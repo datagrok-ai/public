@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import {getGPUDevice} from '../getGPUDevice';
 import {toOffsetForm} from '../umap/utils';
+import {WORKGROUP_DIM} from '../workgroup';
 
 export async function webGPUMMP(frags: [number, number][][], fragSizes: Uint32Array, threshold: number = 0.4):
 Promise<{mol1Idx: Uint32Array, mol2Idx: Uint32Array, frag1Idx: Uint32Array, frag2Idx: Uint32Array, coreIdx: Uint32Array} | null> {
@@ -8,7 +9,7 @@ Promise<{mol1Idx: Uint32Array, mol2Idx: Uint32Array, frag1Idx: Uint32Array, frag
   if (!device)
     return null; // if no device, return null, as we cannot do anything without it.
 
-  const threadsPerWorkgroupDim = 10;
+  const threadsPerWorkgroupDim = WORKGROUP_DIM;
   const threadsInWorkgroup = threadsPerWorkgroupDim * threadsPerWorkgroupDim;
   const neededThreads = 10000; //TBD
   const neededWorkgroups = Math.ceil(neededThreads / threadsInWorkgroup);
@@ -150,11 +151,15 @@ Promise<{mol1Idx: Uint32Array, mol2Idx: Uint32Array, frag1Idx: Uint32Array, frag
   let startRow = 0;
   let startCol = 1;
   for (let i = 0; i < neededThreads; i++) {
-    const endIdx = i === neededThreads - 1 ? condensedDistanceMatrixSize - 1 : (i + 1) * chunkSize;
+    // a thread compares its pairs up to its end, not the end itself: the last thread ends one step past the last pair
+    // (listSize - 2, listSize - 1), where the shader's walk goes next (row listSize - 1, column listSize). Ended at that
+    // pair's own index, it left the pair to no thread: the last two molecules were never compared.
+    const isLast = i === neededThreads - 1;
+    const endIdx = (i + 1) * chunkSize;
     // fancy formulas to calculate the start and end indices for the condensed distance matrix for each thread start
-    const endRow =
+    const endRow = isLast ? listSize - 1 :
       listSize - 2 - Math.floor(Math.sqrt(-8 * endIdx + 4 * listSize * (listSize - 1) - 7) / 2 - 0.5);
-    const endCol =
+    const endCol = isLast ? listSize :
         endIdx - listSize * endRow + Math.floor((endRow + 1) * (endRow + 2) / 2);
 
     startAtCols[i] = startCol;
@@ -252,8 +257,22 @@ Promise<{mol1Idx: Uint32Array, mol2Idx: Uint32Array, frag1Idx: Uint32Array, frag
   const outFrag2: Array<Uint32Array> = [];
   const outCores: Array<Uint32Array> = [];
 
+  // A pass takes every unfinished thread through at least min(maxFound, maxComputations) pairs: it stops before
+  // maxComputations only once it has found maxFound. So the thread with the most pairs (each thread but the last has
+  // chunkSize, the last the rest) is done after this many passes; one more is the pass that sees it done. A dispatch
+  // that leaves threads unfinished past it (a driver that does not run some of them) would otherwise loop forever.
+  const maxThreadPairs = Math.max(chunkSize, condensedDistanceMatrixSize - (neededThreads - 1) * chunkSize);
+  const maxPasses = Math.ceil(maxThreadPairs / Math.min(maxFound, maxComputations)) + 1;
+  let passes = 0;
   let isAllDone = false;
   while (!isAllDone) {
+    if (++passes > maxPasses) {
+      resultsOutBuffer.destroy();
+      computeInfoBuffer.destroy();
+      resultBuffer.destroy();
+      mmpDataBuffer.destroy();
+      throw new Error(`MMP on the GPU did not finish in ${maxPasses} passes, the most ${listSize} molecules need`);
+    }
     const encoder = device.createCommandEncoder({
       label: 'distance encoder',
     });

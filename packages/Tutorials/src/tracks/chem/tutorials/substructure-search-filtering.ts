@@ -130,9 +130,8 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     this.title('Add more filters', true);
     this.describe(`In the top left corner of the <b>Filter Panel</b>, click the <b>Hamburger</b> icon and choose ` +
       `<b>Select columns...</b>.<br>
-    Then, in the dialog, select the <b>NOCount</b> column. Search for the <b>NumRotatableBonds</b> column ` +
-      `and select it too.<br>
-    Click <b>OK</b>`);
+    Then, in the dialog, in addition to <b>smiles</b>, select <b>NOCount</b> and <b>NumRotatableBonds</b>, ` +
+      `and click <b>OK</b>`);
 
     const exp = ['NOCount', 'NumRotatableBonds', 'smiles'];
     await this.action('Select columns to be used as filters', v?.onEvent('d4-filter-added').pipe(filter(() => {

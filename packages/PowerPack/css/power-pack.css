@@ -475,6 +475,22 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
   max-width: 100% !important;
 }
 
+/* The type takes the width its caption needs, so "auto (datetime)" is not cut; the name takes the rest, 80px at least. */
+.add-new-column-name-row {
+  display: flex;
+  align-items: center;
+}
+
+.add-new-column-name-row > .add-new-column-name {
+  flex: 1 1 0;
+  min-width: 80px;
+}
+
+.add-new-column-name-row > .add-new-column-type {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 .ui-input-addnewcolumn-expression {
   width: 100%;
   min-width: 100%;

@@ -135,7 +135,7 @@ export class PackageFunctions {
     );
   }
 
-  @grok.decorators.func({'top-menu': 'Data | Curves | Data to Curves', 'outputs': [{'name': 'result', 'type': 'dynamic'}]})
+  @grok.decorators.func({'top-menu': 'Data | Curves | Data to Curves', 'requiresTableView': true, 'outputs': [{'name': 'result', 'type': 'dynamic'}]})
   static async dataToCurvesTopMenu() {
     dataToCurvesUI();
   }

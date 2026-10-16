@@ -1,6 +1,6 @@
 const {bundler} = require('@datagrok/build-config');
 
-const config = bundler({externals: {'datagrok-api/u2core': 'DG.U2'}});
+const config = bundler({});
 
 // `?raw` inlines a source file as text so the demo can show the source of the build that is
 // running (src/source-panel.ts); the TypeScript rule has to skip those requests, or it compiles

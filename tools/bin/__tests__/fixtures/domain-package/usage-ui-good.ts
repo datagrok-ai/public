@@ -1,5 +1,5 @@
 // Positive tsc fixture (typed u2 handles): compiled by the --ui test.
-import type {DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
+import type {DomainTable} from '@datagrok-libraries/ems/src/dg';
 import {getTestdbDb, TestdbDb} from './src/generated/db-ui';
 import type {SampleRow, SampleEventRow} from './src/generated/db';
 

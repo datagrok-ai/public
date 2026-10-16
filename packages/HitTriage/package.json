@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/hit-triage",
   "friendlyName": "Hit Triage",
-  "version": "1.10.8",
+  "version": "1.10.9",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -28,12 +28,15 @@
     "uuid": "^11.1.1"
   },
   "devDependencies": {
-    "@types/uuid": "^9.0.2"
+    "@types/uuid": "^9.0.2",
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.62.1"
   },
   "scripts": {
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
-    "lint": "eslint --ext .ts,.tsx src"
+    "lint": "eslint --ext .ts,.tsx src",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"

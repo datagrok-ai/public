@@ -101,8 +101,8 @@
     "utf-8-validate": "^6.0.5"
   },
   "scripts":   {
-    "build": "grok tsc -p tsconfig.json && grok build --skip-check && node scripts/smoke-bundle.cjs",
-    "build-docker": "grok tsc -p tsconfig.json && grok build --skip-check --only=browser && node scripts/smoke-bundle.cjs",
+    "build": "grok tsc -p tsconfig.json && node -e \"require('fs').copyFileSync('src/u2core/package.json', 'dist/src/u2core/package.json')\" && grok build --skip-check && node scripts/smoke-bundle.cjs",
+    "build-docker": "grok tsc -p tsconfig.json && node -e \"require('fs').copyFileSync('src/u2core/package.json', 'dist/src/u2core/package.json')\" && grok build --skip-check --only=browser && node scripts/smoke-bundle.cjs",
     "build-node": "grok build --skip-check --only=node",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src *.ts",

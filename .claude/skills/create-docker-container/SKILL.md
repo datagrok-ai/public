@@ -118,6 +118,28 @@ ws.addEventListener('message', (event: MessageEvent) => {
 setTimeout(() => ws.close(), 3000);
 ```
 
+### Read the calling user's credentials (if needed)
+
+Every proxied HTTP request and WebSocket handshake reaches the container with two headers:
+`X-User-Api-Key` (the user's session token) and `X-Datagrok-Container-Token` (valid 15 minutes,
+good only for the call below). Trade the second one for the credentials of the user who made the
+call: the package's credentials with the container's own laid over them, each picked by the user's
+groups. Set them per group in the package's **Credentials...** dialog; uncheck **Allow client side**
+there to keep them away from the package's browser code.
+
+```python
+import os, requests
+
+def caller_credentials(request):
+    token = request.headers['X-Datagrok-Container-Token']
+    r = requests.get(f"{os.environ['DATAGROK_API_URL']}/docker/credentials",
+                     headers={'Authorization': f'Bearer {token}'})
+    r.raise_for_status()  # 404: no credentials for this user's groups
+    return r.json()       # {'apiKey': '...', ...}
+```
+
+A WebSocket gets one token per connection: fetch the credentials when the socket opens.
+
 ### 5. Build and publish
 
 ```shell

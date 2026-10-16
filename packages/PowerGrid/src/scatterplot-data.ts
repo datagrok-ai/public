@@ -2,14 +2,8 @@
  * and rebuilt only when their inputs change. A renderer receives the arrays through its sink and draws a frame from
  * the returned description; it never reads the viewer itself, so both backends draw the same thing. */
 import * as DG from 'datagrok-api/dg';
-import {isDotRenderer, readLook, ScatterLook} from './scatterplot-look';
-
-/** Marker names in the order of the core's `Marker.types`: `getMarkerTypes()` answers indexes into this list. */
-const MARKER_TYPES = [
-  'circle', 'circle border', 'square', 'square border', 'cross border', 'cross x border', 'outlier',
-  'diamond', 'diamond border', 'triangle top', 'triangle right', 'triangle bottom', 'triangle left',
-  'triangle top border', 'triangle right border', 'triangle bottom border', 'triangle left border',
-  'star', 'dot', 'gradient'];
+import {isDotRenderer, MARKER_TYPES, plotCanvases, readLook, ScatterLook} from './scatterplot-look';
+import {scatterDebug} from './scatterplot-debug';
 const CIRCLE_BORDER = MARKER_TYPES.indexOf('circle border');
 /** The size the core draws a row with an empty Size value at, when *Show Markers With Empty Size* is on. */
 const EMPTY_SIZE_MARKER_SIZE = 6;
@@ -83,7 +77,8 @@ function noneValue(col: DG.Column, raw: ArrayLike<number>): number {
   return raw instanceof Float32Array ? Math.fround(DG.FLOAT_NULL) : DG.FLOAT_NULL;
 }
 
-export function largestMarker(sc: DG.ScatterPlotViewer, look: ScatterLook): number {
+export function largestMarker(sc: DG.ScatterPlotViewer,
+  look: Pick<ScatterLook, 'sizeColumnName' | 'markerMaxSize'>): number {
   return Math.max(look.sizeColumnName ? look.markerMaxSize : sc.getMarkerSize(0), EMPTY_SIZE_MARKER_SIZE);
 }
 
@@ -109,6 +104,8 @@ class Axis {
     if (key == this.key && (categorical || !(Math.abs(center - this.origin) > REBASE_DISTANCE * (hi - lo))))
       return;
 
+    const start = scatterDebug.now();
+    const rebased = key == this.key;
     this.key = key;
     this.origin = categorical || !Number.isFinite(center) ? 0 : center;
     this.version++;
@@ -132,6 +129,8 @@ class Axis {
     }
     this.invalid = invalid;
     sink.setPositions(this.name, values);
+    scatterDebug.rebuilt(`${this.name} positions`, start, `${n.toLocaleString()} rows, ` +
+      (rebased ? 'the view moved far from where they were centered' : 'new data or axis'));
   }
 
   /** [start + scale * position] places a row on the screen as the core's `Transform.worldToScreen` does. */
@@ -213,7 +212,7 @@ export class ScatterData {
 
     const left = Math.floor(viewBox.x * dpr);
     const top = Math.floor(viewBox.y * dpr);
-    const viewer = sc.canvas;
+    const viewer = plotCanvases(sc).canvas;
     return {
       dots, dpr, viewBox, xform, origin: [left, top],
       size: [Math.max(1, Math.ceil((viewBox.x + viewBox.width) * dpr) - left),
@@ -250,6 +249,7 @@ export class ScatterData {
       this.emptySizes = false;
       return;
     }
+    const start = scatterDebug.now();
     const n = sizeCol.length;
     const flags = new Uint8Array(n);
     const raw = sizeCol.getRawData();
@@ -263,6 +263,7 @@ export class ScatterData {
     }
     this.sizeFlags = flags;
     this.emptySizes = emptySizes;
+    scatterDebug.rebuilt('size flags', start, `${n.toLocaleString()} rows`);
   }
 
   private updateSizes(sc: DG.ScatterPlotViewer, look: ScatterLook, sizeCol: DG.Column | null): [boolean, number] {
@@ -272,8 +273,10 @@ export class ScatterData {
     }
     const key = `${this.sizeFlagsKey}|${look.markerMinSize}|${look.markerMaxSize}`;
     if (key != this.sizesKey) {
+      const start = scatterDebug.now();
       this.sizesKey = key;
       this.sink.setRowValues('sizes', sc.getMarkerSizes());
+      scatterDebug.rebuilt('sizes', start, `${sizeCol.length.toLocaleString()} rows from the core`);
     }
     return [true, 0];
   }
@@ -289,6 +292,7 @@ export class ScatterData {
     const key = [objectId(markersCol), markersCol?.version, look.markersMap, this.metadataVersion, type, emptySizes,
       this.sizeFlagsVersion].join('|');
     if (key != this.typesKey) {
+      const start = scatterDebug.now();
       this.typesKey = key;
       const types = markersCol ? sc.getMarkerTypes() : new Uint32Array(df.rowCount).fill(type);
       if (emptySizes) {
@@ -298,6 +302,7 @@ export class ScatterData {
         }
       }
       this.sink.setRowValues('types', types);
+      scatterDebug.rebuilt('marker types', start, `${types.length.toLocaleString()} rows`);
     }
     return [true, 0];
   }
@@ -307,8 +312,11 @@ export class ScatterData {
       return false;
     const key = `${objectId(selection)}|${selection.version}|${selection.length}`;
     if (key != this.selectionKey) {
+      const start = scatterDebug.now();
       this.selectionKey = key;
       this.sink.setSelection(selection.getBuffer().subarray(0, (selection.length + 31) >>> 5));
+      scatterDebug.rebuilt('selection', start, `${selection.trueCount.toLocaleString()} of ` +
+        `${selection.length.toLocaleString()} rows selected`);
     }
     return true;
   }
@@ -333,9 +341,12 @@ export class ScatterData {
     for (let w = 0; taken && w < taken.length && !deselected; w++)
       deselected = (taken[w] & ~bits[w]) != 0;
     if (key != this.colorsKey || deselected) {
+      const start = scatterDebug.now();
       this.colorsKey = key;
       this.sink.setRowValues('colors', sc.getMarkerColors());
       this.colorsSelection = selectionColors ? bits.slice(0, (selection.length + 31) >>> 5) : null;
+      scatterDebug.rebuilt('colors', start, `${df.rowCount.toLocaleString()} rows from the core` +
+        (deselected ? ', a row painted selected was deselected' : ''));
     }
     return true;
   }
@@ -349,6 +360,7 @@ export class ScatterData {
     const key = [objectId(filter), filter.version, filter.length, this.x.version, this.y.version,
       this.sizeFlagsVersion, look.showFilteredOutPoints, skipEmptySize].join('|');
     if (key != this.filteredKey) {
+      const start = scatterDebug.now();
       this.filteredKey = key;
       const n = filter.length;
       const bits = filter.getBuffer();
@@ -373,12 +385,15 @@ export class ScatterData {
       this.filteredOutCount = o;
       this.sink.setRows('filtered', this.filtered);
       this.sink.setRows('filteredOut', filteredOut.subarray(0, o));
+      scatterDebug.rebuilt('row lists', start, `${f.toLocaleString()} filtered and ${o.toLocaleString()} ` +
+        `filtered-out rows drawn of ${n.toLocaleString()}`);
     }
 
     const selection = df.selection;
     const onTop = !dots && selectionColors && selection.trueCount > 0;
     const selectedKey = onTop ? `${this.filteredVersion}|${objectId(selection)}|${selection.version}` : '';
     if (selectedKey != this.selectedKey) {
+      const start = scatterDebug.now();
       this.selectedKey = selectedKey;
       const bits = selection.getBuffer();
       const rows = new Uint32Array(onTop ? this.filtered.length : 0);
@@ -389,6 +404,7 @@ export class ScatterData {
       }
       this.selectedCount = count;
       this.sink.setRows('selected', rows.subarray(0, count));
+      scatterDebug.rebuilt('selected rows on top', start, `${count.toLocaleString()} rows`);
     }
   }
 }

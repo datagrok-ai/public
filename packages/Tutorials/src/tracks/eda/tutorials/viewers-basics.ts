@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {filter, map} from 'rxjs/operators';
+import {filter, map, mergeMap, takeUntil} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
-import {fromEvent, interval, merge} from 'rxjs';
+import {from, fromEvent, interval, merge, Observable} from 'rxjs';
 import {elementClick, selectionMade} from './utils';
 import {getPlatform, Platform, platformKeyMap} from '../../shortcuts';
 
@@ -63,15 +63,25 @@ export class ViewersTutorial extends Tutorial {
 
     // the gallery may be rebuilt while the step is up, so the box is found by the event, not captured
     const searchInput = (): HTMLInputElement | null => document.querySelector('[name="viewer-gallery-search"]');
-    await this.action('Type "Sunburst" in the search box',
+    const sunburstAdded = grok.events.onViewerAdded
+      .pipe(filter((d: DG.EventData) => d.args.viewer.type === 'Sunburst'));
+    const gallerySearch = (dlg: DG.Dialog) => dlg.root.querySelector<HTMLElement>('[name="viewer-gallery-search"]');
+    const typeHintSub = merge(from(DG.Dialog.getOpenDialogs()), grok.events.onDialogShown).pipe(
+      filter((dlg: DG.Dialog) => gallerySearch(dlg) != null),
+      mergeMap((dlg: DG.Dialog) => new Observable(() => {
+        const hint = ui.hints.addHint(gallerySearch(dlg)!, ui.markdown('Type **Sunburst** here'), 'bottom');
+        return () => hint.remove();
+      }).pipe(takeUntil(dlg.onClose)))).subscribe();
+    await this.action('Type "Sunburst" in the search box', merge(
       fromEvent<InputEvent>(document, 'input').pipe(filter((e) =>
         (e.target as HTMLElement)?.getAttribute('name') === 'viewer-gallery-search' &&
         (e.target as HTMLInputElement).value.toLowerCase().includes('sunburst'))),
-      searchInput, '', () => Tutorial.setInputValue(searchInput()!, 'Sunburst'));
+      sunburstAdded), searchInput, '', () => Tutorial.setInputValue(searchInput()!, 'Sunburst'));
+    typeHintSub.unsubscribe();
 
     // the card appears only once the search has filtered the gallery, so it is resolved per tick
-    await this.action('Select the Sunburst viewer',
-      grok.events.onViewerAdded.pipe(filter((d: DG.EventData) => d.args.viewer.type === 'Sunburst')),
+    const hasSunburst = Array.from(grok.shell.tv.viewers).some((v: DG.Viewer) => v.type === 'Sunburst');
+    await this.action('Select the Sunburst viewer', hasSunburst ? Promise.resolve() : sunburstAdded,
       () => this.getViewerCard('Sunburst'), '', () => this.getViewerCard('Sunburst')!.click());
 
     const sp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);

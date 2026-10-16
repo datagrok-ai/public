@@ -25,6 +25,13 @@ export namespace funcs {
   }
 
   /**
+   * The zero-code u2 app over the external `northwind` binding (the fixture package in core/docs/features/ems/external-bindings/fixtures/northwind) — byte-identical to Stockroom's
+   */
+  export async function northwindOrdersApp(): Promise<DG.View> {
+    return await grok.functions.call('U2Demo:NorthwindOrdersApp', {});
+  }
+
+  /**
    * Registers u2 value editors for the property types enabled in `u2.valueEditors`
    */
   export async function u2AutoRegisterEditors(): Promise<void> {

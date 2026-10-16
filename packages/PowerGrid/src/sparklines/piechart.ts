@@ -1,7 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {desirabilityScore, isNumerical, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {
+  desirabilityScore, isNumerical, migrateDesirability, PropertyDesirability,
+} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 import {
   ColumnGroup,
@@ -65,6 +67,10 @@ function getSettings(gc: DG.GridColumn): PieChartSettings {
     const model = new VlaaiVisModel(settings, gc.grid.dataFrame);
     if (model.sectors.length === 0)
       model.autoGroup(DEFAULTS.AUTO_GROUP_COLUMNS);
+  }
+  for (const sector of settings.sectors?.sectors ?? []) {
+    for (let i = 0; i < sector.subsectors.length; i++)
+      sector.subsectors[i] = migrateDesirability(sector.subsectors[i]) as Subsector;
   }
   return settings;
 }

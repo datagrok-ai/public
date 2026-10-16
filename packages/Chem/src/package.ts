@@ -53,10 +53,11 @@ import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
 import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
 import {Fingerprint, hasNewLines} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {IMolContext, getMolSafe, isFragment, _isSmarts, getQueryMolSafe} from './utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, isFragment, _isSmarts, getQueryMolSafe, readsAsQueryOnly, isSmilesSyntax,
+  withoutCxExtension} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation, convertNotationForColumn} from './utils/convert-notation-utils';
-import {molToMolblock} from './utils/convert-notation-utils';
+import {molToMolblock, asSmiles} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {getSdfString, saveAsSdfDialog} from './utils/sdf-utils';
 import {getSimilaritiesMarix} from './utils/similarity-utils';
@@ -586,6 +587,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'Similarity Search',
     'top-menu': 'Chem | Search | Similarity Search...',
+    'requiresSemType': 'Molecule',
   })
   static similaritySearchTopMenu(): void {
     (grok.shell.v as DG.TableView).addViewer('Chem Similarity Search');
@@ -602,6 +604,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Search | Diversity Search...',
+    'requiresSemType': 'Molecule',
     'name': 'Diversity Search',
   })
   static diversitySearchTopMenu(): void {
@@ -967,6 +970,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Analyze | Chemical Space...',
+    'requiresTableView': true,
     'name': 'Chem Space',
     'description': 'Maps the dataset to 2D plot based on similarity',
     'editor': 'Chem:ChemSpaceEditor',
@@ -1234,6 +1238,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'R-Groups Analysis',
     'top-menu': 'Chem | Analyze | R-Groups Analysis...',
+    'requiresSemType': 'Molecule',
   })
   static rGroupsAnalysisMenu(): void {
     const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
@@ -1299,6 +1304,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Analyze | Activity Cliffs...',
+    'requiresTableView': true,
     'name': 'Activity Cliffs',
     'description': 'Detects pairs of molecules with similar structure and significant difference in any given property',
     'editor': 'Chem:ActivityCliffsEditor',
@@ -2248,8 +2254,7 @@ export class PackageFunctions {
   })
   static copyAsSmiles(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
-    const smiles = !DG.chem.isMolBlock(value.value) && !_isSmarts(value.value) ? value.value :
-      _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, PackageFunctions.getRdKitModule());
+    const smiles = asSmiles(value.value, PackageFunctions.getRdKitModule());
     navigator.clipboard.writeText(smiles);
     grok.shell.info('Smiles copied to clipboard');
   }
@@ -2366,9 +2371,17 @@ export class PackageFunctions {
     return false;
   }
 
+  /** Whether a molecule string is SMARTS (the platform's sketcher sets it as SMARTS, `DG.chem.Sketcher.setMolecule`): no
+   * molblock; SMARTS syntax outside a CXSMILES extension (a CXSMILES with atom labels or an AND group is a molecule), or a
+   * text RDKit reads as a query and not as a molecule (Daylight's [NX3][CX3]=[OX1]: set as SMILES, no sketcher could show
+   * it, and the query entered came back empty). RDKit is asked only about a text outside SMILES syntax: every string a
+   * sketcher is set with comes here, and a SMILES, read by RDKit each time, cost a parse for an answer its syntax gives. */
   @grok.decorators.func()
   static isSmarts(s: string): boolean {
-    return !s.match(/M  END|V2000|V3000/g) && !!s.match(/\[.?#\d|\$|&|;|,|!.?]/g);
+    if (/M  END|V2000|V3000/.test(s))
+      return false;
+    return _isSmarts(s) ||
+      (!isSmilesSyntax(withoutCxExtension(s)) && _rdKitModule != null && readsAsQueryOnly(s, _rdKitModule));
   }
 
   @grok.decorators.func()
@@ -2513,6 +2526,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Analyze | Scaffold Tree',
+    'requiresSemType': 'Molecule',
     'name': 'addScaffoldTree',
     'description': 'Generates a hierarchical tree based on the scaffolds presented in dataset',
   })
@@ -2546,6 +2560,7 @@ export class PackageFunctions {
     'description': 'Finds pairs of molecules differing by a single fragment and relates the change to activity.',
     'editor': 'Chem:MMPEditor',
     'top-menu': 'Chem | Analyze | Matched Molecular Pairs...',
+    'requiresTableView': true,
   })
   static async mmpAnalysis(
     table: DG.DataFrame,
@@ -2633,6 +2648,7 @@ export class PackageFunctions {
     'name': 'SAR Matrix',
     'description': 'Groups related compound series into potency-colored matrices and predicts virtual analogs.',
     'top-menu': 'Chem | Analyze | SAR Matrix...',
+    'requiresTableView': true,
     'editor': 'Chem:SarMatrixEditor',
   })
   static async sarMatrixAnalysis(
@@ -3126,6 +3142,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Reactions | Deprotect...',
+    'requiresTableView': true,
     'name': 'Deprotect',
     'description': 'Removes drawn protecting groups / fragments from molecules',
     'editor': 'Chem:DeprotectEditor',
@@ -3168,6 +3185,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'mpo',
     'top-menu': 'Chem | Calculate | MPO Score...',
+    'requiresSemType': 'Molecule',
     'description': 'Calculates the MPO score for the column of molecules',
   })
   static async _mpo(): Promise<void> {
@@ -3350,6 +3368,7 @@ export class PackageFunctions {
     'name': 'Chemical Properties',
     'description': 'Dynamically discovers and executes tagged biochemical calculators',
     'top-menu': 'Chem | Calculate | Chemical Properties...',
+    'requiresSemType': 'Molecule',
   })
   static async biochemPropsWidget(): Promise<void> {
     await biochemicalPropertiesDialog();
@@ -3475,6 +3494,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     topMenu: 'Chem | Transform | Reactions | Transformation...',
+    requiresSemType: 'Molecule',
     name: 'Run Reaction',
     description: 'Runs reaction based on the reaction SMARTS and list of reactants',
   })
@@ -3529,6 +3549,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     topMenu: 'Chem | Transform | Reactions | Two-Component Reaction...',
+    requiresSemType: 'Molecule',
     name: 'Two-Component Reaction',
     description: 'Runs a reaction between molecules from two columns',
   })

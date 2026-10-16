@@ -12,7 +12,8 @@ Feature: Correlation plot — the matrix and the numbers in it
   apart — Show Coefficients empties the text and leaves the coefficient exactly where it was.
   The coefficients are checked twice over: against the values measured on this fixture, and against
   `DG.Stats` computed independently over the rows the plot's Row Source names — the only check here
-  that does not ask the viewer the same question twice.
+  that does not ask the viewer the same question twice. A column's edge dragged in the header
+  resizes that column alone, and Back Color paints the space below the matrix's rows.
   demog-1000 has 1000 rows of which 128 have a blank HEIGHT, and both `plot.correlation` and
   `DG.Stats` are pairwise-complete: AGE/HEIGHT is computed over 872 rows while AGE/WEIGHT uses all
   1000, so `rows shown` is 1000 for the whole matrix and neither number is over "the rows shown".
@@ -148,4 +149,23 @@ Feature: Correlation plot — the matrix and the numbers in it
     And the "correlation of WEIGHT and HEIGHT" reading of correlation plot viewer should be between 0.4124 and 0.4125
     And the "color of cell AGE x WEIGHT" and "color of cell HEIGHT x WEIGHT" readings of correlation plot viewer should differ
     And the "color of cell AGE x WEIGHT" reading of correlation plot viewer should not be "#ff0000"
+    And no errors should have been logged
+
+  Scenario: Dragging a column's edge widens that column alone, and dragging it back narrows it
+    When user drags the "column resizer HEIGHT" area of correlation plot viewer by 40 pixels to the right
+    Then the "column width of HEIGHT" reading of correlation plot viewer should be higher than before
+    And the "column width of WEIGHT" reading of correlation plot viewer should be the same as before
+    And correlation plot viewer should have repainted
+    When user drags the "column resizer HEIGHT" area of correlation plot viewer by 40 pixels to the left
+    Then the "column width of HEIGHT" reading of correlation plot viewer should be lower than before
+    And the "text of cell HEIGHT x AGE" reading of correlation plot viewer should be "-0.23"
+    And no errors should have been logged
+
+  Scenario: Back Color paints the space the matrix leaves empty
+    Then the "view" area of correlation plot viewer should not contain the color "#FFCC00"
+    When user sets "backColor" property of correlation plot viewer to "#FFCC00"
+    Then the "view" area of correlation plot viewer should contain the color "#FFCC00"
+    And the "text of cell HEIGHT x AGE" reading of correlation plot viewer should be "-0.23"
+    When user sets "backColor" property of correlation plot viewer to "#FFFFFF"
+    Then the "view" area of correlation plot viewer should not contain the color "#FFCC00"
     And no errors should have been logged

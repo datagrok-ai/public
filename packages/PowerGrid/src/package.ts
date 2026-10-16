@@ -396,8 +396,8 @@ export class PackageFunctions {
       if (view.grid)
         attachSummaryColumnHandlers(view.grid);
 
-    if (navigator.gpu)
-      setGPUDevice(await getGPUDevice());
+    const requested = performance.now();
+    setGPUDevice(navigator.gpu ? await getGPUDevice() : null, requested);
     // scatter plots drawn on the CPU before this autostart landed switch to the GPU
     for (const view of grok.shell.tableViews) {
       for (const viewer of view.viewers ?? []) {

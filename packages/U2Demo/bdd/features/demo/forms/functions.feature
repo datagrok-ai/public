@@ -9,5 +9,6 @@ Feature: Functions
     Then Abs heading should be visible
     And function form should be visible
     When user enters "7.5" into x input in function form
-    And user clicks on Run button
+    Then function form should not be clipped
+    When user clicks on Run button
     Then value of result readout should have text "7.5"

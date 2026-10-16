@@ -16,8 +16,10 @@ button[title="About"], button[title="Help (?)"] {
     display: none !important;
 }
 
+/* Ketcher fills its host's width (which the host keeps at 500 px at least): at a fixed 500 px it stayed that wide in a
+   dialog shown with a size until the dialog was resized by hand (.ketcher-resizing) */
 .ketcher-host {
-    width: 500px;
+    width: 100%;
     height: 400px;
     overflow: hidden!important;
 }

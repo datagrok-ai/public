@@ -204,6 +204,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Bio | PolyTool | Convert...',
+    'requiresSemType': 'Macromolecule',
     'name': 'polyToolConvert',
     'description': 'editor for Performing conversion of sequences in custom notation to molfiles'
   })
@@ -242,7 +243,7 @@ export class PackageFunctions {
     'description': 'Dialog for configuring enumeration of a HELM sequence'
   })
   static async polyToolEnumerateHelmTopMenu(): Promise<void> {
-    await polyToolEnumerateHelmUI(grok.shell.tv?.dataFrame.currentCell);
+    await polyToolEnumerateHelmUI(grok.shell.currentTableView?.dataFrame.currentCell);
   }
 
 
@@ -392,7 +393,9 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'name': 'Combine Sequences',
-    'top-menu': 'Bio | PolyTool | Combine Sequences...'
+    'top-menu': 'Bio | PolyTool | Combine Sequences...',
+    'requiresTable': true,
+    'requiresSemType': 'Macromolecule',
   })
   static async getPolyToolCombineDialog() {
     getPTCombineDialog();

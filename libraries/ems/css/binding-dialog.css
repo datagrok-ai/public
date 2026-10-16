@@ -1,0 +1,159 @@
+/* The "Create domain schema" dialog (src/dg/domain/authoring/binding-dialog.ts) and the "Edit
+   binding" one (binding-edit-dialog.ts): the wizard fills the dialog so the Design step's editor
+   has a height; the review is the manifest beside the planned access and the findings (create),
+   or the annotated change list beside the reload report, the confirmation and the findings (edit).
+   Tokens only; css/tokens.css, wizard.css, form.css, section.css, input.css and
+   manifest-editor.css must be loaded alongside. */
+.u2-wizard.u2-binding-dialog {
+  box-sizing: border-box;
+  height: 100%;
+}
+
+.u2-binding-dialog .u2-wizard-panel,
+.u2-binding-design {
+  height: 100%;
+  min-height: 0;
+}
+
+.u2-binding-connection {
+  gap: var(--dg-space-m);
+}
+
+.u2-binding-facts,
+.u2-binding-access {
+  display: block;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-binding-problem {
+  color: var(--dg-error);
+}
+
+.u2-binding-review {
+  display: flex;
+  gap: var(--dg-space-l);
+  height: 100%;
+  min-height: 0;
+}
+
+.u2-binding-json {
+  flex: 1 1 60%;
+  min-width: 0;
+  margin: 0;
+  padding: var(--dg-space-m);
+  overflow: auto;
+  font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+  background: var(--dg-bg-secondary);
+  border: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-binding-review-side {
+  flex: 1 1 40%;
+  min-width: 0;
+  gap: var(--dg-space-l);
+  overflow: auto;
+}
+
+.u2-binding-planned .u2-section-body {
+  gap: var(--dg-space-xs);
+}
+
+.u2-binding-planned-note {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-binding-issues {
+  gap: var(--dg-space-s);
+}
+
+.u2-binding-issues-title {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-binding-issue {
+  color: var(--dg-error);
+}
+
+.u2-binding-created {
+  gap: var(--dg-space-l);
+  padding: var(--dg-space-m);
+  overflow: auto;
+}
+
+.u2-binding-created-head {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+}
+
+.u2-binding-created-list {
+  gap: var(--dg-space-xs);
+}
+
+.u2-binding-created-title {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-binding-created-applied {
+  color: var(--dg-success);
+}
+
+.u2-binding-created-failed {
+  color: var(--dg-error);
+}
+
+.u2-binding-edit-facts {
+  padding: var(--dg-space-m);
+}
+
+.u2-binding-fact {
+  display: flex;
+  gap: var(--dg-space-m);
+}
+
+.u2-binding-fact-label {
+  flex: 0 0 8em;
+  color: var(--dg-text-color-light);
+}
+
+.u2-binding-changes-pane {
+  flex: 1 1 60%;
+  min-width: 0;
+  gap: var(--dg-space-l);
+  overflow: auto;
+}
+
+.u2-binding-changes,
+.u2-binding-reloaded {
+  gap: var(--dg-space-xs);
+}
+
+.u2-binding-changes-title {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-binding-change {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-xs);
+}
+
+.u2-binding-change-removes {
+  color: var(--dg-error);
+}
+
+.u2-binding-change-note {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-binding-body .u2-binding-json {
+  flex: none;
+  max-height: 16em;
+}

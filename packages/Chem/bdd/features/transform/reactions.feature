@@ -3,9 +3,10 @@ Feature: Reactions from the Transform menu
   Remove Water and Salts adds Desalted(canonical_smiles) on smiles. Transformation with the Ester
   Hydrolysis card adds a product column in which some molecules, not all, differ from their desalted
   input. Two-Component Reaction with the Amide Coupling card on ten acid/amine pairs and two pairs
-  that cannot couple makes an amide for the ten pairs.
+  that cannot couple makes an amide for the ten pairs. Deprotect, run with the fragment its dialog
+  opens with, takes the Fmoc group off a protected amino acid.
 
-  The molecules each reaction makes (the water and hydrogen halides gone, the halide anions of quaternary ammonium cations kept, a second desalting into the same column, the products of every row) are tested in Chem src/tests/reactions-tests.ts ('Reactions').
+  The molecules each reaction makes (the water and hydrogen halides gone, the halide anions of quaternary ammonium cations kept, a second desalting into the same column, the products of every row, Deprotect's default fragment on protected and free amino acids) are tested in Chem src/tests/reactions-tests.ts ('Reactions').
 
   Background:
     Given user is logged in
@@ -54,4 +55,17 @@ Feature: Reactions from the Transform menu
     Then 1 new column should have been added
     And a new column "Product(smiles1+smiles2)" should have been added
     And 10 molecules of "Product(smiles1+smiles2)" column should contain "[CX3](=O)[NX3;H1]"
+    And no errors should have been logged
+
+  Scenario: Deprotect with its default fragment takes the Fmoc group off a protected amino acid
+    Given user opens a table "fmoc_amino_acids" with:
+      | smiles                              |
+      | O=C(O)CNC(=O)OCC1c2ccccc2-c2ccccc21 |
+    And the semantic types of the current table are detected
+    When user picks "Chem > Transform > Reactions > Deprotect..." from the top menu
+    Then "Deprotect" dialog should be visible
+    And Molecules input in "Deprotect" dialog should contain text "smiles"
+    When user clicks on OK button in "Deprotect" dialog
+    Then a new column "deprotected(smiles)" should have been added
+    And the molecule in row 1 of "deprotected(smiles)" column should be "NCC(=O)O"
     And no errors should have been logged

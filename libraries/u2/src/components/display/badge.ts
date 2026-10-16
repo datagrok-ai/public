@@ -24,7 +24,8 @@ export function badge(text: Text, options?: {variant?: BadgeVariant}): HTMLEleme
 }
 
 /** Round counter for unread-style counts: anything above `max` reads `max+`, and zero hides the
- * badge instead of rendering an empty circle. */
+ * badge instead of rendering an empty circle. A signal count is followed in a scope of the badge's
+ * own, a child of the ambient one. */
 export function countBadge(count: number | ReadonlySignal<number>, options?: {max?: number}): HTMLElement {
   const max = options?.max ?? 99;
   const el = span('', 'u2-count-badge');
@@ -36,7 +37,7 @@ export function countBadge(count: number | ReadonlySignal<number>, options?: {ma
   if (typeof count === 'number')
     apply(count);
   else
-    owner().effect(() => apply(count.value));
+    new Scope(owner(), {label: 'count-badge', lazy: true}).effect(() => apply(count.value));
   return el;
 }
 

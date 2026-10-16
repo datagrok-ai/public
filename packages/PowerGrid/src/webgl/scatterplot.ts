@@ -3,10 +3,10 @@
  * Per-row data lives in vertex buffers addressed by row index, and every pass draws a list of row indexes as point
  * sprites; the fragment shader shapes the markers as the core's `Marker.draw` does. */
 import * as DG from 'datagrok-api/dg';
-import {ScatterLook} from '../scatterplot-look';
+import {CheckLook, plotCanvases} from '../scatterplot-look';
 import {Frame, largestMarker, RowList} from '../scatterplot-data';
 import {Renderers, ScatterRenderer} from '../scatterplot-renderer';
-import {DOT_FRAGMENT, DOT_VERTEX, PICK_FRAGMENT, PICK_VERTEX, SHAPE_FRAGMENT, SHAPE_VERTEX} from './shaders';
+import {ANY_KIND, DOT_FRAGMENT, DOT_VERTEX, PICK_FRAGMENT, PICK_VERTEX, SHAPE_VERTEX, shapeFragment} from './shaders';
 
 /** Browsers keep about 16 WebGL contexts a page and drop the oldest past that; leave room for other viewers. */
 const MAX_RENDERERS = 8;
@@ -17,16 +17,19 @@ const enum Attr { X, Y, Color, Size, Type, Selected }
 const CONTEXT_ATTRIBUTES: WebGLContextAttributes = {alpha: true, premultipliedAlpha: true, antialias: false,
   depth: false, stencil: false, preserveDrawingBuffer: false, failIfMajorPerformanceCaveat: true};
 
-let capabilities: {maxPointSize: number} | null | undefined;
+let capabilities: {maxPointSize: number, renderer: string} | null | undefined;
+/** Why the plots are not drawn with WebGL 2 here, once the probe found it unusable. */
+let unavailable = '';
 
 function webGLCapabilities() {
   if (capabilities === undefined) {
     const gl = document.createElement('canvas').getContext('webgl2', CONTEXT_ATTRIBUTES);
     // the browser flags its own software fallback only; one picked by a flag or a policy shows in the renderer name
     const info = gl?.getExtension('WEBGL_debug_renderer_info');
-    const software = info && /swiftshader|llvmpipe|softpipe|software|basic render/i
-      .test(gl!.getParameter(info.UNMASKED_RENDERER_WEBGL));
-    capabilities = gl && !software ? {maxPointSize: gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1]} : null;
+    const renderer: string = info ? gl!.getParameter(info.UNMASKED_RENDERER_WEBGL) : 'an unnamed GPU';
+    const software = info && /swiftshader|llvmpipe|softpipe|software|basic render/i.test(renderer);
+    capabilities = gl && !software ? {maxPointSize: gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1], renderer} : null;
+    unavailable = !gl ? 'no hardware WebGL 2' : software ? `software WebGL 2 (${renderer})` : '';
     gl?.getExtension('WEBGL_lose_context')?.loseContext();
   }
   return capabilities;
@@ -36,6 +39,11 @@ export function isWebGLAvailable(): boolean {
   return webGLCapabilities() != null;
 }
 
+export function webGLUnavailable(): string {
+  webGLCapabilities();
+  return unavailable;
+}
+
 /** The point sprite of a marker, as `SHAPE_VERTEX` sizes it for the widest stroke. */
 function spriteSize(markerSize: number, border: number, dpr: number): number {
   return 2 * Math.ceil((markerSize / 2 + Math.max(border, 3)) * dpr + 1);
@@ -43,16 +51,21 @@ function spriteSize(markerSize: number, border: number, dpr: number): number {
 
 const renderers = new Renderers<ScatterPlotGL>();
 
-/** The largest marker fits in a point sprite, and a context is free for a plot that has none yet. */
-export function isWebGLRenderValid(sc: DG.ScatterPlotViewer, look: ScatterLook): boolean {
+/** Why WebGL cannot draw [sc], or null: the largest marker has to fit in a point sprite, and a context be free for a
+ * plot that has none yet. */
+export function whyNotWebGL(sc: DG.ScatterPlotViewer, look: CheckLook): string | null {
   const sprite = spriteSize(largestMarker(sc, look), look.markerBorderWidth, window.devicePixelRatio);
-  return sprite <= webGLCapabilities()!.maxPointSize && (renderers.get(sc) != null || renderers.count < MAX_RENDERERS);
+  const maxPointSize = webGLCapabilities()!.maxPointSize;
+  if (sprite > maxPointSize)
+    return `markers of ${sprite} px exceed the largest WebGL point sprite, ${maxPointSize} px`;
+  return renderers.get(sc) != null || renderers.count < MAX_RENDERERS ? null :
+    `${MAX_RENDERERS} other plots already draw with WebGL`;
 }
 
 /** Draws [sc], or releases its renderer when not [show]; answers the canvas drawn on. */
 export function scWebGLRender(sc: DG.ScatterPlotViewer, show: boolean): HTMLCanvasElement | null {
   let renderer = renderers.get(sc);
-  if (!show || !sc.canvas.isConnected) {
+  if (!show || !plotCanvases(sc).canvas.isConnected) {
     renderer?.dispose();
     return null;
   }
@@ -63,7 +76,7 @@ export function scWebGLRender(sc: DG.ScatterPlotViewer, show: boolean): HTMLCanv
 
 /** The row under [pt], or null when [pt] is off the GPU canvas and the CPU has to answer. */
 export function scWebGLPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Point): number | null {
-  return renderers.get(sc)?.hitTest(sc, pt) ?? null;
+  return renderers.get(sc)?.hitTest(pt) ?? null;
 }
 
 export function disposeWebGLRenderers(): void {
@@ -106,9 +119,11 @@ function colorBytes(argb: number): [number, number, number, number] {
 
 
 class ScatterPlotGL extends ScatterRenderer {
+  protected readonly engine = `WebGL 2 on ${webGLCapabilities()!.renderer}`;
   private readonly gl: WebGL2RenderingContext;
   private readonly dotProgram: Program;
-  private readonly shapeProgram: Program;
+  /** By the marker kind they fix, or `ANY_KIND`; compiled on first use. */
+  private readonly shapePrograms = new Map<number, Program>();
   private readonly pickProgram: Program;
   private readonly vao: WebGLVertexArrayObject;
   private readonly buffers: Record<'x' | 'y' | 'colors' | 'sizes' | 'types' | 'selection', WebGLBuffer>;
@@ -122,7 +137,6 @@ class ScatterPlotGL extends ScatterRenderer {
       throw new Error('Scatter plot: no WebGL 2 context');
     this.gl = gl;
     this.dotProgram = new Program(gl, DOT_VERTEX, DOT_FRAGMENT);
-    this.shapeProgram = new Program(gl, SHAPE_VERTEX, SHAPE_FRAGMENT);
     this.pickProgram = new Program(gl, PICK_VERTEX, PICK_FRAGMENT);
     this.vao = gl.createVertexArray()!;
     const buffer = () => gl.createBuffer()!;
@@ -171,10 +185,8 @@ class ScatterPlotGL extends ScatterRenderer {
     this.gl.bufferData(this.gl.ARRAY_BUFFER, data, this.gl.STATIC_DRAW);
   }
 
-  render(sc: DG.ScatterPlotViewer): void {
+  protected drawFrame(frame: Frame): void {
     const gl = this.gl;
-    const frame = this.data.update(sc);
-    this.layout(frame);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, frame.size[0], frame.size[1]);
     gl.clearColor(0, 0, 0, 0);
@@ -190,7 +202,7 @@ class ScatterPlotGL extends ScatterRenderer {
     else {
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-      const program = this.use(this.shapeProgram, frame);
+      const program = this.use(this.shapeProgram(frame.rowTypes ? ANY_KIND : frame.markerType), frame);
       gl.uniform1i(program.uniform('u_markerCache'), +frame.markerCache);
       gl.uniform1f(program.uniform('u_border'), frame.border);
       gl.uniform1f(program.uniform('u_alpha'), frame.opacity);
@@ -201,14 +213,37 @@ class ScatterPlotGL extends ScatterRenderer {
     gl.bindVertexArray(null);
   }
 
-  hitTest(sc: DG.ScatterPlotViewer, pt: DG.Point): number | null {
+  /** Polls a fence: WebGL has no promise for the GPU finishing, and a sync wait would stall the frame it times. */
+  protected gpuDone(): Promise<void> {
     const gl = this.gl;
-    const frame = this.data.update(sc);
+    const fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    if (!fence)
+      return Promise.resolve();
+    gl.flush();
+    return new Promise((resolve) => {
+      const poll = () => {
+        if (gl.isContextLost() || gl.getSyncParameter(fence, gl.SYNC_STATUS) == gl.SIGNALED) {
+          gl.deleteSync(fence);
+          resolve();
+        }
+        else
+          setTimeout(poll, 1);
+      };
+      poll();
+    });
+  }
+
+  /** The row under [pt] in the frame last drawn, or null before the first frame or off the canvas. */
+  hitTest(pt: DG.Point): number | null {
+    const gl = this.gl;
+    const drawn = this.frame;
+    if (!drawn)
+      return null;
     // GL drops a point whose center is off the viewport, so the pick viewport reaches past the canvas by the largest
     // hit radius: a marker centered off the plot still takes the mouse on it, as on the CPU
-    const margin = Math.ceil((frame.largestMarker / 2 + 2) * frame.dpr);
-    frame.origin = [frame.origin[0] - margin, frame.origin[1] - margin];
-    frame.size = [frame.size[0] + 2 * margin, frame.size[1] + 2 * margin];
+    const margin = Math.ceil((drawn.largestMarker / 2 + 2) * drawn.dpr);
+    const frame: Frame = {...drawn, origin: [drawn.origin[0] - margin, drawn.origin[1] - margin],
+      size: [drawn.size[0] + 2 * margin, drawn.size[1] + 2 * margin]};
     const px = Math.floor(pt.x * frame.dpr) - frame.origin[0];
     const py = Math.floor(pt.y * frame.dpr) - frame.origin[1];
     if (px < 0 || py < 0 || px >= frame.size[0] || py >= frame.size[1])
@@ -231,6 +266,13 @@ class ScatterPlotGL extends ScatterRenderer {
     gl.bindVertexArray(null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     return (pixel[0] | (pixel[1] << 8) | (pixel[2] << 16) | (pixel[3] << 24)) - 1;
+  }
+
+  private shapeProgram(kind: number): Program {
+    let program = this.shapePrograms.get(kind);
+    if (!program)
+      this.shapePrograms.set(kind, program = new Program(this.gl, SHAPE_VERTEX, shapeFragment(kind)));
+    return program;
   }
 
   /** Points the attributes at the per-row buffers, or sets the one value every row shares. */

@@ -169,9 +169,11 @@ class EventTargetBase {
       path.push(node);
     for (let i = path.length - 1; i > 0 && !event._stopped; i--)
       path[i]._invoke(event, true);
-    if (!event._stopped)
+    // stopped on the way down: the target never sees it, as in a browser
+    const reached = !event._stopped;
+    if (reached)
       this._invoke(event, true);
-    if (!event._done)
+    if (reached && !event._done)
       this._invoke(event, false);
     if (event.bubbles) {
       for (let i = 1; i < path.length && !event._stopped; i++)

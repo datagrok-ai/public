@@ -18,6 +18,7 @@ Feature: Virtual lists and trees
     Then "Demo project" tree node should be collapsed
     When user expands "Demo project" tree node
     Then Tables tree node should be visible
+    And Tables tree node should be 20 px tall
     When user expands Tables tree node
     And user clicks on demog tree node
     Then value of selectedNode readout should have text "demog"

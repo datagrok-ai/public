@@ -2,9 +2,9 @@
 Feature: Oligo Toolkit: the Translator and Structure tools
   The Oligo Toolkit app (Browse > Apps > Peptides > Oligo Toolkit) holds the TRANSLATOR, PATTERN and
   STRUCTURE tools as tabs, and the browser address follows the tab. The Translator detects the
-  format of a typed oligonucleotide and lists its translations (a click on one copies it), shows
-  nothing for text it cannot read, opens its monomer library as a read-only table, and converts a
-  whole table column in bulk. The Structure tool refuses to save an SDF without a sense strand, and
+  format of a typed oligonucleotide and lists its translations (a click on one copies it), marks
+  in red the codes it cannot read and lists no translation for them, opens its monomer library as
+  a read-only table, and converts a whole table column in bulk. The Structure tool refuses to save an SDF without a sense strand, and
   saves one with it. Translated from the TestTrack case
   SequenceTranslator/oligo-toolkit-translator-structure.
 
@@ -99,6 +99,17 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
+  Scenario: Codes the Translator cannot read are marked red and leave no translations
+    When user types "AfcgacsuQQ" into text area
+    Then "Single sequence format" choice input should have the value "Axolabs"
+    And the "-webkit-text-fill-color" style of "QQ" text should contain "rgb(255, 0, 0)"
+    And "Nucleotides" table row should be absent
+    And "HELM" table row should be absent
+    When user types "Afcgacsu" into text area
+    Then "Nucleotides" table row should contain the text "ACGACU"
+    And no error or warning balloon should have been shown
+    And no errors should have been logged
+
   Scenario: The Oligo Translator's monomer library opens as a read-only table
     When user double-clicks Apps---Peptides---Oligo-Toolkit---Oligo-Translator tree node inside browse tree
     Then the "Oligo Translator" view should be current
@@ -173,7 +184,7 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     And the downloaded file should contain "M  END"
     And no errors should have been logged
 
-  @known-failure:184
+  @known-failure:195
   Scenario: Save SDF with an antisense strand that cannot be converted is refused by name (GROK-20959)
     Given user watches downloads
     When user clicks on STRUCTURE tab

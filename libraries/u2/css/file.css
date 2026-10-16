@@ -12,6 +12,11 @@
   border-bottom: var(--dg-input-border-focus);
 }
 
+.u2-input-editor.u2-file.u2-invalid,
+.u2-input-editor.u2-file.u2-invalid:focus-within {
+  border-bottom: var(--dg-border-width) solid var(--dg-error);
+}
+
 .u2-file-path {
   flex: 1;
   min-width: 0;

@@ -5,6 +5,7 @@ import {signal, untracked, Signal} from '../../core/signals.js';
 import {Scope} from '../../core/scope.js';
 import {Control} from '../../core/component.js';
 import {iconOf} from '../display/icon.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export interface AccordionPane {
   readonly title: string;
@@ -31,8 +32,8 @@ export class Accordion extends Control {
     super();
     this.root.classList.add('u2-accordion');
     this.root.dataset.u2 = 'accordion';
-    this._listen(this.root, 'click', (e) => this._onClick(e));
-    this._listen(this.root, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.scope.listen(this.root, 'click', (e) => this._onClick(e));
+    this.scope.listen(this.root, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
   }
 
   /** `icon` is a Font Awesome name (rendered through `icon`) or a ready element, shown before the title. */
@@ -47,6 +48,7 @@ export class Accordion extends Control {
     header.id = `${id}-header`;
     header.tabIndex = this._panes.length === 0 ? 0 : -1;
     header.title = title;
+    header.dataset.u2Item = title;
     header.setAttribute('role', 'button');
     header.setAttribute('aria-controls', `${id}-content`);
 
@@ -63,6 +65,7 @@ export class Accordion extends Control {
     }
     const label = document.createElement('span');
     label.className = 'u2-accordion-title';
+    label.dataset.u2Part = 'item-label';
     label.textContent = title;
     header.append(label);
 
@@ -75,8 +78,7 @@ export class Accordion extends Control {
     root.append(header, host);
     this.root.append(root);
 
-    const scope = new Scope();
-    this.own(() => scope.dispose());
+    const scope = this.scope.child('accordion-pane');
     const pane: Pane = {
       title,
       icon: iconEl,
@@ -98,6 +100,18 @@ export class Accordion extends Control {
     return this._panes.find((p) => p.title === title);
   }
 
+  /** Renames the pane at `index` in place — a bound pane title following its source; the title is
+   * also the pane's item key. */
+  setPaneTitle(index: number, title: string): void {
+    const pane = this._panes[index];
+    if (pane === undefined)
+      return;
+    (pane as {title: string}).title = title;
+    pane.header.title = title;
+    pane.header.dataset.u2Item = title;
+    pane.header.querySelector('.u2-accordion-title')!.textContent = title;
+  }
+
   /** By position — unambiguous where {@link getPane} is not (duplicate titles). */
   paneAt(index: number): AccordionPane | undefined {
     return this._panes[index];
@@ -113,6 +127,13 @@ export class Accordion extends Control {
     this._panes.splice(index, 1);
     if (this._panes.length > 0 && !this._panes.some((p) => p.header.tabIndex === 0))
       this._panes[0].header.tabIndex = 0;
+  }
+
+  /** The panes as items: keyed by title, each saying whether it is expanded. */
+  getItems(): IItemsState {
+    const list = this._panes.map((pane, index) => ({key: pane.title, label: pane.title, index,
+      expanded: pane.expanded.peek(), rendered: true}));
+    return {count: list.length, list, truncated: false};
   }
 
   private _apply(pane: Pane): void {
@@ -168,10 +189,5 @@ export class Accordion extends Control {
     }
     e.preventDefault();
     this._focus(next);
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }
