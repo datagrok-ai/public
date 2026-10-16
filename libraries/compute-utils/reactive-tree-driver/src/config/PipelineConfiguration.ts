@@ -211,6 +211,10 @@ type RuleEffectWhen = {when?: RuleLogic};
 
 export type RuleMetaEffect = RuleEffectWhen & (
   | {effect: 'hide' | 'show', targets: RuleTargets}
+  /** Hides or shows the action with id `action` on the nodes of the `actions` aliases. */
+  | {effect: 'hideAction' | 'showAction', targets: RuleTargets, action: string}
+  /** Sets the description field (`title`, `description`, `tags`, `body`) the target's query ends with. */
+  | {effect: 'describe', targets: RuleTargets, value: RuleExpr}
   | {effect: 'items', targets: RuleTargets, items: RuleExpr}
   | {effect: 'meta', targets: RuleTargets, meta: Record<string, RuleExpr>});
 
@@ -261,7 +265,6 @@ export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   debounce?: number;
   runOnInit?: boolean;
   handler?: undefined;
-  actions?: undefined;
   params?: undefined;
 };
 

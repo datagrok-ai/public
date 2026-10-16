@@ -343,6 +343,12 @@ function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>
   const not = processLink(link.not ?? [], 'not');
   const actions = processLink(link.actions ?? [], 'actions');
   const linkType = (link as any).type;
+  if (linkType !== 'pipelineValidator') {
+    for (const io of to) {
+      if (io.flags?.includes('node'))
+        throw new Error(`Link ${link.id}: output ${io.name} uses (node); only rules and pipeline validators allow it.`);
+    }
+  }
   if (linkType !== 'funccall') {
     for (const io of from) {
       if (io.flags?.includes('call') && !io.flags?.includes('optional'))

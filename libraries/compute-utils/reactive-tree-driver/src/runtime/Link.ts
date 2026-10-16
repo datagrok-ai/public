@@ -279,6 +279,7 @@ export class Link {
       basePath: this.matchInfo.basePath,
       params: this.matchInfo.spec.params,
       sourceCache: this.sourceCache,
+      stepsCount: () => state?.getNode(this.prefix).getChildren().length ?? 0,
     };
 
     if (this.isValidator)
