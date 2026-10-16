@@ -3,18 +3,21 @@ import * as grok from "datagrok-api/grok";
 import {_package} from "../package";
 import { gzip } from "pako";
 
-let chemContainer: DG.DockerContainer;
-
 let descriptorsCached: object[];
 
 async function getContainer() {
-  if (!chemContainer)
-    chemContainer = await grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first();
-  if (!chemContainer)
+  const container = await grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first();
+  if (!container)
     throw new Error('Chem service is not available: "chem-chem" Docker container not found');
-  // if (chemContainer.status !== 'started' && chemContainer.status !== 'checking')
-  //   await grok.dapi.docker.dockerContainers.run(chemContainer.id, true);
-  return chemContainer;
+  if (container.status !== 'started' && container.status !== 'checking') {
+    try {
+      await grok.dapi.docker.dockerContainers.run(container.id, true);
+    }
+    catch (e) {
+      _package.logger.warning(`Could not start the "chem-chem" container: ${e}`);
+    }
+  }
+  return container;
 }
 
 export async function getDescriptorsTree(): Promise<object> {
@@ -22,7 +25,7 @@ export async function getDescriptorsTree(): Promise<object> {
     const container = await getContainer();
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/chem/descriptors/tree');
     if (response.status !== 200)
-      throw new Error(response.statusText);
+      throw await requestError(response, '/chem/descriptors/tree');
     descriptorsCached = await response.json();
   }
   return descriptorsCached;
@@ -71,6 +74,12 @@ async function gzipPostRequest(data: any, path: string): Promise<any> {
     {method: 'POST', body: body, headers: {'Content-Encoding': 'gzip',  'Content-Type': 'application/json',
         'Content-Length': `${body.length}`}});
   if (response.status !== 200)
-    throw new Error(`chem-chem container request to ${path} failed: ${response.status} ${response.statusText || '(no statusText)'}`);
+    throw await requestError(response, path);
   return await response.json();
+}
+
+async function requestError(response: Response, path: string): Promise<Error> {
+  const body = await response.json().catch(() => null);
+  const reason = body?.['datagrok-error'] ?? (response.statusText || '(no statusText)');
+  return new Error(`chem-chem container request to ${path} failed: ${response.status} ${reason}`);
 }
