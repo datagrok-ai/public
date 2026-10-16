@@ -61,12 +61,10 @@ export async function createBinding(options: CreateBindingOptions = {}): Promise
   return new BindingDialog(options).open();
 }
 
-/** The domain handle is a database to the platform, but not one to bind. */
-const DOMAIN_SOURCE = 'Domain';
-
-/** Database sources the server's bind policy always refuses (`ExternalBinding.check`): the ones the
- * platform serves itself rather than GrokConnect, and the ones that interpolate values into SQL. */
-const UNBINDABLE_SOURCES = [DOMAIN_SOURCE, 'PostgresDart', 'Web', 'ODATA', 'Sparql', 'MLFlow',
+/** Database sources the server's bind policy always refuses (`ExternalBinding.check`): the domain
+ * handle, the ones the platform serves itself rather than GrokConnect, and the ones that
+ * interpolate values into SQL. */
+const UNBINDABLE_SOURCES = ['Domain', 'PostgresDart', 'Web', 'ODATA', 'Sparql', 'MLFlow',
   'Athena', 'SQLite', 'Neptune'];
 
 const DML = ['AddRows', 'ChangeValues', 'RemoveRows'];
@@ -379,8 +377,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       this.connection.value.value = preset.id;
   }
 
-  /** What the bind policy can accept, as far as the connection says: a database, none of
-   * {@link UNBINDABLE_SOURCES}, on the JDBC engine. The provider's own checks stay the server's. */
+  /** The provider's own checks stay the server's. */
   private static _bindable(c: DG.DataConnection): boolean {
     const engine = c.parameters?.connectionType;
     return c.isDatabase && !UNBINDABLE_SOURCES.includes(c.dataSource) && (engine == null || engine === 'JDBC');

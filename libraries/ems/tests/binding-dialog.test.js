@@ -512,7 +512,8 @@ scoped('every connection past the first page is offered; the identifier is probe
 scoped('only connections the bind policy can accept are offered; a nameless one is shown and proposed by its name', async () => {
   const calls = [];
   stub(calls, () => ({status: 'ok', issues: []}));
-  const NAMELESS = {id: 'c-nn', nqName: 'P:Scratch', name: 'Scratch', friendlyName: '', dataSource: 'MS SQL', isDatabase: true};
+  const NAMELESS = {id: 'c-nn', nqName: 'P:Scratch', name: 'Scratch', friendlyName: '', dataSource: 'MS SQL', isDatabase: true,
+    parameters: {connectionType: 'JDBC'}};
   const refused = ['Web', 'ODATA', 'Sparql', 'MLFlow', 'PostgresDart', 'Athena', 'SQLite', 'Neptune']
     .map((dataSource) => ({id: `c-${dataSource}`, friendlyName: `A ${dataSource}`, dataSource, isDatabase: true}));
   const adbc = {id: 'c-adbc', friendlyName: 'Arrow', dataSource: 'Postgres', isDatabase: true,
