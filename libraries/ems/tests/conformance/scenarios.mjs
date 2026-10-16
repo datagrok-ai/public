@@ -155,6 +155,28 @@ export const scenarios = [
     },
   },
   {
+    name: 'delete: a live child vetoes its parent\'s delete (onDelete restrict, the default), and the veto names the column',
+    requires: ['softDelete'],
+    seed: [
+      {key: 'parent', code: 'rst-parent', name: 'Site'},
+      {key: 'child', code: 'rst-child', name: 'Room', parent_id: '$ref:parent'},
+    ],
+    async run(table, ids, t) {
+      let code = null;
+      let message = '';
+      try {
+        await table.transaction([{op: 'delete', table: table.address, id: ids.parent}]);
+      } catch (e) {
+        code = e.code;
+        message = `${e.message}`;
+      }
+      t.equal(code, 'restrict', 'a parent with a live child is refused');
+      t.ok(message.includes('parent_id'), 'and the refusal names the ref column');
+      t.deepEqual((await table.query({limit: 100})).map((row) => row.code).sort(),
+        ['rst-child', 'rst-parent'], 'nothing was deleted');
+    },
+  },
+  {
     name: 'updateWhere: the filter is required, and an unwritable column is refused before any write',
     requires: ['updateWhere'],
     seed: [
