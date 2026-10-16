@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core#742: Fixed the items grid showing only the first 100 items
 * GROK-20604: `adjustStock` retries via typed `DG.retryOnVersionConflict` (the 'Version conflict' message-matching is gone); aggregation view uses `aggregateDf` directly (no fromObjects bridge); system columns come from `DG.DOMAIN_SYSTEM_COLUMNS`; CI teardown uses one `deleteWhere`; the conflict test asserts `DomainVersionConflictError`
 * GROK-20602: BREAKING regen — `grok api` codegen v2: datetime fields are dayjs, `stock_movements.reason` is a literal union, adjustStock rides the typed `inventoryDb.transaction`, db.ts clients are lazy
 * GROK-20318: Improved adjustStock — the quantity update and the stock_movements row now apply atomically via `grok.dapi.domains.transaction` (movement carries `moved_on`)

@@ -73,7 +73,7 @@ export class InventoryApp {
     const seq = ++this.refreshSeq;
     let df: DG.DataFrame;
     try {
-      df = await inventoryDb.items.queryDf({sort: 'sku'});
+      df = await inventoryDb.items.queryDf({sort: 'sku', limit: DG.DOMAIN_QUERY_ROW_LIMIT});
     } catch (e: any) {
       grok.shell.error(e.message ?? `${e}`);
       return;

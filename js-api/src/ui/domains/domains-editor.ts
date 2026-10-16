@@ -28,7 +28,7 @@ import {DomainRegistryClient, DomainTableClient} from '../../dapi';
 import {Column, DataFrame} from '../../dataframe';
 import {DomainAccess, DomainConditionTree, DomainError, DomainQuerySpec, DomainRestrictError,
   DomainTableInfo, DomainTransactionOp, DomainValidationError, DomainVersionConflictError,
-  DOMAIN_ACCESS_COLUMNS, DOMAIN_DELETED_COLUMN} from '../../domains';
+  DOMAIN_ACCESS_COLUMNS, DOMAIN_DELETED_COLUMN, DOMAIN_QUERY_ROW_LIMIT} from '../../domains';
 import {DomainObjectHandler} from '../../domains-ui';
 import {Property} from '../../entities/property';
 import {IFrameEditor} from '../../grid';
@@ -504,8 +504,9 @@ export class DomainFrameEditor implements IFrameEditor {
    * attaches to the resulting frame. */
   static async create(client: DomainTableClient,
     options?: DomainFrameEditorOptions): Promise<DomainFrameEditor> {
-    const df = await client.queryDf(options?.query ?? {});
-    return DomainFrameEditor.attach(df, client, options);
+    const query = options?.query ?? {limit: DOMAIN_QUERY_ROW_LIMIT};
+    const df = await client.queryDf(query);
+    return DomainFrameEditor.attach(df, client, {...options, query});
   }
 
   /**
@@ -1382,7 +1383,7 @@ export class DomainFrameEditor implements IFrameEditor {
     if (this._busy('refreshing'))
       return this._df;
     const spec = query ?? this._query;
-    const df = await this.client.queryDf(spec ?? {});
+    const df = await this.client.queryDf(spec ?? {limit: DOMAIN_QUERY_ROW_LIMIT});
     this._query = spec;
     this._unsubscribe();
     this._df = df;
