@@ -1,5 +1,5 @@
 Feature: A GraphPad Prism file opens from Browse
-  Translated from TestTrack Curves/curves-data-to-curves.md, scenario 3. Curves 1.12.0 added a viewer
+  Translated from TestTrack Curves/curves-msr-pzfx.md, scenario 2. Curves 1.12.0 added a viewer
   and a handler for .pzfx files: a double-click in Browse, or Open in the context menu of the file,
   previews the file in a view of its name.
   Not claimed: the curve column of the preview grid draws charts — the renderer reports no readings.
