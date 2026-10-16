@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {NumberInput} from '../src/components/inputs/number-input.js';
+import {signal} from '../src/core/signals.js';
 
 function smoke(name, body) {
   test(name, async () => {
@@ -255,5 +256,26 @@ smoke('the stepper does nothing on an empty field, as the platform clicker does'
 smoke('an exponent carries no decimals to count', () => {
   const input = mount(new NumberInput({value: 1.5e-7}));
   assert.equal(editor(input).value, '1.5e-7');
+  input.dispose();
+});
+
+smoke('P74: a bound signal holding undefined builds and shows an empty field; stepping it does nothing', async () => {
+  const input = mount(new NumberInput({label: 'Dose', bind: signal(undefined), clicker: true, min: 0, max: 5}));
+  assert.equal(editor(input).value, '');
+  clickers(input)[1].click();
+  assert.equal(input.value.peek(), undefined);
+  input.dispose();
+});
+
+smoke('commitOn change: typing marks bad text at once but writes only on blur', async () => {
+  const input = mount(new NumberInput({label: 'Dose', value: 2, commitOn: 'change'}));
+  editor(input).value = 'x';
+  fire(editor(input), 'input');
+  assert.equal(input.validity.peek(), 'Not a number');
+  editor(input).value = '9';
+  fire(editor(input), 'input');
+  assert.equal(input.value.peek(), 2);
+  fire(editor(input), 'blur');
+  assert.equal(input.value.peek(), 9);
   input.dispose();
 });

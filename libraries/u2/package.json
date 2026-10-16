@@ -13,6 +13,19 @@
   "type": "module",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
+  "files": [
+    "dist/src",
+    "!**/*.map",
+    "css",
+    "vendor",
+    "docs",
+    "manifest.json",
+    "CHANGELOG.md",
+    "tests/dg-stub.mjs",
+    "tests/dom-shim.js",
+    "tests/platform-doubles.mjs",
+    "tests/filter-grammar.corpus.json"
+  ],
   "dependencies": {
     "@floating-ui/core": "^1.8.0",
     "@floating-ui/dom": "^1.6.0",
@@ -27,10 +40,10 @@
     "http-server": "^14.1.1"
   },
   "scripts": {
-    "build": "grok tsc -p tsconfig.json && npm run manifest:check && npm run lint:tokens",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && grok tsc -p tsconfig.json && npm run manifest:check && npm run lint:tokens",
     "lint": "eslint --ext .ts,.tsx src",
     "prepublishOnly": "npm run build",
-    "test": "grok tsc -p tsconfig.json --outDir . && node --test tests/*.test.js",
+    "test": "grok tsc -p tsconfig.json --outDir . && node scripts/run-tests.mjs",
     "e2e:local": "node e2e/run.mjs",
     "e2e:boot": "node e2e/boot-smoke.mjs",
     "e2e:stand": "node e2e/designer.stand.spec.mjs",

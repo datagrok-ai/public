@@ -4,6 +4,7 @@
    page holds or adds later renders immediately (no debounce, no animation-frame wait). */
 import type {BrowserContext, Page} from '@playwright/test';
 import {Given, When} from '../../src/registry.js';
+import {markLeakBaseline} from '../../src/runtime/audit.js';
 import {takeErrors} from '../../src/runtime/harness.js';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {installViewerRuntime, takeBalloons} from '../../src/runtime/viewers.js';
@@ -57,6 +58,8 @@ export async function resetShellAfterLoad(page: Page, simpleMode = guide.shellSi
   await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});
   await homeWidgetsSettled(page);
   await installViewerRuntime(page);
+  // a cold load or a reload starts the scenario's leak baseline here, before any app view opens
+  await markLeakBaseline(page);
 }
 
 /** The shell mode the page runs in now: a reload or a sign-in mid-feature keeps what the feature set. */

@@ -1,8 +1,10 @@
-import {signal, Signal, ReadonlySignal} from '../../core/signals.js';
-import {Scope} from '../../core/scope.js';
+import {batch, computed, signal, untracked, Signal, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
+import {Scope} from '../../core/scope.js';
 import {Input} from '../../core/input-base.js';
-import {text as asText} from '../../core/text.js';
+import {each} from '../../core/region.js';
+import {camelCaseToWords, text as asText} from '../../core/text.js';
+import type {IItemsState} from '../../core/widget-like.js';
 import {TextInput} from '../inputs/text-input.js';
 import {NumberInput} from '../inputs/number-input.js';
 import {BoolInput} from '../inputs/bool-input.js';
@@ -28,57 +30,92 @@ export interface PropChange {
   value: unknown;
 }
 
+export interface PropertyGridOptions {
+  /** An edit made in the grid (not a write to {@link PropertyGrid.values}): the property and its new
+   * value. Also the `change` event (`grid.on('change', (change, grid) => …)`). */
+  onChanged?: (change: PropChange, grid: PropertyGrid) => void;
+}
+
 let gridCount = 0;
 
 /** Compact two-column editor over the u2 inputs: a name column and an inline editor per row.
- * The value record is replaced (never mutated) on every edit, so consumers can bind to it. */
+ * The value record is replaced (never mutated) on every edit, so consumers can bind to it. Rows are
+ * keyed by property name: each follows its own value only, so a keystroke re-runs one row. */
 export class PropertyGrid extends Control {
   readonly values: Signal<Record<string, unknown>> = signal<Record<string, unknown>>({});
-  readonly onChanged: ReadonlySignal<PropChange | null>;
 
   private readonly _idPrefix = `u2-propgrid-${++gridCount}`;
-  private readonly _lastChange = signal<PropChange | null>(null);
+  private readonly _onChange: PropertyGridOptions['onChanged'];
   private readonly _collapsed = new Map<string, Signal<boolean>>();
-  private _rows = new Scope();
+  private readonly _groups = signal<readonly [string, PropDescriptor[]][]>([]);
+  /** The descriptor each kept row was built for, so a changed one is told from a moved one. */
+  private readonly _shown = new WeakMap<HTMLElement, PropDescriptor>();
   private _groupId = 0;
 
-  constructor() {
+  constructor(options: PropertyGridOptions = {}) {
     super();
-    this.onChanged = this._lastChange;
+    this._onChange = options.onChanged &&
+      Input.bindOwned(this.scope, options.onChanged) as PropertyGridOptions['onChanged'];
     this.root.classList.add('u2-propgrid');
     this.root.dataset.u2 = 'property-grid';
-    this.root.setAttribute('role', 'group');
-    this.own(() => this._rows.dispose());
+    this.root.setAttribute('role', 'grid');
+    // a kept category follows its rows itself, so a new descriptor list never rebuilds it
+    this.runInScope(() => each(this.root, this._groups, ([category]) => `category:${category}`,
+      ([category]) => this._group(category), {update: () => true}));
   }
 
-  /** Rebuilds every row under a fresh scope: the previous editors and their bridges are disposed,
-   * so nothing stale writes into the new value record. Category collapse state is kept by name. */
+  /** The row descriptors shown; a new list keeps the current values and every unchanged row. */
+  get properties(): PropDescriptor[] {
+    return this._groups.peek().flatMap(([, props]) => props);
+  }
+
+  set properties(x: PropDescriptor[]) {
+    this.setProperties(x ?? [], this.values.peek());
+  }
+
+  /** Shows `props` over `values`. A row whose property keeps its name and descriptor keeps its
+   * editor (and focus); a changed descriptor rebuilds that row, a gone one disposes it. Category
+   * collapse state is kept by name. */
   setProperties(props: PropDescriptor[], values: Record<string, unknown>): void {
-    this._rows.dispose();
-    this._rows = new Scope();
-    this._groupId = 0;
-    this.root.textContent = '';
-    this._lastChange.value = null;
-    this.values.value = {...values};
-    Scope.runWith(this._rows, () => {
-      for (const [category, group] of PropertyGrid._group(props))
-        this._addGroup(category, group);
+    batch(() => {
+      this.values.value = {...values};
+      this._groups.value = PropertyGrid._group(props);
     });
   }
 
-  private _addGroup(category: string, props: PropDescriptor[]): void {
+  /** One item per row: key = the property name, label = the caption the row shows. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const rendered = new Set<string>();
+    for (const row of this.root.querySelectorAll<HTMLElement>('.u2-propgrid-row'))
+      rendered.add(row.dataset.u2Item!);
+    const list = this._groups.peek().flatMap(([, props]) => props).map((prop, index) => ({key: prop.name,
+      label: camelCaseToWords(prop.name), index, ...prop.readonly ? {disabled: true} : {}, rendered: rendered.has(prop.name)}));
+    return Input.itemsState(list, opts?.all);
+  }
+
+  /** A category: its header (when it has a name) and its rows, keyed by property name. */
+  private _group(category: string): HTMLElement {
+    const section = document.createElement('div');
+    section.className = 'u2-propgrid-section';
+    section.setAttribute('role', 'rowgroup');
     const group = document.createElement('div');
     group.className = 'u2-propgrid-group';
     if (category) {
       group.id = `${this._idPrefix}-${this._groupId++}`;
-      this.root.append(this._createHeader(category, group));
+      section.append(this._createHeader(category, group, Scope.ambient!));
     }
-    for (const prop of props)
-      group.append(this._createRow(prop));
-    this.root.append(group);
+    section.append(group);
+    const props = computed(() => this._groups.value.find(([c]) => c === category)?.[1] ?? []);
+    each(group, props, (prop) => prop.name, (prop) => this._createRow(prop, Scope.ambient!), {update: (el, prop) => {
+      const kept = PropertyGrid._sameRow(this._shown.get(el), prop);
+      if (kept)
+        this._shown.set(el, prop);
+      return kept;
+    }});
+    return section;
   }
 
-  private _createHeader(category: string, group: HTMLElement): HTMLElement {
+  private _createHeader(category: string, group: HTMLElement, scope: Scope): HTMLElement {
     let collapsed = this._collapsed.get(category);
     if (!collapsed) {
       collapsed = signal(false);
@@ -88,6 +125,7 @@ export class PropertyGrid extends Control {
 
     const header = document.createElement('div');
     header.className = 'u2-propgrid-category';
+    header.dataset.u2Part = 'category';
     header.tabIndex = 0;
     header.title = category;
     header.setAttribute('role', 'button');
@@ -100,14 +138,14 @@ export class PropertyGrid extends Control {
     title.textContent = category;
     header.append(chevron, title);
 
-    this._rows.effect(() => {
+    scope.effect(() => {
       const on = state.value;
       header.setAttribute('aria-expanded', String(!on));
       group.style.display = on ? 'none' : '';
     });
     const toggle = () => state.value = !state.peek();
-    this._listen(header, 'click', toggle);
-    this._listen(header, 'keydown', (e) => {
+    scope.listen(header, 'click', toggle);
+    scope.listen(header, 'keydown', (e) => {
       const key = (e as KeyboardEvent).key;
       if (key !== 'Enter' && key !== ' ')
         return;
@@ -117,29 +155,42 @@ export class PropertyGrid extends Control {
     return header;
   }
 
-  private _createRow(prop: PropDescriptor): HTMLElement {
+  /** A row in its own scope: it follows its own value through a computed, so an edit elsewhere in
+   * the record never wakes it. */
+  private _createRow(prop: PropDescriptor, scope: Scope): HTMLElement {
     const row = document.createElement('div');
+    this._shown.set(row, prop);
     row.className = 'u2-propgrid-row';
+    row.setAttribute('role', 'row');
+    // the caption is reworded for reading; automation keeps addressing the row by its property name
+    row.dataset.u2Name = prop.name;
     const name = document.createElement('div');
     name.className = 'u2-propgrid-name';
-    name.textContent = prop.name;
-    name.title = prop.description ?? prop.name;
+    name.setAttribute('role', 'rowheader');
+    name.dataset.u2Part = 'item-label';
+    // the platform's caption for a property without a friendly name (`showLegend` → Show Legend)
+    name.textContent = camelCaseToWords(prop.name);
+    if (prop.description)
+      name.title = prop.description;
     const cell = document.createElement('div');
     cell.className = 'u2-propgrid-editor';
+    cell.setAttribute('role', 'gridcell');
     row.append(name, cell);
+    const value = computed(() => this.values.value[prop.name]);
 
     if (prop.readonly) {
       row.classList.add('u2-propgrid-row-readonly');
+      row.setAttribute('aria-readonly', 'true');
       const text = document.createElement('span');
       text.className = 'u2-propgrid-value';
       cell.append(text);
-      this._rows.effect(() => text.textContent = asText(this.values.value[prop.name]));
+      scope.effect(() => text.textContent = asText(value.value));
       return row;
     }
 
     const input = this._createInput(prop);
     cell.append(input.root);
-    this._bridge(prop, input);
+    this._bridge(prop, input, value, scope);
     return row;
   }
 
@@ -162,21 +213,27 @@ export class PropertyGrid extends Control {
 
   // Echo suppression compares values instead of raising a flag: a write made inside an effect is
   // flushed after that effect returns, so a transient flag would already be down by then.
-  private _bridge(prop: PropDescriptor, input: Input<any>): void {
-    this._rows.effect(() => input.value.value = PropertyGrid._coerce(prop, this.values.value[prop.name]));
-    this._rows.effect(() => {
-      const value = input.value.value;
+  private _bridge(prop: PropDescriptor, input: Input<any>, value: ReadonlySignal<unknown>, scope: Scope): void {
+    scope.effect(() => input.value.value = PropertyGrid._coerce(prop, value.value));
+    scope.effect(() => {
+      const edited = input.value.value;
       const record = this.values.peek();
-      if (PropertyGrid.same(prop, PropertyGrid._coerce(prop, record[prop.name]), value))
+      if (PropertyGrid.same(prop, PropertyGrid._coerce(prop, record[prop.name]), edited))
         return;
-      this.values.value = {...record, [prop.name]: value};
-      this._lastChange.value = {name: prop.name, value};
+      this.values.value = {...record, [prop.name]: edited};
+      const change = {name: prop.name, value: edited};
+      untracked(() => {
+        this._onChange?.(change, this);
+        this.fireEvent('change', change);
+      });
     });
   }
 
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this._rows.own(() => el.removeEventListener(type, handler));
+  /** Whether a kept row can show `next` as it is: the same editor over the same constraints. */
+  private static _sameRow(prev: PropDescriptor | undefined, next: PropDescriptor): boolean {
+    return prev === next || prev !== undefined && prev.type === next.type && !!prev.readonly === !!next.readonly &&
+      prev.min === next.min && prev.max === next.max && prev.description === next.description &&
+      (prev.choices ?? []).join('\n') === (next.choices ?? []).join('\n');
   }
 
   private static _group(props: PropDescriptor[]): [string, PropDescriptor[]][] {

@@ -1,5 +1,8 @@
-/* The Design step's right pane: one panel per selection kind, rebuilt under a fresh scope when
-   the selection or the model changes (the context-panel pattern of `propertyEditor`). Schema:
+/* The Design step's right pane: one panel per selection kind, rebuilt when the selection or the
+   model changes as keyed parts (title, form, sections), each in its own scope: a part that comes out
+   of the rebuild as it is shown — the same make-up, its controls holding what the user left in them —
+   stays, so the focus and the caret in it survive; a changed part is replaced, and focus inside it is
+   put back on the element with the same keys. Schema:
    name, friendly name, writable, the access grid for every table. Table: logical and friendly
    names, the key (read-only), the name and searchable pickers, the read-only opt-out under a
    writable binding, the relationships with an "include <target>" link where including the
@@ -8,15 +11,15 @@
    its status, visibility. The field offer follows the editor context: `view` renders every
    field as text, never as a dead input. Access is modelled beside the manifest and rendered
    here; the dialog applies it after Create. */
-import {Control, Scope, signal, ReadonlySignal, div, link, span, keepFocus, Form, Section, TextInput, BoolInput,
-  ChoiceInput, RadioInput, ChipsInput, AccessGrid, badge, camelCaseToWords} from '@datagrok-libraries/u2';
+import {Control, Scope, signal, ReadonlySignal, div, link, span, each, focusMark, refocus, Form, Section, TextInput,
+  BoolInput, ChoiceInput, RadioInput, ChipsInput, AccessGrid, badge, camelCaseToWords} from '@datagrok-libraries/u2';
 import type {Input, AccessRow, InheritedAccessRow} from '@datagrok-libraries/u2';
 import {ObjectForm} from '@datagrok-libraries/u2/src/dg/forms/object-form.js';
 import type {EditorContext, FieldOffer} from './editor-context.js';
 import {fieldOffer} from './editor-context.js';
 import {AccessModel, ManifestModel} from './manifest-model.js';
 import type {AccessGrant, AccessPrincipal, AccessScope, ColumnView, DriftView, ManifestDiagnostic, ManifestSelection,
-  RelationView} from './manifest-model.js';
+  RelationView, TableView} from './manifest-model.js';
 import {ManifestTree} from './manifest-tree.js';
 
 /** Builds a look-up control that hands every picked principal to `onPick` — the platform's group
@@ -45,6 +48,21 @@ const EVERYONE = 'Everyone who may see the row';
 const SOME = 'Only these groups';
 const NONE = '— none —';
 
+/** Attributes that point at minted ids or group names: not part of what a part shows. */
+const REFS = ['id', 'for', 'name', 'aria-labelledby', 'aria-describedby', 'aria-controls', 'aria-owns',
+  'data-u2-owner-id'];
+
+/** A keyed piece of the panel, built in its own scope. */
+interface Part {
+  key: string;
+  el: HTMLElement;
+  scope: Scope;
+  /** Its make-up as built, values aside. */
+  shape: string;
+  /** What its controls held as built. */
+  values: string;
+}
+
 export class ManifestContextPanel extends Control {
   readonly offer: FieldOffer;
 
@@ -53,7 +71,7 @@ export class ManifestContextPanel extends Control {
   private readonly _picker: PrincipalPicker | undefined;
   private readonly _diagnostics: ReadonlySignal<ManifestDiagnostic[]> | undefined;
   private readonly _writableDisabled: string | undefined;
-  private _shown: Scope | undefined;
+  private readonly _shapes = new WeakMap<HTMLElement, string>();
 
   constructor(readonly model: ManifestModel, options: ManifestContextPanelOptions) {
     super();
@@ -65,36 +83,83 @@ export class ManifestContextPanel extends Control {
     this._writableDisabled = options.writableDisabled;
     this.root.classList.add('u2-manifest-panel');
     this.root.dataset.u2 = 'manifest-panel';
-    this.own(() => this._shown?.dispose());
-    this.effect(() => {
-      const selection = options.selected.value;
-      this.model.revision.value;
-      this.model.name.value;
-      this._shown?.dispose();
-      const scope = new Scope();
-      this._shown = scope;
-      Scope.runWith(scope, () => this._show(selection));
-    });
+    this.runInScope(() => each(this.root, () => this._parts(options.selected.value), (p) => p.key, (p) => {
+      Scope.ambient!.own(() => p.scope.dispose());
+      this._shapes.set(p.el, p.shape);
+      return p.el;
+    }, {update: (el, p) => {
+      if (this._shapes.get(el) !== p.shape || ManifestContextPanel._values(el) !== p.values)
+        return false;
+      p.scope.dispose();
+      return true;
+    }}));
   }
 
-  private _show(selection: ManifestSelection): void {
+  /** The parts the selection shows now, keyed by the selection and the part. Focus on an element a
+   * replaced part takes away goes to the element with the same keys in its replacement. */
+  private _parts(selection: ManifestSelection): Part[] {
+    this.model.revision.value;
+    this.model.name.value;
+    const active = document.activeElement;
+    const mark = focusMark(this.root);
+    if (mark !== null) {
+      queueMicrotask(() => {
+        if (!this.scope.isDisposed && active !== null && !active.isConnected)
+          refocus(this.root, mark);
+      });
+    }
     const problems = (this._diagnostics?.value ?? [])
       .filter((d) => ManifestModel.sameSelection(this.model.resolvePath(d.path), selection));
-    const content = selection.kind === 'schema' ? this._schema() :
+    const parts = selection.kind === 'schema' ? this._schema() :
       selection.kind === 'table' ? this._table(selection.table) :
         this._column(selection.table, selection.column);
     if (problems.length > 0) {
-      content.splice(1, 0, div(problems.map((p) =>
+      parts.splice(1, 0, this._part('diagnostics', () => div(problems.map((p) =>
         div([badge(p.code, {variant: 'error'}), span(p.message)], 'u2-manifest-panel-diagnostic')),
-      'u2-manifest-panel-diagnostics'));
+      'u2-manifest-panel-diagnostics')));
     }
-    keepFocus(this.root, () => this.root.replaceChildren(...content.map((c) => Control.is(c) ? c.root : c)));
+    const at = selection.kind === 'schema' ? 'schema' : selection.kind === 'table' ? `table:${selection.table}` :
+      `column:${selection.table}.${selection.column}`;
+    for (const p of parts)
+      p.key = `${at}/${p.key}`;
+    return parts;
   }
 
-  private _schema(): (HTMLElement | Control)[] {
+  private _part(key: string, build: () => HTMLElement | Control): Part {
+    const scope = new Scope(this.scope, {label: 'part', lazy: true});
+    const built = Scope.runWith(scope, build);
+    const el = Control.is(built) ? built.root : built;
+    return {key, el, scope, shape: ManifestContextPanel._shape(el), values: ManifestContextPanel._values(el)};
+  }
+
+  private static _shape(el: Element): string {
+    const attrs = el.getAttributeNames().filter((n) => !REFS.includes(n)).map((n) => `${n}="${el.getAttribute(n)}"`);
+    const type = el.tagName === 'INPUT' ? ` type="${(el as HTMLInputElement).type}"` : '';
+    let shape = `<${el.tagName}${type} ${attrs.join(' ')}>`;
+    for (const child of el.childNodes) {
+      shape += child.nodeType === 1 ? ManifestContextPanel._shape(child as Element) :
+        child.nodeType === 3 ? child.textContent : '';
+    }
+    return shape;
+  }
+
+  private static _values(el: Element): string {
+    return JSON.stringify([...el.querySelectorAll<HTMLInputElement>('input, select, textarea')]
+      .map((c) => [c.value, c.checked === true]));
+  }
+
+  private _schema(): Part[] {
+    const model = this.model;
+    const name = model.name.peek();
+    const writable = model.writable.peek();
+    return [this._part('title', () => ManifestContextPanel._title('Schema', name)),
+      this._part('form', () => this._schemaForm(name, writable)),
+      this._part('access', () => this._schemaAccess(writable))];
+  }
+
+  private _schemaForm(name: string, writable: boolean): Form {
     const model = this.model;
     const form = new Form({layout: 'wide'});
-    const name = model.name.peek();
     const friendly = model.friendlyName.peek();
     this._field(form, 'Friendly name', 'friendlyName', friendly, () => new TextInput({label: 'Friendly name',
       name: 'friendlyName', value: friendly, commitOn: 'change', onChanged: (v) => model.setSchemaFriendlyName(v)}));
@@ -109,7 +174,6 @@ export class ManifestContextPanel extends Control {
       this._field(form, 'Description', 'description', description, () => new TextInput({label: 'Description',
         name: 'description', value: description, commitOn: 'change', onChanged: (v) => model.setDescription(v)}));
     }
-    const writable = model.writable.peek();
     if (this.offer.writable) {
       const hint = this._writableDisabled;
       this._field(form, 'Writable', 'writable', writable ? 'Yes' : 'No', (extra) => new BoolInput({label: 'Writable',
@@ -123,6 +187,11 @@ export class ManifestContextPanel extends Control {
       form.addElement(ManifestContextPanel._note('The warehouse catalog could not be read: the registered tables ' +
         'and columns are shown as they were, nothing is marked missing, and no new table is offered.'));
     }
+    return form;
+  }
+
+  private _schemaAccess(writable: boolean): Section {
+    const model = this.model;
     const access = new Section({title: 'Access — every table', collapsible: false});
     const locked = writable ? [] : ['edit', 'delete'];
     if (this._access.editing) {
@@ -137,30 +206,39 @@ export class ManifestContextPanel extends Control {
       access.add(ManifestContextPanel._note('Applied after Create as the same grant on every included table — ' +
         'there is no schema-wide row access. Edit and Delete need a writable binding.'));
     }
-    return [ManifestContextPanel._title('Schema', name), form, access];
+    return access;
   }
 
-  private _table(remote: string): (HTMLElement | Control)[] {
-    const model = this.model;
-    const table = model.table(remote);
-    if (table === undefined)
-      return [ManifestContextPanel._title('Table', remote)];
-    const title = ManifestContextPanel._title('Table', remote);
-    if (!table.included) {
-      const status = !table.bindable ? ManifestTree.shortReason(table.code) :
-        table.drafted ? (table.registered ? 'removed' : 'not included') : 'not in this draft';
-      title.append(badge(status, {variant: table.bindable ? 'warning' : 'error'}),
-        span(!table.bindable || !table.drafted ? table.reason ?? '' :
-          table.registered ? 'unregistered on Save — its grants, restrictions and saved filters go with it' :
-            'check it in the tree to expose it', 'u2-manifest-node-hint'));
-      if (!table.bindable || !table.drafted)
-        return [title];
-    } else
-      ManifestContextPanel._drift(title, table.drift);
-    const columns = model.columns(remote).peek();
-    const form = new Form({layout: 'wide'});
+  private _table(remote: string): Part[] {
+    const table = this.model.table(remote);
+    const title = this._part('title', () => {
+      const title = ManifestContextPanel._title('Table', remote);
+      if (table === undefined)
+        return title;
+      if (!table.included) {
+        const status = !table.bindable ? ManifestTree.shortReason(table.code) :
+          table.drafted ? (table.registered ? 'removed' : 'not included') : 'not in this draft';
+        title.append(badge(status, {variant: table.bindable ? 'warning' : 'error'}),
+          span(!table.bindable || !table.drafted ? table.reason ?? '' :
+            table.registered ? 'unregistered on Save — its grants, restrictions and saved filters go with it' :
+              'check it in the tree to expose it', 'u2-manifest-node-hint'));
+      } else
+        ManifestContextPanel._drift(title, table.drift);
+      return title;
+    });
+    if (table === undefined || !table.included && (!table.bindable || !table.drafted))
+      return [title];
     // a registered table taken out is on its way to the purge: its fields are read, not edited
     const live = table.included || !table.registered;
+    return [title, this._part('form', () => this._tableForm(remote, table, live)),
+      this._part('relations', () => this._tableRelations(remote)),
+      this._part('access', () => this._tableAccess(remote, table, live))];
+  }
+
+  private _tableForm(remote: string, table: TableView, live: boolean): Form {
+    const model = this.model;
+    const columns = model.columns(remote).peek();
+    const form = new Form({layout: 'wide'});
     this._field(form, 'Logical name', 'logical', table.logical, () => {
       const input = new TextInput({label: 'Logical name', name: 'logical', value: table.logical, commitOn: 'change',
         onChanged: (v) => model.renameTable(remote, v)});
@@ -193,6 +271,11 @@ export class ManifestContextPanel extends Control {
         ...hint}),
       'opt this table out of writes', live);
     }
+    return form;
+  }
+
+  private _tableRelations(remote: string): Section {
+    const model = this.model;
     const relations = new Section({title: 'Relationships', collapsible: false});
     const rels = model.relations.peek().filter((r) => r.table === remote);
     if (rels.length === 0) {
@@ -203,6 +286,11 @@ export class ManifestContextPanel extends Control {
     }
     for (const r of rels)
       relations.add(this._relation(r, `${r.column} → ${r.targetTable}`));
+    return relations;
+  }
+
+  private _tableAccess(remote: string, table: TableView, live: boolean): Section {
+    const model = this.model;
     const scope: AccessScope = {kind: 'table', table: remote};
     const rows = this._access.grantsOf(scope).peek();
     const locked = model.writes(table) ? [] : ['edit', 'delete'];
@@ -225,20 +313,36 @@ export class ManifestContextPanel extends Control {
       access.add(this._accessGrid(remote, rows, [ManifestContextPanel._creator(), ...schemaRows], locked,
         (changed) => this._access.setGrants(scope, changed), {inheritedGroups: schemaGrants.map((g) => g.group)}));
     }
-    return [title, form, relations, access];
+    return access;
   }
 
-  private _column(table: string, remote: string): (HTMLElement | Control)[] {
-    const model = this.model;
-    const column = model.column(table, remote);
-    const title = ManifestContextPanel._title('Column', `${table}.${remote}`);
-    if (column === undefined)
+  private _column(table: string, remote: string): Part[] {
+    const column = this.model.column(table, remote);
+    const title = this._part('title', () => {
+      const title = ManifestContextPanel._title('Column', `${table}.${remote}`);
+      if (column !== undefined && !column.supported)
+        title.append(badge('not bindable', {variant: 'error'}), span(column.reason ?? '', 'u2-manifest-node-hint'));
+      else if (column !== undefined)
+        ManifestContextPanel._drift(title, column.drift);
+      return title;
+    });
+    if (column === undefined || !column.supported)
       return [title];
-    if (!column.supported) {
-      title.append(badge('not bindable', {variant: 'error'}), span(column.reason ?? '', 'u2-manifest-node-hint'));
-      return [title];
+    const parts = [title, this._part('form', () => this._columnForm(table, remote, column))];
+    if (column.relations.length > 0) {
+      parts.push(this._part('reference', () => {
+        const reference = new Section({title: 'Reference', collapsible: false});
+        for (const r of column.relations)
+          reference.add(this._relation(r, `foreign key to ${r.targetTable}`));
+        return reference;
+      }));
     }
-    ManifestContextPanel._drift(title, column.drift);
+    parts.push(this._part('visibility', () => this._visibility(table, remote, column)));
+    return parts;
+  }
+
+  private _columnForm(table: string, remote: string, column: ColumnView): Form {
+    const model = this.model;
     const form = new Form({layout: 'wide'});
     this._field(form, 'Logical name', 'logical', column.logical, () => {
       const input = new TextInput({label: 'Logical name', name: 'logical', value: column.logical, commitOn: 'change',
@@ -272,15 +376,7 @@ export class ManifestContextPanel extends Control {
         label: 'Searchable', name: 'searchable', value: column.searchable, enabled: isString,
         onChanged: (v) => model.setSearchable(table, v ? remote : null), ...hint}), 'one per table');
     }
-    const content: (HTMLElement | Control)[] = [title, form];
-    if (column.relations.length > 0) {
-      const reference = new Section({title: 'Reference', collapsible: false});
-      for (const r of column.relations)
-        reference.add(this._relation(r, `foreign key to ${r.targetTable}`));
-      content.push(reference);
-    }
-    content.push(this._visibility(table, remote, column));
-    return content;
+    return form;
   }
 
   private _visibility(table: string, remote: string, column: ColumnView): Section {

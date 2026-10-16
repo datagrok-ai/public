@@ -3,6 +3,7 @@
 ## v.next
 
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Data | Curves | Data to Curves is disabled unless the current view is a table view
+* [public#4306](https://github.com/datagrok-ai/public/issues/4306): Fixed the Context Panel replacing the Curves panes with the generic cell panes a second after a curve cell is clicked
 
 ## 1.13.3 (2026-09-23)
 

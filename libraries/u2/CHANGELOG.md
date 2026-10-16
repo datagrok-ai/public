@@ -2,6 +2,157 @@
 
 ## v.next
 
+* Form: Fixed a form built hidden (in a collapsed section, behind a toggle) keeping a misaligned label column once shown; every caption-left form now re-aligns when its size changes
+* Form: Added `remove(input)`; an input disposed with its row (an `each()` key, a rebuilt section) now leaves the form instead of still failing its validity
+* Inputs: `addOptions` is public, so a caller can put its own icon on an input's options rail, as with Dart's `InputBase.addOptions`
+* u2/dg: Added `host(control)` — a control placed in a docked panel or a pane is disposed when the platform closes it (`appView` uses it)
+* Form: `addButtons(build, {align: 'editors'})` starts the buttons where the editors do, as `ui.buttonsInput`; a primary button in a form takes the platform's form button color (blue-2) and padding
+* Buttons: A disabled button takes the pointer again (no `pointer-events: none`), so its tooltip can say why it is disabled and a click on it no longer falls through to what is under it
+* Inputs: Fixed CANCEL taking two clicks when an empty required field had focus — a field left for a button shows its verdict once that press is over, so the new error line no longer moves the button from under the pointer
+* MapInput: Fixed a repeated key dropping the earlier row from the value; the value keeps the last map the rows stood for until the key is fixed
+* ColorInput: Fixed a "Not a color" left by typed text staying after a valid color is set from outside
+* Dialog: Closing a dialog gives focus to the dialog still open below it (unless its opener sits inside that one), so Escape still reaches it
+* Inputs: Added `reset(value)` — a fresh start for another record: no verdict waiting on an earlier touch, the editor's unreadable text (a "Not a number", "Not a color", a half-typed map) replaced even when the value is the same, and no `onChanged`
+* MapInput: A row with a value but no key is flagged ("A value needs its key") instead of being left out of the value silently
+* TabStrip: An invalid tab also shows a dot, not only its red caption
+* Dialog: CANCEL comes with the first action (`onOK`, `addButton`), as in every platform dialog; before, it showed only with `onCancel`
+* TabStrip: Added `setInvalid(id, message)` — a red caption, `aria-invalid` and `invalid` in the tab's item while its content has an error, the message as the header's tooltip
+* Inputs: Fixed div-based editors (slider, list, column and columns pickers, comboboxes) staying short in a Form's normal state and in a Dialog body; they now grow as in `ui.form`, except the check and radio lists
+* Inputs: Fixed a u2 input bridged into a platform dialog (`asDartInput`) staying 143 px; it now fills the row like the platform's own editor
+* Form: Fixed radio and multi-choice collapsing to 0 px in a wide form
+* Inputs: Multi-choice now has the platform's 150 px floor; the Columns picker has a 100 px floor and the platform's chevron
+* Form: A choice keeps the width its form measured after it moves elsewhere; added `Form.fitChoices`
+* Property grid: Number rows now fill the cell like the other rows
+* Inputs: Disabled inputs use the platform's grey text and near-white field
+* Inputs: Error lines start under the editor, in forms and in loose captioned inputs; an invalid radio or check list no longer draws an underline
+* Inputs: The color field no longer spills out of its box; the image preview scales into its row instead of wrapping under its caption
+* Inputs: The Columns popup keeps OK and CANCEL visible when the window's bottom edge squeezes it
+* Inputs: Mapping's nested x/y captions take their own width
+* Dialog: A choice placed straight in a dialog body takes the width a form measures for it (longest option plus 30 px), as in ui.dialog
+* Accordion: The open pane's content sits 2 px under its header, 10 px above the next and 20 px in, in grey-5, as the platform's
+* BasicTable: Rows are 22 px, inset 12 px, with no rules and a 13 px bold header, as ui.table
+* VirtualTree: Rows are 20 px with a caret icon twistie and a 20 px indent per level, as the platform tree
+* TabStrip: The default strip is 34 px, with tabs padded 8 px 16 px and no full-width rule, as ui.tabControl
+* FilterBuilder: Disabled dims + / − and Advanced; read-only hides add, remove, the drag handles and Advanced; a blank required builder shows its error even where an older copy of the stylesheet is loaded
+* Dialog: Fixed a dialog whose content grows after show running off the window, so OK is reachable
+* Dialog: Fixed a dialog dragged to the right being crushed when the window narrows
+* Dialog: Matched the platform's backdrop, shadow, footer rule and spacing, and its 18 px close icon shown on hover
+* Dialog: Added `onHelp`, the platform's "?" in the title bar
+* Dialog: The first text editor's text is selected on show, as in the platform
+* Menu: Re-skinned popup menus to the platform's look, with a chevron for submenus
+* Tooltip: Matched the platform's tooltip size, font, translucency and border
+* Breadcrumbs: Widened the separator spacing to the platform's
+* Wizard: Long values wrap instead of being clipped
+* Toolbar: Breaking: `addButton`'s `icon` is a Font Awesome name, as a menu item's is (it was shown as text), so a button folded into the » menu keeps its icon
+* Inputs: A captioned editor shrinks to a 60px floor before it drops under its caption, as the platform's row never wraps
+* Inputs: Captions sit on the first line of multi-line editors (text area, radio, map, aggregations, checklists), as in the platform
+* Inputs: Fixed the invalid underline on list, password, columns, file and saved-run editors, which showed only under the rail icon
+* Inputs: Disabled inputs grey their rail icons and dim the image preview; read-only choices drop the chevron; text areas lose the resize grip when disabled or read-only
+* Inputs: The list placeholder ends in an ellipsis; password dots keep clear of the eye icon; captioned text areas fill the row and cap at 12 lines with a scroll
+* Property grid: Fixed an invalid value collapsing its editor to 0px; the error shows under the editor
+* Property grid: Rows are captioned the platform way (`showLegend` → Show Legend); the tooltip is the description
+* Range slider: Handles no longer overhang the component at either end
+* Func form: Run is gated only on non-nullable params, so a form of nullable params can run at open
+* Func form: A failed computed default shows its message and Retry on their own line under the editor; the auto badge keeps a gap from the rail
+* Dialog: Kept a shown dialog on screen through window resizes; a tall dialog scrolls its body inside the viewport
+* Dialog: Matched the platform dialog: 34px header with an 18px title, square corners, CANCEL first and OK right-most and flat, captions in one column sized to the longest
+* Dialog: Disabled OK and Enter while the form in the body is invalid
+* Dialog: Kept the focus in the dialog when a busy OK disables the clicked button; an edit clears the error row, which no longer widens the dialog
+* DartInput: Fixed Enter in a bridged input inside a platform dialog re-opening the dialog through the button that opened it
+* DartInput: An empty value the u2 input refuses now disables the platform dialog's OK; a validity change re-validates the host
+* Overlay: Closed anchored popups on a window resize instead of stranding them away from their anchor
+* TypeAhead: Cleared stray text on blur, turned spellcheck off, and added a `maxHeight` option; user, entity and rich column pickers open on focus
+* User picker: Dropped the repeated second line and capped the popup height
+* Entity chip: Structure and image chips grow to show the whole depiction; handler markup gets the chip's gap and alignment
+* FilterBuilder: A new row says its value is missing only after it is edited or left, or the builder is validated; the message sits under the value, and value boxes fill the row
+* FilterBuilder: A required, empty builder shows its error
+* MessageInput: A space after a query with no match ends the mention
+* Toolbar: Fixed items folded into the » menu staying on screen and the » showing when everything fits; the toolbar now takes the free space of a flex row, so a toolbar next to a title folds and unfolds correctly
+* VirtualGrid: Fixed "ResizeObserver loop" errors when the grid narrows, and cells now stretch to fill the row instead of leaving a dead strip
+* Splitter: Panels keep `minSize` when the splitter itself shrinks, not only while dragging; a drag no longer leaves a focus band on the sash
+* BasicTable: Added a sticky header and the `fixedLayout` option (host-wide columns, long cells end in an ellipsis)
+* Table, VirtualGrid: The focus ring shows for keyboard focus only
+* Wizard: Fixed the first step marker sitting 3 px above the others
+* Tour: The counter and the DONE label skip steps whose target is not on screen
+* StatCard: A long value wraps before the icon instead of running under it
+* Menu: Wider gap between an item's label and its shortcut
+* Core: Breaking: What an effect run builds belongs to that run (the js-api engine gives each run its own scope), and what an element handler or a `bindValue` commit builds belongs to the handler's owner; build lasting content under a component scope, and use `Scope.runWith(undefined, …)` for anything that must outlive its owner
+* Core: DOM handlers — `button`/`link` handlers, `bindValue` commits and the controls' listeners (`Scope.listen` replaced the private `_listen` helpers) — run batched under their owner's scope, and a throwing handler is reported instead of thrown
+* Core: Added `each()` and `show()` (`core/region.ts`), keyed and conditional regions: one element per key, built once in its own scope, patched in place, moved only when out of place, disposed when its key leaves
+* Core: Breaking: Removed `keepFocus`: controls keep their elements with `each()`, so focus and the caret survive; `focusMark`/`refocus` remain for structural rebuilds
+* Core: `span(signal)` and `bindText` render `null` and `undefined` as empty; `visible = false` hides a root even when its class sets `display`
+* Core: Importing u2 next to a second copy of the signal engine throws a named error; `@datagrok-libraries/build-config` maps `datagrok-api/u2core` to `DG.U2` by default, so a package no longer declares that external
+* Exports: The package root exports the kind catalog (`U2_KINDS`, `kindCatalog` and their types), `ITEMS_CAP`, `IItemState`, `IItemsState`, `U2Plugin`, `WizardRunContext`, `CardSelectMode`, `BreadcrumbsClick`, `TabStripOptions`, `TableSection` and `PropertyGridOptions`; `core/scope` re-exports `debug` and its types
+* Spec: Breaking: A bind never rebuilds a node at run time: every declared prop follows its bind in place (bindable props as signals, the rest through the component's setter), and a prop marked `structural` (`SpecPropMeta.structural`; among them `u2-func-form.functionName`, `u2-state.initial` and the data sources' config) reads it once and warns; a bound tab title, button text or number max no longer rebuilds the form around it, and the form / stat card / source promotion loop is gone
+* Spec: Every visual tag with the appearance group has a live `visible` prop; bound tab, accordion-pane and wizard-step titles follow in place (`ComponentMeta.setChildProp`); a forward-ref bind to a bindable prop with no same-named signal is linked; the manifest states the binding rule, and `kinds[].props` leaves structural props out
+* Spec: `u2-wizard` declares the `finish`, `cancel` and `step` events and a readable `currentStep`, and a designer rebuild keeps the open step and the visited ones
+* Components: Added live setters — Button text/primary/icon, panel/div `cls`, NumberInput/SliderInput min/max/step, RadioInput items/itemTooltips, MultiChoiceInput/ChipsInput emptyText, AccessGrid principalLabel/addText, ImageInput alt, FilterQueryInput placeholder, PropertyGrid properties, TextArea rows, RangeSlider label, DataTable columns (rows keep keys and selection), icon variant/size; Card title/subtitle and StatCard label are bindable
+* Spec: A malformed node (a non-string bind, non-array children, a null child) renders as a placeholder naming the mistake, also when the node is named; the renderer no longer throws
+* Spec: Fixed `dump()` sharing nested props with the live document: it deep-copies plain objects and arrays, keeping cycles, and passes other values (dates, functions, bigints) through unchanged
+* Spec: Breaking: Removed `setSpecAmbient`; a companion library installs with `registry.use(plugin)` (`U2Plugin`: name, tagPrefixes, register, specAmbient), once per name, and the returned function removes its tags and ambient; every installed plugin's ambient wraps each tray build in install order, so a second writer no longer splits a spec's unit of work
+* Spec: A domain or manifest tag the host has not installed renders a placeholder naming `@datagrok-libraries/ems` and `installEms()`; an unregistered tray tag also warns in the console
+* Manifest: Added the kind catalog (`kinds`, `kindsVersion` 1): every `data-u2` value with its noun, family, roles, parts, state keys, settable props, items and gestures; components carry their kind and the states their props reach (`invalid` is `{required: true}`, not listed for bool, color and font inputs); part selectors are anchored at the component's root (a dialog's title and close button at its title bar), so a nested component's parts never match
+* [public#4275](https://github.com/datagrok-ai/public/issues/4275): Inputs: Breaking: `required` (and `nullable: false`) makes an empty value invalid, so forms with such inputs start invalid; the error shows once the input was edited, left or its form validated (`Input.touch()`); an empty map or a filter without a condition is empty, while a checkbox's `false` and a color or font default are values (`Input.isEmptyValue`)
+* core#760: Inputs: Added `readOnly`, `visible`, `focus()`, `onEnter`/`onEscape` (which keep the key from the form and dialog), `fill` and TextArea `rows`; `readOnly` and `required` are spec props on every input tag
+* core#761: Inputs: The label is tied to the editor (`for` / `aria-labelledby`); an invalid input carries `aria-invalid` and `aria-describedby` pointing at the error, a disabled one `aria-disabled`, an inline one an `aria-label`; MultiChoiceInput and RadioInput items carry `data-u2-item`, `data-value` and an item-label part
+* Inputs: Added `getState()`: value, displayed text, validity, the error shown, placeholder, `readOnly`, `required`, a BoolInput's `checked`, and the items of choice, radio and multi-choice inputs (a MultiChoiceInput's text is its checked captions)
+* Inputs: `onChanged`, `onEnter` and `onEscape` run untracked under whoever built the input, or under the dialog that adopted it once the builder is gone (PropertyGrid's handlers too); `onChanged` receives the input as its second argument; added the `change` event, `input.on('change', (value, input) => …)`, fired once per value change
+* Inputs: `undefined` shows as empty in number, bigint, qnum, slider, switch and multi-choice inputs; NumberInput, BigIntInput, QNumInput and SliderInput honour `commitOn: 'change'`
+* Inputs: Every input (core, popup and picker, ChipsInput, AccessGrid, PlatformInput) works without `useDefineForClassFields: false`
+* BoolInput: Added `captionAfter`; a switch toggles from its caption
+* Form, Inputs: The auto form layout keeps the platform's editor widths (number 150px, choice = longest option + 30px) and rounds the label column up as the platform does; a captioned TextInput or SuggestInput fills its row (min 150px), and the 100px pin stays on inline inputs
+* [public#4274](https://github.com/datagrok-ai/public/issues/4274): Form: Hidden and disabled inputs no longer fail its validity; `validate()` shows every error and focuses the first
+* Layout: An ImageInput's and a ColumnsMapInput's caption sit on the editor's first line, as the platform's do; a captioned MapInput shrinks to the form's editor floor instead of wrapping under its label; an error line in a form no longer spills past its row; a long token in a Card body wraps; an empty Breadcrumbs keeps its row height
+* Combobox, MultiSelect, TypeAhead, SuggestInput, TagsInput: Popup options are keyed: a keystroke keeps the options that still match and builds only the ones it brings in (a narrowing keystroke in a 500-item MultiSelect builds none); options carry `role="option"`, `data-u2-item`, `aria-selected`, an item-label part and stable ids for `aria-activedescendant`
+* Combobox, TypeAhead, SuggestInput, TagsInput, FileInput: An async source marks the root `aria-busy` while it fetches, and the state reports `busy`
+* Popup and picker inputs: `getState()` reports `open`, the items (every option, not the filtered popup) and the selection; `revealItem` opens the popup over the whole list and resolves to the option, also when `minChars` is set
+* Combobox, TypeAhead: Added `focus()`, `label`, `onEnter`/`onEscape` (handled while the popup is closed, kept from the form or dialog) and a `change` event that passes the value and the control; TypeAhead gained `keyOf`
+* RangeSlider: Added `label` and a `change` event; `onChanged` receives the slider and runs owned by its builder; the state reports `[lo, hi]`
+* TagsInput, MapInput, FontInput: Tag chips are list items kept by text, map rows are items keyed by key (an edit never reloads the rows), and font sizes are addressable items
+* FunctionInput: The prompt is the placeholder, and the text stays empty until a function is picked
+* [public#4271](https://github.com/datagrok-ai/public/issues/4271): Dialog: Breaking: Closing disposes the dialog and what it holds, so a closed dialog cannot be shown again unless it has `keepAlive: true`; a shown dialog outlives the scope that built it (a list row scrolled away, an effect re-run), a never-shown one dies with it; content added from a handler or from outside any scope belongs to the dialog, and `add(() => …)` builds content owned by the dialog, so a dialog opened from a list row keeps its buttons and live text after the row is gone
+* [public#4272](https://github.com/datagrok-ai/public/issues/4272): Dialog: An OK handler may return a promise: the dialog stays open and busy (spinner, `aria-busy`, footer disabled) until it settles, closes unless it answers `false`, and shows a rejection or a throw in an error row; Escape or ✕ while busy aborts the handler's signal
+* core#757: Dialog: Added `getButton(text)`, `onOK(fn, {text})`, `onClose(fn)` with the close reason, and the `busy`/`error` signals and state; `addButton` handlers get the event and the dialog; handlers run owned by whoever registered them
+* core#758: Dialog: Breaking: Dialogs share the platform's dialog band and are no longer children of `.u2-overlay`, so a DG.Dialog or menu opened from a u2 dialog is on top, and pressing a dialog raises it
+* Dialog: Inputs placed straight in a dialog get the platform's grey, right-aligned 140px caption column
+* [public#4273](https://github.com/datagrok-ai/public/issues/4273): Overlay: One stack routes Escape and outside presses; Escape in an open popup closes only the popup, never the dialog around it
+* core#758: Overlay: One `keydown`, one `pointerdown` and one body observer serve every open popup and dialog, gone when none is open; positioning follows events (no frame loop); a context menu opened at a point is a popup of that stack, and a TabStrip listens to the page only while its overflow menu is open
+* Overlay: Popups carry `data-u2-part="popup"` and `data-u2-owner-id` (the owning control's root id); the owner's focus target gets `aria-controls`, `aria-expanded` and `aria-haspopup`
+* [public#4272](https://github.com/datagrok-ai/public/issues/4272): Wizard: A commit, action or finish that throws or rejects keeps the step and shows its message in the footer's error row; each run gets an `AbortSignal` that Escape and ✕ abort; two NEXTs in one task commit once
+* Wizard: Added the `step`, `finish` and `cancel` events, the `busy` and `error` signals and `aria-busy` on the root; content built in `onActivate` lives until the step's next visit; the wizard's dialog is kept alive between openings
+* core#764: TabStrip: Breaking: `onTabClosed` is no longer a signal; use the `onTabClosed(id, strip)` option or `strip.on('tabClosed', …)`; closing the same id twice notifies twice
+* core#764: Card: `onClick` gets the event and the card; added `selectMode` (`'toggle'` / `'select'`) and `compact`; a card given `selected` always shows it; in dev mode a click on a disposed card warns
+* Buttons: `button()`, `link()`, `iconButton`, `buttonWithIcon` and a split `dropDownButton` pass the DOM event to their handler, and ButtonGroup and Breadcrumbs item handlers get the event and the control; `button()` roots carry `data-u2="button"`; an icon button without a tooltip warns in dev mode
+* AsyncView: A reload keeps the last answer (dimmed, `aria-busy`) until the next one lands
+* State: Tabs, wizard, accordion, menu (items keyed by path, e.g. "File > Open"), menu bar, toolbar, breadcrumbs and button group report their items; sections report expanded, cards selected, splitters their sizes, progress bars and stat cards their values, AsyncView its error; FuncCallForm is `aria-busy` while it runs
+* Parts: Dialog, section, card, stat card, progress bar, splitter, wizard and tab parts carry `data-u2-part`; the spec tags `u2-panel`, `u2-div-v` and `u2-div-h` stamp `data-u2`
+* EntityCard: The platform card's gallery title is the card's title part and its label, else the object's caption
+* VirtualList, VirtualTree: Breaking: Rows are keyed, and a row is rendered again only when its item is a new object under the same key — an item mutated in place needs `refresh(key)`, live proxies need `liveItems: true`; one edit in 10,000 rows renders 1 row (was 23)
+* VirtualList, VirtualTree: Each row's render runs in its own scope, so `span(signal)` works in a render and stops with the row; added `update`, `refresh(key)`, `labelOf`, `liveItems` and `rowAt`; the multi-selection follows its keys across `setItems`, so a pager load or a tree expand no longer collapses it
+* VirtualList, VirtualTree: Rows carry `data-u2-item`; the state reports every item with selected/disabled/rendered and the selection as keys; `revealItem` scrolls (in a tree, opens the ancestors) to a key or label and rejects an ambiguous label
+* VirtualTree: Fixed a checkbox showing a state its node does not have: clicks never flip the box, a tree without `onCheck` shows disabled boxes, the treeitem carries `aria-checked`, and the box is named by `checkLabel`
+* VirtualTree: A failed lazy read is retried when the branch is opened again, new roots with new loaders read again, a read is released (scope disposed, signal aborted) once its node leaves the tree, and `expandPath` keeps the expand/collapse clicks made while it awaited a load
+* core#762: BasicTable: Rows are keyed (`keyOf`; by default a string or number item, else its name or id, else its position): an items change builds only the items that changed, each row in its own scope, and the selection follows its key; rows carry `role="row"`, `data-u2-item` and an item-label part, and the state reports them as items
+* core#762: BasicTable: Added the `row(item, index, tr)` hook (it runs in the row's scope) and `{section: 'Title'}` items, header rows spanning all columns that clicks and the keyboard pass by
+* DataTable: Rows of a plain array are rendered again only when their item is a new object (one edit in 10,000 rows: 1 row, was 23); a RowsLike or signal source stays live (`liveItems` overrides); kept rows update `aria-rowindex`; a row's label is its first column's value
+* VirtualGrid: Cells are keyed like VirtualList rows (built once, a scope per cell, selection by key across `setItems`) and carry `data-u2-item`; added `getItems`, `revealItem`, `refresh(key)`, `cellAt` and `labelOf`; IconInput cells are addressable by icon name
+* PropertyGrid: A keystroke re-runs one row (2 effects with 200 properties, was 201); rows are keyed by property name, so `setProperties` keeps unchanged rows and their focus; rows carry `role="row"`, `data-u2-item` and an item-label part, and the state reports them as items
+* PropertyGrid: Breaking: Removed the `onChanged` signal; use the `onChanged` option or `grid.on('change', (change, grid) => …)`
+* PropertyEditor, FunctionsBrowser: The state reports their fields or shown functions as items; `FunctionsBrowser.revealItem` scrolls to a function by qualified or friendly name
+* ChipsInput: Breaking: Chips are `u2-chips-chip`/`u2-chips-chip-on` (no longer `.u2-chip`), so pressed chips look pressed under `all.css`; chips are kept by value across changes and carry `data-u2-item`, `role="button"` and an item-label part; the state reports items, the selection and the pressed captions
+* AccessGrid: Locked capabilities and inherited rows stay disabled after an enable, and clicks on them or on a disabled grid are ignored; an added principal gets the first unlocked capability
+* AccessGrid: The add select adds on a pick or Enter, never on an arrow, Home/End, Page Up/Down or a letter, and resets when left
+* AccessGrid: `principals` is live (a signal, `setPrincipals()`, the `principals` accessor, a bound spec prop); rows are kept by principal and patched in place, with `role="row"`, `data-u2-item` and an item-label part, in a table with `role="grid"`
+* Input bridge: A u2 input handed to the platform as a value editor (`dartInputFor`, `asDartInput`) is released when the platform kills the element hosting it (a closed view or dialog, a re-rendered panel); a deferred editor the platform never mounts holds no live scope
+* Input bridge: Fixed `setStringValue` throwing on text that is not JSON (it leaves the value and warns once), and platform inputs writing object values back on every change
+* Control inspector: Only u2 controls get the inspector (platform widgets and viewers keep their own context panel); the panel is disposed when the context panel moves on; `registerControlInspector()` returns an unregister
+* `leakReport()` also reports the pending timers and global listeners that `DG.U2.debug` tracks
+* Tokens: The palette, `--dg-text-color(-light)`, `--dg-success`/`--dg-failure` and `--dg-font-weight-*` alias the platform's `datagrok.css` tokens, with the old values as standalone fallbacks; success and failure now use the platform's #006400/#8B0000
+* Buttons, ChoiceInput: `.u2-btn` takes the platform's `ui-btn` metrics (28px, 13px bold caps) and primary is the platform's raised button; icon buttons stay 24px squares; the platform's denser styles apply in its ribbon and toolbox; ChoiceInput's chevron is the platform's stroked "v"
+* CSS: `lint:tokens` fails on a raw hex colour outside `tokens.css`/`theme-dark.css`, and a test fails when two bundled sheets give one selector conflicting declarations
+* Docs: Added the specs recipe (live binds, structural props, events, `installEms`/`Registry.use`); the forms recipe covers the input contract and Wizard runs, the lists recipe `each`/`show` and Card `onClick`
+* Packaging: Replaced `.npmignore` with a `files` allow-list, and the build starts from an empty `dist`; the tarball no longer ships the in-place src emits, files whose sources moved to ems, `dist/tests` or a second copy of the css (1,169 → 441 files)
+* Testing: Fixed `pnpm test` on Windows (it lists its test files itself); it runs on Node 20 without `--experimental-detect-module`
 * EMS (domain tables) moved to `@datagrok-libraries/ems`
 * **Breaking**: `DomainSelection.bind` is now `collectionSelection` in `src/dg/shell/`
 * Added `tests/boundaries.test.js`: no `datagrok-api` below `src/dg` except `u2core`, no EMS imports

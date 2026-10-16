@@ -78,8 +78,10 @@ category('DataFrame: Methods', () => {
   test('appendTables', async () => {
     const df1 = createDf();
     await df1.columns.addNewCalculated('doubled', '${population} * 2');
+    const views = Array.from(grok.shell.views).length;
     const appended = await grok.data.appendTables([df1, createDfTail()]);
     expectArray(appended.col('doubled')!.toList(), [2, 8, 4, 6]);
+    expect(Array.from(grok.shell.views).length, views, 'appendTables must not open a view');
   });
 
   test('cell', async () => {

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core#825: Tests: The line chart legend feature expects the legend to list only the Y column / category pairs with data (HEIGHT / UC has none, so 11 and 17 items where it counted 12 and 18)
 * GROK-20884: Removed the Update events and Reports migration queries: they ran as the read-only System:Datagrok and always failed
 * GROK-20884: Errors: Top errors and Top source come from the server's error metrics, by stack signature; a row's context panel shows its error incident and alert to users with Manage Alerts
 * GROK-20884: Errors: Top errors and Top source say they need View Telemetry instead of failing; the Alert pane finds the incident of an error without a stack trace and says when it needs Manage Alerts; a Top errors bar of errors without a stack trace filters to them. Removed the unused TopErrors and TopErrorSources queries

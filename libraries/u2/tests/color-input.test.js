@@ -137,3 +137,38 @@ smoke('two inputs on one signal stay in step; dispose kills the listeners', asyn
   type(first, '#333333');
   assert.equal(first.value.value, '#222222', 'listeners died with the scope');
 });
+
+smoke('required: black by default, as the platform; an empty value is invalid, a cleared field too', async () => {
+  const fresh = mount(new ColorInput({label: 'Color', required: true}));
+  assert.equal(fresh.getState().valid, true);
+  const empty = mount(new ColorInput({label: 'Color', required: true, value: ''}));
+  assert.equal(empty.getState().valid, false);
+  empty.value.value = '#ff0000';
+  assert.equal(empty.getState().valid, true);
+  const text = fresh.root.querySelector('.u2-color-text');
+  text.value = '';
+  fire(text, 'input');
+  assert.equal(fresh.getState().valid, false);
+  fresh.dispose();
+  empty.dispose();
+});
+
+smoke('a value set from outside clears the "not a color" a typed text left', async () => {
+  const input = mount(new ColorInput({label: 'Color'}));
+  type(input, 'notacolor');
+  assert.equal(input.validity.value, 'Not a color');
+  input.value.value = '#202020';
+  assert.equal(text(input).value, '#202020');
+  assert.equal(input.validity.value, null, 'the loaded color is the one shown, and it is one');
+  input.dispose();
+});
+
+smoke('reset: loading the same color again replaces unreadable text and its error', async () => {
+  const input = mount(new ColorInput({label: 'Color', value: '#202020'}));
+  type(input, 'notacolor');
+  assert.equal(input.validity.value, 'Not a color');
+  input.reset('#202020');
+  assert.equal(text(input).value, '#202020');
+  assert.equal(input.validity.value, null);
+  input.dispose();
+});

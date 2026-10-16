@@ -1,13 +1,13 @@
 /* dg-ui/1: JSON in, a live component tree out, and back through dump(). A malformed node becomes
    a visible placeholder — the rest of the tree always renders. Specs never carry code: events
    name context commands, and that is the only executable form. */
-import {signal, Signal, isWritableSignal} from '../core/signals.js';
+import {signal, Signal, isWritableSignal, untracked} from '../core/signals.js';
 import {bindTypeOf} from '../core/widget-like.js';
 import {Scope} from '../core/scope.js';
 import {Component, Control} from '../core/component.js';
 import {ComponentMeta, ComponentStart, SpecPropMeta, Registry, registry as globalRegistry,
   SPEC_SCHEMA} from './registry.js';
-import {findBindingCycle, parsePath, referencesOf} from './path.js';
+import {childNodes, findBindingCycle, parsePath, referencesOf} from './path.js';
 import {BindProp, BindSource, isBindSource} from './bind-source.js';
 import {APPEARANCE_PROPS, applyAppearance} from './appearance.js';
 
@@ -15,13 +15,6 @@ import {APPEARANCE_PROPS, applyAppearance} from './appearance.js';
  * strings starting `$.` are paths resolved when the event fires, `$$.` escapes a literal `$.`,
  * everything else is a literal. Still JSON, still code-free. */
 export type SpecEventEntry = string | {cmd: string, args?: Record<string, unknown>};
-
-/** Wraps component construction; EMS sets it to join each spec's sources to one session. */
-export let specAmbient: (<T>(instance: SpecInstance, build: () => T) => T) | undefined;
-
-export function setSpecAmbient(ambient: typeof specAmbient): void {
-  specAmbient = ambient;
-}
 
 export interface SpecNode {
   tag: string;
@@ -64,31 +57,39 @@ interface Mount {
   release(): void;
 }
 
-/** A bind whose target is a visual node declared later in the document. `link`: the component took
- * a proxy signal at construction, and the link to the real signal waits for the render pass to end.
- * `wire`: an HTML node's own live prop — {@link SpecInstance._flushLinks} resolves the target and
- * runs {@link Deferred.wire}, so the element is never re-rendered. `rerender`: a re-render-tier
- * bind built with `undefined` — the flush re-renders the node with the resolved value baked in
- * ({@link SpecInstance._rebaked}), then wires the follow once the rebuilt value converges. */
+/** A bind whose target is a visual node declared later in the document, resolved when the render
+ * pass ends ({@link SpecInstance._flushLinks}) — nothing is ever re-rendered for it. `link`: a
+ * bindable prop; the component took {@link Deferred.proxy} at construction, and its same-named
+ * signal (or the proxy itself) is linked to the real source. `apply`: any other live prop — an
+ * HTML node's own, a component setter, a parent's child prop — {@link Deferred.apply} installs the
+ * follower over the resolved source. */
 interface Deferred {
   node: SpecNode;
-  /** Identity guard, as before: a re-rendered node's stale entries are skipped. */
+  /** Identity guard: entries of a node the designer rebuilt since are skipped. */
   built: Component | HTMLElement;
-  kind: 'link' | 'wire' | 'rerender';
+  kind: 'link' | 'apply';
   name: string;
   path: string;
   twoWay: boolean;
-  /** `wire` only: installs the in-place follower over the resolved source. */
-  wire?: (source: Signal<unknown>) => void;
+  proxy?: Signal<unknown>;
+  apply?: (source: Signal<unknown>) => void;
+}
+
+/** A child's bound {@link ComponentMeta.childProps} entry: the value its parent is built with, and
+ * the source — or, for a forward ref, the path — the parent follows it through. */
+interface ChildBind {
+  value: unknown;
+  source?: Signal<unknown>;
+  path?: string;
 }
 
 // module-level is safe only because builds are synchronous and every builder deletes its entry first
-const childBindValues = new WeakMap<SpecNode, Record<string, unknown>>();
+const childBinds = new WeakMap<SpecNode, Record<string, ChildBind>>();
 
 /** The value a parent reads off a child's declared prop (a pane's `title`): the resolved bind
  * when the child carries one, the literal otherwise. */
 export function childProp(node: SpecNode | undefined, name: string): unknown {
-  const bound = node ? childBindValues.get(node)?.[name] : undefined;
+  const bound = node ? childBinds.get(node)?.[name]?.value : undefined;
   return bound !== undefined ? bound : node?.props?.[name];
 }
 
@@ -141,14 +142,6 @@ export class SpecInstance extends Control {
    * leaves behind, not the one it replaced. */
   private readonly _pending: SpecNode[] = [];
   private readonly _deferred: Deferred[] = [];
-  /** Per node, the resolved value a forward-ref re-render bind is rebuilt with. Under an ADOPTING
-   * render root the flush's re-render re-creates the target too, so the rebuilt node still sees a
-   * forward ref — building with the baked value and wiring at the next flush is what terminates
-   * that loop with the value resolved. `rounds` caps re-bakes for a target whose value is a fresh
-   * object on every build, which `Object.is` can never call converged. */
-  private readonly _rebaked = new WeakMap<SpecNode, Map<string, {value: unknown, rounds: number}>>();
-  private readonly _rerenderQueue = new Set<SpecNode>();
-  private _rerenderScheduled = false;
   private _cycle: string[] | null;
   private _designTime: boolean;
   private _batching = false;
@@ -174,8 +167,18 @@ export class SpecInstance extends Control {
     });
   }
 
+  /** The registry's plugin ambients around a tray build, the first installed outermost. */
   private _ambient<T>(build: () => T): T {
-    return specAmbient === undefined ? build() : specAmbient(this, build);
+    let run = build;
+    const plugins = this._registry.plugins();
+    for (let i = plugins.length - 1; i >= 0; i--) {
+      const ambient = plugins[i].specAmbient;
+      if (ambient !== undefined) {
+        const inner = run;
+        run = () => ambient(this, inner);
+      }
+    }
+    return run();
   }
 
   dispose(): void {
@@ -315,13 +318,13 @@ export class SpecInstance extends Control {
   private static _eachName(node: SpecNode, fn: (name: string) => void): void {
     if (node.name !== undefined)
       fn(node.name);
-    for (const child of node.children ?? [])
+    for (const child of childNodes(node))
       SpecInstance._eachName(child, fn);
   }
 
   /** Whether the document declares a node of this name at all, built or not. */
   private static _declared(root: SpecNode, name: string): boolean {
-    return root.name === name || (root.children ?? []).some((child) => SpecInstance._declared(child, name));
+    return root.name === name || childNodes(root).some((child) => SpecInstance._declared(child, name));
   }
 
   /** A later-declared visual node: the one first segment {@link resolveBinding} cannot answer yet. */
@@ -335,7 +338,6 @@ export class SpecInstance extends Control {
    * warns, leaving the referencing node built and unlinked (the target's own placeholder names
    * the real problem). */
   private _flushLinks(): void {
-    const rerenders: SpecNode[] = [];
     for (const d of this._deferred.splice(0)) {
       const mount = this._mounts.get(d.node);
       if (mount === undefined || mount.scope.isDisposed)
@@ -343,40 +345,47 @@ export class SpecInstance extends Control {
       if (this._nodes.get(d.node) !== d.built)
         continue;
       try {
-        if (d.kind === 'wire') {
-          const {signal: source} = this.resolveBinding(d.path);
-          Scope.runWith(mount.scope, () => d.wire!(source));
-        } else if (d.kind === 'rerender') {
-          const {signal: source} = this.resolveBinding(d.path);
-          const baked = this._rebaked.get(d.node);
-          const entry = baked?.get(d.name);
-          // converged on the target's current value — or round-capped: wire the follow, done
-          if (entry !== undefined && (Object.is(entry.value, source.value) || entry.rounds >= 2)) {
-            baked!.delete(d.name);
-            Scope.runWith(mount.scope, () => this._watchRerender(d.node, [[d.name, source]]));
-          } else {
-            const map = baked ?? new Map();
-            this._rebaked.set(d.node, map);
-            map.set(d.name, {value: source.value, rounds: (entry?.rounds ?? 0) + 1});
-            rerenders.push(d.node);
-          }
-        } else {
-          const {signal: source, writable} = this.resolveBinding(d.path);
-          if (d.twoWay && !writable)
-            this._warn(`bind "${d.path}" is read-only — edits will not flow back`);
-          Scope.runWith(mount.scope, () => (d.built as Control).link(d.name, source, d.twoWay && writable));
+        const {signal: source, writable} = this.resolveBinding(d.path);
+        if (d.kind === 'apply') {
+          Scope.runWith(mount.scope, () => d.apply!(source));
+          continue;
         }
+        if (d.twoWay && !writable)
+          this._warn(`bind "${d.path}" is read-only — edits will not flow back`);
+        Scope.runWith(mount.scope, () =>
+          SpecInstance._link(d.built as Control, d.name, d.proxy!, source, d.twoWay && writable));
       } catch (e) {
-        this._rebaked.get(d.node)?.delete(d.name);
         this._warn(`${d.node.tag}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
-    if (rerenders.length > 0)
-      this.rerenderAll(rerenders);
+  }
+
+  /** A forward-ref bindable prop: the component's same-named signal follows the source where it has
+   * one (it may have copied the proxy), else the proxy it was handed does. */
+  private static _link(built: Control, name: string, proxy: Signal<unknown>, source: Signal<unknown>,
+    twoWay: boolean): void {
+    if (built.bindStep(name) instanceof Signal) {
+      built.link(name, source, twoWay);
+      return;
+    }
+    const scope = Scope.ambient!;
+    scope.effect(() => {
+      const value = source.value;
+      if (!Component.sameValue(proxy.peek(), value))
+        proxy.value = value;
+    });
+    if (twoWay) {
+      scope.effect(() => {
+        const value = proxy.value;
+        if (!Component.sameValue(source.peek(), value))
+          source.value = value;
+      });
+    }
   }
 
   /** Disposes what `node` rendered — its whole subtree, scopes, components, listeners and map
-   * entries — and renders it anew in place. The node must currently be rendered. */
+   * entries — and renders it anew in place: the designer's structural patches, never a bind (every
+   * bind follows its source in place). The node must currently be rendered. */
   rerender(node: SpecNode): void {
     const old = this._nodes.get(node);
     if (old === undefined)
@@ -421,7 +430,7 @@ export class SpecInstance extends Control {
       const built = this._nodes.get(at);
       if (carry !== undefined && built !== undefined)
         out.push([at, carry, built]);
-      for (const child of at.children ?? [])
+      for (const child of childNodes(at))
         walk(child);
     };
     walk(node);
@@ -470,9 +479,9 @@ export class SpecInstance extends Control {
     this._flushStarts();
   }
 
-  /** Promotion (D-3): a parent that wires its children into itself — `Form.add`, a tab strip
-   * consuming them at construction — must be rebuilt whole; replacing one child element under it
-   * would corrupt its internals. A tray component has no parent and answers itself. */
+  /** Promotion (D-3) of a designer patch: a parent that wires its children into itself — `Form.add`,
+   * a tab strip consuming them at construction — must be rebuilt whole; replacing one child element
+   * under it would corrupt its internals. A tray component has no parent and answers itself. */
   renderRootOf(node: SpecNode): SpecNode {
     let at = node;
     for (;;) {
@@ -546,15 +555,20 @@ export class SpecInstance extends Control {
   private _buildComponent(node: SpecNode): Component | HTMLElement {
     try {
       const meta = this._registry.get(node.tag);
-      if (!meta?.createComponent) {
-        throw new Error(meta ? 'is a visual component — it belongs in the form' :
-          'is not a registered component');
+      if (meta === undefined) {
+        // a tray placeholder never reaches the canvas: the console is the only place it can say why
+        const message = this._unknownTag(node.tag, 'is not a registered component');
+        this._warn(`${node.tag}: ${message}`);
+        throw new Error(message);
       }
+      if (!meta.createComponent)
+        throw new Error('is a visual component — it belongs in the form');
+      SpecInstance._shape(node);
       this._children(node, meta, false);
       this._noCycle(node);
       const props = this._props(node, meta);
-      const deferredRerenders: [string, string][] = [];
-      const rerenderBinds: [string, Signal<unknown>][] = [];
+      const follow: [string, Signal<unknown>][] = [];
+      const forward: [string, string][] = [];
       for (const [name, path] of Object.entries(node.bind ?? {})) {
         const dot = name.indexOf('.');
         if (dot >= 0) {
@@ -567,9 +581,7 @@ export class SpecInstance extends Control {
           throw new Error(`has no prop "${name}" to bind`);
         if (prop.bindable || prop.subBindable)
           continue; // the source resolves these itself at start() (filter, id)
-        const rerendered = this._rerenderTier(node, name, path, deferredRerenders, rerenderBinds);
-        if (rerendered !== undefined)
-          props[name] = rerendered.value;
+        this._bindOnce(node, prop, path, props, follow, forward);
       }
       const built = meta.createComponent(props, {
         designTime: this._designTime,
@@ -583,13 +595,17 @@ export class SpecInstance extends Control {
           }
         },
       });
-      for (const [name, path] of deferredRerenders)
-        this._deferred.push({node, built, kind: 'rerender', name, path, twoWay: false});
-      this._watchRerender(node, rerenderBinds);
+      this._followProps(node, built, this._mounts.get(node)!.scope, follow, forward);
       return built;
     } catch (e) {
       return SpecInstance._placeholder(`${node.tag}: ${e instanceof Error ? e.message : String(e)}`);
     }
+  }
+
+  /** The unknown-tag message, naming the plugin that would register the tag when one does. */
+  private _unknownTag(tag: string, message: string): string {
+    const hint = this._registry.missingTagHint(tag);
+    return hint === null ? message : `${message}; ${hint}`;
   }
 
   private _render(node: SpecNode, parent?: ComponentMeta): Control | HTMLElement {
@@ -657,6 +673,7 @@ export class SpecInstance extends Control {
    * `childProps` — a pane title — validates against it instead of counting as unknown. */
   private _build(node: SpecNode, parent?: ComponentMeta): Control | HTMLElement {
     try {
+      SpecInstance._shape(node);
       const commands = SpecInstance._commands(node);
       const meta = this._registry.get(node.tag);
       const built = meta ? this._component(node, meta, parent) : this._html(node, parent);
@@ -674,11 +691,11 @@ export class SpecInstance extends Control {
     this._noCycle(node);
     const props = this._props(node, meta, parent);
 
-    childBindValues.delete(node);
+    childBinds.delete(node);
     const twoWay: [string, Signal<unknown>, boolean][] = [];
-    const deferredLinks: [string, string, boolean][] = [];
-    const deferredRerenders: [string, string][] = [];
-    const rerenderBinds: [string, Signal<unknown>][] = [];
+    const deferredLinks: [string, string, boolean, Signal<unknown>][] = [];
+    const follow: [string, Signal<unknown>][] = [];
+    const forward: [string, string][] = [];
     for (const [name, path] of Object.entries(node.bind ?? {})) {
       const dot = name.indexOf('.');
       // a sub-bind ('params.days') delivers raw through the components engine's env, never here
@@ -689,8 +706,9 @@ export class SpecInstance extends Control {
         throw new Error(`has no prop "${name}" to bind`);
       if (prop.bindable) {
         if (this._forwardRef(path)) {
-          props[name] = signal(undefined);
-          deferredLinks.push([name, path, prop.twoWay === true]);
+          const proxy = signal<unknown>(undefined);
+          props[name] = proxy;
+          deferredLinks.push([name, path, prop.twoWay === true, proxy]);
           continue;
         }
         const {signal: source, writable} = this.resolveBinding(path);
@@ -700,14 +718,10 @@ export class SpecInstance extends Control {
             this._warn(`bind "${path}" is read-only — edits will not flow back`);
           twoWay.push([name, source, writable]);
         }
-      } else {
-        const rerendered = this._rerenderTier(node, name, path, deferredRerenders, rerenderBinds);
-        if (rerendered !== undefined) {
-          props[name] = rerendered.value;
-          if (SpecInstance._childProp(parent, name) === prop)
-            childBindValues.set(node, {...childBindValues.get(node), [name]: rerendered.value});
-        }
-      }
+      } else if (SpecInstance._childProp(parent, name) === prop)
+        this._childBind(node, prop, path);
+      else
+        this._bindOnce(node, prop, path, props, follow, forward);
     }
 
     const component = meta.createWithChildren ?
@@ -715,61 +729,110 @@ export class SpecInstance extends Control {
       this._adopt(node, meta, meta.create!(props));
     for (const [name, source, writable] of twoWay)
       component.link(name, source, writable);
-    for (const [name, path, twoWay] of deferredLinks)
-      this._deferred.push({node, built: component, kind: 'link', name, path, twoWay});
-    for (const [name, path] of deferredRerenders)
-      this._deferred.push({node, built: component, kind: 'rerender', name, path, twoWay: false});
-    this._watchRerender(node, rerenderBinds);
+    for (const [name, path, twoWay, proxy] of deferredLinks)
+      this._deferred.push({node, built: component, kind: 'link', name, path, twoWay, proxy});
+    const scope = Scope.ambient!;
+    this._followProps(node, component, scope, follow, forward);
+    this._followChildren(node, meta, component, scope);
     return component;
   }
 
-  /** One scope-owned effect per re-render-bound node: it only ENQUEUES — the rerender that
-   * disposes this very effect runs in a microtask, after the signal batch and the effect callback
-   * have completed. The re-render registers a fresh effect over the freshly resolved sources. */
-  private _watchRerender(node: SpecNode, binds: [string, Signal<unknown>][]): void {
-    if (binds.length === 0)
+  /** A bind on a prop the component does not take as a signal: built with the source's value,
+   * then — unless the prop is structural — written through the component's setter on every change
+   * ({@link _followProps}). A forward ref is applied at the flush; a structural one cannot be read
+   * before its target exists and is dropped with a warning. */
+  private _bindOnce(node: SpecNode, prop: SpecPropMeta, path: string, props: Record<string, unknown>,
+    follow: [string, Signal<unknown>][], forward: [string, string][]): void {
+    const name = prop.name;
+    if (this._forwardRef(path)) {
+      if (prop.structural)
+        this._warn(`${node.tag}.${name} is structural — "${path}" names a node declared later, so it is not read`);
+      else
+        forward.push([name, path]);
       return;
-    let first = true;
-    Scope.ambient!.effect(() => {
-      for (const [, source] of binds)
-        void source.value;
-      if (first) {
-        first = false;
+    }
+    const {signal: source} = this.resolveBinding(path);
+    props[name] = source.peek();
+    if (prop.structural)
+      this._warn(`${node.tag}.${name} is structural — a bind is read once`);
+    else
+      follow.push([name, source]);
+  }
+
+  /** After create: each live bind writes through the component's own setter from the next change
+   * on, and a forward ref from the flush on, its current value first. A prop with no setter (a
+   * registration the drift test missed) keeps the value it was built with. */
+  private _followProps(node: SpecNode, built: Component, scope: Scope, follow: [string, Signal<unknown>][],
+    forward: [string, string][]): void {
+    for (const [name, source] of follow) {
+      const set = this._setter(node, built, name);
+      if (set !== null)
+        SpecInstance._follow(scope, source, set, false);
+    }
+    for (const [name, path] of forward) {
+      const set = this._setter(node, built, name);
+      if (set !== null) {
+        this._deferred.push({node, built, kind: 'apply', name, path, twoWay: false,
+          apply: (source) => SpecInstance._follow(scope, source, set, true)});
+      }
+    }
+  }
+
+  private _setter(node: SpecNode, built: Component, name: string): ((value: unknown) => void) | null {
+    const set = built.getProperties().find((p) => p.name === name)?.set;
+    if (set == null) {
+      this._warn(`${node.tag}.${name} has no live setter — a bind is read once`);
+      return null;
+    }
+    return (value) => set(built.propertyTarget, value);
+  }
+
+  /** Writes `source` into `apply` on every change — from the next one, or from now for a forward
+   * ref resolved at the flush. Untracked: a setter's own reads never subscribe the follower. */
+  private static _follow(scope: Scope, source: Signal<unknown>, apply: (value: unknown) => void, now: boolean): void {
+    let skip = !now;
+    scope.effect(() => {
+      const value = source.value;
+      if (skip) {
+        skip = false;
         return;
       }
-      this._queueRerender(node);
+      untracked(() => apply(value));
     });
   }
 
-  private _queueRerender(node: SpecNode): void {
-    this._rerenderQueue.add(node);
-    if (this._rerenderScheduled)
-      return;
-    this._rerenderScheduled = true;
-    queueMicrotask(() => {
-      this._rerenderScheduled = false;
-      const queued = Array.from(this._rerenderQueue);
-      this._rerenderQueue.clear();
-      if (this.scope.isDisposed)
-        return;
-      this.rerenderAll(queued);
-    });
+  /** A bound child prop (a pane's title) is the parent's to show: the value the parent is built
+   * with, and what it follows — see {@link _followChildren}. */
+  private _childBind(node: SpecNode, prop: SpecPropMeta, path: string): void {
+    const props: Record<string, unknown> = {};
+    const follow: [string, Signal<unknown>][] = [];
+    const forward: [string, string][] = [];
+    this._bindOnce(node, prop, path, props, follow, forward);
+    const bind: ChildBind = {value: props[prop.name], source: follow[0]?.[1], path: forward[0]?.[1]};
+    childBinds.set(node, {...childBinds.get(node), [prop.name]: bind});
   }
 
-  /** The re-render-tier tail every non-live bind takes: a forward ref defers to the flush and
-   * answers its bake, if a prior round left one; a resolvable path drops the bake, resolves and
-   * watches. Undefined = a forward ref with no bake yet — nothing to build with. */
-  private _rerenderTier(node: SpecNode, name: string, path: string,
-    deferred: [string, string][], binds: [string, Signal<unknown>][]): {value: unknown} | undefined {
-    if (this._forwardRef(path)) {
-      deferred.push([name, path]);
-      const entry = this._rebaked.get(node)?.get(name);
-      return entry === undefined ? undefined : {value: entry.value};
+  /** The bound child props under `node`, written in place through the parent's
+   * {@link ComponentMeta.setChildProp} — a structural one was read once at the child. */
+  private _followChildren(node: SpecNode, meta: ComponentMeta, built: Control, scope: Scope): void {
+    for (const [index, child] of (node.children ?? []).entries()) {
+      for (const [name, bind] of Object.entries(childBinds.get(child) ?? {})) {
+        if (bind.source === undefined && bind.path === undefined)
+          continue;
+        const setChild = meta.setChildProp;
+        if (setChild === undefined) {
+          this._warn(`${meta.tag}: child prop "${name}" has no live setter — a bind is read once`);
+          continue;
+        }
+        const set = (value: unknown): void => setChild(built, index, name, value);
+        if (bind.source !== undefined)
+          SpecInstance._follow(scope, bind.source, set, false);
+        else {
+          this._deferred.push({node, built, kind: 'apply', name, path: bind.path!, twoWay: false,
+            apply: (source) => SpecInstance._follow(scope, source, set, true)});
+        }
+      }
     }
-    this._rebaked.get(node)?.delete(name);
-    const {signal: source} = this.resolveBinding(path);
-    binds.push([name, source]);
-    return {value: source.value};
   }
 
   /** The node's props, each validated against what the tag declares — an unknown one is a warning
@@ -790,12 +853,30 @@ export class SpecInstance extends Control {
       throw new Error(`binding cycle: ${this._cycle.join(' → ')}`);
   }
 
+  /** The mistakes an LLM-written spec makes, caught where the node's failure is contained: a
+   * bind that is not a path string, children that are not an array of nodes. */
+  private static _shape(node: SpecNode): void {
+    for (const [name, path] of Object.entries(node.bind ?? {})) {
+      if (typeof path !== 'string')
+        throw new Error(`bind "${name}" must be a "$." path string`);
+    }
+    const children: unknown = node.children;
+    if (children === undefined)
+      return;
+    if (!Array.isArray(children))
+      throw new Error('"children" must be an array of nodes');
+    for (const [i, child] of children.entries()) {
+      if (child === null || typeof child !== 'object' || typeof (child as SpecNode).tag !== 'string')
+        throw new Error(`children[${i}] is not a node with a "tag"`);
+    }
+  }
+
   /** Fully live (UB-4): every own prop a plain element declares — text, cls, href/src and the
    * appearance group — is bound through an engine-owned effect writing the DOM in place, so the
    * element the node built is the element it keeps. */
   private _html(node: SpecNode, parent?: ComponentMeta): HTMLElement {
     if (!HTML_TAGS.has(node.tag))
-      throw new Error('neither a registered component nor a supported HTML tag');
+      throw new Error(this._unknownTag(node.tag, 'neither a registered component nor a supported HTML tag'));
     const el = document.createElement(node.tag);
     let prevCls: string[] = [];
     const applyHtml = (name: string, value: unknown): void => {
@@ -826,13 +907,11 @@ export class SpecInstance extends Control {
         throw new Error(`prop "${name}" expects string`);
       applyHtml(name, value);
     }
-    childBindValues.delete(node);
+    childBinds.delete(node);
     const scope = Scope.ambient!;
     // literals first: a bound appearance prop's effect installs below and wins over a same-named one
     applyAppearance(el, appearance, APPEARANCE_PROPS, scope);
     const ownProps = htmlProps(node.tag);
-    const rerenderBinds: [string, Signal<unknown>][] = [];
-    const deferredRerenders: [string, string][] = [];
     const follow = (name: string, source: Signal<unknown>): void => {
       if (APPEARANCE_PROPS.some((p) => p.name === name))
         applyAppearance(el, {[name]: source}, APPEARANCE_PROPS, scope);
@@ -841,25 +920,20 @@ export class SpecInstance extends Control {
     };
     for (const [name, path] of Object.entries(node.bind ?? {})) {
       const own = ownProps.some((p) => p.name === name);
-      if (!own && !SpecInstance._childProp(parent, name))
+      const child = SpecInstance._childProp(parent, name);
+      if (!own && !child)
         throw new Error(`has no prop "${name}" to bind`);
       if (!own) {
-        const rerendered = this._rerenderTier(node, name, path, deferredRerenders, rerenderBinds);
-        if (rerendered !== undefined)
-          childBindValues.set(node, {...childBindValues.get(node), [name]: rerendered.value});
+        this._childBind(node, child!, path);
         continue;
       }
       if (this._forwardRef(path)) {
-        // wired in place at the flush — an element's own props are live, never re-rendered
-        this._deferred.push({node, built: el, kind: 'wire', name, path, twoWay: false,
-          wire: (source) => follow(name, source)});
+        this._deferred.push({node, built: el, kind: 'apply', name, path, twoWay: false,
+          apply: (source) => follow(name, source)});
         continue;
       }
       follow(name, this.resolveBinding(path).signal);
     }
-    for (const [name, path] of deferredRerenders)
-      this._deferred.push({node, built: el, kind: 'rerender', name, path, twoWay: false});
-    this._watchRerender(node, rerenderBinds);
     for (const child of this._children(node, undefined, true))
       el.append(SpecInstance._element(child));
     return el;
@@ -897,8 +971,7 @@ export class SpecInstance extends Control {
       scope.own(() => subscription.unsubscribe());
       return;
     }
-    built.addEventListener(event, handler);
-    scope.own(() => built.removeEventListener(event, handler));
+    scope.listen(built, event, handler);
   }
 
   /** The `cmd:` tiers (Q6), classified by syntax at fire time — commands and functions may appear
@@ -963,17 +1036,33 @@ export class SpecInstance extends Control {
     if (node.name !== undefined)
       out.name = node.name;
     if (node.props)
-      out.props = {...node.props};
+      out.props = SpecInstance._copy(node.props);
     if (node.bind)
-      out.bind = {...node.bind};
-    if (node.on) {
-      const on: Record<string, SpecEventEntry> = {};
-      for (const [event, entry] of Object.entries(node.on))
-        on[event] = typeof entry === 'string' ? entry : JSON.parse(JSON.stringify(entry));
-      out.on = on;
+      out.bind = SpecInstance._copy(node.bind);
+    if (node.on)
+      out.on = SpecInstance._copy(node.on);
+    if (node.children) {
+      // a malformed entry goes back as it came, so the document round-trips with its mistake
+      out.children = Array.isArray(node.children) ? node.children.map((child) =>
+        child !== null && typeof child === 'object' ? this._dump(child) : child) : node.children;
     }
-    if (node.children)
-      out.children = node.children.map((child) => this._dump(child));
+    return out;
+  }
+
+  /** Plain objects and arrays copied, so the caller may change the dump; anything else (a Date, a
+   * function, a platform object) as it is. */
+  private static _copy(value: unknown, seen = new Map<object, unknown>()): unknown {
+    if (value === null || typeof value !== 'object')
+      return value;
+    const proto = Object.getPrototypeOf(value);
+    if (!Array.isArray(value) && proto !== Object.prototype && proto !== null)
+      return value;
+    if (seen.has(value))
+      return seen.get(value);
+    const out = (Array.isArray(value) ? [] : {}) as Record<string, unknown>;
+    seen.set(value, out);
+    for (const [key, item] of Object.entries(value))
+      out[key] = SpecInstance._copy(item, seen);
     return out;
   }
 
@@ -1015,7 +1104,7 @@ export class SpecInstance extends Control {
   }
 
   private static _parentOf(at: SpecNode, node: SpecNode): SpecNode | null {
-    for (const child of at.children ?? []) {
+    for (const child of childNodes(at)) {
       if (child === node)
         return at;
       const found = SpecInstance._parentOf(child, node);

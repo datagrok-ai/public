@@ -1,14 +1,10 @@
-/* Focus across a re-render. A control that rebuilds its DOM loses the focused element with it and
-   the keyboard lands on the body — the next Space goes nowhere. `keepFocus` names the focused
-   element before the rebuild by the keys on the way down from the host (`data-u2-key`, or an
-   input's `data-u2-name`, one per level of keyed nesting) and, after it, focuses the element the
-   same keys name: the element itself where it is focusable, else its first focusable descendant.
-   A keyed element gone from the rebuilt DOM (a removed row) hands focus to the neighbour that
-   followed it, else the one before, else the nearest surviving level's first focusable. Focus in
-   transit — Tab or a click took it off the field whose `change` caused the rebuild, and the
-   browser has not landed it yet, so nothing is focused inside the handler — defers the rebuild
-   to the next task, when the landing element is known and can be kept. Focus that moved on
-   to an element still in the document is left where it went. */
+/* Focus across a structural rebuild (the designer's patches). Controls keep their elements with
+   keyed regions (`each`, core/region.ts) and need none of this. `focusMark` names the focused
+   element by the keys on the way down from the host (`data-u2-key`, or an input's `data-u2-name`,
+   one per level of keyed nesting); `refocus` focuses the element the same keys name after the
+   rebuild: the element itself where it is focusable, else its first focusable descendant. A keyed
+   element gone from the rebuilt DOM (a removed row) hands focus to the neighbour that followed it,
+   else the one before, else the nearest surviving level's first focusable. */
 const FOCUSABLE = 'input, select, textarea, button, [tabindex]';
 
 /** Where focus stood before a rebuild: the keys down to it, and at every level the keys of the
@@ -112,56 +108,4 @@ export function refocus(host: Element, mark: FocusMark | string[] | null): void 
     if (target !== undefined)
       return target.focus();
   }
-}
-
-/** Whether a Tab or a click is moving focus right now: set on the way in, cleared once focus
- * lands (or the task ends), so a rebuild caused by the leaving field's `change` can wait. */
-let transit = false;
-let tracking = false;
-
-function track(): void {
-  if (tracking)
-    return;
-  tracking = true;
-  const leave = () => {
-    transit = true;
-    setTimeout(() => transit = false, 0);
-  };
-  document.addEventListener('keydown', (e) => {
-    if ((e as KeyboardEvent).key === 'Tab')
-      leave();
-  }, true);
-  document.addEventListener('mousedown', leave, true);
-  document.addEventListener('focusin', () => transit = false, true);
-}
-
-const pending = new WeakMap<Element, ReturnType<typeof setTimeout>>();
-
-function render(host: Element, body: () => void): void {
-  const mark = focusMark(host);
-  body();
-  const active = document.activeElement;
-  if (active !== null && active !== document.body && document.body.contains(active))
-    return;
-  refocus(host, mark);
-}
-
-/** Runs `render` and puts focus back where it was, by key — one task later when focus is in
- * transit and nowhere yet. A later call for the same host supersedes a deferred one. */
-export function keepFocus(host: Element, body: () => void): void {
-  track();
-  const deferred = pending.get(host);
-  if (deferred !== undefined) {
-    clearTimeout(deferred);
-    pending.delete(host);
-  }
-  const active = document.activeElement;
-  if (transit && (active === null || active === document.body)) {
-    pending.set(host, setTimeout(() => {
-      pending.delete(host);
-      render(host, body);
-    }, 0));
-    return;
-  }
-  render(host, body);
 }

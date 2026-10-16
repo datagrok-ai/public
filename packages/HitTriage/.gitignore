@@ -4,3 +4,9 @@ dist/
 test-report.html
 test-console-output.log
 
+
+# bdd (grok-bdd) run artifacts
+bdd/guides/
+bdd/test-results/
+bdd/e2e/
+bdd/.auth.json

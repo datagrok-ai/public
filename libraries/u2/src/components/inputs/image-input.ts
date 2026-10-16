@@ -12,6 +12,15 @@ export class ImageInput extends Input<string, ImageInputOptions> {
     this.root.dataset.u2 = 'image-input';
   }
 
+  get alt(): string {
+    return this.options.alt ?? '';
+  }
+
+  set alt(x: string) {
+    this.options.alt = x ?? undefined;
+    this.root.querySelector<HTMLImageElement>('.u2-image-preview')!.alt = this.alt;
+  }
+
   protected createEditor(): HTMLElement {
     const image = document.createElement('img');
     image.className = 'u2-image-preview';
@@ -21,9 +30,7 @@ export class ImageInput extends Input<string, ImageInputOptions> {
     remove.type = 'button';
     remove.className = 'u2-image-remove';
     remove.textContent = 'REMOVE';
-    const onRemove = () => this.value.value = '';
-    remove.addEventListener('click', onRemove);
-    this.own(() => remove.removeEventListener('click', onRemove));
+    this.scope.listen(remove, 'click', () => this.value.value = '');
 
     this.effect(() => {
       const value = this.value.value;

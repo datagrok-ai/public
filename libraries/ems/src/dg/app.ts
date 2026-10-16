@@ -781,7 +781,7 @@ export class DomainApp extends Control {
     query: FilterGroup | null = null, draft = false): Promise<boolean> {
     if (page === this._page.peek() && (page === 'list' || entity === this._entity.peek()))
       return true;
-    if (!await confirmDiscard(this.session, {action: 'leave this page'}))
+    if (!await confirmDiscard(this.session, {action: 'leave this page'}) || this.scope.isDisposed)
       return false;
     this._show(page, entity, query, draft);
     return true;

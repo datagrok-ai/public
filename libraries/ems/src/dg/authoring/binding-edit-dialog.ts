@@ -12,7 +12,7 @@
    names its refusals. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {computed, signal, div, divV, span, plural, Section, BoolInput, badge} from '@datagrok-libraries/u2';
+import {computed, signal, div, divV, span, plural, Section, BoolInput, badge, Scope} from '@datagrok-libraries/u2';
 import {DomainErrors} from '../errors.js';
 import {groupInput} from '@datagrok-libraries/u2/src/dg/inputs/group-input.js';
 import {BindingWizard} from './binding-dialog.js';
@@ -324,7 +324,8 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
    * a read that fails leaves this one standing, and says why. */
   private async _reopen(): Promise<false> {
     this._say('Reading the binding again…');
-    const next = new BindingEditDialog(this._name);
+    // the commit runs with this dialog's scope ambient; the one taking its place must not die with it
+    const next = Scope.runWith(undefined, () => new BindingEditDialog(this._name));
     let read: Read;
     try {
       read = await next._read();

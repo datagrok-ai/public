@@ -46,6 +46,7 @@ export {columnsInput, ColumnsInput, columnsMapInput, ColumnsMapInput, aggregated
 export type {ColumnsInputOptions, ColumnsMapInputOptions, ColumnKey, ColumnAggregation,
   AggregatedColumnsInputOptions} from './inputs/columns.js';
 export {appView} from './shell/app-view.js';
+export {host} from './shell/host.js';
 export type {AppViewOptions} from './shell/app-view.js';
 export {SpecNodeRef, SpecNodesRef, specTree, brokenCount, nodeLabel, idPath} from './designer/node-ref.js';
 export type {SpecTree} from './designer/node-ref.js';
@@ -79,7 +80,7 @@ import './shell/source-backends.js';
 
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
-import {Scope} from '../core/scope.js';
+import {Scope, debug} from '../core/scope.js';
 import {signal, ReadonlySignal, rawEffect} from '../core/signals.js';
 import {PlatformInputs} from './forms/object-form.js';
 import {FileInput} from './inputs/file-input.js';
@@ -102,10 +103,13 @@ export function toObservable<T>(source: ReadonlySignal<T>): Observable<T> {
   return new Observable<T>((observer) => rawEffect(() => observer.next(source.value)));
 }
 
-/** Live u2 scopes vs platform-registered widgets — the leak detector's report.
- * After a view with u2 content closes, both numbers must return to their baseline. */
-export function leakReport(): {liveScopes: number, liveWidgets: number} {
-  return {liveScopes: Scope.liveCount, liveWidgets: DG.Widget.getAll().length};
+/** Live u2 scopes vs platform-registered widgets — the leak detector's report — plus the pending
+ * timers and global listeners `debug` tracks (0 while tracking is off). After a view with u2
+ * content closes, every number must return to its baseline; the platform's own registry keeps a
+ * few shell-chrome widgets per closed view, u2 or not. */
+export function leakReport(): {liveScopes: number, liveWidgets: number, timers: number, listeners: number} {
+  return {liveScopes: Scope.liveCount, liveWidgets: DG.Widget.getAll().length,
+    timers: debug.timers().length, listeners: debug.listeners().length};
 }
 export {viewerOf, viewerControl, REPOINTING} from './viewers/viewer-control.js';
 export type {Bindable, TableRef} from './viewers/viewer-control.js';

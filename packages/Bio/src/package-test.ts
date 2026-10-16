@@ -12,6 +12,7 @@ import './tests/detectors-benchmark-tests';
 import './tests/msa-tests';
 import './tests/splitters-test';
 import './tests/monomer-libraries-tests';
+import './tests/monomer-manager-tests';
 import './tests/renderers-test';
 import './tests/renderers-monomer-placer-tests';
 import './tests/converters-test';

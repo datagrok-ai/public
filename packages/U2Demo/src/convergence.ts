@@ -6,6 +6,7 @@ import {signal, computed, Scope, div, divV, divH, span, h3, link, iconButton, Bo
   from '@datagrok-libraries/u2';
 import {propertyForm, propertyEditor} from '@datagrok-libraries/u2/src/dg/index.js';
 import {EDITOR_TYPES, enabledEditorTypes, registeredEditorTypes, setEditorTypes} from './editors';
+import {AbGrid, readout} from './pages/common';
 
 const HOVER = 'Number rows keep the platform\'s hover chrome, ported as it is: the slider and the ' +
   '− + clicker are invisible at rest and appear the moment the pointer enters the input. Each ' +
@@ -20,10 +21,10 @@ const EDITOR = 'The leading `…` opens that row\'s own metadata in the context 
   '`max` to 500 on `Dose` and watch both sides validate at 500, or switch `Name` from `string` ' +
   'to `int` and watch both editors change kind and drop the value.';
 
-const NARROW = 'Two editor columns need about 700px between them. With Browse and the context ' +
-  'panel both open the pane is narrower than that, and the grid — not the page — scrolls ' +
-  'sideways: the prose stays put, and the row you are editing scrolls back with a drag of the ' +
-  'bar under the matrix. Close the panel (or Browse) and both columns fit again.';
+const NARROW = 'Two editor columns need about 750px between them. Where the pane is narrower — ' +
+  'Browse and the context panel both open, or a small screen — each u2 editor drops under its ' +
+  'platform twin instead, so the rows still compare one to one and nothing is cut off. Close ' +
+  'the panel (or Browse) and the two columns come back.';
 
 const CHEM_NOTE ='Structure (semType `Molecule`) needs the Chem package — both sides route to ' +
   'its sketcher, so the row is left out here. Open the app on a stand that has Chem published.';
@@ -370,10 +371,10 @@ export function convergencePage(): HTMLElement {
     gridScope?.dispose();
     const generation = new Scope();
     gridScope = generation;
-    grid.textContent = '';
-    grid.append(span(''), h3('Dart — ui.input.forProperty'), h3('u2 — propertyForm'));
+    ui.empty(grid);
 
     Scope.runWith(generation, () => {
+      const ab = new AbGrid(grid, 'ui.input.forProperty', 'propertyForm');
       const shown = Object.values(records).filter((r) =>
         (hasChem || r.semType !== 'Molecule') && DEAD[r.name!] == null);
       const props = shown.map((r) => DG.Property.fromOptions(r));
@@ -406,12 +407,12 @@ export function convergencePage(): HTMLElement {
       let i = 0;
       for (const record of Object.values(records)) {
         if (!hasChem && record.semType === 'Molecule') {
-          grid.append(note(CHEM_NOTE));
+          ab.full(note(CHEM_NOTE));
           continue;
         }
         const name = record.name!;
         if (DEAD[name] != null) {
-          grid.append(note(DEAD[name], name));
+          ab.full(note(DEAD[name], name));
           continue;
         }
         // the panel is closed by default in local mode, and shell.o alone would not open it
@@ -421,18 +422,18 @@ export function convergencePage(): HTMLElement {
         }, {tooltip: 'Edit this property\'s metadata'}), dart[i].root, form.input(name)!.root];
         for (const cell of cells)
           cell.dataset.row = name;
-        grid.append(...cells);
+        ab.row(cells[0], cells[1], cells[2]);
         if (record.type === DG.TYPE.FILE)
-          grid.append(note(FILE_NOTE));
+          ab.full(note(FILE_NOTE));
         if (record.type === DG.TYPE.BIG_INT)
-          grid.append(note(BIGINT_NOTE));
+          ab.full(note(BIGINT_NOTE));
         // where the missing `list` + `Tags` row would sit, right after the other list rows
         if (name === 'aliases')
-          grid.append(note(TAGS_NOTE));
+          ab.full(note(TAGS_NOTE));
         if (name === 'privateKey')
-          grid.append(note(ROUTE_NOTE));
+          ab.full(note(ROUTE_NOTE));
         if (name === 'tables')
-          grid.append(note(PICKERS_NOTE));
+          ab.full(note(PICKERS_NOTE));
         i++;
       }
       markCurrent();
@@ -479,8 +480,7 @@ export function convergencePage(): HTMLElement {
       'precision, and `<5.2` in u2, which prints the value as it stands.'),
     prose(NARROW),
     grid,
-    divH([span('sync = '), span(computed(() =>
-      `u2 → Dart ${toDart.value} · Dart → u2 ${toU2.value}`))], 'u2demo-status'),
+    readout('sync', computed(() => `u2 → Dart ${toDart.value} · Dart → u2 ${toU2.value}`)),
     h3('Dual run: u2 inputs as platform value editors'),
     prose('Each type registers a `role: valueEditor` func, which the platform consults before any ' +
       'type default — so the LEFT column, still built by the platform, starts rendering u2 ' +

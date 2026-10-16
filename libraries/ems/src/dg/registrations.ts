@@ -1,10 +1,11 @@
 /* The `u2-domain-*` tags (ruling 8: every domain control is spec-registered from day one). A
    control binds to its source as a whole — `bind: {source: "$.issues.source"}` — and inherits the
-   source's access; registered by `registerPlatformComponents`, next to the other dg tags. */
+   source's access; a host registers them with `installEms()`. */
 import {Signal, Registry, registry as globalRegistry} from '@datagrok-libraries/u2';
-import type {LiveOption, ComponentMeta, FormLayout} from '@datagrok-libraries/u2';
+import type {LiveOption, ComponentMeta, FormLayout, U2Plugin} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
-import {registerDomainSources} from '../core/registrations.js';
+import {emsSourcesPlugin} from '../core/registrations.js';
+import {sessionAmbient} from '../core/session.js';
 import {DomainChildren} from './children.js';
 import {DomainFilters} from './filters.js';
 import {DomainForm} from './form.js';
@@ -54,9 +55,9 @@ function editorContext(props: Props): EditorContext {
 const DRAFT = {name: 'draft', type: 'object', bindable: true,
   description: 'The draft envelope the server answered — `{manifest, inventory, diagnostics}`.'};
 const CONTEXT_PROPS = [
-  {name: 'mode', type: 'string', choices: ['create', 'view'],
+  {name: 'mode', type: 'string', choices: ['create', 'view'], structural: true,
     description: 'What may be changed: `create` edits, `view` shows every field as text.'},
-  {name: 'storage', type: 'string', choices: ['external'],
+  {name: 'storage', type: 'string', choices: ['external'], structural: true,
     description: 'The manifest storage the field offer follows; `external` is the one built.'},
 ];
 const EXAMPLE_DRAFT = {manifest: {name: 'sales', storage: {kind: 'external', connection: 'Demo:Northwind',
@@ -79,9 +80,10 @@ const METAS: ComponentMeta[] = [
       'write (no edit on the row, no insert for a draft) is text.',
     props: [
       SOURCE,
-      {name: 'include', type: 'string_list', description: 'Columns to show, in this order; every column by default.'},
-      {name: 'exclude', type: 'string_list', description: 'Columns to leave out.'},
-      {name: 'layout', type: 'string', choices: ['auto', 'normal', 'wide', 'tall']},
+      {name: 'include', type: 'string_list', structural: true,
+        description: 'Columns to show, in this order; every column by default.'},
+      {name: 'exclude', type: 'string_list', structural: true, description: 'Columns to leave out.'},
+      {name: 'layout', type: 'string', choices: ['auto', 'normal', 'wide', 'tall'], structural: true},
     ],
     example: {tag: 'u2-domain-form', bind: {source: '$.issues.source'}},
   },
@@ -102,9 +104,10 @@ const METAS: ComponentMeta[] = [
       'the same source beside it for master–detail.',
     props: [
       SOURCE,
-      {name: 'mode', type: 'string', choices: ['brief', 'cards'], description: 'One line per row, or a card.'},
-      {name: 'itemHeight', type: 'int', description: 'Row height in pixels (28 brief, 96 cards).'},
-      {name: 'empty', type: 'string', description: 'What an empty result says.'},
+      {name: 'mode', type: 'string', choices: ['brief', 'cards'], structural: true,
+        description: 'One line per row, or a card.'},
+      {name: 'itemHeight', type: 'int', structural: true, description: 'Row height in pixels (28 brief, 96 cards).'},
+      {name: 'empty', type: 'string', structural: true, description: 'What an empty result says.'},
     ],
     defaults: {mode: 'brief'},
     example: {tag: 'u2-domain-list', bind: {source: '$.issues.source'}, props: {mode: 'cards'}},
@@ -133,13 +136,13 @@ const METAS: ComponentMeta[] = [
       '(`<schema>.<table>`), `filter` narrows the candidates with a smart filter. Bind `value` two-way to ' +
       'the column (`$.issues.currentRow.project_id`); a generated domain form does this by itself.',
     props: [
-      {name: 'table', type: 'string', description: 'The table to pick from, `<schema>.<table>`.'},
+      {name: 'table', type: 'string', structural: true, description: 'The table to pick from, `<schema>.<table>`.'},
       {name: 'label', type: 'string', bindable: true},
       {name: 'name', type: 'string', description: 'Stable key for forms and dumps; defaults to the label.'},
       {name: 'value', type: 'string', bindable: true, twoWay: true, description: 'The picked row\'s id.'},
-      {name: 'placeholder', type: 'string'},
-      {name: 'filter', type: 'string', description: 'A smart filter the candidates must match.'},
-      {name: 'nullable', type: 'bool'},
+      {name: 'placeholder', type: 'string', structural: true},
+      {name: 'filter', type: 'string', structural: true, description: 'A smart filter the candidates must match.'},
+      {name: 'nullable', type: 'bool', structural: true},
       {name: 'tooltipText', type: 'string', bindable: true},
       {name: 'enabled', type: 'bool', bindable: true},
     ],
@@ -175,9 +178,11 @@ const METAS: ComponentMeta[] = [
       'when the rows are edited in place — this one shows the edits, it does not take them.',
     props: [
       SOURCE,
-      {name: 'columns', type: 'string_list', description: 'Columns to show, in this order; the schema\'s by default.'},
-      {name: 'hiddenColumns', type: 'string_list', description: 'Columns to leave out.'},
-      {name: 'rowHeight', type: 'int', description: 'Row and header height in pixels (24 by default).'},
+      {name: 'columns', type: 'string_list', structural: true,
+        description: 'Columns to show, in this order; the schema\'s by default.'},
+      {name: 'hiddenColumns', type: 'string_list', structural: true, description: 'Columns to leave out.'},
+      {name: 'rowHeight', type: 'int', structural: true,
+        description: 'Row and header height in pixels (24 by default).'},
     ],
     example: {tag: 'u2-domain-data-table', bind: {source: '$.issues.source'}},
   },
@@ -195,9 +200,11 @@ const METAS: ComponentMeta[] = [
       'a tree is for is driving a collection: bind a `u2-domain-source`\'s `query` to the selection and ' +
       'write it as `<fk> under "<id>"`, which answers the whole subtree, not one level.',
     props: [
-      {name: 'table', type: 'string', description: 'The hierarchy table, `<schema>.<table>`.'},
-      {name: 'expandTo', type: 'string', description: 'A row id to reveal: its ancestors opened, the row selected.'},
-      {name: 'pageSize', type: 'int', description: 'How many children one level loads (500 by default).'},
+      {name: 'table', type: 'string', structural: true, description: 'The hierarchy table, `<schema>.<table>`.'},
+      {name: 'expandTo', type: 'string', structural: true,
+        description: 'A row id to reveal: its ancestors opened, the row selected.'},
+      {name: 'pageSize', type: 'int', structural: true,
+        description: 'How many children one level loads (500 by default).'},
       {name: 'selected', type: 'object', bindable: true,
         description: 'The selected row; read-only — bind a source\'s query to it.'},
     ],
@@ -231,8 +238,9 @@ const METAS: ComponentMeta[] = [
       'children.',
     props: [
       SOURCE,
-      {name: 'tables', type: 'string_list', description: 'The child tables to show; every one by default.'},
-      {name: 'mode', type: 'string', choices: ['grid', 'list'],
+      {name: 'tables', type: 'string_list', structural: true,
+        description: 'The child tables to show; every one by default.'},
+      {name: 'mode', type: 'string', choices: ['grid', 'list'], structural: true,
         description: 'The platform grid, or a list beside a form.'},
     ],
     defaults: {mode: 'grid'},
@@ -253,7 +261,8 @@ const METAS: ComponentMeta[] = [
     props: [
       SOURCE,
       {name: 'placeholder', type: 'string'},
-      {name: 'debounceMs', type: 'int', description: 'The pause before the search runs (300 by default).'},
+      {name: 'debounceMs', type: 'int', structural: true,
+        description: 'The pause before the search runs (300 by default).'},
     ],
     example: {tag: 'u2-domain-search', bind: {source: '$.issues.source'}},
   },
@@ -271,8 +280,8 @@ const METAS: ComponentMeta[] = [
       'asks to save or discard them first; the query round-trips to the URL (`?q=`) through the app\'s path.',
     props: [
       SOURCE,
-      {name: 'mode', type: 'string', choices: ['query', 'builder']},
-      {name: 'placeholder', type: 'string'},
+      {name: 'mode', type: 'string', choices: ['query', 'builder'], structural: true},
+      {name: 'placeholder', type: 'string', structural: true},
     ],
     defaults: {mode: 'query'},
     example: {tag: 'u2-domain-filters', bind: {source: '$.issues.source'}},
@@ -294,8 +303,10 @@ const METAS: ComponentMeta[] = [
     props: [
       DRAFT,
       ...CONTEXT_PROPS,
-      {name: 'groups', type: 'string_list', description: 'The groups and users the access pickers offer.'},
-      {name: 'friendlyName', type: 'string', description: 'The schema\'s friendly name, carried beside the manifest.'},
+      {name: 'groups', type: 'string_list', structural: true,
+        description: 'The groups and users the access pickers offer.'},
+      {name: 'friendlyName', type: 'string', structural: true,
+        description: 'The schema\'s friendly name, carried beside the manifest.'},
       {name: 'selected', type: 'object', bindable: true,
         description: 'The selected node — `{kind: schema | table | column, table?, column?}`; read-only.'},
     ],
@@ -311,8 +322,25 @@ export function registerDomainComponents(reg: Registry = globalRegistry): void {
   }
 }
 
-/** The source plus every domain control. */
+/** ems as a u2 plugin: the source, every domain control, and the session every source of one
+ * spec joins. */
+export const emsPlugin: U2Plugin = {
+  name: '@datagrok-libraries/ems',
+  tagPrefixes: ['u2-domain-', 'u2-manifest-'],
+  register: (reg) => {
+    emsSourcesPlugin.register(reg);
+    registerDomainComponents(reg);
+  },
+  specAmbient: sessionAmbient,
+};
+
+/** Installs ems into a registry, the global one by default — once, whoever calls it again; a host
+ * rendering specs with domain tags calls it before the first render. Answers the uninstall. */
+export function installEms(reg: Registry = globalRegistry): () => void {
+  return reg.use(emsPlugin);
+}
+
+/** @deprecated Use {@link installEms}. */
 export function registerEmsComponents(reg: Registry = globalRegistry): void {
-  registerDomainSources(reg);
-  registerDomainComponents(reg);
+  installEms(reg);
 }

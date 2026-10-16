@@ -144,7 +144,16 @@ export abstract class Tutorial extends DG.Widget {
     grok.shell.windows.showBrowse = true;
   }
 
+  private static active: Tutorial | null = null;
+
+  static closeActive(): void {
+    const t = Tutorial.active;
+    if (t?.currentRun != null && !t.closed)
+      t.close();
+  }
+
   async start(): Promise<void> {
+    Tutorial.active = this;
     while (this.currentRun != null) {
       this.closed = true;
       this.onClose.next();
@@ -271,6 +280,7 @@ export abstract class Tutorial extends DG.Widget {
             this.clearRoot();
             tutorialNode.html('');
             tutorialNode.append(nextTutorial.root);
+            nextTutorial.clearRoot();
             nextTutorial.start();
           }),
           ui.button('Cancel', () => {

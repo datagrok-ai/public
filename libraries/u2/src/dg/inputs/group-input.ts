@@ -33,6 +33,7 @@ export function groupInput(options: GroupInputOptions = {}): TypeAhead<DG.Group>
       return kept;
     },
     itemText: (group) => group.friendlyName,
+    keyOf: (group) => group.id,
     render: (group) => renderGroup(group, label(group)),
     placeholder: options.placeholder ?? 'Group or user…',
     minChars: 1,
@@ -56,7 +57,9 @@ function renderGroup(group: DG.Group, label: string): HTMLElement {
   const text = document.createElement('div');
   text.className = 'u2-typeahead-user-text';
   const kind = group.personal ? 'user' : 'group';
-  text.append(line('u2-typeahead-user-name', group.friendlyName),
+  const name = line('u2-typeahead-user-name', group.friendlyName);
+  name.dataset.u2Part = 'item-label';
+  text.append(name,
     line('u2-typeahead-user-secondary', label === group.friendlyName ? kind : `${kind} · ${group.id.slice(0, 8)}`));
   row.append(text);
   return row;

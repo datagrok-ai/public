@@ -405,3 +405,11 @@ test('the translated stack trace of a logged error is not a second error', () =>
   log('Stack trace Zz9\n\tpackages/d4/src/y.dart 1:1');
   assert.equal(takeErrors(fake).length, 1);
 });
+
+scenario('a "name = value" status line is a readout by its label, and its value part is the value alone', async () => {
+  await page!.setContent('<div role="status"><label>search = </label><output>Kinase</output></div>');
+  assert.equal(await text('value of search readout'), 'Kinase');
+  const readout = await locate(page!, el('search readout'));
+  assert.equal(await readout.count(), 1);
+  assert.equal(await readout.evaluate((e) => e.getAttribute('role')), 'status');
+});

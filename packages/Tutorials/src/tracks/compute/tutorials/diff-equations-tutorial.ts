@@ -182,10 +182,13 @@ export class DifferentialEquationsTutorial extends Tutorial {
       () => lotkaVolterraElement.dispatchEvent(new MouseEvent('dblclick', {bubbles: true})),
     );
 
-    await new Promise((resolve) => setTimeout(resolve, DELAY));
-
     // 4. Explore elements
-    const dsView = grok.shell.v as DG.TableView;
+    const dsView = await getViewWithElement('div.ui-form') as DG.TableView | null;
+    if (dsView === null) {
+      grok.shell.warning('Failed to run the Lotka-Volterra model');
+      return;
+    }
+
     const dsViewRoot = dsView.root;
     const inputsPanel = dsViewRoot.querySelector('div[class="panel-base splitter-container-horizontal"]') as HTMLElement;
     let uiFormRoot = dsViewRoot.querySelector('div.ui-form') as HTMLElement;

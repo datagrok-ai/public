@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {adapterName, disposeWebGPURenderers, scWebGPUPointHitTest, scWebGPURender} from './webgpu/scatterplot';
 import {disposeWebGLRenderers, isWebGLAvailable, scWebGLPointHitTest, scWebGLRender, webGLUnavailable,
   whyNotWebGL} from './webgl/scatterplot';
-import {readLook, whyOnCpu} from './scatterplot-look';
+import {readCheckLook, whyOnCpu} from './scatterplot-look';
 import {scatterDebug} from './scatterplot-debug';
 
 type Backend = 'WebGPU' | 'WebGL';
@@ -52,7 +52,7 @@ export function isGpuAvailable(): boolean {
 export function isGpuRenderValid(sc: DG.ScatterPlotViewer): boolean {
   const start = scatterDebug.now();
   const current = backend();
-  const look = readLook(sc);
+  const look = readCheckLook(sc);
   const reason = !current ? `no GPU engine: ${noBackendReason()}` :
     whyOnCpu(sc, look) ?? (current == 'WebGL' ? whyNotWebGL(sc, look) : null);
   scatterDebug.checked(sc, start, reason);

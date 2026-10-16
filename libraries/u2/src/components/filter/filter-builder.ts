@@ -79,6 +79,9 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
   private _drag!: FilterDragLayer;
   private _horizontal!: boolean;
   private _warned!: boolean;
+  /** Rows whose value the user has edited or left: only they say a value is missing, until {@link touch}. */
+  private _touchedRows!: Signal<ReadonlySet<string>>;
+  private _revealed!: Signal<boolean>;
 
   constructor(options: FilterBuilderOptions) {
     super(options, Filters.group('and'));
@@ -108,6 +111,12 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     const group = Filters.group(Filters.isGroup(parent) && parent.op === 'and' ? 'or' : 'and');
     this._append(root, group, parentId, index);
     return group.id;
+  }
+
+  /** Shows every row's problem — what Apply or `Form.validate` asks for. */
+  touch(): void {
+    super.touch();
+    this._revealed.value = true;
   }
 
   removeNode(id: string): void {
@@ -157,6 +166,11 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     return ids ? root : Filters.clone(root, true);
   }
 
+  /** A tree without a condition — empty groups included — is what `required` refuses. */
+  protected isEmptyValue(value: FilterGroup): boolean {
+    return Input.isEmpty(value) || Filters.count(value) === 0;
+  }
+
   protected createEditor(): HTMLElement {
     const o = this.options;
     this._mode = o.mode instanceof Signal ? o.mode : signal(o.mode ?? 'simple');
@@ -167,6 +181,8 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     this._joins = new Map();
     this._horizontal = o.orientation === 'horizontal';
     this._warned = false;
+    this._touchedRows = signal<ReadonlySet<string>>(new Set());
+    this._revealed = signal(false);
     this._host = {
       schema: o.schema,
       editors: o.editors ?? FilterBuilder.defaultEditors,
@@ -222,6 +238,12 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
       drop: (id, target) => this.value.value = Filters.move(this.value.peek(), id, target.parentId, target.index),
     });
     this.own(() => this._drag.dispose());
+    this.scope.listen(this._panel, 'focusout', (e) => {
+      const target = e.target as Element;
+      const id = target.closest?.('.u2-fb-values') ? target.closest<HTMLElement>('[data-u2-node]')?.dataset.u2Node : undefined;
+      if (id !== undefined)
+        this._touchRow(id);
+    });
 
     this.addValidator(() => this._problems.value[0]?.message ?? null);
     this.effect(() => this._render());
@@ -235,7 +257,14 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
 
   /** A patch key set to `undefined` leaves the node (`not`, a cleared value) rather than staying
    * on it as a key. */
+  private _touchRow(id: string): void {
+    if (!this._touchedRows.peek().has(id))
+      this._touchedRows.value = new Set([...this._touchedRows.peek(), id]);
+  }
+
   private _change(id: string, patch: Partial<FilterCondition> | Partial<FilterGroup>): void {
+    if ('value' in patch)
+      this._touchRow(id);
     const root = this.value.peek();
     const node: Record<string, unknown> = {...Filters.find(root, id), ...patch};
     for (const key of Object.keys(patch)) {
@@ -317,6 +346,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     else
       this._hint.hidden = true;
     this._panel.classList.toggle('u2-fb-horizontal', horizontal);
+    this.root.classList.toggle('u2-fb-blank', Filters.count(root) === 0);
     this._panel.classList.toggle('u2-fb-advanced', advanced);
     this._rootRow.header.hidden = horizontal;
     this._rootRow.update(root);
@@ -324,7 +354,10 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
       this._rootRow.header.insertBefore(this._rootRow.add, this._rootRow.addGroup);
 
     const seen = new Set<string>();
-    this._renderChildren(root, this._rootRow, advanced, horizontal, this._problems.value, seen);
+    // a value not filled in yet is no mistake until the row is left or the builder validated
+    const shown = this._revealed.value ? this._problems.value : this._problems.value.filter((p) =>
+      p.code !== 'missing-value' || p.nodeId == null || this._touchedRows.value.has(p.nodeId));
+    this._renderChildren(root, this._rootRow, advanced, horizontal, shown, seen);
     for (const id of this._rows.keys()) {
       if (!seen.has(id))
         this._releaseRow(id);

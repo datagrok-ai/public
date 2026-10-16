@@ -301,6 +301,48 @@ category('Add new column', () => {
     }
   });
 
+  test('the edit dialog previews the column under its own name', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.INT, 'n', [1, 2])]);
+    await t.columns.addNewCalculated('c3', '${n} * 2');
+    const dlg = new AddNewColumnDialog(prepareAddNewColumnFuncCall(t.col('c3')!));
+    try {
+      await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+      await dlg.updatePreview('${n} * 3', false);
+      const names = dlg.gridPreview!.dataFrame.columns.names();
+      expect(names.includes('c3') && !names.includes('c3 (2)'), true, `preview columns: ${names.join(', ')}`);
+    }
+    finally {
+      dlg.close();
+    }
+  });
+
+  test('a numeric formula is added as a string or as plain text', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.INT, 'n', [1, 2])]);
+    const expression = '${n} + 1';
+    const add = async (name: string, type: string) => {
+      const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0].prepare({table: t, name, expression}));
+      try {
+        await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+        dlg.inputType!.value = type;
+        await dlg.updatePreview(expression, false);
+        expect(dlg.error, '', `type ${type} refuses a number`);
+        const preview = dlg.gridPreview!.dataFrame.col(dlg.currentCalculatedColName)?.get(0);
+        await dlg.addNewColumnAction();
+        return preview;
+      }
+      finally {
+        dlg.close();
+      }
+    };
+    await add('r', DG.COLUMN_TYPE.STRING);
+    expect(t.col('r')!.type, DG.COLUMN_TYPE.STRING);
+    expect(t.col('r')!.get(0), '2');
+
+    const preview = await add('p', 'plain text');
+    expect(preview, t.col('p')!.get(0), 'the plain text preview is not the text the column gets');
+    expect(preview, '1 + 1');
+  });
+
   test('insert function on click', async () => {
     const clear = async () => {
       dlg.codeMirror!.dispatch({

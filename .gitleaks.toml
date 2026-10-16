@@ -42,6 +42,9 @@ paths = [
   '''(^|/)BenchlingLink/swaggers/''',
   # Multiple sequence alignments — residue strings read as high entropy.
   '''.*\.a3m$''',
+  # SHA-256 digests of the IMGT downloads behind the ANARCI germline models —
+  # "Homo_sapiens" reads as an `api` keyword.
+  '''(^|/)HMM/wasm/anarci/provenance\.json$''',
   '''(^|/)cfg/local2/''',
   '''(^|/)users/''',
   # Browser-facing client code — anything here ships to the browser by design
@@ -77,3 +80,12 @@ stopwords = [
 description = "Typesense search-only key (Docusaurus configs)"
 targetRules = ["generic-api-key"]
 regexes = ['''^23vmY72BpQAytsutm24pCUNJJXh2txjU$''']
+
+# HMM "Profile" choice list: "Pfam family or accession", "Antibody/TCR germline
+# (auto)" reads as an `access` keyword followed by a value. Matched by value for
+# the same reason as above — the choices are repeated in package.ts and its
+# generated files, so line pins would break on every edit.
+[[allowlists]]
+description = "HMM profile choice (Antibody/TCR)"
+targetRules = ["generic-api-key"]
+regexes = ['''^Antibody/TCR$''']

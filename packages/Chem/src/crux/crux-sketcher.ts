@@ -267,6 +267,11 @@ export class CruxSketcher extends grok.chem.SketcherBase {
   }
 
   private write(notation: Notation, value: string): void {
+    // A molblock given as SMILES is read as the molblock it is, as Ketcher and OpenChemLib read it. Core's Sketch action
+    // (the context panel's Actions on a molecule) sets the current molecule's value as SMILES, and once a sketcher has
+    // synced the current object (js-api's Sketcher.syncCurrentObject) that value is a molblock: Crux opened empty.
+    if (notation === 'smiles' && DG.chem.isMolBlock(value))
+      notation = value.includes('V3000') ? 'molblockV3000' : 'molblock';
     this.explicitMol = {notation, value};
     if (this.sketch === null || this.isDetached) {
       this.unshown = {notation, value};

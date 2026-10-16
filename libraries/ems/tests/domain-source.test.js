@@ -1023,3 +1023,35 @@ source('readOnly: a table `transaction` does not land on is read-only whatever t
   assert.equal(live.readOnly.value, false, 'a backend that writes keeps its access');
   live.dispose();
 });
+
+source('afterSave: a count a later refresh outran never overwrites the refresh\'s total', async () => {
+  const memory = backend();
+  let held = null;
+  const inner = counting(memory, []);
+  emsBackends.domain = {table: async (address) => {
+    const table = await inner.table(address);
+    const count = table.count;
+    table.count = (scope) => {
+      if (held === null)
+        return count(scope);
+      const gate = held;
+      held = null;
+      gate.asked = true;
+      return gate.promise;
+    };
+    return table;
+  }};
+  const src = await issues({pageSize: 10});
+  assert.equal(src.total.value, 3);
+  let release;
+  const gate = held = {asked: false, promise: new Promise((resolve) => release = resolve)};
+  const saving = src.afterSave();
+  await flush();
+  assert.equal(gate.asked, true, 'the save is counting');
+  await src.refresh();
+  assert.equal(src.total.value, 3);
+  release(99);
+  await saving;
+  assert.equal(src.total.value, 3, 'the late count is dropped');
+  src.dispose();
+});

@@ -8,8 +8,8 @@ import '../css/u2demo.css';
 
 import {computed} from '@datagrok-libraries/u2';
 import {domains} from '@datagrok-libraries/ems/src/dg';
-import {appView, designerView, disposePanel, registerControlInspector, registerPlatformComponents, registerSpecNodeHandler} from '@datagrok-libraries/u2/src/dg/index.js';
-import {registerEmsComponents} from '@datagrok-libraries/ems/src/dg';
+import {appView, designerView, registerControlInspector, registerPlatformComponents, registerSpecNodeHandler} from '@datagrok-libraries/u2/src/dg/index.js';
+import {installEms} from '@datagrok-libraries/ems/src/dg';
 import {DemoShell, buildDemo} from './demo';
 import {DemoLeaf, leafForPath, pathOf} from './nav';
 import {buildBrowseTree} from './browse';
@@ -63,13 +63,13 @@ function openDemo(leaf: DemoLeaf): void {
 export function u2DemoApp(path?: string): DG.ViewBase {
   registerEnabledEditors();
   registerPropRowHandler();
-  registerControlInspector();
+  const unregisterInspector = registerControlInspector();
   registerDemoSourceHandler();
   // the platform routes an app URL's query string into `meta.params`, not into the `meta.url` path
   readFilterPath(path ?? '') || readFilterPath(location.search);
   const {content, shell, status} = buildDemo({initial: leafForPath(path)?.id});
   // the inspector's panel outlives this view otherwise, holding the control it last rendered
-  content.own(disposePanel);
+  content.own(unregisterInspector);
   const view = appView({
     name: 'U2 Demo', content, status,
     ribbon: [content.runInScope(() => demoRibbon(shell))],
@@ -107,7 +107,7 @@ export function reportsBrowserApp(): DG.ViewBase {
 //output: view result
 export function u2DesignerApp(): DG.ViewBase {
   registerPlatformComponents();
-  registerEmsComponents();
+  installEms();
   registerSpecNodeHandler();
   return designerView(DESIGNER_SPEC, {name: 'U2 Designer', ctx: designerContext()});
 }

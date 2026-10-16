@@ -421,13 +421,13 @@ rules('the verdict moves on a sibling change under an unchanged own value', () =
 
 // --- missingRequired (FP-W4-7) ---
 
-rules('missingRequired lists non-optional empty fields by label and reacts to edits', () => {
+rules('missingRequired lists non-nullable empty fields by label and reacts to edits', () => {
   const f = mount(funcForm(callOf(
-    fp('firstName', 'string'),
-    fp('age', 'int'),
-    fp('nickname', 'string', {isOptional: true}))));
+    fp('firstName', 'string', {nullable: false}),
+    fp('age', 'int', {nullable: false}),
+    fp('nickname', 'string'))));
   assert.deepEqual(f.missingRequired.value, ['First Name', 'Age'],
-    'labels, not param names; optional excluded');
+    'labels, not param names; nullable excluded');
   typeInto(f, 'firstName', 'Ada');
   assert.deepEqual(f.missingRequired.value, ['Age']);
   typeInto(f, 'age', '36');
@@ -435,10 +435,17 @@ rules('missingRequired lists non-optional empty fields by label and reacts to ed
   f.dispose();
 });
 
+rules('missingRequired: a nullable param without isOptional never gates Run (the field validator\'s predicate)', () => {
+  const f = mount(funcForm(callOf(fp('stage', 'string'), fp('site', 'string', {nullable: true}))));
+  assert.deepEqual(f.missingRequired.value, []);
+  assert.equal(validityOf(f, 'stage'), null, 'and no field shows a required verdict either');
+  f.dispose();
+});
+
 rules('missingRequired is visibility-aware: a hidden required field blocks nothing', () => {
   const call = callOf(
     fp('type', 'string', {choices: ['ICE', 'Electric']}),
-    fp('cylinders', 'int', {options: {visible: 'type == "ICE"'}}));
+    fp('cylinders', 'int', {nullable: false, options: {visible: 'type == "ICE"'}}));
   call.setParamValue('type', 'ICE');
   const f = mount(funcForm(call));
   assert.deepEqual(f.missingRequired.value, ['Cylinders'],
@@ -451,15 +458,15 @@ rules('missingRequired is visibility-aware: a hidden required field blocks nothi
 });
 
 rules('missingRequired recomputes over a rebind (orphans excluded, values re-read)', () => {
-  const f = mount(funcForm(callOf(fp('name', 'string'), fp('age', 'int'))));
+  const f = mount(funcForm(callOf(fp('name', 'string', {nullable: false}), fp('age', 'int', {nullable: false}))));
   assert.deepEqual(f.missingRequired.value, ['Name', 'Age']);
 
-  const next = callOf(fp('name', 'string'));
+  const next = callOf(fp('name', 'string', {nullable: false}));
   next.setParamValue('name', 'Ada');
   f.source = next;
   assert.deepEqual(f.missingRequired.value, [], 'age orphaned out, name filled');
 
-  const back = callOf(fp('name', 'string'), fp('age', 'int'));
+  const back = callOf(fp('name', 'string', {nullable: false}), fp('age', 'int', {nullable: false}));
   f.source = back;
   assert.deepEqual(f.missingRequired.value, ['Name', 'Age']);
   f.dispose();

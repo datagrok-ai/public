@@ -10,7 +10,10 @@ import {
 import {errInfo} from '../utils/err-info';
 
 export type RGroup = {
-  [RGP.CAP_GROUP_SMILES]: string,
+  /** The cap's SMILES under the key HELM's monomer schema and the monomer libraries use. */
+  [RGP.CAP_GROUP_SMILES_UPPERCASE]?: string,
+  /** The same under the key older Datagrok code writes; a reader takes either. */
+  [RGP.CAP_GROUP_SMILES]?: string,
   [RGP.ALTERNATE_ID]: string,
   [RGP.CAP_GROUP_NAME]: string,
   [RGP.LABEL]: string,

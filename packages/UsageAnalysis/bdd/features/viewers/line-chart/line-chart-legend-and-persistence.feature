@@ -15,8 +15,9 @@ Feature: Line chart legend, category colours and what survives a round-trip
   spgi-100 (a line chart of WEIGHT by STARTED split by DIS_POP, whose six categories replace Series;
   WEIGHT, HEIGHT and AGE replace Average Mass, TPSA and NIBR logP): the default palette gives
   neighbouring categories different colors (a hue apart — two shades of one hue count as alike);
-  two Y columns share one six-item legend until Multi Axis gives every Y column its own block of
-  six items ("WEIGHT / RA", "HEIGHT / RA"), every item named; replacing a Y column replaces its
+  two Y columns share one six-item legend until Multi Axis gives every Y column its own block, an
+  item for each category the column has values in ("WEIGHT / RA", "HEIGHT / RA"; no HEIGHT value
+  is in UC, so there is no "HEIGHT / UC"), every item named; replacing a Y column replaces its
   block and leaves the other one with its colors; and Split, Multi Axis, the blocks and the
   replaced column come back from a layout and from a project. The Y column is replaced through
   the property, as the manual case allows. A marker column picked by hand keeps its F and M items
@@ -150,9 +151,8 @@ Feature: Line chart legend, category colours and what survives a round-trip
     When user sets "yColumnNames" property of line chart viewer to "WEIGHT, HEIGHT"
     Then the legend of line chart viewer should list 6 items
     When user sets "multiAxis" property of line chart viewer to "true"
-    Then the legend of line chart viewer should list 12 items
-    # 12 legend items, 11 lines: every UC row lacks HEIGHT, so the HEIGHT / UC series is listed but
-    # draws no point, and `lines` counts only the series that drew one
+    Then the legend of line chart viewer should list 11 items
+    # every UC row lacks HEIGHT, so HEIGHT / UC has no line and no legend item
     And the "lines" reading of line chart viewer should be 11
     And the following elements should be visible:
       | "WEIGHT / AS" legend item in legend of line chart viewer |
@@ -166,7 +166,7 @@ Feature: Line chart legend, category colours and what survives a round-trip
       | "HEIGHT / PsA" legend item in legend of line chart viewer |
       | "HEIGHT / Psoriasis" legend item in legend of line chart viewer |
       | "HEIGHT / RA" legend item in legend of line chart viewer |
-      | "HEIGHT / UC" legend item in legend of line chart viewer |
+    And "HEIGHT / UC" legend item in legend of line chart viewer should be absent
     And the "WEIGHT / RA" and "HEIGHT / RA" items in the legend of line chart viewer should be colored differently
     And the "y axes" reading of line chart viewer should be 2
     And line chart viewer should have a "y2 axis" area
@@ -178,14 +178,14 @@ Feature: Line chart legend, category colours and what survives a round-trip
     And the "charts" reading of line chart viewer should be 1
     And the "y axes" reading of line chart viewer should be 0
     And line chart viewer should not have a "y2 axis" area
-    And the legend of line chart viewer should list 18 items
+    And the legend of line chart viewer should list 17 items
     And "AGE / RA" legend item in legend of line chart viewer should be visible
     And "HEIGHT / RA" legend item in legend of line chart viewer should be visible
     And "WEIGHT / RA" legend item in legend of line chart viewer should be visible
     When user sets "yColumnNames" property of line chart viewer to "WEIGHT, HEIGHT"
     Then the "y axes" reading of line chart viewer should be 2
     And line chart viewer should have a "y2 axis" area
-    And the legend of line chart viewer should list 12 items
+    And the legend of line chart viewer should list 11 items
     And no errors should have been logged
 
   Scenario: Replacing a Y column replaces its block and leaves the other one

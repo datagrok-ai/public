@@ -3,8 +3,7 @@
    toolbar, async view). */
 import {Signal} from '../core/signals.js';
 import {Control} from '../core/component.js';
-import {button, divH, divV, panel, type Text} from '../core/elements.js';
-import {buttonWithIcon} from '../components/actions/buttons.js';
+import {button, divH, divV, panel, span, type Text} from '../core/elements.js';
 import {icon, IconVariant} from '../components/display/icon.js';
 import {Input, InputOptions, LiveOption} from '../core/input-base.js';
 import {TextInput, TextArea} from '../components/inputs/text-input.js';
@@ -65,6 +64,8 @@ function inputOptions<T>(props: Props): InputOptions<T> {
     postfix: props.postfix as LiveOption<string> | undefined,
     tooltipText: props.tooltipText as LiveOption<string> | undefined,
     enabled: props.enabled as LiveOption<boolean> | undefined,
+    readOnly: props.readOnly as LiveOption<boolean> | undefined,
+    required: props.required as LiveOption<boolean> | undefined,
     value: bound ? undefined : value as T,
     bind: bound ? value as Signal<T> : undefined,
   };
@@ -79,10 +80,7 @@ function boundItems(input: Control & {setItems(items: string[]): void}, items: u
 
 /** `['name', 'cas:CAS number']` — the property, and after a colon the header it gets. */
 function dataTableColumns(spec: unknown): DataTableColumn<Record<string, unknown>>[] {
-  return itemList(spec).map((entry) => {
-    const at = entry.indexOf(':');
-    return at < 0 ? {name: entry} : {name: entry.slice(0, at), header: entry.slice(at + 1)};
-  });
+  return itemList(spec).map((entry) => DataTable.column(entry));
 }
 
 function itemList(items: unknown): string[] {
@@ -90,17 +88,21 @@ function itemList(items: unknown): string[] {
 }
 
 function inputProps(value: string, ...extra: SpecPropMeta[]): SpecPropMeta[] {
-  // chrome is live-bindable one-way (UB-10); `name` and `inline` are structural and stay re-render
+  // chrome is live-bindable one-way (UB-10); `inline` changes the layout and is structural
   return [
     {name: 'label', type: 'string', bindable: true},
     {name: 'name', type: 'string', description: 'Stable key for forms and dumps; defaults to the label.'},
     {name: 'value', type: value, bindable: true, twoWay: true},
-    {name: 'inline', type: 'bool', description: 'Compact one-row variant without a label.'},
+    {name: 'inline', type: 'bool', structural: true, description: 'Compact one-row variant without a label.'},
     {name: 'postfix', type: 'string', bindable: true,
       description: 'Units or a short suffix shown after the editor.'},
     {name: 'tooltipText', type: 'string', bindable: true},
     {name: 'enabled', type: 'bool', bindable: true,
       description: 'false grays the input out and blocks edits.'},
+    {name: 'readOnly', type: 'bool', bindable: true,
+      description: 'Shows the value, selectable, but blocks edits.'},
+    {name: 'required', type: 'bool', bindable: true,
+      description: 'An empty value is invalid once the input was edited, left or its form validated.'},
     ...extra,
   ];
 }
@@ -187,16 +189,115 @@ function section(props: Props, children: Child[]): Section {
   return s.add(...children.map(element));
 }
 
+/** `u2-button`: text, primary and icon are written in place — the element stays. */
+class SpecButton extends Control {
+  private declare _text: string;
+  private declare _icon: string;
+
+  constructor(props: Props) {
+    super(button('', () => {}, {primary: props.primary === true}));
+    this._text = (props.text as string | undefined) ?? '';
+    this._icon = (props.icon as string | undefined) ?? '';
+    this._paint();
+  }
+
+  get text(): string {
+    return this._text;
+  }
+
+  set text(x: string) {
+    this._text = x ?? '';
+    this._paint();
+  }
+
+  get icon(): string {
+    return this._icon;
+  }
+
+  set icon(x: string) {
+    this._icon = x ?? '';
+    this._paint();
+  }
+
+  get primary(): boolean {
+    return this.root.classList.contains('u2-btn-primary');
+  }
+
+  set primary(x: boolean) {
+    this.root.classList.toggle('u2-btn-primary', x === true);
+  }
+
+  /** What `button` and `buttonWithIcon` put inside: the text alone, or the icon and a label. */
+  private _paint(): void {
+    this.root.replaceChildren(...this._icon === '' ? [this._text] :
+      [icon(this._icon), span(this._text, 'u2-btn-label')]);
+  }
+}
+
+/** A layout container whose extra `cls` follows the prop in place. */
+class SpecContainer extends Control {
+  private declare _cls: string[];
+
+  get cls(): string {
+    return (this._cls ?? []).join(' ');
+  }
+
+  set cls(x: string) {
+    this.root.classList.remove(...this._cls ?? []);
+    this._cls = String(x ?? '').split(/\s+/).filter((c) => c);
+    this.root.classList.add(...this._cls);
+  }
+}
+
+/** `u2-icon`: variant and size follow their props in place; the glyph is read once (`name` is the
+ * node's identity accessor). */
+class SpecIcon extends Control {
+  private declare _glyph: string;
+  private declare _variant: IconVariant | undefined;
+  private declare _size: IconSize | undefined;
+
+  constructor(props: Props) {
+    const glyph = (props.name as string | undefined) ?? 'question';
+    const options = {variant: props.variant as IconVariant | undefined, size: props.size as IconSize | undefined};
+    super(icon(glyph, options));
+    this._glyph = glyph;
+    this._variant = options.variant;
+    this._size = options.size;
+  }
+
+  get variant(): IconVariant | undefined {
+    return this._variant;
+  }
+
+  set variant(x: IconVariant | undefined) {
+    this._variant = x;
+    this._paint();
+  }
+
+  get size(): IconSize | undefined {
+    return this._size;
+  }
+
+  set size(x: IconSize | undefined) {
+    this._size = x;
+    this._paint();
+  }
+
+  private _paint(): void {
+    this.root.className = icon(this._glyph, {variant: this._variant, size: this._size}).className;
+  }
+}
+
+type IconSize = 'small' | 'medium' | 'large';
+
 function container(tag: string, create: () => HTMLElement, description: string): ComponentMeta {
   return {
     tag,
     category: 'Containers',
     create: (props) => {
-      const el = create();
-      const cls = props.cls as string | undefined;
-      if (cls)
-        el.classList.add(...cls.split(' ').filter((c) => c));
-      return new Control(el);
+      const built = new SpecContainer(create());
+      built.cls = (props.cls as string | undefined) ?? '';
+      return built;
     },
     description,
     props: [{name: 'cls', type: 'string', description: 'Extra layout class.'}],
@@ -221,9 +322,10 @@ const METAS: ComponentMeta[] = [
       'in the view ribbon (`appView({ribbon})`), not inside the content area.',
     props: inputProps('string',
       {name: 'placeholder', type: 'string', bindable: true},
-      {name: 'search', type: 'bool', description: 'Magnifier affordance plus a clear button.'},
-      {name: 'password', type: 'bool', description: 'Masked field with an eye toggle.'},
-      {name: 'autoResize', type: 'bool', description: 'Width follows the text between 100 and 300px.'}),
+      {name: 'search', type: 'bool', structural: true, description: 'Magnifier affordance plus a clear button.'},
+      {name: 'password', type: 'bool', structural: true, description: 'Masked field with an eye toggle.'},
+      {name: 'autoResize', type: 'bool', structural: true,
+        description: 'Width follows the text between 100 and 300px.'}),
     events: ['input', 'change'],
     example: {tag: 'u2-text-input', props: {label: 'Name', value: 'Aspirin'}},
   },
@@ -234,11 +336,13 @@ const METAS: ComponentMeta[] = [
       ...inputOptions<string>(props),
       placeholder: props.placeholder as LiveOption<string> | undefined,
       autoGrow: props.autoGrow as boolean | undefined,
+      rows: props.rows as number | undefined,
     }),
     description: 'Multi-line text editor.',
     props: inputProps('string',
       {name: 'placeholder', type: 'string', bindable: true},
-      {name: 'autoGrow', type: 'bool', description: 'Grows with the text instead of scrolling.'}),
+      {name: 'autoGrow', type: 'bool', structural: true, description: 'Grows with the text instead of scrolling.'},
+      {name: 'rows', type: 'int', description: 'Visible text lines.'}),
     events: ['input', 'change'],
     example: {tag: 'u2-text-area', props: {label: 'Description', placeholder: 'Up to 40 characters'}},
   },
@@ -248,9 +352,12 @@ const METAS: ComponentMeta[] = [
     create: (props) => new BoolInput({
       ...inputOptions<boolean>(props),
       switch: props.switch as boolean | undefined,
+      captionAfter: props.captionAfter as boolean | undefined,
     }),
     description: 'Checkbox or switch.',
-    props: inputProps('bool', {name: 'switch', type: 'bool', description: 'Compact toggle instead of a checkbox.'}),
+    props: inputProps('bool',
+      {name: 'switch', type: 'bool', structural: true, description: 'Compact toggle instead of a checkbox.'},
+      {name: 'captionAfter', type: 'bool', structural: true, description: 'Checklist row: the box, then its caption.'}),
     events: ['change'],
     example: {tag: 'u2-bool-input', props: {label: 'Active', value: true, switch: true}},
   },
@@ -270,15 +377,16 @@ const METAS: ComponentMeta[] = [
     description: 'Numeric editor; text that does not parse or falls outside min/max stays on ' +
       'screen and only marks the input invalid.',
     props: inputProps('double',
-      {name: 'mode', type: 'string', choices: ['int', 'float'], description: '"int" or "float" (default).'},
+      {name: 'mode', type: 'string', choices: ['int', 'float'], structural: true,
+        description: '"int" or "float" (default).'},
       {name: 'min', type: 'double'},
       {name: 'max', type: 'double'},
       {name: 'step', type: 'double', description: 'Spinner, clicker and arrow-key increment; 1 by default.'},
-      {name: 'slider', type: 'bool',
+      {name: 'slider', type: 'bool', structural: true,
         description: 'Range control under the box, revealed on hover; needs both bounds.'},
-      {name: 'clicker', type: 'bool',
+      {name: 'clicker', type: 'bool', structural: true,
         description: '− / + buttons on the options rail, revealed on hover.'},
-      {name: 'spinner', type: 'bool', description: 'Hover spinner inside the field.'}),
+      {name: 'spinner', type: 'bool', structural: true, description: 'Hover spinner inside the field.'}),
     events: ['input', 'change'],
     example: {tag: 'u2-number-input', props: {label: 'Amount', value: 10, min: 0, max: 100}},
   },
@@ -297,7 +405,7 @@ const METAS: ComponentMeta[] = [
     description: 'Single choice over a native select.',
     props: inputProps('string',
       {name: 'items', type: 'string_list', bindable: true},
-      {name: 'nullable', type: 'bool', description: 'Offers an empty option; true by default.'}),
+      {name: 'nullable', type: 'bool', structural: true, description: 'Offers an empty option; true by default.'}),
     defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
     events: ['change'],
     example: {tag: 'u2-choice-input', props: {label: 'Series', items: ['a', 'b', 'c'], value: 'b'}},
@@ -318,7 +426,7 @@ const METAS: ComponentMeta[] = [
     description: 'Checkbox list; the value holds the checked items in item order.',
     props: inputProps('string_list', {name: 'items', type: 'string_list', bindable: true},
       {name: 'emptyText', type: 'string', description: 'Stands in for an empty list; \'No items\' by default.'},
-      {name: 'showSummaryCheckbox', type: 'bool',
+      {name: 'showSummaryCheckbox', type: 'bool', structural: true,
         description: 'Tri-state "<N> of <M>" summary row that toggles all/none; the list collapses on click.'}),
     defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
     events: ['change'],
@@ -327,13 +435,7 @@ const METAS: ComponentMeta[] = [
   {
     tag: 'u2-button',
     category: 'Actions',
-    create: (props) => {
-      const text = (props.text as string | undefined) ?? '';
-      const primary = props.primary === true;
-      const name = props.icon;
-      return new Control(typeof name === 'string' && name !== '' ?
-        buttonWithIcon(text, name, () => {}, {primary}) : button(text, () => {}, {primary}));
-    },
+    create: (props) => new SpecButton(props),
     description: 'Push button; `on: {"click": "cmd:<name>"}` runs a context command.',
     props: [
       {name: 'text', type: 'string'},
@@ -345,9 +447,21 @@ const METAS: ComponentMeta[] = [
     events: ['click'],
     example: {tag: 'u2-button', props: {text: 'Save', primary: true}, on: {click: 'cmd:save'}},
   },
-  container('u2-panel', panel, 'Padded vertical container.'),
-  container('u2-div-v', divV, 'Vertical stack.'),
-  container('u2-div-h', divH, 'Horizontal row.'),
+  container('u2-panel', () => {
+    const el = panel();
+    el.dataset.u2 = 'panel';
+    return el;
+  }, 'Padded vertical container.'),
+  container('u2-div-v', () => {
+    const el = divV();
+    el.dataset.u2 = 'div-v';
+    return el;
+  }, 'Vertical stack.'),
+  container('u2-div-h', () => {
+    const el = divH();
+    el.dataset.u2 = 'div-h';
+    return el;
+  }, 'Horizontal row.'),
   {
     tag: 'u2-splitter',
     category: 'Containers',
@@ -357,10 +471,10 @@ const METAS: ComponentMeta[] = [
     usage: 'Master-detail layouts (list left, details right): see the entity-browser recipe. In a ' +
       'platform view, consider handing details to the context panel (`grok.shell.o`) instead of a pane.',
     props: [
-      {name: 'direction', type: 'string', choices: ['horizontal', 'vertical'],
+      {name: 'direction', type: 'string', choices: ['horizontal', 'vertical'], structural: true,
         description: '"horizontal" (default) or "vertical".'},
       {name: 'sizes', type: 'object', description: 'Fraction per panel, normalized; equal shares by default.'},
-      {name: 'minSize', type: 'double', description: 'Smallest panel size in pixels; 60 by default.'},
+      {name: 'minSize', type: 'double', structural: true, description: 'Smallest panel size in pixels; 60 by default.'},
     ],
     acceptsChildren: true,
     defaults: {direction: 'horizontal'},
@@ -378,16 +492,31 @@ const METAS: ComponentMeta[] = [
     category: 'Containers',
     create: () => wizard([], []),
     createWithChildren: (_props, children, nodes) => wizard(children, nodes),
+    // a designer rebuild keeps the user's place: the open step and the visited ones, by id
+    carry: (_node, prev, next) => {
+      if (prev instanceof Wizard && next instanceof Wizard)
+        next.resumeFrom(prev);
+    },
+    setChildProp: (parent, index, name, value) => {
+      if (name === 'title')
+        (parent as Wizard).setStepTitle(index, typeof value === 'string' ? value : `Step ${index + 1}`);
+    },
     description: 'Steps on a rail with BACK / NEXT / FINISH, one per spec child; the child node carries the ' +
       'step title. Panels are hidden, never rebuilt, so a step\'s inputs keep their state.',
-    usage: 'For a flow whose steps are known up front. A spec expresses the steps alone; gates ' +
-      '(`canProceed`), a step\'s `commit`, its `actions`, `onFinish`/`onCancel` and dialog mode are code options.',
-    props: [],
+    usage: 'For a flow whose steps are known up front. A spec expresses the steps, reacts to `finish`, ' +
+      '`cancel` and `step` through `on`, and reads `currentStep`; gates (`canProceed`), a step\'s `commit`, ' +
+      'its `actions` and dialog mode are code options.',
+    props: [
+      {name: 'currentStep', type: 'string', bindable: true,
+        description: 'Id of the open step (read-only): bind a readout or a source param to it.'},
+    ],
     childProps: [
       {name: 'title', type: 'string', description: 'Step title; numbered when absent.'},
-      {name: 'id', type: 'string', description: 'Step id for `goTo`; `step-<index>` when absent.'},
-      {name: 'done', type: 'bool', description: 'A terminal report step: no BACK, the closing button reads CLOSE.'},
+      {name: 'id', type: 'string', structural: true, description: 'Step id for `goTo`; `step-<index>` when absent.'},
+      {name: 'done', type: 'bool', structural: true,
+        description: 'A terminal report step: no BACK, the closing button reads CLOSE.'},
     ],
+    events: ['finish', 'cancel', 'step'],
     acceptsChildren: true,
     defaultChildren: [{tag: 'u2-panel', props: {title: 'Step 1'}}, {tag: 'u2-panel', props: {title: 'Step 2'}}],
     example: {tag: 'u2-wizard', children: [
@@ -405,11 +534,15 @@ const METAS: ComponentMeta[] = [
         accordion.addPane(childTitle(nodes[i], `Pane ${i + 1}`), element(children[i]), false, childIcon(nodes[i]));
       return accordion;
     },
+    setChildProp: (parent, index, name, value) => {
+      if (name === 'title')
+        (parent as Accordion).setPaneTitle(index, typeof value === 'string' ? value : `Pane ${index + 1}`);
+    },
     description: 'Independently expanding panes, one per spec child; the child node carries the pane title.',
     props: [],
     childProps: [
       {name: 'title', type: 'string', description: 'Pane title; numbered when absent.'},
-      {name: 'icon', type: 'string', inputType: 'Icon',
+      {name: 'icon', type: 'string', inputType: 'Icon', structural: true,
         description: 'Font Awesome icon name shown before the title.'},
     ],
     acceptsChildren: true,
@@ -434,7 +567,7 @@ const METAS: ComponentMeta[] = [
     props: [
       {name: 'title', type: 'string', bindable: true},
       {name: 'expanded', type: 'bool', bindable: true, twoWay: true},
-      {name: 'collapsible', type: 'bool',
+      {name: 'collapsible', type: 'bool', structural: true,
         description: 'false renders a plain heading and body — no chevron, no click.'},
     ],
     acceptsChildren: true,
@@ -457,8 +590,8 @@ const METAS: ComponentMeta[] = [
         tabs.activeTab.value = props.activeTab;
       return tabs;
     },
-    // a re-render (a bound pane title following its source) keeps the user's tab; an explicit
-    // activeTab — literal or bound — stays the document's to decide
+    // a designer rebuild keeps the user's tab; an explicit activeTab — literal or bound — stays the
+    // document's to decide
     carry: (node, prev, next) => {
       if (node.props?.activeTab !== undefined || node.bind?.activeTab !== undefined ||
           !(prev instanceof TabStrip) || !(next instanceof TabStrip))
@@ -468,18 +601,22 @@ const METAS: ComponentMeta[] = [
       if (index < (node.children?.length ?? 0))
         next.activeTab.value = active;
     },
+    setChildProp: (parent, index, name, value) => {
+      if (name === 'title')
+        (parent as TabStrip).setTabLabel(`tab-${index}`, typeof value === 'string' ? value : `Tab ${index + 1}`);
+    },
     description: 'Tab strip with one tab per spec child; the child node carries the tab label.',
     props: [
-      {name: 'orientation', type: 'string', choices: ['horizontal', 'vertical'],
+      {name: 'orientation', type: 'string', choices: ['horizontal', 'vertical'], structural: true,
         description: '"horizontal" (default) or "vertical" — a header column on the left.'},
-      {name: 'variant', type: 'string', choices: ['platform', 'document'],
+      {name: 'variant', type: 'string', choices: ['platform', 'document'], structural: true,
         description: '"platform" (default) is the ui.tabControl look; "document" the IDE document-tab skin.'},
       {name: 'activeTab', type: 'string', bindable: true, twoWay: true,
         description: 'Id of the selected tab (spec children get tab-0, tab-1, …).'},
     ],
     childProps: [
       {name: 'title', type: 'string', description: 'Tab label; numbered when absent.'},
-      {name: 'icon', type: 'string', inputType: 'Icon',
+      {name: 'icon', type: 'string', inputType: 'Icon', structural: true,
         description: 'Font Awesome icon name shown before the title.'},
     ],
     acceptsChildren: true,
@@ -512,7 +649,7 @@ const METAS: ComponentMeta[] = [
     usage: 'Labels share a left column and values stay left-aligned — never center form content. ' +
       'For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building.',
     props: [
-      {name: 'layout', type: 'string', choices: ['auto', 'normal', 'wide', 'tall'],
+      {name: 'layout', type: 'string', choices: ['auto', 'normal', 'wide', 'tall'], structural: true,
         description: '"auto" (default) picks wide or tall by fit — editors fill the row while ' +
           'the label column plus the minimum editor width fit, captions move above when they ' +
           'do not; "normal" never switches; "wide" stretches editors across the row; "tall" ' +
@@ -553,12 +690,11 @@ const METAS: ComponentMeta[] = [
   {
     tag: 'u2-icon',
     category: 'Display',
-    create: (props) => new Control(icon((props.name as string | undefined) ?? 'question',
-      {variant: props.variant as IconVariant | undefined,
-        size: props.size as 'small' | 'medium' | 'large' | undefined})),
+    create: (props) => new SpecIcon(props),
     description: 'A Font Awesome icon.',
     props: [
-      {name: 'name', type: 'string', inputType: 'Icon', description: 'Font Awesome icon name.'},
+      {name: 'name', type: 'string', inputType: 'Icon', structural: true,
+        description: 'Font Awesome icon name; read once — `name` is also the node\'s identity accessor.'},
       {name: 'variant', type: 'string', choices: ['light', 'regular', 'solid', 'brands'],
         description: 'Face; light by default, brands picked on its own for a brand name.'},
       {name: 'size', type: 'string', choices: ['small', 'medium', 'large']},
@@ -612,6 +748,7 @@ const METAS: ComponentMeta[] = [
       vertical: props.vertical as boolean | undefined,
       lo: props.lo as number | Signal<number> | undefined,
       hi: props.hi as number | Signal<number> | undefined,
+      label: props.label as string | undefined,
     }),
     description: 'Two-handle range selector: drag a handle to move one end, the band between ' +
       'them to move the whole window.',
@@ -626,11 +763,12 @@ const METAS: ComponentMeta[] = [
       {name: 'max', type: 'double'},
       {name: 'step', type: 'double', description: 'Snap increment for dragging; continuous when absent.'},
       {name: 'minRange', type: 'double', description: 'Smallest allowed hi − lo; 0 by default.'},
-      {name: 'vertical', type: 'bool', description: 'Bottom-to-top track.'},
+      {name: 'vertical', type: 'bool', structural: true, description: 'Bottom-to-top track.'},
+      {name: 'label', type: 'string', description: 'Accessible name of the pair (aria-label).'},
     ],
     defaults: {min: 0, max: 100, lo: 20, hi: 60},
     events: ['input', 'change'],
-    example: {tag: 'u2-range-slider', props: {min: 0, max: 100, lo: 20, hi: 60}},
+    example: {tag: 'u2-range-slider', props: {label: 'Price range', min: 0, max: 100, lo: 20, hi: 60}},
   },
   {
     tag: 'u2-radio-input',
@@ -645,7 +783,7 @@ const METAS: ComponentMeta[] = [
     usage: 'For three to five always-visible options. Above that use `u2-choice-input`.',
     props: inputProps('string',
       {name: 'items', type: 'string_list'},
-      {name: 'buttons', type: 'bool', description: 'Raised-button variant instead of radio dots.'},
+      {name: 'buttons', type: 'bool', structural: true, description: 'Raised-button variant instead of radio dots.'},
       {name: 'itemTooltips', type: 'object', description: 'Hover text per item.'}),
     defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
     events: ['change'],
@@ -661,7 +799,7 @@ const METAS: ComponentMeta[] = [
     }),
     description: 'Hex field plus a swatch that opens the browser color picker.',
     props: inputProps('string',
-      {name: 'swatchOnly', type: 'bool', description: 'Swatch alone, no hex field.'}),
+      {name: 'swatchOnly', type: 'bool', structural: true, description: 'Swatch alone, no hex field.'}),
     events: ['input', 'change'],
     example: {tag: 'u2-color-input', props: {label: 'Color', value: '#1f77b4'}},
   },
@@ -723,7 +861,8 @@ const METAS: ComponentMeta[] = [
     create: (props) => new AccessGrid({
       ...inputOptions<AccessRow[]>(props),
       capabilities: itemList(props.capabilities),
-      principals: itemList(props.principals),
+      principals: props.principals instanceof Signal ? props.principals as Signal<string[]> :
+        itemList(props.principals),
       principalLabel: props.principalLabel as string | undefined,
       addText: props.addText as string | undefined,
     }),
@@ -731,7 +870,8 @@ const METAS: ComponentMeta[] = [
       'a picker that adds a principal. The value is the rows — `[{principal, can: {view: true, …}}]`.',
     usage: 'For the access a schema or a table grants (groups × View / Edit / Delete). Inherited rows ' +
       'and locked capabilities are code options; a spec passes the columns and the picker\'s list.',
-    props: inputProps('object', {name: 'capabilities', type: 'string_list', description: 'The columns, in order.'},
+    props: inputProps('object',
+      {name: 'capabilities', type: 'string_list', structural: true, description: 'The columns, in order.'},
       {name: 'principals', type: 'string_list', bindable: true, description: 'What the add picker offers.'},
       {name: 'principalLabel', type: 'string', description: 'The first column\'s header; Group by default.'},
       {name: 'addText', type: 'string', description: 'The picker\'s placeholder.'}),
@@ -768,8 +908,9 @@ const METAS: ComponentMeta[] = [
     usage: 'For the "<weight> <style> <size>px <family>" strings viewer looks carry; anything ' +
       'else that needs a font belongs in CSS.',
     props: inputProps('string',
-      {name: 'families', type: 'string_list', description: 'Families on offer; four defaults otherwise.'},
-      {name: 'sizes', type: 'object', description: 'Sizes in the popup under the size box.'}),
+      {name: 'families', type: 'string_list', structural: true,
+        description: 'Families on offer; four defaults otherwise.'},
+      {name: 'sizes', type: 'object', structural: true, description: 'Sizes in the popup under the size box.'}),
     events: ['change'],
     example: {tag: 'u2-font-input', props: {label: 'Font', value: 'bold normal 14px "Roboto"'}},
   },
@@ -794,12 +935,12 @@ const METAS: ComponentMeta[] = [
     usage: 'For dashboard tiles and item previews; a card grid is a collection of these. ' +
       'A KPI number belongs in `u2-stat-card`; a plain padded area in a panel.',
     props: [
-      {name: 'title', type: 'string'},
-      {name: 'subtitle', type: 'string'},
-      {name: 'icon', type: 'string', inputType: 'Icon'},
-      {name: 'media', type: 'string', description: 'Image URL shown above the body.'},
-      {name: 'clickable', type: 'bool', description: 'The whole card acts as a button.'},
-      {name: 'selectable', type: 'bool', description: 'Click toggles the selection ring.'},
+      {name: 'title', type: 'string', bindable: true},
+      {name: 'subtitle', type: 'string', bindable: true},
+      {name: 'icon', type: 'string', inputType: 'Icon', structural: true},
+      {name: 'media', type: 'string', structural: true, description: 'Image URL shown above the body.'},
+      {name: 'clickable', type: 'bool', structural: true, description: 'The whole card acts as a button.'},
+      {name: 'selectable', type: 'bool', structural: true, description: 'Click toggles the selection ring.'},
       {name: 'selected', type: 'bool', bindable: true, twoWay: true},
     ],
     acceptsChildren: true,
@@ -822,13 +963,13 @@ const METAS: ComponentMeta[] = [
     usage: 'For dashboard metrics. Bind `value` to a source output for live numbers; ' +
       'loading states come from the source, not from this card.',
     props: [
-      {name: 'label', type: 'string'},
+      {name: 'label', type: 'string', bindable: true},
       {name: 'value', type: 'string', bindable: true,
         description: 'Literal values are strings ("1.2M"); a bound signal may hold a number, formatted by the card.'},
       {name: 'delta', type: 'double', bindable: true,
         description: 'Fractional change; 0.12 renders "+12%" in the success color.'},
-      {name: 'deltaInverted', type: 'bool', description: 'Negative is good (error rates).'},
-      {name: 'icon', type: 'string', inputType: 'Icon'},
+      {name: 'deltaInverted', type: 'bool', structural: true, description: 'Negative is good (error rates).'},
+      {name: 'icon', type: 'string', inputType: 'Icon', structural: true},
     ],
     defaults: {label: 'Metric', value: '0'},
     example: {tag: 'u2-stat-card', props: {label: 'Revenue', value: '1.2M', delta: 0.12, icon: 'chart-line'}},
@@ -856,7 +997,7 @@ const METAS: ComponentMeta[] = [
         description: 'The item properties to show, in order; `name:Header` gives a column its own header.'},
       {name: 'items', type: 'object', bindable: true,
         description: 'The records to show — bind a source\'s rows (`$.substances.rows`).'},
-      {name: 'rowHeight', type: 'int', description: 'Row and header height in pixels (default 24).'},
+      {name: 'rowHeight', type: 'int', structural: true, description: 'Row and header height in pixels (default 24).'},
     ],
     defaults: {columns: ['name', 'value']},
     example: {tag: 'u2-data-table', props: {columns: ['name', 'cas:CAS number'],
@@ -891,17 +1032,18 @@ const METAS: ComponentMeta[] = [
       '"Blocked") or owner = @current)`; `mw between 200 and 500`. Prefer `u2-filter-query-input` for a ' +
       'one-line search box; this control for visible criteria rows.',
     props: inputProps('object',
-      {name: 'schema', type: 'object',
+      {name: 'schema', type: 'object', structural: true,
         description: '`{properties: IProperty[], values?: {<name>: scalar[]}}` — what can be filtered on.'},
       {name: 'mode', type: 'string', choices: ['simple', 'advanced'], bindable: true, twoWay: true,
         description: 'simple: one flat and/or group; advanced: nested groups, not, drag handles.'},
-      {name: 'orientation', type: 'string', choices: ['vertical', 'horizontal'],
+      {name: 'orientation', type: 'string', choices: ['vertical', 'horizontal'], structural: true,
         description: 'horizontal lays the rows out inline with a connector chip between them.'},
-      {name: 'template', type: 'object',
+      {name: 'template', type: 'object', structural: true,
         description: '`{root, allowedProperties?, allowedOperators?, allowAdvanced?, allowAdd?}` — locks ' +
           'and limits: `allowAdvanced: false` keeps the builder simple, `allowAdd: false` fixes the rows.'},
-      {name: 'showQuery', type: 'bool', description: 'Footer line with the canonical query string; off by default.'},
-      {name: 'target', type: 'string', choices: ['domain', 'dataframe'],
+      {name: 'showQuery', type: 'bool', structural: true,
+        description: 'Footer line with the canonical query string; off by default.'},
+      {name: 'target', type: 'string', choices: ['domain', 'dataframe'], structural: true,
         description: 'What the tree must be expressible for; validation only.'},
       {name: 'query', type: 'string', bindable: true, description: 'The canonical query string (read-only).'}),
     events: ['change'],
@@ -933,10 +1075,10 @@ const METAS: ComponentMeta[] = [
       '("Open", "Blocked") or owner = @current)`; `mw between 200 and 500`. Prefer `u2-filter-builder` ' +
       'for visible criteria rows; this control for a one-line search box.',
     props: inputProps('object',
-      {name: 'schema', type: 'object',
+      {name: 'schema', type: 'object', structural: true,
         description: '`{properties: IProperty[], values?: {<name>: scalar[]}}` — what can be filtered on.'},
       {name: 'placeholder', type: 'string'},
-      {name: 'target', type: 'string', choices: ['domain', 'dataframe'],
+      {name: 'target', type: 'string', choices: ['domain', 'dataframe'], structural: true,
         description: 'What the tree must be expressible for; validation only.'},
       {name: 'query', type: 'string', bindable: true,
         description: 'The draft text (per keystroke, may be unparsable; read-only).'}),
@@ -958,11 +1100,11 @@ const METAS: ComponentMeta[] = [
     usage: 'For a draft, a flag or a selection that outlives no single control — anything two ' +
       'nodes must agree on. Data that comes from somewhere belongs in a source, not here.',
     props: [
-      {name: 'type', type: 'string',
+      {name: 'type', type: 'string', structural: true,
         choices: ['string', 'int', 'double', 'bool', 'string_list', 'object'],
         description: 'What the value holds; `initial` is checked against it.'},
-      {name: 'initial', type: 'object', description: 'The value it starts at, and what `clear` ' +
-        'returns it to; the type\'s empty value otherwise.'},
+      {name: 'initial', type: 'object', structural: true, description: 'The value it starts at, and what ' +
+        '`clear` returns it to; the type\'s empty value otherwise.'},
     ],
     defaults: {type: 'string'},
     example: {tag: 'u2-state', name: 'draft', props: {type: 'string', initial: ''}},

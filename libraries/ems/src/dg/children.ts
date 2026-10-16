@@ -54,7 +54,8 @@ export class DomainChildren extends Control {
       if (built || parent.state.value !== 'ready')
         return;
       built = true;
-      void this._build(options.tables);
+      // built once and kept: owned by this control, not by the effect run that triggered it
+      void this.runInScope(() => this._build(options.tables));
     });
   }
 

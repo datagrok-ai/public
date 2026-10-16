@@ -10,6 +10,7 @@
         {
           "name": "table",
           "type": "string",
+          "structural": true,
           "description": "The table address, `<schema>.<table>`."
         },
         {
@@ -27,31 +28,37 @@
         {
           "name": "pageSize",
           "type": "int",
+          "structural": true,
           "description": "How many rows one page loads (default 50)."
         },
         {
           "name": "withAccess",
           "type": "bool",
+          "structural": true,
           "description": "Fetch the per-row access columns with every row (default true); the table-level access is always fetched."
         },
         {
           "name": "captions",
           "type": "string_list",
+          "structural": true,
           "description": "Ref columns whose target names ride with the rows; every visible ref column by default."
         },
         {
           "name": "defaults",
           "type": "object",
+          "structural": true,
           "description": "Column values every draft row starts with — a parent's id on a child table."
         },
         {
           "name": "empty",
           "type": "bool",
+          "structural": true,
           "description": "Load no rows; drafts can still be added — a child collection under a draft parent."
         },
         {
           "name": "draft",
           "type": "bool",
+          "structural": true,
           "description": "Load nothing and start on one pristine draft — what a create form binds to."
         },
         {
@@ -88,5 +95,500 @@
         }
       }
     }
-  ]
+  ],
+  "kinds": [
+    {
+      "kind": "domain-app",
+      "noun": "domain app",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "domain-children",
+      "noun": "domain children",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "domain-data-table",
+      "noun": "domain data table",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy",
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "row",
+        "noun": "table row",
+        "gestures": [
+          "select"
+        ]
+      },
+      "gestures": [
+        "select",
+        "scroll"
+      ]
+    },
+    {
+      "kind": "domain-filters",
+      "noun": "domain filters",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "domain-form",
+      "noun": "domain form",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy",
+        "valid",
+        "error"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "domain-grid",
+      "noun": "domain grid",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy",
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "row",
+        "noun": "table row",
+        "gestures": [
+          "select"
+        ]
+      },
+      "gestures": [
+        "select",
+        "scroll"
+      ]
+    },
+    {
+      "kind": "domain-history",
+      "noun": "domain history",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy",
+        "items"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "select"
+        ]
+      },
+      "gestures": [
+        "select"
+      ]
+    },
+    {
+      "kind": "domain-list",
+      "noun": "domain list",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy",
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "select"
+        ]
+      },
+      "gestures": [
+        "select",
+        "scroll"
+      ]
+    },
+    {
+      "kind": "domain-pick",
+      "noun": "domain pick",
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "open",
+        "placeholder"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "type",
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "domain-presets",
+      "noun": "domain presets",
+      "family": "composite",
+      "role": "group",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "value",
+        "current",
+        "items"
+      ],
+      "props": [],
+      "items": {
+        "role": "button",
+        "noun": "button",
+        "gestures": [
+          "press"
+        ]
+      },
+      "gestures": [
+        "pick"
+      ]
+    },
+    {
+      "kind": "domain-search",
+      "noun": "domain search",
+      "family": "input",
+      "focusRole": "textbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "placeholder"
+      ],
+      "props": [],
+      "gestures": [
+        "type",
+        "clear"
+      ]
+    },
+    {
+      "kind": "domain-tree",
+      "noun": "domain tree",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy",
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "treeitem",
+        "noun": "tree node",
+        "gestures": [
+          "select",
+          "expand",
+          "collapse"
+        ]
+      },
+      "gestures": [
+        "select",
+        "expand",
+        "collapse"
+      ]
+    },
+    {
+      "kind": "pick-input",
+      "noun": "pick input",
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "open",
+        "placeholder"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "type",
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "save-button",
+      "noun": "button",
+      "family": "action",
+      "role": "button",
+      "nameFrom": [
+        "text",
+        "aria",
+        "title"
+      ],
+      "parts": {},
+      "state": [
+        "label",
+        "busy",
+        "pressed"
+      ],
+      "props": [],
+      "gestures": [
+        "press"
+      ]
+    },
+    {
+      "kind": "discard-button",
+      "noun": "button",
+      "family": "action",
+      "role": "button",
+      "nameFrom": [
+        "text",
+        "aria",
+        "title"
+      ],
+      "parts": {},
+      "state": [
+        "label",
+        "busy",
+        "pressed"
+      ],
+      "props": [],
+      "gestures": [
+        "press"
+      ]
+    },
+    {
+      "kind": "new-button",
+      "noun": "button",
+      "family": "action",
+      "role": "button",
+      "nameFrom": [
+        "text",
+        "aria",
+        "title"
+      ],
+      "parts": {},
+      "state": [
+        "label",
+        "busy",
+        "pressed"
+      ],
+      "props": [],
+      "gestures": [
+        "press"
+      ]
+    },
+    {
+      "kind": "refresh-button",
+      "noun": "button",
+      "family": "action",
+      "role": "button",
+      "nameFrom": [
+        "text",
+        "aria",
+        "title"
+      ],
+      "parts": {},
+      "state": [
+        "label",
+        "busy",
+        "pressed"
+      ],
+      "props": [],
+      "gestures": [
+        "press"
+      ]
+    },
+    {
+      "kind": "actions-menu",
+      "noun": "dropdown button",
+      "family": "action",
+      "role": "button",
+      "nameFrom": [
+        "aria",
+        "title"
+      ],
+      "parts": {},
+      "state": [
+        "label",
+        "open"
+      ],
+      "props": [],
+      "gestures": [
+        "press",
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "binding-dialog",
+      "noun": "binding dialog",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "binding-edit-dialog",
+      "noun": "binding edit dialog",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "manifest-editor",
+      "noun": "manifest editor",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "manifest-panel",
+      "noun": "manifest panel",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "manifest-tree",
+      "noun": "manifest tree",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": []
+    }
+  ],
+  "kindsVersion": 1
 }

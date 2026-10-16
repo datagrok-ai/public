@@ -25,7 +25,7 @@ host too, over `MemoryFrame` — is what the headless tests and the gallery run.
 | `domains.history(src, row?)` | `DomainHistory`, the entity-page pane over `table.audit(id)`: the current row's (or `row`'s) trail newest first, `caption: before → after` per updated column, system columns skipped, refreshed when the session saves; a draft says "Not saved yet" |
 | `domains.children(src, options?)` | `DomainChildren`, the entity-page pane: one tab per table referring to the source's rows (`tables` narrows), a child `DomainSource` per tab in the parent's session with the FK defaulted to the parent's id (a draft parent → `~new:`, one transaction), `mode: 'grid'` (default) or `'list'` beside a form; rebuilt when the parent's id changes, never mid-save |
 | `domains.saveButton(src \| session)` / `domains.discardButton(src \| session)` / `domains.newButton(src, values?)` | buttons over a `DomainSession` (a source stands for its own): disabled while clean or saving; the session balloons "<Singular> saved" once and emits `onSaved`, so no form is passed around; New adds a pristine draft (`src.newRow`), hidden without `insert` |
-| `registerDomainComponents(reg)` | the `u2-domain-*` tags — `form`, `list`, `pick`, `grid`, `search`, `filters`, `history`, `children` (also run by `registerPlatformComponents`); a control binds to its source whole: `bind: {source: "$.issues.source"}` |
+| `installEms(reg?)` | installs ems into a registry (the global one by default) as one u2 plugin (`emsPlugin`): `u2-domain-source`, the `u2-domain-*` controls — `form`, `list`, `pick`, `grid`, `data-table`, `tree`, `search`, `filters`, `history`, `children` — and `u2-manifest-editor`, plus the spec ambient that joins every source of one spec into one session. Once per registry, whoever calls it again; answers the uninstall. u2's `registerAll`/`registerPlatformComponents` register no domain tag, so a host rendering specs with domain tags calls it before the first render — the placeholder of a missing tag names it. A control binds to its source whole: `bind: {source: "$.issues.source"}`. `registerEmsComponents(reg)` is its deprecated alias; `registerDomainComponents(reg)` adds the controls alone |
 
 The classes (`DomainForm`, `DomainList`, `DomainApp`, …) and the option types are exported beside
 `domains` for subclassing and typing; the factories live on `domains` alone.
@@ -38,7 +38,7 @@ app per tier):
 | Tier | What the author writes | Reference |
 |---|---|---|
 | Zero code | `schema.json` and `(await domains.table(address)).app()` — the app is the schema | Stockroom (`packages/Stockroom`), `docs/recipes/crud-app.md` |
-| Configuration | a `dg-ui/1` spec: `u2-domain-source` + the `u2-domain-*` tags, mounted with `renderSpec`, edited in the designer; phase 4 stores it on the table | Stockroom's `app.spec.json`, `docs/recipes/spec-app.md` |
+| Configuration | a `dg-ui/1` spec: `u2-domain-source` on the tray + the `u2-domain-*` tags, mounted with `renderSpec` after `installEms()`, edited in the designer; phase 4 stores it on the table | Stockroom's `app.spec.json`, `docs/recipes/spec-app.md` |
 | Code | the table's registries (`actions`, `validators`, `renderer`) and a `DomainApp` subclass passed as `app({app})` | Grit (`packages/Grit`) over the generated `getGritDb()`, `docs/recipes/custom-app.md` |
 
 `DomainTable.app(options?: DomainAppViewOptions): DG.ViewBase` builds a `DomainApp` under its own

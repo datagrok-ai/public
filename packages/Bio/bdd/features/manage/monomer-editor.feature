@@ -2,7 +2,8 @@
 Feature: Making and removing a monomer in the Manage Monomers view
   Bio | Manage | Monomers shows the monomers of one library at a time, picked in its Monomer Library
   input, beside an editor: a monomer drawn in the editor's sketcher (its SMILES typed into the
-  sketcher's molecule field, its attachment points as R groups, which fill the R-groups tab) and given
+  sketcher's molecule field, its attachment points as R groups, a row each on the R-groups tab, R1 capped
+  with H and R2 with OH as on an amino acid) and given
   a symbol and a name is written into that library by Save, and the library is reloaded with it;
   Delete removes the current monomer after a confirmation. The sketcher is Crux: the editor keeps the
   sketcher it was made with for the page's life, and with OpenChemLib the typed SMILES did not reach
@@ -38,11 +39,12 @@ Feature: Making and removing a monomer in the Manage Monomers view
     And user types "CC(C)(C)[C@H](N[1*])C([2*])=O" into molecule input of monomer sketcher
     And user presses Enter in molecule input of monomer sketcher
     And user clicks on "R-groups" tab
-    Then the R-groups grid of the monomer form should list "R1, R2"
+    Then "R1" input in monomer form should have value "H"
+    And "R2" input in monomer form should have value "OH"
     When user clicks on "Monomer" tab
     And user enters "BDDTLE" into "Monomer Symbol" input in monomer form
     And user enters "bdd tert-leucine" into "Monomer Name" input in monomer form
-    And user clicks on Save button in monomer form
+    And user clicks on "Add Monomer" button in monomer form
     Then an info balloon containing "Monomer BDDTLE was successfully saved in library bdd-monomer-editor.json" should have been shown
     And "BDDTLE" should be a known "PEPTIDE" monomer
     And the table should have 2 rows

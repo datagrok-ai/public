@@ -335,7 +335,7 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
       const vals = Array.from(el.querySelectorAll('input, select')).map((i: any) => i.value || '').join(' ');
       return `${txt} ${vals}`.includes(name);
     }, setupProbe.macroName as string);
-    expect(seqHost, 'Split to Monomers dialog exposes a Sequence input').toBeVisible();
+    await expect(seqHost, 'Split to Monomers dialog exposes a Sequence input').toBeVisible();
     expect(populated,
       `Split to Monomers Sequence selector must default to the sole Macromolecule column ` +
       `"${setupProbe.macroName}" (bio.md:167)`).toBe(true);

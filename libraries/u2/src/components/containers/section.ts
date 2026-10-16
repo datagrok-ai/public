@@ -22,19 +22,28 @@ export class Section extends Control {
   readonly header: HTMLElement;
   readonly body: HTMLElement;
 
+  private readonly _title: HTMLElement;
+  private readonly _collapsible: boolean;
+
   constructor(options: SectionOptions) {
     super();
     const id = `u2-section-${++sectionCount}`;
     this.root.classList.add('u2-section');
     this.root.dataset.u2 = 'section';
+    this.root.setAttribute('role', 'group');
     this.expanded = options.expanded instanceof Signal ? options.expanded :
       signal(options.expanded !== false);
-    const collapsible = options.collapsible !== false;
-    const title = this.runInScope(() => span(options.title, 'u2-section-title'));
+    const collapsible = this._collapsible = options.collapsible !== false;
+    const title = this._title = this.runInScope(() => span(options.title, 'u2-section-title'));
+    title.id = `${id}-title`;
+    title.dataset.u2Part = 'title';
+    this.root.setAttribute('aria-labelledby', title.id);
     this.header = div([title], 'u2-section-header');
     this.header.id = `${id}-header`;
+    this.header.dataset.u2Part = 'header';
     this.body = div([], 'u2-section-body');
     this.body.id = `${id}-body`;
+    this.body.dataset.u2Part = 'body';
     this.body.setAttribute('role', 'region');
     this.body.setAttribute('aria-labelledby', this.header.id);
     this.root.append(this.header, this.body);
@@ -50,8 +59,8 @@ export class Section extends Control {
     this.header.setAttribute('aria-controls', this.body.id);
     this.header.tabIndex = 0;
     const toggle = () => this.expanded.value = !this.expanded.peek();
-    this._listen(this.header, 'click', toggle);
-    this._listen(this.header, 'keydown', (e) => {
+    this.scope.listen(this.header, 'click', toggle);
+    this.scope.listen(this.header, 'keydown', (e) => {
       const key = (e as KeyboardEvent).key;
       if (key !== 'Enter' && key !== ' ')
         return;
@@ -71,8 +80,13 @@ export class Section extends Control {
     return this;
   }
 
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
+  /** The base state plus whether the body shows (a plain heading's always does). */
+  getState(): ReturnType<Control['getState']> {
+    return {...super.getState(), expanded: !this._collapsible || this.expanded.peek()};
+  }
+
+  /** The title — read off the element, so a section not in the document still has it. */
+  protected accessibleLabel(): string | undefined {
+    return this.root.getAttribute('aria-label') ?? (Control.text(this._title) || undefined);
   }
 }

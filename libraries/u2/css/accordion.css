@@ -66,6 +66,9 @@
   text-overflow: ellipsis;
 }
 
+/* the platform's open pane (.d4-accordion-pane-content.expanded): 2px under the header, 10px over
+   the next one, 20px in, in the grey-5 body colour */
 .u2-accordion-content {
-  padding: 0 0 var(--dg-space-s) var(--dg-space-xxl);
+  padding: 2px 0 10px 20px;
+  color: var(--dg-grey-5);
 }

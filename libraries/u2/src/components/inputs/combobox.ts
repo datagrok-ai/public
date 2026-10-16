@@ -10,15 +10,24 @@
    past the work order's ~15-file / no-framework-glue bar, so the machine is ours: three
    states, typed events, WAI-ARIA 1.2 combobox pattern, and `machineState` exposed for
    getWidgetStatus()-style introspection — the property we wanted from Zag in the first place. */
-import {signal, computed, Signal, ReadonlySignal} from '../../core/signals.js';
+import {signal, computed, untracked, Signal, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
+import {Input} from '../../core/input-base.js';
 import {bindValue} from '../../core/bind.js';
+import {each} from '../../core/region.js';
 import {AsyncSource, AsyncState} from '../../core/async-source.js';
 import {Overlay, OVERLAY_CLOSE_EVENT} from '../../core/overlay.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export interface ComboboxOptions {
   items: string[] | ((query: string, abort: AbortSignal) => Promise<string[]>);
   placeholder?: string;
+  /** The accessible name (`aria-label` on the editor); a combobox shows no caption of its own. */
+  label?: string;
+  /** Enter with the popup closed: handled here, never seen by the form or dialog around. */
+  onEnter?: (e: KeyboardEvent, combobox: Combobox) => void;
+  /** Escape with the popup closed: handled here (instead of clearing the text). */
+  onEscape?: (e: KeyboardEvent, combobox: Combobox) => void;
 }
 
 export type ComboboxState = 'idle' | 'focused' | 'open';
@@ -28,6 +37,8 @@ type ComboboxEvent =
   {type: 'enter'} | {type: 'escape'} | {type: 'tab'} | {type: 'dismiss'} |
   {type: 'select', index: number};
 
+/** Free text with a list of suggestions. `on('change', (value, combobox) => …)` fires on every
+ * value change. */
 export class Combobox extends Control {
   private static _seq = 0;
 
@@ -36,18 +47,26 @@ export class Combobox extends Control {
   readonly machineState: ReadonlySignal<ComboboxState>;
 
   private readonly _id = `u2-combobox-${++Combobox._seq}`;
+  private readonly _options: ComboboxOptions;
   private readonly _input = document.createElement('input');
   private readonly _popup = document.createElement('div');
+  private readonly _list = document.createElement('div');
+  private readonly _status = document.createElement('div');
   private readonly _view: ReadonlySignal<AsyncState<string>>;
   private readonly _source: AsyncSource<string> | undefined;
   private readonly _open = signal(false);
+  /** The popup lists everything, whatever the box holds — until the next keystroke. */
+  private readonly _all = signal(false);
   private readonly _machine = signal<ComboboxState>('idle');
   private readonly _activeIndex = signal(-1);
-  private readonly _optionEls = signal<HTMLElement[]>([]);
+  /** What the popup shows: the ready items while open, nothing while closed. */
+  private readonly _shown: ReadonlySignal<string[]>;
+  private _optionSeq = 0;
   private _closeOverlay: (() => void) | undefined;
 
   constructor(options: ComboboxOptions) {
     super();
+    this._options = options;
     this.isOpen = this._open;
     this.machineState = this._machine;
 
@@ -59,40 +78,106 @@ export class Combobox extends Control {
     input.type = 'text';
     input.autocomplete = 'off';
     input.placeholder = options.placeholder ?? '';
+    input.id = `${this._id}-input`;
     input.setAttribute('role', 'combobox');
     input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-haspopup', 'listbox');
     input.setAttribute('aria-controls', `${this._id}-listbox`);
+    if (options.label)
+      input.setAttribute('aria-label', options.label);
     this.root.append(input);
 
     this._popup.className = 'u2-combobox-popup';
     this._popup.id = `${this._id}-listbox`;
     this._popup.setAttribute('role', 'listbox');
+    this._list.className = 'u2-combobox-options';
+    this._popup.append(this._list, this._status);
 
     if (typeof options.items === 'function') {
       const source = new AsyncSource<string>(options.items);
       this._source = source;
       this._view = source.state;
       this.own(() => source.dispose());
+      this.effect(() => {
+        if (source.state.value.kind === 'loading')
+          this.root.setAttribute('aria-busy', 'true');
+        else
+          this.root.removeAttribute('aria-busy');
+      });
     } else {
       const items = options.items;
       this._view = computed<AsyncState<string>>(() => {
-        const q = this.value.value.toLowerCase();
+        const q = this._all.value ? '' : this.value.value.toLowerCase();
         const matched = q ? items.filter((i) => i.toLowerCase().includes(q)) : items;
         return matched.length > 0 ? {kind: 'ready', items: matched} : {kind: 'empty'};
       });
     }
+    this._shown = computed(() => {
+      const state = this._view.value;
+      return this._open.value && state.kind === 'ready' ? state.items : [];
+    });
 
     bindValue(this.scope, input, this.value);
-    this._listen(input, 'input', () => this._send({type: 'input'}));
-    this._listen(input, 'focus', () => this._send({type: 'focus'}));
-    this._listen(input, 'blur', () => this._send({type: 'blur'}));
-    this._listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
-    this._listen(this._popup, 'pointerdown', (e) => this._onPopupPointerDown(e));
-    this._listen(this._popup, OVERLAY_CLOSE_EVENT, () => this._send({type: 'dismiss'}));
+    this.scope.listen(input, 'input', () => this._send({type: 'input'}));
+    this.scope.listen(input, 'focus', () => this._send({type: 'focus'}));
+    this.scope.listen(input, 'blur', () => this._send({type: 'blur'}));
+    this.scope.listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.scope.listen(this._popup, 'pointerdown', (e) => this._onPopupPointerDown(e));
+    this.scope.listen(this._popup, OVERLAY_CLOSE_EVENT, () => this._send({type: 'dismiss'}));
 
     this.effect(() => input.setAttribute('aria-expanded', String(this._open.value)));
-    this.effect(() => this._renderOptions());
+    this.runInScope(() => each(this._list, this._shown, (item) => item, (item) => this._option(item)));
+    this.effect(() => this._renderStatus());
     this.effect(() => this._applyActive());
+    let initial = true;
+    this.effect(() => {
+      const value = this.value.value;
+      if (initial)
+        initial = false;
+      else
+        untracked(() => this.fireEvent('change', value));
+    });
+  }
+
+  /** Focuses the editor. */
+  focus(): void {
+    this._input.focus();
+  }
+
+  /** The value, the typed text, whether the popup is open, whether an async source is loading. */
+  getState(): ReturnType<Control['getState']> {
+    const placeholder = this._input.placeholder;
+    return {...super.getState(), value: this.value.peek(), text: this._input.value, open: this._open.peek(),
+      busy: this._view.peek().kind === 'loading', ...placeholder ? {placeholder} : {}};
+  }
+
+  /** Every option, not the filtered popup: the given items, or what an async source answered last. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const items = typeof this._options.items === 'function' ? this._lastItems() : this._options.items;
+    const rendered = new Set(this._shown.peek());
+    return Input.itemsState(items.map((item, index) => ({key: item, label: item, index,
+      selected: item === this.value.peek(), rendered: rendered.has(item)})), opts?.all);
+  }
+
+  /** Opens the popup over the whole list (an async source is asked for the empty query) and
+   * resolves to the option's element. */
+  async revealItem(keyOrLabel: string): Promise<HTMLElement | null> {
+    this._all.value = true;
+    if (this._source)
+      this._source.query('');
+    this._openPopup();
+    for (let i = 0; i < 50 && this._view.peek().kind === 'loading'; i++)
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    return super.revealItem(keyOrLabel);
+  }
+
+  protected accessibleLabel(): string | undefined {
+    return super.accessibleLabel() ?? Control.labelOf(this._input) ?? (this._input.placeholder || undefined);
+  }
+
+  private _lastItems(): string[] {
+    const state = this._view.peek();
+    return state.kind === 'ready' ? state.items : [];
   }
 
   private _send(ev: ComboboxEvent): void {
@@ -108,6 +193,7 @@ export class Combobox extends Control {
         break;
       case 'input':
         this._activeIndex.value = -1;
+        this._all.value = false;
         this._refresh();
         this._openPopup();
         break;
@@ -155,6 +241,7 @@ export class Combobox extends Control {
     if (!this._open.peek())
       return;
     this._open.value = false;
+    this._all.value = false;
     this._activeIndex.value = -1;
     if (this._machine.peek() === 'open')
       this._machine.value = 'focused';
@@ -170,22 +257,30 @@ export class Combobox extends Control {
   }
 
   private _move(delta: number): void {
-    const count = this._optionEls.peek().length;
+    const count = this._shown.peek().length;
     if (count === 0)
       return;
     this._activeIndex.value = Math.min(Math.max(this._activeIndex.peek() + delta, 0), count - 1);
   }
 
   private _commit(index: number): void {
-    const state = this._view.peek();
-    if (state.kind !== 'ready' || index < 0 || index >= state.items.length)
+    const items = this._shown.peek();
+    if (index < 0 || index >= items.length)
       return;
-    this.value.value = state.items[index];
+    this.value.value = items[index];
     this._dismiss();
     this._input.focus();
   }
 
   private _onKeyDown(e: KeyboardEvent): void {
+    const open = this._open.peek();
+    const own = e.key === 'Enter' ? this._options.onEnter : e.key === 'Escape' ? this._options.onEscape : undefined;
+    if (own !== undefined && !open && !e.isComposing) {
+      e.preventDefault();
+      e.stopPropagation();
+      own(e, this);
+      return;
+    }
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -196,7 +291,7 @@ export class Combobox extends Control {
         this._send({type: 'arrowUp'});
         break;
       case 'Enter':
-        if (this._open.peek())
+        if (open)
           e.preventDefault();
         this._send({type: 'enter'});
         break;
@@ -215,7 +310,7 @@ export class Combobox extends Control {
     const option = target.closest('.u2-combobox-option') as HTMLElement | null;
     if (option) {
       e.preventDefault();
-      this._send({type: 'select', index: Number(option.dataset.index)});
+      this._send({type: 'select', index: [...this._list.children].indexOf(option)});
       return;
     }
     if (target.closest('.u2-combobox-retry')) {
@@ -225,46 +320,40 @@ export class Combobox extends Control {
     }
   }
 
-  private _renderOptions(): void {
-    const popup = this._popup;
-    if (!this._open.value) {
-      this._optionEls.value = [];
-      return;
-    }
+  /** The row under the options while there are none to show: loading, empty or the error. */
+  private _renderStatus(): void {
+    const status = this._status;
     const state = this._view.value;
-    popup.textContent = '';
-    if (state.kind === 'ready') {
-      const els = state.items.map((item, i) => this._option(item, i));
-      popup.append(...els);
-      this._optionEls.value = els;
+    status.textContent = '';
+    // the row classes set a display, which outranks a bare `hidden`
+    status.className = 'u2-combobox-status';
+    status.hidden = !this._open.value || state.kind === 'ready';
+    if (status.hidden)
       return;
-    }
-    this._optionEls.value = [];
-    if (state.kind === 'empty') {
-      popup.append(Combobox._row('u2-combobox-empty', 'No matches'));
-      return;
-    }
     if (state.kind === 'error') {
-      const row = Combobox._row('u2-combobox-error', state.message);
+      status.className = 'u2-combobox-error';
+      status.textContent = state.message;
       const retry = document.createElement('button');
       retry.className = 'u2-combobox-retry';
       retry.type = 'button';
       retry.textContent = 'Retry';
-      row.append(retry);
-      popup.append(row);
+      status.append(retry);
       return;
     }
-    popup.append(Combobox._row('u2-combobox-loading', 'Loading…'));
+    const empty = state.kind === 'empty';
+    status.className = empty ? 'u2-combobox-empty' : 'u2-combobox-loading';
+    status.textContent = empty ? 'No matches' : 'Loading…';
   }
 
   private _applyActive(): void {
-    const els = this._optionEls.value;
+    const count = this._shown.value.length;
     const active = this._activeIndex.value;
-    for (let i = 0; i < els.length; i++) {
+    const els = this._list.children;
+    for (let i = 0; i < count; i++) {
       els[i].classList.toggle('u2-combobox-option-active', i === active);
       els[i].setAttribute('aria-selected', i === active ? 'true' : 'false');
     }
-    const el = active >= 0 ? els[active] : undefined;
+    const el = active >= 0 && active < count ? els[active] : undefined;
     if (!el) {
       this._input.removeAttribute('aria-activedescendant');
       return;
@@ -273,24 +362,17 @@ export class Combobox extends Control {
     el.scrollIntoView({block: 'nearest'});
   }
 
-  private _option(item: string, i: number): HTMLElement {
-    const el = Combobox._row('u2-combobox-option', item);
-    el.id = `${this._id}-opt-${i}`;
-    el.dataset.index = String(i);
+  /** Built once per item while it stays listed: the id `aria-activedescendant` names stays put. */
+  private _option(item: string): HTMLElement {
+    const el = document.createElement('div');
+    el.className = 'u2-combobox-option';
+    el.id = `${this._id}-opt-${++this._optionSeq}`;
     el.setAttribute('role', 'option');
     el.setAttribute('aria-selected', 'false');
-    return el;
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
-  }
-
-  private static _row(cls: string, text: string): HTMLElement {
-    const el = document.createElement('div');
-    el.className = cls;
-    el.textContent = text;
+    const text = document.createElement('span');
+    text.dataset.u2Part = 'item-label';
+    text.textContent = item;
+    el.append(text);
     return el;
   }
 }

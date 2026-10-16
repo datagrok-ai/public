@@ -10,6 +10,7 @@ import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, Scope} from '../src/index.js';
 import {Form} from '../src/components/forms/form.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
+import {ChoiceInput} from '../src/components/inputs/choice-input.js';
 
 function ui(name, body) {
   test(name, async () => {
@@ -315,10 +316,17 @@ ui('dispose disconnects the ResizeObserver', () => {
   f.dispose();
   assert.equal(observer.disconnected, true);
 
+  // a fixed caption-left layout observes too: built hidden, it aligns its labels once it shows
   const fixed = new Form({layout: 'normal'});
-  assert.equal(ResizeObserver.instances.some((o) => o.targets.includes(fixed.root)), false,
-    'a fixed layout attaches no observer');
+  const fixedObserver = ResizeObserver.instances.find((o) => o.targets.includes(fixed.root));
+  assert.notEqual(fixedObserver, undefined, 'a fixed caption-left layout observes its root');
   fixed.dispose();
+  assert.equal(fixedObserver.disconnected, true);
+
+  const tall = new Form({layout: 'tall'});
+  assert.equal(ResizeObserver.instances.some((o) => o.targets.includes(tall.root)), false,
+    'a tall form has no label column to align');
+  tall.dispose();
 });
 
 // the shim loads no stylesheets — the level-heading cascade is pinned at the source: the l3
@@ -348,4 +356,104 @@ ui('auto survives a missing ResizeObserver (the headless guard)', async () => {
   } finally {
     globalThis.ResizeObserver = saved;
   }
+});
+
+ui('validity skips hidden and disabled inputs (P79); validate() shows every counted verdict', async () => {
+  const f = mount(new Form({layout: 'normal'}));
+  const hidden = new TextInput({label: 'Code', name: 'code', required: true});
+  const off = new TextInput({label: 'Note', name: 'note', required: true, enabled: false});
+  f.addAll([hidden, off]);
+  hidden.visible = false;
+  assert.equal(f.validity.peek(), null);
+  assert.equal(f.validate(), true);
+  hidden.visible = true;
+  assert.notEqual(f.validity.peek(), null, 'shown again, it fails the form');
+  assert.equal(f.validate(), false);
+  f.dispose();
+  hidden.dispose();
+  off.dispose();
+});
+
+ui('choices take the platform width: the longest option plus 30px, measured into --u2-choice-width', async () => {
+  const f = mount(new Form({layout: 'normal'}));
+  const role = new ChoiceInput({label: 'Role', name: 'role', items: ['Viewer', 'Administrator'], value: 'Viewer'});
+  f.add(role);
+  const probes = [];
+  const append = f.root.append.bind(f.root);
+  f.root.append = (el) => {
+    probes.push(el);
+    el.getBoundingClientRect = () => ({width: el.textContent.length * 7});
+    append(el);
+  };
+  await flush();
+  assert.equal(role.root.style.getPropertyValue('--u2-choice-width'), `${'Administrator'.length * 7 + 30}px`);
+  assert.equal(probes.length, 1, 'one probe per pass, removed after');
+  assert.equal(probes[0].parentNode, null);
+  f.dispose();
+  role.dispose();
+});
+
+test('form.css: the auto form keeps ui.form widths in its wide state; the error line stays inside the row', () => {
+  const form = readFileSync(new URL('../css/form.css', import.meta.url), 'utf8');
+  assert.match(form, /\.u2-form-auto\.u2-form-wide \.u2-input-root:not\(\.u2-input-fill\)\[data-u2='choice-input'\] select\.u2-input-editor/);
+  assert.match(form, /width: var\(--u2-choice-width, 200px\);/);
+  assert.match(form, /\.u2-form-auto\.u2-form-wide \.u2-input-root:not\(\.u2-input-fill\) \.u2-input-editor\.u2-number/);
+  const inputs = readFileSync(new URL('../css/inputs.css', import.meta.url), 'utf8');
+  const at = inputs.indexOf('\n.u2-input-error {');
+  const error = inputs.slice(at, inputs.indexOf('}', at));
+  assert.match(error, /box-sizing: border-box;/, 'the form indents it by padding, inside its 100% basis');
+});
+
+ui('Form.fitChoices: a dialog body that lays inputs out as a form measures its choices the same way', async () => {
+  const host = document.createElement('div');
+  document.body.append(host);
+  const stage = new ChoiceInput({label: 'Stage', name: 'stage', items: ['I', 'Preclinical'], value: 'I'});
+  const name = new TextInput({label: 'Name', name: 'name'});
+  host.append(stage.root, name.root);
+  const append = host.append.bind(host);
+  host.append = (el) => {
+    el.getBoundingClientRect = () => ({width: el.textContent.length * 7});
+    append(el);
+  };
+  Form.fitChoices(host, [stage.root, name.root]);
+  assert.equal(stage.root.style.getPropertyValue('--u2-choice-width'), `${'Preclinical'.length * 7 + 30}px`);
+  assert.equal(name.root.style.getPropertyValue('--u2-choice-width'), '', 'only choices are measured');
+  stage.dispose();
+  name.dispose();
+});
+
+// the shim cannot lay out: the platform's form widths are pinned at the source
+test('form.css / choice.css / inputs.css: the platform form widths hold in every host', () => {
+  const form = readFileSync(new URL('../css/form.css', import.meta.url), 'utf8');
+  const choice = readFileSync(new URL('../css/choice.css', import.meta.url), 'utf8');
+  const inputs = readFileSync(new URL('../css/inputs.css', import.meta.url), 'utf8');
+  const block = (sheet, selector) => {
+    const at = sheet.indexOf(selector);
+    assert.notEqual(at, -1, `${selector} is a rule`);
+    return sheet.slice(sheet.indexOf('{', at) + 1, sheet.indexOf('}', at));
+  };
+  const grow = ':not(.u2-multi-choice):not(.u2-radio):not(.u2-image)';
+  assert.match(block(form, `.u2-form .u2-input-box > div.u2-input-editor${grow}`), /flex-grow: 1;/,
+    'a normal-state form (dialog-hosted, nested) grows its div editors, as ui.form does');
+  assert.ok(form.includes(`.u2-dialog-content > .u2-input-root > .u2-input-box > div.u2-input-editor${grow}`),
+    'and so does a u2 Dialog body');
+  assert.match(block(form, '.ui-form .ui-input-root > .u2-input-box:has(> input.u2-input-editor)'), /flex: 1;/,
+    'a box bridged into a platform form or dialog grows like the platform text editor');
+  assert.match(block(form, '.u2-form-wide .u2-input-root[data-u2=\'multi-choice-input\'] .u2-input-editor'), /flex: none;/,
+    'the wide form\'s list exception keeps no 0 basis');
+  assert.match(block(form, '.u2-form:not(.u2-form-tall) .u2-input-error'),
+    /padding-left: calc\(var\(--u2-form-label-width, 100px\) \+ var\(--dg-space-m\)\);/, 'the verdict starts under the editor');
+  assert.match(block(choice, ':where([data-u2=\'choice-input\'] > .u2-input-box) > select.u2-input-editor'),
+    /width: var\(--u2-choice-width, 200px\);/, 'the measured choice width travels with the input');
+  assert.match(block(choice, 'div.u2-input-editor.u2-multi-choice'), /min-width: 150px;/);
+  assert.match(block(inputs, '\n.u2-input-editor.u2-columns {'), /min-width: 100px;/);
+});
+
+ui('the auto layout marks itself, so the platform widths hold in its wide state', async () => {
+  const auto = new Form();
+  assert.equal(auto.root.classList.contains('u2-form-auto'), true);
+  const wide = new Form({layout: 'wide'});
+  assert.equal(wide.root.classList.contains('u2-form-auto'), false);
+  auto.dispose();
+  wide.dispose();
 });

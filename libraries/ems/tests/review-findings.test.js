@@ -26,7 +26,10 @@ const HOOK = 'data:text/javascript,' + encodeURIComponent(`
 import {existsSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 export async function resolve(specifier, context, next) {
-  try { return await next(specifier, context); }
+  try {
+    const r = await next(specifier, context);
+    return r.url.includes('/js-api/dist/') && r.url.endsWith('.js') ? {...r, format: 'module'} : r;
+  }
   catch (e) {
     if (!specifier.startsWith('.') && !specifier.startsWith('/'))
       return next(specifier + '/index.js', context);

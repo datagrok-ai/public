@@ -1,6 +1,13 @@
 # API Tests changelog
 
+## v.next
+
+* GROK-21087: Read rows without a backing item as empty and create the item on edit
+* GROK-21058: Resolve renderers of grid-less value cells without dereferencing a null grid column
+
 ## 1.10.3 (WIP)
+
+U2: `u2/u2.ts` covers `DG.U2.debug` snapshot/diff, `Scope.bind` after dispose, `DG.U2.state` of a control, the state a `DG.Widget` status carries, and `Widget.onEvent` seeing `fireEvent`
 
 Domains: new `Dapi: domain editing` (6 cases over a throwaway binding cloned from the `extwlive` fixture — the access snapshot's shape and tokens; access deltas in a dry run and a commit, idempotent on repeat, restrict and unrestrict; a stale `ifVersion` and a stale `ifIncarnation` after delete + re-create as typed conflicts; an Edit-only editor's `null` snapshot and `access-forbidden`; the schema-scoped `draft()` gated by the connection share; self-skipping without the fixture or the privilege); `Dapi: domain live` and `Dapi: domain hierarchy` send the required `ifVersion` on their fixture apply
 

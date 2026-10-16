@@ -195,7 +195,7 @@ scoped('connection › design › review › created: draft, dry run, create, re
   await pick(editor.panel.root.querySelector('[data-u2-name="visibleTo"] .u2-typeahead input'), 'sam');
   assert.deepEqual(editor.access.visibilityOf('orders', 'freight'), [SALES, {id: 'u-sam', label: 'Sam Sales'}],
     'a user through the personal group');
-  assert.deepEqual(editor.panel.root.querySelectorAll('.u2-chip').map((c) => c.textContent), ['Sales', 'Sam Sales']);
+  assert.deepEqual(editor.panel.root.querySelectorAll('.u2-chips-chip').map((c) => c.textContent), ['Sales', 'Sam Sales']);
   editor.access.setVisibility('orders', 'freight', [SALES]);
   assert.equal(buttonNamed('NEXT').disabled, false);
 

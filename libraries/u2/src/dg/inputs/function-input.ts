@@ -24,17 +24,31 @@ export interface FunctionInputOptions extends InputOptions<string> {
  * the anchor leaving the DOM close without a write. The editor renders the platform icon and
  * friendly name where the value resolves in the client registry, the raw string where it doesn't. */
 export class FunctionInput extends Input<string, FunctionInputOptions> {
-  private _control!: HTMLElement;
-  private _popup?: Scope;
+  private declare _control: HTMLElement;
+  private declare _name: HTMLElement;
+  private declare _popup?: Scope;
 
   constructor(options: FunctionInputOptions = {}) {
     super(options, '');
     this.root.dataset.u2 = 'function-input';
   }
 
+  /** The prompt is the placeholder; the text is empty until a function is picked. */
+  getState(): ReturnType<Input<string>['getState']> {
+    return {...super.getState(), open: this._popup !== undefined, placeholder: this._prompt};
+  }
+
+  protected displayText(): string {
+    return this.value.peek() === '' ? '' : this._name.textContent ?? '';
+  }
+
+  private get _prompt(): string {
+    return this.options.placeholder ?? 'Pick a function…';
+  }
+
   protected createEditor(): HTMLElement {
     const icon = span('', 'u2-function-input-icon');
-    const name = span('', 'u2-function-input-name');
+    const name = this._name = span('', 'u2-function-input-name');
     const control = this._control = div([icon, name], 'u2-function-input');
     control.tabIndex = 0;
     for (const [k, v] of [['role', 'button'], ['aria-haspopup', 'listbox'], ['aria-expanded', 'false']])
@@ -46,17 +60,17 @@ export class FunctionInput extends Input<string, FunctionInputOptions> {
       const glyph = func ? funcIcon(func) : null;
       icon.replaceChildren(...(glyph ? [glyph] : []));
       icon.hidden = glyph === null;
-      name.textContent = value === '' ? (this.options.placeholder ?? 'Pick a function…') :
-        (func?.friendlyName || value);
+      name.textContent = value === '' ? this._prompt : (func?.friendlyName || value);
       name.classList.toggle('u2-function-input-empty', value === '');
       name.title = value; // not the editor's own title — the base owns that for validity messages
     });
-    control.addEventListener('click', () => this._toggle());
-    control.addEventListener('keydown', (e) => {
-      const clear = (e.key === 'Backspace' || e.key === 'Delete') && this.nullable;
+    this.scope.listen(control, 'click', () => this._toggle());
+    this.scope.listen(control, 'keydown', (e) => {
+      const key = (e as KeyboardEvent).key;
+      const clear = (key === 'Backspace' || key === 'Delete') && this.nullable;
       if (clear)
         this.value.value = '';
-      else if (e.key === 'Enter' || e.key === ' ')
+      else if (key === 'Enter' || key === ' ')
         this._toggle();
       else
         return;
@@ -88,13 +102,13 @@ export class FunctionInput extends Input<string, FunctionInputOptions> {
       const popup = div([browser.root], 'u2-function-input-popup');
       // one click picks: the row carries the qualified name it renders, so the commit never
       // depends on the browser's selection effects having flushed
-      popup.addEventListener('click', (e) => {
+      scope.listen(popup, 'click', (e) => {
         const picked = (e.target as Element | null)?.closest('[data-u2-func]')
           ?.getAttribute('data-u2-func');
         if (picked)
           commit(picked);
       });
-      popup.addEventListener(OVERLAY_CLOSE_EVENT, () => this._close());
+      scope.listen(popup, OVERLAY_CLOSE_EVENT, () => this._close());
       Overlay.show(this._control, popup, scope);
       this._control.setAttribute('aria-expanded', 'true');
       browser.root.querySelector<HTMLElement>('input')?.focus();
