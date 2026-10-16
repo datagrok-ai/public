@@ -4,11 +4,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {MonomerCollection, IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
-import {HelmType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
-import {MonomerSelectionWidget} from '@datagrok-libraries/bio/src/utils/monomer-selection-dialog';
 
 import {MonomerLibManager} from './lib-manager';
+import {CollectionDialogs} from './collection-dialogs';
+import {Control} from '@datagrok-libraries/u2';
+import type {MonomerCollectionsView} from './monomer-collections-view';
 import {SEM_TYPES} from '../constants';
 import {_package} from '../../package';
 
@@ -58,7 +60,7 @@ export class MonomerCollectionHandler extends DG.ObjectHandler<MonomerCollection
   private renderSingleProperties(info: MonomerCollectionInfo): HTMLElement {
     const acc = ui.accordion('Monomer Collection');
     const currentUser = DG.User.current().login;
-    const isOwner = info.data.updatedBy === currentUser;
+    const isOwner = CollectionDialogs.canEdit(info.data, currentUser);
 
     // Details pane
     acc.addPane('Details', () => {
@@ -114,13 +116,13 @@ export class MonomerCollectionHandler extends DG.ObjectHandler<MonomerCollection
 
       const editBtn = ui.button('Edit', async () => {
         if (isOwner) await this.editCollection(info);
-      }, isOwner ? 'Edit this collection' : 'Only the author can edit');
+      }, CollectionDialogs.notEditable(info.data, currentUser) ?? 'Edit this collection');
       if (!isOwner) MonomerCollectionHandler.disableButton(editBtn);
       actions.push(editBtn);
 
       const deleteBtn = ui.button('Delete', async () => {
         if (isOwner) await this.deleteCollection(info);
-      }, isOwner ? 'Delete this collection' : 'Only the author can delete');
+      }, CollectionDialogs.notEditable(info.data, currentUser) ?? 'Delete this collection');
       if (!isOwner) MonomerCollectionHandler.disableButton(deleteBtn);
       actions.push(deleteBtn);
 
@@ -139,7 +141,7 @@ export class MonomerCollectionHandler extends DG.ObjectHandler<MonomerCollection
   private renderMultiProperties(items: MonomerCollectionInfo[]): HTMLElement {
     const acc = ui.accordion('Monomer Collections');
     const currentUser = DG.User.current().login;
-    const allOwned = items.every((c) => c.data.updatedBy === currentUser);
+    const allOwned = items.every((c) => CollectionDialogs.canEdit(c.data, currentUser));
 
     // Summary pane
     acc.addPane('Selection', () => {
@@ -158,9 +160,9 @@ export class MonomerCollectionHandler extends DG.ObjectHandler<MonomerCollection
         await this.mergeCollections(items);
       }, 'Merge selected collections into one'));
 
-      const deleteAllBtn = ui.button('Delete All', async () => {
+      const deleteAllBtn = ui.button(`Delete ${items.length} Collections`, async () => {
         if (allOwned) await this.deleteMultipleCollections(items);
-      }, allOwned ? 'Delete all selected collections' : 'Only the author can delete (you must be author of all)');
+      }, MonomerCollectionHandler._notAllEditable(items, currentUser) ?? 'Delete the selected collections');
       if (!allOwned) MonomerCollectionHandler.disableButton(deleteAllBtn);
       actions.push(deleteAllBtn);
 
@@ -173,143 +175,42 @@ export class MonomerCollectionHandler extends DG.ObjectHandler<MonomerCollection
   // -- Actions --
 
   private async editCollection(info: MonomerCollectionInfo): Promise<void> {
-    // Find existing view and trigger edit
-    const view = Array.from(grok.shell.views).find((v) => v.name === 'Monomer Collections');
-    if (view && (view as any)._mcView) {
-      const mcView = (view as any)._mcView as import('./monomer-collections-view').MonomerCollectionsView;
-      mcView.editCollectionPublic(info.name, info.data);
-    } else {
-      // Fallback: open the edit dialog directly
-      const libHelper = await MonomerLibManager.getInstance();
-      await libHelper.awaitLoaded();
-      const monomerLib = libHelper.getMonomerLib();
-      this.showEditDialog(info, libHelper, monomerLib!);
+    const view = MonomerCollectionHandler._view();
+    if (view !== null) {
+      view.editCollectionPublic(info.name, info.data);
+      return;
     }
-  }
-
-  private showEditDialog(info: MonomerCollectionInfo, libHelper: MonomerLibManager, monomerLib: IMonomerLib): void {
-    const polymerTypes: PolymerType[] = ['PEPTIDE', 'RNA', 'CHEM'];
-    const nameInput = ui.input.string('Name', {value: info.displayName, nullable: false});
-    const descInput = ui.input.string('Description', {value: info.data.description ?? '', nullable: true});
-    const tagsInput = ui.input.string('Tags', {value: (info.data.tags ?? []).join(', '), nullable: true, placeholder: 'Comma-separated tags'});
-    const polymerTypeInput = ui.input.choice('Polymer Type', {items: [...polymerTypes], value: 'PEPTIDE', nullable: false});
-    const monomerWidget = new MonomerSelectionWidget(monomerLib, polymerTypeInput.value as PolymerType, [...(info.data.monomerSymbols ?? [])], libHelper);
-
-    // eslint-disable-next-line rxjs/no-ignored-subscription
-    polymerTypeInput.onChanged.subscribe(() => monomerWidget.setPolymerType(polymerTypeInput.value as PolymerType));
-
-    const dlg = ui.dialog({title: `Edit Collection: ${info.displayName}`})
-      .add(ui.divV([nameInput, descInput, tagsInput, polymerTypeInput, ui.element('hr'), monomerWidget.root]))
-      .onOK(async () => {
-        const name = nameInput.value?.trim();
-        if (!name) { grok.shell.warning('Collection name is required'); return; }
-        const selectedMonomers = monomerWidget.getSelectedMonomers();
-        if (selectedMonomers.length === 0) { grok.shell.warning('Please select at least one monomer'); return; }
-        const tags = this.parseTags(tagsInput.value);
-        try {
-          if (name !== info.displayName)
-            await libHelper.deleteMonomerCollection(info.name);
-          await libHelper.addOrUpdateMonomerCollection(name, selectedMonomers, descInput.value ?? undefined, tags.length > 0 ? tags : undefined);
-          grok.shell.info(`Collection "${name}" saved successfully`);
-          await this.refreshView();
-        } catch (err: any) {
-          grok.shell.error('Error saving collection');
-        }
-      })
-      .show({resizable: true});
-    dlg.root.style.width = '550px';
-    monomerWidget.focus();
+    const libHelper = await MonomerLibManager.getInstance();
+    await libHelper.awaitLoaded();
+    await CollectionDialogs.edit(libHelper, libHelper.getMonomerLib(), info, () => this.refreshView());
   }
 
   private async deleteCollection(info: MonomerCollectionInfo): Promise<void> {
-    ui.dialog({title: 'Delete Collection'})
-      .add(ui.divText(`Are you sure you want to delete "${info.displayName}"?`))
-      .onOK(async () => {
-        try {
-          const libHelper = await MonomerLibManager.getInstance();
-          await libHelper.deleteMonomerCollection(info.name);
-          grok.shell.info(`Collection "${info.displayName}" deleted`);
-          await this.refreshView();
-        } catch (err: any) {
-          grok.shell.error('Error deleting collection');
-        }
-      })
-      .show();
+    CollectionDialogs.delete(await MonomerLibManager.getInstance(), [info], () => this.refreshView());
   }
 
   private async duplicateCollection(info: MonomerCollectionInfo): Promise<void> {
-    const nameInput = ui.input.string('New Name', {value: `${info.displayName} (copy)`, nullable: false});
-    ui.dialog({title: 'Duplicate Collection'})
-      .add(nameInput)
-      .onOK(async () => {
-        const name = nameInput.value?.trim();
-        if (!name) { grok.shell.warning('Name is required'); return; }
-        try {
-          const libHelper = await MonomerLibManager.getInstance();
-          await libHelper.addOrUpdateMonomerCollection(name, [...info.data.monomerSymbols], info.data.description, info.data.tags ? [...info.data.tags] : undefined);
-          grok.shell.info(`Collection "${name}" created`);
-          await this.refreshView();
-        } catch (err: any) {
-          grok.shell.error('Error duplicating collection');
-        }
-      })
-      .show();
+    await CollectionDialogs.duplicate(await MonomerLibManager.getInstance(), info, () => this.refreshView());
   }
 
   private async mergeCollections(items: MonomerCollectionInfo[]): Promise<void> {
-    const nameInput = ui.input.string('Merged Name', {value: 'Merged Collection', nullable: false});
-    const descInput = ui.input.string('Description', {nullable: true, placeholder: 'Optional description'});
-    ui.dialog({title: `Merge ${items.length} Collections`})
-      .add(ui.divV([
-        ui.divText(`Merging: ${items.map((c) => c.displayName).join(', ')}`),
-        nameInput,
-        descInput,
-      ]))
-      .onOK(async () => {
-        const name = nameInput.value?.trim();
-        if (!name) { grok.shell.warning('Name is required'); return; }
-        try {
-          const allSymbols = [...new Set(items.flatMap((c) => c.data.monomerSymbols))];
-          const allTags = [...new Set(items.flatMap((c) => c.data.tags ?? []))];
-          const libHelper = await MonomerLibManager.getInstance();
-          await libHelper.addOrUpdateMonomerCollection(name, allSymbols, descInput.value ?? undefined, allTags.length > 0 ? allTags : undefined);
-          grok.shell.info(`Merged collection "${name}" created with ${allSymbols.length} monomers`);
-          await this.refreshView();
-        } catch (err: any) {
-          grok.shell.error('Error merging collections');
-        }
-      })
-      .show();
+    await CollectionDialogs.merge(await MonomerLibManager.getInstance(), items, () => this.refreshView());
   }
 
   private async deleteMultipleCollections(items: MonomerCollectionInfo[]): Promise<void> {
-    ui.dialog({title: 'Delete Collections'})
-      .add(ui.divText(`Are you sure you want to delete ${items.length} collections?\n${items.map((c) => c.displayName).join(', ')}`))
-      .onOK(async () => {
-        try {
-          const libHelper = await MonomerLibManager.getInstance();
-          for (const item of items)
-            await libHelper.deleteMonomerCollection(item.name);
-          grok.shell.info(`${items.length} collections deleted`);
-          await this.refreshView();
-        } catch (err: any) {
-          grok.shell.error('Error deleting collections');
-        }
-      })
-      .show();
+    CollectionDialogs.delete(await MonomerLibManager.getInstance(), items, () => this.refreshView());
   }
 
   private async refreshView(): Promise<void> {
-    const view = Array.from(grok.shell.views).find((v) => v.name === 'Monomer Collections');
-    if (view && (view as any)._mcView) {
-      const mcView = (view as any)._mcView as import('./monomer-collections-view').MonomerCollectionsView;
-      await mcView.refresh();
-    }
+    await MonomerCollectionHandler._view()?.refresh();
   }
 
-  private parseTags(input: string | null): string[] {
-    if (!input) return [];
-    return input.split(',').map((t) => t.trim()).filter((t) => t.length > 0);
+  /** The open Monomer Collections view, if any — found from the view's root: the platform hands out a new
+   * wrapper for a view each time, so nothing stored on one is there the next. */
+  private static _view(): MonomerCollectionsView | null {
+    const view = Array.from(grok.shell.views).find((v) => v.name === 'Monomer Collections');
+    const root = view?.root.querySelector<HTMLElement>('.monomer-collections-view');
+    return root ? (Control.forElement(root) as MonomerCollectionsView | undefined) ?? null : null;
   }
 
   /** Gets the current monomer lib (synchronous, returns null if not loaded). */
@@ -338,22 +239,28 @@ export class MonomerCollectionHandler extends DG.ObjectHandler<MonomerCollection
   /** Builds a context menu for a single collection. */
   static buildContextMenu(menu: DG.Menu, info: MonomerCollectionInfo, handler: MonomerCollectionHandler): void {
     const currentUser = DG.User.current().login;
-    const isOwner = info.data.updatedBy === currentUser;
+    const isOwner = CollectionDialogs.canEdit(info.data, currentUser);
 
     menu.item('Edit', () => { if (isOwner) handler.editCollection(info); }, null,
-      {isEnabled: () => isOwner ? null : 'Only the author can edit'});
+      {isEnabled: () => CollectionDialogs.notEditable(info.data, currentUser)});
     menu.item('Delete', () => { if (isOwner) handler.deleteCollection(info); }, null,
-      {isEnabled: () => isOwner ? null : 'Only the author can delete'});
+      {isEnabled: () => CollectionDialogs.notEditable(info.data, currentUser)});
     menu.item('Duplicate', () => handler.duplicateCollection(info));
   }
 
   /** Builds a context menu for multiple collections. */
   static buildMultiContextMenu(menu: DG.Menu, items: MonomerCollectionInfo[], handler: MonomerCollectionHandler): void {
     const currentUser = DG.User.current().login;
-    const allOwned = items.every((c) => c.data.updatedBy === currentUser);
+    const allOwned = items.every((c) => CollectionDialogs.canEdit(c.data, currentUser));
 
     menu.item('Merge', () => handler.mergeCollections(items));
-    menu.item('Delete All', () => { if (allOwned) handler.deleteMultipleCollections(items); }, null,
-      {isEnabled: () => allOwned ? null : 'Only the author can delete (you must be author of all)'});
+    menu.item(`Delete ${items.length} Collections`, () => { if (allOwned) handler.deleteMultipleCollections(items); },
+      null, {isEnabled: () => MonomerCollectionHandler._notAllEditable(items, currentUser)});
+  }
+
+  /** Why one of `items` keeps the selection from being changed, naming it, or null. */
+  private static _notAllEditable(items: MonomerCollectionInfo[], user: string): string | null {
+    const locked = items.find((c) => !CollectionDialogs.canEdit(c.data, user));
+    return locked === undefined ? null : `Only ${locked.data.updatedBy} can change ${locked.displayName}`;
   }
 }

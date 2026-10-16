@@ -116,7 +116,9 @@ export function each<T>(host: HTMLElement, items: ReadonlySignal<readonly T[]> |
 }
 
 /** A conditional region: `build` (own scope) while `when` is true, `otherwise` (own scope) while it
- * is false; each is built when its branch is entered and disposed when it is left. */
+ * is false; each is built when its branch is entered and disposed when it is left. Only a flip rebuilds:
+ * content that must follow a value (a record that changes) is `each(host, () => [value], keyOf, build)`
+ * with a key that changes with it. */
 export function show(host: HTMLElement, when: ReadonlySignal<boolean> | (() => boolean),
   build: () => HTMLElement, otherwise?: () => HTMLElement): void {
   const scope = owner('show');

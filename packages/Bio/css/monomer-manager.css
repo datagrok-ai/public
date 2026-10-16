@@ -71,74 +71,252 @@
     flex-wrap: nowrap !important;
 }
 
-/* the editor docked left of the grid: library, sketcher and tabs scroll as one column above Save */
+/* a size container: the sketcher's share is taken from the editor's own height, not the window's */
 .monomer-manager-editor {
-    display: flex;
-    flex-direction: column;
+    container: monomer-editor / size;
     height: 100%;
-    padding: 0 10px;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
-.monomer-manager-editor-body {
+/* four rows: the library; the sketcher, taking the height the fields leave, down to its floor (40% of the
+   editor, 300-480px: under 300 the sketcher folds its own toolbars); the fields at their own height, scrolling past that floor; Save, pinned at the bottom.
+   One left edge for all of them: the forms inside add no inset of their own */
+.monomer-manager-editor-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(clamp(300px, 40cqh, 480px), 1fr) minmax(0, max-content) auto;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 0 12px;
+}
+
+/* in a wide dock the rows stop at 640px, so a name stays near its symbol and a + by its value */
+.monomer-manager-library,
+.monomer-manager-fields > .u2-form-rows,
+.monomer-manager-save {
+    max-width: 640px;
+}
+
+.monomer-manager-library {
+    padding: 4px 0;
+}
+
+/* the sketcher sizes itself to 100% of its host: the grid row is that host */
+.monomer-manager-sketcher {
+    min-height: 0;
+}
+
+/* the fields scroll on their own — the canvas takes the wheel for its zoom, so it never sits in a scroller.
+   A reversed column keeps the scroll at the bottom, by Save: what opens pushes the rows above it up */
+.monomer-manager-scroller {
     display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
+    flex-direction: column-reverse;
     min-height: 0;
     overflow-y: auto;
 }
 
-/* the sketcher sizes itself to 100% of its host; here it keeps a drawing-sized block */
-.monomer-manager-editor-body > .monomer-manager-sketcher {
-    flex: 0 0 auto;
-    height: clamp(240px, 45vh, 460px) !important;
+/* rows scrolled away above fade out at the top edge: the identity is up there */
+.monomer-manager-scroller.monomer-manager-more-above {
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 24px);
+    mask-image: linear-gradient(to bottom, transparent, #000 24px);
 }
 
-/* one label column for the library, the Monomer, Meta and Colors tabs and Save: switching tabs moves no input */
-.monomer-manager-editor .u2-form {
-    --u2-form-label-width: 110px !important;
-}
-
-/* inset as the tab content is, so the library, the tabs' inputs and Save start in one column */
-.monomer-manager-library {
-    padding: 4px var(--dg-space-m);
-}
-
-.monomer-manager-editor-body > .u2-tabs {
-    flex: 0 0 auto;
-}
-
-.monomer-manager-save {
+.monomer-manager-fields {
+    container: monomer-fields / inline-size;
     flex: none;
-    padding: 0 var(--dg-space-m) 10px;
+    max-width: none;
+    padding: 8px 0 4px;
 }
 
-/* once the dock is too narrow for captions beside inputs, Save starts at the left edge with them */
-.monomer-manager-editor:has(.monomer-manager-library.u2-form-tall) .monomer-manager-save .u2-form-buttons-editors {
-    padding-left: 0;
+/* air between the groups — the identity, the R groups and Details — over the 8px between rows */
+.monomer-manager-fields > .u2-form-rows > .monomer-manager-rgroups {
+    padding: 8px 0 4px;
 }
 
+/* Save, what it does or why it cannot yet, and the Details toggle: the form's button row, pinned at the bottom */
+.monomer-manager-save {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+    margin: 0;
+    padding: 8px 0 12px;
+}
+
+.monomer-manager-save > .u2-btn {
+    flex: none;
+}
+
+.monomer-manager-save > .u2-status-line {
+    flex: 1 1 0;
+}
+
+.monomer-manager-save > .u2-section-header {
+    flex: none;
+    height: 28px;
+    margin-left: auto;
+    padding: 0 6px 0 8px;
+    border-radius: var(--dg-radius);
+    font-weight: 500;
+    color: var(--grey-6);
+}
+
+.monomer-manager-save > .u2-section-header:hover {
+    background: var(--dg-hover-subtle);
+}
+
+/* Details opens above the row: the chevron points up while it is folded */
+.monomer-manager-save > .u2-section-header.u2-section-chevron-end > .u2-section-chevron {
+    transform: rotate(180deg);
+}
+
+.monomer-manager-save > .u2-section-header.u2-section-chevron-end[aria-expanded='true'] > .u2-section-chevron {
+    transform: none;
+}
+
+/* a narrow dock: the line takes a row of its own under Save and Details */
+@container monomer-editor (max-width: 364px) {
+    .monomer-manager-save > .u2-status-line {
+        order: 3;
+        flex-basis: 100%;
+    }
+}
+
+.monomer-manager-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    vertical-align: middle;
+}
+
+.monomer-manager-color-dot {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px var(--grey-3);
+}
+
+.monomer-manager-summary-count:not(:empty) {
+    min-width: 16px;
+    height: 16px;
+    margin-left: 3px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    background: var(--grey-1);
+    font-size: var(--dg-font-size-xs);
+    line-height: 16px;
+    text-align: center;
+    color: var(--grey-5);
+}
+
+.monomer-manager-details > .u2-section-body {
+    padding-top: 4px;
+}
+
+/* the R groups: chips that wrap, small and all alike, a row's height held so drawing R1 and R2 on a new
+   monomer moves nothing; under them, the row of the one opened */
+.monomer-rgroups-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-height: 24px;
+}
+
+.monomer-rgroup-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    box-sizing: border-box;
+    min-width: 64px;
+    height: 24px;
+    padding: 0 8px 0 10px;
+    font: inherit;
+    color: var(--grey-6);
+    background: var(--grey-1);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.monomer-rgroup-chip:hover {
+    background: var(--grey-2);
+}
+
+.monomer-rgroup-chip:focus-visible {
+    outline: 1px solid var(--blue-1);
+}
+
+.monomer-rgroup-chip[aria-expanded='true'] {
+    background: var(--dg-bg);
+    border-color: var(--blue-1);
+}
+
+.monomer-rgroup-chip-label {
+    font-size: var(--dg-font-size-small);
+    color: var(--grey-4);
+}
+
+.monomer-rgroup-chip-cap {
+    font-weight: 500;
+}
+
+/* the caret says the chip opens — upward, its row above the chips — and turns while the row is open */
+.monomer-rgroup-chip-caret.u2-icon {
+    margin-left: auto;
+    font-size: 9px;
+    color: var(--grey-4);
+    transform: rotate(180deg);
+    transition: transform 100ms ease;
+}
+
+.monomer-rgroup-chip[aria-expanded='true'] > .monomer-rgroup-chip-caret {
+    transform: none;
+}
+
+.monomer-rgroup-chip-invalid,
+.monomer-rgroup-chip-invalid:hover {
+    background: var(--red-1);
+}
+
+.monomer-rgroup-chip-invalid[aria-expanded='true'] {
+    border-color: var(--red-3);
+}
+
+.monomer-rgroup-chip-invalid .monomer-rgroup-chip-cap {
+    color: var(--red-3);
+}
 
 .monomer-rgroups-empty {
+    font-size: var(--dg-font-size-small);
     color: var(--grey-4);
+}
+
+/* the structure's own problem says what to do; the empty line would contradict it */
+.monomer-rgroups-structure:not([hidden]) ~ .monomer-rgroups-chips .monomer-rgroups-empty {
+    display: none;
 }
 
 .monomer-rgroups-structure {
     display: block;
-    margin-bottom: 8px;
+    padding-bottom: 4px;
+    font-size: var(--dg-font-size-small);
     color: var(--red-3);
 }
 
-/* an R group: its cap as a short choice, what the cap is, and the pencil */
 .monomer-rgroups-editor > .u2-form {
-    --u2-form-label-width: 28px !important;
+    max-width: none;
 }
 
-.monomer-rgroups-editor .u2-input-root[data-u2='choice-input'] {
-    --u2-choice-width: 110px !important;
+/* no rows open: no band under the chips */
+.monomer-rgroups-editor .u2-form-rows > .monomer-rgroups-rows:not(:has(> :not([hidden]))) {
+    padding: 0;
 }
 
-/* the box starts from nothing and takes the row, so a long description shortens instead of wrapping the row */
+/* an R group's row: its cap as a short choice, what the cap is, and the pencil; the box starts from nothing
+   and takes the row, so a long description shortens instead of wrapping the row */
 .monomer-rgroups-editor .u2-input-root[data-u2='choice-input'] > .u2-input-box {
     flex: 1 1 0;
     min-width: 0;
@@ -150,6 +328,11 @@
     min-width: 0;
 }
 
+/* what the cap is reads as text beside the choice, not as a field: no underline under it */
+.monomer-rgroups-editor .u2-input-box > .u2-input-editor + .u2-input-options {
+    border-bottom: none;
+}
+
 .monomer-rgroup-info {
     flex: 1 1 auto;
     min-width: 0;
@@ -157,14 +340,46 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    font-size: var(--dg-font-size-small);
     color: var(--grey-5);
     cursor: default;
 }
 
+/* in a narrow dock an R group keeps its cap, its friendly name and the pencil; the SMILES goes first */
+@container monomer-fields (max-width: 360px) {
+    .monomer-rgroup-smiles {
+        display: none;
+    }
+}
+
+/* an R group keeps its short caption beside its cap when the fields around go tall: "R1" fits anywhere */
+.monomer-manager-fields.u2-form-tall .monomer-rgroups-editor .u2-input-root[data-u2='choice-input'] {
+    flex-wrap: nowrap;
+}
+
+.monomer-manager-fields.u2-form-tall .monomer-rgroups-editor .u2-input-root[data-u2='choice-input'] > .u2-input-label {
+    flex-basis: auto;
+    min-width: 24px;
+    height: var(--dg-control-height);
+    margin-right: var(--dg-space-m);
+    font-size: inherit;
+}
+
+/* the pencil's four fields, set in under their R group on a tint, starting at the editors' column —
+   resolved on the row, since the fields' own form redefines the label width for its captions */
+.monomer-rgroup-row {
+    --monomer-manager-editors-x: calc(var(--u2-form-label-width, 100px) + var(--dg-space-m));
+}
+
 .monomer-rgroup-fields {
-    margin: 0 0 8px 24px;
-    padding-left: 10px;
-    border-left: 2px solid var(--grey-2);
+    margin: 0 0 6px var(--monomer-manager-editors-x);
+    padding: 2px 8px;
+    border-radius: var(--dg-radius);
+    background: var(--grey-1);
+}
+
+.monomer-manager-fields.u2-form-tall .monomer-rgroup-fields {
+    margin-left: 0;
 }
 
 .monomer-manager-prompt {

@@ -4,6 +4,7 @@
    absolutely-positioned div rather than the Overlay layer: it is anchored inside the header and
    must not outlive it. */
 import {signal, untracked, Signal} from '../../core/signals.js';
+import type {ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {iconOf} from '../display/icon.js';
@@ -18,7 +19,13 @@ export interface TabOptions {
   /** Header tooltip; defaults to the label, so an icon-only tab should set it. */
   tooltip?: string;
   closable?: boolean;
-  content: HTMLElement | (() => HTMLElement);
+  /** An element or a control, or a function building one; either is placed in the tab's panel on its
+   * first activation, unless the strip is {@link TabStripOptions.eager}. */
+  content: HTMLElement | Control | (() => HTMLElement | Control);
+  /** Why the tab's content needs the user, followed live: the tab is marked while it says something
+   * ({@link TabStrip.setInvalid}). Unset and the content is a `Form`, the form's shown error
+   * ({@link Form.error}) — nothing on a fresh form, the first failing field after a Save attempt. */
+  validity?: ReadonlySignal<string | null>;
 }
 
 export type TabOrientation = 'horizontal' | 'vertical';
@@ -31,6 +38,10 @@ export interface TabStripOptions {
   variant?: TabVariant;
   /** Also the `tabClosed` event (`strip.on('tabClosed', …)`): one call per close, a repeated id included. */
   onTabClosed?: (id: string, strip: TabStrip) => void;
+  /** Places a tab's element or control content in its hidden panel when the tab is added, not on its
+   * first activation: a form on a tab not yet visited then measures its captions — the tabs of an editor
+   * sharing a `LabelColumn` line up before the user switches. A function content stays lazy. */
+  eager?: boolean;
 }
 
 interface Tab {
@@ -41,6 +52,8 @@ interface Tab {
   built: boolean;
   /** Why the tab's content needs attention, while it does ({@link TabStrip.setInvalid}). */
   invalid?: string | null;
+  /** Owns the tab's validity watch; disposed when the tab closes. */
+  scope: Scope;
 }
 
 let stripCount = 0;
@@ -58,10 +71,12 @@ export class TabStrip extends Control {
   private readonly _content = document.createElement('div');
   private readonly _tabs = signal<Tab[]>([]);
   private readonly _menuOpen = signal(false);
+  private readonly _eager: boolean;
 
   constructor(options?: TabStripOptions) {
     super();
     this.orientation = options?.orientation ?? 'horizontal';
+    this._eager = options?.eager === true;
 
     this.root.classList.add('u2-tabs');
     this.root.classList.toggle('u2-tabs-vertical', this.orientation === 'vertical');
@@ -140,10 +155,31 @@ export class TabStrip extends Control {
 
     this._scroller.append(header);
     this._content.append(panel);
-    this._tabs.value = [...this._tabs.peek(), {options: tab, header, panel, mark, built: false}];
+    const eager = this._eager && typeof tab.content !== 'function';
+    const entry: Tab = {options: tab, header, panel, mark, built: eager, scope: this.scope.child('tab-validity')};
+    if (eager)
+      panel.append(tab.content instanceof Control ? tab.content.root : tab.content as HTMLElement);
+    this._tabs.value = [...this._tabs.peek(), entry];
+    if (tab.validity !== undefined)
+      this._watchValidity(entry, tab.validity);
+    else if (typeof tab.content !== 'function')
+      this._watchContent(entry, tab.content);
     if (this.activeTab.peek() === null)
       this.activeTab.value = tab.id;
     this._updateOverflow();
+  }
+
+  private _watchValidity(tab: Tab, validity: ReadonlySignal<string | null>): void {
+    tab.scope.effect(() => {
+      const message = validity.value;
+      untracked(() => this.setInvalid(tab.options.id, message));
+    });
+  }
+
+  private _watchContent(tab: Tab, content: HTMLElement | Control): void {
+    const error = (content as {error?: unknown}).error;
+    if (content instanceof Control && error instanceof Signal)
+      this._watchValidity(tab, error as ReadonlySignal<string | null>);
   }
 
   closeTab(id: string): void {
@@ -153,6 +189,7 @@ export class TabStrip extends Control {
       return;
     tabs[index].header.remove();
     tabs[index].panel.remove();
+    tabs[index].scope.dispose();
     const rest = tabs.slice();
     rest.splice(index, 1);
     this._tabs.value = rest;
@@ -236,8 +273,12 @@ export class TabStrip extends Control {
         tab.built = true;
         const content = tab.options.content;
         // built once and kept: owned by the strip, not by this effect run (disposed on the next switch)
-        Scope.runWith(this.scope.child('tab'), () =>
-          untracked(() => tab.panel.append(typeof content === 'function' ? content() : content)));
+        Scope.runWith(this.scope.child('tab'), () => untracked(() => {
+          const built = typeof content === 'function' ? content() : content;
+          tab.panel.append(built instanceof Control ? built.root : built);
+          if (typeof content === 'function' && tab.options.validity === undefined)
+            this._watchContent(tab, built);
+        }));
       }
       tab.header.scrollIntoView({block: 'nearest', inline: 'nearest'});
     }

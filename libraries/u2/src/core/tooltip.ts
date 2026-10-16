@@ -33,8 +33,11 @@ export class Tooltip {
   }
 
   /** Shows the tooltip for `el` after a hover delay; `content` is evaluated at show time.
-   * Both listeners are released with `scope`. */
-  static bind(el: HTMLElement, content: string | (() => string | HTMLElement), scope: Scope): void {
+   * The listeners are released with `scope` — by default whoever is building (an `each()` row). */
+  static bind(el: HTMLElement, content: string | (() => string | HTMLElement), scope?: Scope): void {
+    const owner = scope ?? Scope.ambient;
+    if (owner === undefined)
+      throw new Error('u2: Tooltip.bind needs an owner — pass a scope, or bind while a control builds');
     const enter = () => {
       const show = () => Tooltip.show(typeof content === 'function' ? content() : content, el);
       // Warm state: leaving one bound element and entering another switches with no delay.
@@ -50,7 +53,7 @@ export class Tooltip {
     el.addEventListener('pointerenter', enter);
     el.addEventListener('pointerleave', leave);
     el.addEventListener('pointerdown', leave);
-    scope.own(() => {
+    owner.own(() => {
       el.removeEventListener('pointerenter', enter);
       el.removeEventListener('pointerleave', leave);
       el.removeEventListener('pointerdown', leave);
@@ -64,7 +67,7 @@ export class Tooltip {
   static show(content: string | HTMLElement, anchor: HTMLElement): void {
     window.clearTimeout(Tooltip._timer);
     Tooltip._pending = undefined;
-    if (!anchor.isConnected)
+    if (!anchor.isConnected || content === '')
       return;
     const root = Tooltip.root;
     root.textContent = '';

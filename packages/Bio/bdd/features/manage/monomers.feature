@@ -3,10 +3,13 @@ Feature: Monomers, and matching molecules against the library
   Bio | Manage | Monomers opens a table view of every monomer the selected libraries hold, one row
   per monomer with its symbol, name and polymer type. Match with Monomer Library asks for a
   molecule column and the polymer type to match against — peptide, RNA or chemical monomers. The
-  Manage Monomer Libraries app is the same view as the menu command. Match run on a column of
-  amino acids drawn as molecules (a table the feature makes; Chem reads the molecules) opens a copy
-  of the table that names the monomer of each: alanine is A, glycine G. Which molecules match which
-  monomers, and how, is the matcher's to test (match-molecules.ts), not this feature's.
+  Manage Monomer Libraries app is the same view as the menu command. Match is greyed out on a table
+  with no molecule column (the platform greys out a command whose function needs a column the table
+  lacks, #4226). Match run on a column of amino acids drawn as molecules (a table the feature makes;
+  Chem reads the molecules) against the HELM core library opens a copy of the table that names the
+  monomer of each: alanine is A, glycine G — with every library selected, alanine is also the other
+  libraries' Ala and sAla. Which molecules match which monomers, and how, is the matcher's to test
+  (match-molecules.ts), not this feature's.
 
   Not translated: the Manage Monomer Libraries app's tree browser in Browse (its children load
   with no signal the tree gives, a core gap); creating and deleting a monomer in the Monomers
@@ -36,17 +39,10 @@ Feature: Monomers, and matching molecules against the library
     And "HELMCoreLibrary.json" checkbox should be visible
     When user closes the current view
 
-  Scenario: Match with Monomer Library offers the three polymer types
-    When user switches to the "filter_HELM" table view
-    And user picks "Bio > Manage > Match with Monomer Library..." from the top menu
-    Then "Match with Monomer Library" dialog should be visible
-    And "Polymer Type" input in "Match with Monomer Library" dialog should offer "PEPTIDE, RNA, CHEM"
-    And "Polymer Type" input in "Match with Monomer Library" dialog should have value "PEPTIDE"
-    When user clicks on CANCEL button in "Match with Monomer Library" dialog
-    Then "Match with Monomer Library" dialog should be hidden
-
   # last: the gate skips the rest of the journey on a stand without Chem
-  Scenario: Match with Monomer Library names the monomer of each molecule
+  Scenario: Match with Monomer Library needs a molecule column, and offers the three polymer types
+    When user switches to the "filter_HELM" table view
+    Then the top menu should list "Bio > Manage > Match with Monomer Library..." as disabled
     Given the "Chem" package is installed
     And user opens a table "amino-acids" with:
       | molecule        |
@@ -55,6 +51,16 @@ Feature: Monomers, and matching molecules against the library
     And the semantic types of the current table are detected
     Then "molecule" column should have semantic type "Molecule"
     When user picks "Bio > Manage > Match with Monomer Library..." from the top menu
+    Then "Match with Monomer Library" dialog should be visible
+    And "Polymer Type" input in "Match with Monomer Library" dialog should offer "PEPTIDE, RNA, CHEM"
+    And "Polymer Type" input in "Match with Monomer Library" dialog should have value "PEPTIDE"
+    When user clicks on CANCEL button in "Match with Monomer Library" dialog
+    Then "Match with Monomer Library" dialog should be hidden
+
+  Scenario: Match with Monomer Library names the monomer of each molecule
+    Given only "HELMCoreLibrary.json" monomer library is selected
+    When user switches to the "amino-acids" table view
+    And user picks "Bio > Manage > Match with Monomer Library..." from the top menu
     Then "Match with Monomer Library" dialog should be visible
     When user clicks on OK button in "Match with Monomer Library" dialog
     Then the top menu command should have completed
