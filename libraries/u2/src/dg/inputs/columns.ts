@@ -188,7 +188,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
       return;
     const renamed = value.slice();
     renamed[index] = newName;
-    Input.system(() => this.value.value = renamed);
+    this.systemWrite(renamed);
   }
 
   private _prune(): void {
@@ -196,7 +196,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     const value = this.value.peek();
     const kept = value.filter((name) => available.includes(name));
     if (kept.length !== value.length)
-      Input.system(() => this.value.value = kept);
+      this.systemWrite(kept);
     else
       this._renderSummary(value); // the 'All' threshold moves with the column count
   }

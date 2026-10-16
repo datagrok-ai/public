@@ -7,7 +7,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {debug} from 'datagrok-api/u2core';
-import {Scope, Control, Overlay, Dialog, Form, TextInput, NumberInput, Combobox, PropertyGrid, button, divH, span, signal}
+import {Scope, Control, Overlay, Dialog, Form, TextInput, NumberInput, Combobox, PropertyGrid, button, divH, span, signal,
+  computed, Tooltip}
   from '../src/index.js';
 
 function smoke(name, body) {
@@ -492,4 +493,31 @@ smoke('dialog parts are stamped for automation', () => {
   assert.notEqual(part('close'), null);
   assert.notEqual(part('error-row'), null);
   dialog.dispose();
+});
+
+smoke('okDisabled: OK is off while the reason speaks, and says why in its tooltip; a form in the body adds its own', async () => {
+  const picked = signal(0);
+  const name = new TextInput({label: 'Name', required: true});
+  const dialog = Dialog.create('New collection')
+    .add(new Form().add(name))
+    .okDisabled(computed(() => picked.value === 0 ? 'Select at least one monomer' : null))
+    .onOK(() => {})
+    .show();
+  const ok = dialog.getButton('OK');
+  const tip = async () => {
+    fire(ok, 'pointerenter');
+    await new Promise((r) => setTimeout(r, 700));
+    const text = Tooltip.root.textContent;
+    fire(ok, 'pointerleave');
+    return text;
+  };
+  assert.equal(ok.disabled, true);
+  assert.equal(await tip(), 'Name: Value can\'t be empty', 'the form\'s fields first, top to bottom');
+  name.value.value = 'Peptides';
+  assert.equal(ok.disabled, true);
+  assert.equal(await tip(), 'Select at least one monomer');
+  picked.value = 2;
+  assert.equal(ok.disabled, false);
+  dialog.close();
+  name.dispose();
 });

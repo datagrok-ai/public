@@ -1,10 +1,11 @@
-/* The R groups of the monomer in the editor: a row per R label the structure carries, each a choice
-   of the common caps (and of the cap its definition names when that is none of them), a line saying
-   what the chosen cap is, and a pencil that opens the four fields a library stores. */
+/* The R groups of the monomer in the editor: a chip per R label the structure carries — its cap, red while
+   it cannot be saved — and, above the chips, the row of the one opened: a choice of the common caps (and of
+   the cap its definition names when that is none of them), a line saying what the chosen cap is, and a
+   pencil that opens the four fields a library stores. */
 import {RGroup} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
-import {Control, Form, ChoiceInput, TextInput, ChoiceItem, signal, computed, each, span, div, iconButton,
-  Signal, ReadonlySignal, batch} from '@datagrok-libraries/u2';
+import {Control, Form, ChoiceInput, TextInput, ChoiceItem, LabelColumn, signal, computed, each, span, div,
+  iconButton, icon, on, effect, Tooltip, Signal, ReadonlySignal, batch} from '@datagrok-libraries/u2';
 
 import {CapGroup, CapGroups, COMMON_CAP_GROUPS, CapInference, Canonicalize} from './cap-groups';
 import {STANDRARD_R_GROUPS} from './const';
@@ -16,6 +17,10 @@ export interface RGroupsEditorOptions {
   canonicalize?: Canonicalize;
   /** Whether a cap SMILES is valid; without it, any non-empty one is. */
   isValidSmiles?: (smiles: string) => boolean;
+  /** The label column of the form around the rows; without one, R1, R2 get a narrow column of their own. */
+  labelColumn?: LabelColumn;
+  /** The user changed an R group — a pick or one of the four fields. */
+  onInput?: () => void;
 }
 
 type Field = 'smiles' | 'name' | 'alternateId';
@@ -34,6 +39,9 @@ export class RGroupsEditor extends Control {
   readonly rgroups: ReadonlySignal<RGroup[]>;
   /** The first R group that cannot be saved and why, or null. */
   readonly problem: ReadonlySignal<string | null>;
+
+  /** The R group whose row shows above the chips, or null. */
+  readonly open = signal<string | null>(null);
 
   private readonly _labels = signal<string[]>([]);
   private readonly _defs = new Map<string, Signal<RGroup>>();
@@ -55,22 +63,36 @@ export class RGroupsEditor extends Control {
       }
       return null;
     });
-    this._form = this.runInScope(() => new Form({layout: 'normal'}));
+    // R1, R2 alone want a narrow column, not the 100 px a form gives by default
+    this._form = this.runInScope(() => new Form(_options.labelColumn !== undefined ?
+      {layout: 'normal', labelColumn: _options.labelColumn} : {layout: 'normal', labelWidth: 28}));
     const rows = div([], 'monomer-rgroups-rows');
     this._form.addElement(rows);
     this._structure.dataset.u2Part = 'error';
     this._structure.hidden = true;
-    this.root.append(this._structure, this._form.root);
+    const chips = div([], 'monomer-rgroups-chips');
+    // the open row sits above the chips: with the fields growing upward, the chips stay where they were clicked
+    this.root.append(this._structure, this._form.root, chips);
     const empty = () =>
       span('Draw the monomer with its R groups (R1, R2, ...) to define their caps', 'monomer-rgroups-empty');
-    this.runInScope(() => each(rows, this._labels, (label) => `${this._generation}:${label}`,
-      (label) => this._row(label), {empty}));
+    const key = (label: string) => `${this._generation}:${label}`;
+    this.runInScope(() => {
+      each(chips, this._labels, key, (label) => this._chip(label), {empty});
+      each(rows, this._labels, key, (label) => this._row(label));
+    });
+    // an R group the structure lost takes its row with it
+    this.effect(() => {
+      const open = this.open.value;
+      if (open !== null && !this._labels.value.includes(open))
+        this.open.value = null;
+    });
   }
 
   /** Shows the R groups of a monomer as its library defines them. */
   setDefinitions(rgroups: RGroup[]): void {
     batch(() => {
       this._generation++;
+      this.open.value = null;
       this._defs.clear();
       for (const rg of rgroups) {
         const label = CapGroups.labelOf(rg);
@@ -149,6 +171,58 @@ export class RGroupsEditor extends Control {
     return null;
   }
 
+  /** What the chip and the row say of a definition: the cap, what it is (its friendly name) and the SMILES
+   * Save writes. */
+  private _describe(label: string, def: RGroup): {cap: string, what: string, smiles: string} {
+    const n = CapGroups.numberOf(label) ?? 1;
+    const inference = this._infer(def);
+    const smiles = CapGroups.smilesOf(def);
+    if (inference === null) {
+      const raw = smiles || CapGroups.nameOf(def);
+      return {cap: raw ? '?' : '–', what: raw ? `not recognized: ${raw}` : 'not defined', smiles: ''};
+    }
+    return inference.known ?
+      {cap: inference.cap.name, what: inference.cap.description + (inference.note ? ` (${inference.note})` : ''),
+        smiles: CapGroups.numbered(inference.cap.smiles, n)} :
+      {cap: inference.cap.name, what: inference.note ?? 'as defined', smiles: smiles || 'no SMILES'};
+  }
+
+  /** Why R`n` cannot be saved, without the label the row and the chip already show. */
+  private _problemHere(label: string, def: RGroup): string | null {
+    return this._problemOf(label, def)?.replace(`${label}: `, '') ?? null;
+  }
+
+  /** R1 and its cap, small: opens the R group's row above the chips, or closes it. */
+  private _chip(label: string): HTMLElement {
+    const def = this._defs.get(label)!;
+    const cap = span('', 'monomer-rgroup-chip-cap');
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'monomer-rgroup-chip';
+    chip.dataset.u2Item = label;
+    chip.setAttribute('aria-controls', `${this.rootId}-${label}`);
+    const caret = icon('chevron-down', {cls: 'monomer-rgroup-chip-caret'});
+    caret.setAttribute('aria-hidden', 'true');
+    // the space reads "R4 X" to a screen reader; a flex row does not render it
+    chip.append(span(label, 'monomer-rgroup-chip-label'), ' ', cap, caret);
+    const said = computed(() => ({...this._describe(label, def.value), problem: this._problemHere(label, def.value)}));
+    const about = () => {
+      const {what, smiles, problem} = said.value;
+      return problem ?? (smiles ? `${what} · ${smiles}` : what);
+    };
+    effect(() => {
+      const {cap: name, problem} = said.value;
+      cap.textContent = name;
+      chip.classList.toggle('monomer-rgroup-chip-invalid', problem !== null);
+      chip.setAttribute('aria-expanded', String(this.open.value === label));
+      // what the tooltip shows the pointer, said to the keyboard and a screen reader too
+      chip.setAttribute('aria-description', about());
+    });
+    Tooltip.bind(chip, () => `${label}: ${chip.getAttribute('aria-description') ?? ''}`);
+    on(chip, 'click', () => this.open.value = this.open.peek() === label ? null : label);
+    return chip;
+  }
+
   private _row(label: string): HTMLElement {
     const def = this._defs.get(label)!;
     const n = CapGroups.numberOf(label) ?? 1;
@@ -164,9 +238,9 @@ export class RGroupsEditor extends Control {
     ]);
     const editing = signal(false);
 
-    const choice = new ChoiceInput({label, name: label, items: items.peek(), nullable: true,
+    const choice = new ChoiceInput({label, name: label, items, nullable: true, width: 110,
       tooltipText: `The cap group that closes ${label} when the monomer ends a chain`,
-      onChanged: (value) => {
+      onInput: (value) => {
         if (value === OWN && own.peek() !== null)
           def.value = own.peek()!;
         else if (value === null)
@@ -176,6 +250,7 @@ export class RGroupsEditor extends Control {
           if (cap !== null)
             def.value = CapGroups.rgroup(cap, n);
         }
+        this._options.onInput?.();
       }});
     // every effect of the row is its controls': they go with the row, not with the editor
     choice.effect(() => {
@@ -183,13 +258,12 @@ export class RGroupsEditor extends Control {
       if (inference !== null && !inference.known)
         own.value = def.peek();
     });
-    choice.effect(() => choice.setItems(items.value));
     choice.follow(() => {
       const inference = inferred.value;
       return inference === null ? null : inference.known ? inference.cap.name : OWN;
     });
     choice.addValidator(() => {
-      const problem = this._problemOf(label, def.peek())?.replace(`${label}: `, '') ?? null;
+      const problem = this._problemHere(label, def.peek());
       return problem === null ? null : problem.charAt(0).toUpperCase() + problem.slice(1);
     });
     choice.effect(() => {
@@ -197,17 +271,16 @@ export class RGroupsEditor extends Control {
       choice.revalidate();
     });
 
-    const info = span('', 'monomer-rgroup-info');
+    // the friendly name, then the SMILES, which a narrow dock drops first
+    const what = span('', 'monomer-rgroup-what');
+    const smiles = span('', 'monomer-rgroup-smiles');
+    const info = div([what, smiles], 'monomer-rgroup-info');
     info.dataset.u2Part = 'description';
     choice.effect(() => {
-      const inference = inferred.value;
-      const smiles = CapGroups.smilesOf(def.value);
-      info.textContent = inference === null ? (smiles || CapGroups.nameOf(def.value) ?
-        `not recognized: ${smiles || CapGroups.nameOf(def.value)}` : 'not defined') :
-        inference.known ? `${inference.cap.description} · ${CapGroups.numbered(inference.cap.smiles, n)}` +
-          (inference.note ? ` (${inference.note})` : '') :
-          `${smiles || 'no SMILES'} · ${inference.note ?? 'as defined'}`;
-      info.title = info.textContent;
+      const described = this._describe(label, def.value);
+      what.textContent = described.what;
+      smiles.textContent = described.smiles ? ` · ${described.smiles}` : '';
+      info.title = info.textContent ?? '';
     });
     const pencil = iconButton('pencil', () => {}, {tooltip: `Edit the ${label} definition`, toggle: editing});
     choice.addOptions(info);
@@ -220,7 +293,10 @@ export class RGroupsEditor extends Control {
     const saved = computed(() => this._saved(label, def.value));
     const fieldInput = (caption: string, field: Field, read: (rg: RGroup) => string) => {
       const input = new TextInput({label: caption, name: `${label} ${caption}`, required: true, commitOn: 'change',
-        onChanged: (value) => def.value = {...saved.peek(), [FIELD_KEYS[field]]: value.trim()}});
+        onInput: (value) => {
+          def.value = {...saved.peek(), [FIELD_KEYS[field]]: value.trim()};
+          this._options.onInput?.();
+        }});
       input.follow(() => read(saved.value));
       return input;
     };
@@ -233,9 +309,12 @@ export class RGroupsEditor extends Control {
     fields.effect(() => fields.root.hidden = !editing.value);
 
     const row = div([], 'monomer-rgroup-row');
+    row.id = `${this.rootId}-${label}`;
     row.dataset.u2Item = label;
-    this._form.add(choice, row);
+    // the pencil's fields open above its row, which stays where the pencil was clicked
     row.append(fields.root);
+    this._form.add(choice, row);
+    choice.effect(() => row.hidden = this.open.value !== label);
     return row;
   }
 }

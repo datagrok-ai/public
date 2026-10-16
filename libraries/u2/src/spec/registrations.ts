@@ -319,7 +319,10 @@ const METAS: ComponentMeta[] = [
     }),
     description: 'Single-line text editor with validation.',
     usage: 'With `search: true` this is the filter box; in a platform view the main filter belongs ' +
-      'in the view ribbon (`appView({ribbon})`), not inside the content area.',
+      'in the view ribbon (`appView({ribbon})`), not inside the content area. Every input: act on the ' +
+      'user\'s edits with `onInput` (`onChanged` also hears writes from code); load another record with ' +
+      '`reset(value)`, keep in step with a model with `follow(read)`; a status line or tab marker reads ' +
+      '`error` (shown, touch-gated), Save reads `validity`.',
     props: inputProps('string',
       {name: 'placeholder', type: 'string', bindable: true},
       {name: 'search', type: 'bool', structural: true, description: 'Magnifier affordance plus a clear button.'},
@@ -403,6 +406,10 @@ const METAS: ComponentMeta[] = [
       return input;
     },
     description: 'Single choice over a native select.',
+    usage: 'In a form a choice is as wide as its longest item; `width` sets it outright (a short code ' +
+      'list), `fill: true` stretches it across the row. Act on the user\'s pick with `onInput` — ' +
+      '`onChanged` also hears the program\'s writes. `items` may be a signal, and the value may be set ' +
+      'before its item arrives.',
     props: inputProps('string',
       {name: 'items', type: 'string_list', bindable: true},
       {name: 'nullable', type: 'bool', structural: true, description: 'Offers an empty option; true by default.'}),
@@ -437,6 +444,9 @@ const METAS: ComponentMeta[] = [
     category: 'Actions',
     create: (props) => new SpecButton(props),
     description: 'Push button; `on: {"click": "cmd:<name>"}` runs a context command.',
+    usage: 'In code, `button(text, onClick, {disabled: reason})` disables it and shows the reason (a string, ' +
+      'or a signal of one) as its tooltip — say what is missing rather than leaving the user to guess; a ' +
+      'dialog\'s OK takes the same through `okDisabled(reason)`.',
     props: [
       {name: 'text', type: 'string'},
       {name: 'primary', type: 'bool', description: 'Accent styling for the main action.'},
@@ -539,6 +549,11 @@ const METAS: ComponentMeta[] = [
         (parent as Accordion).setPaneTitle(index, typeof value === 'string' ? value : `Pane ${index + 1}`);
     },
     description: 'Independently expanding panes, one per spec child; the child node carries the pane title.',
+    usage: 'In code, `addPane(title, content, {hint, validity, persistKey})`: a folded pane says what it ' +
+      'holds (`hint`, a signal or an element for a live summary), shows the problem inside it ' +
+      '(`validity`) and remembers the user\'s open or close (`persistKey`; `pane.userSet` until then). ' +
+      '`new Accordion({flush: true})` lines the titles and the content up with the captions of a form ' +
+      'around it, the chevron at the header\'s end — the panes of a docked editor.',
     props: [],
     childProps: [
       {name: 'title', type: 'string', description: 'Pane title; numbered when absent.'},
@@ -563,7 +578,10 @@ const METAS: ComponentMeta[] = [
       'chevron sits left of the caption; clicking the header folds the body.',
     usage: 'For grouping form fields or page content under a heading. Inputs inside a ' +
       'u2-section child of a u2-form are adopted by the section, not the form — they do not ' +
-      'join the form\'s label column. A managed pane set belongs in u2-accordion.',
+      'join the form\'s label column. A managed pane set belongs in u2-accordion. In code, a folded ' +
+      'section says what it holds with `hint`, shows the problem inside it with `validity`, and remembers ' +
+      'the user\'s open or close with `persistKey`; `form.add(input, section.body)` keeps an input in the ' +
+      'form\'s label column.',
     props: [
       {name: 'title', type: 'string', bindable: true},
       {name: 'expanded', type: 'bool', bindable: true, twoWay: true},
@@ -606,6 +624,10 @@ const METAS: ComponentMeta[] = [
         (parent as TabStrip).setTabLabel(`tab-${index}`, typeof value === 'string' ? value : `Tab ${index + 1}`);
     },
     description: 'Tab strip with one tab per spec child; the child node carries the tab label.',
+    usage: 'In code, give a tab a `validity` signal and it is marked while that says something; a tab ' +
+      'whose content is a Form answers with the form\'s shown error. A tab\'s content is placed on its first ' +
+      'activation; `eager: true` places element contents at once, hidden, so a form on a tab not yet visited ' +
+      'measures its captions (a `LabelColumn` across the tabs).',
     props: [
       {name: 'orientation', type: 'string', choices: ['horizontal', 'vertical'], structural: true,
         description: '"horizontal" (default) or "vertical" — a header column on the left.'},
@@ -647,7 +669,13 @@ const METAS: ComponentMeta[] = [
     description: 'Vertical input layout: spec children that are inputs join the form and share its ' +
       'label column, validity and Enter navigation; anything else renders as a plain row in place.',
     usage: 'Labels share a left column and values stay left-aligned — never center form content. ' +
-      'For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building.',
+      'For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building. ' +
+      'Forms that must line up — the tabs of one editor — share a `LabelColumn` (`labelColumn` option); ' +
+      '`labelWidth` fixes the column. The labels align before the first paint; `layoutNow()` for a test ' +
+      'that reads the layout in the same task. `addColumns(inputs, {minWidth})` puts short fields two to ' +
+      'a row, aligned, one to a row where two would go under `minWidth`; `quiet: true` drops the ' +
+      'underlines at rest (an inspector or a docked editor). Beside a Save, `statusLine(problem, ' +
+      'otherwise)` says what Save will do or why it cannot yet.',
     props: [
       {name: 'layout', type: 'string', choices: ['auto', 'normal', 'wide', 'tall'], structural: true,
         description: '"auto" (default) picks wide or tall by fit — editors fill the row while ' +

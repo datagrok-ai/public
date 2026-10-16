@@ -2,6 +2,11 @@
 
 ## v.next
 
+* Layout audit: `label-column` measures a cell of a form's columns (u2 `Form.addColumns`, `data-u2-part="columns"`) from its own column, so two aligned columns are no longer reported as one misaligned one
+* Vocabulary: Added the u2 `status-line` kind ("status line")
+* Vocabulary: `the top menu should list {string} as disabled` / `as enabled` — the platform greys out a command whose function needs a column the table lacks (#4226)
+* Kinds: A plain ARIA list (`role="list"`) is a list and its `role="listitem"` rows are items, so "first item in annotations list" reaches them
+
 * Geometry: Added width claims — `{element} should be as wide as {element}`, `… should be {int} px wide`, `… should be at least {int} px wide` and `… should be at most {int} px wide` — so an editor too short next to its Dart twin fails a feature
 * Geometry: Added `{element} should be inside the window` (a dialog or popup no ancestor clips) and `the window is {int} by {int} px`, which resizes the window until the test ends
 * Layout audit: Inputs inside another input's editor (a columns map's key rows) no longer count as rows of the form in the label-column rule

@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {state} from 'datagrok-api/u2core';
-import {signal, Scope, button} from '../src/index.js';
+import {signal, computed, Scope, button, Form, TextInput} from '../src/index.js';
 import {debug} from '../src/core/scope.js';
 import {Wizard} from '../src/components/containers/wizard.js';
 import {TabStrip} from '../src/components/containers/tabs.js';
@@ -108,6 +108,35 @@ ui('TabStrip: setInvalid marks a tab whose content needs fixing, in the header a
   assert.equal(header.title, 'R-groups');
   assert.equal(state(strip.root).items.list[1].invalid, undefined);
   strip.dispose();
+});
+
+ui('TabStrip: a tab\'s validity marks it live; a Form as content answers for itself, a fresh one marks nothing', () => {
+  const problem = signal(null);
+  const form = new Form();
+  const name = new TextInput({label: 'Name', required: true});
+  form.add(name);
+  const strip = new TabStrip({tabs: [
+    {id: 'monomer', label: 'Monomer', content: form},
+    {id: 'rgroups', label: 'R-groups', content: content('r'), validity: problem},
+    {id: 'meta', label: 'Meta', content: () => content('m')},
+  ]});
+  document.body.append(strip.root);
+  const invalid = () => state(strip.root).items.list.filter((i) => i.invalid).map((i) => i.key);
+  assert.deepEqual(invalid(), [], 'nothing on a fresh editor, though Name is empty');
+  problem.value = 'R2: pick a cap group';
+  assert.deepEqual(invalid(), ['rgroups']);
+  assert.equal(strip.root.querySelector('[data-u2-item="rgroups"]').title, 'R2: pick a cap group');
+  form.validate();
+  assert.deepEqual(invalid(), ['monomer', 'rgroups'], 'after a Save attempt the form shows its verdict');
+  problem.value = null;
+  name.value.value = 'meI';
+  assert.deepEqual(invalid(), []);
+  strip.closeTab('rgroups');
+  problem.value = 'gone';
+  assert.deepEqual(invalid(), [], 'a closed tab stops watching');
+  strip.dispose();
+  name.dispose();
+  form.dispose();
 });
 
 ui('TabStrip: the page is watched only while the overflow menu is open (P24)', () => tracked((listeners) => {
@@ -502,4 +531,133 @@ ui('Breadcrumbs: an empty path keeps the strip\'s row height', () => {
   const at = sheet.indexOf('.u2-breadcrumbs {');
   assert.match(sheet.slice(at, sheet.indexOf('}', at)), /min-height: var\(--dg-inline-control-height\);/);
   crumbs.dispose();
+});
+
+ui('Section: the hint says what a fold holds, the validity marks the header and replaces the hint while folded', () => {
+  const problem = signal(null);
+  const section = new Section({title: 'Details', hint: 'ID, colors, properties', validity: problem, expanded: false});
+  document.body.append(section.root);
+  const hint = section.root.querySelector('[data-u2-part="section-hint"]');
+  assert.equal(hint.textContent, 'ID, colors, properties');
+  problem.value = 'ID: Not a number';
+  assert.equal(hint.textContent, 'ID: Not a number', 'folded: the problem shows on the header');
+  assert.equal(section.header.getAttribute('aria-invalid'), 'true');
+  assert.equal(state(section.root).error, 'ID: Not a number');
+  section.expanded.value = true;
+  assert.equal(hint.textContent, 'ID, colors, properties', 'open: the field itself shows it');
+  problem.value = null;
+  assert.equal(section.header.hasAttribute('aria-invalid'), false);
+  section.dispose();
+});
+
+ui('Section: persistKey keeps the user\'s own open or close, and userSet says there is one', () => {
+  const store = new Map();
+  globalThis.localStorage = {getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v)};
+  try {
+    const first = new Section({title: 'Details', persistKey: 'test.details', expanded: false});
+    document.body.append(first.root);
+    assert.equal(first.userSet, false);
+    first.header.click();
+    assert.equal(first.expanded.value, true);
+    assert.equal(first.userSet, true);
+    first.dispose();
+    const again = new Section({title: 'Details', persistKey: 'test.details', expanded: false});
+    assert.equal(again.expanded.value, true, 'the user\'s choice wins over the default');
+    assert.equal(again.userSet, true);
+    again.dispose();
+  }
+  finally {
+    delete globalThis.localStorage;
+  }
+});
+
+ui('TabStrip: content waits for the first activation, unless the strip is eager', () => {
+  const lazy = new TabStrip({tabs: [{id: 'a', label: 'A', content: content('a')}, {id: 'b', label: 'B', content: content('b')}]});
+  const eager = new TabStrip({eager: true, tabs: [{id: 'a', label: 'A', content: content('a')},
+    {id: 'b', label: 'B', content: content('b')}, {id: 'c', label: 'C', content: () => content('c')}]});
+  document.body.append(lazy.root, eager.root);
+  const panel = (strip, i) => strip.root.querySelectorAll('.u2-tabs-panel')[i];
+  assert.equal(panel(lazy, 1).childElementCount ?? panel(lazy, 1).children.length, 0, 'a tab not visited holds nothing');
+  assert.equal(panel(eager, 1).children.length, 1, 'eager: the element is there, hidden, before the first visit');
+  assert.equal(panel(eager, 1).style.display, 'none');
+  assert.equal(panel(eager, 2).children.length, 0, 'a function content stays lazy');
+  lazy.dispose();
+  eager.dispose();
+});
+
+ui('Accordion: a pane\'s hint, a live summary element, and its validity in place of the hint while folded', () => {
+  const problem = signal(null);
+  const count = signal(2);
+  const accordion = new Accordion({flush: true});
+  document.body.append(accordion.root);
+  const summary = document.createElement('span');
+  summary.textContent = 'ID 0';
+  const details = accordion.addPane('Details', document.createElement('div'), {hint: summary, validity: problem});
+  const props = accordion.addPane('Properties', document.createElement('div'),
+    {hint: computedText(count), expanded: true});
+  assert.equal(accordion.root.classList.contains('u2-accordion-flush'), true);
+  const hint = (pane) => pane.root.querySelector('[data-u2-part="pane-hint"]');
+  assert.equal(hint(details).textContent, 'ID 0');
+  assert.equal(hint(props).textContent, '2 properties');
+  count.value = 5;
+  assert.equal(hint(props).textContent, '5 properties', 'a signal hint follows');
+  problem.value = 'ID: Not a number';
+  assert.equal(summary.hidden, true, 'folded: the problem takes the summary\'s place');
+  assert.equal(hint(details).textContent.endsWith('ID: Not a number'), true);
+  assert.equal(details.root.classList.contains('u2-accordion-pane-invalid'), true);
+  assert.equal(accordion.getItems().list[0].invalid, true, 'automation sees the red pane');
+  details.expanded.value = true;
+  assert.equal(summary.hidden, false, 'open: the field itself shows it');
+  problem.value = null;
+  assert.equal(details.root.classList.contains('u2-accordion-pane-invalid'), false);
+  assert.equal(details.root.querySelector('.u2-accordion-header').title, 'Details');
+  accordion.dispose();
+});
+
+ui('Accordion: persistKey keeps the user\'s own open or close, and the older (expanded, icon) arguments still work', () => {
+  const store = new Map();
+  globalThis.localStorage = {getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v)};
+  try {
+    const first = new Accordion();
+    document.body.append(first.root);
+    const pane = first.addPane('Details', document.createElement('div'), {persistKey: 'test.pane'});
+    assert.equal(pane.userSet, false);
+    pane.root.querySelector('.u2-accordion-header').click();
+    assert.equal(pane.expanded.value, true);
+    assert.equal(pane.userSet, true);
+    first.dispose();
+    const again = new Accordion();
+    const back = again.addPane('Details', document.createElement('div'), {persistKey: 'test.pane'});
+    assert.equal(back.expanded.value, true, 'the user\'s choice wins over the default');
+    assert.equal(back.userSet, true);
+    const old = again.addPane('Old', document.createElement('div'), true, 'cog');
+    assert.equal(old.expanded.value, true);
+    assert.ok(old.icon);
+    again.dispose();
+  }
+  finally {
+    delete globalThis.localStorage;
+  }
+});
+
+function computedText(count) {
+  return computed(() => `${count.value} properties`);
+}
+
+ui('Section: chevron end — the header placed in a row of its own stays the toggle and keeps its error marker', () => {
+  const problem = signal(null);
+  const section = new Section({title: 'Details', hint: 'ID, colors', validity: problem, chevron: 'end', expanded: false});
+  const row = document.createElement('div');
+  row.append(section.header);
+  document.body.append(row, section.root);
+  assert.equal([...section.header.children].pop().classList.contains('u2-section-chevron'), true, 'after the title and hint');
+  assert.equal(section.header.classList.contains('u2-section-chevron-end'), true);
+  section.header.click();
+  assert.equal(section.expanded.value, true, 'a click on the moved header still toggles');
+  assert.equal(section.body.style.display, '');
+  problem.value = 'ID: Not a number';
+  assert.equal(section.header.getAttribute('aria-invalid'), 'true');
+  const sheet = readFileSync(new URL('../css/section.css', import.meta.url), 'utf8');
+  assert.match(sheet, /\.u2-section-header\[aria-invalid='true'\] > \.u2-section-title/);
+  section.dispose();
 });

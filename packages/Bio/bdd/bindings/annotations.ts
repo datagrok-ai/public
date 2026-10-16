@@ -48,5 +48,5 @@ export const allNamedLike = Then('every annotation on {string} column should be 
 
 export const listMatchesAnnotations = Then('annotations list in {string} dialog should have as many items as {string} column has annotations', async (page: Page, dialog: string, column: string) => {
   const count = (await annotationNames(page, column)).length;
-  await expect(page.locator(`[name="dialog-${dialog.replace(/\s+/g, '-')}"] [data-u2-name="annotations"] [data-u2="item"]`), `rows of the annotations list against ${count} annotations`).toHaveCount(count);
+  await expect(page.locator(`[name="dialog-${dialog.replace(/\s+/g, '-')}"] [data-u2-name="annotations"] [role="listitem"]`), `rows of the annotations list against ${count} annotations`).toHaveCount(count);
 });
