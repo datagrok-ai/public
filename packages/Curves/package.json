@@ -19,6 +19,9 @@
     "jstat": "^1.9.6",
     "rxjs": "catalog:"
   },
+  "devDependencies": {
+    "@datagrok-libraries/bdd": "workspace:^"
+  },
   "scripts": {
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
