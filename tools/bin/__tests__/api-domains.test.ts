@@ -229,6 +229,16 @@ describe('generateDomainClients', () => {
     expect(code).toMatch(/interface IssueStateRow \{[^}]*y\?: IssueStateYIssueState;/);
   });
 
+  it('choices values with a quote or a backslash compile to the same literals', {timeout: 180_000}, () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.sample.columns.resolution =
+      {type: 'string', choices: ['Fixed', `Won't fix`, 'a\\b']});
+    expect(generateDomainClients(dir)).toBe(true);
+    const res = runTsc(dir, 'usage-choices.ts');
+    expect(res.output.trim(), res.output).toBe('');
+    expect(res.status).toBe(0);
+  });
+
   it('expand maps: a multi-FK child emits one qualified details key per FK', () => {
     const dir = makePackage();
     mutateManifest(dir, (m) => m.tables.link = {columns: {
