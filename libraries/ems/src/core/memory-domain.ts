@@ -823,8 +823,6 @@ export class MemoryTable implements DomainTableLike {
     });
   }
 
-  /** The manifest's `invalid-hierarchy` refusal: a hierarchy table declares exactly one ref
-   * column targeting itself. */
   /** The platform's `StringUtils.toSingular` (ddt utils.dart): regular forms only; a noun already
    * singular in `-is`/`-us`/`-ss` passes through. */
   private static _singular(s: string): string {
@@ -846,6 +844,8 @@ export class MemoryTable implements DomainTableLike {
     return s.length > 1 && s.endsWith('y') && !'aeiou'.includes(s[s.length - 2]) ? s.slice(0, -1) + 'ies' : s + 's';
   }
 
+  /** The manifest's `invalid-hierarchy` refusal: a hierarchy table declares exactly one ref
+   * column targeting itself. */
   private static _parentColumn(address: string, refs: Record<string, string>): string {
     const self = Object.entries(refs).filter(([, target]) => target === address).map(([column]) => column);
     if (self.length !== 1) {
