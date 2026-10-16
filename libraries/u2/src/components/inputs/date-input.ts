@@ -306,7 +306,7 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
       {hours: value.getHours(), minutes: value.getMinutes()};
     this._time.value = time.hours * 60 + time.minutes;
     this._machine.value = 'open';
-    this._closeOverlay = Overlay.show(this._field, this._popup, this.scope);
+    this._closeOverlay = Overlay.show(this._field, this._popup, this.scope, {matchWidth: false});
     this._open.value = true;
     this._syncTime();
     this._focusActive();

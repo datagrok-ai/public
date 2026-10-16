@@ -173,6 +173,8 @@ columns('columnsInput: clicking the control toggles the popup, and cancels what 
   fire(control(input), 'click');
   assert.ok(popup(), 'and the third opens it again');
   assert.equal(control(input).getAttribute('aria-expanded'), 'true');
+  assert.equal(control(input).getAttribute('aria-haspopup'), 'dialog', 'a checklist with OK / CANCEL, not a listbox');
+  assert.equal(popup().getAttribute('role'), 'dialog');
   input.dispose();
 });
 

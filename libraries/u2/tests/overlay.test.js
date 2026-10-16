@@ -157,3 +157,18 @@ smoke('positioning follows events, not a frame loop', async () => {
   assert.equal(frames, 0);
   scope.dispose();
 });
+
+smoke('matchWidth: a dropdown is at least as wide as its anchor; false leaves a calendar its own width', async () => {
+  const scope = new Scope();
+  const anchor = anchored();
+  const list = document.createElement('div');
+  const calendar = document.createElement('div');
+  Overlay.show(anchor, list, scope);
+  Overlay.show(anchor, calendar, scope, {matchWidth: false});
+  for (let i = 0; i < 5; i++)
+    await flush();
+  await new Promise((r) => setTimeout(r, 20));
+  assert.match(String(list.style.minWidth), /px$/, 'the default follows the anchor');
+  assert.equal(calendar.style.minWidth ?? '', '', 'matchWidth: false sets no min-width');
+  scope.dispose();
+});

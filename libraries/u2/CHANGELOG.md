@@ -2,6 +2,14 @@
 
 ## v.next
 
+* Tooltip: Keyboard focus shows a bound tooltip too (a click's focus does not), the tooltip is `role="tooltip"`, and its anchor lists it in `aria-describedby` while it shows, beside its own ids
+* ColumnsInput: The control says its popup is a dialog (`aria-haspopup="dialog"`, the popup `role="dialog"`, "Choose columns") — a checklist with OK / CANCEL, not a listbox
+* RadioInput: `buttons: true` lays its buttons out in a row again (the stacked editor rule outranked it)
+* Buttons: A disabled primary button in a view ribbon or the toolbox keeps the disabled skin (it stayed teal under grey text, unreadable)
+* Inputs: In a right-aligned form or a dialog, a required caption's asterisk hangs in the gap before the editor, so its text ends where every other caption's does (it was pushed off the column)
+* DateInput: In a form a date (140px) and a date-time (170px) keep their own width, as a number does, instead of stretching across a wide row; the calendar popup keeps its own width instead of taking the field's (new `Overlay.show(anchor, content, scope, {matchWidth: false})`)
+* Wizard: In a dialog the wizard fills the body, so BACK / NEXT / FINISH sit at the bottom like a dialog footer instead of under a short step
+* Inputs: `tooltipText` shows u2's tooltip over the caption, as the platform's `setTooltip` does (over the whole input when it has none), and is the editor's `aria-description`; it no longer sets a native `title` on the root, which the hover never showed inside a form and bdd could not read
 * Menu: Added `detail` to an item's options — grey text after the label saying what the item stands for ("hydroxyl · O[*:2]"); the details of one menu start in one column
 * Form: `addButtons(build, {align, host})` — `host` places the form's button row elsewhere (a footer pinned under a form that scrolls) and its primary button keeps the platform's form-button blue there; `align: 'start'` starts the buttons at the row's left
 * Form: Added `addColumns(inputs, {minWidth, columns, host})` — short fields two (or `columns`) to a row, every column's captions and editors in line and each editor filling its column (a choice and a number too), one to a row where two would go under `minWidth`
