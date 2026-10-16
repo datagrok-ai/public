@@ -169,8 +169,10 @@ category('Dapi: domains', () => {
   test('save: a row read with access, captions, deleted scope and a master expand saves back', async () => {
     const [ins] = await items().insert({sku: sku(), name: 'Save parent'});
     const events = grok.dapi.domains.table('apitests.item_event');
+    let evId: string | null = null;
     try {
       const [ev] = await events.insert({item_id: ins.id, kind: 'saved', amount: 1});
+      evId = ev.id;
       const [row] = await events.query({filter: `id = "${ev.id}"`, withAccess: true,
         captions: ['item_id'], deleted: 'include', expand: ['item_id']});
       for (const k of ['~can_edit', '~caption_item_id', '~is_deleted', 'item_id.name'])
@@ -179,7 +181,9 @@ category('Dapi: domains', () => {
       expect(saved.version, row.version + 1);
       expect((await events.get(ev.id)).amount, 7);
     } finally {
-      await items().delete(ins.id); // cascades item_event
+      if (evId != null)
+        await events.delete(evId);
+      await items().delete(ins.id);
     }
   });
 
