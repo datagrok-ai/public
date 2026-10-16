@@ -379,12 +379,12 @@ export class MemoryTable implements DomainTableLike {
       .map(([column, c]) => [column, MemoryTable._address(schema, c.ref!)]));
     const named = columns.find(([, c]) => c.isName)?.[0] ??
       columns.find(([n, c]) => n === 'name' && c.type === 'string')?.[0];
-    const singular = json.singularName ?? json.friendlyName?.replace(/s$/, '') ?? name.replace(/_/g, ' ');
+    const singular = json.singularName ?? MemoryTable._singular(json.friendlyName ?? name.replace(/_/g, ' '));
     const searchable = columns.filter(([, c]) => c.searchable === true).map(([n]) => n);
     const permissions = Array.isArray(json.permissions) ? json.permissions : Object.keys(json.permissions ?? {});
     this.info = {
       nameColumn: named ?? null, businessKey: json.businessKey ?? [], rowAddress: 'businessKey',
-      singularName: singular, pluralName: json.pluralName ?? json.friendlyName ?? `${singular}s`,
+      singularName: singular, pluralName: json.pluralName ?? json.friendlyName ?? MemoryTable._plural(singular),
       searchableColumns: searchable.length > 0 ? searchable : named === undefined ? [] : [named],
       constraints: Object.entries(json.constraints ?? {}).filter(([, c]) => typeof c.expr === 'string')
         .map(([n, c]) => ({name: n, expr: c.expr!, ...(c.message === undefined ? {} : {message: c.message})})),
@@ -825,6 +825,27 @@ export class MemoryTable implements DomainTableLike {
 
   /** The manifest's `invalid-hierarchy` refusal: a hierarchy table declares exactly one ref
    * column targeting itself. */
+  /** The platform's `StringUtils.toSingular` (ddt utils.dart): regular forms only; a noun already
+   * singular in `-is`/`-us`/`-ss` passes through. */
+  private static _singular(s: string): string {
+    if (s.length <= 2 || !s.endsWith('s') || s.endsWith('ss') || s.endsWith('is') || s.endsWith('us'))
+      return s;
+    if (s.endsWith('ies') && s.length > 3)
+      return s.slice(0, -3) + 'y';
+    return /(xes|zzes|ches|shes|sses|tuses)$/.test(s) ? s.slice(0, -2) : s.slice(0, -1);
+  }
+
+  /** The platform's `StringUtils.toPlural` (ddt utils.dart). */
+  private static _plural(s: string): string {
+    if (s.length === 0)
+      return s;
+    if (s.endsWith('is'))
+      return s.slice(0, -2) + 'es';
+    if (/(s|x|z|ch|sh)$/.test(s))
+      return s + 'es';
+    return s.length > 1 && s.endsWith('y') && !'aeiou'.includes(s[s.length - 2]) ? s.slice(0, -1) + 'ies' : s + 's';
+  }
+
   private static _parentColumn(address: string, refs: Record<string, string>): string {
     const self = Object.entries(refs).filter(([, target]) => target === address).map(([column]) => column);
     if (self.length !== 1) {

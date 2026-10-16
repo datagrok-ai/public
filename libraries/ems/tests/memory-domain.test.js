@@ -250,6 +250,18 @@ test('search: case-insensitive over the searchable columns, the name column by d
     (e) => e.code === 'validation' && /no searchable column/.test(e.message));
 });
 
+test('info: undeclared singular and plural are derived from the table name the way the platform derives them', async () => {
+  const names = ['categories', 'order_details', 'statuses', 'boxes', 'study', 'issue', 'address', 'analysis'];
+  const be = new MemoryDomainBackend({name: 'nw', tables: Object.fromEntries(names.map((n) => [n, {columns: {}}]))});
+  const info = (n) => be.tableSync(`nw.${n}`).info;
+  assert.deepEqual(names.map((n) => [info(n).singularName, info(n).pluralName]), [
+    ['category', 'categories'], ['order detail', 'order details'], ['status', 'statuses'], ['box', 'boxes'],
+    ['study', 'studies'], ['issue', 'issues'], ['address', 'addresses'], ['analysis', 'analyses']]);
+  const named = new MemoryDomainBackend({name: 'nw', tables: {categories: {friendlyName: 'Categories', columns: {}}}});
+  assert.deepEqual([named.tableSync('nw.categories').info.singularName, named.tableSync('nw.categories').info.pluralName],
+    ['Category', 'Categories'], 'a declared friendly name is singularized by the same rules');
+});
+
 test('info: constraints, refFilters, permissions and childTables from the schema; access grants a declared permission', async () => {
   const be = backend();
   const issue = await be.table('grit.issue');
