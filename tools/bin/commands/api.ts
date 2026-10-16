@@ -596,6 +596,8 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
           `values: DG.DomainTxValues<${relations.length > 0 ? `${typeName}Update` : `Partial<${typeName}Row>`}>; ` +
           `expectedVersion?: number} |`,
         `  {op: 'delete'; table: '${tableName}'; id: string} |`);
+    if (!external && table.softDelete !== false)
+      txArms.push(`  {op: 'restore'; table: '${tableName}'; id: string} |`);
 
     // No datetime config: the client resolves datetime columns from the domain
     // registry itself (the Dayjs typing in <Table>Row stays true for every client).
