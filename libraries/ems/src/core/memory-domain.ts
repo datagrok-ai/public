@@ -235,6 +235,9 @@ export class MemoryDomainBackend implements DomainBackend {
     const audit: [MemoryTable, AuditEntryLike][] = [];
     const tx = uuid4();
     const ts = new Date().toISOString();
+    const entry = (table: MemoryTable, name: string, rowId: string, prior: Row | null, next: Row | null): void => {
+      audit.push([table, {id: rowId, tx_id: tx, op: name, actor_id: null, ts, before: prior, after: next}]);
+    };
     // the server's referential actions run before the row goes; a child already in the trash holds nothing back
     const remove = (table: MemoryTable, id: string, index: number, seen: Set<string>): void => {
       if (seen.has(`${table.address}:${id}`))
@@ -242,8 +245,9 @@ export class MemoryDomainBackend implements DomainBackend {
       seen.add(`${table.address}:${id}`);
       for (const child of this._tables.values()) {
         for (const [column, target] of Object.entries(child.refs)) {
-          const live = target === table.address ?
-            rowsOf(child).filter((row) => row[column] === id && row[IS_DELETED] !== true) : [];
+          if (target !== table.address)
+            continue;
+          const live = rowsOf(child).filter((row) => row[column] === id && row[IS_DELETED] !== true);
           if (live.length > 0 && child.onDelete[column] === 'restrict') {
             throw new DomainBackendError('restrict',
               `Operation ${index}: Live rows in "${child.name}" reference this row via "${column}"`);
@@ -255,8 +259,7 @@ export class MemoryDomainBackend implements DomainBackend {
               const rows = rowsOf(child);
               const at = rows.findIndex((r) => r.id === row.id);
               const next = child.stamp({...rows[at], [column]: null}, (rows[at].version as number) + 1);
-              audit.push([child, {id: row.id as string, tx_id: tx, op: 'update', actor_id: null, ts,
-                before: {...rows[at]}, after: {...next}}]);
+              entry(child, 'update', row.id as string, {...rows[at]}, {...next});
               rows[at] = next;
               written.add(child);
             }
@@ -266,7 +269,7 @@ export class MemoryDomainBackend implements DomainBackend {
       const rows = rowsOf(table);
       const at = rows.findIndex((row) => row.id === id);
       // soft delete: the row stays in the store and leaves every query that excludes deleted
-      audit.push([table, {id, tx_id: tx, op: 'delete', actor_id: null, ts, before: {...rows[at]}, after: null}]);
+      entry(table, 'delete', id, {...rows[at]}, null);
       rows[at] = table.stamp({...rows[at], [IS_DELETED]: true}, (rows[at].version as number) + 1);
       written.add(table);
     };
@@ -277,9 +280,6 @@ export class MemoryDomainBackend implements DomainBackend {
       const values = Object.fromEntries(Object.entries(op.values ?? {}).map(([k, v]) => [k, resolve(v, index)]));
       const id = op.op === 'insert' ? undefined : String(resolve(op.id, index));
       const at = rows.findIndex((row) => row.id === id);
-      const entry = (name: string, rowId: string, prior: Row | null, next: Row | null): void => {
-        audit.push([table, {id: rowId, tx_id: tx, op: name, actor_id: null, ts, before: prior, after: next}]);
-      };
       if (op.op === 'insert') {
         const row = table.stamp(values, 1);
         table.check(row, index);
@@ -287,10 +287,13 @@ export class MemoryDomainBackend implements DomainBackend {
         if (op.ref !== undefined)
           refs.set(op.ref, row.id as string);
         results[index] = MemoryDomainBackend._stamped(row, 1);
-        entry(op.op, row.id as string, null, {...row});
+        entry(table, op.op, row.id as string, null, {...row});
       } else if (at < 0)
         throw new DomainBackendError('not-found', `Operation ${index}: no row "${id}"`);
       else if (op.op === 'delete') {
+        // as on the server, a row in the trash (or cascaded earlier in this batch) is gone
+        if (rows[at][IS_DELETED] === true)
+          throw new DomainBackendError('not-found', `Operation ${index}: no row "${id}"`);
         remove(table, id!, index, new Set());
         results[index] = {id};
       } else if (op.op === 'restore') {
@@ -306,7 +309,7 @@ export class MemoryDomainBackend implements DomainBackend {
           }
         }
         const row = table.stamp({...rows[at], [IS_DELETED]: false}, (rows[at].version as number) + 1);
-        entry('undelete', id!, {...rows[at]}, {...row});
+        entry(table, 'undelete', id!, {...rows[at]}, {...row});
         rows[at] = row;
         results[index] = MemoryDomainBackend._stamped(row, row.version as number);
       } else {
@@ -322,7 +325,7 @@ export class MemoryDomainBackend implements DomainBackend {
         }
         const row = table.stamp({...rows[at], ...values}, (rows[at].version as number) + 1);
         table.check(row, index);
-        entry(op.op, id!, {...rows[at]}, {...row});
+        entry(table, op.op, id!, {...rows[at]}, {...row});
         rows[at] = row;
         results[index] = MemoryDomainBackend._stamped(row, row.version as number);
       }

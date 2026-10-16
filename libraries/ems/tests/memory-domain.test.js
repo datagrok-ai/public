@@ -264,6 +264,18 @@ test('delete: onDelete cascade soft-deletes the live children, setnull clears th
     'a cascade recurses down a self-referencing tree');
 });
 
+test('delete: a row the batch already deleted, by a cascade or in the trash, is not found, as on the platform', async () => {
+  const be = shop();
+  await assert.rejects(be.transaction([{op: 'delete', table: 'folder', id: 'f1'}, {op: 'delete', table: 'folder', id: 'f3'}]),
+    (e) => e.code === 'not-found' && /Operation 1: no row "f3"/.test(e.message));
+  assert.deepEqual(be.tableSync('shop.folder').rows.map((r) => r.is_deleted ?? false), [false, false, false],
+    'the refused batch rolled back the cascade');
+  assert.equal(be.tableSync('shop.folder').history.length, 0);
+  await be.transaction([{op: 'delete', table: 'folder', id: 'f3'}]);
+  await assert.rejects(be.transaction([{op: 'delete', table: 'folder', id: 'f3'}]), (e) => e.code === 'not-found');
+  assert.equal(be.tableSync('shop.folder').rows[2].version, 2, 'a re-delete stamps nothing');
+});
+
 test('delete: onDelete restrict (the default) is refused with the platform\'s restrict, and refuses the whole batch', async () => {
   const be = shop();
   await assert.rejects(be.transaction([{op: 'delete', table: 'item', id: 'i2'}]),
