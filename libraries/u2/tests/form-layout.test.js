@@ -570,8 +570,9 @@ test('addColumns: a track never goes under the minimum, so a narrow row holds fe
   const rule = sheet.slice(at, sheet.indexOf('}', at));
   assert.match(rule, /repeat\(auto-fill, minmax\(min\(100%, max\(var\(--u2-form-column-min, 200px\)/);
   assert.match(rule, /\/ var\(--u2-form-columns, 2\)\)\), 1fr\)\)/);
-  assert.match(sheet, /\.u2-form\.u2-form \.u2-form-columns > \.u2-input-root:not\(\.u2-input-fill\) \.u2-input-editor \{\s+flex-shrink: 1;/,
-    'a fixed-width editor (a number\'s 150px) gives way to its column');
+  const fill = sheet.slice(sheet.indexOf('[data-u2=\'choice-input\'], [data-u2=\'number-input\']'));
+  assert.match(fill.slice(0, fill.indexOf('}')), /> \.u2-input-box > \.u2-input-editor \{\s+flex: 1 1 auto;\s+width: auto;/,
+    'a choice fitted to its longest item and a number\'s 150px fill their column like a text editor');
 });
 
 ui('quiet: the form says so, and an input says while it is empty', async () => {

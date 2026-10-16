@@ -38,8 +38,8 @@ Feature: Making and removing a monomer in the Manage Monomers view
     When user clicks on "Add New Monomer" icon
     And user types "CC(C)(C)[C@H](N[1*])C([2*])=O" into molecule input of monomer sketcher
     And user presses Enter in molecule input of monomer sketcher
-    Then "R1" input in monomer form should have value "H"
-    And "R2" input in monomer form should have value "OH"
+    Then "R1" R-group chip in monomer form should contain the text "R1 H"
+    And "R2" R-group chip in monomer form should contain the text "R2 OH"
     When user enters "BDDTLE" into "Symbol" input in monomer form
     And user enters "bdd tert-leucine" into "Name" input in monomer form
     And user clicks on "Add Monomer" button in monomer form

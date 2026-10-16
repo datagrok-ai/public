@@ -2,8 +2,9 @@
 
 ## v.next
 
+* Menu: Added `detail` to an item's options — grey text after the label saying what the item stands for ("hydroxyl · O[*:2]"); the details of one menu start in one column
 * Form: `addButtons(build, {align, host})` — `host` places the form's button row elsewhere (a footer pinned under a form that scrolls) and its primary button keeps the platform's form-button blue there; `align: 'start'` starts the buttons at the row's left
-* Form: Added `addColumns(inputs, {minWidth, columns, host})` — short fields two (or `columns`) to a row, every column's captions and editors in line, one to a row where two would go under `minWidth`
+* Form: Added `addColumns(inputs, {minWidth, columns, host})` — short fields two (or `columns`) to a row, every column's captions and editors in line and each editor filling its column (a choice and a number too), one to a row where two would go under `minWidth`
 * Form: Added `quiet` (the `u2-quiet` class on any other host) — values read as text: an editor's underline shows while it is hovered, focused, empty or wrong, a key/value row's buttons while it is hovered or focused, and editors take the host's background; an input marks itself `u2-input-empty` while it holds nothing
 * Accordion: `addPane(title, content, {expanded, icon, hint, validity, persistKey})` — a folded pane says what it holds (a signal, or an element for a live summary), shows the problem inside it in place of the hint, and remembers the user's open or close (`pane.userSet`); the older `(expanded, icon)` arguments still work
 * Accordion: Added `flush` — titles and content start at the left edge, in line with the captions of a form around it, the chevron at the header's end

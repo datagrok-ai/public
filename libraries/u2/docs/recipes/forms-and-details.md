@@ -52,13 +52,12 @@ and shows the message in the footer. React to `wizard.on('step' | 'finish' | 'ca
 
 An editor beside a grid (Bio's monomer editor, `packages/Bio/src/utils/monomer-lib/monomer-manager/`)
 lives in a panel the user resizes and on screens from 720 to 1440 px tall. The shape that wastes no
-space at any of those sizes and moves nothing under the pointer:
+space at any of those sizes:
 
 ```ts
 const column = new LabelColumn();                          // one caption column for every form below
-const fields = new Form({layout: 'auto', labelColumn: column, quiet: true, captionAlign: 'left'})
-  .addColumns([symbol, name, polymer, type], {minWidth: 176}); // two to a row, one to a row when narrow
-const save = button('Save', () => onSave(), {primary: true, disabled: problem}); // the reason is the tooltip
+const fields = new Form({layout: 'auto', labelColumn: column})
+  .addColumns([symbol, name, polymer, type], {minWidth: 176}); // two to a row, one to a row when narrowconst save = button('Save', () => onSave(), {primary: true, disabled: problem}); // the reason is the tooltip
 const details = new Section({title: 'Details', hint: summary, validity: detailsProblem, chevron: 'end',
   expanded: false, persistKey: 'my-editor.details'});      // folded: what it holds, or what is wrong in it
 fields.addElement(details.root).add(id, details.body)      // last in the fields: it opens right above Save
@@ -72,22 +71,27 @@ panel.append(div([header, preview, scroller, footer], 'my-grid'));
   taking whatever height the fields leave, down to a floor (a share of the panel's height, 300 px at
   least); the fields at their own height, scrolling once the big control is at its floor; and
   Save, pinned in the last row. Make the panel a size container and key the floor off it.
-- With Save pinned at the bottom, whatever opens grows the fields upward. Put what a click opens
-  above what was clicked — a sub-record's row above its chips, a fold's body above its toggle — and
-  give the scroller `flex-direction: column-reverse` around one child, so it stays scrolled to the
-  bottom: then nothing moves under the pointer, whether the big control gives way or the fields scroll.
-  Fade the scroller's top edge while rows are hidden above it.
-- `quiet` reads values as text: no column of underlines, a line where the pointer, the focus, an
-  empty field or an error is. Left captions give the panel one left edge; `addColumns` keeps every
-  column's captions and editors in line, and `minWidth` is the narrowest a caption and its editor
-  get — the longest choice item and a dozen characters of text — before the row goes one to a row.
+- With Save pinned at the bottom, whatever opens makes room by moving the rows above it up. Open a
+  sub-record's fields under its chips, where users look for them, and a fold whose toggle sits in the
+  pinned row (Details) above that row. Give the scroller `flex-direction: column-reverse` around one
+  child, so it stays scrolled to the bottom and what just opened stays in view; the trigger moves up
+  by what opened under it. (Opening everything upward keeps the trigger still, but read as
+  unexpected.) Fade the scroller's top edge while rows are hidden above it.
+- Every editor keeps its underline and its caption right-aligned beside it, as in every platform
+  form (`quiet` hides underlines at rest, and a form people fill in then reads as half fields, half
+  text). `addColumns` keeps every column's captions and editors in line, each editor filling its
+  column, and `minWidth` is the narrowest a caption and its editor get — the longest choice item and a
+  dozen characters of text — before the row goes one to a row.
 - Save with a `statusLine` beside it says what Save will do, or why it cannot yet, without hovering.
   The fold's header (`chevron: 'end'`) sits at the end of that row with a `hint` summarizing what it
   holds (an element can carry swatches); open it where there is room (from a `ResizeObserver`, until
   `section.userSet`). A form whose panes stand on their own rows lines them up with
   `new Accordion({flush: true})`.
-- A small set of sub-records (R groups) reads as chips that wrap, one opened at a time into its row:
-  build them with `each()`, and give their plain elements `effect()` and `on()` — both owned by the row.
+- A small set of sub-records (R groups) reads as chips that wrap, each opening a `Menu` of its choices
+  — an item's `detail` says what each stands for, the current one is `check`ed — so a change is two
+  clicks and nothing in the panel moves. Fields needed rarely (a cap's raw definition) open under the
+  chips from the menu's last item. Build the chips with `each()`, and give their plain elements
+  `effect()` and `on()` — both owned by the row; build the menu on every open, so its checks are fresh.
 - Tabs in a narrow panel hide most of the record and leave an empty band under the short tabs.
 - Keep a canvas that takes the mouse wheel (a sketcher, a chart) out of any scroller.
 

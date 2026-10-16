@@ -108,10 +108,12 @@ right. Each rule names the API that makes it easy.
 - **Listen with `on(el, type, handler)`, follow with `effect(fn)`** on elements you build in a row
   or a card: both go with them. `this.scope.listen` or `this.effect` would tie them, and the element,
   to the long-lived control.
-- **A panel, not a page of underlines.** `new Form({quiet: true})` reads values as text;
-  `form.addColumns(inputs, {minWidth})` puts short fields two to a row, aligned, one to a row when
-  narrow; `statusLine(problem, otherwise)` beside Save says what it does or why it cannot yet; a flush
-  `Accordion` pane with a `hint` folds the rest. The recipe: docs/recipes/forms-and-details.md.
+- **A docked editor panel.** `form.addColumns(inputs, {minWidth})` puts short fields two to a row,
+  each editor filling its column, one to a row when narrow. `statusLine(problem, otherwise)` beside
+  Save says what it does or why it cannot yet; a flush `Accordion` pane with a `hint` folds the rest; a
+  chip that opens a `Menu` (an item's `detail` says what it stands for) changes a small choice in two
+  clicks. The recipe: docs/recipes/forms-and-details.md. `new Form({quiet: true})` drops the underlines
+  at rest: for an inspector, not a form people fill in.
 - **Dock with `host(control)`.** It disposes the control when the platform closes its panel. A
   panel closed from code with `dockManager.close` skips that: check `root.isConnected`.
 - **Find a view's control from its root.** The platform hands out a new wrapper object for a view

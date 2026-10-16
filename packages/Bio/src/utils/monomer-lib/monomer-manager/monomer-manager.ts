@@ -551,6 +551,8 @@ export class MonomerManager implements IMonomerManager {
 
     const newMonomerButton = ui.icons.add(() => {
       this.editor.setEmptyMonomer();
+      // a new monomer is the user's: a current row the grid sets later must not load over the drawing
+      this.editor.edited.value = true;
     }, 'Add New Monomer');
 
     const fixAllMonomersIcon = ui.iconFA('wand-magic', () => { this.fixAllMonomers(); }, 'Fix All Monomers');

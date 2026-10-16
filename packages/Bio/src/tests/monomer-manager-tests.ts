@@ -107,8 +107,17 @@ category('monomerManager: R-groups editor', () => {
     editors.splice(editors.indexOf(editor), 1);
     expect(Scope.liveCount, live, 'scopes left behind by the editor');
   };
-  const row = (editor: RGroupsEditor, label: string) =>
-    editor.root.querySelector<HTMLElement>(`.monomer-rgroup-row[data-u2-item="${label}"]`)!;
+  const chip = (editor: RGroupsEditor, label: string) =>
+    editor.root.querySelector<HTMLButtonElement>(`.monomer-rgroup-chip[data-u2-item="${label}"]`)!;
+  /** Opens R`n`'s menu with a click on its chip and reads the items as shown. */
+  const menuOf = (editor: RGroupsEditor, label: string) => {
+    chip(editor, label).click();
+    const panels = document.querySelectorAll<HTMLElement>('.u2-menu');
+    return Array.from(panels[panels.length - 1].querySelectorAll<HTMLElement>('.u2-menu-item')).map((el) => ({el,
+      label: el.querySelector('.u2-menu-label')!.textContent, checked: el.getAttribute('aria-checked') === 'true',
+      detail: el.querySelector('.u2-menu-detail')?.textContent ?? ''}));
+  };
+  const text = (el: Element) => (el.textContent ?? '').replace(/\s+/g, ' ').trim();
 
   after(async () => {
     for (const editor of editors.splice(0)) {
@@ -126,36 +135,47 @@ category('monomerManager: R-groups editor', () => {
     expectObject(saved[1], {capGroupSMILES: 'O[*:2]', capGroupName: 'OH', alternateId: 'R2-OH', label: 'R2'});
     expectObject(saved[2], {capGroupSMILES: 'X[*:3]', capGroupName: 'X', label: 'R3'});
     expect(editor.problem.value, 'R3: X is a placeholder, not a cap group — pick the cap R3 gets (usually H)');
-    const select = row(editor, 'R3').querySelector('select')!;
-    expect(select.value, '~own', 'the cap the library names is the chosen one');
-    expect(select.options[select.options.length - 1].textContent, 'X', 'and is appended to the list');
-    expect(row(editor, 'R4').querySelector('select')!.value, '', 'nothing to infer: the empty choice');
+    expect(text(chip(editor, 'R3')), 'R3 X');
+    expect(chip(editor, 'R3').getAttribute('aria-invalid'), 'true');
+    const r3 = menuOf(editor, 'R3');
+    expect(r3.length, COMMON_CAP_GROUPS.length + 2, 'the common caps, the library\'s own, Edit definition');
+    expectArray(r3.filter((i) => i.checked).map((i) => i.label), ['X'], 'the cap the library names, appended and checked');
+    chip(editor, 'R3').click();
+    expect(document.querySelector('.u2-menu'), null, 'a second click closes the menu');
+    expect(menuOf(editor, 'R4').some((i) => i.checked), false, 'nothing to infer: nothing checked');
+    chip(editor, 'R4').click();
     dispose(editor);
   });
 
-  test('a pick and the four fields both edit the R group', async () => {
+  test('a pick and the definition fields both edit the R group', async () => {
     const editor = make();
     editor.setDefinitions([rg('R1', '[*:1][H]', 'H', 'R1-H'), rg('R2', '', '', '')]);
-    const select = row(editor, 'R2').querySelector('select')!;
-    select.value = 'Br';
-    select.dispatchEvent(new Event('change'));
+    const br = menuOf(editor, 'R2').find((i) => i.label === 'Br')!;
+    expect(br.detail, 'bromo · Br[*:2]', 'each cap says what it is and the SMILES Save writes');
+    expect(chip(editor, 'R2').getAttribute('aria-expanded'), 'true');
+    br.el.click();
+    expect(chip(editor, 'R2').getAttribute('aria-expanded'), 'false', 'a pick closes the menu');
     expectObject(editor.rgroups.value[1], {capGroupSMILES: 'Br[*:2]', capGroupName: 'Br', alternateId: 'R2-Br'});
     expect(editor.problem.value, null);
-    expect(row(editor, 'R2').querySelector('.monomer-rgroup-info')!.textContent, 'bromo · Br[*:2]');
+    expect(text(chip(editor, 'R2')), 'R2 Br');
 
-    const fields = row(editor, 'R2').querySelector<HTMLElement>('.monomer-rgroup-fields')!;
-    expect(fields.hidden, true, 'the fields wait for the pencil');
-    row(editor, 'R2').querySelector<HTMLButtonElement>('[data-u2="icon-button"]')!.click();
-    expect(fields.hidden, false);
-    const [smiles, name, alternateId] = Array.from(fields.querySelectorAll('input'));
+    const definition = editor.root.querySelector<HTMLElement>('.monomer-rgroup-definition[data-u2-item="R2"]')!;
+    expect(definition.hidden, true, 'the fields wait for Edit definition');
+    menuOf(editor, 'R2').find((i) => i.label === 'Edit definition…')!.el.click();
+    expect(definition.hidden, false);
+    const chips = editor.root.querySelector('.monomer-rgroups-chips')!;
+    expect(!!(chips.compareDocumentPosition(definition) & Node.DOCUMENT_POSITION_FOLLOWING), true,
+      'the definition opens under the chips');
+    const [smiles, name, alternateId] = Array.from(definition.querySelectorAll('input'));
     for (const [input, value] of [[smiles, '[*:2]C(F)(F)F'], [name, 'CF3'], [alternateId, 'R2-CF3']] as const) {
       input.value = value;
       input.dispatchEvent(new Event('change'));
     }
     expectObject(editor.rgroups.value[1],
       {capGroupSMILES: '[*:2]C(F)(F)F', capGroupName: 'CF3', alternateId: 'R2-CF3'});
-    expect(select.value, '~own');
-    expect(select.options[select.options.length - 1].textContent, 'CF3');
+    expectArray(menuOf(editor, 'R2').filter((i) => i.checked).map((i) => i.label), ['CF3'],
+      'a definition of its own joins the menu, checked');
+    chip(editor, 'R2').click();
     dispose(editor);
   });
 
@@ -166,7 +186,8 @@ category('monomerManager: R-groups editor', () => {
     expectArray(editor.rgroups.value.map((r) => r.capGroupName), ['H', 'Cl', 'H']);
     editor.setLabels(['R2']);
     expectArray(editor.labels, ['R2']);
-    expect(editor.root.querySelectorAll('.monomer-rgroup-row').length, 1);
+    expect(editor.root.querySelectorAll('.monomer-rgroup-chip').length, 1);
+    expect(editor.root.querySelectorAll('.monomer-rgroup-definition').length, 1);
     editor.setCap('R2', 'OMe');
     expectObject(editor.rgroups.value[0], {capGroupSMILES: 'CO[*:2]', capGroupName: 'OMe'});
     let thrown = '';
@@ -223,6 +244,9 @@ category('monomerManager: editor', () => {
         'the row is the form\'s own button row: Save keeps the platform\'s form-button look');
       const fields = [...editor.root.querySelector('.monomer-manager-fields > .u2-form-rows')!.children];
       expect(fields[fields.length - 1] === editor.details.root, true, 'Details opens right above Save');
+      expect(editor.root.querySelector('.u2-form-captions-left'), null,
+        'captions stand right-aligned beside their editors, as in platform forms');
+      expect(editor.root.querySelector('.u2-quiet'), null, 'every editor is underlined, as in platform forms');
       expect(editor.details.root.querySelector('[role="group"]')?.textContent?.startsWith('Colors'), true,
         'one Colors row in Details');
       const line = editor.root.querySelector('.u2-status-line')!;

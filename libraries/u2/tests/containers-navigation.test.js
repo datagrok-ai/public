@@ -399,6 +399,28 @@ ui('Menu: an item\'s handler runs owned by whoever added it, after the menu clos
   owner.dispose();
 });
 
+ui('Menu: a detail is grey text after the label; a label with none runs on across the details\' column', () => {
+  const menu = Menu.popup().item('H', () => {}, {check: false, detail: 'hydrogen · [*:1][H]'})
+    .item('OH', () => {}, {check: true, detail: 'hydroxyl · O[*:1]'}).separator().item('Edit definition…', () => {});
+  menu.show({x: 10, y: 10});
+  const panel = document.body.querySelector('.u2-menu');
+  assert.equal(panel.classList.contains('u2-menu-detailed'), true);
+  const items = panel.querySelectorAll('.u2-menu-item');
+  assert.deepEqual(items.map((el) => el.querySelector('.u2-menu-detail')?.textContent),
+    ['hydrogen · [*:1][H]', 'hydroxyl · O[*:1]', undefined]);
+  assert.equal(items[0].querySelector('.u2-menu-label').textContent, 'H', 'the label stays the item\'s name');
+  assert.deepEqual(items.map((el) => el.querySelector('.u2-menu-label').classList.contains('u2-menu-label-wide')),
+    [false, false, true], '"Edit definition…" does not widen the labels\' column');
+  menu.close();
+
+  Menu.popup().item('Copy', () => {}).show({x: 10, y: 10});
+  const plain = document.body.querySelector('.u2-menu');
+  assert.equal(plain.classList.contains('u2-menu-detailed'), false);
+  assert.equal(plain.querySelector('.u2-menu-detail'), null, 'a menu without details keeps its three cells');
+  assert.equal(plain.querySelector('.u2-menu-label-wide'), null);
+  fire(plain, 'keydown', {key: 'Escape'});
+});
+
 ui('MenuBar and Toolbar list their items; a toolbar toggle is selected while pressed', () => {
   const bar = new MenuBar({items: [{label: 'File', build: (m) => m.item('New', () => {})},
     {label: 'Edit', build: () => {}, enabled: false}]});

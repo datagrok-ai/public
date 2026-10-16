@@ -15,7 +15,7 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {bioInitialized} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, shouldBe, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {call} from '@datagrok-libraries/bdd/bindings/platform/functions';
@@ -74,7 +74,7 @@ test.describe("Crux in Bio's hosts", () => {
     await session.step(58, "And user clicks on crux R2 button", () => clickOn(page, el("crux R2 button")));
     await session.step(59, "And user clicks on crux R-Group OK button", () => clickOn(page, el("crux R-Group OK button")));
     await session.step(60, "Then the \"smiles\" reading of crux sketcher widget should be the molecule \"[*:1]C[*:2]\"", () => readingIsMolecule(page, "smiles", el("crux sketcher widget"), "[*:1]C[*:2]"));
-    await session.step(61, "And \"R1\" input in monomer form should have value \"H\"", () => shouldHaveValue(page, el("\"R1\" input in monomer form"), "H"));
-    await session.step(62, "And \"R2\" input in monomer form should have value \"OH\"", () => shouldHaveValue(page, el("\"R2\" input in monomer form"), "OH"));
+    await session.step(61, "And \"R1\" R-group chip in monomer form should contain the text \"R1 H\"", () => shouldContainText(page, el("\"R1\" R-group chip in monomer form"), "R1 H"));
+    await session.step(62, "And \"R2\" R-group chip in monomer form should contain the text \"R2 OH\"", () => shouldContainText(page, el("\"R2\" R-group chip in monomer form"), "R2 OH"));
   });
 });

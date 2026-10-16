@@ -673,8 +673,9 @@ const METAS: ComponentMeta[] = [
       'Forms that must line up — the tabs of one editor — share a `LabelColumn` (`labelColumn` option); ' +
       '`labelWidth` fixes the column. The labels align before the first paint; `layoutNow()` for a test ' +
       'that reads the layout in the same task. `addColumns(inputs, {minWidth})` puts short fields two to ' +
-      'a row, aligned, one to a row where two would go under `minWidth`; `quiet: true` drops the ' +
-      'underlines at rest (an inspector or a docked editor). Beside a Save, `statusLine(problem, ' +
+      'a row, each editor filling its column, one to a row where two would go under `minWidth`. ' +
+      '`quiet: true` drops the underlines at rest — for an inspector, not a form people fill in. Beside a ' +
+      'Save, `statusLine(problem, ' +
       'otherwise)` says what Save will do or why it cannot yet.',
     props: [
       {name: 'layout', type: 'string', choices: ['auto', 'normal', 'wide', 'tall'], structural: true,

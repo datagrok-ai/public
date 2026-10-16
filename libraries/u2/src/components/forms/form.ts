@@ -240,8 +240,9 @@ export class Form extends Control {
 
   /** The inputs in equal columns, filled row by row — Symbol | Name, Polymer | Type. A column is never
    * narrower than `minWidth`: a row with no room for two holds one, so a narrow dock stacks them rather
-   * than squeezing them. Every column keeps the form's label column, so captions and editors line up
-   * down the rows and across them. The inputs join the form as {@link add}'s do. */
+   * than squeezing them. Every column keeps the form's label column, and an editor fills its column, so
+   * captions and editors line up down the rows and across them. The inputs join the form as
+   * {@link add}'s do. */
   addColumns(inputs: Input<any>[], options?: FormColumnsOptions): Form {
     const grid = document.createElement('div');
     grid.className = 'u2-form-columns';

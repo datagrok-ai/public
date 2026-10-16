@@ -472,10 +472,19 @@
   min-width: 0;
 }
 
-/* a cell is as wide as its column: an editor of a fixed width — a number's 150px, a choice fitted to its
-   longest item — gives way rather than spilling into the next column. The doubled class outweighs the
-   auto form's width rules (.u2-form-auto.u2-form-wide … .u2-number, 0,6,0) */
-.u2-form.u2-form .u2-form-columns > .u2-input-root:not(.u2-input-fill) .u2-input-editor {
-  flex-shrink: 1;
+/* a field's editor fills its cell, so the editors of a column share both edges — a choice fitted to its
+   longest item and a number's 150px included, which would otherwise leave one short underline under
+   another. The part attribute outweighs the auto form's width rules (a choice's select, 0,6,1) */
+.u2-form.u2-form .u2-form-columns[data-u2-part='columns'] > .u2-input-root:not(.u2-input-fill) > .u2-input-box {
+  flex: 1 1 0;
   min-width: 0;
+  max-width: none;
+}
+
+.u2-form.u2-form .u2-form-columns[data-u2-part='columns'] > .u2-input-root:not(.u2-input-fill):is([data-u2='text-input'],
+  [data-u2='choice-input'], [data-u2='number-input'], [data-u2='date-input'], [data-u2='suggest-input']) > .u2-input-box > .u2-input-editor {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: none;
 }

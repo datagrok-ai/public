@@ -1,9 +1,8 @@
 /* The editor docked beside the Manage Monomers grid: the library the grid shows; the monomer's structure in
    a sketcher taking the height the fields leave; the fields, scrolling on their own — its symbol, name and
-   types two to a row, its R groups as chips, its Details — and, pinned at the bottom, Save, a line saying
-   what it will do or why it cannot yet, and the Details toggle. The fields grow upward from that row, so
-   whatever opens (a chip's row, the pencil, Details) opens above what was clicked and nothing moves under
-   the pointer. */
+   types two to a row, its R groups as chips that open a menu of caps, its Details — and, pinned at the
+   bottom, Save, a line saying what it will do or why it cannot yet, and the Details toggle. With that row
+   pinned, the fields grow upward: Details opens above its toggle, an R group's definition under the chips. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -67,8 +66,8 @@ export class MonomerEditor extends Control implements INewMonomerForm {
   readonly details: Section;
   /** Why the monomer cannot be saved yet, or null. */
   readonly problem: ReadonlySignal<string | null>;
-  /** The user changed the monomer since it was loaded or saved — until then the manager loads the grid's
-   * current row into the editor, so moving through the grid shows each monomer. */
+  /** The user changed the monomer, or started a new one, since it was loaded or saved — until then the
+   * manager loads the grid's current row into the editor, so moving through the grid shows each monomer. */
   readonly edited = signal(false);
 
   static readonly DRAW = 'Draw the monomer\'s structure';
@@ -129,7 +128,7 @@ export class MonomerEditor extends Control implements INewMonomerForm {
       };
 
       const rgroups = new RGroupsEditor({canonicalize: MonomerEditor.canonicalize,
-        isValidSmiles: (smiles) => grok.chem.checkSmiles(smiles), labelColumn, onInput: () => this.edited.value = true});
+        isValidSmiles: (smiles) => grok.chem.checkSmiles(smiles), onInput: () => this.edited.value = true});
       const meta = new MapInput({label: 'Properties', name: 'meta'});
       const colorInput = (label: string) => new ColorInput({label, name: label.toLowerCase(), swatchOnly: true});
       const colors = {line: colorInput('Line'), background: colorInput('Background'), text: colorInput('Text')};
@@ -183,8 +182,8 @@ export class MonomerEditor extends Control implements INewMonomerForm {
     });
 
     const layout = this.runInScope(() => {
-      const head = new Form({layout: 'auto', labelColumn, quiet: true, captionAlign: 'left'}).add(this.library);
-      const fields = new Form({layout: 'auto', labelColumn, quiet: true, captionAlign: 'left'})
+      const head = new Form({layout: 'auto', labelColumn}).add(this.library);
+      const fields = new Form({layout: 'auto', labelColumn})
         .addColumns([this.symbol, this.monomerName, this.polymerType, this.monomerType], {minWidth: COLUMN_WIDTH});
       this.rgroups.root.classList.add('monomer-manager-rgroups');
       fields.addElement(this.rgroups.root);
@@ -532,9 +531,10 @@ export class MonomerEditor extends Control implements INewMonomerForm {
     if (!smiles)
       return MonomerEditor.DRAW;
     const numbers = MonomerEditor.rgroupNumbers(smiles);
-    if (numbers.length === 0)
+    if (numbers.length === 0) {
       return 'Mark the monomer\'s attachment points as R groups (R1, R2, ...) — the R-group tool in the ' +
         'sketcher, or [*:1] in the SMILES';
+    }
     const twice = numbers.find((n, i) => numbers.indexOf(n) !== i);
     return twice === undefined ? null : `R${twice} appears twice in the structure — renumber one of them`;
   }
@@ -557,7 +557,7 @@ export class MonomerEditor extends Control implements INewMonomerForm {
     const problem = this._checkStructure(smiles);
     this._structureProblem.value = problem;
     const numbers = MonomerEditor.rgroupNumbers(smiles);
-    // an R label twice leaves the rows as they were, the R groups saying which one to renumber
+    // an R label twice leaves the chips as they were, the R groups saying which one to renumber
     if (new Set(numbers).size !== numbers.length)
       return;
     this.rgroups.setLabels(numbers.map((n) => `R${n}`));
