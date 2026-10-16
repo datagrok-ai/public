@@ -4,7 +4,8 @@ Gherkin features under `features/`, compiled by `@datagrok-libraries/bdd` (`publ
 into the Playwright specs under `generated/` — committed, never edited by hand. `features/viewers/`
 holds one folder per platform viewer (every TestTrack viewer spec translated, most as `@journey`
 features: the data and the viewer opened once, the scenarios in order as soft steps) plus
-`viewer-chrome.feature`, the outline over the title and description every viewer shares;
+`viewer-chrome.feature`, the outline over the title and description every viewer shares, and
+`molecule-categories.feature`, a molecule column as the category axis of five viewers (needs Chem);
 `viewers/grid/grid-context-menu.feature` is not a translation but the reproduction of a bug
 (2026-09-22: a right click put the current row back where it was and scrolled there), kept as the
 proof that a right-clicked cell becomes current and that the Current Value actions of Chem and Helm

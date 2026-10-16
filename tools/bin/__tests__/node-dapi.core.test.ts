@@ -31,6 +31,12 @@ describe('throwIfApiError', () => {
     catch (e: any) { expect(e.apiError.errorCode).toBe(404); }
   });
 
+  it('takes the code from the api-error-code header when the body has none', () => {
+    try { throwIfApiError({'#type': 'ApiError', message: 'Wait'}, new Headers({'api-error-code': '429'})); }
+    catch (e: any) { expect(e.apiError.errorCode).toBe(429); }
+    expect.assertions(1);
+  });
+
   it('throws on an ApiError serialized as a JSON string', () => {
     expect(() => throwIfApiError('{"#type":"ApiError","message":"Login already exists"}'))
       .toThrow('Login already exists');

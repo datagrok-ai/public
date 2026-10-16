@@ -146,10 +146,10 @@ test.describe("The preprocessing options of Train Model, kept by the saved model
       await session.step(182, "Then the \"Apply predictive model\" dialog should close", () => dialogCloses(page, "Apply predictive model"));
       await session.step(183, "And a new column \"target\" should have been added", () => newColumnNamed(page, "target"));
       await session.step(184, "And \"target\" column should have no missing values", () => columnComplete(page, "target"));
-      await session.step(186, "And the \"target\" cell of row 2 should be displayed as \"2.42\"", () => displayedInRow(page, "target", 2, "2.42"));
-      await session.step(187, "And the \"target\" cell of row 3 should be displayed as \"3.35\"", () => displayedInRow(page, "target", 3, "3.35"));
-      await session.step(188, "And no error or warning balloon should have been shown", () => noBalloons(page));
-      await session.step(189, "And no errors should have been logged", () => noErrors(page));
+      await session.step(188, "And the \"target\" cell of row 2 should be displayed as \"2.42\"", () => displayedInRow(page, "target", 2, "2.42"));
+      await session.step(189, "And the \"target\" cell of row 3 should be displayed as \"3.35\"", () => displayedInRow(page, "target", 3, "3.35"));
+      await session.step(190, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(191, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

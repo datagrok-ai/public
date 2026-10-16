@@ -8,6 +8,8 @@ export const FLAGS = {rowColors: 1, rowSizes: 2, rowTypes: 4, selection: 8, mark
 /** The size of the `Frame` struct. */
 export const FRAME_BYTES = 96;
 export const PICK_WORKGROUP = 256;
+/** `MARKER_KIND` of a shape pipeline whose rows have markers of any kind. */
+export const ANY_KIND = 0xFFFFFFFF;
 
 const PRELUDE = /* wgsl */`
 struct Frame {
@@ -62,6 +64,10 @@ fn rowType(row: u32) -> u32 {
 
 const DRAW_PRELUDE = /* wgsl */`
 ${PRELUDE}
+// The kind of every marker a shape pipeline draws, when they share one: the other shapes compile out, which makes
+// the fragment shader several times faster than one choosing among all of them per pixel.
+override MARKER_KIND: u32 = ${ANY_KIND}u;
+
 @group(0) @binding(4) var<storage, read> colors: array<u32>;
 @group(0) @binding(7) var<storage, read> selection: array<u32>;
 
@@ -159,17 +165,18 @@ fn triangle(kind: u32, p: vec2f, s: f32) -> f32 {
   return triangleTop(p, s);
 }
 
-// Five spikes from the top, the inner radius half the outer one.
+// Five spikes from the top, the inner radius half the outer one. The directions live at module scope: as a local
+// array, built in each of the five marker() calls of a pixel, they made the shader several times slower for every kind.
+const STAR_DIRS = array<vec2f, 10>(vec2f(0.0, -1.0), vec2f(0.58778525, -0.80901699), vec2f(0.95105652, -0.30901699),
+  vec2f(0.95105652, 0.30901699), vec2f(0.58778525, 0.80901699), vec2f(0.0, 1.0), vec2f(-0.58778525, 0.80901699),
+  vec2f(-0.95105652, 0.30901699), vec2f(-0.95105652, -0.30901699), vec2f(-0.58778525, -0.80901699));
 fn star(p: vec2f, r: f32) -> f32 {
-  var dirs = array<vec2f, 10>(vec2f(0.0, -1.0), vec2f(0.58778525, -0.80901699), vec2f(0.95105652, -0.30901699),
-    vec2f(0.95105652, 0.30901699), vec2f(0.58778525, 0.80901699), vec2f(0.0, 1.0), vec2f(-0.58778525, 0.80901699),
-    vec2f(-0.95105652, 0.30901699), vec2f(-0.95105652, -0.30901699), vec2f(-0.58778525, -0.80901699));
   var d = 1e9;
   var s = 1.0;
   var j = 9u;
   for (var i = 0u; i < 10u; i++) {
-    let vi = dirs[i] * select(r * 0.5, r, i % 2u == 0u);
-    let vj = dirs[j] * select(r * 0.5, r, j % 2u == 0u);
+    let vi = STAR_DIRS[i] * select(r * 0.5, r, i % 2u == 0u);
+    let vj = STAR_DIRS[j] * select(r * 0.5, r, j % 2u == 0u);
     let e = vj - vi;
     let w = p - vi;
     let b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
@@ -216,7 +223,9 @@ fn marker(v: ShapeVarying, p: vec2f) -> vec2f {
 // Pixel coverage at signed distances [d], ramping over a pixel, or over a quarter pixel's share of it.
 fn coverage(d: vec2f, ramps: f32) -> vec2f { return clamp(0.5 - d * frame.dpr * ramps, vec2f(0.0), vec2f(1.0)); }
 
-@fragment fn shapeFragment(v: ShapeVarying) -> @location(0) vec4f {
+@fragment fn shapeFragment(vin: ShapeVarying) -> @location(0) vec4f {
+  var v = vin;
+  if (MARKER_KIND != ${ANY_KIND}u) { v.kind = MARKER_KIND; }
   let p = (v.position.xy - v.center) / frame.dpr;
   var o: vec4f;
   if (v.kind == GRADIENT) {

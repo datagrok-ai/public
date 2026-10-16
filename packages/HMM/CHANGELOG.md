@@ -2,6 +2,8 @@
 
 ## 0.1.0 (unreleased)
 
+* [public#4226](https://github.com/datagrok-ai/public/issues/4226): Profile HMM Search, Profile HMM Logo, Build
+  Profile HMM, Homology Search and Find Domains are disabled until the current table has a macromolecule column.
 * ANARCI numbering engine (IMGT, Kabat, Chothia, Martin, AHo, Wolfguy) for Bio's
   Apply Numbering Scheme dialog, with chain, species and germline assignment.
 * Germlines and Species (ANARCI) for antibody and TCR columns.

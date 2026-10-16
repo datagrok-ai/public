@@ -230,6 +230,17 @@ export const dropFile = When('user drops the {string} file of the project onto {
   }
 }, {tier: 'ui', description: 'the browser\'s own drag of the file from disk: it enters over the element, the platform lays its drop layer over the window, and the file is dragged over it and dropped there'});
 
+/* GROK-20507: a drag whose dragleave or drop the page never hears (lost while the UI was busy) leaves the
+   page with a dragenter and nothing after it. Made in the page: the browser's drag is over, only the page
+   missed its end, so the pointer and the keyboard reach the page as usual. */
+export const fileDragEndLost = When('a file dragged from disk enters {element} and the drag\'s end never reaches the page', async (page: Page, target: ElementRef) => {
+  await (await locate(page, target)).filter({visible: true}).first().evaluate((e) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File(['a,b\n1,2\n'], 'dragged.csv', {type: 'text/csv'}));
+    e.dispatchEvent(new DragEvent('dragenter', {bubbles: true, cancelable: true, dataTransfer: dt}));
+  });
+}, {tier: 'ui', description: 'a dragenter carrying a CSV file dispatched on the element, and no dragleave or drop after it'});
+
 export const menuFileChooser = When('user picks {string} from the open menu and chooses the {string} file of the project', async (page: Page, path: string, file: string) => {
   const chooser = page.waitForEvent('filechooser', {timeout: pollMs(15000)});
   await pickMenuPath(page, path);

@@ -24,6 +24,31 @@ export const searchListsCategories = Then('the search results should list the ca
   }, {message: `the result categories ${list}`}).toBe('all there');
 }, {description: 'each named category has a header and a list in the results (others may be there too)'});
 
+/* An entity a category lists is a link labelled with its friendly name, which the platform may capitalize
+   ("bdd-x" is listed as "Bdd-x"): the entity's own name is in the link's `name` attribute. */
+export const categoryLists = Then('the {string} search results should list {string}', async (page: Page, category: string, name: string) => {
+  await expect.poll(() => page.evaluate(([c, n]) => {
+    const container = [...document.querySelectorAll('.power-pack-search-host .power-pack-search-list-container')]
+      .filter((e) => (e as HTMLElement).offsetParent !== null)
+      .find((e) => (e.querySelector('.power-pack-search-list-header')?.textContent ?? '').trim() === c);
+    if (!container)
+      return `no ${c} results`;
+    const links = [...container.querySelectorAll('.d4-link-label')];
+    return links.some((l) => l.getAttribute('name') === `span-${n}` || (l.textContent ?? '').trim() === n) ?
+      'listed' : `${c} lists: ${links.map((l) => (l.textContent ?? '').trim()).join(', ')}`;
+  }, [category, name] as [string, string]), {message: `"${name}" among the ${category} results`}).toBe('listed');
+}, {description: 'a link to the entity in the list under that category header'});
+
+export const noResults = Then('the search results should be empty', async (page: Page) => {
+  expect(await page.evaluate(() => {
+    const host = (window as any).grok.shell.v?.root?.querySelector('.power-pack-search-host') as HTMLElement | null;
+    if (!host)
+      return 'no search results on the current view';
+    const pictures = [...host.querySelectorAll('canvas, img, svg')].filter((e) => (e as HTMLElement).getBoundingClientRect().width > 0);
+    return [host.innerText.trim().slice(0, 80), ...pictures.map((e) => e.tagName)].filter(Boolean).join(' | ');
+  }), 'what the finished search shows').toBe('');
+}, {description: 'read after the search has finished: no text, list or picture of any search path is shown (empty hosts the answers would go into stay)'});
+
 export const noSuggestions = Then('no search suggestion should be shown', async (page: Page) => {
   expect(await menuItems(page), 'the suggestions under the search box').toEqual([]);
 }, {description: 'read after the search has finished, when the suggestions of that text would have been shown'});

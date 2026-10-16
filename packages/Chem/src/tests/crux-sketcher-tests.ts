@@ -426,6 +426,36 @@ category('Crux sketcher', () => {
     }
   });
 
+  // The product owner (2026-10-15): in the context panel's Filter pane of a molecule column, Crux stayed 500 px wide and
+  // ran past the panel, where Ketcher takes the pane's width: Crux's preferred size (css/crux-sketcher.css) was the
+  // pane's minimum content width. In the context panel Crux takes the pane's width.
+  test('fits the context panel\'s filter pane', async () => {
+    const df = DG.DataFrame.fromCsv(`smiles\n${SMILES}\nc1ccccc1O\nCCO`);
+    await grok.data.detectSemanticTypes(df);
+    grok.chem.currentSketcherType = 'Crux';
+    const showContextPanel = grok.shell.windows.showContextPanel;
+    const tv = grok.shell.addTableView(df);
+    try {
+      grok.shell.windows.showContextPanel = true;
+      grok.shell.o = df.col('smiles');
+      const filterHeader = () => [...document.querySelectorAll<HTMLElement>('.grok-prop-panel .d4-accordion-pane-header')]
+        .find((h) => h.textContent?.trim() === 'Filter');
+      await awaitCheck(() => filterHeader() !== undefined, 'no Filter pane in the context panel', 10000);
+      if (!filterHeader()!.classList.contains('expanded'))
+        filterHeader()!.click();
+      await awaitCheck(() => document.querySelector('.grok-prop-panel .crux-sketcher crux-sketch') !== null,
+        'no Crux in the Filter pane', 15000);
+      await delay(SETTLE_MS);
+      const pane = document.querySelector('.grok-prop-panel .d4-pane-filter')!.getBoundingClientRect().width;
+      const crux = document.querySelector('.grok-prop-panel .crux-sketcher')!.getBoundingClientRect().width;
+      expect(crux <= pane + 1, true, `Crux ${Math.round(crux)} px wide in a ${Math.round(pane)} px pane`);
+      expect(crux >= pane - 40, true, `Crux ${Math.round(crux)} px wide does not fill a ${Math.round(pane)} px pane`);
+    } finally {
+      grok.shell.windows.showContextPanel = showContextPanel;
+      tv.close();
+    }
+  }, {timeout: 60000});
+
   test('smiles', async () => {
     const s = await openCrux();
     try {
@@ -439,6 +469,30 @@ category('Crux sketcher', () => {
       expect(canonical(s.host.getMolFile()), canonical(STEREO_SMILES), 'stereo in the V2000 written by Crux');
     } finally {
       s.dialog.close();
+    }
+  });
+
+  // The product owner (2026-10-15): the context panel's Actions > Sketch on a molecule opened Crux empty from the third
+  // time on. Core's action sets the current molecule's value as SMILES, and once a sketcher has synced the current object
+  // (js-api's Sketcher.syncCurrentObject) that value is a molblock, which Ketcher and OpenChemLib read by its format.
+  // Crux reads a molblock given as SMILES as the molblock it is: set before it is ready, as core sets it, and after.
+  test('a molblock given as SMILES', async () => {
+    const molblock = (smiles: string) => DG.chem.convert(smiles, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+    grok.chem.currentSketcherType = 'Crux';
+    const host = new DG.chem.Sketcher();
+    host.setSmiles(molblock(SMILES));
+    const dialog = ui.dialog().add(host).show();
+    try {
+      await host.sketcherReady();
+      await delay(SETTLE_MS);
+      const crux = () => host.sketcher!.root.querySelector<CruxElement>('crux-sketch')!;
+      expect(crux().isEmpty, false, 'Crux given a molblock as SMILES before it was ready');
+      expect(canonical(crux().molfile), canonical(SMILES), 'the drawing of a molblock given as SMILES');
+      host.setSmiles(molblock(STEREO_SMILES));
+      await delay(SETTLE_MS);
+      expect(canonical(crux().molfile), canonical(STEREO_SMILES), 'a molblock given as SMILES once Crux is ready');
+    } finally {
+      dialog.close();
     }
   });
 

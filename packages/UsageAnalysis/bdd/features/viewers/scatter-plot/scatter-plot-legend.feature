@@ -2,7 +2,11 @@
 Feature: Scatter plot legend
   What the scatter plot puts in its legend and what the legend does back to the plot: a categorical
   Color builds it, Markers adds a second section to the same legend, a numeric Color leaves only
-  the marker section, clearing Markers takes it away again, a table filter shrinks the marker
+  the marker section (a date column groups its markers by year, or by what the map picker in the
+  legend's markers header says — three years, four quarters of STARTED), clearing Markers takes it away again and takes the marker glyphs off the
+  color entries it leaves (GROK-19083), a hovered marker entry offers the shape picker and no color
+  picker while a color entry offers the color picker, a click on a marker entry hides that marker's rows on the
+  canvas as a color entry does, a table filter shrinks the marker
   section and giving the filter back restores it, a click on an entry hides that category on the
   canvas without touching the table filter, and Legend Visibility and Legend Position decide
   whether and where it shows. The item counts are what the legend lists (every section, rendered
@@ -69,20 +73,52 @@ Feature: Scatter plot legend
     And legend of scatter plot viewer should contain text "Asian"
     And no errors should have been logged
 
-  Scenario: Clearing Markers leaves the color entries alone
+  @GROK-19083
+  Scenario: Clearing Markers takes the marker glyphs off and leaves the color entries alone
     When user sets properties of scatter plot viewer:
       | Color   | SEX |
       | Markers | SEX |
     Then the legend of scatter plot viewer should list 2 items
+    And marker of "F" legend item in legend of scatter plot viewer should be visible
     When user sets "Markers" property of scatter plot viewer to ""
-    Then "Markers" property of scatter plot viewer should be ""
+    Then marker of "F" legend item in legend of scatter plot viewer should be absent
+    And marker of "M" legend item in legend of scatter plot viewer should be absent
     And the legend of scatter plot viewer should list 2 items
-    And legend of scatter plot viewer should contain text "F"
+    And "F" legend item in legend of scatter plot viewer should be visible
     When user sets properties of scatter plot viewer:
       | Color   | RACE |
       | Markers | SEX  |
     Then the legend of scatter plot viewer should list 6 items
+    And marker of "F" legend item in legend of scatter plot viewer should be visible
+    When user hovers over "M" legend item in legend of scatter plot viewer
+    Then marker picker icon should be visible
+    And color picker icon should be absent
+    When user hovers over "Asian" legend item in legend of scatter plot viewer
+    Then color picker icon should be visible
+    And marker picker icon should be absent
+    When user clicks on "M" item in the legend of scatter plot viewer
+    Then "M" legend item in legend of scatter plot viewer should be selected
+    And scatter plot viewer should show fewer rows than before
+    And all rows should pass the filter
+    When user clicks on "M" item in the legend of scatter plot viewer
+    Then scatter plot viewer should show 872 rows
     And no errors should have been logged
+
+  Scenario: A date Markers column gets a map picker in the legend, and the pick regroups the markers
+    When user sets properties of scatter plot viewer:
+      | Color   | RACE    |
+      | Markers | STARTED |
+    Then the legend of scatter plot viewer should list 7 items
+    And legend markers map of scatter plot viewer should be visible
+    And legend markers map of scatter plot viewer should have value "year"
+    When user selects "quarter" in legend markers map of scatter plot viewer
+    Then "markersMap" property of scatter plot viewer should be "quarter"
+    And the legend of scatter plot viewer should list 8 items
+    When user sets "Markers" property of scatter plot viewer to "SEX"
+    Then the legend of scatter plot viewer should list 6 items
+    And legend markers map of scatter plot viewer should be hidden
+    When user sets "markersMap" property of scatter plot viewer to "year"
+    Then no errors should have been logged
 
   Scenario: A table filter drops the filtered-out categories and Markers on the color column adds no section
     When user sets "Markers" property of scatter plot viewer to ""

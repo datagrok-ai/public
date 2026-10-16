@@ -123,7 +123,96 @@ category('sketcher testing', () => {
     expect(changes - before, 1);
     d.close();
   });
+
+  // The product owner's report (2026-10-14): a margin under the sketcher in its dialog. The in-place sketcher's column
+  // was 90% as tall as its parent, a fudge for the input row above the sketcher: in a dialog sized from outside it left
+  // the bottom of the dialog's body empty (at 100% the row pushed the sketcher's bottom under the footer), and the
+  // invalid-molecule warning, drawn over the sketcher, left its line blank under it. Every sketcher, in a dialog as it
+  // opens, in one shown with a size and with the warning shown, reaches the bottom of the dialog's body and is not
+  // covered there; ChemDraw needs a licence, as in the tests above.
+  test('a sketcher fills its dialog', async () => {
+    const cases: {size: {width: number, height: number} | null, invalid: boolean}[] =
+      [{size: null, invalid: false}, {size: {width: 700, height: 700}, invalid: false}, {size: null, invalid: true}];
+    for (const func of funcs) {
+      if (func.name === 'chemDrawSketcher')
+        continue;
+      for (const {size, invalid} of cases) {
+        chem.currentSketcherType = func.friendlyName;
+        const s = invalid ? new Sketcher(undefined, () => 'Malformed molecule') : new Sketcher();
+        s.setSmiles(exampleSmiles);
+        const d = ui.dialog().add(s).show(size ? {...size, resizable: true} : {resizable: true});
+        try {
+          await s.sketcherReady();
+          await delay(500);
+          const where = `${func.friendlyName} in a dialog ` +
+            `${size ? `of ${size.width} x ${size.height}` : 'as it opens'}${invalid ? ', the molecule invalid' : ''}`;
+          const {gap, bodyScroll, sketcherGap, onTop, warning} = sketcherInDialog(s, d);
+          expect(Math.abs(gap) <= 2, true, `${where}: the sketcher's bottom is ${gap} px above the body's`);
+          expect(bodyScroll, 0, `${where}: the dialog's body scrolls by`);
+          expect(Math.abs(sketcherGap) <= 2, true, `${where}: the sketcher ends ${sketcherGap} px above its host`);
+          expect(onTop, 'sketcher', `${where}: above the sketcher's bottom edge`);
+          if (invalid)
+            expect(warning, true, `${where}: the warning is seen`);
+        } finally {
+          d.close();
+        }
+      }
+    }
+  }, {timeout: 180000});
+
+  // The product owner (2026-10-14): Ketcher stayed 500 px wide in a dialog shown with a size, until the dialog was
+  // resized by hand. Its editor reaches the host's right edge in a dialog of 700 x 700, and in one as it opens (500 px).
+  test('Ketcher fills the width of its dialog', async () => {
+    const type = chem.currentSketcherType;
+    try {
+      for (const size of [{width: 700, height: 700}, null]) {
+        chem.currentSketcherType = 'Ketcher';
+        const s = new Sketcher();
+        s.setSmiles(exampleSmiles);
+        const d = ui.dialog().add(s).show(size ? {...size, resizable: true} : {resizable: true});
+        try {
+          await s.sketcherReady();
+          await delay(500);
+          const where = `Ketcher in a dialog ${size ? `of ${size.width} x ${size.height}` : 'as it opens'}`;
+          const editor = s.host.querySelector('.Ketcher-root')?.getBoundingClientRect();
+          const host = s.host.getBoundingClientRect();
+          expect(editor !== undefined, true, `${where}: no Ketcher editor in the host`);
+          expect(Math.abs(host.right - editor!.right) <= 2, true,
+            `${where}: the editor (${Math.round(editor!.width)} px wide) ends ${Math.round(host.right - editor!.right)} px ` +
+            `before the host (${Math.round(host.width)} px wide)`);
+        } finally {
+          d.close();
+        }
+      }
+    } finally {
+      chem.currentSketcherType = type;
+    }
+  }, {timeout: 120000});
 });
+
+/** Where the sketcher ends in its dialog: the gap between its host's bottom and the dialog's body's (padding aside),
+ * how far the body scrolls, the gap between the implementation's root and its host, what is on top just above the
+ * host's bottom edge, in its middle ('sketcher' for the sketcher itself, else the element's class), and whether the
+ * invalid-molecule warning's text is on top where it is drawn. */
+function sketcherInDialog(s: Sketcher, d: DG.Dialog):
+  {gap: number, bodyScroll: number, sketcherGap: number, onTop: string, warning: boolean} {
+  const body = d.root.querySelector('.d4-dialog-contents') as HTMLElement;
+  const style = getComputedStyle(body);
+  const bodyBottom = body.getBoundingClientRect().bottom - parseFloat(style.paddingBottom) -
+    parseFloat(style.borderBottomWidth);
+  const host = s.host.getBoundingClientRect();
+  const at = document.elementFromPoint(host.left + host.width / 2, host.bottom - 4);
+  const text = s.invalidMoleculeWarning.firstElementChild?.getBoundingClientRect();
+  const atText = text ?
+    document.elementFromPoint(text.left + Math.min(10, text.width / 2), text.top + text.height / 2) : null;
+  return {
+    gap: Math.round(bodyBottom - host.bottom),
+    bodyScroll: Math.max(0, body.scrollHeight - body.clientHeight),
+    sketcherGap: Math.round(host.bottom - s.sketcher!.root.getBoundingClientRect().bottom),
+    onTop: at && s.host.contains(at) ? 'sketcher' : String(at?.className ?? at),
+    warning: !!atText && s.invalidMoleculeWarning.contains(atText),
+  };
+}
 
 /** A host in a dialog, switching to `from` (as the session's sketcher), whose function's apply is `apply(from)`. */
 async function sketcherSwitchingFrom(from: DG.Func, apply: (f: DG.Func) => () => Promise<chem.SketcherBase>):

@@ -5,6 +5,7 @@
    on the balloon closes it. Deliberately not ported: `appendHtml` for string content — a
    string renders as text, never as markup. */
 import {Overlay} from '../../core/overlay.js';
+import {Scope} from '../../core/scope.js';
 import {div} from '../../core/elements.js';
 import {icon} from './icon.js';
 import {iconButton} from '../actions/buttons.js';
@@ -79,8 +80,9 @@ class Notify {
     else
       body.append(content);
 
-    const balloon = div([icon(TYPE_ICONS[type], {cls: 'u2-notify-type-icon'}), body],
-      `u2-notify u2-notify-${type}`);
+    // the balloon outlives whoever raised it (a handler, an effect run): its controls have no owner
+    const balloon = Scope.runWith(undefined, () => div([icon(TYPE_ICONS[type], {cls: 'u2-notify-type-icon'}), body],
+      `u2-notify u2-notify-${type}`));
     balloon.setAttribute('role', type === 'info' ? 'status' : 'alert');
 
     let closed = false;
@@ -96,7 +98,7 @@ class Notify {
     };
     Notify._open.add(close);
 
-    const copy = iconButton('copy', () => {
+    const copy = Scope.runWith(undefined, () => iconButton('copy', () => {
       const text = options.copyText === undefined ?
         balloon.textContent ?? '' : `${balloon.textContent}\n\n${options.copyText}`;
       try {
@@ -104,9 +106,10 @@ class Notify {
       } catch {
         // no clipboard in this host — the copy affordance is best-effort
       }
-    }, {tooltip: 'Copy to clipboard'});
+    }, {tooltip: 'Copy to clipboard'}));
     copy.addEventListener('click', (e) => e.stopPropagation());
-    balloon.append(div([copy, iconButton('times', close, {tooltip: 'Close'})], 'u2-notify-icons'));
+    balloon.append(div([copy, Scope.runWith(undefined, () => iconButton('times', close, {tooltip: 'Close'}))],
+      'u2-notify-icons'));
 
     if (options.closeOnClick ?? true)
       balloon.addEventListener('click', close);

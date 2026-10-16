@@ -180,9 +180,9 @@ export const sortedBySimilarity = Then('the first {int} rows of grid should be i
 
 /** The rows of the current table where the filter and an RDKit substructure match of the query
  * disagree, with how many rows contain the query, how many pass, and how many RDKit could not read. */
-function filterAgainstQuery(page: Page, column: string, query: string):
+function filterAgainstQuery(page: Page, column: string, query: string, without = false):
   Promise<{wrong: string[]; matched: number; unreadable: number; passed: number}> {
-  return page.evaluate(async ([c, q]) => {
+  return page.evaluate(async ([c, q, out]) => {
     const df = grok.shell.t;
     const col = df.col(c);
     if (!col)
@@ -205,20 +205,20 @@ function filterAgainstQuery(page: Page, column: string, query: string):
         }
         if (hit)
           matched++;
-        if (hit !== df.filter.get(i))
-          wrong.push(`row ${i + 1} ${hit ? 'contains it but is filtered out' : 'passes without it'}`);
+        if (hit === out ? df.filter.get(i) : !df.filter.get(i))
+          wrong.push(`row ${i + 1} ${hit ? 'contains it' : 'lacks it'} and ${df.filter.get(i) ? 'passes' : 'is filtered out'}`);
       }
     }
     finally {
       qmol.delete();
     }
     return {wrong, matched, unreadable, passed: df.filter.trueCount};
-  }, [column, query] as [string, string]);
+  }, [column, query, without] as [string, string, boolean]);
 }
 
 /** Polled until the filter keeps exactly the rows whose molecule contains the query: a filter card
  * or a tree applies its bitset after the search it started ends. */
-async function expectFilterMatches(page: Page, column: string, query: () => Promise<string>, what: string, someMatch: boolean): Promise<void> {
+async function expectFilterMatches(page: Page, column: string, query: () => Promise<string>, what: string, someMatch: boolean, without = false): Promise<void> {
   let q = undefined as string | undefined;
   let r = undefined as Awaited<ReturnType<typeof filterAgainstQuery>> | undefined;
   try {
@@ -227,7 +227,7 @@ async function expectFilterMatches(page: Page, column: string, query: () => Prom
       q = await query();
       if (q === '')
         return false;
-      r = await filterAgainstQuery(page, column, q);
+      r = await filterAgainstQuery(page, column, q, without);
       return r.unreadable === 0 && r.wrong.length === 0 && (!someMatch || r.matched > 0);
     }).toBe(true);
   }
@@ -242,6 +242,10 @@ async function expectFilterMatches(page: Page, column: string, query: () => Prom
 export const filterPassesMatching = Then('the filter should pass exactly the molecules of {string} column containing {string}', (page: Page, column: string, query: string) =>
   expectFilterMatches(page, column, async () => query, query, false),
 {description: 'every row passes the filter if and only if its molecule contains the query (RDKit substructure match), polled'});
+
+export const filterPassesLacking = Then('the filter should pass exactly the molecules of {string} column not containing {string}', (page: Page, column: string, query: string) =>
+  expectFilterMatches(page, column, async () => query, query, true, true),
+{description: 'every row passes the filter if and only if its molecule does not contain the query (RDKit substructure match), and some molecule does; polled'});
 
 export const readingIsRowMolecule = Then('the {string} reading of filter panel should be the molecule of row {int} of {string} column', async (page: Page, reading: string, row: number, column: string) => {
   await expect.poll(() => page.evaluate(async ([name, i, c]) => {

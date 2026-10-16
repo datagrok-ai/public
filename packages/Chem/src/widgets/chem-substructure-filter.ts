@@ -415,7 +415,8 @@ export class SubstructureFilter extends DG.Filter {
       const molFile = this.getSketcherMolecule();
       if (this.currentMolecule && molFile !== this.currentMolecule) {
         this.syncEvent = true;
-        this.sketcher.setMolFile(this.currentMolecule);
+        // in its own notation: the card's molecule is the sketcher's string, a SMARTS or a SMILES entered as well as a molblock
+        this.sketcher.setMolecule(this.currentMolecule);
       }
     });
   }
@@ -598,7 +599,9 @@ export class SubstructureFilter extends DG.Filter {
     this.active = state.active ?? true;
     if (state.molBlock && state.molBlock !== this.currentMolecule) {
       this.currentMolecule = state.molBlock;
-      this.sketcher.setMolFile(state.molBlock);
+      // in its own notation: a card saved with a SMARTS or a SMILES entered holds that string (set as a molblock, no
+      // sketcher could read it, and the card's sketcher opened empty)
+      this.sketcher.setMolecule(state.molBlock);
       this.updateFilterUiOnSketcherChanged(this.currentMolecule);
     }
     if (state.searchType && state.searchType !== this.searchType) {

@@ -59,4 +59,5 @@ Feature: Crux in Bio's hosts
     And user clicks on crux R-Group OK button
     Then the "smiles" reading of crux sketcher widget should be the molecule "[*:1]C[*:2]"
     When user clicks on "R-groups" tab
-    Then the R-groups grid of the monomer form should list "R1, R2"
+    Then "R1" input in monomer form should have value "H"
+    And "R2" input in monomer form should have value "OH"

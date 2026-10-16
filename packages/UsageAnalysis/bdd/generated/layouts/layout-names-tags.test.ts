@@ -4,13 +4,15 @@
 /* ---
 generated: features/layouts/layout-names-tags.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [views.layouts]
+sub_features_covered: [views.layouts, sharing.share-dialog]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
+import '../../bindings/file-formats.js';
 import '../../bindings/flow.js';
 import '../../bindings/grid.js';
+import '../../bindings/queries.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -19,16 +21,16 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clearField, clickOn, hoverOver, isExpanded, pressKey, shouldBe, shouldContainText, shouldHaveText, typeAtCaret, typeInto, visibleCount} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {closeAllViews, contextPanelOpen, contextPanelShows, contextPanelTitle, layoutsDeleted, openDatasetRowsAs, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, clickArea, noErrors, pickFromContextMenu, propertyShouldBe, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {clearField, clickOn, hoverOver, isExpanded, pressKey, shouldBe, shouldContainText, shouldHaveText, typeAtCaret, typeInto, uncheck, visibleCount} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {closeAllViews, contextPanelOpen, contextPanelShows, contextPanelTitle, dialogCloses, layoutsDeleted, openDatasetRowsAs, pickSharingUser, sharingUserLevel, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {addViewerWith, clickArea, infoBalloonText, noBalloons, noErrors, pickFromContextMenu, propertyShouldBe, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("A layout saved from the toolbox gets a name and tags", () => {
   const session = feature(test, "features/layouts/layout-names-tags.feature", import.meta.url);
-  test("A layout saved from the toolbox gets a name and tags", {tag: ["@realizes:views.layouts", "@journey"]}, async ({browser}) => {
+  test("A layout saved from the toolbox gets a name and tags", {tag: ["@realizes:views.layouts", "@journey", "@realizes:sharing.share-dialog"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 6, page);
+    const run = journey(test, 7, page);
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And the layouts named \"bdd-layout-{time}\" are deleted when the feature ends", () => layoutsDeleted(page, session.text("bdd-layout-{time}")));
     await session.step(20, "And the layouts named \"BDD height vs weight-{time}\" are deleted when the feature ends", () => layoutsDeleted(page, session.text("BDD height vs weight-{time}")));
@@ -115,6 +117,23 @@ test.describe("A layout saved from the toolbox gets a name and tags", () => {
       await session.step(104, "Then there should be 1 visible layout card", () => visibleCount(page, 1, el("layout card")));
       await session.step(105, "And \"BDD tags-{time}\" layout card should be visible", () => shouldBe(page, el(session.text("\"BDD tags-{time}\" layout card")), "visible"));
       await session.step(106, "When user clears layouts filter", () => clearField(page, el("layouts filter")));
+    });
+    await run.scenario("Share... on a layout card shares the layout with another user", async () => {
+      await session.step(110, "When user picks \"Share...\" from the context menu of \"BDD tags-{time}\" layout card", () => pickFromContextMenu(page, "Share...", el(session.text("\"BDD tags-{time}\" layout card"))));
+      await session.step(111, "Then \"Share BDD tags-{time}\" dialog should be visible", () => shouldBe(page, el(session.text("\"Share BDD tags-{time}\" dialog")), "visible"));
+      await session.step(112, "And share access selector should contain text \"View and use\"", () => shouldContainText(page, el("share access selector"), "View and use"));
+      await session.step(113, "When user picks the sharing user in \"User, group, or email\" input in \"Share BDD tags-{time}\" dialog", () => pickSharingUser(page, el(session.text("\"User, group, or email\" input in \"Share BDD tags-{time}\" dialog"))));
+      await session.step(114, "And user unchecks \"Send notifications\" input in \"Share BDD tags-{time}\" dialog", () => uncheck(page, el(session.text("\"Send notifications\" input in \"Share BDD tags-{time}\" dialog"))));
+      await session.step(115, "And user clicks on OK button in \"Share BDD tags-{time}\" dialog", () => clickOn(page, el(session.text("OK button in \"Share BDD tags-{time}\" dialog"))));
+      await session.step(116, "Then the \"Share BDD tags-{time}\" dialog should close", () => dialogCloses(page, session.text("Share BDD tags-{time}")));
+      await session.step(117, "And an info balloon containing \"Shared\" should have been shown", () => infoBalloonText(page, "Shared"));
+      await session.step(118, "When user picks \"Share...\" from the context menu of \"BDD tags-{time}\" layout card", () => pickFromContextMenu(page, "Share...", el(session.text("\"BDD tags-{time}\" layout card"))));
+      await session.step(119, "Then \"Share BDD tags-{time}\" dialog should be visible", () => shouldBe(page, el(session.text("\"Share BDD tags-{time}\" dialog")), "visible"));
+      await session.step(120, "And the access level of the sharing user in \"Share BDD tags-{time}\" dialog should be \"View and use\"", () => sharingUserLevel(page, el(session.text("\"Share BDD tags-{time}\" dialog")), "View and use"));
+      await session.step(121, "When user clicks on CANCEL button in \"Share BDD tags-{time}\" dialog", () => clickOn(page, el(session.text("CANCEL button in \"Share BDD tags-{time}\" dialog"))));
+      await session.step(122, "Then the \"Share BDD tags-{time}\" dialog should close", () => dialogCloses(page, session.text("Share BDD tags-{time}")));
+      await session.step(123, "And no errors should have been logged", () => noErrors(page));
+      await session.step(124, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     run.finish();
   });

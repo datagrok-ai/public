@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {category, before, test, after, expect, delay} from '@datagrok-libraries/test/src/test';
-import {TestManager} from '../package-testing';
+import {NODE_TYPE, TestManager} from '../package-testing';
 
 
 category('Test manager', () => {
@@ -36,6 +36,16 @@ category('Test manager', () => {
     expect(testManager.testsResultsDf.get('package', 0), 'DevTools');
     expect(testManager.testsResultsDf.get('category', 0), 'FSE');
     expect(testManager.testsResultsDf.get('name', 0), 'exist');
+  });
+
+  test('Unhandled exception row', async () => {
+    const condition = {package: 'DevTools', category: 'FSE', name: 'exist'};
+    const testInfo = testManager.getTestsInfoGrid(condition, NODE_TYPE.TEST, false, 'unhandled error').testInfo;
+    const last = testInfo.rowCount - 1;
+    expect(testInfo.get('category', last), 'unhandled');
+    expect(testInfo.get('success', last), false);
+    expect(testInfo.get('result', last), 'unhandled error');
+    expect(testInfo.get('package', last), 'DevTools');
   });
 
 

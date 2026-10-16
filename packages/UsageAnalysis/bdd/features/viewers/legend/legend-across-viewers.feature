@@ -3,7 +3,13 @@ Feature: One legend column across seven viewers
   Seven viewers on one table view share a legend column, and the column's category colors are the
   one source every legend and every canvas paints from: a coloring switched on in the grid reaches
   all seven legends, a color picked in one viewer's legend reaches the grid and the other six, the
-  picker's Cancel leaves everything as it was, an empty category gets an item of its own, and the
+  picker's Cancel leaves everything as it was, a second color picked in another viewer's legend
+  leaves the first pick alone (github-3132) and takes no legend sharing the column off the screen
+  (GROK-17438), a category hovered in one legend lights up its rows in the others (the pie chart's
+  mouse-over wedge) until the pointer leaves or the legend's column changes under it, a category selected in the pie chart's, the line chart's or the box plot's legend
+  stays selected through a row filter but goes when the legend column changes (the selection is
+  kept by position, and the item at Black's place in SEX, M, must not inherit it), an empty
+  category gets an item of its own, and the
   palette, the legend column and the legend's visibility come back from a saved layout and a
   saved project.
   One journey on demog-1000 with RACE as the legend column (Caucasian 896, Other 62, Black 27,
@@ -110,6 +116,44 @@ Feature: One legend column across seven viewers
     And the "view" area of box plot viewer should contain the color "#D62728"
     And no errors should have been logged
 
+  Scenario Outline: A selection in the <viewer> legend outlives a row filter and goes with its column
+    When user clicks on "Black" item in the legend of <viewer> viewer
+    Then "Black" legend item in legend of <viewer> viewer should be selected
+    When user filters rows where "SEX" is "F"
+    Then "Black" legend item in legend of <viewer> viewer should be selected
+    When user resets the filter
+    And user sets "<legend column>" property of <viewer> viewer to "SEX"
+    Then the legend of <viewer> viewer should list 2 items
+    And "M" legend item in legend of <viewer> viewer should not be selected
+    When user sets "<legend column>" property of <viewer> viewer to "RACE"
+    Then the legend of <viewer> viewer should list 4 items
+    And "Black" legend item in legend of <viewer> viewer should not be selected
+    And no errors should have been logged
+
+    Examples:
+      | viewer     | legend column         |
+      | pie chart  | categoryColumnName    |
+      | line chart | splitColumnNames      |
+      | box plot   | markerColorColumnName |
+
+  Scenario: A category hovered in one legend lights up its rows in the other viewers
+    When user hovers over "Black" legend item in legend of scatter plot viewer
+    Then pie chart viewer should have a "mouse over Black" area
+    And pie chart viewer should not have a "mouse over Asian" area
+    When user hovers over "Asian" legend item in legend of bar chart viewer
+    Then pie chart viewer should have a "mouse over Asian" area
+    And pie chart viewer should not have a "mouse over Black" area
+    When user moves the pointer away from bar chart viewer
+    Then pie chart viewer should not have a "mouse over Asian" area
+    When user hovers over "Black" legend item in legend of scatter plot viewer
+    Then pie chart viewer should have a "mouse over Black" area
+    When user sets "colorColumnName" property of scatter plot viewer to "SEX"
+    Then the legend of scatter plot viewer should list 2 items
+    And pie chart viewer should not have a "mouse over Black" area
+    When user sets "colorColumnName" property of scatter plot viewer to "RACE"
+    Then the legend of scatter plot viewer should list 4 items
+    And no errors should have been logged
+
   Scenario: A categorical coloring switched on in the grid reaches every legend and every canvas
     When user drags the "x scroll handle" area of grid by 60 pixels to the right
     Then grid should have a "header RACE" area
@@ -175,6 +219,38 @@ Feature: One legend column across seven viewers
     And the "Asian" item in the legend of box plot viewer should be colored "#9467BD"
     And the "Caucasian" item in the legend of pie chart viewer should be colored "#FF00FF"
     And the "pie" area of pie chart viewer should contain the color "#9467BD"
+    And no errors should have been logged
+
+  @github-3132 @GROK-17438
+  Scenario: A second color picked in another legend keeps the first, and the other legends stay shown
+    When user hovers over "Black" legend item in legend of scatter plot viewer
+    And user clicks on color picker icon
+    Then "Black" dialog should be visible
+    When user picks the color "#BCBD22" in the color picker dialog
+    And user clicks on OK button in "Black" dialog
+    Then "Black" dialog should be absent
+    And the categorical color of "Black" in "RACE" column should be "#BCBD22"
+    And the categorical color of "Asian" in "RACE" column should be "#9467BD"
+    And the "Black" item in the legend of histogram viewer should be colored "#BCBD22"
+    And the "Asian" item in the legend of histogram viewer should be colored "#9467BD"
+    And the "Asian" item in the legend of scatter plot viewer should be colored "#9467BD"
+    And the "Black" item in the legend of bar chart viewer should be colored "#BCBD22"
+    And the "Asian" item in the legend of bar chart viewer should be colored "#9467BD"
+    And the "Caucasian" item in the legend of bar chart viewer should be colored "#FF00FF"
+    And legend of histogram viewer should be visible
+    And legend of bar chart viewer should be visible
+    And the legend of histogram viewer should be docked
+    And the legend of bar chart viewer should be docked
+    And the "view" area of histogram viewer should contain the color "#BCBD22"
+    When user sets "Legend Visibility" property of histogram viewer to "Never"
+    Then legend of histogram viewer should be hidden
+    When user sets "Legend Visibility" property of histogram viewer to "Always"
+    Then legend of histogram viewer should be visible
+    And the "Asian" item in the legend of histogram viewer should be colored "#9467BD"
+    When user drags the legend splitter of histogram viewer by 40 pixels to the left
+    Then the legend of histogram viewer should be wider than before
+    And legend of histogram viewer should be visible
+    And the legend of histogram viewer should list 4 items
     And no errors should have been logged
 
   Scenario: An empty category gets a "(no value)" item whose color can be picked

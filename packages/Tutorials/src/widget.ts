@@ -44,18 +44,7 @@ export class TutorialWidget extends DG.Widget {
           ui.divText(String(complete) + ' / ' + String(total), 'widget-tutorial-track-progress'),
         ], 'widget-tutorial-track-body');
 
-        trackRoot.addEventListener('click', function() {
-          const dockRoot = ui.div([root,
-            ui.panel([], {id: 'tutorial-child-node', style: {paddingTop: '10px'}}),
-          ], 'tutorials-root');
-          const existingTutorials = document.querySelector('.tutorials-root') as HTMLElement;
-          if (existingTutorials) {
-            const existingDock = grok.shell.dockManager.findNode(existingTutorials);
-            if (existingDock)
-              grok.shell.dockManager.close(existingDock);
-          }
-          grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.LEFT, null, 'Tutorials', 0.22);
-        });
+        trackRoot.addEventListener('click', () => TutorialRunner.dock([root]));
 
         tracksRoot.append(ui.divV([
           trackRoot,

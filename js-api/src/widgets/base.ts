@@ -15,7 +15,7 @@ import {IDartApi} from "../api/grok_api.g";
 // The .js suffix keeps webpack on the same module instance the DG.U2 barrel loads —
 // an extensionless import resolves to the .ts twin and bundles a second Control.
 import {Control} from "../u2core/index.js";
-import type {PropertyChange, Scope, ObservableLike, IWidgetStatus} from "../u2core/index.js";
+import type {PropertyChange, Scope, ObservableLike, IWidgetStatus, IControlState} from "../u2core/index.js";
 
 declare let DG: any;
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
@@ -33,6 +33,7 @@ export class TypedEventArgs<TData> {
     return api.grok_TypedEventArgs_Get_Type(this.dart);
   }
 
+  /** Event payload, wrapped for JS. */
   get data(): TData {
     let data = api.grok_TypedEventArgs_Get_Data(this.dart);
     return toJs(data);
@@ -144,6 +145,7 @@ export class ObjectPropertyBag {
   }
 
 
+  /** Properties of the source object. */
   getProperties(): Property[] {
     return this.source.getProperties();
   }
@@ -157,6 +159,7 @@ export class ObjectPropertyBag {
   }
 
 
+  /** Whether the source object has a property with this name (case-sensitive). */
   hasProperty(name: string): boolean {
     return this.getProperties().findIndex((p) => p.name === name) !== -1;
   }
@@ -173,7 +176,9 @@ export class ObjectPropertyBag {
       throw 'Call failed: object is not Viewer instance';
   }
 
-  static setDefaultProperty(viewerType: string, propertyName: string, propertyValue: any) {
+  /** Sets the default value of one property for viewers of the specified type created from now on;
+   * the value must be JSON-serializable. */
+  static setDefaultProperty(viewerType: string, propertyName: string, propertyValue: unknown) {
     api.grok_Viewer_Props_SetDefaultProperty(viewerType, propertyName, propertyValue);
   }
 
@@ -187,14 +192,17 @@ export class ObjectPropertyBag {
 }
 
 
-export type {IEventType, IRectBounds, IInputStatus, IWidgetStatus} from "../u2core/index.js";
+export type {IEventType, IRectBounds, IInputStatus, IWidgetStatus, IControlState} from "../u2core/index.js";
 
-/** What {@link Widget.addStatusProvider} contributes on every status read. */
-export type StatusProvider = () => Partial<Pick<IWidgetStatus, 'parts' | 'hitAreas' | 'values'>>;
+/** What {@link Widget.addStatusProvider} contributes on every status read; `state` is merged key-wise
+ * over the DOM-derived one. */
+export type StatusProvider = () => Partial<Pick<IWidgetStatus, 'parts' | 'hitAreas' | 'values'>> &
+  {state?: Partial<IControlState>};
 
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget<TSettings = any> extends Control {
 
+  /** Widget type name; subclasses override it. */
   public get type(): string { return 'Unknown'; }
 
   /** Contains auxiliary information */
@@ -252,6 +260,7 @@ export class Widget<TSettings = any> extends Control {
   }
 
 
+  /** Sets each key of `properties` as the property of that name; returns this widget. */
   apply(properties: object): Widget {
     for (let name of Object.keys(properties))
       if (typeof name !== 'undefined')
@@ -406,19 +415,38 @@ export class Widget<TSettings = any> extends Control {
     return p.defaultValue;
   }
 
-  /** Observes events with the specified eventId. Override in subclasses to provide actual events. */
-  onEvent(eventId: string | null = null): rxjs.Observable<any> { return rxjs.EMPTY; }
+  /** Observes events with the specified eventId: what {@link fireEvent} raises and, for an id, the DOM
+   * events of that name on the root — as on every u2 `Control`. */
+  onEvent(eventId: string | null = null): rxjs.Observable<any> {
+    return new rxjs.Observable((subscriber) => {
+      const subscription = Control.prototype.onEvent.call(this, eventId).subscribe((x) => subscriber.next(x));
+      return () => subscription.unsubscribe();
+    });
+  }
 
-  /** Returns the widget's runtime structure for automated testing and introspection. */
+  /** Returns the widget's runtime structure for automated testing and introspection; `state` is read off
+   * the DOM (kind, label, enabled, visible, focused …), then merged with what providers contribute. */
   getWidgetStatus(): IWidgetStatus {
+    const status: IWidgetStatus = this.dart == null ?
+      {parts: {}, hitAreas: {}, shortcuts: {}, events: [], description: null, error: null} :
+      api.grok_Widget_GetWidgetStatus(this.dart);
+    let state: IControlState;
+    try {
+      state = {...this.getState(), kind: this.root.dataset.u2 ?? this.type};
+    }
+    catch (_) {
+      state = {kind: this.type} as IControlState;
+    }
+    status.state = state;
     if (this.dart == null)
-      return {parts: {}, hitAreas: {}, shortcuts: {}, events: [], description: null, error: null};
-    const status: IWidgetStatus = api.grok_Widget_GetWidgetStatus(this.dart);
+      return status;
     for (const provider of Object.values(api.grok_Widget_Get_StatusProviders(this.dart)) as StatusProvider[]) {
       const extra = provider();
       Object.assign(status.parts, extra.parts);
       Object.assign(status.hitAreas, extra.hitAreas);
       status.values = {...status.values, ...extra.values};
+      if (extra.state !== undefined)
+        status.state = {...status.state, ...extra.state};
     }
     return status;
   }
@@ -463,10 +491,14 @@ export class DartWidget extends Widget {
     this.temp = new MapProxy(api.grok_Widget_Get_Temp(this.dart));
   }
 
+  /** Type name the Dart widget reports. */
   get type(): string { return api.grok_Widget_Get_Type(this.dart); }
+  /** Visual root of the Dart widget. */
   get root(): HTMLElement { return api.grok_Widget_Get_Root(this.dart); }
+  /** The Dart handle: properties are read from and written to the Dart widget. */
   get propertyTarget(): unknown { return this.dart; }
   protected _wireLifecycle(): void { this._wireDartLifecycle(); }
+  /** Properties of the Dart widget. */
   getProperties(): Property[] { return toJs(api.grok_PropMixin_GetProperties(this.dart)); }
   /** Functions applicable to the Dart widget, as the context menu and the AI assistant see them. */
   getFunctions(): Func[] { return toJs(api.grok_Widget_GetFunctions(this.dart)); }
@@ -482,6 +514,8 @@ export class DartWidget extends Widget {
       f(this.dart, x);
   }
 
+  /** The platform's events of that id only: the u2 + DOM merge of {@link Widget.onEvent} would mint a
+   * scope, and register a Dart cleanup, for every `toJs` wrapper subscribed through. */
   onEvent(eventId: string | null = null): rxjs.Observable<any> {
     if (eventId === null)
       return rxjs.EMPTY;

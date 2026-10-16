@@ -14,6 +14,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {openDemoPage} from '../../../bindings/demo.js';
+import {notClipped} from '@datagrok-libraries/bdd/bindings/common/geometry';
 import {clickOn, enterInto, shouldBe, shouldHaveText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -28,7 +29,8 @@ test.describe("Functions", () => {
     await session.step(9, "Then Abs heading should be visible", () => shouldBe(page, el("Abs heading"), "visible"));
     await session.step(10, "And function form should be visible", () => shouldBe(page, el("function form"), "visible"));
     await session.step(11, "When user enters \"7.5\" into x input in function form", () => enterInto(page, "7.5", el("x input in function form")));
-    await session.step(12, "And user clicks on Run button", () => clickOn(page, el("Run button")));
-    await session.step(13, "Then value of result readout should have text \"7.5\"", () => shouldHaveText(page, el("value of result readout"), "7.5"));
+    await session.step(12, "Then function form should not be clipped", () => notClipped(page, el("function form")));
+    await session.step(13, "When user clicks on Run button", () => clickOn(page, el("Run button")));
+    await session.step(14, "Then value of result readout should have text \"7.5\"", () => shouldHaveText(page, el("value of result readout"), "7.5"));
   });
 });

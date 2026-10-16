@@ -105,6 +105,21 @@ Feature: The Share dialog and the Sharing pane
     Then the "Share ShareDialog1" dialog should close
     And no errors should have been logged
 
+  # that CANCEL granted All users nothing is claimed by Resulting permissions below: the sharing user,
+  # a member of All users, still has no access
+  Scenario: All users is picked from the suggestions as a user is, and CANCEL grants it nothing
+    When user picks "Share..." from the context menu of "ShareDialog1" gallery card
+    Then "Share ShareDialog1" dialog should be visible
+    And "Remove" icon in "Share ShareDialog1" dialog should be hidden
+    When user types "All" into "User, group, or email" input in "Share ShareDialog1" dialog
+    And user clicks on "All users" table row in "Share ShareDialog1" dialog
+    Then "Remove" icon in "Share ShareDialog1" dialog should be visible
+    And "Send notifications" input in "Share ShareDialog1" dialog should be visible
+    And share message should be visible
+    When user clicks on CANCEL button in "Share ShareDialog1" dialog
+    Then the "Share ShareDialog1" dialog should close
+    And no errors should have been logged
+
   Scenario: Your own account is not offered (GROK-20755)
     When user picks "Share..." from the context menu of "ShareDialog1" gallery card
     Then "Share ShareDialog1" dialog should be visible

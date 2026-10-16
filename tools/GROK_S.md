@@ -36,6 +36,7 @@ browser or a logged-in session.
 | See what fields an entity type has                          | `grok s describe connections`                          |
 | Hit any undocumented endpoint                               | `grok s raw GET /users/current` / `raw POST <path> --data '{...}'` |
 | Check server + per-module health                            | `grok s healthcheck [--module <name>]`                 |
+| Problems, alerts, problem rules, logger settings, errors, cloud logs | `grok s observe problems list --alert-status open` (alias `grok s o`) |
 | Bulk operations in one round-trip                           | `grok s batch <entity> <verb> --json items.json`       |
 | Move entities dev to prod (bundle, or instance to instance) | `grok s pull ... --out ./bundle` / `grok s migrate ... --from dev --to prod` |
 | Browse / query / edit domain-table rows                    | `grok s domains query grit.issue --filter 'status = "open"'` / `domains insert` / `domains upload` |
@@ -136,6 +137,18 @@ grok s connections test --json conn.json              # test before saving
 
 See `public/packages/Chembl/connections/` for connection JSON examples.
 
+Connection tags over REST: the entity JSON carries `entityTags`
+(`[{id, tag, owner: {id: <All users group id>}}]`, no `#type` on the owner), not `tags`.
+`grok s connections save --json` without `entityTags` **clears** the tags (saveTags deletes rows
+not in the list); `POST /entities/save_tags {id, entityTags}` sets them. Filter with
+`whereTag([...])` (`?tags=x`); `whereSmart('tag = "x"')` returns nothing for connections over REST.
+A `Web` connection's parameters must be wrapped (`{"url": {"value": "https://..."}}`); a bare
+string makes the test route answer 400 "Invalid argument(s): value".
+
+A connection saved over REST goes through `Project.add(uniqueName: true)` and can come back
+renamed `<name>_1` for a package's connection — see `core/docs/PROJECTS_AND_PACKAGES.MD`
+"Package connections on a stand".
+
 ## Group membership
 
 `grok s groups add-members` is idempotent — it resolves each member (by login, name,
@@ -160,6 +173,12 @@ Names resolve by substring, an exact `name`/`friendlyName` match wins. When a na
 ambiguous the command prints every matching group and exits non-zero — pass a UUID to
 disambiguate, or add `--user` (accepted by all four membership verbs) to restrict lookup to
 personal groups.
+
+> **Trap:** `grok s groups add-members <group> <users...>` without `--admin` sets `isAdmin=false`
+> on members that are already group admins (reported as `updated`, not `noop`). Before a bulk add
+> run `grok s groups list-members <group> --admin` and exclude those users, or re-add them with
+> `--admin`. Pass the group UUID — `list-members Administrators` by name has returned
+> "(no results)" while the id worked.
 
 ## User administration
 
@@ -411,12 +430,19 @@ grok s domains audit inventory --limit 50                        # DDL and row e
 grok s domains delete inventory --force                          # purge: data, audit, registry, grants
 ```
 
-`schema.json` may be a full manifest or a partial apply body — only `tables`, `extend`,
-`propertySchemas` and `dropTables` are sent; `name`, `version` and `description` are dropped.
-Named tables replace their definition wholesale; untouched tables stay as the registry has
-them. A plan that drops or narrows anything is refused until `--confirm-destructive` is
-passed, and the plan is printed with the refusal. `--if-version` fails the apply when the
-schema's apply counter (or `ext_version` on a package schema) has moved. Package-deployed
+`schema.json` may be a full manifest or a partial apply body — `tables`, `extend`,
+`propertySchemas`, `dropTables` and `access` are sent, plus `friendlyName`, `description` and
+`storage` when the schema is user-managed (`name` is dropped; `version` becomes `ifVersion` and
+`incarnation` becomes `ifIncarnation` unless `--if-version` says otherwise — `current` takes
+both from the schema registered right now, so a name deleted and re-created since the file was
+written is a conflict, not a fresh `1`). Named tables
+replace their definition wholesale; untouched tables stay as the registry has them. A plan
+that drops or narrows anything is refused until `--confirm-destructive` is passed, and the
+plan is printed with the refusal. `--if-version` fails the apply when the schema's apply
+counter (or `ext_version` on a package schema) has moved; a user-managed schema REQUIRES the
+token (the server answers `version-required` without it) — pass the version the edit was made
+against, or `--if-version current` to take the one registered right now. Dropping a table
+needs Delete on that table, dropping its columns Edit on it. Package-deployed
 schemas cannot be applied to or deleted here — `apply` on one is the user-extension path
 (needs `Extend`), and the manifest is owned by `grok publish`. `delete <schema>` requires
 `--force` because it takes every row with it.
@@ -470,6 +496,44 @@ that reports no services (a dev stack) prints `(no services reported)`; `--modul
 module the server does not report exits 1. Requires a valid dev key (standard `grok s` auth).
 For an anonymous liveness probe — load balancer, k8s readiness — hit `/admin/health` directly;
 it's on the server's unauthenticated allowlist.
+
+## Problems, logging and errors (`grok s observe`, alias `grok s o`)
+
+Thin commands over the server's routes; `grok s observe` with no command prints every verb and option.
+
+```bash
+grok s o problems list --alert-status open                 # the open alerts; --status, --state, --kind, --since 7d
+grok s o problems get 'health:Jupyter@<server>'            # by id or kind:key; history <id> for its records
+grok s o problems status connection:<connection id> --data '{"status": "muted", "reason": "maintenance", "until": "2026-10-04T06:00:00Z"}'
+grok s o problems ack 'health:Jupyter@<server>' --reason x  # resolve <id> --reason ... closes the alert
+grok s o rules get > rules.json                             # Settings > Alerts problem rules; rules put --json rules.json
+grok s o rules test                                         # evaluates the saved rules once, now
+grok s o logger get exportSettings                          # the logger settings, or one path of them
+grok s o logger set --user alice --set debugFlags='["db"]' --for 30m --reason "ticket 123"   # an expiring entry, from All users
+grok s o logger set --user alice --remove                  # delete that entry
+grok s o logger history --limit 5                           # log-settings-changed audit records with their diff
+grok s o logs capture alice --for 2h --reason "ticket 123" # logger set of saveHttpRequests on an expiring entry; 30m by default
+grok s o logs capture                                       # the active captures; logs capture stop alice removes one
+grok s o errors top --since 7d --by signature --limit 20    # GET /admin/metrics errors
+grok s o errors top --since 24h --source server           # ranked by distinct users: system errors (scheduler, probes) need --source
+grok s o errors get error-incident:<key>                    # each occurrence of a problem's error: time, user, function, session
+grok s o errors get <signature> --since 1d                  # or of a signature from errors top --by signature
+grok s o timeline --session <id>                            # its events and requests of the last 15 min
+grok s o timeline --session <id> --from 2026-10-09T10:00     # 10 min from then; --to sets the end, at most 2 h later
+grok s o logs cloud --since 2h --filter ERROR                # CloudWatch, the instance's own group; --group, --from/--to
+grok s o logs archive list --prefix cw/ --since 1d           # keys in the log archive (WORM bucket); --since filters the returned page only
+grok s o logs archive read <key>                             # one archived object decoded to events
+grok s o logs container                                      # docker containers and their status
+grok s o logs container scripting-python_1 --since 1h --grep 'Kernel (started|shutdown)'   # one container's log lines
+```
+
+Problems need `ManageAlerts`, errors, another session's timeline and `logs cloud`/`logs archive` `ViewTelemetry`,
+`rules test` both, logger and rules changes and `logs capture` `EditPluginsSettings`. `capture` is an expiring
+`userGroupSettings` entry with `saveHttpRequests` on (seeded from the All Users entry, with `usage` saved); on an entry
+that already expires later it keeps that time. `capture stop` removes only an expiring entry that holds nothing but the
+capture; for any other entry use `logger set --user <login> --remove`. Read what it recorded with
+`timeline --session <id>`. `logs container` reads the container's latest `--limit` lines (20000) and only then cuts `--since`/`--from`/`--to` (UTC, matched across the container's own offset) and `--grep`, so a window older than those lines comes back empty: raise `--limit`. `logs archive list --since` filters only the page the server returned (`--limit`), so narrow
+the listing with `--prefix` first. `logs` read with the server's AWS role, or with `--connection <id>`. In durations `m` means minutes (in `grok s pull --since` it means months).
 
 ## Describing an entity type
 

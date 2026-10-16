@@ -2,6 +2,55 @@
 
 ## v.next
 
+* Shell: Added a ribbon Show navigation toggle that brings back the 148px nav rail when the pane is too narrow and the nav has folded away
+* Shell: The nav is now 180px wide and keeps that width across window resizes; double-clicking the sash resets it
+* All inputs, FuncCalls: Fixed the stacked layout of the A/B grids, where the two side sections lay on one another; the platform side's editors now fill their cells as in a form
+* Functions: In a narrow pane the function list moves above the forms instead of making the page scroll sideways
+* Dataframes, Files: The pickers are now in a form, so their captions and editors line up
+* Overview: The "What is where" lists line up beside their area captions
+* MSA workbench: The toolbar uses font icons, and Save is one of its items
+* Popups: The dialog has a help button and an Add rows button that grows its content after it opens
+* Popups: Added an Opacity slider and a Targets multi-choice to the dialog form
+* FuncCalls: The u2 choices in the A/B grid take the platform's measured widths, and refit when a provider's items arrive
+* All inputs: Removed the image box rule that u2 now covers
+* BDD: The suite runs green at 1920×1080, 1440×900, 1280×800 and 1024×768, with geometry claims that pin the layout of the shell, the A/B grids, Dataframes, the MSA toolbar, menus, dialogs and their editors, pickers, the property grid, tables, trees, tabs, the accordion and the filter builder states
+* Demo shell: Turned Inspect off by default, and kept the focus in the clicked field when Inspect opens the context panel
+* Demo shell: Capped the navigation pane at 40% and kept at least 480 px for the content, on drag and on resize
+* All inputs, FuncCalls: Fitted the A/B grid to the pane — narrow panes stack each u2 editor under its platform twin, tagged u2, instead of clipping or scrolling sideways
+* Filters: Validated the query and the builder before Apply/Run/Count, and showed the problem instead of running the old or an incomplete filter
+* MSA workbench: Reflowed the panels with the available width and framed Settings
+* Run history: Showed the run's output, and a running state, under the form
+* Layout: Showed the splitter sizes in percent
+* Bridge: Each open builds its own bridged input, so the second dialog still syncs and validates
+* Catalog: Added the Catalog sub-demo under Automation — every registered u2 component in each state its props reach (disabled, read-only, invalid, empty), generated from the u2 registry, with `samples` and `failed` readouts; a sample that throws shows its message in place
+* Catalog: Added a generated BDD journey over the Catalog sub-demo — every sample claimed in its state by its name and the noun the u2 manifest gives its kind, with typing or toggling on the default samples (`bdd/tools/gen-catalog.mjs`, `--check` reports drift; an optional `bdd/tools/catalog-known.json` pins a known u2 defect as `@known-failure` — none is left)
+* Catalog: Dropped the invalid sample of checkbox, color and font inputs, whose default values are values
+* Automation: Covered All inputs, FuncCalls, Spaces and Filters with BDD features, so every sub-demo now has one
+* Automation: Removed the BDD route table, picker elements and package `readout` kind (bindings 119 → 57 lines) — a sub-demo opens by its nav label, pickers are addressed by their placeholder — and turned on the layout, console-error and leak audits in report mode
+* BDD: The suite's automatic audits (layout, console errors, leaks) now fail a scenario instead of reporting it; the suite passes with no allowlist entry
+* Readouts: Introduced the status line markup the bdd library's `readout` kind reads — `role="status"` with a `<label>` and an `<output>`; the ad-hoc lines of FuncCalls, Functions and All inputs use it too
+* Navigation: Added opening a sub-demo by its label in the URL (`/apps/U2demo/U2Demo/Sections%20%26%20wizard`), as well as by its id
+* Navigation: Fixed in-app navigation leaving the previous sub-demo's platform widgets and bridged inputs alive; All inputs kills its Dart editors when it rebuilds
+* Navigation: Named the sub-demo tree "Demos" for screen readers and tests
+* Range slider: Added accessible names to the two sliders (Percent, Dose)
+* Source panel: Fixed the Catalog and Filters pages showing no source
+* All inputs: Removed the map-input CSS workaround; the u2 map input shrinks to the form's editor width
+* All inputs, FuncCalls: Each side of an A/B grid is a section named Platform or u2, and the rows of both sides stay aligned
+* All inputs: The platform checkbox row keeps a form's height, so both checkbox rows match
+* Spaces: Named the space picker (Space) and the preview region
+* Fixed the content pane running past its panel by its padding, which clipped labels at the bottom edge
+* BDD: The features name the A/B side instead of counting fields, and no known failure is left in the suite
+* Containers: Kept the demo dialog alive between openings (`keepAlive`), since closing now disposes a u2 dialog
+* Property grid: Moved the last-change readout to the PropertyGrid `onChanged` option from the deprecated signal
+* U2 Designer: Installed EMS with `installEms()`
+* Control inspector: Released the inspector's registration when the U2 Demo view closes
+* EMS: imports from `@datagrok-libraries/ems`
+* GROK-20298: Added the `U2: domain editing` test category — the PowerPack `editDomainBinding` dialog over a throwaway binding from the Northwind draft: a no-op gated, a candidate table + a column restriction + a grant reviewed, validated and saved in one apply (the snapshot shows it), and a binding moved meanwhile reloaded on SAVE with the conflict report
+* GROK-20298: `U2: domain conformance` sends the required `ifVersion` on its fixture apply
+* GROK-20298: `U2: domain authoring` follows the dialog opening on Design with the proposed identifier
+* GROK-20298: Added the `U2: domain authoring` test category — the PowerPack `createDomainBinding` dialog over the Northwind connection: NEXT › a name › NEXT › VALIDATE › CREATE registers a throwaway schema, opens the u2 app over its `orders`, and deletes it afterwards
+* GROK-20298: Added the `Northwind Orders` app (the zero-code u2 app over the external `northwind` binding) and the `U2: domain external` test category
+* GROK-20298: Added the `U2: domain external write` test category — the app over the writable `extwlive` binding: a new row typed with its key, a guarded edit, the conflict dialog (Overwrite and Reload) when a column moved behind the app, a delete, and an upsert import counting merged rows
 * Tests: Dropped the BDD features that tested the bdd library's own phrase resolution, which its unit tests cover
 * GROK-20298: `U2: domain trash` covers the staged restore — Restore is a pending change until Save (Discard takes it back, and nothing is written meanwhile), and a landed batch carries the row out of the trash; `U2: domain import` asserts the preview's verdicts are the server's dry run and its counts are the commit's
 * GROK-20753: Added the `U2: domain conformance` test category — the u2 backend conformance scenarios run against the platform backend over a throwaway hierarchy schema, the same file the headless suite runs over the memory backend

@@ -1,0 +1,29 @@
+{
+  "order": ["default", "disabled", "readOnly", "invalid", "busy", "empty"],
+  "states": {
+    "default": {},
+    "disabled": {"enabled": false},
+    "readOnly": {"readOnly": true},
+    "invalid": {"required": true, "value": null},
+    "busy": {"busy": true},
+    "empty": {"items": []}
+  },
+  "requires": {
+    "disabled": ["enabled"],
+    "readOnly": ["readOnly"],
+    "invalid": ["required"],
+    "busy": ["busy"],
+    "empty": ["items"]
+  },
+  "unreached": {"invalid": ["u2-bool-input", "u2-color-input", "u2-font-input"]},
+  "touch": ["invalid"],
+  "claims": {
+    "default": "be enabled",
+    "disabled": "be disabled",
+    "readOnly": "be read-only",
+    "invalid": "be invalid",
+    "busy": "be busy",
+    "empty": "have 0 items in total"
+  },
+  "layoutOnly": ["u2-panel", "u2-div-v", "u2-div-h"]
+}

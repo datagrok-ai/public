@@ -1,6 +1,8 @@
 import type { SketcherSettings } from './settings.js';
 import type { SketcherStrings } from './strings.js';
 export type { SketcherSettings } from './settings.js';
+import type { ReadoutItem } from './readout-items.js';
+export type { ReadoutItem } from './readout-items.js';
 export type { Message, PluralForms, SketcherStrings } from './strings.js';
 /**
  * `molecule` (the default) or `query` (API-021; spike query, Q2): query mode offers the means to draw query features (the
@@ -44,10 +46,10 @@ export type SketchErrorCode = 'loading' | 'unavailable';
  * What a warning is about (spike charges-checks, K11): an atom with a valence RDKit's sanitization rejects (`valence`),
  * aromatic bonds with no Kekulé structure (`aromaticity`), a label kept as an alias, which nothing interprets (`label`),
  * a stereocentre nothing specifies in a structure drawn with stereo bonds (`stereo`, spike stereo, S13), an atom on or very
- * close to another atom or a bond (`contact`, spike v1-display, CHECK-006), or something a getter's format cannot hold
- * (`format`).
+ * close to another atom or a bond (`contact`, spike v1-display, CHECK-006), an unlabelled atom between two identical bonds
+ * at 180° (`linear`, spike later-quick, CHECK-009), or something a getter's format cannot hold (`format`).
  */
-export type SketchWarningKind = 'valence' | 'aromaticity' | 'label' | 'abbreviation' | 'stereo' | 'contact' | 'format';
+export type SketchWarningKind = 'valence' | 'aromaticity' | 'label' | 'abbreviation' | 'stereo' | 'contact' | 'linear' | 'format';
 /**
  * The loss table's rows (spike formats, F2, F11): what a format cannot hold, as a `format` warning's `code` names it.
  * `v3000` is no loss but a notice: under `molV2000`, that the molfile getter (and `value` after an edit) writes V3000, and
@@ -121,6 +123,42 @@ export type WarningMarks = 'shown' | 'hidden';
  */
 export type AnalysisPanel = 'shown' | 'collapsed' | 'hidden';
 /**
+ * The stereochemistry panel (spike stereo-panel): `'closed'`, the default (its top-bar button and the canvas menu's
+ * "Stereochemistry panel" open it), `'open'`, or `'hidden'` (no button, no menu item, never shown). Any other value is
+ * `'closed'`, and reads back so.
+ */
+export type StereoPanel = 'closed' | 'open' | 'hidden';
+/** An enhanced-stereo group as `stereo` names it (spike stereo-panel): its type and its number (0 for ABS). */
+export interface SketchStereoGroup {
+    readonly type: 'abs' | 'and' | 'or';
+    readonly id: number;
+}
+/**
+ * A stereo element as the stereochemistry panel lists it (spike stereo-panel): a stereocentre (`centre`, its atom), a stereo
+ * double bond (`double-bond`) or an atropisomer axis (`axis`), each a bond with its two atoms; its CIP label (`R`, `S`,
+ * `r`, `s`, `E`, `Z`, `P`, `M`) or null; its status (`specified`, `unspecified`, or `unknown` for a wavy or crossed bond);
+ * its enhanced-stereo group, or null.
+ */
+export interface SketchStereoElement {
+    readonly kind: 'centre' | 'double-bond' | 'axis';
+    readonly atoms: readonly number[];
+    readonly bond: number | null;
+    readonly label: string | null;
+    readonly status: 'specified' | 'unspecified' | 'unknown';
+    readonly group: SketchStereoGroup | null;
+}
+/**
+ * The drawing's stereo as the stereochemistry panel reads it (spike stereo-panel): its elements in the panel's order
+ * (centres by atom, double bonds by bond, axes by bond); how many stereoisomers its annotation stands for (RDKit's
+ * `GetStereoisomerCount`: unspecified elements counted, each AND or OR group two; `Infinity` past 1023 of them), or null
+ * where the engine cannot say (a query); and the flag the drawing shows (`absolute`, `racemic`, `relative`), or null.
+ */
+export interface SketchStereo {
+    readonly elements: readonly SketchStereoElement[];
+    readonly count: number | null;
+    readonly flag: 'absolute' | 'racemic' | 'relative' | null;
+}
+/**
  * What a `render` listener receives (API-061; spike datagrok-platform, R5): the canvas's render count once this drawing is
  * shown, as `renderCount` then reads it.
  */
@@ -134,19 +172,46 @@ export interface RenderDetail {
  * edit, a write, a view change or a resize), once per drawing, as `renderCount` counts them, with the drawing on the page
  * when it comes. What the canvas marks on a drawing it shows (a tool's preview, the hover, the selection) is no render. A
  * host that waits for the sketcher to settle waits on it and on `isPending` (Datagrok's settles do), never on a timeout.
+ * `selection` (API-017; spike later-quick): what the user has selected changed, with what `selection` reads now (the
+ * atoms and bonds by index, ascending): once per change, when a click, a drag's release, a key or an edit changes it,
+ * never per pointer move, and not for an edit that leaves it as it was. `notice` (API-047; spike later-quick): the status
+ * line says a refusal or a notice to the user (`SketchNotice`), once each time it says one; never for a drag's preview or a
+ * hover.
  */
 export interface SketcherEvents {
     change: ChangeDetail;
     error: SketchError;
     settings: SketcherSettings;
     render: RenderDetail;
+    selection: SketchSelection;
+    notice: SketchNotice;
 }
-/** An event's name, as `on()` and `off()` take it: `change`, `error`, `settings` or `render`. */
+/**
+ * What the status line says to the user, told to the host as the `notice` event (API-047; spike later-quick; Ketcher's
+ * `errorHandler`): a `'refusal'` of what the user did (a bond with no room, a key that cannot act there) or a `'notice'`
+ * (a paste that held no structure, a clipboard the browser keeps from the sketcher, what a read left out), its `message`
+ * as the status line says it, in the sketcher's locale. It is not the `error` event, which is the host's own call refused
+ * (a malformed value, the engine failing).
+ */
+export interface SketchNotice {
+    readonly kind: 'refusal' | 'notice';
+    readonly message: string;
+}
+/** An event's name, as `on()` and `off()` take it: `change`, `error`, `settings`, `render`, `selection` or `notice`. */
 export type SketcherEventType = keyof SketcherEvents;
 /** A listener of the event `T`, called with that event's detail (`SketcherEvents[T]`). */
 export type SketcherListener<T extends SketcherEventType> = (detail: SketcherEvents[T]) => void;
 /** A format `setValue` can force; any other text is detected from its shape. */
 export type SketcherFormat = 'smiles' | 'cxsmiles' | 'smarts' | 'molV2000' | 'molV3000' | 'inchi' | 'cdxml';
+/** What `png()` takes (spike later-quick-2, API-023, IO-033). */
+export interface PngOptions {
+    /**
+     * The scale of the drawing's natural size (the `svg` getter's `width` and `height`, CSS px): 1 by default, one pixel
+     * per CSS px (96 dpi); 3.125 gives 300 dpi, 4 gives 384. A finite number above 0, else `png()` rejects with a
+     * RangeError. The PNG's longer side is held to 16,384 px, the scale lowered to fit.
+     */
+    readonly scale?: number;
+}
 /** How `setValue` reads its text, and where it shows the molecule. */
 export interface SetValueOptions {
     /** Read the text as this format instead of detecting it (e.g. SMARTS that is also SMILES). */
@@ -165,10 +230,14 @@ export interface SetValueOptions {
  * opens the periodic table; `zoom.in`, `zoom.out`, `zoom.reset` (100%) and `zoom.fit` (fit to view)
  * change the view (spike view); `layout` lays the whole drawing out afresh and fits the view to it, and
  * `clean` (Clean Up) lays it out afresh where it is, turned onto 15° (spike layout); `cut`, `copy` and `paste`
- * go through the system clipboard, as Ctrl+X, Ctrl+C and Ctrl+V do (spike clipboard). `structure.enhanced-stereo` opens
- * the Enhanced Stereochemistry dialog for the selected stereocentres, or every one with nothing selected (spike stereo).
+ * go through the system clipboard, as Ctrl+X, Ctrl+C and Ctrl+V do (spike clipboard). `structure.stereo-panel` opens and
+ * closes the stereochemistry panel, shown pressed while it is open (spike stereo-panel); `structure.enhanced-stereo`, which
+ * opened the Enhanced Stereochemistry dialog before the panel retired it, is kept as its alias.
+ * `structure.aromatize` and `structure.dearomatize` (spike canonical-arom, BOND-022) make the ring systems wholly among the
+ * selected atoms, or every one with nothing selected, aromatic or Kekulé, as Alt+A and Ctrl+Alt+A do; neither is in the
+ * default toolbar, and each is unavailable with nothing to change.
  */
-export type ToolbarAction = 'clear' | 'undo' | 'redo' | 'element.table' | 'zoom.in' | 'zoom.out' | 'zoom.reset' | 'zoom.fit' | 'layout' | 'clean' | 'cut' | 'copy' | 'paste' | 'structure.enhanced-stereo' | 'keys' | 'settings';
+export type ToolbarAction = 'clear' | 'undo' | 'redo' | 'element.table' | 'zoom.in' | 'zoom.out' | 'zoom.reset' | 'zoom.fit' | 'layout' | 'clean' | 'cut' | 'copy' | 'paste' | 'structure.enhanced-stereo' | 'structure.stereo-panel' | 'structure.aromatize' | 'structure.dearomatize' | 'keys' | 'settings';
 /** A readout a toolbar can hold: it shows a state and takes no input. `zoom.level` shows the zoom as a percentage (spike view). */
 export type ToolbarReadout = 'zoom.level';
 /**
@@ -273,17 +342,26 @@ export type StereoDisplay = 'shown' | 'hidden';
  */
 export type UnspecifiedDoubleBonds = 'crossed' | 'plain';
 /**
- * Whether terminal carbons are labelled CH₃ (spike settings-touch, K6, P10; UI-021's hydrogen labels): `'hidden'` (the
- * default, ChemDraw's and the ACS look's) or `'shown'`, moldraw2d's `explicitMethyl`. Hydrogens on heteroatoms are always
- * written (H23).
+ * Which carbons are labelled (spike settings-touch, K6, P10; UI-021's hydrogen labels; ATOM-025): `'hidden'` (the default,
+ * ChemDraw's and the ACS look's), `'shown'`, terminal carbons labelled CH₃ (moldraw2d's `explicitMethyl`), or `'all'`
+ * (spike later-quick-2), every carbon labelled with its hydrogens (C, CH, CH₂, CH₃; ChemDraw's "Show Carbons: All").
+ * Hydrogens on heteroatoms are always written (H23).
  */
-export type MethylLabels = 'shown' | 'hidden';
+export type MethylLabels = 'shown' | 'hidden' | 'all';
 /**
- * How large the toolbars' controls are (spike bar-fit, B1; UI-005): `'auto'` (the default) follows the sketcher's own box,
- * compact (28 px buttons, 20 px icons, a little less padding) under 720 px wide or 600 px tall, such as Datagrok's sketcher
- * dialog, and regular (32 px buttons, 24 px icons) otherwise; `'regular'` and `'compact'` keep that size in any box. No
- * target is ever under 24 px. It changes nothing but sizes: no change event, no undo step, no getter changes. Any other
- * value is `'auto'`, and reads back so.
+ * Whether every atom is numbered on the canvas (spike stereo-commands; the GCRS review's FR-GUI-06): `'hidden'` (the
+ * default) or `'shown'`, each atom's number counted from 1 as the molfile counts it, small, beside its atom where RDKit
+ * places an atom note (moldraw2d's `addAtomIndices`, from `atomIndexBase` 1). A setting alone (`settings.atomNumbers`); the
+ * API's SVG (`svg`) draws them while it is on.
+ */
+export type AtomNumbers = 'shown' | 'hidden';
+/**
+ * How large the toolbars' controls are (spike bar-fit, B1; UI-005; spike compact-default): `'compact'` (the default: 28 px
+ * buttons, 20 px icons, a little less padding) and `'regular'` (32 px buttons, 24 px icons) keep that size in a box of any
+ * size; `'auto'` follows the sketcher's own box, compact under 720 px wide or 600 px tall, such as Datagrok's sketcher
+ * dialog, and regular otherwise. No target is ever under 24 px. It changes nothing but sizes: no change event, no undo step,
+ * no getter changes. Any other value is `'compact'` (HTML's rule for enumerated attributes, compact the missing and invalid
+ * value default), and reads back so.
  */
 export type Density = 'auto' | 'regular' | 'compact';
 /**
@@ -314,8 +392,21 @@ export interface CreateSketcherOptions {
     warningMarks?: WarningMarks;
     /** The formula and mass readout: `'shown'` (the default), `'collapsed'` or `'hidden'`. The handle's `analysisPanel` changes it later. */
     analysisPanel?: AnalysisPanel;
+    /**
+     * What the readout shows (spike readout-config; INFO-016): the items checked, by id (`'formula'`, `'molecular-weight'`,
+     * `'exact-mass'`, the default; `'smiles'`, `'cxsmiles'`, `'smarts'`, `'inchikey'`; `'atoms'`, `'heavy-atoms'`, `'bonds'`,
+     * `'rings'`, `'fragments'`, `'stereocentres'`, `'charge'`; `'clogp'`, `'tpsa'`, `'hbd'`, `'hba'`, `'rotatable-bonds'`,
+     * `'lipinski-violations'`, `'qed'`; `'under-pointer'`, `'drawing'`). A setting, the host's value winning over the user's
+     * kept one. The handle's `readoutItems` changes it later.
+     */
+    readoutItems?: readonly ReadoutItem[];
     /** The CIP labels: `'hidden'` (the default) or `'shown'` (spike stereo, S10). The handle's `stereoLabels` changes it later. */
     stereoLabels?: StereoDisplay;
+    /**
+     * The stereochemistry panel: `'closed'` (the default), `'open'` or `'hidden'` (spike stereo-panel). The handle's
+     * `stereoPanel` changes it later.
+     */
+    stereoPanel?: StereoPanel;
     /** The stereo flag: `'shown'` (the default) or `'hidden'` (spike stereo, S8). The handle's `stereoFlag` changes it later. */
     stereoFlag?: StereoDisplay;
     /** A value's unspecified double bonds: `'crossed'` (the default) or `'plain'` (spike stereo, P2). The handle's `unspecifiedDoubleBonds` changes it later. */
@@ -327,7 +418,7 @@ export interface CreateSketcherOptions {
     locale?: string;
     /** Translations of the sketcher's messages, partial: what they leave out is English (I18N-002). The handle's `strings` changes them later. */
     strings?: SketcherStrings;
-    /** Terminal carbons labelled CH₃: `'hidden'` (the default) or `'shown'` (spike settings-touch, K6). The handle's `methylLabels` changes it later. */
+    /** Terminal carbons labelled CH₃: `'hidden'` (the default) or `'shown'` (spike settings-touch, K6); every carbon, `'all'` (ATOM-025). The handle's `methylLabels` changes it later. */
     methylLabels?: MethylLabels;
     /**
      * The host's keys over the keymap's profile (spike settings-touch, K7, KEY-004, P11): `{ "Ctrl+L": "layout", "t": null }`,
@@ -346,8 +437,9 @@ export interface CreateSketcherOptions {
      */
     cxsmilesCoordinates?: boolean;
     /**
-     * How large the toolbars' controls are (spike bar-fit, B1): `'auto'` (the default, by the sketcher's box), `'regular'` or
-     * `'compact'`. The `density` attribute of `<crux-sketch>` sets it too; the handle's `density` changes it later.
+     * How large the toolbars' controls are (spike bar-fit, B1; spike compact-default): `'compact'` (the default, in a box of any
+     * size), `'regular'`, or `'auto'` (by the sketcher's box). The `density` attribute of `<crux-sketch>` sets it too; the
+     * handle's `density` changes it later.
      */
     density?: Density;
     /**
@@ -360,6 +452,10 @@ export interface CreateSketcherOptions {
      * `persist-settings` attribute of `<crux-sketch>` sets it too (`"false"` turns it off); the handle's changes it later.
      */
     persistSettings?: boolean;
+    /**
+     * View-only mode (API-029; spike later-quick): `false` (the default) or `true`. The handle's `viewOnly` switches it later.
+     */
+    viewOnly?: boolean;
     /**
      * The query elements the host turns off (API-028; spike query-edit): generic symbols (`'A'`, `'AH'`, `'Q'`, `'QH'`,
      * `'X'`, `'XH'`, `'M'`, `'MH'`, `'*'`), `'list'`, `'not-list'` and the query bonds (`'any'`, `'single-or-double'`,
@@ -420,11 +516,11 @@ export type SketcherTool = Exclude<ToolbarTool, ToolbarAction | ToolbarReadout |
 /**
  * What `createSketcher` resolves to; `<crux-sketch>` has the same members.
  *
- * The format getters (`smiles`, `molfile`, `molV3000`, `cxsmiles`, `smarts`, `cdxml`) and `plainSmiles` (and `value`
- * once the user has edited) are `""` for an empty drawing; `smiles`, `plainSmiles` and `cxsmiles` also for a drawing with
- * a query feature SMILES cannot hold (spike query, Q12; QUERY-019), a `format` warning with `code: 'query'` under `smiles`
- * and `cxsmiles` saying why; `inchi` and `inchiKey` also for a drawing InChI cannot hold (spike inchi, N6), which `warnings`
- * says why. If the engine cannot write a drawing that has atoms in a format, reading that getter throws a `SketchError`
+ * The format getters (`smiles`, `molfile`, `molV3000`, `cxsmiles`, `smarts`, `cdxml`), `plainSmiles`, `canonicalSmiles`
+ * and `canonicalCxsmiles` (and `value` once the user has edited) are `""` for an empty drawing; `smiles`, `plainSmiles`,
+ * `cxsmiles` and the canonical two also for a drawing with a query feature SMILES cannot hold (spike query, Q12;
+ * QUERY-019), a `format` warning with `code: 'query'` under `smiles` and `cxsmiles` saying why; `inchi` and `inchiKey`
+ * also for a drawing InChI cannot hold (spike inchi, N6), which `warnings` says why. If the engine cannot write a drawing that has atoms in a format, reading that getter throws a `SketchError`
  * (`{ format, message }`), never an `Error`, and throws it again until the drawing changes; `cdxml`, `inchi` and `inchiKey`
  * throw one with a `code` while their module loads or after it failed to (`loading`, `unavailable`).
  */
@@ -436,6 +532,11 @@ export interface SketcherApi {
      * getter's text, character for character; otherwise it is plain SMILES, as `plainSmiles` is. R labels of one
      * number (`[*:n]`), radicals, isotopes, charges, atom maps and stereo are held by plain SMILES. RDKit, and so
      * Datagrok, reads either. `""` for an empty drawing. Chosen once per drawing state.
+     *
+     * It writes what Datagrok's RDKit.js writes for the drawing (H18; the product owner, 2026-10-13): stereo groups as
+     * drawn, so a lone ABS group (`|a:1|`) and a meso molecule's AND group (`&1`) are kept, and two drawings that mean the
+     * same may give two texts. To compare or register molecules (deduplication, a registration key), read
+     * `canonicalSmiles` instead, which gives one text per meaning.
      *
      * Query features (spike query, Q12; QUERY-019): generic atoms alone (A, Q, X, M and their H variants) are written as
      * CXSMILES labels; any other query feature (an atom list, a query property, a custom query, a query bond) has no
@@ -453,8 +554,35 @@ export interface SketcherApi {
     readonly molfile: string;
     /** MOL V3000; `""` for an empty drawing. */
     readonly molV3000: string;
-    /** Canonical CXSMILES; `""` for an empty drawing, and for a query feature other than generics (spike query, Q12), as `smiles`. */
+    /**
+     * Canonical CXSMILES, as Datagrok's RDKit.js writes it (`get_cxsmiles`): stereo groups as drawn, so a lone ABS group and a
+     * meso molecule's AND group are kept; with `cxsmilesCoordinates`, the coordinates and wedges too. `""` for an empty
+     * drawing, and for a query feature other than generics (spike query, Q12), as `smiles`. To compare or register
+     * molecules, read `canonicalCxsmiles` instead.
+     */
     readonly cxsmiles: string;
+    /**
+     * The `smiles` getter's text in RDKit's canonical form for enhanced stereo (spike canonical-arom, API-064): one text per
+     * meaning, for deduplication and registration. Drawings that mean the same give the same text: an AND or OR group's
+     * wedges all flipped, a symmetric molecule's drawing turned over, the groups numbered otherwise, ABS centres listed as a
+     * group or not. RDKit's `CanonicalizeStereoGroups` (the pinned RDKit; crux-core `sketch-canonical-fixes`): a lone ABS
+     * group and the one group of a meso or achiral molecule mean nothing and are not written; an ABS group is written beside
+     * AND and OR groups. Plain SMILES, or CXSMILES where plain SMILES would lose something, as `smiles` chooses; the same
+     * text as `smiles` for a drawing without stereo groups. RDKit.js reads it as the same molecule; Datagrok's RDKit.js
+     * cannot write it (it has no `CanonicalizeStereoGroups`), so a host that compares it with texts RDKit.js wrote compares
+     * different forms. `""` for an empty drawing and for a query feature other than generics, as `smiles` is, and what it
+     * loses `warnings` names under `smiles` and `cxsmiles`. Written once per drawing state, on its first read.
+     *
+     * Which to read: `smiles` and `cxsmiles` to show, store or hand the drawing on as the user drew it (what RDKit.js writes);
+     * `canonicalSmiles` and `canonicalCxsmiles` to compare two drawings or to look a molecule up.
+     */
+    readonly canonicalSmiles: string;
+    /**
+     * The `cxsmiles` getter's text in RDKit's canonical form for enhanced stereo (API-064): `CanonicalizeStereoGroups`, as
+     * `canonicalSmiles`, always CXSMILES, never with coordinates or wedges, whatever `cxsmilesCoordinates` says. One text
+     * per meaning; `""` as `cxsmiles` is.
+     */
+    readonly canonicalCxsmiles: string;
     /**
      * SMARTS, as RDKit's MolToSmarts writes the same query (spike query, Q10; QUERY-017): each query feature as RDKit writes
      * it, drawn hydrogens merged into their heavy atoms where the drawing has a query feature (P10, QUERY-022); a drawing
@@ -471,6 +599,16 @@ export interface SketcherApi {
      * waits for the engine.
      */
     readonly svg: string;
+    /**
+     * The drawing as a PNG (API-023, IO-033; spike later-quick-2): the `svg` getter's drawing rasterised in the browser, on
+     * a canvas never put in the page, at `scale` times its natural size (1 by default: one pixel per CSS px; 3.125 for 300
+     * dpi), its vectors drawn at that size. The PNG says its resolution (`pHYs`, 96 × scale dpi), so that a document places
+     * it at the drawing's natural size; its background is the canvas's, white. Resolves `null` for an empty drawing (as
+     * `svg` is `""`); rejects with the `svg` getter's error when the engine cannot draw it, and with a RangeError for a
+     * scale that is not a finite number above 0. A read: it draws nothing on the canvas and emits nothing. After
+     * `destroy()`, the last drawing's.
+     */
+    png(options?: PngOptions): Promise<Blob | null>;
     /**
      * The drawing as CDXML (spike cdxml, X4; API-008, IO-020): ChemDraw's ACS Document 1996 style, its colour and font tables,
      * y down at 14.4 pt per bond (IO-018), labels written as ChemDraw writes them, enhanced stereo, R labels as generic
@@ -525,6 +663,16 @@ export interface SketcherApi {
      * sketcher.
      */
     setValue(text: string, options?: SetValueOptions): void;
+    /**
+     * Adds the molecule `text` holds to the drawing without replacing it (API-025; spike later-quick; Ketcher's
+     * `addFragment`): read as `options.format` when it is given, else detected from its shape, as `value` reads it, and placed
+     * as a paste is placed: scaled to the drawing's bond length, the middle of its box at the centre of the view, moved right
+     * and down until it is clear of every structure. One edit, one undo step, one change event with `{ source: 'api' }`;
+     * the selection and the view stay as they are. A text that holds no structure (or a reaction) changes nothing, sets
+     * `lastError` and emits `error`, never throwing (API-013); CDXML and InChI wait for their module, as `value` does; before
+     * the sketcher is ready it waits until it is. Throws on a destroyed sketcher.
+     */
+    addMolecule(text: string, options?: Pick<SetValueOptions, 'format'>): void;
     /** The last refused write's error, until the next accepted write clears it to `null`. */
     readonly lastError: SketchError | null;
     /**
@@ -534,7 +682,8 @@ export interface SketcherApi {
      * (`'aromaticity'`), a label kept as an alias (`'label'`), a stereocentre nothing specifies in a structure drawn with
      * a wedge, a hashed wedge or a wavy bond (`'stereo'`, "Unspecified stereocentre"; spike stereo, S13), and atoms on or
      * very close to other atoms or bonds (`'contact'`, the atoms of a pair together, an atom on a bond alone; spike
-     * v1-display, CHECK-006), each with the status line's words and every atom concerned. Then the losses (`'format'`),
+     * v1-display, CHECK-006), and an unlabelled atom between two identical bonds at 180° (`'linear'`; spike later-quick,
+     * CHECK-009), each with the status line's words and every atom concerned. Then the losses (`'format'`),
      * one per format and loss: a combined R label (R1,R2), which SMILES, CXSMILES and SMARTS write with its lowest number,
      * and attachment points, which SMARTS does not write. Under `smiles`, what the `smiles` getter's text loses (decision `smiles-cx`): it writes CXSMILES
      * for attachment points, so they warn under `smarts` alone; `plainSmiles` has no entries, since it loses something
@@ -587,8 +736,44 @@ export interface SketcherApi {
      * or `'hidden'`. The toggle changes it too. It reads back the value in force as `atomColours` does; no edit.
      */
     analysisPanel: AnalysisPanel;
+    /**
+     * What the readout shows (spike readout-config; INFO-016): the items checked, by id, in the readout's order (`'formula'`,
+     * `'molecular-weight'` and `'exact-mass'` by default). Each item shows when it applies: the selection's value when there
+     * is one, else the drawing's; a query's SMARTS in place of its formula and masses; the pointer's items while the pointer
+     * is over an atom or a bond, or a bond is drawn. Written as a list or a text of ids apart by spaces or commas, ids it does
+     * not know left out; the readout's menu and the Settings dialog change it too, and the `readout-items` attribute. A
+     * setting (`settings.readoutItems`): kept and shared as the others are, the host's value winning. No edit.
+     */
+    readoutItems: readonly ReadoutItem[];
+    /**
+     * The stereochemistry panel (spike stereo-panel): `'closed'` (the default), `'open'` or `'hidden'` (no button, no menu
+     * item). Its button in the top bar and the canvas menu's "Stereochemistry panel" open and close it too, for this sketcher
+     * only, never kept nor shared (spike reports-oct14). It reads back the value in force; opening and closing it is a look:
+     * no edit, no event.
+     */
+    stereoPanel: StereoPanel;
+    /**
+     * The drawing's stereo as the stereochemistry panel lists it (spike stereo-panel): each stereocentre, stereo double bond
+     * and atropisomer axis with its label, status and group, the stereoisomers its annotation stands for, and the flag.
+     * Synchronous and current at every moment, whether or not the panel shows; read once per molecule, a read that emits
+     * nothing. Empty before the sketcher is ready and for a query.
+     */
+    readonly stereo: SketchStereo;
     /** Whether the drawing is empty (API-019), as it is after a clear, a write of `""` and the last atom erased. A read. */
     readonly isEmpty: boolean;
+    /**
+     * Whether the drawing is as it was when the host last marked it saved with `markSaved()` (API-045; spike later-quick;
+     * ChemDraw JS's `isSaved`): until then, the drawing the sketcher started with (the initial value, or none). Any change
+     * to another drawing (a user's edit, a host's write, an undo or a redo) makes it false, and undo or redo back to the
+     * drawing marked saved makes it true again; a write starts a new history, so nothing before it counts as saved again.
+     * A read, which emits nothing; after `destroy()`, what it said then.
+     */
+    readonly isSaved: boolean;
+    /**
+     * Marks the drawing shown now as saved (API-045; ChemDraw JS's `markAsSaved`): `isSaved` is true until the drawing
+     * changes. No edit: no change event, no undo step. Nothing after `destroy()`.
+     */
+    markSaved(): void;
     /**
      * Whether the drawing has a query feature (spike query, Q14; API-020): a generic atom, an atom list or NOT list, a query
      * property, a custom query, a query bond or a bond topology; a plain `*` is none. Synchronous and current at every moment;
@@ -717,17 +902,19 @@ export interface SketcherApi {
      */
     strings: SketcherStrings;
     /**
-     * Terminal carbons labelled CH₃ (spike settings-touch, K6, P10): `'hidden'` (the default) or `'shown'`. It reads back the
-     * value in force, as `atomColours` does: `'shown'` only when set to that keyword. Setting it redraws at once, and is no
-     * edit: no change event, no undo step, and no getter changes.
+     * Terminal carbons labelled CH₃ (spike settings-touch, K6, P10): `'hidden'` (the default) or `'shown'`; or every carbon
+     * labelled with its hydrogens, `'all'` (spike later-quick-2, ATOM-025). It reads back the value in force, as `atomColours`
+     * does: `'shown'` or `'all'` only when set to that keyword. Setting it redraws at once, and is no edit: no change event,
+     * no undo step, and no getter changes.
      */
     methylLabels: MethylLabels;
     /**
-     * How large the toolbars' controls are (spike bar-fit, B1; UI-005, HOST-029): `'auto'` (the default) compact in a box under
-     * 720 px wide or 600 px tall and regular otherwise, following the box as it changes; `'regular'` or `'compact'` in any
-     * box. It reads back the value in force, as `atomColours` does: `'regular'` or `'compact'` only when set to that keyword.
-     * Setting it changes the controls' sizes at once, and nothing else: no change event, no undo step, no getter changes. The
-     * `density` attribute sets it too. Each sketcher has its own.
+     * How large the toolbars' controls are (spike bar-fit, B1; UI-005, HOST-029; spike compact-default): `'compact'` (the
+     * default) or `'regular'` in a box of any size; `'auto'` compact in a box under 720 px wide or 600 px tall and regular
+     * otherwise, following the box as it changes. It reads back the value in force, as `atomColours` does: `'regular'` or
+     * `'auto'` only when set to that keyword, `'compact'` for anything else. Setting it changes the controls' sizes at once,
+     * and nothing else: no change event, no undo step, no getter changes. The `density` attribute sets it too. Each sketcher
+     * has its own.
      */
     density: Density;
     /**
@@ -738,6 +925,15 @@ export interface SketcherApi {
      */
     persistSettings: boolean;
     /**
+     * View-only mode (API-029; spike later-quick): `false` (the default) or `true`, switched at any time. While it is on, the
+     * user selects (by mouse, keyboard and touch), copies, zooms and pans, and edits nothing: the tools but the selection tools
+     * and the editing actions are disabled, saying so, a selection tool is chosen (the one chosen before comes back when it
+     * ends), editing keys are left to the page, and there is no context menu, rotation handle, floating action, long-press
+     * menu, paste, cut or drop. The host's own calls (`value`, `setValue`, `addMolecule`, `undo()`) still act. Switching it
+     * is no edit: no change event, no undo step. With `toolbar: {}` it is a viewer: the structure alone (API-030).
+     */
+    viewOnly: boolean;
+    /**
      * The host's keys (spike settings-touch, K7, KEY-004, P11): each key, as written ("Ctrl+L", "Shift+T", "t", "F2";
      * Ctrl means Ctrl or Cmd), bound to a built-in action (`layout`, `undo`, `keys.open`, `tool.erase`,
      * `tool.ring.cyclohexane`, `element.N`, `bond.double`, `atom.properties` …) or to `null`, which turns the key off so that
@@ -747,8 +943,9 @@ export interface SketcherApi {
     keys: HostKeys;
     /**
      * The settings (spike settings-touch, K6, P9; UI-021, UI-022): `atomColours`, `warningMarks`, `analysisPanel`,
-     * `stereoLabels`, `stereoFlag`, `unspecifiedDoubleBonds`, `methylLabels` and `keymap`, read and written whole: what a
-     * written object leaves out takes its default. Each is its own option as well. A user's change emits `settings` with
+     * `stereoLabels`, `stereoFlag`, `unspecifiedDoubleBonds`, `methylLabels`, `atomNumbers`, `keymap`, `readoutItems` and
+     * `stereoPanel` (spike stereo-panel), read and written whole: what a written object leaves out takes its default. Each is
+     * its own option as well, but `atomNumbers` (spike stereo-commands), a setting alone. A user's change emits `settings` with
      * them, for a host to store; and, unless `persistSettings` is off, the sketcher keeps the user's changes in the page's
      * localStorage and shares them with the page's other sketchers (spike reports-oct5, R5), where a host's own value wins.
      * No edit: no change event, no undo step, no getter changes.

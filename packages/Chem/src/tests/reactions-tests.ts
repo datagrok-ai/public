@@ -7,6 +7,7 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {PackageFunctions} from '../package';
 import {removeWaterAndSalts, runTransformationReaction, runTwoComponentReaction} from '../utils/reactions/reactions';
 import {NamedReaction} from '../utils/reactions/types';
+import {addDeprotectedColumn, defaultFragment} from '../analysis/deprotect';
 import {loadFileAsText, readDataframe} from './utils';
 
 category('Reactions', () => {
@@ -82,5 +83,14 @@ category('Reactions', () => {
       'Cc1ccc(NC(=O)C2CCCCC2)cc1', 'Cc1ccc(C(=O)Nc2ccc(Cl)cc2)cc1', 'O=C(NCCc1ccccc1)c1ccc(Cl)cc1',
       'O=C(Cc1ccccc1)Nc1cccnc1', 'CCNC(=O)c1cccnc1', 'COc1ccc(NC(=O)c2ccco2)cc1', '', '']);
     expect(res.noProducts, 2);
+  });
+
+  test('deprotect: the default fragment takes Fmoc off', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', [
+      'O=C(O)CNC(=O)OCC1c2ccccc2-c2ccccc21', 'CC(NC(=O)OCC1c2ccccc2-c2ccccc21)C(=O)O',
+      'O=C(O)C1CCCN1C(=O)OCC1c2ccccc2-c2ccccc21', 'CC(C)C(N)C(=O)O'])]);
+    const deprotected = addDeprotectedColumn(df, df.col('smiles')!, defaultFragment, rdkit)!;
+    expectArray(canonical(deprotected.toList()),
+      canonical(['NCC(=O)O', 'CC(N)C(=O)O', 'O=C(O)C1CCCN1', 'CC(C)C(N)C(=O)O']));
   });
 });

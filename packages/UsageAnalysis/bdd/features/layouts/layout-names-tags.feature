@@ -104,3 +104,21 @@ Feature: A layout saved from the toolbox gets a name and tags
     Then there should be 1 visible layout card
     And "BDD tags-{time}" layout card should be visible
     When user clears layouts filter
+
+  @realizes:sharing.share-dialog
+  Scenario: Share... on a layout card shares the layout with another user
+    When user picks "Share..." from the context menu of "BDD tags-{time}" layout card
+    Then "Share BDD tags-{time}" dialog should be visible
+    And share access selector should contain text "View and use"
+    When user picks the sharing user in "User, group, or email" input in "Share BDD tags-{time}" dialog
+    And user unchecks "Send notifications" input in "Share BDD tags-{time}" dialog
+    And user clicks on OK button in "Share BDD tags-{time}" dialog
+    Then the "Share BDD tags-{time}" dialog should close
+    And an info balloon containing "Shared" should have been shown
+    When user picks "Share..." from the context menu of "BDD tags-{time}" layout card
+    Then "Share BDD tags-{time}" dialog should be visible
+    And the access level of the sharing user in "Share BDD tags-{time}" dialog should be "View and use"
+    When user clicks on CANCEL button in "Share BDD tags-{time}" dialog
+    Then the "Share BDD tags-{time}" dialog should close
+    And no errors should have been logged
+    And no error or warning balloon should have been shown

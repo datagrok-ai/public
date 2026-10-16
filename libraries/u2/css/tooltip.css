@@ -1,15 +1,16 @@
-/* Tooltip skin — the platform's light-yellow compact box. Tokens only; css/tokens.css must
-   be loaded alongside. Positioning and pointer-events live on the element (see tooltip.ts). */
+/* Tooltip skin — the platform's light-yellow compact box (d4 .d4-tooltip). Tokens only;
+   css/tokens.css must be loaded alongside. Positioning and pointer-events live on the element
+   (see tooltip.ts). */
 .u2-tooltip {
   box-sizing: border-box;
-  max-width: 400px;
-  padding: var(--dg-space-s) var(--dg-space-m);
+  max-width: 600px;
+  padding: 5px;
   font-family: var(--dg-font-family);
-  font-size: var(--dg-font-size-small);
+  font-size: calc(var(--dg-font-size) * 0.9);
   line-height: var(--dg-line-height);
-  color: var(--dg-text-color);
-  background: var(--dg-beige-1);
-  border: var(--dg-overlay-border);
-  border-radius: var(--dg-radius);
-  box-shadow: var(--dg-shadow-1);
+  color: var(--dg-warm-grey-4);
+  background: color-mix(in srgb, var(--dg-beige-1) 88%, transparent);
+  border: var(--dg-border-width) solid var(--dg-beige-2);
+  border-radius: 2px;
+  box-shadow: 0 0 5px var(--dg-beige-2);
 }

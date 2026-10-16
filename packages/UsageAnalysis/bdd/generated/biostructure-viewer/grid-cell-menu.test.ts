@@ -9,8 +9,10 @@ sub_features_covered: [biostructureviewer.cell.molecule3d, biostructureviewer.vi
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
+import '../../bindings/file-formats.js';
 import '../../bindings/flow.js';
 import '../../bindings/grid.js';
+import '../../bindings/queries.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';

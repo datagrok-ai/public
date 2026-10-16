@@ -74,10 +74,7 @@ export class MonomerWrapper {
   ): CapGroupInfo[] {
     const rgroups = libraryMonomerObject.rgroups;
     return rgroups.map((rgroup, ind) => {
-      const smiles = rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES] ||
-        // WARNING: ignore because both key variants coexist in HELM Core Library!
-        // @ts-ignore
-        rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE];
+      const smiles = rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES] || rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE] || '';
       let rgroupId = rgroup[HELM_RGROUP_FIELDS.LABEL][1];
       if (!rgroupId || !parseInt(rgroupId) || isNaN(parseInt(rgroupId))) {
         // try to parse it from smiles, which can look like '[H][*:1]', 'O[*:2]', 'C=C[*:3]'

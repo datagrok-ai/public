@@ -14,6 +14,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {openDemoPage} from '../../../bindings/demo.js';
+import {atLeastWidePx} from '@datagrok-libraries/bdd/bindings/common/geometry';
 import {clickOn, shouldBe, shouldContainText, shouldHaveText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -25,18 +26,19 @@ test.describe("The Dart bridge", () => {
     enter(page, "U2 Demo");
     await session.step(8, "When user clicks on \"Open a DG.Dialog with a u2 input\" button", () => clickOn(page, el("\"Open a DG.Dialog with a u2 input\" button")));
     await session.step(9, "Then dialog should be visible", () => shouldBe(page, el("dialog"), "visible"));
-    await session.step(10, "And title of dialog should have text \"u2 input, platform dialog\"", () => shouldHaveText(page, el("title of dialog"), "u2 input, platform dialog"));
-    await session.step(11, "When user types \"Caffeine\" into Compound input in dialog", () => typeInto(page, "Caffeine", el("Compound input in dialog")));
-    await session.step(12, "Then value of \"bridged value\" readout should have text \"Caffeine\"", () => shouldHaveText(page, el("value of \"bridged value\" readout"), "Caffeine"));
-    await session.step(13, "When user clicks on OK button in dialog", () => clickOn(page, el("OK button in dialog")));
-    await session.step(14, "Then dialog should be hidden", () => shouldBe(page, el("dialog"), "hidden"));
-    await session.step(15, "And notification should contain text \"Compound: Caffeine\"", () => shouldContainText(page, el("notification"), "Compound: Caffeine"));
+    await session.step(10, "And editor of Compound input in dialog should be at least 200 px wide", () => atLeastWidePx(page, el("editor of Compound input in dialog"), 200));
+    await session.step(11, "And title of dialog should have text \"u2 input, platform dialog\"", () => shouldHaveText(page, el("title of dialog"), "u2 input, platform dialog"));
+    await session.step(12, "When user types \"Caffeine\" into Compound input in dialog", () => typeInto(page, "Caffeine", el("Compound input in dialog")));
+    await session.step(13, "Then value of \"bridged value\" readout should have text \"Caffeine\"", () => shouldHaveText(page, el("value of \"bridged value\" readout"), "Caffeine"));
+    await session.step(14, "When user clicks on OK button in dialog", () => clickOn(page, el("OK button in dialog")));
+    await session.step(15, "Then dialog should be hidden", () => shouldBe(page, el("dialog"), "hidden"));
+    await session.step(16, "And notification should contain text \"Compound: Caffeine\"", () => shouldContainText(page, el("notification"), "Compound: Caffeine"));
   });
   test("The leak detector answers", {tag: ["@demo", "@realizes:u2.dg.dart-input"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(18, "Given user opens the \"Bridge\" demo page", () => openDemoPage(page, "Bridge"));
+    await session.step(19, "Given user opens the \"Bridge\" demo page", () => openDemoPage(page, "Bridge"));
     enter(page, "U2 Demo");
-    await session.step(19, "When user clicks on \"leakReport()\" button", () => clickOn(page, el("\"leakReport()\" button")));
-    await session.step(20, "Then demo page should contain text \"liveScopes\"", () => shouldContainText(page, el("demo page"), "liveScopes"));
+    await session.step(20, "When user clicks on \"leakReport()\" button", () => clickOn(page, el("\"leakReport()\" button")));
+    await session.step(21, "Then demo page should contain text \"liveScopes\"", () => shouldContainText(page, el("demo page"), "liveScopes"));
   });
 });

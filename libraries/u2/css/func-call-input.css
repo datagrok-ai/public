@@ -12,6 +12,11 @@
   border-bottom: var(--dg-input-border-focus);
 }
 
+.u2-input-editor.u2-func-call-input.u2-invalid,
+.u2-input-editor.u2-func-call-input.u2-invalid:focus {
+  border-bottom: var(--dg-border-width) solid var(--dg-error);
+}
+
 .u2-func-call-input-name {
   overflow: hidden;
   white-space: nowrap;

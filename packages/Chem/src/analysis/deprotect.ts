@@ -39,7 +39,7 @@ function radicalToRgroupForm(smiles: string): string {
   });
 }
 
-const defaultFragment = 'O=C(N[*:1])OCC1c2ccccc2-c2ccccc21';
+export const defaultFragment = 'O=C([*:1])OCC1c2ccccc2-c2ccccc21';
 export class DeprotectEditor extends DG.FuncCallEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;
   columnInput!: DG.InputBase<DG.Column | null>;

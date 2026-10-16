@@ -51,10 +51,10 @@ test.describe("Progress, notifications and the guided tour", () => {
     enter(page, "U2 Demo");
     await session.step(28, "When user clicks on \"Start tour\" button", () => clickOn(page, el("\"Start tour\" button")));
     await session.step(29, "Then tour should be visible", () => shouldBe(page, el("tour"), "visible"));
-    await session.step(30, "And \"1 / 4\" text should be visible", () => shouldBe(page, el("\"1 / 4\" text"), "visible"));
+    await session.step(30, "And \"1 / 3\" text should be visible", () => shouldBe(page, el("\"1 / 3\" text"), "visible"));
     await session.step(31, "When user clicks on NEXT button", () => clickOn(page, el("NEXT button")));
     await session.step(32, "And user clicks on NEXT button", () => clickOn(page, el("NEXT button")));
-    await session.step(33, "And user clicks on NEXT button", () => clickOn(page, el("NEXT button")));
+    await session.step(33, "And user clicks on DONE button", () => clickOn(page, el("DONE button")));
     await session.step(34, "Then tour should be hidden", () => shouldBe(page, el("tour"), "hidden"));
     await session.step(35, "And value of tour readout should have text \"done\"", () => shouldHaveText(page, el("value of tour readout"), "done"));
     await session.step(36, "When user clicks on \"Start tour\" button", () => clickOn(page, el("\"Start tour\" button")));

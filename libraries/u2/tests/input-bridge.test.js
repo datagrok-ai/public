@@ -10,7 +10,9 @@ import {Scope} from '../src/core/scope.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
 import {NumberInput} from '../src/components/inputs/number-input.js';
 import {ChoiceInput} from '../src/components/inputs/choice-input.js';
+import {ListInput} from '../src/components/inputs/list-input.js';
 import {inputForProperty} from '../src/dg/forms/object-form.js';
+import {platform} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
 const {asDartInput, dartInputFor} = await import('../src/dg/inputs/input-bridge.js');
@@ -23,6 +25,7 @@ function bridge(name, body) {
     try {
       await body();
     } finally {
+      platform.reset();
       resetDom();
       await flush();
     }
@@ -143,6 +146,45 @@ bridge('the deferred editor belongs to the bridge: detach() disposes it', () => 
   assert.equal(input.scope.isDisposed, true, 'built under the bridge scope, released with it');
 });
 
+/** P11: `JsInputProxy` never detaches its JS input, so a value editor the platform mounted lived
+ * as long as the session. The element it mounts carries a cleanup the kill-walk runs. */
+bridge('the platform kill of the editor\'s host severs the bridge and disposes what it built', async () => {
+  const dart = dartInputFor(() => new TextInput({}));
+  const host = document.createElement('div');
+  host.append(dart.getInput());
+  dart.getInput();
+  assert.equal(platform.cleanups.length, 1, 'one cleanup, however often the platform asks');
+  const input = dart.u2;
+
+  globalThis.grok_Widget_Kill(host);
+  assert.equal(input.scope.isDisposed, true, 'the editor built for the platform is released');
+  assert.equal(platform.cleanups.length, 0);
+  dart.setValue('late');
+  await flush();
+  assert.deepEqual(dart.fired, {input: 0, changed: 0}, 'a severed bridge reports nothing');
+  dart.detach();
+});
+
+bridge('a kill severs a handed-over input and leaves it alive', async () => {
+  const input = new TextInput({label: 'Name'});
+  const dart = asDartInput(input);
+  const host = document.createElement('div');
+  host.append(dart.getInput());
+  globalThis.grok_Widget_Kill(host);
+  assert.equal(input.scope.isDisposed, false, 'never owned by the bridge');
+  input.value.value = 'after';
+  await flush();
+  assert.deepEqual(dart.fired, {input: 0, changed: 0});
+  input.dispose();
+});
+
+bridge('a deferred editor the platform never mounts costs no live scope', () => {
+  const live = Scope.liveCount;
+  const dart = dartInputFor(() => new TextInput({}));
+  assert.equal(Scope.liveCount, live);
+  dart.detach();
+});
+
 bridge('an input handed over is not owned: detach() leaves it alive', () => {
   const input = new TextInput({label: 'Name'});
   const dart = asDartInput(input);
@@ -245,4 +287,56 @@ bridge('dataType comes from the component, not from the value', () => {
   const typed = dartInputFor(() => new TextInput({}), {dataType: 'string'});
   assert.equal(typed.dataType, 'string', 'the explicit type holds before the build');
   typed.detach();
+});
+
+bridge('setStringValue: text that is not JSON leaves an object value as it was and warns once (P46)', () => {
+  const dart = dartInputFor(() => new ListInput({value: ['a']}));
+  dart.getInput();
+  assert.equal(dart.dataType, 'object');
+  dart.setStringValue('["b","c"]');
+  assert.deepEqual(dart.getValue(), ['b', 'c']);
+
+  const warnings = [];
+  const original = console.warn;
+  console.warn = (message) => warnings.push(message);
+  try {
+    dart.setStringValue('["d"');
+    dart.setStringValue('{oops');
+  } finally {
+    console.warn = original;
+  }
+  assert.deepEqual(dart.getValue(), ['b', 'c'], 'the value is unchanged');
+  assert.equal(warnings.length, 1, 'reported once per editor');
+  dart.detach();
+});
+
+bridge('an empty value the u2 input refuses reaches the platform as not nullable; it validates nothing empty', async () => {
+  const name = new TextInput({label: 'Compound', value: 'Aspirin'});
+  name.addValidator((v) => v.trim() ? null : 'Required');
+  const dart = asDartInput(name);
+  document.body.append(dart.getInput());
+  assert.equal(dart.nullable, true);
+  name.value.value = '';
+  await flush();
+  assert.equal(dart.nullable, false, 'the platform refuses the empty value through nullable');
+  name.value.value = 'Caffeine';
+  await flush();
+  assert.equal(dart.nullable, true);
+  dart.detach();
+  name.dispose();
+});
+
+bridge('Enter in a bridged editor inside a platform dialog is taken, so it never lands on the opener', () => {
+  const name = new TextInput({label: 'Compound', value: 'Aspirin'});
+  const dart = asDartInput(name);
+  const host = document.createElement('div');
+  host.className = 'd4-dialog';
+  host.append(dart.getInput());
+  document.body.append(host);
+  const editor = host.querySelector('input');
+  assert.equal(fire(editor, 'keydown', {key: 'Enter', cancelable: true}), false, 'default prevented');
+  host.classList.remove('d4-dialog');
+  assert.equal(fire(editor, 'keydown', {key: 'Enter', cancelable: true}), true, 'elsewhere it is left alone');
+  dart.detach();
+  name.dispose();
 });

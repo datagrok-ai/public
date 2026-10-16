@@ -1,7 +1,7 @@
 /* Item actions — one declaration feeding every surface (docs/recipes/list-item-rendering.md):
    the hover-revealed icon block on a row shows the subset with icons, the right-click menu always
    shows the full list. */
-import {iconButton} from './buttons.js';
+import {iconButton, ownScope} from './buttons.js';
 import {Menu} from '../navigation/menu.js';
 import {Access} from '../../core/access.js';
 import type {Capability} from '../../core/access.js';
@@ -39,18 +39,22 @@ export function allowedActions(actions: Action[], options?: ActionsOptions): Act
  * or a button in it is tabbed to (css/list.css: opacity, not display, so the buttons keep their
  * space and stay focusable). Shortcuts only: the same list belongs on the right-click menu too. */
 export function rowActions(actions: Action[], options?: ActionsOptions): HTMLElement {
-  const el = document.createElement('div');
-  el.className = 'u2-row-actions';
-  el.dataset.u2 = 'row-actions';
-  for (const action of allowedActions(actions, options)) {
-    if (!action.icon)
-      continue;
-    const button = iconButton(action.icon, action.run, {tooltip: action.name});
-    if (action.enabled === false)
-      button.disabled = true;
-    el.append(button);
-  }
-  return el;
+  return ownScope('row-actions', () => {
+    const el = document.createElement('div');
+    el.className = 'u2-row-actions';
+    el.dataset.u2 = 'row-actions';
+    el.setAttribute('role', 'toolbar');
+    for (const action of allowedActions(actions, options)) {
+      if (!action.icon)
+        continue;
+      const button = iconButton(action.icon, () => action.run(), {tooltip: action.name});
+      button.dataset.u2Item = action.name;
+      if (action.enabled === false)
+        button.disabled = true;
+      el.append(button);
+    }
+    return el;
+  });
 }
 
 /** A submenu under the flat list: what a wider target than the clicked object offers — the rows of
