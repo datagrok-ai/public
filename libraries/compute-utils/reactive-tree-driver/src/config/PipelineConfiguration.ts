@@ -170,7 +170,6 @@ export type PipelineReturnConfiguration<P> = PipelineLinkConfigurationBase<P> & 
 
 export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'nodemeta' | 'selector', // selector for API compat
-  actions?: undefined;
   handler: SelectorHandler;
   runOnInit?: undefined;
   sequential?: boolean;
@@ -288,7 +287,7 @@ export type PipelineCheckConfiguration<P> = {
 export type PipelineLinkConfigurationInput<P> = PipelineLinkConfiguration<P> | PipelineRuleConfiguration<P> | PipelineCheckConfiguration<P>;
 
 /** Action fields shared between config-time (ActionInfo<P>) and the UI-facing ViewAction.
- *  Excludes runtime-only matcher fields (showWhen/hideWhen) and UI-only fields (uuid/visible). */
+ *  Excludes the visibility fields (showWhen/hideWhen) and the UI-only uuid. */
 export type ActionInfoBase = {
   id: string;
   position: ActionPositions;
@@ -304,10 +303,10 @@ export type ActionInfoBase = {
 
 export type ActionInfo<P> = ActionInfoBase & {
   runOnInit?: undefined;
-  /** LQL string or array. Action's ViewAction.visible is true only when all
-   *  required entries match. (optional) entries are ignored. Empty / absent => no positive gate. */
+  /** LQL string or array. The action is hidden unless every required entry matches a node.
+   *  (optional) entries are ignored. Empty / absent => no positive gate. */
   showWhen?: P;
-  /** LQL string or array. Action's ViewAction.visible is false when any entry matches.
+  /** LQL string or array. The action is hidden when any entry matches a node.
    *  Mirrors the link-level `not` field. Empty / absent => no negative gate. */
   hideWhen?: P;
 };

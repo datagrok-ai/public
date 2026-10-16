@@ -4,7 +4,7 @@ import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutation
 import {GranularMutationOp, RestrictionType, StepHandle, ValidationResult} from '../data/common-types';
 import {StateTreeNode} from './StateTreeNodes';
 import {ScopeInfo} from './Link';
-import {ActionRef, MatchedIO, MatchedNodePaths} from './link-matching';
+import {MatchedIO, MatchedNodePaths} from './link-matching';
 import {PipelineInstanceConfig, PipelineInstanceConfigInput, PipelineOutline, normalizePipelineInstanceConfig} from '../config/PipelineInstance';
 import {NodePath} from '../data/BaseTree';
 
@@ -26,9 +26,15 @@ export interface ControllerBaseArgs {
   sourceCache?: Map<string, any>;
 }
 
+type ActionsUUID = ReadonlyMap<string, ReadonlyMap<string, string[]>>;
+
 export interface ValidatorControllerArgs extends ControllerBaseArgs {
-  actions: ReadonlyMap<string, ReadonlyMap<string, ActionRef>>;
+  actions: ActionsUUID;
   baseNode?: TreeNode<StateTreeNode>;
+}
+
+export interface NodeMetaControllerArgs extends ControllerBaseArgs {
+  actions: ActionsUUID;
 }
 
 export interface PipelineValidatorControllerArgs extends ControllerBaseArgs {
@@ -204,7 +210,7 @@ export class LinkController extends ControllerBase<[any, RestrictionType]> imple
 }
 
 export class ValidatorController extends ControllerBase<ValidationResult | undefined> implements IRuntimeValidatorController {
-  public actions: ReadonlyMap<string, ReadonlyMap<string, ActionRef>>;
+  public actions: ActionsUUID;
   public baseNode?: TreeNode<StateTreeNode>;
 
   constructor(args: ValidatorControllerArgs) {
@@ -215,13 +221,9 @@ export class ValidatorController extends ControllerBase<ValidationResult | undef
 
   getValidationAction(name: string, actionId: string): string | undefined {
     this.checkIsClosed();
-    return this.actions.get(name)?.get(actionId)?.uuid;
+    return this.actions.get(name)?.get(actionId)?.at(-1);
   }
 
-  isActionVisible(name: string, actionId: string): boolean {
-    this.checkIsClosed();
-    return this.actions.get(name)?.get(actionId)?.visible ?? false;
-  }
 
   setValidation(name: string, validation?: ValidationResult | undefined) {
     this.checkIsClosed();
@@ -320,9 +322,26 @@ export class MutationController extends ControllerBase<PipelineInstanceConfig | 
 }
 
 export class NodeMetaController extends ControllerBase<any | undefined> implements INameSelectorController {
+  public actionsVisibility = new Map<string, boolean>();
+  private actions: ActionsUUID;
+
+  constructor(args: NodeMetaControllerArgs) {
+    super(args);
+    this.actions = args.actions;
+  }
+
   setDescriptionItem(name: string, val: string) {
     this.checkIsClosed();
     this.outputs[name] = val;
+  }
+
+  setActionVisible(name: string, actionId: string, visible: boolean) {
+    this.checkIsClosed();
+    const ids = this.actions.get(name);
+    if (!ids)
+      throw new Error(`Handler for Link ${this.id} is trying to set visibility through an unknown actions ${name}`);
+    for (const uuid of ids.get(actionId) ?? [])
+      this.actionsVisibility.set(uuid, visible);
   }
 }
 

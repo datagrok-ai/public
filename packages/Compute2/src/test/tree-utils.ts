@@ -22,7 +22,7 @@ const errors = {a: {errors: ['bad']}};
 const warnings = {b: {warnings: ['careful']}};
 const inconsistent = (restriction: RestrictionType): Record<string, ConsistencyInfo> =>
   ({c: {restriction, inconsistent: true, assignedValue: 1}});
-const action = (id: string, position: ViewAction['position']): ViewAction => ({id, uuid: id, position, visible: true});
+const action = (id: string, position: ViewAction['position']): ViewAction => ({id, uuid: id, position});
 
 category('TreeWizard: step status', () => {
   test('Running, failed and pending come first', async () => {

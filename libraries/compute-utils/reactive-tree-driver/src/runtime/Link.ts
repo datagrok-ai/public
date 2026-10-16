@@ -64,6 +64,7 @@ export class Link {
   );
 
   private isWired = false;
+  private linksState?: LinksState;
 
   constructor(
     public prefix: NodePath,
@@ -84,6 +85,7 @@ export class Link {
   wire(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
     if (this.isWired)
       return;
+    this.linksState = linksState;
 
     const {slots: inputSlots, templates: inputTemplates} =
       this.buildSlotsAndTemplates(this.matchInfo.spec.from ?? [], this.matchInfo.inputs);
@@ -295,8 +297,11 @@ export class Link {
       return new MutationController({...baseArgs, outputNodes});
     }
 
-    if (this.isNodeMeta)
-      return new NodeMetaController({...baseArgs, outputsSet: new Set(descriptionOutputs)});
+    if (this.isNodeMeta) {
+      return new NodeMetaController({
+        ...baseArgs, outputsSet: new Set(descriptionOutputs), actions: this.matchInfo.actionsUUID,
+      });
+    }
 
     if (this.isFuncallAction)
       return new FuncallActionController(baseArgs);
@@ -448,6 +453,13 @@ export class Link {
         }
       }
     }
+    if (controller instanceof NodeMetaController && this.linksState && this.matchInfo.actionsUUID.size) {
+      for (const ids of this.matchInfo.actionsUUID.values()) {
+        for (const uuid of [...ids.values()].flat())
+          this.linksState.actions.get(uuid)?.setVisibility(this.uuid, controller.actionsVisibility.get(uuid));
+      }
+      this.linksState.updateHiddenActions();
+    }
     if (controller instanceof MutationController)
       checkMutationOverlap(this.matchInfo.spec.id, this.lastPipelineMutations, this.lastGranularMutations);
   }
@@ -467,7 +479,13 @@ function checkMutationOverlap(
   }
 }
 
+/** The visibility entry of an action's own `showWhen`/`hideWhen`. */
+export const STRUCTURE_VISIBILITY = '$structure';
+
 export class Action extends Link {
+  // writer -> visible, merged like meta: a later writer overrides an earlier one
+  private visibility = new Map<string, boolean | undefined>();
+
   constructor(
     public prefix: NodePath,
     public matchInfo: MatchInfo,
@@ -475,6 +493,30 @@ export class Action extends Link {
     logger?: DriverLogger,
   ) {
     super(prefix, matchInfo, undefined, logger);
+  }
+
+  setVisibility(writer: string, visible: boolean | undefined) {
+    this.visibility.set(writer, visible);
+  }
+
+  removeVisibility(writer: string) {
+    this.visibility.delete(writer);
+  }
+
+  pruneVisibility(writers: ReadonlySet<string>) {
+    for (const writer of this.visibility.keys()) {
+      if (writer !== STRUCTURE_VISIBILITY && !writers.has(writer))
+        this.visibility.delete(writer);
+    }
+  }
+
+  isVisible() {
+    let visible = true;
+    for (const value of this.visibility.values()) {
+      if (value !== undefined)
+        visible = value;
+    }
+    return visible;
   }
 
   exec(additionalParams: Record<string, any>) {

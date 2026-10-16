@@ -63,7 +63,7 @@ function inspectLink(state: StateTree, link: LinksData): InspectedLink {
   if (spec.annotation)
     res.annotation = spec.annotation;
   if (isAction)
-    res.visible = state.linksState.actionsVisibility.get(link.uuid) ?? true;
+    res.visible = state.linksState.isActionVisible(link.uuid);
   const original = getOriginalConfig(spec);
   if (original)
     res.original = toInspectorJSON(original);

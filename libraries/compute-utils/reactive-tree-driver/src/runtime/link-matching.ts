@@ -16,8 +16,6 @@ export type MatchedIO = {
 
 export type MatchedNodePaths = Readonly<Array<MatchedIO>>;
 
-export type ActionRef = {uuid: string, visible: boolean};
-
 export type MatchInfo = {
   spec: LinkSpec | ActionSpec;
   basePath?: Readonly<NodePath>;
@@ -29,7 +27,7 @@ export type MatchInfo = {
   inputsUUID: Map<string, Array<string>>;
   outputsUUID: Map<string, Array<string>>;
   // resolved after actions, so a changed action recreates the links referencing it
-  actionsUUID: Map<string, Map<string, ActionRef>>;
+  actionsUUID: Map<string, Map<string, string[]>>;
 }
 
 type NodeTraverseState = {

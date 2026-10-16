@@ -2,6 +2,7 @@
 
 ## v.next
 
+* RTD: Added `setActionVisible` to node meta links: an `actions` query addresses the actions, a later link overrides an earlier one like meta, and `Driver.hiddenActions$` publishes the hidden ones; `showWhen`/`hideWhen` hide an action the same way and withdraw when they stop matching; removed `ViewAction.visible` and the validator controller's `isActionVisible` (which actions a validation result offers is up to the validator)
 * RTD: Fixed validator actions going stale after adding or moving steps: `getValidationAction` returned a removed action and `isActionVisible` an outdated visibility until the validator was recreated; links now resolve actions when matched, and a changed action recreates and reruns them
 * RTD: Added `Driver.inspectLinks` and `Driver.inspectConfig` for debugging: resolved links and actions, including the links generated from annotations with their kind (`rule`, `check`, `required`), with the link, rule or check as written, their empty aliases, the targets `$linked` dropped and action visibility, and the config as written with resolved step io
 * RTD: Removed `Driver.currentConfig$`
