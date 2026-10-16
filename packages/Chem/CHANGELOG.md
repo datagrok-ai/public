@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#874](https://github.com/datagrok-ai/core/issues/874): Scaffold Tree: Fixed an error when the viewer was opened while the current view was not a table view
 * [#4291](https://github.com/datagrok-ai/public/issues/4291): Chem: MPO: Add support for qnum values
 * Tests: `sketcher testing: a sketcher fills its dialog`: every sketcher, in a dialog as it opens, in one shown with a size and with the invalid-molecule warning shown, reaches the bottom of the dialog's body and is not covered there (js-api's in-place sketcher left a margin under it)
 * Substructure search: A query molblock with an uncharged pentavalent nitrogen (a nitro drawn `N(=O)=O`, an azide `N=N#N`, a pyridine N-oxide `N=O`, from any sketcher) is read sanitized, as one with an H count query is: RDKit makes the group charge-separated, as the molecules searched hold it. Read unsanitized it matched no row (a nitrobenzene: none of smiles.csv's 75). Every other query molblock is read as before
