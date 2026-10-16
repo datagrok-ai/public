@@ -1,4 +1,4 @@
-import {observedMolecules, SarMatrix} from './sar-matrix-types';
+import {observedMolecules, SarMatrix} from '../sar-matrix-types';
 
 export enum SarRankScheme {
   Potency = 'Potent compounds',

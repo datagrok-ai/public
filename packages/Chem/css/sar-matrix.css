@@ -1,3 +1,10 @@
+/* The platform's tab host does not shrink below its content, and a grid keeps the canvas height it was last
+   given; without this the matrix tab overflows its dock panel and hides the panel's tab strip. */
+.d4-sar-matrix-viewer .d4-tab-host {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
 .chem-sar-matrix {
   display: flex;
   flex-direction: row;
@@ -144,9 +151,17 @@ i.chem-sar-card-twisty:hover {
   background: var(--grey-1);
 }
 
+.chem-sar-card.chem-sar-sum-static {
+  cursor: default;
+}
+
+.chem-sar-card.chem-sar-sum-static:hover {
+  background: none;
+}
+
 .chem-sar-card.selected {
-  background: #2083D530;
-  border-left-color: var(--blue-1);
+  background: color-mix(in srgb, var(--blue-2) 15%, transparent);
+  border-left-color: var(--blue-2);
 }
 
 .chem-sar-card-core {
@@ -372,7 +387,7 @@ i.chem-sar-card-twisty:hover {
 }
 
 .chem-sar-chip-transfer {
-  color: var(--blue-3);
+  color: var(--white);
   background: var(--blue-2);
   border-color: var(--grey-2);
   font-weight: 600;
@@ -514,8 +529,8 @@ i.chem-sar-card-twisty:hover {
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--blue-3);
-  background: #2083D530;
+  color: var(--steel-5);
+  background: color-mix(in srgb, var(--blue-2) 15%, transparent);
   border-radius: 4px;
   padding: 1px 6px;
 }
@@ -602,7 +617,7 @@ i.chem-sar-card-twisty:hover {
 }
 
 .chem-sar-struct-icon.chem-sar-filter-on {
-  color: var(--blue-1);
+  color: var(--blue-2);
   position: relative;
 }
 
@@ -614,7 +629,7 @@ i.chem-sar-card-twisty:hover {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--blue-1);
+  background: var(--blue-2);
 }
 
 .chem-sar-nav-controls {
@@ -679,7 +694,7 @@ i.chem-sar-card-twisty:hover {
   width: 3px;
   height: 14px;
   margin-left: -2px;
-  background: var(--blue-1);
+  background: var(--blue-2);
 }
 
 .chem-sar-cp-strip-scale {
@@ -700,4 +715,290 @@ i.chem-sar-card-twisty:hover {
   color: var(--grey-5);
   text-align: center;
   padding-bottom: 2px;
+}
+
+/* ---- Summary tab ------------------------------------------------------------------------- */
+
+/* Short of room, the chips move to a line of their own as a block rather than splitting. */
+.chem-sar-sum-top {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+
+.chem-sar-sum-title-row {
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+}
+
+.chem-sar-sum-pane {
+  flex: 1 1 0;
+  min-height: 0;
+  gap: 8px;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  container-type: inline-size;
+}
+
+.chem-sar-sum-cols {
+  gap: 8px;
+}
+
+/* Side by side once each column has room for a row. The analogs then scroll within the height of the key
+   series beside them, so a long list neither leaves a gap beside it nor pushes the answers down. */
+@container (min-width: 830px) {
+  .chem-sar-sum-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .chem-sar-sum-cols > .chem-sar-sum-making {
+    contain: size;
+    min-height: 320px;
+  }
+
+  .chem-sar-sum-making > .chem-sar-sum-making-block {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+}
+
+/* Badges move under a long name, and a description takes a second line, rather than both clipping. */
+.chem-sar-sum-pane .chem-sar-card-body > .chem-sar-card-title {
+  flex-wrap: wrap;
+}
+
+.chem-sar-sum-pane .chem-sar-card-body > .chem-sar-card-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+/* One bitmap, shown smaller as the pane narrows, so structures shrink rather than squash. */
+.chem-sar-sum-mol {
+  flex: 0 0 auto;
+  width: 136px;
+  height: 76px;
+  box-sizing: border-box;
+}
+
+@container (max-width: 1100px) {
+  .chem-sar-sum-mol {
+    width: 100px;
+    height: 56px;
+  }
+
+  div.chem-sar-sum-mol {
+    padding: 8px 2px;
+  }
+}
+
+@container (max-width: 700px) {
+  .chem-sar-sum-mol {
+    width: 72px;
+    height: 40px;
+  }
+
+  div.chem-sar-sum-mol {
+    padding: 2px;
+  }
+
+  .chem-sar-sum-comp-row {
+    flex-wrap: wrap;
+    padding-top: 6px;
+  }
+
+  .chem-sar-sum-comp-row > .chem-sar-sum-col {
+    flex-basis: 100%;
+  }
+
+  .chem-sar-sum-half {
+    flex-basis: 260px;
+  }
+
+  .chem-sar-sum-comp-row:has(> .chem-sar-sum-half-head),
+  .chem-sar-sum-coverage > :first-child {
+    display: none;
+  }
+}
+
+/* Too narrow for text beside the structure: the text takes a line of its own under it. */
+@container (max-width: 420px) {
+  .chem-sar-sum-pane .chem-sar-card {
+    flex-wrap: wrap;
+  }
+
+  .chem-sar-sum-pane .chem-sar-card-body {
+    order: 1;
+    flex-basis: 100%;
+  }
+
+  .chem-sar-sum-pane .chem-sar-sum-valuebox {
+    margin-left: auto;
+  }
+}
+
+.chem-sar-sum-overview {
+  gap: 8px;
+}
+
+.chem-sar-sum-card {
+  padding: 8px 10px;
+  border: 1px solid var(--grey-2);
+  border-radius: 6px;
+}
+
+.chem-sar-sum-chips,
+.chem-sar-sum-answers {
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.chem-sar-sum-answer {
+  flex: 1 1 260px;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--grey-2);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.chem-sar-sum-answer:hover,
+.chem-sar-sum-half:hover,
+.chem-sar-sum-open {
+  background: var(--grey-1);
+}
+
+.chem-sar-sum-answer-head {
+  justify-content: space-between;
+}
+
+.chem-sar-sum-pair {
+  align-items: center;
+  gap: 4px;
+}
+
+.chem-sar-sum-arrow,
+.chem-sar-sum-faint {
+  color: var(--grey-4);
+}
+
+.chem-sar-sum-comp-row {
+  align-items: center;
+  gap: 8px;
+}
+
+.chem-sar-sum-col {
+  flex: 0 0 90px;
+}
+
+/* The value and the swap halves share the row equally, so both line up down the table. */
+.chem-sar-sum-half,
+.chem-sar-sum-half-head {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.chem-sar-sum-half {
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.chem-sar-sum-figure {
+  white-space: nowrap;
+}
+
+.chem-sar-sum-half-head {
+  padding-left: 6px;
+  color: var(--grey-5);
+  font-size: 11px;
+}
+
+/* Indented past the row's depiction, so it reads as nested under that row. */
+.chem-sar-sum-expand {
+  padding: 2px 12px 10px 48px;
+}
+
+.chem-sar-sum-detail:not(:empty) {
+  padding: 4px 0 8px 24px;
+}
+
+.chem-sar-sum-levels {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.chem-sar-sum-level {
+  color: var(--blue-2);
+  border-color: var(--blue-2);
+  cursor: pointer;
+}
+
+.chem-sar-sum-level-on {
+  color: var(--white);
+  background: var(--blue-2);
+}
+
+.chem-sar-sum-lane {
+  gap: 2px;
+  padding-top: 2px;
+}
+
+.chem-sar-sum-reason {
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 1px solid var(--grey-2);
+  border-radius: 3px;
+  font-size: 9px;
+  line-height: 12px;
+  text-align: center;
+  flex: 0 0 auto;
+}
+
+.chem-sar-sum-reason-on {
+  background: var(--grey-5);
+  border-color: var(--grey-5);
+  color: var(--grey-1);
+}
+
+.chem-sar-sum-valuebox {
+  flex: 0 0 auto;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 64px;
+}
+
+.chem-sar-sum-prose {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--grey-6);
+}
+
+.chem-sar-sum-fold {
+  align-items: center;
+  gap: 6px;
+}
+
+* + .chem-sar-sum-fold {
+  padding-top: 8px;
+}
+
+.chem-sar-sum-fold,
+.chem-sar-sum-click {
+  cursor: pointer;
+}
+
+.chem-sar-sum-making {
+  gap: 8px;
 }

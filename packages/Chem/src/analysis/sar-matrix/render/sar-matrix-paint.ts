@@ -1,11 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 
 import * as TextUtils from '@datagrok-libraries/gridext/src/utils/TextUtils';
-import {SarMatrix, SarMatrixCell} from './sar-matrix-types';
+import {SarMatrix, SarMatrixCell} from '../sar-matrix-types';
 import {drawDepiction, rowTemplate} from './sar-matrix-depict';
 import {ACTIVITY_SCHEME, CHIP_H, CHIP_MARGIN, CHIP_PAD, cssColor, GRID_FONT, HEADER_ARGB,
   HEADER_W, MatrixGridState, PaneRow, REAL_ALPHA, VIRTUAL_ALPHA, VIRTUAL_ALPHA_MIN, WHITE_ARGB,
-  FULL_SUPPORT} from './sar-matrix-ui-common';
+  FULL_SUPPORT} from '../sar-matrix-ui-common';
 
 /** How a cell corner chip is drawn. The two corners carry different facts and sit on opposite
  *  diagonals so they never collide however wide either gets. */
@@ -209,7 +209,7 @@ export class MatrixPainter {
     // Host-grid link: a selected row's cell gets a blue ring.
     if (cell.molIdx !== null && this.host.dataFrame.selection.get(cell.molIdx)) {
       g.lineWidth = 2;
-      g.strokeStyle = cssColor(this.host.root, '--blue-1', '#2083d5');
+      g.strokeStyle = cssColor(this.host.root, '--blue-2', '#50a9c5');
       g.strokeRect(b.x + 1, b.y + 1, b.width - 2, b.height - 2);
     }
   }

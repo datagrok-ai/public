@@ -1309,6 +1309,13 @@ export namespace funcs {
   }
 
   /**
+   * Rank warhead, linker and E3 ligand across 2792 patent degraders whose parts are columns
+   */
+  export async function demoSarMatrixProtac(): Promise<void> {
+    return await grok.functions.call('Chem:DemoSarMatrixProtac', {});
+  }
+
+  /**
    * R Group Analysis including R-group decomposition and  visual analysis of the obtained R-groups
    */
   export async function demoRgroupAnalysis(): Promise<void> {

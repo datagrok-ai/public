@@ -1,10 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 
-import {getRdKitModule} from '../../utils/chem-common-rdkit';
-import {getMoleculeRenderer} from '../../package';
-import {SarMatrix} from './sar-matrix-types';
-import {attachmentNumbers} from './sar-matrix-link';
-import {MatrixGridState} from './sar-matrix-ui-common';
+import {getRdKitModule} from '../../../utils/chem-common-rdkit';
+import {getMoleculeRenderer} from '../../../package';
+import {SarMatrix} from '../sar-matrix-types';
+import {attachmentNumbers} from '../build/sar-matrix-link';
+import {MatrixGridState} from '../sar-matrix-ui-common';
 
 /** Drawing molecules onto a grid canvas, aligned so a shared core points the same way in every cell.
  *

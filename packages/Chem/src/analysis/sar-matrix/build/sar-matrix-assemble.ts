@@ -1,10 +1,10 @@
-import {_package} from '../../package';
-import {getRdKitService} from '../../utils/chem-common-rdkit';
+import {_package} from '../../../package';
+import {getRdKitService} from '../../../utils/chem-common-rdkit';
 import {ClusterDecomposition, positionNumber, PositionRecord} from './sar-matrix-decompose';
 import {cellPossible, FragmentLinks, LinkStages, planLink} from './sar-matrix-link';
 import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixCellKind, SarMatrixColumn,
   SarMatrixRow}
-  from './sar-matrix-types';
+  from '../sar-matrix-types';
 
 /**
  * Rows and columns joined into components by the cells actually observed, as a union-find over
@@ -47,53 +47,58 @@ export interface AdditiveFit {
   rowN: Int32Array;
   colN: Int32Array;
   observed: number;
+  /** Whether the sweeps reached the tolerance instead of exhausting their cap. Until they
+   *  do, the effects are still shrunk toward the zero start by an amount that differs per design, so
+   *  anything comparing effects BETWEEN matrices has to drop the ones that stopped short. */
+  converged: boolean;
 }
 
-export function fitAdditiveEffects(cells: SarMatrixCell[][], rowCount: number,
-  columnCount: number): AdditiveFit {
+/**
+ * Fit from observed cells already collected as `(row, column, value)` triples, so a caller that walks
+ * the grid for its own reasons does not pay for a second sweep over it.
+ */
+export function fitAdditiveFromTriples(obsRow: ArrayLike<number>, obsCol: ArrayLike<number>,
+  obsVal: ArrayLike<number>, rowCount: number, columnCount: number, maxSweeps = MAX_FIT_SWEEPS): AdditiveFit {
   const rowAcc = new Float64Array(rowCount);
   const rowN = new Int32Array(rowCount);
   const colAcc = new Float64Array(columnCount);
   const colN = new Int32Array(columnCount);
+  const observed = obsVal.length;
   let grandSum = 0;
-  // The fit sweeps the measured cells repeatedly and the grid is mostly holes, so they are collected
-  // once here rather than rescanned.
-  const obsRow: number[] = [];
-  const obsCol: number[] = [];
-  const obsVal: number[] = [];
-
-  for (let ri = 0; ri < rowCount; ri++) {
-    for (let ci = 0; ci < columnCount; ci++) {
-      const cell = cells[ri][ci];
-      if (cell.kind === 'real' && cell.value !== null) {
-        rowN[ri]++;
-        colN[ci]++;
-        grandSum += cell.value;
-        obsRow.push(ri);
-        obsCol.push(ci);
-        obsVal.push(cell.value);
-      }
-    }
+  let sumSq = 0;
+  for (let k = 0; k < observed; k++) {
+    rowN[obsRow[k]]++;
+    colN[obsCol[k]]++;
+    grandSum += obsVal[k];
+    sumSq += obsVal[k] * obsVal[k];
   }
 
-  const grandMean = obsVal.length ? grandSum / obsVal.length : 0;
+  const grandMean = observed ? grandSum / observed : 0;
   // Alternating least squares for value ≈ grand + row + column. Averaging the margins in one pass
   // solves that model only when every row is measured at the same columns; with holes it is a
   // different and worse estimator, and holes are the normal case here. Sweeping the two arms against
   // each other converges on the least-squares fit, and reproduces the one-pass answer exactly when
   // the design happens to be balanced.
+  //
+  // Starting both arms at zero against the exact observed mean is what makes the fitted effects
+  // count-centred — `Σ rowN·rowEffect = Σ colN·colEffect = 0` holds after every sweep — so an effect
+  // is read against that matrix's own count-weighted average and nothing else. Warm-starting from
+  // another matrix's effects would silently drop that.
   const rowEffect = new Float64Array(rowCount);
   const colEffect = new Float64Array(columnCount);
-  for (let iteration = 0; iteration < MAX_FIT_SWEEPS; iteration++) {
+  let converged = observed === 0;
+  let lastShift = 0;
+  let remaining = Infinity;
+  for (let iteration = 0; iteration < maxSweeps; iteration++) {
     rowAcc.fill(0);
-    for (let k = 0; k < obsVal.length; k++)
+    for (let k = 0; k < observed; k++)
       rowAcc[obsRow[k]] += obsVal[k] - grandMean - colEffect[obsCol[k]];
     for (let ri = 0; ri < rowCount; ri++) {
       if (rowN[ri])
         rowEffect[ri] = rowAcc[ri] / rowN[ri];
     }
     colAcc.fill(0);
-    for (let k = 0; k < obsVal.length; k++)
+    for (let k = 0; k < observed; k++)
       colAcc[obsCol[k]] += obsVal[k] - grandMean - rowEffect[obsRow[k]];
     let shift = 0;
     for (let ci = 0; ci < columnCount; ci++) {
@@ -103,10 +108,40 @@ export function fitAdditiveEffects(cells: SarMatrixCell[][], rowCount: number,
       shift = Math.max(shift, Math.abs(next - colEffect[ci]));
       colEffect[ci] = next;
     }
-    if (shift < FIT_TOLERANCE)
+    if (shift < FIT_TOLERANCE) {
+      converged = true;
       break;
+    }
+    // The sweeps converge geometrically, so the distance left to the fixed point is shift·r/(1−r).
+    const rate = lastShift > 0 ? shift / lastShift : 1;
+    remaining = rate < 1 ? shift * rate / (1 - rate) : Infinity;
+    lastShift = shift;
   }
-  return {grandMean, rowEffect, colEffect, rowN, colN, observed: obsVal.length};
+  // A sparse design can need thousands of sweeps to reach the fixed step while already sitting a
+  // negligible share of the data's spread from its answer; that is converged for every comparison made.
+  if (!converged)
+    converged = remaining < FIT_TOLERANCE_SD * Math.sqrt(Math.max(0, sumSq / observed - grandMean ** 2));
+  return {grandMean, rowEffect, colEffect, rowN, colN, observed, converged};
+}
+
+export function fitAdditiveEffects(cells: SarMatrixCell[][], rowCount: number,
+  columnCount: number): AdditiveFit {
+  // The fit sweeps the measured cells repeatedly and the grid is mostly holes, so they are collected
+  // once here rather than rescanned.
+  const obsRow: number[] = [];
+  const obsCol: number[] = [];
+  const obsVal: number[] = [];
+  for (let ri = 0; ri < rowCount; ri++) {
+    for (let ci = 0; ci < columnCount; ci++) {
+      const cell = cells[ri][ci];
+      if (cell.kind === 'real' && cell.value !== null) {
+        obsRow.push(ri);
+        obsCol.push(ci);
+        obsVal.push(cell.value);
+      }
+    }
+  }
+  return fitAdditiveFromTriples(obsRow, obsCol, obsVal, rowCount, columnCount);
 }
 
 export function fitAdditiveModel(cells: SarMatrixCell[][], rowCount: number,
@@ -204,11 +239,14 @@ export const MAX_MATRIX_ROWS = 2000;
 /** Ceiling on columns, independent of the cell budget: the pane builds a grid column per substituent,
  *  so few rows must not buy unlimited width. */
 export const MAX_MATRIX_COLS = 500;
-/** Sweep ceiling for the additive fit. It converges geometrically and reaches the tolerance in a
- *  handful of sweeps; the cap only bounds a pathologically ill-conditioned design. */
+/** Default sweep ceiling for the additive fit. A dense series reaches the tolerance in a handful of sweeps;
+ *  a sparse one can need hundreds, but stops here within ~0.01 of its fixed point, which the fill accepts. */
 const MAX_FIT_SWEEPS = 50;
 /** Largest column-effect move that still counts as converged, well under any activity unit in use. */
 const FIT_TOLERANCE = 1e-9;
+/** Distance left to the fixed point, as a share of the observed values' SD, that a capped fit may still be
+ *  off by and count as converged. */
+const FIT_TOLERANCE_SD = 1e-3;
 
 /** Claim a cell for a compound the set holds but has no activity for, so `fillVirtualCells` cannot
  *  predict it and offer it as one to make. Never over a measured cell: two members can share a slot,

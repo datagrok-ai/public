@@ -1,14 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../../package';
-import {isMolBlock} from '../../utils/chem-common';
-import {checkMoleculeValid} from '../../utils/chem-common-rdkit';
+import {_package} from '../../../package';
+import {isMolBlock} from '../../../utils/chem-common';
+import {checkMoleculeValid} from '../../../utils/chem-common-rdkit';
 import {linkStaged, MAX_MATRIX_CELLS, MAX_MATRIX_COLS, MAX_MATRIX_ROWS, rankByFrequency}
   from './sar-matrix-assemble';
 import {ClusterDecomposition, PositionRecord} from './sar-matrix-decompose';
 import {attachmentNumbers, fragmentLinks, planLink, PositionFills} from './sar-matrix-link';
-import {CoreCluster} from './sar-matrix-types';
+import {CoreCluster} from '../sar-matrix-types';
 
 /** Columns that already hold a decomposition, sorted into the axes they build. */
 export interface SarFragmentColumns {

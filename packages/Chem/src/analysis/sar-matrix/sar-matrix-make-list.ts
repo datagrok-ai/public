@@ -3,24 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {renderMolecule} from '../../rendering/render-molecule';
-import {fitAdditiveEffects} from './sar-matrix-assemble';
-import {standardizeFragment} from './sar-matrix-columns';
+import {fitAdditiveEffects} from './build/sar-matrix-assemble';
 import {closeGridQuietly, SarMatrix, SarMatrixCell} from './sar-matrix-types';
-import {ANALOG_W, CELL_H, CELL_W, CORE_W, MatrixCellRef} from './sar-matrix-ui-common';
-
-const structureCache = new Map<string, boolean>();
-const STRUCTURE_CACHE_MAX = 2000;
-
-/** Whether a fragment is a structure rather than a name such as "VHL". */
-function isStructure(value: string): boolean {
-  let known = structureCache.get(value);
-  if (known === undefined) {
-    if (structureCache.size >= STRUCTURE_CACHE_MAX)
-      structureCache.clear();
-    structureCache.set(value, known = standardizeFragment(value).structure);
-  }
-  return known;
-}
+import {ANALOG_W, CELL_W, CORE_W, isStructure, MatrixCellRef,
+  moleculeGrid} from './sar-matrix-ui-common';
 
 /** Spelled out in the Context Panel, where there is room to say what produced the number. */
 const FREE_WILSON_METHOD = 'local Free-Wilson (row + column effects)';
@@ -237,19 +223,8 @@ export class MakeListPanel {
       ui.divH([open, remove]),
       clear,
     ], 'chem-sar-main-bar'));
-    this.makeListGrid = DG.Viewer.grid(this.makeList);
-    // The grid root is a ui-box, which pins itself to a fixed size and leaves the rest of the tab blank.
-    this.makeListGrid.root.style.width = '100%';
-    this.makeListGrid.root.style.height = '100%';
-    // Sized like the matrix cells these came from: the text-oriented defaults leave a molecule column
-    // too short and too narrow to read.
-    this.makeListGrid.setOptions({rowHeight: CELL_H});
-    for (const [name, width] of [[MAKELIST_STRUCTURE, ANALOG_W], ['Core', CORE_W], ['Substituent', CELL_W]] as
-      [string, number][]) {
-      const gridCol = this.makeListGrid.col(name);
-      if (gridCol)
-        gridCol.width = width;
-    }
+    this.makeListGrid = moleculeGrid(this.makeList,
+      [[MAKELIST_STRUCTURE, ANALOG_W], ['Core', CORE_W], ['Substituent', CELL_W]]);
     this.currentCellSub = this.makeList.onCurrentCellChanged.subscribe(() => this.showCurrentCompound());
     this.root.appendChild(ui.div([this.makeListGrid.root], 'chem-sar-makelist-grid'));
   }

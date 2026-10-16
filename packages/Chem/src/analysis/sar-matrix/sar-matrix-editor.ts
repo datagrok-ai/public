@@ -5,8 +5,8 @@ import {Observable, Subject} from 'rxjs';
 
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from '../molecular-matched-pairs/mmp-viewer/mmpa-utils';
-import {defaultAxis, holdsFragments} from './sar-matrix-columns';
-import {MAX_SERIES_LEVELS} from './sar-matrix-run';
+import {defaultAxis, holdsFragments} from './build/sar-matrix-columns';
+import {MAX_SERIES_LEVELS} from './build/sar-matrix-run';
 
 const DIRECTIONS = ['Auto (from scaling)', 'Higher is better', 'Lower is better'];
 const HISTOGRAM_W = 200;
@@ -19,6 +19,8 @@ export class SarMatrixEditor extends DG.FuncCallEditor {
   private activityInput!: DG.InputBase<DG.Column | null>;
   private coreInput!: DG.InputBase<DG.Column | null>;
   private rGroupsInput!: DG.InputBase<DG.Column[]>;
+  /** Re-entry guard: correcting the R-group list fires its own change handler. */
+  private fixingOverlap = false;
   private axisInput!: DG.ChoiceInput<string | null>;
   private seriesInput!: DG.InputBase<DG.Column | null>;
   private readonly moleculesHost = ui.div();
@@ -190,6 +192,17 @@ export class SarMatrixEditor extends DG.FuncCallEditor {
   private onRGroupsChanged(): void {
     if (this.axisInput === undefined)
       return;
+    // A column cannot be both the scaffold every row is drawn from and a substituent hanging off it.
+    // Corrected rather than refused: whichever picker the user touched last is the one they meant, and
+    // an error on a pair of inputs that each look right on their own explains nothing.
+    const core = this.coreInput?.value ?? null;
+    if (core !== null && !this.fixingOverlap && this.rGroupColumns().some((c) => c.name === core.name)) {
+      this.fixingOverlap = true;
+      this.rGroupsInput.value = this.rGroupColumns().filter((c) => c.name !== core.name);
+      this.fixingOverlap = false;
+      grok.shell.info(`SAR Matrix: ${core.name} is the core column, so it was dropped from the ` +
+        'R-group columns.');
+    }
     const columns = this.rGroupColumns();
     const names = columns.map((c) => c.name);
     const chosen = this.axisInput.value;

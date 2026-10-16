@@ -1,9 +1,9 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
-import {Fingerprint, rdKitFingerprintToBitArray} from '../../utils/chem-common';
-import {getRdKitService} from '../../utils/chem-common-rdkit';
-import {SarMatrix, SarMatrixCell, logSarTime} from './sar-matrix-types';
+import {Fingerprint, rdKitFingerprintToBitArray} from '../../../utils/chem-common';
+import {getRdKitService} from '../../../utils/chem-common-rdkit';
+import {SarMatrix, SarMatrixCell, logSarTime} from '../sar-matrix-types';
 
 /**
  * SAR-transfer detection: a transfer rank-correlates the potencies of shared substituents across
