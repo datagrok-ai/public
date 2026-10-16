@@ -18,7 +18,8 @@ const CALL_TIMEOUT_MS = 60000;
 
 export const MODEL = 'forge.model';
 export const RUN = 'forge.training_run';
-export const MODEL_FOLDER = /^file:\/\/(System:DomainFiles\/forge\/model\/[0-9a-f-]{36})\/[^/]+$/i;
+const APPLICATION = 'forge.application';
+const MODEL_FOLDER = /^file:\/\/(System:DomainFiles\/forge\/model\/[0-9a-f-]{36})\/[^/]+$/i;
 const COPY_SUFFIX = ' (training data)';
 const DELETE_PAGES = 20;
 
@@ -80,15 +81,35 @@ export async function countOf(table: string, filter: string): Promise<number> {
   return count;
 }
 
+/** The items of a comma-separated list in a step, trimmed, the empty ones dropped. */
+export const listOf = (list: string): string[] => list.split(',').map((s) => s.trim()).filter((s) => s !== '');
+
 export const quoted = (s: string): string => `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 
-let cliLogin: Promise<string> | undefined;
+interface CliUser {login: string; groupId: string}
+let cliUser: Promise<CliUser> | undefined;
+
+/** The id of a user's personal group, as `grok s` prints the user. */
+function groupIdOf(user: {login?: unknown; group?: unknown}): string {
+  const id = (user.group as {id?: unknown} | undefined)?.id;
+  if (typeof id !== 'string' || id === '')
+    throw new Error(`grok s printed the user ${String(user.login)} without a personal group`);
+  return id;
+}
+
+/** The CLI's user: its login and its personal group, read once. */
+export function currentCliUser(): Promise<CliUser> {
+  cliUser ??= grokS(['raw', 'GET', 'users/current']).then((u) => {
+    const user = (u ?? {}) as {login?: unknown; group?: unknown};
+    return {login: String(user.login ?? ''), groupId: groupIdOf(user)};
+  });
+  return cliUser;
+}
 
 /** Fails when the CLI's user is not the page's: the claims would read another user's rows. The page's login is read
  * every time (a feature can sign in as another account); the CLI's once. */
 export async function guardIdentity(page: Page): Promise<void> {
-  cliLogin ??= grokS(['raw', 'GET', 'users/current']).then((u) => String((u as {login?: unknown} | null)?.login ?? ''));
-  const [cli, shown] = await Promise.all([cliLogin, page.evaluate(() => String(grok.shell.user.login))]);
+  const [{login: cli}, shown] = await Promise.all([currentCliUser(), page.evaluate(() => String(grok.shell.user.login))]);
   if (cli !== shown) {
     throw new Error(`the grok s alias "${GROK_HOST}" is "${cli}", the page is "${shown}": the server claims would read ` +
       'another user\'s rows (set FORGE_BDD_GROK_HOST to an alias of the page\'s user)');
@@ -123,17 +144,137 @@ async function countWhere(table: string, terms: string[]): Promise<number> {
 
 const termsOf = (column: string, values: string[]): string[] => values.map((v) => `${column} = ${quoted(v)}`);
 
-/** The one model row named [name], or why there is not exactly one. */
+/** Every model row read by its name in this worker, as last read: the claims about a deleted model (its applications,
+ * its folder) need it once the row is gone, and the fields a model keeps (id, blob, metrics, seed, fingerprint, table)
+ * are read from it. A sweep forgets its names. */
+const knownModels = new Map<string, Record<string, unknown>>();
+
+/** The one model row named [name], read now, or why there is not exactly one; a row found is remembered by its name.
+ * The read for a field that can change (tags, description). */
 export async function modelRow(name: string): Promise<Record<string, unknown> | string> {
   const rows = rowsOf(await grokS(['domains', 'query', MODEL, '--filter', `name = ${quoted(name)}`, '--limit', '2']));
-  return rows.length === 1 ? rows[0] : `${rows.length} Forge models named "${name}"`;
+  if (rows.length !== 1)
+    return `${rows.length} Forge models named "${name}"`;
+  knownModels.set(name, rows[0]);
+  return rows[0];
 }
 
+/** The row of the model [name] as last read, read now if it never was: the read for the fields a model keeps. */
 export async function requireModelRow(name: string): Promise<Record<string, unknown>> {
+  const known = knownModels.get(name);
+  if (known !== undefined)
+    return known;
   const row = await modelRow(name);
   if (typeof row === 'string')
     throw new Error(row);
   return row;
+}
+
+/** The id and the model file of the model [name], also once it is deleted. */
+export async function knownModel(name: string): Promise<{id: string; blob: string}> {
+  const row = await requireModelRow(name);
+  return {id: String(row.id), blob: String(row.blob ?? '')};
+}
+
+/** Waits for the one row of the model [name] a step has just created, and remembers it. */
+export async function expectCreatedModel(name: string, message: string): Promise<void> {
+  await expect.poll(async () => {
+    const row = await modelRow(name);
+    return typeof row === 'string' ? row : 'one row';
+  }, {...SERVER_POLL, message}).toBe('one row');
+}
+
+/** The number at the dotted [path] of the model [name]'s row (a stored metric); fails without one. */
+export async function modelNumber(name: string, path: string): Promise<number> {
+  const value = valueAt(await requireModelRow(name), path);
+  if (typeof value !== 'number')
+    throw new Error(`the Forge model "${name}" has no number at ${path}: ${JSON.stringify(value)}`);
+  return value;
+}
+
+/** The newest row of [table] whose [column] is [value], or what was found instead. */
+async function newestRow(table: string, column: string, value: string): Promise<Record<string, unknown> | string> {
+  const rows = rowsOf(await grokS(['domains', 'query', table, '--filter', `${column} = ${quoted(value)}`,
+    '--sort', '!created_on', '--limit', '1']));
+  return rows[0] ?? `no ${table} row with ${column} = ${value}`;
+}
+
+/** The applications of the model [id] on the server: their count, or the newest. */
+export const applicationCount = (id: string): Promise<number> => countOf(APPLICATION, `model_id = ${quoted(id)}`);
+
+export const newestApplication = (id: string): Promise<Record<string, unknown> | string> =>
+  newestRow(APPLICATION, 'model_id', id);
+
+/** The newest training run of the table [table]. */
+export const newestRun = (table: string): Promise<Record<string, unknown> | string> =>
+  newestRow(RUN, 'dataset_name', table);
+
+/** The value at the dotted [path] of [row] ("dataset_fingerprint.rowCount"). */
+export function valueAt(row: Record<string, unknown>, path: string): unknown {
+  let value: unknown = row;
+  for (const key of path.split('.'))
+    value = typeof value === 'object' && value !== null ? (value as Record<string, unknown>)[key] : undefined;
+  return value;
+}
+
+/** The folder of the model file [blob] (a model row's `blob`), or null when it is not in Forge's folders. */
+export const modelFolderOf = (blob: string): string | null => MODEL_FOLDER.exec(blob)?.[1] ?? null;
+
+/** The folder of the model file of the model [name], whose blob was [blob]; fails when it is not in Forge's folders. */
+export function requireModelFolder(name: string, blob: string): string {
+  const folder = modelFolderOf(blob);
+  if (folder === null)
+    throw new Error(`the Forge model "${name}" has no model file in Forge's folders: ${JSON.stringify(blob)}`);
+  return folder;
+}
+
+/** `shares list <id>`: one row per group and permission ({group, groupId, access, personal, inherited}). */
+export async function sharesOf(id: string): Promise<Record<string, unknown>[]> {
+  return rowsOf(await grokS(['shares', 'list', id]));
+}
+
+interface SharingAccount {login: string; groupId: string; name: string}
+let sharingUser: Promise<SharingAccount> | undefined;
+
+/** The second account of a sharing feature (DATAGROK_SHARING_LOGIN): its personal group and the name the platform
+ * shows for it, read once. */
+export function sharingAccount(): Promise<SharingAccount> {
+  const login = process.env.DATAGROK_SHARING_LOGIN;
+  if (!login)
+    throw new Error('no second account: set DATAGROK_SHARING_LOGIN');
+  sharingUser ??= grokS(['users', 'list', '--filter', login]).then((listed) => {
+    const user = rowsOf(listed).find((u) => u.login === login);
+    if (user === undefined)
+      throw new Error(`no user "${login}" on the server`);
+    return {login, groupId: groupIdOf(user), name: String(user.friendlyName ?? login)};
+  });
+  return sharingUser;
+}
+
+/** The grants of the group [groupId] on the model [id], as the page reads them: `grok.dapi.permissions.get` reads the
+ * project the platform keeps the row's shares in (made by the first share), as `revoke` writes it; an empty list
+ * comes back undefined. */
+function pageGrantsOf(page: Page, id: string, groupId: string): Promise<number> {
+  return page.evaluate(async ([entityId, group]) => {
+    const [entity] = await grok.dapi.getEntities([entityId]);
+    const {view, edit} = await grok.dapi.permissions.get(entity);
+    return [...view ?? [], ...edit ?? []].filter((g: {id: string}) => g.id === group).length;
+  }, [id, groupId]);
+}
+
+/** Takes back every grant of the second account on the model [id] named [name] (a run that failed between the share
+ * and its removal): `grok.dapi.permissions.revoke` in the page, read back gone the same way. Also after the model is
+ * deleted: its entity and the project stay. Nothing to do without a grant. */
+export async function revokeSharingGrant(page: Page, id: string, name: string): Promise<void> {
+  const {groupId, name: shown} = await sharingAccount();
+  if (await pageGrantsOf(page, id, groupId) === 0)
+    return;
+  await page.evaluate(async ([entityId, group]) => {
+    const [entity] = await grok.dapi.getEntities([entityId]);
+    await grok.dapi.permissions.revoke(entity, await grok.dapi.groups.find(group));
+  }, [id, groupId]);
+  await expect.poll(() => pageGrantsOf(page, id, groupId),
+    {message: `the grants of ${shown} on the Forge model "${name}" after the revoke`}).toBe(0);
 }
 
 export async function expectModelCount(name: string, n: number, message: string): Promise<void> {
@@ -159,15 +300,19 @@ export async function expectTables(name: string, n: number): Promise<void> {
  * exact names and ids: no such row, no model file folder of theirs, no training copy of theirs. */
 export async function sweepModels(page: Page, names: string[]): Promise<void> {
   await guardIdentity(page);
+  for (const name of names)
+    knownModels.delete(name);
   const rows = await fixtureRows(page, MODEL, 'name', names, ['blob', 'dataset_table_id']);
+  if (rows.length === 0)
+    return;
   const ids = rows.map((r) => String(r.id));
   await page.evaluate((list) => Promise.all(list.map((id) => grok.functions.call('Forge:deleteModel', {model: id}))), ids);
   await expect.poll(() => countWhere(MODEL, [...termsOf('name', names), ...termsOf('id', ids)]),
     {...SERVER_POLL, message: `Forge models named ${names.join(', ')} or deleted by id (${ids.length}) left on the server`})
     .toBe(0);
   await Promise.all(rows.map(async (row) => {
-    const folder = MODEL_FOLDER.exec(String(row.blob ?? ''))?.[1];
-    if (folder !== undefined) {
+    const folder = modelFolderOf(String(row.blob ?? ''));
+    if (folder !== null) {
       await expect.poll(() => folderFiles(folder),
         {...SERVER_POLL, message: `the model file folder ${folder} of "${row.name}"`}).toEqual([]);
     }
@@ -176,11 +321,11 @@ export async function sweepModels(page: Page, names: string[]): Promise<void> {
   }));
 }
 
-/** Deletes the runs of [table] (and of the stale tables of its family) and reads the count of every one back. */
-export async function sweepRuns(page: Page, table: string): Promise<void> {
+/** Deletes the runs of [names] (tables, and the stale tables of their families) and reads the count of all back. */
+export async function sweepRuns(page: Page, names: string[]): Promise<void> {
   await guardIdentity(page);
-  const stale = (await fixtureRows(page, RUN, 'dataset_name', [table], [])).map((r) => String(r.dataset_name));
-  const tables = [...new Set([table, ...stale])];
+  const stale = (await fixtureRows(page, RUN, 'dataset_name', names, [])).map((r) => String(r.dataset_name));
+  const tables = [...new Set([...names, ...stale])];
   await Promise.all(tables.map(async (name) => {
     let pages = 0;
     for (let more = true; more; pages++) {

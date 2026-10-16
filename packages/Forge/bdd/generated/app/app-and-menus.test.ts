@@ -1,0 +1,129 @@
+/* eslint-disable max-len */
+/* eslint-disable comma-spacing */
+/* eslint-disable quotes */
+/* ---
+generated: features/app/app-and-menus.feature
+generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+--- */
+import {test} from '@playwright/test';
+import '../../bindings/elements.js';
+import '@datagrok-libraries/bdd/bindings/common/kinds';
+import '@datagrok-libraries/bdd/bindings/common/parameter-types';
+import '@datagrok-libraries/bdd/bindings/platform/datasets';
+import '@datagrok-libraries/bdd/bindings/platform/elements';
+import {gridShowsColumns, gridShowsNoText, openViewsNamed, topMenuGroupExactly} from '../../bindings/catalog.js';
+import {openDemoFile} from '../../bindings/train.js';
+import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
+import {clickOn, expand, hoverOver, shouldBe, shouldContainText, shouldHaveValue, shouldNotContainText, visibleCount} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {pickFromTopMenu, topMenuLists} from '@datagrok-libraries/bdd/bindings/platform/commands';
+import {browsePanelOpen, closeCurrentView, dialogCloses, switchTableView, switchView, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {hoverArea, noBalloons, noErrors, readingIs, readingReads} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
+
+test.describe("The Forge app, its menus, and the old tool beside it", () => {
+  const session = feature(test, "features/app/app-and-menus.feature", import.meta.url);
+  test("The Forge app, its menus, and the old tool beside it", {tag: ["@journey"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    const run = journey(test, 4, page);
+    await session.step(30, "Given user is logged in", () => loggedIn(page));
+    await session.step(31, "And user opens the demo file \"iris.csv\" as \"forge-test-iris-{time}\"", () => openDemoFile(page, "iris.csv", session.text("forge-test-iris-{time}")));
+    await run.scenario("Forge opens from Apps and from the ML menu; the old tool keeps its menu and its Browse node (1.1, 1.2, 6.4, 4.13)", async () => {
+      await session.step(34, "Then the top menu should list:", () => topMenuLists(page, [["ML > Forge > Models"],["ML > Forge > Train..."],["ML > Forge > Apply..."],["ML > Models > Train Model..."],["ML > Models > Apply Model..."]]), [["ML > Forge > Models"],["ML > Forge > Train..."],["ML > Forge > Apply..."],["ML > Models > Train Model..."],["ML > Models > Apply Model..."]]);
+      await session.step(40, "And the \"ML > Forge\" top menu group should list exactly \"Models, Train..., Apply...\"", () => topMenuGroupExactly(page, "ML > Forge", "Models, Train..., Apply..."));
+      await session.step(41, "And the \"ML > Models\" top menu group should list exactly \"Train Model..., Apply Model...\"", () => topMenuGroupExactly(page, "ML > Models", "Train Model..., Apply Model..."));
+      await session.step(42, "Given the browse panel is open", () => browsePanelOpen(page));
+      await session.step(43, "When user expands \"Apps\" tree node inside browse tree", () => expand(page, el("\"Apps\" tree node inside browse tree")));
+      await session.step(44, "And user clicks on \"Apps > Forge\" tree node inside browse tree", () => clickOn(page, el("\"Apps > Forge\" tree node inside browse tree")));
+      await session.step(45, "Then the \"Forge\" view should be current", () => viewIsCurrent(page, "Forge"));
+      await session.step(46, "And \"Methods\" heading in forge app should be visible", () => shouldBe(page, el("\"Methods\" heading in forge app"), "visible"));
+      await session.step(47, "And \"Models\" heading in forge app should be visible", () => shouldBe(page, el("\"Models\" heading in forge app"), "visible"));
+      await session.step(48, "And first grid viewer should be visible", () => shouldBe(page, el("first grid viewer"), "visible"));
+      await session.step(49, "And second grid viewer should be visible", () => shouldBe(page, el("second grid viewer"), "visible"));
+      await session.step(50, "When user expands \"Platform\" tree node inside browse tree", () => expand(page, el("\"Platform\" tree node inside browse tree")));
+      await session.step(51, "And user clicks on \"Predictive models\" tree node inside browse tree", () => clickOn(page, el("\"Predictive models\" tree node inside browse tree")));
+      await session.step(52, "Then the \"Models\" view should be current", () => viewIsCurrent(page, "Models"));
+      await session.step(53, "When user switches to the \"forge-test-iris-{time}\" table view", () => switchTableView(page, session.text("forge-test-iris-{time}")));
+      await session.step(54, "And user picks \"ML > Forge > Models\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Models"));
+      await session.step(55, "Then the \"Forge\" view should be current", () => viewIsCurrent(page, "Forge"));
+      await session.step(56, "And there should be 1 open view named \"Forge\"", () => openViewsNamed(page, 1, "Forge"));
+      await session.step(57, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(58, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("Methods lists the installed methods with their package, type, roles and settings; Engine appears nowhere (1.3)", async () => {
+      await session.step(61, "Given user switches to the \"Forge\" view", () => switchView(page, "Forge"));
+      await session.step(62, "Then first grid viewer should show the columns \"Method, Package, Method type, Roles, Hyperparameters\"", () => gridShowsColumns(page, el("first grid viewer"), "Method, Package, Method type, Roles, Hyperparameters"));
+      await session.step(63, "And the \"rows\" reading of first grid viewer should be 5", () => readingIs(page, "rows", el("first grid viewer"), 5));
+      await session.step(64, "And the \"text of cell 1 of Method\" reading of first grid viewer should be \"Linear Regression\"", () => readingReads(page, "text of cell 1 of Method", el("first grid viewer"), "Linear Regression"));
+      await session.step(65, "And the \"text of cell 2 of Method\" reading of first grid viewer should be \"PLS Regression\"", () => readingReads(page, "text of cell 2 of Method", el("first grid viewer"), "PLS Regression"));
+      await session.step(66, "And the \"text of cell 3 of Method\" reading of first grid viewer should be \"Softmax\"", () => readingReads(page, "text of cell 3 of Method", el("first grid viewer"), "Softmax"));
+      await session.step(67, "And the \"text of cell 4 of Method\" reading of first grid viewer should be \"SVM\"", () => readingReads(page, "text of cell 4 of Method", el("first grid viewer"), "SVM"));
+      await session.step(68, "And the \"text of cell 5 of Method\" reading of first grid viewer should be \"XGBoost\"", () => readingReads(page, "text of cell 5 of Method", el("first grid viewer"), "XGBoost"));
+      await session.step(69, "And the \"text of cell 1 of Package\" reading of first grid viewer should be \"Eda\"", () => readingReads(page, "text of cell 1 of Package", el("first grid viewer"), "Eda"));
+      await session.step(70, "And the \"text of cell 2 of Package\" reading of first grid viewer should be \"Eda\"", () => readingReads(page, "text of cell 2 of Package", el("first grid viewer"), "Eda"));
+      await session.step(71, "And the \"text of cell 3 of Package\" reading of first grid viewer should be \"Eda\"", () => readingReads(page, "text of cell 3 of Package", el("first grid viewer"), "Eda"));
+      await session.step(72, "And the \"text of cell 4 of Package\" reading of first grid viewer should be \"Eda\"", () => readingReads(page, "text of cell 4 of Package", el("first grid viewer"), "Eda"));
+      await session.step(73, "And the \"text of cell 5 of Package\" reading of first grid viewer should be \"Eda\"", () => readingReads(page, "text of cell 5 of Package", el("first grid viewer"), "Eda"));
+      await session.step(74, "And the \"text of cell 1 of Method type\" reading of first grid viewer should be \"function\"", () => readingReads(page, "text of cell 1 of Method type", el("first grid viewer"), "function"));
+      await session.step(75, "And the \"text of cell 2 of Method type\" reading of first grid viewer should be \"function\"", () => readingReads(page, "text of cell 2 of Method type", el("first grid viewer"), "function"));
+      await session.step(76, "And the \"text of cell 3 of Method type\" reading of first grid viewer should be \"function\"", () => readingReads(page, "text of cell 3 of Method type", el("first grid viewer"), "function"));
+      await session.step(77, "And the \"text of cell 4 of Method type\" reading of first grid viewer should be \"function\"", () => readingReads(page, "text of cell 4 of Method type", el("first grid viewer"), "function"));
+      await session.step(78, "And the \"text of cell 5 of Method type\" reading of first grid viewer should be \"function\"", () => readingReads(page, "text of cell 5 of Method type", el("first grid viewer"), "function"));
+      await session.step(79, "And the \"text of cell 5 of Roles\" reading of first grid viewer should be \"train, apply, isApplicable, isInteractive\"", () => readingReads(page, "text of cell 5 of Roles", el("first grid viewer"), "train, apply, isApplicable, isInteractive"));
+      await session.step(80, "And the \"text of cell 5 of Hyperparameters\" reading of first grid viewer should be \"iterations, eta, maxDepth, lambda, alpha\"", () => readingReads(page, "text of cell 5 of Hyperparameters", el("first grid viewer"), "iterations, eta, maxDepth, lambda, alpha"));
+      await session.step(81, "And the \"text of cell 2 of Roles\" reading of first grid viewer should be \"train, apply, isApplicable, isInteractive, visualize\"", () => readingReads(page, "text of cell 2 of Roles", el("first grid viewer"), "train, apply, isApplicable, isInteractive, visualize"));
+      await session.step(82, "And the \"text of cell 2 of Hyperparameters\" reading of first grid viewer should be \"components\"", () => readingReads(page, "text of cell 2 of Hyperparameters", el("first grid viewer"), "components"));
+      await session.step(83, "And forge app should not contain text \"Engine\"", () => shouldNotContainText(page, el("forge app"), "Engine"));
+      await session.step(84, "And no drawn cell or header of first grid viewer should contain \"Engine\"", () => gridShowsNoText(page, el("first grid viewer"), "Engine"));
+      await session.step(85, "And no drawn cell or header of second grid viewer should contain \"Engine\"", () => gridShowsNoText(page, el("second grid viewer"), "Engine"));
+      await session.step(86, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(87, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("The catalog shows its captions and icons; the Methods grid explains itself in tooltips (1.4)", async () => {
+      await session.step(90, "Given user switches to the \"Forge\" view", () => switchView(page, "Forge"));
+      await session.step(91, "Then second grid viewer should show the columns \"Name, Method, Task, Target, Data storage, Training rows, Tags, Created\"", () => gridShowsColumns(page, el("second grid viewer"), "Name, Method, Task, Target, Data storage, Training rows, Tags, Created"));
+      await session.step(92, "And \"Refresh\" icon in forge app should be enabled", () => shouldBe(page, el("\"Refresh\" icon in forge app"), "enabled"));
+      await session.step(93, "And \"Apply model\" icon in forge app should be disabled", () => shouldBe(page, el("\"Apply model\" icon in forge app"), "disabled"));
+      await session.step(94, "And \"Delete model\" icon in forge app should be disabled", () => shouldBe(page, el("\"Delete model\" icon in forge app"), "disabled"));
+      await session.step(95, "And \"Compare in a new view\" icon in forge app should be disabled", () => shouldBe(page, el("\"Compare in a new view\" icon in forge app"), "disabled"));
+      await session.step(96, "And \"Applicable to\" input in forge app should be visible", () => shouldBe(page, el("\"Applicable to\" input in forge app"), "visible"));
+      await session.step(97, "And \"Applicable to\" input in forge app should have value \"\"", () => shouldHaveValue(page, el("\"Applicable to\" input in forge app"), ""));
+      await session.step(98, "When user hovers over \"Refresh\" icon in forge app", () => hoverOver(page, el("\"Refresh\" icon in forge app")));
+      await session.step(99, "Then tooltip should contain text \"Refresh\"", () => shouldContainText(page, el("tooltip"), "Refresh"));
+      await session.step(100, "When user hovers over the \"header Roles\" area of first grid viewer", () => hoverArea(page, "header Roles", el("first grid viewer")));
+      await session.step(101, "Then tooltip should contain text \"What the method can do.\"", () => shouldContainText(page, el("tooltip"), "What the method can do."));
+      await session.step(102, "When user hovers over the \"cell 2 of Method type\" area of first grid viewer", () => hoverArea(page, "cell 2 of Method type", el("first grid viewer")));
+      await session.step(103, "Then tooltip should contain text \"A package function.\"", () => shouldContainText(page, el("tooltip"), "A package function."));
+      await session.step(104, "When user hovers over the \"cell 5 of Roles\" area of first grid viewer", () => hoverArea(page, "cell 5 of Roles", el("first grid viewer")));
+      await session.step(105, "Then tooltip should contain text \"train: Trains a model on a table and a target column, returns the model\"", () => shouldContainText(page, el("tooltip"), "train: Trains a model on a table and a target column, returns the model"));
+      await session.step(106, "And tooltip should contain text \"apply: Applies a trained model to a table, returns the predictions\"", () => shouldContainText(page, el("tooltip"), "apply: Applies a trained model to a table, returns the predictions"));
+      await session.step(107, "And tooltip should contain text \"isApplicable: Tells whether the method can learn from the given data\"", () => shouldContainText(page, el("tooltip"), "isApplicable: Tells whether the method can learn from the given data"));
+      await session.step(108, "And tooltip should contain text \"isInteractive: Tells whether training is fast enough to rerun on every change\"", () => shouldContainText(page, el("tooltip"), "isInteractive: Tells whether training is fast enough to rerun on every change"));
+      await session.step(109, "When user hovers over the \"cell 2 of Roles\" area of first grid viewer", () => hoverArea(page, "cell 2 of Roles", el("first grid viewer")));
+      await session.step(110, "Then tooltip should contain text \"isInteractive: Tells whether training is fast enough to rerun on every change\"", () => shouldContainText(page, el("tooltip"), "isInteractive: Tells whether training is fast enough to rerun on every change"));
+      await session.step(111, "And tooltip should contain text \"visualize: Shows method-specific views of a trained model\"", () => shouldContainText(page, el("tooltip"), "visualize: Shows method-specific views of a trained model"));
+      await session.step(112, "When user closes the current view", () => closeCurrentView(page));
+      await session.step(113, "Then forge app should be absent", () => shouldBe(page, el("forge app"), "absent"));
+      await session.step(114, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(115, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("The old tool's Train view and Apply dialog still open beside Forge (1.6, 2.9)", async () => {
+      await session.step(118, "Given user switches to the \"forge-test-iris-{time}\" table view", () => switchTableView(page, session.text("forge-test-iris-{time}")));
+      await session.step(119, "When user picks \"ML > Models > Train Model...\" from the top menu", () => pickFromTopMenu(page, "ML > Models > Train Model..."));
+      await session.step(120, "Then the \"Predictive model\" view should be current", () => viewIsCurrent(page, "Predictive model"));
+      await session.step(121, "And model preview should be visible", () => shouldBe(page, el("model preview"), "visible"));
+      await session.step(122, "When user closes the current view", () => closeCurrentView(page));
+      await session.step(123, "And user switches to the \"forge-test-iris-{time}\" table view", () => switchTableView(page, session.text("forge-test-iris-{time}")));
+      await session.step(124, "And user picks \"ML > Models > Apply Model...\" from the top menu", () => pickFromTopMenu(page, "ML > Models > Apply Model..."));
+      await session.step(125, "Then there should be 1 visible \"Apply predictive model\" dialog", () => visibleCount(page, 1, el("\"Apply predictive model\" dialog")));
+      await session.step(126, "And Inputs input in \"Apply predictive model\" dialog should be visible", () => shouldBe(page, el("Inputs input in \"Apply predictive model\" dialog"), "visible"));
+      await session.step(127, "And \"Columns\" group in \"Apply predictive model\" dialog should be absent", () => shouldBe(page, el("\"Columns\" group in \"Apply predictive model\" dialog"), "absent"));
+      await session.step(128, "When user clicks on CANCEL button in \"Apply predictive model\" dialog", () => clickOn(page, el("CANCEL button in \"Apply predictive model\" dialog")));
+      await session.step(129, "Then the \"Apply predictive model\" dialog should close", () => dialogCloses(page, "Apply predictive model"));
+      await session.step(130, "When user picks \"ML > Forge > Models\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Models"));
+      await session.step(131, "Then the \"Forge\" view should be current", () => viewIsCurrent(page, "Forge"));
+      await session.step(132, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(133, "And no errors should have been logged", () => noErrors(page));
+    });
+    run.finish();
+  });
+});

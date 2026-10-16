@@ -41,3 +41,16 @@ element('tags box', {selector: 'input.d4-tags-selector-input',
 /* LIB-PROMOTE: the platform's tags input shows a chip per tag in a container of its own; there is no kind for them. */
 element('tag chips', {selector: '.d4-tags-selector-tags-container > *',
   description: 'the chips of a Tags input, one per tag'});
+
+element('forge app', {selector: '.forge-app', description: 'the Forge view: Methods and the model catalog'});
+
+/* LIB-PROMOTE: every entity's Details (and a package's Sharing) pane is a ui.tableFromMap, a <table> of caption and
+   value rows; the library's "table row" kind has no value part. */
+kind('detail', {
+  aliases: ['detail row'],
+  selector: '.d4-info-table tr',
+  match: ['label'],
+  labelSelector: ':scope > td:first-child',
+  parts: {value: ':scope > td:last-child'},
+  description: 'a row of a key-value table of the context panel (Details, Sharing) by its caption; its value part',
+});

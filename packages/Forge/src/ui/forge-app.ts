@@ -53,12 +53,14 @@ export class ForgeApp extends DG.ViewBase {
   readonly applicableToInput: DG.InputBase<DG.DataFrame | null>;
   readonly methodsGrid: DG.Grid;
   private readonly grid: DG.Grid;
+  private readonly catalogPane: HTMLElement;
   private readonly emptyHint: HTMLElement;
   // The current frame's subscriptions: a reload replaces the frame and drops them.
   private catalogSubs: rxjs.Subscription[] = [];
   // Numbers the comparison reads, so a slow read never replaces a newer selection's comparison.
   private comparisonRead = 0;
-  // Numbers the catalog reloads, so a slow reload never replaces a newer one's frame.
+  // Numbers the catalog's due loads: a change or a Refresh takes the next one, and a load is shown only while its
+  // number is the newest, so a slow reload never replaces a newer one's frame.
   private catalogLoad = 0;
   // The open table the grid is filtered by.
   private filteredBy: DG.DataFrame | null = null;
@@ -97,11 +99,18 @@ export class ForgeApp extends DG.ViewBase {
     this.applicableToInput = ui.input.table('Applicable to', {nullable: true,
       tooltipText: 'Show only the models whose features all have a close column in the table; empty shows every model.',
       onValueChanged: () => this.filterModels()});
-    const header = ui.divH([ui.h2('Models'), ui.icons.sync(() => this.refresh(), 'Refresh'), this.applyIcon,
-      this.deleteIcon, this.compareIcon], 'forge-pane-header');
-    const modelsPane = ui.panel([header, this.applicableToInput.root, this.emptyHint, this.grid.root]);
+    const refreshIcon = ui.icons.sync(() => {
+      this.markStale();
+      void this.refresh();
+    }, 'Refresh');
+    const header = ui.divH([ui.h2('Models'), refreshIcon, this.applyIcon, this.deleteIcon, this.compareIcon],
+      'forge-pane-header');
+    this.catalogPane = ui.panel([header, this.applicableToInput.root, this.emptyHint, this.grid.root], 'forge-catalog');
     this.bindCatalog();
+    this.publishLoad(0);
     this.subs.push(
+      // Stale from the change, not from the debounced reload.
+      modelsChanged.subscribe(() => this.markStale()),
       // A burst of writes (tag chips) reloads once.
       DG.debounce(modelsChanged, RELOAD_DELAY_MS).subscribe(() => this.refresh()),
       // The table input drops a closed table without reporting a change.
@@ -111,7 +120,8 @@ export class ForgeApp extends DG.ViewBase {
       }),
       grok.events.onContextMenu.subscribe((event: {args: ContextMenuArgs}) => this.extendMenu(event.args)));
 
-    this.root.appendChild(ui.splitV([methodsPane, modelsPane]));
+    this.root.classList.add('forge-app');
+    this.root.appendChild(ui.splitV([methodsPane, this.catalogPane]));
   }
 
   get models(): DG.DataFrame {
@@ -170,10 +180,18 @@ export class ForgeApp extends DG.ViewBase {
     super.detach();
   }
 
-  /** Reloads the catalog; the current row and the selected rows that still exist are found again by id. A context
-   * panel left on a model the catalog no longer has (a delete) shows the selection again (see `showSelection`). */
+  /** A newer load is due: a load still running is superseded and shows nothing, and the pane is busy until the due load
+   * is shown. */
+  private markStale(): void {
+    this.catalogLoad++;
+    this.catalogPane.setAttribute('aria-busy', 'true');
+  }
+
+  /** Loads the catalog under the due load's number ({@link markStale} first); the current row and the selected rows
+   * that still exist are found again by id. A context panel left on a model the catalog no longer has (a delete) shows
+   * the selection again (see `showSelection`). */
   private async refresh(): Promise<void> {
-    const load = ++this.catalogLoad;
+    const load = this.catalogLoad;
     try {
       const models = await ForgeApp.loadModels();
       if (load !== this.catalogLoad)
@@ -190,12 +208,21 @@ export class ForgeApp extends DG.ViewBase {
       const restored = currentId === null ? -1 : reloaded.toList().indexOf(currentId);
       if (restored >= 0)
         this.models.currentRowIdx = restored;
+      this.publishLoad(load);
       // A restored selection reports its change, which shows the selection again; without one it is checked here.
       if (this.models.selection.trueCount === 0 && this.isGone(grok.shell.o))
         await this.showSelection();
     } catch (e) {
+      if (load === this.catalogLoad)
+        this.catalogPane.setAttribute('aria-busy', 'false');
       reportError(e);
     }
+  }
+
+  /** The catalog's readiness for automation (ARCHITECTURE.md, "Automation surface"): load [load] is shown. */
+  private publishLoad(load: number): void {
+    this.catalogPane.setAttribute('data-forge-catalog-load', String(load));
+    this.catalogPane.setAttribute('aria-busy', 'false');
   }
 
   /** Whether [x] is a model, or a comparison with a model, that the catalog no longer has. */

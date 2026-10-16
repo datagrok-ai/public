@@ -1,8 +1,9 @@
 /* What the Train view says about its results, on `.forge-train-results` (ARCHITECTURE.md, "Automation surface"):
    aria-busy while it checks, trains or shows a result, aria-invalid for a problem, and data-forge-run-id, the id of the
-   training_run row whose result it shows (absent while it shows a hint). No steps here: the step modules import it. */
+   training_run row whose result it shows (absent while it shows a hint); the seed shown and a viewer's reading as text.
+   No steps here: the step modules import it. */
 import type {Page} from '@playwright/test';
-import {expect, pollMs} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, expect, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
 
 export interface ResultsState {busy: string | null; invalid: string | null; run: string | null}
 
@@ -22,9 +23,19 @@ export async function settled(page: Page, ms = 15000): Promise<void> {
   {timeout: pollMs(ms), message: 'the Train view settled (aria-busy not true)'}).toBe(true);
 }
 
-/** The seed in the shown Performance panel. */
-export async function shownSeed(page: Page): Promise<string> {
-  return (await page.locator('.forge-results-metrics .forge-seed').filter({visible: true}).first().textContent() ?? '').trim();
+/** Where a seed is shown: the Performance panel of the results, or a model's Performance pane in the context panel. */
+export const RESULTS_SEED = '.forge-results-metrics .forge-seed';
+export const PANE_SEED = '.grok-prop-panel .forge-seed';
+
+/** The seed shown in [where] (the results' Performance panel unless told otherwise). */
+export async function shownSeed(page: Page, where = RESULTS_SEED): Promise<string> {
+  return (await page.locator(where).filter({visible: true}).first().textContent() ?? '').trim();
+}
+
+/** A viewer's reading [name] as text; an absent one as the library's message in brackets, which no value equals. */
+export async function readingText(page: Page, target: ElementRef, name: string): Promise<string> {
+  const value = await viewers.readingOf(page, target, name);
+  return value instanceof viewers.MissingReading ? `(${value.text})` : String(value);
 }
 
 /** The run whose result the shown Train view shows, or null. */

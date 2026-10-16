@@ -32,9 +32,9 @@ import {saveModelDialog} from '../ui/save-model-dialog';
 import {tableModelsPane} from '../ui/table-models-panel';
 import {tagsOfInput} from '../ui/tags-input';
 import {CHECK_DELAY_MS, SHOWN_RUN, TrainView} from '../ui/train-view';
-import {balloonWith, cancelTaskBarEntry, columnsOf, deleteRunsOf, expectNoFrames, expectReleased, framesSharing,
-  insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, readUntil, runsOf, savedFixture,
-  saveIrisModel,
+import {balloonWith, cancelTaskBarEntry, catalogState, columnsOf, deleteRunsOf, expectNoFrames, expectReleased,
+  framesSharing, insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, readUntil,
+  refreshThenChange, runsOf, savedFixture, saveIrisModel,
   saveSkipUniqueModel, saveTestModel, taskBarEntry, twoSpeciesIris, unbalancedIris, valuesOf, XGBOOST_FIELDS}
   from './test-data';
 
@@ -237,15 +237,15 @@ category('UI', () => {
   test('Forge app opens', async () => {
     const view = await ForgeApp.create();
     expect(view.models.currentRowIdx, -1);
+    expect(`${view.root.classList.contains('forge-app')} ${catalogState(view.root)}`, 'true 0/false', 'Class, load');
     expect(isDisabled(view.deleteIcon), true, 'Delete is enabled without a current row');
     expect(isDisabled(view.applyIcon), true, 'Apply is enabled without a current row');
     grok.shell.addView(view);
     let measured = '';
     try {
       expect(view.name, APP_NAME);
-      const text = view.root.textContent ?? '';
       for (const caption of ['Methods', 'Models'])
-        expect(text.includes(caption), true, `${caption} is missing`);
+        expect((view.root.textContent ?? '').includes(caption), true, `${caption} is missing`);
       const methods = view.methodsGrid;
       expectArray(methods.dataFrame.columns.names(), ['Method', 'Package', 'Method type', 'Roles', 'Hyperparameters']);
       expect(methods.dataFrame.rowCount, EngineRegistry.discover().length);
@@ -286,6 +286,7 @@ category('UI', () => {
         storage_mode: 'none'});
       modelsChanged.next();
       await awaitCheck(() => rowOf() >= 0, 'The saved model does not appear', WAIT_MS);
+      expect(catalogState(view.root), '1/false');
       view.models.currentRowIdx = -1;
       await awaitCheck(() => isDisabled(view.deleteIcon) && isDisabled(view.applyIcon),
         'Delete or Apply is enabled without a current row', WAIT_MS);
@@ -697,8 +698,7 @@ category('UI', () => {
       expect(choice.inputType, 'Radio');
       expect(choice.value, 'Skip rows');
       expectOptionsInRow(choice);
-      // The skipped row makes every training column a copy: no frame but the Results pane's holds a column of the
-      // table.
+      // The skipped row makes every training column a copy: only the Results pane's frames hold a table column.
       const [, frames] = await framesSharing(iris.columns.toList(), () => view.train());
       expectNoFrames(frames.filter((f) => !view.resultsPane.frames.includes(f)));
       expect(Array.from(view.root.querySelectorAll('ul > li'), (li) => li.textContent)
@@ -2191,10 +2191,12 @@ category('UI: Catalog', () => {
       const indexOf = (modelId: string) => view.models.getCol('id').toList().indexOf(modelId);
       const selectedIds = () => Array.from(view.models.selection.getSelectedIndexes(),
         (i) => view.models.get('id', i)).sort();
-      const reload = async (description: string) => {
+      const reload = async (description: string, load: number) => {
         const frame = view.models.dart;
         await updateModelInfo(otherId, undefined, {description});
+        expect(catalogState(view.root), `${load - 1}/true`, 'The catalog is not busy before the debounced reload');
         await awaitCheck(() => view.models.dart !== frame, 'The catalog does not reload', WAIT_MS);
+        expect(catalogState(view.root), `${load}/false`);
         await awaitCheck(() => view.models.currentRowIdx === indexOf(id), 'The current row is lost', WAIT_MS);
       };
       view.models.currentRowIdx = indexOf(id);
@@ -2202,7 +2204,7 @@ category('UI: Catalog', () => {
         'The chosen model is not the current object', WAIT_MS);
       const shown: unknown = grok.shell.o;
       const shownDart: unknown = shown instanceof DG.DomainRow ? shown.dart : null;
-      await reload('refreshed');
+      await reload('refreshed', 1);
       const now: unknown = grok.shell.o;
       expect(now instanceof DG.DomainRow && now.dart === shownDart, true,
         'The context panel got a new object for the same model');
@@ -2210,10 +2212,12 @@ category('UI: Catalog', () => {
       view.models.selection.set(indexOf(id), true);
       view.models.selection.set(indexOf(otherId), true);
       await awaitCheck(() => comparedIds() !== '', 'Two selected rows are not compared', WAIT_MS);
-      await reload('refreshed again');
+      await reload('refreshed again', 2);
       expectArray(selectedIds(), [id, otherId].sort());
       expect(isDisabled(view.applyIcon) || isDisabled(view.compareIcon), false, 'An icon greyed out');
       await awaitCheck(() => comparedIds() === [id, otherId].sort().join(), 'The comparison is lost', WAIT_MS);
+      const raced = await refreshThenChange(view.root, () => view.models.dart);
+      expect(`${raced.later} ${raced.isRebound}`, `${raced.first} false`, 'A Refresh in flight published first');
     } finally {
       view.close();
       await forgeDb.models.delete(otherId);

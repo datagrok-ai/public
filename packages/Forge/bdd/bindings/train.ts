@@ -1,9 +1,10 @@
 /* How a Forge feature gets its data and its fixtures, the shown training, and the gestures on a running training. */
-import type {Locator, Page} from '@playwright/test';
+import type {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
 import {atFeatureEnd, el, type ElementRef, expect, gestures, locate, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
-import {expectModelCount, guardIdentity, sweepModels, sweepRuns} from './grok-s.js';
-import {type ResultsState, resultsState, settled, shownRun, shownSeed} from './results-state.js';
+import {catalogRowOf, modelArea} from './catalog-grid.js';
+import {expectCreatedModel, guardIdentity, listOf, sweepModels, sweepRuns} from './grok-s.js';
+import {readingText, type ResultsState, resultsState, settled, shownRun, shownSeed} from './results-state.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -45,12 +46,6 @@ export const clipboardHoldsSeed = Then('the clipboard should hold the shown seed
     .toBe(seed);
 }, {description: 'the clipboard text against the seed in the Performance panel'});
 
-/** A reading as text; an absent one as the library's message, which no value equals. */
-async function readingText(page: Page, target: ElementRef, name: string): Promise<string> {
-  const value = await viewers.readingOf(page, target, name);
-  return value instanceof viewers.MissingReading ? `(${value.text})` : String(value);
-}
-
 export const readingIsShownSeed = Then('the {string} reading of {widget} should be the shown seed',
   async (page: Page, name: string, target: ElementRef) => {
     const seed = await shownSeed(page);
@@ -62,10 +57,14 @@ export const readingIsShownSeed = Then('the {string} reading of {widget} should 
    metric ("Accuracy (validation)") and the Performance grid after the set ("Validation"). */
 export const readingsEqual = Then('the {string} reading of {widget} should equal the {string} reading of {widget}',
   async (page: Page, name: string, target: ElementRef, otherName: string, other: ElementRef) => {
-    const expected = await readingText(page, other, otherName);
-    await expect.poll(() => readingText(page, target, name),
-      {message: `"${name}" of ${target.phrase} against "${otherName}" of ${other.phrase} (${expected})`}).toBe(expected);
-  }, {description: 'the two readings as text'});
+    // Both are read in every attempt: a grid drawing its columns reports a cell of one before the other.
+    await expect.poll(async () => {
+      const [value, expected] = await Promise.all([viewers.readingOf(page, target, name),
+        viewers.readingOf(page, other, otherName)]);
+      const isRead = !(value instanceof viewers.MissingReading) && !(expected instanceof viewers.MissingReading);
+      return isRead && String(value) === String(expected) ? 'equal' : `${String(value)} against ${String(expected)}`;
+    }, {message: `"${name}" of ${target.phrase} against "${otherName}" of ${other.phrase}`}).toBe('equal');
+  }, {description: 'the two readings as text, both present, read together until they agree'});
 
 export const readingHigher = Then('the {string} reading of {widget} should be higher than the {string} reading of {widget}',
   async (page: Page, name: string, target: ElementRef, otherName: string, other: ElementRef) => {
@@ -74,31 +73,6 @@ export const readingHigher = Then('the {string} reading of {widget} should be hi
       .toBe(true);
   }, {description: 'the two readings as numbers, read once after the view is ready'});
 
-/** The 1-based row of the catalog grid [target] whose name cell shows [name], or the names it shows. */
-function catalogRow(page: Page, target: ElementRef, name: string): Promise<number | string> {
-  return viewers.onViewer(page, target, (el, n) => {
-    const values: Record<string, unknown> = DG.Widget.find(el).getWidgetStatus().values ?? {};
-    const names: string[] = [];
-    for (const [key, value] of Object.entries(values)) {
-      const row = /^text of cell (\d+) of name$/.exec(key);
-      if (row === null)
-        continue;
-      if (value === n)
-        return Number(row[1]);
-      names.push(String(value));
-    }
-    return names.join(', ') || 'no rows';
-  }, name);
-}
-
-/** Waits for the row of [name] in [target]; its 1-based number. */
-async function catalogRowOf(page: Page, target: ElementRef, name: string): Promise<number> {
-  let row: number | string = '';
-  await expect.poll(async () => typeof (row = await catalogRow(page, target, name)) === 'number',
-    {message: `a row "${name}" in ${target.phrase}; it shows ${row}`}).toBe(true);
-  return Number(row);
-}
-
 export const catalogLists = Then('{widget} should list the Forge model {string}', async (page: Page, target: ElementRef,
   name: string) => {
   await catalogRowOf(page, target, name);
@@ -106,16 +80,13 @@ export const catalogLists = Then('{widget} should list the Forge model {string}'
 
 export const clickCatalogRow = When('user clicks on the Forge model {string} in {widget}', async (page: Page, name: string,
   target: ElementRef) => {
-  const row = await catalogRowOf(page, target, name);
-  const c = viewers.centerOf(await viewers.hitArea(page, target, `cell ${row} of name`, true));
+  const c = await modelArea(page, target, name, (row) => `cell ${row} of name`);
   await page.mouse.click(c.x, c.y);
 }, {tier: 'ui', description: 'clicks the name cell of the row that shows the model'});
 
-/* LIB-PROMOTE: "the context panel should show {string}" matches String(grok.shell.o), which for a domain row is not
-   its name. */
-export const panelShowsModel = Then('the context panel should show the Forge model {string}', async (page: Page,
-  name: string) => {
-  await expect.poll(() => page.evaluate((n) => {
+/** What the context panel shows of the Forge model [name]: 'shown', or what it is instead. */
+function panelOfModel(page: Page, name: string): Promise<string> {
+  return page.evaluate((n) => {
     const o: any = grok.shell.o;
     if (!(o instanceof DG.DomainRow) || o.typeName !== 'forge.model')
       return `the current object is ${String(o)}`;
@@ -123,8 +94,45 @@ export const panelShowsModel = Then('the context panel should show the Forge mod
       return `the current object is the Forge model "${String(o.values.name)}"`;
     const panel = document.querySelector('.grok-prop-panel');
     return panel !== null && (panel.textContent ?? '').includes(n) ? 'shown' : 'the context panel does not show its name';
-  }, name), {message: `the context panel and the Forge model "${name}"`}).toBe('shown');
+  }, name);
+}
+
+/* LIB-PROMOTE: "the context panel should show {string}" matches String(grok.shell.o), which for a domain row is not
+   its name. */
+export const panelShowsModel = Then('the context panel should show the Forge model {string}', async (page: Page,
+  name: string) => {
+  await expect.poll(() => panelOfModel(page, name), {message: `the context panel and the Forge model "${name}"`})
+    .toBe('shown');
 }, {description: 'the current object is the forge.model row of that name, and the context panel shows the name'});
+
+/* The context panel is built again only for a model it does not show already (`showModel` in forge-app.ts): a claim
+   that needs a model's panel fresh (after an edit, an application, an evaluation) has another row shown first. */
+export const reopenModel = When('user reopens the Forge model {string} in {widget}', async (page: Page, name: string,
+  target: ElementRef) => {
+  const other = await viewers.onViewer(page, target, (el, n) => {
+    const values: Record<string, unknown> = DG.Widget.find(el).getWidgetStatus().values ?? {};
+    const names = Object.entries(values).filter(([k, v]) => /^text of cell \d+ of name$/.test(k) && v !== n)
+      .map(([, v]) => String(v));
+    return names.find((s) => s.startsWith('forge-test-')) ?? names[0] ?? null;
+  }, name);
+  if (other === null)
+    throw new Error(`${target.phrase} draws no model other than "${name}"`);
+  for (const model of [other, name]) {
+    const c = await modelArea(page, target, model, (row) => `cell ${row} of name`);
+    await page.mouse.click(c.x, c.y);
+    await expect.poll(() => panelOfModel(page, model), {message: `the context panel and the Forge model "${model}"`})
+      .toBe('shown');
+  }
+}, {tier: 'ui', description: 'clicks the name cell of another drawn model (a forge-test one first) and, once the context ' +
+  'panel shows it, the model\'s; done when the panel shows the model'});
+
+/* LIB-PROMOTE: the negative of "the context panel should show the Forge model". */
+export const panelShowsNotModel = Then('the context panel should not show the Forge model {string}', async (page: Page,
+  name: string) => {
+  await expect.poll(async () => (await panelOfModel(page, name)).startsWith('the current object is'),
+    {message: `the context panel left the Forge model "${name}"`}).toBe(true);
+}, {description: 'polled: the current object is not the forge.model row of that name (another object, or nothing); ' +
+  'read after the change that removed it (a delete and the catalog\'s reload)'});
 
 /* LIB-PROMOTE: "{string} link in notification" takes the first balloon with the link; after two saves both balloons
    have one, and the claim is which model each opens. */
@@ -193,13 +201,65 @@ export const countTaskBarEntries = Given('user counts the task bar entries', (pa
   w.__forgeTaskBar = {observer, entries};
 }), {tier: 'ui', description: 'keeps every task bar entry added from now until the page resets, with the texts it showed'});
 
+interface CountedEntries {texts: string[]; isShown: boolean; count: number}
+
+/** The task bar entries counted since "user counts the task bar entries" that showed [text]: every text they showed,
+ * whether one is still on the page (marked `data-forge-entry` for a gesture on it), and how many there were. */
+function entryTexts(page: Page, text: string): Promise<CountedEntries> {
+  return page.evaluate((t) => {
+    const entries: Map<Element, string[]> | undefined = (window as any).__forgeTaskBar?.entries;
+    if (entries === undefined)
+      throw new Error('no task bar entries are counted: "user counts the task bar entries" first');
+    const shown = Array.from(entries).filter(([, texts]) => texts.some((s) => s.includes(t)));
+    const live = shown.find(([e]) => e.isConnected)?.[0];
+    for (const e of Array.from(document.querySelectorAll('[data-forge-entry]')))
+      e.removeAttribute('data-forge-entry');
+    live?.setAttribute('data-forge-entry', 'true');
+    return {texts: shown.flatMap(([, texts]) => texts), isShown: live !== undefined, count: shown.length};
+  }, text);
+}
+
+/** Waits for a counted entry that showed [text] to be on the page; it is then marked `data-forge-entry`. */
+async function awaitEntryShown(page: Page, text: string): Promise<void> {
+  await expect.poll(async () => (await entryTexts(page, text)).isShown ? 'shown' : 'not shown',
+    {timeout: pollMs(15000), message: `a task bar entry that showed "${text}" since "user counts the task bar entries"`})
+    .toBe('shown');
+}
+
 export const taskBarEntryCount = Then('the task bar should have shown {int} entry/entries {string}', async (page: Page, n: number,
   text: string) => {
-  await expect.poll(() => page.evaluate((t) => {
-    const entries: Map<Element, string[]> = (window as any).__forgeTaskBar?.entries ?? new Map();
-    return Array.from(entries.values()).filter((texts) => texts.some((s) => s.includes(t))).length;
-  }, text), {message: `task bar entries showing "${text}" since "user counts the task bar entries"`}).toBe(n);
+  await expect.poll(async () => (await entryTexts(page, text)).count,
+    {message: `task bar entries showing "${text}" since "user counts the task bar entries"`}).toBe(n);
 }, {description: 'distinct entries, each a job the task bar showed'});
+
+/* LIB-PROMOTE: the library's "the task bar should have finished" looks for the text, and a running job replaces it with
+   its progress ("Rows 1-5098 of 5098"), so it passes while the job still runs. This one follows the entry itself. */
+export const taskBarEntryEnded = Then('the task bar entry that showed {string} should have ended', async (page: Page,
+  text: string) => {
+  await expect.poll(async () => {
+    const {texts, isShown} = await entryTexts(page, text);
+    return texts.length === 0 ? 'never shown' : isShown ? 'still shown' : 'ended';
+  }, {message: `the task bar entry that showed "${text}" since "user counts the task bar entries"`,
+    timeout: pollMs(120000)}).toBe('ended');
+}, {description: 'an entry counted since "user counts the task bar entries" showed the text and every such entry has ' +
+  'left the page, whatever text it shows by then: the job ended; on a 120 s budget'});
+
+/* LIB-PROMOTE: a job's progress texts ("Rows 1-1 of 6497"), which the library's watch records only as an entry is
+   added. The positive is polled; the negative is read once the entry has left the page, so no later text is missed. */
+export const taskBarEntryShowedText = Then('the task bar entry that showed {string} should have shown {string}',
+  async (page: Page, text: string, shown: string) => {
+    await expect.poll(async () => (await entryTexts(page, text)).texts.some((s) => s.includes(shown)),
+      {message: `the texts of the task bar entry that showed "${text}", one containing "${shown}"`}).toBe(true);
+  }, {description: 'a text the entry counted since "user counts the task bar entries" showed at some point'});
+
+export const taskBarEntryNotShowedText = Then('the task bar entry that showed {string} should not have shown {string}',
+  async (page: Page, text: string, shown: string) => {
+    await expect.poll(async () => {
+      const read = await entryTexts(page, text);
+      return read.count === 0 ? 'never shown' : read.isShown ? 'still shown' :
+        read.texts.filter((s) => s.includes(shown)).join(' | ') || 'ended without it';
+    }, {message: `the texts of the task bar entry that showed "${text}", once it has ended`}).toBe('ended without it');
+  }, {description: 'once the entry has ended, none of the texts it showed contains the text'});
 
 /* LIB-PROMOTE: the library's dataset opener reads a csv into a fresh frame, which has no creation script, so Save would
    not offer Reference. This one opens the demo file as Browse > Files does (OpenServerFile, unprocessed: the platform
@@ -251,27 +311,38 @@ export const openDemoFile = Given('user opens the demo file {string} as {string}
 }, {tier: 'api', description: 'OpenServerFile of System:DemoFiles/<file>, unprocessed (the table keeps its creation ' +
   'script, so Save offers Reference), named; done when the platform has detected its semantic types'});
 
+const FIXTURE_FIELDS = ['target', 'features', 'method', 'storage', 'tags', 'description'];
+
 /* A saved model for a feature that is not about training (M1b's catalog and apply features): Forge:trainModel in the
-   page, the view's defaults, the table's last column as the target (the view's default too), no data stored. The model
-   and the runs of the table are swept at feature end, and the sweep read back. */
-export const trainThroughApi = Given('a Forge model {string} is trained on the current table through the API',
-  async (page: Page, name: string) => {
+   page with the view's defaults unless a row says otherwise. The model and the runs of the table are swept at feature
+   end, and the sweep read back. */
+export const trainThroughApiWith = Given('a Forge model {string} is trained on the current table through the API with:',
+  async (page: Page, name: string, rows: string[][]) => {
+    const fields: Record<string, string> = {};
+    for (const [field, value] of rows) {
+      if (!FIXTURE_FIELDS.includes(field))
+        throw new Error(`no fixture field "${field}"; the fields are: ${FIXTURE_FIELDS.join(', ')}`);
+      fields[field] = value;
+    }
     await guardIdentity(page);
     const table = await page.evaluate(() => grok.shell.t ? String(grok.shell.t.name) : null);
     if (table === null)
       throw new Error('no current table to train on');
     atFeatureEnd(page, async () => {
       await sweepModels(page, [name]);
-      await sweepRuns(page, table);
+      await sweepRuns(page, [table]);
     });
-    await page.evaluate(async (modelName) => {
+    const features = fields.features === undefined ? null : listOf(fields.features);
+    await page.evaluate(async ([modelName, f, list]) => {
       const t = grok.shell.t;
-      await grok.functions.call('Forge:trainModel', {table: t, target: t.columns.byIndex(t.columns.length - 1).name,
-        name: modelName, storage: 'none', showProgress: false});
-    }, name);
-    await expectModelCount(name, 1, `the Forge model "${name}" trained on ${table}`);
-  }, {tier: 'api', description: 'Forge:trainModel {table, target: the last column, name, storage: none}; deleted with ' +
-  'Forge:deleteModel at feature end, and the runs of the table swept'});
+      await grok.functions.call('Forge:trainModel', {table: t, target: f.target ?? t.columns.byIndex(t.columns.length - 1).name,
+        features: list, method: f.method ?? null, name: modelName, storage: f.storage ?? 'none', tags: f.tags ?? null,
+        description: f.description ?? null, showProgress: false});
+    }, [name, fields, features] as [string, Record<string, string | undefined>, string[] | null]);
+    await expectCreatedModel(name, `the Forge model "${name}" trained on ${table}`);
+  }, {tier: 'api', description: 'Forge:trainModel on the current table, saved as the name, with | field | value | rows: ' +
+  'target (default the last column), features (comma-separated; default the API\'s), method, storage (default none), ' +
+  'tags, description; deleted with Forge:deleteModel at feature end, and the runs of the table swept'});
 
 /* LIB-PROMOTE: a journey's scenario inherits the balloons of the ones before it (the harness removes them between
    features only); a claim about "the" balloon's link needs the earlier ones gone. */
@@ -286,26 +357,22 @@ export const scrollIntoView = When('user scrolls {element} into view', async (pa
   await (await locate(page, target)).first().scrollIntoViewIfNeeded();
 }, {tier: 'ui', description: 'scrolls the nearest scrolling ancestors until the element is in view'});
 
-/* LIB-PROMOTE: a wait for a task bar entry by its text. The entry appears when the work starts; it is waited for (a
-   training queued behind another starts later), never a fixed time. */
-async function taskBarEntry(page: Page, text: string, message: string): Promise<Locator> {
-  const entry = page.locator('.d4-task-bar-entry', {hasText: text}).first();
-  await expect(entry, message).toBeVisible({timeout: pollMs(15000)});
-  return entry;
-}
-
-/* LIB-PROMOTE: every cancellable task-bar progress could use it; the entry's cross is the user's cancel. */
+/* LIB-PROMOTE: every cancellable task-bar progress could use it; the entry's cross is the user's cancel. A running
+   job replaces the entry's text with its progress ("Rows 1-1 of 6497"), so the entry is the one that showed the text
+   since "user counts the task bar entries". */
 export const cancelTaskBarEntry = When('user cancels the {string} task bar entry', async (page: Page, text: string) => {
-  await (await taskBarEntry(page, text, `a task bar entry "${text}"`)).locator('.fa-times').first().click();
-}, {tier: 'ui', description: 'clicks the cross of the task bar entry that shows the text'});
+  await awaitEntryShown(page, text);
+  await page.locator('.d4-task-bar-entry[data-forge-entry] .fa-times').first().click();
+}, {tier: 'ui', description: 'clicks the cross of the task bar entry that showed the text, counted since "user counts ' +
+  'the task bar entries" and still on the page'});
 
 /* A change while a training runs (scenario 5.3): the first value is typed and committed, the second goes in once the
-   training of the first is in the task bar. */
+   training of the first is in the task bar (waited for: a training queued behind another starts later). */
 export const changeDuringTraining = When('user sets {string} input to {string} and then to {string} while the training runs',
   async (page: Page, caption: string, first: string, second: string) => {
     const input = el(`"${caption}" input`);
     await gestures.typeInto(page, input, first, true);
-    await taskBarEntry(page, 'Training', 'a training in the task bar after the first value');
+    await awaitEntryShown(page, 'Training');
     await gestures.typeInto(page, input, second, true);
-  }, {tier: 'ui', description: 'types and commits the first value, and the second while a "Training …" task bar entry is ' +
-    'shown'});
+  }, {tier: 'ui', description: 'types and commits the first value, and the second while a "Training …" task bar entry ' +
+    'counted since "user counts the task bar entries" is shown'});

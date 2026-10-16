@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {delay, expect, expectArray, expectFloat} from '@datagrok-libraries/test/src/test';
+import {awaitCheck, delay, expect, expectArray, expectFloat} from '@datagrok-libraries/test/src/test';
 import {defaultHyperparameters, Engine} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {forgeDb, ModelInsert, TrainingRunRow} from '../generated/db';
@@ -10,7 +10,7 @@ import {DEFAULT_CUTOFF, PreparationSteps} from '../preparation/pipeline';
 import {PreparationOptions} from '../preparation/preparation-options';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {ModelFields, modelFieldsOf} from '../storage/model-fields';
-import {deleteModel, saveModel} from '../storage/model-store';
+import {deleteModel, modelsChanged, saveModel} from '../storage/model-store';
 import {prepareTraining, TrainingRequest, TrainingResult, TrainingSelection, trainModel}
   from '../training/train-model';
 
@@ -64,6 +64,32 @@ export function cancelTaskBarEntry(entry: Element | undefined): void {
   if (!(cancel instanceof HTMLElement) || !cancel.isConnected)
     throw new Error('No task-bar entry to cancel');
   cancel.click();
+}
+
+/** The catalog's readiness attributes in the Forge view [root]: `<data-forge-catalog-load>/<aria-busy>`. */
+export function catalogState(root: Element): string {
+  const pane = root.querySelector('.forge-catalog');
+  return `${pane?.getAttribute('data-forge-catalog-load')}/${pane?.getAttribute('aria-busy')}`;
+}
+
+/** Clicks the catalog's Refresh in the Forge view [root] and reports a change of the models at once. The catalog must
+ * be busy then; its readiness attributes ({@link catalogState}) when it next publishes a load and 1.5 s later, and
+ * whether the frame [frame] reads was replaced in between. */
+export async function refreshThenChange(root: HTMLElement, frame: () => unknown):
+  Promise<{first: string; later: string; isRebound: boolean}> {
+  const refresh = root.querySelector('.forge-pane-header .fa-sync');
+  if (!(refresh instanceof HTMLElement))
+    throw new Error('No Refresh icon');
+  const state = () => catalogState(root);
+  refresh.click();
+  modelsChanged.next();
+  if (!state().endsWith('/true'))
+    throw new Error(`The catalog is not busy during a Refresh and a change: ${state()}`);
+  await awaitCheck(() => state().endsWith('/false'), 'The catalog does not publish a load', 5000);
+  const first = state();
+  const bound = frame();
+  await delay(1500);
+  return {first, later: state(), isRebound: frame() !== bound};
 }
 
 /** The training runs recorded for [tables] (frames or their names). */

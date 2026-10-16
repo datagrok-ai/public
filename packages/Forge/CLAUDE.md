@@ -7,8 +7,8 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
 - `src/package.ts` — annotated functions only, each delegating: `forgeApp`, `forgeModels`, `forgeTrain`, `forgeApply`
   (`ML | Forge | ...`), the API `applyModel`, `trainModel`, `deleteModel`, `_initForge` (autostart), the column panel
   **Predicted by** and the table panel **Forge models** (`ui/table-models-panel.ts`).
-- `src/ui/`: `train-view.ts` (+ `runs-panel.ts`), `evaluation-view.ts` (on `results-*.ts`; `aria-busy`;
-  Train also `aria-invalid`, `data-forge-run-id`), `apply-model-dialog.ts`, `forge-app.ts` (catalog), `model-*.ts`.
+- `src/ui/`: `train-view.ts` (+ `runs-panel.ts`), `evaluation-view.ts` (on `results-*.ts`), `forge-app.ts` (catalog),
+  `apply-model-dialog.ts`, `model-*.ts`; their readiness attributes: ARCHITECTURE.md, "Automation surface".
 - `src/training/` (`train-api.ts`: `Forge:trainModel`; `training-queue.ts`: one at a time; `evaluation.ts`: records
   nothing), `src/apply/`, `src/preparation/` (`pipeline.ts`: steps and their replay; `Eda:knnImpute`), `src/catalog/`.
 - `databases/forge/schema.json` — the EMS schema; `src/generated/db.ts` is its generated typed client `forgeDb`.

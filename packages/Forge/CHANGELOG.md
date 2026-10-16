@@ -21,5 +21,7 @@
 * GROK-20932: Added the API functions Forge:trainModel (the Train view's checks and defaults, every training recorded, optional save with a storage mode) and Forge:deleteModel, and the training run's source (schema 0.1.14)
 * GROK-20932: Added readiness attributes for automation: aria-busy on the Train and Evaluation results; aria-invalid and data-forge-run-id (the training run shown) on the Train results; aria-expanded and aria-invalid on the collapsible groups
 * GROK-20932: Added the BDD features of the Train view (bdd/): the iris and winequality journeys, each training claimed by the run it shows and that run on the server
+* GROK-20932: Added catalog readiness attributes for automation: aria-busy (from a change of the models or a Refresh click, before the reload) and data-forge-catalog-load (the number of the load shown) on the models pane, and the forge-app class on the Forge view
+* GROK-20932: Added the BDD features of the Apply dialog, the catalog, the app and the menus (bdd/)
 
 ## 0.0.1 (2026-09-30)

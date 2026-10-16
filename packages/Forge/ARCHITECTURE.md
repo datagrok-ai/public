@@ -1260,6 +1260,16 @@ The views publish their state in the DOM, so a test waits on what a view says in
   results are shown or the evaluation ends; a failure or a cancel closes the view, so it has no `aria-invalid`. It has
   no `data-forge-run-id`: an evaluation records no `training_run` (`training/evaluation.ts`), and the view
   shows the one result it opened for.
+- The Forge view (`ForgeApp`): its constructor adds the class `forge-app` to the view root, so a claim can be scoped to
+  Forge's own view. Its models pane, `.forge-catalog`, publishes the catalog's loads (`ForgeApp.publishLoad`): the
+  constructor sets `data-forge-catalog-load="0"` and `aria-busy="false"` once the first catalog is bound. A
+  `modelsChanged` and a **Refresh** click each make a new load due at once (`markStale`: the next load number, per view,
+  and `aria-busy="true"`), a change before the 300 ms debounce of its reload; a load still running is then superseded and
+  publishes nothing, so a load read in between is never taken for the change's. The `refresh()` that follows loads
+  under that number and, once the reloaded frame is bound and the current row and the selection are found again, sets
+  `data-forge-catalog-load` to it and `aria-busy="false"`; a failed load sets only `aria-busy="false"`, and only while
+  its number is the newest. Each change or click advances the number by one. A reload is thus a load number above the
+  one remembered with `aria-busy` not true; every open catalog, hidden ones too, reloads on `modelsChanged`.
 - `CollapsibleGroup`: `aria-expanded` on `.forge-group-header` follows `setExpanded`; `aria-invalid` on
   `.forge-group-summary` follows `setSummary` (the Apply dialog's red `N of M matched`).
 - Every table of data is the platform's grid, whose widget status publishes the hit areas `cell <row> of <column>`,
@@ -1268,9 +1278,13 @@ The views publish their state in the DOM, so a test waits on what a view says in
 
 The user flows are Gherkin features on `@datagrok-libraries/bdd` in `bdd/` (`bdd/README.md`), run by Playwright
 against a stand. Forge's vocabulary is in `bdd/bindings/`: the kinds `group` and `results panel` over the classes
-above, the demo-file opener (`OpenServerFile` unprocessed, so the table keeps its creation script), and the server
-claims, which run the `grok s` CLI from Node as the page's user (a guard compares the two logins). A feature names its
-data `forge-test-<purpose>-{time}` and sweeps it at its start and end: its models through `Forge:deleteModel` in the
+above and `detail` (a caption-value row of the context panel's `ui.tableFromMap`), the catalog's loads over the
+`.forge-catalog` of every open Forge view (a hidden view's root is read through `grok.shell.views`), the captions a grid
+draws (the text of the header cell at each column's `header <column>` area), the demo-file opener (`OpenServerFile`
+unprocessed, so the table keeps its creation script), the API fixtures (`Forge:trainModel`, a row inserted without a
+model file), and the server claims, which run the `grok s` CLI from Node as the page's user (a guard compares the two
+logins). A feature that saves data names it
+`forge-test-<purpose>-{time}` and sweeps it at its start and end: its models through `Forge:deleteModel` in the
 page (with their folders and copies), its tables' training runs through `grok s domains delete`, each read back gone
 by the exact names and ids it deleted. A step that claims a training waits for a new `data-forge-run-id` and asks the
 server whether that id is the table's newest run, with the method and the settings the step chose; a claim that
