@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {after, awaitCheck, before, category, delay, expect, expectArray, expectFloat, test}
   from '@datagrok-libraries/test/src/test';
+import {recordApplication} from '../apply/application-store';
 import {applyAndRecord, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-model';
 import {exactMapping} from '../apply/column-matching';
 import {updateModelInfo} from '../catalog/model-edit';
@@ -33,10 +34,9 @@ import {tableModelsPane} from '../ui/table-models-panel';
 import {tagsOfInput} from '../ui/tags-input';
 import {CHECK_DELAY_MS, SHOWN_RUN, TrainView} from '../ui/train-view';
 import {balloonWith, cancelTaskBarEntry, catalogState, columnsOf, deleteRunsOf, expectNoFrames, expectReleased,
-  framesSharing, insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, readUntil,
-  refreshThenChange, runsOf, savedFixture, saveIrisModel,
-  saveSkipUniqueModel, saveTestModel, taskBarEntry, twoSpeciesIris, unbalancedIris, valuesOf, XGBOOST_FIELDS}
-  from './test-data';
+  expectGridsFillPanes, framesSharing, insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile,
+  readUntil, refreshThenChange, runsOf, savedFixture, saveIrisModel, saveSkipUniqueModel, saveTestModel, taskBarEntry,
+  twoSpeciesIris, unbalancedIris, valuesOf, XGBOOST_FIELDS} from './test-data';
 
 const WAIT_MS = 5000;
 const TIMEOUT = 60000;
@@ -2384,7 +2384,7 @@ category('UI: Catalog', () => {
     document.body.append(host);
     const measured: string[] = [];
     try {
-      let accordion = modelAccordion(row, model);
+      const accordion = modelAccordion(row, model);
       host.append(accordion.root);
       const title = accordion.root.firstElementChild;
       expect(title?.classList.contains('d4-accordion-title'), true, `The first element is ${title?.className}`);
@@ -2418,9 +2418,6 @@ category('UI: Catalog', () => {
       const loaded = await loadModel(id);
       await applyAndRecord({model: loaded, table: iris, mapping: exactMapping(loaded.features, iris),
         batchSize: DEFAULT_BATCH_SIZE, missingValues: {mode: 'skip'}}, 'ui');
-      accordion.root.remove();
-      accordion = modelAccordion(row, model);
-      host.append(accordion.root);
       await expectPaneText(accordion, 'Activity', ['1 application']);
       const activity = gridWith(accordion.getPane('Activity').root, 'Status');
       expectArray(activity.dataFrame.columns.names(), ['When', 'Who', 'Table', 'Rows', 'Prediction column', 'Status',
@@ -2432,8 +2429,8 @@ category('UI: Catalog', () => {
       expect(gridTooltip(activity, activity.cell('Status', 0)), 'Completed: the column was added.');
       expect(gridTooltip(activity, activity.cell('Source', 0)), 'The Apply dialog or the catalog.');
       measured.push(expectRowsFit('Activity', activity));
-      await expectPaneText(accordion, 'Details', ['Last run', dayjs().format('YYYY-MM-DD')]);
-      expect((accordion.getPane('Details').root.textContent ?? '').includes('Never'), false, 'Last run is Never');
+      await expectGridsFillPanes(host, {Performance: metrics, Activity: activity});
+      await expectPaneText(accordion, 'Details', ['Applications1', `Last run${dayjs().format('YYYY-MM-DD')}`]);
     } finally {
       host.remove();
     }
@@ -2532,6 +2529,10 @@ category('UI: Catalog', () => {
         await typeTag(details, 'y');
         const written = await storedTags('demo, x, y');
         expectArray([written.tags, written.version, newDialogs().length], ['demo, x, y', edited.version + 2, 0]);
+        await recordApplication({model_id: id, row_count: 1, source: 'api', status: 'completed'});
+        await expectPaneText(accordion, 'Details', ['Applications1']);
+        await typeTag(details, 'z');
+        expectArray([(await storedTags('demo, x, y, z')).version, newDialogs().length], [edited.version + 3, 0]);
       } finally {
         for (const dialog of newDialogs())
           dialog.close();
@@ -2539,7 +2540,7 @@ category('UI: Catalog', () => {
       }
     } finally {
       opened?.close();
-      await forgeDb.models.delete(id);
+      await deleteModel(id);
     }
   });
 

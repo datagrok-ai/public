@@ -8,6 +8,12 @@
   color: var(--blue-1);
 }
 
+/* A model's pane in the context panel spans its width: the accordion's pane content sizes its children to their content,
+   where a grid's width: 100% would resolve to the grid's own width. */
+.forge-pane-fill {
+  width: 100%;
+}
+
 .forge-apply-rows {
   overflow-y: auto;
 }

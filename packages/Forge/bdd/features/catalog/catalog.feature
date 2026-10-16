@@ -8,8 +8,9 @@ Feature: The model catalog: a model's panes, its commands, comparing, sharing, e
   A reload of the catalog is claimed by the load it shows (data-forge-catalog-load on the models pane of every open
   Forge view, a hidden one too): a delete or an edit is followed by a later load in every open catalog before the grid
   is read. Every claim names this feature's models; the stand's other models are listed too and never named. The
-  context panel is rebuilt only when another row is clicked, so a scenario that needs a model's panel fresh reopens the
-  model (another row shown first). The Performance pane is claimed against the model row's stored metrics, and Last run
+  context panel is rebuilt only when another row is clicked (an application of the shown model is followed in place
+  by its Details and Activity), so a scenario that needs a model's panel built anew reopens the model (another row
+  shown first). The Performance pane is claimed against the model row's stored metrics, and Last run
   against the newest application's time; an application's or an evaluation's end is its task bar entry gone, and
   each scenario counts the entries it caused.
 
@@ -36,7 +37,8 @@ Feature: The model catalog: a model's panes, its commands, comparing, sharing, e
   (train-iris.feature's @known-failure scenario); OK is claimed disabled.
 
   Where the product moved on from the manual text: ML | Forge | Models focuses an open catalog, so 2.6's second
-  catalog is the app opened again; 4.4's "click the catalog row again" rebuilds nothing (another row and back does).
+  catalog is the app opened again; 4.4's "click the catalog row again" is not needed: the shown model's Details and
+  Activity show the application by themselves.
   4.6 opens a second iris copy, so the iris model fits two tables, and then the catalog again: the demo opener names
   the copy after the platform has listed it ("iris (2)"), and the open catalog's Applicable to keeps a table under the
   name it was listed with until a table closes. 4.6's "make iris the current table (click its view, then back to the
@@ -177,7 +179,6 @@ Feature: The model catalog: a model's panes, its commands, comparing, sharing, e
     And the table should have a column "Species (predicted)"
     And the model "forge-test-cat-iris-{time}" should have 1 application on the server
     Given user switches to the "Forge" view
-    When user reopens the Forge model "forge-test-cat-iris-{time}" in second grid viewer
     Then the context panel should show the Forge model "forge-test-cat-iris-{time}"
     And value of "Applications" detail in context panel should have the text "1"
     And value of "Last run" detail in context panel should start with the time of the newest application of the model "forge-test-cat-iris-{time}"

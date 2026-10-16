@@ -66,6 +66,18 @@ export function cancelTaskBarEntry(entry: Element | undefined): void {
   cancel.click();
 }
 
+/** Every grid of [grids] (by its pane's name) spans its accordion pane's content within 2 px, and still does once
+ * [host], the accordion's container, is made wider. */
+export async function expectGridsFillPanes(host: HTMLElement, grids: {[pane: string]: DG.Grid}): Promise<void> {
+  const narrower = () => Object.entries(grids).filter(([, grid]) => {
+    const pane = grid.root.closest('.d4-accordion-pane-content');
+    return pane === null || Math.abs(grid.root.getBoundingClientRect().width - pane.getBoundingClientRect().width) >= 2;
+  }).map(([name]) => name).join(', ');
+  expect(narrower(), '', 'The grids narrower than their pane');
+  host.style.width = `${host.getBoundingClientRect().width + 160}px`;
+  await awaitCheck(() => narrower() === '', `Grids narrower than their pane once wider: ${narrower()}`, 5000);
+}
+
 /** The catalog's readiness attributes in the Forge view [root]: `<data-forge-catalog-load>/<aria-busy>`. */
 export function catalogState(root: Element): string {
   const pane = root.querySelector('.forge-catalog');

@@ -23,5 +23,7 @@
 * GROK-20932: Added the BDD features of the Train view (bdd/): the iris and winequality journeys, each training claimed by the run it shows and that run on the server
 * GROK-20932: Added catalog readiness attributes for automation: aria-busy (from a change of the models or a Refresh click, before the reload) and data-forge-catalog-load (the number of the load shown) on the models pane, and the forge-app class on the Forge view
 * GROK-20932: Added the BDD features of the Apply dialog, the catalog, the app and the menus (bdd/)
+* GROK-20932: Fixed the shown model's Details (Last run, Applications) and Activity staying stale after an application until another row was clicked
+* GROK-20932: Fixed the Activity and Performance grids of the model's context panel being narrower than the panel
 
 ## 0.0.1 (2026-09-30)

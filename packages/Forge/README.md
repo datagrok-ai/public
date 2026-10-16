@@ -391,7 +391,10 @@ model's commands, then come the panes:
   join your workspace, and an evaluation is not recorded as an application
 * **Activity**: a grid of the model's applications, newest first (up to 100): **When**, **Who**, **Table**, **Rows**,
   **Prediction column**, **Status**, **Source** (`ui` or `api`) and **Duration (ms)**; hover a header, a status or a
-  source for what it means
+  source for what it means. When the shown model is applied in this session (the Apply dialog, the catalog or
+  Forge:applyModel), **Activity** and the **Last run** and **Applications** of **Details** show the new application by
+  themselves; an application made by another user or in another browser tab shows once you choose another model and
+  come back
 * **Sharing**: the groups the model is shared with and **Share...** (see "Share a model")
 * **History**: every change of the model's record (who, when, what)
 

@@ -64,6 +64,7 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
            │                       apply/ (featureSchemasOf), catalog/ (featureFit),
            │                       storage/model-fields.ts (tagsOf), ui/save-model-dialog.ts (STORAGE_CAPTIONS)
            │                       └─> ui/model-panes.ts (modelAccordion, modelIcon, userOf) ──>
+           │                                                  apply/application-store.ts (applicationRecorded),
            │                                                  catalog/, generated/db.ts, grok.dapi (users,
            │                                                  entities, permissions), DG.DomainObjectHandler
            │                                                  (audit, sharing), ui/data-grid.ts,
@@ -847,7 +848,8 @@ engine call
 table is the column's only parent (`column.dataFrame` is the table). Only the first column of the engine's result is
 used; other output columns are dropped.
 
-After the pipeline, `applyAndRecord` writes one `application` row (`apply/application-store.ts`): `completed` with
+After the pipeline, `applyAndRecord` writes one `application` row (`apply/application-store.ts`, which then fires
+`applicationRecorded` with the model's id): `completed` with
 `column_name` and `skipped_rows`, `cancelled` when the progress indicator was cancelled, `failed` with the error
 otherwise; always `model_id`, `table_name`, `row_count`, `source` and `duration_ms`. When the pipeline failed and the
 record cannot be written either, the pipeline's error is the one thrown. `applyWithProgress(request, source)` runs
@@ -1053,7 +1055,16 @@ tooltip take the count from `feature_count` and read `features` and `options` on
   "The model is no longer available.". It replaces the platform's whole panel of the row (generic
   Details, Shared with, Chats, History, Actions): the platform has no JS surface for its Chats, and its History is
   hosted as a pane. The accordion's panes are built when first opened; Details and Activity share one
-  `modelActivity` query:
+  `modelActivity` query. The newest accordion follows `applicationRecorded` (`apply/application-store.ts`, an
+  in-memory Subject fired by `recordApplication` in this session, after a successful insert, whatever the record's
+  status; another user's or another tab's application is seen only by a panel built afresh): while the accordion is in
+  the page, for its model it drops the query and shows again Details' **Last run** and **Applications** cells and the
+  Activity pane if built (a pane not built yet reads afresh when opened). Details' other rows and its Tags input (with
+  the version of its last write) stay, as do the current object, the expanded panes and the other panes; an evaluation
+  records nothing. The roots of
+  Performance and Activity carry `forge-pane-fill` (`width: 100%`, `css/forge.css`): the accordion's pane content sizes
+  its children to their content, where a grid's own `width: 100%` resolves to the grid's width, so without it the
+  grids stay narrower than the panel; with it they span the panel and follow its resizing:
 
 | Pane | Content |
 |---|---|

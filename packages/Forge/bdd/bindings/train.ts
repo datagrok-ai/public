@@ -105,8 +105,9 @@ export const panelShowsModel = Then('the context panel should show the Forge mod
     .toBe('shown');
 }, {description: 'the current object is the forge.model row of that name, and the context panel shows the name'});
 
-/* The context panel is built again only for a model it does not show already (`showModel` in forge-app.ts): a claim
-   that needs a model's panel fresh (after an edit, an application, an evaluation) has another row shown first. */
+/* The context panel is built again only for a model it does not show already (`showModel` in forge-app.ts; an
+   application of the shown model is followed in place): a claim that needs a model's panel built anew (Applicable to
+   after the open tables changed, a model the panel may already show) has another row shown first. */
 export const reopenModel = When('user reopens the Forge model {string} in {widget}', async (page: Page, name: string,
   target: ElementRef) => {
   const other = await viewers.onViewer(page, target, (el, n) => {

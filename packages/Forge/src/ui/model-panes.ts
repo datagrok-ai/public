@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
+import {applicationRecorded} from '../apply/application-store';
 import {featureFit} from '../catalog/applicable-tables';
 import {ModelActivity, modelActivity} from '../catalog/model-activity';
 import {MINUTE_FORMAT, MODEL_TYPE, SECOND_FORMAT} from '../constants';
@@ -38,6 +39,10 @@ const SOURCE_TOOLTIPS: Record<ApplicationSource, string> = {
 };
 
 let sharingSub: rxjs.Subscription | undefined;
+let activitySub: rxjs.Subscription | undefined;
+type Refill = () => void;
+/** By Details host: shows again its cells that follow the model's applications (Last run, Applications). */
+const ACTIVITY_CELLS = new WeakMap<HTMLElement, Refill>();
 /** The authors by user id, read once per session for the tooltips and Details; a failed read is tried again. */
 const USERS = new Map<string, Promise<DG.User>>();
 
@@ -65,7 +70,7 @@ export function modelFacts(model: FactsRow, lastRun: () => Promise<ModelActivity
     created: model.created_on.format(MINUTE_FORMAT),
     updated: model.updated_on.format(MINUTE_FORMAT),
     table: `${model.dataset_name ?? ''}${model.row_count === undefined ? '' : ` (${model.row_count} rows)`}`,
-    lastRun: ui.wait(async () => ui.divText(lastRunText(await lastRun()))),
+    lastRun: lastRunCell(lastRun),
     features: names,
     applicableTo: tables.map((t) => t.name).join(', '),
   };
@@ -89,38 +94,78 @@ export function modelIcon(): HTMLElement {
 
 /** The model's context panel: the title the platform gives a row (icon, favorites star, name, context actions), then
  * **Details** (open), **Performance**, **Activity**, **Sharing** and **History**, each built when first opened. [row]
- * is the shown row, [model] its full values. */
+ * is the shown row, [model] its full values. An application of the model recorded in this session while the panel is
+ * shown refreshes Details' Last run and Applications and the Activity pane in place. */
 export function modelAccordion(row: DG.DomainRow, model: ModelRow): DG.Accordion {
   let activity: Promise<ModelActivity> | undefined;
   const activityOf = () => activity ??= modelActivity(model.id);
+  const details = ui.divV([]);
+  const activityHost = ui.divV([], 'forge-pane-fill');
   const accordion = ui.accordion(MODEL_TYPE);
   // Bound for the tooltip and the drag (onto a Space); the commands are the context actions'.
   const name = ui.bind(row, ui.label(model.name, 'forge-model-name'), {contextMenu: false});
   accordion.addTitle(ui.span([modelIcon(), ui.star(row.id), name, ui.contextActions(row)]));
-  accordion.addPane('Details', () => detailsPane(model, activityOf), true);
+  accordion.addPane('Details', () => fillDetails(details, model, activityOf), true);
   accordion.addPane('Performance', () => performancePane(model));
-  accordion.addPane('Activity', () => activityPane(activityOf));
+  accordion.addPane('Activity', () => fillActivity(activityHost, activityOf));
   accordion.addPane('Sharing', () => sharingPane(row));
   accordion.addPane('History', () => DG.DomainObjectHandler.auditPane(row));
+  // The context panel shows one model: the newest accordion follows its model's applications.
+  activitySub?.unsubscribe();
+  activitySub = applicationRecorded.subscribe((id) => {
+    if (id !== model.id || !accordion.root.isConnected)
+      return;
+    activity = undefined;
+    // Details keeps its Tags and their version; a pane not built yet reads the activity when it is opened.
+    ACTIVITY_CELLS.get(details)?.();
+    if (activityHost.hasChildNodes())
+      fillActivity(activityHost, activityOf);
+  });
   return accordion;
 }
 
-function detailsPane(model: ModelRow, activity: () => Promise<ModelActivity>): HTMLElement {
-  const host = ui.divV([]);
-  fillDetails(host, model, activity);
+/** Fills [host] with `N application(s)` and the grid of the newest applications, or "Not applied yet.". */
+function fillActivity(host: HTMLElement, activity: () => Promise<ModelActivity>): HTMLElement {
+  ui.empty(host);
+  host.append(ui.wait(async () => {
+    const {applications, count} = await activity();
+    if (count === 0)
+      return ui.divText('Not applied yet.');
+    // One read of the authors; a deleted user is not found and shows no login.
+    const users = await grok.dapi.getEntities([...new Set(applications.map((a) => a.author_id))]);
+    const logins = new Map(users.filter((u): u is DG.User => u instanceof DG.User).map((u) => [u.id, u.login]));
+    const at = (row: number) => applications[row];
+    const grid = readOnlyGrid(activityFrame(applications, logins), {headers: ACTIVITY_HEADERS, cells: {
+      'When': (row) => at(row).created_on.format(SECOND_FORMAT),
+      'Status': (row) => `${STATUS_TOOLTIPS[at(row).status]}${at(row).status === 'failed' ? at(row).error ?? '' : ''}`,
+      'Source': (row) => SOURCE_TOOLTIPS[at(row).source],
+    }});
+    return ui.divV([ui.divText(`${count} ${count === 1 ? 'application' : 'applications'}`), grid.root]);
+  }));
   return host;
 }
 
-function fillDetails(host: HTMLElement, model: ModelRow, activity: () => Promise<ModelActivity>): void {
-  const facts = modelFacts(model, async () => (await activity()).lastRun);
+function fillDetails(host: HTMLElement, model: ModelRow, activity: () => Promise<ModelActivity>): HTMLElement {
+  const lastRun = async () => (await activity()).lastRun;
+  const facts = modelFacts(model, lastRun);
+  const lastRunHost = ui.div([facts.lastRun]);
+  const countHost = ui.div([]);
+  const showCount = () => countHost.append(ui.wait(async () => ui.divText(`${(await activity()).count}`)));
+  showCount();
+  ACTIVITY_CELLS.set(host, () => {
+    ui.empty(lastRunHost);
+    ui.empty(countHost);
+    lastRunHost.append(lastRunCell(lastRun));
+    showCount();
+  });
   const details: {[caption: string]: string | HTMLElement} = {
     'Author': facts.author,
     'Created': facts.created,
     'Updated': facts.updated,
     'Table': facts.table,
     ...storageDetails(model),
-    'Last run': facts.lastRun,
-    'Applications': ui.wait(async () => ui.divText(`${(await activity()).count}`)),
+    'Last run': lastRunHost,
+    'Applications': countHost,
     'Features': facts.features.join(', '),
     'Target': model.target_name,
     'Method': model.engine_name,
@@ -131,6 +176,7 @@ function fillDetails(host: HTMLElement, model: ModelRow, activity: () => Promise
   ui.empty(host);
   host.append(...(model.description ? [ui.divText(model.description)] : []), ui.tableFromMap(details),
     ui.form([detailsTags(host, model, activity)]));
+  return host;
 }
 
 /** **Data storage**, then **Data source** of a reference or **Data copy** (the uploaded table, or `missing`). */
@@ -179,6 +225,10 @@ function detailsTags(host: HTMLElement, model: ModelRow, activity: () => Promise
   return input;
 }
 
+function lastRunCell(lastRun: () => Promise<ModelActivity['lastRun']>): HTMLElement {
+  return ui.wait(async () => ui.divText(lastRunText(await lastRun())));
+}
+
 function lastRunText(lastRun: ModelActivity['lastRun']): string {
   if (lastRun === undefined)
     return 'Never';
@@ -191,27 +241,9 @@ function performancePane(model: ModelRow): HTMLElement {
   const summary = storedSummary(model);
   const metrics = summary === null ? ui.divText('No metrics were recorded for this model.') :
     new MetricsTable(summary).root;
-  return ownBlob(model.blob) === null ? metrics :
-    ui.divV([metrics, ui.button('Run Evaluation', () => void runEvaluation(model),
-      'Apply the model to its training data, or to an open table, and show how well it predicts.')]);
-}
-
-function activityPane(activity: () => Promise<ModelActivity>): HTMLElement {
-  return ui.wait(async () => {
-    const {applications, count} = await activity();
-    if (count === 0)
-      return ui.divText('Not applied yet.');
-    // One read of the authors; a deleted user is not found and shows no login.
-    const users = await grok.dapi.getEntities([...new Set(applications.map((a) => a.author_id))]);
-    const logins = new Map(users.filter((u): u is DG.User => u instanceof DG.User).map((u) => [u.id, u.login]));
-    const at = (row: number) => applications[row];
-    const grid = readOnlyGrid(activityFrame(applications, logins), {headers: ACTIVITY_HEADERS, cells: {
-      'When': (row) => at(row).created_on.format(SECOND_FORMAT),
-      'Status': (row) => `${STATUS_TOOLTIPS[at(row).status]}${at(row).status === 'failed' ? at(row).error ?? '' : ''}`,
-      'Source': (row) => SOURCE_TOOLTIPS[at(row).source],
-    }});
-    return ui.divV([ui.divText(`${count} ${count === 1 ? 'application' : 'applications'}`), grid.root]);
-  });
+  const run = ownBlob(model.blob) === null ? [] : [ui.button('Run Evaluation', () => void runEvaluation(model),
+    'Apply the model to its training data, or to an open table, and show how well it predicts.')];
+  return ui.divV([metrics, ...run], 'forge-pane-fill');
 }
 
 /** One row per application: **When**, **Who**, **Table**, **Rows**, **Prediction column**, **Status**, **Source**,

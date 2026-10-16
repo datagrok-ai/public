@@ -49,6 +49,9 @@ npx grok-bdd run --reporter=list generated/apply generated/catalog    # one or m
   row is read once for the fields a model keeps, and a model sweep that finds nothing reads nothing back (a run sweep
   always reads its count back).
   `FORGE_BDD_GROK_LOG=<file>` appends one line per call with its time.
+- `bdd/` is not linted: the package's `lint` covers `src/` only, as in every public package with BDD bindings (Chem,
+  Bio, PowerPack, …); linting it would need a root-config override of `new-cap` for `Given` / `When` / `Then`.
+  `npx tsc -p bdd` type-checks it.
 - `DATAGROK_SHARING_LOGIN` is the account `catalog.feature` shares a model with (the stand's `forge.tester`); its
   name in the Share dialog and the Sharing pane is the account's friendly name, read from the server.
 
