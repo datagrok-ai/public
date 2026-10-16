@@ -24,4 +24,20 @@ category('Tutorials App', () => {
       tutorial.close();
     }
   });
+
+  test('Reopening the app closes the running tutorial', async () => {
+    const tutorial = eda.tutorials.find((t) => t.name === 'Scatter Plot')!;
+    let tableName = '';
+    try {
+      await grok.functions.call('Tutorials:trackOverview', {path: '/eda/ScatterPlot'});
+      await awaitCheck(() => grok.shell.v instanceof DG.TableView && grok.shell.v.path === tutorial.path,
+        'Tutorial did not start', 5000);
+      tableName = grok.shell.tv.dataFrame.name;
+      await grok.functions.call('Tutorials:trackOverview');
+      expect(grok.shell.tableView(tableName) == null, true);
+      expect(document.querySelector('#tutorial-child-node .tutorials-root-progress') == null, true);
+    } finally {
+      grok.shell.tableView(tableName)?.close();
+    }
+  });
 });
