@@ -105,30 +105,30 @@ category('Grit: issue labels', () => {
         {property: 'project_id', operator: '=', value: projectId!};
 
       // Tree form: a relation segment matches the owners that HAVE such a link.
-      const byName = await gritDb.issues.query({filter: [mine, 'and',
-        {property: 'labels.name', operator: '=', value: labelName('bug')}]});
+      const byName = (await gritDb.issues.query({filter: [mine, 'and',
+        {property: 'labels.name', operator: '=', value: labelName('bug')}]})).rows;
       expect(byName.map((r) => r.id).join(','), tagged);
 
       // The smart-filter STRING form takes the same path (values quoted, as everywhere).
-      const byString = await gritDb.issues.query(
-        {filter: `project_id = "${projectId}" and labels.name = "${labelName('urgent')}"`});
+      const byString = (await gritDb.issues.query(
+        {filter: `project_id = "${projectId}" and labels.name = "${labelName('urgent')}"`})).rows;
       expect(byString.map((r) => r.id).join(','), other);
 
       // 'labels.id' with a list is the ANY-of shape the filter panel's checkbox list
       // emits — the reason the manifest declares {"column": "labels.id"} explicitly.
-      const anyOf = await gritDb.issues.query({filter: [mine, 'and',
-        {property: 'labels.id', operator: '=', value: [bug, urgent]}], sort: 'number'});
+      const anyOf = (await gritDb.issues.query({filter: [mine, 'and',
+        {property: 'labels.id', operator: '=', value: [bug, urgent]}], sort: 'number'})).rows;
       expect(anyOf.map((r) => r.id).join(','), `${tagged},${other}`);
 
       // '!=' on that leaf is the uncheck gesture: EXCLUDE the owners having those
       // links, rather than "has some other label" (which would keep them).
-      const excluded = await gritDb.issues.query({filter: [mine, 'and',
-        {property: 'labels.id', operator: '!=', value: [bug]}], sort: 'number'});
+      const excluded = (await gritDb.issues.query({filter: [mine, 'and',
+        {property: 'labels.id', operator: '!=', value: [bug]}], sort: 'number'})).rows;
       expect(excluded.map((r) => r.id).join(','), `${other},${bare}`);
 
       // '= null' is the facet's "(no value)" bucket: no visible link at all.
-      const unlinked = await gritDb.issues.query({filter: [mine, 'and',
-        {property: 'labels.id', operator: '=', value: null}]});
+      const unlinked = (await gritDb.issues.query({filter: [mine, 'and',
+        {property: 'labels.id', operator: '=', value: null}]})).rows;
       expect(unlinked.map((r) => r.id).join(','), bare);
 
       // The facet behind the declared 'labels.id' filter: DISTINCT owners per label,

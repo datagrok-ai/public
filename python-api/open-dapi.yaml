@@ -364,7 +364,7 @@ paths:
     post:
       operationId: queryRows
       summary: query rows
-      description: "Output format is selected by the spec's 'format': JSON rows (default) or a d42 binary DataFrame (pattern: TablesRouter.getTableData); unknown formats are rejected by the spec parse (400)."
+      description: "Output format is selected by the spec's 'format': JSON {rows, hasMore} (default) or a d42 binary DataFrame (pattern: TablesRouter.getTableData); unknown formats are rejected by the spec parse (400)."
       tags:
         - domains
       parameters:

@@ -65,7 +65,7 @@ category('U2: domain app', () => {
   after(async () => {
     app.session.discard();
     view.close();
-    const mine = await items().query({filter: query});
+    const mine = (await items().query({filter: query})).rows;
     for (const item of mine)
       await events().deleteWhere(`item_id = "${item.id}"`);
     await items().deleteWhere(query);

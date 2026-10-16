@@ -74,8 +74,10 @@ export async function handleDomains(dapi: NodeDapi, verb: string | undefined, re
     case 'query': {
       if (!args[0]) return usage('query <schema.table> [--filter <expr>] [--columns a,b] [--sort s] [--limit n]');
       const a = parseDomainAddress(args[0], {table: true});
-      const rows = await domains.query(a.schema, a.table!, querySpec(argv, filter, limit ?? 50, offset));
+      const {rows, hasMore} = await domains.query(a.schema, a.table!, querySpec(argv, filter, limit ?? 50, offset));
       printOutput(rows, output);
+      if (hasMore)
+        console.error('More rows match: raise --limit or page with --offset');
       return true;
     }
     case 'count': {
@@ -419,7 +421,10 @@ async function handleDownload(dapi: NodeDapi, args: string[], argv: any, filter:
     if (output !== 'quiet') console.log(`Wrote ${bytes.length} bytes to ${outFile}`);
     return true;
   }
-  const csv = rowsToCsv(await dapi.domains.query(a.schema, a.table!, spec));
+  const {rows, hasMore} = await dapi.domains.query(a.schema, a.table!, spec);
+  if (hasMore)
+    console.error('More rows match: raise --limit or page with --offset');
+  const csv = rowsToCsv(rows);
   if (outFile) {
     fs.writeFileSync(String(outFile), csv);
     if (output !== 'quiet') console.log(`Wrote ${csv.length} bytes to ${outFile}`);

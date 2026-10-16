@@ -155,7 +155,7 @@ export class DgDomainTable implements DomainTableLike {
   }
 
   query(spec: DomainQueryLike): Promise<Record<string, unknown>[]> {
-    return this.client.query(DgDomainTable.spec(spec));
+    return this.client.query(DgDomainTable.spec(spec)).then((r) => r.rows);
   }
 
   count(scope: DomainReadScope = {}): Promise<number> {

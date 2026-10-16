@@ -80,7 +80,7 @@ category('U2: domain import', () => {
     const result = await running as {inserted: number};
     expect(result.inserted, 3);
 
-    const landed = await items().query({filter: query, sort: 'sku'});
+    const landed = (await items().query({filter: query, sort: 'sku'})).rows;
     expect(landed.length, 3);
     expect(landed.map((r) => `${r.name}:${r.quantity}`).join(), 'Row 1:1,Row 2:2,Row 3:3',
       'the mapped columns landed, the text coerced by the server');

@@ -10,7 +10,7 @@ export async function bad(): Promise<void> {
   await testdbDb.samples.query({expand: ['details:nope']});
   await testdbDb.samples.query({columns: ['nope']});
   await testdbDb.samples.aggregate({groupBy: ['nope'], measures: [{fn: 'count'}]});
-  const rows = await testdbDb.samples.query({});
+  const {rows} = await testdbDb.samples.query({});
   rows[0].measured_on = '2026-01-01';
   const ops: TestdbTransactionOp[] = [
     {op: 'insert', table: 'sample_event', values: {name: 'wrong-table-values', score: 1}},

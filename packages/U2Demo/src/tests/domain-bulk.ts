@@ -38,7 +38,7 @@ category('U2: domain bulk', () => {
   const fieldRoot = (name: string) => includeBox(name)!.parentElement!.querySelector('.u2-input-root');
   const buttonNamed = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.u2-dialog button')]
     .find((b) => b.textContent === text)!;
-  const quantities = async () => (await items().query({filter: query, sort: 'sku'}))
+  const quantities = async () => (await items().query({filter: query, sort: 'sku'})).rows
     .map((r) => r.quantity).join();
 
   /** The dialog up and rendered. The promise is handed back WRAPPED: awaiting an async function

@@ -120,7 +120,7 @@ category('U2: domain source', () => {
       row!.quantity = 3;
       expect(draft.isDirty.value, true);
       expect(await draft.save(), true, `save refused: ${String(draft.error.value)}`);
-      const [saved] = await items().query({filter: `sku = "${prefix}-3"`});
+      const [saved] = (await items().query({filter: `sku = "${prefix}-3"`})).rows;
       expect(saved?.quantity, 3);
       expect(saved?.name, 'Gamma');
       ids.push(saved.id);

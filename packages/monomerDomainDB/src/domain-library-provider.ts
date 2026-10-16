@@ -287,17 +287,18 @@ export class DomainDbLibraryProvider implements IMonomerLibProvider {
     }
   }
 
-  private async queryAll<T>(page: (limit: number, offset: number) => Promise<T[]>): Promise<T[]> {
+  private async queryAll<T>(page: (limit: number, offset: number) => Promise<DG.DomainQueryResult<T>>): Promise<T[]> {
     const res: T[] = [];
     for (let offset = 0; ; offset += PAGE_SIZE) {
-      const rows = await page(PAGE_SIZE, offset);
+      const {rows, hasMore} = await page(PAGE_SIZE, offset);
       res.push(...rows);
-      if (rows.length < PAGE_SIZE)
+      if (!hasMore)
         return res;
     }
   }
 
-  private async queryNames(page: (limit: number, offset: number) => Promise<{name: string}[]>): Promise<string[]> {
+  private async queryNames(
+    page: (limit: number, offset: number) => Promise<DG.DomainQueryResult<{name: string}>>): Promise<string[]> {
     return (await this.queryAll(page)).map((r) => r.name);
   }
 

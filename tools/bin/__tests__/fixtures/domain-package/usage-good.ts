@@ -7,7 +7,7 @@ export async function good(): Promise<void> {
   const ins: SampleInsert = {name: 'a', count: 3, tags: ['x'], score: 0.5, idempotencyKey: 'k',
     status: 'new', measured_on: '2026-01-01T00:00:00Z'};
   await testdbDb.samples.insert(ins);
-  const rows = await testdbDb.samples.query({filter: 'count > 1', columns: ['name', 'count']});
+  const {rows} = await testdbDb.samples.query({filter: 'count > 1', columns: ['name', 'count']});
   const count: number | undefined = rows[0].count;
   const measured: Dayjs | undefined = rows[0].measured_on;
   const created: Dayjs = rows[0].created_on;

@@ -19,6 +19,15 @@ const n = await items.count({property: 'name', operator: '=', value: 'Widget'});
 const has = await items.exists(`sku = "${sku}"`); // app-generated value — bind USER input via conditions instead
 grok.shell.info(`${rows.length} rows, count ${n}, exists ${has}, byKey ${byKey?.id === ins.id}`);
 
+// query(spec) returns one page (limit defaults to 100); hasMore says more rows match — page with offset
+const all = [];
+for (let offset = 0, more = true; more; offset += 500) {
+  const page = await items.query({filter: 'name = "Widget"', sort: 'created_on', limit: 500, offset});
+  all.push(...page.rows);
+  more = page.hasMore;
+}
+grok.shell.info(`${all.length} Widget rows in total`);
+
 // Update with optimistic concurrency; read the row and table audit trails
 await items.update(ins.id, {quantity: 6}, {version: 1});
 grok.shell.info(`ops: ${(await items.audit(ins.id)).map((a) => a.op).join(', ')}`);

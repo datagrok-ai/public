@@ -92,14 +92,14 @@ category('Dapi: domain hierarchy', () => {
     if (skipped())
       return;
     const codes = async (client: any, filter: string): Promise<string> =>
-      (await client.query({filter, sort: 'code'})).map((r: any) => r.code).join(',');
+      (await client.query({filter, sort: 'code'})).rows.map((r: any) => r.code).join(',');
     expect(await codes(folders(), `id under "${id['root']}"`), 'leaf,mid,root',
       'under must return the node and everything below it');
     expect(await codes(folders(), `id under "${id['mid']}"`), 'leaf,mid', 'under returned the wrong subtree');
     expect(await codes(folders(), `id under "${id['leaf']}"`), 'leaf', 'a leaf is its own subtree');
 
     const names = async (filter: string): Promise<string> =>
-      (await things().query({filter, sort: 'name'})).map((r: any) => r.name).join(',');
+      (await things().query({filter, sort: 'name'})).rows.map((r: any) => r.name).join(',');
     expect(await names(`folder_id under "${id['mid']}"`), 'in-leaf,in-mid',
       'a ref column into the tree must match the whole subtree');
     expect(await names(`folder_id under "${id['leaf']}"`), 'in-leaf', 'the deepest subtree matched too much');
@@ -108,7 +108,7 @@ category('Dapi: domain hierarchy', () => {
   test('a table with no hierarchy refuses both surfaces', async () => {
     if (skipped())
       return;
-    const [thing] = await things().query({limit: 1});
+    const [thing] = (await things().query({limit: 1})).rows;
     const path = await thrown(() => things().pathTo(thing.id));
     expect(path instanceof DG.DomainUnsupportedError && path.op === 'ancestors', true,
       `pathTo on a flat table must be refused as unsupported: ${path?.constructor?.name}: ${path}`);

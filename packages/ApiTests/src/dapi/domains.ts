@@ -25,7 +25,7 @@ category('Dapi: domains', () => {
     expect(ins.created, true);
     const id: string = ins.id;
     try {
-      const rows = await items().query({filter: `sku = "${key}"`});
+      const rows = (await items().query({filter: `sku = "${key}"`})).rows;
       expect(rows.length, 1);
       expect(rows[0].name, 'Widget');
       expect(rows[0].note, 'first', 'jsonb property schema key not returned');
@@ -45,6 +45,26 @@ category('Dapi: domains', () => {
       await items().delete(id);
     }
     expect(await items().get(id), null, 'soft-deleted row is still visible');
+  });
+
+  test('query reports hasMore when the limit cuts the result', async () => {
+    const prefix = sku();
+    const filter = `sku starts "${prefix}-"`;
+    await items().insert(Array.from({length: 101}, (_, i) => ({sku: `${prefix}-${i}`, name: 'Paged'})));
+    try {
+      const page = await items().query({filter});
+      expect(page.rows.length, 100, 'the default limit is 100');
+      expect(page.hasMore, true, 'a query cut at the default limit must report hasMore');
+      const rest = await items().query({filter, offset: 100});
+      expect(rest.rows.length, 1);
+      expect(rest.hasMore, false, 'the last page must not report hasMore');
+      expect((await items().query({filter, limit: 101})).hasMore, false,
+        'a limit covering every row must not report hasMore');
+      expect((await items().query().where('sku', 'like', `${prefix}-%`).top(5)).length, 5,
+        'the awaited builder still resolves to rows');
+    } finally {
+      await items().deleteWhere(filter);
+    }
   });
 
   test('optimistic concurrency conflict', async () => {
@@ -151,15 +171,15 @@ category('Dapi: domains', () => {
       const filter = `id = "${ev.id}"`;
       const caption = DG.domainCaptionColumn('item_id');
       expect(caption, '~caption_item_id', 'the caption column name is spelled once, in the js-api');
-      const [row] = await events.query({filter, captions: ['item_id']});
+      const [row] = (await events.query({filter, captions: ['item_id']})).rows;
       // the name column wins over the business key (C3): apitests.item names itself by `name`
       expect(row[caption], 'Caption parent', `the caption must be the parent's display name: ${JSON.stringify(row)}`);
       // A caption is not an expand and does not drag its ref column in.
-      const [narrow] = await events.query({filter, columns: ['kind'], captions: ['item_id']});
+      const [narrow] = (await events.query({filter, columns: ['kind'], captions: ['item_id']})).rows;
       expect(narrow[caption], 'Caption parent', 'a caption is independent of the projected columns');
       expect('item_id' in narrow, false,
         `asking for a caption must not project the ref column: ${JSON.stringify(narrow)}`);
-      const [plain] = await events.query({filter});
+      const [plain] = (await events.query({filter})).rows;
       expect(caption in plain, false, `captions are never on by default: ${JSON.stringify(plain)}`);
     } finally {
       await items().delete(ins.id); // cascades item_event

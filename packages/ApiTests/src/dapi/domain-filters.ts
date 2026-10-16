@@ -79,8 +79,8 @@ category('Dapi: domain filters', () => {
 
   test('FK-path filter: dotted tree in query, path categories facet', async () => {
     // Query item_event through the FK path (compiles to EXISTS server-side).
-    const rows = await events().query(
-      {filter: [{property: 'item_id.name', operator: '=', value: [`${marker} P1`]}]});
+    const rows = (await events().query(
+      {filter: [{property: 'item_id.name', operator: '=', value: [`${marker} P1`]}]})).rows;
     expect(rows.length, 2, `expected the two P1 events, got ${rows.length}`);
     expect(rows.every((r: any) => r.kind === 'e1'), true);
 

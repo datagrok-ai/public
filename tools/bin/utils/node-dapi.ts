@@ -977,8 +977,9 @@ export class NodeDomainsDataSource {
     return this.client.get(`${this.rows(schema, table)}/access`);
   }
 
-  /** JSON rows; spec = {filter, sort, columns, expand, limit, offset} (10k row cap). */
-  query(schema: string, table: string, spec: Record<string, any> = {}): Promise<any[]> {
+  /** One page of JSON rows and whether more match; spec = {filter, sort, columns, expand, limit, offset}
+   * (limit defaults to 100, 10k row cap). */
+  query(schema: string, table: string, spec: Record<string, any> = {}): Promise<{rows: any[], hasMore: boolean}> {
     return this.client.post(`${this.rows(schema, table)}/query`, spec);
   }
 

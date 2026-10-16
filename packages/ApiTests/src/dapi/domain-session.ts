@@ -378,7 +378,7 @@ category('Dapi: domain session', () => {
       expect(await session.save(), true, 'the session save did not land');
       expect(trash.isDirty || child.isDirty, false, 'an editor stayed dirty after the session save');
       expect(trash.dataFrame.get(DG.DOMAIN_DELETED_COLUMN, 0), false, 'the restored row still reads as deleted');
-      expect((await items().query({filter: like('sku', prefix)})).length, 1,
+      expect((await items().query({filter: like('sku', prefix)})).rows.length, 1,
         'the restored row is not in a default query');
 
       // The restore and the insert are ONE transaction: the parent is live by the

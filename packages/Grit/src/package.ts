@@ -33,7 +33,7 @@ export function _initGrit(): void {
  * are per-project, so the fixed part is the project's own key, not a literal. */
 async function registerIssueHandleDetectors(): Promise<void> {
   try {
-    const projects = await gritDb.projects.query({});
+    const projects = (await gritDb.projects.query({})).rows;
     for (const p of projects) {
       const key = (p.key ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       if (key.length > 0)

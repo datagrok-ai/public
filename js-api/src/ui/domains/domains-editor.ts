@@ -1165,7 +1165,7 @@ export class DomainFrameEditor implements IFrameEditor {
       rows = this._info.rowAddress === 'id'
         ? (await Promise.all(ids.map((id) => this.client.get(id, {withAccess}).catch(() => null))))
           .filter((r) => r != null)
-        : await this.client.query({filter: {property: 'id', operator: '=', value: ids}, withAccess});
+        : (await this.client.query({filter: {property: 'id', operator: '=', value: ids}, withAccess, limit: ids.length})).rows;
     } catch (e) {
       log.warning(`${this.table}: post-save re-read failed — ${e}`);
       return;
@@ -1792,7 +1792,7 @@ export class DomainFrameEditor implements IFrameEditor {
       filter.push({property: key[i], operator: '=', value: values[i]});
     }
     try {
-      const rows = await this.client.query({filter: filter, columns: [column], limit: 2}) as any[];
+      const {rows} = await this.client.query({filter: filter, columns: [column], limit: 2});
       for (const r of rows) {
         if (`${r['id'] ?? ''}` === selfId)
           continue;

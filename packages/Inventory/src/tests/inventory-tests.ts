@@ -49,7 +49,7 @@ category('Inventory', () => {
       expect(second.updated, 2, 'existing SKUs must be updated in place');
       expect(second.errorCount, 0);
 
-      const rows = await items().query({filter: `sku starts "${p}"`, sort: 'sku'});
+      const rows = (await items().query({filter: `sku starts "${p}"`, sort: 'sku'})).rows;
       expect(rows.length, 4);
       expect(rows[0].quantity, 15, 'upsert must merge by sku');
       expect(rows[2].quantity, 5);
@@ -79,7 +79,7 @@ category('Inventory', () => {
       const report = await items().batch(bytes, {format: 'parquet', mode: 'upsert'});
       expect(report.inserted, 2);
       expect(report.errorCount, 0);
-      const rows = await items().query({filter: `sku starts "${p}"`, sort: 'sku'});
+      const rows = (await items().query({filter: `sku starts "${p}"`, sort: 'sku'})).rows;
       expect(rows.length, 2);
       expect(rows[1].quantity, 9);
     } finally {
@@ -110,7 +110,7 @@ category('Inventory', () => {
       const row = await items().get(ins.id);
       expect(row.quantity, 12, 'both adjustments must land exactly once');
 
-      const moves = await movements().query({filter: `item_id = "${ins.id}"`});
+      const moves = (await movements().query({filter: `item_id = "${ins.id}"`})).rows;
       expect(moves.length, 2);
       expect((await movements().audit(moves[0].id)).length, 0,
         'audit-off stock_movements must write no audit rows');

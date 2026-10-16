@@ -37,7 +37,7 @@ category('Dapi: domain bulk', () => {
       expect(report.updated, 2, `updateWhere reported ${JSON.stringify(report)}`);
       expect(report.hasMore, false, 'two rows under the cap must not report hasMore');
 
-      const after = await items().query({filter: like('sku', prefix), sort: 'sku'});
+      const after = (await items().query({filter: like('sku', prefix), sort: 'sku'})).rows;
       expect(after.map((r: any) => r.quantity).join(','), '7,7,1',
         'the update did not land exactly on the selected rows');
       expect(after[0].version, before + 1, 'the bulk update did not bump the version once');
@@ -79,7 +79,7 @@ category('Dapi: domain bulk', () => {
     const [seeded] = await items().insert({sku: `${prefix}-1`, name: 'Seeded', quantity: 1, origin: 'seed'});
     const filter = like('sku', prefix);
     try {
-      expect((await items().query({filter, sort: 'created_on'}))[0].id, plain.id,
+      expect((await items().query({filter, sort: 'created_on'})).rows[0].id, plain.id,
         'the fixture rows do not carry the order updateWhere attempts them in');
       const version = (await items().get(seeded.id)).version;
       const immutable = await thrown(() => items().updateWhere(filter, {origin: 'rewritten'}));
@@ -99,7 +99,7 @@ category('Dapi: domain bulk', () => {
       expect(empty instanceof DG.DomainValidationError, true,
         `an empty filter must be refused: ${empty?.constructor?.name}: ${empty}`);
 
-      const untouched = await items().query({filter, sort: 'sku'});
+      const untouched = (await items().query({filter, sort: 'sku'})).rows;
       expect(untouched.map((r: any) => r.quantity).join(','), '1,1', 'a refused call wrote a value');
       expect((await items().get(seeded.id)).version, version, 'a refused call bumped a version');
     } finally {

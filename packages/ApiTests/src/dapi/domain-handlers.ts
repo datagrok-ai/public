@@ -318,7 +318,7 @@ category('JS: domain handlers', () => {
       const tab = tabs.find((t) => t.table === 'apitests.item_event');
       expect(tab != null, true, `child-table tab missing: ${JSON.stringify(tabs.map((t) => t.table))}`);
       expect(tab!.fkColumn, 'item_id');
-      const children = await events().query({filter: tab!.filter});
+      const children = (await events().query({filter: tab!.filter})).rows;
       expect(children.length, 1, 'the detail-tab filter must scope the child table to the parent row');
       // Editable columns only — the form mirrors column security, and system
       // columns are never editable.

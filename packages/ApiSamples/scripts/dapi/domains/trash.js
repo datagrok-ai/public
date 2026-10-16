@@ -9,7 +9,7 @@ await items.delete(row.id);
 
 // The trash of this table: only the deleted rows, each saying so. count/exists take the
 // same scope, so a trash list's total agrees with its rows.
-const [deleted] = await items.query({filter: `id = "${row.id}"`, deleted: 'only'});
+const [deleted] = (await items.query({filter: `id = "${row.id}"`, deleted: 'only'})).rows;
 grok.shell.info(`in the trash: ${deleted.name} (~is_deleted: ${deleted['~is_deleted']}), ` +
   `${await items.count(null, {deleted: 'only'})} deleted rows in all`);
 

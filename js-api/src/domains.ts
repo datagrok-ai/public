@@ -178,6 +178,10 @@ export interface DomainDeleteReport { deleted: number; hasMore: boolean; }
  * more matching editable rows remain (loop while `hasMore`). */
 export interface DomainUpdateReport { updated: number; hasMore: boolean; }
 
+/** Result of domain table `query`: one page of rows, and whether more matching rows remain
+ * past the limit (page with `offset` while `hasMore`). */
+export interface DomainQueryResult<TRow = any> { rows: TRow[]; hasMore: boolean; }
+
 /** Grantable permission on a domain registry entity (table, schema, or column schema).
  * 'Extend' is grantable on SCHEMA entities only — it lets the holder add their own
  * tables and columns to a package-managed schema the plugin opted in to. Any other
@@ -1513,7 +1517,7 @@ export async function retryOnVersionConflict<T>(
 
 /** Minimal structural client the builder executes against (avoids a domains.ts → dapi.ts cycle). */
 export interface IDomainQueryExecutor<TRow> {
-  query(spec: any): Promise<TRow[]>;
+  query(spec: any): Promise<DomainQueryResult<TRow>>;
   queryDf(spec: any): Promise<any>;       // DG.DataFrame
   count(filter?: any, options?: {search?: string}): Promise<number>;
   /** Table address, needed by {@link DomainQueryBuilder.toQuery} (`DomainTableClient` carries it). */
@@ -1688,7 +1692,7 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
   }
 
   private _run(): Promise<TResult[]> {
-    return this.client.query(this._spec()) as Promise<any>;
+    return this.client.query(this._spec()).then((r) => r.rows) as Promise<any>;
   }
 
   /** The same query as a typed DataFrame (d42; `'details:'` expand is JSON-only and

@@ -76,7 +76,8 @@ describe('NodeDomainsDataSource (integration)', () => {
       Buffer.from(JSON.stringify([{sku: 'W-10', quantity: 100}, {sku: 'W-12', quantity: 12}])), 'application/json', {mode: 'upsert'});
     expect(upsert).toMatchObject({inserted: 1, updated: 1});
 
-    const rows = await dapi.domains.query(SCHEMA, 'widget', {filter: 'quantity > 11', sort: '!quantity', columns: ['sku', 'quantity']});
+    const {rows, hasMore} = await dapi.domains.query(SCHEMA, 'widget', {filter: 'quantity > 11', sort: '!quantity', columns: ['sku', 'quantity']});
+    expect(hasMore).toBe(false);
     expect(rows.map((r) => r.sku)).toEqual(['W-10', 'W-12']);
     expect(await dapi.domains.count(SCHEMA, 'widget')).toBe(3);
     const agg = await dapi.domains.aggregate(SCHEMA, 'widget', {measures: [{fn: 'sum', column: 'quantity', as: 'total'}]});

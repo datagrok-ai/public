@@ -19,9 +19,9 @@ category('Dapi: domain trash', () => {
 
   async function cleanup(prefix: string): Promise<void> {
     try {
-      for (const id of (await events().query({filter: like('kind', prefix), deleted: 'only'})).map((r) => r.id))
+      for (const id of (await events().query({filter: like('kind', prefix), deleted: 'only'})).rows.map((r) => r.id))
         await events().restore(id);
-      for (const id of (await items().query({filter: like('sku', prefix), deleted: 'only'})).map((r) => r.id))
+      for (const id of (await items().query({filter: like('sku', prefix), deleted: 'only'})).rows.map((r) => r.id))
         await items().restore(id);
       await events().deleteWhere(like('kind', prefix));
       await items().deleteWhere(like('sku', prefix));
@@ -37,11 +37,12 @@ category('Dapi: domain trash', () => {
     try {
       const version = (await items().get(row.id)).version;
       await items().delete(row.id);
-      expect((await items().query({filter})).length, 0, 'a deleted row is still in a default query');
-      const [deleted] = await items().query({filter, deleted: 'only'});
+      expect((await items().query({filter})).rows.length, 0, 'a deleted row is still in a default query');
+      const [deleted] = (await items().query({filter, deleted: 'only'})).rows;
       expect(deleted?.id, row.id, 'the deleted row is not in the trash');
       expect((deleted as any)['~is_deleted'], true, `~is_deleted is not set: ${JSON.stringify(deleted)}`);
-      expect((await items().query({filter, deleted: 'include'})).length, 1, 'include does not see the deleted row');
+      expect((await items().query({filter, deleted: 'include'})).rows.length, 1,
+        'include does not see the deleted row');
       expect(await items().count(filter, {deleted: 'only'}), 1, 'the trash count does not agree with its rows');
       expect(await items().count(filter), 0, 'a default count still counts the deleted row');
 
@@ -52,8 +53,8 @@ category('Dapi: domain trash', () => {
       const audit = await items().audit(row.id);
       expect(audit.some((a) => a.op === 'undelete'), true,
         `no undelete entry in the trail: ${audit.map((a) => a.op).join(', ')}`);
-      expect((await items().query({filter})).length, 1, 'the restored row is not in a default query');
-      expect((await items().query({filter, deleted: 'only'})).length, 0, 'the restored row is still in the trash');
+      expect((await items().query({filter})).rows.length, 1, 'the restored row is not in a default query');
+      expect((await items().query({filter, deleted: 'only'})).rows.length, 0, 'the restored row is still in the trash');
 
       const again = await thrown(() => items().restore(row.id));
       expect(again?.code, 'not-found', `restoring a live row must be a not-found: ${again}`);
@@ -69,7 +70,7 @@ category('Dapi: domain trash', () => {
     const [event] = await events().insert({item_id: item.id, kind: `${prefix}-ev`, amount: 1});
     try {
       await items().delete(item.id);
-      const [cascaded] = await events().query({filter: like('kind', prefix), deleted: 'only'});
+      const [cascaded] = (await events().query({filter: like('kind', prefix), deleted: 'only'})).rows;
       expect(cascaded?.id, event.id, 'the cascade did not delete the child row');
 
       const refusal = await thrown(() => events().restore(event.id));
@@ -79,7 +80,8 @@ category('Dapi: domain trash', () => {
 
       await items().restore(item.id);
       expect((await events().restore(event.id)).restored, true, 'the child did not come back under a live parent');
-      expect((await events().query({filter: like('kind', prefix)})).length, 1, 'the restored child is not queryable');
+      expect((await events().query({filter: like('kind', prefix)})).rows.length, 1,
+        'the restored child is not queryable');
     } finally {
       await cleanup(prefix);
     }
@@ -112,7 +114,7 @@ category('Dapi: domain trash', () => {
         [{op: 'restore', table: 'item', id: row.id}]))[0];
       expect(viaTx.id, row.id, `the transaction did not answer the row: ${JSON.stringify(viaTx)}`);
       expect(viaTx.restored, true, `the transaction did not restore the row: ${JSON.stringify(viaTx)}`);
-      expect((await items().query({filter: like('sku', prefix)})).length, 1,
+      expect((await items().query({filter: like('sku', prefix)})).rows.length, 1,
         'the transactionally restored row is not in a default query');
 
       await items().delete(row.id);
@@ -136,7 +138,7 @@ category('Dapi: domain trash', () => {
       const [event] = await events().insert({item_id: item.id, kind: `${prefix}-ev`, amount: 1});
       try {
         await items().delete(item.id);
-        expect((await events().query({filter: like('kind', prefix), deleted: 'only'})).length, 1,
+        expect((await events().query({filter: like('kind', prefix), deleted: 'only'})).rows.length, 1,
           'the cascade did not delete the child row');
 
         // The child is listed FIRST: the server orders the parent's restore before it,
@@ -147,9 +149,9 @@ category('Dapi: domain trash', () => {
         ]);
         expect(res.length, 2, 'the transaction did not answer both ops');
         expect(res[0].id, event.id, 'the results left the request order');
-        expect((await events().query({filter: like('kind', prefix)})).length, 1,
+        expect((await events().query({filter: like('kind', prefix)})).rows.length, 1,
           'the child did not come back');
-        expect((await items().query({filter: like('sku', prefix)})).length, 1,
+        expect((await items().query({filter: like('sku', prefix)})).rows.length, 1,
           'the parent did not come back');
       } finally {
         await cleanup(prefix);

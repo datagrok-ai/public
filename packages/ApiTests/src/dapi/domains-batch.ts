@@ -23,7 +23,7 @@ category('Dapi: domains batch', () => {
       const res = await items().batch(`sku,name,quantity\n${p}-1,Widget,1\n${p}-2,Widget,2`);
       expect(res.inserted, 2);
       expect(res.errorCount, 0);
-      const rows = await items().query({filter: `sku starts "${p}"`});
+      const rows = (await items().query({filter: `sku starts "${p}"`})).rows;
       expect(rows.length, 2);
     } finally {
       await purge(p);
@@ -39,7 +39,7 @@ category('Dapi: domains batch', () => {
       const df2 = DG.DataFrame.fromCsv(`sku,name,quantity\n${p}-3,W,3`);
       const res2 = await items().batch(new Uint8Array(df2.toByteArray()));
       expect(res2.inserted, 1);
-      const rows = await items().query({filter: `sku starts "${p}"`});
+      const rows = (await items().query({filter: `sku starts "${p}"`})).rows;
       expect(rows.length, 3);
     } finally {
       await purge(p);
@@ -65,7 +65,7 @@ category('Dapi: domains batch', () => {
       const bytes: Uint8Array = await grok.functions.call('Arrow:toParquet', {table: df});
       const res = await items().batch(bytes, {format: 'parquet'});
       expect(res.inserted, 2);
-      const rows = await items().query({filter: `sku starts "${p}"`, sort: 'sku'});
+      const rows = (await items().query({filter: `sku starts "${p}"`, sort: 'sku'})).rows;
       expect(rows.length, 2);
       expect(rows[1].quantity, 2);
     } finally {
@@ -83,7 +83,7 @@ category('Dapi: domains batch', () => {
       expect(second.inserted, 1);
       expect(second.updated, 2);
       expect(second.errorCount, 0);
-      const rows = await items().query({filter: `sku = "${p}-1"`});
+      const rows = (await items().query({filter: `sku = "${p}-1"`})).rows;
       expect(rows[0].quantity, 10);
     } finally {
       await purge(p);
@@ -111,7 +111,7 @@ category('Dapi: domains batch', () => {
     const res = await items().batch([{sku: `${p}-ok`, quantity: 1}, {sku: `${p}-bad`, quantity: -5}]);
     expect(res.error, 'validation');
     expect(res.errorCount, 1);
-    const rows = await items().query({filter: `sku starts "${p}"`});
+    const rows = (await items().query({filter: `sku starts "${p}"`})).rows;
     expect(rows.length, 0, 'allOrNothing batch must not apply any rows');
   });
 
@@ -127,7 +127,7 @@ category('Dapi: domains batch', () => {
         {sku: `${p}-3`, name: 'New B', quantity: 3},
         {sku: `${p}-4`, name: 'Refused', quantity: -5},
       ];
-      const before = (await items().query({filter: `sku starts "${p}"`})).length;
+      const before = (await items().query({filter: `sku starts "${p}"`})).rows.length;
       const preview = await items().batch(payload, {mode: 'upsert', allOrNothing: false, validateOnly: true});
       expect(preview.validateOnly, true, `the preview must answer its own shape: ${JSON.stringify(preview)}`);
       expect(preview.rowCount, 4, JSON.stringify(preview));
@@ -145,9 +145,9 @@ category('Dapi: domains batch', () => {
       expect(updated!.existingId != null, true,
         `a predicted update must name the row it would merge into: ${JSON.stringify(updated)}`);
       // Nothing was written.
-      expect((await items().query({filter: `sku starts "${p}"`})).length, before,
+      expect((await items().query({filter: `sku starts "${p}"`})).rows.length, before,
         'a validate-only batch must write no rows');
-      expect((await items().query({filter: `sku = "${p}-1"`}))[0].quantity, 1,
+      expect((await items().query({filter: `sku = "${p}-1"`})).rows[0].quantity, 1,
         'a validate-only batch must not update the row it predicted an update for');
 
       // Now commit the same payload: every verdict must match, one to one.
@@ -216,7 +216,7 @@ category('Dapi: domains batch', () => {
       expect(res[0].created, true);
       expect(res[1].created, true);
       expect(res[2].version, 2);
-      const rows = await items().query({filter: `sku = "${key}"`, expand: ['details:item_event']});
+      const rows = (await items().query({filter: `sku = "${key}"`, expand: ['details:item_event']})).rows;
       expect(rows[0].item_event.length, 1);
       expect(rows[0].item_event[0].kind, 'created');
     } finally {
@@ -238,7 +238,7 @@ category('Dapi: domains batch', () => {
     expect(error instanceof DG.DomainValidationError, true,
       `expected DomainValidationError, got ${error?.constructor?.name}: ${error?.message}`);
     expect(error.opIndex, 1, 'the error must point at the failing op');
-    const rows = await items().query({filter: `sku = "${key}"`});
+    const rows = (await items().query({filter: `sku = "${key}"`})).rows;
     expect(rows.length, 0, 'first op was not rolled back');
   });
 

@@ -39,7 +39,7 @@ category('U2: domain session', () => {
   });
 
   after(async () => {
-    const mine = await items().query({filter: query});
+    const mine = (await items().query({filter: query})).rows;
     for (const item of mine)
       await events().deleteWhere(`item_id = "${item.id}"`);
     await items().deleteWhere(query);
@@ -110,7 +110,7 @@ category('U2: domain session', () => {
     } finally {
       grid?.dispose();
       src.dispose();
-      const alpha = await items().query({filter: `sku = "${prefix}-1"`});
+      const alpha = (await items().query({filter: `sku = "${prefix}-1"`})).rows;
       if (alpha[0] !== undefined)
         await items().update(alpha[0].id, {name: 'Alpha'});
     }

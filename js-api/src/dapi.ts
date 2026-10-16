@@ -76,6 +76,7 @@ import {
   DomainTableVersion,
   DomainTransactionOp,
   DomainUpdateReport,
+  DomainQueryResult,
   DomainUpdateResult,
   DomainValidationError,
   DomainRowAccess,
@@ -1743,20 +1744,21 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   query(): DomainQueryBuilder<TRow, TColumn, TExpand, TRow, DataFrame>;
   /** {@link query} with `withAccess`: every row also carries the {@link DomainRowAccess} keys. */
   query(spec: DomainQuerySpec<TColumn, keyof TExpand & string> & {withAccess: true}):
-    Promise<(TRow & DomainRowAccess)[]>;
-  /** Runs a filtered, sorted, paginated query; resolves to an array of row objects (10k row cap).
+    Promise<DomainQueryResult<TRow & DomainRowAccess>>;
+  /** Runs a filtered, sorted, paginated query; resolves to `{rows, hasMore}` — up to `limit`
+   * rows (default 100, 10k cap), `hasMore` when more match (page with `offset` while it is set).
    * A declared many-to-many relation expands under its own name into a
    * {@link DomainRelationLink}`[]` (`expand: ['labels']` → `row.labels = [{id, name}, ...]`,
    * capped at 100, ordered by display name, `[]` when there are no visible links). */
-  query(spec: DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<TRow[]>;
+  query(spec: DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<DomainQueryResult<TRow>>;
   query(spec?: DomainQuerySpec<TColumn, keyof TExpand & string>): any {
     if (spec === undefined)
       return new DomainQueryBuilder<TRow, TColumn, TExpand, TRow, DataFrame>(this);
     const datetimes = this._datetimes();
     return domainCall(api.grok_Dapi_Domains_Query(this.dart, this.schema, this.table, spec))
-      .then(async (rows: any) => {
+      .then(async (res: any) => {
         const dt = await datetimes;
-        return rows.map((r: any) => this._fromWire(r, dt));
+        return {rows: res.rows.map((r: any) => this._fromWire(r, dt)), hasMore: res.hasMore};
       });
   }
 
@@ -1998,7 +2000,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
 
   /** First matching row or null; shorthand for query({...spec, limit: 1}). */
   async first(spec?: DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<TRow | null> {
-    const rows = await this.query({...spec, limit: 1});
+    const {rows} = await this.query({...spec, limit: 1});
     return rows.length === 0 ? null : rows[0];
   }
 

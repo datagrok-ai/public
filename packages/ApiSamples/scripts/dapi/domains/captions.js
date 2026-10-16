@@ -17,14 +17,14 @@ const caption = DG.domainCaptionColumn('item_id'); // '~caption_item_id'
 const [parent] = await items.insert({sku: `CAP-${Date.now()}`, name: 'Caption sample'});
 await events.insert({item_id: parent.id, kind: 'created', amount: 1});
 
-const rows = await events.query({filter: `item_id = "${parent.id}"`, captions: ['item_id']});
+const rows = (await events.query({filter: `item_id = "${parent.id}"`, captions: ['item_id']})).rows;
 // apitests.item declares no isName column, so its display name is its business key (sku).
 grok.shell.info(`${rows.length} event(s) of "${rows[0][caption]}"`);
 
 // Independent of `columns`: a caption may be asked for a ref column that is not projected, and
 // asking for one never projects the ref column itself.
-const [narrow] = await events.query(
-  {filter: `item_id = "${parent.id}"`, columns: ['kind'], captions: ['item_id']});
+const [narrow] = (await events.query(
+  {filter: `item_id = "${parent.id}"`, columns: ['kind'], captions: ['item_id']})).rows;
 grok.shell.info(`${narrow.kind} on ${narrow[caption]} — no item_id in the row: ${!('item_id' in narrow)}`);
 
 // In a frame the column is a plain nullable string, tagged out of both exports like every

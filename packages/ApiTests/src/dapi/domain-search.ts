@@ -34,11 +34,11 @@ category('Dapi: domain search', () => {
     const prefix = `se-q-${stamp()}`;
     await seed(prefix);
     try {
-      const rows = await items().query({filter: skuLike(prefix), search: 'ALPH'});
+      const rows = (await items().query({filter: skuLike(prefix), search: 'ALPH'})).rows;
       expect(rows.length, 1, `search did not narrow: ${JSON.stringify(rows.map((r) => r.name))}`);
       expect(rows[0].name, `Alpha ${prefix}`, 'search matched the wrong row');
       // sku is not searchable: a substring only the sku holds matches nothing.
-      expect((await items().query({filter: skuLike(prefix), search: `${prefix}-1`})).length, 0,
+      expect((await items().query({filter: skuLike(prefix), search: `${prefix}-1`})).rows.length, 0,
         'search matched a column that is not searchable');
       const df = await items().queryDf({filter: skuLike(prefix), search: 'beta'});
       expect(df.rowCount, 1, 'queryDf ignored search');

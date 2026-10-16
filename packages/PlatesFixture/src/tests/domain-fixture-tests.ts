@@ -49,7 +49,7 @@ category('Domains: plates fixture', () => {
     const [ins] = await plates().insert(
       {barcode: barcode, row_count: 8, col_count: 12, organism: 'human', price: 9.99});
     try {
-      const [row] = await plates().query({filter: `barcode = "${barcode}"`});
+      const [row] = (await plates().query({filter: `barcode = "${barcode}"`})).rows;
       expect(row.organism, 'human', 'jsonb property schema key not returned');
       expect(row.price, 9.99);
 
@@ -76,9 +76,9 @@ category('Domains: plates fixture', () => {
       {plate_id: plate.id, row: 0, col: 0, volume: 10.5, sample_state: 'filled'},
       {plate_id: plate.id, row: 0, col: 1},
     ]);
-    expect((await wells().query({filter: `plate_id = "${plate.id}"`})).length, 2);
+    expect((await wells().query({filter: `plate_id = "${plate.id}"`})).rows.length, 2);
     await plates().delete(plate.id);
-    expect((await wells().query({filter: `plate_id = "${plate.id}"`})).length, 0,
+    expect((await wells().query({filter: `plate_id = "${plate.id}"`})).rows.length, 0,
       'cascade soft-delete did not remove wells');
   });
 
@@ -89,9 +89,9 @@ category('Domains: plates fixture', () => {
       {well_id: well.id, wavelength: 450, value: 0.42},
       {well_id: well.id, wavelength: 620, value: 0.13},
     ]);
-    expect((await readings().query({filter: `well_id = "${well.id}"`})).length, 2);
+    expect((await readings().query({filter: `well_id = "${well.id}"`})).rows.length, 2);
     await plates().delete(plate.id);
-    expect((await readings().query({filter: `well_id = "${well.id}"`})).length, 0,
+    expect((await readings().query({filter: `well_id = "${well.id}"`})).rows.length, 0,
       'cascade soft-delete did not propagate to depth-2 readings');
   });
 

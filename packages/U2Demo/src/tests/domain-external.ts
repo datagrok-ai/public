@@ -126,7 +126,7 @@ category('U2: domain external', () => {
     expect(children !== null, true, 'the child tab is there');
     // the child pane is a d4 grid on a canvas: its rows are not DOM; the empty marker hides once lines are in
     await until(() => children!.querySelector('.u2-domain-children-empty')?.hasAttribute('hidden') === true, 'the order lines');
-    const lines = await grok.dapi.domains.table(LINES).query({filter: 'order_id = "10248"'});
+    const lines = (await grok.dapi.domains.table(LINES).query({filter: 'order_id = "10248"'})).rows;
     expect(lines.length > 0, true);
     expect(lines.every((line) => line.id.startsWith('10248,')), true, 'every line is 10248,<product>');
     expect(await app.goTo('list'), true);

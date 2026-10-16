@@ -79,7 +79,7 @@ category('Dapi: domain visual queries', () => {
   after(async () => {
     for (const s of scratchSkus) {
       try {
-        const rows = await items().query({filter: `sku = "${s}"`});
+        const rows = (await items().query({filter: `sku = "${s}"`})).rows;
         for (const r of rows)
           await items().delete(r.id);
       } catch (e: any) {

@@ -142,7 +142,7 @@ category('Dapi: domain live', () => {
       expect(preview.validateOnly, true, `a preview answers its own shape: ${JSON.stringify(preview)}`);
       expect(preview.willInsert, 1, JSON.stringify(preview));
       expect(await seq(), start, 'a validate-only batch must leave the token where it was');
-      expect((await items().query({filter: `sku starts "${key}"`})).length, 0,
+      expect((await items().query({filter: `sku starts "${key}"`})).rows.length, 0,
         'a validate-only batch must write no rows');
     } finally {
       // A server that ignored the flag committed the row — take it back either way.

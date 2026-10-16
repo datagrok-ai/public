@@ -140,7 +140,7 @@ category('Dapi: domain lifecycle', () => {
       const things = grok.dapi.domains.table(`${name}.things`);
       const [ins] = await things.insert({name: 'w1', qty: 2});
       expect(ins.created, true);
-      expect((await things.query({filter: 'name = "w1"'})).length, 1);
+      expect((await things.query({filter: 'name = "w1"'})).rows.length, 1);
 
       // Whole-schema audit: ddl registry events + the row insert, newest first.
       const audit = await handle.audit({limit: 100});
@@ -261,7 +261,7 @@ category('Dapi: domain lifecycle', () => {
     }
     // Restored: the core schema serves the column again — a query NAMING it
     // succeeding is the assertion (a restricted column would 400, no-oracle).
-    const rows = await items.query({limit: 1, columns: ['name']});
+    const rows = (await items.query({limit: 1, columns: ['name']})).rows;
     expect(Array.isArray(rows), true);
   });
 
