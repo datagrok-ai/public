@@ -82,6 +82,7 @@ export class SummaryPanel extends SummaryKit {
     // A new analysis has its own tiers; a stale one would filter every matrix out.
     this.tierFilter = null;
     this.pendingPaints = [];
+    this.stopPainting();
     ui.empty(this.root);
   }
 
@@ -91,13 +92,18 @@ export class SummaryPanel extends SummaryKit {
     const scrolled = keepPlace ? this.root.querySelector('.chem-sar-sum-pane')?.scrollTop ?? 0 : 0;
     window.clearTimeout(this.paintTimer);
     this.pendingPaints = [];
+    this.stopPainting();
     ui.empty(this.root);
 
     if (host.matrices.length === 0) {
       this.root.appendChild(ui.divText(host.noMatricesMessage(), 'chem-sar-empty-note'));
       return;
     }
-    const pane = ui.divV([this.overview.build(this.data!), this.making.build(this.data!)], 'chem-sar-sum-pane');
+    const data = this.data!;
+    // What to start with and what to make sit side by side, so neither waits below the other.
+    const pane = ui.divV([this.overview.head(data),
+      ui.divV([this.overview.keySeries(data), this.making.build(data)], 'chem-sar-sum-cols'),
+      this.overview.answers(data)], 'chem-sar-sum-pane');
     this.root.appendChild(pane);
     pane.scrollTop = scrolled;
     this.paintTimer = window.setTimeout(() => this.flushPaints(), 0);

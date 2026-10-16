@@ -740,6 +740,107 @@ i.chem-sar-card-twisty:hover {
   overflow: auto;
   box-sizing: border-box;
   padding: 8px 10px;
+  container-type: inline-size;
+}
+
+.chem-sar-sum-cols {
+  gap: 8px;
+}
+
+/* Side by side once each column has room for a row. The analogs then scroll within the height of the key
+   series beside them, so a long list neither leaves a gap beside it nor pushes the answers down. */
+@container (min-width: 830px) {
+  .chem-sar-sum-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .chem-sar-sum-cols > .chem-sar-sum-making {
+    contain: size;
+    min-height: 320px;
+  }
+
+  .chem-sar-sum-making > .chem-sar-sum-making-block {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+}
+
+/* Badges move under a long name, and a description takes a second line, rather than both clipping. */
+.chem-sar-sum-pane .chem-sar-card-body > .chem-sar-card-title {
+  flex-wrap: wrap;
+}
+
+.chem-sar-sum-pane .chem-sar-card-body > .chem-sar-card-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+/* One bitmap, shown smaller as the pane narrows, so structures shrink rather than squash. */
+.chem-sar-sum-mol {
+  flex: 0 0 auto;
+  width: 136px;
+  height: 76px;
+  box-sizing: border-box;
+}
+
+@container (max-width: 1100px) {
+  .chem-sar-sum-mol {
+    width: 100px;
+    height: 56px;
+  }
+
+  div.chem-sar-sum-mol {
+    padding: 8px 2px;
+  }
+}
+
+@container (max-width: 700px) {
+  .chem-sar-sum-mol {
+    width: 72px;
+    height: 40px;
+  }
+
+  div.chem-sar-sum-mol {
+    padding: 2px;
+  }
+
+  .chem-sar-sum-comp-row {
+    flex-wrap: wrap;
+    padding-top: 6px;
+  }
+
+  .chem-sar-sum-comp-row > .chem-sar-sum-col {
+    flex-basis: 100%;
+  }
+
+  .chem-sar-sum-half {
+    flex-basis: 260px;
+  }
+
+  .chem-sar-sum-comp-row:has(> .chem-sar-sum-half-head),
+  .chem-sar-sum-coverage > :first-child {
+    display: none;
+  }
+}
+
+/* Too narrow for text beside the structure: the text takes a line of its own under it. */
+@container (max-width: 420px) {
+  .chem-sar-sum-pane .chem-sar-card {
+    flex-wrap: wrap;
+  }
+
+  .chem-sar-sum-pane .chem-sar-card-body {
+    order: 1;
+    flex-basis: 100%;
+  }
+
+  .chem-sar-sum-pane .chem-sar-sum-valuebox {
+    margin-left: auto;
+  }
 }
 
 .chem-sar-sum-overview {
@@ -760,7 +861,7 @@ i.chem-sar-card-twisty:hover {
 }
 
 .chem-sar-sum-answer {
-  flex: 1 1 200px;
+  flex: 1 1 260px;
   gap: 2px;
   padding: 6px 8px;
   border: 1px solid var(--grey-2);
@@ -810,6 +911,10 @@ i.chem-sar-card-twisty:hover {
   padding: 4px 6px;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.chem-sar-sum-figure {
+  white-space: nowrap;
 }
 
 .chem-sar-sum-half-head {

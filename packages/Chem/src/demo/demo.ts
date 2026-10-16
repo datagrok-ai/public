@@ -235,10 +235,9 @@ function showEvidence(trigger: Element | null): void {
     trigger.click();
 }
 
-/** Open the analogs worth making and their first row, then bring them into view. */
+/** Open the first analog worth making, then bring the list into view. */
 function openMaking(): void {
   const block = document.querySelector('.chem-sar-sum-making-block');
-  openIfClosed(block?.querySelector(':scope > .chem-sar-sum-fold') ?? null);
   openIfClosed(block?.querySelector('.chem-sar-card') ?? null);
   block?.scrollIntoView({block: 'start'});
 }

@@ -75,7 +75,7 @@ export class SummaryStartHere {
     }
     if (r2 === null || r2 < TRUST_R2)
       return null;
-    return {label: 'support thin', tip: 'The fit holds, but every prediction rests on fewer than ' +
+    return {label: 'thin support', tip: 'The fit holds, but every prediction rests on fewer than ' +
       MIN_SUPPORT + ' measured compounds on an axis.'};
   }
 

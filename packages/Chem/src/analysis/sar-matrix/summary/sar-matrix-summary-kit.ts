@@ -6,6 +6,17 @@ import {chipBadge, CORE_BG_ARGB, isStructure, MatrixCellRef, paintMoleculeOnColo
 
 export class SummaryKit {
   pendingPaints: (() => void)[] = [];
+  private readonly paints: WeakMap<Element, () => void> = new WeakMap();
+  /** Draws a structure once it scrolls into view, so a long list costs only the rows on screen. */
+  private readonly painter = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting)
+        continue;
+      this.painter.unobserve(entry.target);
+      this.paints.get(entry.target)?.();
+      this.paints.delete(entry.target);
+    }
+  });
   /** Tier the summary is read at; null for all. */
   protected tierFilter: number | null = null;
 
@@ -81,24 +92,31 @@ export class SummaryKit {
     }];
   }
 
-  /** Canvas now, RDKit on the next tick, so a tab switch is not held up by drawing. */
+  /** Drawn at one size and shown at the size the stylesheet gives the Summary's width. */
   depiction(smiles: string | null): HTMLElement {
-    const canvas = ui.canvas(SUM_MOL_W, SUM_MOL_H);
-    canvas.classList.add('chem-sar-card-core');
+    const canvas = ui.canvas();
+    canvas.width = SUM_MOL_W;
+    canvas.height = SUM_MOL_H;
+    canvas.classList.add('chem-sar-card-core', 'chem-sar-sum-mol');
     if (smiles) {
-      this.pendingPaints.push(() => {
+      this.paints.set(canvas, () => {
         if (isStructure(smiles)) {
           paintMoleculeOnColor(canvas, smiles, SUM_MOL_W, SUM_MOL_H, CORE_BG_ARGB);
-          return;
-        }
-        // A component given by name, such as "VHL", has nothing to draw and is written out instead.
-        const name = ui.divText(smiles, 'chem-sar-cp-frag-name');
-        name.style.width = `${SUM_MOL_W}px`;
-        name.style.height = `${SUM_MOL_H}px`;
-        canvas.replaceWith(name);
+          // The renderer pins the drawn size inline, which would override the stylesheet's.
+          canvas.style.removeProperty('width');
+          canvas.style.removeProperty('height');
+        } else // A component given by name, such as "VHL", has nothing to draw and is written out instead.
+          canvas.replaceWith(ui.divText(smiles, 'chem-sar-cp-frag-name chem-sar-sum-mol'));
       });
+      // Observed once attached: every caller puts the canvas in the document in the same task.
+      queueMicrotask(() => this.painter.observe(canvas));
     }
     return canvas;
+  }
+
+  /** Forgets the structures of a page about to be replaced. */
+  stopPainting(): void {
+    this.painter.disconnect();
   }
 
   flushPaints(): void {
@@ -116,12 +134,12 @@ export class SummaryKit {
   trustBadges(matrix: SarMatrix): HTMLElement[] {
     const conf = matrix.confidence;
     if (!conf) {
-      return [this.badge('fit unchecked', 'Too few measured cells to cross-validate this series\' fit, or all ' +
+      return [this.badge('unchecked fit', 'Too few measured cells to cross-validate this series\' fit, or all ' +
         'values identical: its predictions are unverified, not wrong.')];
     }
     if (conf.r2 >= TRUST_R2)
       return [];
-    return [this.badge('fit weak', `The additive fit does not predict held-out compounds well (R² ` +
+    return [this.badge('weak fit', `The additive fit does not predict held-out compounds well (R² ` +
       `${conf.r2.toFixed(2)}, below ${TRUST_R2}; ± ${this.host.formatActivity(conf.rmse)} over ${conf.n} of ` +
       `${conf.total} cells): treat this series' predictions with caution.`, true)];
   }

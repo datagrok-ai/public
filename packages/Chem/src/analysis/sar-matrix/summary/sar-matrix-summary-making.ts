@@ -2,39 +2,26 @@ import * as ui from 'datagrok-api/ui';
 
 import {BEST_FIT_MIN_N, MIN_LISTED_SUPPORT, MIN_SUPPORT, SummaryData, SummaryRow} from './sar-matrix-summary-data';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
-import {count} from '../sar-matrix-ui-common';
-
-/** Analog rows shown before the rest fold away; the whole ranked list goes to the Make list, which sorts it. */
-const MAKING_ROWS = 8;
+import {count, tipText} from '../sar-matrix-ui-common';
 
 type Best = {value: number} | null;
 
 export class SummaryMaking {
   constructor(private readonly kit: SummaryPanel) {}
 
+  /** Compounds to test first when there are any, then those worth making. */
   build(data: SummaryData): HTMLElement {
-    return ui.divV([this.buildShelf(data), this.buildAnalogs(data)], 'chem-sar-sum-making');
-  }
-
-  private buildShelf(data: SummaryData): HTMLElement {
     const shelf = data.test.take();
-    return this.section(`Already in the table, never assayed · ${count(shelf.length)}`,
-      'Compounds in your table with no activity value, ranked by their predicted value. Testing them needs ' +
-      'no synthesis. Click to open.', () => this.shelfBody(data, shelf));
+    return ui.divV([...shelf.length === 0 ? [] : [this.buildShelf(data, shelf)], this.buildAnalogs(data)],
+      'chem-sar-sum-making');
   }
 
-  private shelfBody(data: SummaryData, shelf: SummaryRow[]): HTMLElement[] {
+  private buildShelf(data: SummaryData, shelf: SummaryRow[]): HTMLElement {
     const host = this.kit.host;
     const body: HTMLElement[] = [
       this.kit.prose('Rows of your table with no activity value, ranked by prediction. No synthesis needed.',
         `No fit gate, only ≥ ${MIN_LISTED_SUPPORT} measured compounds on both axes: an assay is cheap.`),
     ];
-    if (shelf.length === 0) {
-      body.push(...this.kit.reason(host.predictUnmeasured ?
-        `No untested compound rests on ${MIN_LISTED_SUPPORT} measured compounds on both axes.` :
-        '"Predict untested compounds" is off, so untested compounds carry no predicted value to rank by.'));
-      return body;
-    }
     const bests = this.seriesBests(data);
     for (const row of shelf) {
       const cell = row.matrix.cells[row.ri][row.ci];
@@ -44,7 +31,8 @@ export class SummaryMaking {
     body.push(ui.divH([ui.button(shelf.length === 1 ? 'Queue this compound for testing' :
       `Queue these ${shelf.length} for testing`, () => host.addCellsToMakeList(shelf, 'Nothing to add.'))],
     'chem-sar-sum-chips'));
-    return body;
+    return this.section(`Already in the table, never assayed · ${count(shelf.length)}`, 'Compounds in your ' +
+      'table with no activity value, ranked by their predicted value. Testing them needs no synthesis.', body);
   }
 
   /** Ranked on gain, not on the predicted value, which only ranks series by what was already made. */
@@ -58,9 +46,9 @@ export class SummaryMaking {
     const title = rows.length === 0 ? 'Worth making · none' :
       `Worth making · ${count(rows.length)} analog${rows.length === 1 ? '' : 's'}`;
     const tip = 'Predicted analogs nobody has made, ranked by how much they would beat the best compound of ' +
-      'their series. Click to open.';
-    return this.section(title, tip,
-      () => this.analogBody(data, rows, new Set(thin.map((row) => row.key)), fallback), 'chem-sar-sum-making-block');
+      'their series.';
+    return this.section(title, tip, this.analogBody(data, rows, new Set(thin.map((row) => row.key)), fallback),
+      'chem-sar-sum-making-block');
   }
 
   private analogBody(data: SummaryData, rows: SummaryRow[], thinKeys: Set<string>, fallback: boolean):
@@ -92,9 +80,7 @@ export class SummaryMaking {
         thinKeys.has(row.key) ? [this.kit.badge('thin', `The series has fewer than ${BEST_FIT_MIN_N} checkable ` +
           'cells, so this is listed, not ranked.', true)] : [], '');
     });
-    body.push(...draw(rows.slice(0, MAKING_ROWS)));
-    if (rows.length > MAKING_ROWS)
-      body.push(...this.kit.lazyFold(`${count(rows.length - MAKING_ROWS)} more`, () => draw(rows.slice(MAKING_ROWS))));
+    body.push(...draw(rows));
     body.push(ui.divH([ui.button(rows.length === 1 ? 'Add it to Make list' : `Add all ${rows.length} to Make list`,
       () => host.addCellsToMakeList(rows, 'Nothing to add.'))], 'chem-sar-sum-chips'));
     if (data.analogOverflow > 0) {
@@ -104,10 +90,8 @@ export class SummaryMaking {
     return body;
   }
 
-  private section(title: string, tip: string, fill: () => HTMLElement[], cls = ''): HTMLElement {
-    const [head, body] = this.kit.lazyFold(title, fill);
-    ui.tooltip.bind(head, tip);
-    return ui.divV([head, body], `chem-sar-sum-card ${cls}`.trim());
+  private section(title: string, tip: string, body: HTMLElement[], cls = ''): HTMLElement {
+    return ui.divV([tipText(title, 'chem-sar-cp-section-title', tip), ...body], `chem-sar-sum-card ${cls}`.trim());
   }
 
   private seriesBests(data: SummaryData): Map<string, Best> {

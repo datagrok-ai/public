@@ -14,16 +14,16 @@ export class SummaryOverview {
     this.startHere = new SummaryStartHere(kit);
   }
 
-  build(data: SummaryData): HTMLElement {
-    const keySeries = tipText('Key series', 'chem-sar-cp-section-title', `Series fits: ${count(data.fitHolds)} ` +
+  head(data: SummaryData): HTMLElement {
+    return this.kit.scaleRow(data, this.coverage(data));
+  }
+
+  keySeries(data: SummaryData): HTMLElement {
+    const title = tipText('Key series', 'chem-sar-cp-section-title', `Series fits: ${count(data.fitHolds)} ` +
       `hold, ${count(data.unchecked)} unchecked, ${count(data.lowR2)} weak. Unchecked means unverified, ` +
       'not wrong.');
-    return ui.divV([
-      this.kit.scaleRow(data, this.coverage(data)),
-      ui.divH([keySeries, this.kit.levelInput()], 'chem-sar-sum-title-row'),
-      ui.divV(this.startHere.build(data), 'chem-sar-sum-list'),
-      this.buildAnswers(data),
-    ], 'chem-sar-sum-overview');
+    return ui.divV([ui.divH([title, this.kit.levelInput()], 'chem-sar-sum-title-row'),
+      ui.divV(this.startHere.build(data), 'chem-sar-sum-list')], 'chem-sar-sum-card chem-sar-sum-overview');
   }
 
   private coverage(data: SummaryData): HTMLElement {
@@ -49,7 +49,7 @@ export class SummaryOverview {
   }
 
   /** Each tile carries its own limit, or it reads as a ranking of the chemistry, not of what was made. */
-  private buildAnswers(data: SummaryData): HTMLElement {
+  answers(data: SummaryData): HTMLElement {
     const findings = this.buildFindings(data);
     if (findings !== null)
       return findings;
@@ -157,7 +157,8 @@ export class SummaryOverview {
   }
 
   private figure(value: string, caption: string): HTMLElement {
-    return ui.divV([ui.divText(value, 'chem-sar-card-title'), ui.divText(caption, 'chem-sar-cp-hint')]);
+    return ui.divV([ui.divText(value, 'chem-sar-card-title'), ui.divText(caption, 'chem-sar-cp-hint')],
+      'chem-sar-sum-figure');
   }
 
   private answerTile(title: string, text: Answer, detail: ReturnType<SummaryOverview['detail']>,
