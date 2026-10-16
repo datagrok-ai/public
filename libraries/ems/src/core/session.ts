@@ -117,11 +117,13 @@ export class SharedSession implements DomainSession {
       try {
         if (!await emsBackends.domain!.saveAll(batch.map((s) => s.edit.peek()!))) {
           SharedSession._refused(batch);
+          this._reloadAccess();
           return false;
         }
       } catch (e) {
         for (const source of batch)
           source.fail(e);
+        this._reloadAccess();
         return false;
       } finally {
         for (const sub of heard)
@@ -175,6 +177,12 @@ export class SharedSession implements DomainSession {
   /** A backend that refused without throwing (the platform editor reports the server's error
    * itself and answers false): the summary still has to say the changes are stuck, and the
    * column errors the editor mapped onto the cells name why. */
+  /** Every source of the session, not just the batch: New on the list follows the list source. */
+  private _reloadAccess(): void {
+    for (const source of this._sources.peek())
+      void source.reloadAccess();
+  }
+
   private static _refused(batch: readonly DomainSource[]): void {
     // a refusal naming a column reaches that cell and is the source's validity; one about a whole
     // row (a delete a child's reference vetoes) reaches nothing, and the writer kept the sentence

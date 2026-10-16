@@ -477,6 +477,20 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     }
   }
 
+  /** Re-reads the table-level access after a refused save: a 403 says the one the affordances
+   * were built from is stale (the platform answers from its cache otherwise). A failed read keeps it. */
+  async reloadAccess(): Promise<void> {
+    if (this.scope.isDisposed || this._ready === undefined)
+      return;
+    try {
+      const data = await (await this._ready).access();
+      if (!this.scope.isDisposed)
+        this._access.value = Access.from(data);
+    } catch {
+      // the access the source has stays until the next refresh
+    }
+  }
+
   /** Through the session — the one Save every button and shortcut runs; the trash source's own
    * refusal lives in {@link check}, which the session runs for every source of the batch. */
   save(): Promise<boolean> {

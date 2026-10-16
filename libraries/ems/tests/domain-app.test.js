@@ -445,6 +445,24 @@ scoped('DomainTable.app(): the shell rewrites the view path only AFTER onViewAdd
   }
 });
 
+scoped('a refused save re-reads the access, so New follows a grant revoked meanwhile (EMS-032)', async () => {
+  const {app: a} = await app();
+  const add = a.ribbon().main[0];
+  assert.equal(add.root.hidden, false);
+  const memory = emsBackends.domain;
+  memory.tableSync('grit.issue').access = async () => ({can: {view: true, insert: false, edit: false,
+    delete: false, share: false}, fields: {title: 'readonly'}});
+  memory.transaction = async () => {
+    throw Object.assign(new Error('Edit is required on "grit.issue"'), {code: 'forbidden'});
+  };
+  a.listSource.rows.byKey('i1').title = 'Revoked meanwhile';
+  assert.equal(await a.session.save(), false);
+  await flush();
+  assert.equal(a.listSource.access.value.can('insert'), false);
+  assert.equal(add.root.hidden, true, 'New is gated by the access the server answers now');
+  a.dispose();
+});
+
 scoped('the ambient session is the app\'s; New is hidden without insert', async () => {
   emsBackends.domain = backend({access: {can: {view: true, insert: false, edit: true, delete: true, share: true},
     fields: {title: 'editable'}}});
