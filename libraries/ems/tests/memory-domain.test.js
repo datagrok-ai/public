@@ -223,7 +223,8 @@ test('transaction: any table in one batch, all or nothing across tables; deletes
   assert.equal(await issue.count(), 3);
 
   await assert.rejects(project.transaction([{op: 'delete', table: 'project', id: 'p1'}]),
-    (e) => e.code === 'validation' && /referenced by issue.project_id/.test(e.message), 'a referenced row stays');
+    (e) => e.code === 'restrict' && /Live rows in "issue" reference this row via "project_id"/.test(e.message),
+    'a referenced row stays');
   const results = await project.transaction([
     {op: 'delete', table: 'project', id: 'p2'},
     {op: 'delete', table: 'grit.issue', id: 'i3'},
@@ -231,6 +232,49 @@ test('transaction: any table in one batch, all or nothing across tables; deletes
   assert.deepEqual(results, [{id: 'p2'}, {id: 'i3'}], 'parent first as requested, child first as run; request order');
   assert.equal(await project.count(), 1);
   assert.equal(issue.history.at(-1).tx_id, project.history.at(-1).tx_id, 'one transaction');
+});
+
+/** `item` with one child table per referential action, and a self-cascading `folder` tree. */
+const shop = () => new MemoryDomainBackend({name: 'shop', tables: {
+  item: {columns: {name: {type: 'string'}}},
+  note: {columns: {item_id: {type: 'ref', ref: 'item', onDelete: 'cascade'}}},
+  lock: {columns: {item_id: {type: 'ref', ref: 'item', onDelete: 'restrict'}}},
+  tag: {columns: {item_id: {type: 'ref', ref: 'item', onDelete: 'setnull'}}},
+  folder: {hierarchy: true, columns: {parent_id: {type: 'ref', ref: 'folder', onDelete: 'cascade'}}},
+}}, {rows: {item: [{id: 'i1'}, {id: 'i2'}, {id: 'i3'}], note: [{id: 'n1', item_id: 'i1'}],
+  lock: [{id: 'k2', item_id: 'i2'}, {id: 'k3', item_id: 'i3'}], tag: [{id: 't1', item_id: 'i1'}],
+  folder: [{id: 'f1'}, {id: 'f2', parent_id: 'f1'}, {id: 'f3', parent_id: 'f2'}]}});
+
+test('delete: onDelete cascade soft-deletes the live children, setnull clears the reference, as the platform', async () => {
+  const be = shop();
+  await be.transaction([{op: 'delete', table: 'item', id: 'i1'}]);
+  const [note] = be.tableSync('shop.note').rows;
+  assert.equal(note.is_deleted, true, 'the cascaded child is in the trash');
+  assert.equal(note.version, 2);
+  const [tag] = be.tableSync('shop.tag').rows;
+  assert.equal(tag.item_id, null, 'setnull clears the reference and keeps the row');
+  assert.notEqual(tag.is_deleted, true);
+  assert.equal(tag.version, 2);
+  const tx = be.tableSync('shop.item').history.at(-1).tx_id;
+  assert.deepEqual([be.tableSync('shop.note').history.at(-1), be.tableSync('shop.tag').history.at(-1)]
+    .map((line) => [line.op, line.tx_id]), [['delete', tx], ['update', tx]], 'audited in the same transaction');
+
+  await be.transaction([{op: 'delete', table: 'folder', id: 'f1'}]);
+  assert.deepEqual(be.tableSync('shop.folder').rows.map((r) => r.is_deleted), [true, true, true],
+    'a cascade recurses down a self-referencing tree');
+});
+
+test('delete: onDelete restrict (the default) is refused with the platform\'s restrict, and refuses the whole batch', async () => {
+  const be = shop();
+  await assert.rejects(be.transaction([{op: 'delete', table: 'item', id: 'i2'}]),
+    (e) => e.code === 'restrict' && /Live rows in "lock" reference this row via "item_id"/.test(e.message));
+  await assert.rejects(be.transaction([
+    {op: 'delete', table: 'item', id: 'i1'}, {op: 'delete', table: 'item', id: 'i3'}]),
+  (e) => e.code === 'restrict');
+  assert.equal(be.tableSync('shop.note').rows[0].is_deleted, undefined, 'the cascade of the refused batch rolled back');
+  assert.equal(be.tableSync('shop.tag').rows[0].item_id, 'i1');
+  await be.transaction([{op: 'delete', table: 'lock', id: 'k2'}, {op: 'delete', table: 'item', id: 'i2'}]);
+  assert.equal(be.tableSync('shop.item').rows[1].is_deleted, true, 'a child already in the trash holds nothing back');
 });
 
 test('search: case-insensitive over the searchable columns, the name column by default; count agrees', async () => {

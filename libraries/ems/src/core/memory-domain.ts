@@ -32,6 +32,8 @@ export interface MemoryColumnJson {
   filter?: string;
   semType?: string;
   default?: unknown;
+  /** A ref column's action when its target row is deleted (default `restrict`). */
+  onDelete?: 'restrict' | 'cascade' | 'setnull';
 }
 
 export interface MemoryTableJson {
@@ -233,6 +235,41 @@ export class MemoryDomainBackend implements DomainBackend {
     const audit: [MemoryTable, AuditEntryLike][] = [];
     const tx = uuid4();
     const ts = new Date().toISOString();
+    // the server's referential actions run before the row goes; a child already in the trash holds nothing back
+    const remove = (table: MemoryTable, id: string, index: number, seen: Set<string>): void => {
+      if (seen.has(`${table.address}:${id}`))
+        return;
+      seen.add(`${table.address}:${id}`);
+      for (const child of this._tables.values()) {
+        for (const [column, target] of Object.entries(child.refs)) {
+          const live = target === table.address ?
+            rowsOf(child).filter((row) => row[column] === id && row[IS_DELETED] !== true) : [];
+          if (live.length > 0 && child.onDelete[column] === 'restrict') {
+            throw new DomainBackendError('restrict',
+              `Operation ${index}: Live rows in "${child.name}" reference this row via "${column}"`);
+          }
+          for (const row of live) {
+            if (child.onDelete[column] === 'cascade')
+              remove(child, row.id as string, index, seen);
+            else {
+              const rows = rowsOf(child);
+              const at = rows.findIndex((r) => r.id === row.id);
+              const next = child.stamp({...rows[at], [column]: null}, (rows[at].version as number) + 1);
+              audit.push([child, {id: row.id as string, tx_id: tx, op: 'update', actor_id: null, ts,
+                before: {...rows[at]}, after: {...next}}]);
+              rows[at] = next;
+              written.add(child);
+            }
+          }
+        }
+      }
+      const rows = rowsOf(table);
+      const at = rows.findIndex((row) => row.id === id);
+      // soft delete: the row stays in the store and leaves every query that excludes deleted
+      audit.push([table, {id, tx_id: tx, op: 'delete', actor_id: null, ts, before: {...rows[at]}, after: null}]);
+      rows[at] = table.stamp({...rows[at], [IS_DELETED]: true}, (rows[at].version as number) + 1);
+      written.add(table);
+    };
     for (const index of order) {
       const op = ops[index];
       const table = tables[index];
@@ -254,18 +291,7 @@ export class MemoryDomainBackend implements DomainBackend {
       } else if (at < 0)
         throw new DomainBackendError('not-found', `Operation ${index}: no row "${id}"`);
       else if (op.op === 'delete') {
-        // the server's FK veto the child-first ordering exists to beat; a child already in the
-        // trash holds nothing back
-        for (const child of this._tables.values()) {
-          for (const [column, target] of Object.entries(child.refs)) {
-            if (target === table.address &&
-                rowsOf(child).some((row) => row[column] === id && row[IS_DELETED] !== true))
-              throw new DomainBackendError('validation', `Operation ${index}: row "${id}" is referenced by ${child.name}.${column}`);
-          }
-        }
-        // soft delete: the row stays in the store and leaves every query that excludes deleted
-        entry(op.op, id!, {...rows[at]}, null);
-        rows[at] = table.stamp({...rows[at], [IS_DELETED]: true}, (rows[at].version as number) + 1);
+        remove(table, id!, index, new Set());
         results[index] = {id};
       } else if (op.op === 'restore') {
         if (rows[at][IS_DELETED] !== true)
@@ -355,6 +381,8 @@ export class MemoryTable implements DomainTableLike {
   readonly rows: Row[];
   /** Every ref column → its target address. */
   readonly refs: Record<string, string>;
+  /** Every ref column → its `onDelete` action. */
+  readonly onDelete: Record<string, 'restrict' | 'cascade' | 'setnull'>;
   /** What every transaction that touched this table recorded, oldest first. */
   readonly history: AuditEntryLike[] = [];
   /** One bump per transaction that wrote this table's rows — the memory twin of
@@ -375,8 +403,9 @@ export class MemoryTable implements DomainTableLike {
         {get: (row) => row[column], semType: column === 'author_id' ? 'User' : undefined})),
       ...columns.map(([column, c]) => MemoryTable._column(schema, column, c)),
     ];
-    this.refs = Object.fromEntries(columns.filter(([, c]) => c.type === 'ref' && c.ref)
-      .map(([column, c]) => [column, MemoryTable._address(schema, c.ref!)]));
+    const refColumns = columns.filter(([, c]) => c.type === 'ref' && c.ref);
+    this.refs = Object.fromEntries(refColumns.map(([column, c]) => [column, MemoryTable._address(schema, c.ref!)]));
+    this.onDelete = Object.fromEntries(refColumns.map(([column, c]) => [column, c.onDelete ?? 'restrict']));
     const named = columns.find(([, c]) => c.isName)?.[0] ??
       columns.find(([n, c]) => n === 'name' && c.type === 'string')?.[0];
     const singular = json.singularName ?? json.friendlyName?.replace(/s$/, '') ?? name.replace(/_/g, ' ');

@@ -322,7 +322,7 @@ scoped('finding 6 (recorded): child-first request order lands too; an unbatched 
   assert.deepEqual(ok.map((r) => r.id), ['l2', 'l1']);
   const table = await rooms().table('stock.location');
   await assert.rejects(() => table.transaction([{op: 'delete', table: 'stock.location', id: 'l1'}]),
-    /Operation 0: row "l1" is referenced by location.parent_id/,
+    {code: 'restrict', message: 'Operation 0: Live rows in "location" reference this row via "parent_id"'},
     'the FK veto stands for a child the batch does not delete');
 });
 
