@@ -96,7 +96,7 @@ import {
 import {openAskSmeDialog, openDiscussDialog} from './discussion-dialog';
 import {area, check, choice, choiceValue, composer, labelled, linkTo, table, text} from './u2-controls';
 import {programAddress} from '../model/pinning';
-import {showProgramInPanel} from './program-panel';
+import {refreshProgramPanels, showProgramInPanel} from './program-panel';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -506,6 +506,9 @@ export class PortalView {
     this.selected = id;
     this.viewedStage = viewedStage;
     const load = ++this.pageLoads;
+    // read again after a change: the program's panel says what the page says
+    if (!opened)
+      void refreshProgramPanels(id).catch(this.failed);
     const program = this.programs.find((x) => x.id === id);
     this.markSelected(program ?? null);
     if (program) {

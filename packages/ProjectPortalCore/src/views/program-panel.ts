@@ -34,18 +34,41 @@ const failed = (e: any): void => {
  * panel (and the platform keeps as the current object); the panel itself where the platform has no
  * record for it. */
 export async function showProgramInPanel(programId: string): Promise<void> {
+  const shown = ++panelsShown;
+  // another program's panel, still on show while the record is read, would act on that program
+  for (const host of Array.from(document.querySelectorAll<HTMLElement>('[data-u2-name="program-panel"]'))) {
+    if (host.dataset.programId !== programId) {
+      fills.set(host, (fills.get(host) ?? 0) + 1);
+      host.replaceChildren(span('Reading the program…', 'pp-muted'));
+    }
+  }
   const record = await grok.dapi.entities.find(programId).catch(() => null);
+  // another program was put in the panel meanwhile
+  if (shown !== panelsShown)
+    return;
   grok.shell.windows.showContextPanel = true;
   grok.shell.o = record ?? programPanel(programId);
 }
+
+/** The latest program put in the panel: an earlier one read late must not take its place. */
+let panelsShown = 0;
 
 /** The panel of [programId]: drawn at once, filled as its facts are read. */
 export function programPanel(programId: string): HTMLElement {
   installStyles();
   const host = named(divV([span('Reading the program…', 'pp-muted')], 'pp-program-panel'), 'program-panel');
+  host.dataset.programId = programId;
   void fill(host, programId).catch((e) => host.replaceChildren(named(span(`The program could not be read: ${e?.message ?? e}`,
     'pp-reason'), 'program-panel-error')));
   return host;
+}
+
+/** Draws [programId]'s panels on show again, after a change made here or on its page: the platform
+ * may have drawn the panel anew since, so the one a change was made from may be gone. */
+export async function refreshProgramPanels(programId: string): Promise<void> {
+  const hosts = Array.from(document.querySelectorAll<HTMLElement>('[data-u2-name="program-panel"]'))
+    .filter((h) => h.dataset.programId === programId);
+  await Promise.all(hosts.map((h) => fill(h, programId)));
 }
 
 /** The latest fill of each panel: an earlier one still reading when a change refills the panel
@@ -77,8 +100,7 @@ async function fill(host: HTMLElement, programId: string): Promise<void> {
   // drawn again after a change, and the page too when it shows this program
   const changed = async () => {
     await openPortal()?.portal.refreshProgram(programId);
-    if (host.isConnected)
-      await fill(host, programId);
+    await refreshProgramPanels(programId);
   };
   const address = {portfolioCode: portfolio.code, programId, address: programAddress(portfolio.code, program.code)};
 
