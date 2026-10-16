@@ -477,8 +477,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     }
   }
 
-  /** Re-reads the table-level access after a refused save: a 403 says the one the affordances
-   * were built from is stale (the platform answers from its cache otherwise). A failed read keeps it. */
+  /** Re-reads the table-level access — the session calls it after a 403, which says the one the
+   * affordances were built from is stale. A failed read keeps the access the source has. */
   async reloadAccess(): Promise<void> {
     if (this.scope.isDisposed || this._ready === undefined)
       return;
@@ -487,7 +487,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (!this.scope.isDisposed)
         this._access.value = Access.from(data);
     } catch {
-      // the access the source has stays until the next refresh
     }
   }
 

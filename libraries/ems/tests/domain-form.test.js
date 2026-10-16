@@ -278,6 +278,25 @@ scoped('a refused save is one balloon; a failed load is the hint\'s to show, not
   broken.dispose();
 });
 
+scoped('a refusal that is not a 403 leaves the access as it was and does not rebuild the form (EMS-032)', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = domains.form(src);
+  await flush();
+  const access = src.access.value;
+  const input = form.input('title');
+  emsBackends.domain.transaction = async () => {
+    throw Object.assign(new Error('Title is too short'), {code: 'validation'});
+  };
+  src.rows.byKey('i1').title = 'Ab';
+  assert.equal(await src.save(), false);
+  await flush();
+  assert.equal(src.access.value, access, 'no re-read: the access the form was built from stands');
+  assert.equal(form.input('title'), input, 'the form under the cursor is not rebuilt');
+  form.dispose();
+  src.dispose();
+});
+
 scoped('a 403 balloons; over the memory backend there is no platform access cache to drop', async () => {
   const {src} = await issues();
   emsBackends.domain.transaction = async () => {
