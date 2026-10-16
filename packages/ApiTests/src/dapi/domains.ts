@@ -166,6 +166,23 @@ category('Dapi: domains', () => {
     }
   });
 
+  test('save: a row read with access, captions, deleted scope and a master expand saves back', async () => {
+    const [ins] = await items().insert({sku: sku(), name: 'Save parent'});
+    const events = grok.dapi.domains.table('apitests.item_event');
+    try {
+      const [ev] = await events.insert({item_id: ins.id, kind: 'saved', amount: 1});
+      const [row] = await events.query({filter: `id = "${ev.id}"`, withAccess: true,
+        captions: ['item_id'], deleted: 'include', expand: ['item_id']});
+      for (const k of ['~can_edit', '~caption_item_id', '~is_deleted', 'item_id.name'])
+        expect(k in row, true, `the read must carry ${k}: ${JSON.stringify(row)}`);
+      const saved = await events.save({...row, amount: 7});
+      expect(saved.version, row.version + 1);
+      expect((await events.get(ev.id)).amount, 7);
+    } finally {
+      await items().delete(ins.id); // cascades item_event
+    }
+  });
+
   test('captions: the queryDf column is typed and export-tagged, and toCsv drops it', async () => {
     const key = sku();
     const [ins] = await items().insert({sku: key, name: 'Caption frame parent'});

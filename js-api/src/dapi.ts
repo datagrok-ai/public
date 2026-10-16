@@ -2123,8 +2123,11 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   }
 
   /** Insert-or-update by row identity: no id → insert; id → version-checked partial update
-   * (uses row.version when present). System columns other than the addressing id/version are
-   * stripped from the payload, so spreading a read row is safe. Resolves to the row merged
+   * (uses row.version when present). System columns other than the addressing id/version,
+   * the `'~'` service columns and master-expand fields (`'<fk_column>.<name>'`) are stripped
+   * from the payload, so spreading a row read with `withAccess`, `captions`, `deleted` or a
+   * master expand is safe; the arrays a `'details:'` or relation expand adds are not stripped —
+   * leave them out of the spread (a link set replaces the row's links). Resolves to the row merged
    * with the new id/version — NB: re-saving an OLD object after a successful save carries its
    * stale version and rejects with a {@link DomainVersionConflictError}; keep the resolved
    * row. An id-less save whose business key matches an existing row is a TRUE
@@ -2138,7 +2141,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   async save(row: Partial<TRow> & {id?: string; version?: number}): Promise<TRow> {
     const values: any = {};
     for (const k of Object.keys(row))
-      if (!(DOMAIN_SYSTEM_COLUMNS as readonly string[]).includes(k))
+      if (!(DOMAIN_SYSTEM_COLUMNS as readonly string[]).includes(k) && !k.startsWith('~') && !k.includes('.'))
         values[k] = (row as any)[k];
     if (row.id == null) {
       const [res] = await this.insert(values);
