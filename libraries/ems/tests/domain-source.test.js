@@ -369,7 +369,8 @@ source('spec: the tray tag round-trips through dump, a bound query narrows, a bo
 
     const input = instance.root.querySelector('input');
     assert.equal(input.value, '', 'no current row: the field is empty, not "undefined"');
-    await fn(src, 'newRow').apply({values: {project_id: 'p1', title: 'From the form'}});
+    // `done: false`: the re-read after the save runs the bound query, and a null bool is not false
+    await fn(src, 'newRow').apply({values: {project_id: 'p1', title: 'From the form', done: false}});
     assert.equal(input.value, 'From the form');
     assert.equal(src.isDirty.value, false, 'a spec-driven New is a pristine draft');
     input.value = 'Edited in the form';

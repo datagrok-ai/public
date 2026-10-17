@@ -6,7 +6,7 @@
    touches or on none. */
 import {uuid4} from 'datagrok-api/u2core';
 import {Filters, notify, Access, MemoryFrame, Rows} from '@datagrok-libraries/u2';
-import type {FilterCondition, FilterGroup, IProperty, AccessData, FieldAccess,
+import type {FilterCondition, FilterGroup, FilterNode, IProperty, AccessData, FieldAccess,
   MemoryColumn} from '@datagrok-libraries/u2';
 import {DomainBackendError, isUnscoped} from './domain-backend.js';
 import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike,
@@ -451,8 +451,10 @@ export class MemoryTable implements DomainTableLike {
   async query(spec: DomainQueryLike = {}): Promise<Row[]> {
     const captions = this._captionTargets(spec.captions);
     let rows = await this._where(spec);
-    if (spec.sort)
+    if (spec.sort) {
+      this._checkSort(spec.sort);
       rows = MemoryTable._sorted(rows, spec.sort);
+    }
     const offset = spec.offset ?? 0;
     rows = rows.slice(offset, spec.limit === undefined ? undefined : offset + spec.limit);
     return rows.map((row) => {
@@ -778,11 +780,8 @@ export class MemoryTable implements DomainTableLike {
   private async _where(scope: DomainReadScope): Promise<Row[]> {
     const {filter, search, deleted = 'exclude'} = scope;
     let rows = this.rows;
-    if (filter !== undefined && filter !== '') {
-      const mask = await Filters.toMask(Filters.recordsFrame(this.rows, this.properties),
-        this._resolved(MemoryTable._tree(filter)));
-      rows = rows.filter((_, i) => mask.get(i));
-    }
+    if (filter !== undefined && filter !== '')
+      rows = await this._matching(rows, MemoryTable._tree(filter));
     if (deleted !== 'include')
       rows = rows.filter((row) => (row[IS_DELETED] === true) === (deleted === 'only'));
     if (search) {
@@ -795,11 +794,70 @@ export class MemoryTable implements DomainTableLike {
     return rows;
   }
 
-  /** Every `under` term of the tree resolved over the store — the only operator with no
-   * DataFrame form the server answers, so the mask never sees one. */
-  private _resolved(root: FilterGroup): FilterGroup {
-    return {...root, nodes: root.nodes.map((node) => 'nodes' in node ? this._resolved(node) :
-      node.operator === 'under' ? this._subtree(node) : node)};
+  /** The rows of [rows] the tree selects, its terms resolved first. */
+  private async _matching(rows: Row[], root: FilterGroup): Promise<Row[]> {
+    return MemoryTable._masked(rows, this.properties, await this._resolved(root));
+  }
+
+  private static async _masked(rows: Row[], properties: IProperty[], root: FilterGroup): Promise<Row[]> {
+    const mask = await Filters.toMask(Filters.recordsFrame(rows, properties), root);
+    return rows.filter((_, i) => mask.get(i));
+  }
+
+  /** The terms the records frame cannot answer as the server does, resolved over the store into
+   * id sets: a dotted FK path, `under`, and a bool condition (the frame's bool has no null slot). */
+  private async _resolved(root: FilterGroup): Promise<FilterGroup> {
+    const nodes: FilterNode[] = [];
+    for (const node of root.nodes) {
+      if ('nodes' in node)
+        nodes.push(await this._resolved(node));
+      else if (node.property.includes('.'))
+        nodes.push(await this._path(node));
+      else if (node.operator === 'under')
+        nodes.push(this._subtree(node));
+      else
+        nodes.push(this._isBool(node) ? await this._bool(node) : node);
+    }
+    return {...root, nodes};
+  }
+
+  /** `<ref>.<rest> <op> <value>` as the server joins it: the rows whose ref names a live target
+   * row that `<rest> <op> <value>` selects — the target resolving any further hop itself. */
+  private async _path(condition: FilterCondition): Promise<FilterCondition> {
+    const dot = condition.property.indexOf('.');
+    const column = condition.property.slice(0, dot);
+    const target = this.refs[column] === undefined ? undefined : this._backend.tableSync(this.refs[column]);
+    if (target === undefined)
+      throw new DomainBackendError('filter', `Unknown or inaccessible column "${condition.property}"`);
+    const hits = await target._matching(target.rows.filter((row) => row[IS_DELETED] !== true),
+      {id: condition.id, op: 'and', nodes: [{...condition, property: condition.property.slice(dot + 1)}]});
+    return {...condition, property: column, operator: 'in', value: hits.map((row) => String(row.id))};
+  }
+
+  private _isBool(condition: FilterCondition): boolean {
+    const value = condition.value;
+    return this.properties.some((p) => p.name === condition.property && p.propertyType === 'bool') &&
+      !(typeof value === 'object' && value !== null && 'column' in value);
+  }
+
+  /** A bool condition read as SQL reads it: a null cell passes no comparison, and `is null` finds it. */
+  private async _bool(condition: FilterCondition): Promise<FilterCondition> {
+    const isNull = (row: Row): boolean => row[condition.property] === null || row[condition.property] === undefined;
+    const hits = condition.operator === 'is null' ? this.rows.filter(isNull) :
+      condition.operator === 'is not null' ? this.rows.filter((row) => !isNull(row)) :
+        await MemoryTable._masked(this.rows.filter((row) => !isNull(row)), this.properties,
+          {id: condition.id, op: 'and', nodes: [condition]});
+    return {...condition, property: 'id', operator: 'in', value: hits.map((row) => String(row.id))};
+  }
+
+  /** The server's sort refusal: every key names a readable, non-json column of the table. */
+  private _checkSort(sort: string): void {
+    for (const key of sort.split(',').map((k) => k.trim().replace(/^!/, '')).filter((k) => k !== '')) {
+      const prop = this.properties.find((p) => p.name === key);
+      if (prop === undefined || prop.propertyType === 'map' ||
+          !SYSTEM.some(([column]) => column === key) && this._access.fields[key] === undefined)
+        throw new DomainBackendError('filter', `Unknown or inaccessible sort column "${key}"`);
+    }
   }
 
   /** The hierarchy subtree term as the server compiles it: `<column> under <id>` matches the rows
