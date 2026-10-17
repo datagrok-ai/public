@@ -43,6 +43,20 @@ export const scenarios = [
     },
   },
   {
+    name: 'sort: a `prop.<name>` key names the table\'s own column of that name',
+    requires: [],
+    seed: [
+      {key: 'b', code: 'prp-b', name: 'Second'},
+      {key: 'a', code: 'prp-a', name: 'First'},
+      {key: 'c', code: 'prp-c', name: 'Third'},
+    ],
+    async run(table, ids, t) {
+      const codes = async (sort) => (await table.query({sort, limit: 100})).map((row) => row.code);
+      t.deepEqual(await codes('prop.code'), ['prp-a', 'prp-b', 'prp-c'], 'ascending, as `code`');
+      t.deepEqual(await codes('!prop.name'), ['prp-c', 'prp-b', 'prp-a'], 'descending, as `!name`');
+    },
+  },
+  {
     name: 'sort: an unknown or json column is refused, not ignored',
     requires: [],
     seed: [{key: 'a', code: 'srt-a', name: 'First'}],
