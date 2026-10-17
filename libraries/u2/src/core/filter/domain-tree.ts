@@ -71,7 +71,7 @@ function typed(v: unknown, prop: FilterProperty | null): FilterScalar {
   return v;
 }
 
-function conditionFrom(c: DomainCondition, schema?: FilterSchema): FilterCondition {
+function conditionFrom(c: DomainCondition, schema?: FilterSchema): FilterNode {
   const proto = Object.getPrototypeOf(c);
   if (proto !== Object.prototype && proto !== null)
     throw new FilterError('condition is not a plain object');
@@ -94,6 +94,9 @@ function conditionFrom(c: DomainCondition, schema?: FilterSchema): FilterConditi
     return cond(property, op === '=' ? 'in' : 'not in', value(v));
   if ((op === '=' || op === '!=') && v == null)
     return cond(property, op === '=' ? 'is null' : 'is not null');
+  // the server's IS TRUE / IS NOT TRUE: a null is not true, so IS NOT counts it
+  if ((op === 'is' || op === 'is not') && typeof v === 'boolean')
+    return op === 'is' ? cond(property, '=', v) : group('or', [cond(property, '=', !v), cond(property, 'is null')]);
   if (op === 'is' || op === 'is not')
     return cond(property, op === 'is' ? 'is null' : 'is not null');
   if (op === '~*' || op === '!~*')
@@ -116,7 +119,7 @@ function conditionFrom(c: DomainCondition, schema?: FilterSchema): FilterConditi
 }
 
 /** A sub-list that is a fold — a fuzzy pair or a `between` pair — as one condition, else null. */
-function foldedList(list: DomainConditionTree, schema?: FilterSchema): FilterCondition | null {
+function foldedList(list: DomainConditionTree, schema?: FilterSchema): FilterNode | null {
   const pair = fuzzyPair(list);
   if (pair)
     return conditionFrom(pair.fuzzy, schema);

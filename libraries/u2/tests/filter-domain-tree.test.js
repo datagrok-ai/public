@@ -37,6 +37,14 @@ test('fromDomainTree: flat and/or lists, AND-over-OR grouping, sticky and omitte
     {op: 'and', nodes: [{property: 'a', operator: '=', value: 1}]}, 'single-element sub-lists inline, empties drop');
 });
 
+test('fromDomainTree: `is` / `is not` with a bool are the server\'s IS TRUE / IS NOT TRUE — IS NOT counts a null', () => {
+  assert.deepEqual(Filters.fromDomainTree([c('a', 'is', true), 'and', c('b', 'is', false)]).nodes.map(shape),
+    [{property: 'a', operator: '=', value: true}, {property: 'b', operator: '=', value: false}]);
+  assert.deepEqual(Filters.fromDomainTree([c('a', 'is not', true), 'and', c('b', 'is not', false)]).nodes.map(shape), [
+    {op: 'or', nodes: [{property: 'a', operator: '=', value: false}, {property: 'a', operator: 'is null'}]},
+    {op: 'or', nodes: [{property: 'b', operator: '=', value: true}, {property: 'b', operator: 'is null'}]}]);
+});
+
 test('fromDomainTree: the folds — in, is null, like shapes, regex, fuzzy pair, between, brackets', () => {
   const nodes = Filters.fromDomainTree([
     c('a', '=', [1, 2]), 'and', c('b', '!=', ['x']), 'and', c('d', '=', null), 'and', c('e', '!=', null), 'and',
