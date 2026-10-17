@@ -4,11 +4,26 @@
    drifts from the other is a red test here, not a surprise in the browser.
 
    The fixture both harnesses build: table `folder` — `code` (string, required, the business key),
-   `name` (string, the name column), `parent_id` (ref → `folder`), `hierarchy: true`, soft delete
-   on. Plain ESM importing NOTHING, so a package with no u2 link can run it too. */
+   `name` (string, the name column), `parent_id` (ref → `folder`), `done` (bool), `meta` (json),
+   `hierarchy: true`, soft delete on. Plain ESM importing NOTHING, so a package with no u2 link can run it too. */
 
 /** @type {import('./scenarios.d.ts').ConformanceScenario[]} */
 export const scenarios = [
+  {
+    name: 'filters: `is true` and `is not true` read as SQL: IS NOT TRUE counts a null',
+    requires: [],
+    seed: [
+      {key: 'yes', code: 'ist-yes', name: 'Yes', done: true},
+      {key: 'none', code: 'ist-none', name: 'None'},
+      {key: 'no', code: 'ist-no', name: 'No', done: false},
+    ],
+    async run(table, ids, t) {
+      const codes = async (operator) => (await table.query({
+        filter: [{property: 'done', operator, value: true}], limit: 100})).map((row) => row.code).sort();
+      t.deepEqual(await codes('is'), ['ist-yes'], 'is true: only the true row');
+      t.deepEqual(await codes('is not'), ['ist-no', 'ist-none'], 'is not true: the false row and the null one');
+    },
+  },
   {
     name: 'ancestors: a deleted seed still answers its chain',
     requires: ['hierarchy', 'softDelete'],
