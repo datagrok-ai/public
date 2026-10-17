@@ -68,6 +68,8 @@ export interface MemoryDomainOptions {
 
 type Row = Record<string, unknown>;
 
+type SortKey = {column: string, dir: number};
+
 /** The system columns every table carries (js-api `DOMAIN_SYSTEM_COLUMNS`). */
 const SYSTEM: [string, string][] = [['id', 'string'], ['version', 'int'], ['created_on', 'datetime'],
   ['updated_on', 'datetime'], ['author_id', 'string']];
@@ -450,11 +452,10 @@ export class MemoryTable implements DomainTableLike {
 
   async query(spec: DomainQueryLike = {}): Promise<Row[]> {
     const captions = this._captionTargets(spec.captions);
-    if (spec.sort)
-      this._checkSort(spec.sort);
+    const keys = spec.sort ? this._sortKeys(spec.sort) : [];
     let rows = await this._where(spec);
-    if (spec.sort)
-      rows = MemoryTable._sorted(rows, spec.sort);
+    if (keys.length > 0)
+      rows = MemoryTable._sorted(rows, keys);
     const offset = spec.offset ?? 0;
     rows = rows.slice(offset, spec.limit === undefined ? undefined : offset + spec.limit);
     return rows.map((row) => {
@@ -866,13 +867,28 @@ export class MemoryTable implements DomainTableLike {
     return SYSTEM.some(([system]) => system === column) || access !== undefined && access !== 'hidden';
   }
 
-  /** The server's sort refusal: every key names a readable, non-json column of the table. */
-  private _checkSort(sort: string): void {
-    for (const key of sort.split(',').map((k) => k.trim().replace(/^!/, '')).filter((k) => k !== '')) {
-      const prop = this.properties.find((p) => p.name === key);
-      if (prop === undefined || prop.propertyType === 'map' || !this._readable(key))
-        throw new DomainBackendError('filter', `Unknown or inaccessible sort column "${key}"`);
+  /** The sort keys as the server resolves them: every key a readable, non-json column of the
+   * table. `prop.<name>` names the table's own column; without one (a system or json column too)
+   * the server orders by the platform's property values, which a domain row has none of, so the
+   * key orders nothing. */
+  private _sortKeys(sort: string): SortKey[] {
+    const declared = (name: string): IProperty | undefined =>
+      SYSTEM.some(([system]) => system === name) ? undefined : this.properties.find((p) => p.name === name);
+    const keys: SortKey[] = [];
+    for (const term of sort.split(',').map((k) => k.trim()).filter((k) => k !== '')) {
+      const dir = term.startsWith('!') ? -1 : 1;
+      let column = dir < 0 ? term.slice(1) : term;
+      if (column.startsWith('prop.')) {
+        column = column.slice('prop.'.length);
+        if (declared(column) === undefined || declared(column)!.propertyType === 'map')
+          continue;
+      }
+      const prop = this.properties.find((p) => p.name === column);
+      if (prop === undefined || prop.propertyType === 'map' || !this._readable(column))
+        throw new DomainBackendError('filter', `Unknown or inaccessible sort column "${column}"`);
+      keys.push({column, dir});
     }
+    return keys;
   }
 
   /** The hierarchy subtree term as the server compiles it: `<column> under <id>` matches the rows
@@ -908,9 +924,7 @@ export class MemoryTable implements DomainTableLike {
     return root;
   }
 
-  private static _sorted(rows: Row[], sort: string): Row[] {
-    const keys = sort.split(',').map((k) => k.trim()).filter((k) => k !== '')
-      .map((k) => k.startsWith('!') ? {column: k.slice(1), dir: -1} : {column: k, dir: 1});
+  private static _sorted(rows: Row[], keys: SortKey[]): Row[] {
     return [...rows].sort((a, b) => {
       for (const {column, dir} of keys) {
         const x = a[column] as string | number | null;
