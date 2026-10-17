@@ -43,6 +43,11 @@ test('fromDomainTree: `is` / `is not` with a bool are the server\'s IS TRUE / IS
   assert.deepEqual(Filters.fromDomainTree([c('a', 'is not', true), 'and', c('b', 'is not', false)]).nodes.map(shape), [
     {op: 'or', nodes: [{property: 'a', operator: '=', value: false}, {property: 'a', operator: 'is null'}]},
     {op: 'or', nodes: [{property: 'b', operator: '=', value: true}, {property: 'b', operator: 'is null'}]}]);
+  assert.deepEqual(Filters.toDomainTree(Filters.fromDomainTree([c('a', 'is not', true)])),
+    [c('a', '=', false), 'or', c('a', '=', null)], 'back as the equivalent equality form, not the `is` spelling');
+  for (const value of ['x', 0])
+    assert.throws(() => Filters.fromDomainTree([c('a', 'is', value)]),
+      {message: 'Operator "is" accepts only true, false, or null'}, 'any other value is refused, as the server does');
 });
 
 test('fromDomainTree: the folds — in, is null, like shapes, regex, fuzzy pair, between, brackets', () => {

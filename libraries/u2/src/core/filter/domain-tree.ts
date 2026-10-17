@@ -97,6 +97,8 @@ function conditionFrom(c: DomainCondition, schema?: FilterSchema): FilterNode {
   // the server's IS TRUE / IS NOT TRUE: a null is not true, so IS NOT counts it
   if ((op === 'is' || op === 'is not') && typeof v === 'boolean')
     return op === 'is' ? cond(property, '=', v) : group('or', [cond(property, '=', !v), cond(property, 'is null')]);
+  if ((op === 'is' || op === 'is not') && v != null)
+    throw new FilterError(`Operator "${op}" accepts only true, false, or null`);
   if (op === 'is' || op === 'is not')
     return cond(property, op === 'is' ? 'is null' : 'is not null');
   if (op === '~*' || op === '!~*')
