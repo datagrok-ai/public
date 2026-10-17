@@ -73,7 +73,7 @@ export class DomainHistory extends Control {
   changesOf(entry: AuditEntryLike): string {
     return this.changedColumns(entry)
       .map(({prop, before, after}) =>
-        `${prop.friendlyName ?? prop.name}: ${DomainHistory.display(before)} → ${DomainHistory.display(after)}`)
+        `${prop.friendlyName ?? prop.name}: ${DomainHistory._display(before)} → ${DomainHistory._display(after)}`)
       .join(', ');
   }
 
@@ -91,7 +91,7 @@ export class DomainHistory extends Control {
   }
 
   /** An audit cell as text: a list joined, a json object as JSON. */
-  static display(raw: unknown): string {
+  private static _display(raw: unknown): string {
     return Array.isArray(raw) ? raw.map(text).join(', ') :
       raw !== null && typeof raw === 'object' && raw.constructor === Object ? JSON.stringify(raw) : text(raw);
   }
@@ -143,7 +143,7 @@ export class DomainHistory extends Control {
    * `~caption_<column>` off the frame: an audit line's `before`/`after` values are ids out of a
    * jsonb snapshot, not frame cells, and no caption column will ever carry them. */
   private _value(prop: IProperty, raw: unknown, resolved: () => void): HTMLElement {
-    const el = span(DomainHistory.display(raw), 'u2-domain-history-value');
+    const el = span(DomainHistory._display(raw), 'u2-domain-history-value');
     const id = text(raw);
     if (id !== '' && DomainTable.isReference(prop)) {
       void this._resolve(id, () => DomainForm.captionOf(prop, id)).then((name) => {
