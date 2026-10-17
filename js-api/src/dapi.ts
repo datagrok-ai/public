@@ -1817,7 +1817,8 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * pass `options.errorOnDuplicate` to reject duplicates with a
    * {@link DomainValidationError} instead, its `isDuplicate` set).
    * For tables that declare `"idempotency": true`, pass an `idempotencyKey` (UUID) row field
-   * to make retries safe: a replay returns the existing id with `status: 'idempotent-replay'`.
+   * to make retries safe: a replay returns the existing id with `status: 'idempotent-replay'`
+   * (`id` null when the caller cannot read that row, or it is in the trash).
    *
    * A payload may carry declared many-to-many relations as lists of target row ids
    * (`{title: 'Crash', labels: [id1, id2]}`); the junction rows are written in the same
@@ -2132,7 +2133,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * (retried on conflict), so save() never resolves a version-less row. An idempotency-key
    * replay applies nothing — the original insert already did — and resolves the existing
    * row's fresh version (rejects {@link DomainNotFoundError} when that row is no longer
-   * visible). The unversioned
+   * visible, or the replay names none). The unversioned
    * (last-write-wins) update remains available ONLY by deliberately constructing
    * `{id}` without a version — never as a side effect of a duplicate. */
   async save(row: Partial<TRow> & {id?: string; version?: number}): Promise<TRow> {
@@ -2150,10 +2151,12 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
       }
       if (res.status === 'idempotent-replay') {
         // The ORIGINAL insert already applied these values; report its state.
-        const fresh = await this.get(res.id);
+        // a replay names no row when the caller cannot read it or it is in the trash
+        const fresh = res.id == null ? null : await this.get(res.id);
         if (fresh == null)
-          throw new DomainNotFoundError(`Row "${res.id}" not found in ${this.schema}.${this.table}`,
-            404, {error: 'not-found', id: res.id});
+          throw new DomainNotFoundError(res.id == null
+            ? `The row this idempotency key created is not available in ${this.schema}.${this.table}`
+            : `Row "${res.id}" not found in ${this.schema}.${this.table}`, 404, {error: 'not-found', id: res.id});
         return {...(row as any), id: res.id, version: (fresh as any).version};
       }
       return {...(row as any), id: res.id, version: res.version};

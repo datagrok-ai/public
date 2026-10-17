@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Domains: Fixed `DomainTableClient.save()` reading a row by a null id when an idempotency replay names no row (the original is in the trash or not readable by the caller); it rejects `DomainNotFoundError` without the read
 * U2: With debug tracking on (`DG.U2.debug`), `effect()` and `own()` on a control warn once per call site when the same site registers from a second `each()` row or effect run that the control does not live in: what it registers outlives each of them and piles up
 * Sketcher: A molecule lookup (a name, an identifier) answered after a newer value was set no longer overwrites it, and one that finds nothing keeps the drawing and says `Could not recognize "…"` instead of clearing it
 * U2: Breaking: An effect's every run gets its own child scope, disposed before the next run and with the owner, so what a run builds dies with it
