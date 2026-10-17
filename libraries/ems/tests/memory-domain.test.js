@@ -578,3 +578,25 @@ test('ancestors: the chain stops at an ancestor out of sight, at a cycle and at 
   assert.equal(chain.length, MemoryTable.maxPathDepth);
   assert.equal(chain.at(-1).id, 'd78', 'root-first, truncated at the far end');
 });
+
+test('a hidden or unlisted column is out of reach for sort, captions and FK paths, as on the server', async () => {
+  const issues = (fields) => backend({access: {can: {view: true}, fields}}).table('grit.issue');
+  const refused = (fn, text) => assert.rejects(fn, (e) => e.code === 'filter' && e.message.includes(text));
+  const path = (property, value, operator = '=') => ({filter: [{property, operator, value}]});
+
+  const hidden = await issues({title: 'editable', project_id: 'hidden'});
+  await refused(() => hidden.query({sort: 'project_id'}), 'sort column "project_id"');
+  await refused(() => hidden.query({sort: 'due'}), 'sort column "due"');
+  await refused(() => hidden.query({captions: ['project_id']}), 'caption column "project_id"');
+  await refused(() => hidden.query(path('project_id.name', 'Grit')), 'column "project_id.name"');
+  const unlisted = await issues({title: 'editable'});
+  await refused(() => unlisted.query({captions: ['project_id']}), 'caption column "project_id"');
+
+  const leafHidden = await issues({title: 'editable', project_id: 'readonly', name: 'hidden'});
+  await refused(() => leafHidden.query(path('project_id.name', 'Grit')), 'column "project_id.name"');
+  await refused(() => leafHidden.query(path('project_id.nope', 'Grit')), 'column "project_id.nope"');
+  const readable = await issues({title: 'editable', project_id: 'readonly', name: 'readonly'});
+  assert.deepEqual((await readable.query({...path('project_id.name', 'Grit'), sort: 'title'})).map((r) => r.title),
+    ['Aspirin', 'Ibuprofen']);
+  await refused(() => readable.query(path('project_id.id', 'p1', 'under')), 'column "project_id.id"');
+});

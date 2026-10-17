@@ -450,11 +450,11 @@ export class MemoryTable implements DomainTableLike {
 
   async query(spec: DomainQueryLike = {}): Promise<Row[]> {
     const captions = this._captionTargets(spec.captions);
-    let rows = await this._where(spec);
-    if (spec.sort) {
+    if (spec.sort)
       this._checkSort(spec.sort);
+    let rows = await this._where(spec);
+    if (spec.sort)
       rows = MemoryTable._sorted(rows, spec.sort);
-    }
     const offset = spec.offset ?? 0;
     rows = rows.slice(offset, spec.limit === undefined ? undefined : offset + spec.limit);
     return rows.map((row) => {
@@ -493,7 +493,7 @@ export class MemoryTable implements DomainTableLike {
         throw new DomainBackendError('filter', `Duplicate caption "${name}"`);
       seen.add(name);
       const target = this._backend.tableSync(this.refs[name] ?? '');
-      if (target === undefined || this._access.fields[name] === 'hidden')
+      if (target === undefined || !this._readable(name))
         throw new DomainBackendError('filter', `Unknown or inaccessible caption column "${name}"`);
       return [name, target];
     });
@@ -824,11 +824,21 @@ export class MemoryTable implements DomainTableLike {
   /** `<ref>.<rest> <op> <value>` as the server joins it: the rows whose ref names a live target
    * row that `<rest> <op> <value>` selects — the target resolving any further hop itself. */
   private async _path(condition: FilterCondition): Promise<FilterCondition> {
+    // the whole path checked here, so a refusal names it as the server's does: every hop a readable
+    // ref, the leaf a readable non-json column, and no `under` (resolved against the root table only)
+    const segments = condition.property.split('.');
+    let table: MemoryTable | undefined = this;
+    for (const hop of segments.slice(0, -1)) {
+      table = table !== undefined && table._readable(hop) && table.refs[hop] !== undefined ?
+        table._backend.tableSync(table.refs[hop]) : undefined;
+    }
+    const leaf = segments[segments.length - 1];
+    if (table === undefined || condition.operator === 'under' || !table._readable(leaf) ||
+        table.properties.some((p) => p.name === leaf && p.propertyType === 'map'))
+      throw new DomainBackendError('filter', `Unknown or inaccessible column "${condition.property}"`);
     const dot = condition.property.indexOf('.');
     const column = condition.property.slice(0, dot);
-    const target = this.refs[column] === undefined ? undefined : this._backend.tableSync(this.refs[column]);
-    if (target === undefined)
-      throw new DomainBackendError('filter', `Unknown or inaccessible column "${condition.property}"`);
+    const target = this._backend.tableSync(this.refs[column])!;
     const hits = await target._matching(target.rows.filter((row) => row[IS_DELETED] !== true),
       {id: condition.id, op: 'and', nodes: [{...condition, property: condition.property.slice(dot + 1)}]});
     return {...condition, property: column, operator: 'in', value: hits.map((row) => String(row.id))};
@@ -850,12 +860,17 @@ export class MemoryTable implements DomainTableLike {
     return {...condition, property: 'id', operator: 'in', value: hits.map((row) => String(row.id))};
   }
 
+  /** A system column, or one the caller's field access neither omits nor hides. */
+  private _readable(column: string): boolean {
+    const access = this._access.fields[column];
+    return SYSTEM.some(([system]) => system === column) || access !== undefined && access !== 'hidden';
+  }
+
   /** The server's sort refusal: every key names a readable, non-json column of the table. */
   private _checkSort(sort: string): void {
     for (const key of sort.split(',').map((k) => k.trim().replace(/^!/, '')).filter((k) => k !== '')) {
       const prop = this.properties.find((p) => p.name === key);
-      if (prop === undefined || prop.propertyType === 'map' ||
-          !SYSTEM.some(([column]) => column === key) && this._access.fields[key] === undefined)
+      if (prop === undefined || prop.propertyType === 'map' || !this._readable(key))
         throw new DomainBackendError('filter', `Unknown or inaccessible sort column "${key}"`);
     }
   }
