@@ -30,6 +30,18 @@ category('server features', () => {
     expect(t.columns.contains('RingCount'), true);
   }, {benchmark: true, stressTest: true});
 
+  test('descriptors start a stopped container', async () => {
+    const container = await grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first();
+    await grok.dapi.docker.dockerContainers.stop(container.id, true);
+    try {
+      const t = await grok.chem.descriptors(DG.DataFrame.fromCsv(testCsv), 'smiles', ['MolWt']);
+      expect(t.columns.contains('MolWt'), true);
+    }
+    finally {
+      await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
+    }
+  });
+
   test('sketcher', async () => {
     const result: HTMLElement = grok.chem.sketcher(()=>{}, 'CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3');
     expect(result !== null, true);
