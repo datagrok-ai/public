@@ -48,6 +48,8 @@ category('U2: domain conformance', () => {
           code: {type: 'string', required: true, unique: true},
           name: {type: 'string', isName: true},
           parent_id: {type: 'ref', ref: TABLE(index)},
+          done: {type: 'bool'},
+          meta: {type: 'json'},
         },
       };
     await grok.dapi.domains.schema(name).apply({ifVersion: created.version, tables});
