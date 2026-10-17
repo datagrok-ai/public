@@ -880,7 +880,8 @@ export class MemoryTable implements DomainTableLike {
       let column = dir < 0 ? term.slice(1) : term;
       if (column.startsWith('prop.')) {
         column = column.slice('prop.'.length);
-        if (declared(column) === undefined || declared(column)!.propertyType === 'map')
+        const own = declared(column);
+        if (own === undefined || own.propertyType === 'map')
           continue;
       }
       const prop = this.properties.find((p) => p.name === column);

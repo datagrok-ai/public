@@ -604,7 +604,7 @@ test('a hidden or unlisted column is out of reach for sort, captions and FK path
 test('sort: `prop.<name>` without such a column orders nothing, as the server\'s property-value fallback; a hidden one is refused', async () => {
   const issue = await backend({access: {can: {view: true}, fields: {title: 'editable', number: 'hidden'}}}).table('grit.issue');
   const titles = async (sort) => (await issue.query({sort})).map((row) => row.title);
-  assert.deepEqual(await titles('prop.nope'), ['Aspirin', 'Ibuprofen', 'Naproxen'], 'accepted, the stored order kept');
+  assert.deepEqual(await titles('prop.nope,title'), ['Aspirin', 'Ibuprofen', 'Naproxen'], 'accepted; the next key decides');
   assert.deepEqual(await titles('prop.id,!title'), ['Naproxen', 'Ibuprofen', 'Aspirin'], 'a system column too: the next key decides');
   await assert.rejects(() => issue.query({sort: 'prop.number'}),
     (e) => e.code === 'filter' && e.message === 'Unknown or inaccessible sort column "number"');
