@@ -297,20 +297,23 @@ scoped('finding 5: a standalone save leaves no subscription on the editor', {}, 
   assert.equal(editor.onChanged.observers.length, 0);
 });
 
-scoped('EMS-054: a replay naming no row rejects not-found and reads nothing', {}, async () => {
+scoped('EMS-054: a duplicate or a replay naming no row rejects not-found and touches no row', {}, async () => {
   const {DomainTableClient} = await import('../../../js-api/dist/src/dapi.js');
   const {DomainNotFoundError} = await import('../../../js-api/dist/src/domains.js');
-  // the server's answer when the original row is trashed or the caller cannot read it (core EMS-052)
-  globalThis.grok_Dapi_Domains_Insert = async () => [{id: null, created: false, status: 'idempotent-replay'}];
-  const client = new DomainTableClient({}, 'grit', 'issue');
-  const reads = [];
-  client.get = async (id) => (reads.push(id), null);
-  try {
-    await assert.rejects(client.save({title: 'Retried', idempotencyKey: '7c2f8d1e-0b5a-4c3e-9f1d-2a6b8c4d0e1f'}),
-      (e) => e instanceof DomainNotFoundError);
-    assert.deepEqual(reads, [], 'no read of a null id');
-  } finally {
-    delete globalThis.grok_Dapi_Domains_Insert;
+  // the server's answers when the existing row is trashed or the caller cannot read it (core EMS-052)
+  for (const status of ['idempotent-replay', 'duplicate']) {
+    globalThis.grok_Dapi_Domains_Insert = async () => [{id: null, created: false, status}];
+    const client = new DomainTableClient({}, 'grit', 'issue');
+    const touched = [];
+    client.get = async (id) => (touched.push(['get', id]), null);
+    client.updateWithRetry = async (id) => (touched.push(['update', id]), {id, version: 2});
+    try {
+      await assert.rejects(client.save({title: 'Retried', idempotencyKey: '7c2f8d1e-0b5a-4c3e-9f1d-2a6b8c4d0e1f'}),
+        (e) => e instanceof DomainNotFoundError, status);
+      assert.deepEqual(touched, [], `${status}: no read or update of a null id`);
+    } finally {
+      delete globalThis.grok_Dapi_Domains_Insert;
+    }
   }
 });
 
