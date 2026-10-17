@@ -10,6 +10,7 @@ import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, signal, Registry, SpecContext, renderSpec, registerAll, notify} from '@datagrok-libraries/u2';
 import {backend} from './domain-fixtures.mjs';
+import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -187,6 +188,33 @@ scoped('a reference cell shows the name it points at, not the uuid; the pane car
   assert.equal(changes.textContent, 'project_id: Grit → Datagrok',
     'a ref cell shows the name of the row it points at, not the uuid');
   assert.equal(changes.title, changes.textContent, 'the full line rides the title');
+  history.dispose();
+  src.dispose();
+});
+
+scoped('json and list cells compare and read by value, as the platform audit stores them; a restore says so', async () => {
+  const memory = new MemoryDomainBackend({name: 'audit', tables: {note: {columns: {
+    n: {type: 'int'}, j: {type: 'json'}, tags: {type: 'string_list'}}}}},
+  {rows: {note: [{id: 'n1', n: 5, j: {k: 2, tag: 'x'}, tags: ['a', 'b']}]}});
+  emsBackends.domain = memory;
+  const table = await domains.table('audit.note');
+  const src = table.source();
+  await flush();
+  src.currentRow.value = src.rows.byKey('n1');
+  const history = domains.history(src);
+  await settle();
+  // full row snapshots out of jsonb: equal cells are distinct instances
+  const snap = (n, k, tags) => ({id: 'n1', version: n, n, j: {k, tag: 'x'}, tags: [...tags]});
+  memory.tableSync('audit.note').history.push(
+    {id: 'n1', tx_id: 't1', op: 'update', actor_id: null, ts: '2026-10-17T10:00:00Z', before: snap(1, 1, ['a']), after: snap(5, 1, ['a'])},
+    {id: 'n1', tx_id: 't2', op: 'update', actor_id: null, ts: '2026-10-17T11:00:00Z', before: snap(5, 1, ['a']), after: snap(5, 2, ['a', 'b'])},
+    {id: 'n1', tx_id: 't3', op: 'undelete', actor_id: null, ts: '2026-10-17T12:00:00Z', before: null, after: null});
+  history.view.refresh();
+  await settle();
+  const rows = lines(history);
+  assert.deepEqual(rows.slice(1).map((r) => r.querySelector('.u2-domain-history-changes').textContent),
+    ['j: {"k":1,"tag":"x"} → {"k":2,"tag":"x"}, tags: a → a, b', 'n: 1 → 5']);
+  assert.deepEqual(rows.map((r) => r.querySelector('.u2-badge').textContent), ['restored', 'updated', 'updated']);
   history.dispose();
   src.dispose();
 });

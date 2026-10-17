@@ -4,8 +4,8 @@
    saves. A draft has no history yet, and says so. */
 import {emsBackends} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
-import {Control, signal, AsyncSource, div, divH, span, timestamp, text, badge, AsyncView, Section, VirtualList,
-  Rows} from '@datagrok-libraries/u2';
+import {Component, Control, signal, AsyncSource, div, divH, span, timestamp, text, badge, AsyncView, Section,
+  VirtualList, Rows} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, BadgeVariant, IProperty, RowView} from '@datagrok-libraries/u2';
 import type {AuditEntryLike} from '../core/domain-backend.js';
 import type {DomainSource} from '../core/domain-source.js';
@@ -18,7 +18,7 @@ export type DomainHistoryTarget = RowView | ReadonlySignal<RowView | null>;
 
 const OPS: Record<string, [label: string, variant: BadgeVariant]> = {
   insert: ['created', 'success'], update: ['updated', 'default'], delete: ['deleted', 'error'],
-  promote: ['shared', 'accent'],
+  promote: ['shared', 'accent'], undelete: ['restored', 'success'],
 };
 const ITEM_HEIGHT = 40;
 
@@ -72,7 +72,8 @@ export class DomainHistory extends Control {
    * always touches (version, updated) are not changes the user made. */
   changesOf(entry: AuditEntryLike): string {
     return this.changedColumns(entry)
-      .map(({prop, before, after}) => `${prop.friendlyName ?? prop.name}: ${text(before)} → ${text(after)}`)
+      .map(({prop, before, after}) =>
+        `${prop.friendlyName ?? prop.name}: ${DomainHistory.display(before)} → ${DomainHistory.display(after)}`)
       .join(', ');
   }
 
@@ -85,8 +86,14 @@ export class DomainHistory extends Control {
     const after = entry.after ?? {};
     return this.source.schema.properties
       .filter((p) => p.name! in after && !SYSTEM_COLUMNS.some(([name]) => name === p.name) &&
-        before[p.name!] !== after[p.name!])
+        !Component.sameValue(before[p.name!], after[p.name!]))
       .map((prop) => ({prop, before: before[prop.name!], after: after[prop.name!]}));
+  }
+
+  /** An audit cell as text: a list joined, a json object as JSON. */
+  static display(raw: unknown): string {
+    return Array.isArray(raw) ? raw.map(text).join(', ') :
+      raw !== null && typeof raw === 'object' && raw.constructor === Object ? JSON.stringify(raw) : text(raw);
   }
 
   private async _load(id: string): Promise<AuditEntryLike[]> {
@@ -136,7 +143,7 @@ export class DomainHistory extends Control {
    * `~caption_<column>` off the frame: an audit line's `before`/`after` values are ids out of a
    * jsonb snapshot, not frame cells, and no caption column will ever carry them. */
   private _value(prop: IProperty, raw: unknown, resolved: () => void): HTMLElement {
-    const el = span(text(raw), 'u2-domain-history-value');
+    const el = span(DomainHistory.display(raw), 'u2-domain-history-value');
     const id = text(raw);
     if (id !== '' && DomainTable.isReference(prop)) {
       void this._resolve(id, () => DomainForm.captionOf(prop, id)).then((name) => {
