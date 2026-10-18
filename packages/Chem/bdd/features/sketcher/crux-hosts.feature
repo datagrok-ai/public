@@ -171,6 +171,32 @@ Feature: Crux in Datagrok's hosts
     And user clicks on crux canvas
     Then a molecule should have become the current object 1 time, the molecule "CC"
 
+  # The product owner (2026-10-19): in the context panel, a stroke made the drawing the current object, so the panel
+  # showed the molecule instead of the column, and the Filter pane, its sketcher with it, went at every stroke. There
+  # the host leaves the current object as it is.
+  Scenario: Strokes in a molecule column's Filter pane leave the column the current object
+    Given user opens a table "molecules" with:
+      | molecule |
+      | c1ccccc1 |
+      | CCO      |
+      | CC(=O)O  |
+    And the semantic types of the current table are detected
+    And the context panel is open
+    And the molecules made the current object are counted
+    When user clicks on the "header molecule" area of grid
+    Then the context panel should show "molecule"
+    When user expands Filter accordion header in context panel
+    Then the "ready" reading of crux sketcher widget should be "true"
+    When user clicks on crux single bond tool
+    And user clicks on Crux canvas 25% across and 50% down
+    Then the "atoms" reading of crux sketcher widget should be 2
+    And a molecule should have become the current object 0 times
+    And the context panel should show "molecule"
+    When user clicks on Crux canvas 75% across and 50% down
+    Then the "atoms" reading of crux sketcher widget should be 4
+    And a molecule should have become the current object 0 times
+    And the context panel should show "molecule"
+
   # HOST-048
   Scenario: A SMILES typed into the host's field and confirmed with Enter is drawn, and the dialog stays
     Given user opens a table "molecules" with:
