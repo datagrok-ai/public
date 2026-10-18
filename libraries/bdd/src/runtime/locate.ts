@@ -418,7 +418,11 @@ function byLabel(page: Page, base: Base, kind: KindEntry, q: string): Locator {
   if (direct.every((s) => s.startsWith(':scope >')))
     return base.locator(direct.map((s) => s.slice(':scope >'.length).trim()).join(', '), {hasText: exactText(q)})
       .locator('xpath=parent::*').and(page.locator(kind.selector));
-  return base.locator(kind.selector).filter({has: page.locator(label, {hasText: exactText(q)})});
+  // a host does not go by the label of an input nested in it (a multi-choice by its items' labels), except a u2
+  // bridge, whose label is its inner Dart root's
+  const nested = `:scope:not([data-u2="dart-input"]) :is(.ui-input-root, [data-u2$="-input"]) :is(${label})`;
+  return base.locator(kind.selector).filter({has: page.locator(label, {hasText: exactText(q)})})
+    .filter({hasNot: page.locator(nested, {hasText: exactText(q)})});
 }
 
 /** Appends an attribute selector to every alternative of a comma-separated selector list. */

@@ -17,12 +17,9 @@ Feature: Clicking a network diagram node selects the rows behind it
   toggles them and Control+Shift-click takes them off (F, then the 6 CONTROL rows of which one is M,
   then F toggled away leaves that one). Not translated: the edge click and the double-click on
   empty canvas — the viewer reports its nodes as areas but no edge and no empty point.
-  Known failure (no ticket yet): Shift-click on a node replaces the selection (6 rows, not 554). The
-  click takes its modifiers from the last key event the viewer's root received
-  (`network_diagram_core.dart`, `ke`), not from the click itself, and the root sees no key event
-  while the focus is outside it — after a click on the vis canvas the focus is on the page body.
-  Reproduced twice in the suite on 2026-10-13; the fix is to read the modifiers off the click's
-  own pointer event.
+  Shift-click on a node replaced the selection (6 rows, not 554) until 2026-10-18: the click took its
+  modifiers from the last key event the viewer's root received, which it never gets while the focus is
+  outside it; it reads them off the click's own pointer event now (`network_diagram_core.dart`).
 
   Background:
     Given user is logged in
@@ -58,7 +55,6 @@ Feature: Clicking a network diagram node selects the rows behind it
     When user clears the row selection
     Then no errors should have been logged
 
-  @known-failure:66
   Scenario: Shift-click adds a node's rows, Control-click toggles them, Control+Shift-click takes them off
     When user clicks on the "node \"F\"" area of network diagram viewer
     Then 553 rows should be selected
@@ -67,7 +63,7 @@ Feature: Clicking a network diagram node selects the rows behind it
     And all rows where "CONTROL" is "true" should be selected
     When user clicks on the "node \"F\"" area of network diagram viewer holding Control
     Then 1 row should be selected
-    And only rows where "SEX" is "M" should be selected
+    And no rows where "SEX" is "F" should be selected
     When user clicks on the "node \"M\"" area of network diagram viewer holding Shift
     Then 447 rows should be selected
     When user clicks on the "node \"true\"" area of network diagram viewer holding Control+Shift

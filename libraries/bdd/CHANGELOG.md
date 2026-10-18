@@ -2,6 +2,17 @@
 
 ## v.next
 
+* Harness: Fixed a failed scenario leaving its dialog over the next one when Escape does not close it (an editor that keeps Escape, such as the formula editor of Add New Column): the shell reset and a failed journey scenario click the topmost dialog's close icon, so a failure no longer leaves its dialog over the next scenario
+* Second account: Fixed a page reloaded after `the sharing user has no notifications` coming up signed in as the second account: minting its session took the login's Set-Cookie, which the page then sent on its next load
+* Context menus: Fixed a right-click on a tree row under a sticky group header (a root space under Spaces once the Browse tree is scrolled a row) landing on the header three times: the row is scrolled to the middle of its panel; a failed menu pick names what the right-click reached
+* Harness: A failed journey scenario closes only the dialogs it opened, not one the Background opened under a menu Escape leaves open
+* Balloons: Fixed a failed balloon claim always saying "none": it lists the balloons the poll saw
+* Locator: Fixed an input phrase matching a host input whose nested input carries the label (a multi-choice by its items' labels), so a claim no longer passes on the host; a u2 bridge still goes by its inner Dart root's label
+* Kinds: Extended the `text input` kind to a map input's named row editor ("Pattern 1" of a conditional coloring)
+* Kinds: Added a `color bar` part to the `item` kind, the bar a category of the categorical color coding editor opens its picker from
+* Vocabulary: Added `the server has logged activity on the {string} script` (the Activity pane counts once, when it renders: a fresh view opened before the server logged a run showed 0 for good)
+* Vocabulary: Added `the text of {string} column should not be color-coded` and `user scrolls {element} into view` (the wheel over its panel until the whole element shows, for one at the start of a list)
+* Server fixtures: Fixed the stale-fixture sweep missing a `{time}` with no dash before it, as a script a formula calls by name has (`BddDouble{time}`)
 * Layout audit: `label-column` measures a cell of a form's columns (u2 `Form.addColumns`, `data-u2-part="columns"`) from its own column, so two aligned columns are no longer reported as one misaligned one
 * Vocabulary: Added the u2 `status-line` kind ("status line")
 * Vocabulary: `the top menu should list {string} as disabled` / `as enabled` — the platform greys out a command whose function needs a column the table lacks (#4226)

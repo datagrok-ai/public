@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Tests: Retired the network diagram's known failure: its Shift-, Control- and Control+Shift-click scenario runs in full now that the viewer reads the click's own modifiers
+* Tests: Added `bdd/features/general/find-and-replace.feature` — the Find and Replace dialog's column predicates, its options and kinds of columns once each, the messages for a predicate naming no column, an invalid pattern and a replacement a number column cannot hold, and the undo kept by a replace with no rows in scope (core#837, core#838, core#890, core#891)
+* Tests: Added BDD features for the color coding editor: the linear, conditional and categorical editors (a category's colour picked from its bar), Apply to both ways, Edit scheme (a stop's colour, Below min), Bin..., Pick Up / Apply Coloring from the header menu, text coloring through Extract, with MISSING.md for what the steps cannot reach
 * core#825: Tests: The line chart legend feature expects the legend to list only the Y column / category pairs with data (HEIGHT / UC has none, so 11 and 17 items where it counted 12 and 18)
 * GROK-20884: Removed the Update events and Reports migration queries: they ran as the read-only System:Datagrok and always failed
 * GROK-20884: Errors: Top errors and Top source come from the server's error metrics, by stack signature; a row's context panel shows its error incident and alert to users with Manage Alerts

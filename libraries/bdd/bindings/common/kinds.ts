@@ -40,8 +40,9 @@ const BY_NAME: U2Override = {match: ['name']};
 const OVERRIDES: Record<string, U2Override> = {
   // --- inputs ---
   // a bare <input> outside any input host that names itself (aria-label) is a text input too: the
-  // Save project dialog's Name
-  'text input': input('.ui-input-text, input[aria-label]:not([type="checkbox"]):not(.ui-input-root *)', ['text field', 'textbox'],
+  // Save project dialog's Name; and so is a row's editor of a map input ("Pattern 1" of a conditional coloring)
+  'text input': input('.ui-input-text, input[aria-label]:not([type="checkbox"]):not(.ui-input-root *), .ui-input-map input[aria-label]',
+    ['text field', 'textbox'],
     {match: [...INPUT_MATCH, 'aria']}),
   'text area': input('.ui-input-textarea', ['textarea', 'multiline input']),
   'choice input': input('.ui-input-choice', ['dropdown', 'choice', 'select']),
@@ -177,6 +178,8 @@ kind('item', {
   match: ['text', 'label', 'aria', 'item', 'name'],
   items: true,
   labelSelector: `${PRIMARY_TEXT}, ${ITEM_LABEL}`,
+  // a category of the categorical color coding editor opens its color picker from the bar
+  parts: {'color bar': '.d4-legend-item-bar'},
 });
 // the Dart tree wraps every row in a .d4-tree-view-group[role=treeitem] that carries the row's
 // text too, so the wrapper is excluded and the row — which owns name="tree-My-stuff---Favorites" —

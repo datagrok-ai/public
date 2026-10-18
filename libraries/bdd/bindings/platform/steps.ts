@@ -774,8 +774,9 @@ async function sessionOf(page: Page, login: string): Promise<string> {
       throw new Error(`no user "${l}" on the server`);
     const keyText = await (await fetch(`${grok.dapi.root}/users/${user.id}/dev_key`, {headers: {Authorization: auth}})).text();
     const key = keyText.startsWith('"') ? JSON.parse(keyText) : keyText;
-    const answer = await (await fetch(`${grok.dapi.root}/users/login/dev`, {method: 'POST', headers: {Authorization: `Dev ${key}`}}))
-      .json().catch(() => null);
+    // the login answers with a Set-Cookie of the new session: taken, it signs the page's next load in as that account
+    const answer = await (await fetch(`${grok.dapi.root}/users/login/dev`, {method: 'POST', headers: {Authorization: `Dev ${key}`},
+      credentials: 'omit'})).json().catch(() => null);
     if (!answer?.token)
       throw new Error(`the dev key of "${l}" was not exchanged for a session`);
     return answer.token as string;
@@ -2150,6 +2151,15 @@ export const paneCountAtLeast = Then('the {string} pane of the context panel sho
   await expect.poll(async () => Number(await paneCountOf(page, pane) || '0'),
     {message: `the count the "${pane}" pane of the context panel shows`, timeout: pollMs(60000)}).toBeGreaterThanOrEqual(count);
 }, {description: 'a counting pane with at least that many entries — the platform records an entity made through the JS API with a delay of its own'});
+
+/** The pane counts the log once, when the panel renders the object: under load the server logs a run after a
+ * fresh view has already shown 0. */
+export const scriptLogged = Given('the server has logged activity on the {string} script', async (page: Page, name: string) => {
+  await expect.poll(() => page.evaluate(async (n) => {
+    const script = await grok.dapi.scripts.filter(`name = "${n}"`).first();
+    return script ? await grok.dapi.log.where({entityId: script.id}).count() : -1;
+  }, name), {message: `the server's log of the "${name}" script (-1: no such script)`, timeout: pollMs(60000)}).toBeGreaterThan(0);
+}, {tier: 'api', description: 'the log the Activity pane counts, read on the server until it has an entry'});
 
 /* --- the side panel ------------------------------------------------------------------------------ */
 

@@ -8,8 +8,13 @@ then remove the scenario or lines named, with one line in the feature's descript
 
 | Behaviour | Where the test goes | What it lets go |
 |---|---|---|
-| SequenceTranslator: Convert over all of `cyclized.csv`, Combine Sequences, Combine Sense+Antisense, the Translator's outputs and bulk conversion, GROK-20958 | SequenceTranslator `src/tests` | value lines of `oligo-polytool`, `oligo-nucleotide-grid`, `oligo-toolkit-translator-structure` — set aside with the oligo features (the lead, 2026-10-11) |
 | The toolbox Search box with "and" / "or" (GROK-20229) | with the fix, beside xamgle `features/search.dart` | — (the cases left the feature already); the fix is deferred |
+
+## Written on 2026-10-18
+
+| Behaviour | Test | What went |
+|---|---|---|
+| SequenceTranslator: Convert over all of `cyclized.csv`, Combine Sequences, Combine Sense+Antisense, the Translator's outputs and bulk conversion, GROK-20958 | SequenceTranslator `PolyTool: Convert` (`cyclized.csv`), `PolyTool: Combine Sequences`, `OligoRenderer: converters`, `Formats support`, `Translator: bulk`, `Translator: app` (`src/tests`) | the value lines of `oligo-polytool` (Convert's HELM, missing values and V3000; the combined row), `oligo-nucleotide-grid` (the combined duplexes of rows 1 and 34) and `oligo-toolkit-translator-structure` (the sample's translations, the HELM rows, the bulk values) |
 
 ## Written on 2026-10-12
 

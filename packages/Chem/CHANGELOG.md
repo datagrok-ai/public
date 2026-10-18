@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Substructure filter: Fixed a query typed as SMILES turning into SMARTS on a card restored from a layout or a project: its sketcher handed the molecule back as a molblock, which replaced the typed string
+* Tests: Moved the BDD features that clear Filter as you draw (an account setting) or filter while the sketcher is open to the serial lane: in a full run, a query round trip filtered by the previous stroke while another worker had the option cleared
 * [#4291](https://github.com/datagrok-ai/public/issues/4291): Chem: MPO: Add support for qnum values
 * Tests: `sketcher testing: a sketcher fills its dialog`: every sketcher, in a dialog as it opens, in one shown with a size and with the invalid-molecule warning shown, reaches the bottom of the dialog's body and is not covered there (js-api's in-place sketcher left a margin under it)
 * Substructure search: A query molblock with an uncharged pentavalent nitrogen (a nitro drawn `N(=O)=O`, an azide `N=N#N`, a pyridine N-oxide `N=O`, from any sketcher) is read sanitized, as one with an H count query is: RDKit makes the group charge-separated, as the molecules searched hold it. Read unsanitized it matched no row (a nitrobenzene: none of smiles.csv's 75). Every other query molblock is read as before

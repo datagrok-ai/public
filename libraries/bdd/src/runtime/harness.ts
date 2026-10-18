@@ -15,6 +15,7 @@ import {leave} from './args.js';
 import {type AuditOutcome, auditScenario, leakCheck, type LoggedError, markLeakBaseline, settleAudit, shouldAudit,
   trackLeaks} from './audit.js';
 import {failure, isSkip, isWaitFailure, journeyFailure, reasonOf, StepFailure} from './failure.js';
+import {DIALOG_CLOSE} from './gestures.js';
 import * as guide from './guide.js';
 import {explain} from './locate.js';
 import {logMemory, rendererMb} from './memory.js';
@@ -61,7 +62,7 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
     auditedInJourney.add(page);
   return {
     async scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean; line?: number}): Promise<void> {
-      const overlays = page ? await openOverlays(page) : 0;
+      const overlays = page ? await openOverlayCounts(page) : {all: 0, dialogs: 0};
       try {
         if (page) {
           takeErrors(page);
@@ -138,7 +139,8 @@ function featureFile(specUrl: string, path: string): string {
 
 const HOME_VIEW = 'datagrok';
 // what Escape closes: dialogs and popup menus of both UI generations
-const CLOSABLE = '[data-u2="dialog"], [data-u2="menu"], .d4-dialog, .d4-menu-popup';
+const DIALOGS = '[data-u2="dialog"], .d4-dialog';
+const CLOSABLE = `${DIALOGS}, [data-u2="menu"], .d4-menu-popup`;
 // transient notifications, taken away as their close icons would
 const NOTICES = '[data-u2="notify"] > *, .d4-balloon, .ui-hint-popup';
 
@@ -431,13 +433,26 @@ async function settleWork(page: Page): Promise<void> {
 }
 
 /** Dialogs and menus closed the platform's way: Escape, as many times as there are open ones. */
-const openOverlays = (page: Page): Promise<number> =>
-  page.locator(CLOSABLE).filter({visible: true}).count().catch(() => 0);
+const openOverlays = (page: Page, selector = CLOSABLE): Promise<number> =>
+  page.locator(selector).filter({visible: true}).count().catch(() => 0);
 
-/** Escape, the topmost first, while more dialogs and menus are open than `keep`. */
-async function closeOverlays(page: Page, keep = 0): Promise<void> {
-  for (let i = 0; i < 3 && await openOverlays(page) > keep; i++)
+type OverlayCounts = {all: number; dialogs: number};
+const openOverlayCounts = async (page: Page): Promise<OverlayCounts> =>
+  ({all: await openOverlays(page), dialogs: await openOverlays(page, DIALOGS)});
+
+/** Escape, the topmost first, while more dialogs and menus are open than `keep`. Escape goes to the focused
+ * element, and an editor that keeps it (the formula editor of Add New Column) leaves its dialog open: then the
+ * topmost dialog's close icon, as a person would. */
+async function closeOverlays(page: Page, keep: OverlayCounts = {all: 0, dialogs: 0}): Promise<void> {
+  for (let i = 0; i < 3 && await openOverlays(page) > keep.all; i++)
     await page.keyboard.press('Escape').catch(() => undefined);
+  // dialogs counted apart from menus: a menu Escape leaves open must not cost a dialog the Background opened
+  for (let i = 0; i < 3 && await openOverlays(page, DIALOGS) > keep.dialogs; i++) {
+    const close = page.locator(DIALOGS).filter({visible: true}).last().locator(DIALOG_CLOSE).first();
+    if (await close.count().catch(() => 0) === 0)
+      break;
+    await close.click({timeout: 2000}).catch(() => undefined);
+  }
 }
 
 /** Everything closed and the Home view current — the state the next scenario starts from. A page

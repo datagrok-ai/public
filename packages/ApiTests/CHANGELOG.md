@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Grid: Color Coding: Added checks that a layout keeps a coloring applied to the text (GROK-13668) and that a text coloring switched off leaves no `.color-coding-text` tag behind
 * GROK-21087: Read rows without a backing item as empty and create the item on edit
 * GROK-21058: Resolve renderers of grid-less value cells without dereferencing a null grid column
 

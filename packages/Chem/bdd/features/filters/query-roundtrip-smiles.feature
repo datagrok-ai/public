@@ -1,4 +1,4 @@
-@sketcher-controls
+@sketcher-controls @serial
 Feature: A query drawn in the substructure filter on smiles.csv: its rows, the sketcher reopened, and Ketcher
   The product owner's report of 2026-10-07 (crux-sketch spike query-roundtrip, H47): "Open mol1k. Open filters panel. In
   structure filter draw toluene (with crux sketcher). Mark the bond of benzene to methyl as aromatic. Click ok in dialog.
@@ -10,6 +10,8 @@ Feature: A query drawn in the substructure filter on smiles.csv: its rows, the s
   the column the same way. The other query features, on mol1K, SPGI and smiles.csv, with Crux and with Ketcher, are the
   package test category "query round trip"; this one checks the report's flow on smiles.csv, a SMILES column.
   The feature drives Crux's own controls (@sketcher-controls): a run that pins another sketcher skips it.
+  Serial (`@serial`): it filters while the sketcher is open, by Filter as you draw, the account's setting that
+  card-interplay and ketcher-sketch clear; they take turns.
 
   Background:
     Given user is logged in
