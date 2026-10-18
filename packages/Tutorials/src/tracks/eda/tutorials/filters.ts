@@ -157,15 +157,16 @@ export class FiltersTutorial extends Tutorial {
 
     this.title('Saving filter state');
 
-    await this.contextMenuAction('Save the current filter as a column', 'Filter to Column...', null,
+    await this.action('Save the current filter as a column', grok.functions.onAfterRunAction.pipe(
+      filter((call: DG.FuncCall) => call.func.name === 'FilterToColumn')), null,
       'To save the current filter state into a boolean column, use the <b>Filter to column...</b>' +
       ' command in the context menu. A new column will be added to the dataframe. By default, ' +
       'its name corresponds to the applied filters, for example, <b>AGE: [40,60]</b>, but you ' +
-      'can change it from the dialog when saving.', async () => {
+      'can change it from the dialog when saving.', Tutorial.apiSkip(async () => {
         await Tutorial.runContextMenu(filters.root, 'Filter to Column...');
         (await Tutorial.waitFor(() => DG.Dialog.getOpenDialogs().find((d) => d.title === 'Filter to Column')))!
           .getButton('OK').click();
-      });
+      }));
 
     await this.contextMenuAction('Save the filter configuration as "AGE: [40,60]"', 'Save...', null,
       'Choose <b>Save or apply | Save...</b> in the context menu ' +

@@ -129,6 +129,8 @@ type ErrorBehaviorSettings = {
   valueType?: string,
   errorColumn: boolean,
   errorColName: string,
+  /** The name is "<result column> errors" and follows the result column's name until one is typed in. */
+  errorColNameSuggested?: boolean,
 }
 
 type PreviewFailure = {failed: number, total: number, row: number, message: string};
@@ -179,10 +181,14 @@ export class AddNewColumnDialog {
   widgetColumns?: DG.ColumnGrid;
   widgetFunctions?: DG.Widget;
   resultColumnType?: string;
+  /** The expression [resultColumnType] was computed for. */
+  previewedExpression?: string;
+  private previews: Promise<void> = Promise.resolve();
   dialogTitle: string = '';
   call: DG.FuncCall;
   edit: boolean = false;
   currentCalculatedColName = '';
+  currentErrorColName = '';
 
   inputName?: DG.InputBase;
   inputType?: DG.InputBase;
@@ -555,6 +561,7 @@ export class AddNewColumnDialog {
     }
     this.errorBehaviorIcon = ui.iconFA('cog', () => this.showErrorBehaviorPopup());
     this.errorBehaviorIcon.classList.add('add-new-column-error-behavior-icon');
+    this.errorBehaviorIcon.setAttribute('aria-label', 'Rows that fail');
     ui.tooltip.bind(this.errorBehaviorIcon, () => this.createErrorBehaviorTooltip());
     this.inputType!.root.append(this.errorBehaviorIcon);
     this.updateErrorBehaviorIcon();
@@ -584,10 +591,16 @@ export class AddNewColumnDialog {
     return typeof value === 'number' && this.getErrorValueType() === DG.COLUMN_TYPE.QNUM ? DG.Qnum.toString(value) : `${value}`;
   }
 
+  /** The name typed in for the error column, or the one suggested from the result column's name. */
+  getErrorColName(): string {
+    const b = this.errorBehavior;
+    return b.errorColNameSuggested ? `${this.getResultColumnName().colName} errors` : b.errorColName;
+  }
+
   /** The `errorBehavior` parameter of AddNewColumn and EditColumnFormula; null when failed rows are just left empty. */
   getErrorBehaviorParam(): ErrorBehaviorParam | null {
     const value = this.getErrorColumnValue();
-    const errorColName = this.errorBehavior.errorColumn ? this.errorBehavior.errorColName.trim() : '';
+    const errorColName = this.errorBehavior.errorColumn ? this.getErrorColName().trim() : '';
     if (value == null && !errorColName)
       return null;
     const param: ErrorBehaviorParam = {};
@@ -612,8 +625,17 @@ export class AddNewColumnDialog {
     this.errorBehaviorIcon?.classList.toggle('add-new-column-error-behavior-set', this.getErrorBehaviorParam() != null);
   }
 
+  async showErrorBehaviorPopup(): Promise<void> {
+    // the value's editor takes the type the formula returns: opened within the preview's debounce, it would be a
+    // string editor whose value the computed type then discards
+    const expression = this.codeMirror?.state.doc.toString();
+    if (expression != null && expression !== this.previewedExpression)
+      await this.updatePreview(expression, false).catch(() => {});
+    this.openErrorBehaviorPopup();
+  }
+
   /** Rows are hidden rather than removed: the popup closes on a click whose target has left the DOM. */
-  showErrorBehaviorPopup(): void {
+  private openErrorBehaviorPopup(): void {
     const b = this.errorBehavior;
     const changed = () => {
       value.root.style.display = b.useValue ? '' : 'none';
@@ -630,14 +652,17 @@ export class AddNewColumnDialog {
     const value = this.createErrorValueInput(changed);
     const errorColumn = ui.input.bool('Error column', {value: b.errorColumn, onValueChanged: (v) => {
       b.errorColumn = v;
-      if (v && !b.errorColName)
-        name.value = b.errorColName = `${this.getResultColumnName().colName} errors`;
+      if (v && !b.errorColName) {
+        b.errorColNameSuggested = true;
+        name.value = this.getErrorColName();
+      }
       changed();
     }});
-    const name = ui.input.string('Column name', {value: b.errorColName, onValueChanged: (v) => {
-      if (v === b.errorColName)
+    const name = ui.input.string('Column name', {value: this.getErrorColName(), onValueChanged: (v) => {
+      if (v === this.getErrorColName())
         return;
       b.errorColName = v;
+      b.errorColNameSuggested = false;
       changed();
     }});
     value.root.style.display = b.useValue ? '' : 'none';
@@ -1215,6 +1240,10 @@ export class AddNewColumnDialog {
           return e.message ?? e;
         }
       }
+      //a nested vector function is computed once per column, and the enclosing call gets its per-row values
+      if (actualInputType === DG.TYPE.COLUMN && property.propertyType !== DG.TYPE.COLUMN &&
+        input?.func?.options['vectorFunc'] === 'true')
+        actualInputType = DG.TYPE.DYNAMIC;
       //handling dynamic type in actual input
       if (actualInputType === DG.TYPE.DYNAMIC) {
         //extract type from column in case $COLUMN_NAME was passed to formula
@@ -1602,10 +1631,10 @@ export class AddNewColumnDialog {
     const layout =
         ui.div([
           ui.div([
-            ui.block([
-              ui.block([this.inputName!.root], {style: {width: '65%'}}),
-              ui.block([this.inputType!.root], {style: {width: '35%'}}),
-            ]),
+            ui.div([
+              ui.div([this.inputName!.root], 'add-new-column-name'),
+              ui.div([this.inputType!.root], 'add-new-column-type'),
+            ], 'add-new-column-name-row'),
             ui.block([this.codeMirrorDiv!, this.hintDiv, this.errorDiv]),
             ui.block([this.uiPreview], {style: flexStyle}),
           ], 'ui-addnewcolumn-expression-pane'),
@@ -1623,17 +1652,25 @@ export class AddNewColumnDialog {
   }
 
   /** Updates the Preview Grid. Executed every time the controls are changed. */
-  async updatePreview(expression: string, changeName: boolean): Promise<void> {
+  /** Previews run one at a time: two at once take each other's columns out of the preview table. A failed
+   *  one rejects for its caller and lets the next run. */
+  updatePreview(expression: string, changeName: boolean): Promise<void> {
+    const run = this.previews.then(() => this.computePreview(expression, changeName));
+    this.previews = run.catch(() => {});
+    return run;
+  }
+
+  private async computePreview(expression: string, changeName: boolean): Promise<void> {
     //get result column name
     let colName = this.widget ? this.call.getParamValue('name') : this.getResultColumnName().colName;
+    const emptyColumnType = this.getEmptyColumnType(expression);
+    if (emptyColumnType)
+      this.error = '';
 
     if (this.error && this.error !== SYNTAX_ERROR && !this.changedType) {
       //clearing preview df in case of error (use only within dialog)
-      if (!this.widget) {
-        const rowCount = this.gridPreview!.dataFrame.rowCount;
-        this.gridPreview!.dataFrame = DG.DataFrame.fromColumns([DG.Column.string(colName, rowCount)]);
-        this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
-      }
+      if (!this.widget)
+        this.showEmptyPreviewColumn(colName, DG.COLUMN_TYPE.STRING);
       return;
     }
 
@@ -1657,6 +1694,24 @@ export class AddNewColumnDialog {
         this.gridPreview!.invalidate();
         this.currentCalculatedColName = colName;
       }
+      const errorColName = this.getErrorBehaviorParam()?.errorColName;
+      const gridErrorCol = this.currentErrorColName ? this.gridPreview!.dataFrame.col(this.currentErrorColName) : null;
+      if (gridErrorCol && errorColName) {
+        gridErrorCol.name = errorColName;
+        this.gridPreview!.invalidate();
+        this.currentErrorColName = errorColName;
+      }
+      return;
+    }
+
+    if (emptyColumnType) {
+      this.showEmptyPreviewColumn(colName, emptyColumnType);
+      this.currentCalculatedColName = colName;
+      this.resultColumnType = emptyColumnType;
+      this.previewedExpression = expression;
+      this.previewFailure = null;
+      this.updateError();
+      this.setAutoType();
       return;
     }
 
@@ -1692,6 +1747,7 @@ export class AddNewColumnDialog {
       potentialColIds[0] = colName;
     const result = this.previwDf!.col(potentialColIds[0]);
     this.resultColumnType = result?.type ?? this.resultColumnType;
+    this.previewedExpression = expression;
     this.previewFailure = this.countFailures(errorColIds.length ? this.previwDf!.col(errorColIds[0]) : null);
     this.updateError();
     this.updateErrorBehaviorIcon();
@@ -1707,6 +1763,7 @@ export class AddNewColumnDialog {
     for (const colName of errorColName && errorColIds.length ? potentialColIds.concat(errorColName) : potentialColIds)
       this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
     this.currentCalculatedColName = potentialColIds[0];
+    this.currentErrorColName = errorColName && errorColIds.length ? errorColName : '';
 
     for (const colName of potentialColIds.concat(errorColIds))
       this.previwDf!.columns.remove(colName);
@@ -1721,7 +1778,7 @@ export class AddNewColumnDialog {
 
     // the name input may have changed while the preview was being computed
     if (this.getResultColumnName().colName !== colName && (!this.error || this.error === SYNTAX_ERROR))
-      await this.updatePreview(expression, true);
+      await this.computePreview(expression, true);
   }
 
   /** Show `text` in this editor, unless it is already what is shown (a no-op
@@ -1802,7 +1859,14 @@ export class AddNewColumnDialog {
   /** Runs the formula on the preview table. [errorColIds] gets the column of per-row messages, when one is asked for. */
   async getPreviewResults(colName: string, colType: string, expression: string, potentialColIds: string[],
     errorColIds: string[] = []): Promise<void> {
-    const params: {[key: string]: unknown} = {table: this.previwDf!, name: colName, expression: expression, type: 'auto'};
+    // the preview table still holds the column being edited, next to which the result would be named "<name> (2)"
+    const edited = this.edit ? this.previwDf!.col(this.call.getParamValue('name')) : null;
+    if (edited)
+      this.previwDf!.columns.remove(edited.name);
+    const treatAsString = !this.widget && this.inputType ? this.getSelectedType()[1] :
+      this.call.getParamValue('treatAsString') ?? false;
+    const params: {[key: string]: unknown} = {table: this.previwDf!, name: colName, expression: expression, type: 'auto',
+      treatAsString: treatAsString, subscribeOnChanges: false};
     const errorBehavior = this.errorBehaviorIcon ? this.getErrorBehaviorParam() : null;
     // The preview is of the type the formula returns; a value for another type the user picked applies on OK.
     if (errorBehavior?.valueOnError != null && this.resultColumnType != null && this.resultColumnType !== this.getErrorValueType())
@@ -1819,7 +1883,8 @@ export class AddNewColumnDialog {
       }
       potentialColIds[potentialColIds.length] = args.columns[0].name;
       const mappedTypes = VALIDATION_TYPES_MAPPING[colType] ?? [];
-      this.error = colType !== 'auto' &&
+      // any result converts to a string column
+      this.error = colType !== 'auto' && colType !== DG.COLUMN_TYPE.STRING &&
        args.columns[0].type !== colType && !mappedTypes.includes(args.columns[0].type) ?
         this.typeMismatchError(args.columns[0].type, colType) : '';
     });
@@ -1959,6 +2024,21 @@ export class AddNewColumnDialog {
     return selectedType;
   }
 
+  /** The type of the plain empty column OK adds when the formula is left empty, auto being string; null when OK
+   *  runs a formula. */
+  getEmptyColumnType(expression: string): string | null {
+    if (this.widget || this.edit || this.isFilterFormulaEditor || this.isExpressionEditor || expression.trim() !== '')
+      return null;
+    const type = this.getSelectedType()[0];
+    return type === this.autoType ? DG.COLUMN_TYPE.STRING : type;
+  }
+
+  showEmptyPreviewColumn(colName: string, type: string): void {
+    const rowCount = this.gridPreview!.dataFrame.rowCount;
+    this.gridPreview!.dataFrame = DG.DataFrame.fromColumns([DG.Column.fromType(type as DG.COLUMN_TYPE, colName, rowCount)]);
+    this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
+  }
+
   /** Adds (or removes) the column auto-type caption to "Auto" item in the ChoiceBox. */
   setAutoType(): void {
     const input = (this.inputType!.input as any)[0];
@@ -1997,6 +2077,7 @@ export class AddNewColumnDialog {
       this.call.setParamValue('expression', this.codeMirror!.state.doc.toString());
       return;
     }
+    const emptyColumnType = this.getEmptyColumnType(this.codeMirror!.state.doc.toString());
     if (this.edit) {
       const colToUpdate = this.sourceDf?.col(this.call!.getParamValue('name'));
       if (colToUpdate) {
@@ -2026,7 +2107,9 @@ export class AddNewColumnDialog {
         this.reportFailedRows(this.sourceDf!.col(finalName));
       } else
         grok.shell.error(`Column ${this.call!.getParamValue('name')} is missing in the table`);
-    } else {
+    } else if (emptyColumnType)
+      this.sourceDf!.columns.addNew(this.getResultColumnName().unusedName, emptyColumnType as DG.ColumnType);
+    else {
       if (!this.call.getParamValue('table'))
         this.call.setParamValue('table', this.sourceDf);
       this.call.setParamValue('name', this.edit ? this.inputName!.value : this.getResultColumnName().unusedName);

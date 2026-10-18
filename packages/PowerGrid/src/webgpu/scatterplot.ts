@@ -4,7 +4,8 @@
 import * as DG from 'datagrok-api/dg';
 import {Frame, RowList} from '../scatterplot-data';
 import {Renderers, ScatterRenderer} from '../scatterplot-renderer';
-import {DRAW_SHADER, FLAGS, FRAME_BYTES, PICK_SHADER, PICK_WORKGROUP} from './shaders';
+import {plotCanvases} from '../scatterplot-look';
+import {ANY_KIND, DRAW_SHADER, FLAGS, FRAME_BYTES, PICK_SHADER, PICK_WORKGROUP} from './shaders';
 
 const STORAGE = ['x', 'y', 'colors', 'sizes', 'types', 'selection', 'filtered', 'filteredOut', 'selected'] as const;
 type Storage = typeof STORAGE[number];
@@ -13,13 +14,18 @@ const MAX_WORKGROUPS = 65535;
 
 interface Pipelines {
   dot: GPURenderPipeline;
-  shape: GPURenderPipeline;
+  /** Shape pipelines by the marker kind they fix, or `ANY_KIND`; compiled on first use. */
+  shapes: Map<number, GPURenderPipeline>;
   pick: GPUComputePipeline;
   drawLayout: GPUBindGroupLayout;
   pickLayout: GPUBindGroupLayout;
+  draw: GPUShaderModule;
+  layout: GPUPipelineLayout;
+  format: GPUTextureFormat;
 }
 
 const pipelines = new WeakMap<GPUDevice, Pipelines>();
+const PREMULTIPLIED: GPUBlendComponent = {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'};
 
 /** Compiled once per device: shaders and pipelines do not depend on the plot. */
 function devicePipelines(device: GPUDevice): Pipelines {
@@ -38,21 +44,28 @@ function devicePipelines(device: GPUDevice): Pipelines {
   const draw = device.createShaderModule({code: DRAW_SHADER});
   const format = navigator.gpu.getPreferredCanvasFormat();
   const layout = device.createPipelineLayout({bindGroupLayouts: [drawLayout]});
-  const premultiplied: GPUBlendComponent = {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'};
   p = {
-    drawLayout, pickLayout,
+    drawLayout, pickLayout, draw, layout, format, shapes: new Map(),
     dot: device.createRenderPipeline({layout, primitive: {topology: 'point-list'},
       vertex: {module: draw, entryPoint: 'dotVertex'},
       fragment: {module: draw, entryPoint: 'dotFragment', targets: [{format}]}}),
-    shape: device.createRenderPipeline({layout, primitive: {topology: 'triangle-strip'},
-      vertex: {module: draw, entryPoint: 'shapeVertex'},
-      fragment: {module: draw, entryPoint: 'shapeFragment',
-        targets: [{format, blend: {color: premultiplied, alpha: premultiplied}}]}}),
     pick: device.createComputePipeline({layout: device.createPipelineLayout({bindGroupLayouts: [pickLayout]}),
       compute: {module: device.createShaderModule({code: PICK_SHADER}), entryPoint: 'pick'}}),
   };
   pipelines.set(device, p);
   return p;
+}
+
+function shapePipeline(device: GPUDevice, p: Pipelines, kind: number): GPURenderPipeline {
+  let pipeline = p.shapes.get(kind);
+  if (!pipeline) {
+    pipeline = device.createRenderPipeline({layout: p.layout, primitive: {topology: 'triangle-strip'},
+      vertex: {module: p.draw, entryPoint: 'shapeVertex'},
+      fragment: {module: p.draw, entryPoint: 'shapeFragment', constants: {MARKER_KIND: kind},
+        targets: [{format: p.format, blend: {color: PREMULTIPLIED, alpha: PREMULTIPLIED}}]}});
+    p.shapes.set(kind, pipeline);
+  }
+  return pipeline;
 }
 
 const renderers = new Renderers<ScatterPlotGPU>();
@@ -61,11 +74,12 @@ const renderers = new Renderers<ScatterPlotGPU>();
 export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean,
   device: GPUDevice | null): HTMLCanvasElement | null {
   let renderer = renderers.get(sc);
-  if (renderer && (!show || !device || renderer.device !== device || !sc.canvas.isConnected)) {
+  const connected = plotCanvases(sc).canvas.isConnected;
+  if (renderer && (!show || !device || renderer.device !== device || !connected)) {
     renderer.dispose();
     renderer = undefined;
   }
-  if (!show || !device || !sc.canvas.isConnected)
+  if (!show || !device || !connected)
     return null;
   renderer ??= new ScatterPlotGPU(sc, device);
   renderer.render(sc);
@@ -73,8 +87,8 @@ export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean,
 }
 
 /** The row under [pt], or null when [sc] is not drawn with WebGPU and the CPU has to answer. */
-export function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Point): Promise<number> | null {
-  return renderers.get(sc)?.hitTest(sc, pt) ?? null;
+export function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Point): Promise<number | null> | null {
+  return renderers.get(sc)?.hitTest(pt) ?? null;
 }
 
 export function disposeWebGPURenderers(): void {
@@ -128,16 +142,15 @@ class ScatterPlotGPU extends ScatterRenderer {
     this.write(list, rows);
   }
 
-  render(sc: DG.ScatterPlotViewer): void {
-    const frame = this.data.update(sc);
-    this.layout(frame);
+  protected drawFrame(frame: Frame): void {
     for (const list of PASSES)
       this.device.queue.writeBuffer(this.uniforms[list], 0, this.frameUniforms(frame, list));
     const groups = this.groups();
     const encoder = this.device.createCommandEncoder();
     const pass = encoder.beginRenderPass({colorAttachments: [{view: this.context.getCurrentTexture().createView(),
       clearValue: {r: 0, g: 0, b: 0, a: 0}, loadOp: 'clear', storeOp: 'store'}]});
-    pass.setPipeline(frame.dots ? this.pipelines.dot : this.pipelines.shape);
+    pass.setPipeline(frame.dots ? this.pipelines.dot :
+      shapePipeline(this.device, this.pipelines, frame.rowTypes ? ANY_KIND : frame.markerType));
     for (const list of PASSES) {
       const count = frame.rows[list];
       if (count == 0)
@@ -152,8 +165,11 @@ class ScatterPlotGPU extends ScatterRenderer {
     this.device.queue.submit([encoder.finish()]);
   }
 
-  async hitTest(sc: DG.ScatterPlotViewer, pt: DG.Point): Promise<number> {
-    const frame = this.data.update(sc);
+  /** The row under [pt] in the frame last drawn, or null before the first frame. */
+  async hitTest(pt: DG.Point): Promise<number | null> {
+    const frame = this.frame;
+    if (!frame)
+      return null;
     const count = frame.rows.filtered;
     if (count == 0)
       return -1;

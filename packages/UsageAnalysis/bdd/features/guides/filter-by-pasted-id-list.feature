@@ -13,9 +13,11 @@ Feature: Filter a table down to a list of IDs
     And simple mode is off
     And user opens spgi dataset
     When user clicks on filter icon in toolbar
+    And user hovers over caption of "Structure" filter card
     And user adds a card for "Id" to the filter panel
     And user hovers over "Id" filter card
     And user clicks on search icon of "Id" filter card
+    And user clicks on search of "Id" filter card
     And user pastes "CAST-634783\nCAST-634790\nCAST-634812\nCAST-634851\nCAST-634880" into the search of the "Id" filter card
     Then 5 rows should pass the filter
     And the filter should pass exactly the rows where "Id" is one of "CAST-634783, CAST-634790, CAST-634812, CAST-634851, CAST-634880"

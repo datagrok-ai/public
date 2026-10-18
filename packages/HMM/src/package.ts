@@ -93,6 +93,7 @@ export class PackageFunctions {
     friendlyName: 'Profile HMM Search',
     description: 'Searches a sequence column with a profile HMM (Pfam family, Pfam accession or HMM file) using hmmsearch in the browser; adds score, E-value and domain columns and annotates the domains. HMMER 3.4 is reimplemented here in Rust and compiled to WebAssembly (Rusty-HMMER), not the original HMMER; results are identical.',
     topMenu: 'Bio | Search | Profile HMM Search...',
+    requiresSemType: 'Macromolecule',
   })
   static async profileHmmSearchDialog(): Promise<void> {
     await (await search()).showProfileSearchDialog(pool(), _package);
@@ -165,6 +166,7 @@ export class PackageFunctions {
     friendlyName: 'Profile HMM Logo',
     description: 'Adds a WebLogo of a profile HMM (hmmlogo heights) to the current table view. HMMER 3.4 is reimplemented here in Rust and compiled to WebAssembly (Rusty-HMMER), not the original HMMER; results are identical.',
     topMenu: 'Bio | Analyze | Profile HMM Logo...',
+    requiresSemType: 'Macromolecule',
   })
   static async profileLogoDialog(): Promise<void> {
     await (await import('./logo')).showLogoDialog(pool(), _package);
@@ -175,6 +177,7 @@ export class PackageFunctions {
     friendlyName: 'Build Profile HMM',
     description: 'Builds a profile HMM (hmmbuild, in the browser) from aligned rows of a column, then searches the table with it, annotates the hits and shows its logo. HMMER 3.4 is reimplemented here in Rust and compiled to WebAssembly (Rusty-HMMER), not the original HMMER; results are identical.',
     topMenu: 'Bio | Search | Build Profile HMM...',
+    requiresSemType: 'Macromolecule',
   })
   static async buildProfileDialog(): Promise<void> {
     await (await import('./build')).showBuildProfileDialog(pool());
@@ -201,6 +204,7 @@ export class PackageFunctions {
     friendlyName: 'Homology Search (phmmer)',
     description: 'Searches a protein sequence column with one query sequence (a row or typed) using phmmer in the browser; adds bit score, E-value and domain columns and annotates the matches. HMMER 3.4 is reimplemented here in Rust and compiled to WebAssembly (Rusty-HMMER), not the original HMMER; results are identical.',
     topMenu: 'Bio | Search | Homology Search (phmmer)...',
+    requiresSemType: 'Macromolecule',
   })
   static async homologySearchDialog(): Promise<void> {
     const {showHomologySearchDialog} = await import('./homology');
@@ -229,6 +233,7 @@ export class PackageFunctions {
     friendlyName: 'Find Domains (HMMER)',
     description: 'Annotates protein domains (built-in Pfam biologics library, Pfam accessions or an HMM file) on a sequence column using hmmscan in the browser. Overlapping matches of one Pfam clan are resolved as Pfam does (this package\'s implementation, checked against pfam_scan.pl). HMMER 3.4 is reimplemented here in Rust and compiled to WebAssembly (Rusty-HMMER), not the original HMMER; results are identical.',
     topMenu: 'Bio | Annotate | Find Domains (HMMER)...',
+    requiresSemType: 'Macromolecule',
   })
   static async findDomainsDialog(): Promise<void> {
     await (await domains()).showFindDomainsDialog(pool(), _package);

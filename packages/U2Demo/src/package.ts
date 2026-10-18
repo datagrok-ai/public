@@ -3,68 +3,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-/* Every skin the library ships except css/icons.css (the standalone `.u2-standalone` icon font —
-   the platform already serves Font Awesome) and css/theme-dark.css (an opt-in theme). A control
-   whose skin is missing falls back to UA chrome, which reads as a u2 defect. */
-import '@datagrok-libraries/u2/css/tokens.css';
-import '@datagrok-libraries/u2/css/elements.css';
-import '@datagrok-libraries/u2/css/inputs.css';
-import '@datagrok-libraries/u2/css/number.css';
-import '@datagrok-libraries/u2/css/slider.css';
-import '@datagrok-libraries/u2/css/range-slider.css';
-import '@datagrok-libraries/u2/css/radio.css';
-import '@datagrok-libraries/u2/css/color.css';
-import '@datagrok-libraries/u2/css/date.css';
-import '@datagrok-libraries/u2/css/font.css';
-import '@datagrok-libraries/u2/css/tags.css';
-import '@datagrok-libraries/u2/css/choice.css';
-import '@datagrok-libraries/u2/css/multi-select.css';
-import '@datagrok-libraries/u2/css/combobox.css';
-import '@datagrok-libraries/u2/css/list.css';
-import '@datagrok-libraries/u2/css/functions-browser.css';
-import '@datagrok-libraries/u2/css/grid.css';
-import '@datagrok-libraries/u2/css/icon-input.css';
-import '@datagrok-libraries/u2/css/function-input.css';
-import '@datagrok-libraries/u2/css/func-call-history-browser.css';
-import '@datagrok-libraries/u2/css/func-call-input.css';
-import '@datagrok-libraries/u2/css/message-input.css';
-import '@datagrok-libraries/u2/css/file.css';
-import '@datagrok-libraries/u2/css/progress.css';
-import '@datagrok-libraries/u2/css/spec.css';
-import '@datagrok-libraries/u2/css/wizard.css';
-import '@datagrok-libraries/u2/css/tree.css';
-import '@datagrok-libraries/u2/css/tabs.css';
-import '@datagrok-libraries/u2/css/splitter.css';
-import '@datagrok-libraries/u2/css/accordion.css';
-import '@datagrok-libraries/u2/css/breadcrumbs.css';
-import '@datagrok-libraries/u2/css/toolbar.css';
-import '@datagrok-libraries/u2/css/menu.css';
-import '@datagrok-libraries/u2/css/menu-bar.css';
-import '@datagrok-libraries/u2/css/dialog.css';
-import '@datagrok-libraries/u2/css/tooltip.css';
-import '@datagrok-libraries/u2/css/notify.css';
-import '@datagrok-libraries/u2/css/tour.css';
-import '@datagrok-libraries/u2/css/form.css';
-import '@datagrok-libraries/u2/css/section.css';
-import '@datagrok-libraries/u2/css/card.css';
-import '@datagrok-libraries/u2/css/property-grid.css';
-import '@datagrok-libraries/u2/css/async.css';
-import '@datagrok-libraries/u2/css/typeahead.css';
-import '@datagrok-libraries/u2/css/entity.css';
-import '@datagrok-libraries/u2/css/badge.css';
-import '@datagrok-libraries/u2/css/table.css';
-import '@datagrok-libraries/u2/css/adaptive.css';
-import '@datagrok-libraries/u2/css/buttons.css';
-import '@datagrok-libraries/u2/css/designer.css';
-import '@datagrok-libraries/u2/css/viewers.css';
-import '@datagrok-libraries/u2/css/filter.css';
-import '@datagrok-libraries/u2/css/filter-query.css';
-import '@datagrok-libraries/u2/css/domain.css';
 import '../css/u2demo.css';
 
 import {computed} from '@datagrok-libraries/u2';
-import {appView, designerView, disposePanel, registerControlInspector, registerPlatformComponents,
-  registerSpecNodeHandler} from '@datagrok-libraries/u2/src/dg/index.js';
+import {domains} from '@datagrok-libraries/ems/src/dg';
+import {appView, designerView, registerControlInspector, registerPlatformComponents, registerSpecNodeHandler} from '@datagrok-libraries/u2/src/dg/index.js';
+import {installEms} from '@datagrok-libraries/ems/src/dg';
 import {DemoShell, buildDemo} from './demo';
 import {DemoLeaf, leafForPath, pathOf} from './nav';
 import {buildBrowseTree} from './browse';
@@ -118,13 +62,13 @@ function openDemo(leaf: DemoLeaf): void {
 export function u2DemoApp(path?: string): DG.ViewBase {
   registerEnabledEditors();
   registerPropRowHandler();
-  registerControlInspector();
+  const unregisterInspector = registerControlInspector();
   registerDemoSourceHandler();
   // the platform routes an app URL's query string into `meta.params`, not into the `meta.url` path
   readFilterPath(path ?? '') || readFilterPath(location.search);
   const {content, shell, status} = buildDemo({initial: leafForPath(path)?.id});
   // the inspector's panel outlives this view otherwise, holding the control it last rendered
-  content.own(disposePanel);
+  content.own(unregisterInspector);
   const view = appView({
     name: 'U2 Demo', content, status,
     ribbon: [content.runInScope(() => demoRibbon(shell))],
@@ -162,8 +106,18 @@ export function reportsBrowserApp(): DG.ViewBase {
 //output: view result
 export function u2DesignerApp(): DG.ViewBase {
   registerPlatformComponents();
+  installEms();
   registerSpecNodeHandler();
   return designerView(DESIGNER_SPEC, {name: 'U2 Designer', ctx: designerContext()});
+}
+
+//name: Northwind Orders
+//description: The zero-code u2 app over the external `northwind` binding (the fixture package in core/docs/features/ems/external-bindings/fixtures/northwind) — byte-identical to Stockroom's
+//tags: app
+//meta.browsePath: Dev
+//output: view result
+export async function northwindOrdersApp(): Promise<DG.ViewBase> {
+  return (await domains.table('northwind.order')).app();
 }
 
 //name: u2AutoRegisterEditors

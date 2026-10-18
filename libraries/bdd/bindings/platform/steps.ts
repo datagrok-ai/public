@@ -4,12 +4,12 @@ import {type Locator, type Page, test} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {el, type ElementRef} from '../../src/runtime/args.js';
-import {expectState} from '../../src/runtime/assertions.js';
-import {click, dblclick, editorOf, setExpanded} from '../../src/runtime/gestures.js';
+import {expectState, type State} from '../../src/runtime/assertions.js';
+import {click, dblclick, drag, editorOf, setExpanded} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
 import {cssString, escapeRegExp, exactText, locate} from '../../src/runtime/locate.js';
-import {armEvent} from '../../src/runtime/viewer-menus.js';
+import {armEvent, openContextMenuOf} from '../../src/runtime/viewer-menus.js';
 import {pickMenuPath, settleAll} from '../../src/runtime/viewers.js';
 import {RUN_SUFFIX, type SavedScript, deleteChatsOf, deleteLayoutsAtEnd, deletePictures, fixtureFamilies, isStaleFixture,
   pictureIdOf, rememberSavedScript, reportedServices, serverNow, serverRequests, serviceGap} from '../../src/runtime/server.js';
@@ -257,6 +257,19 @@ export const noProjectOnServer = Given('no project named {string} is on the serv
   await cleanup();
 }, {tier: 'api', description: 'deletes the projects an earlier run left under those names (comma-separated; with their tables and views), and again when the feature ends — for a save made through the Save dialog'});
 
+export const taggedProjectOnServer = Given('a project named {string} tagged {string} is on the server', async (page: Page, name: string, tag: string) => {
+  const cleanup = () => deleteLeftoverProjects(page, [name]);
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+  await page.evaluate(async ([n, t]) => {
+    const project = DG.Project.create();
+    project.name = n;
+    project.tag(t);
+    await grok.dapi.projects.save(project);
+  }, [name, tag] as [string, string]);
+  await expectNamedCount(page, 'projects', 'projects', name, 1);
+}, {tier: 'api', description: 'an empty project saved through the JS API with that entity tag, which a "#tag" search finds; an earlier one of the name goes first, and it is deleted at feature end'});
+
 /* The "user's own" cleanups are for names a feature does not choose — a tutorial dictates them, and
    people who took it by hand saved theirs under the same names: those of other users stay. */
 export const ownProjectGone = Given('the user\'s own project {string} is removed now and at feature end', async (page: Page, name: string) => {
@@ -390,6 +403,14 @@ export const currentViewType = Then('the current view should be a {word} view', 
 export const viewIsCurrent = Then('the {string} view should be current', async (page: Page, name: string) => {
   await expect.poll(() => page.evaluate(() => String((window as any).grok.shell.v?.name ?? '')), {message: 'the current view'}).toBe(name);
 }, {description: 'grok.shell.v by name — what a command that opens a view leaves in front'});
+
+export const currentViewShows = Then('the current view should show the text {string}', async (page: Page, text: string) => {
+  let shown = '';
+  await expect.poll(async () => (shown = (await page.evaluate(() => String((window as any).grok.shell.v?.root?.innerText ?? '')))
+    .replace(/\s+/g, ' ')).includes(text)).toBe(true).catch(() => {
+    throw new Error(`the current view does not show "${text}"; it shows "${shown.slice(0, 300)}"`);
+  });
+}, {description: 'the rendered text of grok.shell.v (innerText: what is shown, not what is hidden), case-sensitive — a document a viewer renders as text'});
 
 export const closeCurrentView = When('user closes the current view', async (page: Page) => {
   await page.evaluate(() => { (window as any).grok.shell.v?.close(); });
@@ -626,16 +647,51 @@ export function sharingShownName(): string {
   return sharingLogin().split('@')[0].replace(/[^a-z0-9]/gi, '');
 }
 
-export const pickSharingUser = When('user picks the sharing user in {element}', async (page: Page, target: ElementRef) => {
-  const login = sharingLogin();
+const SUGGESTION_ROWS = '.d4-user-selector-drop-down tr, .d4-tags-selector-drop-down tr';
+
+/** The local part of a login, typed key by key so the typeahead asks the server as a person's typing does. */
+async function typeLogin(page: Page, target: ElementRef, login: string): Promise<void> {
   const editor = await editorOf(page, el(target.phrase));
   await editor.click();
   await editor.pressSequentially(login.split('@')[0]);
-  const row = page.locator('.d4-user-selector-drop-down tr, .d4-tags-selector-drop-down tr')
-    .filter({hasText: new RegExp(sharingShownName(), 'i')}).first();
+}
+
+async function pickUser(page: Page, target: ElementRef, login: string, shown: RegExp): Promise<void> {
+  await typeLogin(page, target, login);
+  const row = page.locator(SUGGESTION_ROWS).filter({has: page.locator('.d4-user-selector-user-name', {hasText: shown})}).first();
   await expect(row, `the "${login}" row of the user typeahead`).toBeVisible({timeout: pollMs(15000)});
   await row.click();
-}, {tier: 'ui', description: 'types the login of DATAGROK_SHARING_LOGIN and takes it from the typeahead'});
+}
+
+export const pickSharingUser = When('user picks the sharing user in {element}', (page: Page, target: ElementRef) =>
+  pickUser(page, target, sharingLogin(), new RegExp(sharingShownName(), 'i')),
+{tier: 'ui', description: 'types the login of DATAGROK_SHARING_LOGIN and takes it from the typeahead'});
+
+export const pickRunningAccount = When('user picks the running account in {element}', (page: Page, target: ElementRef) => {
+  const own = ownSessions.get(page);
+  if (!own)
+    throw new Error('the feature has not signed in as another account, so there is no running account to pick');
+  return pickUser(page, target, own.login, exactText(own.name));
+}, {tier: 'ui', description: 'the account the feature started with, taken from the typeahead by its name while another account is signed in'});
+
+export const typeOwnLogin = When('user types the current user\'s login into {element}', async (page: Page, target: ElementRef) =>
+  typeLogin(page, target, await page.evaluate(() => String(grok.shell.user.login))), {tier: 'ui', description: 'the local part of the signed-in account\'s login, typed key by key so a typeahead fires; not committed'});
+
+/* The typeahead asks the server per keystroke and filters what comes back, so a row read off a list
+   still answering an earlier keystroke proves nothing. The rows are read once they are the server's
+   answer to the text now in the box — with the account's own row, or without it — and only then is
+   the account looked for among them. */
+export const suggestionsNotOfferOwn = Then('the user suggestions should not offer the current user', async (page: Page) => {
+  const me = await page.evaluate(() => ({group: String(grok.shell.user.group.id), name: String(grok.shell.user.friendlyName),
+    text: String((document.activeElement as HTMLInputElement | null)?.value ?? '')}));
+  const lookup = await (await serverRequests(page)).get<{id: string}[]>(`/groups/lookup?query=${encodeURIComponent(me.text)}`);
+  if (!lookup.some((g) => g.id === me.group))
+    throw new Error(`the server does not offer the account for "${me.text}": the check would prove nothing`);
+  const names = page.locator('.d4-user-selector-drop-down').filter({visible: true}).locator('tr .d4-user-selector-user-name');
+  await expect.poll(async () => [lookup.length - 1, lookup.length].includes(await names.count()),
+    {message: `the suggestions for "${me.text}", as the server answered them`, timeout: pollMs(15000)}).toBe(true);
+  expect(await names.allTextContents(), `the suggestions for "${me.text}"`).not.toContain(me.name);
+}, {tier: 'ui', description: 'read once the drop-down holds the server\'s answer to the typed text; the account\'s own name is not among the rows (GROK-20755)'});
 
 /* The grant row of the second account in a Share dialog; its Remove button shows while the row is
    hovered. The row goes at once, the grant only when the dialog is confirmed. */
@@ -647,6 +703,12 @@ export const removeSharingUser = When('user removes the sharing user from {eleme
   await row.locator('[name="button-Remove"]').click();
   await expect(row, `the grant row of "${shown}" after Remove`).toBeHidden();
 }, {tier: 'ui', description: 'hovers the grant row of DATAGROK_SHARING_LOGIN and clicks its Remove button'});
+
+export const sharingUserLevel = Then('the access level of the sharing user in {element} should be {string}', async (page: Page, target: ElementRef, level: string) => {
+  const shown = sharingShownName();
+  const row = (await locate(page, target)).locator('[name^="div-permissions-row-"]').filter({visible: true}).filter({hasText: new RegExp(shown, 'i')}).first();
+  await expect(row.locator('.grok-privilege-selector-label'), `the access level in the grant row of "${shown}"`).toHaveText(exactText(level));
+}, {tier: 'ui', description: 'the grant row of DATAGROK_SHARING_LOGIN in a Share dialog is listed, at that level'});
 
 /* Whom an entity is shared with, read where the platform shows it. grok.dapi.permissions.get answers
    with the edit and view buckets only, and a share made through the dialog lands in neither — the
@@ -712,8 +774,9 @@ async function sessionOf(page: Page, login: string): Promise<string> {
       throw new Error(`no user "${l}" on the server`);
     const keyText = await (await fetch(`${grok.dapi.root}/users/${user.id}/dev_key`, {headers: {Authorization: auth}})).text();
     const key = keyText.startsWith('"') ? JSON.parse(keyText) : keyText;
-    const answer = await (await fetch(`${grok.dapi.root}/users/login/dev`, {method: 'POST', headers: {Authorization: `Dev ${key}`}}))
-      .json().catch(() => null);
+    // the login answers with a Set-Cookie of the new session: taken, it signs the page's next load in as that account
+    const answer = await (await fetch(`${grok.dapi.root}/users/login/dev`, {method: 'POST', headers: {Authorization: `Dev ${key}`},
+      credentials: 'omit'})).json().catch(() => null);
     if (!answer?.token)
       throw new Error(`the dev key of "${l}" was not exchanged for a session`);
     return answer.token as string;
@@ -808,6 +871,20 @@ export const expandShared = When('user expands {string} shared by the running ac
 
 export const openShared = When('user double-clicks on {string} shared by the running account', (page: Page, path: string) =>
   dblclick(page, sharedByRunningAccount(page, path)),
+{tier: 'ui', description: 'a node under My stuff > Shared with me > <the account the feature started with>'});
+
+export const dragShared = When('user drags {string} shared by the running account to {string} shared by the running account',
+  (page: Page, source: string, target: string) => drag(page, sharedByRunningAccount(page, source), sharedByRunningAccount(page, target)),
+  {tier: 'ui', description: 'one node under My stuff > Shared with me > <the account the feature started with> onto another'});
+
+export const pickFromSharedMenu = When('user picks {string} from the context menu of {string} shared by the running account',
+  async (page: Page, menuPath: string, path: string) => {
+    await openContextMenuOf(page, sharedByRunningAccount(page, path));
+    await pickMenuPath(page, menuPath);
+  }, {tier: 'ui', description: 'right-clicks a node under My stuff > Shared with me > <the account the feature started with>'});
+
+export const sharedShouldBe = Then('{string} shared by the running account should be {state}', (page: Page, path: string, state: State) =>
+  expectState(page, sharedByRunningAccount(page, path), state),
 {tier: 'ui', description: 'a node under My stuff > Shared with me > <the account the feature started with>'});
 
 /* My stuff names an entity bucket "My scripts" for an account with a home share and "Scripts" for one
@@ -2003,7 +2080,7 @@ export const scriptsView = Given('user opens the Scripts view', async (page: Pag
     await search.fill('');
   await expect.poll(() => page.locator('.grok-items-view-counts').filter({visible: true}).first().textContent()
     .then((t) => (t ?? '').trim()).catch(() => ''), {message: 'the Scripts gallery counter once it has loaded every script',
-    timeout: pollMs(60000)}).toMatch(/^\d+ of \d+$/);
+    timeout: pollMs(60000)}).toMatch(/^\d+( of \d+)?$/);
 }, {tier: 'api', description: 'Browse > Platform > Functions > Scripts, by its route (or made current when open), with its search empty and every script loaded'});
 
 /* --- the console ---------------------------------------------------------------------------- */
@@ -2074,6 +2151,15 @@ export const paneCountAtLeast = Then('the {string} pane of the context panel sho
   await expect.poll(async () => Number(await paneCountOf(page, pane) || '0'),
     {message: `the count the "${pane}" pane of the context panel shows`, timeout: pollMs(60000)}).toBeGreaterThanOrEqual(count);
 }, {description: 'a counting pane with at least that many entries — the platform records an entity made through the JS API with a delay of its own'});
+
+/** The pane counts the log once, when the panel renders the object: under load the server logs a run after a
+ * fresh view has already shown 0. */
+export const scriptLogged = Given('the server has logged activity on the {string} script', async (page: Page, name: string) => {
+  await expect.poll(() => page.evaluate(async (n) => {
+    const script = await grok.dapi.scripts.filter(`name = "${n}"`).first();
+    return script ? await grok.dapi.log.where({entityId: script.id}).count() : -1;
+  }, name), {message: `the server's log of the "${name}" script (-1: no such script)`, timeout: pollMs(60000)}).toBeGreaterThan(0);
+}, {tier: 'api', description: 'the log the Activity pane counts, read on the server until it has an entry'});
 
 /* --- the side panel ------------------------------------------------------------------------------ */
 

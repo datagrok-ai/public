@@ -60,6 +60,18 @@ The package version is the ChEMBL release plus `.0.0` — 37.0.0 ships ChEMBL 37
   `explorer-config.ts` (DBExplorer entry points, joins, and column subsets), `demo.ts`
   (demo app).
 
+## Schema changes across ChEMBL releases
+
+ChEMBL 36 replaced `frac/hrac/irac_classification` and their `molecule_*_classification`
+mappings with `pesticide_classification` (`ref_type`, `mechanism_comment`, `compound_name`) +
+`pesticide_class_mapping`, and dropped `research_stem`, `research_companies`,
+`molecule_synonyms.res_stem_id` and `molecule_dictionary.indication_class`. A query or
+explorer join that still names one of these (e.g. `FracClassification` in `queries.sql`,
+`explorer-config.ts`) fails against ChEMBL ≥ 36. The demo hierarchy is WHO ATC
+(`atc_classification` + `molecule_atc_classification`). db.datagrok.ai runs ChEMBL 37 since
+2026-08-31; the local `public/docker/localhost*.docker-compose.yaml` files still pin ChEMBL 32
+(`datagrok/demo_db_chembl:…-32`).
+
 See also:
 
 * [Grok API](https://datagrok.ai/help/develop/packages/js-api)

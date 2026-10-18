@@ -7,8 +7,11 @@ Feature: The row analyses on a table with an empty sequence
   after it; Diversity Search counts the empty sequence as one of the column's values. The table is
   opened and its first row emptied once.
 
-  Activity Cliffs over a column with empty sequences is tested in Bio src/tests/activity-cliffs-tests.ts
-  (activityCliffsWithEmptyRows).
+  Activity Cliffs, run from its dialog while the empty row is current, embeds every row and docks its
+  cliff plot without a word about the empty sequence, and leaves the table its rows; what it computes
+  over a column with empty sequences is tested in Bio src/tests/activity-cliffs-tests.ts
+  (activityCliffsWithEmptyRows). Activity Cliffs needs an activity column, which filter_FASTA does
+  not have: it runs on FASTA_sample.
 
   Background:
     Given user is logged in
@@ -33,4 +36,22 @@ Feature: The row analyses on a table with an empty sequence
     And the "subset size" reading of "Sequence Diversity Search" viewer should be 10
     And no error or warning balloon should have been shown
     And the table should have 14 rows
+    And no errors should have been logged
+
+  @GROK-16111
+  Scenario: Activity Cliffs runs with an empty current row
+    Given user opens FASTA_sample dataset
+    When user sets "Sequence" column in row 1 to ""
+    And user makes row 1 current
+    Then the value of "Sequence" column in row 1 should be ""
+    When user picks "Bio > Analyze > Activity Cliffs..." from the top menu
+    Then "Sequence Activity Cliffs" dialog should be visible
+    When user selects "Activity" in Activities input in "Sequence Activity Cliffs" dialog
+    And user clicks on OK button in "Sequence Activity Cliffs" dialog
+    Then the top menu command should have completed
+    And a new column "Embed_X_1" should have been added
+    And scatter plot viewer should be visible
+    And title of scatter plot viewer should have text "Activity cliffs"
+    And no error or warning balloon should have been shown
+    And the table should have 64 rows
     And no errors should have been logged

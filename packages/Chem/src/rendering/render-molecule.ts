@@ -3,8 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
-import {_convertMolNotation} from '../utils/convert-notation-utils';
-import {_isSmarts} from '../utils/mol-creation_rdkit';
+import {_convertMolNotation, asSmiles} from '../utils/convert-notation-utils';
 
 /** Renders the molecule and returns div with the canvas inside. */
 export function renderMolecule(
@@ -75,8 +74,7 @@ export function _svgDiv(mol: any): HTMLDivElement {
 function showMoleculeMenu(molStr: string) {
   const menu = DG.Menu.popup();
   menu.item('Copy SMILES', () => {
-    const smiles = !DG.chem.isMolBlock(molStr) && !_isSmarts(molStr) ? molStr :
-      _convertMolNotation(molStr, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, getRdKitModule());
+    const smiles = asSmiles(molStr, getRdKitModule());
     navigator.clipboard.writeText(smiles);
     grok.shell.info('SMILES copied to clipboard');
   });

@@ -1,4 +1,4 @@
-@sketcher-controls
+@sketcher-controls @serial
 Feature: Crux in Datagrok's hosts
   Crux Sketch, pinned as the session's sketcher, where Datagrok puts it: the cell editor of a molecule cell, the
   substructure filter's sketcher, the host's molecule field and its options menu (≡). The steps act as the user does,
@@ -8,6 +8,8 @@ Feature: Crux in Datagrok's hosts
   counted on the sketcher's onChanged from its creation, so a sketcher opened showing a molecule has fired once. The
   SketcherBase contract itself (the getters, the setters, detach, refresh) is the package tests' (Crux sketcher).
   The feature drives Crux's own controls (@sketcher-controls): a run that pins another sketcher skips it.
+  Serial (`@serial`): it filters while the sketcher is open, by Filter as you draw, the account's setting that
+  card-interplay, ketcher-sketch and crux-chem-hosts clear; they take turns.
 
   Background:
     Given user is logged in

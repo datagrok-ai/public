@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Tests: Added package tests for the Translator (bulk translation, the app's Axolabs sample, a plain RNA HELM, unreadable codes, GROK-20958), Combine Sequences and the oligo converters
+* [public#4226](https://github.com/datagrok-ai/public/issues/4226): PolyTool: Convert is disabled until the current table has a macromolecule column and Combine Sequences until an open table has one; fixed Enumerate HELM failing when the current view is not a table view
 * GROK-21149: Pattern: Fixed bulk Convert failing with "Column already exists" when run again on the same table
 * GROK-20959: Warn on Save SDF when a strand cannot be converted instead of linking an empty sense molfile
 * GROK-20958: Handle MonomerNotFoundError in Oligo Translator getMolfile so unknown-monomer input refreshes the view instead of throwing

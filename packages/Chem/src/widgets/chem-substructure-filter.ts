@@ -16,7 +16,7 @@ import {filter} from 'rxjs/operators';
 import wu from 'wu';
 import {TaskBarProgressIndicator, chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import {querySmarts} from '../utils/mol-creation_rdkit';
+import {getMolSafe, querySmarts} from '../utils/mol-creation_rdkit';
 import {translateQueryAliasesV2000} from '../utils/query-alias-translator';
 import {_package, PackageFunctions} from '../package';
 import {AVAILABLE_FPS, CHEM_APPLY_FILTER_SYNC, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT,
@@ -415,7 +415,8 @@ export class SubstructureFilter extends DG.Filter {
       const molFile = this.getSketcherMolecule();
       if (this.currentMolecule && molFile !== this.currentMolecule) {
         this.syncEvent = true;
-        this.sketcher.setMolFile(this.currentMolecule);
+        // in its own notation: the card's molecule is the sketcher's string, a SMARTS or a SMILES entered as well as a molblock
+        this.sketcher.setMolecule(this.currentMolecule);
       }
     });
   }
@@ -598,7 +599,9 @@ export class SubstructureFilter extends DG.Filter {
     this.active = state.active ?? true;
     if (state.molBlock && state.molBlock !== this.currentMolecule) {
       this.currentMolecule = state.molBlock;
-      this.sketcher.setMolFile(state.molBlock);
+      // in its own notation: a card saved with a SMARTS or a SMILES entered holds that string (set as a molblock, no
+      // sketcher could read it, and the card's sketcher opened empty)
+      this.sketcher.setMolecule(state.molBlock);
       this.updateFilterUiOnSketcherChanged(this.currentMolecule);
     }
     if (state.searchType && state.searchType !== this.searchType) {
@@ -645,7 +648,11 @@ export class SubstructureFilter extends DG.Filter {
     // See resolveColumn()'s comment — this is the entry point for every user-driven sketch edit, and
     // the rest of this method (both branches below) dereferences `this.column!` repeatedly.
     this.resolveColumn();
-    const newMolecule = this.getSketcherMolecule();
+    let newMolecule = this.getSketcherMolecule();
+    // a sketcher hands a SMILES or SMARTS the card holds back as a molblock: an unchanged molecule keeps its notation
+    if (this.currentMolecule && !DG.chem.isMolBlock(this.currentMolecule) && DG.chem.isMolBlock(newMolecule) &&
+      this.isUnchanged(newMolecule, this.currentMolecule))
+      newMolecule = this.currentMolecule;
     _package.logger.debug(`newMolfile ${newMolecule} , ${this.filterId}`);
     const newSmarts = this.moleculeToSmarts(newMolecule);
     _package.logger.debug(`newSmarts ${newSmarts}, ${this.filterId}`);
@@ -764,6 +771,25 @@ export class SubstructureFilter extends DG.Filter {
   private resolveColumn(): DG.Column | null {
     this.column ??= this.dataFrame && this.columnName ? this.dataFrame.col(this.columnName) : null;
     return this.column;
+  }
+
+  /** Whether a sketcher's molblock is the molecule the card holds, with no query feature drawn on it: an atom list or a
+   * ring bond count leaves the SMILES as it was. */
+  isUnchanged(molblock: string, molecule: string): boolean {
+    const rdkit = PackageFunctions.getRdKitModule();
+    const smiles = (m: string, plain: boolean): string | null => {
+      const mol = getMolSafe(m, {}, rdkit).mol;
+      try {
+        return !mol || (plain && /"(atom|bond)Queries"/.test(mol.get_json())) ? null : mol.get_smiles();
+      } catch {
+        // a molecule RDKit reads only partly (a malformed one) throws here: it is no molecule to keep
+        return null;
+      } finally {
+        mol?.delete();
+      }
+    };
+    const drawn = smiles(molblock, true);
+    return drawn !== null && drawn === smiles(molecule, false);
   }
 
   isFilteringBySameStructure(molecule: string): boolean {

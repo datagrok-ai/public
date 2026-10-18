@@ -3,9 +3,12 @@
    editor-group model and the widget layer we skipped). The overflow dropdown is a plain
    absolutely-positioned div rather than the Overlay layer: it is anchored inside the header and
    must not outlive it. */
-import {signal, untracked, Signal, ReadonlySignal} from '../../core/signals.js';
+import {signal, untracked, Signal} from '../../core/signals.js';
+import type {ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
+import {Scope} from '../../core/scope.js';
 import {iconOf} from '../display/icon.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export interface TabOptions {
   id: string;
@@ -16,7 +19,13 @@ export interface TabOptions {
   /** Header tooltip; defaults to the label, so an icon-only tab should set it. */
   tooltip?: string;
   closable?: boolean;
-  content: HTMLElement | (() => HTMLElement);
+  /** An element or a control, or a function building one; either is placed in the tab's panel on its
+   * first activation, unless the strip is {@link TabStripOptions.eager}. */
+  content: HTMLElement | Control | (() => HTMLElement | Control);
+  /** Why the tab's content needs the user, followed live: the tab is marked while it says something
+   * ({@link TabStrip.setInvalid}). Unset and the content is a `Form`, the form's shown error
+   * ({@link Form.error}) — nothing on a fresh form, the first failing field after a Save attempt. */
+  validity?: ReadonlySignal<string | null>;
 }
 
 export type TabOrientation = 'horizontal' | 'vertical';
@@ -27,6 +36,12 @@ export interface TabStripOptions {
   orientation?: TabOrientation;
   /** `platform` (default) is `ui.tabControl`; `document` is the IDE document-tab skin. */
   variant?: TabVariant;
+  /** Also the `tabClosed` event (`strip.on('tabClosed', …)`): one call per close, a repeated id included. */
+  onTabClosed?: (id: string, strip: TabStrip) => void;
+  /** Places a tab's element or control content in its hidden panel when the tab is added, not on its
+   * first activation: a form on a tab not yet visited then measures its captions — the tabs of an editor
+   * sharing a `LabelColumn` line up before the user switches. A function content stays lazy. */
+  eager?: boolean;
 }
 
 interface Tab {
@@ -35,13 +50,17 @@ interface Tab {
   panel: HTMLElement;
   mark: HTMLElement;
   built: boolean;
+  /** Why the tab's content needs attention, while it does ({@link TabStrip.setInvalid}). */
+  invalid?: string | null;
+  /** Owns the tab's validity watch; disposed when the tab closes. */
+  scope: Scope;
 }
 
 let stripCount = 0;
 
+/** Events: `tabClosed` (the tab id). */
 export class TabStrip extends Control {
   readonly activeTab: Signal<string | null> = signal<string | null>(null);
-  readonly onTabClosed: ReadonlySignal<string | null>;
   readonly orientation: TabOrientation;
 
   private readonly _idPrefix = `u2-tabs-${++stripCount}`;
@@ -52,12 +71,12 @@ export class TabStrip extends Control {
   private readonly _content = document.createElement('div');
   private readonly _tabs = signal<Tab[]>([]);
   private readonly _menuOpen = signal(false);
-  private readonly _closed = signal<string | null>(null);
+  private readonly _eager: boolean;
 
   constructor(options?: TabStripOptions) {
     super();
-    this.onTabClosed = this._closed;
     this.orientation = options?.orientation ?? 'horizontal';
+    this._eager = options?.eager === true;
 
     this.root.classList.add('u2-tabs');
     this.root.classList.toggle('u2-tabs-vertical', this.orientation === 'vertical');
@@ -81,12 +100,14 @@ export class TabStrip extends Control {
     this._content.className = 'u2-tabs-content';
     this.root.append(this._header, this._content);
 
-    this._listen(this._scroller, 'pointerdown', (e) => this._onPointerDown(e as PointerEvent));
-    this._listen(this._scroller, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
-    this._listen(this._overflow, 'click', () => this._menuOpen.value = !this._menuOpen.peek());
-    this._listen(this._menu, 'click', (e) => this._onMenuClick(e));
-    this._listen(document, 'pointerdown', (e) => this._onDocumentPointerDown(e));
-    this._listen(document, 'keydown', (e) => this._onDocumentKeyDown(e as KeyboardEvent));
+    const scope = this.scope;
+    scope.listen(this._scroller, 'pointerdown', (e) => this._onPointerDown(e as PointerEvent));
+    scope.listen(this._scroller, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    scope.listen(this._overflow, 'click', () => this._menuOpen.value = !this._menuOpen.peek());
+    scope.listen(this._menu, 'click', (e) => this._onMenuClick(e));
+    const onTabClosed = options?.onTabClosed;
+    if (onTabClosed)
+      this.on('tabClosed', (id, strip) => onTabClosed(id as string, strip));
 
     const resize = new ResizeObserver(() => this._updateOverflow());
     resize.observe(this._header);
@@ -104,6 +125,7 @@ export class TabStrip extends Control {
     header.className = 'u2-tabs-tab';
     header.id = `${this._idPrefix}-tab-${tab.id}`;
     header.dataset.id = tab.id;
+    header.dataset.u2Item = tab.id;
     header.tabIndex = -1;
     header.title = tab.tooltip ?? tab.label;
     header.setAttribute('role', 'tab');
@@ -112,11 +134,14 @@ export class TabStrip extends Control {
 
     const label = document.createElement('span');
     label.className = 'u2-tabs-label';
+    label.dataset.u2Part = 'item-label';
     label.textContent = tab.label;
     const mark = document.createElement('span');
     mark.className = tab.closable ? 'u2-tabs-close' : 'u2-tabs-mark';
-    if (tab.closable)
+    if (tab.closable) {
       mark.title = 'Close';
+      mark.dataset.u2Part = 'close';
+    }
     if (tab.icon !== undefined)
       header.append(TabStrip._icon(tab.icon));
     header.append(label, mark);
@@ -130,10 +155,31 @@ export class TabStrip extends Control {
 
     this._scroller.append(header);
     this._content.append(panel);
-    this._tabs.value = [...this._tabs.peek(), {options: tab, header, panel, mark, built: false}];
+    const eager = this._eager && typeof tab.content !== 'function';
+    const entry: Tab = {options: tab, header, panel, mark, built: eager, scope: this.scope.child('tab-validity')};
+    if (eager)
+      panel.append(tab.content instanceof Control ? tab.content.root : tab.content as HTMLElement);
+    this._tabs.value = [...this._tabs.peek(), entry];
+    if (tab.validity !== undefined)
+      this._watchValidity(entry, tab.validity);
+    else if (typeof tab.content !== 'function')
+      this._watchContent(entry, tab.content);
     if (this.activeTab.peek() === null)
       this.activeTab.value = tab.id;
     this._updateOverflow();
+  }
+
+  private _watchValidity(tab: Tab, validity: ReadonlySignal<string | null>): void {
+    tab.scope.effect(() => {
+      const message = validity.value;
+      untracked(() => this.setInvalid(tab.options.id, message));
+    });
+  }
+
+  private _watchContent(tab: Tab, content: HTMLElement | Control): void {
+    const error = (content as {error?: unknown}).error;
+    if (content instanceof Control && error instanceof Signal)
+      this._watchValidity(tab, error as ReadonlySignal<string | null>);
   }
 
   closeTab(id: string): void {
@@ -143,13 +189,30 @@ export class TabStrip extends Control {
       return;
     tabs[index].header.remove();
     tabs[index].panel.remove();
+    tabs[index].scope.dispose();
     const rest = tabs.slice();
     rest.splice(index, 1);
     this._tabs.value = rest;
     if (this.activeTab.peek() === id)
       this.activeTab.value = rest.length > 0 ? rest[Math.min(index, rest.length - 1)].options.id : null;
     this._updateOverflow();
-    this._closed.value = id;
+    this.fireEvent('tabClosed', id);
+  }
+
+  /** The base state plus the active tab and the tabs as items. */
+  getState(): ReturnType<Control['getState']> {
+    const active = this.activeTab.peek();
+    return {...super.getState(), ...active === null ? {} : {current: active}};
+  }
+
+  getItems(): IItemsState {
+    const active = this.activeTab.peek();
+    const list = this._tabs.peek().map((tab, index) => {
+      const {id, label, tooltip} = tab.options;
+      return {key: id, label: label || tooltip || id, index, selected: id === active, current: id === active,
+        ...tab.invalid ? {invalid: true} : {}, rendered: true};
+    });
+    return {count: list.length, list, truncated: false};
   }
 
   setDirty(id: string, dirty: boolean): void {
@@ -158,11 +221,38 @@ export class TabStrip extends Control {
       tab.mark.classList.toggle('u2-tabs-dirty', dirty);
   }
 
+  /** Marks a tab whose content has an error the user should go and fix (`message`, shown as the
+   * header's tooltip), or clears it with null: red caption, `aria-invalid`, `invalid` in its item. */
+  setInvalid(id: string, message: string | null): void {
+    const tab = this._find(id);
+    if (tab === undefined)
+      return;
+    tab.invalid = message;
+    tab.header.classList.toggle('u2-tabs-invalid', message !== null);
+    if (message === null)
+      tab.header.removeAttribute('aria-invalid');
+    else
+      tab.header.setAttribute('aria-invalid', 'true');
+    tab.header.title = message ?? tab.options.tooltip ?? tab.options.label;
+  }
+
   private static _icon(source: string | HTMLElement): HTMLElement {
     const wrap = document.createElement('span');
     wrap.className = 'u2-tabs-icon';
     wrap.append(iconOf(source));
     return wrap;
+  }
+
+  /** Renames a tab in place — a bound tab title following its source. */
+  setTabLabel(id: string, label: string): void {
+    const tab = this._find(id);
+    if (tab === undefined)
+      return;
+    tab.options = {...tab.options, label};
+    tab.header.querySelector('.u2-tabs-label')!.textContent = label;
+    if (tab.options.tooltip === undefined && !tab.invalid)
+      tab.header.title = label;
+    this._tabs.value = [...this._tabs.peek()];
   }
 
   private _find(id: string): Tab | undefined {
@@ -182,7 +272,13 @@ export class TabStrip extends Control {
       if (!tab.built) {
         tab.built = true;
         const content = tab.options.content;
-        untracked(() => tab.panel.append(typeof content === 'function' ? content() : content));
+        // built once and kept: owned by the strip, not by this effect run (disposed on the next switch)
+        Scope.runWith(this.scope.child('tab'), () => untracked(() => {
+          const built = typeof content === 'function' ? content() : content;
+          tab.panel.append(built instanceof Control ? built.root : built);
+          if (typeof content === 'function' && tab.options.validity === undefined)
+            this._watchContent(tab, built);
+        }));
       }
       tab.header.scrollIntoView({block: 'nearest', inline: 'nearest'});
     }
@@ -278,15 +374,13 @@ export class TabStrip extends Control {
   }
 
   private _onDocumentPointerDown(e: Event): void {
-    if (!this._menuOpen.peek())
-      return;
     const target = e.target as Node;
     if (!this._menu.contains(target) && !this._overflow.contains(target))
       this._menuOpen.value = false;
   }
 
   private _onDocumentKeyDown(e: KeyboardEvent): void {
-    if (e.key === 'Escape' && this._menuOpen.peek()) {
+    if (e.key === 'Escape') {
       this._menuOpen.value = false;
       this._overflow.focus();
     }
@@ -299,6 +393,10 @@ export class TabStrip extends Control {
       this._menu.textContent = '';
       return;
     }
+    // the page is watched only while the menu is open: this run's scope drops the listeners
+    const run = Scope.ambient!;
+    run.listen(document, 'pointerdown', (e) => this._onDocumentPointerDown(e));
+    run.listen(document, 'keydown', (e) => this._onDocumentKeyDown(e as KeyboardEvent));
     const active = this.activeTab.value;
     this._menu.replaceChildren(...this._tabs.value.map((tab) => {
       const {id, label, icon, tooltip} = tab.options;
@@ -323,10 +421,5 @@ export class TabStrip extends Control {
     this._overflow.tabIndex = overflowing ? 0 : -1;
     if (!overflowing)
       this._menuOpen.value = false;
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

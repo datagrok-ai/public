@@ -117,7 +117,8 @@ category('rendering', () => {
     const renderer: DG.GridCellRenderer =
       await DG.Func.find({package: 'Chem', meta: {cellType: 'ChemicalMixture', role: 'cellRenderer'}})[0].apply();
     const r = window.devicePixelRatio;
-    const [w, h, margin] = [300, 100, 4].map((v) => Math.round(v * r));
+    // the renderer works in device pixels: a fixed device-pixel canvas gets the same picture at any devicePixelRatio
+    const [w, h, margin] = [600, 200, 4];
     const leafComponents = [2, 3, 3, 3];
     for (let row = 0; row < df.rowCount; row++) {
       const canvas = ui.canvas(w, h);

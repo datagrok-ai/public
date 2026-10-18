@@ -29,6 +29,7 @@ export class Driver {
   public currentMeta$ = new BehaviorSubject<Record<string, Observable<Record<string, BehaviorSubject<any>>>>>({});
   public nodesDescriptions$ = new BehaviorSubject<Record<string, Observable<Record<string, string | string[]> | undefined>>>({});
   public currentLinks$ = new BehaviorSubject<LinksData[]>([]);
+  public hiddenActions$ = new BehaviorSubject<ReadonlySet<string>>(new Set());
   public result$ = new Subject<any>();
 
   public globalROLocked$ = new BehaviorSubject(false);
@@ -123,6 +124,11 @@ export class Driver {
       map((state) => state ? state.getNodesDescriptions() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.nodesDescriptions$);
+
+    this.states$.pipe(
+      switchMap((state) => state ? state.linksState.hiddenActions$ : of(new Set<string>())),
+      takeUntil(this.closed$),
+    ).subscribe(this.hiddenActions$);
 
     stateUpdates$.pipe(
       switchMap((state) => state ? state.globalROLocked$ : of(false)),

@@ -144,7 +144,16 @@ export abstract class Tutorial extends DG.Widget {
     grok.shell.windows.showBrowse = true;
   }
 
+  private static active: Tutorial | null = null;
+
+  static closeActive(): void {
+    const t = Tutorial.active;
+    if (t?.currentRun != null && !t.closed)
+      t.close();
+  }
+
   async start(): Promise<void> {
+    Tutorial.active = this;
     while (this.currentRun != null) {
       this.closed = true;
       this.onClose.next();
@@ -172,12 +181,7 @@ export abstract class Tutorial extends DG.Widget {
 
     if (this.prerequisites.packages && Array.isArray(this.prerequisites.packages) &&
       this.prerequisites.packages.length > 0) {
-      const missingPackages = [];
-      for (const p of this.prerequisites.packages) {
-        const packages = await grok.dapi.packages.list({filter: `shortName = "${p}"`});
-        if (!packages.length || !(packages[0] instanceof DG.Package))
-          missingPackages.push(p);
-      }
+      const missingPackages = this.prerequisites.packages.filter((p) => DG.Func.find({package: p}).length === 0);
       if (missingPackages.length) {
         grok.shell.error(`Please install package${missingPackages.length === 1 ? '' : 's'} ${
           missingPackages.join(', ')} to start the tutorial`);
@@ -276,6 +280,7 @@ export abstract class Tutorial extends DG.Widget {
             this.clearRoot();
             tutorialNode.html('');
             tutorialNode.append(nextTutorial.root);
+            nextTutorial.clearRoot();
             nextTutorial.start();
           }),
           ui.button('Cancel', () => {

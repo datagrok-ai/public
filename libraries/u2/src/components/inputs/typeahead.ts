@@ -2,12 +2,14 @@
    a small focused/open state machine, plus the selection-to-text coupling the platform's
    look-up inputs have. The machine owns the option ROW — hover, active state and ARIA live on the
    row, never on the rendered content. */
-import {signal, computed, Signal, ReadonlySignal} from '../../core/signals.js';
+import {signal, computed, untracked, Signal, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
+import {Input} from '../../core/input-base.js';
 import {bindValue} from '../../core/bind.js';
 import {AsyncSource, AsyncFetch, AsyncState} from '../../core/async-source.js';
 import {SuggestionList} from '../../core/suggestion-list.js';
 import {ObjectRenderer} from '../../core/object-renderer.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export interface TypeAheadOptions<T> {
   source: T[] | AsyncFetch<T>;
@@ -15,6 +17,9 @@ export interface TypeAheadOptions<T> {
    * Defaults to `renderer.caption`; one of the two must be given. */
   itemText?: (item: T) => string;
   render?: (item: T) => HTMLElement;
+  /** The option's key (`data-u2-item`, the items' keys); `itemText` by default. Give one where two
+   * items may read the same. */
+  keyOf?: (item: T) => string;
   /** Item presentation as one object; explicit `itemText`/`render` win over its members. */
   renderer?: ObjectRenderer<T>;
   placeholder?: string;
@@ -26,6 +31,14 @@ export interface TypeAheadOptions<T> {
   openOnFocus?: boolean;
   /** What the empty row says, per query; "No matches" by default. */
   emptyText?: string | ((query: string) => string);
+  /** A ceiling on the popup's height (a CSS length or pixels), under the room the overlay gives it. */
+  maxHeight?: number | string;
+  /** The accessible name (`aria-label` on the editor); a type-ahead shows no caption of its own. */
+  label?: string;
+  /** Enter with the popup closed: handled here, never seen by the form or dialog around. */
+  onEnter?: (e: KeyboardEvent, typeAhead: TypeAhead<T>) => void;
+  /** Escape with the popup closed: handled here (instead of clearing the selection). */
+  onEscape?: (e: KeyboardEvent, typeAhead: TypeAhead<T>) => void;
 }
 
 export type TypeAheadState = 'idle' | 'focused' | 'open';
@@ -35,6 +48,8 @@ type TypeAheadEvent =
   {type: 'enter'} | {type: 'escape'} | {type: 'tab'} | {type: 'dismiss'} |
   {type: 'select', index: number};
 
+/** Picks one item by typing. `on('change', (item, typeAhead) => …)` fires on every change of
+ * {@link selected}. */
 export class TypeAhead<T> extends Control {
   readonly selected: Signal<T | null> = signal<T | null>(null);
   readonly text: ReadonlySignal<string>;
@@ -42,6 +57,7 @@ export class TypeAhead<T> extends Control {
   readonly machineState: ReadonlySignal<TypeAheadState>;
 
   private readonly _input = document.createElement('input');
+  private readonly _options: TypeAheadOptions<T>;
   private readonly _list: SuggestionList<T>;
   private readonly _itemText: (item: T) => string;
   private readonly _minChars: number;
@@ -53,10 +69,13 @@ export class TypeAhead<T> extends Control {
   private readonly _source: AsyncSource<T> | undefined;
   private readonly _text = signal('');
   private readonly _machine = signal<TypeAheadState>('idle');
+  /** The popup lists everything, whatever the box holds — until the next keystroke. */
+  private readonly _all = signal(false);
   private _echo = false;
 
   constructor(options: TypeAheadOptions<T>) {
     super();
+    this._options = options;
     this.text = this._text;
     this.machineState = this._machine;
     const renderer = options.renderer;
@@ -75,9 +94,13 @@ export class TypeAhead<T> extends Control {
     input.className = 'u2-typeahead-input';
     input.type = 'text';
     input.autocomplete = 'off';
+    input.spellcheck = false;
     input.placeholder = options.placeholder ?? '';
     input.setAttribute('role', 'combobox');
     input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-haspopup', 'listbox');
+    if (options.label)
+      input.setAttribute('aria-label', options.label);
     this.root.append(input);
 
     if (typeof options.source === 'function') {
@@ -85,10 +108,16 @@ export class TypeAhead<T> extends Control {
       this._source = source;
       this._view = source.state;
       this.own(() => source.dispose());
+      this.effect(() => {
+        if (source.state.value.kind === 'loading')
+          this.root.setAttribute('aria-busy', 'true');
+        else
+          this.root.removeAttribute('aria-busy');
+      });
     } else {
       const items = options.source;
       this._view = computed<AsyncState<T>>(() => {
-        const q = this._text.value.toLowerCase();
+        const q = this._all.value ? '' : this._text.value.toLowerCase();
         const matched = q ? items.filter((i) => itemText(i).toLowerCase().includes(q)) : items;
         return matched.length > 0 ? {kind: 'ready', items: matched} : {kind: 'empty'};
       });
@@ -98,6 +127,8 @@ export class TypeAhead<T> extends Control {
       return state.kind === 'ready' ? state.items : [];
     });
 
+    const minChars = this._minChars;
+    const all = this._all;
     this._list = new SuggestionList<T>({
       prefix: 'u2-typeahead',
       anchor: input,
@@ -105,13 +136,16 @@ export class TypeAhead<T> extends Control {
       items: this._items,
       view: this._view,
       text: this._text,
-      minChars: this._minChars,
+      // read inside the list's computeds, so a reveal (`_all`) drops the hint row until it ends
+      get minChars() { return all.value ? 0 : minChars; },
       render,
+      keyOf: options.keyOf ?? itemText,
       autoHighlight: this._openOnFocus ? 'always' : true,
       onPick: (index) => this._send({type: 'select', index}),
       onDismiss: () => this._send({type: 'dismiss'}),
       onRetry: () => this._source?.retry(),
       emptyText: options.emptyText,
+      maxHeight: options.maxHeight,
     });
     this.isOpen = this._list.isOpen;
     // a fast Enter: the intent was clear — the name typed, else the first candidate, once they land
@@ -128,13 +162,65 @@ export class TypeAhead<T> extends Control {
     });
 
     bindValue(this.scope, input, this._text);
-    this._listen(input, 'input', () => this._onInput());
-    this._listen(input, 'focus', () => this._send({type: 'focus'}));
-    this._listen(input, 'blur', () => this._send({type: 'blur'}));
-    this._listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.scope.listen(input, 'input', () => this._onInput());
+    this.scope.listen(input, 'focus', () => this._send({type: 'focus'}));
+    this.scope.listen(input, 'blur', () => this._send({type: 'blur'}));
+    this.scope.listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
 
     this.effect(() => input.setAttribute('aria-expanded', String(this._list.isOpen.value)));
     this.effect(() => this._syncText());
+    let initial = true;
+    this.effect(() => {
+      const item = this.selected.value;
+      if (initial)
+        initial = false;
+      else
+        untracked(() => this.fireEvent('change', item));
+    });
+  }
+
+  /** Focuses the editor. */
+  focus(): void {
+    this._input.focus();
+  }
+
+  /** The selection (JSON-projected), the typed text, whether the popup is open, whether an async
+   * source is loading. */
+  getState(): ReturnType<Control['getState']> {
+    const placeholder = this._input.placeholder;
+    return {...super.getState(), value: Control.jsonValue(this.selected.peek()) ?? null, text: this._input.value,
+      open: this._list.isOpen.peek(), busy: this._view.peek().kind === 'loading', ...placeholder ? {placeholder} : {}};
+  }
+
+  /** Every candidate, not the filtered popup: the given items, or what an async source answered last. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const source = this._options.source;
+    const items = typeof source === 'function' ? this._lastItems() : source;
+    const rendered = new Set(this._list.isOpen.peek() ? this._items.peek() : []);
+    const keyOf = this._options.keyOf ?? this._itemText;
+    return Input.itemsState(items.map((item, index) =>
+      ({key: keyOf(item), label: this._itemText(item), index, rendered: rendered.has(item)})), opts?.all);
+  }
+
+  /** Opens the popup over every candidate (an async source is asked for the empty query) and
+   * resolves to the option's element. */
+  async revealItem(keyOrLabel: string): Promise<HTMLElement | null> {
+    this._all.value = true;
+    if (this._source)
+      this._source.query('');
+    this._openPopup();
+    for (let i = 0; i < 50 && this._view.peek().kind === 'loading'; i++)
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    return super.revealItem(keyOrLabel);
+  }
+
+  protected accessibleLabel(): string | undefined {
+    return super.accessibleLabel() ?? Control.labelOf(this._input) ?? (this._input.placeholder || undefined);
+  }
+
+  private _lastItems(): T[] {
+    const state = this._view.peek();
+    return state.kind === 'ready' ? state.items : [];
   }
 
   private _send(ev: TypeAheadEvent): void {
@@ -155,6 +241,12 @@ export class TypeAhead<T> extends Control {
       case 'blur':
         this._dismiss();
         this._machine.value = 'idle';
+        // text that is not a pick never survives a blur; a host that restores a pick of its own
+        // (its blur listener runs after this one) has had its say by then
+        queueMicrotask(() => {
+          if (!this.scope.isDisposed && !this._pendingPick && this.selected.peek() === null && this._text.peek() !== '')
+            this.resync();
+        });
         break;
       case 'input':
         this._refresh();
@@ -209,13 +301,11 @@ export class TypeAhead<T> extends Control {
 
   private _onInput(): void {
     this._pendingPick = false;
+    this._all.value = false;
+    // the handler runs batched: the text sync sees the flag when the batch ends, and drops it
     if (this.selected.peek() !== null) {
       this._echo = true;
-      try {
-        this.selected.value = null;
-      } finally {
-        this._echo = false;
-      }
+      this.selected.value = null;
     }
     this._send({type: 'input'});
   }
@@ -227,8 +317,10 @@ export class TypeAhead<T> extends Control {
 
   private _syncText(): void {
     const item = this.selected.value;
-    if (this._echo)
+    if (this._echo) {
+      this._echo = false;
       return;
+    }
     this._text.value = item === null ? '' : this._itemText(item);
   }
 
@@ -247,6 +339,7 @@ export class TypeAhead<T> extends Control {
   private _dismiss(): void {
     if (!this._list.isOpen.peek())
       return;
+    this._all.value = false;
     if (this._machine.peek() === 'open')
       this._machine.value = 'focused';
     this._list.dismiss();
@@ -268,6 +361,13 @@ export class TypeAhead<T> extends Control {
   }
 
   private _onKeyDown(e: KeyboardEvent): void {
+    const own = e.key === 'Enter' ? this._options.onEnter : e.key === 'Escape' ? this._options.onEscape : undefined;
+    if (own !== undefined && !this._list.isOpen.peek() && !e.isComposing) {
+      e.preventDefault();
+      e.stopPropagation();
+      own(e, this);
+      return;
+    }
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -289,10 +389,5 @@ export class TypeAhead<T> extends Control {
         this._send({type: 'tab'});
         break;
     }
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

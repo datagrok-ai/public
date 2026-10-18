@@ -1,4 +1,4 @@
-// Synced from Rusty-HMMER web/clans.ts by web/sync-datagrok.mjs — do not edit here.
+// Synced from crux-core crates/hmmer-web/web/clans.ts by crates/hmmer-web/web/sync-datagrok.mjs — do not edit here.
 /** Pfam clan competition: overlapping matches of families in the same clan
  * are resolved in favour of the most significant one, as Pfam reports them.
  *

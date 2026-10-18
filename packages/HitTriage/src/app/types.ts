@@ -125,6 +125,8 @@ export type HitDesignMergeConfig = {
 export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'> & {
     tilesViewerFormSketch?: string,
     mergeConfig?: HitDesignMergeConfig,
+    // the CSV table carries no column metadata
+    columnTags?: {[colName: string]: {[tag: string]: string}},
 };
 
 // todo: probably add some more stuff

@@ -1,9 +1,10 @@
 import {Scope} from './scope.js';
-import {Signal, computed, isWritableSignal, signal} from './signals.js';
+import {Signal, batch, computed, isWritableSignal, signal} from './signals.js';
+import {describeScope, registry} from './debug.js';
 import {propertyFields} from './property-fields.js';
 import type {IProperty} from './property-fields.js';
 import type {BindProp, BindSource, ComponentMetaBase, FuncLike, NamedProperty, ObservableLike,
-  IWidgetStatus} from './protocol.js';
+  IWidgetStatus, IControlState, IItemsState, JsonValue} from './protocol.js';
 
 /** What a widget announces when one of its properties changed: the property's name, or null when
  * several changed at once (or the widget cannot say which). Structural — nothing platform-typed. */
@@ -17,6 +18,16 @@ interface PropertyEntry {
   step: Signal<unknown>;
   known: unknown;
 }
+
+/** Labels of the scopes torn down and built again while their owner lives: rows of `each()` and
+ * `show()`, and effect runs. */
+const REBUILT: Record<string, string> = {item: 'each() row', row: 'row', show: 'show() branch',
+  empty: 'each() empty state', effect: 'effect run'};
+/** The component each component scope belongs to — the adoption link a scope's `parent` lacks. */
+const scopeOwners = new WeakMap<Scope, Component>();
+/** Per registering scope: the rebuilt scope each call site first registered from. */
+const rebuiltSites = new WeakMap<Scope, Map<string, WeakRef<Scope>>>();
+const warnedSites = new Set<string>();
 
 /** The per-instance u2 state, kept under one own field so that {@link Component.init} can be
  * applied to a platform `DG.Widget` (a Component by inheritance) without clobbering its own fields. */
@@ -38,6 +49,9 @@ export interface ComponentState {
   platformKilled?: boolean;
   propertyChangeListeners?: Set<(c: PropertyChange) => void>;
   name?: string;
+  /** The ambient scope that adopted this component and the release it registered there — dropped
+   * on {@link Component.dispose} so a long-lived owner does not pile up dead closures. */
+  adopter?: {scope: Scope, release: () => void};
 }
 
 /** Base of every u2 component, visual or not: a name, an effect/cleanup scope, and the widget
@@ -54,6 +68,8 @@ export class Component implements BindSource {
     const u2 = this._u2;
     if (u2.scope === undefined) {
       u2.scope = new Scope();
+      scopeOwners.set(u2.scope, this);
+      describeScope(u2.scope, this);
       this._scopeMinted(u2.scope);
     }
     return u2.scope;
@@ -90,11 +106,17 @@ export class Component implements BindSource {
     const it = self as {_u2: ComponentState};
     it._u2 = {aiDescription: null, properties: null, functions: [], listeners: [],
       propertySignals: new Map(), changesWired: false};
-    if (scope !== undefined)
+    if (scope !== undefined) {
       it._u2.scope = scope;
+      scopeOwners.set(scope, self);
+      describeScope(scope, self);
+    }
     const owner = self.ambientAdoption ? Scope.ambient : undefined;
-    if (owner && owner !== it._u2.scope)
-      owner.own(() => self.dispose());
+    if (owner && owner !== it._u2.scope) {
+      const release = () => self.dispose();
+      it._u2.adopter = {scope: owner, release};
+      owner.own(release);
+    }
   }
 
   /** Structural probe by methods only — never `.scope`: the accessor mints. */
@@ -120,31 +142,94 @@ export class Component implements BindSource {
       keys.every((k) => k in b && Component.sameValue(a[k], b[k]));
   }
 
-  private static _isPlain(x: unknown): x is Record<string, unknown> {
+  protected static _isPlain(x: unknown): x is Record<string, unknown> {
     if (x === null || typeof x !== 'object')
       return false;
     const proto = Object.getPrototypeOf(x);
     return proto === Object.prototype || proto === null;
   }
 
+  /** Runs `fn` with this component's scope ambient: what it builds is owned by this component. */
   runInScope<T>(fn: () => T): T {
     return Scope.runWith(this.scope, fn);
   }
 
+  /** Runs `fn` now and on every change of the signals it reads, until this component is disposed.
+   * Called while a row of `each()` or an effect run is being built, it belongs on a control built
+   * there (`input.effect(...)`) — on a longer-lived one it piles up with every rebuild, and u2 warns. */
   effect(fn: () => void): this {
+    Component._checkRebuilt(this, 'effect');
     this.scope.effect(fn);
     return this;
   }
 
+  /** Registers a cleanup that runs when this component is disposed. */
   own(dispose: () => void): this {
+    Component._checkRebuilt(this, 'own');
     this.scope.own(dispose);
     return this;
+  }
+
+  /** Warns when one call site registers on `self` from two different rebuilt scopes (rows of an
+   * `each()`, runs of an effect) that `self` does not live inside: what it registers outlives each of
+   * them and is added again by every rebuild. One warning per call site; with u2 debug tracking on (dev,
+   * tests, the bdd leak audit), as it captures a stack. */
+  private static _checkRebuilt(self: Component, kind: 'effect' | 'own'): void {
+    if (!registry.enabled)
+      return;
+    const ambient = Scope.ambient;
+    const target = self._u2.scope;
+    if (ambient === undefined || target === undefined || ambient === target)
+      return;
+    let rebuilt: Scope | undefined;
+    for (let s: Scope | undefined = ambient, hops = 0; s !== undefined && hops < 64; s = Component._ownerOf(s), hops++) {
+      if (s === target)
+        return;
+      if (REBUILT[s.label] !== undefined) {
+        rebuilt = s;
+        break;
+      }
+    }
+    if (rebuilt === undefined)
+      return;
+    for (let s: Scope | undefined = target, hops = 0; s !== undefined && hops < 64; s = Component._ownerOf(s), hops++) {
+      if (s === rebuilt)
+        return;
+    }
+    const site = (new Error().stack ?? '').split('\n').slice(3, 6).join('\n');
+    let sites = rebuiltSites.get(target);
+    if (sites === undefined)
+      rebuiltSites.set(target, sites = new Map());
+    const first = sites.get(site);
+    if (first === undefined) {
+      sites.set(site, new WeakRef(rebuilt));
+      return;
+    }
+    if (first.deref() === rebuilt || warnedSites.has(site))
+      return;
+    warnedSites.add(site);
+    const root = (self as {root?: HTMLElement}).root;
+    const who = root?.dataset.u2Name ?? root?.dataset.u2 ?? self.constructor.name;
+    const what = REBUILT[rebuilt.label];
+    console.warn(`u2: ${kind}() on ${who} is called from inside a rebuilt ${what} and lives until ${who} is ` +
+      `disposed — one more per rebuild. Register it on a control built in the ${what} (\`input.${kind}(...)\`) ` +
+      `or on its scope (\`Scope.ambient.${kind}(...)\`).\n${site}`);
+  }
+
+  /** The scope `scope` is disposed with: its parent, or the scope that adopted its component. */
+  private static _ownerOf(scope: Scope): Scope | undefined {
+    return scope.parent ?? scopeOwners.get(scope)?._u2.adopter?.scope;
   }
 
   /** On a never-engaged wrapper the getter mints here and {@link _scopeMinted} wires the
    * lifecycle (`own(kill)` + the platform cleanup for Dart-owned), so dispose still kills it;
    * re-entry from the kill cleanup is a no-op via the scope's disposed flag. */
   dispose(): void {
+    const adopter = this._u2.adopter;
+    if (adopter !== undefined) {
+      this._u2.adopter = undefined;
+      adopter.scope.disown(adopter.release);
+    }
     this.scope.dispose();
   }
 
@@ -432,24 +517,59 @@ export class Component implements BindSource {
     this._u2.functions.push(f);
   }
 
+  /** Subscribes `handler` to {@link onEvent}`(eventId)`; it gets the payload and this component.
+   * Owned by the ambient scope when there is one (the subscriber's), else by this component; runs
+   * as {@link Scope.bind} runs a handler. Answers the unsubscribe. */
+  on(eventId: string, handler: (arg: unknown, source: this) => void): () => void {
+    const owner = Scope.ambient ?? this.scope;
+    const subscription = this.onEvent(eventId).subscribe(owner.bind((x: unknown) => handler(x, this)));
+    const off = () => {
+      subscription.unsubscribe();
+      owner.disown(off);
+    };
+    owner.own(off);
+    return off;
+  }
+
+  /** Every matching listener runs inside one batch; a throwing one is reported to this component's
+   * scope and does not stop the rest. */
   protected fireEvent(eventId: string, args?: unknown): void {
-    for (const listener of this._u2.listeners.slice()) {
-      if (listener.id === null || listener.id === eventId)
-        listener.next(args);
+    const listeners = this._u2.listeners.filter((l) => l.id === null || l.id === eventId);
+    if (listeners.length === 0)
+      return;
+    try {
+      batch(() => {
+        for (const listener of listeners) {
+          try {
+            listener.next(args);
+          }
+          catch (e) {
+            this.scope.reportError(e);
+          }
+        }
+      });
+    }
+    catch (e) {
+      this.scope.reportError(e);
     }
   }
 }
 
+/** The element → control slot. A registered symbol, so every engine copy on the page reads the same one. */
+const SLOT = Symbol.for('u2.control');
+
+/** The `u2-<n>` id counter, shared by every engine copy on the page. */
+const ids: {next: number} = (globalThis as Record<PropertyKey, any>)[Symbol.for('u2.ids')] ??= {next: 0};
+
 /** A component that renders: everything visual in u2 is one. */
 export class Control extends Component {
   protected _root!: HTMLElement;
-  private static readonly _byRoot = new WeakMap<Element, Control>();
 
   constructor(root?: HTMLElement, scope?: Scope) {
     super(scope);
     this._root = root ?? document.createElement('div');
     this._root.classList.add('u2-component');
-    Control._byRoot.set(this._root, this);
+    (this._root as unknown as Record<symbol, Control>)[SLOT] = this;
   }
 
   get root(): HTMLElement {
@@ -458,8 +578,191 @@ export class Control extends Component {
 
   set root(x: HTMLElement) {
     this._root = x;
-    Control._byRoot.set(x, this);
+    (x as unknown as Record<symbol, Control>)[SLOT] = this;
     this._stampName();
+  }
+
+  /** Hidden ⇔ the root carries the `hidden` attribute. */
+  get visible(): boolean {
+    return !this.root.hidden;
+  }
+
+  set visible(x: boolean) {
+    this.root.hidden = !x;
+  }
+
+  /** Stable element id, minted (`u2-<n>`) on first ask unless the root has one: the anchor of
+   * `for`, `aria-*` and `data-u2-owner-id` references. */
+  get rootId(): string {
+    const root = this.root;
+    return root.id || (root.id = `u2-${++ids.next}`);
+  }
+
+  /** The state block generic tests read (`DG.U2.state`). This base reads the DOM — kind, name,
+   * accessible name, `aria-disabled`, `hidden`, focus, `aria-busy` — plus {@link getItems}; a
+   * subclass adds what the DOM cannot say and spreads `super.getState()`. Synchronous, side-effect
+   * free, never cached. */
+  getState(): IControlState {
+    const root = this.root;
+    const busy = root.getAttribute('aria-busy');
+    const items = this.getItems();
+    return Control._defined({
+      kind: root.dataset.u2 ?? this.componentMeta?.tag?.replace(/^u2-/, '') ?? 'control',
+      tag: this.componentMeta?.tag ?? root.dataset.u2Tag,
+      name: root.dataset.u2Name,
+      label: this.accessibleLabel(),
+      enabled: root.getAttribute('aria-disabled') !== 'true' && !root.hasAttribute('disabled'),
+      visible: root.isConnected && root.closest('[hidden]') === null &&
+        (typeof root.getClientRects !== 'function' || root.getClientRects().length > 0),
+      focused: this._hasFocus(),
+      busy: busy === null ? undefined : busy === 'true',
+      items,
+      selection: items?.list.some((item) => item.selected !== undefined) ?
+        items.list.filter((item) => item.selected).map((item) => item.key) : undefined,
+    });
+  }
+
+  /** Items of a collection-like control; undefined for other kinds. `list` holds the first
+   * {@link ITEMS_CAP} unless `all`. */
+  getItems(_opts?: {all?: boolean}): IItemsState | undefined {
+    return undefined;
+  }
+
+  /** Brings the item into view and resolves to its element, or null when none matches: the exact
+   * key (`data-u2-item`) first, then the label, trimmed and case-insensitive. Several label matches
+   * reject, naming the candidates. This base searches the rendered `[data-u2-item]` elements under
+   * the root and in the popups it owns; a virtual or collapsible control overrides it to scroll or
+   * expand first. */
+  async revealItem(keyOrLabel: string): Promise<HTMLElement | null> {
+    const elements = this._itemElements();
+    const byKey = elements.find((el) => el.dataset.u2Item === keyOrLabel);
+    if (byKey !== undefined)
+      return byKey;
+    const wanted = keyOrLabel.trim().toLowerCase();
+    const matches = elements.filter((el) => Control._itemLabel(el).toLowerCase() === wanted);
+    if (matches.length > 1) {
+      const keys = matches.map((el) => el.dataset.u2Item).join(', ');
+      throw new Error(`u2: ${matches.length} items match "${keyOrLabel}": ${keys}`);
+    }
+    return matches[0] ?? null;
+  }
+
+  /** The accessible name: `aria-label`, then the `aria-labelledby` texts, then this control's own
+   * `data-u2-part="label"` element, then — for a root that is a button — its own text. */
+  protected accessibleLabel(): string | undefined {
+    const root = this.root;
+    const own = Control.labelOf(root);
+    if (own !== undefined)
+      return own;
+    for (const el of root.querySelectorAll('[data-u2-part="label"]')) {
+      if (el.closest('.u2-component') === root)
+        return Control.text(el) || undefined;
+    }
+    return root.matches('button, [role="button"]') ? Control.text(root) || undefined : undefined;
+  }
+
+  /** `aria-label`, else the joined texts of the `aria-labelledby` elements; undefined when neither names `el`. */
+  protected static labelOf(el: Element): string | undefined {
+    const aria = el.getAttribute('aria-label');
+    if (aria)
+      return aria;
+    const by = el.getAttribute('aria-labelledby');
+    const doc = el.ownerDocument ?? globalThis.document;
+    const text = by === null ? '' : by.split(/\s+/)
+      .map((id) => doc?.getElementById(id))
+      .map((labelEl) => labelEl == null ? '' : Control.text(labelEl))
+      .filter((t) => t !== '').join(' ');
+    return text || undefined;
+  }
+
+  /** The text the user reads: trimmed, single-spaced. */
+  protected static text(el: Element): string {
+    return (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+  }
+
+  private _hasFocus(): boolean {
+    const active = globalThis.document?.activeElement;
+    if (active == null)
+      return false;
+    if (this.root.contains(active))
+      return true;
+    const id = this.root.id;
+    return id !== '' && active.closest(Control._ownedBy(id)) !== null;
+  }
+
+  private _itemElements(): HTMLElement[] {
+    const elements = [...this.root.querySelectorAll<HTMLElement>('[data-u2-item]')];
+    const id = this.root.id;
+    if (id !== '') {
+      for (const popup of globalThis.document.querySelectorAll(Control._ownedBy(id)))
+        elements.push(...popup.querySelectorAll<HTMLElement>('[data-u2-item]'));
+    }
+    return elements;
+  }
+
+  /** The selector of the popups a control with this root id owns; no `CSS` in Node. */
+  private static _ownedBy(id: string): string {
+    return `[data-u2-owner-id="${typeof CSS === 'undefined' ? id : CSS.escape(id)}"]`;
+  }
+
+  private static _itemLabel(el: HTMLElement): string {
+    return Control.text(el.querySelector('[data-u2-part="item-label"]') ?? el);
+  }
+
+  /** The JSON-safe projection behind {@link IControlState.value}: a Date → its ISO string, an object
+   * with a string `name` (an entity, a column) → the name, arrays and sets element-wise, plain objects
+   * key-wise (depth 4), a signal → its current value; functions and elements → undefined; anything
+   * else → `String(x)`. */
+  static jsonValue(x: unknown, depth: number = 0): JsonValue | undefined {
+    if (x === null || x === undefined)
+      return x as null | undefined;
+    if (x instanceof Signal)
+      return Control.jsonValue(x.peek(), depth);
+    switch (typeof x) {
+    case 'boolean':
+    case 'string':
+      return x;
+    case 'number':
+      return Number.isFinite(x) ? x : String(x);
+    case 'function':
+    case 'symbol':
+      return undefined;
+    }
+    if (typeof x !== 'object')
+      return String(x);
+    if (x instanceof Date)
+      return Number.isNaN(x.getTime()) ? String(x) : x.toISOString();
+    if (typeof Element !== 'undefined' && x instanceof Element)
+      return undefined;
+    if (depth >= 4)
+      return String(x);
+    if (Array.isArray(x) || x instanceof Set)
+      return [...x].map((item) => Control.jsonValue(item, depth + 1) ?? null);
+    const name = (x as {name?: unknown}).name;
+    if (typeof name === 'string')
+      return name;
+    if (!Component._isPlain(x))
+      return String(x);
+    const out: {[key: string]: JsonValue} = {};
+    for (const [key, value] of Object.entries(x)) {
+      const projected = Control.jsonValue(value, depth + 1);
+      if (projected !== undefined)
+        out[key] = projected;
+    }
+    return out;
+  }
+
+  private static _defined<T extends object>(x: T): T {
+    for (const key of Object.keys(x) as (keyof T)[]) {
+      if (x[key] === undefined)
+        delete x[key];
+    }
+    return x;
+  }
+
+  /** The base status plus {@link getState}. */
+  getWidgetStatus(): IWidgetStatus {
+    return {...super.getWidgetStatus(), state: this.getState()};
   }
 
   /** A named control carries its name in the DOM: `data-u2-name` is the stable automation id
@@ -484,15 +787,19 @@ export class Control extends Component {
   }
 
   /** The nearest control owning `el` — the DOM → component door for tooling, automation and
-   * inspectors (the u2 counterpart of the platform's `Widget.find`). Best-effort: the last
-   * control constructed on (or assigned) a root wins it. */
+   * inspectors (the u2 counterpart of the platform's `Widget.find`): the nearest root at or above
+   * `el`, else, inside a popup portaled to the body, the popup's owner (`data-u2-owner-id`).
+   * Best-effort: the last control constructed on (or assigned) a root wins it. The root carries
+   * the control under `Symbol.for('u2.control')`, so every engine copy on the page answers alike. */
   static forElement(el: Element | null): Control | undefined {
     for (let node = el; node; node = node.parentElement) {
-      const control = Control._byRoot.get(node);
-      if (control)
+      const control = (node as unknown as Record<symbol, Control | undefined>)[SLOT];
+      if (control !== undefined)
         return control;
     }
-    return undefined;
+    const host = el?.closest<HTMLElement>('[data-u2-owner-id]');
+    const owner = host == null ? null : document.getElementById(host.dataset.u2OwnerId!);
+    return owner === null ? undefined : Control.forElement(owner);
   }
 
   static is(x: unknown): x is Control {

@@ -121,6 +121,18 @@ When a package has a `dockerfiles/` directory, `grok publish` automatically mana
 
 **Practical implication:** editing any file inside `dockerfiles/<name>/` will cause `grok publish` to rebuild that container image on the next publish, without needing `--rebuild-docker`.
 
+**Publish traps:**
+- `grok publish` runs `npm run build` / `pnpm run build` itself (`buildPackage`); `--skip-check`
+  only skips checks, and `--rebuild` skips the local build rather than forcing one.
+- With no local image and a transient error on the fallback lookup, CLI <= 6.5.10 published
+  `image: null` and the container went to `error`; 6.5.11+ builds instead.
+- A republish renames a package's containers to `<name>_1`.
+- Outside the pnpm workspace, a fresh `npm install` in a package may pull ts-loader 9.6.x /
+  webpack 5.109, which cannot resolve `datagrok-api/*` (tsc can); reuse a known-good
+  `node_modules` (ts-loader 9.5.7 / webpack 5.106) and junction `node_modules/datagrok-api` to a
+  built js-api (`cmd /c mklink /J`).
+- Long publishes outlive a 10-minute agent tool limit; run them detached and poll a log.
+
 ### Testing Framework
 
 Tests use Puppeteer for headless browser automation:

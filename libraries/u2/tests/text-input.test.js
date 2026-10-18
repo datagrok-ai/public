@@ -3,7 +3,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
-import {Scope, TextInput} from '../src/index.js';
+import {Scope, TextInput, signal, batch} from '../src/index.js';
 
 function smoke(name, body) {
   test(name, async () => {
@@ -88,4 +88,61 @@ smoke('the plain and search variants are untouched by the new options', async ()
   assert.equal(search.value.value, '');
   assert.equal(clear.hidden, true);
   search.dispose();
+});
+
+smoke('follow: shows the model value, never echoes it to onChanged, user commits still reach it', async () => {
+  const name = signal('orders');
+  const changes = [];
+  const input = mount(new TextInput({label: 'Name', value: '', commitOn: 'change', onChanged: (v) => changes.push(v)}))
+    .follow(() => name.value);
+  assert.equal(field(input).value, 'orders');
+
+  name.value = 'order_lines';
+  batch(() => name.value = 'lines');
+  assert.equal(field(input).value, 'lines');
+  assert.deepEqual(changes, []);
+
+  field(input).value = 'items';
+  fire(field(input), 'change');
+  assert.deepEqual(changes, ['items']);
+  input.dispose();
+});
+
+smoke('follow: a re-read with an unchanged value leaves the field being typed in alone', async () => {
+  const revision = signal(0);
+  const input = mount(new TextInput({label: 'Name', value: '', commitOn: 'change'}))
+    .follow(() => (revision.value, 'orders'));
+  const editor = field(input);
+  editor.value = 'ord';
+  revision.value++;
+  assert.equal(field(input), editor);
+  assert.equal(editor.value, 'ord');
+  assert.equal(input.value.value, 'orders');
+  input.dispose();
+});
+
+smoke('tooltipText: u2 tooltip over the caption, the editor\'s description; none over the editor', async () => {
+  const {Tooltip} = await import('../src/index.js');
+  const input = mount(new TextInput({label: 'Name', tooltipText: 'The compound\'s registered name'}));
+  const caption = input.root.querySelector('.u2-input-label');
+  assert.equal(input.root.title, '', 'no native title');
+  assert.equal(field(input).getAttribute('aria-description'), 'The compound\'s registered name');
+  fire(caption, 'pointerenter');
+  await new Promise((r) => setTimeout(r, 400));
+  assert.equal(Tooltip.root.textContent, 'The compound\'s registered name');
+  fire(caption, 'pointerleave');
+  input.tooltipText = '';
+  assert.equal(field(input).hasAttribute('aria-description'), false);
+  fire(caption, 'pointerenter');
+  await new Promise((r) => setTimeout(r, 400));
+  assert.equal(Tooltip.isVisible, false, 'an emptied tooltip shows nothing');
+  fire(caption, 'pointerleave');
+
+  const bare = mount(new TextInput({tooltipText: 'Filter rows'}));
+  fire(bare.root, 'pointerenter');
+  await new Promise((r) => setTimeout(r, 400));
+  assert.equal(Tooltip.root.textContent, 'Filter rows', 'no caption: the whole input carries it');
+  fire(bare.root, 'pointerleave');
+  input.dispose();
+  bare.dispose();
 });

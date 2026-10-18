@@ -4,9 +4,12 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git"
   },
-  "version": "6.7.7",
+  "version": "6.7.9",
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "dependencies": {
     "@babel/parser": "^7.29.7",
     "@babel/runtime": "^7.29.7",
@@ -25,7 +28,7 @@
     "minimist": "^1.2.8",
     "node-fetch": "^2.7.0",
     "papaparse": "^5.5.3",
-    "puppeteer": "^24.15.0",
+    "puppeteer": "^25.14.0",
     "ts-morph": "^28.0.0",
     "@babel/generator": "^7.29.0"
   },
@@ -37,7 +40,7 @@
     "update:ivp-parser": "esbuild plugins/ivp-parser.entry.mjs --bundle --format=cjs --platform=node --alias:diff-grok=../libraries/compute-utils/node_modules/diff-grok --outfile=plugins/ivp-parser.bundle.cjs",
     "debug-source-map": "node build.js --source-maps",
     "test": "vitest run --project unit",
-    "test:server": "vitest run --project unit bin/__tests__/node-dapi bin/__tests__/server bin/__tests__/migrate bin/__tests__/keypair",
+    "test:server": "vitest run --project unit bin/__tests__/node-dapi bin/__tests__/server bin/__tests__/migrate bin/__tests__/keypair bin/__tests__/grok-cli",
     "test:watch": "vitest --project unit",
     "test:integration": "vitest run --project integration",
     "test:all": "vitest run"

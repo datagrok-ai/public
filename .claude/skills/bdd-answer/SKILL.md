@@ -1,7 +1,7 @@
 ---
 name: bdd-answer
-description: Answer a "how do I …" question about the platform with a Gherkin scenario on @datagrok-libraries/bdd that is filmed into a how-to video (grok-bdd guide), so the answer is demonstrated, sent as a video plus numbered steps, and kept as a regression test
-when-to-use: When a user or customer asks how to do something in Datagrok, when support wants a walkthrough video or GIF for a question, or when a help page needs its walkthrough regenerated
+description: Answer a "how do I …" question about the platform with a Gherkin scenario on @datagrok-libraries/bdd that is filmed into a how-to video (grok-bdd guide), so the answer is demonstrated, sent as a video plus numbered steps, and kept as a regression test; the same scenarios, filmed in help mode, are the GIFs of the help pages
+when-to-use: When a user or customer asks how to do something in Datagrok, when support wants a walkthrough video or GIF for a question, or when a help page needs a GIF recorded or replaced
 context: fork
 effort: medium
 argument-hint: "<the question, or a features/guides/*.feature path> [<package>]"
@@ -31,7 +31,8 @@ What a guide shows, and what the runtime guarantees (`grok-bdd guide` sets it up
   the person already has when they ask (the open tables); a view switch is a click on the view's
   tab (`user clicks on spgi-100 tab`), which the full shell shows. Opening the tables IS in the
   video: each `Given user opens X dataset` shows the table it opened under its caption. Only the
-  login and a step that changed nothing on the page are left out.
+  login and a step that changed nothing on the page are left out (a help GIF leaves out every
+  `Given`: section 4).
 - **A menu path is shown stop by stop**: the group in the bar lights and opens, then each item on
   the way, then the leaf; the same for a context menu. A walk that lights only the bar means a
   runtime path did not report its stops: it calls `guide.hop` for each, as `pickTopMenu` and
@@ -41,6 +42,16 @@ What a guide shows, and what the runtime guarantees (`grok-bdd guide` sets it up
   its search short of its last letter (a complete unique name is taken on the spot) and the row
   it leaves is clicked. Tests take the same steps through `selectOption` and Enter; only a guide
   walks the list (`selectNative`, `typeInColumnGrid` in `src/runtime/gestures.ts`).
+- **A control that shows only under the pointer is hovered in a step of its own.** A filter panel's
+  +, a filter card's search icon and a viewer's title-bar icons appear only while the pointer is over
+  their panel (a guide films without the test styles that keep them shown). A step's first picture is
+  taken before its gestures, so a hover inside the clicking step never shows the control and the
+  press lands on empty space: write `When user hovers over filter panel` before `user adds a card for
+  …`, `user hovers over scatter plot viewer` before `user clicks on settings icon of scatter plot
+  viewer`. A click on such an icon with no hover before it fails ("present, none visible").
+- **Text goes into a box the reader has seen clicked.** When another gesture left the focus in the
+  box (a card's search icon opens and focuses its search), click into the box in a step of its own
+  before typing or pasting, so the video shows where the text goes.
 - **The pointer rests on the lit element before every click**; only an icon-sized target (28 px
   or less each way) is zoomed into. The caption sits above the page, clear of a player's timeline.
 - **Every press is marked where it landed, under the pointer's tip**: a yellow dot and ring for
@@ -113,6 +124,13 @@ prints any press more than 2 px off or outside the lit element). What to fix and
 - a test feature filmed as a guide fails on a context-panel section or a viewer reading → the
   full shell is not the simple one the test was written in; film a guide feature instead.
 
+Typing shows as it goes in, a drag in several pictures, a wheel turn notch by notch, and a step ends on
+a cut to its result. A window narrower than the 1600 px video (`BDD_GUIDE_VIEWPORT`) is filmed at twice
+its density. With `--gif` the run also writes `guide-thumb.png` (the result) and `guide-sheet.png`
+(twelve frames of the GIF, for a review at a glance); `--fps`, `--colors`, `--size` and `--hold` set
+the GIF's rate, palette, width and last-frame hold. The command fails on a press drawn away from the
+pointer — a rendering error to fix, not a take to send.
+
 ## 3. Send it, and keep it
 
 - Reply with `guide.mp4` (or `guide.gif` where a video does not embed) and the body of
@@ -122,7 +140,37 @@ prints any press more than 2 px off or outside the lit element). What to fix and
 - Leave the feature and its generated spec uncommitted for the lead, with the list of core or
   library changes it needed.
 
-For help pages: `npx grok-bdd guide --help-pages` re-films every `@help:` tagged feature of the
-package and copies the GIFs into `public/help/<page dir>/img/`; the page embeds them as
-`![…](img/<scenario slug>.gif)`. `public/help` is the datagrok-ai/help submodule, so the GIFs are
-committed there.
+## 4. Help GIFs
+
+A help page shows a GIF about 800 px wide, beside the steps it illustrates (the `write-help` skill
+decides where one goes). The GIF is a guide feature filmed in help mode: an 800×500 window at twice
+its density (a 1600×1000 GIF, 256 colours, 12 fps), the bare shell (no sidebar, Browse, Toolbox,
+Context Panel or Help unless a step opens one), the page as a person sees it, no title card, caption
+strip or dimming, no zoom, and no set-up — every `Given` is left out, and the GIF starts a second
+before the first action and holds its result two seconds.
+
+1. **Write the feature** in `features/guides/` of the package that owns the area, tagged
+   `@guide @help:<page dir>` (the dir under `public/help/`), named by what it shows:
+   - one action and its result; set, then undone where the flow allows (a filter applied and reset,
+     a column hidden and shown), ending where it started so the loop does not jump;
+   - cause before effect: nothing changes on screen before the gesture that changes it;
+   - demo data the reader can open (`demog`, a package's sample table) — no fixture with `{run}` or
+     `{time}` in a name the GIF shows;
+   - the whole viewer in the window, the grid only when the result is in the data (a selection, a
+     filter) with the status bar's Selected and Filtered in view;
+   - settings changed from the viewer's own context menu where it has one; a step that looks broken
+     on video is left out of the feature rather than filmed.
+   A replaced GIF repeats the scenario of the one it replaces: watch the old one frame by frame first.
+2. **Check it on the local stand**: `npx grok-bdd run generated/guides/<slug>.test.ts`, then
+   `npx grok-bdd guide features/guides/<slug>.feature --help-mode` and review `guide-sheet.png`,
+   `guide-thumb.png` and single frames at 800 px: nothing cut off, labels readable, cause before effect.
+3. **Film it on the stand the help is reviewed on**: `npx grok-bdd guide --help-pages` films every
+   `@help:` feature of the package and puts each `<scenario slug>.gif` and `-thumb.png` into
+   `public/help/<page dir>/img/`. A GIF the page already has is not overwritten: the new one is
+   `<slug>.new.gif`, swapped in after the reviewer approves it; the old file goes only when nothing
+   else references it. `public/help` is the datagrok-ai/help submodule: the GIFs are committed there,
+   the feature to `public`.
+4. **Leave the stand as it was.** What a feature makes goes at feature end (the library's rule), and a
+   killed run's leftovers are swept by the fixture's own name family — so on a shared stand a fixture
+   carries a name no person would use (the `BDD-` prefix). A step never saves a shared setting (stop
+   before **Save and apply**).

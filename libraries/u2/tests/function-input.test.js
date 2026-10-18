@@ -182,3 +182,19 @@ ui('opening and closing repeatedly leaves no scope behind', () => {
   assert.equal(Scope.liveCount, live);
   input.dispose();
 });
+
+ui('state: the prompt is the placeholder and the text stays empty until a pick; open follows the popup', () => {
+  const input = make();
+  const empty = input.getState();
+  assert.equal(empty.value, '');
+  assert.equal(empty.text, '');
+  assert.equal(empty.placeholder, 'Pick a function…');
+  assert.equal(empty.open, false);
+  open(input);
+  assert.equal(input.getState().open, true);
+  fire(document.body, 'pointerdown');
+  input.value.value = 'MolWeight';
+  assert.equal(input.getState().text, 'Molecular Weight');
+  assert.equal(input.getState().open, false);
+  input.dispose();
+});

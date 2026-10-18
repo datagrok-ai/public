@@ -1,4 +1,5 @@
-// Synced from Rusty-HMMER web/anarci/schemes.ts by web/sync-datagrok.mjs — do not edit here.
+// Synced from crux-core crates/hmmer-web/web/anarci/schemes.ts by crates/hmmer-web/web/sync-datagrok.mjs — do not edit here.
+// Ported from ANARCI 2024.05.21 (oxpig/ANARCI 79f6c57, the Bioconda 2024.05.21 build): anarci.py, schemes.py
 /* eslint-disable max-len */
 /** Numbering schemes of ANARCI 2024.05.21 (BSD-3-Clause, Copyright (C) 2016
  * Oxford Protein Informatics Group; notice in licenses/ANARCI.txt).

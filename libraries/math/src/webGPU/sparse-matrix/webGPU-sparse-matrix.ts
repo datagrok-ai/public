@@ -12,6 +12,7 @@ import {
 } from '../multi-col-distances/webGPU-multicol-distances';
 import {webGPUProcessInfo} from '../preprocessing/webGPU-process-info';
 import {getGPUDevice} from '../getGPUDevice';
+import {WORKGROUP_DIM} from '../workgroup';
 
 /** generate sparse matrix based on list of lists of entries.
  *  these entries are each encoded as Uint32Array or FLOAT32Array (depending on their type).
@@ -107,7 +108,7 @@ export async function multiColWebGPUSparseMatrix(
 
   const combinedComplexity = processInfo.reduce((a, b) => a + b.complexity, 0); // combined complexity of all the columns
   const maxIterationsPerThread = Math.ceil(6000 / combinedComplexity); // maximum number of iterations per thread
-  const workGroupDivision = 10; // how many threads inside of one workgroup dimension (in this case 10 * 10 threads per workgroup)
+  const workGroupDivision = WORKGROUP_DIM; // threads per workgroup dimension (../workgroup.ts)
   const threadsPerWorkgroup = workGroupDivision * workGroupDivision;
   const workgroupsDim = Math.ceil(
     Math.sqrt(Math.ceil(numOfThreads / threadsPerWorkgroup))

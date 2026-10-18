@@ -12,23 +12,33 @@ the `/bdd-translate` skill.
 
 ```
 bin/grok-bdd.js         launcher: the package-local install first, else this one; runs dist/src/cli.js
-src/project.ts          a project = a dir with features/ (a package's bdd/, or the library root); bdd.config.json {tiers}
+src/project.ts          a project = a dir with features/ (a package's bdd/, or the library root); bdd.config.json {tiers, audits}
 src/discover.ts         imports binding modules (library: this build's bindings/; project: .ts through tsx), maps step fn → export
 src/gherkin.ts          @cucumber/gherkin → flat model (And/But resolved, outlines expanded, rule backgrounds folded)
 src/registry.ts         Given/When/Then, element(), context(), kind(), dataset(), defineParameterType(); one global registry
+src/u2-vocabulary.ts    the manifests' kind entries → one kind per noun, merged with bdd's overrides (registerU2Kinds)
 src/nouns.ts            phrase (+ context) → NounRef (pure; shared by compiler and runtime)
 src/match.ts            cucumber-expressions matching + specificity
 src/compile.ts          FeatureModel → *.test.ts (feature(test) session, test() per scenario, @journey = one test)
 src/states.ts           the {state} list, shared by the assertions, the parameter type and init's VS Code settings
 src/init.ts, src/cli.ts init | compile [--check] | lint | list-steps | run [playwright args] | guide <features> | link
-src/runtime/            args, locate, gestures, assertions, harness (session, journey, resetShell, error floor),
+src/runtime/            args, locate (R9 order, item reveal, BDD_RESOLVE_TRACE), gestures, assertions, u2-state (DG.U2.state
+                        reads), layout (the layout audit, geometry claims), audit (the automatic audits),
+                        harness (session, journey, resetShell, error floor, audits),
                         viewer-runtime (in-page window.__bdd), viewers (readers over it), viewer-pixels,
                         viewer-menus, viewer-legend, menus (top menu), events, functions, patience, failure,
                         server (endpoints the JS API lacks, layouts, fixture families), memory (BDD_MEMORY_LOG),
                         guide (BDD_GUIDE: per-step screenshots, located element or the hit area a gesture aims at, menu stops (hop), the page's own pointer events per stop,
-                        a `# caption:` comment's caption, a frame (frameTo) → steps.json; full shell)
-tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif, guide-thumb.png)
-bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart conventions), steps, session — always loaded
+                        pictures taken while typing, dragging and wheeling, a `# caption:` comment's caption, a frame (frameTo) → steps.json; full shell,
+                        no test styles; a window under 1600 px at device scale 2; BDD_GUIDE_HELP: the bare shell of a help GIF)
+tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif from the lossless frames,
+                        guide-thumb.png of the result, guide-sheet.png; --help: no title, strip, dimming, zoom or Given steps)
+tool/gen-u2-kinds.mjs   the u2 and EMS manifests → bindings/common/u2-kinds.g.ts (npm run vocab; vocab:check compares)
+tool/snapshot-kinds.mjs the built kind table → tests/fixtures/kinds-before.json (the compat test's reference)
+tool/audit-summary.mjs  a run's report.json (+ BDD_MEMORY_LOG files) → audit findings by rule, feature, scenario; heap per worker
+bindings/common/        parameter-types, u2-kinds.g (generated), kinds (registers the u2 nouns with what only bdd knows: Dart
+                        selectors and names, legacy aliases, parts, strategy pins; the Dart shell's kinds), steps, u2-steps
+                        (claims through DG.U2.state), geometry, session — always loaded
 bindings/platform/      the shell: elements, datasets, steps (views, projects and the Save dialog, server fixtures, the second
                         account and signing in as another), data (rows, filter, links between tables), columns, commands,
                         functions, events, workspace (open tables and views, direct links, files in the user's files or a
@@ -40,7 +50,8 @@ bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend,
 bindings/tiers/molecules/ opt-in: crux (Chem's Crux sketcher wherever a host opens it: its widget, its controls by test
                         id), molecules (a reading or a cell read as a molecule through Chem's RDKit, a table's semantic
                         types detected) — for the suites whose features draw or read molecules, Chem's and the hosts'
-tests/                  node:test via tsx: nouns, compile, project, init, failure, locate (Chromium over a static page)
+tests/                  node:test via tsx: nouns, compile, project, init, failure, vocabulary (drift, coverage, compat), audit;
+                        locate, addressing, u2-state, layout (Chromium over a static page)
 playwright.config.ts    the one config every project runs with (BDD_ROOT → testDir/outputDir/storageState; 4 workers)
 ```
 
@@ -256,11 +267,55 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   (`enter(page, …)`); every runtime parse goes through `refOf(page, target)`.
 - **Noun resolution**: whole registered phrase → ordinal → split at the first scope word (`of`
   names a part) → registered element, else kind by every matching suffix, longest first. Kinds
-  try their `match` strategies in order; a scope that is not on the page is not waited for.
+  try their `match` strategies in the R9 order (`effectiveOrder`): what the user sees — label,
+  `accessible` (the name the browser associates, right after the label), title, text, placeholder,
+  item key, in the kind's own order — then `data-u2-name`, and `dart` where the kind declares it;
+  a scope that is not on the page is not waited for. `BDD_RESOLVE_TRACE=<file>` logs every
+  resolution that order decides by another strategy than the declared one (`same: false` = another
+  element).
+- **Items are found by what they show, then by key**: an item kind (`items: true` — item, tree node,
+  table row, tab, wizard step, menu item, breadcrumb, chip) tries `item` (`data-u2-item`) after its
+  visible strategies and before `name`/`dart`; a control is no item kind (button, checkbox and tag
+  are pinned `items: false`). A gesture or a state claim whose phrase names the collection
+  (`X in Y`) and finds no visible match asks `DG.U2.revealItem` first (`locateActionable`), whose
+  rejection ("2 items match …") is the failure; `visible`/`hidden`/`present`/`absent` and
+  `enabled`/`disabled` never reveal.
 - **Gestures act on the visible match** (`locateActionable`); `enabled`/`disabled` read every
   match and prefer the visible ones; `visible`/`hidden` over several matches = any/none. An
   ordinal counts the visible matches: the Home page keeps its own viewers in the DOM, hidden,
-  under a table view, so "first line chart viewer" must not land on one of them.
+  under a table view, so "first line chart viewer" must not land on one of them. Several visible
+  matches fail a click (Playwright's strict mode, a wait failure) naming the candidates by label and
+  container (`describeCandidates`); typing still takes the first match's editor (`editorOf`).
+- **Value, state and text reads prefer the visible match**: a value or a state reads the first
+  visible match, else the first — a tab panel not shown keeps its own copy first in the DOM;
+  `contain`/`have text` over several matches reads the visible ones when there are any, else all:
+  any for a positive claim, none for a negative. A hidden match never satisfies a claim while a
+  visible one exists. Several visible matches keep their rule: a u2 phrase fails naming them, a value
+  reads the first visible, a flag state keeps every/any.
+- **Status reads only on a control root** (`u2-state.ts`): a state or value claim reads
+  `DG.U2.state` only when the located element is the root of a u2 control; a part, a wrapper and a
+  Dart widget keep their DOM reading, and a key the control does not report falls back to the DOM
+  (absence is not a value). When both answer and disagree, the claim follows the status and
+  `bdd: u2 contract: …` is printed once per phrase and page — a u2 finding, not a binding to patch.
+- **New library binding modules register no nouns.** A module that calls `kind()`, `element()`,
+  `context()`, `dataset()` or `defineParameterType()` is a side-effect import of every spec of every
+  project that loads it (`compile.ts` `sideEffects`), so a new one makes every committed spec stale:
+  nouns go into `bindings/common/kinds.ts` (u2's into the manifests), new modules hold steps only
+  (`u2-steps.ts`, `geometry.ts`).
+- **The vocabulary is regenerated after a manifest change.** The u2 and EMS nouns are
+  `u2-kinds.g.ts`, generated from `libraries/u2/manifest.json` and `libraries/ems/manifest.json`;
+  after any change to either, `npm run vocab`. `vocab:check`, `npm test` and the vocabulary test in
+  `test:unit` fail on a stale table, and the compat test fails when a kind loses a selector,
+  strategy, part or Dart name the hand-written table had (`kinds-before.json`) unless `REPLACED`
+  lists the narrowing.
+- **Audits run before the reset, leaks after** (`audit.ts`, `harness.ts` `afterEach`): a scenario
+  that passed as expected on a page showing u2 gets the layout audit and the console-error floor on
+  its final state, then the shell reset, then the leak check against the baseline taken when it
+  started (`markLeakBaseline`, last in `resetShellAfterLoad`; none on a page not yet in the shell).
+  A journey audits layout and errors at each scenario's end and leaks once at the test's end; a test
+  carrying `@known-failure` skips its end-of-test audits, leaks included; a failed, skipped or crashed
+  scenario is not audited; an audit that cannot run warns and never fails. `__U2_DEBUG__` is set
+  only in pages of a project whose leaks audit is not `off`.
 - **Labels are found first, items second** (`byLabel`, `:scope >` labels); menu items match
   their own label, not their children's.
 - **The context panel renders the current object (`grok.shell.o`) and nothing else**
@@ -355,17 +410,28 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   `@Prop(name:)` set one; two properties sharing a caption must be named. `annotate` prefixes the
   element's tag (`div-`, `span-`, `icon-`…) and turns `:_; *\[]{}|` into dashes — the `dart` match
   tries that form; a sketch box's name sits on its `.d4-host`, not on `.d4-sketch-item`.
+- A balloon claim takes the balloon it matched (the read is destructive; the others go back): a second claim on
+  the same balloon fails. Claim a balloon once.
 - A context menu of a non-viewer element is opened at a point of its visible part that
   `elementFromPoint` gives back to it: a tree row runs past its panel's edge, and a panel docked a
   moment ago (the console) covers part of a gallery. `scrollIntoView` is the last resort — it moves
-  overflow-hidden ancestors too, and the page with them.
+  overflow-hidden ancestors too, and the page with them — and `block: 'nearest'` leaves a row under a sticky
+  header where it is (the browse tree's Spaces over its first space once the tree is scrolled a row): then `center`.
+- A session minted in the page for another account (`sessionOf`) is fetched with `credentials: 'omit'`: the dev-key
+  login answers with a Set-Cookie of the new session, and the browser took it, so the page went on as the running
+  account while its next reload, features later, signed in as the second one (sticky-meta came up as bddsecond).
 - An entity saved through the JS API gets its first Activity entry late, and a counting pane hides
   at 0: claim its count (`should count at least`), never the pane's presence right after the save.
+- A guide films without the `selenium` body class, so the page looks as a person's does: a panel's title
+  bar shows its icons only while the pointer is over the panel (`dock-manager.css`), and a guide feature
+  hovers the panel in a step of its own before clicking one (a step's first picture is taken before its
+  gestures, so a hover inside the clicking step never shows the icon). Typing through a locator (`fill`, `pressSequentially`) or the keyboard and a wheel turn are
+  pictured as they go (`beat` in `guide.ts`, at most six pictures each).
 - A guide takes the pointer from the page, not from `page.mouse`: a locator's `click()`, `hover()`,
   `dragTo()` never pass through it, and a recorder that wrapped only the mouse had 60 of 80 clicks
   with no place (drawn unmarked, at the element's centre). `guide.ts` logs trusted pointer events
   in the page (capture listeners on every document) and drains them into the stop of the step they
-  belong to; `page.mouse` is wrapped only to picture a drag.
+  belong to; `page.mouse` is wrapped only to picture a drag and a wheel turn.
 - Package tools that decorate a view on `onViewAdded` (DevTools' Signature Editor icon) attach in
   the package's autostart; a view opened before it runs used to miss them (fixed in DevTools
   2026-09-24 by decorating the open views too).
@@ -438,8 +504,12 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   reports a status (`addStatusProvider` registers the widget); its areas are in px of its root.
 - The u2 side: `ChoiceInput` is a native `<select>`; comboboxes open on a keystroke; a tree row
   click selects and the twistie toggles; popups are portaled under `.u2-overlay` with
-  `data-u2-owner` = the nearest named ancestor; plain `button()`, toolbar buttons and tab headers
-  carry no `data-u2`. A `funcForm` number field loses a typed leading "-" (unreported u2 bug).
+  `data-u2-part="popup"`, `data-u2-owner` = the nearest named ancestor and `data-u2-owner-id` = the
+  owning control's root id, while dialogs are direct children of `body` (in the platform's dialog
+  z-band); plain `button()` carries `data-u2="button"`, toolbar buttons and tab headers carry
+  `data-u2-item` (the label, the tab id). The u2 and EMS nouns are generated from their manifests'
+  `kinds` (`npm run vocab`); `kinds.ts` holds only the overrides. A `funcForm` number field loses a
+  typed leading "-" (unreported u2 bug).
 - A u2 name is one token: the locator tries the phrase without spaces and with dashes.
 - The Dart column picker ("Select columns...") is a grid viewer: `text of cell N of __name` names
   a row's column, `cell N of x` is its checkbox, its Search input filters without renumbering. A
@@ -480,8 +550,9 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
 - The table view's Search box applies `NumericMatcher` / `StringMatcher` / `DateTimeMatcher` to each
   column of their type; its syntax is ddt's `matcher_test.dart` claim, not a feature's.
 - A Dart choice input's phrase can resolve to its `<select>` itself; `select` handles both. The Share
-  dialog of an entity that is not a project (a model) fetches the entity's project after it opens and
-  its OK throws "Not initialized" before that: wait for the owner's grant row ("Full access").
+  dialog fetches the entity's project after it opens, and its OK waits for that (since 2026-10-12;
+  before, it threw "Not initialized"). Its own grant row is kept hidden, and `contain text "Full
+  access"` reads it: claim the visible parts, and the sharing user's row by its access level.
 - A viewer outside a table view (a function view's docked chart, a facet's small multiples) is
   reached through `DG.Widget.find(root)`; the function view's tabs are dock-spawn-ts handles in a
   shadow root (`.dockspan-tab-handle`, a CSS locator pierces it), and the viewers of its other
@@ -561,7 +632,9 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
   sketcher. A feature about one sketcher's own controls (Chem's Ketcher template toolbar) carries `@sketcher-controls`
   and skips, saying why, under an override that names another (`sketcherPin`, platform/steps.ts).
 - Every run leaves its JSON report in the project's `test-results/report.json`, with the stand and
-  the machine in `config.metadata` (a `--reporter` on the command line gets `json` added). The run
+  the machine in `config.metadata` (a `--reporter` on the command line gets `json` added; one that
+  names `json` itself, `--reporter=list,json`, sends the report to stdout and the old file is gone,
+  unless `PLAYWRIGHT_JSON_OUTPUT_FILE` is set). The run
   history in `packages/UsageAnalysis/bdd/history` records such reports **only when the user asks
   for it** — never as part of a run, a review or a fix (`node history.mjs record --note …`, then
   `html`; see that package's bdd README).
@@ -584,8 +657,14 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
 - Bash tool: cwd persists across calls, long heredocs fail — write files with the Write tool.
 - Node 18 is what the libraries CI runs, and `@playwright/test` 1.62 exits at load below Node 20:
   the library pins `~1.61` (the last that runs on 18) until CI moves on; `npm test` there is the
-  build, the drift check of the library's own project and the unit tests, with the locator tests
-  skipping themselves where no Chromium is installed.
+  build, the vocabulary check, the drift check of the library's own project and the unit tests, with
+  the locator tests skipping themselves where no Chromium is installed.
+- A run started in the background is polled with `pgrep -f "[l]ibraries/bdd/bin/grok-bdd.js run"`:
+  without the brackets the pattern also matches the command line of the shell that runs `pgrep`, and
+  the run never seems to end.
+- `BDD_AUDIT=<mode>` (`fail`, `report`, `off`) overrides a project's audits for a run,
+  `BDD_AUDIT_LAYOUT|ERRORS|LEAKS` one of them; `node tool/audit-summary.mjs <report.json>
+  [memory.jsonl …]` sums the findings of a run up.
 
 ## Conventions
 

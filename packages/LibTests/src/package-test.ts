@@ -22,6 +22,7 @@ import './tests/compute-utils/reactive-tree-driver/annotation-checks';
 import './tests/compute-utils/reactive-tree-driver/links-check-expressions';
 import './tests/compute-utils/reactive-tree-driver/links-rule-sources';
 import './tests/compute-utils/reactive-tree-driver/links-rule-formula';
+import './tests/compute-utils/reactive-tree-driver/links-rule-workflow';
 import './tests/compute-utils/reactive-tree-driver/links-value-annotations';
 import './tests/compute-utils/reactive-tree-driver/links-reserved-names';
 import './tests/compute-utils/reactive-tree-driver/links-docs-cases';

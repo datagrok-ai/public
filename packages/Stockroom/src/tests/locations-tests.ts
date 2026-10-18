@@ -5,7 +5,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
-import {domains, DomainApp} from '@datagrok-libraries/u2/src/dg/index.js';
+import {domains, DomainApp} from '@datagrok-libraries/ems/src/dg';
 import {newContainerAt, stockroomLocations} from '../package';
 
 category('Stockroom: locations', () => {

@@ -232,7 +232,7 @@ tier('propsFor: a property-tier node reads its live values through propertyTarge
   const instance = renderSpec({$schema: 'dg-ui/1', root: node}, new SpecContext(), reg);
   const ref = new SpecNodeRef(instance, node);
   const [section] = propsFor(ref);
-  assert.deepEqual(section.values, {level: 3, unit: 'mg'});
+  assert.deepEqual(section.values, {level: 3, unit: 'mg', visible: undefined});
   target.level = 4;
   assert.equal(section.read().level, 4, 'live, not the document');
   instance.dispose();

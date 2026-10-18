@@ -6,7 +6,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
-import {Scope, signal, Filters, FilterBuilder, TextInput, Control} from '../src/index.js';
+import {Scope, signal, Filters, FilterBuilder, TextInput, Control, EMPTY} from '../src/index.js';
 import {Registry} from '../src/spec/registry.js';
 import {SpecContext, renderSpec} from '../src/spec/spec.js';
 import {registerAll} from '../src/spec/registrations.js';
@@ -114,6 +114,8 @@ smoke('empty tree shows the empty hint (a link that adds); + adds a row on the f
   assert.equal(cond.value, undefined);
   assert.deepEqual(fb.problems.peek().map((p) => p.code), ['missing-value']);
   assert.equal(fb.validity.peek(), fb.problems.peek()[0].message, 'validity is the first problem');
+  assert.equal(rows(fb)[0].classList.contains('u2-fb-invalid'), false, 'a fresh row is quiet until touched');
+  fb.touch();
   assert.equal(rows(fb)[0].classList.contains('u2-fb-invalid'), true);
   assert.equal(rows(fb)[0].title, fb.problems.peek()[0].message);
   const problem = part(rows(fb)[0], 'problem');
@@ -523,7 +525,7 @@ smoke('a bound literal without ids is adopted with fresh ids (a system write)', 
 
 smoke('rows come and go without leaving disposers behind on the builder', () => {
   const fb = mount(new FilterBuilder({schema: SCHEMA, orientation: 'horizontal'}));
-  const owned = fb.scope._disposers.length;
+  const owned = fb.scope._disposers?.size ?? 0;
   for (let i = 0; i < 50; i++) {
     const a = fb.addCondition();
     const b = fb.addCondition();
@@ -531,7 +533,7 @@ smoke('rows come and go without leaving disposers behind on the builder', () => 
     fb.removeNode(b);
   }
   assert.equal(rows(fb).length, 0);
-  assert.equal(fb.scope._disposers.length, owned, 'a released row disowns its disposer');
+  assert.equal(fb.scope._disposers?.size ?? 0, owned, 'a released row disowns its disposer');
 });
 
 smoke('a spec template without node ids seeds the value, locks its rows and never hangs the lock walk', () => {
@@ -611,4 +613,16 @@ smoke('disposing the builder releases every row, editor and popup scope', () => 
   assert.equal(Scope.liveCount > base, true);
   fb.dispose();
   assert.equal(Scope.liveCount, base);
+});
+
+smoke('required: a tree without a condition is invalid once touched; a condition makes it valid', () => {
+  const fb = mount(new FilterBuilder({schema: SCHEMA, required: true}));
+  assert.equal(fb.getState().valid, false);
+  assert.equal(fb.getState().error, null, 'not shown before a touch');
+  fb.touch();
+  assert.equal(fb.getState().error, EMPTY);
+  fb.value.value = tree(Filters.cond('age', '>', 30));
+  assert.equal(fb.getState().valid, true);
+  const groups = mount(new FilterBuilder({schema: SCHEMA, required: true, value: tree(Filters.group('or'))}));
+  assert.equal(groups.getState().valid, false, 'empty sub-groups are still no condition');
 });

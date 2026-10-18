@@ -1,9 +1,11 @@
 import {Signal, ReadonlySignal} from './signals.js';
 import {Scope} from './scope.js';
+import {text} from './text.js';
 
+/** `null` and `undefined` show as empty. */
 export function bindText(scope: Scope, el: Element, source: ReadonlySignal<unknown>): void {
   scope.effect(() => {
-    el.textContent = String(source.value);
+    el.textContent = text(source.value);
   });
 }
 
@@ -15,22 +17,21 @@ export function bindText(scope: Scope, el: Element, source: ReadonlySignal<unkno
  * (`commitOn: 'change'`). Either way the field shows what is being typed; only the signal waits. */
 export function bindValue(scope: Scope, input: HTMLInputElement | HTMLTextAreaElement,
   source: Signal<string>, commitOn: 'input' | 'change' = 'input'): void {
+  // set by a commit that changed the signal, consumed by the effect run it causes — which comes
+  // after the handler, when its batch ends
   let echo = false;
   scope.effect(() => {
     // a bound source may hold nothing yet — a data source before its first run — and the DOM
     // would render that as the literal "undefined"
     const v = source.value ?? '';
-    if (!echo)
+    if (echo)
+      echo = false;
+    else
       input.value = v;
   });
-  const handler = () => {
-    echo = true;
-    try {
-      source.value = input.value;
-    } finally {
-      echo = false;
-    }
-  };
-  input.addEventListener(commitOn, handler);
-  scope.own(() => input.removeEventListener(commitOn, handler));
+  scope.listen(input, commitOn, () => {
+    const before = source.peek();
+    source.value = input.value;
+    echo = !Object.is(source.peek(), before);
+  });
 }

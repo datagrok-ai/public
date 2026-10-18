@@ -119,8 +119,9 @@ budgets are enforced by the engine's test harness.
 
 ## Verification
 
-The engine and the ANARCI port live in the Rusty-HMMER repository
-(`crates/hmmer-web`, `web/`), which verifies them against the C HMMER 3.4
+The engine and the ANARCI port live in crux-core (github.com/datagrok-ai/crux-core,
+area `sequence`: `crates/hmmer-web`, `crates/hmmer-web-tools`, `crates/hmmer-web/web`),
+which verifies them against the C HMMER 3.4
 oracle (hmmsearch/hmmscan/phmmer tabular outputs, including searches split
 across workers; hmmalign alignments; hmmbuild model files; hmmlogo values)
 and against unmodified ANARCI (numbering, germlines and E-values for 2,500

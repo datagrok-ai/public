@@ -13,11 +13,12 @@ export interface GuideBox {
   height: number;
 }
 
-/** What the pointer did, in the page's CSS pixels — the screenshots' pixels. */
+/** What the pointer did, in the page's CSS pixels (the screenshots' pixels times the manifest's `scale`). */
 export interface GuidePointer {
   /** `move`: where the pointer came to rest, or with `held` a point of a drag; `down` and `up`: a
-   * button pressed or released there. */
-  type: 'move' | 'down' | 'up';
+   * button pressed or released there; `still`: a picture of the page while the step went on (text
+   * being typed, a wheel notch), the pointer where it was. */
+  type: 'move' | 'down' | 'up' | 'still';
   x: number;
   y: number;
   button?: 'left' | 'middle' | 'right';
@@ -34,6 +35,8 @@ export interface GuidePointer {
 export type GuideStepKind = 'action' | 'check' | 'setup';
 
 const DRAG_SHOTS = 8;
+/** At most this many pictures of one typing or one wheel turn. */
+const BEATS = 6;
 
 /** A stop of a step: the page as the pointer set off for it, the element lit there, and what the
  * pointer did at it. A step has one stop, or one per stop of a path it walked (a menu's group, each
@@ -69,6 +72,8 @@ export interface GuideManifest {
   description: string;
   tags: string[];
   viewport: {width: number; height: number} | null;
+  /** Screenshot pixels per CSS pixel: a small window is filmed at twice its density. */
+  scale: number;
   /** The part of the page the video shows (`frameTo`): every picture is cut to it. */
   frame?: GuideBox;
   steps: GuideStep[];
@@ -86,6 +91,7 @@ interface Recording {
   /** What the pointer did since the last stop. */
   pending: GuidePointer[];
   dragShots: number;
+  beats: number;
   silent: boolean;
   /** The step aimed at a hit area (`locatedArea`): finer than the viewer a later read of it locates. */
   area?: boolean;
@@ -97,6 +103,11 @@ const attached = new WeakSet<Page>();
 
 export function guideDir(): string | undefined {
   return process.env.BDD_GUIDE || undefined;
+}
+
+/** A help-page GIF (`grok-bdd guide --help-mode`): the bare shell, no captions, no set-up. */
+export function helpMode(): boolean {
+  return !!guideDir() && !!process.env.BDD_GUIDE_HELP;
 }
 
 /** A guide films the full shell — the menus, view tabs and panels as a person has them; a test
@@ -283,12 +294,70 @@ async function drain(page: Page): Promise<GuidePointer[]> {
   }).catch(() => []);
 }
 
+/** A picture of the page in the middle of the step — the text typed so far, the list after a wheel
+ * notch — shown where the pointer is when it was taken. */
+async function beat(page: Page, r: Recording): Promise<void> {
+  r.pending.push(...await drain(page));
+  await page.evaluate(() => new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())))).catch(() => undefined);
+  const last = [...r.pending, ...r.legs.flatMap((l) => l.pointer)].reverse().find((p) => p.type !== 'still');
+  r.pending.push({type: 'still', x: last?.x ?? 0, y: last?.y ?? 0,
+    shot: await shot(page, r.dir, `${String(r.open!.index).padStart(2, '0')}-beat${++r.beats}.png`)});
+}
+
+/** The text in a few pieces, a picture after each: typing shows as it goes, not all at once. */
+function pieces(text: string): string[] {
+  const size = Math.max(1, Math.ceil(text.length / BEATS));
+  const out: string[] = [];
+  for (let i = 0; i < text.length; i += size)
+    out.push(text.slice(i, i + size));
+  return out;
+}
+
+/** A locator's typing goes past `page.keyboard`: its `fill` and `pressSequentially` are wrapped once
+ * for every page, and do what they did whenever the page is not being filmed. */
+let locatorWrapped = false;
+function wrapLocatorTyping(loc: Locator): void {
+  if (locatorWrapped)
+    return;
+  locatorWrapped = true;
+  const proto = Object.getPrototypeOf(loc);
+  const fill = proto.fill;
+  const pressSequentially = proto.pressSequentially;
+  const filming = (l: Locator): Recording | undefined => {
+    const r = recordings.get(l.page());
+    return r?.open && !r.silent ? r : undefined;
+  };
+  proto.fill = async function(this: Locator, value: string, options?: unknown) {
+    const r = filming(this);
+    if (!r || !value)
+      return fill.call(this, value, options);
+    let typed = '';
+    for (const piece of pieces(value)) {
+      typed += piece;
+      await fill.call(this, typed, options);
+      await beat(this.page(), r);
+    }
+  };
+  proto.pressSequentially = async function(this: Locator, text: string, options?: unknown) {
+    const r = filming(this);
+    if (!r)
+      return pressSequentially.call(this, text, options);
+    for (const piece of pieces(text)) {
+      await pressSequentially.call(this, piece, options);
+      await beat(this.page(), r);
+    }
+  };
+}
+
 /** The pointer is followed in the page, whatever runtime path drives it (a gesture, a menu walk, a
- * viewer hit area, a locator's own click). The page's `mouse` is wrapped only to picture drags. */
+ * viewer hit area, a locator's own click). The page's `mouse` is wrapped to picture drags and wheel
+ * notches, and the typing to picture the text as it goes in. */
 export async function attach(page: Page): Promise<void> {
   if (!guideDir() || attached.has(page))
     return;
   attached.add(page);
+  wrapLocatorTyping(page.locator('body'));
   await page.addInitScript(capturePointer);
   await page.evaluate(capturePointer).catch(() => undefined);
   const rec = (): Recording | undefined => recordings.get(page);
@@ -306,7 +375,7 @@ export async function attach(page: Page): Promise<void> {
     r.pending.push(...await drain(page));
     const last = [...r.pending].reverse().find((p) => p.type !== 'up');
     const from = last ?? {x, y};
-    const legs = Math.min(3, Math.max(1, Math.round(Math.hypot(x - from.x, y - from.y) / 120)));
+    const legs = Math.min(DRAG_SHOTS - r.dragShots, Math.max(2, Math.round(Math.hypot(x - from.x, y - from.y) / 60)));
     for (let i = 1; i <= legs; i++) {
       const at = {x: from.x + (x - from.x) * i / legs, y: from.y + (y - from.y) * i / legs};
       await move(at.x, at.y, {steps: 4});
@@ -318,6 +387,17 @@ export async function attach(page: Page): Promise<void> {
         reached.shot = name;
       else
         r.pending.push({type: 'move', x: at.x, y: at.y, held: true, shot: name});
+    }
+  };
+  const wheel = mouse.wheel.bind(mouse);
+  mouse.wheel = async (dx: number, dy: number) => {
+    const r = rec();
+    const notches = Math.min(BEATS, Math.round(Math.max(Math.abs(dx), Math.abs(dy)) / 100));
+    if (!r?.open || r.silent || notches < 2)
+      return wheel(dx, dy);
+    for (let i = 0; i < notches; i++) {
+      await wheel(dx / notches, dy / notches);
+      await beat(page, r);
     }
   };
   mouse.down = async (options?: unknown) => {
@@ -336,11 +416,21 @@ export async function attach(page: Page): Promise<void> {
     rec()?.keys.push(key);
     return press(key, options);
   };
+  // a native select finds an option by the keys typed within a second: only a text field is pictured as it fills
+  const intoText = (): Promise<boolean> => page.evaluate(() => {
+    const e = document.activeElement as HTMLElement | null;
+    return !!e && (e.tagName === 'INPUT' || e.tagName === 'TEXTAREA' || e.isContentEditable);
+  }).catch(() => false);
   keyboard.type = async (text: string, options?: unknown) => {
     const r = rec();
     if (r)
       r.typed += text;
-    return type(text, options);
+    if (!r?.open || r.silent || !await intoText())
+      return type(text, options);
+    for (const piece of pieces(text)) {
+      await type(piece, options);
+      await beat(page, r);
+    }
   };
   keyboard.insertText = async (text: string) => {
     const r = rec();
@@ -450,8 +540,9 @@ function recordingFor(page: Page, info: TestInfo): Recording {
   mkdirSync(dir, {recursive: true});
   const viewport = page.viewportSize();
   const manifest: GuideManifest =
-    {feature: featureName, scenario: scenarioName, description: '', tags: info.tags, viewport, steps: []};
-  r = {dir, manifest, lastType: 'Given', keys: [], typed: '', legs: [], pending: [], dragShots: 0, silent: false};
+    {feature: featureName, scenario: scenarioName, description: '', tags: info.tags, viewport,
+      scale: info.project.use.deviceScaleFactor ?? 1, steps: []};
+  r = {dir, manifest, lastType: 'Given', keys: [], typed: '', legs: [], pending: [], dragShots: 0, beats: 0, silent: false};
   recordings.set(page, r);
   return r;
 }
@@ -480,6 +571,7 @@ export async function begin(page: Page | undefined, info: TestInfo, line: number
   r.legs = [];
   r.pending = [];
   r.dragShots = 0;
+  r.beats = 0;
   r.silent = false;
   r.area = false;
   r.open = {index, line, keyword, text, table, caption, started: Date.now(), before: await shot(page, r.dir, `${stem}-before.png`)};

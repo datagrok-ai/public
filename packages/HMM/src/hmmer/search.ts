@@ -1,4 +1,4 @@
-// Synced from Rusty-HMMER web/search.ts by web/sync-datagrok.mjs — do not edit here.
+// Synced from crux-core crates/hmmer-web/web/search.ts by crates/hmmer-web/web/sync-datagrok.mjs — do not edit here.
 /** `hmmsearch` split across workers.
  *
  * Every target sequence is compared independently, so a search can run in

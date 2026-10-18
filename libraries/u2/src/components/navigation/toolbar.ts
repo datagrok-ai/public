@@ -5,9 +5,12 @@ import {Scope} from '../../core/scope.js';
 import {Control} from '../../core/component.js';
 import {Tooltip} from '../../core/tooltip.js';
 import {Menu} from './menu.js';
+import {icon as iconElement} from '../display/icon.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export interface ToolbarButtonOptions {
   tooltip?: string;
+  /** A Font Awesome name, as for a menu item: the » menu shows the same icon when the item folds. */
   icon?: string;
 }
 
@@ -54,9 +57,9 @@ export class Toolbar extends Control {
     this._chevron.setAttribute('aria-expanded', 'false');
     this.root.append(this._chevron);
 
-    this._listen(this._chevron, 'click', () => this._toggleMenu(this._chevron, (m) => this._buildOverflow(m)));
-    this._listen(this.root, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
-    this._listen(this.root, 'focusin', (e) => this._onFocusIn(e));
+    this.scope.listen(this._chevron, 'click', () => this._toggleMenu(this._chevron, (m) => this._buildOverflow(m)));
+    this.scope.listen(this.root, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.scope.listen(this.root, 'focusin', (e) => this._onFocusIn(e));
 
     const resize = new ResizeObserver(() => this._layout());
     resize.observe(this.root);
@@ -66,14 +69,14 @@ export class Toolbar extends Control {
 
   addButton(label: string, onClick: () => void, options?: ToolbarButtonOptions): Toolbar {
     const el = this._button(label, options);
-    this._listen(el, 'click', () => onClick());
+    this.scope.listen(el, 'click', () => onClick());
     return this._add({kind: 'button', el, label, hidden: false, onClick, icon: options ? options.icon : undefined});
   }
 
   addToggle(label: string, bind: Signal<boolean>, options?: {tooltip?: string}): Toolbar {
     const el = this._button(label, options);
     el.setAttribute('aria-pressed', 'false');
-    this._listen(el, 'click', () => bind.value = !bind.peek());
+    this.scope.listen(el, 'click', () => bind.value = !bind.peek());
     this.effect(() => {
       const pressed = bind.value;
       el.classList.toggle('u2-toolbar-btn-pressed', pressed);
@@ -92,7 +95,7 @@ export class Toolbar extends Control {
     arrow.className = 'u2-toolbar-arrow';
     arrow.textContent = '▾';
     el.append(arrow);
-    this._listen(el, 'click', () => this._toggleMenu(el, build));
+    this.scope.listen(el, 'click', () => this._toggleMenu(el, build));
     return this._add({kind: 'menu', el, label, hidden: false, build});
   }
 
@@ -111,19 +114,26 @@ export class Toolbar extends Control {
     return this._add({kind: 'slot', el: slot, label: '', hidden: false});
   }
 
+  /** The buttons, toggles and menus, keyed by label; a toggle is selected while pressed, an item
+   * folded into the » menu is not rendered. */
+  getItems(): IItemsState {
+    const list = this._items.filter((item) => item.kind !== 'separator' && item.kind !== 'slot').map((item, index) => ({
+      key: item.label, label: item.label, index, disabled: (item.el as HTMLButtonElement).disabled,
+      ...item.bind === undefined ? {} : {selected: item.bind.peek()}, rendered: !item.hidden}));
+    return {count: list.length, list, truncated: false};
+  }
+
   private _button(label: string, options?: ToolbarButtonOptions): HTMLButtonElement {
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'u2-toolbar-btn';
+    el.dataset.u2Item = label;
     el.tabIndex = -1;
-    if (options && options.icon) {
-      const icon = document.createElement('span');
-      icon.className = 'u2-toolbar-icon';
-      icon.textContent = options.icon;
-      el.append(icon);
-    }
+    if (options && options.icon)
+      el.append(iconElement(options.icon, {cls: 'u2-toolbar-icon'}));
     const text = document.createElement('span');
     text.className = 'u2-toolbar-label';
+    text.dataset.u2Part = 'item-label';
     text.textContent = label;
     el.append(text);
     if (options && options.tooltip)
@@ -283,10 +293,6 @@ export class Toolbar extends Control {
     }
   }
 
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
-  }
 
   private static _setHidden(item: Item, hidden: boolean): void {
     item.hidden = hidden;

@@ -9,8 +9,7 @@ import {generateDomainClients, tableProp} from './api';
  * answer key): u2 is not on npm, so the dependency is the workspace link, and `u2core` is the one
  * external `@datagrok/build-config` does not know about. The css imports and the tsconfig need
  * nothing — the shared bundler config carries the loaders and the tsconfig extends the base. */
-const u2Dependency = 'workspace:^';
-const u2DgModule = '@datagrok-libraries/u2/src/dg/index.js';
+const emsDgModule = '@datagrok-libraries/ems/src/dg';
 const u2RspackExternal = `'datagrok-api/u2core': 'DG.U2'`;
 const u2RspackConfig = [
   `const {bundler} = require('@datagrok/build-config');`,
@@ -114,7 +113,7 @@ export function add(args: { _: string[], domain?: string | boolean }) {
    * existing imports (which webpack's externals depend on). */
   function addU2Imports() {
     const contents = fs.readFileSync(packageEntry, 'utf8');
-    if (contents.includes(u2DgModule)) return;
+    if (contents.includes(emsDgModule)) return;
     const eol = contents.includes('\r\n') ? '\r\n' : '\n';
     const imports = fs.readFileSync(path.join(templateDir, 'entity-template', 'domain-app-imports.js'), 'utf8')
       .trimEnd().split(/\r?\n/);
@@ -131,7 +130,8 @@ export function add(args: { _: string[], domain?: string | boolean }) {
   function addU2Wiring() {
     const packageObj = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
     packageObj.dependencies = packageObj.dependencies ?? {};
-    packageObj.dependencies['@datagrok-libraries/u2'] ??= u2Dependency;
+    packageObj.dependencies['@datagrok-libraries/ems'] ??= 'workspace:^';
+    packageObj.dependencies['@datagrok-libraries/u2'] ??= 'workspace:^';
     fs.writeFileSync(packagePath, JSON.stringify(packageObj, null, 2), 'utf8');
 
     if (!fs.existsSync(rspackConfigPath))

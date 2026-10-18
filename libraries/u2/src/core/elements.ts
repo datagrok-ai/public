@@ -1,10 +1,11 @@
 /* Fluent element factories (L3). Every text/child slot takes `T | ReadonlySignal<T>`; a signal
    is bound through the ambient Scope, so live values never outlive their owner. */
-import {Signal, ReadonlySignal} from './signals.js';
+import {Signal, ReadonlySignal, batch} from './signals.js';
 import {Scope} from './scope.js';
 import {Control} from './component.js';
 import {bindText} from './bind.js';
 import {Dates} from './dates.js';
+import {Tooltip} from './tooltip.js';
 
 export type Child = HTMLElement | Control | string | ReadonlySignal<unknown>;
 export type Text = string | ReadonlySignal<unknown>;
@@ -52,13 +53,25 @@ function fill<T extends HTMLElement>(el: T, children?: Child[]): T {
   return el;
 }
 
-/** Listeners on a factory-made element die with the element; owning them is still right when
- * someone is building inside a scope, so disposal is provably listener-free. */
-function listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-  el.addEventListener(type, handler);
-  const scope = Scope.ambient;
-  if (scope)
-    scope.own(() => el.removeEventListener(type, handler));
+/** Reports the throws of handlers on elements built with no owner. Never owns anything, so it
+ * is never counted. */
+const UNOWNED = new Scope(undefined, {label: 'unowned', lazy: true});
+
+/** A factory-made element's handler: owned by whoever is building (removed on its dispose), and
+ * like every u2 handler batched and contained — a throw is reported, never thrown at the browser. */
+function listen<E extends Event>(el: HTMLElement, type: string, handler: (e: E) => void): void {
+  const owner = Scope.ambient;
+  if (owner) {
+    owner.listen(el, type, handler as (e: Event) => void);
+    return;
+  }
+  el.addEventListener(type, (e) => {
+    try {
+      batch(() => handler(e as E));
+    } catch (error) {
+      UNOWNED.reportError(error);
+    }
+  });
 }
 
 export function div(children?: Child[], cls?: string): HTMLDivElement {
@@ -130,7 +143,9 @@ export function h3(text: Text): HTMLHeadingElement {
   return setText(element('h3'), text);
 }
 
-export function link(text: Text, onClickOrUrl: (() => void) | string): HTMLAnchorElement {
+/** `onClick` gets the click, or the Enter keydown that activated the link. */
+export function link(text: Text,
+  onClickOrUrl: ((e: MouseEvent | KeyboardEvent) => void) | string): HTMLAnchorElement {
   const el = setText(element('a', 'u2-link'), text);
   if (typeof onClickOrUrl === 'string') {
     el.classList.add('u2-link-external');
@@ -139,26 +154,70 @@ export function link(text: Text, onClickOrUrl: (() => void) | string): HTMLAncho
     return el;
   }
   el.tabIndex = 0;
-  listen(el, 'click', () => onClickOrUrl());
-  listen(el, 'keydown', (e) => {
-    if ((e as KeyboardEvent).key === 'Enter')
-      onClickOrUrl();
+  listen<MouseEvent>(el, 'click', (e) => onClickOrUrl(e));
+  listen<KeyboardEvent>(el, 'keydown', (e) => {
+    if (e.key === 'Enter')
+      onClickOrUrl(e);
   });
   return el;
 }
 
-export function button(text: Text | HTMLElement, onClick: () => void,
-  options?: {primary?: boolean}): HTMLButtonElement {
+/** Adds `handler` to `el`, owned by whoever is building — a row of `each()`, a card — and removed
+ * with it; batched, and a throw reported rather than thrown. What a built element listens with:
+ * `scope.listen` on a longer-lived scope would keep every element ever built alive. */
+export function on<E extends Event = Event>(el: HTMLElement, type: string, handler: (e: E) => void): HTMLElement {
+  listen<E>(el, type, handler);
+  return el;
+}
+
+/** Runs `fn` now and again whenever a signal it read changes, owned by whoever is building — an `each()`
+ * row, a card — and stopped with it: what a plain element built there follows its model with, as
+ * {@link on} is what it listens with. */
+export function effect(fn: () => void): void {
+  owner().effect(fn);
+}
+
+export interface ButtonOptions {
+  primary?: boolean;
+  /** Hover text; a function is asked at hover time. */
+  tooltip?: string | (() => string);
+  /** `true`, or WHY the button is disabled — the reason becomes its tooltip, so the user learns what
+   * to fix; `false`, `null` or `''` enable it. A signal is followed live. */
+  disabled?: boolean | string | null | ReadonlySignal<boolean | string | null>;
+}
+
+export function button(text: Text | HTMLElement, onClick: (e: MouseEvent) => void,
+  options?: ButtonOptions): HTMLButtonElement {
   const el = element('button', 'u2-btn', options?.primary ? 'u2-btn-primary' : undefined);
   el.type = 'button';
+  el.dataset.u2 = 'button';
   if (text instanceof HTMLElement)
     el.append(text);
   else
     setText(el, text);
-  listen(el, 'click', () => onClick());
+  listen<MouseEvent>(el, 'click', (e) => onClick(e));
+  const disabled = options?.disabled;
+  const apply = (x: boolean | string | null | undefined) => el.disabled = x === true || (typeof x === 'string' && x !== '');
+  if (isSignal(disabled))
+    owner().effect(() => apply(disabled.value as boolean | string | null));
+  else
+    apply(disabled);
+  if (disabled !== undefined || options?.tooltip !== undefined) {
+    const text = () => {
+      const x = isSignal(disabled) ? disabled.peek() : disabled;
+      const tip = options?.tooltip;
+      return typeof x === 'string' && x !== '' ? x : typeof tip === 'function' ? tip() : tip ?? '';
+    };
+    // no owner to release the hover listeners with: the browser's own title, as iconButton does
+    const scope = Scope.ambient;
+    if (scope === undefined)
+      el.title = text();
+    else
+      Tooltip.bind(el, text, scope);
+  }
   return el;
 }
 
-export function bigButton(text: Text, onClick: () => void): HTMLButtonElement {
+export function bigButton(text: Text, onClick: (e: MouseEvent) => void): HTMLButtonElement {
   return button(text, onClick, {primary: true});
 }

@@ -1,5 +1,9 @@
 # statistics changelog
 
+## v.next
+
+* [#4291](https://github.com/datagrok-ai/public/issues/4291): Chem: MPO: Add support for qnum values
+
 ## 1.12.14 (2026-09-18)
 
 * Statistics: `tTest` uses the sample variance. Every branch was built from the population variance (jStat divides by n unless told otherwise), so every p-value the platform reported was too small - by 12% for n=5 - in Charts group analysis, Peptides, Proteomics differential expression and ClinicalCase

@@ -959,13 +959,14 @@ export class Grid extends Viewer<IGridSettings> {
     return new Grid(api.grok_Grid_Create(table.dart));
   }
 
-  /** Creates a new grid from a list of items (rows) and their properties (columns) */
+  /** Creates a new grid from a list of items (rows) and their properties (columns).
+   * Rows added to the grid's table later read as empty until edited, which creates a plain object item for them. */
   static fromProperties(items: any[], props: Property[]): Grid {
     const t = DataFrame.create(items.length);
     for (let p of props)
       t.columns.addNewVirtual(p.name,
-        (i: number) => p.get(items[i]), p.propertyType,
-        p.set == null ? null : ((i: number, x: any) => p.set(items[i], x)));
+        (i: number) => items[i] == null ? null : p.get(items[i]), p.propertyType,
+        p.set == null ? null : ((i: number, x: any) => p.set(items[i] ??= {}, x)));
     return Grid.create(t);
   }
 

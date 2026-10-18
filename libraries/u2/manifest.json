@@ -1,7 +1,7 @@
 {
   "schema": "dg-ui/1",
   "recipes": "docs/recipes/",
-  "binding": "Every declared prop accepts a \"bind\" entry. bindable: true marks live in-place consumption (twoWay marks write-back); a bind on any other declared prop re-renders the node when the bound source changes. A bind on an undeclared prop is an error.",
+  "binding": "Every declared prop accepts a \"bind\" entry and follows it live, except props marked structural, which read a bind once. A bind on an undeclared prop is an error.",
   "appearance": [
     {
       "name": "color",
@@ -128,7 +128,7 @@
       "tag": "u2-text-input",
       "category": "Inputs",
       "description": "Single-line text editor with validation.",
-      "usage": "With `search: true` this is the filter box; in a platform view the main filter belongs in the view ribbon (`appView({ribbon})`), not inside the content area.",
+      "usage": "With `search: true` this is the filter box; in a platform view the main filter belongs in the view ribbon (`appView({ribbon})`), not inside the content area. Every input: act on the user's edits with `onInput` (`onChanged` also hears writes from code); load another record with `reset(value)`, keep in step with a model with `follow(read)`; a status line or tab marker reads `error` (shown, touch-gated), Save reads `validity`.",
       "props": [
         {
           "name": "label",
@@ -149,6 +149,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -169,6 +170,18 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "placeholder",
           "type": "string",
           "bindable": true
@@ -176,17 +189,25 @@
         {
           "name": "search",
           "type": "bool",
+          "structural": true,
           "description": "Magnifier affordance plus a clear button."
         },
         {
           "name": "password",
           "type": "bool",
+          "structural": true,
           "description": "Masked field with an eye toggle."
         },
         {
           "name": "autoResize",
           "type": "bool",
+          "structural": true,
           "description": "Width follows the text between 100 and 300px."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -198,6 +219,18 @@
         "props": {
           "label": "Name",
           "value": "Aspirin"
+        }
+      },
+      "kind": "text-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
         }
       }
     },
@@ -225,6 +258,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -245,6 +279,18 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "placeholder",
           "type": "string",
           "bindable": true
@@ -252,7 +298,18 @@
         {
           "name": "autoGrow",
           "type": "bool",
+          "structural": true,
           "description": "Grows with the text instead of scrolling."
+        },
+        {
+          "name": "rows",
+          "type": "int",
+          "description": "Visible text lines."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -264,6 +321,18 @@
         "props": {
           "label": "Description",
           "placeholder": "Up to 40 characters"
+        }
+      },
+      "kind": "text-area",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
         }
       }
     },
@@ -291,6 +360,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -311,9 +381,33 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "switch",
           "type": "bool",
+          "structural": true,
           "description": "Compact toggle instead of a checkbox."
+        },
+        {
+          "name": "captionAfter",
+          "type": "bool",
+          "structural": true,
+          "description": "Checklist row: the box, then its caption."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -325,6 +419,15 @@
           "label": "Active",
           "value": true,
           "switch": true
+        }
+      },
+      "kind": "bool-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
         }
       }
     },
@@ -352,6 +455,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -372,12 +476,25 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "mode",
           "type": "string",
           "choices": [
             "int",
             "float"
           ],
+          "structural": true,
           "description": "\"int\" or \"float\" (default)."
         },
         {
@@ -396,17 +513,25 @@
         {
           "name": "slider",
           "type": "bool",
+          "structural": true,
           "description": "Range control under the box, revealed on hover; needs both bounds."
         },
         {
           "name": "clicker",
           "type": "bool",
+          "structural": true,
           "description": "− / + buttons on the options rail, revealed on hover."
         },
         {
           "name": "spinner",
           "type": "bool",
+          "structural": true,
           "description": "Hover spinner inside the field."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -421,12 +546,25 @@
           "min": 0,
           "max": 100
         }
+      },
+      "kind": "number-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
+        }
       }
     },
     {
       "tag": "u2-choice-input",
       "category": "Inputs",
       "description": "Single choice over a native select.",
+      "usage": "In a form a choice is as wide as its longest item; `width` sets it outright (a short code list), `fill: true` stretches it across the row. Act on the user's pick with `onInput` — `onChanged` also hears the program's writes. `items` may be a signal, and the value may be set before its item arrives.",
       "props": [
         {
           "name": "label",
@@ -447,6 +585,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -467,6 +606,18 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "items",
           "type": "string_list",
           "bindable": true
@@ -474,7 +625,13 @@
         {
           "name": "nullable",
           "type": "bool",
+          "structural": true,
           "description": "Offers an empty option; true by default."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "defaults": {
@@ -497,6 +654,21 @@
             "c"
           ],
           "value": "b"
+        }
+      },
+      "kind": "choice-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
+        },
+        "empty": {
+          "items": []
         }
       }
     },
@@ -524,6 +696,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -544,6 +717,18 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "items",
           "type": "string_list",
           "bindable": true
@@ -556,7 +741,13 @@
         {
           "name": "showSummaryCheckbox",
           "type": "bool",
+          "structural": true,
           "description": "Tri-state \"<N> of <M>\" summary row that toggles all/none; the list collapses on click."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "defaults": {
@@ -581,12 +772,28 @@
             "acid"
           ]
         }
+      },
+      "kind": "multi-choice-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
+        },
+        "empty": {
+          "items": []
+        }
       }
     },
     {
       "tag": "u2-button",
       "category": "Actions",
       "description": "Push button; `on: {\"click\": \"cmd:<name>\"}` runs a context command.",
+      "usage": "In code, `button(text, onClick, {disabled: reason})` disables it and shows the reason (a string, or a signal of one) as its tooltip — say what is missing rather than leaving the user to guess; a dialog's OK takes the same through `okDisabled(reason)`.",
       "props": [
         {
           "name": "text",
@@ -602,6 +809,11 @@
           "type": "string",
           "inputType": "Icon",
           "description": "Font Awesome icon name shown before the text."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "defaults": {
@@ -619,7 +831,8 @@
         "on": {
           "click": "cmd:save"
         }
-      }
+      },
+      "kind": "button"
     },
     {
       "tag": "u2-panel",
@@ -630,6 +843,11 @@
           "name": "cls",
           "type": "string",
           "description": "Extra layout class."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "acceptsChildren": true,
@@ -643,7 +861,8 @@
             }
           }
         ]
-      }
+      },
+      "kind": "panel"
     },
     {
       "tag": "u2-div-v",
@@ -654,6 +873,11 @@
           "name": "cls",
           "type": "string",
           "description": "Extra layout class."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "acceptsChildren": true,
@@ -667,7 +891,8 @@
             }
           }
         ]
-      }
+      },
+      "kind": "div-v"
     },
     {
       "tag": "u2-div-h",
@@ -678,6 +903,11 @@
           "name": "cls",
           "type": "string",
           "description": "Extra layout class."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "acceptsChildren": true,
@@ -691,7 +921,8 @@
             }
           }
         ]
-      }
+      },
+      "kind": "div-h"
     },
     {
       "tag": "u2-splitter",
@@ -706,6 +937,7 @@
             "horizontal",
             "vertical"
           ],
+          "structural": true,
           "description": "\"horizontal\" (default) or \"vertical\"."
         },
         {
@@ -716,7 +948,13 @@
         {
           "name": "minSize",
           "type": "double",
+          "structural": true,
           "description": "Smallest panel size in pixels; 60 by default."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "acceptsChildren": true,
@@ -764,13 +1002,113 @@
             ]
           }
         ]
-      }
+      },
+      "kind": "splitter"
+    },
+    {
+      "tag": "u2-wizard",
+      "category": "Containers",
+      "description": "Steps on a rail with BACK / NEXT / FINISH, one per spec child; the child node carries the step title. Panels are hidden, never rebuilt, so a step's inputs keep their state.",
+      "usage": "For a flow whose steps are known up front. A spec expresses the steps, reacts to `finish`, `cancel` and `step` through `on`, and reads `currentStep`; gates (`canProceed`), a step's `commit`, its `actions` and dialog mode are code options.",
+      "props": [
+        {
+          "name": "currentStep",
+          "type": "string",
+          "bindable": true,
+          "description": "Id of the open step (read-only): bind a readout or a source param to it."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
+        }
+      ],
+      "childProps": [
+        {
+          "name": "title",
+          "type": "string",
+          "description": "Step title; numbered when absent."
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "structural": true,
+          "description": "Step id for `goTo`; `step-<index>` when absent."
+        },
+        {
+          "name": "done",
+          "type": "bool",
+          "structural": true,
+          "description": "A terminal report step: no BACK, the closing button reads CLOSE."
+        }
+      ],
+      "events": [
+        "finish",
+        "cancel",
+        "step"
+      ],
+      "acceptsChildren": true,
+      "defaultChildren": [
+        {
+          "tag": "u2-panel",
+          "props": {
+            "title": "Step 1"
+          }
+        },
+        {
+          "tag": "u2-panel",
+          "props": {
+            "title": "Step 2"
+          }
+        }
+      ],
+      "example": {
+        "tag": "u2-wizard",
+        "children": [
+          {
+            "tag": "u2-panel",
+            "props": {
+              "title": "Source"
+            },
+            "children": [
+              {
+                "tag": "u2-text-input",
+                "props": {
+                  "label": "File"
+                }
+              }
+            ]
+          },
+          {
+            "tag": "u2-panel",
+            "props": {
+              "title": "Options"
+            },
+            "children": [
+              {
+                "tag": "u2-bool-input",
+                "props": {
+                  "label": "Header row"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "kind": "wizard"
     },
     {
       "tag": "u2-accordion",
       "category": "Containers",
       "description": "Independently expanding panes, one per spec child; the child node carries the pane title.",
-      "props": [],
+      "usage": "In code, `addPane(title, content, {hint, validity, persistKey})`: a folded pane says what it holds (`hint`, a signal or an element for a live summary), shows the problem inside it (`validity`) and remembers the user's open or close (`persistKey`; `pane.userSet` until then). `new Accordion({flush: true})` lines the titles and the content up with the captions of a form around it, the chevron at the header's end — the panes of a docked editor.",
+      "props": [
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
+        }
+      ],
       "childProps": [
         {
           "name": "title",
@@ -781,6 +1119,7 @@
           "name": "icon",
           "type": "string",
           "inputType": "Icon",
+          "structural": true,
           "description": "Font Awesome icon name shown before the title."
         }
       ],
@@ -825,13 +1164,14 @@
             ]
           }
         ]
-      }
+      },
+      "kind": "accordion"
     },
     {
       "tag": "u2-section",
       "category": "Containers",
       "description": "One collapsible titled section: a form-category-styled header whose hover chevron sits left of the caption; clicking the header folds the body.",
-      "usage": "For grouping form fields or page content under a heading. Inputs inside a u2-section child of a u2-form are adopted by the section, not the form — they do not join the form's label column. A managed pane set belongs in u2-accordion.",
+      "usage": "For grouping form fields or page content under a heading. Inputs inside a u2-section child of a u2-form are adopted by the section, not the form — they do not join the form's label column. A managed pane set belongs in u2-accordion. In code, a folded section says what it holds with `hint`, shows the problem inside it with `validity`, and remembers the user's open or close with `persistKey`; `form.add(input, section.body)` keeps an input in the form's label column.",
       "props": [
         {
           "name": "title",
@@ -847,7 +1187,13 @@
         {
           "name": "collapsible",
           "type": "bool",
+          "structural": true,
           "description": "false renders a plain heading and body — no chevron, no click."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "acceptsChildren": true,
@@ -871,12 +1217,14 @@
             }
           }
         ]
-      }
+      },
+      "kind": "section"
     },
     {
       "tag": "u2-tabs",
       "category": "Containers",
       "description": "Tab strip with one tab per spec child; the child node carries the tab label.",
+      "usage": "In code, give a tab a `validity` signal and it is marked while that says something; a tab whose content is a Form answers with the form's shown error. A tab's content is placed on its first activation; `eager: true` places element contents at once, hidden, so a form on a tab not yet visited measures its captions (a `LabelColumn` across the tabs).",
       "props": [
         {
           "name": "orientation",
@@ -885,6 +1233,7 @@
             "horizontal",
             "vertical"
           ],
+          "structural": true,
           "description": "\"horizontal\" (default) or \"vertical\" — a header column on the left."
         },
         {
@@ -894,6 +1243,7 @@
             "platform",
             "document"
           ],
+          "structural": true,
           "description": "\"platform\" (default) is the ui.tabControl look; \"document\" the IDE document-tab skin."
         },
         {
@@ -902,6 +1252,11 @@
           "bindable": true,
           "twoWay": true,
           "description": "Id of the selected tab (spec children get tab-0, tab-1, …)."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "childProps": [
@@ -914,6 +1269,7 @@
           "name": "icon",
           "type": "string",
           "inputType": "Icon",
+          "structural": true,
           "description": "Font Awesome icon name shown before the title."
         }
       ],
@@ -963,13 +1319,14 @@
             ]
           }
         ]
-      }
+      },
+      "kind": "tabs"
     },
     {
       "tag": "u2-form",
       "category": "Containers",
       "description": "Vertical input layout: spec children that are inputs join the form and share its label column, validity and Enter navigation; anything else renders as a plain row in place.",
-      "usage": "Labels share a left column and values stay left-aligned — never center form content. For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building.",
+      "usage": "Labels share a left column and values stay left-aligned — never center form content. For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building. Forms that must line up — the tabs of one editor — share a `LabelColumn` (`labelColumn` option); `labelWidth` fixes the column. The labels align before the first paint; `layoutNow()` for a test that reads the layout in the same task. `addColumns(inputs, {minWidth})` puts short fields two to a row, each editor filling its column, one to a row where two would go under `minWidth`. `quiet: true` drops the underlines at rest — for an inspector, not a form people fill in. Beside a Save, `statusLine(problem, otherwise)` says what Save will do or why it cannot yet.",
       "props": [
         {
           "name": "layout",
@@ -980,6 +1337,7 @@
             "wide",
             "tall"
           ],
+          "structural": true,
           "description": "\"auto\" (default) picks wide or tall by fit — editors fill the row while the label column plus the minimum editor width fit, captions move above when they do not; \"normal\" never switches; \"wide\" stretches editors across the row; \"tall\" puts captions above their editors."
         },
         {
@@ -991,6 +1349,11 @@
           ],
           "bindable": true,
           "description": "Caption alignment in caption-left layouts; right is the platform default."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "acceptsChildren": true,
@@ -1014,7 +1377,8 @@
             }
           }
         ]
-      }
+      },
+      "kind": "form"
     },
     {
       "tag": "u2-property-grid",
@@ -1031,6 +1395,11 @@
           "name": "values",
           "type": "object",
           "description": "Initial value per property name."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "example": {
@@ -1052,7 +1421,8 @@
             "Rows": 20
           }
         }
-      }
+      },
+      "kind": "property-grid"
     },
     {
       "tag": "u2-icon",
@@ -1063,7 +1433,8 @@
           "name": "name",
           "type": "string",
           "inputType": "Icon",
-          "description": "Font Awesome icon name."
+          "structural": true,
+          "description": "Font Awesome icon name; read once — `name` is also the node's identity accessor."
         },
         {
           "name": "variant",
@@ -1084,6 +1455,11 @@
             "medium",
             "large"
           ]
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "defaults": {
@@ -1095,7 +1471,8 @@
           "name": "flask",
           "size": "large"
         }
-      }
+      },
+      "kind": "icon"
     },
     {
       "tag": "u2-breadcrumbs",
@@ -1106,6 +1483,11 @@
         {
           "name": "items",
           "type": "string_list"
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "defaults": {
@@ -1126,6 +1508,12 @@
             "Projects",
             "Demo"
           ]
+        }
+      },
+      "kind": "breadcrumbs",
+      "states": {
+        "empty": {
+          "items": []
         }
       }
     },
@@ -1154,6 +1542,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -1174,6 +1563,18 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "min",
           "type": "double"
         },
@@ -1185,6 +1586,11 @@
           "name": "step",
           "type": "double",
           "description": "(max - min) / 100 by default."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -1198,6 +1604,18 @@
           "value": 50,
           "min": 0,
           "max": 100
+        }
+      },
+      "kind": "slider-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
         }
       }
     },
@@ -1242,7 +1660,18 @@
         {
           "name": "vertical",
           "type": "bool",
+          "structural": true,
           "description": "Bottom-to-top track."
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "description": "Accessible name of the pair (aria-label)."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "defaults": {
@@ -1258,12 +1687,14 @@
       "example": {
         "tag": "u2-range-slider",
         "props": {
+          "label": "Price range",
           "min": 0,
           "max": 100,
           "lo": 20,
           "hi": 60
         }
-      }
+      },
+      "kind": "range-slider"
     },
     {
       "tag": "u2-radio-input",
@@ -1290,6 +1721,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -1310,18 +1742,36 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "items",
           "type": "string_list"
         },
         {
           "name": "buttons",
           "type": "bool",
+          "structural": true,
           "description": "Raised-button variant instead of radio dots."
         },
         {
           "name": "itemTooltips",
           "type": "object",
           "description": "Hover text per item."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "defaults": {
@@ -1343,6 +1793,21 @@
             "Preclinical"
           ],
           "value": "Discovery"
+        }
+      },
+      "kind": "radio-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
+        },
+        "empty": {
+          "items": []
         }
       }
     },
@@ -1370,6 +1835,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -1390,9 +1856,27 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "swatchOnly",
           "type": "bool",
+          "structural": true,
           "description": "Swatch alone, no hex field."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -1404,6 +1888,15 @@
         "props": {
           "label": "Color",
           "value": "#1f77b4"
+        }
+      },
+      "kind": "color-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
         }
       }
     },
@@ -1432,6 +1925,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -1450,6 +1944,23 @@
           "type": "bool",
           "bindable": true,
           "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -1461,6 +1972,18 @@
         "props": {
           "label": "Icon",
           "value": "star"
+        }
+      },
+      "kind": "icon-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
         }
       }
     },
@@ -1488,6 +2011,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -1508,9 +2032,26 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "placeholder",
           "type": "string",
           "bindable": true
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -1525,6 +2066,18 @@
             "ASA",
             "2-acetoxybenzoic acid"
           ]
+        }
+      },
+      "kind": "list-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
         }
       }
     },
@@ -1552,6 +2105,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -1570,6 +2124,23 @@
           "type": "bool",
           "bindable": true,
           "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -1583,6 +2154,265 @@
           "value": {
             "solvent": "DMSO"
           }
+        }
+      },
+      "kind": "map-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
+        }
+      }
+    },
+    {
+      "tag": "u2-chips-input",
+      "category": "Inputs",
+      "description": "Toggle chips, one per item; the value holds the pressed ones in item order.",
+      "usage": "For a handful of names picked inline (the groups a column is visible to). A long list belongs in `u2-multi-select`, a tall one in `u2-multi-choice-input`.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string_list",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "structural": true,
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
+          "name": "items",
+          "type": "string_list",
+          "bindable": true
+        },
+        {
+          "name": "emptyText",
+          "type": "string",
+          "description": "Stands in for an empty list; 'No items' by default."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
+        }
+      ],
+      "defaults": {
+        "items": [
+          "Item 1",
+          "Item 2",
+          "Item 3"
+        ]
+      },
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-chips-input",
+        "props": {
+          "label": "Visible to",
+          "items": [
+            "Sales",
+            "Chemists"
+          ],
+          "value": [
+            "Sales"
+          ]
+        }
+      },
+      "kind": "chips-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
+        },
+        "empty": {
+          "items": []
+        }
+      }
+    },
+    {
+      "tag": "u2-access-grid",
+      "category": "Inputs",
+      "description": "Who may do what: a row per principal, a checkbox per capability, a remove button, and a picker that adds a principal. The value is the rows — `[{principal, can: {view: true, …}}]`.",
+      "usage": "For the access a schema or a table grants (groups × View / Edit / Delete). Inherited rows and locked capabilities are code options; a spec passes the columns and the picker's list.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "object",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "structural": true,
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
+          "name": "capabilities",
+          "type": "string_list",
+          "structural": true,
+          "description": "The columns, in order."
+        },
+        {
+          "name": "principals",
+          "type": "string_list",
+          "bindable": true,
+          "description": "What the add picker offers."
+        },
+        {
+          "name": "principalLabel",
+          "type": "string",
+          "description": "The first column's header; Group by default."
+        },
+        {
+          "name": "addText",
+          "type": "string",
+          "description": "The picker's placeholder."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
+        }
+      ],
+      "defaults": {
+        "capabilities": [
+          "view",
+          "edit",
+          "delete"
+        ],
+        "principals": [
+          "All users",
+          "Developers"
+        ]
+      },
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-access-grid",
+        "props": {
+          "label": "Access",
+          "capabilities": [
+            "view",
+            "edit",
+            "delete"
+          ],
+          "principals": [
+            "Sales",
+            "Developers"
+          ],
+          "value": [
+            {
+              "principal": "Sales",
+              "can": {
+                "view": true
+              }
+            }
+          ]
+        }
+      },
+      "kind": "access-grid",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
         }
       }
     },
@@ -1611,6 +2441,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -1631,9 +2462,26 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "placeholder",
           "type": "string",
           "bindable": true
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -1645,6 +2493,18 @@
         "props": {
           "label": "IC50",
           "value": 5.2
+        }
+      },
+      "kind": "qnum-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
         }
       }
     },
@@ -1673,6 +2533,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -1693,14 +2554,33 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "families",
           "type": "string_list",
+          "structural": true,
           "description": "Families on offer; four defaults otherwise."
         },
         {
           "name": "sizes",
           "type": "object",
+          "structural": true,
           "description": "Sizes in the popup under the size box."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -1711,6 +2591,15 @@
         "props": {
           "label": "Font",
           "value": "bold normal 14px \"Roboto\""
+        }
+      },
+      "kind": "font-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
         }
       }
     },
@@ -1738,6 +2627,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -1758,9 +2648,26 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "alt",
           "type": "string",
           "description": "Alternative text."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -1772,6 +2679,18 @@
           "label": "Logo",
           "value": "https://datagrok.ai/img/logo.svg"
         }
+      },
+      "kind": "image-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
+        }
       }
     },
     {
@@ -1782,30 +2701,36 @@
       "props": [
         {
           "name": "title",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "subtitle",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "icon",
           "type": "string",
-          "inputType": "Icon"
+          "inputType": "Icon",
+          "structural": true
         },
         {
           "name": "media",
           "type": "string",
+          "structural": true,
           "description": "Image URL shown above the body."
         },
         {
           "name": "clickable",
           "type": "bool",
+          "structural": true,
           "description": "The whole card acts as a button."
         },
         {
           "name": "selectable",
           "type": "bool",
+          "structural": true,
           "description": "Click toggles the selection ring."
         },
         {
@@ -1813,6 +2738,11 @@
           "type": "bool",
           "bindable": true,
           "twoWay": true
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "acceptsChildren": true,
@@ -1836,7 +2766,8 @@
             }
           }
         ]
-      }
+      },
+      "kind": "card"
     },
     {
       "tag": "u2-stat-card",
@@ -1846,7 +2777,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "value",
@@ -1863,12 +2795,19 @@
         {
           "name": "deltaInverted",
           "type": "bool",
+          "structural": true,
           "description": "Negative is good (error rates)."
         },
         {
           "name": "icon",
           "type": "string",
-          "inputType": "Icon"
+          "inputType": "Icon",
+          "structural": true
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "defaults": {
@@ -1883,7 +2822,8 @@
           "delta": 0.12,
           "icon": "chart-line"
         }
-      }
+      },
+      "kind": "stat-card"
     },
     {
       "tag": "u2-data-table",
@@ -1905,7 +2845,13 @@
         {
           "name": "rowHeight",
           "type": "int",
+          "structural": true,
           "description": "Row and header height in pixels (default 24)."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "defaults": {
@@ -1931,6 +2877,12 @@
               "cas": "58-08-2"
             }
           ]
+        }
+      },
+      "kind": "data-table",
+      "states": {
+        "empty": {
+          "items": []
         }
       }
     },
@@ -1959,6 +2911,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -1979,8 +2932,21 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "schema",
           "type": "object",
+          "structural": true,
           "description": "`{properties: IProperty[], values?: {<name>: scalar[]}}` — what can be filtered on."
         },
         {
@@ -2001,16 +2967,19 @@
             "vertical",
             "horizontal"
           ],
+          "structural": true,
           "description": "horizontal lays the rows out inline with a connector chip between them."
         },
         {
           "name": "template",
           "type": "object",
+          "structural": true,
           "description": "`{root, allowedProperties?, allowedOperators?, allowAdvanced?, allowAdd?}` — locks and limits: `allowAdvanced: false` keeps the builder simple, `allowAdd: false` fixes the rows."
         },
         {
           "name": "showQuery",
           "type": "bool",
+          "structural": true,
           "description": "Footer line with the canonical query string; off by default."
         },
         {
@@ -2020,6 +2989,7 @@
             "domain",
             "dataframe"
           ],
+          "structural": true,
           "description": "What the tree must be expressible for; validation only."
         },
         {
@@ -2027,6 +2997,11 @@
           "type": "string",
           "bindable": true,
           "description": "The canonical query string (read-only)."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -2070,6 +3045,18 @@
           },
           "showQuery": true
         }
+      },
+      "kind": "filter-builder",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
+        }
       }
     },
     {
@@ -2097,6 +3084,7 @@
         {
           "name": "inline",
           "type": "bool",
+          "structural": true,
           "description": "Compact one-row variant without a label."
         },
         {
@@ -2117,8 +3105,21 @@
           "description": "false grays the input out and blocks edits."
         },
         {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
           "name": "schema",
           "type": "object",
+          "structural": true,
           "description": "`{properties: IProperty[], values?: {<name>: scalar[]}}` — what can be filtered on."
         },
         {
@@ -2132,6 +3133,7 @@
             "domain",
             "dataframe"
           ],
+          "structural": true,
           "description": "What the tree must be expressible for; validation only."
         },
         {
@@ -2139,6 +3141,11 @@
           "type": "string",
           "bindable": true,
           "description": "The draft text (per keystroke, may be unparsable; read-only)."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
         }
       ],
       "events": [
@@ -2182,6 +3189,18 @@
           },
           "placeholder": "age > 30 and sex = \"F\""
         }
+      },
+      "kind": "filter-query-input",
+      "states": {
+        "disabled": {
+          "enabled": false
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
+        }
       }
     },
     {
@@ -2194,6 +3213,7 @@
         {
           "name": "type",
           "type": "string",
+          "structural": true,
           "choices": [
             "string",
             "int",
@@ -2207,6 +3227,7 @@
         {
           "name": "initial",
           "type": "object",
+          "structural": true,
           "description": "The value it starts at, and what `clear` returns it to; the type's empty value otherwise."
         }
       ],
@@ -2232,6 +3253,7 @@
         {
           "name": "func",
           "type": "string",
+          "structural": true,
           "description": "The function name, `Package:Name` for a package function."
         },
         {
@@ -2243,16 +3265,19 @@
         {
           "name": "auto",
           "type": "bool",
+          "structural": true,
           "description": "Run at construction and whenever a bound param changes (default true)."
         },
         {
           "name": "debounce",
           "type": "int",
+          "structural": true,
           "description": "Milliseconds a param change waits before the re-run (default 300)."
         },
         {
           "name": "designData",
           "type": "string",
+          "structural": true,
           "choices": [
             "live",
             "schema",
@@ -2263,6 +3288,7 @@
         {
           "name": "sample",
           "type": "object",
+          "structural": true,
           "description": "The preview the `sample` policy builds its outputs from; rows become a table."
         }
       ],
@@ -2290,6 +3316,7 @@
         {
           "name": "entity",
           "type": "string",
+          "structural": true,
           "choices": [
             "users",
             "groups",
@@ -2310,11 +3337,13 @@
         {
           "name": "order",
           "type": "string",
+          "structural": true,
           "description": "The field to order by."
         },
         {
           "name": "pageSize",
           "type": "int",
+          "structural": true,
           "description": "How many entities one page loads (default 20)."
         }
       ],
@@ -2341,6 +3370,7 @@
         {
           "name": "table",
           "type": "string",
+          "structural": true,
           "description": "The name of the open table."
         }
       ],
@@ -2362,6 +3392,7 @@
         {
           "name": "entityType",
           "type": "string",
+          "structural": true,
           "choices": [
             "users",
             "groups",
@@ -2382,6 +3413,7 @@
         {
           "name": "designData",
           "type": "string",
+          "structural": true,
           "choices": [
             "live",
             "schema",
@@ -2392,6 +3424,7 @@
         {
           "name": "sample",
           "type": "object",
+          "structural": true,
           "description": "The preview the `sample` policy builds its outputs from; rows become a table."
         }
       ],
@@ -2411,94 +3444,3216 @@
           "id": "current"
         }
       }
+    }
+  ],
+  "kinds": [
+    {
+      "kind": "text-input",
+      "noun": "text input",
+      "aliases": [
+        "text field",
+        "textbox"
+      ],
+      "family": "input",
+      "tag": "u2-text-input",
+      "focusRole": "textbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "placeholder",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "placeholder",
+        "visible"
+      ],
+      "gestures": [
+        "type",
+        "clear"
+      ]
     },
     {
-      "tag": "u2-domain-source",
-      "category": "Data",
-      "visual": false,
-      "description": "A domain (EMS) table as data: its rows, the current row a form edits, the caller's access, and every pending change until `save`.",
-      "usage": "The one source every domain control binds to. Bind `query` to a filter input and `search` to a search box to narrow the rows; bind a form's inputs under `currentRow` to edit the current row; wire Save and Discard to the `save` and `discard` functions (they go through the session), and `newRow` to a Create button; `draft: true` is the source of a create form. Every source in one spec shares the ambient session, so one Save writes them all as one transaction. Prefer it over a query source for anything a user edits.",
-      "props": [
-        {
-          "name": "table",
-          "type": "string",
-          "description": "The table address, `<schema>.<table>`."
-        },
-        {
-          "name": "query",
-          "type": "string",
-          "bindable": true,
-          "description": "A smart-filter string; changing it reloads the rows from the first page."
-        },
-        {
-          "name": "search",
-          "type": "string",
-          "bindable": true,
-          "description": "A case-insensitive text over the table's searchable columns, ANDed with the query."
-        },
-        {
-          "name": "pageSize",
-          "type": "int",
-          "description": "How many rows one page loads (default 50)."
-        },
-        {
-          "name": "withAccess",
-          "type": "bool",
-          "description": "Fetch the per-row access columns with every row (default true); the table-level access is always fetched."
-        },
-        {
-          "name": "captions",
-          "type": "string_list",
-          "description": "Ref columns whose target names ride with the rows; every visible ref column by default."
-        },
-        {
-          "name": "defaults",
-          "type": "object",
-          "description": "Column values every draft row starts with — a parent's id on a child table."
-        },
-        {
-          "name": "empty",
-          "type": "bool",
-          "description": "Load no rows; drafts can still be added — a child collection under a draft parent."
-        },
-        {
-          "name": "draft",
-          "type": "bool",
-          "description": "Load nothing and start on one pristine draft — what a create form binds to."
-        },
-        {
-          "name": "deleted",
-          "type": "string",
-          "choices": [
-            "exclude",
-            "include",
-            "only"
-          ],
-          "description": "Which rows the source answers: the live ones (default), the live and the soft-deleted, or the deleted alone — a trash list, read-only until its rows are restored."
-        },
-        {
-          "name": "live",
-          "type": "bool",
-          "bindable": true,
-          "description": "Follow the server: the source probes the table every 30 s and reloads while there is nothing unsaved to lose, marking itself stale while there is."
-        }
+      "kind": "text-area",
+      "noun": "text area",
+      "aliases": [
+        "textarea",
+        "multiline input"
       ],
-      "defaults": {
-        "pageSize": 50,
-        "withAccess": true,
-        "empty": false,
-        "draft": false,
-        "deleted": "exclude",
-        "live": false
+      "family": "input",
+      "tag": "u2-text-area",
+      "focusRole": "textbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
       },
-      "example": {
-        "tag": "u2-domain-source",
-        "name": "issues",
-        "props": {
-          "table": "grit.issue",
-          "pageSize": 50
-        }
-      }
+      "state": [
+        "label",
+        "value",
+        "text",
+        "placeholder",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "placeholder",
+        "rows",
+        "visible"
+      ],
+      "gestures": [
+        "type",
+        "clear"
+      ]
+    },
+    {
+      "kind": "number-input",
+      "noun": "number input",
+      "aliases": [
+        "numeric input",
+        "number field"
+      ],
+      "family": "input",
+      "tag": "u2-number-input",
+      "focusRole": "spinbutton",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "min",
+        "max",
+        "step",
+        "visible"
+      ],
+      "gestures": [
+        "type",
+        "clear"
+      ]
+    },
+    {
+      "kind": "bigint-input",
+      "noun": "number input",
+      "family": "input",
+      "focusRole": "spinbutton",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [],
+      "gestures": [
+        "type",
+        "clear"
+      ]
+    },
+    {
+      "kind": "qnum-input",
+      "noun": "number input",
+      "family": "input",
+      "tag": "u2-qnum-input",
+      "focusRole": "textbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "placeholder",
+        "visible"
+      ],
+      "gestures": [
+        "type",
+        "clear"
+      ]
+    },
+    {
+      "kind": "slider-input",
+      "noun": "slider",
+      "aliases": [
+        "slider input"
+      ],
+      "family": "input",
+      "tag": "u2-slider-input",
+      "focusRole": "slider",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "min",
+        "max",
+        "step",
+        "visible"
+      ],
+      "gestures": [
+        "drag"
+      ]
+    },
+    {
+      "kind": "range-slider",
+      "noun": "range slider",
+      "aliases": [
+        "range input"
+      ],
+      "family": "input",
+      "tag": "u2-range-slider",
+      "focusRole": "slider",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text"
+      ],
+      "props": [
+        "lo",
+        "hi",
+        "min",
+        "max",
+        "step",
+        "minRange",
+        "label",
+        "visible"
+      ],
+      "gestures": [
+        "drag"
+      ]
+    },
+    {
+      "kind": "bool-input",
+      "noun": "checkbox",
+      "aliases": [
+        "bool input",
+        "switch",
+        "toggle"
+      ],
+      "family": "input",
+      "tag": "u2-bool-input",
+      "focusRole": "checkbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "checked"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "visible"
+      ],
+      "gestures": [
+        "toggle"
+      ]
+    },
+    {
+      "kind": "choice-input",
+      "noun": "choice input",
+      "aliases": [
+        "dropdown",
+        "choice",
+        "select"
+      ],
+      "family": "input",
+      "tag": "u2-choice-input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "items",
+        "selection"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "items",
+        "visible"
+      ],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "radio-input",
+      "noun": "radio input",
+      "aliases": [
+        "radio group",
+        "radio"
+      ],
+      "family": "input",
+      "tag": "u2-radio-input",
+      "focusRole": "radiogroup",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "items"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "items",
+        "itemTooltips",
+        "visible"
+      ],
+      "items": {
+        "role": "radio",
+        "noun": "radio",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "pick"
+      ]
+    },
+    {
+      "kind": "multi-choice-input",
+      "noun": "multi choice input",
+      "aliases": [
+        "multi choice"
+      ],
+      "family": "input",
+      "tag": "u2-multi-choice-input",
+      "focusRole": "group",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "items",
+        "selection"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "items",
+        "emptyText",
+        "visible"
+      ],
+      "items": {
+        "role": "checkbox",
+        "noun": "checkbox",
+        "gestures": [
+          "toggle"
+        ],
+        "multi": true
+      },
+      "gestures": [
+        "toggle"
+      ]
+    },
+    {
+      "kind": "chips-input",
+      "noun": "chips input",
+      "family": "input",
+      "tag": "u2-chips-input",
+      "focusRole": "group",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "items",
+        "selection"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "items",
+        "emptyText",
+        "visible"
+      ],
+      "items": {
+        "role": "button",
+        "noun": "chip",
+        "gestures": [
+          "toggle"
+        ],
+        "multi": true
+      },
+      "gestures": [
+        "toggle"
+      ]
+    },
+    {
+      "kind": "tags-input",
+      "noun": "tags input",
+      "aliases": [
+        "tags field"
+      ],
+      "family": "input",
+      "focusRole": "textbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "open",
+        "items"
+      ],
+      "props": [],
+      "items": {
+        "role": "listitem",
+        "noun": "tag",
+        "gestures": [
+          "remove"
+        ]
+      },
+      "gestures": [
+        "type",
+        "add",
+        "remove"
+      ]
+    },
+    {
+      "kind": "list-input",
+      "noun": "list input",
+      "family": "input",
+      "tag": "u2-list-input",
+      "focusRole": "textbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "items"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "placeholder",
+        "visible"
+      ],
+      "items": {
+        "role": "listitem",
+        "noun": "tag",
+        "gestures": [
+          "remove"
+        ]
+      },
+      "gestures": [
+        "type",
+        "add",
+        "remove"
+      ]
+    },
+    {
+      "kind": "map-input",
+      "noun": "map input",
+      "aliases": [
+        "key value input"
+      ],
+      "family": "input",
+      "tag": "u2-map-input",
+      "focusRole": "grid",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "items"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "visible"
+      ],
+      "items": {
+        "role": "row",
+        "noun": "item",
+        "gestures": [
+          "remove"
+        ]
+      },
+      "gestures": [
+        "add",
+        "remove",
+        "type"
+      ]
+    },
+    {
+      "kind": "color-input",
+      "noun": "color input",
+      "aliases": [
+        "color picker"
+      ],
+      "family": "input",
+      "tag": "u2-color-input",
+      "focusRole": "textbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "visible"
+      ],
+      "gestures": [
+        "type",
+        "pick"
+      ]
+    },
+    {
+      "kind": "icon-input",
+      "noun": "icon input",
+      "aliases": [
+        "icon picker"
+      ],
+      "family": "input",
+      "tag": "u2-icon-input",
+      "focusRole": "button",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "open"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "visible"
+      ],
+      "gestures": [
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "font-input",
+      "noun": "font input",
+      "aliases": [
+        "font picker"
+      ],
+      "family": "input",
+      "tag": "u2-font-input",
+      "focusRole": "textbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "open",
+        "items",
+        "selection"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "visible"
+      ],
+      "items": {
+        "role": "option",
+        "noun": "size",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "image-input",
+      "noun": "image input",
+      "aliases": [
+        "image picker"
+      ],
+      "family": "input",
+      "tag": "u2-image-input",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "alt",
+        "visible"
+      ],
+      "gestures": [
+        "clear"
+      ]
+    },
+    {
+      "kind": "date-input",
+      "noun": "date input",
+      "aliases": [
+        "date field",
+        "datetime input",
+        "date picker"
+      ],
+      "family": "input",
+      "focusRole": "textbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "open"
+      ],
+      "props": [],
+      "gestures": [
+        "type",
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "datetime-input",
+      "noun": "date input",
+      "family": "input",
+      "focusRole": "textbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "open"
+      ],
+      "props": [],
+      "gestures": [
+        "type",
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "combobox",
+      "noun": "combobox",
+      "aliases": [
+        "combo box",
+        "editable choice"
+      ],
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "open",
+        "placeholder",
+        "busy",
+        "items"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "type",
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "typeahead",
+      "noun": "suggest input",
+      "aliases": [
+        "autocomplete",
+        "typeahead"
+      ],
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "open",
+        "placeholder",
+        "busy",
+        "items"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "type",
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "suggest-input",
+      "noun": "suggest input",
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "open",
+        "placeholder",
+        "busy",
+        "items"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "type",
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "multi-select",
+      "noun": "multi select",
+      "aliases": [
+        "multi select input"
+      ],
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "open",
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "toggle"
+        ],
+        "multi": true
+      },
+      "gestures": [
+        "open",
+        "toggle"
+      ]
+    },
+    {
+      "kind": "access-grid",
+      "noun": "access grid",
+      "family": "input",
+      "tag": "u2-access-grid",
+      "focusRole": "grid",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "items"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "principals",
+        "principalLabel",
+        "addText",
+        "visible"
+      ],
+      "items": {
+        "role": "row",
+        "noun": "table row",
+        "gestures": [
+          "toggle",
+          "remove"
+        ]
+      },
+      "gestures": [
+        "add",
+        "toggle",
+        "remove"
+      ]
+    },
+    {
+      "kind": "message-input",
+      "noun": "message input",
+      "aliases": [
+        "prompt input",
+        "chat input"
+      ],
+      "family": "input",
+      "focusRole": "textbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "open",
+        "placeholder"
+      ],
+      "props": [],
+      "gestures": [
+        "type"
+      ]
+    },
+    {
+      "kind": "filter-builder",
+      "noun": "filter builder",
+      "family": "input",
+      "tag": "u2-filter-builder",
+      "focusRole": "group",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]",
+        "mode": "[data-u2-part=\"mode\"]",
+        "none": "[data-u2-part=\"none\"]",
+        "flatten": "[data-u2-part=\"flatten\"]",
+        "hint mode": "[data-u2-part=\"hint-mode\"]",
+        "hint": "[data-u2-part=\"hint\"]",
+        "query": "[data-u2-part=\"query\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "valid",
+        "error"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "mode",
+        "query",
+        "visible"
+      ],
+      "items": {
+        "role": "row",
+        "noun": "filter row",
+        "gestures": [
+          "remove"
+        ]
+      },
+      "gestures": [
+        "add",
+        "remove",
+        "type"
+      ]
+    },
+    {
+      "kind": "filter-query-input",
+      "noun": "filter query",
+      "aliases": [
+        "filter query input"
+      ],
+      "family": "input",
+      "tag": "u2-filter-query-input",
+      "focusRole": "textbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "valid",
+        "error"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "enabled",
+        "readOnly",
+        "required",
+        "placeholder",
+        "query",
+        "visible"
+      ],
+      "gestures": [
+        "type"
+      ]
+    },
+    {
+      "kind": "ref-input",
+      "noun": "ref input",
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "open",
+        "placeholder"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "type",
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "column-combo",
+      "noun": "column input",
+      "aliases": [
+        "column picker",
+        "column selector",
+        "column combobox"
+      ],
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "open",
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "column-picker",
+      "noun": "column input",
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "open",
+        "items"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "columns-input",
+      "noun": "columns input",
+      "aliases": [
+        "columns picker"
+      ],
+      "family": "input",
+      "focusRole": "button",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "open",
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "toggle"
+        ],
+        "multi": true
+      },
+      "gestures": [
+        "open",
+        "toggle"
+      ]
+    },
+    {
+      "kind": "columns-map-input",
+      "noun": "columns input",
+      "family": "input",
+      "focusRole": "group",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [],
+      "gestures": [
+        "open",
+        "toggle"
+      ]
+    },
+    {
+      "kind": "aggregated-columns-input",
+      "noun": "columns input",
+      "family": "input",
+      "focusRole": "group",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [],
+      "gestures": [
+        "open",
+        "toggle"
+      ]
+    },
+    {
+      "kind": "file-input",
+      "noun": "file input",
+      "aliases": [
+        "file field",
+        "files input"
+      ],
+      "family": "input",
+      "focusRole": "group",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "busy"
+      ],
+      "props": [],
+      "gestures": [
+        "pick"
+      ]
+    },
+    {
+      "kind": "files-input",
+      "noun": "file input",
+      "family": "input",
+      "focusRole": "group",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [],
+      "gestures": [
+        "pick"
+      ]
+    },
+    {
+      "kind": "function-input",
+      "noun": "function input",
+      "aliases": [
+        "func input"
+      ],
+      "family": "input",
+      "focusRole": "button",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "open",
+        "placeholder"
+      ],
+      "props": [],
+      "gestures": [
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "func-call-input",
+      "noun": "function input",
+      "family": "input",
+      "focusRole": "button",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "open"
+      ],
+      "props": [],
+      "gestures": [
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "rsa-input",
+      "noun": "rsa input",
+      "aliases": [
+        "key input"
+      ],
+      "family": "input",
+      "focusRole": "textbox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [],
+      "gestures": [
+        "type"
+      ]
+    },
+    {
+      "kind": "dynamic-input",
+      "noun": "dynamic input",
+      "family": "input",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [],
+      "gestures": [
+        "type",
+        "pick"
+      ]
+    },
+    {
+      "kind": "dart-input",
+      "noun": "dart input",
+      "aliases": [
+        "bridged input"
+      ],
+      "family": "input",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required"
+      ],
+      "props": [],
+      "gestures": [
+        "type"
+      ]
+    },
+    {
+      "kind": "readonly-field",
+      "noun": "read-only field",
+      "family": "input",
+      "nameFrom": [
+        "label"
+      ],
+      "parts": {
+        "label": ".u2-input-label",
+        "value": "[data-u2-part=\"readonly-value\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "readOnly"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "button",
+      "noun": "button",
+      "family": "action",
+      "tag": "u2-button",
+      "role": "button",
+      "nameFrom": [
+        "text",
+        "aria",
+        "title"
+      ],
+      "parts": {},
+      "state": [
+        "label",
+        "busy",
+        "pressed"
+      ],
+      "props": [
+        "text",
+        "primary",
+        "icon",
+        "visible"
+      ],
+      "gestures": [
+        "press"
+      ]
+    },
+    {
+      "kind": "icon-button",
+      "noun": "icon button",
+      "family": "action",
+      "role": "button",
+      "nameFrom": [
+        "aria",
+        "title"
+      ],
+      "parts": {},
+      "state": [
+        "label",
+        "pressed"
+      ],
+      "props": [],
+      "gestures": [
+        "press"
+      ]
+    },
+    {
+      "kind": "dropdown-button",
+      "noun": "dropdown button",
+      "aliases": [
+        "menu button",
+        "split button"
+      ],
+      "family": "action",
+      "role": "button",
+      "nameFrom": [
+        "text",
+        "aria",
+        "title"
+      ],
+      "parts": {},
+      "state": [
+        "label",
+        "open"
+      ],
+      "props": [],
+      "gestures": [
+        "press",
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "button-group",
+      "noun": "button group",
+      "aliases": [
+        "segmented control"
+      ],
+      "family": "action",
+      "role": "group",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "value",
+        "current",
+        "items"
+      ],
+      "props": [],
+      "items": {
+        "role": "button",
+        "noun": "button",
+        "gestures": [
+          "press"
+        ]
+      },
+      "gestures": [
+        "pick"
+      ]
+    },
+    {
+      "kind": "row-actions",
+      "noun": "row actions",
+      "aliases": [
+        "actions"
+      ],
+      "family": "action",
+      "role": "toolbar",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "items"
+      ],
+      "props": [],
+      "items": {
+        "role": "button",
+        "noun": "button",
+        "gestures": [
+          "press"
+        ]
+      },
+      "gestures": [
+        "press"
+      ]
+    },
+    {
+      "kind": "section",
+      "noun": "section",
+      "aliases": [
+        "pane",
+        "accordion pane"
+      ],
+      "family": "container",
+      "tag": "u2-section",
+      "role": "group",
+      "nameFrom": [
+        "title",
+        "aria"
+      ],
+      "parts": {
+        "title": ":scope > [data-u2-part=\"header\"] > [data-u2-part=\"title\"]",
+        "header": ":scope > [data-u2-part=\"header\"]",
+        "body": ":scope > [data-u2-part=\"body\"]"
+      },
+      "state": [
+        "label",
+        "expanded"
+      ],
+      "props": [
+        "title",
+        "expanded",
+        "visible"
+      ],
+      "gestures": [
+        "expand",
+        "collapse"
+      ]
+    },
+    {
+      "kind": "accordion",
+      "noun": "accordion",
+      "family": "container",
+      "tag": "u2-accordion",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "items"
+      ],
+      "props": [
+        "visible"
+      ],
+      "items": {
+        "role": "button",
+        "noun": "accordion header",
+        "gestures": [
+          "expand",
+          "collapse"
+        ]
+      },
+      "gestures": [
+        "expand",
+        "collapse"
+      ]
+    },
+    {
+      "kind": "tabs",
+      "noun": "tabs",
+      "aliases": [
+        "tab strip",
+        "tab control"
+      ],
+      "family": "container",
+      "tag": "u2-tabs",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "close button": "[data-u2-part=\"close\"]"
+      },
+      "state": [
+        "current",
+        "items",
+        "selection"
+      ],
+      "props": [
+        "activeTab",
+        "visible"
+      ],
+      "items": {
+        "role": "tab",
+        "noun": "tab",
+        "gestures": [
+          "select"
+        ]
+      },
+      "gestures": [
+        "select"
+      ]
+    },
+    {
+      "kind": "wizard",
+      "noun": "wizard",
+      "family": "container",
+      "tag": "u2-wizard",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "steps": ":scope > [data-u2-part=\"steps\"]",
+        "body": ":scope > [data-u2-part=\"body\"]",
+        "footer": ":scope > [data-u2-part=\"footer\"]",
+        "status": ":scope > [data-u2-part=\"footer\"] > * > [data-u2-part=\"status\"]",
+        "reason": ":scope > [data-u2-part=\"footer\"] > * > [data-u2-part=\"reason\"]",
+        "error row": ":scope > [data-u2-part=\"footer\"] > * > [data-u2-part=\"error-row\"]"
+      },
+      "state": [
+        "current",
+        "busy",
+        "valid",
+        "error",
+        "items"
+      ],
+      "props": [
+        "currentStep",
+        "visible"
+      ],
+      "items": {
+        "role": "listitem",
+        "noun": "wizard step",
+        "gestures": [
+          "select"
+        ]
+      },
+      "gestures": [
+        "select"
+      ]
+    },
+    {
+      "kind": "splitter",
+      "noun": "splitter",
+      "aliases": [
+        "split panel"
+      ],
+      "family": "container",
+      "tag": "u2-splitter",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "sash": "[data-u2-part=\"sash\"]"
+      },
+      "state": [
+        "extra"
+      ],
+      "props": [
+        "sizes",
+        "visible"
+      ],
+      "gestures": [
+        "drag",
+        "resize"
+      ]
+    },
+    {
+      "kind": "card",
+      "noun": "card",
+      "family": "container",
+      "tag": "u2-card",
+      "nameFrom": [
+        "title",
+        "text"
+      ],
+      "parts": {
+        "title": ":scope > [data-u2-part=\"header\"] > * > [data-u2-part=\"title\"]",
+        "subtitle": ":scope > [data-u2-part=\"header\"] > * > [data-u2-part=\"subtitle\"]",
+        "header": ":scope > [data-u2-part=\"header\"]",
+        "media": ":scope > [data-u2-part=\"media\"]",
+        "body": ":scope > [data-u2-part=\"body\"]",
+        "footer": ":scope > [data-u2-part=\"footer\"]",
+        "actions": ":scope > [data-u2-part=\"header\"] > [data-u2-part=\"actions\"]"
+      },
+      "state": [
+        "label",
+        "selected"
+      ],
+      "props": [
+        "title",
+        "subtitle",
+        "selected",
+        "visible"
+      ],
+      "gestures": [
+        "press"
+      ]
+    },
+    {
+      "kind": "form",
+      "noun": "form",
+      "family": "container",
+      "tag": "u2-form",
+      "role": "form",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "valid",
+        "error",
+        "items"
+      ],
+      "props": [
+        "captionAlign",
+        "visible"
+      ],
+      "gestures": []
+    },
+    {
+      "kind": "object-form",
+      "noun": "object form",
+      "family": "container",
+      "role": "form",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "valid",
+        "error",
+        "items"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "func-form",
+      "noun": "function form",
+      "aliases": [
+        "func form"
+      ],
+      "family": "container",
+      "role": "form",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "run button": "[data-u2=\"ff-run\"]",
+        "history icon": "[data-u2=\"ff-history-icon\"]"
+      },
+      "state": [
+        "valid",
+        "error",
+        "busy",
+        "items"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "panel",
+      "noun": "layout panel",
+      "family": "container",
+      "tag": "u2-panel",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [],
+      "props": [
+        "cls",
+        "visible"
+      ],
+      "gestures": []
+    },
+    {
+      "kind": "div-v",
+      "noun": "vertical stack",
+      "family": "container",
+      "tag": "u2-div-v",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [],
+      "props": [
+        "cls",
+        "visible"
+      ],
+      "gestures": []
+    },
+    {
+      "kind": "div-h",
+      "noun": "horizontal stack",
+      "family": "container",
+      "tag": "u2-div-h",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [],
+      "props": [
+        "cls",
+        "visible"
+      ],
+      "gestures": []
+    },
+    {
+      "kind": "async-view",
+      "noun": "async view",
+      "aliases": [
+        "loading view"
+      ],
+      "family": "container",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy",
+        "error"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "list",
+      "noun": "list",
+      "family": "collection",
+      "role": "listbox",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "label",
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "select"
+        ]
+      },
+      "gestures": [
+        "select",
+        "scroll"
+      ]
+    },
+    {
+      "kind": "tree",
+      "noun": "tree",
+      "family": "collection",
+      "role": "tree",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "item-label": "[data-u2-part=\"item-label\"]"
+      },
+      "state": [
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "treeitem",
+        "noun": "tree node",
+        "gestures": [
+          "select",
+          "expand",
+          "collapse",
+          "toggle"
+        ]
+      },
+      "gestures": [
+        "select",
+        "expand",
+        "collapse"
+      ]
+    },
+    {
+      "kind": "table",
+      "noun": "table",
+      "family": "collection",
+      "role": "table",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "item-label": "[data-u2-part=\"item-label\"]",
+        "section": "[data-u2-part=\"section\"]"
+      },
+      "state": [
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "row",
+        "noun": "table row",
+        "gestures": [
+          "select"
+        ]
+      },
+      "gestures": [
+        "select",
+        "scroll"
+      ]
+    },
+    {
+      "kind": "data-table",
+      "noun": "table",
+      "family": "collection",
+      "tag": "u2-data-table",
+      "role": "grid",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "item-label": "[data-u2-part=\"item-label\"]"
+      },
+      "state": [
+        "items",
+        "selection"
+      ],
+      "props": [
+        "columns",
+        "items",
+        "visible"
+      ],
+      "items": {
+        "role": "row",
+        "noun": "table row",
+        "gestures": [
+          "select"
+        ]
+      },
+      "gestures": [
+        "select",
+        "scroll"
+      ]
+    },
+    {
+      "kind": "grid",
+      "noun": "grid",
+      "aliases": [
+        "virtual grid",
+        "cell grid"
+      ],
+      "family": "collection",
+      "role": "listbox",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "cell",
+        "gestures": [
+          "select",
+          "pick"
+        ]
+      },
+      "gestures": [
+        "select",
+        "scroll"
+      ]
+    },
+    {
+      "kind": "property-grid",
+      "noun": "property grid",
+      "aliases": [
+        "property editor"
+      ],
+      "family": "collection",
+      "tag": "u2-property-grid",
+      "role": "grid",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "item-label": "[data-u2-part=\"item-label\"]",
+        "category": "[data-u2-part=\"category\"]"
+      },
+      "state": [
+        "items"
+      ],
+      "props": [
+        "properties",
+        "values",
+        "visible"
+      ],
+      "items": {
+        "role": "row",
+        "noun": "property",
+        "gestures": [
+          "type"
+        ]
+      },
+      "gestures": [
+        "type"
+      ]
+    },
+    {
+      "kind": "property-editor",
+      "noun": "property grid",
+      "family": "collection",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "items"
+      ],
+      "props": [],
+      "gestures": [
+        "type"
+      ]
+    },
+    {
+      "kind": "functions-browser",
+      "noun": "functions browser",
+      "family": "collection",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "search": "[data-u2=\"fb-search\"]",
+        "list": "[data-u2=\"fb-list\"]",
+        "status": "[data-u2=\"fb-status\"]",
+        "clear button": "[data-u2=\"fb-clear\"]",
+        "roles": "[data-u2=\"fb-roles\"]",
+        "tags": "[data-u2=\"fb-tags\"]",
+        "empty message": "[data-u2=\"fb-empty\"]",
+        "panes": "[data-u2=\"fb-panes\"]",
+        "role": "[data-u2=\"fb-role\"]",
+        "tag": "[data-u2=\"fb-tag\"]"
+      },
+      "state": [
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "select"
+        ]
+      },
+      "gestures": [
+        "type",
+        "select"
+      ]
+    },
+    {
+      "kind": "func-call-history-browser",
+      "noun": "history browser",
+      "aliases": [
+        "func call history browser",
+        "run history"
+      ],
+      "family": "collection",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "list": "[data-u2=\"fch-list\"]",
+        "retry button": "[data-u2=\"fch-retry\"]",
+        "state": "[data-u2=\"fch-state\"]"
+      },
+      "state": [
+        "items",
+        "busy",
+        "error"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "select"
+        ]
+      },
+      "gestures": [
+        "select"
+      ]
+    },
+    {
+      "kind": "breadcrumbs",
+      "noun": "breadcrumbs",
+      "aliases": [
+        "breadcrumb bar"
+      ],
+      "family": "navigation",
+      "tag": "u2-breadcrumbs",
+      "role": "navigation",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "current",
+        "items"
+      ],
+      "props": [
+        "items",
+        "visible"
+      ],
+      "items": {
+        "role": "listitem",
+        "noun": "breadcrumb",
+        "gestures": [
+          "press"
+        ]
+      },
+      "gestures": [
+        "press"
+      ]
+    },
+    {
+      "kind": "menu",
+      "noun": "menu",
+      "family": "navigation",
+      "role": "menu",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "open",
+        "items"
+      ],
+      "props": [],
+      "items": {
+        "role": "menuitem",
+        "noun": "menu item",
+        "gestures": [
+          "pick",
+          "hover"
+        ]
+      },
+      "gestures": [
+        "pick",
+        "hover"
+      ]
+    },
+    {
+      "kind": "menu-bar",
+      "noun": "menu bar",
+      "family": "navigation",
+      "role": "menubar",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "items"
+      ],
+      "props": [],
+      "items": {
+        "role": "menuitem",
+        "noun": "menu item",
+        "gestures": [
+          "open",
+          "pick"
+        ]
+      },
+      "gestures": [
+        "open",
+        "pick"
+      ]
+    },
+    {
+      "kind": "toolbar",
+      "noun": "toolbar",
+      "family": "navigation",
+      "role": "toolbar",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "items"
+      ],
+      "props": [],
+      "items": {
+        "role": "button",
+        "noun": "button",
+        "gestures": [
+          "press"
+        ]
+      },
+      "gestures": [
+        "press"
+      ]
+    },
+    {
+      "kind": "dialog",
+      "noun": "dialog",
+      "family": "overlay",
+      "role": "dialog",
+      "nameFrom": [
+        "title",
+        "aria"
+      ],
+      "parts": {
+        "title": ":scope > .u2-dialog-title > [data-u2-part=\"title\"]",
+        "close button": ":scope > .u2-dialog-title > [data-u2-part=\"close\"]",
+        "body": ":scope > [data-u2-part=\"body\"]",
+        "footer": ":scope > [data-u2-part=\"footer\"]",
+        "error row": ":scope > [data-u2-part=\"error-row\"]",
+        "spinner": ":scope > [data-u2-part=\"footer\"] > * > [data-u2-part=\"busy\"]"
+      },
+      "state": [
+        "label",
+        "open",
+        "busy",
+        "error",
+        "valid"
+      ],
+      "props": [],
+      "gestures": [
+        "close"
+      ]
+    },
+    {
+      "kind": "tooltip",
+      "noun": "tooltip",
+      "family": "overlay",
+      "role": "tooltip",
+      "nameFrom": [
+        "text"
+      ],
+      "parts": {},
+      "state": [
+        "text"
+      ],
+      "props": [],
+      "gestures": [
+        "hover"
+      ]
+    },
+    {
+      "kind": "notify",
+      "noun": "notification",
+      "aliases": [
+        "balloon",
+        "toast",
+        "message"
+      ],
+      "family": "overlay",
+      "role": "status",
+      "nameFrom": [
+        "text"
+      ],
+      "parts": {},
+      "state": [
+        "text",
+        "extra"
+      ],
+      "props": [],
+      "gestures": [
+        "close"
+      ]
+    },
+    {
+      "kind": "tour",
+      "noun": "tour",
+      "family": "overlay",
+      "role": "dialog",
+      "nameFrom": [
+        "title"
+      ],
+      "parts": {},
+      "state": [
+        "current",
+        "items"
+      ],
+      "props": [],
+      "gestures": [
+        "press"
+      ]
+    },
+    {
+      "kind": "icon",
+      "noun": "icon",
+      "family": "display",
+      "tag": "u2-icon",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "label",
+        "extra"
+      ],
+      "props": [
+        "variant",
+        "size",
+        "visible"
+      ],
+      "gestures": []
+    },
+    {
+      "kind": "badge",
+      "noun": "badge",
+      "family": "display",
+      "nameFrom": [
+        "text",
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "text"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "count-badge",
+      "noun": "badge",
+      "family": "display",
+      "nameFrom": [
+        "text",
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "text"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "dot",
+      "noun": "badge",
+      "family": "display",
+      "nameFrom": [
+        "text",
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "text"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "status-line",
+      "noun": "status line",
+      "family": "display",
+      "role": "status",
+      "nameFrom": [
+        "text"
+      ],
+      "parts": {},
+      "state": [
+        "text"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "tag",
+      "noun": "tag",
+      "family": "display",
+      "nameFrom": [
+        "text"
+      ],
+      "parts": {},
+      "state": [
+        "text",
+        "selected",
+        "pressed"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "chip",
+      "noun": "chip",
+      "family": "display",
+      "nameFrom": [
+        "text"
+      ],
+      "parts": {},
+      "state": [
+        "text",
+        "selected",
+        "pressed"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "bind-chip",
+      "noun": "chip",
+      "family": "display",
+      "nameFrom": [
+        "text"
+      ],
+      "parts": {},
+      "state": [
+        "text",
+        "selected",
+        "pressed"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "msg-chip",
+      "noun": "chip",
+      "family": "display",
+      "nameFrom": [
+        "text"
+      ],
+      "parts": {},
+      "state": [
+        "text",
+        "selected",
+        "pressed"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "stat-card",
+      "noun": "stat card",
+      "aliases": [
+        "stat"
+      ],
+      "family": "display",
+      "tag": "u2-stat-card",
+      "nameFrom": [
+        "label",
+        "text"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "value": "[data-u2-part=\"value\"]",
+        "delta": "[data-u2-part=\"delta\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "extra"
+      ],
+      "props": [
+        "label",
+        "value",
+        "delta",
+        "visible"
+      ],
+      "gestures": []
+    },
+    {
+      "kind": "progress-bar",
+      "noun": "progress bar",
+      "aliases": [
+        "progress"
+      ],
+      "family": "display",
+      "role": "progressbar",
+      "nameFrom": [
+        "label",
+        "aria"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "track": "[data-u2-part=\"track\"]",
+        "percent": "[data-u2-part=\"percent\"]"
+      },
+      "state": [
+        "value",
+        "text",
+        "busy"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "entity-card",
+      "noun": "entity card",
+      "aliases": [
+        "entity"
+      ],
+      "family": "display",
+      "nameFrom": [
+        "title",
+        "text"
+      ],
+      "parts": {
+        "title": "[data-u2-part=\"title\"]"
+      },
+      "state": [
+        "label"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "designer",
+      "noun": "designer",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "busy"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "palette",
+      "noun": "palette",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "tray",
+      "noun": "tray",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "filter-group",
+      "noun": "filter group",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "connector": "[data-u2-part=\"connector\"]",
+        "not": "[data-u2-part=\"not\"]",
+        "add": "[data-u2-part=\"add\"]",
+        "add group": "[data-u2-part=\"add-group\"]",
+        "rows": "[data-u2-part=\"rows\"]",
+        "handle": "[data-u2-part=\"handle\"]"
+      },
+      "state": [],
+      "props": [],
+      "gestures": [
+        "add",
+        "remove",
+        "drag"
+      ]
+    },
+    {
+      "kind": "filter-row",
+      "noun": "filter row",
+      "family": "composite",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "property": "[data-u2-part=\"prop\"]",
+        "operator": "[data-u2-part=\"op\"]",
+        "value": "[data-u2-part=\"value\"]",
+        "remove": "[data-u2-part=\"remove\"]",
+        "handle": "[data-u2-part=\"handle\"]"
+      },
+      "state": [],
+      "props": [],
+      "gestures": [
+        "type",
+        "pick",
+        "remove",
+        "drag"
+      ]
+    },
+    {
+      "kind": "fb-search",
+      "noun": "search",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "functions-browser"
+    },
+    {
+      "kind": "fb-list",
+      "noun": "list",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "functions-browser"
+    },
+    {
+      "kind": "fb-status",
+      "noun": "status",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "functions-browser"
+    },
+    {
+      "kind": "fb-clear",
+      "noun": "clear button",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "functions-browser"
+    },
+    {
+      "kind": "fb-roles",
+      "noun": "roles",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "functions-browser"
+    },
+    {
+      "kind": "fb-tags",
+      "noun": "tags",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "functions-browser"
+    },
+    {
+      "kind": "fb-empty",
+      "noun": "empty message",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "functions-browser"
+    },
+    {
+      "kind": "fb-panes",
+      "noun": "panes",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "functions-browser"
+    },
+    {
+      "kind": "fb-role",
+      "noun": "role",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "functions-browser"
+    },
+    {
+      "kind": "fb-tag",
+      "noun": "tag",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "functions-browser"
+    },
+    {
+      "kind": "fch-list",
+      "noun": "list",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "func-call-history-browser"
+    },
+    {
+      "kind": "fch-retry",
+      "noun": "retry button",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "func-call-history-browser"
+    },
+    {
+      "kind": "fch-state",
+      "noun": "state",
+      "family": "collection",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "func-call-history-browser"
+    },
+    {
+      "kind": "ff-run",
+      "noun": "run button",
+      "family": "container",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "func-form"
+    },
+    {
+      "kind": "ff-history-icon",
+      "noun": "history icon",
+      "family": "container",
+      "nameFrom": [],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [],
+      "partOf": "func-form"
     }
-  ]
+  ],
+  "kindsVersion": 1
 }

@@ -7,15 +7,15 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/elements.js';
+import '../../bindings/monomer-form.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
-import {rgroupLabels} from '../../bindings/monomer-form.js';
 import {bioInitialized} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {call} from '@datagrok-libraries/bdd/bindings/platform/functions';
@@ -74,7 +74,7 @@ test.describe("Crux in Bio's hosts", () => {
     await session.step(58, "And user clicks on crux R2 button", () => clickOn(page, el("crux R2 button")));
     await session.step(59, "And user clicks on crux R-Group OK button", () => clickOn(page, el("crux R-Group OK button")));
     await session.step(60, "Then the \"smiles\" reading of crux sketcher widget should be the molecule \"[*:1]C[*:2]\"", () => readingIsMolecule(page, "smiles", el("crux sketcher widget"), "[*:1]C[*:2]"));
-    await session.step(61, "When user clicks on \"R-groups\" tab", () => clickOn(page, el("\"R-groups\" tab")));
-    await session.step(62, "Then the R-groups grid of the monomer form should list \"R1, R2\"", () => rgroupLabels(page, "R1, R2"));
+    await session.step(61, "And \"R1\" R-group chip in monomer form should contain the text \"R1 H\"", () => shouldContainText(page, el("\"R1\" R-group chip in monomer form"), "R1 H"));
+    await session.step(62, "And \"R2\" R-group chip in monomer form should contain the text \"R2 OH\"", () => shouldContainText(page, el("\"R2\" R-group chip in monomer form"), "R2 OH"));
   });
 });

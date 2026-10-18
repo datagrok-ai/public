@@ -302,6 +302,17 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
             try {this.dataFrame!.changeColumnType(colName, type as DG.COLUMN_TYPE);} catch (e) {console.error(e);}
         });
       }
+      // restored before the view binds the table, which subscribes formula columns to recalculation only if it has any
+      for (const [colName, tags] of Object.entries(this._campaign?.columnTags ?? {})) {
+        const col = this.dataFrame.columns.byName(colName);
+        if (!col)
+          continue;
+        for (const [tag, value] of Object.entries(tags))
+          !!tag && !!value && col.setTag(tag, value);
+        // the tag alone does not reorder the categories
+        if (tags['.category-order'] && col.type === DG.COLUMN_TYPE.STRING)
+          col.setCategoryOrder(col.getCategoryOrder());
+      }
       //await this.dataFrame.meta.detectSemanticTypes();
     }
 
@@ -1070,6 +1081,9 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     enrichedDf.columns.toList().forEach((col) => columnSemTypes[col.name] = col.semType);
     const colTypeMap: {[_: string]: string} = {};
     enrichedDf.columns.toList().forEach((col) => colTypeMap[col.name] = col.type);
+    const columnTags: {[_: string]: {[_: string]: string}} = {};
+    for (const col of enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')))
+      columnTags[col.name] = Object.fromEntries(col.tags);
     const sketchStateString = this.campaign?.tilesViewerFormSketch ?? undefined;
 
     const getDefaultPerms = async () => {
@@ -1103,6 +1117,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       filteredRowCount: enrichedDf.filter.trueCount,
       savePath: this._filePath,
       columnTypes: colTypeMap,
+      columnTags,
       tilesViewerFormSketch: sketchStateString,
       version: this.version + 1,
       authorUserId,

@@ -83,16 +83,22 @@ export interface ContextEntry extends ElementEntry {
 }
 
 /** `exact-text` is Playwright's own text engine (the innermost element whose text is the qualifier),
- * independent of the kind's selector. */
-export type MatchStrategy = 'name' | 'label' | 'text' | 'exact-text' | 'title' | 'aria' | 'placeholder' | 'dart';
+ * independent of the kind's selector. `accessible` is the label the browser associates (`<label for>`,
+ * aria-labelledby, aria-label) with the root or an element inside it; `item` is a u2 item key
+ * (`data-u2-item`). */
+export type MatchStrategy = 'name' | 'label' | 'text' | 'exact-text' | 'title' | 'aria' | 'placeholder' | 'dart' |
+  'accessible' | 'item';
 
 export interface KindDef {
   /** Base locator for candidates of this kind. */
   selector: string;
   aliases?: string[];
-  /** How the qualifier ("sequence column" in "sequence column input") narrows the candidates,
-   * in priority order — the first strategy that finds something wins. */
+  /** How the qualifier ("sequence column" in "sequence column input") narrows the candidates —
+   * the first strategy that finds something wins. Applied in the R9 order (`effectiveOrder` in
+   * runtime/locate.ts): what the user sees first, `name` after it, `dart` where it is declared. */
   match: MatchStrategy[];
+  /** Items of a u2 collection: matched by data-u2-item, revealed for a gesture when not rendered. */
+  items?: boolean;
   /** Where the kind keeps its caption (the input label, the dialog title) for `label`/`title`. */
   labelSelector?: string;
   /** Dart `name=` conventions for the qualifier; `{q}` is the qualifier with spaces as dashes.

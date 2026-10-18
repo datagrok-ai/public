@@ -94,9 +94,10 @@ export async function render(main) {
   const active = el('b');
   const closed = el('code');
   bindText(tabs.scope, active, computed(() => tabs.activeTab.value ?? '(none)'));
-  bindText(tabs.scope, closed, computed(() => tabs.onTabClosed.value ?? '(none)'));
+  closed.textContent = '(none)';
+  tabs.on('tabClosed', (id) => closed.textContent = id);
   const readout = el('p', 'u2-gallery-status');
-  readout.append('activeTab = ', active, '  ·  onTabClosed = ', closed);
+  readout.append('activeTab = ', active, '  ·  tabClosed = ', closed);
   main.append(readout);
 
   main.append(el('h2', null, 'Dirty marker'));

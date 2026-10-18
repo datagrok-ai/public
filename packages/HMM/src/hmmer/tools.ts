@@ -1,4 +1,4 @@
-// Synced from Rusty-HMMER web/tools.ts by web/sync-datagrok.mjs — do not edit here.
+// Synced from crux-core crates/hmmer-web/web/tools.ts by crates/hmmer-web/web/sync-datagrok.mjs — do not edit here.
 /** Typed wrapper of the lazily loaded tools module (crates/hmmer-web-tools,
  * web/dist/hmmer_tools.wasm): phmmer query models, hmmalign (traces per chunk
  * of sequences, then the alignment from all traces) and hmmlogo values. Like

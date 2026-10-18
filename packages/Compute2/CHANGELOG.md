@@ -2,6 +2,22 @@
 
 ## v.next
 
+* Workflows: Actions hidden by a node meta link (`setActionVisible`) are not shown
+* Run compare: Selected runs and workflow steps load in parallel; a run that fails to load no longer stops the others, and runs with steps that could not be loaded show a warning
+* Run compare: Empty index cells no longer show up as an `undefined` category on a categorical index
+* Run compare: Fixed a blank chart when the first checked value disappears while others stay checked; a charted value stays listed when Hide equal values would hide it
+* Run compare: Chart and export columns carry their units in the name (`Biomass (g/L)`, `Time (h)`), and the Compare list shows each value's units
+* Run compare: A run that has the value in other units shows `units differ (mg/L)` instead of `no similar data`
+* Run compare: Clicking the selected value again clears the selection; the expand chevron takes its whole cell, so clicks near it no longer change the selection
+* Run compare: Unit mappings (`1 g/L = 1000 mg/L`) in the Mappings dialog let values in other units join a row; they are multiplied into the first run's units when the chart is built
+* Run compare: Units compare case-sensitively (`MPa` ≠ `mPa`), folding only spacing, micro signs, superscripts, `l`/`L` and time unit spellings; the time units picker reads the same spellings, so `H` (henry) is no longer taken for hours
+* Run compare: The Multiple values toggle sits next to the value filter, and the name mappings icon got a label
+* Run compare: Charts of several values show every run any of them has, and the partial badge no longer depends on which value was checked first
+* Run compare: Fixed repeated workflow steps (e.g. one per day) overwriting each other's tables and showing as identical rows; each occurrence is now its own row labeled with its step, and runs pair by step
+* Run compare: Several dataframe columns from different workflow steps chart together, like scalars; each step of a run is its own line
+* Run compare: Several columns in the same units chart in one panel on a shared y axis; the Shared y axis switch brings back the stacked panels
+* Run compare: The Mappings dialog lists values that are in no compare row, with shortcuts to map their name or units
+* Run compare: Raw tables without units no longer raise the missing-units warning; an info icon says their values are taken in the row's units
 * RFV: Dataframe outputs annotated `hidden: true` are hidden, like scalar and graphics outputs
 * TreeWizard: Step tooltips no longer name inputs that were only changed among those with warnings
 * TreeWizard: Removing a step or workflow from the tree asks for confirmation
