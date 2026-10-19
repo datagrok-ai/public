@@ -229,6 +229,16 @@ describe('generateDomainClients', () => {
     expect(code).toMatch(/interface IssueStateRow \{[^}]*y\?: IssueStateYIssueState;/);
   });
 
+  it('choices values with a quote or a backslash compile to the same literals', {timeout: 180_000}, () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.sample.columns.resolution =
+      {type: 'string', choices: ['Fixed', `Won't fix`, 'a\\b']});
+    expect(generateDomainClients(dir)).toBe(true);
+    const res = runTsc(dir, 'usage-choices.ts');
+    expect(res.output.trim(), res.output).toBe('');
+    expect(res.status).toBe(0);
+  });
+
   it('expand maps: a multi-FK child emits one qualified details key per FK', () => {
     const dir = makePackage();
     mutateManifest(dir, (m) => m.tables.link = {columns: {
@@ -653,7 +663,7 @@ describe('generateDomainClients', () => {
     const res = runTsc(dir, 'usage-bad.ts');
     expect(res.status).not.toBe(0);
     // exactly one error per intended negative — no accidental extra breakage
-    expect(res.output.match(/error TS/g)).toHaveLength(15);
+    expect(res.output.match(/error TS/g)).toHaveLength(16);
     // wrong-typed payload values: `count: string` and `active: string`
     expect(res.output).toContain('usage-bad.ts(5,');
     expect(res.output).toContain('usage-bad.ts(7,');
@@ -675,6 +685,8 @@ describe('generateDomainClients', () => {
     expect(res.output).toContain('usage-bad.ts(21,');
     expect(res.output).toContain('usage-bad.ts(22,');
     expect(res.output).toContain('usage-bad.ts(23,');
+    // ...an FK path as a sort key (the server sorts by plain columns only)...
+    expect(res.output).toContain('usage-bad.ts(24,');
     // ...non-selected field access after select()...
     expect(res.output).toMatch(/Property 'count' does not exist on type 'Pick<SampleRow/);
     // ...and a field absent from the mapped-tuple insert result

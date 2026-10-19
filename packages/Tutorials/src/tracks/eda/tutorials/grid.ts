@@ -69,7 +69,7 @@ export class GridTutorial extends Tutorial {
       'There are several ways to add a row to a spreadsheet: clicking the <b>+</b> ' +
       'icon (requires "Allow Edit" property set to true), editing the last row (if "Add New Row On Last Row Edit" ' +
       'is enabled), selecting <b>Edit > Add Rows...</b> in the top menu (this way you can add a specific number of ' +
-      'rows at a specific position in the grid).', () => this.t!.rows.addNew());
+      'rows at a specific position in the grid).', () => {this.t!.rows.addNew();});
 
     const lastRowIdx = this.t!.rowCount - 1;
     await this.action(`Enter "X0273T51080200024" as USUBJID in the new row (#${lastRowIdx + 1})`,

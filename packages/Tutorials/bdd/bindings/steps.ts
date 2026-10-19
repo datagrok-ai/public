@@ -64,8 +64,19 @@ export const startTutorial = When('user starts the {string} tutorial', async (pa
   }
   await card.click({timeout: pollMs(30000)});
   await expect(page.locator('.tutorials-root-header h1'), 'the running tutorial\'s title').toHaveText(name, {timeout: pollMs(60000)});
+  await expect(page.locator('.tutorials-bar-step'), 'the first step in the tutorial bar')
+    .toHaveText(/\S/, {timeout: pollMs(60000)});
+  await page.locator('.tutorials-bar .fa-list').click();
   await expect(page.locator('.grok-tutorial-entry[aria-current="step"]').first(), 'the first step of the tutorial').toBeVisible({timeout: pollMs(60000)});
-}, {tier: 'ui', description: 'clicks the tutorial\'s card in the Tutorials panel (opening the panel first if needed) and waits for its first step'});
+}, {tier: 'ui', description: 'clicks the tutorial\'s card in the Tutorials panel (opening the panel first if needed), waits for its first step and opens its step list'});
+
+/** Opens the step list from the bar; clicked in the page, so a dialog a step opened does not block it. */
+async function showStepList(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    if (document.querySelector('.tutorials-root') == null)
+      (document.querySelector('.tutorials-bar .fa-list') as HTMLElement | null)?.click();
+  });
+}
 
 /* A tutorial with a service prerequisite reads the service health the stand reports before it starts
    (Tutorial.checkService) and refuses to start unless the service is reported running, so a dev stack,
@@ -93,7 +104,9 @@ export const tutorialProgress = Then('the tutorial progress should be {int} of {
 }, {description: 'the progress bar\'s value and maximum and the "Step: N of M" caption agree on N of M'});
 
 export const tutorialCompleted = Then('the {string} tutorial should be completed', async (page: Page, name: string) => {
-  await expect(page.locator('.tutorials-root h3', {hasText: 'Congratulations!'}), 'the congratulations').toBeVisible();
+  await expect(page.locator('.tutorials-bar-section'), 'the congratulations in the tutorial bar')
+    .toHaveText('Congratulations!');
+  await showStepList(page);
   await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('.grok-tutorial-entry[role="checkbox"]'))
     .filter((e) => e.getAttribute('aria-checked') !== 'true').map((e) => e.getAttribute('aria-label'))), {message: 'steps not done'}).toEqual([]);
   await expect.poll(() => page.evaluate(([key, n]) => {
@@ -103,6 +116,7 @@ export const tutorialCompleted = Then('the {string} tutorial should be completed
 }, {description: 'the congratulations are shown, every step listed is done, and the tutorial\'s record says completed'});
 
 export const tutorialStepsListed = Then('the tutorial should have listed {int} steps', async (page: Page, count: number) => {
+  await showStepList(page);
   await expect.poll(() => page.locator('.grok-tutorial-entry[role="checkbox"]').count(), {message: 'step entries listed'}).toBe(count);
 }, {description: 'the number of step entries the running tutorial has shown so far'});
 
@@ -122,6 +136,7 @@ export const closeTutorial = When('user closes the tutorial', async (page: Page)
  * modifier as the learner's keyboard labels it (`platformKeyMap`, src/tracks/shortcuts.ts), so on a Mac
  * the Ctrl and Alt a feature writes read Command and Option. */
 async function stepEntry(page: Page, instruction: string) {
+  await showStepList(page);
   const mac = await page.evaluate(() => navigator.platform.toLowerCase().includes('mac'));
   const shown = mac ? instruction.replace(/\bCtrl\b/g, 'Command').replace(/\bAlt\b/g, 'Option') : instruction;
   return page.locator(`.grok-tutorial-entry[role="checkbox"][aria-label="${shown.replace(/"/g, '\\"')}"]`);

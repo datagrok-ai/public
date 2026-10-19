@@ -366,7 +366,9 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
   const choicesAliases: {[alias: string]: string} = {};
 
   const choicesAlias = (tableName: string, columnName: string, values: any[]): string | null => {
-    const valueSet = values.map((v) => `'${v}'`).join(' | ');
+    // JSON.stringify escapes every special character; inside single quotes only ' needs one more
+    const literals = values.map((v) => `'${JSON.stringify(v).slice(1, -1).replace(/'/g, `\\'`)}'`);
+    const valueSet = literals.join(' | ');
     let alias = utils.snakeToCamelCase(tableName) + utils.snakeToCamelCase(columnName);
     if (choicesAliases[alias] !== undefined && choicesAliases[alias] !== valueSet)
       alias += utils.snakeToCamelCase(tableName);
@@ -376,8 +378,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     }
     if (choicesAliases[alias] === undefined) {
       choicesAliases[alias] = valueSet;
-      decls.push(wrapTokens(`export type ${alias} = `,
-        values.map((v) => `'${v}'`), ' | ', ';'));
+      decls.push(wrapTokens(`export type ${alias} = `, literals, ' | ', ';'));
     }
     return alias;
   };

@@ -1,3 +1,4 @@
+import {map} from 'rxjs/operators';
 import {
   Handler, MetaHandler, RuleDataEffect, RuleExpr, RuleMetaEffect, RuleSource, RuleValidatorEffect, SelectorHandler,
 } from '../config/PipelineConfiguration';
@@ -14,17 +15,14 @@ function ruleParams<E>(controller: IControllerBase) {
   };
 }
 
-// rules without sources stay synchronous so they remain batchable
+// rules whose sources resolve synchronously stay synchronous, so they remain batchable
 function withContext(
   controller: IControllerBase, sources: Record<string, RuleSource> | undefined, run: (ctx: RuleContext) => void,
 ) {
   const base = buildRuleContext(controller);
   if (!sources)
     return run(base);
-  const resolved = resolveSources(controller, sources, base);
-  if (resolved instanceof Promise)
-    return resolved.then((values) => run({...base, ...values}));
-  return run({...base, ...resolved});
+  return resolveSources(controller, sources, base).pipe(map((values) => run({...base, ...values})));
 }
 
 function matchedTargets<E extends {targets?: string | string[]}>(controller: IControllerBase, effect: E) {
