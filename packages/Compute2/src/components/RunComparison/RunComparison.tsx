@@ -21,7 +21,7 @@ import {
   matchScalarTargets, matchColumnTargets, buildAliasGroups, buildUnitConverter,
 } from './matching';
 import {
-  getEntryStatuses, matchesFilter, compatibleTargetsFor, selectionGaps,
+  getEntryStatuses, matchesFilter, compatibleTargetsFor, selectionGaps, unmatchedItems,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
   targetContexts, EntryStatus, withAnnotatedDefaults,
 } from './selection';
@@ -293,7 +293,7 @@ export const RunComparison = Vue.defineComponent({
     });
 
     // in multi mode: suggestions plus everything already selected — a selected target
-    // that became conflicting must stay visible so it can be unchecked. A charted value
+    // that became incompatible must stay visible so it can be unchecked. A charted value
     // stays listed even when equal, so what is on the chart can always be deselected
     const filteredTargets = Vue.computed(() => {
       const charted = (target: ComparisonTarget) => isCharted(targetSelection.value, target.key);
@@ -310,6 +310,7 @@ export const RunComparison = Vue.defineComponent({
       targets.value.find((target) => target.key === selectedTargetKey.value) ?? null);
 
     const scalarChartType = Vue.ref<ScalarChartType>('radar');
+    const sharedScale = Vue.ref(true);
     const radarAvailable = DG.Func.find({meta: {role: DG.FUNC_TYPES.VIEWER}})
       .some((f) => f.friendlyName === 'Radar');
 
@@ -387,7 +388,9 @@ export const RunComparison = Vue.defineComponent({
       }
     };
 
-    const editMappings = () => showMappingsDialog(nameMappings.value, unitMappings.value, (names, units) => {
+    const editMappings = () => showMappingsDialog(nameMappings.value, unitMappings.value, unmatchedItems(
+      entries.value.map((entry) => entry.nodes), targets.value, indexColumnsMap.value,
+    ), (names, units) => {
       nameMappings.value = names;
       unitMappings.value = units;
     });
@@ -439,7 +442,8 @@ export const RunComparison = Vue.defineComponent({
     });
 
     const currentChartSpec = Vue.computed(() =>
-      chartSpec(comparison.value, selectedTarget.value != null, scalarChartType.value, radarAvailable));
+      chartSpec(comparison.value, selectedTarget.value != null, scalarChartType.value, radarAvailable,
+        sharedScale.value));
 
     // tables that could participate in column comparison and need an index choice;
     // with merging on, same-function outputs (by nqName) collapse into one row
@@ -645,6 +649,8 @@ export const RunComparison = Vue.defineComponent({
         { confidenceBadge(candidate.confidence) }
         { candidate.unitsWarn &&
           <IconFA name='exclamation-triangle' tooltip='Units are missing on some items'/> }
+        { candidate.unitsAssumed &&
+          <IconFA name='info-circle' tooltip={`Raw data without units is taken to be in ${target.units}`}/> }
         { candidate.auto &&
           <span style={{fontSize: '11px', color: 'var(--grey-4)', flexShrink: '0'}}>(auto)</span> }
       </label>;
@@ -766,7 +772,9 @@ export const RunComparison = Vue.defineComponent({
             <span class='c2-comparison-units' title={target.units ? 'Units of the first run' : ''}>{target.units ?? ''}</span>
             { target.unitsWarning ?
               <IconFA name='exclamation-triangle' tooltip='Units are missing on some runs'/> :
-              <span></span> }
+              target.kind === 'column' && target.rawWithoutUnits ?
+                <IconFA name='info-circle' tooltip={`Raw data without units is taken to be in ${target.units}`}/> :
+                <span></span> }
             { confidenceBadge(target.confidence) }
             <span style={{fontSize: '11px', color: 'var(--grey-4)', flexShrink: '0'}}>
               {target.coverage}/{target.total}
@@ -774,9 +782,7 @@ export const RunComparison = Vue.defineComponent({
             { gapRuns.length > 0 ?
               <span
                 class='c2-comparison-badge c2-badge-partial'
-                title={target.kind === 'scalar' ?
-                  `No value on: ${gapRuns.join(', ')}` :
-                  `Shown as gaps (no data in the charted rows): ${gapRuns.join(', ')}`}
+                title={`No value on: ${gapRuns.join(', ')}`}
               >partial</span> :
               <span></span> }
           </div>;
@@ -864,6 +870,14 @@ export const RunComparison = Vue.defineComponent({
                 }}
               >{label}</span>,
             )}
+          </div> }
+        { spec.sharedScaleSwitch &&
+          <div style={{padding: '2px 0px', flexShrink: '0'}}>
+            <ToggleInput
+              caption='Shared y axis'
+              value={sharedScale.value}
+              onUpdate:value={(val) => sharedScale.value = val}
+            />
           </div> }
         { Vue.withDirectives(
           <Viewer

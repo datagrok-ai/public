@@ -332,6 +332,27 @@ category('RunComparison: name mappings', () => {
 });
 
 category('RunComparison: candidates', () => {
+  test('raw data without units is assumed in the row units, not warned about', async () => {
+    const table = (units?: string) => ({path: 't', columns: [{name: 'time'}, {name: 'Biomass', units}]});
+    const [target] = matchColumnTargets([
+      makeEntry('a', [], [table('g/L')]), makeEntry('b', [], [table('g/L')]), makeEntry('raw', [], [table()], 'raw'),
+    ], indexMap({a: {t: 'time'}, b: {t: 'time'}, raw: {t: 'time'}}));
+    expect(target.bindings.length, 3);
+    expect(target.unitsWarning, false);
+    expect(target.rawWithoutUnits, true);
+    const raw = target.candidates.find((c) => c.binding.entryId === 'raw')!;
+    expect(raw.unitsWarn, false);
+    expect(raw.unitsAssumed, true);
+  });
+
+  test('a model run without units is still warned about', async () => {
+    const table = (units?: string) => ({path: 't', columns: [{name: 'time'}, {name: 'Biomass', units}]});
+    const [target] = matchColumnTargets([makeEntry('a', [], [table('g/L')]), makeEntry('b', [], [table()])],
+      indexMap({a: {t: 'time'}, b: {t: 'time'}}));
+    expect(target.unitsWarning, true);
+    expect(!!target.rawWithoutUnits, false);
+  });
+
   test('candidates pass the same gate as clustering', async () => {
     const entries = [
       makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height', units: 'm'}]}]),

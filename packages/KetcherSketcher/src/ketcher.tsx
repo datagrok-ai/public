@@ -434,8 +434,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     if (ketcher) {
       // a molecule set loads asynchronously: export what it drew, not the canvas before it
       await this._loading;
-      return !this._detached && this._sketcher === ketcher ?
-        await KetcherSketcher._inTurn(() => ketcher.getSmarts()) : this._smarts ?? '';
+      // its turn may come after a detach or suspend has unmounted the Ketcher, which then throws "couldnt find ketcher instance"
+      return await KetcherSketcher._inTurn(async () => !this._detached && this._sketcher === ketcher ?
+        await ketcher.getSmarts() : this._smarts ?? '');
     }
     return this._smarts ?? '';
   }

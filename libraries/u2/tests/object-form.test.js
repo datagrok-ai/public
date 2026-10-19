@@ -97,7 +97,7 @@ form('maps caption, name and description, and reads the initial values', () => {
   const f = mount(propertyForm(PROPS, source));
   const name = inputOf(f, 'name');
   assert.equal(name.root.querySelector('.u2-input-label').textContent, 'Compound');
-  assert.equal(name.root.title, 'Registered name');
+  assert.equal(name.tooltipText, 'Registered name');
   assert.equal(inputOf(f, 'count').root.querySelector('.u2-input-label').textContent, 'count');
 
   assert.deepEqual(f.getValues(), {name: 'Aspirin', count: 3, weight: 1.5, active: true,

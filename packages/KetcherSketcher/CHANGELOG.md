@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#877](https://github.com/datagrok-ai/core/issues/877): Sketcher: Fixed "couldnt find ketcher instance" when a Ketcher sketcher was closed or suspended while a SMARTS export waited for its turn
 * Fixed Ketcher staying 500 px wide in a dialog shown with a size until the dialog was resized by hand: it fills its host's width (500 px at least, which the host keeps)
 * README: known limitations: a recursive SMARTS (`$(...)`) is not held (Indigo's SMARTS reader drops it)
 * Fixed query features drawn in Datagrok's substructure filter being lost: aromatic or aliphatic, implicit H count, ring membership, ring size, connectivity and a custom atom query are written as RDKit SMARTSQ groups in a V3000 molblock, and a custom bond query MDL can say as its bond type and topology (ketcher-core's V2000 left them out, or wrote "any"); a molblock with SMARTSQ groups set on Ketcher shows them as custom queries, and one Ketcher wrote shows the drawing it was written from. Not held: an atom's chirality query, and a custom bond query MDL cannot say

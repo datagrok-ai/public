@@ -1,5 +1,8 @@
-/* The editor docked beside the Manage Monomers grid: the library the grid shows, the monomer's
-   structure in a sketcher, its fields on four tabs and Save, which writes it into that library. */
+/* The editor docked beside the Manage Monomers grid: the library the grid shows; the monomer's structure in
+   a sketcher taking the height the fields leave; the fields, scrolling on their own — its symbol, name and
+   types two to a row, its R groups as chips that open a menu of caps, its Details — and, pinned at the
+   bottom, Save, a line saying what it will do or why it cannot yet, and the Details toggle. With that row
+   pinned, the fields grow upward: Details opens above its toggle, an R group's definition under the chips. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -9,9 +12,9 @@ import {MonomerTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/const
 import {INewMonomerForm, MonomerFormFields} from '@datagrok-libraries/bio/src/utils/monomer-ui';
 import {mostSimilarNaturalAnalog} from '@datagrok-libraries/bio/src/utils/macromolecule/monomers';
 import {polymerTypeToHelmType} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {Control, Form, TabStrip, ChoiceInput, TextInput, NumberInput, ColorInput, MapInput, Dialog, Tooltip,
-  signal, computed, button, div, divH, span, iconButton, tableFromMap, timestamp, Input, ReadonlySignal,
-  Signal} from '@datagrok-libraries/u2';
+import {Control, Form, LabelColumn, Section, ChoiceInput, TextInput, NumberInput, ColorInput,
+  MapInput, Dialog, signal, computed, effect, button, statusLine, plural, div, divH, span, iconButton, tableFromMap,
+  timestamp, ReadonlySignal, Signal, ChoiceItem} from '@datagrok-libraries/u2';
 
 import {MonomerLibManager} from '../lib-manager';
 import {RGroupsEditor} from './rgroups-editor';
@@ -22,6 +25,11 @@ import {MONOMER_DF_COLUMN_NAMES, getCorrectedMolBlock, getCorrectedSmiles, monom
 const POLYMER_TYPES: PolymerType[] =
   [PolymerTypes.PEPTIDE, PolymerTypes.RNA, PolymerTypes.CHEM, PolymerTypes.BLOB, PolymerTypes.G];
 const MONOMER_TYPES: MonomerType[] = [MonomerTypes.BACKBONE, MonomerTypes.BRANCH, MonomerTypes.TERMINAL];
+/** The narrowest a caption and its input get before the fields go one to a row: a type choice shows its
+ * longest item, and the symbol and the name keep room for a dozen characters. */
+const COLUMN_WIDTH = 176;
+/** The editor height from which Details opens by itself, until the user opens or closes it. */
+const DETAILS_OPEN_HEIGHT = 900;
 
 interface MonomerColors {
   line: string;
@@ -53,9 +61,14 @@ export class MonomerEditor extends Control implements INewMonomerForm {
   readonly rgroups: RGroupsEditor;
   readonly meta: MapInput;
   readonly colors: {[key in keyof MonomerColors]: ColorInput};
-  readonly tabs: TabStrip;
+  /** Natural analog, ID, colors and properties: open when the editor is tall enough, until the user
+   * opens or closes it themselves. */
+  readonly details: Section;
   /** Why the monomer cannot be saved yet, or null. */
   readonly problem: ReadonlySignal<string | null>;
+  /** The user changed the monomer, or started a new one, since it was loaded or saved — until then the
+   * manager loads the grid's current row into the editor, so moving through the grid shows each monomer. */
+  readonly edited = signal(false);
 
   static readonly DRAW = 'Draw the monomer\'s structure';
 
@@ -74,16 +87,20 @@ export class MonomerEditor extends Control implements INewMonomerForm {
   /** The colors the monomer is drawn with, as loaded, and whether the library sets them itself. */
   private _shownColors: MonomerColors = {line: '', background: '', text: ''};
   private _ownColors = false;
+  /** The monomer loaded for editing, by what identifies it in the library; null for a new one. */
+  private _loaded: {polymerType: string, symbol: string} | null = null;
 
   constructor(private readonly _host: MonomerEditorHost, libraries: string[], libraryName: string) {
     super();
     this._libraryName = signal(libraryName);
     this.root.classList.add('monomer-manager-editor');
     this.name = 'monomerEditor';
+    const labelColumn = new LabelColumn();
     const built = this.runInScope(() => {
       // fill: the library's name takes the row, its arrow and + stay in the dock however narrow
-      const library = new ChoiceInput({label: 'Monomer Library', name: 'library', items: libraries, value: libraryName,
-        nullable: false, fill: true, onChanged: (name) => name && void this._host.openLibrary(name)});
+      const library = new ChoiceInput({label: 'Library', name: 'library', items: MonomerEditor.libraryItems(libraries),
+        value: libraryName,
+        nullable: false, fill: true, onInput: (name) => name && void this._host.openLibrary(name)});
       library.follow(() => this._libraryName.value);
       library.addOptions(iconButton('plus', () => this._host.createLibrary(),
         {tooltip: 'Create a new monomer library'}));
@@ -99,34 +116,23 @@ export class MonomerEditor extends Control implements INewMonomerForm {
       this.own(() => resized.disconnect());
 
       const fields = {
-        polymerType: new ChoiceInput({label: 'Polymer Type', name: 'polymerType', items: POLYMER_TYPES,
-          value: PolymerTypes.PEPTIDE, nullable: false}),
-        monomerType: new ChoiceInput({label: 'Monomer Type', name: 'monomerType', items: MONOMER_TYPES,
-          value: MonomerTypes.BACKBONE, nullable: false}),
-        symbol: new TextInput({label: 'Monomer Symbol', name: 'symbol', required: true}),
-        monomerName: new TextInput({label: 'Monomer Name', name: 'name', required: true}),
-        id: new NumberInput({label: 'Monomer ID', name: 'id', mode: 'int', value: 0}),
-        naturalAnalog: new TextInput({label: 'Natural Analog', name: 'naturalAnalog'}),
+        polymerType: new ChoiceInput({label: 'Polymer', name: 'polymerType', items: POLYMER_TYPES,
+          value: PolymerTypes.PEPTIDE, nullable: false, tooltipText: 'The polymer type the monomer belongs to'}),
+        monomerType: new ChoiceInput({label: 'Type', name: 'monomerType', items: MONOMER_TYPES,
+          value: MonomerTypes.BACKBONE, nullable: false, tooltipText: 'Monomer type: backbone, branch or terminal'}),
+        symbol: new TextInput({label: 'Symbol', name: 'symbol', required: true}),
+        monomerName: new TextInput({label: 'Name', name: 'name', required: true}),
+        id: new NumberInput({label: 'ID', name: 'id', mode: 'int', value: 0}),
+        naturalAnalog: new TextInput({label: 'Analog', name: 'naturalAnalog',
+          tooltipText: 'Natural analog: the natural monomer this one is a variant of'}),
       };
 
       const rgroups = new RGroupsEditor({canonicalize: MonomerEditor.canonicalize,
-        isValidSmiles: (smiles) => grok.chem.checkSmiles(smiles)});
+        isValidSmiles: (smiles) => grok.chem.checkSmiles(smiles), onInput: () => this.edited.value = true});
       const meta = new MapInput({label: 'Properties', name: 'meta'});
-      const colorInput = (label: string) => new ColorInput({label, name: label.toLowerCase()});
+      const colorInput = (label: string) => new ColorInput({label, name: label.toLowerCase(), swatchOnly: true});
       const colors = {line: colorInput('Line'), background: colorInput('Background'), text: colorInput('Text')};
-
-      const tabs = new TabStrip({tabs: [
-        {id: 'monomer', label: 'Monomer', content: new Form({layout: 'auto'}).addAll(Object.values(fields)).root},
-        {id: 'rgroups', label: 'R-groups', content: rgroups.root},
-        {id: 'meta', label: 'Meta', content: new Form({layout: 'auto'}).add(meta).root},
-        {id: 'colors', label: 'Colors', content: new Form({layout: 'auto'}).addAll(Object.values(colors)).root},
-      ]});
-      const save = button('Add Monomer', () => void this.saveMonomer(), {primary: true});
-      // auto: in a narrow dock the captions go above their inputs instead of squeezing them
-      const head = new Form({layout: 'auto'}).add(library);
-      // Save stays put under the scrolling body, starting where the editors do, as ui.buttonsInput did
-      const footer = new Form({layout: 'normal'}).addButtons((row) => row.append(save), {align: 'editors'});
-      return {library, sketcher, ...fields, rgroups, meta, colors, tabs, save, head, footer};
+      return {library, sketcher, ...fields, rgroups, meta, colors};
     });
     this.library = built.library;
     this.sketcher = built.sketcher;
@@ -139,10 +145,11 @@ export class MonomerEditor extends Control implements INewMonomerForm {
     this.rgroups = built.rgroups;
     this.meta = built.meta;
     this.colors = built.colors;
-    this.tabs = built.tabs;
-    const save = built.save;
+    for (const input of [this.symbol, this.monomerName, this.polymerType, this.monomerType, this.id,
+      this.naturalAnalog, this.meta, ...Object.values(this.colors)])
+      input.on('userInput', () => this.edited.value = true);
 
-    // each tab answers for its own inputs, so the tab with the problem is the one marked
+    // the first input with a verdict, as Save's tooltip says it: "Symbol: Value can't be empty"
     type Verdict = {label: string, validity: ReadonlySignal<string | null>};
     const firstOf = (inputs: Verdict[]) => {
       for (const input of inputs) {
@@ -152,35 +159,19 @@ export class MonomerEditor extends Control implements INewMonomerForm {
       }
       return null;
     };
-    const monomerRequired = computed(() => {
-      for (const input of [this.polymerType, this.monomerType, this.symbol, this.monomerName]) {
-        if (Input.isEmpty(input.value.value))
-          return `${input.label} is required`;
-      }
-      return null;
-    });
-    // what was typed wrong; an empty required field is monomerRequired's to say
-    const monomerVerdicts = computed(() => firstOf([this.id, this.naturalAnalog]));
-    const monomerTab = computed(() => monomerRequired.value ?? monomerVerdicts.value);
-    // a structure with no R group or one twice is the R-groups tab's to say; nothing drawn is no tab's
+    const identityProblem = computed(() =>
+      firstOf([this.symbol, this.monomerName, this.polymerType, this.monomerType]));
+    // a structure with no R group or one twice is the R groups' to say; nothing drawn is the whole editor's
     const structureOfRGroups = computed(() => {
       const structure = this._structureProblem.value;
       return structure === MonomerEditor.DRAW ? null : structure;
     });
-    const rgroupsTab = computed(() => structureOfRGroups.value ?? this.rgroups.problem.value);
-    const metaTab = computed(() => firstOf([this.meta]));
-    const colorsTab = computed(() => firstOf(Object.values(this.colors)));
-    this.problem = computed(() => this._structureProblem.value ?? monomerTab.value ?? rgroupsTab.value ??
-      metaTab.value ?? colorsTab.value);
-    this.effect(() => {
-      // a new monomer's empty symbol and name mark the tab only once there is something to name
-      this.tabs.setInvalid('monomer', this._structureProblem.value === MonomerEditor.DRAW ?
-        monomerVerdicts.value : monomerTab.value);
-      this.tabs.setInvalid('rgroups', rgroupsTab.value);
-      this.tabs.setInvalid('meta', metaTab.value);
-      this.tabs.setInvalid('colors', colorsTab.value);
-      this.rgroups.setStructureProblem(structureOfRGroups.value);
-    });
+    const rgroupsProblem = computed(() => structureOfRGroups.value ?? this.rgroups.problem.value);
+    const detailsProblem = computed(() =>
+      firstOf([this.id, this.naturalAnalog, this.meta, ...Object.values(this.colors)]));
+    this.problem = computed(() => this._structureProblem.value ?? identityProblem.value ?? rgroupsProblem.value ??
+      detailsProblem.value);
+    this.effect(() => this.rgroups.setStructureProblem(structureOfRGroups.value));
     const exists = computed(() => {
       this._libraryVersion.value;
       const polymerType = MonomerEditor.polymerTypeOf(this.polymerType.value.value);
@@ -189,17 +180,76 @@ export class MonomerEditor extends Control implements INewMonomerForm {
       return !!polymerType && !!symbol &&
         !!this._host.activeLib()?.getMonomerSymbolsByType(polymerType).includes(symbol);
     });
-    this.effect(() => {
-      save.disabled = this.problem.value !== null;
-      save.textContent = exists.value ? 'Save Monomer' : 'Add Monomer';
-    });
-    Tooltip.bind(save, () => this.problem.peek() ?? `Save the monomer into ${this.library.value.peek()}`, this.scope);
 
-    built.head.root.classList.add('monomer-manager-library');
-    built.footer.root.classList.add('monomer-manager-save');
-    this.root.append(div([built.head.root, this.sketcher.root, this.tabs.root], 'monomer-manager-editor-body'),
-      built.footer.root);
+    const layout = this.runInScope(() => {
+      const head = new Form({layout: 'auto', labelColumn}).add(this.library);
+      const fields = new Form({layout: 'auto', labelColumn})
+        .addColumns([this.symbol, this.monomerName, this.polymerType, this.monomerType], {minWidth: COLUMN_WIDTH});
+      this.rgroups.root.classList.add('monomer-manager-rgroups');
+      fields.addElement(this.rgroups.root);
+      const save = button(computed(() => exists.value ? 'Save Monomer' : 'Add Monomer'), () => void this.saveMonomer(),
+        {primary: true, disabled: this.problem});
+      // nothing drawn yet is where a new monomer starts, not an error
+      const drawing = computed(() => this.problem.value === MonomerEditor.DRAW);
+      const status = statusLine(computed(() => drawing.value ? null : this.problem.value),
+        computed(() => drawing.value ? MonomerEditor.DRAW :
+          `Saves into ${MonomerEditor.libraryLabel(this.library.value.value ?? '')}`));
+      const details = new Section({title: 'Details', hint: this._summary(), validity: detailsProblem,
+        chevron: 'end', expanded: false, persistKey: 'bio.monomer-editor.details'});
+      details.root.classList.add('monomer-manager-details');
+      // the form's own button row, pinned under the scrolling fields
+      const footer = div([], 'monomer-manager-footer');
+      fields.addButtons((row) => {
+        row.classList.add('monomer-manager-save');
+        row.append(save, status, details.header);
+      }, {align: 'start', host: footer});
+      fields.addElement(details.root)
+        .addColumns([this.naturalAnalog, this.id], {minWidth: COLUMN_WIDTH, host: details.body})
+        .addGroup('Colors', Object.values(this.colors), {captionsAfter: true, host: details.body})
+        .add(this.meta, details.body);
+      return {head, fields, details, footer};
+    });
+    this.details = layout.details;
+    layout.head.root.classList.add('monomer-manager-library');
+    layout.fields.root.classList.add('monomer-manager-fields');
+    // a reversed column keeps the scroll at the bottom: what opens pushes up, toward the sketcher
+    const scroller = div([layout.fields.root], 'monomer-manager-scroller');
+    // reversed, the scroll runs from 0 at the bottom to minus what is above
+    const above = () => scroller.classList.toggle('monomer-manager-more-above',
+      scroller.scrollHeight - scroller.clientHeight + scroller.scrollTop > 1);
+    this.scope.listen(scroller, 'scroll', above);
+    const fit = new ResizeObserver(() => {
+      if (!this.details.userSet && this.root.clientHeight > 0)
+        this.details.expanded.value = this.root.clientHeight >= DETAILS_OPEN_HEIGHT;
+      above();
+    });
+    for (const el of [this.root, scroller, layout.fields.root])
+      fit.observe(el);
+    this.own(() => fit.disconnect());
+    this.root.append(div([layout.head.root, this.sketcher.root, scroller, layout.footer],
+      'monomer-manager-editor-layout'));
     this._setColors(null);
+  }
+
+  /** What folded Details holds, small enough for the row beside Save: the three colors as dots and how many
+   * properties; the analog and the ID in its tooltip. Defaults (no analog, ID 0) are not news. */
+  private _summary(): HTMLElement {
+    const count = computed(() => Object.keys(this.meta.value.value).filter((key) => key.trim() !== '').length);
+    const dots = Object.values(this.colors).map((color) => {
+      const dot = span('', 'monomer-manager-color-dot');
+      effect(() => dot.style.background = color.value.value);
+      return dot;
+    });
+    const props = span(computed(() => count.value === 0 ? '' : String(count.value)), 'monomer-manager-summary-count');
+    const summary = div([...dots, props], 'monomer-manager-summary');
+    effect(() => {
+      const analog = this.naturalAnalog.value.value;
+      const id = this.id.value.value ?? 0;
+      summary.title = [analog ? `natural analog ${analog}` : '', id ? `ID ${id}` : '',
+        count.value ? plural(count.value, 'property', 'properties') : ''].filter((x) => x).join(' · ') ||
+        'Natural analog, ID, colors and properties';
+    });
+    return summary;
   }
 
   /** Canonical SMILES through Chem, null for what is not one. */
@@ -210,6 +260,14 @@ export class MonomerEditor extends Control implements INewMonomerForm {
     } catch {
       return null;
     }
+  }
+
+  static libraryLabel(name: string): string {
+    return name.replace(/\.json$/i, '');
+  }
+
+  static libraryItems(names: string[]): ChoiceItem[] {
+    return names.map((value) => ({value, label: MonomerEditor.libraryLabel(value)}));
   }
 
   static polymerTypeOf(value: string | null): PolymerType | undefined {
@@ -227,7 +285,7 @@ export class MonomerEditor extends Control implements INewMonomerForm {
   /** The grid's library was reloaded: refreshes the list of libraries and what Save would do. */
   libraryReloaded(libraries?: string[], name?: string): void {
     if (libraries !== undefined)
-      this.library.setItems(libraries);
+      this.library.setItems(MonomerEditor.libraryItems(libraries));
     if (name !== undefined)
       this._libraryName.value = name;
     this._libraryVersion.value++;
@@ -266,9 +324,11 @@ export class MonomerEditor extends Control implements INewMonomerForm {
       this.id.value.value = fields.id;
     if (fields.naturalAnalog !== undefined)
       this.naturalAnalog.value.value = fields.naturalAnalog;
+    this.edited.value = true;
   }
 
   setEmptyMonomer(): void {
+    this._loaded = null;
     this._structureProblem.value = this._checkStructure(this._setStructure(''));
     // reset, not set: another monomer starts untouched, with nothing left over from the last one's typing
     this.symbol.reset('');
@@ -279,9 +339,11 @@ export class MonomerEditor extends Control implements INewMonomerForm {
     this._loadedMeta = {};
     this.meta.reset({});
     this._setColors(null);
+    this.edited.value = false;
   }
 
   setMonomer(monomer: Monomer): void {
+    this._loaded = {polymerType: monomer.polymerType, symbol: monomer.symbol};
     const smiles = this._setStructure(monomer.smiles);
     this.polymerType.reset(monomer.polymerType);
     this.monomerType.reset(monomer.monomerType);
@@ -298,9 +360,10 @@ export class MonomerEditor extends Control implements INewMonomerForm {
     if (!monomer.naturalAnalog && monomer.polymerType)
       void this._suggestNaturalAnalog(monomer.smiles, monomer.polymerType);
     this._setColors(monomer);
+    this.edited.value = false;
   }
 
-  /** A meta value as the Meta tab shows it: an object as its JSON, anything else as its text. */
+  /** A meta value as the Properties input shows it: an object as its JSON, anything else as its text. */
   static metaText(value: string | number | boolean | object | null | undefined): string {
     return value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value ?? '');
   }
@@ -468,8 +531,10 @@ export class MonomerEditor extends Control implements INewMonomerForm {
     if (!smiles)
       return MonomerEditor.DRAW;
     const numbers = MonomerEditor.rgroupNumbers(smiles);
-    if (numbers.length === 0)
-      return 'Mark the monomer\'s attachment points as R groups (R1, R2, ...)';
+    if (numbers.length === 0) {
+      return 'Mark the monomer\'s attachment points as R groups (R1, R2, ...) — the R-group tool in the ' +
+        'sketcher, or [*:1] in the SMILES';
+    }
     const twice = numbers.find((n, i) => numbers.indexOf(n) !== i);
     return twice === undefined ? null : `R${twice} appears twice in the structure — renumber one of them`;
   }
@@ -492,14 +557,16 @@ export class MonomerEditor extends Control implements INewMonomerForm {
     const problem = this._checkStructure(smiles);
     this._structureProblem.value = problem;
     const numbers = MonomerEditor.rgroupNumbers(smiles);
-    // an R label twice leaves the rows as they were, the tab saying which one to renumber
+    // an R label twice leaves the chips as they were, the R groups saying which one to renumber
     if (new Set(numbers).size !== numbers.length)
       return;
     this.rgroups.setLabels(numbers.map((n) => `R${n}`));
     // the editor's own load echoes back; only a drawn change suggests a natural analog
     const echo = smiles === this._loadedSmiles;
-    if (!echo)
+    if (!echo) {
       this._loadedSmiles = null;
+      this.edited.value = true;
+    }
     if (!echo && smiles && problem === null && this.polymerType.value.peek())
       void this._suggestNaturalAnalog(smiles, this.polymerType.value.peek()!);
   }
@@ -528,9 +595,10 @@ export class MonomerEditor extends Control implements INewMonomerForm {
       grok.shell.error('Monomer library data frame is corrupted');
       return;
     }
-    const sameSymbol = polymerTypes.findIndex((pt, i) => pt === monomer.polymerType && symbols[i] === monomer.symbol);
-    // the grid holds canonical SMILES, so the same structure is the same string
-    const sameStructure = structures.findIndex((smi) => smi === monomer.smiles);
+    const same = (i: number) => polymerTypes[i] === monomer.polymerType && symbols[i] === monomer.symbol;
+    const sameSymbol = polymerTypes.findIndex((_, i) => same(i));
+    // the grid holds canonical SMILES, so the same structure is the same string; a monomer's own does not count
+    const sameStructure = structures.findIndex((smi, i) => smi === monomer.smiles && !same(i));
 
     const save = async () => {
       try {
@@ -540,6 +608,9 @@ export class MonomerEditor extends Control implements INewMonomerForm {
           return;
         }
         await provider.updateOrAddMonomersInLibrary(libName, [{...monomer, lib: undefined, wem: undefined}]);
+        this._loaded = {polymerType: monomer.polymerType, symbol: monomer.symbol};
+        // saved: the editor follows the grid again, starting with the row the save makes current
+        this.edited.value = false;
         await this._host.libManager.loadMonomerLib(true);
         await this._host.refreshTable(monomer.symbol);
         grok.shell.info(`Monomer ${monomer.symbol} was successfully saved in library ${libName}`);
@@ -548,22 +619,25 @@ export class MonomerEditor extends Control implements INewMonomerForm {
         console.error(e);
       }
     };
-    let clash: Monomer | null = null;
-    let prompt = '';
+    // a symbol the library has, and a structure it has under another symbol: each is asked about, both at once
+    const prompts: string[] = [];
+    const clashes: Monomer[] = [];
     if (sameSymbol >= 0) {
-      clash = await monomerFromDfRow(df.rows.get(sameSymbol));
-      prompt = `Monomer with symbol '${monomer.symbol}' already exists in library ${libName}.\n` +
-        'Are you sure you want to overwrite it?';
-    } else if (sameStructure >= 0) {
-      clash = await monomerFromDfRow(df.rows.get(sameStructure));
-      prompt = `Monomer with the same structure already exists in library ${libName} with different symbol ` +
-        `(${clash.symbol}).\nAre you sure you want to duplicate it?`;
+      clashes.push(await monomerFromDfRow(df.rows.get(sameSymbol)));
+      prompts.push(`Monomer with symbol '${monomer.symbol}' already exists in library ${libName}.\n` +
+        'Are you sure you want to overwrite it?');
     }
-    if (clash === null)
+    if (sameStructure >= 0) {
+      const twin = await monomerFromDfRow(df.rows.get(sameStructure));
+      clashes.push(twin);
+      prompts.push(`Monomer with the same structure already exists in library ${libName} with different symbol ` +
+        `(${twin.symbol}).\nAre you sure you want to duplicate it?`);
+    }
+    if (clashes.length === 0)
       return await save();
     Dialog.create('Save Monomer', {name: 'saveMonomerDialog'})
-      .add(span(prompt, 'monomer-manager-prompt'))
-      .add(MonomerEditor.monomerCard(clash))
+      .add(span(prompts.join('\n\n'), 'monomer-manager-prompt'))
+      .add(div(clashes.map((m) => MonomerEditor.monomerCard(m)), 'monomer-manager-cards'))
       .onOK(save, {text: 'Save'})
       .show();
   }

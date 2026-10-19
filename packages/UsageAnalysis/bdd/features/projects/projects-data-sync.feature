@@ -1,4 +1,4 @@
-@journey @serial @realizes:views.projects
+@journey @realizes:views.projects
 Feature: A project saved with and without Data sync
   demog.csv opened from Browse > Files > Demo is saved through the ribbon's Save dialog with Data
   sync on, then saved as a copy with Data sync off, and the copy is saved again with Data sync on.
@@ -9,7 +9,7 @@ Feature: A project saved with and without Data sync
   uploaded snapshot — is ApiTests `Dapi: projects: data sync` (src/dapi/projects.ts).
 
   Both projects are named with the run's time and removed, with their tables and views, when the
-  feature ends. It is @serial: a save uploads the table and the server reads it back.
+  feature ends.
 
   Not translated, and why: opening the projects from the Dashboards tiles (the tile gallery is
   Browse's subject) and the Share dialog the first save
@@ -49,7 +49,8 @@ Feature: A project saved with and without Data sync
     And choice input in "demog" project table in "Save project" dialog should have value "Clone"
     When user enters "BDD-Sync-Copy-{time}" into Name text input in "Save project" dialog
     And user unchecks Data sync switch in "demog" project table in "Save project" dialog
-    Then "Creation script" button in "demog" project table in "Save project" dialog should be hidden
+    Then Data sync switch in "demog" project table in "Save project" dialog should be unchecked
+    And "Creation script" button in "demog" project table in "Save project" dialog should be hidden
     When user clicks on OK button in "Save project" dialog
     Then the "Save project" dialog should close
     And 1 project named "BDD-Sync-Copy-{time}" should be on the server

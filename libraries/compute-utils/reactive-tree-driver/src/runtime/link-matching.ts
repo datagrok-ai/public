@@ -26,6 +26,8 @@ export type MatchInfo = {
   // needed to diff order beetween multiple steps of the same kind
   inputsUUID: Map<string, Array<string>>;
   outputsUUID: Map<string, Array<string>>;
+  // resolved after actions, so a changed action recreates the links referencing it
+  actionsUUID: Map<string, Map<string, string[]>>;
 }
 
 type NodeTraverseState = {
@@ -75,6 +77,7 @@ function matchLinkInstance(
     outputs: {},
     inputsUUID: new Map(),
     outputsUUID: new Map(),
+    actionsUUID: new Map(),
   };
   const currentIO: Record<string, MatchedNodePaths> = {};
   if (base && baseName)

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* u2: Stopped importing u2's stylesheets; u2 installs its stylesheet once per page
 * Shell: Added a ribbon Show navigation toggle that brings back the 148px nav rail when the pane is too narrow and the nav has folded away
 * Shell: The nav is now 180px wide and keeps that width across window resizes; double-clicking the sash resets it
 * All inputs, FuncCalls: Fixed the stacked layout of the A/B grids, where the two side sections lay on one another; the platform side's editors now fill their cells as in a form

@@ -1,21 +1,21 @@
-/* The R groups of the monomer in the editor: a row per R label the structure carries, each a choice
-   of the common caps (and of the cap its definition names when that is none of them), a line saying
-   what the chosen cap is, and a pencil that opens the four fields a library stores. */
+/* The R groups of the monomer in the editor: a chip per R label the structure carries — its cap, red while
+   it cannot be saved. A click opens the chip's menu: the common caps, each with what it is and the SMILES
+   Save writes, the cap its definition names when that is none of them, and Edit definition, which opens
+   the fields a library stores under the chips. */
 import {RGroup} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
-import {Control, Form, ChoiceInput, TextInput, ChoiceItem, signal, computed, each, span, div, iconButton,
-  Signal, ReadonlySignal, batch} from '@datagrok-libraries/u2';
+import {Control, Form, TextInput, Menu, Scope, signal, computed, each, span, div, iconButton, icon, on, effect,
+  Tooltip, Signal, ReadonlySignal, batch} from '@datagrok-libraries/u2';
 
-import {CapGroup, CapGroups, COMMON_CAP_GROUPS, CapInference, Canonicalize} from './cap-groups';
+import {CapGroups, COMMON_CAP_GROUPS, CapInference, Canonicalize} from './cap-groups';
 import {STANDRARD_R_GROUPS} from './const';
-
-/** The choice that stands for the cap the definition names when it is none of the common ones. */
-const OWN = '~own';
 
 export interface RGroupsEditorOptions {
   canonicalize?: Canonicalize;
   /** Whether a cap SMILES is valid; without it, any non-empty one is. */
   isValidSmiles?: (smiles: string) => boolean;
+  /** The user changed an R group — a pick or one of the definition's fields. */
+  onInput?: () => void;
 }
 
 type Field = 'smiles' | 'name' | 'alternateId';
@@ -35,12 +35,14 @@ export class RGroupsEditor extends Control {
   /** The first R group that cannot be saved and why, or null. */
   readonly problem: ReadonlySignal<string | null>;
 
+  /** The R group whose definition shows under the chips, or null. */
+  readonly open = signal<string | null>(null);
+
   private readonly _labels = signal<string[]>([]);
   private readonly _defs = new Map<string, Signal<RGroup>>();
-  /** Bumped by every monomer loaded: its rows are built afresh, while a structure edit keeps them. */
+  /** Bumped by every monomer loaded: its chips are built afresh, while a structure edit keeps them. */
   private _generation = 0;
-  private readonly _form: Form;
-  /** What is wrong with the structure's R groups themselves (an R label twice), over the rows. */
+  /** What is wrong with the structure's R groups themselves (an R label twice), over the chips. */
   private readonly _structure = span('', 'monomer-rgroups-structure');
 
   constructor(private readonly _options: RGroupsEditorOptions = {}) {
@@ -55,22 +57,31 @@ export class RGroupsEditor extends Control {
       }
       return null;
     });
-    this._form = this.runInScope(() => new Form({layout: 'normal'}));
-    const rows = div([], 'monomer-rgroups-rows');
-    this._form.addElement(rows);
     this._structure.dataset.u2Part = 'error';
     this._structure.hidden = true;
-    this.root.append(this._structure, this._form.root);
+    const chips = div([], 'monomer-rgroups-chips');
+    const definitions = div([], 'monomer-rgroups-definitions');
+    this.root.append(this._structure, chips, definitions);
     const empty = () =>
       span('Draw the monomer with its R groups (R1, R2, ...) to define their caps', 'monomer-rgroups-empty');
-    this.runInScope(() => each(rows, this._labels, (label) => `${this._generation}:${label}`,
-      (label) => this._row(label), {empty}));
+    const key = (label: string) => `${this._generation}:${label}`;
+    this.runInScope(() => {
+      each(chips, this._labels, key, (label) => this._chip(label), {empty});
+      each(definitions, this._labels, key, (label) => this._definition(label));
+    });
+    // an R group the structure lost takes its definition with it
+    this.effect(() => {
+      const open = this.open.value;
+      if (open !== null && !this._labels.value.includes(open))
+        this.open.value = null;
+    });
   }
 
   /** Shows the R groups of a monomer as its library defines them. */
   setDefinitions(rgroups: RGroup[]): void {
     batch(() => {
       this._generation++;
+      this.open.value = null;
       this._defs.clear();
       for (const rg of rgroups) {
         const label = CapGroups.labelOf(rg);
@@ -93,7 +104,7 @@ export class RGroupsEditor extends Control {
     });
   }
 
-  /** Says, over the rows, what is wrong with the R groups of the drawn structure; null clears it. */
+  /** Says, over the chips, what is wrong with the R groups of the drawn structure; null clears it. */
   setStructureProblem(message: string | null): void {
     this._structure.textContent = message ?? '';
     this._structure.hidden = message === null;
@@ -136,7 +147,7 @@ export class RGroupsEditor extends Control {
   private _problemOf(label: string, def: RGroup): string | null {
     const inferred = this._infer(def);
     if (inferred === null)
-      return `${label}: pick its cap group, or define it with the pencil`;
+      return `${label}: pick its cap group, or edit its definition`;
     if (inferred.known)
       return null;
     if (CapGroups.isPlaceholder(inferred.cap))
@@ -149,78 +160,131 @@ export class RGroupsEditor extends Control {
     return null;
   }
 
-  private _row(label: string): HTMLElement {
-    const def = this._defs.get(label)!;
+  /** What the chip and its menu say of a definition: the cap, what it is (its friendly name) and the SMILES
+   * Save writes. */
+  private _describe(label: string, def: RGroup): {cap: string, what: string, smiles: string} {
     const n = CapGroups.numberOf(label) ?? 1;
-    const inferred = computed(() => this._infer(def.value));
-    // the definition the "own" choice brings back: the latest one that named a cap outside the list
-    const own = signal<RGroup | null>(null);
-    const ownCap = computed(() => own.value === null ? null : this._infer(own.value)?.cap ?? null);
-    // a cap of its own that borrows a common name (H over other chemistry) must not read as that one
-    const ownLabel = (cap: CapGroup) => CapGroups.byName(cap.name) === null ? cap.name : `${cap.name} (custom)`;
-    const items = computed<ChoiceItem[]>(() => [
-      ...COMMON_CAP_GROUPS.map((c) => ({value: c.name, label: c.name})),
-      ...ownCap.value === null ? [] : [{value: OWN, label: ownLabel(ownCap.value)}],
-    ]);
-    const editing = signal(false);
+    const inference = this._infer(def);
+    const smiles = CapGroups.smilesOf(def);
+    if (inference === null) {
+      const raw = smiles || CapGroups.nameOf(def);
+      return {cap: raw ? '?' : '–', what: raw ? `not recognized: ${raw}` : 'not defined', smiles: ''};
+    }
+    return inference.known ?
+      {cap: inference.cap.name, what: inference.cap.description + (inference.note ? ` (${inference.note})` : ''),
+        smiles: CapGroups.numbered(inference.cap.smiles, n)} :
+      {cap: inference.cap.name, what: inference.note ?? 'as defined', smiles: smiles || 'no SMILES'};
+  }
 
-    const choice = new ChoiceInput({label, name: label, items: items.peek(), nullable: true,
-      tooltipText: `The cap group that closes ${label} when the monomer ends a chain`,
-      onChanged: (value) => {
-        if (value === OWN && own.peek() !== null)
-          def.value = own.peek()!;
-        else if (value === null)
-          def.value = CapGroups.undefinedRGroup(label);
-        else {
-          const cap = CapGroups.byName(value);
-          if (cap !== null)
-            def.value = CapGroups.rgroup(cap, n);
-        }
-      }});
-    // every effect of the row is its controls': they go with the row, not with the editor
-    choice.effect(() => {
-      const inference = inferred.value;
+  /** Why R`n` cannot be saved, without the label the chip already shows. */
+  private _problemHere(label: string, def: RGroup): string | null {
+    return this._problemOf(label, def)?.replace(`${label}: `, '') ?? null;
+  }
+
+  /** R1 and its cap, small: a click opens its menu, a second one closes it. */
+  private _chip(label: string): HTMLElement {
+    const def = this._defs.get(label)!;
+    // the definition the menu brings back: the latest one that named a cap outside the common ones
+    const own = signal<RGroup | null>(null);
+    effect(() => {
+      const inference = this._infer(def.value);
       if (inference !== null && !inference.known)
         own.value = def.peek();
     });
-    choice.effect(() => choice.setItems(items.value));
-    choice.follow(() => {
-      const inference = inferred.value;
-      return inference === null ? null : inference.known ? inference.cap.name : OWN;
+    const cap = span('', 'monomer-rgroup-chip-cap');
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'monomer-rgroup-chip';
+    chip.dataset.u2Item = label;
+    chip.setAttribute('aria-haspopup', 'menu');
+    chip.setAttribute('aria-expanded', 'false');
+    const caret = icon('chevron-down', {cls: 'monomer-rgroup-chip-caret'});
+    caret.setAttribute('aria-hidden', 'true');
+    // the space reads "R4 X" to a screen reader; a flex row does not render it
+    chip.append(span(label, 'monomer-rgroup-chip-label'), ' ', cap, caret);
+    const said = computed(() => ({...this._describe(label, def.value), problem: this._problemHere(label, def.value)}));
+    effect(() => {
+      const {cap: name, what, smiles, problem} = said.value;
+      cap.textContent = name;
+      chip.classList.toggle('monomer-rgroup-chip-invalid', problem !== null);
+      chip.setAttribute('aria-invalid', String(problem !== null));
+      chip.classList.toggle('monomer-rgroup-chip-editing', this.open.value === label);
+      // what the tooltip shows the pointer, said to the keyboard and a screen reader too
+      chip.setAttribute('aria-description', problem ?? (smiles ? `${what} · ${smiles}` : what));
     });
-    choice.addValidator(() => {
-      const problem = this._problemOf(label, def.peek())?.replace(`${label}: `, '') ?? null;
-      return problem === null ? null : problem.charAt(0).toUpperCase() + problem.slice(1);
-    });
-    choice.effect(() => {
-      def.value;
-      choice.revalidate();
-    });
+    Tooltip.bind(chip, () => `${label}: ${chip.getAttribute('aria-description') ?? ''}`);
 
-    const info = span('', 'monomer-rgroup-info');
-    info.dataset.u2Part = 'description';
-    choice.effect(() => {
-      const inference = inferred.value;
-      const smiles = CapGroups.smilesOf(def.value);
-      info.textContent = inference === null ? (smiles || CapGroups.nameOf(def.value) ?
-        `not recognized: ${smiles || CapGroups.nameOf(def.value)}` : 'not defined') :
-        inference.known ? `${inference.cap.description} · ${CapGroups.numbered(inference.cap.smiles, n)}` +
-          (inference.note ? ` (${inference.note})` : '') :
-          `${smiles || 'no SMILES'} · ${inference.note ?? 'as defined'}`;
-      info.title = info.textContent;
+    let menu: Menu | null = null;
+    const toggle = () => {
+      if (menu !== null) {
+        menu.close();
+        return;
+      }
+      const shown = this._menu(label, own.peek());
+      menu = shown;
+      shown.show({anchor: chip});
+      // aria-expanded follows the menu, and the watch goes with it, as a dropDownButton's does
+      const watch = new Scope(undefined, {label: 'rgroup-menu'});
+      watch.effect(() => {
+        const open = shown.isOpen.value;
+        chip.setAttribute('aria-expanded', String(open));
+        if (open)
+          return;
+        menu = null;
+        watch.dispose();
+      });
+    };
+    on(chip, 'click', toggle);
+    on(chip, 'keydown', (e) => {
+      if ((e as KeyboardEvent).key !== 'ArrowDown' || menu !== null)
+        return;
+      e.preventDefault();
+      toggle();
     });
-    const pencil = iconButton('pencil', () => {}, {tooltip: `Edit the ${label} definition`, toggle: editing});
-    choice.addOptions(info);
-    choice.addOptions(pencil);
+    return chip;
+  }
 
-    const fields = new Form({layout: 'normal'});
-    fields.root.classList.add('monomer-rgroup-fields');
-    // the fields show what Save writes — a cap read from the alternate ID alone shows its SMILES and name
-    // too — and an edit starts from that
+  /** The chip's menu, built on every open: the common caps with what each is and its SMILES, the current one
+   * checked; the cap the definition names when it is none of them; and the definition's fields. */
+  private _menu(label: string, own: RGroup | null): Menu {
+    const def = this._defs.get(label)!;
+    const n = CapGroups.numberOf(label) ?? 1;
+    const current = this._infer(def.peek());
+    const pick = (rg: RGroup) => {
+      def.value = rg;
+      this._options.onInput?.();
+    };
+    const menu = Menu.popup();
+    for (const cap of COMMON_CAP_GROUPS) {
+      menu.item(cap.name, () => pick(CapGroups.rgroup(cap, n)), {check: current?.known === true &&
+        current.cap.name === cap.name, detail: `${cap.description} · ${CapGroups.numbered(cap.smiles, n)}`});
+    }
+    const ownCap = own === null ? null : this._infer(own)?.cap ?? null;
+    if (own !== null && ownCap !== null) {
+      const {what, smiles} = this._describe(label, own);
+      // a cap of its own that borrows a common name (H over other chemistry) must not read as that one
+      menu.item(CapGroups.byName(ownCap.name) === null ? ownCap.name : `${ownCap.name} (custom)`, () => pick(own),
+        {check: current !== null && !current.known, detail: `${what} · ${smiles}`});
+    }
+    menu.separator();
+    const editing = this.open.peek() === label;
+    menu.item(editing ? 'Hide definition' : 'Edit definition…', () => this.open.value = editing ? null : label);
+    return menu;
+  }
+
+  /** The fields a library stores for R`n`, under the chips while its definition is open; they show what
+   * Save writes — a cap read from the alternate ID alone shows its SMILES and name too — and an edit
+   * starts from that. */
+  private _definition(label: string): HTMLElement {
+    const def = this._defs.get(label)!;
     const saved = computed(() => this._saved(label, def.value));
+    const fields = new Form({layout: 'normal'});
     const fieldInput = (caption: string, field: Field, read: (rg: RGroup) => string) => {
       const input = new TextInput({label: caption, name: `${label} ${caption}`, required: true, commitOn: 'change',
-        onChanged: (value) => def.value = {...saved.peek(), [FIELD_KEYS[field]]: value.trim()}});
+        onInput: (value) => {
+          def.value = {...saved.peek(), [FIELD_KEYS[field]]: value.trim()};
+          this._options.onInput?.();
+        }});
       input.follow(() => read(saved.value));
       return input;
     };
@@ -228,14 +292,14 @@ export class RGroupsEditor extends Control {
       fieldInput('Cap SMILES', 'smiles', CapGroups.smilesOf),
       fieldInput('Cap name', 'name', CapGroups.nameOf),
       fieldInput('Alternate ID', 'alternateId', CapGroups.alternateIdOf),
-      new TextInput({label: 'Label', name: `${label} Label`, value: label, readOnly: true}),
     ]);
-    fields.effect(() => fields.root.hidden = !editing.value);
-
-    const row = div([], 'monomer-rgroup-row');
-    row.dataset.u2Item = label;
-    this._form.add(choice, row);
-    row.append(fields.root);
-    return row;
+    const close = iconButton('times', () => this.open.value = null, {tooltip: `Close the ${label} definition`});
+    const head = div([span(`${label} definition`, 'monomer-rgroup-definition-title'), close],
+      'monomer-rgroup-definition-head');
+    const box = div([head, fields.root], 'monomer-rgroup-definition');
+    box.id = `${this.rootId}-${label}`;
+    box.dataset.u2Item = label;
+    fields.effect(() => box.hidden = this.open.value !== label);
+    return box;
   }
 }
