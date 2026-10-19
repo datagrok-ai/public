@@ -116,6 +116,8 @@ export interface ColumnCandidate {
   // confidence/unitsWarn are relative to the cluster canonical name and seed units
   confidence: MatchConfidence;
   unitsWarn: boolean;
+  // a raw table column without units, taken to be in the seed units
+  unitsAssumed?: boolean;
   auto: boolean;
   enabled: boolean;
 }
@@ -125,6 +127,8 @@ export interface ColumnTarget extends TargetBase {
   candidates: ColumnCandidate[];
   // enabled candidates' bindings; what statuses, signatures and builders consume
   bindings: ColumnBinding[];
+  // an enabled candidate is a raw table column without units
+  rawWithoutUnits?: boolean;
 }
 
 // index/split column names are deliberately excluded so toggles survive picker changes

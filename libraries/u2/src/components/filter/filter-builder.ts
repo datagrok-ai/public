@@ -332,7 +332,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     // a bound literal without ids (a spec's `value`, a fresh state) is adopted with ids first
     const root = FilterBuilder.withIds(value);
     if (root !== value) {
-      Input.system(() => this.value.value = root);
+      this.systemWrite(root);
       return;
     }
     const advanced = this._advanced();
@@ -400,7 +400,9 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
   private _mountRow(kind: RowKind, node: FilterNode): Row {
     const scope = new Scope();
     const disposer = () => scope.dispose();
-    this.own(disposer);
+    // the row outlives the render run that mounts it and takes its cleanup back when released —
+    // the scope's own `own`, not the control's, which would warn about the run
+    this.scope.own(disposer);
     scope.own(() => this.scope.disown(disposer));
     this._scopes.set(node.id, scope);
     const row = Scope.runWith(scope, () => kind === 'cond' ? new FilterRow(node as FilterCondition, this._host) :

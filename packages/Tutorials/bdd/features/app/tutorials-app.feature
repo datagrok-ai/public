@@ -28,6 +28,24 @@ Feature: The Tutorials application
     And "Scatter Plot" tutorial card should be visible
     And no errors should have been logged
 
+  Scenario: A running tutorial shows its current step in a bar
+    Given the "Scatter Plot" tutorial is not completed yet
+    And the Tutorials app is open
+    When user clicks on "Scatter Plot" tutorial card
+    Then tutorial bar should contain text "Open scatter plot"
+    And Tutorials panel should be absent
+    And the tutorial progress should be 1 of 10
+    When user clicks on all steps icon
+    Then Tutorials panel should be visible
+    And tutorial bar should be above Tutorials panel
+    When user clicks on all steps icon
+    Then Tutorials panel should be absent
+    And the tutorial step "Open scatter plot" should be current
+    When user closes the tutorial
+    Then tutorial bar should be absent
+    And Tutorials panel should be visible
+    And no errors should have been logged
+
   Scenario: A finished tutorial offers the next one of its track, which starts
     Given the "Scatter Plot" tutorial is not completed yet
     And the "Embedded Viewers" tutorial is not completed yet
@@ -44,9 +62,9 @@ Feature: The Tutorials application
     And user drags a selection box over the "view" area of scatter plot viewer
     And user presses Escape in scatter plot viewer
     Then the "Scatter Plot" tutorial should be completed
-    And Tutorials panel should contain text "Next \"Embedded Viewers\""
+    And tutorial bar should contain text "Next \"Embedded Viewers\""
     # the next is the first tutorial of the track not completed yet, after the finished one first
-    When user clicks on Start button in Tutorials panel
+    When user clicks on Start button in tutorial bar
     Then tutorial title should contain text "Embedded Viewers"
     And the tutorial progress should be 1 of 9
     And the tutorial step "Open scatter plot" should not be done yet

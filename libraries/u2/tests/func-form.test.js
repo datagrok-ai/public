@@ -172,10 +172,11 @@ form('units come from the units field or the options map, as InputBase.getOption
   f.dispose();
 });
 
-form('description becomes the tooltip on the input root', () => {
+form('description becomes the tooltip on the caption and the editor description', () => {
   const call = callOf(fp('dose', 'double', {description: 'Dose in milligrams'}));
   const f = mount(funcForm(call));
-  assert.equal(f.getInput('dose').root.title, 'Dose in milligrams');
+  assert.equal(f.getInput('dose').tooltipText, 'Dose in milligrams');
+  assert.equal(f.getInput('dose').root.querySelector('input').getAttribute('aria-description'), 'Dose in milligrams');
   f.dispose();
 });
 

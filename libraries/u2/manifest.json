@@ -128,7 +128,7 @@
       "tag": "u2-text-input",
       "category": "Inputs",
       "description": "Single-line text editor with validation.",
-      "usage": "With `search: true` this is the filter box; in a platform view the main filter belongs in the view ribbon (`appView({ribbon})`), not inside the content area.",
+      "usage": "With `search: true` this is the filter box; in a platform view the main filter belongs in the view ribbon (`appView({ribbon})`), not inside the content area. Every input: act on the user's edits with `onInput` (`onChanged` also hears writes from code); load another record with `reset(value)`, keep in step with a model with `follow(read)`; a status line or tab marker reads `error` (shown, touch-gated), Save reads `validity`.",
       "props": [
         {
           "name": "label",
@@ -564,6 +564,7 @@
       "tag": "u2-choice-input",
       "category": "Inputs",
       "description": "Single choice over a native select.",
+      "usage": "In a form a choice is as wide as its longest item; `width` sets it outright (a short code list), `fill: true` stretches it across the row. Act on the user's pick with `onInput` — `onChanged` also hears the program's writes. `items` may be a signal, and the value may be set before its item arrives.",
       "props": [
         {
           "name": "label",
@@ -792,6 +793,7 @@
       "tag": "u2-button",
       "category": "Actions",
       "description": "Push button; `on: {\"click\": \"cmd:<name>\"}` runs a context command.",
+      "usage": "In code, `button(text, onClick, {disabled: reason})` disables it and shows the reason (a string, or a signal of one) as its tooltip — say what is missing rather than leaving the user to guess; a dialog's OK takes the same through `okDisabled(reason)`.",
       "props": [
         {
           "name": "text",
@@ -1099,6 +1101,7 @@
       "tag": "u2-accordion",
       "category": "Containers",
       "description": "Independently expanding panes, one per spec child; the child node carries the pane title.",
+      "usage": "In code, `addPane(title, content, {hint, validity, persistKey})`: a folded pane says what it holds (`hint`, a signal or an element for a live summary), shows the problem inside it (`validity`) and remembers the user's open or close (`persistKey`; `pane.userSet` until then). `new Accordion({flush: true})` lines the titles and the content up with the captions of a form around it, the chevron at the header's end — the panes of a docked editor.",
       "props": [
         {
           "name": "visible",
@@ -1168,7 +1171,7 @@
       "tag": "u2-section",
       "category": "Containers",
       "description": "One collapsible titled section: a form-category-styled header whose hover chevron sits left of the caption; clicking the header folds the body.",
-      "usage": "For grouping form fields or page content under a heading. Inputs inside a u2-section child of a u2-form are adopted by the section, not the form — they do not join the form's label column. A managed pane set belongs in u2-accordion.",
+      "usage": "For grouping form fields or page content under a heading. Inputs inside a u2-section child of a u2-form are adopted by the section, not the form — they do not join the form's label column. A managed pane set belongs in u2-accordion. In code, a folded section says what it holds with `hint`, shows the problem inside it with `validity`, and remembers the user's open or close with `persistKey`; `form.add(input, section.body)` keeps an input in the form's label column.",
       "props": [
         {
           "name": "title",
@@ -1221,6 +1224,7 @@
       "tag": "u2-tabs",
       "category": "Containers",
       "description": "Tab strip with one tab per spec child; the child node carries the tab label.",
+      "usage": "In code, give a tab a `validity` signal and it is marked while that says something; a tab whose content is a Form answers with the form's shown error. A tab's content is placed on its first activation; `eager: true` places element contents at once, hidden, so a form on a tab not yet visited measures its captions (a `LabelColumn` across the tabs).",
       "props": [
         {
           "name": "orientation",
@@ -1322,7 +1326,7 @@
       "tag": "u2-form",
       "category": "Containers",
       "description": "Vertical input layout: spec children that are inputs join the form and share its label column, validity and Enter navigation; anything else renders as a plain row in place.",
-      "usage": "Labels share a left column and values stay left-aligned — never center form content. For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building.",
+      "usage": "Labels share a left column and values stay left-aligned — never center form content. For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building. Forms that must line up — the tabs of one editor — share a `LabelColumn` (`labelColumn` option); `labelWidth` fixes the column. The labels align before the first paint; `layoutNow()` for a test that reads the layout in the same task. `addColumns(inputs, {minWidth})` puts short fields two to a row, each editor filling its column, one to a row where two would go under `minWidth`. `quiet: true` drops the underlines at rest — for an inspector, not a form people fill in. Beside a Save, `statusLine(problem, otherwise)` says what Save will do or why it cannot yet.",
       "props": [
         {
           "name": "layout",
@@ -6238,6 +6242,21 @@
       "nameFrom": [
         "text",
         "aria"
+      ],
+      "parts": {},
+      "state": [
+        "text"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "status-line",
+      "noun": "status line",
+      "family": "display",
+      "role": "status",
+      "nameFrom": [
+        "text"
       ],
       "parts": {},
       "state": [

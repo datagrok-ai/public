@@ -19,6 +19,7 @@ category('Grid: Color Coding', () => {
     demog.col('sex')!.meta.colors.setCategorical({'M': 0xFF0000FF, 'F': 0xFF800080});
     demog.col('started')!.meta.colors.setLinear([DG.Color.white, DG.Color.red], {min: startedMin, max: startedMax});
     demog.col('height')!.meta.colors.setLinearAbsolute({58.31: '#73aff5', 97.98: '#ff5140', 137.65: '#ffa500', 177.32: '#50af28', 197.16: '#d9d9d9', 217: '#9467bd'}, {belowMinColor: '#000000', aboveMaxColor: '#ffffff'});
+    grid.col('sex')!.isTextColorCoded = true;
     grid.setOptions({colorCoding: 'None'});
     grid.setOptions({colorCoding: 'Auto'});
     testTags();
@@ -35,6 +36,24 @@ category('Grid: Color Coding', () => {
     testTags(' after layout');
   }, {owner: 'dkovalyov@datagrok.ai'});
 
+  test('colorCoding.text: switched off, the coloring leaves no text tag behind', async () => {
+    const df = grok.data.demo.demog(100);
+    const view = grok.shell.addTableView(df);
+    try {
+      const col = view.grid.col('age')!;
+      df.col('age')!.meta.colors.setLinear();
+      col.isTextColorCoded = true;
+      if (df.col('age')!.getTag(DG.Tags.ColorCodingText) !== 'true')
+        throw new Error('The text flag is not stored on the column');
+      col.isTextColorCoded = false;
+      if (Array.from(df.col('age')!.tags.keys()).includes(DG.Tags.ColorCodingText))
+        throw new Error(`The text flag is kept as "${df.col('age')!.getTag(DG.Tags.ColorCodingText)}" after it was switched off`);
+    }
+    finally {
+      view.close();
+    }
+  }, {owner: 'drizhinashvili@datagrok.ai'});
+
   function testTags(after: string = '') {
     const ageCol = demog.col('age')!;
     if (ageCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.CONDITIONAL ||
@@ -45,6 +64,8 @@ category('Grid: Color Coding', () => {
     if (sexCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.CATEGORICAL ||
       sexCol.getTag(DG.TAGS.COLOR_CODING_CATEGORICAL) !== '{"M":4278190335,"F":4286578816}')
       throw new Error('Categorical Color Coding error on Sex column' + after);
+    if (!v.grid.col('sex')!.isTextColorCoded)
+      throw new Error('The coloring of the Sex column is not on its text' + after);
 
     const startedCol = demog.col('started')!;
     if (startedCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.LINEAR ||

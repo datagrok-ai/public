@@ -56,12 +56,20 @@ export async function openContextMenuOf(page: Page, target: ElementRef, area?: s
     const {x, y, token} = await onReachable(page, target, (el, [a, cap]) => {
       const w = window as any;
       w.__bddMenuHit = undefined;
-      document.addEventListener('contextmenu', (e) => { w.__bddMenuHit = el.contains(e.target as Node); }, {capture: true, once: true});
+      w.__bddMenuReached = 'no contextmenu event';
+      document.addEventListener('contextmenu', (e) => {
+        const t = e.target as Element;
+        w.__bddMenuHit = el.contains(t);
+        w.__bddMenuReached = `${t.tagName?.toLowerCase()}${t.getAttribute?.('name') ? `[name="${t.getAttribute('name')}"]` : ''} ` +
+          `"${(t.textContent ?? '').trim().slice(0, 40)}"${w.__bddMenuHit ? '' : ', outside the target'}`;
+      }, {capture: true, once: true});
       return w.__bdd.menuPoint(el, a, cap);
     }, [area ?? null, MENU_SHOWN_MS()] as [string | null, number]);
     const menu = await rightClickArmed(page, x, y, token);
-    if (attempt === 3 || await page.evaluate(() => (window as any).__bddMenuHit !== false))
+    if (attempt === 3 || await page.evaluate(() => (window as any).__bddMenuHit !== false)) {
+      await page.evaluate((n) => (window as any).__bddMenuReached += ` (try ${n})`, attempt).catch(() => undefined);
       return menu;
+    }
     await closeContextMenu(page);
   }
 }
@@ -149,24 +157,35 @@ async function openGroup(page: Page, label: string, wanted: string | undefined, 
  * a toggle. */
 export async function pickMenuPath(page: Page, path: string): Promise<void> {
   const segments = path.split(SEP).filter((s) => s.length > 0);
+  // a context menu's own: what its right-click reached, when the item is not in it
+  const reached = async () => {
+    const r: string | undefined = await page.evaluate(() => {
+      const w = window as any;
+      const value = w.__bddMenuReached;
+      delete w.__bddMenuReached;
+      return value;
+    }).catch(() => undefined);
+    return r ? `; the right-click reached ${r}` : '';
+  };
   let group: Locator | undefined;
   for (let i = 0; i < segments.length; i++) {
     const last = i === segments.length - 1;
     if (!last) {
       group = await openGroup(page, segments[i], segments[i + 1], group).catch(async () => {
-        throw new Error(`no "${segments[i]}" in the menu; it shows: ${await visibleMenuLabels(page, group)}`);
+        throw new Error(`no "${segments[i]}" in the menu; it shows: ${await visibleMenuLabels(page, group)}${await reached()}`);
       });
       continue;
     }
     const label = menuLabelsMatching(page, segments[i], group).filter({visible: true}).first();
     await label.waitFor({state: 'visible', timeout: 3000}).catch(async () => {
-      throw new Error(`no "${segments[i]}" in the menu; it shows: ${await visibleMenuLabels(page, group)}`);
+      throw new Error(`no "${segments[i]}" in the menu; it shows: ${await visibleMenuLabels(page, group)}${await reached()}`);
     });
     const item = label.locator(MENU_ITEM);
     const leaf = await item.count() > 0 ? item : label;
     await guide.hop(page, leaf);
     await leaf.click();
   }
+  await page.evaluate(() => delete (window as any).__bddMenuReached).catch(() => undefined);
 }
 
 /** The labels under [path], opening every group of it first ("" reads the top level). */
