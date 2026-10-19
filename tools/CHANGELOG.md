@@ -2,6 +2,7 @@
 
 ## v.next
 
+* `grok s status`: server build, uptime, DB pool and HTTP connections from `/info/server`; for admins also the requests in flight (`?extended=true`)
 * `grok api`: Fixed double plurals in table accessors (`categorieses` → `categories`)
 * Upgraded Puppeteer to v25, which drops the vulnerable `extract-zip` and `basic-ftp` transitive dependencies; Node.js 22.12+ is now required
 * `grok add app --domain`, `grok api --ui`: scaffold against `@datagrok-libraries/ems`
