@@ -27,10 +27,9 @@ Feature: MPO scores a qualified-number property by the Score as option of its cu
   row whatever the source of the profile: a profile made from the table lists the properties in the
   table's order, one read from the server as Caco2, Solubility, Lipophilicity.
 
-  One scenario is a known failure, observed on localhost with Chem built from master on 2026-10-16.
-  With the default flat curve of a new profile, the row holding the qnum column's smallest exact value
-  scores 0 instead of 0.5 (comment on public#4291): the curve starts at the column's minimum, read with
-  the qualifier bits still in it, and the row's own value, read without them, falls just short of it.
+  The default flat curve of a new profile starts at the qnum column's minimum, so the row holding the
+  smallest exact value sits on the curve's edge and scores like the rest (it scored 0 before the fix of
+  the comment on public#4291).
 
   The profiles a scenario saves are deleted when it ends, together with any other profile the user
   saved meanwhile.
@@ -188,7 +187,6 @@ Feature: MPO scores a qualified-number property by the Score as option of its cu
     And "Score as" input in "Caco2" dialog should have value "Most favorable value"
     And no errors should have been logged
 
-  @known-failure:209
   Scenario: The row with the column's smallest exact value scores like the rest on a flat curve
     Given user opens a table "qnum min" with:
       | smiles   | IC50 |

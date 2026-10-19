@@ -20,25 +20,23 @@ import {clickOn, selectIn, shouldBe, shouldContainText} from '@datagrok-librarie
 import {columnsExactly} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {autostartsCompleted, contextPanelOpen, dialogCloses, openTableOf} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("MPO Score leaves the table as it was when the dialog is cancelled", () => {
   const session = feature(test, "features/mpo/score-dialog-cancel.feature", import.meta.url);
-  test("Cancel after picking a profile leaves the table's own columns only", {tag: ["@known-failure:32"]}, async ({browser}) => {
+  test("Cancel after picking a profile leaves the table's own columns only", async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(14, "Given user is logged in", () => loggedIn(page));
-    await session.step(15, "And the package autostarts have completed", () => autostartsCompleted(page));
-    await session.step(16, "And the shipped MPO profile \"ADME Test\" is on the server", () => shippedMpoProfile(page, "ADME Test"));
-    await session.step(17, "And user opens a table \"adme\" with:", () => openTableOf(page, "adme", [["smiles","Caco2","Lipophilicity","Solubility"],["c1ccccc1","-6","2","-4"],["CCO","-7","3","-5"],["c1ccncc1","-5","1","-3"]]), [["smiles","Caco2","Lipophilicity","Solubility"],["c1ccccc1","-6","2","-4"],["CCO","-7","3","-5"],["c1ccncc1","-5","1","-3"]]);
-    await knownFailure(async () => {
-      await session.step(25, "Given the context panel is open", () => contextPanelOpen(page));
-      await session.step(26, "When user picks \"Chem > Calculate > MPO Score...\" from the top menu", () => pickFromTopMenu(page, "Chem > Calculate > MPO Score..."));
-      await session.step(27, "Then \"MPO Score\" dialog should be visible", () => shouldBe(page, el("\"MPO Score\" dialog"), "visible"));
-      await session.step(28, "When user selects \"+ Create New...\" in Profile input in \"MPO Score\" dialog", () => selectIn(page, "+ Create New...", el("Profile input in \"MPO Score\" dialog")));
-      await session.step(29, "Then context panel should contain the text \"MPO Profile\"", () => shouldContainText(page, el("context panel"), "MPO Profile"));
-      await session.step(30, "When user clicks on CANCEL button in \"MPO Score\" dialog", () => clickOn(page, el("CANCEL button in \"MPO Score\" dialog")));
-      await session.step(31, "Then the \"MPO Score\" dialog should close", () => dialogCloses(page, "MPO Score"));
-      await session.step(32, "And the table should have the columns \"smiles, Caco2, Lipophilicity, Solubility\"", () => columnsExactly(page, "smiles, Caco2, Lipophilicity, Solubility"));
-    }, 32);
+    await session.step(13, "Given user is logged in", () => loggedIn(page));
+    await session.step(14, "And the package autostarts have completed", () => autostartsCompleted(page));
+    await session.step(15, "And the shipped MPO profile \"ADME Test\" is on the server", () => shippedMpoProfile(page, "ADME Test"));
+    await session.step(16, "And user opens a table \"adme\" with:", () => openTableOf(page, "adme", [["smiles","Caco2","Lipophilicity","Solubility"],["c1ccccc1","-6","2","-4"],["CCO","-7","3","-5"],["c1ccncc1","-5","1","-3"]]), [["smiles","Caco2","Lipophilicity","Solubility"],["c1ccccc1","-6","2","-4"],["CCO","-7","3","-5"],["c1ccncc1","-5","1","-3"]]);
+    await session.step(23, "Given the context panel is open", () => contextPanelOpen(page));
+    await session.step(24, "When user picks \"Chem > Calculate > MPO Score...\" from the top menu", () => pickFromTopMenu(page, "Chem > Calculate > MPO Score..."));
+    await session.step(25, "Then \"MPO Score\" dialog should be visible", () => shouldBe(page, el("\"MPO Score\" dialog"), "visible"));
+    await session.step(26, "When user selects \"+ Create New...\" in Profile input in \"MPO Score\" dialog", () => selectIn(page, "+ Create New...", el("Profile input in \"MPO Score\" dialog")));
+    await session.step(27, "Then context panel should contain the text \"MPO Profile\"", () => shouldContainText(page, el("context panel"), "MPO Profile"));
+    await session.step(28, "When user clicks on CANCEL button in \"MPO Score\" dialog", () => clickOn(page, el("CANCEL button in \"MPO Score\" dialog")));
+    await session.step(29, "Then the \"MPO Score\" dialog should close", () => dialogCloses(page, "MPO Score"));
+    await session.step(30, "And the table should have the columns \"smiles, Caco2, Lipophilicity, Solubility\"", () => columnsExactly(page, "smiles, Caco2, Lipophilicity, Solubility"));
   });
 });

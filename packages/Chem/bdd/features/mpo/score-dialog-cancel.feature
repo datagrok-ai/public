@@ -4,11 +4,10 @@ Feature: MPO Score leaves the table as it was when the dialog is cancelled
   turns from "MPO not calculated yet" to "MPO Profile" once the preview is computed. The preview waits
   150 ms for further edits, so the scenario cancels after the panel shows it, as a user would.
 
-  The scenario is a known failure, observed on localhost with Chem built from master on 2026-10-16,
-  filed as public#4323: the preview writes its "MPO <profile name>" column into the table while the
-  dialog is open, and the column stays after Cancel (and after Save, then Cancel). It needs a stored
-  profile on the stand, which the shipped ADME Test is; with no stored profile the dialog opens on
-  "+ Create New..." and previews nothing. Nothing is put on the server.
+  Until public#4323 was fixed, the preview's "MPO <profile name>" column stayed in the table after
+  Cancel. The scenario needs a stored profile on the stand, which the shipped ADME Test is; with no
+  stored profile the dialog opens on "+ Create New..." and previews nothing. Nothing is put on the
+  server.
 
   Background:
     Given user is logged in
@@ -20,7 +19,6 @@ Feature: MPO Score leaves the table as it was when the dialog is cancelled
       | CCO      | -7    | 3             | -5         |
       | c1ccncc1 | -5    | 1             | -3         |
 
-  @known-failure:32
   Scenario: Cancel after picking a profile leaves the table's own columns only
     Given the context panel is open
     When user picks "Chem > Calculate > MPO Score..." from the top menu
