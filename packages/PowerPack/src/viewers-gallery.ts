@@ -262,7 +262,9 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
   let i = 0;
   for (const v of list) {
     let isViewerEnabled = true;
-    if (v.package.name === 'Charts') {
+    const pkg = v.package;
+    const pkgName = pkg?.name ?? '';
+    if (pkgName === 'Charts') {
       const viewerTestData = CHARTS_VIEWERS_TEST_DATA[v.friendlyName];
       if (viewerTestData !== undefined) {
         if (!viewerTestData.checkFunc(table))
@@ -270,11 +272,11 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
       }
       else
         isViewerEnabled = false;
-    } else if ((v.package.name === 'Chem' || v.package.name === 'Bio' || v.package.name === 'Peptides') && BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName])
+    } else if ((pkgName === 'Chem' || pkgName === 'Bio' || pkgName === 'Peptides') && BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName])
       isViewerEnabled = BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].checkFunc(table);
-    else if ((v.package.name === 'Dendrogram' || v.package.name === 'PhyloTreeViewer') && TREE_VIEWERS_TEST_DATA[v.friendlyName])
+    else if ((pkgName === 'Dendrogram' || pkgName === 'PhyloTreeViewer') && TREE_VIEWERS_TEST_DATA[v.friendlyName])
       isViewerEnabled = TREE_VIEWERS_TEST_DATA[v.friendlyName].checkFunc(table);
-    else if (v.package.name === 'Curves' && CURVES_VIEWERS_TEST_DATA[v.friendlyName])
+    else if (pkgName === 'Curves' && CURVES_VIEWERS_TEST_DATA[v.friendlyName])
       isViewerEnabled = CURVES_VIEWERS_TEST_DATA[v.friendlyName].checkFunc(table);
     else {
       if (v.options['showInGallery'] === 'false')
@@ -289,12 +291,12 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
           BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].tooltip : TREE_VIEWERS_TEST_DATA[v.friendlyName] ?
           TREE_VIEWERS_TEST_DATA[v.friendlyName].tooltip : CURVES_VIEWERS_TEST_DATA[v.friendlyName] ?
           CURVES_VIEWERS_TEST_DATA[v.friendlyName].tooltip : 'Viewer cannot be created from viewer gallery',
-        icon: (v.options['icon'] != undefined) ? `${v.package.webRoot.endsWith('/') ?
-          v.package.webRoot : v.package.webRoot + '/'}${v.options['icon']}` : 'svg-project',
+        icon: (v.options['icon'] != undefined && pkg != null) ? `${pkg.webRoot.endsWith('/') ?
+          pkg.webRoot : pkg.webRoot + '/'}${v.options['icon']}` : 'svg-project',
         description: v.description,
         keywords: (v.options['keywords'] != null) ? v.options['keywords'] : '',
         group: '',
-        package: v.package.name,
+        package: pkgName,
         type: 'js-viewer',
       },
     });
@@ -413,8 +415,10 @@ function generateTags() {
   for (const i in jsViewers)
     list.push(jsViewers[i].group);
 
-  for (const i in jsViewers)
-    list.push(jsViewers[i].package);
+  for (const i in jsViewers) {
+    if (jsViewers[i].package)
+      list.push(jsViewers[i].package);
+  }
 
   const tags = [...new Set(list)];
 

@@ -65,6 +65,27 @@ category('top menu activity cliffs', async () => {
     }
   });
 
+  test('activityCliffs.viewReopenedDuringRun', async () => {
+    const df = await readDataframe('tests/activity_cliffs_test.csv');
+    await grok.data.detectSemanticTypes(df);
+    const tv = grok.shell.addTableView(df);
+    const encodingFunc = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
+    try {
+      const run = PackageFunctions.activityCliffs(df, df.col('smiles')!, df.col('Activity')!, 80,
+        DimReductionMethods.UMAP, BitArrayMetricsNames.Tanimoto, encodingFunc, undefined, undefined, true);
+      tv.close();
+      const reopened = df.clone();
+      reopened.name = df.name;
+      const reopenedView = grok.shell.addTableView(reopened);
+      await run;
+      expect(grok.shell.tv.dataFrame === df, true);
+      expect(Array.from(reopenedView.viewers).some((v) => v.type === DG.VIEWER.SCATTER_PLOT), false);
+      expect(Array.from(grok.shell.tv.viewers).some((v) => v.type === DG.VIEWER.SCATTER_PLOT), true);
+    } finally {
+      grok.shell.closeAll();
+    }
+  });
+
   test('activityCliffs_layout', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/spgi-100.csv'), 'Structure', 'Chemical Space X', 80, 1);
   });

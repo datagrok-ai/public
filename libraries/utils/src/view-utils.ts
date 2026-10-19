@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 export function checkCurrentView(dataFrame: DG.DataFrame): void {
   if (grok.shell.tv?.dataFrame === dataFrame)
     return;
-  const tv = grok.shell.tableView(dataFrame.name);
+  const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame === dataFrame);
   if (tv)
     grok.shell.v = tv;
   else

@@ -21,6 +21,7 @@ export async function bad(): Promise<void> {
   testdbDb.samples.query().orderBy('nope');
   testdbDb.samples.query().select('nope');
   testdbDb.samples.query().expand('details:nope');
+  testdbDb.sampleEvents.query().orderBy('sample_id.name');
   const slim = await testdbDb.samples.query().select('name').top(1);
   const notSelected: number | undefined = slim[0].count;
   const [insR] = await testdbDb.transaction([

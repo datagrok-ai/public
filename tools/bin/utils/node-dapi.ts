@@ -1073,9 +1073,14 @@ export class NodeDapi {
 
   internal(route: string): InternalDataSource { return new InternalDataSource(this.client, route); }
 
+  /** `/info/server`; [extended] adds the in-flight requests per endpoint (admins only). */
+  async serverStatus(extended: boolean = false): Promise<any> {
+    const raw = await this.client.get(extended ? '/info/server?extended=true' : '/info/server');
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+  }
+
   async serverInfo(): Promise<{version: string; commit?: string}> {
-    const raw = await this.client.get('/info/server');
-    const info = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const info = await this.serverStatus();
     return {version: info?.Version ?? '', commit: info?.Commit};
   }
 
