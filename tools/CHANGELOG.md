@@ -2,6 +2,7 @@
 
 ## v.next
 
+* `grok api`: Fixed double plurals in table accessors (`categorieses` → `categories`)
 * Upgraded Puppeteer to v25, which drops the vulnerable `extract-zip` and `basic-ftp` transitive dependencies; Node.js 22.12+ is now required
 * `grok add app --domain`, `grok api --ui`: scaffold against `@datagrok-libraries/ems`
 * GROK-20884: Added `grok s o errors get <signature|problem>`: each occurrence of an error with its time, user, function and session, so an error incident leads to its calls
