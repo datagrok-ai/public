@@ -165,7 +165,7 @@ export function applyDesirabilityPatch(prop: PropertyDesirability, patch: Partia
   Object.assign(prop, patch);
   if (!isNumerical(prop))
     return;
-  if (prop.mode === DesirabilityMode.Freeform && 'line' in patch)
+  if (prop.mode === DesirabilityMode.Freeform && 'line' in patch && prop.freeformLine)
     prop.freeformLine = prop.line;
   refreshDesirabilityLine(prop);
 }

@@ -318,6 +318,14 @@ export class DesirabilityModeDialog {
         contentPanel.append(sectionHeader('VALUES WITH < OR >'), this.buildQualifierInput(this.prop));
     };
 
+    const replaceLive = (next: PropertyDesirability) => {
+      for (const key of Object.keys(live)) {
+        if (!(key in next))
+          Reflect.deleteProperty(live, key);
+      }
+      this.onUpdate(next);
+    };
+
     buildContent();
 
     dialog.add(contentPanel);
@@ -327,18 +335,14 @@ export class DesirabilityModeDialog {
       if (this.prop.functionType !== original.functionType)
         this.onTypeChanged?.(this.prop);
       else
-        this.onUpdate(this.prop);
+        replaceLive(this.prop);
       dialog.close();
     });
 
     dialog.onCancel(() => {
       dispose();
-      for (const key of Object.keys(live)) {
-        if (!(key in original))
-          Reflect.deleteProperty(live, key);
-      }
       this.prop = original;
-      this.onUpdate(original);
+      replaceLive(original);
       dialog.close();
     });
 
