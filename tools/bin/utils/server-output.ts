@@ -1,5 +1,5 @@
 /// Docs: [Grok Dapi](/docs/plans/grok-dapi/)
-import type {NodeApiError, BatchResponse} from './node-dapi';
+import type {NodeApiError, BatchResponse, CapturedLog} from './node-dapi';
 
 export type OutputFormat = 'table' | 'json' | 'csv' | 'quiet';
 
@@ -144,6 +144,31 @@ export function printError(err: any, opts: {verbose?: boolean} = {}): void {
   printErrorDetails(apiErr?.body);
   if (opts.verbose && apiErr?.stackTrace)
     process.stderr.write(apiErr.stackTrace + '\n');
+}
+
+/**
+ * The log a request brought back (`--log`, `functions run --debug`): to stderr, so the result on
+ * stdout stays a document; one JSON object per message under `--output json`, as `grok s o` reads them.
+ */
+export function printCapturedLog(request: string, captured: CapturedLog): void {
+  const messages = captured.log ?? [];
+  if (!messages.length && !captured.dropped)
+    return;
+  if (errorFormat === 'json') {
+    for (const m of messages)
+      process.stderr.write(JSON.stringify({request, ...m}) + '\n');
+    return;
+  }
+  const session = captured.sessionId ? ` · grok s o timeline --session ${captured.sessionId}` : '';
+  process.stderr.write(`── ${request}: ${messages.length} message${messages.length === 1 ? '' : 's'}` +
+    `${captured.dropped ? ` (${captured.dropped} more dropped)` : ''}${session}\n`);
+  for (const m of messages) {
+    const time = typeof m.time === 'string' ? m.time.substring(11, 23) : '';
+    const tags = [m.flag, m.source].filter(Boolean).join(' ');
+    process.stderr.write(`${time} ${String(m.level ?? '').toUpperCase().padEnd(7)} ${tags ? `[${tags}] ` : ''}${m.message ?? ''}\n`);
+    if (m.stackTrace)
+      process.stderr.write(String(m.stackTrace).replace(/^/gm, '    ') + '\n');
+  }
 }
 
 /** Structured fields of a domain error envelope: per-row validation errors, manifest errors, a plan awaiting confirmation. */

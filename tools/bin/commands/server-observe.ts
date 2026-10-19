@@ -54,7 +54,11 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
                                        to logger set --remove
 
 Durations are 30m (minutes), 24h, 7d, 2w; times are ISO 8601 (UTC without an offset) or
-relative, written with = (--from=-2h).`;
+relative, written with = (--from=-2h).
+
+Any grok s command takes --log [<spec>]: logger settings for its own requests (verbose, standard,
+levels, debug flags or all, comma-separated), and what they logged printed to stderr; functions run
+--debug returns a debug call's log the same way.`;
 
 const UNIT_MS: Record<string, number> = {m: 60000, h: 3600000, d: 86400000, w: 604800000};
 

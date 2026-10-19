@@ -1,5 +1,6 @@
 import {NodeApiClient} from './node-dapi';
 import {getServerCredentials} from './keypair';
+import {printCapturedLog} from './server-output';
 
 /**
  * `--admin` asks the server for an admin session, which lifts the permission filter for this run:
@@ -8,11 +9,18 @@ import {getServerCredentials} from './keypair';
  * flag into the token, and a dev key mints a fresh session per invocation, so it cannot outlive
  * the command or reach another session.
  */
-export async function createClient(hostArg?: string, admin: boolean = false): Promise<NodeApiClient> {
+/** `--log` alone is `verbose`. */
+export function logSpecOf(argv: any): string | undefined {
+  return argv.log === undefined || argv.log === false ? undefined : argv.log === true ? 'verbose' : String(argv.log);
+}
+
+export async function createClient(hostArg?: string, admin: boolean = false, logSpec?: string): Promise<NodeApiClient> {
   // Resolved from the alias the caller named, not from its URL: two aliases can point at the
   // same server, and only this side knows which one was asked for.
   const cred = getServerCredentials(hostArg ?? '');
   const client = await NodeApiClient.login(cred.url, cred.key ?? '', cred.privateKey);
+  client.logSpec = logSpec;
+  client.onLog = printCapturedLog;
   if (!admin)
     return client;
   const token = (await client.post('/users/sessions/current/admin'))?.token;

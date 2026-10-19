@@ -2,7 +2,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {NodeDapi, BatchRequest, BatchOperation, InternalDataSource, PackageOpResult, mapPositionalParams} from '../utils/node-dapi';
-import {createClient} from '../utils/server-client';
+import {createClient, logSpecOf} from '../utils/server-client';
 import {printOutput, printBatchOutput, printError, setOutputFormat, OutputFormat} from '../utils/server-output';
 import {handleMigrate} from './server-migrate';
 import {handleDomains} from './server-domains';
@@ -42,8 +42,9 @@ export async function server(argv: any): Promise<boolean> {
   }
 
   let client;
+  const logSpec = logSpecOf(argv);
   try {
-    client = await createClient(host, !!argv.admin);
+    client = await createClient(host, !!argv.admin, logSpec);
   } catch (err: any) {
     // a bad alias, URL or key is not a usage error: no help dump, just the reason
     printError(err);
@@ -51,6 +52,12 @@ export async function server(argv: any): Promise<boolean> {
     return true;
   }
   const dapi = new NodeDapi(client);
+  let logged = false;
+  const printLog = client.onLog!;
+  client.onLog = (request, captured) => {
+    logged = true;
+    printLog(request, captured);
+  };
 
   try {
     // await each handler so a rejection lands in the catch below instead of
@@ -161,6 +168,10 @@ export async function server(argv: any): Promise<boolean> {
     printError(err, {verbose: !!argv.verbose});
     process.exitCode = 1;
     return true;
+  }
+  finally {
+    if (logSpec && !logged && client.requests && !process.exitCode)
+      process.stderr.write(`--log: ${client.baseUrl} returned no log; it predates the datlas-log header\n`);
   }
 }
 
@@ -601,9 +612,11 @@ async function handleDescribe(dapi: NodeDapi, entityType: string | undefined, ou
 }
 
 async function handleFuncRun(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
-  let funcName = rest[0];
+  // `--debug` is not a declared boolean (grok publish reads it too), so `--debug 'Pkg:f()'` hands it the call.
+  let funcName = rest[0] ?? (typeof argv.debug === 'string' ? argv.debug : undefined);
+  const debug = argv.debug !== undefined && argv.debug !== false && argv.debug !== 'false';
   if (!funcName) {
-    printError(new Error('Usage: grok s functions run <Name:function(args...)> [--json params.json]'));
+    printError(new Error('Usage: grok s functions run <Name:function(args...)> [--json params.json] [--debug]'));
     return false;
   }
 
@@ -625,7 +638,7 @@ async function handleFuncRun(dapi: NodeDapi, rest: string[], argv: any, output: 
       params = mapPositionalParams(params, (await dapi.functions.find(funcName))?.parameterInfos, funcName);
   }
 
-  const result = await dapi.functions.run(funcName, params);
+  const result = await dapi.functions.run(funcName, params, debug);
   printOutput(result, output);
   return true;
 }
@@ -1031,6 +1044,14 @@ Options:
   --offset <n>          Start offset (default: 0)
   -r, --recursive       Recursive (for files list)
   --verbose             Print the stack of a runtime failure, not just its message
+  --log [<spec>]        Log every request of this command at <spec> and print what the server
+                        logged to stderr: verbose (default), standard, levels (error, warning,
+                        info, debug, audit, usage) and debug flags (db, storage, credentials, ...,
+                        or all), comma-separated. The settings apply to the request on the server
+                        too, so it prints and saves at them (grok s o timeline). Only that
+                        request's settings change; no permission is needed
+  --debug               functions run: a debug call; the server returns its log (a query's
+                        stages, as the query debugger shows them) to stderr, like --log
   --json <file>         Read a JSON body from a file (save, functions run, batch, raw)
   --data '<json>'       Inline JSON body for raw
   -O, --output-file     Write table download to a file instead of stdout
@@ -1061,6 +1082,8 @@ Examples:
   grok s connections test --json conn.json
   grok s functions run 'Chem:smilesToMw("ccc")'
   grok s functions run Chem:test --json params.json
+  grok s functions run 'MyPkg:MyQuery()' --debug                   # the query's own log
+  grok s functions run UsageAnalysis:Groups --log verbose,db       # and every SQL statement it ran
   grok s functions list --type script --language python --limit 20
   grok s functions list --package Chem --type query
   grok s functions list --package PowerPack --type package --filter 'name contains "grid"'
