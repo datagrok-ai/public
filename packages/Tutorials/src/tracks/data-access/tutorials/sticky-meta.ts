@@ -243,50 +243,50 @@ export class StickyMetaTutorial extends Tutorial {
     );
 
     // --- Step 11: Fill in sticky meta property ---
+    // the context panel rebuilds its accordion after the click, so the pane, the input and the button
+    // are looked up in the live panel every time instead of being kept
     grok.shell.windows.showContextPanel = true;
-    const stickyPane = await waitForElement<HTMLElement>(
-      () => document.querySelector<HTMLElement>('.d4-accordion-pane[d4-title="Sticky meta"]'),
-      'the Sticky meta pane');
-    const header = stickyPane.querySelector('.d4-accordion-pane-header') as HTMLElement;
-    if (header && !header.classList.contains('expanded')) header.click();
-
-    const schemaSection = await waitForElement<HTMLElement>(
-      () => Array.from(stickyPane.querySelectorAll<HTMLElement>('.grok-sticky-meta-schema-header'))
-        .find(textIs(SCHEMA_NAME)), `the "${SCHEMA_NAME}" section`);
-    schemaSection.scrollIntoView({block: 'start'});
+    const stickyPanes = () => Array.from(document.querySelectorAll<HTMLElement>(
+      '.d4-accordion-pane[d4-title="Sticky meta"]'));
+    const schemaSection = () => stickyPanes()
+      .map((pane) => Array.from(pane.querySelectorAll<HTMLElement>('.grok-sticky-meta-schema-header'))
+        .find(textIs(SCHEMA_NAME)))
+      .find((section) => section != null) ?? null;
+    await waitForElement<HTMLElement>(() => {
+      for (const pane of stickyPanes()) {
+        const header = pane.querySelector<HTMLElement>('.d4-accordion-pane-header');
+        if (header && !header.classList.contains('expanded')) header.click();
+      }
+      return schemaSection();
+    }, `the "${SCHEMA_NAME}" section`);
+    schemaSection()?.scrollIntoView({block: 'start'});
 
     // by its label, not by a generated input name: the property is named by the learner
-    const projectPropertyInput = await waitForElement<HTMLInputElement>(
-      () => Array.from(schemaSection.parentElement!.querySelectorAll('.ui-input-root'))
-        .find((root) => textIs(PROPERTY_NAME)(root.querySelector('label.ui-label span')!))
-        ?.querySelector('input'), `the "${PROPERTY_NAME}" input`);
+    const projectPropertyInput = () => Array.from(
+      schemaSection()?.parentElement?.querySelectorAll('.ui-input-root') ?? [])
+      .find((root) => textIs(PROPERTY_NAME)(root.querySelector('label.ui-label span')!))
+      ?.querySelector('input') ?? null;
+    await waitForElement<HTMLInputElement>(projectPropertyInput, `the "${PROPERTY_NAME}" input`);
     await this.action(
       `Set "${PROPERTY_NAME}" to "${PROPERTY_VALUE}"`,
-      new Promise<void>((resolve) => {
-        const listener = () => {
-          if (projectPropertyInput.value.trim().toLowerCase() === PROPERTY_VALUE.toLowerCase()) {
-            projectPropertyInput.removeEventListener('input', listener);
-            resolve();
-          }
-        };
-        projectPropertyInput.addEventListener('input', listener);
-      }),
+      interval(200).pipe(filter(() =>
+        projectPropertyInput()?.value.trim().toLowerCase() === PROPERTY_VALUE.toLowerCase())),
       [schemaSection, projectPropertyInput],
       `In the Context Panel, under <b>Sticky meta → ${SCHEMA_NAME}</b>, ` +
         `type <b>${PROPERTY_VALUE}</b> into the <b>${PROPERTY_NAME}</b> field.`,
-      () => Tutorial.setInputValue(projectPropertyInput, PROPERTY_VALUE),
+      () => Tutorial.setInputValue(projectPropertyInput()!, PROPERTY_VALUE),
     );
 
     // --- Step 12: Save sticky meta ---
     const schemaSaveButton = () => {
-      for (let el = schemaSection.nextElementSibling; el != null; el = el.nextElementSibling) {
+      for (let el = schemaSection()?.nextElementSibling; el != null; el = el.nextElementSibling) {
         const btn = el.matches('button[name^="button-Save"]') ? el : el.querySelector('button[name^="button-Save"]');
         if (btn != null)
           return btn as HTMLButtonElement;
       }
       return null;
     };
-    const saveBtn = await waitForElement<HTMLButtonElement>(() => {
+    await waitForElement<HTMLButtonElement>(() => {
       const btn = schemaSaveButton();
       return btn != null && !btn.classList.contains('disabled') && btn.getAttribute('aria-disabled') !== 'true' ?
         btn : null;
@@ -294,11 +294,12 @@ export class StickyMetaTutorial extends Tutorial {
 
     await this.action(
       `Click SAVE under "${SCHEMA_NAME}"`,
-      new Promise<void>((resolve) => saveBtn.addEventListener('click', () => resolve(), {once: true})),
-      saveBtn,
+      fromEvent<MouseEvent>(document, 'click', {capture: true})
+        .pipe(filter((e) => schemaSaveButton()?.contains(e.target as Node) === true)),
+      schemaSaveButton,
       `Click the <b>SAVE</b> button right below the <b>${PROPERTY_NAME}</b> field. ` +
         'Each schema in the pane has its own SAVE button.',
-      () => saveBtn.click(),
+      () => schemaSaveButton()!.click(),
     );
 
     await this.action(
