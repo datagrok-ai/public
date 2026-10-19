@@ -3,7 +3,7 @@ import {AnnotationLinkKind, LinkSpecString} from '../data/common-types';
 import {
   PipelineCheckConfiguration, PipelineLinkConfiguration, PipelineLinkConfigurationBase,
   PipelineLinkConfigurationInput, PipelineMetaConfiguration, PipelineRuleConfiguration, PipelineValidatorConfiguration,
-  RuleEffect, RuleExpr, RuleMessageAction, RuleSource, SourceKind, SourceSpec,
+  RuleEffect, RuleExpr, RuleMessageAction, RuleSource,
 } from './PipelineConfiguration';
 import {CALL, CheckOptions, expandChecks, TABLE, TARGET, VALUE, validateCheckOptions} from './checks';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
@@ -15,6 +15,7 @@ import {
 import {descriptionOutputs} from '../runtime/StateTreeNodes';
 import {indexFromEnd} from '../utils';
 import {ruleTargets, usedAliases} from '../runtime/rule-expressions';
+import {sourceReads} from '../runtime/rule-sources';
 import {DriverLogger, reportError} from '../data/Logger';
 
 const metaEffects = new Set(['hide', 'show', 'items', 'meta']);
@@ -232,23 +233,6 @@ function effectExpressions(effect: RuleEffect): RuleExpr[] {
 const offeredActions = (effect: RuleEffect): RuleMessageAction[] =>
   (effect as {actions?: RuleMessageAction[]}).actions ?? [];
 
-// typed per kind, so a new RuleSource kind fails the build until it says which inputs it reads
-const sourceInputs: {[K in SourceKind]: (spec: SourceSpec<K>) => string[]} = {
-  validators: (spec) => [spec.input],
-  choices: (spec) => [spec.input],
-  js: (spec) => spec.args,
-  func: (spec) => Object.values(spec.args ?? {}).flatMap((arg) => usedAliases(arg)),
-  query: (spec) => Object.values(spec.args ?? {}).flatMap((arg) => usedAliases(arg)),
-  file: () => [],
-  table: () => [],
-};
-
-function sourceReads(source: RuleSource): string[] {
-  // expandRule has checked the source, so it has exactly one known kind
-  const kind = Object.keys(source)[0] as SourceKind;
-  return (sourceInputs[kind] as (spec: unknown) => string[])((source as Record<SourceKind, unknown>)[kind]);
-}
-
 function ruleLink(
   family: Family, link: Omit<PipelineLinkConfigurationBase<LinkSpecString>, 'actions'>,
   rule: PipelineRuleConfiguration<LinkSpecString>, actions: string[],
@@ -300,8 +284,8 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       throw new Error(`Rule ${id}: actions alias ${alias} collides with an io alias`);
   }
   const from = [...normalizeLinkSpec(rule.from)];
-  const isAlias = (name: string) => fromAliases.has(name) || Object.hasOwn(sources ?? {}, name);
-  const checkExpr = (expr: RuleExpr | undefined) => {
+  const isRuleAlias = (name: string) => fromAliases.has(name) || Object.hasOwn(sources ?? {}, name);
+  const checkExpr = (expr: RuleExpr | undefined, isAlias = isRuleAlias) => {
     const fields = new Set<string>();
     for (const alias of usedAliases(expr, fields)) {
       if (driverValues.has(alias)) {
@@ -320,24 +304,43 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       }
     }
   };
-  const checkArgs = (alias: string, args: unknown) => {
+  // a source reads inputs and the sources declared before it, which resolve first
+  const sourceAliases = Object.keys(sources ?? {});
+  const declared = new Set<string>();
+  const isReadable = (name: string) => fromAliases.has(name) || declared.has(name);
+  const checkOrder = (alias: string, source: RuleSource) => {
+    for (const name of sourceReads(source)) {
+      if (name === alias)
+        throw new Error(`Rule ${id}: source ${alias} reads itself`);
+      if (sourceAliases.indexOf(name) > sourceAliases.indexOf(alias))
+        throw new Error(`Rule ${id}: source ${alias} reads ${name}, which is declared after it`);
+    }
+  };
+  const checkArgs = (alias: string, source: RuleSource, args: unknown) => {
     if (args == null)
       return;
     if (typeof args !== 'object' || Array.isArray(args))
       throw new Error(`Rule ${id}: source ${alias} args must map parameters to expressions`);
-    Object.values(args).forEach(checkExpr);
+    checkOrder(alias, source);
+    Object.values(args).forEach((arg) => checkExpr(arg, isReadable));
   };
   const expandedSources: Record<string, RuleSource> = {};
   const callQueries = new Map<string, string>();
   for (const [alias, source] of Object.entries(sources ?? {})) {
+    declared.add(alias);
     if (alias.startsWith('$'))
       throw new Error(`Rule ${id}: source alias ${alias} is reserved for the driver`);
+    // JS orders integer keys first, which would break the declaration order
+    if (/^(0|[1-9]\d*)$/.test(alias))
+      throw new Error(`Rule ${id}: source alias ${alias} must not be a number`);
     if (fromAliases.has(alias))
       throw new Error(`Rule ${id}: source alias ${alias} collides with an input alias`);
     if ('js' in source) {
       const {args, fn} = source.js;
-      if (!Array.isArray(args) || args.some((arg) => !fromAliases.has(arg)))
-        throw new Error(`Rule ${id}: source ${alias} args must be input aliases`);
+      if (Array.isArray(args))
+        checkOrder(alias, source);
+      if (!Array.isArray(args) || args.some((arg) => !isReadable(arg)))
+        throw new Error(`Rule ${id}: source ${alias} args must be input or earlier source aliases`);
       if (typeof fn !== 'function')
         throw new Error(`Rule ${id}: source ${alias} fn must be a function`);
       expandedSources[alias] = source;
@@ -347,7 +350,7 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       const {name, args} = source.func;
       if (typeof name !== 'string' || !name)
         throw new Error(`Rule ${id}: source ${alias} name must be a function name`);
-      checkArgs(alias, args);
+      checkArgs(alias, source, args);
       expandedSources[alias] = source;
       continue;
     }
@@ -369,7 +372,7 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       const {connection, sql, args} = source.query;
       if (typeof connection !== 'string' || !connection || typeof sql !== 'string' || !sql)
         throw new Error(`Rule ${id}: source ${alias} needs a connection and sql`);
-      checkArgs(alias, args);
+      checkArgs(alias, source, args);
       expandedSources[alias] = source;
       continue;
     }
@@ -498,7 +501,7 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
         visibilityTargets.add(key);
       }
     }
-    effectExpressions(effect).forEach(checkExpr);
+    effectExpressions(effect).forEach((expr) => checkExpr(expr));
     checkExpr(effect.when);
   }
   for (const [kind, aliases] of [['output', toAliases], ['actions', actionAliases]] as const) {
@@ -518,9 +521,13 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
     const read = new Set([...effectExpressions(effect), effect.when, when].flatMap((expr) => usedAliases(expr)));
     if (effect.effect === 'verdicts')
       read.add(effect.source);
-    const used = Object.keys(expandedSources).filter((alias) => read.has(alias));
-    for (const alias of used)
-      sourceReads(expandedSources[alias]).forEach((name) => read.add(name));
+    const aliases = Object.keys(expandedSources);
+    // a source reads only earlier ones, so one pass from the last collects the sources read through others
+    for (const alias of [...aliases].reverse()) {
+      if (read.has(alias))
+        sourceReads(expandedSources[alias]).forEach((name) => read.add(name));
+    }
+    const used = aliases.filter((alias) => read.has(alias));
     ruleTargets(effect.additionalTriggers ?? []).forEach((alias) => read.add(alias));
     return {
       inputs: [...fromAliases.keys()].filter((alias) => read.has(alias)),

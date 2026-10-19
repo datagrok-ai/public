@@ -205,18 +205,35 @@ function resolveFile(path: string) {
   return /^[a-z][a-z0-9+.-]*:\/\//i.test(path) ? grok.data.loadTable(path) : grok.data.files.openTable(path);
 }
 
-// a source that reads no input is loaded once per link
-function isConstant(source: RuleSource) {
+// typed per kind, so a new RuleSource kind fails the build until it says which names it reads
+const sourceNames: {[K in SourceKind]: (spec: SourceSpec<K>) => string[]} = {
+  validators: (spec) => [spec.input],
+  choices: (spec) => [spec.input],
+  js: (spec) => spec.args,
+  func: (spec) => Object.values(spec.args ?? {}).flatMap((arg) => usedAliases(arg)),
+  query: (spec) => Object.values(spec.args ?? {}).flatMap((arg) => usedAliases(arg)),
+  file: () => [],
+  table: () => [],
+};
+
+/** The inputs, driver values and earlier sources a source reads. */
+export function sourceReads(source: RuleSource): string[] {
+  // expandRule has checked the source, so it has exactly one known kind
+  const kind = Object.keys(source)[0] as SourceKind;
+  return (sourceNames[kind] as (spec: unknown) => string[])((source as Record<SourceKind, unknown>)[kind]);
+}
+
+// a source that reads no input, directly or through the sources it reads, is loaded once per link
+function isConstant(source: RuleSource, constants: Set<string>) {
   if ('file' in source || 'table' in source)
     return true;
   if (!('func' in source) && !('query' in source))
     return false;
-  const args = 'func' in source ? source.func.args : source.query.args;
-  return Object.values(args ?? {}).every((expr) => !usedAliases(expr).length);
+  return sourceReads(source).every((name) => constants.has(name));
 }
 
-function resolveJs(controller: IControllerBase, spec: JsSource) {
-  return spec.fn(...spec.args.map((alias) => controller.getFirst(alias)));
+function resolveJs(controller: IControllerBase, spec: JsSource, ctx: RuleContext) {
+  return spec.fn(...spec.args.map((alias) => Object.hasOwn(ctx, alias) ? ctx[alias] : controller.getFirst(alias)));
 }
 
 function evaluateArgs(args: Record<string, RuleExpr> | undefined, ctx: RuleContext) {
@@ -257,7 +274,7 @@ type SourceResolver = (controller: IControllerBase, spec: any, ctx: RuleContext)
 const resolvers: {[K in SourceKind]: (controller: IControllerBase, spec: SourceSpec<K>, ctx: RuleContext) => any} = {
   validators: (controller, spec) => resolveValidators(controller, spec),
   choices: (controller, spec) => resolveChoices(controller, spec),
-  js: (controller, spec) => resolveJs(controller, spec),
+  js: (controller, spec, ctx) => resolveJs(controller, spec, ctx),
   func: (_controller, spec, ctx) => resolveFunc(spec, ctx),
   query: (_controller, spec, ctx) => resolveQuery(spec, ctx),
   file: (_controller, spec) => resolveFile(spec),
@@ -265,32 +282,43 @@ const resolvers: {[K in SourceKind]: (controller: IControllerBase, spec: SourceS
 };
 
 /** Resolves the values a rule declares in `sources`; each alias becomes a context variable.
+ *  A source reads the sources declared before it and waits only for those still pending.
  *  Returns a plain object when nothing had to be awaited. */
 export function resolveSources(
   controller: IControllerBase, sources: Record<string, RuleSource> | undefined, ctx: RuleContext = {$all: {}},
 ): Record<string, any> | Promise<Record<string, any>> {
-  const resolved: Record<string, any> = {};
-  const pending: Promise<void>[] = [];
+  const values: Record<string, any> = {};
+  const constants = new Set<string>();
+  const cache = controller.sourceCache;
   for (const [alias, source] of Object.entries(sources ?? {})) {
-    const cache = controller.sourceCache;
-    const constant = !!cache && isConstant(source);
-    let value: any;
-    if (constant && cache.has(alias))
-      value = cache.get(alias);
-    else {
-      // expandRule has checked the source, so it has exactly one known kind
-      const kind = Object.keys(source)[0] as SourceKind;
-      value = (resolvers[kind] as SourceResolver)(controller, (source as Record<SourceKind, unknown>)[kind], ctx);
-      if (constant) {
-        cache.set(alias, value);
-        if (value instanceof Promise)
-          value.catch(() => cache.delete(alias));
-      }
+    const constant = isConstant(source, constants);
+    if (constant)
+      constants.add(alias);
+    const cached = constant && !!cache;
+    if (cached && cache.has(alias)) {
+      values[alias] = cache.get(alias);
+      continue;
     }
-    if (value instanceof Promise)
-      pending.push(value.then((result) => {resolved[alias] = result;}));
-    else
-      resolved[alias] = value;
+    // expandRule has checked the source, so it has exactly one known kind
+    const kind = Object.keys(source)[0] as SourceKind;
+    const resolve = (sourceCtx: RuleContext) =>
+      (resolvers[kind] as SourceResolver)(controller, (source as Record<SourceKind, unknown>)[kind], sourceCtx);
+    const read = sourceReads(source).filter((name) => Object.hasOwn(values, name));
+    const withRead = (results: any[]) =>
+      resolve({...ctx, ...Object.fromEntries(read.map((name, idx) => [name, results[idx]]))});
+    const value = read.some((name) => values[name] instanceof Promise) ?
+      Promise.all(read.map((name) => values[name])).then(withRead) :
+      withRead(read.map((name) => values[name]));
+    if (cached) {
+      cache.set(alias, value);
+      if (value instanceof Promise)
+        value.catch(() => cache.delete(alias));
+    }
+    values[alias] = value;
   }
-  return pending.length ? Promise.all(pending).then(() => resolved) : resolved;
+  const aliases = Object.keys(values);
+  if (!aliases.some((alias) => values[alias] instanceof Promise))
+    return values;
+  return Promise.all(aliases.map((alias) => values[alias]))
+    .then((results) => Object.fromEntries(aliases.map((alias, idx) => [alias, results[idx]])));
 }
