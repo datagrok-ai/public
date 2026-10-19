@@ -24,14 +24,16 @@ declare let DG: any;
 /** The system columns every domain table carries (always projected on reads). */
 export type DomainSystemColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id';
 
-/** Column reference: a declared column of the table, a system column, or a dotted FK path
- * ('project_id.name', up to 3 forward hops). Used by the condition and aggregate column
- * slots — those accept system columns even when a hand-written [TColumn] union omits them
- * (generated `<Table>Column` unions include them). Sort keys take a column or a system
- * column, never an FK path. Other slots (equality-map `where`, `columns`, `select()`,
- * `fetchFields()`, column security) stay TColumn-typed. */
+/** A declared column of the table or a system column: what a sort key takes. */
+export type DomainColumn<TColumn extends string = string> = TColumn | DomainSystemColumn;
+
+/** Column reference: a {@link DomainColumn} or a dotted FK path ('project_id.name', up to 3
+ * forward hops). Used by the condition and aggregate column slots — those accept system columns
+ * even when a hand-written [TColumn] union omits them (generated `<Table>Column` unions include
+ * them). Other slots (equality-map `where`, `columns`, `select()`, `fetchFields()`, column
+ * security) stay TColumn-typed. */
 export type DomainColumnRef<TColumn extends string = string> =
-  TColumn | DomainSystemColumn | `${string}.${string}`;
+  DomainColumn<TColumn> | `${string}.${string}`;
 
 /** Operators of the canonical condition tree (server: filter_compiler.dart:149-153 + fuzzy). */
 export type DomainConditionOperator =
@@ -1613,7 +1615,7 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
   }
 
   /** Appends a sort key (the `'col,!col2'` grammar; [desc] adds the `!`). */
-  orderBy(column: TColumn | DomainSystemColumn, desc: boolean = false): this {
+  orderBy(column: DomainColumn<TColumn>, desc: boolean = false): this {
     this._orders.push(`${desc ? '!' : ''}${column}`);
     return this;
   }
