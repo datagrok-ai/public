@@ -27,13 +27,10 @@ Feature: MPO scores a qualified-number property by the Score as option of its cu
   row whatever the source of the profile: a profile made from the table lists the properties in the
   table's order, one read from the server as Caco2, Solubility, Lipophilicity.
 
-  Two scenarios are known failures, observed on localhost with Chem built from master on 2026-10-16.
-  Cancel in the curve settings does not put Score as back (public#4324): the dialog restores the
-  property by copying the original's fields over it, and an original with no Score as stored has no
-  field to copy, so the choice made before Cancel stays. With the default flat curve of a new profile,
-  the row holding the qnum column's smallest exact value scores 0 instead of 0.5 (comment on
-  public#4291): the curve starts at the column's minimum, read with the qualifier bits still in it, and
-  the row's own value, read without them, falls just short of it.
+  One scenario is a known failure, observed on localhost with Chem built from master on 2026-10-16.
+  With the default flat curve of a new profile, the row holding the qnum column's smallest exact value
+  scores 0 instead of 0.5 (comment on public#4291): the curve starts at the column's minimum, read with
+  the qualifier bits still in it, and the row's own value, read without them, falls just short of it.
 
   The profiles a scenario saves are deleted when it ends, together with any other profile the user
   saved meanwhile.
@@ -121,7 +118,6 @@ Feature: MPO scores a qualified-number property by the Score as option of its cu
     And the "MPO ADME Test" cell of row 4 should be displayed as "0.71429"
     And no errors should have been logged
 
-  @known-failure:134
   Scenario: Cancel in the curve settings puts Score as back
     When user picks "Chem > Calculate > MPO Score..." from the top menu
     And user selects "✓ ADME Test" in Profile input in "MPO Score" dialog
@@ -192,7 +188,7 @@ Feature: MPO scores a qualified-number property by the Score as option of its cu
     And "Score as" input in "Caco2" dialog should have value "Most favorable value"
     And no errors should have been logged
 
-  @known-failure:213
+  @known-failure:209
   Scenario: The row with the column's smallest exact value scores like the rest on a flat curve
     Given user opens a table "qnum min" with:
       | smiles   | IC50 |
