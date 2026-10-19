@@ -62,9 +62,58 @@
 }
 
 .u2-section-title {
+  flex: none;
+  max-width: 100%;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* what the folded body holds, after the title; the problem inside it, in the error color */
+.u2-section-hint {
+  min-width: 0;
+  margin-left: var(--dg-space-m);
+  overflow: hidden;
+  font-weight: var(--dg-font-weight-regular);
+  color: var(--dg-text-color-light);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-section-hint:empty {
+  display: none;
+}
+
+/* open, the body says what it holds, and its fields show their own errors */
+.u2-section-header[aria-expanded='true'] > .u2-section-hint {
+  display: none;
+}
+
+/* keyed on the header too: a header placed in another row (a footer beside Save) keeps the marker */
+.u2-section-invalid > .u2-section-header > .u2-section-title,
+.u2-section-invalid > .u2-section-header > .u2-section-hint,
+.u2-section-header[aria-invalid='true'] > .u2-section-title,
+.u2-section-header[aria-invalid='true'] > .u2-section-hint {
+  color: var(--dg-error);
+}
+
+/* an element hint carries its own display; hidden while the problem takes its place */
+.u2-section-hint > [hidden] {
+  display: none !important;
+}
+
+/* chevron: 'end' — after the title and hint, always shown, down while folded and up while open */
+.u2-section-header.u2-section-chevron-end > .u2-section-chevron {
+  position: static;
+  flex: none;
+  width: auto;
+  margin-left: var(--dg-space-s);
+  opacity: 1;
+  transform: none;
+}
+
+.u2-section-header.u2-section-chevron-end[aria-expanded='true'] > .u2-section-chevron {
+  transform: rotate(180deg);
 }
 
 .u2-section-body {

@@ -372,6 +372,8 @@ export function matchColumnTargets(
       const {confidence, units} = match;
       const factor = conversionFactor(item.units, seed.units, convert);
       const auto = members.has(item);
+      // raw tables carry no units metadata, so their missing units are expected, not a gap
+      const unitsAssumed = units === 'warn' && !!item.raw && !item.units;
       // raw items join every cluster whose name they share (up to normalization) — but a
       // fuzzy guess is not confident enough to become the run's pick by default
       candidates.push({
@@ -380,7 +382,8 @@ export function matchColumnTargets(
           ...factor != null ? {factor} : {},
         },
         confidence,
-        unitsWarn: units === 'warn',
+        unitsWarn: units === 'warn' && !unitsAssumed,
+        unitsAssumed,
         auto,
         enabled: item.raw ? confidence !== 'fuzzy' : auto,
       });
@@ -399,6 +402,7 @@ export function matchColumnTargets(
       units: cluster.items[0].units,
       confidence: cluster.confidence,
       unitsWarning: cluster.unitsWarning,
+      rawWithoutUnits: false,
       candidates,
       bindings: [] as ColumnBinding[],
       coverage: 0,
@@ -436,6 +440,7 @@ export function matchColumnTargets(
     target.confidence = enabled.reduce<MatchConfidence>(
       (acc, candidate) => weakerConfidence(acc, candidate.confidence), 'exact');
     target.unitsWarning = enabled.some((candidate) => candidate.unitsWarn);
+    target.rawWithoutUnits = enabled.some((candidate) => candidate.unitsAssumed);
   }
   return targets;
 }

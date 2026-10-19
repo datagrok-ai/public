@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import '@datagrok-libraries/u2/css/all.css';
 import '../css/u2demo.css';
 
 import {computed} from '@datagrok-libraries/u2';

@@ -3358,6 +3358,22 @@ export const U2_KINDS: U2KindSpec[] = [
     "source": "u2"
   },
   {
+    "kind": "status-line",
+    "noun": "status line",
+    "family": "display",
+    "role": "status",
+    "nameFrom": [
+      "text"
+    ],
+    "parts": {},
+    "state": [
+      "text"
+    ],
+    "props": [],
+    "gestures": [],
+    "source": "u2"
+  },
+  {
     "kind": "suggest-input",
     "noun": "suggest input",
     "family": "input",

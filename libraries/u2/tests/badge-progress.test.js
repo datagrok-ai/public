@@ -6,7 +6,9 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, computed, Scope, Control} from '../src/index.js';
-import {badge, countBadge, dot, tag} from '../src/components/display/badge.js';
+import {badge, countBadge, dot, tag, statusLine} from '../src/components/display/badge.js';
+import {effect, div} from '../src/core/elements.js';
+import {Tooltip} from '../src/core/tooltip.js';
 import {ProgressBar} from '../src/components/display/progress.js';
 
 function ui(name, body) {
@@ -164,4 +166,45 @@ ui('ProgressBar: the description line takes a signal and dies with the bar', () 
   bar.dispose();
   value.value = 1;
   assert.equal(description.textContent, '25 of 100 rows');
+});
+
+ui('statusLine: what the action will do, or why it cannot yet — marked, and said to screen readers', () => {
+  const problem = signal('Symbol: Value can\'t be empty');
+  const library = signal('Peptides');
+  const owner = Control.build(() => statusLine(problem, computed(() => `Saves into ${library.value}`)));
+  const line = owner.root;
+  assert.equal(line.dataset.u2, 'status-line');
+  assert.equal(line.getAttribute('role'), 'status');
+  assert.equal(line.textContent, 'Symbol: Value can\'t be empty');
+  assert.equal(line.classList.contains('u2-status-line-problem'), true);
+  assert.equal(line.querySelector('.u2-status-line-mark').hidden, false);
+  problem.value = null;
+  assert.equal(line.textContent, 'Saves into Peptides');
+  assert.equal(line.title, 'Saves into Peptides', 'two lines at most: the whole text is the tooltip');
+  assert.equal(line.querySelector('.u2-status-line-mark').hidden, true);
+  library.value = 'HELM';
+  assert.equal(line.textContent, 'Saves into HELM');
+  owner.dispose();
+});
+
+ui('effect() and Tooltip.bind belong to whoever is building, and go with it', () => {
+  const name = signal('R1');
+  let runs = 0;
+  const owner = Control.build(() => {
+    const el = div([]);
+    effect(() => {
+      runs++;
+      el.textContent = name.value;
+    });
+    Tooltip.bind(el, () => name.peek());
+    return el;
+  });
+  assert.equal(owner.root.textContent, 'R1');
+  name.value = 'R2';
+  assert.equal(owner.root.textContent, 'R2');
+  owner.dispose();
+  name.value = 'R3';
+  assert.equal(runs, 2, 'disposed with its owner');
+  assert.throws(() => effect(() => {}), /needs an owner/);
+  assert.throws(() => Tooltip.bind(document.createElement('div'), 'x'), /needs an owner/);
 });

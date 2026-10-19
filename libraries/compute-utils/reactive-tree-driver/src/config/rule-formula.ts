@@ -60,6 +60,9 @@ type EffectCall<E extends EffectName> = {positional: readonly EffectFields<E>[],
 const effectCalls = {
   hide: {positional: ['targets'], options: []},
   show: {positional: ['targets'], options: []},
+  hideAction: {positional: ['targets', 'action'], options: []},
+  showAction: {positional: ['targets', 'action'], options: []},
+  describe: {positional: ['targets', 'value'], options: []},
   items: {positional: ['targets', 'items'], options: []},
   meta: {positional: ['targets'], options: ['meta']},
   error: {positional: ['targets', 'message'], options: []},
@@ -308,6 +311,8 @@ export function compileEffect(text: string): RuleEffect {
       effect.targets = targets(arg, body);
     else if (param === 'source')
       effect.source = alias(arg, body, 'source');
+    else if (param === 'action')
+      effect.action = stringLiteral(arg, body, 'action');
     else
       effect[param] = expression(arg, body);
   });

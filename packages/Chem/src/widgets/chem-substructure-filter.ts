@@ -16,7 +16,7 @@ import {filter} from 'rxjs/operators';
 import wu from 'wu';
 import {TaskBarProgressIndicator, chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import {querySmarts} from '../utils/mol-creation_rdkit';
+import {getMolSafe, querySmarts} from '../utils/mol-creation_rdkit';
 import {translateQueryAliasesV2000} from '../utils/query-alias-translator';
 import {_package, PackageFunctions} from '../package';
 import {AVAILABLE_FPS, CHEM_APPLY_FILTER_SYNC, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT,
@@ -648,7 +648,11 @@ export class SubstructureFilter extends DG.Filter {
     // See resolveColumn()'s comment — this is the entry point for every user-driven sketch edit, and
     // the rest of this method (both branches below) dereferences `this.column!` repeatedly.
     this.resolveColumn();
-    const newMolecule = this.getSketcherMolecule();
+    let newMolecule = this.getSketcherMolecule();
+    // a sketcher hands a SMILES or SMARTS the card holds back as a molblock: an unchanged molecule keeps its notation
+    if (this.currentMolecule && !DG.chem.isMolBlock(this.currentMolecule) && DG.chem.isMolBlock(newMolecule) &&
+      this.isUnchanged(newMolecule, this.currentMolecule))
+      newMolecule = this.currentMolecule;
     _package.logger.debug(`newMolfile ${newMolecule} , ${this.filterId}`);
     const newSmarts = this.moleculeToSmarts(newMolecule);
     _package.logger.debug(`newSmarts ${newSmarts}, ${this.filterId}`);
@@ -675,7 +679,7 @@ export class SubstructureFilter extends DG.Filter {
           tableName: this.tableName, searchType: this.searchType,
           simCutOff: this.similarityCutOff, fp: this.fp});
       }
-      this.dataFrame?.rows.requestFilter();
+      this.requestFilter();
     } else if ((wu(this.dataFrame!.rows.filters)
       .has(`${this.columnName}: ${this.getFilterSummary(newMolecule)}`) || this.isFilteringBySameStructure(newMolecule)) &&
       !this.recalculateFilter && !this.searchNotCompleted) {
@@ -710,7 +714,7 @@ export class SubstructureFilter extends DG.Filter {
         this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe((progress: number) => {
           _package.logger.debug(`progress: ${progress}, molfile: ${this.currentMolecule}, ${this.filterId}`);
           this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
-          this.dataFrame?.rows.requestFilter();
+          this.requestFilter();
           this.progressBar?.update(progress, `${progress?.toFixed(2)}% of search completed`);
           // the search reports its end as 100%: the task bar entry goes then, even for a filter that is
           // never finished or detached (the popup's filter a column header opened)
@@ -750,7 +754,24 @@ export class SubstructureFilter extends DG.Filter {
         simCutOff: this.similarityCutOff, fp: this.fp,
       });
     }
-    this.dataFrame?.rows.requestFilter();
+    this.requestFilter();
+  }
+
+  /** Filters the table. In the context panel (a column's Filter pane) the filtered rows are not made the current object,
+   * as the table view makes them on a filter change: the panel would show them instead of the column, and the filter,
+   * its sketcher with it, would go at every stroke. Core's own guard (2 s after a mousedown in the pane) misses an edit
+   * made without a click and a search that ends later. */
+  private requestFilter(): void {
+    const tv = this.root.closest('.grok-prop-panel') ? grok.shell.tv : null;
+    const quiet = tv != null && tv.dataFrame?.dart === this.dataFrame?.dart && tv.syncCurrentObject;
+    if (quiet)
+      tv!.syncCurrentObject = false;
+    try {
+      this.dataFrame?.rows.requestFilter();
+    } finally {
+      if (quiet)
+        tv!.syncCurrentObject = true;
+    }
   }
 
   async getFilterBitset(): Promise<BitArray> {
@@ -767,6 +788,25 @@ export class SubstructureFilter extends DG.Filter {
   private resolveColumn(): DG.Column | null {
     this.column ??= this.dataFrame && this.columnName ? this.dataFrame.col(this.columnName) : null;
     return this.column;
+  }
+
+  /** Whether a sketcher's molblock is the molecule the card holds, with no query feature drawn on it: an atom list or a
+   * ring bond count leaves the SMILES as it was. */
+  isUnchanged(molblock: string, molecule: string): boolean {
+    const rdkit = PackageFunctions.getRdKitModule();
+    const smiles = (m: string, plain: boolean): string | null => {
+      const mol = getMolSafe(m, {}, rdkit).mol;
+      try {
+        return !mol || (plain && /"(atom|bond)Queries"/.test(mol.get_json())) ? null : mol.get_smiles();
+      } catch {
+        // a molecule RDKit reads only partly (a malformed one) throws here: it is no molecule to keep
+        return null;
+      } finally {
+        mol?.delete();
+      }
+    };
+    const drawn = smiles(molblock, true);
+    return drawn !== null && drawn === smiles(molecule, false);
   }
 
   isFilteringBySameStructure(molecule: string): boolean {

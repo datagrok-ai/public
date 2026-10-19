@@ -40,8 +40,9 @@ const BY_NAME: U2Override = {match: ['name']};
 const OVERRIDES: Record<string, U2Override> = {
   // --- inputs ---
   // a bare <input> outside any input host that names itself (aria-label) is a text input too: the
-  // Save project dialog's Name
-  'text input': input('.ui-input-text, input[aria-label]:not([type="checkbox"]):not(.ui-input-root *)', ['text field', 'textbox'],
+  // Save project dialog's Name; and so is a row's editor of a map input ("Pattern 1" of a conditional coloring)
+  'text input': input('.ui-input-text, input[aria-label]:not([type="checkbox"]):not(.ui-input-root *), .ui-input-map input[aria-label]',
+    ['text field', 'textbox'],
     {match: [...INPUT_MATCH, 'aria']}),
   'text area': input('.ui-input-textarea', ['textarea', 'multiline input']),
   'choice input': input('.ui-input-choice', ['dropdown', 'choice', 'select']),
@@ -84,7 +85,7 @@ const OVERRIDES: Record<string, U2Override> = {
 
   // --- forms and collections ---
   'form': {selector: u2('object-form', 'func-form') + ', .ui-form'},
-  'list': {u2Selector: '[data-u2="list"]:not([role="tree"])', selector: '[role="listbox"], .u2-list:not([role="tree"]), .d4-list'},
+  'list': {u2Selector: '[data-u2="list"]:not([role="tree"])', selector: '[role="listbox"], [role="list"], .u2-list:not([role="tree"]), .d4-list'},
   'tree': {selector: '[role="tree"], .d4-tree-view'},
   'table': {selector: 'table'},
   'grid': {selector: '.d4-grid'},
@@ -173,10 +174,12 @@ kind('category', {
 // --- items of u2 collections: also addressed by key (data-u2-item), revealed for a gesture when not rendered
 kind('item', {
   aliases: ['list item', 'row', 'option', 'entry'],
-  selector: '.u2-list-row, [role="option"], [role="row"], .d4-list-item, li',
+  selector: '.u2-list-row, [role="option"], [role="row"], [role="listitem"], .d4-list-item, li',
   match: ['text', 'label', 'aria', 'item', 'name'],
   items: true,
   labelSelector: `${PRIMARY_TEXT}, ${ITEM_LABEL}`,
+  // a category of the categorical color coding editor opens its color picker from the bar
+  parts: {'color bar': '.d4-legend-item-bar'},
 });
 // the Dart tree wraps every row in a .d4-tree-view-group[role=treeitem] that carries the row's
 // text too, so the wrapper is excluded and the row — which owns name="tree-My-stuff---Favorites" —

@@ -5,7 +5,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
-import {signal, Scope, Control, SpecContext, renderSpec, registerAll} from '../src/index.js';
+import {signal, Scope, Control, SpecContext, renderSpec, registerAll, button, Tooltip} from '../src/index.js';
 import {iconButton, buttonWithIcon, dropDownButton} from '../src/components/actions/buttons.js';
 import {ButtonGroup} from '../src/components/actions/button-group.js';
 
@@ -35,6 +35,27 @@ function cell(group, id) {
 function tabStops(group) {
   return [...cells(group)].filter((el) => el.tabIndex === 0).map((el) => el.dataset.id);
 }
+
+ui('button: disabled with a reason — the reason is the tooltip; a signal drives it live', async () => {
+  const c = new Control();
+  const reason = signal('Only the author can delete');
+  const [del, edit, plain] = c.runInScope(() => [
+    button('Delete', () => {}, {disabled: reason}),
+    button('Edit', () => {}, {disabled: true, tooltip: 'Edit the collection'}),
+    button('Open', () => {}, {tooltip: 'Open it'}),
+  ]);
+  document.body.append(del, edit, plain);
+  assert.equal(del.disabled, true);
+  fire(del, 'pointerenter');
+  await new Promise((r) => setTimeout(r, 700));
+  assert.equal(Tooltip.root.textContent, 'Only the author can delete');
+  fire(del, 'pointerleave');
+  reason.value = null;
+  assert.equal(del.disabled, false);
+  assert.equal(edit.disabled, true);
+  assert.equal(plain.disabled, false);
+  c.dispose();
+});
 
 ui('buttonWithIcon: icon then label, primary skin, and iconRight flips the order', () => {
   const clicks = [];
@@ -417,4 +438,28 @@ ui('a control whose root is a button is named by its own text, as the spec-built
   assert.equal(custom.getState().label, 'Open file');
   custom.dispose();
   instance.dispose();
+});
+
+ui('button: with no owner, the reason and the tooltip fall back to the title, and nothing is held', () => {
+  const live = Scope.liveCount;
+  const del = button('Delete', () => {}, {disabled: 'Only the author can delete'});
+  const open = button('Open', () => {}, {tooltip: 'Open it'});
+  assert.equal(del.disabled, true);
+  assert.equal(del.title, 'Only the author can delete');
+  assert.equal(open.title, 'Open it');
+  assert.equal(Scope.liveCount, live);
+});
+
+ui('tooltip: role tooltip, and the anchor is described by it only while it shows (keeping its own ids)', async () => {
+  const c = new Control();
+  const el = c.runInScope(() => button('Delete', () => {}, {tooltip: 'Delete the selected rows'}));
+  el.setAttribute('aria-describedby', 'own-hint');
+  document.body.append(el);
+  fire(el, 'pointerenter');
+  await new Promise((r) => setTimeout(r, 400));
+  assert.equal(Tooltip.root.getAttribute('role'), 'tooltip');
+  assert.equal(el.getAttribute('aria-describedby'), 'own-hint u2-tooltip');
+  fire(el, 'pointerleave');
+  assert.equal(el.getAttribute('aria-describedby'), 'own-hint', 'the link goes with the tooltip');
+  c.dispose();
 });

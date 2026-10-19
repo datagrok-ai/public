@@ -105,7 +105,8 @@ export class DesirabilityModeDialog {
   }
 
   show(): void {
-    const original = structuredClone(this.prop);
+    const live = this.prop;
+    const original = structuredClone(live);
 
     const dialog = ui.dialog({
       title: this.propertyName,
@@ -332,6 +333,10 @@ export class DesirabilityModeDialog {
 
     dialog.onCancel(() => {
       dispose();
+      for (const key of Object.keys(live)) {
+        if (!(key in original))
+          Reflect.deleteProperty(live, key);
+      }
       this.prop = original;
       this.onUpdate(original);
       dialog.close();

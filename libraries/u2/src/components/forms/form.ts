@@ -1,4 +1,4 @@
-import {batch, computed, signal, ReadonlySignal, Signal} from '../../core/signals.js';
+import {batch, computed, signal, untracked, ReadonlySignal, Signal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {Input, LiveOption} from '../../core/input-base.js';
 import type {IItemsState} from '../../core/widget-like.js';
@@ -19,24 +19,89 @@ export interface FormOptions {
   /** Caption text alignment in caption-left layouts; `'right'` (the platform default) or
    * `'left'`. Live: a signal is followed as a pure CSS class toggle. */
   captionAlign?: LiveOption<'right' | 'left'>;
+  /** A fixed label column, in px: nothing is measured. For forms that must line up with something
+   * else, or rows with one-letter captions (`R1`) that want a narrow column. */
+  labelWidth?: number;
+  /** One label column for several forms — the tabs of an editor, a header form over a body form: each
+   * measures its own captions and all of them take the widest, so switching tabs moves no input. */
+  labelColumn?: LabelColumn;
+  /** Values read as text: an editor's underline shows while it is hovered, focused, empty or wrong,
+   * not at rest — for an inspector or a docked editor, where a column of rules is noise. Any other
+   * host gets the same look from the `u2-quiet` class. */
+  quiet?: boolean;
+}
+
+export interface FormColumnsOptions {
+  /** The narrowest a column may get, caption and editor together, in px; 200 by default. */
+  minWidth?: number;
+  /** The most columns a row holds; 2 by default. */
+  columns?: number;
+  /** Places the columns elsewhere, as {@link Form.add}'s `host` does. */
+  host?: HTMLElement;
+}
+
+/** A label column shared by several forms ({@link FormOptions.labelColumn}): as wide as the widest
+ * caption of any of them, a hidden one included (measured off its text). */
+export class LabelColumn {
+  /** The column's width in px; 0 until a member measured. */
+  readonly width: ReadonlySignal<number>;
+  private readonly _width = signal(0);
+  private readonly _members = new Map<Form, number>();
+
+  constructor() {
+    this.width = this._width;
+  }
+
+  /** @internal A member's own widest caption. */
+  report(form: Form, width: number): void {
+    this._members.set(form, width);
+    this._update();
+  }
+
+  /** @internal A disposed member leaves. */
+  leave(form: Form): void {
+    this._members.delete(form);
+    this._update();
+  }
+
+  private _update(): void {
+    let width = 0;
+    for (const w of this._members.values())
+      width = Math.max(width, w);
+    this._width.value = width;
+  }
 }
 
 /** Platform chrome shares the aligned label column: a bridged input brings its own `ui-` label. */
 const LABELS = '.u2-input-label, .ui-input-label';
 
 const _warnedUnkeyed = new Set<string>();
+let _measure: CanvasRenderingContext2D | null | undefined;
 
 /** Vertical input layout with an aligned label column and aggregated validity. The form does not
  * own the inputs it lays out: each one is already adopted by the scope that created it. */
 export class Form extends Control {
+  /** The first verdict of a counted input (visible and enabled) — required ones from the start. */
   readonly validity: ReadonlySignal<string | null>;
+  /** The first message a counted input shows ({@link Input.error}): none on a fresh form. */
+  readonly error: ReadonlySignal<string | null>;
+  /** {@link validity} with the input's caption: "Name: Value can't be empty" — what a disabled OK or
+   * Save says. */
+  readonly problem: ReadonlySignal<string | null>;
 
   private readonly _rows = document.createElement('div');
   private readonly _inputs: Input<any>[] = [];
   private readonly _first = signal<ReadonlySignal<string | null>>(computed(() => null));
+  private readonly _firstShown = signal<ReadonlySignal<string | null>>(computed(() => null));
+  private readonly _firstNamed = signal<ReadonlySignal<string | null>>(computed(() => null));
   private readonly _layout: FormLayout;
+  private readonly _labelWidth: number | undefined;
+  private readonly _column: LabelColumn | undefined;
   private _buttons: HTMLElement | undefined;
   private _frame = 0;
+  private _queued = false;
+  private _tallBeforeMeasure = false;
+  private static _groups = 0;
   private _minEditor: number | undefined;
   private readonly _labelMemo = new WeakMap<HTMLElement, number>();
   /** Re-fits the choice widths when a select's options change. */
@@ -45,10 +110,25 @@ export class Form extends Control {
   constructor(options: FormOptions = {}) {
     super();
     this.validity = computed(() => this._first.value.value);
+    this.error = computed(() => this._firstShown.value.value);
+    this.problem = computed(() => this._firstNamed.value.value);
 
     this.root.classList.add('u2-form');
     this.root.dataset.u2 = 'form';
     this._layout = options.layout ?? 'auto';
+    this._labelWidth = options.labelWidth;
+    if (this._labelWidth !== undefined)
+      this.root.style.setProperty('--u2-form-label-width', `${this._labelWidth}px`);
+    const column = this._column = options.labelColumn;
+    if (column !== undefined) {
+      this.own(() => column.leave(this));
+      // a wider caption elsewhere moves this form's editors too, and may tip it into the tall layout
+      this.effect(() => {
+        const width = column.width.value;
+        if (width > 0)
+          untracked(() => this._applyLabelWidth(width));
+      });
+    }
     // the auto form's roomy state is wide, but its editors keep the platform widths ui.form gives
     if (this._layout === 'auto')
       this.root.classList.add('u2-form-auto');
@@ -56,6 +136,8 @@ export class Form extends Control {
       this.root.classList.add('u2-form-wide');
     if (this._layout === 'tall')
       this.root.classList.add('u2-form-tall');
+    if (options.quiet)
+      this.root.classList.add('u2-quiet');
     const align = options.captionAlign;
     if (align instanceof Signal)
       this.effect(() => this.root.classList.toggle('u2-form-captions-left', align.value === 'left'));
@@ -75,7 +157,7 @@ export class Form extends Control {
     // any layout: a form built hidden (a collapsed section, a closed pencil) measures its labels at
     // 0 px and must align again once it shows; the auto layout also re-picks its state on a resize
     if (this._layout !== 'tall' && typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(() => this._scheduleAlign());
+      const observer = new ResizeObserver(() => this._scheduleFrame());
       observer.observe(this.root);
       this.own(() => observer.disconnect());
     }
@@ -104,7 +186,7 @@ export class Form extends Control {
     (host ?? this._rows).append(input.root);
     const select = input.root.dataset.u2 === 'choice-input' ? input.root.querySelector('select') : null;
     if (select !== null && typeof MutationObserver !== 'undefined')
-      (this._choices ??= new MutationObserver(() => this._scheduleAlign())).observe(select, {childList: true});
+      (this._choices ??= new MutationObserver(() => this._scheduleFrame())).observe(select, {childList: true});
     this._rebuildValidity();
     this._scheduleAlign();
     return this;
@@ -131,6 +213,50 @@ export class Form extends Control {
     return this;
   }
 
+  /** One caption in the label column over several inputs side by side — Colors: Line, Background,
+   * Text. The inputs join the form's validity, values and Enter order; their own captions sit beside
+   * their editors (after them with `captionsAfter`, as a checklist's do) and size no column. `host`
+   * places the row elsewhere, as {@link add} does. */
+  addGroup(caption: string, inputs: Input<any>[], options?: {captionsAfter?: boolean, host?: HTMLElement}): Form {
+    const label = document.createElement('span');
+    label.className = 'u2-input-label u2-form-group-label';
+    label.id = `${this.rootId}-group-${++Form._groups}`;
+    label.textContent = caption;
+    const items = document.createElement('div');
+    items.className = 'u2-form-group-items';
+    const row = document.createElement('div');
+    row.className = 'u2-form-group';
+    row.setAttribute('role', 'group');
+    row.setAttribute('aria-labelledby', label.id);
+    row.append(label, items);
+    (options?.host ?? this._rows).append(row);
+    for (const input of inputs) {
+      input.root.classList.add('u2-input-in-group');
+      input.root.classList.toggle('u2-input-caption-after', options?.captionsAfter === true);
+      this.add(input, items);
+    }
+    return this;
+  }
+
+  /** The inputs in equal columns, filled row by row — Symbol | Name, Polymer | Type. A column is never
+   * narrower than `minWidth`: a row with no room for two holds one, so a narrow dock stacks them rather
+   * than squeezing them. Every column keeps the form's label column, and an editor fills its column, so
+   * captions and editors line up down the rows and across them. The inputs join the form as
+   * {@link add}'s do. */
+  addColumns(inputs: Input<any>[], options?: FormColumnsOptions): Form {
+    const grid = document.createElement('div');
+    grid.className = 'u2-form-columns';
+    grid.dataset.u2Part = 'columns';
+    if (options?.minWidth !== undefined)
+      grid.style.setProperty('--u2-form-column-min', `${options.minWidth}px`);
+    if (options?.columns !== undefined)
+      grid.style.setProperty('--u2-form-columns', String(options.columns));
+    (options?.host ?? this._rows).append(grid);
+    for (const input of inputs)
+      this.add(input, grid);
+    return this;
+  }
+
   /** A non-input row — a button, a heading, a plain element — kept in document order with the
    * input rows instead of trailing the form. */
   addElement(el: HTMLElement): Form {
@@ -138,16 +264,21 @@ export class Form extends Control {
     return this;
   }
 
-  /** The form's button row, under its rows: at the end by default, or (`align: 'editors'`) starting
-   * where the editors do, as `ui.buttonsInput` places the buttons of a platform form. */
-  addButtons(build: (row: HTMLElement) => void, options?: {align?: 'end' | 'editors'}): Form {
+  /** The form's button row, under its rows: at the end by default, at the start (`'start'`), or
+   * (`'editors'`) starting where the editors do, as `ui.buttonsInput` places the buttons of a platform
+   * form. `host` puts the row elsewhere — a footer pinned under a form that scrolls — and its buttons
+   * keep the platform's form-button look there. */
+  addButtons(build: (row: HTMLElement) => void, options?: {align?: 'end' | 'editors' | 'start',
+    host?: HTMLElement}): Form {
     if (!this._buttons) {
       this._buttons = document.createElement('div');
       this._buttons.className = 'u2-form-buttons';
-      this.root.append(this._buttons);
+      (options?.host ?? this.root).append(this._buttons);
     }
-    if (options?.align !== undefined)
+    if (options?.align !== undefined) {
       this._buttons.classList.toggle('u2-form-buttons-editors', options.align === 'editors');
+      this._buttons.classList.toggle('u2-form-buttons-start', options.align === 'start');
+    }
     build(this._buttons);
     return this;
   }
@@ -208,13 +339,21 @@ export class Form extends Control {
 
   private _rebuildValidity(): void {
     const inputs = this._inputs.slice();
-    this._first.value = computed(() => {
+    const first = (verdict: (input: Input<any>) => string | null) => computed(() => {
       for (const input of inputs) {
-        const message = input.validates ? input.validity.value : null;
+        const message = input.validates ? verdict(input) : null;
         if (message)
           return message;
       }
       return null;
+    });
+    batch(() => {
+      this._first.value = first((input) => input.validity.value);
+      this._firstShown.value = first((input) => input.error.value);
+      this._firstNamed.value = first((input) => {
+        const message = input.validity.value;
+        return message !== null && input.label ? `${input.label}: ${message}` : message;
+      });
     });
   }
 
@@ -229,7 +368,21 @@ export class Form extends Control {
     this._inputs[index + 1].focus();
   }
 
+  /** Rows added while building align in a microtask: once the building code has run, before the
+   * browser paints — a form built and attached in one go never shows a misaligned frame. */
   private _scheduleAlign(): void {
+    if (this._queued)
+      return;
+    this._queued = true;
+    queueMicrotask(() => {
+      this._queued = false;
+      this._alignLabels();
+    });
+  }
+
+  /** A resize (or a form shown after being built hidden) aligns in the next frame: re-laying out
+   * inside the observer's own callback would resize what it observes. */
+  private _scheduleFrame(): void {
     if (this._frame)
       return;
     this._frame = requestAnimationFrame(() => {
@@ -238,32 +391,61 @@ export class Form extends Control {
     });
   }
 
+  /** Lays the label column out now: measures the captions (unless the width is fixed), shares them
+   * with the {@link LabelColumn}, fits the choices and picks the auto layout. Runs on its own after
+   * every change; call it where a test or a host must see the final layout synchronously. */
+  layoutNow(): void {
+    this._alignLabels();
+  }
+
+  private _alignLabels(): void {
+    if (this._layout === 'tall' || this.scope.isDisposed)
+      return;
+    if (this._labelWidth !== undefined) {
+      this._applyLabelWidth(this._labelWidth);
+      return;
+    }
+    const width = this._measureLabels();
+    this._column?.report(this, width);
+    this._applyLabelWidth(this._column?.width.peek() ?? width);
+  }
+
   // natural label widths only read back with the alignment (and the tall skin) dropped —
   // min-width clamps them, and a tall label spans the full row
-  private _alignLabels(): void {
-    if (this._layout === 'tall')
-      return;
-    const wasTall = this.root.classList.contains('u2-form-tall');
+  private _measureLabels(): number {
+    this._tallBeforeMeasure ||= this.root.classList.contains('u2-form-tall');
     this.root.classList.remove('u2-form-tall');
     this.root.style.setProperty('--u2-form-label-width', '0px');
-    let width = 0;
+    // a form nested in one gone tall would otherwise read its captions at the tall skin's full row
+    this.root.classList.add('u2-form-measuring');
+    const captions: HTMLElement[] = [...this.root.querySelectorAll<HTMLElement>('.u2-form-group-label')];
     for (const input of this._inputs) {
-      // a checklist row's caption follows its box and reserves no column
-      if (input.root.classList.contains('u2-input-caption-after'))
-        continue;
-      const labels = input.root.querySelectorAll<HTMLElement>(LABELS);
-      for (let i = 0; i < labels.length; i++) {
-        // a hidden label (collapsed section, expression-hidden row) measures 0 — its remembered
-        // width stands in, so folding a section never reflows the shared column; the fraction
-        // rounds up, as the platform's column does (js-api ui.ts getLabelWidth)
-        let w = Math.max(labels[i].offsetWidth, Math.ceil(labels[i].getBoundingClientRect().width));
-        if (w)
-          this._labelMemo.set(labels[i], w);
-        else
-          w = this._labelMemo.get(labels[i]) ?? 0;
-        width = Math.max(width, w);
-      }
+      // a checklist row's caption follows its box, and a grouped input's sits beside it: no column
+      if (!input.root.classList.contains('u2-input-caption-after') && !input.root.classList.contains('u2-input-in-group'))
+        captions.push(...input.root.querySelectorAll<HTMLElement>(LABELS));
     }
+    let width = 0;
+    for (const caption of captions) {
+      // a hidden label (collapsed section, an inactive tab) measures 0 — its remembered width
+      // stands in, else its text measured in its font, so a hidden form still sizes a shared
+      // column; the fraction rounds up, as the platform's column does (js-api ui.ts getLabelWidth)
+      let w = Math.max(caption.offsetWidth, Math.ceil(caption.getBoundingClientRect().width));
+      if (w)
+        this._labelMemo.set(caption, w);
+      else
+        w = this._labelMemo.get(caption) ?? Form._textWidth(caption);
+      width = Math.max(width, w);
+    }
+    this.root.classList.remove('u2-form-measuring');
+    return width;
+  }
+
+  private _applyLabelWidth(width: number): void {
+    if (this.scope.isDisposed)
+      return;
+    const wasTall = this.root.classList.contains('u2-form-tall') || this._tallBeforeMeasure;
+    this._tallBeforeMeasure = false;
+    this.root.classList.remove('u2-form-tall');
     if (width)
       this.root.style.setProperty('--u2-form-label-width', `${width}px`);
     else
@@ -286,6 +468,23 @@ export class Form extends Control {
       wasTall ? 'tall' : this.root.classList.contains('u2-form-wide') ? 'wide' : 'normal');
     this.root.classList.toggle('u2-form-tall', next === 'tall');
     this.root.classList.toggle('u2-form-wide', next === 'wide');
+  }
+
+  /** A caption's width from its text, in its own font — for one not rendered (an inactive tab). */
+  private static _textWidth(label: HTMLElement): number {
+    const text = label.textContent ?? '';
+    if (text === '' || !label.isConnected)
+      return 0;
+    _measure ??= document.createElement('canvas').getContext?.('2d') ?? null;
+    if (_measure === null)
+      return 0;
+    const style = getComputedStyle(label);
+    _measure.font = style.font || `${style.fontSize} ${style.fontFamily}`;
+    let width = _measure.measureText(text).width + (parseFloat(style.paddingLeft) || 0) +
+      (parseFloat(style.paddingRight) || 0);
+    if (label.parentElement?.classList.contains('u2-input-required'))
+      width += _measure.measureText('*').width + (parseFloat(getComputedStyle(label, '::after').marginLeft) || 0);
+    return Math.ceil(width);
   }
 
   /** The platform's fit rule (js-api ui.ts:1443-1448): tall when the label column leaves less

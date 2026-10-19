@@ -1,8 +1,8 @@
 @journey @serial @realizes:bio.menu.manage.monomers
 Feature: Making and removing a monomer in the Manage Monomers view
-  Bio | Manage | Monomers shows the monomers of one library at a time, picked in its Monomer Library
+  Bio | Manage | Monomers shows the monomers of one library at a time, picked in its Library
   input, beside an editor: a monomer drawn in the editor's sketcher (its SMILES typed into the
-  sketcher's molecule field, its attachment points as R groups, a row each on the R-groups tab, R1 capped
+  sketcher's molecule field, its attachment points as R groups, a chip each under the sketcher, R1 capped
   with H and R2 with OH as on an amino acid) and given
   a symbol and a name is written into that library by Save, and the library is reloaded with it;
   Delete removes the current monomer after a confirmation. The sketcher is Crux: the editor keeps the
@@ -29,8 +29,8 @@ Feature: Making and removing a monomer in the Manage Monomers view
     Then the "Manage Monomers" view should be current
     And the monomer sketcher of the Manage Monomers view should be ready
 
-  Scenario: The Monomer Library input shows the monomers of the library picked
-    When user selects "bdd-monomer-editor.json" in "Monomer Library" input in monomer form
+  Scenario: The Library input shows the monomers of the library picked
+    When user selects "bdd-monomer-editor" in "Library" input in monomer form
     Then the table should have 1 row
     And the value of "Symbol" column in row 1 should be "BDD"
 
@@ -38,12 +38,10 @@ Feature: Making and removing a monomer in the Manage Monomers view
     When user clicks on "Add New Monomer" icon
     And user types "CC(C)(C)[C@H](N[1*])C([2*])=O" into molecule input of monomer sketcher
     And user presses Enter in molecule input of monomer sketcher
-    And user clicks on "R-groups" tab
-    Then "R1" input in monomer form should have value "H"
-    And "R2" input in monomer form should have value "OH"
-    When user clicks on "Monomer" tab
-    And user enters "BDDTLE" into "Monomer Symbol" input in monomer form
-    And user enters "bdd tert-leucine" into "Monomer Name" input in monomer form
+    Then "R1" R-group chip in monomer form should contain the text "R1 H"
+    And "R2" R-group chip in monomer form should contain the text "R2 OH"
+    When user enters "BDDTLE" into "Symbol" input in monomer form
+    And user enters "bdd tert-leucine" into "Name" input in monomer form
     And user clicks on "Add Monomer" button in monomer form
     Then an info balloon containing "Monomer BDDTLE was successfully saved in library bdd-monomer-editor.json" should have been shown
     And "BDDTLE" should be a known "PEPTIDE" monomer

@@ -8,8 +8,6 @@ Feature: Line chart in Multi Axis mode filtered from its marker legend
   of one per Y column (the report), the points of one quarter moved to other heights (first comment),
   and two quarters showed one line where three run apart (second comment). On demog-1000 Q3 holds
   259 rows and Q2 254; Q2 and Q3 together draw two X positions.
-  The two-quarter case still fails: each scale shrinks to the filtered rows, so every line runs
-  corner to corner and the three lines, all falling from Q2 to Q3, draw on top of each other.
 
   Background:
     Given user is logged in
@@ -48,7 +46,6 @@ Feature: Line chart in Multi Axis mode filtered from its marker legend
     And the 'y axis max of "WEIGHT"' reading of line chart viewer should be as remembered
     And no errors should have been logged
 
-  @known-failure:60
   Scenario: Two markers clicked in the legend keep every Y column's line where it was
     When user clicks on "Q2" item in the legend of line chart viewer
     Then the "rows shown" reading of line chart viewer should be 254
