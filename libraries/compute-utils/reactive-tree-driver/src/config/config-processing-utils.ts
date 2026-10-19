@@ -4,7 +4,7 @@ import {AnnotationLinkKind, isDynamicType, ItemId, LinkSpecString, NqName} from 
 import {callHandler, indexFromEnd, IOTolerance, ToleranceSpec} from '../utils';
 import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
 import {normalizeIdRef} from './PipelineInstance';
-import {annotationCheckLinks, annotationRules, expandLink, narrowToFamilyTargets} from './rule-expansion';
+import {annotationCheckLinks, annotationRules, expandLink, narrowRuleLink} from './rule-expansion';
 import {CheckOptions, isOptionalAnnotation, parseAnnotationChecks, parseChoices} from './checks';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
@@ -309,7 +309,7 @@ function processActions<A extends ActionInput>(actionsInput: A[], logger?: Drive
 
 function processLinks(links: PipelineLinkConfigurationInput<LinkSpecString>[]) {
   return links.flatMap((link) => expandLink(link).map((expanded) =>
-    withOriginal(narrowToFamilyTargets(expanded, processLinkData(expanded)), link)));
+    withOriginal(narrowRuleLink(expanded, processLinkData(expanded)), link)));
 }
 
 // in place, so the links keep their originals
@@ -343,6 +343,12 @@ function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>
   const not = processLink(link.not ?? [], 'not');
   const actions = processLink(link.actions ?? [], 'actions');
   const linkType = (link as any).type;
+  if (linkType !== 'pipelineValidator') {
+    for (const io of to) {
+      if (io.flags?.includes('node'))
+        throw new Error(`Link ${link.id}: output ${io.name} uses (node); only rules and pipeline validators allow it.`);
+    }
+  }
   if (linkType !== 'funccall') {
     for (const io of from) {
       if (io.flags?.includes('call') && !io.flags?.includes('optional'))

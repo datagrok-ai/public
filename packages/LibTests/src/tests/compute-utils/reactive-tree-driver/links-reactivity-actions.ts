@@ -1231,7 +1231,7 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       const rootActions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid);
       expectDeepEqual(rootActions?.length, 1);
       expectDeepEqual(rootActions?.[0].id, 'action1');
-      expectDeepEqual(rootActions?.[0].visible, true);
+      expectDeepEqual(tree.linksState.isActionVisible(rootActions![0].uuid), true);
     });
   });
 
@@ -1258,17 +1258,19 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
       const rootActions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid);
-      // Action is still in nodesActions (RTD does not filter), but visible is false
+      // Action is still in nodesActions (RTD does not filter), but hidden
       expectDeepEqual(rootActions?.length, 1);
       expectDeepEqual(rootActions?.[0].id, 'action1');
-      expectDeepEqual(rootActions?.[0].visible, false);
+      expectDeepEqual(tree.linksState.isActionVisible(rootActions![0].uuid), false);
       // Action is still runnable (no runtime gating)
       const actionUuid = rootActions![0].uuid;
       expectDeepEqual(tree.linksState.actions.has(actionUuid), true);
     });
   });
 
-  test('Action with matching hideWhen is hidden', async () => {
+  const driverMode = {batchLinks: true, annotationChecks: true};
+
+  const hiddenByHideWhen = (mode: {batchLinks?: boolean, annotationChecks?: boolean}) => async () => {
     const config: PipelineConfiguration = {
       id: 'pipeline1',
       type: 'static',
@@ -1288,13 +1290,17 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
     };
     const pconf = await getProcessedConfig(config);
     testScheduler.run(() => {
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, ...mode});
       tree.init().subscribe();
       const rootActions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid);
       expectDeepEqual(rootActions?.length, 1);
-      expectDeepEqual(rootActions?.[0].visible, false);
+      expectDeepEqual(tree.linksState.isActionVisible(rootActions![0].uuid), false);
     });
-  });
+  };
+
+  test('Action with matching hideWhen is hidden', hiddenByHideWhen({}));
+
+  test('Action with matching hideWhen is hidden in Driver mode', hiddenByHideWhen(driverMode));
 
   test('hideWhen wins over showWhen when both match', async () => {
     const config: PipelineConfiguration = {
@@ -1320,7 +1326,7 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
       const rootActions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid);
-      expectDeepEqual(rootActions?.[0].visible, false);
+      expectDeepEqual(tree.linksState.isActionVisible(rootActions![0].uuid), false);
     });
   });
 
@@ -1347,7 +1353,7 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
       const rootActions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid);
-      expectDeepEqual(rootActions?.[0].visible, true);
+      expectDeepEqual(tree.linksState.isActionVisible(rootActions![0].uuid), true);
     });
   });
 
@@ -1373,7 +1379,7 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
       const rootActions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid);
-      expectDeepEqual(rootActions?.[0].visible, true);
+      expectDeepEqual(tree.linksState.isActionVisible(rootActions![0].uuid), true);
     });
   });
 
@@ -1414,7 +1420,7 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
     const rootUuid = tree.nodeTree.root.getItem().uuid;
     const before = tree.linksState.getNodeActionsData(rootUuid);
     expectDeepEqual(before?.length, 1);
-    expectDeepEqual(before?.[0].visible, true);
+    expectDeepEqual(tree.linksState.isActionVisible(before![0].uuid), true);
 
     const action = [...tree.linksState.actions.values()][0];
     await tree.runAction(action.uuid).toPromise();
@@ -1422,11 +1428,11 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
     const after = tree.linksState.getNodeActionsData(rootUuid);
     expectDeepEqual(after?.length, 1);
     // step2 now exists → hideWhen matches → hidden
-    expectDeepEqual(after?.[0].visible, false);
+    expectDeepEqual(tree.linksState.isActionVisible(after![0].uuid), false);
   });
 
-  test('Validator isActionVisible mirrors UI visibility; getValidationAction is not gated', async () => {
-    const observed = new Subject<{uuid: string | undefined, visible: boolean}>();
+  test('Validator gets a hidden action through getValidationAction', async () => {
+    const observed = new Subject<string | undefined>();
     const config: PipelineConfiguration = {
       id: 'pipeline1',
       type: 'static',
@@ -1442,9 +1448,7 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
         handler({controller}) {
           const v = controller.getFirst('in1');
           if (v === 1) {
-            const uuid = controller.getValidationAction('actions', 'action1');
-            const visible = controller.isActionVisible('actions', 'action1');
-            observed.next({uuid, visible});
+            observed.next(controller.getValidationAction('actions', 'action1'));
           }
         },
       }],
@@ -1468,14 +1472,11 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('a', 1);
       });
-      // getValidationAction returns a UUID (not gated), isActionVisible reports false (hidden)
-      expectObservable(observed.pipe(
-        map(({uuid, visible}) => ({hasUuid: !!uuid, visible})),
-      )).toBe('- 250ms a', {a: {hasUuid: true, visible: false}});
+      expectObservable(observed.pipe(map((uuid) => !!uuid))).toBe('- 250ms a', {a: true});
     });
   });
 
-  test('Validator isActionVisible returns false for unknown name/actionId', async () => {
+  test('Validator getValidationAction returns undefined for unknown name/actionId', async () => {
     const observed = new Subject<{known: boolean, unknownName: boolean, unknownId: boolean}>();
     const config: PipelineConfiguration = {
       id: 'pipeline1',
@@ -1493,9 +1494,9 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
           const v = controller.getFirst('in1');
           if (v === 1) {
             observed.next({
-              known: controller.isActionVisible('actions', 'action1'),
-              unknownName: controller.isActionVisible('nope', 'action1'),
-              unknownId: controller.isActionVisible('actions', 'nope'),
+              known: !!controller.getValidationAction('actions', 'action1'),
+              unknownName: !!controller.getValidationAction('nope', 'action1'),
+              unknownId: !!controller.getValidationAction('actions', 'nope'),
             });
           }
         },
@@ -1519,8 +1520,354 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('a', 1);
       });
-      // No visibility condition → known is true; unknown name/id → false
       expectObservable(observed).toBe('- 250ms a', {a: {known: true, unknownName: false, unknownId: false}});
+    });
+  });
+
+  const daysConfig = (
+    initialDays: number, links: any[], daysActions: any[], rootActions: any[] = [],
+  ): PipelineConfiguration => ({
+    id: 'pipeline1',
+    type: 'static',
+    steps: [
+      {id: 'cooling', nqName: 'LibTests:TestAdd2'},
+      {
+        id: 'days',
+        type: 'parallel',
+        stepTypes: [{id: 'day', nqName: 'LibTests:TestAdd2'}],
+        initialSteps: Array.from({length: initialDays}, () => ({id: 'day'})),
+        actions: daysActions,
+      },
+    ],
+    links,
+    actions: rootActions,
+  });
+
+  const recordingValidator = (actions: string, last: {uuid?: string, runs: number}) => ({
+    id: 'check',
+    type: 'validator' as const,
+    debounce: 0,
+    from: 'in:cooling/a',
+    to: 'out:cooling/a',
+    actions,
+    handler({controller}: any) {
+      last.uuid = controller.getValidationAction('act', 'action1');
+      last.runs++;
+    },
+  });
+
+  const daysAction = {
+    id: 'action1',
+    position: 'none' as const,
+    from: 'in:all(day)/a',
+    to: 'out:all(day)/b',
+    handler({controller}: any) {
+      controller.setAll('out', 1);
+    },
+  };
+
+  test('Validation action stays runnable after its action is recreated', async () => {
+    const last = {runs: 0} as {uuid?: string, runs: number};
+    const config = daysConfig(1, [recordingValidator('act:days', last)], [daysAction]);
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      flush();
+      const cooling = tree.nodeTree.getNode([{idx: 0}]);
+      cooling.getItem().getStateStore().setState('a', 1);
+      flush();
+      expectDeepEqual(tree.linksState.actions.has(last.uuid!), true, {prefix: 'before mutation'});
+
+      const daysUuid = tree.nodeTree.getNode([{idx: 1}]).getItem().uuid;
+      tree.addSubTree(daysUuid, 'day', 1).subscribe();
+      flush();
+      expectDeepEqual(tree.linksState.actions.has(last.uuid!), true, {prefix: 'after mutation'});
+
+      cooling.getItem().getStateStore().setState('a', 2);
+      flush();
+      expectDeepEqual(tree.linksState.actions.has(last.uuid!), true, {prefix: 'after input change'});
+    });
+  });
+
+  test('Validation action is found once its action first matches', async () => {
+    const last = {runs: 0} as {uuid?: string, runs: number};
+    const config = daysConfig(0, [recordingValidator('act:days', last)], [daysAction]);
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      flush();
+      const cooling = tree.nodeTree.getNode([{idx: 0}]);
+      cooling.getItem().getStateStore().setState('a', 1);
+      flush();
+      expectDeepEqual(last.uuid === undefined, true, {prefix: 'no action before mutation'});
+
+      const daysUuid = tree.nodeTree.getNode([{idx: 1}]).getItem().uuid;
+      tree.addSubTree(daysUuid, 'day', 0).subscribe();
+      flush();
+      expectDeepEqual(tree.linksState.actions.has(last.uuid!), true, {prefix: 'after mutation'});
+
+      cooling.getItem().getStateStore().setState('a', 2);
+      flush();
+      expectDeepEqual(tree.linksState.actions.has(last.uuid!), true, {prefix: 'after input change'});
+    });
+  });
+
+  const rootAction = (handler?: () => void, extra: Record<string, any> = {}) => ({
+    id: 'action1',
+    position: 'none' as const,
+    from: [],
+    to: 'out:cooling/b',
+    handler: handler ?? (() => {}),
+    ...extra,
+  });
+
+  const hidingLink = (
+    id: string, from: string, actions: string, visible: (v: any) => boolean | undefined, runs?: {count: number},
+  ) => ({
+    id,
+    type: 'nodemeta' as const,
+    from,
+    to: [],
+    actions,
+    handler({controller}: any) {
+      if (runs)
+        runs.count++;
+      const value = visible(controller.getFirst('in'));
+      if (value !== undefined)
+        controller.setActionVisible('act', 'action1', value);
+    },
+  });
+
+  const actionUuid = (tree: StateTree, nodePath: {idx: number}[] = []) =>
+    tree.linksState.getNodeActionsData(tree.nodeTree.getNode(nodePath).getItem().uuid)![0].uuid;
+
+  const hidesFromInputs = (mode: {batchLinks?: boolean, annotationChecks?: boolean}) => async () => {
+    const config = daysConfig(0, [hidingLink('vis', 'in:cooling/a', 'act', (v) => v !== 1)], [], [rootAction()]);
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, ...mode});
+      tree.init().subscribe();
+      flush();
+      const cooling = tree.nodeTree.getNode([{idx: 0}]);
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), true, {prefix: 'initial'});
+
+      cooling.getItem().getStateStore().setState('a', 1);
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), false, {prefix: 'hidden'});
+      expectDeepEqual(tree.linksState.hiddenActions$.value.has(actionUuid(tree)), true, {prefix: 'published'});
+
+      cooling.getItem().getStateStore().setState('a', 2);
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), true, {prefix: 'shown again'});
+    });
+  };
+
+  test('Node meta link hides an action from input values', hidesFromInputs({}));
+
+  test('Node meta link hides an action from input values in Driver mode', hidesFromInputs(driverMode));
+
+  test('Node meta link withdraws its hiding when it stops setting it', async () => {
+    const config = daysConfig(0, [hidingLink('vis', 'in:cooling/a', 'act', (v) => v === 1 ? false : undefined)], [],
+      [rootAction()]);
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      flush();
+      const cooling = tree.nodeTree.getNode([{idx: 0}]);
+      cooling.getItem().getStateStore().setState('a', 1);
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), false, {prefix: 'hidden'});
+
+      cooling.getItem().getStateStore().setState('a', 2);
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), true, {prefix: 'withdrawn'});
+    });
+  });
+
+  test('Later node meta link can show an action hidden by hideWhen', async () => {
+    const runs = {count: 0};
+    const config = daysConfig(0, [hidingLink('vis', 'in:cooling/a', 'act', (v) => v === 1 ? true : undefined, runs)],
+      [], [rootAction(undefined, {hideWhen: 'guard: cooling'})]);
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), false, {prefix: 'hidden by hideWhen'});
+
+      tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore().setState('a', 1);
+      flush();
+      expectDeepEqual(runs.count > 0, true, {prefix: 'user link ran'});
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), true, {prefix: 'shown by the later link'});
+    });
+  });
+
+  const laterLinkWins = async (first: boolean, second: boolean) => {
+    const config = daysConfig(0, [
+      hidingLink('first', 'in:cooling/a', 'act', () => first),
+      hidingLink('second', 'in:cooling/a', 'act', () => second),
+    ], [], [rootAction()]);
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      flush();
+      tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore().setState('a', 1);
+      flush();
+      return tree.linksState.isActionVisible(actionUuid(tree));
+    });
+  };
+
+  test('Later node meta link overrides an earlier one', async () => {
+    expectDeepEqual(await laterLinkWins(true, false), false, {prefix: 'shown then hidden'});
+    expectDeepEqual(await laterLinkWins(false, true), true, {prefix: 'hidden then shown'});
+  });
+
+  test('Node meta link addresses an action shown elsewhere via visibleOn', async () => {
+    const config = daysConfig(0, [hidingLink('vis', 'in:cooling/a', 'act:cooling', () => false)], [],
+      [rootAction(undefined, {visibleOn: 'cooling'})]);
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      flush();
+      tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore().setState('a', 1);
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree, [{idx: 0}])), false);
+    });
+  });
+
+  test('Hidden action stays hidden after its action is recreated', async () => {
+    const config = daysConfig(1, [hidingLink('vis', 'in:cooling/a', 'act:days', () => false)], [daysAction]);
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      flush();
+      tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore().setState('a', 1);
+      flush();
+      const before = actionUuid(tree, [{idx: 1}]);
+      expectDeepEqual(tree.linksState.isActionVisible(before), false, {prefix: 'before mutation'});
+
+      const daysUuid = tree.nodeTree.getNode([{idx: 1}]).getItem().uuid;
+      tree.addSubTree(daysUuid, 'day', 1).subscribe();
+      flush();
+      const after = actionUuid(tree, [{idx: 1}]);
+      expectDeepEqual(after !== before, true, {prefix: 'action recreated'});
+      expectDeepEqual(tree.linksState.isActionVisible(after), false, {prefix: 'after mutation'});
+    });
+  });
+
+  test('Removed node meta link stops hiding its action', async () => {
+    const config = daysConfig(1, [hidingLink('vis', 'in:days/first(day)/a', 'act', () => false)], [], [rootAction()]);
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      flush();
+      const day = tree.nodeTree.getNode([{idx: 1}, {idx: 0}]);
+      day.getItem().getStateStore().setState('a', 1);
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), false, {prefix: 'hidden'});
+
+      tree.removeSubtree(day.getItem().uuid).subscribe();
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), true, {prefix: 'after link removal'});
+    });
+  });
+
+  test('Node meta hiding stays when hideWhen stops matching', async () => {
+    const config = daysConfig(1, [hidingLink('vis', 'in:cooling/a', 'act', (v) => v === 1 ? false : undefined)], [],
+      [rootAction(undefined, {hideWhen: 'guard: days/first(day)'})]);
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), false, {prefix: 'hidden by hideWhen'});
+      tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore().setState('a', 1);
+      flush();
+
+      tree.removeSubtree(tree.nodeTree.getNode([{idx: 1}, {idx: 0}]).getItem().uuid).subscribe();
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), false, {prefix: 'still hidden by the link'});
+    });
+  });
+
+  test('hideWhen that starts matching overrides an earlier node meta link', async () => {
+    const config = daysConfig(0, [hidingLink('vis', 'in:cooling/a', 'act', (v) => v === 1 ? true : undefined)], [],
+      [rootAction(undefined, {hideWhen: 'guard: days/first(day)'})]);
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      flush();
+      tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore().setState('a', 1);
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), true, {prefix: 'shown by the link'});
+
+      tree.addSubTree(tree.nodeTree.getNode([{idx: 1}]).getItem().uuid, 'day', 0).subscribe();
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), false, {prefix: 'hidden by hideWhen'});
+    });
+  });
+
+  test('Node meta hiding survives an unrelated tree change', async () => {
+    const config = daysConfig(0, [hidingLink('vis', 'in:cooling/a', 'act', (v) => v === 1 ? false : undefined)], [],
+      [rootAction()]);
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      flush();
+      tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore().setState('a', 1);
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), false, {prefix: 'hidden'});
+
+      tree.addSubTree(tree.nodeTree.getNode([{idx: 1}]).getItem().uuid, 'day', 0).subscribe();
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree)), false, {prefix: 'after adding a step'});
+    });
+  });
+
+  test('hideWhen hides an action shown elsewhere via visibleOn', async () => {
+    const config = daysConfig(0, [], [], [rootAction(undefined, {visibleOn: 'cooling', hideWhen: 'guard: cooling'})]);
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(actionUuid(tree, [{idx: 0}])), false);
+    });
+  });
+
+  test('hideWhen hides every copy of a base-expanded action', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'parallel',
+      stepTypes: [{id: 'step1', nqName: 'LibTests:TestAdd2'}],
+      initialSteps: [{id: 'step1'}, {id: 'step1'}, {id: 'step1'}],
+      actions: [{
+        id: 'act',
+        base: 'base:expand(step1)',
+        position: 'none',
+        from: 'in:same(@base)/a',
+        to: 'out:same(@base)/b',
+        hideWhen: 'guard: first(step1)',
+        handler() {},
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    return testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      flush();
+      const actions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid) ?? [];
+      expectDeepEqual(actions.length, 3, {prefix: 'copies'});
+      expectDeepEqual(actions.map((action) => tree.linksState.isActionVisible(action.uuid)), [false, false, false]);
     });
   });
 });

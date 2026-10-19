@@ -1157,9 +1157,16 @@ function install(): void {
       box = seen && reachable(seen);
       if (!box) {
         el.scrollIntoView({block: 'nearest'});
+        let now = visible();
+        box = now && reachable(now);
+        // 'nearest' leaves a row under a sticky header where it is (the browse tree's Spaces over its first space)
+        if (!box) {
+          el.scrollIntoView({block: 'center'});
+          now = visible();
+          box = now && reachable(now);
+        }
         const r = el.getBoundingClientRect();
-        const now = visible();
-        box = (now && reachable(now)) ?? now ?? {x: r.x, y: r.y, width: r.width, height: r.height};
+        box ??= now ?? {x: r.x, y: r.y, width: r.width, height: r.height};
       }
     }
     return {x: box.x + box.width / 2, y: box.y + box.height / 2, token: await openMenu(capMs)};

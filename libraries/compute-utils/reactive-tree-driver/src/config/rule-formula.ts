@@ -2,7 +2,8 @@ import {Grammars, IToken, Parser} from 'ebnf';
 import {RestrictionType} from '../data/common-types';
 import {driverOpNames, isLiteral, scopedOps} from '../runtime/rule-expressions';
 import {
-  PipelineCheckConfiguration, PipelineRuleConfiguration, RuleEffect, RuleExpr, RuleLogic, RuleSource, SourceKind,
+  PipelineCheckConfiguration, PipelineRuleConfiguration, RuleEffect, RuleExpr, RuleLogic, RuleMessageAction, RuleSource,
+  SourceKind,
 } from './PipelineConfiguration';
 
 /* eslint-disable max-len */
@@ -51,8 +52,9 @@ type EffectName = RuleEffect['effect'];
 // the effect object behind a name; found by membership because hide and show share one shape
 type EffectOf<E extends EffectName> = RuleEffect extends infer R ? R extends {effect: infer N} ?
   E extends N ? R : never : never : never;
-// what a call has to cover: every field except the name and the condition every call takes
-type EffectFields<E extends EffectName> = Exclude<keyof EffectOf<E>, 'effect' | 'when'>;
+// what a call has to cover: every field except the name and the options every call takes
+type EffectFields<E extends EffectName> =
+  Exclude<keyof EffectOf<E>, 'effect' | 'when' | 'separate' | 'additionalTriggers'>;
 type EffectCall<E extends EffectName> = {positional: readonly EffectFields<E>[], options: readonly EffectFields<E>[]};
 
 // positional parameters and named options of each effect call;
@@ -60,11 +62,14 @@ type EffectCall<E extends EffectName> = {positional: readonly EffectFields<E>[],
 const effectCalls = {
   hide: {positional: ['targets'], options: []},
   show: {positional: ['targets'], options: []},
+  hideAction: {positional: ['targets', 'action'], options: []},
+  showAction: {positional: ['targets', 'action'], options: []},
+  describe: {positional: ['targets', 'value'], options: []},
   items: {positional: ['targets', 'items'], options: []},
   meta: {positional: ['targets'], options: ['meta']},
-  error: {positional: ['targets', 'message'], options: []},
-  warning: {positional: ['targets', 'message'], options: []},
-  notification: {positional: ['targets', 'message'], options: []},
+  error: {positional: ['targets', 'message'], options: ['actions']},
+  warning: {positional: ['targets', 'message'], options: ['actions']},
+  notification: {positional: ['targets', 'message'], options: ['actions']},
   verdicts: {positional: ['targets', 'source'], options: []},
   set: {positional: ['targets', 'value'], options: ['restriction']},
   clear: {positional: ['targets'], options: ['restriction']},
@@ -88,6 +93,9 @@ const sourceCalls: Record<Exclude<SourceKind, 'js'>, {positional: string[]}> = {
   validators: {positional: ['input']},
   choices: {positional: ['input']},
 };
+
+// options every effect call takes
+const common = ['when', 'separate', 'additionalTriggers'];
 
 const restrictions: Record<RestrictionType, true> = {disabled: true, restricted: true, info: true, none: true};
 
@@ -187,6 +195,8 @@ function expression(node: IToken, text: string, inElement = false): any {
       throw new FormulaError(`${name} is an effect call and cannot be used inside an expression`, node, text);
     if (has(sourceCalls, name))
       throw new FormulaError(`${name} is a source call and cannot be used inside an expression`, node, text);
+    if (name === 'action')
+      throw new FormulaError('action is only allowed in the actions option of a message', node, text);
     if (name === 'obj') {
       if (positional.length)
         throw new FormulaError('obj takes named arguments only', positional[0], text);
@@ -233,12 +243,38 @@ function expression(node: IToken, text: string, inElement = false): any {
   }
 }
 
-function targets(node: IToken, text: string): string | string[] {
+function aliases(node: IToken, text: string, message: string): string | string[] {
   if (node.type === 'Ref' && !node.text.includes('.'))
     return node.text;
   if (node.type === 'Array' && node.children.every((child) => child.type === 'Ref' && !child.text.includes('.')))
     return node.children.map((child) => child.text);
-  throw new FormulaError('Targets are an output alias or a list of them', node, text);
+  throw new FormulaError(message, node, text);
+}
+
+const targets = (node: IToken, text: string) => aliases(node, text, 'Targets are an output alias or a list of them');
+
+// each element is one button of the message, the ActionItem it becomes
+function messageActions(node: IToken, text: string): RuleMessageAction[] {
+  const shape = 'actions are a list of action(alias, "id", name) calls';
+  if (node.type !== 'Array')
+    throw new FormulaError(shape, node, text);
+  return node.children.map((child) => {
+    if (child.type !== 'Call' || child.children[0].text !== 'action')
+      throw new FormulaError(shape, child, text);
+    const {positional, named} = callParts(child, text);
+    arity('action', positional, ['actions', 'action', 'actionName'], child, text);
+    const item: RuleMessageAction = {
+      actions: alias(positional[0], text, 'The actions alias'),
+      action: stringLiteral(positional[1], text, 'The action id'),
+      actionName: expression(positional[2], text),
+    };
+    for (const [key, arg] of Object.entries(named)) {
+      if (key !== 'additionalParams')
+        throw new FormulaError(`action has no option ${key} (expected additionalParams)`, arg, text);
+      item.additionalParams = expression(arg, text);
+    }
+    return item;
+  });
 }
 
 function alias(node: IToken, text: string, what: string): string {
@@ -308,6 +344,8 @@ export function compileEffect(text: string): RuleEffect {
       effect.targets = targets(arg, body);
     else if (param === 'source')
       effect.source = alias(arg, body, 'source');
+    else if (param === 'action')
+      effect.action = stringLiteral(arg, body, 'action');
     else
       effect[param] = expression(arg, body);
   });
@@ -316,12 +354,22 @@ export function compileEffect(text: string): RuleEffect {
   for (const [key, arg] of Object.entries(named)) {
     if (key === 'when')
       effect.when = expression(arg, body);
+    else if (key === 'separate') {
+      const value = constant(arg, body, 'separate');
+      if (typeof value !== 'boolean')
+        throw new FormulaError('separate must be true or false', arg, body);
+      effect.separate = value;
+    } else if (key === 'additionalTriggers')
+      effect.additionalTriggers = aliases(arg, body, 'additionalTriggers are an input alias or a list of them');
     else if (name === 'meta')
       effect.meta[key] = expression(arg, body);
-    else if (!options.includes(key))
-      throw new FormulaError(`${name} has no option ${key} (expected ${[...options, 'when'].join(', ')})`, arg, body);
-    else if (key === 'targets')
+    else if (!options.includes(key)) {
+      throw new FormulaError(`${name} has no option ${key} (expected ${[...options, ...common].join(', ')})`,
+        arg, body);
+    } else if (key === 'targets')
       effect.targets = targets(arg, body);
+    else if (key === 'actions')
+      effect.actions = messageActions(arg, body);
     else if (key === 'restriction') {
       const restriction = stringLiteral(arg, body, 'restriction');
       if (!has(restrictions, restriction))

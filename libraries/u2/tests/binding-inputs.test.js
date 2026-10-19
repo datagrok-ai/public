@@ -47,7 +47,7 @@ spec('the five chrome props follow bound signals live, input element identity st
   const root = instance.node('driver').root;
   const editor = root.querySelector('input');
   assert.equal(root.querySelector('.u2-input-label').textContent, 'Name');
-  assert.equal(root.title, 'A tip');
+  assert.equal(editor.getAttribute('aria-description'), 'A tip');
   assert.equal(editor.disabled, false);
   assert.equal(root.querySelector('.u2-input-postfix').textContent, 'mg');
   assert.equal(editor.placeholder, 'Type here');
@@ -58,7 +58,7 @@ spec('the five chrome props follow bound signals live, input element identity st
   ctx.data.px.value = 'kg';
   ctx.data.ph.value = 'Now here';
   assert.equal(root.querySelector('.u2-input-label').textContent, 'Renamed');
-  assert.equal(root.title, 'Another tip');
+  assert.equal(editor.getAttribute('aria-description'), 'Another tip');
   assert.equal(editor.disabled, true, 'enabled=false grays out live');
   assert.equal(root.classList.contains('u2-input-disabled'), true);
   assert.equal(root.querySelector('.u2-input-postfix').textContent, 'kg');

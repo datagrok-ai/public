@@ -803,7 +803,12 @@ async function expectBalloon(page: Page, types: string[], text: string | RegExp,
     await expect.poll(async () => {
       shown = shown.concat(await v.takeBalloons(page));
       return shown.some(matches);
-    }, {timeout: pollMs(capMs), message: `an ${types.join(' or ')} balloon ${what}; balloons since the last check: ${shown.map((b) => `${b.type}: ${b.message}`).join(' | ') || 'none'}`}).toBe(true);
+    }, {timeout: pollMs(capMs), message: `an ${types.join(' or ')} balloon ${what}`}).toBe(true);
+  }
+  catch (e) {
+    // what the poll saw, which the message could not know when it was written
+    (e as Error).message += `\nballoons since the last check: ${shown.map((b) => `${b.type}: ${b.message}`).join(' | ') || 'none'}`;
+    throw e;
   }
   finally {
     // the read is destructive, so a balloon this claim did not want goes back on the floor: a

@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, Scope} from '../src/index.js';
-import {Form} from '../src/components/forms/form.js';
+import {Form, LabelColumn} from '../src/components/forms/form.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
 import {ChoiceInput} from '../src/components/inputs/choice-input.js';
 
@@ -294,6 +294,71 @@ ui('folding a section (labels measuring 0) never reflows the shared label column
   short.dispose();
 });
 
+ui('alignment lands before the next task: a form built and attached in one go is aligned after a microtask', async () => {
+  const f = mount(new Form({layout: 'normal'}));
+  f.addAll([input('Name', 60), input('Natural analog', 97)]);
+  assert.equal(f.root.style.getPropertyValue('--u2-form-label-width'), '', 'not while the building code runs');
+  await Promise.resolve();
+  assert.equal(f.root.style.getPropertyValue('--u2-form-label-width'), '97px');
+  for (const i of f.inputs.slice())
+    i.dispose();
+  f.dispose();
+});
+
+ui('labelWidth: a fixed column — nothing measured, the auto layout decides with it', async () => {
+  const f = mount(new Form({labelWidth: 28}));
+  f.add(input('R1', 20));
+  f.root.clientWidth = 400;
+  f.layoutNow();
+  assert.equal(f.root.style.getPropertyValue('--u2-form-label-width'), '28px');
+  assert.equal(wide(f), true);
+  f.inputs[0].dispose();
+  f.dispose();
+});
+
+ui('labelColumn: the forms sharing a column take its widest caption, a hidden one\'s included', async () => {
+  const column = new LabelColumn();
+  const a = mount(new Form({layout: 'normal', labelColumn: column}));
+  const b = mount(new Form({layout: 'normal', labelColumn: column}));
+  a.add(input('Name', 60));
+  b.add(input('Natural analog', 97));
+  await flush();
+  assert.equal(column.width.value, 97);
+  assert.equal(a.root.style.getPropertyValue('--u2-form-label-width'), '97px', 'the narrower form follows');
+  assert.equal(b.root.style.getPropertyValue('--u2-form-label-width'), '97px');
+  b.inputs[0].dispose();
+  b.dispose();
+  assert.equal(column.width.value, 60, 'a disposed form leaves the column');
+  assert.equal(a.root.style.getPropertyValue('--u2-form-label-width'), '60px');
+  a.inputs[0].dispose();
+  a.dispose();
+});
+
+ui('error: the form\'s first shown message — none on a fresh form, validity has it from the start', async () => {
+  const f = mount(new Form());
+  const name = new TextInput({label: 'Name', required: true});
+  f.add(name);
+  assert.notEqual(f.validity.value, null);
+  assert.equal(f.error.value, null);
+  f.validate();
+  assert.equal(f.error.value, f.validity.value);
+  name.dispose();
+  f.dispose();
+});
+
+ui('width: an input\'s own editor width beats the widths a form fits', async () => {
+  const f = mount(new Form({layout: 'normal'}));
+  const cap = new ChoiceInput({label: 'R1', items: ['H', 'OH'], width: 110});
+  const name = new TextInput({label: 'Name', width: '12em'});
+  f.addAll([cap, name]);
+  await flush();
+  assert.equal(cap.root.querySelector('select').style.width, '110px');
+  assert.equal(name.root.querySelector('input').style.width, '12em');
+  cap.dispose();
+  name.dispose();
+  f.dispose();
+});
+
 ui('a nested form leaves the auto switching to the outer one', async () => {
   const outer = mount(new Form());
   const inner = new Form();
@@ -456,4 +521,110 @@ ui('the auto layout marks itself, so the platform widths hold in its wide state'
   assert.equal(wide.root.classList.contains('u2-form-auto'), false);
   auto.dispose();
   wide.dispose();
+});
+
+ui('addGroup: one caption over several inputs — the group caption sizes the column, its inputs do not', async () => {
+  const f = mount(new Form({layout: 'normal'}));
+  const name = input('Name', 40);
+  const line = input('Line', 30);
+  const background = input('A long background caption', 160);
+  f.add(name).addGroup('Colors', [line, background], {captionsAfter: true});
+  f.root.querySelector('.u2-form-group-label').offsetWidth = 52;
+  f.layoutNow();
+  assert.equal(f.root.style.getPropertyValue('--u2-form-label-width'), '52px', 'the group caption, not its inputs\'');
+  assert.deepEqual(f.inputs.map((i) => i.name), ['Name', 'Line', 'A long background caption']);
+  const group = f.root.querySelector('[role="group"]');
+  assert.equal(document.getElementById(group.getAttribute('aria-labelledby')).textContent, 'Colors');
+  assert.equal(line.root.classList.contains('u2-input-caption-after'), true);
+  for (const i of [name, line, background])
+    i.dispose();
+  f.dispose();
+});
+
+ui('addColumns: the inputs in one grid, at the minimum and column count asked, still the form\'s own', async () => {
+  const f = mount(new Form({layout: 'normal'}));
+  const symbol = input('Symbol', 44);
+  const name = input('Name', 38);
+  const polymer = input('Polymer', 52);
+  f.addColumns([symbol, name, polymer], {minWidth: 176});
+  f.layoutNow();
+  const grid = f.root.querySelector('.u2-form-columns');
+  assert.deepEqual([...grid.children], [symbol.root, name.root, polymer.root]);
+  assert.equal(grid.style.getPropertyValue('--u2-form-column-min'), '176px');
+  assert.equal(grid.style.getPropertyValue('--u2-form-columns'), '', 'two columns by default');
+  assert.equal(f.root.style.getPropertyValue('--u2-form-label-width'), '52px', 'its captions size the one label column');
+  assert.deepEqual(f.inputs.map((i) => i.name), ['Symbol', 'Name', 'Polymer']);
+  const host = document.createElement('div');
+  f.root.append(host);
+  const three = [input('A', 10), input('B', 10), input('C', 10)];
+  f.addColumns(three, {columns: 3, host});
+  assert.equal(host.querySelector('.u2-form-columns').style.getPropertyValue('--u2-form-columns'), '3');
+  for (const i of [symbol, name, polymer, ...three])
+    i.dispose();
+  f.dispose();
+});
+
+test('addColumns: a track never goes under the minimum, so a narrow row holds fewer columns rather than squeezing them', () => {
+  const sheet = readFileSync(new URL('../css/form.css', import.meta.url), 'utf8');
+  const at = sheet.indexOf('.u2-form-columns {');
+  const rule = sheet.slice(at, sheet.indexOf('}', at));
+  assert.match(rule, /repeat\(auto-fill, minmax\(min\(100%, max\(var\(--u2-form-column-min, 200px\)/);
+  assert.match(rule, /\/ var\(--u2-form-columns, 2\)\)\), 1fr\)\)/);
+  const fill = sheet.slice(sheet.indexOf('[data-u2=\'choice-input\'], [data-u2=\'number-input\']'));
+  assert.match(fill.slice(0, fill.indexOf('}')), /> \.u2-input-box > \.u2-input-editor \{\s+flex: 1 1 auto;\s+width: auto;/,
+    'a choice fitted to its longest item and a number\'s 150px fill their column like a text editor');
+});
+
+ui('quiet: the form says so, and an input says while it is empty', async () => {
+  const f = mount(new Form({quiet: true}));
+  const name = new TextInput({label: 'Name', name: 'name'});
+  f.add(name);
+  assert.equal(f.root.classList.contains('u2-quiet'), true);
+  assert.equal(name.root.classList.contains('u2-input-empty'), true, 'nothing typed: it keeps its underline');
+  name.value.value = 'Cysteine';
+  assert.equal(name.root.classList.contains('u2-input-empty'), false);
+  name.value.value = '';
+  assert.equal(name.root.classList.contains('u2-input-empty'), true);
+  const sheet = readFileSync(new URL('../css/inputs.css', import.meta.url), 'utf8');
+  assert.match(sheet, /\.u2-quiet \{\s+--dg-input-border: var\(--dg-border-width\) solid transparent;/);
+  assert.match(sheet, /\.u2-quiet \.u2-input-root\.u2-input-empty,/);
+  name.dispose();
+  f.dispose();
+});
+
+ui('addButtons: the row goes where `host` says, at the start when asked, and keeps the form-button look there', async () => {
+  const f = mount(new Form());
+  const footer = document.createElement('div');
+  document.body.append(footer);
+  const save = document.createElement('button');
+  f.addButtons((row) => row.append(save), {align: 'start', host: footer});
+  const row = footer.firstElementChild ?? footer.children[0];
+  assert.equal(row.classList.contains('u2-form-buttons'), true);
+  assert.equal(row.classList.contains('u2-form-buttons-start'), true);
+  assert.equal(row.contains(save), true);
+  assert.equal(f.root.contains(row), false, 'placed in the host, not under the rows');
+  const sheet = readFileSync(new URL('../css/form.css', import.meta.url), 'utf8');
+  assert.match(sheet, /\.u2-form-buttons \.u2-btn-primary:not\(:disabled\)[^{]*\{\s+background: var\(--dg-blue-2\);/,
+    'a primary button in the row is the platform form button outside the form too');
+  f.dispose();
+});
+
+test('stylesheet: dates keep their own width in a form; required marks hang past the caption', () => {
+  const form = readFileSync(new URL('../css/form.css', import.meta.url), 'utf8');
+  assert.match(form, /\.u2-form-auto\.u2-form-wide \.u2-input-root:not\(\.u2-input-fill\) \.u2-input-editor\.u2-date \{/,
+    'a date never stretches across a wide auto form');
+  assert.match(form, /\[data-u2='datetime-input'\] \.u2-input-editor\.u2-date \{\s*width: 170px;/);
+  const inputs = readFileSync(new URL('../css/inputs.css', import.meta.url), 'utf8');
+  const at = inputs.indexOf('.u2-form:not(.u2-form-captions-left):not(.u2-form-tall) .u2-input-required > .u2-input-label::after');
+  assert.notEqual(at, -1, 'right-aligned forms hang the asterisk');
+  assert.match(inputs.slice(at, inputs.indexOf('}', at)), /position: absolute;\s*left: 100%;/);
+  const wizard = readFileSync(new URL('../css/wizard.css', import.meta.url), 'utf8');
+  assert.match(wizard, /\.u2-dialog-content > \.u2-wizard \{\s*height: 100%;/, 'the wizard footer sits at the dialog bottom');
+  const buttons = readFileSync(new URL('../css/buttons.css', import.meta.url), 'utf8');
+  assert.match(buttons, /\.d4-ribbon-item \.u2-btn\.u2-btn-primary:not\(:disabled\) \{\s*background/,
+    'a disabled ribbon primary keeps the disabled skin');
+  assert.doesNotMatch(buttons, /\.d4-ribbon-item \.u2-btn\.u2-btn-primary \{[^}]*background/);
+  const radio = readFileSync(new URL('../css/radio.css', import.meta.url), 'utf8');
+  assert.match(radio, /\.u2-input-editor\.u2-radio\.u2-radio-buttons \{\s*flex-direction: row;/,
+    'the segmented radio outranks the stacked editor rule');
 });

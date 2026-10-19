@@ -3,7 +3,7 @@ feature: projects
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [projects.cp.share-with-unshared-deps, projects.cp.view-and-use-failure-state, projects.op.rename_external_dep, projects.op.share_with_recipient_open, projects.op.rename_project]
+realizes_atlas: [projects.cp.share-with-unshared-deps, projects.cp.view-and-use-failure-state, projects.op.rename_external_dep, projects.op.share_with_recipient_open]
 realizes: [views.projects]
 realized_as:
   - projects-lifecycle-script-spec.ts
@@ -22,12 +22,13 @@ related_bugs:
 
 A project built from the output of your own script is saved and
 shared **without** sharing the script. Then the script is renamed and
-broken. Two bugs are checked:
+its body changed, and the project must show what the new body returns.
+Finally the script is broken. Two bugs are checked:
 
 - **GROK-19403.** A recipient of a project whose script was not
-  shared must never get an empty table without a message. Today the
-  project share also gives the recipient access to the script, so
-  the data loads.
+  shared must never get an empty table without a message. The project
+  share also gives the recipient access to the script, so the data
+  loads.
 - **GROK-19728.** A recipient with **View and use** access must not be
   able to edit the creation script, even when it fails.
 
@@ -94,43 +95,56 @@ broken. Two bugs are checked:
    - Click **Logout** in the profile view.
    - Sign in with the owner's credentials.
 
-6. **Rename the script.**
+6. **Rename the script and change its body.**
    - Go to **Browse > Platform > Functions > Scripts**.
    - Right-click `lifecycleScript` and choose **Edit...**.
-   - Change the first line to `//name: lifecycleScriptRenamed`.
+   - Replace the whole text with the text below.
    - Click **SAVE** in the editor.
+   - Reload the browser tab.
    - Go to **Browse > Dashboards**.
    - Type `lifecycleScriptProj` into the search box.
    - Click the refresh icon.
    - Double-click the `lifecycleScriptProj` tile.
-   - **Verify:** `demog` opens with 5,850 rows.
+   - **Verify:** `demog` opens with 100 rows (not the 5,850 it was
+     saved with): the renamed script ran again.
    - Right-click the left sidebar and select **Close All**.
 
-7. **Rename the project.**
-   - Go to **Browse > Dashboards**.
-   - Right-click the `lifecycleScriptProj` tile and choose
-     **Rename...**.
-   - Change the name to `lifecycleScriptProjRenamed`.
-   - Click **OK**.
-   - Go to **Browse > Dashboards**.
-   - Type `lifecycleScriptProjRenamed` into the search box.
-   - Click the refresh icon.
-   - Double-click the `lifecycleScriptProjRenamed` tile.
-   - **Verify:** `demog` opens with 5,850 rows.
-   - Right-click the left sidebar and select **Close All**.
+   ```
+   //name: lifecycleScriptRenamed
+   //language: javascript
+   //output: dataframe df
+   df = grok.data.demo.demog(100);
+   ```
 
-8. **Break the script (GROK-19728).**
+7. **Break the script (GROK-19728).**
    - Go to **Browse > Platform > Functions > Scripts**.
    - Right-click `lifecycleScriptRenamed` and choose **Edit...**.
    - Add the line `throw new Error('intentional break');` before the
      `df = …` line.
    - Click **SAVE** in the editor.
 
-9. **The owner opens the broken project.**
+8. **The recipient opens the broken project.**
+   - Click your avatar at the bottom of the left sidebar.
+   - Click **Logout** in the profile view.
+   - Sign in with the second user's credentials.
    - Go to **Browse > Dashboards**.
-   - Type `lifecycleScriptProjRenamed` into the search box.
+   - Type `lifecycleScriptProj` into the search box.
    - Click the refresh icon.
-   - Double-click the `lifecycleScriptProjRenamed` tile.
+   - Double-click the `lifecycleScriptProj` tile.
+   - **Verify:** the **Data loading error** dialog says *Ask the
+     project owner to fix the script*.
+   - **Verify:** the dialog offers only **OPEN ANYWAY** and **CLOSE
+     PROJECT**.
+   - Click **CLOSE PROJECT**.
+   - Click your avatar at the bottom of the left sidebar.
+   - Click **Logout** in the profile view.
+
+9. **The owner opens the broken project.**
+   - Sign in with the owner's credentials.
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleScriptProj` into the search box.
+   - Click the refresh icon.
+   - Double-click the `lifecycleScriptProj` tile.
    - **Verify:** the **Data loading error** dialog says the project
      *could not load some of its data* and shows `Error: intentional
      break`.
@@ -138,28 +152,10 @@ broken. Two bugs are checked:
      and **CLOSE PROJECT**.
    - Click **CLOSE PROJECT**.
 
-10. **The recipient opens the broken project.**
-    - Click your avatar at the bottom of the left sidebar.
-    - Click **Logout** in the profile view.
-    - Sign in with the second user's credentials.
-    - Reload the browser tab.
+10. **Cleanup.**
     - Go to **Browse > Dashboards**.
-    - Type `lifecycleScriptProjRenamed` into the search box.
-    - Click the refresh icon.
-    - Double-click the `lifecycleScriptProjRenamed` tile.
-    - **Verify:** the **Data loading error** dialog says *Ask the
-      project owner to fix the script*.
-    - **Verify:** the dialog offers only **OPEN ANYWAY** and **CLOSE
-      PROJECT**.
-    - Click **CLOSE PROJECT**.
-    - Click your avatar at the bottom of the left sidebar.
-    - Click **Logout** in the profile view.
-    - Sign in with the owner's credentials.
-
-11. **Cleanup.**
-    - Go to **Browse > Dashboards**.
-    - Right-click the `lifecycleScriptProjRenamed` tile and choose
-      **Delete Project**.
+    - Right-click the `lifecycleScriptProj` tile and choose **Delete
+      Project**.
     - Click **DELETE**.
     - Wait until the dialog closes (about 20 seconds).
     - In **Scripts**, right-click `lifecycleScriptRenamed` and choose
@@ -170,9 +166,17 @@ broken. Two bugs are checked:
 
 ## Expected results
 
-- A script-based project reopens and re-runs the script.
+- A script-based project reopens and runs the script again: after the
+  script is renamed and its body changed, the project shows the new
+  result.
 - The recipient gets the data although the script is not shared.
 - A recipient with **View and use** access cannot edit the creation
-  script, even when it fails.
-- Renaming the script and then the project leaves the project
-  working.
+  script, even when it fails; the owner can.
+
+## Automation notes
+
+- After a script is renamed in its editor, the same browser session
+  can keep running the old body for about a minute. Step 6 reloads the
+  tab before opening the project, and after the break the owner opens
+  the project only after signing in again, which also loads a fresh
+  page.

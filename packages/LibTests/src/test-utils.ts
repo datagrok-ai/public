@@ -6,7 +6,8 @@ import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {TestScheduler} from 'rxjs/testing';
 import {Observable, of} from 'rxjs';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
-import {map, mapTo, startWith, switchMap} from 'rxjs/operators';
+import {resolveSources} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/rule-sources';
+import {map, mapTo, startWith, switchMap, take} from 'rxjs/operators';
 import {isFuncCallNode, StateTreeNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {NodePath} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/BaseTree';
 import {getProcessedConfig, PipelineConfigurationProcessed} from
@@ -137,6 +138,17 @@ export const warnings = (...descriptions: string[]) =>
 
 // a link controller for sources that read no step call
 export const noCallController = (sourceCache?: Map<string, any>) => ({getFirst: () => undefined, sourceCache}) as any;
+
+export const resolvedSources = (...args: Parameters<typeof resolveSources>) => resolveSources(...args).toPromise();
+
+export const notYet = Object.freeze({notYet: true});
+
+/** What `value$` emits while it is subscribed, or `notYet` when it emits later. */
+export function syncResult<T>(value$: Observable<T>): T | typeof notYet {
+  let result: T | typeof notYet = notYet;
+  value$.pipe(take(1)).subscribe((value) => result = value).unsubscribe();
+  return result;
+}
 
 export async function makeTree(config: PipelineConfiguration, mockMode = false) {
   const tree = StateTree.fromPipelineConfig({config: await getProcessedConfig(config), mockMode});

@@ -118,12 +118,18 @@ anywhere else now fails the test. Pinning showed one tag green for the wrong rea
 | [After a layout saved before a rename, the formula names only existing columns](../../packages/UsageAnalysis/bdd/features/viewers/nx/nx-chain.feature) | A layout wrote its saved `formula` tag over the column's own. | `client/xamgle/lib/src/views/table_view.dart` `applyUserDataTags`; Dart test in "Core: ddt: Calculated columns: Save/Apply". |
 | [Converting the same column twice keeps both columns — GROK-20806](../../packages/UsageAnalysis/bdd/features/sequence-translator/oligo-toolkit-translator-structure.feature) | Green for the wrong reason: the scenario failed at its first claim, a column name Convert no longer writes (it writes HELM). | The bug is fixed: with the name corrected, both columns stay, the second named "(2)". |
 
+## Tags retired on 2026-10-18
+
+| Scenario | Was | Resolution |
+| --- | --- | --- |
+| [Shift-click on a network diagram node adds its rows](../../packages/UsageAnalysis/bdd/features/viewers/network-diagram/network-diagram-selection.feature) | Shift-click replaced the selection (6 rows, not 554). | `client/d4/lib/src/viewers/network_diagram/network_diagram_core.dart`: the click took its modifiers from the last key event the viewer's root received, never sent while the focus is outside it; it reads them off the click's own pointer event (vis's `event.srcEvent`). The scenario's Control-click claim said "only the M rows" (447) for the one row left; it now says no F row is selected. |
+| [Save SDF with an antisense strand that cannot be converted is refused by name — GROK-20959](../../packages/UsageAnalysis/bdd/features/sequence-translator/oligo-toolkit-translator-structure.feature) | The refusal balloon does not name the strand. | The product names it ("Unable to detect the format of the sequence 'NOTASEQUENCE'"); the scenario claimed the one balloon twice, and the first claim takes it. One claim now. |
+
 ## Open on 2026-10-12
 
 | Scenario | Pinned at | Was |
 | --- | --- | --- |
 | [Converted molecules keep their stereochemistry — GROK-20956](../../packages/Chem/bdd/features/transform/notation.feature) | line 58, `every molecule of "canonical_smiles_molblock" column should be the same as in "canonical_smiles" column` | Rows 478, 487 and 488: RDKit's own SMILES → molblock → SMILES round trip flips the vinyl stereocentre of the quinuclidines in Chem's RDKit_minimal 1.2.23 (2024.09) and keeps it in 2026.03; the tag goes with the upgrade. CoordGen also flips the C=N geometry of row 833 — a separate defect the next line would report once the first is fixed. |
-| [Save SDF with an antisense strand that cannot be converted is refused by name — GROK-20959](../../packages/UsageAnalysis/bdd/features/sequence-translator/oligo-toolkit-translator-structure.feature) | line 184, `a warning balloon containing "NOTASEQUENCE" should have been shown` | The refusal balloon does not name the strand. |
 
 ## Validation
 

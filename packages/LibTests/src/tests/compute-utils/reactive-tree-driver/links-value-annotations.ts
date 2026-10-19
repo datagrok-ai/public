@@ -10,7 +10,7 @@ import {DriverLogger} from '@datagrok-libraries/compute-utils/reactive-tree-driv
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {createTestScheduler} from '../../../test-utils';
+import {createTestScheduler, notYet, resolvedSources, syncResult} from '../../../test-utils';
 
 const VALUES = 'LibTests:TestValueAnnotations';
 const LOOKUP = 'LibTests:TestLookupAnnotations';
@@ -48,26 +48,25 @@ category('ComputeUtils: Driver value annotations', async () => {
       getFirst: (name: string) => name === 'call' ? fc : value,
       getMatchedPositions: () => [{path: [], position: 0, ioName: io}],
     } as any, {c: {choices: {input: 'value', call: 'call'}}});
-    const first = await choices('city', 'EU-1');
+    const first = await choices('city', 'EU-1').toPromise();
     expectDeepEqual(first.c, {
       items: ['EU-1', 'EU-2'], values: {'EU-1': 'EU-1', 'EU-2': 'EU-2'}, inList: true, row: null, rowErrors: [],
     });
-    const cached = choices('city', 'Nope');
-    expect(cached instanceof Promise, false);
+    const cached: any = syncResult(choices('city', 'Nope'));
     expect(cached.c.inList, false);
     fc.setParamValue('region', 'US');
     const refreshed = choices('city', 'EU-1');
-    expect(refreshed instanceof Promise, true);
-    const {c} = await refreshed;
+    expect(syncResult(refreshed) === notYet, true);
+    const {c} = await refreshed.toPromise();
     expectDeepEqual([c.items, c.inList], [['US-1', 'US-2'], false]);
-    expectDeepEqual((await choices('model', 'Volvo')).c.row, {mpg: 30, CYL: 4});
-    expect((await choices('model', 'Nope')).c.row === null, true);
-    expect(choices('model', null).c.inList, true);
+    expectDeepEqual((await choices('model', 'Volvo').toPromise()).c.row, {mpg: 30, CYL: 4});
+    expect((await choices('model', 'Nope').toPromise()).c.row === null, true);
+    expect((syncResult(choices('model', null)) as any).c.inList, true);
   });
 
   test('Lookup rows are converted to the input types', async () => {
     const fc = DG.Func.byName(LOOKUP).prepare();
-    const lookup = async (value: string) => (await resolveSources({
+    const lookup = async (value: string) => (await resolvedSources({
       hasCall: (name: string) => name === 'call',
       getFirst: (name: string) => name === 'call' ? fc : value,
       getMatchedPositions: () => [{path: [], position: 0, ioName: 'model'}],

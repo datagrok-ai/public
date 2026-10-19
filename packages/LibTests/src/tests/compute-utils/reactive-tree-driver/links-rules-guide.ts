@@ -5,9 +5,9 @@ import {getProcessedConfig} from
 import {compileExpression, compileRuleFormulas, compileSource} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/rule-formula';
 import {evaluate} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/rule-expressions';
-import {resolveSources} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/rule-sources';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
-import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {FuncCallNode, PipelineNodeBase} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FuncCallInstancesBridge} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
@@ -15,7 +15,7 @@ import {PipelineLinkConfigurationInput} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {createTestScheduler, errors, noCallController, warnings} from '../../../test-utils';
+import {createTestScheduler, errors, noCallController, resolvedSources, warnings} from '../../../test-utils';
 
 // the examples of help/compute/workflows/rules-and-checks.mdx, with Pkg: written as LibTests:
 
@@ -365,10 +365,10 @@ category('ComputeUtils: Driver rules guide cases', async () => {
     };
     const pconf: any = await getProcessedConfig(pk([allometric]));
     expectDeepEqual(pconf.links.map((link: any) => link.id), ['allometric::data']);
-    const {scaled} = await resolveSources(noCallController(), {scaled: compileSource(allometric.sources.scaled)},
+    const {scaled} = await resolvedSources(noCallController(), {scaled: compileSource(allometric.sources.scaled)},
       {$all: {}, weight: 70}) as any;
     expect(scaled, 5);
-    const {scaled: none} = await resolveSources(noCallController(), {scaled: compileSource(allometric.sources.scaled)},
+    const {scaled: none} = await resolvedSources(noCallController(), {scaled: compileSource(allometric.sources.scaled)},
       {$all: {}, weight: null}) as any;
     expect(none === null, true);
   });
@@ -387,10 +387,10 @@ category('ComputeUtils: Driver rules guide cases', async () => {
     expectDeepEqual(pconf.links.map((link: any) => link.id), ['toleranceAdvice::validator']);
     const controllerFor = (value: any) => ({getFirst: () => value}) as any;
     const source = {advice: compileSource(advice.sources.advice)};
-    expectDeepEqual(await resolveSources(controllerFor(0.01), source, {$all: {}}), {advice: [
+    expectDeepEqual(await resolvedSources(controllerFor(0.01), source, {$all: {}}), {advice: [
       {message: 'A tolerance above 0.001 can miss the absorption peak', isError: true, isHelper: false},
     ]});
-    expectDeepEqual(await resolveSources(controllerFor(0.0001), source, {$all: {}}), {advice: []});
+    expectDeepEqual(await resolvedSources(controllerFor(0.0001), source, {$all: {}}), {advice: []});
   });
 
   test('A query source binds its arguments', async () => {
@@ -567,5 +567,83 @@ category('ComputeUtils: Driver rules guide cases', async () => {
     }]));
     const params = (pconf: any) => pconf.links.map((link: any) => [link.id, link.params]);
     expectDeepEqual(params(formula), params(object));
+  });
+
+  const scenarios = (initialSteps: string[], links: Links, actions: any[] = []) => getProcessedConfig({
+    id: 'scenarios',
+    type: 'dynamic',
+    stepTypes: [
+      {id: 'data', nqName: 'LibTests:LoadProfile'},
+      {id: 'model', nqName: 'LibTests:PkModel'},
+    ],
+    initialSteps,
+    links,
+    actions,
+  } as PipelineConfiguration);
+  const driverMode = {batchLinks: true, annotationChecks: true};
+
+  test('Model steps are titled by their position and route', async () => {
+    const pconf = await scenarios(['data', 'model', 'model'], [{
+      id: 'scenarioTitle',
+      type: 'rule',
+      base: 'base:expand(model)',
+      from: 'route:same(@base)/route',
+      to: 'title:same(@base)/title',
+      effects: ['describe(title, cat("Step ", add($position, 1), ": ", route))'],
+    }]);
+    testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, ...driverMode});
+      tree.init().subscribe();
+      flush();
+      const titles = () => [1, 2].map((i) => nodeAt(tree, i).nodeDescription.getState('title'));
+      set(nodeAt(tree, 1), {route: 'iv'});
+      set(nodeAt(tree, 2), {route: 'oral'});
+      flush();
+      expectDeepEqual(titles(), ['Step 2: iv', 'Step 3: oral']);
+    });
+  });
+
+  test('The report action waits for a fitted model', async () => {
+    const pconf = await scenarios(['data', 'model'], [{
+      id: 'reportAfterFit',
+      type: 'rule',
+      from: 'auc:first(model)/auc',
+      to: [],
+      actions: 'scenarios',
+      when: 'missing(auc)',
+      effects: ['hideAction(scenarios, "report")'],
+    }], [{id: 'report', position: 'buttons', from: [], to: 'out:first(model)/dose', handler() {}}]);
+    testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, ...driverMode});
+      tree.init().subscribe();
+      flush();
+      const uuid = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid)![0].uuid;
+      expectDeepEqual(tree.linksState.isActionVisible(uuid), false, {prefix: 'before the fit'});
+      nodeAt(tree, 1).getStateStore().setState('auc', 12);
+      flush();
+      expectDeepEqual(tree.linksState.isActionVisible(uuid), true, {prefix: 'after the fit'});
+    });
+  });
+
+  test('An empty scenarios workflow asks for steps', async () => {
+    const pconf = await scenarios([], [{
+      id: 'stepsRequired',
+      type: 'rule',
+      from: [],
+      to: 'scenarios(node)',
+      when: 'eq($steps, 0)',
+      effects: ['error(scenarios, "Add a data step and a model step")'],
+    }]);
+    testScheduler.run(({flush}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, ...driverMode});
+      tree.init().subscribe();
+      flush();
+      const root = tree.nodeTree.root.getItem() as PipelineNodeBase;
+      const messages = () => Object.values(root.pipelineValidations$.value).flatMap((r) => r?.errors ?? []);
+      expectDeepEqual(messages(), [{description: 'Add a data step and a model step'}], {prefix: 'empty'});
+      tree.addSubTree(root.uuid, 'data', 0).subscribe();
+      flush();
+      expectDeepEqual(messages(), [], {prefix: 'with a step'});
+    });
   });
 });

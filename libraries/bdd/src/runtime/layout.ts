@@ -370,20 +370,28 @@ const audit = async (host: Element, a: AuditArg): Promise<LayoutResult> => {
     inputs.push(i);
     forms.set(form, inputs);
   }
+  // a cell of a form's columns (Form.addColumns) lines up with its own column: measured from the grid's
+  // first column, its editor joins the form's one column like any other row's
+  const leftOf = (i: {e: Element; editor: DOMRect}) => {
+    const cell = i.e.parentElement?.matches('[data-u2-part="columns"]') ? i.e : null;
+    return cell === null ? i.editor.left :
+      i.editor.left - (cell.getBoundingClientRect().left - cell.parentElement!.getBoundingClientRect().left);
+  };
   for (const [form, inputs] of forms) {
-    let column = inputs[0].editor.left;
+    const lefts = inputs.map(leftOf);
+    let column = lefts[0];
     let most = 0;
-    for (const i of inputs) {
-      const n = inputs.filter((j) => Math.abs(j.editor.left - i.editor.left) <= 2).length;
+    for (const left of lefts) {
+      const n = lefts.filter((l) => Math.abs(l - left) <= 2).length;
       if (n > most) {
         most = n;
-        column = i.editor.left;
+        column = left;
       }
     }
-    const out = inputs.filter((i) => Math.abs(i.editor.left - column) > 2);
+    const out = inputs.map((i, k) => ({...i, left: lefts[k]})).filter((i) => Math.abs(i.left - column) > 2);
     if (out.length > 0)
       add('label-column', [form, ...out.map((o) => o.e)], nameOf(form), `the editors of ${nameOf(form)} do not start in one column: ` +
-        `${out.map((o) => `${nameOf(o.e)} at ${px(o.editor.left)} px`).join(', ')}; the other ${inputs.length - out.length} at ${px(column)} px`);
+        `${out.map((o) => `${nameOf(o.e)} at ${px(o.left)} px`).join(', ')}; the other ${inputs.length - out.length} at ${px(column)} px`);
   }
 
   return {u2: true, controls: controls.length, findings: findings.map(({rule, what, detail}) => ({rule, what, detail})),
