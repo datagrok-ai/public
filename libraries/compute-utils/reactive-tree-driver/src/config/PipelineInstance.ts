@@ -96,10 +96,6 @@ export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateDy
 
 export type ViewAction = ActionInfoBase & {
   uuid: string;
-  /** Result of evaluating showWhen / hideWhen against the current tree.
-   *  `true` when no condition is set. Compute2 uses this to decide whether
-   *  to render the action; RTD itself does not filter or gate on it. */
-  visible: boolean;
 };
 
 export type StepFunCallStateBase = {

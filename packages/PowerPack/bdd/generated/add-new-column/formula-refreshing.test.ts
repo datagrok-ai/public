@@ -21,6 +21,7 @@ import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {browsePanelOpen, closeAllViews, contextPanelOpen, contextPanelShows, noProjectOnServer, projectsOnServer, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noTableLeft} from '@datagrok-libraries/bdd/bindings/platform/workspace';
 import {clickArea, doubleClickArea, noBalloons, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {scrollGridTo} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("A chain of calculated columns recalculates on a formula edit and survives a project round trip", () => {
@@ -134,12 +135,13 @@ test.describe("A chain of calculated columns recalculates on a formula edit and 
       await session.step(123, "And every value of \"Weight3\" column should equal \"Weight2\" column plus 50", () => everyValuePlus(page, "Weight3", "Weight2", 50));
       await session.step(124, "And every value of \"Weight4\" column should be the decimal log of \"Weight3\" column minus 0.1", () => everyValueLog(page, "Weight4", "Weight3", 0.1));
       await session.step(125, "Given the context panel is open", () => contextPanelOpen(page));
-      await session.step(126, "When user clicks on the \"header Weight3\" area of grid", () => clickArea(page, "header Weight3", el("grid")));
-      await session.step(127, "Then the context panel should show \"Weight3\"", () => contextPanelShows(page, "Weight3"));
-      await session.step(128, "Given Formula pane in context panel is expanded", () => isExpanded(page, el("Formula pane in context panel")));
-      await session.step(129, "Then formula pane editor in Formula pane in context panel should hold the code \"${Weight2} + 50\"", () => holdsCode(page, el("formula pane editor in Formula pane in context panel"), "${Weight2} + 50"));
-      await session.step(130, "And no error or warning balloon should have been shown", () => noBalloons(page));
-      await session.step(131, "And no errors should have been logged", () => noErrors(page));
+      await session.step(127, "When user scrolls the grid to the \"Weight3\" column", () => scrollGridTo(page, "Weight3"));
+      await session.step(128, "And user clicks on the \"header Weight3\" area of grid", () => clickArea(page, "header Weight3", el("grid")));
+      await session.step(129, "Then the context panel should show \"Weight3\"", () => contextPanelShows(page, "Weight3"));
+      await session.step(130, "Given Formula pane in context panel is expanded", () => isExpanded(page, el("Formula pane in context panel")));
+      await session.step(131, "Then formula pane editor in Formula pane in context panel should hold the code \"${Weight2} + 50\"", () => holdsCode(page, el("formula pane editor in Formula pane in context panel"), "${Weight2} + 50"));
+      await session.step(132, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(133, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

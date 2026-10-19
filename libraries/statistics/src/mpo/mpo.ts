@@ -165,7 +165,7 @@ export function applyDesirabilityPatch(prop: PropertyDesirability, patch: Partia
   Object.assign(prop, patch);
   if (!isNumerical(prop))
     return;
-  if (prop.mode === DesirabilityMode.Freeform && 'line' in patch)
+  if (prop.mode === DesirabilityMode.Freeform && 'line' in patch && prop.freeformLine)
     prop.freeformLine = prop.line;
   refreshDesirabilityLine(prop);
 }
@@ -282,7 +282,11 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
   const inv = !isCat && (h.template as NumericalDesirability).inverted === true;
   const log = !isCat && (h.template as NumericalDesirability).scale === MpoScale.Log;
   const floorX = log ? domainMinX(h.template as NumericalDesirability) : 0;
-  const xs = line ? line.map((p) => log ? Math.log10(Math.max(floorX, p[0])) : p[0]) : null;
+  const xs = line ? line.map((p) => {
+    const x = log ? Math.max(floorX, p[0]) : p[0];
+    const value = isQnum ? DG.Qnum.getValue(x) : x;
+    return log ? Math.log10(value) : value;
+  }) : null;
   const segN = line ? line.length : 0;
   const loX = segN ? xs![0] : 0;
   const hiX = segN ? xs![segN - 1] : 0;
@@ -304,8 +308,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
       if (missState !== RowState.Contribute) {
         (state ??= new Uint8Array(rowCount))[i] = missState;
         D[i] = NaN;
-      }
-      else
+      } else
         D[i] = defaultScore;
       continue;
     }
@@ -314,8 +317,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
       if (s == null) {
         (state ??= new Uint8Array(rowCount))[i] = RowState.Bail;
         D[i] = NaN;
-      }
-      else
+      } else
         D[i] = s;
       continue;
     }

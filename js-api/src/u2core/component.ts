@@ -1,6 +1,6 @@
 import {Scope} from './scope.js';
 import {Signal, batch, computed, isWritableSignal, signal} from './signals.js';
-import {describeScope} from './debug.js';
+import {describeScope, registry} from './debug.js';
 import {propertyFields} from './property-fields.js';
 import type {IProperty} from './property-fields.js';
 import type {BindProp, BindSource, ComponentMetaBase, FuncLike, NamedProperty, ObservableLike,
@@ -18,6 +18,16 @@ interface PropertyEntry {
   step: Signal<unknown>;
   known: unknown;
 }
+
+/** Labels of the scopes torn down and built again while their owner lives: rows of `each()` and
+ * `show()`, and effect runs. */
+const REBUILT: Record<string, string> = {item: 'each() row', row: 'row', show: 'show() branch',
+  empty: 'each() empty state', effect: 'effect run'};
+/** The component each component scope belongs to — the adoption link a scope's `parent` lacks. */
+const scopeOwners = new WeakMap<Scope, Component>();
+/** Per registering scope: the rebuilt scope each call site first registered from. */
+const rebuiltSites = new WeakMap<Scope, Map<string, WeakRef<Scope>>>();
+const warnedSites = new Set<string>();
 
 /** The per-instance u2 state, kept under one own field so that {@link Component.init} can be
  * applied to a platform `DG.Widget` (a Component by inheritance) without clobbering its own fields. */
@@ -58,6 +68,7 @@ export class Component implements BindSource {
     const u2 = this._u2;
     if (u2.scope === undefined) {
       u2.scope = new Scope();
+      scopeOwners.set(u2.scope, this);
       describeScope(u2.scope, this);
       this._scopeMinted(u2.scope);
     }
@@ -97,6 +108,7 @@ export class Component implements BindSource {
       propertySignals: new Map(), changesWired: false};
     if (scope !== undefined) {
       it._u2.scope = scope;
+      scopeOwners.set(scope, self);
       describeScope(scope, self);
     }
     const owner = self.ambientAdoption ? Scope.ambient : undefined;
@@ -142,15 +154,71 @@ export class Component implements BindSource {
     return Scope.runWith(this.scope, fn);
   }
 
+  /** Runs `fn` now and on every change of the signals it reads, until this component is disposed.
+   * Called while a row of `each()` or an effect run is being built, it belongs on a control built
+   * there (`input.effect(...)`) — on a longer-lived one it piles up with every rebuild, and u2 warns. */
   effect(fn: () => void): this {
+    Component._checkRebuilt(this, 'effect');
     this.scope.effect(fn);
     return this;
   }
 
   /** Registers a cleanup that runs when this component is disposed. */
   own(dispose: () => void): this {
+    Component._checkRebuilt(this, 'own');
     this.scope.own(dispose);
     return this;
+  }
+
+  /** Warns when one call site registers on `self` from two different rebuilt scopes (rows of an
+   * `each()`, runs of an effect) that `self` does not live inside: what it registers outlives each of
+   * them and is added again by every rebuild. One warning per call site; with u2 debug tracking on (dev,
+   * tests, the bdd leak audit), as it captures a stack. */
+  private static _checkRebuilt(self: Component, kind: 'effect' | 'own'): void {
+    if (!registry.enabled)
+      return;
+    const ambient = Scope.ambient;
+    const target = self._u2.scope;
+    if (ambient === undefined || target === undefined || ambient === target)
+      return;
+    let rebuilt: Scope | undefined;
+    for (let s: Scope | undefined = ambient, hops = 0; s !== undefined && hops < 64; s = Component._ownerOf(s), hops++) {
+      if (s === target)
+        return;
+      if (REBUILT[s.label] !== undefined) {
+        rebuilt = s;
+        break;
+      }
+    }
+    if (rebuilt === undefined)
+      return;
+    for (let s: Scope | undefined = target, hops = 0; s !== undefined && hops < 64; s = Component._ownerOf(s), hops++) {
+      if (s === rebuilt)
+        return;
+    }
+    const site = (new Error().stack ?? '').split('\n').slice(3, 6).join('\n');
+    let sites = rebuiltSites.get(target);
+    if (sites === undefined)
+      rebuiltSites.set(target, sites = new Map());
+    const first = sites.get(site);
+    if (first === undefined) {
+      sites.set(site, new WeakRef(rebuilt));
+      return;
+    }
+    if (first.deref() === rebuilt || warnedSites.has(site))
+      return;
+    warnedSites.add(site);
+    const root = (self as {root?: HTMLElement}).root;
+    const who = root?.dataset.u2Name ?? root?.dataset.u2 ?? self.constructor.name;
+    const what = REBUILT[rebuilt.label];
+    console.warn(`u2: ${kind}() on ${who} is called from inside a rebuilt ${what} and lives until ${who} is ` +
+      `disposed — one more per rebuild. Register it on a control built in the ${what} (\`input.${kind}(...)\`) ` +
+      `or on its scope (\`Scope.ambient.${kind}(...)\`).\n${site}`);
+  }
+
+  /** The scope `scope` is disposed with: its parent, or the scope that adopted its component. */
+  private static _ownerOf(scope: Scope): Scope | undefined {
+    return scope.parent ?? scopeOwners.get(scope)?._u2.adopter?.scope;
   }
 
   /** On a never-engaged wrapper the getter mints here and {@link _scopeMinted} wires the

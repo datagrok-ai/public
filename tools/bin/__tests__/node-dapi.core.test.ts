@@ -1,7 +1,7 @@
 import {describe, it, expect} from 'vitest';
 import {
   throwIfApiError, apiPath, mapPositionalParams, NodeUsersDataSource, NodeFuncsDataSource,
-  NodeTablesDataSource, NodeFilesDataSource, NodeHttpDataSource,
+  NodeTablesDataSource, NodeFilesDataSource, NodeHttpDataSource, NodeDapi,
 } from '../utils/node-dapi';
 
 interface Call {method: string; path: string; body?: any}
@@ -138,6 +138,16 @@ describe('NodeUsersDataSource.invite', () => {
     const {client, calls} = makeMock(() => '');
     await new NodeUsersDataSource(client).invite('a@b.com', true);
     expect(calls[0].path).toBe('/users/invite?email=a%40b.com&target=Datagrok');
+  });
+});
+
+describe('NodeDapi.serverStatus', () => {
+  it('reads /info/server, plain and extended, parsing a text body', async () => {
+    const {client, calls} = makeMock(() => '{"Version":"1.28.0"}');
+    const dapi = new NodeDapi(client);
+    expect(await dapi.serverStatus()).toEqual({Version: '1.28.0'});
+    await dapi.serverStatus(true);
+    expect(calls.map((c) => c.path)).toEqual(['/info/server', '/info/server?extended=true']);
   });
 });
 

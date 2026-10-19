@@ -101,7 +101,9 @@ export function handleClick(gridCell: DG.GridCell, e: MouseEvent): void {
 
   const data = getOrCreateParsedChartData(gridCell.cell, false);
   const value = contextValue(gridCell, data);
-  grok.shell.o = value;
+  // not frozen, as `grok.shell.o =` would: the freeze dropped a click on the next cell within a second,
+  // and the Context Panel kept the previous cell's panes
+  grok.shell.setCurrentObject(value, false);
   if (value !== gridCell)
     return;
 

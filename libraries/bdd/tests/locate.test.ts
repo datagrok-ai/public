@@ -259,6 +259,23 @@ scenario('Delete and Del follow Datagrok commands while ForwardDelete and Backsp
 });
 
 
+scenario('a host input does not go by the label of an input nested in it; a u2 bridge goes by its inner root\'s', async () => {
+  await page!.setContent(`<div class="ui-input-root ui-input-tables-multi-choice" name="input-host-Tables">
+      <label class="ui-input-label">Tables</label>
+      <div class="ui-input-editor">
+        <div class="ui-input-root ui-input-bool" id="first"><input type="checkbox"><label class="ui-input-label">first</label></div>
+        <div class="ui-input-root ui-input-bool" id="second"><input type="checkbox"><label class="ui-input-label">second</label></div>
+      </div>
+    </div>
+    <div data-u2="dart-input" id="bridge"><div class="ui-input-root"><label class="ui-input-label">Bridged</label><input class="ui-input-editor"></div></div>
+    <div class="ui-input-root ui-input-map"><table><tr><td><input class="ui-input-editor" aria-label="Pattern 1"></td></tr></table></div>`);
+  assert.equal(await count('"second" input'), 1);
+  assert.equal(await (await locate(page!, el('"second" input'))).getAttribute('id'), 'second');
+  assert.equal(await count('Tables input'), 1);
+  assert.equal(await (await locate(page!, el('Bridged input'))).getAttribute('id'), 'bridge');
+  assert.equal(await count('"Pattern 1" text input'), 1);
+});
+
 scenario('select handles both a named native select and a host with a select inside', async () => {
   await page!.setContent(`<select class="ui-input-root" name="input-host-Engine"><option>A</option><option>B</option></select>
     <div class="ui-input-root" name="input-host-Mode"><select><option>C</option><option>D</option></select></div>`);

@@ -93,6 +93,7 @@ export const TreeWizard = Vue.defineComponent({
       states,
       logs,
       links,
+      hiddenActions,
       result,
       //
       loadPipeline,
@@ -607,7 +608,8 @@ export const TreeWizard = Vue.defineComponent({
         return {};
       const globalActions = getRelevantGlobalActions(treeState.value, chosenStepUuid.value);
       const currentStepActions = chosenStepState.value?.actions?.filter(action => action.position === 'menu') ?? [];
-      const actions = [...globalActions, ...currentStepActions].filter((action) => action.visible !== false);
+      const actions = [...globalActions, ...currentStepActions]
+        .filter((action) => !hiddenActions.value?.has(action.uuid));
       return actions.reduce((acc, action) => {
         const menuCategory = action.menuCategory ?? 'Actions';
         if (action.position === 'menu' || action.position === 'globalmenu') {
@@ -622,7 +624,7 @@ export const TreeWizard = Vue.defineComponent({
 
     const buttonActions = Vue.computed(() => {
       return chosenStepState.value?.actions?.reduce((acc, action) => {
-        if (action.position === 'buttons' && action.visible !== false)
+        if (action.position === 'buttons' && !hiddenActions.value?.has(action.uuid))
           acc.push(action);
 
         return acc;

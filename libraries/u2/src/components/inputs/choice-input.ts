@@ -1,4 +1,5 @@
-import {signal, Signal} from '../../core/signals.js';
+import {signal, untracked, Signal} from '../../core/signals.js';
+import type {ReadonlySignal} from '../../core/signals.js';
 import {Input, InputOptions} from '../../core/input-base.js';
 import {iconOf} from '../display/icon.js';
 import type {IItemsState} from '../../core/widget-like.js';
@@ -14,7 +15,9 @@ function itemLabel(item: ChoiceItem): string {
 }
 
 export interface ChoiceInputOptions extends InputOptions<string | null> {
-  items: ChoiceItem[];
+  /** The choices — a list, or a signal followed live (each change is {@link ChoiceInput.setItems}). The
+   * value may arrive before or after the item it names: it stays selected once both are there. */
+  items: ChoiceItem[] | ReadonlySignal<ChoiceItem[]>;
   /** Shown as a disabled placeholder option while the item list is empty, so a picker over a
    * live collection reads as empty rather than broken. */
   emptyText?: string;
@@ -29,6 +32,16 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
   constructor(options: ChoiceInputOptions) {
     super(options, null);
     this.root.dataset.u2 = 'choice-input';
+    const items = options.items;
+    if (items instanceof Signal) {
+      let first = true;
+      this.effect(() => {
+        const list = items.value;
+        if (!first)
+          untracked(() => this.setItems(list));
+        first = false;
+      });
+    }
   }
 
   get items(): ChoiceItem[] {
@@ -45,8 +58,7 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
     this._items = items;
     this._fill();
     const value = this.value.peek();
-    Input.system(() => this.value.value =
-      value !== null && items.some((i) => itemValue(i) === value) ? value : null);
+    this.systemWrite(value !== null && items.some((i) => itemValue(i) === value) ? value : null);
     this._select.value = this.value.peek() ?? '';
   }
 
@@ -60,7 +72,8 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
   protected createEditor(): HTMLElement {
     const select = document.createElement('select');
     this._select = select;
-    this._items = this.options.items;
+    const items = this.options.items;
+    this._items = items instanceof Signal ? items.peek() : items;
     this._fill();
     this.scope.listen(select, 'change', () => this.value.value = select.value === '' ? null : select.value);
     this.effect(() => select.value = this.value.value ?? '');
@@ -175,7 +188,7 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
     const current = new Set(this.value.peek() ?? []);
     const pruned = items.filter((i) => current.has(itemValue(i))).map(itemValue);
     if (pruned.length !== current.size)
-      Input.system(() => this.value.value = pruned);
+      this.systemWrite(pruned);
   }
 
   protected createEditor(): HTMLElement {

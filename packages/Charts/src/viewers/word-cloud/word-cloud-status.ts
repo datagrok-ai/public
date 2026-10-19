@@ -22,7 +22,7 @@ function laidOutWords(chart: any): LaidWord[] {
       rect.applyTransform(transform);
     const style = el.style ?? {};
     words.push({
-      name: String(data.getName(i)),
+      name: data.getRawDataItem(i).word,
       box: {x: rect.x, y: rect.y, width: rect.width, height: rect.height},
       font: `${style.fontWeight ?? ''} ${style.fontFamily ?? ''}`.trim(),
     });
