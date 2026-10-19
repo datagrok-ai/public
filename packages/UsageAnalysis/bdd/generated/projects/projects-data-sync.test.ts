@@ -29,7 +29,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("A project saved with and without Data sync", () => {
   const session = feature(test, "features/projects/projects-data-sync.feature", import.meta.url);
-  test("A project saved with and without Data sync", {tag: ["@journey", "@serial", "@realizes:views.projects"]}, async ({browser}) => {
+  test("A project saved with and without Data sync", {tag: ["@journey", "@realizes:views.projects"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 4, page);
     await session.step(19, "Given user is logged in", () => loggedIn(page));
@@ -64,33 +64,34 @@ test.describe("A project saved with and without Data sync", () => {
       await session.step(49, "And choice input in \"demog\" project table in \"Save project\" dialog should have value \"Clone\"", () => shouldHaveValue(page, el("choice input in \"demog\" project table in \"Save project\" dialog"), "Clone"));
       await session.step(50, "When user enters \"BDD-Sync-Copy-{time}\" into Name text input in \"Save project\" dialog", () => enterInto(page, session.text("BDD-Sync-Copy-{time}"), el("Name text input in \"Save project\" dialog")));
       await session.step(51, "And user unchecks Data sync switch in \"demog\" project table in \"Save project\" dialog", () => uncheck(page, el("Data sync switch in \"demog\" project table in \"Save project\" dialog")));
-      await session.step(52, "Then \"Creation script\" button in \"demog\" project table in \"Save project\" dialog should be hidden", () => shouldBe(page, el("\"Creation script\" button in \"demog\" project table in \"Save project\" dialog"), "hidden"));
-      await session.step(53, "When user clicks on OK button in \"Save project\" dialog", () => clickOn(page, el("OK button in \"Save project\" dialog")));
-      await session.step(54, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
-      await session.step(55, "And 1 project named \"BDD-Sync-Copy-{time}\" should be on the server", () => projectsOnServer(page, 1, session.text("BDD-Sync-Copy-{time}")));
-      await session.step(56, "And the \"demog\" table of the \"BDD-Sync-Copy-{time}\" project should be saved as a snapshot", () => savedAsSnapshot(page, "demog", session.text("BDD-Sync-Copy-{time}")));
-      await session.step(57, "And the \"demog\" table of the \"BDD-Sync-Orig-{time}\" project should be saved with data sync", () => savedWithDataSync(page, "demog", session.text("BDD-Sync-Orig-{time}")));
-      await session.step(58, "And no errors should have been logged", () => noErrors(page));
+      await session.step(52, "Then Data sync switch in \"demog\" project table in \"Save project\" dialog should be unchecked", () => shouldBe(page, el("Data sync switch in \"demog\" project table in \"Save project\" dialog"), "unchecked"));
+      await session.step(53, "And \"Creation script\" button in \"demog\" project table in \"Save project\" dialog should be hidden", () => shouldBe(page, el("\"Creation script\" button in \"demog\" project table in \"Save project\" dialog"), "hidden"));
+      await session.step(54, "When user clicks on OK button in \"Save project\" dialog", () => clickOn(page, el("OK button in \"Save project\" dialog")));
+      await session.step(55, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
+      await session.step(56, "And 1 project named \"BDD-Sync-Copy-{time}\" should be on the server", () => projectsOnServer(page, 1, session.text("BDD-Sync-Copy-{time}")));
+      await session.step(57, "And the \"demog\" table of the \"BDD-Sync-Copy-{time}\" project should be saved as a snapshot", () => savedAsSnapshot(page, "demog", session.text("BDD-Sync-Copy-{time}")));
+      await session.step(58, "And the \"demog\" table of the \"BDD-Sync-Orig-{time}\" project should be saved with data sync", () => savedWithDataSync(page, "demog", session.text("BDD-Sync-Orig-{time}")));
+      await session.step(59, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The copy's Save dialog keeps Data sync off", async () => {
-      await session.step(61, "When user clicks on Save button", () => clickOn(page, el("Save button")));
-      await session.step(62, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));
-      await session.step(63, "And Data sync switch in \"demog\" project table in \"Save project\" dialog should be unchecked", () => shouldBe(page, el("Data sync switch in \"demog\" project table in \"Save project\" dialog"), "unchecked"));
-      await session.step(64, "When user clicks on CANCEL button in \"Save project\" dialog", () => clickOn(page, el("CANCEL button in \"Save project\" dialog")));
-      await session.step(65, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
-      await session.step(66, "And no errors should have been logged", () => noErrors(page));
+      await session.step(62, "When user clicks on Save button", () => clickOn(page, el("Save button")));
+      await session.step(63, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));
+      await session.step(64, "And Data sync switch in \"demog\" project table in \"Save project\" dialog should be unchecked", () => shouldBe(page, el("Data sync switch in \"demog\" project table in \"Save project\" dialog"), "unchecked"));
+      await session.step(65, "When user clicks on CANCEL button in \"Save project\" dialog", () => clickOn(page, el("CANCEL button in \"Save project\" dialog")));
+      await session.step(66, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
+      await session.step(67, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Turning Data sync on for the copy saves its creation script", async () => {
-      await session.step(69, "When user clicks on Save button", () => clickOn(page, el("Save button")));
-      await session.step(70, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));
-      await session.step(71, "When user checks Data sync switch in \"demog\" project table in \"Save project\" dialog", () => check(page, el("Data sync switch in \"demog\" project table in \"Save project\" dialog")));
-      await session.step(72, "And user clicks on \"Creation script\" button in \"demog\" project table in \"Save project\" dialog", () => clickOn(page, el("\"Creation script\" button in \"demog\" project table in \"Save project\" dialog")));
-      await session.step(73, "Then \"demog\" project table in \"Save project\" dialog should contain text \"System:DemoFiles/demog.csv\"", () => shouldContainText(page, el("\"demog\" project table in \"Save project\" dialog"), "System:DemoFiles/demog.csv"));
-      await session.step(74, "When user clicks on OK button in \"Save project\" dialog", () => clickOn(page, el("OK button in \"Save project\" dialog")));
-      await session.step(75, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
-      await session.step(76, "And the \"demog\" table of the \"BDD-Sync-Copy-{time}\" project should be saved with data sync", () => savedWithDataSync(page, "demog", session.text("BDD-Sync-Copy-{time}")));
-      await session.step(77, "And no errors should have been logged", () => noErrors(page));
-      await session.step(78, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(70, "When user clicks on Save button", () => clickOn(page, el("Save button")));
+      await session.step(71, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));
+      await session.step(72, "When user checks Data sync switch in \"demog\" project table in \"Save project\" dialog", () => check(page, el("Data sync switch in \"demog\" project table in \"Save project\" dialog")));
+      await session.step(73, "And user clicks on \"Creation script\" button in \"demog\" project table in \"Save project\" dialog", () => clickOn(page, el("\"Creation script\" button in \"demog\" project table in \"Save project\" dialog")));
+      await session.step(74, "Then \"demog\" project table in \"Save project\" dialog should contain text \"System:DemoFiles/demog.csv\"", () => shouldContainText(page, el("\"demog\" project table in \"Save project\" dialog"), "System:DemoFiles/demog.csv"));
+      await session.step(75, "When user clicks on OK button in \"Save project\" dialog", () => clickOn(page, el("OK button in \"Save project\" dialog")));
+      await session.step(76, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
+      await session.step(77, "And the \"demog\" table of the \"BDD-Sync-Copy-{time}\" project should be saved with data sync", () => savedWithDataSync(page, "demog", session.text("BDD-Sync-Copy-{time}")));
+      await session.step(78, "And no errors should have been logged", () => noErrors(page));
+      await session.step(79, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     run.finish();
   });

@@ -1,6 +1,6 @@
 # tutorials changelog
 
-## v.next
+## 1.7.10 (2026-10-19)
 
 * Tutorial: `Tutorial.closeActive()` closes the tutorial in progress, so a tutorial the user leaves no longer keeps running in the background
 * Package prerequisites check that the package is installed, so a tutorial reports a package the server only lists from its repository

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* `grok api`: Fixed double plurals in table accessors (`categorieses` → `categories`)
 * Upgraded Puppeteer to v25, which drops the vulnerable `extract-zip` and `basic-ftp` transitive dependencies; Node.js 22.12+ is now required
 * `grok add app --domain`, `grok api --ui`: scaffold against `@datagrok-libraries/ems`
 * GROK-20884: Added `grok s o errors get <signature|problem>`: each occurrence of an error with its time, user, function and session, so an error incident leads to its calls
@@ -11,6 +12,7 @@
 * GROK-20884: Added `grok s o logs capture <login|group> [--for 30m]`: saves every API request of a user or a group until the entry expires (a `logger set` of `saveHttpRequests`; an entry that expires later keeps its time); `logs capture stop` removes an expiring entry that holds only the capture, `logs capture` lists the active ones
 * GROK-20298: `grok s domains apply` sends the manifest JSON's `version` as the now-required `ifVersion` of a user-managed schema, accepts `--if-version current` to take the registered one, refuses such an apply without either, and forwards `friendlyName`, `description` and `storage` from the JSON for a user-managed schema (a package schema keeps its key set)
 * GROK-20298: `domain-schema.schema.json` accepts the root `storage` key (`{kind: external, connection, schema?, catalog?}`) and the remote-name keys `table`/`column`; `grok api` types an external table's rows with `id` only, an empty expand map, and emits no `<Schema>TransactionOp`/`transaction` for an external schema
+* Fixed `grok api` emitting a choices type that does not compile, or holds a different value, when a choice contains `'` or `\`
 
 ## 6.7.8 (2026-10-13)
 

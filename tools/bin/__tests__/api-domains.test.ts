@@ -229,6 +229,16 @@ describe('generateDomainClients', () => {
     expect(code).toMatch(/interface IssueStateRow \{[^}]*y\?: IssueStateYIssueState;/);
   });
 
+  it('choices values with a quote or a backslash compile to the same literals', {timeout: 180_000}, () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.sample.columns.resolution =
+      {type: 'string', choices: ['Fixed', `Won't fix`, 'a\\b']});
+    expect(generateDomainClients(dir)).toBe(true);
+    const res = runTsc(dir, 'usage-choices.ts');
+    expect(res.output.trim(), res.output).toBe('');
+    expect(res.status).toBe(0);
+  });
+
   it('expand maps: a multi-FK child emits one qualified details key per FK', () => {
     const dir = makePackage();
     mutateManifest(dir, (m) => m.tables.link = {columns: {
@@ -346,6 +356,18 @@ describe('generateDomainClients', () => {
     expect(code).toMatch(/interface SampleEventInsert \{[^}]*  number\?: number;/);
     expect(code).toMatch(/interface SampleRow \{[^}]*  seq: number;/);
     expect(code).toMatch(/interface SampleInsert \{[^}]*  seq\?: number;/);
+  });
+
+  it('accessors: the plural of the singular, as the platform derives a table\'s plural name', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      for (const name of ['categories', 'order_details', 'status', 'analysis', 'box'])
+        m.tables[name] = {columns: {name: {type: 'string'}}};
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    for (const accessor of ['samples', 'categories', 'orderDetails', 'statuses', 'analyses', 'boxes'])
+      expect(code).toContain(`  get ${accessor}() {`);
   });
 
   it('external storage: rows carry id only, remote names are metadata, no expand map, no transaction', () => {
@@ -615,6 +637,15 @@ describe('generateDomainClients', () => {
     const {result, output} = runCapturingLog(dir);
     expect(result).toBe(false);
     expect(output).toContain(`table 'sample' emits interface 'SampleRow' already generated`);
+    expect(fs.existsSync(dbPath(dir))).toBe(false);
+  });
+
+  it('rejects two tables of one schema that get the same accessor', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.samples = {columns: {name: {type: 'string'}}});
+    const {result, output} = runCapturingLog(dir);
+    expect(result).toBe(false);
+    expect(output).toContain(`tables 'sample' and 'samples' both get the accessor 'samples'`);
     expect(fs.existsSync(dbPath(dir))).toBe(false);
   });
 
