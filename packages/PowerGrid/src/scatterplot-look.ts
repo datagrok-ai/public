@@ -7,13 +7,14 @@ const LOOK_PROPERTIES = [
   'colorColumnName', 'colorMap', 'colorAxisType', 'colorMin', 'colorMax', 'invertColorScheme', 'linearColorScheme',
   'categoricalColorScheme', 'filteredRowsColor', 'filteredOutRowsColor', 'selectedRowsColor', 'missingValueColor',
   'showFilteredOutPoints', 'showSelectedRows', 'rowSource',
-  'zoomAndFilter', 'jitterSize', 'jitterSizeY', 'labelColumnNames', 'displayLabels',
+  'zoomAndFilter', 'jitterSize', 'jitterSizeY', 'labelColumnNames', 'displayLabels', 'xCategoryOrder', 'yCategoryOrder',
 ] as const;
 
 /** What deciding between the GPU and the CPU reads: the core asks for it twice on every mouse move. */
 const CHECK_PROPERTIES = [
   'xColumnName', 'yColumnName', 'xMap', 'yMap', 'markerType', 'markersColumnName', 'sizeColumnName', 'markerMaxSize',
   'markerBorderWidth', 'zoomAndFilter', 'jitterSize', 'jitterSizeY', 'labelColumnNames', 'displayLabels',
+  'xCategoryOrder', 'yCategoryOrder',
 ] as const satisfies readonly LookProperty[];
 
 type LookProperty = (typeof LOOK_PROPERTIES)[number];
@@ -90,6 +91,8 @@ export function isGpuRenderable(sc: DG.ScatterPlotViewer, look: CheckLook): bool
   const {canvas, overlay} = plotCanvases(sc);
   return canvas.isConnected && overlay?.parentElement === canvas.parentElement &&
     look.zoomAndFilter != 'pack and zoom by filter' && !look.jitterSize && !look.jitterSizeY &&
+    // a category order moves the categories to slots the GPU data does not hold
+    !look.xCategoryOrder && !look.yCategoryOrder &&
     isAxis(look.xColumnName, look.xMap) && isAxis(look.yColumnName, look.yMap) &&
     // the canvas renderer draws labels next to the markers, the dot renderer draws none
     (isDotRenderer(look) || !look.labelColumnNames?.length || look.displayLabels == 'Never');
