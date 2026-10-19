@@ -1,10 +1,13 @@
-/* How a Forge feature gets its data and its fixtures, the shown training, and the gestures on a running training. */
-import type {Page} from '@playwright/test';
+/* How a Forge feature gets its data and its fixtures, the shown training, the train form's groups, readings noted and
+   compared, and the gestures on a running training. */
+import type {Locator, Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, el, type ElementRef, expect, gestures, locate, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
+import {el, type ElementRef, expect, gestures, locate, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
 import {catalogRowOf, modelArea} from './catalog-grid.js';
-import {expectCreatedModel, guardIdentity, listOf, sweepModels, sweepRuns} from './grok-s.js';
-import {readingText, type ResultsState, resultsState, settled, shownRun, shownSeed} from './results-state.js';
+import {expectCreatedModel, guardIdentity, listOf, sweepAtFeatureEnd} from './grok-s.js';
+import {slidePointer} from './pointer.js';
+import {contextPanelTitle, readingText, type ResultsState, resultsState, settled, shownRun, shownSeed} from
+  './results-state.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -85,25 +88,24 @@ export const clickCatalogRow = When('user clicks on the Forge model {string} in 
 }, {tier: 'ui', description: 'clicks the name cell of the row that shows the model'});
 
 /** What the context panel shows of the Forge model [name]: 'shown', or what it is instead. */
-function panelOfModel(page: Page, name: string): Promise<string> {
-  return page.evaluate((n) => {
+async function panelOfModel(page: Page, name: string): Promise<string> {
+  const [current, title] = await Promise.all([page.evaluate((n) => {
     const o: any = grok.shell.o;
     if (!(o instanceof DG.DomainRow) || o.typeName !== 'forge.model')
       return `the current object is ${String(o)}`;
-    if (o.values.name !== n)
-      return `the current object is the Forge model "${String(o.values.name)}"`;
-    const panel = document.querySelector('.grok-prop-panel');
-    return panel !== null && (panel.textContent ?? '').includes(n) ? 'shown' : 'the context panel does not show its name';
-  }, name);
+    return o.values.name === n ? 'the model' : `the current object is the Forge model "${String(o.values.name)}"`;
+  }, name), contextPanelTitle(page)]);
+  // The title, not the panel's text: a table's panel names its models too (the pane Forge models).
+  return current !== 'the model' ? current : title === name ? 'shown' : `the context panel's title is "${title}"`;
 }
 
 /* LIB-PROMOTE: "the context panel should show {string}" matches String(grok.shell.o), which for a domain row is not
-   its name. */
+   its name; checking the panel's title (or a `title` part of `context panel`) would cover a domain row. */
 export const panelShowsModel = Then('the context panel should show the Forge model {string}', async (page: Page,
   name: string) => {
   await expect.poll(() => panelOfModel(page, name), {message: `the context panel and the Forge model "${name}"`})
     .toBe('shown');
-}, {description: 'the current object is the forge.model row of that name, and the context panel shows the name'});
+}, {description: 'the current object is the forge.model row of that name, and the context panel\'s title is the name'});
 
 /* The context panel is built again only for a model it does not show already (`showModel` in forge-app.ts; an
    application of the shown model is followed in place): a claim that needs a model's panel built anew (Applicable to
@@ -144,35 +146,227 @@ export const clickBalloonLink = When('user clicks on {string} link in the balloo
     await balloon.getByText(link, {exact: true}).first().click();
   }, {tier: 'ui', description: 'the link of the balloon whose text names the model in quotes'});
 
-type Sizes = Record<string, [number, number]>;
-const rememberedSizes = new WeakMap<Page, Sizes>();
+/** The shown panels of the results by row (the panels with one top), each row keyed by its titles in order: the
+ * [width, height] of each panel by its title, without a value after it ("ROC Curve (AUC = 0.906)" is "ROC Curve"). */
+type PanelRows = Record<string, Record<string, [number, number]>>;
+const rememberedRows = new WeakMap<Page, PanelRows>();
 
-function panelSizes(page: Page): Promise<Sizes> {
+function panelRows(page: Page): Promise<PanelRows> {
   return page.locator('.forge-results-panel').evaluateAll((all) => {
-    const sizes: Record<string, [number, number]> = {};
+    const tops = new Map<number, [string, [number, number]][]>();
     for (const p of all) {
       const r = p.getBoundingClientRect();
-      const title = p.querySelector(':scope > .forge-results-title')?.textContent?.trim();
-      if (title && r.width > 0)
-        sizes[title] = [Math.round(r.width), Math.round(r.height)];
+      const title = p.querySelector(':scope > .forge-results-title')?.textContent?.trim().replace(/ \(.*\)$/, '');
+      if (title && r.width > 0) {
+        const top = Math.round(r.top);
+        tops.set(top, [...tops.get(top) ?? [], [title, [Math.round(r.width), Math.round(r.height)]]]);
+      }
     }
-    return sizes;
+    return Object.fromEntries([...tops.values()].map((row) => [row.map(([t]) => t).join(', '), Object.fromEntries(row)]));
   });
 }
 
 export const rememberPanelSizes = When('user remembers the sizes of the results panels', async (page: Page) => {
-  rememberedSizes.set(page, await panelSizes(page));
-}, {tier: 'api', description: 'the width and height of every shown panel of the results, by its title'});
+  rememberedRows.set(page, await panelRows(page));
+}, {tier: 'api', description: 'the width and height of every shown panel of the results, by its row and its title'});
 
+/* A row of the results is laid out again when a panel of it comes or goes (Insights & Tips after a cutoff): the rows
+   that keep their panels are claimed, and no remembered panel may go. */
 export const panelSizesKept = Then('the results panels should keep their remembered sizes', async (page: Page) => {
-  const kept = rememberedSizes.get(page);
+  const kept = rememberedRows.get(page);
   if (kept === undefined)
     throw new Error('no panel sizes were remembered');
-  expect(await panelSizes(page), 'the panels of the results, by title: [width, height]').toEqual(kept);
-}, {description: 'every panel, to the pixel, read once after the change that could have moved it'});
+  const now = await panelRows(page);
+  const shown = new Set(Object.values(now).flatMap((row) => Object.keys(row)));
+  const gone = Object.values(kept).flatMap((row) => Object.keys(row)).filter((t) => !shown.has(t));
+  const rows = Object.keys(kept).filter((k) => k in now);
+  if (gone.length > 0 || rows.length === 0) {
+    throw new Error(`the rows of the results were ${Object.keys(kept).join(' | ')}, now ${Object.keys(now).join(' | ')}` +
+      (gone.length > 0 ? `: ${gone.join(', ')} gone` : ': no row kept its panels'));
+  }
+  expect(Object.fromEntries(rows.map((k) => [k, now[k]])), 'the rows of the results that kept their panels: [width, ' +
+    'height] by title').toEqual(Object.fromEntries(rows.map((k) => [k, kept[k]])));
+}, {description: 'every row of panels (the panels with one top) whose panels are the ones remembered, each panel to ' +
+  'the pixel; no remembered panel gone, and at least one row kept; read once after the change that could have moved it'});
 
-/* LIB-PROMOTE: the library's balloon floor counts errors and warnings only; where a scenario says "no balloon", an
-   info balloon is a failure too. */
+/** The captions of the shown groups of the train form, in order, or of the shown inputs of the group [group]. */
+function shownCaptions(page: Page, group: string | null): Promise<string> {
+  return page.locator('.forge-train-form').evaluateAll((forms, g) => {
+    const form = forms.find((f) => f.getClientRects().length > 0);
+    const isShown = (e: Element) => e.getClientRects().length > 0;
+    const caption = (e: Element | null) => (e?.textContent ?? '').trim();
+    const groups = Array.from(form?.querySelectorAll('.forge-group') ?? []).filter(isShown)
+      .map((e) => ({e, caption: caption(e.querySelector('.forge-group-header label'))}));
+    if (g === null)
+      return groups.map((x) => x.caption).join(', ');
+    const shown = groups.find((x) => x.caption === g)?.e;
+    if (shown === undefined)
+      return `(no shown "${g}" group)`;
+    return Array.from(shown.querySelectorAll('.forge-group-body .ui-input-root')).filter(isShown)
+      .map((r) => caption(r.querySelector('label.ui-input-label'))).join(', ');
+  }, group);
+}
+
+export const groupsOfTrainForm = Then('the groups of train form should be {string}', async (page: Page, list: string) => {
+  await expect.poll(() => shownCaptions(page, null), {message: 'the shown groups of the train form'})
+    .toBe(listOf(list).join(', '));
+}, {description: 'the captions of the groups of the Train view that are shown, in order (comma-separated)'});
+
+/* LIB-PROMOTE: a form's visible inputs, by their captions; the library claims one input at a time. The selector needs
+   generalising first: it is tied to Forge's `.forge-train-form` and `.forge-group`. */
+export const groupShowsInputs = Then('the {string} group should show exactly the inputs {string}', async (page: Page,
+  group: string, list: string) => {
+  await expect.poll(() => shownCaptions(page, group), {message: `the shown inputs of the "${group}" group`})
+    .toBe(listOf(list).join(', '));
+}, {description: 'the captions of the shown inputs of the train form\'s group, in order (comma-separated); a hidden ' +
+  'input does not count'});
+
+const notedReadings = new WeakMap<Page, Map<string, string>>();
+const noteKey = (name: string, target: ElementRef) => `${name}|${target.phrase}`;
+
+function notedReading(page: Page, name: string, target: ElementRef): string {
+  const noted = notedReadings.get(page)?.get(noteKey(name, target));
+  if (noted === undefined)
+    throw new Error(`"${name}" of ${target.phrase} was not noted: "user notes the … reading of …" comes first`);
+  return noted;
+}
+
+/* LIB-PROMOTE: the library's "higher / lower than remembered" compare numeric readings only (viewers.ts
+   `expectRememberedDirection`); a grid cell's reading is text ("0.882"). The direction pair over numeric text is what
+   is missing; "as remembered" is the library's. */
+export const noteReading = When('user notes the {string} reading of {widget}', async (page: Page, name: string,
+  target: ElementRef) => {
+  await expect.poll(() => readingText(page, target, name), {message: `"${name}" of ${target.phrase}`}).not.toMatch(/^\(/);
+  const map = notedReadings.get(page) ?? new Map<string, string>();
+  notedReadings.set(page, map);
+  map.set(noteKey(name, target), await readingText(page, target, name));
+}, {tier: 'api', description: 'the reading\'s text, once the viewer reports it, kept for this page'});
+
+/* Polled: a cutoff re-cuts the shown result after the view's debounce, with no busy signal of its own. */
+async function expectAgainstNoted(page: Page, name: string, target: ElementRef, isHigher: boolean): Promise<void> {
+  const noted = notedReading(page, name, target);
+  await expect.poll(async () => {
+    const text = await readingText(page, target, name);
+    return (isHigher ? Number(text) > Number(noted) : Number(text) < Number(noted)) ? 'holds' : text;
+  }, {message: `"${name}" of ${target.phrase} ${isHigher ? 'above' : 'below'} the noted ${noted}`}).toBe('holds');
+}
+
+export const readingLowerThanNoted = Then('the {string} reading of {widget} should be lower than noted',
+  (page: Page, name: string, target: ElementRef) => expectAgainstNoted(page, name, target, false),
+  {description: 'polled: the reading and the noted text as numbers, the reading strictly lower'});
+
+export const readingHigherThanNoted = Then('the {string} reading of {widget} should be higher than noted',
+  (page: Page, name: string, target: ElementRef) => expectAgainstNoted(page, name, target, true),
+  {description: 'polled: the reading and the noted text as numbers, the reading strictly higher'});
+
+/** The title of the results panel [panel]. */
+async function titleOf(page: Page, panel: ElementRef): Promise<Locator> {
+  return (await locate(page, panel)).first().locator('.forge-results-title').first();
+}
+
+/** The number in "(AUC = …)" of a panel's [title], as written; null without one. */
+async function titleAuc(title: Locator): Promise<string | null> {
+  return /\(AUC = ([\d.]+)\)/.exec((await title.textContent()) ?? '')?.[1] ?? null;
+}
+
+export const aucInTitle = Then('the AUC in the title of {element} should equal the {string} reading of {widget}',
+  async (page: Page, panel: ElementRef, name: string, target: ElementRef) => {
+    const title = await titleOf(page, panel);
+    await expect.poll(async () => {
+      const [auc, value] = await Promise.all([titleAuc(title), readingText(page, target, name)]);
+      return (auc ?? '(no AUC in the title)') === value ? 'equal' : `the title's ${auc ?? '(no AUC)'} against ${value}`;
+    }, {message: `the AUC in the title of ${panel.phrase} against "${name}" of ${target.phrase}`}).toBe('equal');
+  }, {description: 'the number in "(AUC = …)" of the panel\'s title against the reading\'s text (both with three ' +
+  'decimals), read together until they agree'});
+
+/** The area under the curve a scatter plot draws (its y over its x, the points sorted by x and closed at (0, 0) and
+ * (1, 1), as a ROC curve), by the trapezoid rule. */
+function curveArea(page: Page, target: ElementRef): Promise<number> {
+  return viewers.onViewer(page, target, (el) => {
+    const v = DG.Widget.find(el);
+    const [x, y] = [v.dataFrame.col(v.props.xColumnName), v.dataFrame.col(v.props.yColumnName)];
+    const points: [number, number][] = [[0, 0], [1, 1]];
+    for (let i = 0; i < v.dataFrame.rowCount; i++) {
+      if (!x.isNone(i) && !y.isNone(i))
+        points.push([x.get(i), y.get(i)]);
+    }
+    points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    let area = 0;
+    for (let i = 1; i < points.length; i++)
+      area += (points[i][0] - points[i - 1][0]) * (points[i][1] + points[i - 1][1]) / 2;
+    return area;
+  });
+}
+
+export const curveAreaIsAuc = Then('the area under the curve of {widget} should equal the AUC in the title of {element} ' +
+  'within {float}', async (page: Page, target: ElementRef, panel: ElementRef, within: number) => {
+  const title = await titleOf(page, panel);
+  await expect.poll(async () => {
+    const [text, area] = await Promise.all([titleAuc(title), curveArea(page, target)]);
+    if (text === null)
+      return '(no AUC in the title)';
+    const auc = Number(text);
+    return Math.abs(area - auc) <= within ? 'equal' : `the curve's area ${area.toFixed(3)} against the title's ${auc}`;
+  }, {message: `the area under the curve of ${target.phrase} against the AUC in the title of ${panel.phrase}`})
+    .toBe('equal');
+}, {description: 'the trapezoid area of the points the plot draws (its x and y columns, closed at (0, 0) and (1, 1)) ' +
+  'against the number in "(AUC = …)" of the panel\'s title, polled until within the tolerance'});
+
+/* LIB-PROMOTE: a viewer's current row is no reading of the scatter plot's status (a grid has "current row"). */
+export const currentRowOf = Then('the current row of {widget} should be {int}', async (page: Page, target: ElementRef,
+  row: number) => {
+  await expect.poll(() => viewers.onViewer(page, target, (el) => DG.Widget.find(el).dataFrame.currentRowIdx + 1),
+    {message: `the current row of ${target.phrase} (1-based)`}).toBe(row);
+}, {description: 'the 1-based current row of the frame the viewer shows'});
+
+/** Records every frame the platform's semantic type detection reports from now on, once per document: a table opened
+ * after it is waited for by awaitTableReady, whenever its detection lands. */
+function watchDetection(page: Page): Promise<void> {
+  return page.evaluate(() => {
+    const w = window as any;
+    if (w.__forgeDetected !== undefined)
+      return;
+    w.__forgeDetected = [];
+    grok.events.onEvent('ddt-semantic-type-detected').subscribe((a: any) => {
+      w.__forgeDetected = [...w.__forgeDetected.slice(-19), a?.args?.dataFrame?.dart];
+    });
+  });
+}
+
+/* A table opened in the page is ready, as the library's opener waits for, once the platform has detected its semantic
+   types (watchDetection, from before the open) and its view is the current one with its own grid shown. */
+async function awaitTableReady(page: Page, name: string): Promise<void> {
+  await expect.poll(() => viewers.evaluate(page, (n) => {
+    const w = window as any;
+    const t = w.__bdd.tableNamed(n);
+    if (!w.__forgeDetected.includes(t.dart))
+      return 'its semantic types are not detected';
+    const tv = grok.shell.tv;
+    return tv?.dataFrame?.dart !== t.dart ? `the current view is ${String(tv?.name)}` :
+      tv.root.querySelector('[name="viewer-Grid"]')?.getClientRects().length > 0 ? 'ready' : 'its grid is not shown';
+  }, name), {timeout: pollMs(60000), message: `the table "${name}" open`}).toBe('ready');
+}
+
+/* The step ends when the table's view has its grid and the table is the current one: a menu picked before the grid is
+   built left a scatter plot legend's icon over the next feature's menu. LIB-PROMOTE: the library's dataset opener reads
+   files, and the manual's console line opens a generated table; with `openTable` taking a generated table as its
+   source and the harness finding viewer chrome left after `closeAll` (the legend icon), this step goes. */
+export const demoTableOpen = Given('a demo table {string} of {int} rows is open', async (page: Page, name: string,
+  rows: number) => {
+  await page.evaluate(([n, count]) => {
+    const t = grok.data.demo.demog(count);
+    t.name = n;
+    grok.shell.addTableView(t);
+  }, [name, rows] as [string, number]);
+  await page.locator('[name="viewer-Grid"]').first().waitFor();
+  await expect.poll(() => page.evaluate(() => String(grok.shell.t?.name ?? '')), {message: 'the current table'})
+    .toBe(name);
+}, {tier: 'api', description: 'grok.data.demo.demog(rows) named and added as a table view; done when it is the ' +
+  'current table'});
+
+/* Where a scenario says "no balloon", an info balloon fails too (the library's floor counts errors and warnings).
+   LIB-PROMOTE: the harness keeping the Background's balloons and errors for the first scenario (or the generator
+   adding the floor) lets the Background floors go. */
 export const noBalloonAtAll = Then('no balloon of any colour should have been shown', async (page: Page) => {
   const shown = await viewers.takeBalloons(page);
   expect(shown.map((b) => `${b.type}: ${b.message}`), 'balloons since the last check').toEqual([]);
@@ -264,53 +458,28 @@ export const taskBarEntryNotShowedText = Then('the task bar entry that showed {s
 
 /* LIB-PROMOTE: the library's dataset opener reads a csv into a fresh frame, which has no creation script, so Save would
    not offer Reference. This one opens the demo file as Browse > Files does (OpenServerFile, unprocessed: the platform
-   records the creation script) and names the table, so its runs are the feature's own. The step ends when the
-   platform's semantic type detection reports the frame, as the library's opener does. */
+   records the creation script) and names the table, so its runs are the feature's own. The step ends when the table
+   is ready (awaitTableReady), as the library's opener does. */
 export const openDemoFile = Given('user opens the demo file {string} as {string}', async (page: Page, file: string, name: string) => {
-  await page.evaluate(async ([path, tableName, timeout]) => {
-    // One subscription from before the call: the detection can report the frame before the call returns it.
-    const detected: unknown[] = [];
-    const waiting: (() => void)[] = [];
-    let table: any = null;
-    const sub = grok.events.onEvent('ddt-semantic-type-detected').subscribe((a: any) => {
-      detected.push(a?.args?.dataFrame?.dart);
-      if (table !== null && detected.includes(table.dart)) {
-        for (const done of waiting.splice(0))
-          done();
-      }
-    });
-    try {
-      const call = DG.Func.byName('OpenServerFile').prepare({fullPath: path});
-      await call.call(false, undefined, {processed: false});
-      const tables: unknown = call.getOutputParamValue();
-      table = Array.isArray(tables) ? tables[0] : null;
-      if (!(table instanceof DG.DataFrame))
-        throw new Error(`OpenServerFile gave no table for ${path}`);
-      table.name = tableName;
-      const view = Array.from(grok.shell.tableViews as any[]).find((v: any) => v.dataFrame?.dart === table.dart);
-      if (view === undefined)
-        grok.shell.addTableView(table);
-      else
-        grok.shell.v = view;
-      await new Promise<void>((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error(`${path}: semantic types were not detected`)), timeout);
-        waiting.push(() => {
-          clearTimeout(timer);
-          resolve();
-        });
-        if (detected.includes(table.dart)) {
-          for (const done of waiting.splice(0))
-            done();
-        }
-      });
-    }
-    finally {
-      sub.unsubscribe();
-    }
-  }, [`System:DemoFiles/${file}`, name, pollMs(60000)] as [string, string, number]);
-  await page.locator('[name="viewer-Grid"]').first().waitFor();
+  await watchDetection(page);
+  await page.evaluate(async ([path, tableName]) => {
+    const call = DG.Func.byName('OpenServerFile').prepare({fullPath: path});
+    await call.call(false, undefined, {processed: false});
+    const tables: unknown = call.getOutputParamValue();
+    const table: any = Array.isArray(tables) ? tables[0] : null;
+    if (!(table instanceof DG.DataFrame))
+      throw new Error(`OpenServerFile gave no table for ${path}`);
+    table.name = tableName;
+    const view = Array.from(grok.shell.tableViews as any[]).find((v: any) => v.dataFrame?.dart === table.dart);
+    if (view === undefined)
+      grok.shell.addTableView(table);
+    else
+      grok.shell.v = view;
+  }, [`System:DemoFiles/${file}`, name] as [string, string]);
+  await awaitTableReady(page, name);
 }, {tier: 'api', description: 'OpenServerFile of System:DemoFiles/<file>, unprocessed (the table keeps its creation ' +
-  'script, so Save offers Reference), named; done when the platform has detected its semantic types'});
+  'script, so Save offers Reference), named; done when the platform has detected its semantic types and its view is ' +
+  'current with its grid shown'});
 
 const FIXTURE_FIELDS = ['target', 'features', 'method', 'storage', 'tags', 'description'];
 
@@ -329,10 +498,7 @@ export const trainThroughApiWith = Given('a Forge model {string} is trained on t
     const table = await page.evaluate(() => grok.shell.t ? String(grok.shell.t.name) : null);
     if (table === null)
       throw new Error('no current table to train on');
-    atFeatureEnd(page, async () => {
-      await sweepModels(page, [name]);
-      await sweepRuns(page, [table]);
-    });
+    sweepAtFeatureEnd(page, [name], [table]);
     const features = fields.features === undefined ? null : listOf(fields.features);
     await page.evaluate(async ([modelName, f, list]) => {
       const t = grok.shell.t;
@@ -366,6 +532,17 @@ export const cancelTaskBarEntry = When('user cancels the {string} task bar entry
   await page.locator('.d4-task-bar-entry[data-forge-entry] .fa-times').first().click();
 }, {tier: 'ui', description: 'clicks the cross of the task bar entry that showed the text, counted since "user counts ' +
   'the task bar entries" and still on the page'});
+
+/* LIB-PROMOTE: the library's hover lands on the element in one move and waits for its own mouseenter; a disabled
+   button (ui.setDisabled) takes no pointer events, and the overlay that carries its reason shows the tooltip only
+   after moves over it, as a person's pointer makes (probed on the Train view, 2026-10-19). */
+export const slidePointerOnto = When('user slides the pointer onto {element}', async (page: Page, target: ElementRef) => {
+  const box = await (await locate(page, target)).first().boundingBox();
+  if (box === null)
+    throw new Error(`${target.phrase}: no box to slide onto`);
+  const x = box.x + box.width / 2;
+  await slidePointer(page, {x, y: box.y + box.height / 2}, {x, y: Math.max(0, box.y - 40)});
+}, {tier: 'ui', description: 'from 40 px above the element to its centre in five moves'});
 
 /* A change while a training runs (scenario 5.3): the first value is typed and committed, the second goes in once the
    training of the first is in the task bar (waited for: a training queued behind another starts later). */

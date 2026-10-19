@@ -44,6 +44,8 @@ Feature: Training a classifier on iris in the Train view
     When user picks "ML > Forge > Train..." from the top menu
     Then the "Predictive model" view should be current
     And a new training's result should be shown
+    And no balloon of any colour should have been shown
+    And no errors should have been logged
 
   Scenario: The view opens on iris and trains a classifier by itself (2.1)
     Then the task bar should have finished "Training XGBoost model"

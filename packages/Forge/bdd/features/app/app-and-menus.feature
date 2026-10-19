@@ -29,6 +29,8 @@ Feature: The Forge app, its menus, and the old tool beside it
   Background:
     Given user is logged in
     And user opens the demo file "iris.csv" as "forge-test-iris-{time}"
+    Then no balloon of any colour should have been shown
+    And no errors should have been logged
 
   Scenario: Forge opens from Apps and from the ML menu; the old tool keeps its menu and its Browse node (1.1, 1.2, 6.4, 4.13)
     Then the top menu should list:

@@ -66,6 +66,22 @@ export function cancelTaskBarEntry(entry: Element | undefined): void {
   cancel.click();
 }
 
+/** Waits up to [ms] for the task-bar entry that shows [text] and cancels it a moment later. The entry is held from
+ * when it shows: a training's text becomes the fold progress after the first fit. */
+export async function cancelOnceShown(text: string, ms: number): Promise<void> {
+  await awaitCheck(() => taskBarEntry(text) !== undefined, 'No task-bar progress', ms);
+  const entry = taskBarEntry(text);
+  await delay(100);
+  cancelTaskBarEntry(entry);
+}
+
+/** The demo table demog of [rows] generated rows, named `forge-test-demog-<time>`. */
+export function demoDemog(rows: number): DG.DataFrame {
+  const demog = grok.data.demo.demog(rows);
+  demog.name = `forge-test-demog-${Date.now()}`;
+  return demog;
+}
+
 /** Every grid of [grids] (by its pane's name) spans its accordion pane's content within 2 px, and still does once
  * [host], the accordion's container, is made wider. */
 export async function expectGridsFillPanes(host: HTMLElement, grids: {[pane: string]: DG.Grid}): Promise<void> {

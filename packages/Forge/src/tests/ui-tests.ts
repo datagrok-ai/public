@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -33,7 +34,7 @@ import {saveModelDialog} from '../ui/save-model-dialog';
 import {tableModelsPane} from '../ui/table-models-panel';
 import {tagsOfInput} from '../ui/tags-input';
 import {CHECK_DELAY_MS, SHOWN_RUN, TrainView} from '../ui/train-view';
-import {balloonWith, cancelTaskBarEntry, catalogState, columnsOf, deleteRunsOf, expectNoFrames, expectReleased,
+import {balloonWith, cancelOnceShown, catalogState, columnsOf, deleteRunsOf, demoDemog, expectNoFrames, expectReleased,
   expectGridsFillPanes, framesSharing, insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile,
   readUntil, refreshThenChange, runsOf, savedFixture, saveIrisModel, saveSkipUniqueModel, saveTestModel, taskBarEntry,
   twoSpeciesIris, unbalancedIris, valuesOf, XGBOOST_FIELDS} from './test-data';
@@ -469,8 +470,7 @@ category('UI', () => {
   }, {timeout: TIMEOUT});
 
   test('a cancelled training is recorded; a slow method waits for Train', async () => {
-    const demog = grok.data.demo.demog(SLOW_ROWS);
-    demog.name = `forge-test-demog-${Date.now()}`;
+    const demog = demoDemog(SLOW_ROWS);
     const view = await TrainView.create(demog);
     grok.shell.addView(view);
     try {
@@ -478,11 +478,7 @@ category('UI', () => {
       for (let i = 0; i < TIMEOUT / 10 && !view.isTraining; i++)
         await delay(10);
       expect(`${view.isTraining} ${view.methodInput.value} ${resultsState(view)}`, 'true XGBoost true/false');
-      await awaitCheck(() => taskBarEntry('Training XGBoost model') !== undefined, 'No task-bar progress', TIMEOUT);
-      // The entry's text becomes the fold progress after the first fit.
-      const entry = taskBarEntry('Training XGBoost model');
-      await delay(100);
-      cancelTaskBarEntry(entry);
+      await cancelOnceShown('Training XGBoost model', TIMEOUT);
       await awaitCheck(() => !view.isTraining, 'The cancelled training does not end', TIMEOUT);
       expect(resultsState(view), 'false/true');
       const recorded = await runsOf([demog]);
@@ -752,8 +748,7 @@ category('UI: Train', () => {
   }, {timeout: TIMEOUT});
 
   test('a training superseded while its task-bar progress is shown writes no run', async () => {
-    const demog = grok.data.demo.demog(SLOW_ROWS);
-    demog.name = `forge-test-demog-${Date.now()}`;
+    const demog = demoDemog(SLOW_ROWS);
     const view = await TrainView.create(demog);
     grok.shell.addView(view);
     const progressShown = () => taskBarEntry('Training XGBoost model') !== undefined;
@@ -840,6 +835,29 @@ category('UI: Train', () => {
       await closeTrainView(view, [table]);
     }
   }, {timeout: 120000});
+
+  test('a training completed after a cancelled one clears the invalid mark', async () => {
+    const demog = demoDemog(50000);
+    const view = await TrainView.create(demog);
+    view.targetInput.value = demog.getCol('sex');
+    view.methodInput.value = 'SVM';
+    grok.shell.addView(view);
+    try {
+      await awaitCheck(() => isTrainShown(view) && !isDisabled(view.trainButton), 'Train is not offered for SVM',
+        WAIT_MS);
+      const cancelled = view.train();
+      await cancelOnceShown('Training SVM model', WAIT_MS);
+      await cancelled;
+      expect(`${view.runs[0]?.status} ${resultsState(view)}`, 'cancelled false/true',
+        'The cancel came after the training ended');
+      await view.train();
+      await awaitCheck(() => resultsState(view).startsWith('false/'), 'The results stay busy', WAIT_MS);
+      expect(`${view.runs[0]?.status} ${resultsState(view)}`, 'completed false/false');
+      expect(shownRun(view), view.lastTraining?.runId ?? null, 'The results show another run than the last training');
+    } finally {
+      await closeTrainView(view, [demog]);
+    }
+  }, {timeout: TIMEOUT});
 
   test('Preparation follows demog: Missing values, One-hot encoding, Skip unique categories', async () => {
     const demog = await openDemog();
@@ -2758,6 +2776,43 @@ category('UI: Table panel', () => {
     }
   }, {timeout: TIMEOUT});
 
+  test('a click on a name right after the pane is expanded shows the model', async () => {
+    const {name, iris} = paneFixture();
+    const tableView = grok.shell.addTableView(iris);
+    const isPanelShown = grok.shell.windows.showContextPanel;
+    grok.shell.windows.showContextPanel = true;
+    const headers = () =>
+      Array.from(document.querySelectorAll<HTMLElement>('.grok-prop-panel .d4-accordion-pane-header'));
+    const header = () => headers().find((h) => h.textContent?.trim() === PANEL_TABLE_MODELS);
+    const panel = () => document.querySelector<HTMLElement>('.grok-prop-panel') ?? ui.div();
+    try {
+      // The view just added may set its own current object after this one: the table is set until it stays.
+      await awaitCheck(() => {
+        if (!(grok.shell.o instanceof DG.DataFrame && grok.shell.o.dart === iris.dart))
+          grok.shell.setCurrentObject(iris, false, true);
+        return header() !== undefined;
+      }, 'No Forge models pane', WAIT_MS).catch(() => {
+        throw new Error(`No Forge models pane for ${String(grok.shell.o)}: ${headers().map((h) => h.textContent)}`);
+      });
+      if (header()?.getAttribute('aria-expanded') !== 'true')
+        header()?.click();
+      await awaitCheck(() => paneLine(panel(), name) !== undefined, 'The pane does not list the model', WAIT_MS);
+      // Expanding any accordion pane makes the platform drop unforced current-object changes for 2 s.
+      const other = headers().find((h) => h !== header());
+      if (other === undefined)
+        throw new Error('The context panel has no other pane');
+      if (other.getAttribute('aria-expanded') === 'true')
+        other.click();
+      other.click();
+      paneParts(panel(), name).link.click();
+      await awaitCheck(() => grok.shell.o instanceof DG.DomainRow && grok.shell.o.values?.name === name,
+        `The click left ${String(grok.shell.o)} as the current object`, WAIT_MS);
+    } finally {
+      grok.shell.windows.showContextPanel = isPanelShown;
+      tableView.close();
+    }
+  }, {timeout: TIMEOUT});
+
   test('Train opens the Train view on the table', async () => {
     const {iris} = paneFixture();
     const pane = tableModelsPane(iris);
@@ -2880,16 +2935,12 @@ category('UI: Runs', () => {
   }, {timeout: TIMEOUT});
 
   test('a cancelled training is a cancelled row; a click on it trains again', async () => {
-    const demog = grok.data.demo.demog(SLOW_ROWS);
-    demog.name = `forge-test-demog-${Date.now()}`;
+    const demog = demoDemog(SLOW_ROWS);
     const view = await TrainView.create(demog);
     grok.shell.addView(view);
     try {
       trainSlowly(view, demog);
-      await awaitCheck(() => taskBarEntry('Training XGBoost model') !== undefined, 'No task-bar progress', TIMEOUT);
-      const entry = taskBarEntry('Training XGBoost model');
-      await delay(100);
-      cancelTaskBarEntry(entry);
+      await cancelOnceShown('Training XGBoost model', TIMEOUT);
       await awaitCheck(() => !view.isTraining, 'The cancelled training does not end', TIMEOUT);
       expect(view.runs[0]?.status, 'cancelled');
       const grid = runsGrid(view);

@@ -6,6 +6,7 @@ import type {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
 import {type ElementRef, expect, gestures, locate, viewers} from '@datagrok-libraries/bdd/runtime';
 import {guardIdentity, listOf, modelNumber} from './grok-s.js';
+import {contextPanelTitle} from './results-state.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -275,9 +276,9 @@ export const imputedPredictions = Then('the {string} column should hold the pred
 /* LIB-PROMOTE: "the context panel should show" finds the name in the panel's text, and the panel of the column
    "Species (predicted 2)" holds "Species" too: a claim about the new panel waits for its title. */
 export const panelTitled = Then('the context panel title should be {string}', async (page: Page, name: string) => {
-  await expect.poll(() => page.evaluate(() => {
-    const o: any = grok.shell.o;
-    const title = document.querySelector('.grok-prop-panel .d4-accordion-title');
-    return `${String(o?.name ?? o)} | ${(title?.textContent ?? '').trim()}`;
-  }), {message: 'the current object and the title of the context panel'}).toBe(`${name} | ${name}`);
+  await expect.poll(async () => {
+    const [object, title] = await Promise.all([page.evaluate(() => String(grok.shell.o?.name ?? grok.shell.o)),
+      contextPanelTitle(page)]);
+    return `${object} | ${title}`;
+  }, {message: 'the current object and the title of the context panel'}).toBe(`${name} | ${name}`);
 }, {description: 'the current object\'s name and the context panel\'s title are both exactly the text'});

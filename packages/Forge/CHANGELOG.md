@@ -25,5 +25,8 @@
 * GROK-20932: Added the BDD features of the Apply dialog, the catalog, the app and the menus (bdd/)
 * GROK-20932: Fixed the shown model's Details (Last run, Applications) and Activity staying stale after an application until another row was clicked
 * GROK-20932: Fixed the Activity and Performance grids of the model's context panel being narrower than the panel
+* GROK-20932: Added the BDD features of preparation and training with gaps, the Train view on demog and the table pane Forge models (bdd/)
+* GROK-20932: Fixed the Train view's results keeping aria-invalid after a cancelled training was followed by a completed one
+* GROK-20932: Fixed a click on a model's name in the table pane Forge models doing nothing right after the pane was expanded
 
 ## 0.0.1 (2026-09-30)

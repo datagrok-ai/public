@@ -7,7 +7,7 @@ import {appendFileSync} from 'node:fs';
 import {execFile} from 'node:child_process';
 import {createRequire} from 'node:module';
 import type {Page} from '@playwright/test';
-import {expect, fixtureFamilies, isStaleFixture, pollMs, serverNow} from '@datagrok-libraries/bdd/runtime';
+import {atFeatureEnd, expect, fixtureFamilies, isStaleFixture, pollMs, serverNow} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -120,25 +120,31 @@ export async function guardIdentity(page: Page): Promise<void> {
    server's instant. */
 const createdOn = (row: Record<string, unknown>): number => Date.parse(String(row.created_on ?? '')) || 0;
 
-/** The `forge-test-…` rows of [table] (a name column [column]) that are [names] or a stale member of their family:
- * the ones a killed run of the feature left an hour or more ago, by the server's clock. */
+/** The `forge-test-…` rows of [table] (a name column [column]) that are a stale member of the family of [names]: the
+ * ones a killed run of the feature left an hour or more ago, by the server's clock. Read oldest first, so the limit
+ * cuts the newest. */
 export async function fixtureRows(page: Page, table: string, column: string, names: string[], columns: string[]):
   Promise<Record<string, unknown>[]> {
   const [listed, now] = await Promise.all([grokS(['domains', 'query', table, '--filter', `${column} like "forge-test-%"`,
-    '--columns', [column, ...columns].join(','), '--limit', '1000']), serverNow(page)]);
+    '--columns', [column, ...columns].join(','), '--sort', 'created_on', '--limit', '1000']), serverNow(page)]);
   const families = fixtureFamilies(names);
   return rowsOf(listed).filter((r) => {
     const name = String(r[column] ?? '');
-    return names.includes(name) || isStaleFixture({name, friendlyName: name, createdOn: createdOn(r)}, families, now);
+    return isStaleFixture({name, friendlyName: name, createdOn: createdOn(r)}, families, now);
   });
 }
 
-/** The count of [table] rows matching any of the [terms] (`column = "value"`), in filters of 20 terms. */
-async function countWhere(table: string, terms: string[]): Promise<number> {
-  const chunks: string[][] = [];
+/** The [terms] (`column = "value"`) in filters of 20 terms each. */
+function filtersOf(terms: string[]): string[] {
+  const filters: string[] = [];
   for (let i = 0; i < terms.length; i += 20)
-    chunks.push(terms.slice(i, i + 20));
-  const counts = await Promise.all(chunks.map((chunk) => countOf(table, chunk.join(' or '))));
+    filters.push(terms.slice(i, i + 20).join(' or '));
+  return filters;
+}
+
+/** The count of [table] rows matching any of the [terms]. */
+async function countWhere(table: string, terms: string[]): Promise<number> {
+  const counts = await Promise.all(filtersOf(terms).map((filter) => countOf(table, filter)));
   return counts.reduce((a, b) => a + b, 0);
 }
 
@@ -208,6 +214,9 @@ export const newestApplication = (id: string): Promise<Record<string, unknown> |
 /** The newest training run of the table [table]. */
 export const newestRun = (table: string): Promise<Record<string, unknown> | string> =>
   newestRow(RUN, 'dataset_name', table);
+
+/** The training run [id], or why there is none. */
+export const runOf = (id: string): Promise<Record<string, unknown> | string> => newestRow(RUN, 'id', id);
 
 /** The value at the dotted [path] of [row] ("dataset_fingerprint.rowCount"). */
 export function valueAt(row: Record<string, unknown>, path: string): unknown {
@@ -296,13 +305,18 @@ export async function expectTables(name: string, n: number): Promise<void> {
     {...SERVER_POLL, message: `server tables named "${name}"`}).toBe(n);
 }
 
-/** Deletes the feature's models (and the stale ones of their families) in the page, then reads the server back by the
- * exact names and ids: no such row, no model file folder of theirs, no training copy of theirs. */
+/** Deletes the feature's models (read by their exact names) and the stale ones of their families in the page, then,
+ * when it deleted any, reads the server back by the exact names and ids: no such row, no model file folder of theirs,
+ * no training copy of theirs. */
 export async function sweepModels(page: Page, names: string[]): Promise<void> {
   await guardIdentity(page);
   for (const name of names)
     knownModels.delete(name);
-  const rows = await fixtureRows(page, MODEL, 'name', names, ['blob', 'dataset_table_id']);
+  const columns = ['name', 'blob', 'dataset_table_id'];
+  const [stale, ...exact] = await Promise.all([fixtureRows(page, MODEL, 'name', names, columns.slice(1)),
+    ...filtersOf(termsOf('name', names)).map((filter) => grokS(['domains', 'query', MODEL, '--filter', filter,
+      '--columns', columns.join(','), '--limit', '1000']))]);
+  const rows = [...new Map([...exact.flatMap(rowsOf), ...stale].map((r) => [String(r.id), r])).values()];
   if (rows.length === 0)
     return;
   const ids = rows.map((r) => String(r.id));
@@ -337,4 +351,25 @@ export async function sweepRuns(page: Page, names: string[]): Promise<void> {
   }));
   await expect.poll(() => countWhere(RUN, termsOf('dataset_name', tables)),
     {...SERVER_POLL, message: `training runs of the tables ${tables.join(', ')} left on the server`}).toBe(0);
+}
+
+const endSweeps = new WeakMap<Page, {models: Set<string>; tables: Set<string>}>();
+
+/** Adds the models [models] and the runs of the tables [tables] to the feature-end sweep of the page: one feature-end
+ * cleanup sweeps all the feature named, the models and the runs at once. */
+export function sweepAtFeatureEnd(page: Page, models: string[], tables: string[]): void {
+  let sweep = endSweeps.get(page);
+  if (sweep === undefined) {
+    const s = {models: new Set<string>(), tables: new Set<string>()};
+    endSweeps.set(page, sweep = s);
+    atFeatureEnd(page, async () => {
+      endSweeps.delete(page);
+      await Promise.all([s.models.size > 0 ? sweepModels(page, [...s.models]) : null,
+        s.tables.size > 0 ? sweepRuns(page, [...s.tables]) : null]);
+    });
+  }
+  for (const name of models)
+    sweep.models.add(name);
+  for (const table of tables)
+    sweep.tables.add(table);
 }

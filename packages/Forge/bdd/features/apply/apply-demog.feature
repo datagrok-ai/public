@@ -32,6 +32,8 @@ Feature: Applying on data with natural gaps: demog's HEIGHT and WEIGHT, skipped 
       | target   | AGE               |
       | features | HEIGHT, WEIGHT    |
       | method   | Linear Regression |
+    Then no balloon of any colour should have been shown
+    And no errors should have been logged
 
   Scenario: Rows with a natural gap in HEIGHT or WEIGHT get no prediction by default, and are counted (3.15, steps 2-3)
     Given user counts the task bar entries

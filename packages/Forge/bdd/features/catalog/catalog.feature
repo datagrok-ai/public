@@ -69,6 +69,8 @@ Feature: The model catalog: a model's panes, its commands, comparing, sharing, e
     Then second grid viewer should list the Forge model "forge-test-cat-iris-{time}"
     And second grid viewer should list the Forge model "forge-test-cat-ref-{time}"
     And second grid viewer should list the Forge model "forge-test-cat-quality-{time}"
+    And no balloon of any colour should have been shown
+    And no errors should have been logged
 
   Scenario: A saved model is a platform entity with its author's grants; its Details (4.0, 4.1)
     Then the Forge model "forge-test-cat-iris-{time}" should be an entity on the server with the author's grants

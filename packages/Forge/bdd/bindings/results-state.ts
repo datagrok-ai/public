@@ -1,7 +1,7 @@
 /* What the Train view says about its results, on `.forge-train-results` (ARCHITECTURE.md, "Automation surface"):
    aria-busy while it checks, trains or shows a result, aria-invalid for a problem, and data-forge-run-id, the id of the
-   training_run row whose result it shows (absent while it shows a hint); the seed shown and a viewer's reading as text.
-   No steps here: the step modules import it. */
+   training_run row whose result it shows (absent while it shows a hint); the seed shown and a viewer's reading as text;
+   the context panel's title. No steps here: the step modules import it. */
 import type {Page} from '@playwright/test';
 import {type ElementRef, expect, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
 
@@ -41,4 +41,17 @@ export async function readingText(page: Page, target: ElementRef, name: string):
 /** The run whose result the shown Train view shows, or null. */
 export async function shownRun(page: Page): Promise<string | null> {
   return (await resultsState(page)).run;
+}
+
+/** The run whose result the shown Train view shows; fails while it shows none. */
+export async function requireShownRun(page: Page): Promise<string> {
+  const run = await shownRun(page);
+  if (run === null)
+    throw new Error('the Train view shows no training\'s result (no data-forge-run-id)');
+  return run;
+}
+
+/** The context panel's title, trimmed; '' without one. Read without waiting, for a poll. */
+export function contextPanelTitle(page: Page): Promise<string> {
+  return page.locator('.grok-prop-panel .d4-accordion-title').evaluateAll((all) => (all[0]?.textContent ?? '').trim());
 }

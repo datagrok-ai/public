@@ -27,6 +27,8 @@ Feature: Applying the quality regressor to winequality, and cancelling an applic
     And a Forge model "forge-test-apply-quality-{time}" is trained on the current table through the API with:
       | target | quality |
       | method | XGBoost |
+    Then no balloon of any colour should have been shown
+    And no errors should have been logged
 
   Scenario: The quality model is preset and matches every column; its predictions are whole numbers with the training's MAE (3.2, 3.5)
     Given user counts the task bar entries

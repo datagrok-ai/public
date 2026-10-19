@@ -44,6 +44,8 @@ Feature: Applying an iris classifier: the Apply dialog, column matching, missing
     And a Forge model "forge-test-apply-iris-{time}" is trained on the current table through the API with:
       | target | Species |
       | method | XGBoost |
+    Then no balloon of any colour should have been shown
+    And no errors should have been logged
 
   Scenario: The newest fitting model is preset; the predictions agree with the training as its Accuracy says (3.1, 3.5)
     Given user counts the task bar entries

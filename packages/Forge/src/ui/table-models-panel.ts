@@ -37,7 +37,8 @@ function modelLine(model: PaneModelRow, table: DG.DataFrame): HTMLElement {
   // The platform's menu of the row: its commands and Forge's Apply... / Download.
   const actions = ui.contextActions(row);
   const name = ui.span([ui.label(row.displayName)], 'd4-link-label forge-model-name');
-  name.addEventListener('click', () => grok.shell.setCurrentObject(row, false));
+  // Forced: the platform drops an unforced change for 2 s after an accordion pane is expanded.
+  name.addEventListener('click', () => grok.shell.setCurrentObject(row, false, true));
   // A ui.bind of a JS row gets only the platform's generic menu (Properties...): forward to the row's own menu.
   name.addEventListener('contextmenu', (e) => {
     e.preventDefault();

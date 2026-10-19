@@ -8,20 +8,20 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import type {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, type ElementRef, expect, locate, viewers} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, expect, locate, viewers} from '@datagrok-libraries/bdd/runtime';
 import {MINUTE_FORMAT, PREDICTION_TAG} from '../../src/constants.js';
 import {applicationCount, countOf, currentCliUser, expectCreatedModel, expectModelCount, expectTables, folderFiles,
   grokS, guardIdentity, knownModel, listOf, MODEL, modelNumber, modelRow, newestApplication, newestRun, quoted,
-  requireModelFolder, requireModelRow, rowsOf, RUN, SERVER_POLL, sharesOf, sharingAccount, sweepModels, sweepRuns,
-  tablesNamed, valueAt} from './grok-s.js';
-import {PANE_SEED, readingText, RESULTS_SEED, settled, shownRun, shownSeed} from './results-state.js';
+  requireModelFolder, requireModelRow, rowsOf, RUN, runOf, SERVER_POLL, sharesOf, sharingAccount, sweepAtFeatureEnd,
+  sweepModels, sweepRuns, tablesNamed, valueAt} from './grok-s.js';
+import {PANE_SEED, readingText, requireShownRun, RESULTS_SEED, settled, shownSeed} from './results-state.js';
 
 declare const grok: any;
 
 export const noModelsNamed = Given('no Forge models named {string} are on the server', async (page: Page, list: string) => {
   const names = listOf(list);
   await sweepModels(page, names);
-  atFeatureEnd(page, () => sweepModels(page, names));
+  sweepAtFeatureEnd(page, names, []);
 }, {tier: 'api', description: 'grok s domains query forge.model by the names (comma-separated) and their families older ' +
   'than an hour; each deleted in the page with Forge:deleteModel, now and at feature end; the rows, the model file ' +
   'folders and the training copies read back gone'});
@@ -30,7 +30,7 @@ export const noRunsOf = Given('no Forge training runs of the table(s) {string} a
   list: string) => {
   const tables = listOf(list);
   await sweepRuns(page, tables);
-  atFeatureEnd(page, () => sweepRuns(page, tables));
+  sweepAtFeatureEnd(page, [], tables);
 }, {tier: 'api', description: 'grok s domains delete forge.training_run --filter dataset_name = each table (comma-' +
   'separated), and the tables of their families older than an hour, now and at feature end; the count read back 0'});
 
@@ -170,9 +170,7 @@ export const newestRunShouldHave = Then('the newest training run of the table {s
 export const shownIsNewestRun = Then('the shown training should be the newest training run of the table {string}, with:',
   async (page: Page, table: string, fields: string[][]) => {
     await guardIdentity(page);
-    const shown = await shownRun(page);
-    if (shown === null)
-      throw new Error('the Train view shows no training\'s result (no data-forge-run-id)');
+    const shown = await requireShownRun(page);
     await expect.poll(async () => {
       const row = await newestRun(table);
       if (typeof row === 'string')
@@ -226,7 +224,7 @@ export const runCountOneMore = Then('the training run count of the table {string
 /* A row a user makes by hand in the Domains view (its ribbon's New model...): the required columns, no model file. */
 export const handMadeRow = Given('a Forge model row {string} without a model file is on the server', async (page: Page, name: string) => {
   await guardIdentity(page);
-  atFeatureEnd(page, () => sweepModels(page, [name]));
+  sweepAtFeatureEnd(page, [name], []);
   await grokS(['domains', 'insert', MODEL, `name=${name}`, 'engine_name=XGBoost', 'engine_namespace=Eda',
     'engine_kind=function', 'task=classification', 'target_name=Species', 'storage_mode=none']);
   await expectCreatedModel(name, `the hand-made Forge model row "${name}"`);
@@ -341,6 +339,18 @@ async function expectSeedOfModel(page: Page, name: string, where: string): Promi
 export const shownSeedIsModels = Then('the shown seed should be the seed of the Forge model {string} on the server',
   (page: Page, name: string) => expectSeedOfModel(page, name, RESULTS_SEED),
   {tier: 'api', description: 'the seed in the Performance panel of the results against the seed column of the model row'});
+
+export const shownSeedIsRuns = Then('the shown seed should be the seed of the shown training on the server',
+  async (page: Page) => {
+    await guardIdentity(page);
+    const shown = await requireShownRun(page);
+    const [seed, row] = await Promise.all([shownSeed(page), runOf(shown)]);
+    if (typeof row === 'string')
+      throw new Error(row);
+    expect(seed, `the seed in the Performance panel, against the seed of the training run ${shown}`)
+      .toBe(String(row.seed));
+  }, {tier: 'api', description: 'the seed in the Performance panel of the results against the seed column of the ' +
+  'training_run row whose result the view shows (data-forge-run-id)'});
 
 export const paneSeedIsModels = Then('the seed in the context panel should be the seed of the Forge model {string} on ' +
   'the server', (page: Page, name: string) => expectSeedOfModel(page, name, PANE_SEED),

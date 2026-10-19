@@ -1,8 +1,8 @@
 /* Forge's own names. Platform names (toolbox, context panel, grid …) are reserved; the inputs, buttons, dialogs and
    viewers of the Train view resolve from the platform's kinds ("Target input", "Save button", "grid viewer in
    "Performance" results panel"). What is here has no platform kind: Forge's collapsible groups, the panels of the
-   results, and a few elements with a stable class. The Train view publishes its readiness on `results area`
-   (aria-busy / aria-invalid, ARCHITECTURE.md "Automation surface"). */
+   results, the lines of the table pane, and a few elements with a stable class. The Train view publishes its
+   readiness on `results area` (aria-busy / aria-invalid, ARCHITECTURE.md "Automation surface"). */
 import {element, kind} from '@datagrok-libraries/bdd';
 
 /* A collapsible group of the Train view or the Apply dialog ("Data group", "Columns group"): aria-expanded on its
@@ -25,6 +25,10 @@ kind('results panel', {
   description: 'a panel of the Train or Evaluation view\'s results by its title',
 });
 
+/* The ROC Curve panel's title carries the AUC ("ROC Curve (AUC = 0.906)"), which the kind's whole-title match does not
+   read as "ROC Curve". */
+element('ROC Curve panel', {selector: '.forge-results-panel:has(> .forge-results-title:has-text("ROC Curve"))',
+  description: 'the ROC Curve panel of the results, whatever AUC its title shows'});
 element('results area', {selector: '.forge-train-results',
   description: 'the results of the Train view: aria-busy while it checks, trains or shows, aria-invalid for a problem'});
 element('train form', {selector: '.forge-train-form', description: 'the inputs of the Train view'});
@@ -44,13 +48,24 @@ element('tag chips', {selector: '.d4-tags-selector-tags-container > *',
 
 element('forge app', {selector: '.forge-app', description: 'the Forge view: Methods and the model catalog'});
 
-/* LIB-PROMOTE: every entity's Details (and a package's Sharing) pane is a ui.tableFromMap, a <table> of caption and
-   value rows; the library's "table row" kind has no value part. */
+/* LIB-PROMOTE: a line of the table pane Forge models (`table-models-panel.ts`) has the shape of the built-in Models
+   pane's rows (`d4-entity-markup-row`): the run icon, the name as a link, the menu arrow of `ui.contextActions`. */
+kind('model line', {
+  selector: '.forge-model-line',
+  match: ['label'],
+  labelSelector: '.forge-model-name',
+  parts: {'run icon': '.svg-model-run', name: '.forge-model-name', 'menu arrow': '.grok-context-arrow-down'},
+  description: 'a model\'s line in the table pane Forge models by the model\'s name; its run icon, name and menu arrow',
+});
+
+/* LIB-PROMOTE: every entity's Details (and a package's Sharing) pane, and a model's tooltip, is a ui.tableFromMap, a
+   <table> of caption and value rows; the library's "table row" kind has no value part. */
 kind('detail', {
   aliases: ['detail row'],
   selector: '.d4-info-table tr',
   match: ['label'],
   labelSelector: ':scope > td:first-child',
   parts: {value: ':scope > td:last-child'},
-  description: 'a row of a key-value table of the context panel (Details, Sharing) by its caption; its value part',
+  description: 'a row of a key-value table of the context panel or a tooltip (Details, Sharing, a model\'s tooltip) by ' +
+    'its caption; its value part',
 });

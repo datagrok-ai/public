@@ -7,6 +7,7 @@ import {atFeatureEnd, type ElementRef, expect, gestures, locate, menuNames, open
   from '@datagrok-libraries/bdd/runtime';
 import {catalogRowOf, drawnTexts, modelArea} from './catalog-grid.js';
 import {listOf, revokeSharingGrant, sharingAccount} from './grok-s.js';
+import {slidePointer} from './pointer.js';
 
 declare const DG: any;
 declare const grok: any;
@@ -92,10 +93,10 @@ export const hoverModel = When('user hovers over the Forge model {string} in {wi
   const box = await viewers.hitArea(page, target, `cell ${row} of name`, true);
   const c = viewers.centerOf(box);
   // A pointer that rests in the cell (the click that chose the row) asks for no tooltip: it enters from the left.
-  await page.mouse.move(box.x - 8, c.y);
-  await page.mouse.move(c.x, c.y);
+  await slidePointer(page, c, {x: box.x - 8, y: c.y});
   await viewers.settle(page, target);
-}, {tier: 'ui', description: 'the pointer enters the name cell of the model\'s row from its left, the grid settled'});
+}, {tier: 'ui', description: 'the pointer enters the name cell of the model\'s row from its left in five moves, the grid ' +
+  'settled'});
 
 export const modelCellReads = Then('the {string} cell of the Forge model {string} in {widget} should read {string}',
   async (page: Page, column: string, name: string, target: ElementRef, text: string) => {

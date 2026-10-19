@@ -582,6 +582,7 @@ export class TrainView extends DG.ViewBase {
           this.lastTraining = {result, request: run.request, runId, engine, table, columns: [...features, target],
             datasetName, fingerprint: run.fingerprint, isSaved: false};
           this.isTrained = true;
+          this.isFailed = false;
           // The cutoff may have moved while the model trained.
           this.recut();
         }

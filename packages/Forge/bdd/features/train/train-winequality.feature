@@ -30,6 +30,8 @@ Feature: Training a regressor of wine quality in the Train view
     When user picks "ML > Forge > Train..." from the top menu
     Then the "Predictive model" view should be current
     And a new training's result should be shown
+    And no balloon of any colour should have been shown
+    And no errors should have been logged
 
   Scenario: A classifier of type first, then a regressor of quality; the conflict of Target and Features is shown on Features (2.4, 5.12)
     Then the shown training should be the newest training run of the table "forge-test-wine-{time}", with:

@@ -1140,7 +1140,8 @@ div[data-wrapper=true]` of `d4.css`, inside a `d4-flex-col` list, centred on the
 preferredTable: table, switchToTable: true})`), the name as a link (`d4-link-label`, no model icon) and the menu arrow
 (`ui.contextActions(row)`: the platform's row commands and Forge's **Apply...** / **Download**). The name is not
 `ui.bind`-ed, since a bound JS row gets the generic menu (only **Properties...**) and Forge's rich tooltip; instead a
-click sets the current object, a right-click opens the arrow's menu, `ui.makeDraggable` drags the row (onto a Space),
+click sets the current object (forced: for 2 s after an accordion pane is expanded the platform drops an unforced
+change), a right-click opens the arrow's menu, `ui.makeDraggable` drags the row (onto a Space),
 and its tooltip is the built-in model tooltip (`modelSummary`: the name, then Created by, Created, Updated, Trained on,
 Last run, Tags, Inputs, Outputs, Method and Applicable to when an open table fits; the built-in **Links** row has no
 Forge data and is left out). The tooltip is built from the pane's row with `modelFacts` (`ui/model-panes.ts`, shared
@@ -1257,7 +1258,8 @@ The views publish their state in the DOM, so a test waits on what a view says in
   `ResultsPane.show` settles): `aria-busy="true"` while a check is pending (`check` undefined), a training is queued,
   running or being recorded (`isTraining`) or results are being shown (`showing`, the `ResultsPane.show` calls not
   settled); `aria-invalid="true"` once checked while the selection has a problem (`problem()`, an invalid setting
-  included) or its last training ended `failed` or `cancelled` (`isFailed`, cleared by any change but the cutoff). Ready is
+  included) or its last training ended `failed` or `cancelled` (`isFailed`, cleared by any change but the cutoff and by
+  a training of the current selection that completes, a **Train** click after a cancel too). Ready is
   `aria-busy="false"` without `aria-invalid="true"`; a slow method waiting for **Train** is ready.
 - On the same element, `data-forge-run-id` (`SHOWN_RUN`) is the id of the `training_run` row whose result the results
   show. `showResults` sets it when a completed training of the current selection is shown, and a cutoff-only re-cut
@@ -1289,7 +1291,9 @@ The views publish their state in the DOM, so a test waits on what a view says in
 
 The user flows are Gherkin features on `@datagrok-libraries/bdd` in `bdd/` (`bdd/README.md`), run by Playwright
 against a stand. Forge's vocabulary is in `bdd/bindings/`: the kinds `group` and `results panel` over the classes
-above and `detail` (a caption-value row of the context panel's `ui.tableFromMap`), the catalog's loads over the
+above, `detail` (a caption-value row of a `ui.tableFromMap`, in the context panel or a tooltip) and `model line` (a line of the table
+pane **Forge models**: its run icon, name and menu arrow), a named table set as the current object (the platform's
+corner click does not make it current again), forced and not frozen, the catalog's loads over the
 `.forge-catalog` of every open Forge view (a hidden view's root is read through `grok.shell.views`), the captions a grid
 draws (the text of the header cell at each column's `header <column>` area), the demo-file opener (`OpenServerFile`
 unprocessed, so the table keeps its creation script), the API fixtures (`Forge:trainModel`, a row inserted without a
