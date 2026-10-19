@@ -663,7 +663,7 @@ describe('generateDomainClients', () => {
     const res = runTsc(dir, 'usage-bad.ts');
     expect(res.status).not.toBe(0);
     // exactly one error per intended negative — no accidental extra breakage
-    expect(res.output.match(/error TS/g)).toHaveLength(15);
+    expect(res.output.match(/error TS/g)).toHaveLength(16);
     // wrong-typed payload values: `count: string` and `active: string`
     expect(res.output).toContain('usage-bad.ts(5,');
     expect(res.output).toContain('usage-bad.ts(7,');
@@ -685,6 +685,8 @@ describe('generateDomainClients', () => {
     expect(res.output).toContain('usage-bad.ts(21,');
     expect(res.output).toContain('usage-bad.ts(22,');
     expect(res.output).toContain('usage-bad.ts(23,');
+    // ...an FK path as a sort key (the server sorts by plain columns only)...
+    expect(res.output).toContain('usage-bad.ts(24,');
     // ...non-selected field access after select()...
     expect(res.output).toMatch(/Property 'count' does not exist on type 'Pick<SampleRow/);
     // ...and a field absent from the mapped-tuple insert result
