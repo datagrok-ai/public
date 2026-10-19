@@ -63,7 +63,8 @@ export class EmbeddedViewersTutorial extends Tutorial {
       '<b>General | Use in Trellis</b>. You can select columns by which the data should be split. ' +
       'Each cell will only show rows that belong to the corresponding categories.');
 
-    const trellis: DG.Viewer = (<DG.TableView>grok.shell.v).viewers.find((v) => v.type === DG.VIEWER.TRELLIS_PLOT) ??
+    const trellis: DG.Viewer = Array.from((<DG.TableView>grok.shell.v).viewers)
+      .find((v) => v.type === DG.VIEWER.TRELLIS_PLOT) ??
       await grok.events.onViewerAdded.pipe(map((data: DG.EventData) => data.args.viewer as DG.Viewer),
         filter((v) => v.type === DG.VIEWER.TRELLIS_PLOT), first()).toPromise() as DG.Viewer;
 
