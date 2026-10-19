@@ -1,0 +1,18 @@
+{
+  "#type": "DataConnection",
+  "name": "guillermo",
+  "friendlyName": "Northwind (GuillermoSequence)",
+  "parameters": {
+    "server": "northwind",
+    "port": 5432,
+    "db": "northwind"
+  },
+  "credentials": {
+    "parameters": {
+      "login": "${NORTHWIND_LOGIN}",
+      "password": "${NORTHWIND_PASSWORD}"
+    }
+  },
+  "dataSource": "Postgres",
+  "description": "Local northwind demo database"
+}

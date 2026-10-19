@@ -1,0 +1,36 @@
+{
+  "name": "guillermo-sequence",
+  "friendlyName": "guillermo-sequence",
+  "version": "0.0.1",
+  "author": {
+    "name": "Guillermo Canudo Barreras",
+    "email": "gcbarreras@datagrok.ai"
+  },
+  "description": "Developer onboarding exercises: DNA sequence functions",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/GuillermoSequence"
+  },
+  "dependencies": {
+    "datagrok-api": "workspace:^",
+    "cash-dom": "catalog:",
+    "dayjs": "catalog:",
+    "rxjs": "catalog:",
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^"
+  },
+  "scripts": {
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src --ext .ts",
+    "test": "grok test",
+    "lint-fix": "eslint src --ext .ts --fix"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
+}
