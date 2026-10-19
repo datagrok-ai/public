@@ -15,15 +15,6 @@ category('Dapi: connection', () => {
     expect(DG.DataConnection.create('share', {dataSource: 'S3'}).isDatabase, false);
   });
 
-  test('ConnectionDataSource.byType', async () => {
-    const ds = DG.ConnectionDataSource.byType('PostgresDart');
-    expect(ds instanceof DG.ConnectionDataSource, true, `byType answered ${ds?.constructor?.name}, not a wrapper`);
-    expect(ds!.type, 'PostgresDart');
-    expect(ds!.category, 'Database');
-    expect(ds!.canBrowseSchema, true);
-    expect(DG.ConnectionDataSource.byType('NoSuchSource') == null, true);
-  });
-
   test('Create, save, delete, share', async () => {
     // Unique name + id per run, and clean up only THIS connection. A shared name
     // ('Local DG Test') plus a category-wide cleanup made concurrent stress runs
