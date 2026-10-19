@@ -21,6 +21,7 @@ import {
 import {checkPackage} from '../utils/elemental-analysis-utils';
 
 const CREATE_NEW_PROFILE_ITEM = '+ Create New...';
+const draftColumnName = (profileName: string): string => `~${getMpoScoreColumnName(profileName)}`;
 
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
@@ -42,6 +43,7 @@ export class MpoProfileDialog {
   private subs: Subscription[] = [];
   private footerWarning: HTMLElement | null = null;
   private isNewProfile = false;
+  private draftColumn: DG.Column | null = null;
 
   private pmpoSettingsIcon: HTMLElement;
   private methodInput: DG.ChoiceInput<string | null>;
@@ -101,14 +103,10 @@ export class MpoProfileDialog {
     this.nameInput = ui.input.string('Name', {
       nullable: false,
       onValueChanged: () => {
-        const newName = this.nameInput.value;
-        const oldName = this.currentProfile?.name;
-        if (this.currentProfile)
-          this.currentProfile.name = newName;
-        if (oldName && newName && oldName !== newName) {
-          const oldCol = this.dataFrame.col(getMpoScoreColumnName(oldName));
-          if (oldCol && !this.dataFrame.col(getMpoScoreColumnName(newName)))
-            oldCol.name = getMpoScoreColumnName(newName);
+        if (this.currentProfile) {
+          this.currentProfile.name = this.nameInput.value;
+          if (this.draftColumn)
+            this.renderPreview();
         }
         this.updateOkButtonState();
       },
@@ -146,7 +144,7 @@ export class MpoProfileDialog {
     );
 
     this.listenForProfileChanges();
-    this.mpoContextPanel = new MpoContextPanel(this.dataFrame);
+    this.mpoContextPanel = new MpoContextPanel(this.dataFrame, (profile) => this.syncDraftColumn(profile.name));
   }
 
   private addCreateNewSeparator(): void {
@@ -179,14 +177,18 @@ export class MpoProfileDialog {
     this.subs.push(grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(() => {
       this.updateSaveButtonVisibility();
       this.updateOkButtonState();
-      if (this.currentProfile && this.mpoContextPanel) {
-        this.mpoContextPanel.render(
-          this.currentProfile,
-          this.mpoProfileEditor.columnMapping,
-          this.mpoProfileEditor.aggregationInput.value ?? undefined,
-        );
-      }
+      this.renderPreview();
     }));
+  }
+
+  private renderPreview(): void {
+    if (!this.currentProfile || !this.mpoContextPanel)
+      return;
+    this.mpoContextPanel.render(
+      this.currentProfile,
+      this.mpoProfileEditor.columnMapping,
+      this.mpoProfileEditor.aggregationInput.value ?? undefined,
+    );
   }
 
   private async loadProfile(profileName: string | null): Promise<void> {
@@ -447,10 +449,13 @@ export class MpoProfileDialog {
     this.dialog = ui.dialog('MPO Score')
       .add(this.getEditor())
       .onOK(async () => {
-        await this.runMpoCalculation();
         this.detach();
+        await this.runMpoCalculation();
       })
-      .onCancel(() => this.detach())
+      .onCancel(() => {
+        this.detach();
+        this.mpoContextPanel?.close();
+      })
       .show();
 
     this.updateOkButtonState();
@@ -460,5 +465,24 @@ export class MpoProfileDialog {
     this.mpoContextPanel?.release();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];
+    if (this.draftColumn)
+      this.dataFrame.columns.remove(this.draftColumn);
+  }
+
+  private syncDraftColumn(profileName: string): string {
+    const name = draftColumnName(profileName);
+    if (this.draftColumn?.name === name)
+      return name;
+    if (this.draftColumn)
+      this.draftColumn.name = name;
+    else
+      this.draftColumn = this.dataFrame.columns.addNewFloat(name);
+
+    const gridColumn = grok.shell.tableView(this.dataFrame.name)?.grid.columns.byName(name);
+    if (gridColumn) {
+      gridColumn.visible = true;
+      gridColumn.setWidthType(DG.ColumnWidthType.Maximal);
+    }
+    return name;
   }
 }
