@@ -45,10 +45,11 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
             progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
 
           this.isComputing = true;
+          this.searchedRows = this.getRowSourceIndexes();
           this.renderMolIds =
             await chemDiversitySearch(
               this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit,
-              this.fingerprint as Fingerprint, this.getRowSourceIndexes(), this.tooltipUse);
+              this.fingerprint as Fingerprint, this.searchedRows, this.tooltipUse);
         }
       } catch (e: any) {
         grok.shell.error(e.message);

@@ -14,7 +14,7 @@ const MOL_COL = 'canonical_smiles';
 const SUBSTRUCTURE_LEAF = 'Substructure Search...';
 const SMILES_INPUT = '.d4-dialog input[placeholder*="SMILES" i]';
 const PICKER_DIALOG = '[name="dialog-Substructure-search"]';
-const FILTER_CARD = '[name="viewer-Filters"] .d4-filter';
+const FILTER_CARD = '[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)';
 
 // The home-page PowerPack widgets fail on dev with a broken datagrok_reader DB password and
 // log both the failure and its translated stack trace. Excluded by name so that everything
@@ -49,7 +49,7 @@ async function readTrueCount(page: Page): Promise<number> {
 
 async function readCardState(page: Page, molCol: string): Promise<CardState> {
   return page.evaluate((col) => {
-    const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'));
+    const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'));
     const filter = grok.shell.tv.getFiltersGroup({createDefaultFilters: false}).filters
       .find((f: any) => (f.columnName ?? f.column) === col);
     const state = filter ? filter.saveState() : null;
@@ -128,7 +128,9 @@ async function waitForSketcherBackend(page: Page): Promise<void> {
       .find((x) => x.querySelector('input[placeholder*="SMILES" i]'));
     if (!d) return false;
     return (d.querySelector('.Ketcher-root')?.querySelectorAll('button').length ?? 0) > 5
-      || !!d.querySelector('canvas');
+      || !!d.querySelector('canvas')
+      // Crux draws in its shadow root; its element is busy until it is ready
+      || !!d.querySelector('crux-sketch[aria-busy="false"]');
   }, null, {timeout: 60_000});
 }
 

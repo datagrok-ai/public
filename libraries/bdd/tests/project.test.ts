@@ -51,6 +51,10 @@ test('tiers come from bdd.config.json and must exist in the library', () => {
   const project = loadProject(pkg('viewers', {tiers: ['viewers']}, false));
   assert.deepEqual(project.tiers, ['viewers']);
   assert.ok(project.sources.some((s) => /tiers[\\/]viewers$/.test(s.dir)));
+  // the molecules tier: Crux's widget and controls and the molecule readings, for the suites whose hosts open Crux
+  const molecules = loadProject(pkg('molecules', {tiers: ['viewers', 'molecules']}, false));
+  assert.deepEqual(molecules.tiers, ['viewers', 'molecules']);
+  assert.ok(molecules.sources.some((s) => /tiers[\\/]molecules$/.test(s.dir)));
 });
 
 test('library modules are imported by package subpath, project modules by file', () => {

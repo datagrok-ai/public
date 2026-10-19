@@ -4,19 +4,26 @@
    (dialogs and popups gone, `grok.shell.closeAll()`, back on the Home view), the last one closes
    it. The generated spec keeps calling `test()` itself, so reports point at the spec line.
    The page's console errors and uncaught exceptions are collected from the moment it opens, so a
-   scenario can assert a zero-error floor (`no errors should have been logged`). */
+   scenario can assert a zero-error floor (`no errors should have been logged`). A scenario that passed
+   is audited (audit.ts): layout and console errors before the reset, leaks after it. */
 import {join, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
 import type {Browser, Page, PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs, PlaywrightWorkerOptions,
   TestType} from '@playwright/test';
 import {leave} from './args.js';
-import {failure, isSkip, isWaitFailure, journeyFailure, reasonOf} from './failure.js';
+import {type AuditOutcome, auditScenario, leakCheck, type LoggedError, markLeakBaseline, settleAudit, shouldAudit,
+  trackLeaks} from './audit.js';
+import {failure, isSkip, isWaitFailure, journeyFailure, reasonOf, StepFailure} from './failure.js';
+import {DIALOG_CLOSE} from './gestures.js';
 import * as guide from './guide.js';
 import {explain} from './locate.js';
 import {logMemory, rendererMb} from './memory.js';
 import {whileExpectedToFail} from './patience.js';
+import {deletePictures} from './server.js';
 import {takeBalloons} from './viewers.js';
+
+export {auditModes, markLeakBaseline} from './audit.js';
 
 type Test = TestType<PlaywrightTestArgs & PlaywrightTestOptions, PlaywrightWorkerArgs & PlaywrightWorkerOptions>;
 
@@ -28,14 +35,15 @@ export interface FeatureSession {
   /** One Gherkin step: a Playwright step located at the feature line, whose failure names the
    * line, the step as written, the reason, and — when Playwright gave up on an element — what the
    * page shows where the phrase looked. */
-  step(line: number, title: string, body: () => Promise<unknown>, table?: string[][]): Promise<void>;
+  step(line: number, title: string, body: () => Promise<unknown>, table?: string[][], caption?: string): Promise<void>;
 }
 
 export interface Journey {
   /** Runs a scenario as a soft step: a failure is recorded and the next scenario still runs.
    * `knownFailure` inverts that scenario: its failure is expected and does not fail the test,
-   * while its passing does — the bug it describes is fixed and the tag has to go. */
-  scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean}): Promise<void>;
+   * while its passing does — the bug it describes is fixed and the tag has to go. With `line`, only a
+   * failure of the step at that feature line is the expected one. */
+  scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean; line?: number}): Promise<void>;
   /** Fails the test when any scenario failed, listing them. */
   finish(): void;
 }
@@ -51,9 +59,11 @@ const SCENARIO_BUDGET_MS = 20000;
 export function journey(test: Test, scenarios: number, page?: Page): Journey {
   test.setTimeout(test.info().timeout + SCENARIO_BUDGET_MS * scenarios);
   const failed: {name: string; error: unknown}[] = [];
+  if (page)
+    auditedInJourney.add(page);
   return {
-    async scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean}): Promise<void> {
-      const overlays = page ? await openOverlays(page) : 0;
+    async scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean; line?: number}): Promise<void> {
+      const overlays = page ? await openOverlayCounts(page) : {all: 0, dialogs: 0};
       try {
         if (page) {
           takeErrors(page);
@@ -68,14 +78,26 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
           throw failed.length > 0 ? journeyFailure(failed, scenarios, `the rest was skipped at "${name}": ${reasonOf(e)}`) : e;
         if (!options?.knownFailure)
           failed.push({name, error: e});
+        else if (!failedAt(e, options.line))
+          failed.push({name, error: failedElsewhere(e, options.line!)});
         // a scenario that stopped midway leaves its dialog or menu over the viewers the next one uses;
         // those open before it (a dialog the Background opened for every scenario) stay
-        if (page)
+        if (page) {
           await closeOverlays(page, overlays);
+          await scenarioRestores.get(page)?.().catch((r) =>
+            console.warn(`bdd: what "${name}" changed could not be put back: ${r instanceof Error ? r.message.split('\n')[0] : r}`));
+        }
         return;
       }
       if (options?.knownFailure)
         failed.push({name, error: new Error(KNOWN_FAILURE_PASSED)});
+      else if (page && usable(page)) {
+        const info = test.info();
+        const error = settleAudit(await audited(() => auditScenario(page, () => takeLoggedErrors(page))),
+          `${info.title} › ${name}`, info, name);
+        if (error)
+          failed.push({name, error});
+      }
     },
     finish(): void {
       if (failed.length > 0)
@@ -88,16 +110,27 @@ const KNOWN_FAILURE_PASSED = 'tagged @known-failure and passed — the bug it de
 
 /** A `@known-failure` scenario outside a journey: its steps failing is the defect it describes and
  * passes the test; its steps passing fails it — the bug is fixed and the tag has to go. */
-export async function knownFailure(body: () => Promise<void>): Promise<void> {
+export async function knownFailure(body: () => Promise<void>, line?: number): Promise<void> {
   try {
     await whileExpectedToFail(body);
   }
   catch (e) {
     if (isSkip(e))
       throw e;
+    if (!failedAt(e, line))
+      throw failedElsewhere(e, line!);
     return;
   }
   throw new Error(KNOWN_FAILURE_PASSED);
+}
+
+/** Whether the failure is the one a `@known-failure:<line>` tag pins: the step at that feature line. */
+export function failedAt(e: unknown, line: number | undefined): boolean {
+  return line === undefined || (e instanceof StepFailure && e.at.endsWith(`:${line}`));
+}
+
+function failedElsewhere(e: unknown, line: number): Error {
+  return new Error(`tagged @known-failure:${line}, but did not fail at line ${line}:\n\n${e instanceof Error ? e.message : String(e)}`);
 }
 
 /** `<root>/generated/x/y.test.ts` + `features/x/y.feature` → the feature file (the layout
@@ -110,12 +143,21 @@ function featureFile(specUrl: string, path: string): string {
 
 const HOME_VIEW = 'datagrok';
 // what Escape closes: dialogs and popup menus of both UI generations
-const CLOSABLE = '[data-u2="dialog"], [data-u2="menu"], .d4-dialog, .d4-menu-popup';
+const DIALOGS = '[data-u2="dialog"], .d4-dialog';
+const CLOSABLE = `${DIALOGS}, [data-u2="menu"], .d4-menu-popup`;
 // transient notifications, taken away as their close icons would
 const NOTICES = '[data-u2="notify"] > *, .d4-balloon, .ui-hint-popup';
 
-const errors = new WeakMap<Page, string[]>();
+const errors = new WeakMap<Page, LoggedError[]>();
 const cleanups = new WeakMap<Page, (() => Promise<void>)[]>();
+// a journey audits each scenario as it ends, so the test's own end checks only the leaks
+const auditedInJourney = new WeakSet<Page>();
+
+/** An audit that cannot run (the page went away under it) is a line in the output, never the scenario's failure. */
+const audited = (run: () => Promise<AuditOutcome>): Promise<AuditOutcome> => run().catch((e) => {
+  console.warn(`bdd: an audit could not run: ${e instanceof Error ? e.message.split('\n')[0] : e}`);
+  return {ran: [], findings: []};
+});
 // a page whose renderer crashed stays open, and every call on it fails
 const crashed = new WeakSet<Page>();
 const usable = (page: Page): boolean => !page.isClosed() && !crashed.has(page);
@@ -128,6 +170,34 @@ async function abandon(page: Page): Promise<number> {
   return dropped;
 }
 
+const runSize = new WeakMap<Page, {width: number; height: number}>();
+
+/** Another window size until the test ends: the shell reset puts back the size the run started with.
+ * Resolves after two frames, so what listens to the window's resize has laid out. */
+export async function resizeWindow(page: Page, width: number, height: number): Promise<void> {
+  const size = page.viewportSize();
+  if (size && !runSize.has(page))
+    runSize.set(page, size);
+  await page.setViewportSize({width, height});
+  await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done(null)))));
+}
+
+// the pictures a page uploaded (a Save dialog's, the Layouts pane's) since its feature started: the server keeps a
+// picture when its project or layout goes, so they go at feature end, whatever deleted the entity they were made for
+const uploadedPictures = new WeakMap<Page, Set<string>>();
+
+function watchPictures(page: Page): void {
+  if (uploadedPictures.has(page))
+    return;
+  const ids = new Set<string>();
+  uploadedPictures.set(page, ids);
+  page.on('request', (request) => {
+    const id = request.method() === 'POST' ? /\/entities\/picture\/([^/?]+)\/?(?:\?|$)/.exec(request.url())?.[1] : undefined;
+    if (id)
+      ids.add(id);
+  });
+}
+
 /** Runs when the feature ends, whatever its scenarios did — for state a step created on the server
  * (a project, an uploaded table); a page that crashed runs none, and the feature fails for them. */
 export function atFeatureEnd(page: Page, cleanup: () => Promise<void>, first = false): void {
@@ -137,6 +207,15 @@ export function atFeatureEnd(page: Page, cleanup: () => Promise<void>, first = f
     list.unshift(cleanup);
   else
     list.push(cleanup);
+}
+
+const scenarioRestores = new WeakMap<Page, () => Promise<void>>();
+
+/** What a scenario that stopped midway (a journey's, a test that failed or is a known failure) must put back before
+ * the next one starts — the account it signed in as, which it signs out of only at its end. One per page; a later
+ * call replaces it. */
+export function atScenarioStop(page: Page, restore: () => Promise<void>): void {
+  scenarioRestores.set(page, restore);
 }
 
 /** The two console errors the browser raises about something that is not the platform's code.
@@ -155,7 +234,7 @@ function ignoredError(text: string, url: string): boolean {
 export function watchErrors(page: Page): void {
   if (errors.has(page))
     return;
-  const list: string[] = [];
+  const list: LoggedError[] = [];
   errors.set(page, list);
   // "Stack trace X" arrives seconds after its "Look below, ID = X" error: joined while unreported, else dropped
   const announced = new Set<string>();
@@ -165,17 +244,17 @@ export function watchErrors(page: Page): void {
       return;
     const continuation = /^Stack trace (\S+)/.exec(text);
     if (continuation && announced.has(continuation[1])) {
-      const parent = list.findIndex((e) => new RegExp(`Look below, ID = ${continuation[1]}(\\s|$)`).test(e));
+      const parent = list.findIndex((e) => new RegExp(`Look below, ID = ${continuation[1]}(\\s|$)`).test(e.message));
       if (parent >= 0)
-        list[parent] += `\n${text}`;
+        list[parent].message += `\n${text}`;
       return;
     }
     const id = /Look below, ID = (\S+)/.exec(text);
     if (id)
       announced.add(id[1]);
-    list.push(m.location().url ? `${text} (${m.location().url})` : text);
+    list.push({message: text, url: m.location().url ?? ''});
   });
-  page.on('pageerror', (e) => list.push(String(e)));
+  page.on('pageerror', (e) => list.push({message: String(e), url: ''}));
   page.on('crash', () => crashed.add(page));
   // A reload or a sign-in leaves the page the way a person who chose to does: "Warn on unsaved changes" asks
   // through beforeunload, and dismissing it, Playwright's default, cancels the navigation, which then waits
@@ -185,6 +264,11 @@ export function watchErrors(page: Page): void {
 
 /** The errors logged since the last call (or since the page opened), and clears them. */
 export function takeErrors(page: Page): string[] {
+  return takeLoggedErrors(page).map((e) => e.url ? `${e.message} (${e.url})` : e.message);
+}
+
+/** `takeErrors` with the text and where it came from apart. */
+export function takeLoggedErrors(page: Page): LoggedError[] {
   const list = errors.get(page) ?? [];
   const out = [...list];
   list.length = 0;
@@ -239,10 +323,27 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   const text = (value: string): string => value.replaceAll('{run}', runId).replaceAll('{time}', time);
   const file = path && specUrl ? featureFile(specUrl, path) : undefined;
   test.afterEach(async () => {
-    if (page && usable(page)) {
-      leave(page);
-      await resetShell(page);
+    const p = page;
+    if (!p || !usable(p))
+      return;
+    const inJourney = auditedInJourney.delete(p);
+    leave(p);
+    const info = test.info();
+    const audit = shouldAudit(info);
+    const outcome: AuditOutcome = audit && !inJourney ?
+      await audited(() => auditScenario(p, () => takeLoggedErrors(p))) : {ran: [], findings: []};
+    if (!audit)
+      await scenarioRestores.get(p)?.().catch((r) =>
+        console.warn(`bdd: what "${info.title}" changed could not be put back: ${r instanceof Error ? r.message.split('\n')[0] : r}`));
+    await resetShell(p);
+    if (audit) {
+      const leaks = await audited(() => leakCheck(p));
+      outcome.ran.push(...leaks.ran);
+      outcome.findings.push(...leaks.findings);
     }
+    const error = settleAudit(outcome, info.title, info);
+    if (error)
+      throw error;
   });
   test.afterAll(async () => {
     const failures: unknown[] = [];
@@ -251,6 +352,13 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
     else if (page && !page.isClosed()) {
       const list = cleanups.get(page) ?? [];
       cleanups.delete(page);
+      const pictures = uploadedPictures.get(page);
+      if (pictures?.size) {
+        const p = page;
+        const ids = [...pictures];
+        pictures.clear();
+        list.push(() => deletePictures(p, ids));
+      }
       // a cleanup deletes what is still there, so one that failed on a request the stand dropped under load (nginx
       // answering 502 when its connection to Datlas fails) is run again before the feature fails for it
       for (const [i, cleanup] of list.entries()) {
@@ -301,15 +409,18 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
           shared = await shared.context().newPage();
         shared ??= await (await browser.newContext()).newPage();
         watchErrors(shared);
+        watchPictures(shared);
+        await trackLeaks(shared);
         await guide.attach(shared);
         page = shared;
       }
+      await markLeakBaseline(page);
       return page;
     },
-    async step(line: number, title: string, body: () => Promise<unknown>, table?: string[][]): Promise<void> {
+    async step(line: number, title: string, body: () => Promise<unknown>, table?: string[][], caption?: string): Promise<void> {
       title = text(title);
       await test.step(title, async () => {
-        await guide.begin(page, test.info(), line, title, table);
+        await guide.begin(page, test.info(), line, title, table, caption);
         try {
           await body();
         }
@@ -362,13 +473,26 @@ async function settleWork(page: Page): Promise<void> {
 }
 
 /** Dialogs and menus closed the platform's way: Escape, as many times as there are open ones. */
-const openOverlays = (page: Page): Promise<number> =>
-  page.locator(CLOSABLE).filter({visible: true}).count().catch(() => 0);
+const openOverlays = (page: Page, selector = CLOSABLE): Promise<number> =>
+  page.locator(selector).filter({visible: true}).count().catch(() => 0);
 
-/** Escape, the topmost first, while more dialogs and menus are open than `keep`. */
-async function closeOverlays(page: Page, keep = 0): Promise<void> {
-  for (let i = 0; i < 3 && await openOverlays(page) > keep; i++)
+type OverlayCounts = {all: number; dialogs: number};
+const openOverlayCounts = async (page: Page): Promise<OverlayCounts> =>
+  ({all: await openOverlays(page), dialogs: await openOverlays(page, DIALOGS)});
+
+/** Escape, the topmost first, while more dialogs and menus are open than `keep`. Escape goes to the focused
+ * element, and an editor that keeps it (the formula editor of Add New Column) leaves its dialog open: then the
+ * topmost dialog's close icon, as a person would. */
+async function closeOverlays(page: Page, keep: OverlayCounts = {all: 0, dialogs: 0}): Promise<void> {
+  for (let i = 0; i < 3 && await openOverlays(page) > keep.all; i++)
     await page.keyboard.press('Escape').catch(() => undefined);
+  // dialogs counted apart from menus: a menu Escape leaves open must not cost a dialog the Background opened
+  for (let i = 0; i < 3 && await openOverlays(page, DIALOGS) > keep.dialogs; i++) {
+    const close = page.locator(DIALOGS).filter({visible: true}).last().locator(DIALOG_CLOSE).first();
+    if (await close.count().catch(() => 0) === 0)
+      break;
+    await close.click({timeout: 2000}).catch(() => undefined);
+  }
 }
 
 /** Everything closed and the Home view current — the state the next scenario starts from. A page
@@ -379,7 +503,12 @@ async function closeOverlays(page: Page, keep = 0): Promise<void> {
  * of the DOM behind the platform's back. Errors the teardown itself raises (work cancelled by
  * `closeAll`) are dropped. */
 export async function resetShell(page: Page): Promise<void> {
-  const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
+  const size = runSize.get(page);
+  if (size) {
+    runSize.delete(page);
+    await page.setViewportSize(size);
+  }
+  const inShell =await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell)
     return;
   await settleWork(page);
@@ -395,6 +524,12 @@ export async function resetShell(page: Page): Promise<void> {
     if (w.grok.shell.windows.presentationMode)
       w.grok.shell.windows.presentationMode = false;
     w.grok.shell.closeAll();
+    // a context pane's expanded state is kept per accordion in localStorage (accordion.dart): what one
+    // feature expanded would build, server-backed or not, in every later feature on the page; a gallery's
+    // view mode too (data_source_card_view.dart), so a feature that switched the Scripts view to cards left
+    // the next one without the links it looks for
+    for (const key of Object.keys(localStorage).filter((k) => /^(Accordion:|card-view-render-mode-|domains-render-mode-)/.test(k)))
+      localStorage.removeItem(key);
     return Array.from(document.querySelectorAll('.d4-dialog, [data-u2="dialog"]'))
       .filter((e) => (e as HTMLElement).offsetParent !== null).map((e) => e.getAttribute('name') ?? e.tagName).join(', ');
   }, NOTICES).catch(() => '');

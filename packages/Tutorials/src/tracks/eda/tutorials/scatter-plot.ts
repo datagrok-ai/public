@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { filter } from 'rxjs/operators';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
-import { Platform, getPlatform, platformKeyMap } from '../../shortcuts';
+import {filter} from 'rxjs/operators';
+import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
+import {Platform, getPlatform, platformKeyMap} from '../../shortcuts';
 
 
 export class ScatterPlotTutorial extends Tutorial {
@@ -13,7 +13,7 @@ export class ScatterPlotTutorial extends Tutorial {
   get description() {
     return 'A graph in which the values of two variables are plotted along two axes';
   }
-  get steps() { return 10; }
+  get steps() {return 10;}
 
   get icon() {
     return '📈🔹';
@@ -45,32 +45,45 @@ export class ScatterPlotTutorial extends Tutorial {
     const colSelection = 'There are a few ways to choose a column in a scatter plot. ' +
       'The easiest way to do this is to click on the column selector on the viewer. ' +
       'Alternatively, you can drag the column right from the spreadsheet, or from ' +
-      `the column list (Windows | Columns, or ${platformKeyMap['Alt'][this.platform]}+C). Also, you can make this choice ` +
+      `the column list (Windows | Columns, or ${platformKeyMap['Alt'][this.platform]}+C). ` +
+      'Also, you can make this choice ' +
       'from the context panel on the right (Windows | Properties, or F4). ' +
       'Please try different ways in the next steps.';
-    await this.action('Set X to HEIGHT', columnCheck(info.xColSelector, 'HEIGHT'), info.xColSelector.root, colSelection);
-    await this.action('Set Y to WEIGHT',  columnCheck(info.yColSelector, 'WEIGHT'), info.yColSelector.root);
-    await this.action('Set Size to AGE', columnCheck(info.sizeColSelector, 'AGE'), info.sizeColSelector.root);
-    await this.action('Set Color to SEX', columnCheck(info.colorColSelector, 'SEX'), info.colorColSelector.root);
+    await this.action('Set X to HEIGHT', columnCheck(info.xColSelector, 'HEIGHT'), info.xColSelector.root, colSelection,
+      Tutorial.apiSkip(() => plot.props.xColumnName = 'HEIGHT'));
+    await this.action('Set Y to WEIGHT', columnCheck(info.yColSelector, 'WEIGHT'), info.yColSelector.root, '',
+      Tutorial.apiSkip(() => plot.props.yColumnName = 'WEIGHT'));
+    await this.action('Set Size to AGE', columnCheck(info.sizeColSelector, 'AGE'), info.sizeColSelector.root, '',
+      Tutorial.apiSkip(() => plot.props.sizeColumnName = 'AGE'));
+    await this.action('Set Color to SEX', columnCheck(info.colorColSelector, 'SEX'), info.colorColSelector.root, '',
+      Tutorial.apiSkip(() => plot.props.colorColumnName = 'SEX'));
 
-    const zoomDescription = `To zoom in, hold the <b>${platformKeyMap['Alt'][this.platform]}</b> key and drag a rectangle that you want to zoom in to.`;
-    await this.action('Zoom in', plot.onZoomed, null, zoomDescription);
+    const zoomDescription = `To zoom in, hold the <b>${platformKeyMap['Alt'][this.platform]}</b> key ` +
+      'and drag a rectangle that you want to zoom in to.';
+    await this.action('Zoom in', plot.onZoomed, null, zoomDescription, Tutorial.apiSkip(() => {
+      const vp = plot.viewport;
+      plot.zoom(vp.x, vp.y, vp.x + vp.width / 2, vp.y + vp.height / 2);
+    }));
 
     const zoomReset = 'As in most viewers, double-clicking on an empty area resets the view. ' +
       'Alternatively, this option is always available in the context menu.';
-    await this.action('Double-click to unzoom', plot.onResetView, null, zoomReset);
+    await this.action('Double-click to unzoom', plot.onResetView, null, zoomReset,
+      () => Tutorial.runContextMenu(plot.root, 'Reset View'));
 
     const currentRecord = 'Click on a point. Note that it becomes the current point in a spreadsheet, too.';
-    await this.action('Click on a point', this.t!.onCurrentRowChanged, null, currentRecord);
+    await this.action('Click on a point', this.t!.onCurrentRowChanged, null, currentRecord,
+      () => this.t!.currentRowIdx++);
 
     const selection = 'Select points by dragging a rectangle on a viewer while holding <b>Shift</b>. ' +
       'Note that the row selection is being reflected on most viewers, such as the spreadsheet. ' +
       'A number of points under the selection rectangle is shown right there.';
     await this.action('Select points',
-      this.t!.onSelectionChanged.pipe(filter(() => this.t!.selection.anyTrue)), null, selection);
+      this.t!.onSelectionChanged.pipe(filter(() => this.t!.selection.anyTrue)), null, selection,
+      () => this.t!.selection.init((i) => this.t!.get('HEIGHT', i) > 180));
 
     const deselection = `To remove selection, press <b>Escape</b>.`;
     await this.action('Deselect points',
-      this.t!.onSelectionChanged.pipe(filter(() => !this.t!.selection.anyTrue)), null, deselection);
+      this.t!.onSelectionChanged.pipe(filter(() => !this.t!.selection.anyTrue)), null, deselection,
+      () => this.t!.selection.setAll(false));
   }
 }

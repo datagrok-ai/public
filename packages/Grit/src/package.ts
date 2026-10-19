@@ -3,15 +3,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {badge, div, divV, span} from '@datagrok-libraries/u2';
 import type {BadgeVariant, RowView} from '@datagrok-libraries/u2';
-import {DomainApp} from '@datagrok-libraries/u2/src/dg/index.js';
-import type {DomainRibbon, DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
+import {DomainApp} from '@datagrok-libraries/ems/src/dg';
+import type {DomainRibbon, DomainTable} from '@datagrok-libraries/ems/src/dg';
 import {GritIssueHandler, lookupName, warmLookups} from './grit-issue-handler';
 import {gritDb, IssueRow} from './generated/db';
 import {getGritDb, GritDb} from './generated/db-ui';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
-import '@datagrok-libraries/u2/src/dg/domain/styles.js';
+import '@datagrok-libraries/ems/src/dg/styles.js';
 
 export const _package = new DG.Package();
 

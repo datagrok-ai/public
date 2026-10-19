@@ -25,7 +25,7 @@ export class RsaInput extends Input<string | null, RsaInputOptions> {
   static readonly PLACEHOLDER = '_____________';
   private static readonly PEM = '-----BEGIN';
 
-  private _picker!: HTMLInputElement;
+  private declare _picker: HTMLInputElement;
 
   constructor(options: RsaInputOptions = {}) {
     super(options, null);
@@ -53,7 +53,7 @@ export class RsaInput extends Input<string | null, RsaInputOptions> {
     picker.type = 'file';
     picker.accept = this._accept;
     picker.hidden = true;
-    this._listen(picker, 'change', () => {
+    this.scope.listen(picker, 'change', () => {
       const file = picker.files?.[0];
       if (file)
         this.accept(file);
@@ -165,11 +165,6 @@ export class RsaInput extends Input<string | null, RsaInputOptions> {
     } catch {
       return true;
     }
-  }
-
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }
 

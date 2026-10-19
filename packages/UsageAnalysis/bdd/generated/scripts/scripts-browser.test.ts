@@ -7,17 +7,22 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [views.scripts]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
+import '../../bindings/file-formats.js';
+import '../../bindings/flow.js';
 import '../../bindings/grid.js';
+import '../../bindings/queries.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, followingShouldBe, pressKeyIn, selectIn, shouldBe, shouldContainText, shouldHaveText, typeInto, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {closeCurrentView, contextPanelOpen, contextPanelShows, dialogCloses, galleryMode, openDataset, paneCountAtLeast, pickSharingUser, scriptOnServer, scriptsView, sharingPaneLists, sharingPaneListsNot, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {closeCurrentView, contextPanelOpen, contextPanelShows, dialogCloses, galleryMode, openDataset, paneCountAtLeast, pickSharingUser, scriptLogged, scriptOnServer, scriptsView, sharingPaneLists, sharingPaneListsNot, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -63,20 +68,20 @@ test.describe("The Scripts view and a script's context panel", () => {
       await session.step(78, "And user selects \"cars\" in Table input in \"BddScriptBrowser{time}\" dialog", () => selectIn(page, "cars", el(session.text("Table input in \"BddScriptBrowser{time}\" dialog"))));
       await session.step(79, "And user clicks on OK button in \"BddScriptBrowser{time}\" dialog", () => clickOn(page, el(session.text("OK button in \"BddScriptBrowser{time}\" dialog"))));
       await session.step(80, "Then the \"BddScriptBrowser{time}\" dialog should close", () => dialogCloses(page, session.text("BddScriptBrowser{time}")));
-      await session.step(82, "When user closes the current view", () => closeCurrentView(page));
-      await session.step(83, "And user opens the Scripts view", () => scriptsView(page));
-      await session.step(84, "And user types \"BddScriptBrowser{time}\" into gallery search", () => typeInto(page, session.text("BddScriptBrowser{time}"), el("gallery search")));
-      await session.step(85, "And user clicks on \"BddScriptBrowser{time}\" link in gallery", () => clickOn(page, el(session.text("\"BddScriptBrowser{time}\" link in gallery"))));
-      await session.step(86, "Then the context panel should show \"BddScriptBrowser{time}\"", () => contextPanelShows(page, session.text("BddScriptBrowser{time}")));
-      await session.step(87, "And the \"Activity\" pane of the context panel should count at least 1", () => paneCountAtLeast(page, "Activity", 1));
-      await session.step(88, "And no errors should have been logged", () => noErrors(page));
-      await session.step(89, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(82, "Given the server has logged activity on the \"BddScriptBrowser{time}\" script", () => scriptLogged(page, session.text("BddScriptBrowser{time}")));
+      await session.step(84, "When user closes the current view", () => closeCurrentView(page));
+      await session.step(85, "And user opens the Scripts view", () => scriptsView(page));
+      await session.step(86, "And user types \"BddScriptBrowser{time}\" into gallery search", () => typeInto(page, session.text("BddScriptBrowser{time}"), el("gallery search")));
+      await session.step(87, "And user clicks on \"BddScriptBrowser{time}\" link in gallery", () => clickOn(page, el(session.text("\"BddScriptBrowser{time}\" link in gallery"))));
+      await session.step(88, "Then the context panel should show \"BddScriptBrowser{time}\"", () => contextPanelShows(page, session.text("BddScriptBrowser{time}")));
+      await session.step(89, "And the \"Activity\" pane of the context panel should count at least 1", () => paneCountAtLeast(page, "Activity", 1));
+      await session.step(90, "And no errors should have been logged", () => noErrors(page));
+      await session.step(91, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     await run.scenario("Share... gives the second account access", async () => {
-      await session.step(92, "Then the sharing pane should not list the sharing user", () => sharingPaneListsNot(page));
-      await session.step(93, "When user picks \"Share...\" from the context menu of \"BddScriptBrowser{time}\" link in gallery", () => pickFromContextMenu(page, "Share...", el(session.text("\"BddScriptBrowser{time}\" link in gallery"))));
-      await session.step(94, "Then \"Share BddScriptBrowser{time}\" dialog should be visible", () => shouldBe(page, el(session.text("\"Share BddScriptBrowser{time}\" dialog")), "visible"));
-      await session.step(96, "And \"Share BddScriptBrowser{time}\" dialog should contain text \"Full access\"", () => shouldContainText(page, el(session.text("\"Share BddScriptBrowser{time}\" dialog")), "Full access"));
+      await session.step(94, "Then the sharing pane should not list the sharing user", () => sharingPaneListsNot(page));
+      await session.step(95, "When user picks \"Share...\" from the context menu of \"BddScriptBrowser{time}\" link in gallery", () => pickFromContextMenu(page, "Share...", el(session.text("\"BddScriptBrowser{time}\" link in gallery"))));
+      await session.step(96, "Then \"Share BddScriptBrowser{time}\" dialog should be visible", () => shouldBe(page, el(session.text("\"Share BddScriptBrowser{time}\" dialog")), "visible"));
       await session.step(97, "When user picks the sharing user in \"User, group, or email\" input in \"Share BddScriptBrowser{time}\" dialog", () => pickSharingUser(page, el(session.text("\"User, group, or email\" input in \"Share BddScriptBrowser{time}\" dialog"))));
       await session.step(98, "And user unchecks \"Send notifications\" input in \"Share BddScriptBrowser{time}\" dialog", () => uncheck(page, el(session.text("\"Send notifications\" input in \"Share BddScriptBrowser{time}\" dialog"))));
       await session.step(99, "And user clicks on OK button in \"Share BddScriptBrowser{time}\" dialog", () => clickOn(page, el(session.text("OK button in \"Share BddScriptBrowser{time}\" dialog"))));

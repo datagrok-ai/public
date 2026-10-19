@@ -29,12 +29,15 @@ import {
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
   COLUMNS_NAMES,
+  LST_COLUMN_NAMES,
   SCALING_METHODS,
 } from '../utils/constants';
 import {
   LogoSummaryTable,
 } from '../viewers/logo-summary';
 import {
+  analyzeDemoPeptides,
+  loadDemoPeptides,
   TEST_COLUMN_NAMES,
 } from './utils';
 import {
@@ -173,3 +176,50 @@ category('Model: Settings', () => {
       'Dendrogram is present in the view after disabling');
   }, {skipReason: 'Need to find a way to replace _package variable to call for Bio function with tests'});
 }, {clear: false});
+
+category('Model: MCL clusters', () => {
+  before(async () => {
+    await PeptideUtils.loadComponents();
+  });
+
+  /** Checks every Logo Summary Table row against the source rows of its cluster and the rest. */
+  function expectClusterSummary(lst: LogoSummaryTable): void {
+    const df = lst.dataFrame;
+    const clusters = df.getCol(lst.clustersColumnName);
+    const activity = df.getCol(COLUMNS_NAMES.ACTIVITY);
+    const summary = lst.logoSummaryTable;
+    const pValues = summary.getCol(LST_COLUMN_NAMES.P_VALUE);
+    const mean = (values: number[]): number => values.reduce((sum, value) => sum + value, 0) / values.length;
+    let members = 0;
+    for (let row = 0; row < summary.rowCount; row++) {
+      const cluster = String(summary.get(LST_COLUMN_NAMES.CLUSTER, row));
+      const selected: number[] = [];
+      const rest: number[] = [];
+      for (let i = 0; i < df.rowCount; i++)
+        (String(clusters.get(i)) === cluster ? selected : rest).push(activity.get(i));
+      members += selected.length;
+      expect(summary.get(LST_COLUMN_NAMES.MEMBERS, row), selected.length, `members of cluster ${cluster}`);
+      const meanDifference = rest.length === 0 ? 0 : mean(selected) - mean(rest);
+      expectFloat(summary.get(LST_COLUMN_NAMES.MEAN_DIFFERENCE, row), meanDifference,
+        Math.max(Math.abs(meanDifference) * 1e-4, 1e-9), `mean difference of cluster ${cluster}`);
+      const pValue = pValues.get(row);
+      expect(selected.length > 1 && rest.length > 1 ? pValue >= 0 && pValue <= 1 : pValues.isNone(row), true,
+        `p-value ${pValue} of cluster ${cluster}, which has no t-test with fewer than two rows on a side`);
+    }
+    expect(members, df.rowCount, 'members total');
+  }
+
+  // 96 splits the first 200 peptides into five clusters on some stands and six on others
+  for (const [threshold, fewest, most] of [[10, 1, 1], [75, 2, 2], [96, 5, 6]]) {
+    test(`Similarity threshold ${threshold}`, async () => {
+      const model = await analyzeDemoPeptides(await loadDemoPeptides(200), threshold);
+      expect(model.findViewer(VIEWER_TYPE.MCL)?.getWidgetStatus().values?.['completed threshold'], threshold,
+        'completed MCL threshold');
+      const lst = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
+      const clusterCount = lst.logoSummaryTable.rowCount;
+      expect(clusterCount >= fewest && clusterCount <= most, true,
+        `${clusterCount} clusters at threshold ${threshold}, expected ${fewest}-${most}`);
+      expectClusterSummary(lst);
+    }, {timeout: 120000});
+  }
+});

@@ -12,57 +12,66 @@ manual_only_reason: |
 
 # Projects — tile rendering and view-state preservation (manual)
 
-Two visual checks around project tiles and Save Copy: how project tiles render
-in Dashboards, and whether a copy saved with Personal View Customizations
-brings the customized view back on reopen.
+Two visual checks: how project tiles render in **Dashboards**, and
+whether personal view customizations bring the customized view back on
+reopen, down to the viewer layout.
 
-Self-contained: the scenario creates its own project and deletes it in Cleanup.
+Self-contained: the scenario creates its own project and deletes it in
+Cleanup.
 
 ## Create the test project
 
-1. Close all, open `System:DemoFiles/demog.csv`
-2. Add a Scatter plot and a Histogram to the view
-3. Select **File > Save Project**, name it `test_copy_clone`, click OK — the
-   project is saved; cancel the Share dialog if it opens
-4. Go to **Browse > Dashboards** — the `test_copy_clone` tile is listed
+1. Right-click the left sidebar and select **Close All**.
+2. Go to **Browse > Files > Demo** and double-click `demog.csv`.
+3. In **Toolbox > Viewers**, click **Scatter plot**, then **Histogram**.
+4. Click **SAVE** on the ribbon, enter `testCopyClone` as the name,
+   click **OK**. In the **Share** dialog, click **CANCEL**.
+5. Go to **Browse > Dashboards** and type `testCopyClone` into the
+   search box — the `testCopyClone` tile is listed.
 
 ## Tile rendering in Dashboards
 
-1. Locate the `test_copy_clone` tile among the other project tiles
-2. Its thumbnail renders as a visible preview image — not a blank box, not a
-   broken-image icon, and the same size as neighbouring tiles
-3. The project name below the thumbnail is fully readable at the default panel
-   width — no clipping or truncation artifacts
-4. The tile's metadata (creation date, owner) renders in line with the
-   neighbouring tiles, nothing shifted or overlapping
-5. Hover the tiles and scroll the gallery — all tiles keep the same dimensions,
-   nothing overflows, is cropped, or jitters
+1. Locate the `testCopyClone` tile among the other project tiles.
+2. Its thumbnail renders as a visible preview image — not a blank box,
+   not a broken-image icon, and the same size as neighbouring tiles.
+3. The project name below the thumbnail is fully readable at the default
+   panel width — no clipping or truncation artifacts.
+4. The date under the name renders in line with the neighbouring tiles,
+   nothing shifted or overlapping.
+5. Hover the tiles and scroll the gallery — all tiles keep the same
+   dimensions, nothing overflows, is cropped, or jitters.
 
-## Personal View Customizations preserved on reopen
+## Personal view customizations preserved on reopen
 
-1. Open `test_copy_clone` from Dashboards
+1. Right-click the left sidebar and select **Close All**. In **Browse >
+   Dashboards**, double-click the `testCopyClone` tile.
 2. Customize the view:
-   - filter `AGE > 50` in the Filter Panel
-   - sort the grid by HEIGHT descending
-   - hide the DIS_POP column
-   - drag the Histogram to a different dock position
-3. Select **File > Save Copy**, choose the **Personal View Customizations**
-   mode, name the copy `test_copy_clone_pvc`, click OK — the copy is saved and
-   appears in Dashboards
-4. Close all
-5. Reopen `test_copy_clone_pvc` from Dashboards
-6. The customized view comes back: the `AGE > 50` filter is applied (the
-   filtered row count matches what step 2 produced), the grid is still sorted
-   by HEIGHT descending, DIS_POP is still hidden, and the Histogram sits in the
-   dock position it was moved to
-7. The rest of the workspace matches the pre-save state — panel positions and
-   viewer sizes, with no drift
+   - click the filter icon on the ribbon and, in the `SEX` filter, clear
+     the check box next to `F`; note the **Filtered** count in the
+     status bar;
+   - right-click the `HEIGHT` column header and choose **Sort >
+     Descending**;
+   - right-click any column header, choose **Order or Hide Columns...**,
+     uncheck `DIS_POP` and click **CLOSE**;
+   - drag the histogram by its header to a different dock position.
+3. Click **SAVE** on the ribbon and select **Save personal view
+   customizations**. The **Name** field is greyed out and reads
+   `testCopyClone`. Click **OK**.
+4. Right-click the left sidebar and select **Close All**.
+5. In **Browse > Dashboards**, double-click the `testCopyClone` tile —
+   no new tile appeared, and the balloon *Project has personal view
+   customizations* is shown.
+6. The customized view comes back: the `SEX` filter keeps only `M` with
+   the **Filtered** count noted in step 2, the grid is sorted by
+   `HEIGHT` descending, `DIS_POP` is hidden, and the histogram sits in
+   the dock position it was moved to.
+7. The rest of the workspace matches the pre-save state — panel
+   positions and viewer sizes, with no drift.
 
 ## Cleanup
 
-Delete both projects created by this run — `test_copy_clone` and
-`test_copy_clone_pvc` (Browse > Dashboards, right-click the tile > **Delete**).
-After a partial run, delete whichever of them exists.
+In **Browse > Dashboards**, right-click the `testCopyClone` tile, choose
+**Delete Project** and click **DELETE**.
 
 ---
 {

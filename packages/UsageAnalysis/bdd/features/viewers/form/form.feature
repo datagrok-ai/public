@@ -9,8 +9,9 @@ Feature: Form viewer
   score (a molecule first, then anything with a semantic type, constant columns last) and
   re-sorts a set it is given the same way, so the claims name fields and count them, never
   their order. A column removed from the table stays on a designed form with an empty field.
-  Not translated: the md's design-mode rearrangement before the file is saved — the custom form here
-  is a field set of its own, which the file has to carry back.
+  The md's manual design mode is a scenario of its own: with the toolbar's design toggle on, a field
+  dragged down stays below the fields it passed once the toggle is off, and a form saved to a file
+  after that brings the field back to its new place when the file is loaded over a rebuilt form.
 
   Background:
     Given user is logged in
@@ -166,6 +167,30 @@ Feature: Form viewer
     And form viewer should have a "field SEX" area
     And form viewer should not have a "field HEIGHT" area
     And the "AGE" reading of form viewer should be "26"
+    When user sets "columnNames" property of form viewer to "AGE, HEIGHT, WEIGHT"
+    Then the "fields shown" reading of form viewer should be 3
+    And no errors should have been logged
+
+  Scenario: A field dragged in design mode keeps its place, and the saved file brings the place back
+    Given user sets "columnNames" property of form viewer to "AGE, SEX, RACE"
+    Then the "fields shown" reading of form viewer should be 3
+    And the "design mode" reading of form viewer should be "false"
+    And the "field RACE" area of form viewer should hang below the "field AGE" area
+    When user clicks on the "design" area of form viewer
+    Then the "design mode" reading of form viewer should be "true"
+    When user drags the "field AGE" area of form viewer by 160 pixels to the down
+    Then the "field AGE" area of form viewer should hang below the "field RACE" area
+    And the "field AGE" area of form viewer should hang below the "field SEX" area
+    When user clicks on the "design" area of form viewer
+    Then the "design mode" reading of form viewer should be "false"
+    And the "field AGE" area of form viewer should hang below the "field RACE" area
+    When user downloads a file through arrow to bottom icon in form viewer
+    And user sets "columnNames" property of form viewer to "AGE, SEX, RACE, HEIGHT"
+    Then the "fields shown" reading of form viewer should be 4
+    And the "field RACE" area of form viewer should hang below the "field AGE" area
+    When user uploads the downloaded file through folder open icon in form viewer
+    Then the "fields shown" reading of form viewer should be 3
+    And the "field AGE" area of form viewer should hang below the "field RACE" area
     When user sets "columnNames" property of form viewer to "AGE, HEIGHT, WEIGHT"
     Then the "fields shown" reading of form viewer should be 3
     And no errors should have been logged

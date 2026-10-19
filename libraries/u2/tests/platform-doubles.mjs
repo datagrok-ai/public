@@ -432,6 +432,8 @@ export class Column {
 
   get(i) { return this.dart.frame.dart.rows[i][this.dart.name] ?? null; }
 
+  isNone(i) { return this.get(i) == null; }
+
   get min() { return Math.min(...this._numbers()); }
   get max() { return Math.max(...this._numbers()); }
 

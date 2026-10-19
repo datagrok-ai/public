@@ -1119,7 +1119,7 @@ designer('the multi handler: caption, tag counts and member paths — read-only'
   instance.dispose();
 });
 
-designer('a tree rebuild collapses a multi-selection to the lead — everywhere, not just in the tree', async () => {
+designer('a tree rebuild keeps a multi-selection by key — everywhere, not just in the tree', async () => {
   const view = new SpecDesigner(editable());
   const spec = view._instance.spec;
   document.body.append(view.root);
@@ -1131,15 +1131,14 @@ designer('a tree rebuild collapses a multi-selection to the lead — everywhere,
   assert.equal(view._multi.length, 2);
   assert.match(view.status.value, /^2 selected/);
 
-  // an expand/collapse rebuilds the flat rows (setItems): the list keeps the lead by key and
-  // collapses the set — the designer must follow, or Delete would remove invisible members
+  // an expand/collapse rebuilds the flat rows (setItems): the list keeps every selected key still
+  // shown (P20) — the designer follows, so Delete removes exactly what the tree shows selected
   showTree(view, ['0', '0.0']);
   await flush();
-  assert.equal(view._multi.length, 1, 'the designer collapsed with the tree');
-  assert.equal(view._selected, find(spec, 'second'), 'to the lead');
-  assert.ok(shell.o instanceof SpecNodeRef, 'the panel shows the single selection');
-  assert.equal(shell.o.node, find(spec, 'second'));
-  assert.match(view.status.value, /second · 5 nodes/, view.status.value);
+  assert.equal(view._multi.length, 2, 'the designer kept the set with the tree');
+  assert.equal(view._tree.selectedNodes.value.length, 2);
+  assert.equal(view._selected, find(spec, 'second'), 'and its lead');
+  assert.match(view.status.value, /^2 selected/);
 
   shell.o = null;
   view.dispose();

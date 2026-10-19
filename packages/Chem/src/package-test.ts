@@ -5,6 +5,7 @@ import './tests/calculate';
 import './tests/menu-tests-chem-space';
 import './tests/menu-tests-cliffs';
 import './tests/menu-tests-similarity-diversity';
+import './tests/similarity-diversity-row-source-tests';
 import './tests/menu-tests-rgroups';
 import './tests/menu-tests-script-based';
 
@@ -25,7 +26,10 @@ import './tests/screening-tools';
 import './tests/pharmacophore-features-tests';
 
 import './tests/save-as-sdf-tests';
+import './tests/save-as-csv-tests';
 import './tests/substructure-filter-tests';
+import './tests/query-roundtrip-tests';
+import './tests/query-roundtrip-more-tests';
 
 import './tests/mol2-importer-tests';
 import './tests/chemical-table-parsing';
@@ -45,6 +49,7 @@ import './tests/atom-index-mapper-tests';
 import './tests/atom-picker-tests';
 import './tests/reaction-enumeration-tests';
 import './tests/reaction-rendering-tests';
+import './tests/reactions-tests';
 // import './tests/atom-picker-3d-hover-tests';
 import './tests/atom-picker-escape-tests';
 import './tests/renderer-hover-tests';

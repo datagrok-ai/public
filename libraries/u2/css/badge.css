@@ -121,3 +121,37 @@
   outline: var(--dg-focus-ring);
   outline-offset: calc(-1 * var(--dg-focus-ring-width));
 }
+
+/* statusLine: what the action beside it will do, small and quiet; why it cannot yet, in the error
+   color after a warning mark. Two lines at most — the whole text is the tooltip */
+.u2-status-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--dg-space-s);
+  min-width: 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size-small);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color-light);
+}
+
+.u2-status-line-text {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.u2-status-line-problem {
+  color: var(--dg-error);
+}
+
+.u2-status-line-mark {
+  flex: none;
+}
+
+.u2-status-line-mark[hidden] {
+  display: none;
+}

@@ -7,8 +7,10 @@ import ThreeGlobe from 'three-globe';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import {scaleLinear, scaleSqrt, scaleSequential, interpolateYlOrRd, ScaleLinear} from 'd3';
 
+import {Observable} from 'rxjs';
+
 import {_package} from '../../package';
-import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
+import {ERROR_CLASS, MessageHandler, RenderSignals} from '../../utils/utils';
 
 
 @grok.decorators.viewer({
@@ -38,6 +40,36 @@ export class GlobeViewer extends DG.JsViewer {
   camera?: THREE.PerspectiveCamera;
   orbControls?: OrbitControls;
   animationFrameId?: number;
+
+  // three-globe hides its scene until the globe image has loaded, and digests `pointsData` on a 1 ms
+  // debounce, binding each point to its mesh as `__threeObj`
+  private signals = new RenderSignals(() => this.renderError === null && this.globe !== undefined &&
+    (!this.ready || this.points.some((d: any) => !d.__threeObj)), 120);
+
+  get onRendered(): Observable<void> {return this.signals.rendered;}
+
+  get isRenderPending(): boolean {return this.signals.pending;}
+
+  get renderError(): string | null {return MessageHandler._getMessage(this.root);}
+
+  private get ready(): boolean {return this.globe?.children[0]?.visible === true;}
+
+  getWidgetStatus(): DG.IWidgetStatus {
+    const error = this.renderError;
+    const canvas = this.renderer?.domElement;
+    // a point whose color value is missing gets a transparent color and a hidden mesh
+    let points = 0;
+    if (error === null && this.ready) {
+      this.globe!.traverse((obj: any) => {
+        if (obj.__globeObjType === 'point' && obj.visible)
+          points++;
+      });
+    }
+    return {
+      parts: canvas?.isConnected ? {root: this.root, canvas} : {root: this.root},
+      hitAreas: {}, values: {points}, shortcuts: {}, events: [], description: null, error,
+    };
+  }
 
   constructor() {
     super();
@@ -133,9 +165,9 @@ export class GlobeViewer extends DG.JsViewer {
     }
     // By default, beam color and size depend on the same column
     this.colorByColumnName = this.magnitudeColumnName;
-    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged).subscribe((_) => this.render));
-    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
+    this.subs.push(this.signals.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(this.signals.debounce(this.dataFrame.filter.onChanged, 100).subscribe((_) => this.render()));
+    this.subs.push(this.signals.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
       const width = this.root.parentElement!.clientWidth;
       const height = this.root.parentElement!.clientHeight;
       this.renderer!.setSize(width, height);
@@ -159,6 +191,7 @@ export class GlobeViewer extends DG.JsViewer {
   }
 
   detach() {
+    this.signals.reset();
     if (this.animationFrameId !== undefined)
       cancelAnimationFrame(this.animationFrameId);
     this.orbControls?.dispose();
@@ -210,6 +243,10 @@ export class GlobeViewer extends DG.JsViewer {
   }
 
   render() {
+    this.signals.render(() => this.draw());
+  }
+
+  private draw() {
     if (!this._testColumns()) {
       MessageHandler._showMessage(this.root, 'The Globe viewer requires a minimum of 1 numerical column.', ERROR_CLASS);
       return;

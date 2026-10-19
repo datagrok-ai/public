@@ -106,6 +106,14 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     this.root.dataset.u2 = 'filter-query-input';
   }
 
+  get placeholder(): string {
+    return this._input.placeholder;
+  }
+
+  set placeholder(x: string) {
+    this._input.placeholder = x ?? '';
+  }
+
   /** Parses the text into the tree; false — with the first problem as validity — when it
    * cannot be, the old tree kept. A text equal to the tree re-formats without writing a new
    * root, so a bound builder keeps its rows. */
@@ -175,6 +183,11 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     return status;
   }
 
+  /** A tree without a condition is what `required` refuses. */
+  protected isEmptyValue(value: FilterGroup): boolean {
+    return Input.isEmpty(value) || Filters.count(value) === 0;
+  }
+
   protected createEditor(): HTMLElement {
     const input = document.createElement('input');
     this._input = input;
@@ -217,34 +230,34 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     this.own(() => this._abort?.abort());
 
     bindValue(this.scope, input, this._text);
-    this._listen(input, 'input', () => {
+    this.scope.listen(input, 'input', () => {
       this._dirty = true;
       this._suggest();
     });
-    this._listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.scope.listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
     // the caret moved without typing: the context under it is another token
     const refreshIfOpen = () => {
       if (this._list.isOpen.peek())
         this._refresh();
     };
-    this._listen(input, 'keyup', (e) => {
+    this.scope.listen(input, 'keyup', (e) => {
       const key = (e as KeyboardEvent).key;
       if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'Home' || key === 'End')
         refreshIfOpen();
     });
     // a click where a value is expected offers the values unasked; elsewhere it only re-aims an open list
-    this._listen(input, 'click', () => {
+    this.scope.listen(input, 'click', () => {
       if (this._list.isOpen.peek())
         this._refresh();
       else if (Filters.completionContext(this._text.peek(), this._caret(), this.options.schema).expect === 'value')
         this._suggest();
     });
-    this._listen(input, 'select', refreshIfOpen);
-    this._listen(input, 'focus', () => {
+    this.scope.listen(input, 'select', refreshIfOpen);
+    this.scope.listen(input, 'focus', () => {
       if (this._text.peek() === this._display(this.value.peek()))
         this._dirty = false;
     });
-    this._listen(input, 'blur', () => {
+    this.scope.listen(input, 'blur', () => {
       this._list.dismiss();
       if (this._dirty)
         this.commit();
@@ -263,7 +276,9 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
       return;
     this._dirty = false;
     this._text.value = this._display(root);
-    this._problems.value = Filters.validate(root, this.options.schema, this.options.target);
+    // a value not filled in yet is the builder row's to tell, once the row is touched
+    this._problems.value = Filters.validate(root, this.options.schema, this.options.target)
+      .filter((p) => p.code !== 'missing-value');
   }
 
   private _display(tree: FilterGroup): string {
@@ -503,10 +518,5 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
         this._list.dismiss();
         break;
     }
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* u2: Took u2's stylesheet from u2 itself (installed once per page, the newest copy any package carries) instead of the EMS sheet bundle; republish with the other u2 packages
+* EMS: imports from `@datagrok-libraries/ems`
 * GROK-20753: Issues: ribbon slots — `IssuesApp.ribbon()` returns the named `{main, tools, presets}` record and declares the Mine / Open switch as the `presets` slot, instead of appending a positional group
 * GROK-20753: The Issues app follows the server (`live: true`) — an issue another session files shows up within a poll, and while there are unsaved changes the status bar says the rows are behind instead of dropping them
 * GROK-20753: Added a bulk-close regression over `updateWhere` (`Grit: issue CRUD`) — the request the app's ⋯ > "Bulk edit…" posts: one status into two of three selected issues, the third untouched, one version step and one audit line per row, and an auto-numbered column still refused in bulk

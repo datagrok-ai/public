@@ -28,6 +28,14 @@ category('top menu activity cliffs', async () => {
       DG.Test.isInBenchmark ? 16 : 2, !DG.Test.isInBenchmark);
   }, {timeout: 20000, benchmark: true, benchmarkTimeout: 180000});
 
+  test('activityCliffs.cutoff20', async () => {
+    await _testActivityCliffsOpen(await readDataframe('tests/activity_cliffs_test.csv'), 'smiles', 'Activity', 20, 52);
+  });
+
+  test('activityCliffs.cutoff95', async () => {
+    await _testActivityCliffsOpen(await readDataframe('tests/activity_cliffs_test.csv'), 'smiles', 'Activity', 95, 1);
+  });
+
   test('activityCliffsOpen.molV2000', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/spgi-100.csv'), 'Structure', 'Chemical Space X', 80, 1);
   }, {timeout: 20000});

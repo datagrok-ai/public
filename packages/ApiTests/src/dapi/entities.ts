@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 
 //@ts-ignore
 import { _package } from '../test-package';
@@ -52,6 +52,37 @@ category('Dapi: entities: smart search', () => {
     expect((await grok.dapi.packages.filter('name="Api Tests"').list()).length > 0, true);
     expect((await grok.dapi.packages.filter(`name="Api Tests" and version = "${_package.version}"`).list()).length > 0, true);
   }, {stressTest: true});
+}, {owner: 'aparamonov@datagrok.ai'});
+
+// Recent is read from the account's audit log (a project's creation and edits; opening it is a usage
+// event), which the server writes a moment after the save.
+category('Dapi: entities: recent', () => {
+  test('getRecentEntities holds a project after project.open()', async () => {
+    const df = grok.data.demo.demog(20);
+    const project = DG.Project.create();
+    project.name = `apitests-recent-${DG.Utils.randomString(8)}`;
+    const tableInfo = df.getTableInfo();
+    project.addChild(tableInfo);
+    try {
+      await grok.dapi.tables.uploadDataFrame(df);
+      await grok.dapi.tables.save(tableInfo);
+      await grok.dapi.projects.save(project);
+      await (await grok.dapi.projects.find(project.id)).open();
+      let recent = false;
+      for (const start = Date.now(); !recent && Date.now() - start < 30000; await delay(200))
+        recent = (await grok.dapi.entities.getRecentEntities()).some((e) => e.id === project.id);
+      expect(recent, true, `the project ${project.name} is not among the recent entities 30 s after it was opened`);
+    }
+    finally {
+      grok.shell.closeAll();
+      const saved = await grok.dapi.projects.find(project.id).catch(() => null);
+      if (saved)
+        await grok.dapi.projects.delete(saved);
+      const table = await grok.dapi.tables.find(tableInfo.id).catch(() => null);
+      if (table)
+        await grok.dapi.tables.delete(table);
+    }
+  }, {timeout: 60000});
 }, {owner: 'aparamonov@datagrok.ai'});
 
 async function createTestGroup(): Promise<_DG.Group> {

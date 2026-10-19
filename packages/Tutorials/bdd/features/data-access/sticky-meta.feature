@@ -1,8 +1,8 @@
 @tutorials @serial @realizes:tutorials.sticky-meta
 Feature: The Sticky Meta tutorial
   Walks Data access > Sticky Meta from its card to the end: an entity type made under Browse >
-  Platform > Sticky Meta > Types, a schema for it under Schemas with one string property, a molecule
-  of a table annotated through the Sticky meta pane, and the cell hovered. Each step is claimed as
+  Platform > Sticky Meta > Types, a schema for it under Schemas with one string property, the first
+  molecule of the tutorial's table annotated through the Sticky meta pane, and the cell hovered. Each step is claimed as
   ticked and as done — the dialogs, the fields, the type and the schema on the server, the pane and
   its saved state.
   Not claimed: the annotation read back. The tutorial's last step asks for the cell's tooltip, which
@@ -27,7 +27,7 @@ Feature: The Sticky Meta tutorial
 
   Scenario: A learner completes the Sticky Meta tutorial
     When user starts the "Sticky Meta" tutorial
-    Then the tutorial progress should be 1 of 19
+    Then the tutorial progress should be 1 of 20
     Given the tutorial step "Open Types node" should not be done yet
     When user expands Platform tree node inside browse tree
     And user expands Platform---Sticky-Meta tree node inside browse tree
@@ -73,19 +73,21 @@ Feature: The Sticky Meta tutorial
     Then the tutorial step "Save schema" should be done
     And the Sticky Meta schema "schema for tutorial" should exist
 
+    Given the tutorial step "In the Sticky Meta molecules table, click the first cell in the smiles column" should not be done yet
     When user clicks on the "cell 1 of smiles" area of grid
-    Then "Sticky meta" pane in context panel should be visible
-    And the tutorial step "Enter value for project name" should not be done yet
-    When user types "BDD tutorial" into "project name" input in context panel
-    Then the tutorial step "Enter value for project name" should be done
+    Then the tutorial step "In the Sticky Meta molecules table, click the first cell in the smiles column" should be done
+    And "Sticky meta" pane in context panel should be visible
+    And the tutorial step "Set \"project name\" to \"Tutorial\"" should not be done yet
+    When user types "Tutorial" into "project name" input in context panel
+    Then the tutorial step "Set \"project name\" to \"Tutorial\"" should be done
     When user clicks on Save button in "Sticky meta" pane in context panel
-    Then the tutorial step "Save sticky meta changes" should be done
+    Then the tutorial step "Click SAVE under \"schema for tutorial\"" should be done
     And Save button in "Sticky meta" pane in context panel should be disabled
     When user hovers over the "cell 1 of smiles" area of grid
     Then the tutorial step "Hover a cell to verify metadata tooltip." should be done
 
     And the "Sticky Meta" tutorial should be completed
-    And the tutorial should have listed 19 steps
-    And the tutorial progress should be 19 of 19
+    And the tutorial should have listed 20 steps
+    And the tutorial progress should be 20 of 20
     And no hint should be shown
     And no errors should have been logged

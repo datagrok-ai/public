@@ -43,6 +43,10 @@ def progress_task(self: DatagrokTask, a):
     return "Task completed"
 ```
 
+Set `GROK_JSON_LOGS=true` to print the task logger's records as one JSON line each (`v`, `time`, `level`,
+`service` = the celery name, `message`, `params`, `stackTrace`), secrets redacted. Celery's own worker log keeps
+its format.
+
 ### Notes
 
 * When Datagrok manages the Celery worker, environment variables will auto-populate Settings.

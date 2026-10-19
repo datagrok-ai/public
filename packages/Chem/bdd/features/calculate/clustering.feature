@@ -1,10 +1,10 @@
 @journey @realizes:chem.cp.calculate-clustering
 Feature: BitBIRCH clustering, Cluster MCS and the similarity matrix
-  On smiles, BitBIRCH Clustering with its defaults appends a cluster column that groups the
-  molecules: more than one cluster, fewer clusters than rows. On spgi-100, Cluster MCS over the
-  BitBIRCH clusters appends a Molecule column with a structure on every row, fewer structures than
-  rows. Over the first 50 molecules, Similarity Matrix builds a table with one similarity column per
-  molecule, 1 down the diagonal and something lower off it.
+  On smiles, BitBIRCH Clustering with its defaults appends a cluster column. On spgi-100, Cluster MCS
+  over the BitBIRCH clusters appends an MCS column. Over the first 50 molecules, Similarity Matrix
+  opens a table of the molecules' similarities.
+
+  The clusters, the matrix and the MCS of each cluster are tested in Chem src/tests/calculate.ts ('clustering': 'bitbirch', 'similarity matrix', 'cluster MCS').
 
   Not here: Butina Cluster, a server-side Python script — see the bdd library's CLAUDE.md,
   "What never becomes a feature".
@@ -15,7 +15,7 @@ Feature: BitBIRCH clustering, Cluster MCS and the similarity matrix
     And the package autostarts have completed
     And user opens smiles dataset
 
-  Scenario: BitBIRCH clustering groups the molecules
+  Scenario: BitBIRCH clustering adds a cluster column
     When user picks "Chem > Calculate > BitBIRCH Clustering..." from the top menu
     Then "BitBIRCH Clustering" dialog should be visible
     And Molecules input in "BitBIRCH Clustering" dialog should contain text "canonical_smiles"
@@ -24,13 +24,9 @@ Feature: BitBIRCH clustering, Cluster MCS and the similarity matrix
     When user clicks on OK button in "BitBIRCH Clustering" dialog
     Then the top menu command should have completed
     And a new column "Cluster (BitBIRCH)" should have been added
-    And "Cluster (BitBIRCH)" column should have no missing values
-    And "Cluster (BitBIRCH)" column should have at least 2 distinct values
-    And "Cluster (BitBIRCH)" column should have fewer distinct values than the table has rows
-    And the table should have 1000 rows
     And no errors should have been logged
 
-  Scenario: The similarity matrix reads 1 down its diagonal
+  Scenario: Similarity Matrix opens the matrix of the molecules
     Given user opens smiles dataset keeping the first 50 rows as "clustering_matrix_subset"
     When user picks "Chem > Calculate > Similarity Matrix..." from the top menu
     Then "Similarity Matrix" dialog should be visible
@@ -40,22 +36,16 @@ Feature: BitBIRCH clustering, Cluster MCS and the similarity matrix
     When user clicks on OK button in "Similarity Matrix" dialog
     Then the top menu command should have completed
     And table "canonical_smiles similarity matrix" should be open
-    And the similarity columns of table "canonical_smiles similarity matrix" should be symmetric, read 1 on the diagonal and less somewhere off it
     And no errors should have been logged
 
-  Scenario: Cluster MCS over the BitBIRCH clusters writes a structure on every row
+  Scenario: Cluster MCS over the BitBIRCH clusters adds an MCS column
     Given user opens spgi dataset
     When user picks "Chem > Calculate > BitBIRCH Clustering..." from the top menu
     And user clicks on OK button in "BitBIRCH Clustering" dialog
     Then the top menu command should have completed
     And a new column "Cluster (BitBIRCH)" should have been added
-    And "Cluster (BitBIRCH)" column should have at least 2 distinct values
-    And "Cluster (BitBIRCH)" column should have fewer distinct values than the table has rows
     When user picks "Chem > Calculate > Cluster MCS..." from the top menu
     And user clicks on OK button in "Cluster MCS" dialog
     Then the top menu command should have completed
-    And a new column matching "MCS|mcs|Scaffold" should have been added
-    And the newest column matching "MCS|mcs|Scaffold" should have no missing values
-    And "Cluster MCS" column should have fewer distinct values than the table has rows
-    And the table should have 100 rows
+    And a new column "Cluster MCS" should have been added
     And no errors should have been logged

@@ -36,6 +36,13 @@ export interface ValidationResult {
   notifications?: ValidationItem[];
 }
 
+// detail stays the action id, so hosts that read only detail keep working
+export class ActionRequestEvent extends CustomEvent<string> {
+  constructor(action: string, public additionalParams?: Record<string, any>) {
+    super('action-request', {detail: action});
+  }
+}
+
 export type ValidationIconInput = {
   validation?: ValidationResult,
   consistency?: ConsistencyInfo,
@@ -127,8 +134,8 @@ export class ValidationIcon extends HTMLElement {
     this.dispatchEvent(new CustomEvent('consistency-reset'));
   }
 
-  requestAction(id: string) {
-    this.dispatchEvent(new CustomEvent('action-request', {detail: id}));
+  requestAction(id: string, additionalParams?: Record<string, any>) {
+    this.dispatchEvent(new ActionRequestEvent(id, additionalParams));
   }
 
   showDataFrameDiff(cval: any) {
@@ -230,7 +237,7 @@ export class ValidationIcon extends HTMLElement {
             ...(actions).map(
               (action) => ui.link(
                 action.actionName,
-                () => this.requestAction(action.action),
+                () => this.requestAction(action.action, action.additionalParams),
                 undefined, {style: {paddingLeft: '20px'}})),
           ]));
         });

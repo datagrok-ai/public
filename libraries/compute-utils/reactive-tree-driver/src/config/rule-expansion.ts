@@ -1,20 +1,30 @@
 import * as DG from 'datagrok-api/dg';
-import {LinkSpecString} from '../data/common-types';
+import {AnnotationLinkKind, LinkSpecString} from '../data/common-types';
 import {
-  PipelineCheckConfiguration, PipelineHandlerConfiguration, PipelineLinkConfiguration, PipelineLinkConfigurationInput,
-  PipelineMetaConfiguration, PipelineRuleConfiguration, PipelineValidatorConfiguration, RuleEffect, RuleExpr, RuleSource,
+  PipelineCheckConfiguration, PipelineLinkConfiguration, PipelineLinkConfigurationBase,
+  PipelineLinkConfigurationInput, PipelineMetaConfiguration, PipelineRuleConfiguration, PipelineValidatorConfiguration,
+  RuleEffect, RuleExpr, RuleMessageAction, RuleSource, SourceKind, SourceSpec,
 } from './PipelineConfiguration';
 import {CALL, CheckOptions, expandChecks, TABLE, TARGET, VALUE, validateCheckOptions} from './checks';
-import {parseLinkIO} from './LinkSpec';
+import {LinkIOParsed, parseLinkIO} from './LinkSpec';
 import {compileCheckFormulas, compileRuleFormulas} from './rule-formula';
 import {FuncCallIODescription, IOType, expandDeferredIOs, normalizeLinkSpec} from './config-processing-utils';
-import {ruleDataHandler, ruleMetaHandler, ruleValidatorHandler} from '../runtime/rule-handlers';
+import {
+  ruleDataHandler, ruleMetaHandler, ruleNodeMetaHandler, ruleValidatorHandler,
+} from '../runtime/rule-handlers';
+import {descriptionOutputs} from '../runtime/StateTreeNodes';
+import {indexFromEnd} from '../utils';
 import {ruleTargets, usedAliases} from '../runtime/rule-expressions';
 import {DriverLogger, reportError} from '../data/Logger';
 
 const metaEffects = new Set(['hide', 'show', 'items', 'meta']);
 const validatorEffects = new Set(['error', 'warning', 'notification', 'verdicts']);
 const dataEffects = new Set(['set', 'clear', 'assign']);
+const messageEffects = new Set(['error', 'warning', 'notification']);
+const actionEffects = new Set(['hideAction', 'showAction']);
+const driverValues = new Set(['$position', '$steps']);
+
+type Family = 'meta' | 'validator' | 'data' | 'nodemeta' | 'pipelineValidator';
 
 export function isRuleLink(
   link: PipelineLinkConfigurationInput<LinkSpecString>,
@@ -87,11 +97,36 @@ export function annotationRules(
   });
 }
 
-export function expandLinks(
-  links: PipelineLinkConfigurationInput<LinkSpecString>[],
+/** The checks a step's annotations stand for, one link per input and check; a GrokScript expression
+ *  sees every input of the step under its own name. */
+export function annotationCheckLinks(
+  io: FuncCallIODescription[],
+): {kind: AnnotationLinkKind, link: PipelineLinkConfiguration<LinkSpecString>}[] {
+  const inputs = io.filter((item) => item.direction === 'input');
+  const inputQueries = inputs.filter((other) => other.id !== VALUE).map((other) => `${other.id}:${other.id}`);
+  return inputs.flatMap((item) =>
+    expandChecks({...item.checks, nullable: item.nullable}, {validatorsViaCall: true})
+      .map(({key, family, needsCall, needsInputs, params}) => {
+        const kind: AnnotationLinkKind = key === 'required' ? 'required' : 'check';
+        const common = {
+          id: `::${item.id}:${key}`,
+          from: [`${VALUE}:${item.id}`, ...(needsCall ? [`${CALL}(call,optional):.`] : []),
+            ...(needsInputs ? inputQueries : [])],
+          to: `${TARGET}:${item.id}`,
+          params,
+        };
+        const link: PipelineMetaConfiguration<LinkSpecString> | PipelineValidatorConfiguration<LinkSpecString> =
+          family === 'meta' ? {...common, type: 'meta', handler: ruleMetaHandler} :
+            {...common, type: 'validator', handler: ruleValidatorHandler, debounce: 0};
+        return {kind, link};
+      }));
+}
+
+export function expandLink(
+  link: PipelineLinkConfigurationInput<LinkSpecString>,
 ): PipelineLinkConfiguration<LinkSpecString>[] {
-  return links.flatMap((link) => isRuleLink(link) ? expandRule(compileRuleFormulas(link)) :
-    isCheckLink(link) ? expandCheck(compileCheckFormulas(link)) : [link]);
+  return isRuleLink(link) ? expandRule(compileRuleFormulas(link)) :
+    isCheckLink(link) ? expandCheck(compileCheckFormulas(link)) : [link];
 }
 
 function singleQuery(id: string, field: string, query: LinkSpecString | undefined): string | undefined {
@@ -155,13 +190,21 @@ function expandCheck(check: PipelineCheckConfiguration<LinkSpecString>): Pipelin
   });
 }
 
-function aliasesOf(ruleId: string, ios: LinkSpecString | undefined, ioType: IOType) {
+// `nodes` collects the (node) aliases; parseLinkIO allows them only in `to`
+function aliasesOf(ruleId: string, ios: LinkSpecString | undefined, ioType: IOType, nodes?: Set<string>) {
   const aliases = new Map<string, string>();
+  // a node meta link does not expand its actions queries
+  const allowed = ioType === 'actions' ? ['optional'] : ['optional', 'template', 'node'];
   for (const raw of normalizeLinkSpec(ios)) {
     for (const parsed of expandDeferredIOs(parseLinkIO(raw, ioType), ruleId)) {
-      const badFlag = parsed.flags?.find((flag) => flag !== 'optional' && flag !== 'template');
+      const badFlag = parsed.flags?.find((flag) => !allowed.includes(flag));
       if (badFlag)
         throw new Error(`Rule ${ruleId}: (${badFlag}) flag is not allowed in rule queries (${raw})`);
+      if (parsed.flags?.includes('node')) {
+        if (parsed.flags.includes('template'))
+          throw new Error(`Rule ${ruleId}: (node) and (template) flags cannot be combined (${raw})`);
+        nodes!.add(parsed.name);
+      }
       if (parsed.name.startsWith('$'))
         throw new Error(`Rule ${ruleId}: alias ${parsed.name} is reserved for the driver`);
       aliases.set(parsed.name, raw);
@@ -172,16 +215,70 @@ function aliasesOf(ruleId: string, ios: LinkSpecString | undefined, ioType: IOTy
 
 function effectExpressions(effect: RuleEffect): RuleExpr[] {
   switch (effect.effect) {
+  case 'describe': return [effect.value];
   case 'items': return [effect.items];
   case 'meta': return Object.values(effect.meta);
   case 'error':
   case 'warning':
-  case 'notification': return [effect.message];
+  case 'notification': return [effect.message, ...(effect.actions ?? []).flatMap((item) =>
+    item.additionalParams === undefined ? [item.actionName] : [item.actionName, item.additionalParams])];
   case 'verdicts': return [];
   case 'set': return [effect.value];
   case 'assign': return [effect.values];
   default: return [];
   }
+}
+
+const offeredActions = (effect: RuleEffect): RuleMessageAction[] =>
+  (effect as {actions?: RuleMessageAction[]}).actions ?? [];
+
+// typed per kind, so a new RuleSource kind fails the build until it says which inputs it reads
+const sourceInputs: {[K in SourceKind]: (spec: SourceSpec<K>) => string[]} = {
+  validators: (spec) => [spec.input],
+  choices: (spec) => [spec.input],
+  js: (spec) => spec.args,
+  func: (spec) => Object.values(spec.args ?? {}).flatMap((arg) => usedAliases(arg)),
+  query: (spec) => Object.values(spec.args ?? {}).flatMap((arg) => usedAliases(arg)),
+  file: () => [],
+  table: () => [],
+};
+
+function sourceReads(source: RuleSource): string[] {
+  // expandRule has checked the source, so it has exactly one known kind
+  const kind = Object.keys(source)[0] as SourceKind;
+  return (sourceInputs[kind] as (spec: unknown) => string[])((source as Record<SourceKind, unknown>)[kind]);
+}
+
+function ruleLink(
+  family: Family, link: Omit<PipelineLinkConfigurationBase<LinkSpecString>, 'actions'>,
+  rule: PipelineRuleConfiguration<LinkSpecString>, actions: string[],
+): PipelineLinkConfiguration<LinkSpecString> {
+  switch (family) {
+  case 'meta': return {...link, type: 'meta', handler: ruleMetaHandler};
+  case 'validator':
+    return {...link, type: 'validator', handler: ruleValidatorHandler, debounce: rule.debounce,
+      ...(actions.length ? {actions} : {})};
+  case 'data': return {...link, type: 'data', handler: ruleDataHandler, runOnInit: rule.runOnInit};
+  case 'nodemeta': return {...link, type: 'nodemeta', handler: ruleNodeMetaHandler, actions};
+  case 'pipelineValidator':
+    return {...link, type: 'pipelineValidator', handler: ruleValidatorHandler, debounce: rule.debounce};
+  }
+}
+
+// a template query yields every io it matches, so a rule link keeps only the aliases its own effects target,
+// and a separate effect's link only the inputs it reads
+const linkAliasesOf = new WeakMap<object, {to: Set<string>, from?: Set<string>}>();
+
+export function narrowRuleLink<L extends {from: LinkIOParsed[], to: LinkIOParsed[]}>(
+  expanded: object, processed: L,
+): L {
+  const aliases = linkAliasesOf.get(expanded);
+  if (aliases) {
+    processed.to = processed.to.filter((io) => aliases.to.has(io.name));
+    if (aliases.from)
+      processed.from = processed.from.filter((io) => aliases.from!.has(io.name));
+  }
+  return processed;
 }
 
 // expects compiled formulas: every effect and source is an object
@@ -195,12 +292,23 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
     throw new Error(`Rule ${id}: effects list is empty`);
 
   const fromAliases = aliasesOf(id, rule.from, 'input');
-  const toAliases = aliasesOf(id, rule.to, 'output');
+  const nodeAliases = new Set<string>();
+  const toAliases = aliasesOf(id, rule.to, 'output', nodeAliases);
+  const actionAliases = aliasesOf(id, rule.actions, 'actions');
+  for (const alias of actionAliases.keys()) {
+    if (fromAliases.has(alias) || toAliases.has(alias))
+      throw new Error(`Rule ${id}: actions alias ${alias} collides with an io alias`);
+  }
   const from = [...normalizeLinkSpec(rule.from)];
   const isAlias = (name: string) => fromAliases.has(name) || Object.hasOwn(sources ?? {}, name);
   const checkExpr = (expr: RuleExpr | undefined) => {
     const fields = new Set<string>();
     for (const alias of usedAliases(expr, fields)) {
+      if (driverValues.has(alias)) {
+        if (alias === '$position' && !rule.base)
+          throw new Error(`Rule ${id}: $position needs a base`);
+        continue;
+      }
       if (!isAlias(alias))
         throw new Error(`Rule ${id}: expression references unknown input alias ${alias}`);
     }
@@ -220,6 +328,7 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
     Object.values(args).forEach(checkExpr);
   };
   const expandedSources: Record<string, RuleSource> = {};
+  const callQueries = new Map<string, string>();
   for (const [alias, source] of Object.entries(sources ?? {})) {
     if (alias.startsWith('$'))
       throw new Error(`Rule ${id}: source alias ${alias} is reserved for the driver`);
@@ -287,84 +396,191 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
     parseLinkIO(callQuery, 'input');
     if (!from.includes(callQuery))
       from.push(callQuery);
+    callQueries.set(alias, callQuery);
     expandedSources[alias] = 'choices' in source ? {choices: {input, call: CALL}} : {validators: {input, call: CALL}};
   }
 
   checkExpr(when);
 
+  // describe targets a description field, so it is not one of the io aliases assign defaults to
+  const describeTargets = new Set(effects.flatMap((effect) =>
+    effect.effect === 'describe' && effect.targets != null ? ruleTargets(effect.targets) : []));
   const effectTargets = (effect: RuleEffect) => {
     if (effect.targets == null) {
       if (effect.effect !== 'assign')
         throw new Error(`Rule ${id}: effect ${effect.effect} needs targets`);
-      return [...toAliases.keys()];
+      return [...toAliases.keys()].filter((alias) => !nodeAliases.has(alias) && !describeTargets.has(alias));
     }
     return ruleTargets(effect.targets);
   };
 
+  const targetFamily = (effect: RuleEffect, target: string): Family => {
+    if (actionAliases.has(target)) {
+      if (!actionEffects.has(effect.effect))
+        throw new Error(`Rule ${id}: actions alias ${target} takes only hideAction or showAction`);
+      return 'nodemeta';
+    }
+    if (actionEffects.has(effect.effect))
+      throw new Error(`Rule ${id}: effect ${effect.effect} targets unknown actions alias ${target}`);
+    if (!toAliases.has(target))
+      throw new Error(`Rule ${id}: effect ${effect.effect} targets unknown output alias ${target}`);
+    if (nodeAliases.has(target)) {
+      if (!messageEffects.has(effect.effect))
+        throw new Error(`Rule ${id}: (node) alias ${target} takes only error, warning or notification`);
+      return 'pipelineValidator';
+    }
+    if (effect.effect === 'describe') {
+      for (const parsed of parseLinkIO(toAliases.get(target)!, 'output')) {
+        const field = indexFromEnd(parsed.segments);
+        if (parsed.flags?.includes('template') || field?.type !== 'selector' ||
+          !(descriptionOutputs as readonly string[]).includes(field.ids[0])) {
+          throw new Error(`Rule ${id}: describe target ${target} must end with one of ` +
+            `${descriptionOutputs.join(', ')}`);
+        }
+      }
+      return 'nodemeta';
+    }
+    return metaEffects.has(effect.effect) ? 'meta' : validatorEffects.has(effect.effect) ? 'validator' : 'data';
+  };
+
+  const families = new Map<RuleEffect, Family>();
+  const aliasKinds = new Map<string, string>();
   const targeted = new Set<string>();
   const visibilityTargets = new Set<string>();
   for (const effect of effects) {
-    if (!metaEffects.has(effect.effect) && !validatorEffects.has(effect.effect) && !dataEffects.has(effect.effect))
+    if (!metaEffects.has(effect.effect) && !validatorEffects.has(effect.effect) && !dataEffects.has(effect.effect) &&
+      !actionEffects.has(effect.effect) && effect.effect !== 'describe')
       throw new Error(`Rule ${id}: unknown effect ${(effect as any).effect}`);
     if (effect.effect === 'verdicts' && !('validators' in (sources?.[effect.source] ?? {})))
       throw new Error(`Rule ${id}: verdicts effect references unknown validators source ${effect.source}`);
+    if (effect.separate != null && typeof effect.separate !== 'boolean')
+      throw new Error(`Rule ${id}: separate of effect ${effect.effect} must be true or false`);
+    if (effect.additionalTriggers != null) {
+      if (effect.separate === false)
+        throw new Error(`Rule ${id}: additionalTriggers of effect ${effect.effect} needs a separate link`);
+      for (const alias of ruleTargets(effect.additionalTriggers)) {
+        if (!fromAliases.has(alias))
+          throw new Error(`Rule ${id}: additionalTriggers of ${effect.effect} names unknown input alias ${alias}`);
+      }
+    }
+    const offered = offeredActions(effect);
+    if (!Array.isArray(offered) || (offered.length && !messageEffects.has(effect.effect)))
+      throw new Error(`Rule ${id}: actions are a list of message buttons, on error, warning or notification only`);
+    for (const item of offered) {
+      if (!actionAliases.has(item.actions))
+        throw new Error(`Rule ${id}: message action references unknown actions alias ${item.actions}`);
+      if (typeof item.action !== 'string' || !item.action)
+        throw new Error(`Rule ${id}: message action on ${item.actions} needs an action id`);
+      targeted.add(item.actions);
+    }
+    if ((effect.effect === 'hideAction' || effect.effect === 'showAction') &&
+      (typeof effect.action !== 'string' || !effect.action))
+      throw new Error(`Rule ${id}: ${effect.effect} needs an action id`);
     for (const target of effectTargets(effect)) {
-      if (!toAliases.has(target))
-        throw new Error(`Rule ${id}: effect ${effect.effect} targets unknown output alias ${target}`);
+      const family = targetFamily(effect, target);
+      if (family === 'pipelineValidator' && offered.length)
+        throw new Error(`Rule ${id}: (node) alias ${target} messages take no actions`);
+      if (families.has(effect) && families.get(effect) !== family)
+        throw new Error(`Rule ${id}: effect ${effect.effect} mixes targets of different kinds`);
+      families.set(effect, family);
+      const kind = family === 'nodemeta' ? (actionAliases.has(target) ? 'action' : 'field') :
+        family === 'pipelineValidator' ? 'node' : 'io';
+      if (aliasKinds.has(target) && aliasKinds.get(target) !== kind)
+        throw new Error(`Rule ${id}: alias ${target} is targeted as both ${aliasKinds.get(target)} and ${kind}`);
+      aliasKinds.set(target, kind);
       targeted.add(target);
-      if (effect.effect === 'hide' || effect.effect === 'show') {
-        if (visibilityTargets.has(target))
-          throw new Error(`Rule ${id}: hide/show applied twice to output alias ${target}`);
-        visibilityTargets.add(target);
+      const key = effect.effect === 'hide' || effect.effect === 'show' ? `output alias ${target}` :
+        effect.effect === 'hideAction' || effect.effect === 'showAction' ? `action ${target}/${effect.action}` :
+          undefined;
+      if (key) {
+        if (visibilityTargets.has(key))
+          throw new Error(`Rule ${id}: hide/show applied twice to ${key}`);
+        visibilityTargets.add(key);
       }
     }
     effectExpressions(effect).forEach(checkExpr);
     checkExpr(effect.when);
   }
-  for (const alias of toAliases.keys()) {
-    if (!targeted.has(alias))
-      throw new Error(`Rule ${id}: output alias ${alias} is not targeted by any effect`);
+  for (const [kind, aliases] of [['output', toAliases], ['actions', actionAliases]] as const) {
+    for (const alias of aliases.keys()) {
+      if (!targeted.has(alias))
+        throw new Error(`Rule ${id}: ${kind} alias ${alias} is not targeted by any effect`);
+    }
   }
 
-  const common = {
-    from,
-    not: rule.not,
-    base: rule.base,
-    nodePriority: rule.nodePriority,
-    dataFrameMutations: rule.dataFrameMutations,
+  // a link re-runs on every rewire when its own expressions read $steps; `when` and sources are shared
+  const readsStepsIn = (expr: RuleExpr | undefined) => usedAliases(expr).includes('$steps');
+  const sharedSteps = readsStepsIn(when) || Object.values(expandedSources).some((source) =>
+    sourceReads(source).includes('$steps'));
+
+  // a separate effect's link reads what the effect, the rule's `when` and the sources these use read
+  const separateInputs = (effect: RuleEffect) => {
+    const read = new Set([...effectExpressions(effect), effect.when, when].flatMap((expr) => usedAliases(expr)));
+    if (effect.effect === 'verdicts')
+      read.add(effect.source);
+    const used = Object.keys(expandedSources).filter((alias) => read.has(alias));
+    for (const alias of used)
+      sourceReads(expandedSources[alias]).forEach((name) => read.add(name));
+    ruleTargets(effect.additionalTriggers ?? []).forEach((alias) => read.add(alias));
+    return {
+      inputs: [...fromAliases.keys()].filter((alias) => read.has(alias)),
+      calls: [...new Set(used.flatMap((alias) => callQueries.get(alias) ?? []))],
+      sources: used,
+      readsSteps: read.has('$steps'),
+    };
   };
 
-  const familyLink = (family: Set<string>) => {
-    const familyEffects = effects.filter((effect) => family.has(effect.effect));
-    if (!familyEffects.length)
-      return undefined;
-    const familyTargets = new Set(familyEffects.flatMap(effectTargets));
-    const to = [...new Set([...toAliases].filter(([alias]) => familyTargets.has(alias)).map(([, raw]) => raw))];
-    return {to, params: {when, effects: familyEffects, ...(sources ? {sources: expandedSources} : {})}};
+  const raws = (aliases: Map<string, string>, names: Set<string>) =>
+    [...new Set([...aliases].filter(([alias]) => names.has(alias)).map(([, raw]) => raw))];
+
+  const makeLink = (
+    family: Family, linkEffects: RuleEffect[], suffix: string, separate?: ReturnType<typeof separateInputs>,
+  ): PipelineLinkConfiguration<LinkSpecString> => {
+    const targets = new Set(linkEffects.flatMap(effectTargets));
+    const readsSteps = separate ? separate.readsSteps :
+      sharedSteps || linkEffects.some((effect) => [...effectExpressions(effect), effect.when].some(readsStepsIn));
+    const linkSources = separate ?
+      (separate.sources.length ? Object.fromEntries(separate.sources.map((alias) => [alias, expandedSources[alias]])) :
+        undefined) :
+      sources && expandedSources;
+    const inputs = separate && new Set([...separate.inputs, ...(separate.calls.length ? [CALL] : [])]);
+    const link = {
+      id: `${id}::${suffix}`,
+      from: separate ? [...raws(fromAliases, inputs!), ...separate.calls] : from,
+      to: raws(toAliases, targets),
+      not: rule.not,
+      base: rule.base,
+      nodePriority: rule.nodePriority,
+      dataFrameMutations: Array.isArray(rule.dataFrameMutations) && inputs ?
+        rule.dataFrameMutations.filter((alias) => inputs.has(alias)) : rule.dataFrameMutations,
+      params: {
+        when, effects: linkEffects, ...(linkSources ? {sources: linkSources} : {}), ...(readsSteps ? {readsSteps} : {}),
+      },
+    };
+    const actionNames = new Set([...targets, ...linkEffects.flatMap(offeredActions).map((item) => item.actions)]);
+    const typed = ruleLink(family, link, rule, raws(actionAliases, actionNames));
+    linkAliasesOf.set(typed, {to: targets, from: inputs});
+    return typed;
   };
 
+  const isSeparate = (effect: RuleEffect) => !!effect.separate || effect.additionalTriggers != null;
   const result: PipelineLinkConfiguration<LinkSpecString>[] = [];
-  const meta = familyLink(metaEffects);
-  if (meta) {
-    const link: PipelineMetaConfiguration<LinkSpecString> = {
-      ...common, ...meta, id: `${id}::meta`, type: 'meta', handler: ruleMetaHandler,
-    };
-    result.push(link);
+  for (const family of ['meta', 'validator', 'data', 'nodemeta', 'pipelineValidator'] as const) {
+    const familyEffects = effects.filter((effect) => families.get(effect) === family && !isSeparate(effect));
+    if (familyEffects.length)
+      result.push(makeLink(family, familyEffects, family));
   }
-  const validator = familyLink(validatorEffects);
-  if (validator) {
-    const link: PipelineValidatorConfiguration<LinkSpecString> = {
-      ...common, ...validator, id: `${id}::validator`, type: 'validator', handler: ruleValidatorHandler,
-      debounce: rule.debounce,
-    };
-    result.push(link);
-  }
-  const data = familyLink(dataEffects);
-  if (data) {
-    const link: PipelineHandlerConfiguration<LinkSpecString> = {
-      ...common, ...data, id: `${id}::data`, type: 'data', handler: ruleDataHandler, runOnInit: rule.runOnInit,
-    };
-    result.push(link);
-  }
+  effects.forEach((effect, idx) => {
+    if (!isSeparate(effect))
+      return;
+    const family = families.get(effect)!;
+    const separate = separateInputs(effect);
+    if (!separate.inputs.length && !separate.calls.length && !separate.readsSteps &&
+      !(family === 'data' && rule.runOnInit)) {
+      throw new Error(`Rule ${id}: separate effect ${effect.effect} reads no input, ` +
+        `add additionalTriggers${family === 'data' ? ' or runOnInit' : ''}`);
+    }
+    result.push(makeLink(family, [effect], `${family}:${idx + 1}`, separate));
+  });
   return result;
 }

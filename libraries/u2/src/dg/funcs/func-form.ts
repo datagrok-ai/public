@@ -22,6 +22,7 @@ import type {IProperty} from '../../core/property-like.js';
 import {Input} from '../../core/input-base.js';
 import type {InputOptions, LiveOption} from '../../core/input-base.js';
 import {SuggestionList} from '../../core/suggestion-list.js';
+import {camelCaseToWords} from '../../core/text.js';
 import {Form} from '../../components/forms/form.js';
 import type {FormLayout} from '../../components/forms/form.js';
 import {Section} from '../../components/containers/section.js';
@@ -171,27 +172,12 @@ const SCALARS = new Set(['string', 'int', 'double', 'float', 'num', 'bigint', 'q
  * errors on them (it evals them as function editors), so honoring them here is a documented W1
  * divergence, not a compatibility break. */
 const HINTS = new Set(['textarea', 'password', 'switch', 'slider']);
-const CONJUNCTIONS = new Set(['and', 'or', 'than', 'if', 'but', 'so', 'as', 'that']);
-
-/** prop_gen's `camelCaseToWords` (`prop_gen_annotation.dart:89-112`): all-caps and already-spaced
- * names pass through, humps split, first word capitalized, conjunctions lowercased. */
-function camelCaseToWords(name: string): string {
-  if (name === name.toUpperCase() || name.includes(' '))
-    return name;
-  const words = name.match(/[A-Z]+(?![a-z])|[A-Z]?[^A-Z]+/g) ?? [name];
-  return words
-    .map((w, i) => {
-      const word = CONJUNCTIONS.has(w.toLowerCase()) ? w.toLowerCase() : w;
-      return i === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word;
-    })
-    .join(' ');
-}
 
 /** A {@link Form} over a FuncCall's input params, kept in sync with the call both ways: an edit
  * runs `setParamValue`, a `param.onChanged` refreshes the field (echo-suppressed by value in both
  * directions). It edits the call and nothing else — running it stays with the caller. */
 export class FuncCallForm extends Form {
-  /** Non-optional params of the current call whose field is active and empty, by label — with
+  /** Non-nullable params of the current call whose field is active and empty, by label — with
    * {@link Form.validity} the two terms of the Run gate (visibility-aware: a hidden required
    * field blocks nothing, and returns the moment its expression shows it again). */
   readonly missingRequired: ReadonlySignal<string[]>;
@@ -224,12 +210,13 @@ export class FuncCallForm extends Form {
     this._formOptions = options;
     this._call = call;
     this.root.dataset.u2 = 'func-form';
+    this.effect(() => this.root.setAttribute('aria-busy', String(this._running.value)));
     this._build();
     this.missingRequired = computed(() => {
       this._genSig.value;
       const missing: string[] = [];
       for (const field of this._fields) {
-        if (field.orphaned || field.param.property.isOptional === true || !field.active.value)
+        if (field.orphaned || field.param.property.nullable !== false || !field.active.value)
           continue;
         if (FuncCallForm._empty(field.input.value.value))
           missing.push(field.input.label || field.param.name);
@@ -408,7 +395,7 @@ export class FuncCallForm extends Form {
   /** Deliberately un-exempt (visibility-blind), like Dart's `validateInputs`: a hidden field's
    * parse/range verdict still counts. Gate on {@link missingRequired} + {@link invalidFields}. */
   get isValid(): boolean {
-    return this.validity.peek() === null;
+    return this.inputs.every((input) => input.validity.peek() === null);
   }
 
   validateInputs(): boolean {
@@ -587,6 +574,8 @@ export class FuncCallForm extends Form {
       label: FuncCallForm._caption(prop, param.name),
       tooltipText: prop.description ?? undefined,
       nullable: prop.nullable,
+      // the form words and gates the required verdict itself (visibility, a null parent table)
+      required: false,
       postfix: prop.units || prop.options?.['units'] || undefined,
       ...rest,
     };

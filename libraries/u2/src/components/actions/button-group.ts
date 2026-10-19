@@ -6,6 +6,7 @@ import {signal, Signal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {Tooltip} from '../../core/tooltip.js';
 import {icon} from '../display/icon.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export type ButtonGroupToggle = 'none' | 'single' | 'multi';
 export type ButtonGroupDensity = 'form' | 'toolbar' | 'ribbon';
@@ -15,7 +16,8 @@ export interface ButtonGroupItem {
   label?: string;
   icon?: string;
   tooltip?: string;
-  onClick?: () => void;
+  /** Gets the click and the group. */
+  onClick?: (e: MouseEvent, group: ButtonGroup) => void;
   enabled?: boolean;
 }
 
@@ -51,8 +53,8 @@ export class ButtonGroup extends Control {
     for (const item of this._items)
       this.root.append(this._build(item, iconOnly));
 
-    this._listen(this.root, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
-    this._listen(this.root, 'focusin', (e) => this._onFocusIn(e));
+    this.scope.listen(this.root, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.scope.listen(this.root, 'focusin', (e) => this._onFocusIn(e));
     this.effect(() => this._applySelection());
     this._roving();
   }
@@ -65,17 +67,35 @@ export class ButtonGroup extends Control {
     this._roving();
   }
 
+  /** The base state plus the selection as the value (the id under `single`) and the current id. */
+  getState(): ReturnType<Control['getState']> {
+    const selected = this.selected.peek();
+    return {...super.getState(), value: this._toggle === 'single' ? selected[0] ?? null : selected,
+      ...selected.length === 0 ? {} : {current: selected[0]}};
+  }
+
+  /** The buttons, keyed by id; under a toggle mode each says whether it is selected. */
+  getItems(): IItemsState {
+    const selected = this.selected.peek();
+    const list = this._items.map((item, index) => ({key: item.id, label: item.label ?? item.tooltip ?? item.id, index,
+      ...this._toggle === 'none' ? {} : {selected: selected.includes(item.id)},
+      disabled: this._buttons.get(item.id)!.disabled, rendered: true}));
+    return {count: list.length, list, truncated: false};
+  }
+
   private _build(item: ButtonGroupItem, iconOnly: boolean): HTMLButtonElement {
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'u2-btn-group-item';
     el.dataset.id = item.id;
+    el.dataset.u2Item = item.id;
     el.tabIndex = -1;
     if (item.icon)
       el.append(icon(item.icon));
     if (item.label && !iconOnly) {
       const label = document.createElement('span');
       label.className = 'u2-btn-group-label';
+      label.dataset.u2Part = 'item-label';
       label.textContent = item.label;
       el.append(label);
     }
@@ -92,12 +112,12 @@ export class ButtonGroup extends Control {
       el.setAttribute('aria-pressed', 'false');
     if (item.enabled === false)
       el.disabled = true;
-    this._listen(el, 'click', () => this._activate(item));
+    this.scope.listen(el, 'click', (e) => this._activate(item, e as MouseEvent));
     this._buttons.set(item.id, el);
     return el;
   }
 
-  private _activate(item: ButtonGroupItem): void {
+  private _activate(item: ButtonGroupItem, e: MouseEvent): void {
     if (this._toggle === 'single')
       this.selected.value = [item.id];
     else if (this._toggle === 'multi') {
@@ -106,7 +126,7 @@ export class ButtonGroup extends Control {
         current.filter((id) => id !== item.id) : current.concat([item.id]);
     }
     if (item.onClick)
-      item.onClick();
+      item.onClick(e, this);
   }
 
   private _applySelection(): void {
@@ -165,10 +185,5 @@ export class ButtonGroup extends Control {
     this._active = next.dataset.id;
     this._roving();
     next.focus();
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

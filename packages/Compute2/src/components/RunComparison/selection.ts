@@ -4,10 +4,13 @@
 
 import {
   ColumnInfo, ComparisonEntryNodes, ComparisonTarget, ColumnTarget, isNumericType,
-  TimeUnit, TIME_UNIT_MS, AxisMode, AxisModeSelection, AxisConfigMap,
+  TimeUnit, TIME_UNIT_MS, TIME_UNITS, AxisMode, AxisModeSelection, AxisConfigMap, toTargetUnits,
   isTimeIndexType, isIndexCandidateType,
 } from './types';
-import {normalizeName, nameSimilarity, FUZZY_NAME_THRESHOLD} from './matching';
+import {
+  normalizeName, nameSimilarity, nameMatchConfidence, normalizeUnits, unitsCompatibility, UnitConverter,
+  FUZZY_NAME_THRESHOLD,
+} from './matching';
 
 /** Substring match on the displayed text, with fuzzy per-token fallback for typos. */
 export function matchesFilter(query: string, text: string): boolean {
@@ -18,45 +21,13 @@ export function matchesFilter(query: string, text: string): boolean {
   return t.includes(q) || t.split(' ').some((token) => nameSimilarity(token, q) >= FUZZY_NAME_THRESHOLD);
 }
 
-export interface MultiValueOverlap {
-  // anchor runs the other target charts from the same table
-  aligned: number;
-  // anchor runs (entryIds) the other target has no pick for
-  missing: string[];
-  // anchor runs picked from a different table
-  conflicting: string[];
-}
-
-interface OverlapTarget {
-  bindings: {entryId: string, tablePath?: string}[];
-}
-
-// per anchor run: the other target's pick either shares the table (rows can be shared),
-// is absent (padded), or points elsewhere (padded, flagged); index/split agreement is
-// automatic for same-table picks since pickers are per (run, table); scalar bindings
-// have no tablePath, so they are aligned or missing, never conflicting
-export function multiValueOverlap(anchor: OverlapTarget, other: OverlapTarget): MultiValueOverlap {
-  const otherByRun = new Map(other.bindings.map((b) => [b.entryId, b]));
-  const result: MultiValueOverlap = {aligned: 0, missing: [], conflicting: []};
-  for (const binding of anchor.bindings) {
-    const otherBinding = otherByRun.get(binding.entryId);
-    if (!otherBinding)
-      result.missing.push(binding.entryId);
-    else if (otherBinding.tablePath !== binding.tablePath)
-      result.conflicting.push(binding.entryId);
-    else
-      result.aligned++;
-  }
-  return result;
-}
-
 /**
- * Suggestion predicate for multi-value mode. Scalar anchors: every scalar target is
- * compatible (all scalars are numeric by construction), never mixed with columns.
- * Column anchors: column targets that chart at least one of the anchor's runs from the
- * same table and conflict on none, provided the anchor's index is line-chartable
- * (numeric or datetime) everywhere. Validity of an already selected combination is
- * enforced by builder padding, not here — selected targets are never ejected.
+ * Suggestion predicate for multi-value mode: targets of the anchor's kind, never mixed.
+ * Every scalar is compatible (all scalars are numeric by construction); column targets
+ * when both the anchor's and their own index are line-chartable (numeric or datetime)
+ * everywhere — picks from different tables of a run chart as separate steps. Validity of
+ * an already selected combination is enforced by builder padding, not here — selected
+ * targets are never ejected.
  */
 export function compatibleTargetsFor(
   anchor: ComparisonTarget | null,
@@ -67,18 +38,24 @@ export function compatibleTargetsFor(
     return [];
   if (anchor.kind === 'scalar')
     return targets.filter((target) => target.kind === 'scalar');
-  const lineIndexed = anchor.bindings.every((b) => {
-    const type = getColumnType(b.entryId, b.tablePath, b.indexColumnName);
-    return type != null && (isNumericType(type) || type === 'datetime');
-  });
-  if (!lineIndexed)
+  const lineIndexed = (target: ColumnTarget) => target.bindings.every((b) =>
+    isTimeIndexType(getColumnType(b.entryId, b.tablePath, b.indexColumnName)));
+  if (!lineIndexed(anchor))
     return [];
-  return targets.filter((target): target is ColumnTarget => {
-    if (target.kind !== 'column')
-      return false;
-    const overlap = multiValueOverlap(anchor, target);
-    return overlap.conflicting.length === 0 && overlap.aligned >= 1;
-  });
+  return targets.filter((target) => target.kind === 'column' && lineIndexed(target));
+}
+
+/**
+ * Per selected target, the charted runs it has no data for: runs any selected target charts
+ * (union), minus its own picks.
+ */
+export function selectionGaps(selected: ComparisonTarget[]): Map<string, string[]> {
+  const charted = new Set(selected.flatMap((target) =>
+    (target.bindings as {entryId: string}[]).map((b) => b.entryId)));
+  return new Map(selected.map((target) => {
+    const own = new Set((target.bindings as {entryId: string}[]).map((b) => b.entryId));
+    return [target.key, [...charted].filter((entryId) => !own.has(entryId))];
+  }));
 }
 
 export type ColumnValuesGetter =
@@ -100,6 +77,9 @@ const sameValue = (x: unknown, y: unknown) => {
 
 const exactValue = (x: unknown, y: unknown) => x === y || (x !== x && y !== y);
 
+const toTargetValues = (values: ArrayLike<unknown> | undefined, factor?: number) =>
+  values == null || factor == null ? values : Array.from(values, (value) => toTargetUnits(value, factor));
+
 /**
  * True when every bound run carries the same data for the target: scalar values or
  * element-wise value/index/split columns, with numbers compared to within
@@ -114,8 +94,10 @@ export function isTargetEqualAcrossRuns(
 ): boolean {
   if (target.bindings.length < 2)
     return false;
-  if (target.kind === 'scalar')
-    return target.bindings.every((b) => sameValue(b.value, target.bindings[0].value));
+  if (target.kind === 'scalar') {
+    const first = toTargetUnits(target.bindings[0].value, target.bindings[0].factor);
+    return target.bindings.every((b) => sameValue(toTargetUnits(b.value, b.factor), first));
+  }
   const indexCompare = getColumnType != null && target.bindings.every((b) =>
     getColumnType(b.entryId, b.tablePath, b.indexColumnName) === 'datetime') ? exactValue : sameValue;
   const sameValues = (
@@ -131,7 +113,7 @@ export function isTargetEqualAcrossRuns(
     return true;
   };
   const series = target.bindings.map((b) => ({
-    value: getColumnValues(b.entryId, b.tablePath, b.columnName),
+    value: toTargetValues(getColumnValues(b.entryId, b.tablePath, b.columnName), b.factor),
     index: getColumnValues(b.entryId, b.tablePath, b.indexColumnName),
     split: b.splitColumnName ? getColumnValues(b.entryId, b.tablePath, b.splitColumnName) : null,
   }));
@@ -143,17 +125,10 @@ export function isTargetEqualAcrossRuns(
     (s.split === first.split || sameValues(s.split, first.split)));
 }
 
-const UNIT_ALIASES: Record<string, TimeUnit> = {
-  ms: 'ms', millis: 'ms', millisecond: 'ms', milliseconds: 'ms',
-  s: 's', sec: 's', secs: 's', second: 's', seconds: 's',
-  min: 'min', mins: 'min', minute: 'min', minutes: 'min',
-  h: 'h', hr: 'h', hrs: 'h', hour: 'h', hours: 'h',
-  d: 'days', day: 'days', days: 'days',
-};
-
 // bare 'm' is deliberately not recognized — ambiguous with meters
 export function parseTimeUnit(units?: string): TimeUnit | undefined {
-  return units ? UNIT_ALIASES[units.trim().toLowerCase()] : undefined;
+  const unit = normalizeUnits(units);
+  return TIME_UNITS.find((item) => item === unit);
 }
 
 /**
@@ -184,9 +159,9 @@ export function resolveAxisModes(
   return map;
 }
 
-/** Require-all gate: a target charts in the given mode only when every bound table is configured. */
+/** Require-all gate: bindings chart in the given mode only when every bound table is configured. */
 export function targetAxisMode(
-  target: ColumnTarget,
+  target: {bindings: {entryId: string, tablePath: string}[]},
   axisModes: AxisConfigMap,
   mode: 'timeseries' | 'points',
 ): 'full' | 'partial' | 'none' {
@@ -224,6 +199,41 @@ export function pickAutoUnit(maxElapsedMs: number): TimeUnit {
 
 export const isSplitCandidate = (column: ColumnInfo, indexColumnName: string) =>
   column.type === 'string' && column.name !== indexColumnName;
+
+export interface PickerSelections {
+  index: Record<string, Record<string, string>>;
+  split: Record<string, Record<string, string>>;
+  axis: AxisModeSelection;
+}
+
+/**
+ * Pickers pre-filled from the tables' {comparison: {...}} annotations wherever the user has
+ * no pick yet; unchanged selections are returned as the same objects.
+ */
+export function withAnnotatedDefaults(entry: ComparisonEntryNodes, selections: PickerSelections): PickerSelections {
+  let {index, split, axis} = selections;
+  const set = <T, >(selection: Record<string, Record<string, T>>, tablePath: string, value: T) =>
+    ({...selection, [entry.entryId]: {...selection[entry.entryId], [tablePath]: value}});
+  for (const table of entry.tables) {
+    const indexDefault = table.defaultIndexColumn;
+    if (indexDefault && !index[entry.entryId]?.[table.path] && table.columns.some((col) => col.name === indexDefault))
+      index = set(index, table.path, indexDefault);
+    const splitColumn = table.columns.find((col) => col.name === table.defaultSplitColumn);
+    if (splitColumn && !split[entry.entryId]?.[table.path] &&
+      isSplitCandidate(splitColumn, index[entry.entryId]?.[table.path] ?? ''))
+      split = set(split, table.path, splitColumn.name);
+    const modeDefault = table.defaultAxisMode;
+    if (modeDefault && !axis[entry.entryId]?.[table.path]) {
+      // units matter only on the elapsed axis; storing them elsewhere would let a
+      // unit the user never saw outrank the column-meta prefill later
+      axis = set(axis, table.path, {
+        mode: modeDefault,
+        ...modeDefault === 'timeseries' && table.defaultTimeUnits ? {units: table.defaultTimeUnits} : {},
+      });
+    }
+  }
+  return {index, split, axis};
+}
 
 export function selectionToMap(
   selection: Record<string, Record<string, string>>,
@@ -387,14 +397,37 @@ export function computeIndexRows(
 export type ExclusionReason =
   | 'no similar data'
   | 'index not set'
-  | 'disabled';
+  | 'disabled'
+  | 'units differ';
 
 export interface EntryStatus {
   entryId: string;
   matched: boolean;
   reason?: ExclusionReason;
+  // the run's units when they differ from the target's
+  units?: string;
   // the run still charts — its table just lacks the axis-mode settings on a partial target
   warning?: 'relative timeseries not set' | 'independent points not set';
+}
+
+export interface StatusOptions {
+  axisModes?: AxisConfigMap;
+  aliases?: Map<string, number>;
+  convert?: UnitConverter;
+}
+
+// the run's value of the target's name (exact, normalized or mapped; never fuzzy) in units
+// that neither match nor convert — the hint that a unit mapping would let it join
+function differingUnits(
+  entry: ComparisonEntryNodes, target: ComparisonTarget, indexColumns: Map<string, Map<string, string>>,
+  {aliases, convert}: StatusOptions,
+): string | undefined {
+  const candidates = target.kind === 'scalar' ? entry.scalars :
+    entry.tables.filter((table) => indexColumns.get(entry.entryId)?.get(table.path)).flatMap((table) => table.columns);
+  return candidates.find((item) => {
+    const confidence = nameMatchConfidence(target.displayName, item.name, aliases);
+    return confidence && confidence !== 'fuzzy' && unitsCompatibility(target.units, item.units, convert) === 'mismatch';
+  })?.units;
 }
 
 /** Per-entry participation status for a selected target. */
@@ -402,8 +435,9 @@ export function getEntryStatuses(
   entries: ComparisonEntryNodes[],
   target: ComparisonTarget | null,
   indexColumns: Map<string, Map<string, string>>,
-  axisModes?: AxisConfigMap,
+  options: StatusOptions = {},
 ): EntryStatus[] {
+  const {axisModes} = options;
   const modeOf = (mode: 'timeseries' | 'points') =>
     target?.kind === 'column' && axisModes ? targetAxisMode(target, axisModes, mode) : 'none';
   const partialMode = modeOf('timeseries') === 'partial' ? 'timeseries' :
@@ -428,6 +462,90 @@ export function getEntryStatuses(
       entry.tables.length > 0 &&
       entry.tables.every((table) => !indexColumns.get(entry.entryId)?.get(table.path)))
       return {entryId: entry.entryId, matched: false, reason: 'index not set'};
+    const units = differingUnits(entry, target, indexColumns, options);
+    if (units)
+      return {entryId: entry.entryId, matched: false, reason: 'units differ', units};
     return {entryId: entry.entryId, matched: false, reason: 'no similar data'};
   });
+}
+
+/**
+ * Step context for targets sharing a display name (repeated workflow steps, same-named
+ * tables): the seed's step path for scalars, its table path for columns.
+ */
+export function targetContexts(targets: ComparisonTarget[]): Map<string, string> {
+  const counts = new Map<string, number>();
+  for (const target of targets)
+    counts.set(target.displayName, (counts.get(target.displayName) ?? 0) + 1);
+  const contexts = new Map<string, string>();
+  for (const target of targets) {
+    if (counts.get(target.displayName)! < 2)
+      continue;
+    let context: string | undefined;
+    if (target.kind === 'column') {
+      const seed = target.candidates.find((candidate) => candidate.auto)?.binding;
+      context = seed?.tableFriendlyPath ?? seed?.tableName;
+    } else {
+      const seed = target.bindings[0];
+      context = seed?.friendlyPath?.replace(new RegExp(` · ${escapeRegExp(seed.name)}$`), '');
+    }
+    if (context && context !== target.displayName)
+      contexts.set(target.key, context);
+  }
+  return contexts;
+}
+
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+export interface UnmatchedItem {
+  name: string;
+  units?: string;
+  runCount: number;
+}
+
+/**
+ * Values matching considers (numeric scalars, numeric columns of indexed tables) that no
+ * compare row picks or lists as a candidate, one item per name and units. Values named like
+ * a row in its units are left out: a mapping cannot place them (e.g. a step only one run has).
+ */
+export function unmatchedItems(
+  entries: ComparisonEntryNodes[],
+  targets: ComparisonTarget[],
+  indexColumns: Map<string, Map<string, string>>,
+): UnmatchedItem[] {
+  const scalarId = (entryId: string, path: string) => `${entryId}|${path}`;
+  const columnId = (entryId: string, tablePath: string, columnName: string) =>
+    `${entryId}|${tablePath}|${columnName}`;
+  const present = new Set(targets.flatMap((target) => target.kind === 'scalar' ?
+    target.bindings.map((b) => scalarId(b.entryId, b.path)) :
+    target.candidates.map(({binding: b}) => columnId(b.entryId, b.tablePath, b.columnName))));
+  const nameKey = (name: string, units?: string) => `${normalizeName(name)}|${normalizeUnits(units)}`;
+  const rowKeys = new Set(targets.map((target) => nameKey(target.displayName, target.units)));
+  const items = new Map<string, {name: string, units?: string, runs: Set<string>}>();
+  const add = (entryId: string, id: string, name: string, units?: string) => {
+    const key = nameKey(name, units);
+    if (present.has(id) || rowKeys.has(key))
+      return;
+    const item = items.get(key) ?? {name, units, runs: new Set<string>()};
+    item.runs.add(entryId);
+    items.set(key, item);
+  };
+  for (const entry of entries) {
+    for (const scalar of entry.scalars) {
+      if (isNumericType(scalar.valueType))
+        add(entry.entryId, scalarId(entry.entryId, scalar.path), scalar.name, scalar.units);
+    }
+    for (const table of entry.tables) {
+      const indexColumnName = indexColumns.get(entry.entryId)?.get(table.path);
+      if (!indexColumnName)
+        continue;
+      for (const column of table.columns) {
+        if (column.name !== indexColumnName && isNumericType(column.type))
+          add(entry.entryId, columnId(entry.entryId, table.path, column.name), column.name, column.units);
+      }
+    }
+  }
+  return [...items.values()]
+    .map(({name, units, runs}) => ({name, units, runCount: runs.size}))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }

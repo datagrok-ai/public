@@ -1,12 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
+import {getProcessedConfig, PipelineConfigurationProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {FuncCallIODescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
 import {FuncCallMockAdapter} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallAdapters';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
+import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {DriverLogger} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
+import {isFuncCallSerializedState, PipelineSerializedState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {createTestScheduler} from '../../../test-utils';
@@ -403,5 +406,146 @@ category('ComputeUtils: Driver readonly tree', async () => {
       };
       expectObservable(consistency[outNode.getItem().uuid], '^ 1000ms !').toBe('abb', {a, b});
     });
+  });
+});
+
+const mutationsConfig: PipelineConfiguration = {
+  id: 'root',
+  type: 'static',
+  steps: [
+    {id: 's1', nqName: 'LibTests:TestAdd2'},
+    {id: 'sub', type: 'static', steps: [{id: 'x1', nqName: 'LibTests:TestAdd2'}, {id: 'x2', nqName: 'LibTests:TestMul2'}]},
+    {
+      id: 'dyn',
+      type: 'parallel',
+      stepTypes: [{id: 'add', nqName: 'LibTests:TestAdd2'}],
+      initialSteps: ['add'],
+    },
+  ],
+  actions: [{
+    id: 'replace-sub', type: 'pipeline', position: 'none', from: [], to: 'out1:sub',
+    handler({controller}) {
+      controller.setPipelineState('out1', {id: 'sub', steps: ['x1', 'x2']});
+    },
+  }, {
+    id: 'add-dyn', type: 'pipeline', position: 'none', from: [], to: 'out1:dyn',
+    handler({controller}) {
+      controller.addStep('out1', 'add');
+    },
+  }, {
+    id: 'mixed', type: 'pipeline', position: 'none', from: [], to: ['out1:sub', 'out2:dyn'],
+    handler({controller}) {
+      controller.setPipelineState('out1', {id: 'sub', steps: ['x1', 'x2']});
+      controller.addStep('out2', 'add');
+    },
+  }, {
+    id: 'replace-dyn', type: 'pipeline', position: 'none', from: [], to: 'out1:dyn',
+    handler({controller}) {
+      controller.setPipelineState('out1', {id: 'dyn', steps: ['add']});
+    },
+  }],
+};
+
+category('ComputeUtils: Driver readonly mutations and runs', async () => {
+  let testScheduler: TestScheduler;
+  let pconf: PipelineConfigurationProcessed;
+
+  before(async () => {
+    testScheduler = createTestScheduler();
+    pconf = await getProcessedConfig(mutationsConfig);
+  });
+
+  // a saved state whose listed nodes, with everything below them, are read-only
+  function makeTree(readonlyIds: string[], logger: DriverLogger) {
+    const base = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+    const mark = (s: PipelineSerializedState, ro: boolean): PipelineSerializedState => {
+      const isReadonly = ro || readonlyIds.includes(s.configId);
+      return isFuncCallSerializedState(s) ? {...s, isReadonly} :
+        {...s, isReadonly, steps: s.steps.map((child) => mark(child, isReadonly))} as PipelineSerializedState;
+    };
+    const state = mark(base.toSerializedState(), false);
+    return StateTree.fromInstanceState({state, config: pconf, isReadonly: false, mockMode: true, logger});
+  }
+
+  const shape = (s: PipelineSerializedState): any => isFuncCallSerializedState(s) ?
+    [s.configId, s.isReadonly, s.uuid] : [s.configId, s.isReadonly, s.uuid, s.steps.map(shape)];
+
+  function runAction(tree: StateTree, actionId: string) {
+    let before: any;
+    let after: any;
+    testScheduler.run(({cold}) => {
+      tree.init().subscribe();
+      cold('-a').subscribe(() => {
+        before = shape(tree.toSerializedState());
+        const action = [...tree.linksState.actions.values()].find((a) => a.spec.id === actionId)!;
+        tree.runAction(action.uuid).subscribe();
+      });
+      cold('-----a').subscribe(() => after = shape(tree.toSerializedState()));
+    });
+    return {before, after};
+  }
+
+  const child = (state: any, id: string) => state[3].find((item: any) => item[0] === id);
+
+  test('A pipeline action does not change a read-only tree', async () => {
+    const logger = new DriverLogger();
+    const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, isReadonly: true, logger});
+    const {before, after} = runAction(tree, 'add-dyn');
+    expectDeepEqual(after, before);
+    expectDeepEqual(logger.errors.length, 0, {prefix: 'No errors'});
+  });
+
+  test('A pipeline action does not replace a read-only sub-workflow', async () => {
+    const logger = new DriverLogger();
+    const {before, after} = runAction(makeTree(['sub'], logger), 'replace-sub');
+    expectDeepEqual(child(after, 'sub'), child(before, 'sub'));
+    expectDeepEqual(logger.errors.length, 0, {prefix: 'No errors'});
+  });
+
+  test('A pipeline action skips read-only targets and changes writable ones', async () => {
+    const logger = new DriverLogger();
+    const {before, after} = runAction(makeTree(['sub'], logger), 'mixed');
+    expectDeepEqual(child(after, 'sub'), child(before, 'sub'));
+    expectDeepEqual(child(after, 'dyn')[3].length, 2, {prefix: 'Step added to the writable workflow'});
+    expectDeepEqual(logger.errors.length, 0, {prefix: 'No errors'});
+  });
+
+  test('A pipeline action may replace a workflow holding a read-only item', async () => {
+    const logger = new DriverLogger();
+    const {before, after} = runAction(makeTree(['add'], logger), 'replace-dyn');
+    const [beforeItem] = child(before, 'dyn')[3];
+    const [afterItem] = child(after, 'dyn')[3];
+    expectDeepEqual(beforeItem[1], true, {prefix: 'Item was read-only'});
+    expectDeepEqual(afterItem[1], false, {prefix: 'Item replaced by a writable one'});
+    expectDeepEqual(afterItem[2] !== beforeItem[2], true, {prefix: 'Item replaced'});
+  });
+
+  test('A read-only step does not run', async () => {
+    const tree = makeTree(['sub'], new DriverLogger());
+    let failed = false;
+    let outdated: boolean | undefined;
+    testScheduler.run(({cold}) => {
+      tree.init().subscribe();
+      const x1 = () => tree.nodeTree.getNode([{idx: 1}, {idx: 0}]).getItem() as FuncCallNode;
+      cold('-a').subscribe(() => tree.runStep(x1().uuid, {res: 1}).subscribe({error: () => failed = true}));
+      cold('-----a').subscribe(() => outdated = x1().instancesWrapper.isOutputOutdated$.value);
+    });
+    expectDeepEqual(failed, true, {prefix: 'Run refused'});
+    expectDeepEqual(outdated, true, {prefix: 'Outputs untouched'});
+  });
+
+  test('A run sequence skips read-only steps', async () => {
+    const tree = makeTree(['sub'], new DriverLogger());
+    let outdated: Record<string, boolean> = {};
+    testScheduler.run(({cold}) => {
+      tree.init().subscribe();
+      cold('-a').subscribe(() => tree.runSequence(tree.nodeTree.root.getItem().uuid, false, true).subscribe());
+      cold('-----a').subscribe(() => {
+        const at = (path: number[]) =>
+          (tree.nodeTree.getNode(path.map((idx) => ({idx}))).getItem() as FuncCallNode).instancesWrapper.isOutputOutdated$.value;
+        outdated = {s1: at([0]), x1: at([1, 0]), x2: at([1, 1]), add: at([2, 0])};
+      });
+    });
+    expectDeepEqual(outdated, {s1: false, x1: true, x2: true, add: false});
   });
 });
