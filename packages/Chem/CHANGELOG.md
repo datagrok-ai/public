@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#875](https://github.com/datagrok-ai/core/issues/875): Analysis: Fixed Activity Cliffs and Chemical Space adding their scatter plot to a different table with the same name when the original view was closed during the run
 * Tests: `Crux sketcher: strokes in a sketcher in the context panel leave the current object as it is` and the BDD scenario "Strokes in a molecule column's Filter pane leave the column the current object" (`sketcher/crux-hosts.feature`): js-api's sketcher made each drawing in the Filter pane the current object, so the panel switched at every stroke
 * Substructure filter: Fixed a query typed as SMILES turning into SMARTS on a card restored from a layout or a project: its sketcher handed the molecule back as a molblock, which replaced the typed string
 * Tests: Moved the BDD features that clear Filter as you draw (an account setting) or filter while the sketcher is open to the serial lane: in a full run, a query round trip filtered by the previous stroke while another worker had the option cleared
