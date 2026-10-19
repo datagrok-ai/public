@@ -206,10 +206,12 @@ export type RuleLogic = RulesLogic<RuleOps>;
 export type RuleExpr = RuleLogic | RuleExpr[];
 export type RuleTargets = string | string[];
 
-/** An effect's own condition, combined with the rule's `when`. */
-type RuleEffectWhen = {when?: RuleLogic};
+/** An effect's own condition, combined with the rule's `when`. `separate` runs the effect in a link of its own
+ *  whose `from` holds only the inputs it reads (with the rule's `when` and its sources); `additionalTriggers`
+ *  adds inputs it does not read and implies `separate`. */
+type RuleEffectOptions = {when?: RuleLogic, separate?: boolean, additionalTriggers?: RuleTargets};
 
-export type RuleMetaEffect = RuleEffectWhen & (
+export type RuleMetaEffect = RuleEffectOptions & (
   | {effect: 'hide' | 'show', targets: RuleTargets}
   /** Hides or shows the action with id `action` on the nodes of the `actions` aliases. */
   | {effect: 'hideAction' | 'showAction', targets: RuleTargets, action: string}
@@ -218,12 +220,12 @@ export type RuleMetaEffect = RuleEffectWhen & (
   | {effect: 'items', targets: RuleTargets, items: RuleExpr}
   | {effect: 'meta', targets: RuleTargets, meta: Record<string, RuleExpr>});
 
-export type RuleValidatorEffect = RuleEffectWhen & (
+export type RuleValidatorEffect = RuleEffectOptions & (
   | {effect: 'error' | 'warning' | 'notification', targets: RuleTargets, message: RuleExpr}
   /** Writes a source's verdicts: `isError` items as errors, the rest as warnings. */
   | {effect: 'verdicts', targets: RuleTargets, source: string});
 
-export type RuleDataEffect = RuleEffectWhen & (
+export type RuleDataEffect = RuleEffectOptions & (
   | {effect: 'set', targets: RuleTargets, value: RuleExpr, restriction?: RestrictionType}
   | {effect: 'clear', targets: RuleTargets, restriction?: RestrictionType}
   /** Writes each key of the `values` object to the target alias of the same name;
@@ -254,6 +256,7 @@ export type RuleSource =
   {table: DG.DataFrame | string | {csv: string, options?: DG.CsvImportOptions}};
 
 export type SourceKind = RuleSource extends infer S ? S extends unknown ? keyof S : never : never;
+export type SourceSpec<K extends SourceKind> = Extract<RuleSource, Record<K, unknown>>[K];
 
 export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'rule';

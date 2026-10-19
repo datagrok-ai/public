@@ -51,8 +51,9 @@ type EffectName = RuleEffect['effect'];
 // the effect object behind a name; found by membership because hide and show share one shape
 type EffectOf<E extends EffectName> = RuleEffect extends infer R ? R extends {effect: infer N} ?
   E extends N ? R : never : never : never;
-// what a call has to cover: every field except the name and the condition every call takes
-type EffectFields<E extends EffectName> = Exclude<keyof EffectOf<E>, 'effect' | 'when'>;
+// what a call has to cover: every field except the name and the options every call takes
+type EffectFields<E extends EffectName> =
+  Exclude<keyof EffectOf<E>, 'effect' | 'when' | 'separate' | 'additionalTriggers'>;
 type EffectCall<E extends EffectName> = {positional: readonly EffectFields<E>[], options: readonly EffectFields<E>[]};
 
 // positional parameters and named options of each effect call;
@@ -91,6 +92,9 @@ const sourceCalls: Record<Exclude<SourceKind, 'js'>, {positional: string[]}> = {
   validators: {positional: ['input']},
   choices: {positional: ['input']},
 };
+
+// options every effect call takes
+const common = ['when', 'separate', 'additionalTriggers'];
 
 const restrictions: Record<RestrictionType, true> = {disabled: true, restricted: true, info: true, none: true};
 
@@ -236,13 +240,15 @@ function expression(node: IToken, text: string, inElement = false): any {
   }
 }
 
-function targets(node: IToken, text: string): string | string[] {
+function aliases(node: IToken, text: string, message: string): string | string[] {
   if (node.type === 'Ref' && !node.text.includes('.'))
     return node.text;
   if (node.type === 'Array' && node.children.every((child) => child.type === 'Ref' && !child.text.includes('.')))
     return node.children.map((child) => child.text);
-  throw new FormulaError('Targets are an output alias or a list of them', node, text);
+  throw new FormulaError(message, node, text);
 }
+
+const targets = (node: IToken, text: string) => aliases(node, text, 'Targets are an output alias or a list of them');
 
 function alias(node: IToken, text: string, what: string): string {
   if (node.type !== 'Ref' || node.text.includes('.'))
@@ -321,11 +327,19 @@ export function compileEffect(text: string): RuleEffect {
   for (const [key, arg] of Object.entries(named)) {
     if (key === 'when')
       effect.when = expression(arg, body);
+    else if (key === 'separate') {
+      const value = constant(arg, body, 'separate');
+      if (typeof value !== 'boolean')
+        throw new FormulaError('separate must be true or false', arg, body);
+      effect.separate = value;
+    } else if (key === 'additionalTriggers')
+      effect.additionalTriggers = aliases(arg, body, 'additionalTriggers are an input alias or a list of them');
     else if (name === 'meta')
       effect.meta[key] = expression(arg, body);
-    else if (!options.includes(key))
-      throw new FormulaError(`${name} has no option ${key} (expected ${[...options, 'when'].join(', ')})`, arg, body);
-    else if (key === 'targets')
+    else if (!options.includes(key)) {
+      throw new FormulaError(`${name} has no option ${key} (expected ${[...options, ...common].join(', ')})`,
+        arg, body);
+    } else if (key === 'targets')
       effect.targets = targets(arg, body);
     else if (key === 'restriction') {
       const restriction = stringLiteral(arg, body, 'restriction');
