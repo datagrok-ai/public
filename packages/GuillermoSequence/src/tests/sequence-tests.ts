@@ -2,12 +2,23 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {awaitCheck, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {_fetchENASequence, complement, countSubsequenceTableAugment, enaSequence, getOrders,
-  openTable1, openTable2, openTable3} from '../package';
+  nucleotideLayout, openTable1, openTable2, openTable3} from '../package';
 
 category('Sequence', () => {
   test('complement', async () => {
     expect(complement('fasta: ATTGCA'), 'fasta: TAACGT');
     expect(complement('gttc ca'), 'caag gt');
+  });
+
+  test('nucleotide layout', async () => {
+    // 100px wide with 10px chars and 2px padding on each side fits 9 chars per line.
+    expect(JSON.stringify(nucleotideLayout(5, 100, 20, 10)), '{"perLine":9,"lines":1}');
+    // 30 chars need 4 lines, but a 30px cell only has room for 2 (26px / 13px).
+    expect(JSON.stringify(nucleotideLayout(30, 100, 30, 10)), '{"perLine":9,"lines":2}');
+    // A tall cell draws only the lines the text needs.
+    expect(JSON.stringify(nucleotideLayout(30, 100, 200, 10)), '{"perLine":9,"lines":4}');
+    // A cell narrower than one char still draws one char per line.
+    expect(JSON.stringify(nucleotideLayout(3, 5, 200, 10)), '{"perLine":1,"lines":3}');
   });
 
   test('nucleotide renderer', async () => {

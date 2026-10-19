@@ -47,6 +47,16 @@ function countMatches(sequence: string, other: Map<string, number>, n: number): 
 // Canvas colors encode the data (a common nucleotide scheme), so they are not theme tokens.
 const NUCLEOTIDE_COLORS: {[n: string]: string} = {A: '#2ca02c', C: '#1f77b4', G: '#ff7f0e', T: '#d62728'};
 const OTHER_COLOR = '#999999';
+const CELL_PADDING = 2;
+const LINE_HEIGHT = 13;
+
+/** How many characters fit per line and how many lines to draw, filling lines in order. */
+export function nucleotideLayout(length: number, w: number, h: number, charWidth: number):
+  {perLine: number, lines: number} {
+  const perLine = Math.max(1, Math.floor((w - 2 * CELL_PADDING) / charWidth));
+  const maxLines = Math.max(1, Math.floor((h - 2 * CELL_PADDING) / LINE_HEIGHT));
+  return {perLine, lines: Math.min(maxLines, Math.max(1, Math.ceil(length / perLine)))};
+}
 
 export class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
   get name(): string { return 'Nucleotide cell renderer'; }
@@ -61,12 +71,15 @@ export class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
     g.textAlign = 'left';
     const charWidth = g.measureText('A').width;
     const prefixLength = text.match(FASTA_PREFIX)?.[0].length ?? 0;
-    // Characters past the right edge are clipped anyway, so stop there.
-    const visible = Math.min(text.length, Math.ceil(w / charWidth));
+    const {perLine, lines} = nucleotideLayout(text.length, w, h, charWidth);
+    // The block of lines is centered vertically, so a single line sits in the middle as before.
+    const top = y + (h - lines * LINE_HEIGHT) / 2 + LINE_HEIGHT / 2;
+    // Characters beyond the last line that fits are not drawn.
+    const visible = Math.min(text.length, perLine * lines);
     for (let i = 0; i < visible; i++) {
       const n = text[i];
       g.fillStyle = i < prefixLength ? OTHER_COLOR : NUCLEOTIDE_COLORS[n.toUpperCase()] ?? OTHER_COLOR;
-      g.fillText(n, x + 2 + i * charWidth, y + h / 2);
+      g.fillText(n, x + CELL_PADDING + (i % perLine) * charWidth, top + Math.floor(i / perLine) * LINE_HEIGHT);
     }
   }
 }
