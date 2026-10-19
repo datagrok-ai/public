@@ -172,14 +172,15 @@ Feature: Crux in Datagrok's hosts
     Then a molecule should have become the current object 1 time, the molecule "CC"
 
   # The product owner (2026-10-19): in the context panel, a stroke made the drawing the current object, so the panel
-  # showed the molecule instead of the column, and the Filter pane, its sketcher with it, went at every stroke. There
-  # the host leaves the current object as it is.
+  # showed the molecule instead of the column, and the Filter pane, its sketcher with it, went at every stroke; the
+  # filtering it started could also make the filtered rows current. There neither happens. Core keeps the current object
+  # for 2 s after a mousedown in the pane: the hotkey edit, 3 s after the last click, is one that guard does not cover.
   Scenario: Strokes in a molecule column's Filter pane leave the column the current object
     Given user opens a table "molecules" with:
       | molecule |
       | c1ccccc1 |
       | CCO      |
-      | CC(=O)O  |
+      | OCO      |
     And the semantic types of the current table are detected
     And the context panel is open
     And the molecules made the current object are counted
@@ -190,12 +191,15 @@ Feature: Crux in Datagrok's hosts
     When user clicks on crux single bond tool
     And user clicks on Crux canvas 25% across and 50% down
     Then the "atoms" reading of crux sketcher widget should be 2
+    And fewer than 3 rows should pass the filter
     And a molecule should have become the current object 0 times
     And the context panel should show "molecule"
-    When user clicks on Crux canvas 75% across and 50% down
-    Then the "atoms" reading of crux sketcher widget should be 4
+    When user waits 3 seconds
+    And user presses the "n" key over the "atom 0" area of crux sketcher widget
+    Then 0 rows should pass the filter
     And a molecule should have become the current object 0 times
     And the context panel should show "molecule"
+    And the "atoms" reading of crux sketcher widget should be 2
 
   # HOST-048
   Scenario: A SMILES typed into the host's field and confirmed with Enter is drawn, and the dialog stays

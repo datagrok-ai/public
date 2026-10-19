@@ -679,7 +679,7 @@ export class SubstructureFilter extends DG.Filter {
           tableName: this.tableName, searchType: this.searchType,
           simCutOff: this.similarityCutOff, fp: this.fp});
       }
-      this.dataFrame?.rows.requestFilter();
+      this.requestFilter();
     } else if ((wu(this.dataFrame!.rows.filters)
       .has(`${this.columnName}: ${this.getFilterSummary(newMolecule)}`) || this.isFilteringBySameStructure(newMolecule)) &&
       !this.recalculateFilter && !this.searchNotCompleted) {
@@ -714,7 +714,7 @@ export class SubstructureFilter extends DG.Filter {
         this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe((progress: number) => {
           _package.logger.debug(`progress: ${progress}, molfile: ${this.currentMolecule}, ${this.filterId}`);
           this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
-          this.dataFrame?.rows.requestFilter();
+          this.requestFilter();
           this.progressBar?.update(progress, `${progress?.toFixed(2)}% of search completed`);
           // the search reports its end as 100%: the task bar entry goes then, even for a filter that is
           // never finished or detached (the popup's filter a column header opened)
@@ -754,7 +754,24 @@ export class SubstructureFilter extends DG.Filter {
         simCutOff: this.similarityCutOff, fp: this.fp,
       });
     }
-    this.dataFrame?.rows.requestFilter();
+    this.requestFilter();
+  }
+
+  /** Filters the table. In the context panel (a column's Filter pane) the filtered rows are not made the current object,
+   * as the table view makes them on a filter change: the panel would show them instead of the column, and the filter,
+   * its sketcher with it, would go at every stroke. Core's own guard (2 s after a mousedown in the pane) misses an edit
+   * made without a click and a search that ends later. */
+  private requestFilter(): void {
+    const tv = this.root.closest('.grok-prop-panel') ? grok.shell.tv : null;
+    const quiet = tv != null && tv.dataFrame?.dart === this.dataFrame?.dart && tv.syncCurrentObject;
+    if (quiet)
+      tv!.syncCurrentObject = false;
+    try {
+      this.dataFrame?.rows.requestFilter();
+    } finally {
+      if (quiet)
+        tv!.syncCurrentObject = true;
+    }
   }
 
   async getFilterBitset(): Promise<BitArray> {
