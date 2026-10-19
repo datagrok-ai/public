@@ -122,15 +122,15 @@ category('Portal: work units on the example portfolios', () => {
     const pf = await portfolioByCode('EX-SMD');
     const kin = (await portalDb.programs.query({filter: `portfolio_id = "${pf.id}" and code = "EXS-KIN1"`}))[0];
     const code = `TEST-WU-${Date.now() % 1e9}`;
-    const [ins] = await portalDb.serieses.insert({program_id: kin.id, code, name: code});
+    const [ins] = await portalDb.series.insert({program_id: kin.id, code, name: code});
     try {
-      const got = await portalDb.serieses.get(ins.id);
+      const got = await portalDb.series.get(ins.id);
       expect(got.source, 'manual');
       // a manual unit survives a sync of its kind
       await syncWorkUnits('EX-SMD');
-      expect((await portalDb.serieses.get(ins.id)).missing_from_feed ?? false, false);
+      expect((await portalDb.series.get(ins.id)).missing_from_feed ?? false, false);
     } finally {
-      await portalDb.serieses.delete(ins.id);
+      await portalDb.series.delete(ins.id);
     }
   });
 });

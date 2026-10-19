@@ -2535,7 +2535,7 @@ export const portalDb = {
   get campaigns() {
     return grok.dapi.domains.table<CampaignRow, CampaignInsert, CampaignColumn, CampaignExpand>('portal.campaign');
   },
-  get serieses() {
+  get series() {
     return grok.dapi.domains.table<SeriesRow, SeriesInsert, SeriesColumn, SeriesExpand>('portal.series');
   },
   get studies() {

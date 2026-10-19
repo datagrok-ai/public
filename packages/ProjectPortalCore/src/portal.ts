@@ -403,7 +403,7 @@ async function applyPlan(plan: SyncPlan, portfolio: PortfolioRow): Promise<void>
 export function workUnitTable(kind: WorkUnitKind) {
   switch (kind) {
   case 'campaign': return portalDb.campaigns;
-  case 'series': return portalDb.serieses;
+  case 'series': return portalDb.series;
   case 'study': return portalDb.studies;
   case 'process_stage': return portalDb.processStages;
   }
