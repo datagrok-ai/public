@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Scatter plot: A plot with an X or Y category order is drawn on the CPU: the GPU renderers placed the categories in their unordered positions under the reordered labels
 * [core#644](https://github.com/datagrok-ai/core/issues/644): Skip rendering the Forms viewer while it has no table
 * [core#656](https://github.com/datagrok-ai/core/issues/656): Migrate legacy pie chart subsectors without functionType when reading settings
 * Scatter plot: Made hovering a GPU-drawn plot cheaper: the check the core runs on every mouse move reads only what it needs and no longer rebuilds the viewer's info map, and hit tests answer for the frame on screen without re-reading the plot (about 40% less PowerGrid time per mouse move)

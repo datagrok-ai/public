@@ -445,6 +445,12 @@ export interface IScatterPlotSettings {
 
   showYSelector: boolean;
 
+  /** How the X axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  xCategoryOrder: string;
+
+  /** How the Y axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  yCategoryOrder: string;
+
   /** Shows a distribution histogram along the X axis (at the top) */
   showXHistogram: boolean;
 
@@ -1092,6 +1098,9 @@ export interface IBoxPlotSettings {
 
   /** Display subcategories - category combinations in the x axis table. */
   showMinorCategories: boolean;
+
+  /** How the categories are ordered: by name, row count, an aggregated value, or manually. */
+  categoryOrder: string;
 
   value: string;
   valueColumnName: string;
@@ -2196,6 +2205,9 @@ export interface ILineChartSettings {
    * Example: time series data with the "stimuli" column */
   segment: string;
   segmentColumnName: string;
+
+  /** How the X axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  xCategoryOrder: string;
 
   invertXAxis: boolean;
 

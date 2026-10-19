@@ -1132,6 +1132,20 @@ export const areaLiesBeside = Then('the {string} area of {widget} should lie to 
   (page: Page, a: string, target: ElementRef, side: string, b: string) => expectAreaRelation(page, target, a, side, b),
   {description: 'left or right — a vertical band title in the strip the layout reserved to the right of the plot'});
 
+/* An axis ordered by a property a package computes (Chem's Molecular Property) moves once the values arrive,
+   and the viewer reports nothing pending meanwhile, so the whole chain is polled until it lands. */
+export const areasLeftToRightOnceComputed = Then('once the computed order arrives, the areas {string} of {widget} should lie from left to right',
+  async (page: Page, list: string, target: ElementRef) => {
+    const names = list.split(',').map((s) => s.trim());
+    let shown = '';
+    await expect.poll(async () => {
+      const boxes = await v.areaRects(page, target, names);
+      shown = names.map((n, i) => `${n} at ${fmtBox(boxes[i])}`).join(', ');
+      return boxes.every((b, i) => i === 0 || RELATION.left(boxes[i - 1], b));
+    }, {message: `the areas ${list} of ${target.phrase} from left to right`}).toBe(true)
+      .catch((e) => { throw new Error(`${shown}; ${e instanceof Error ? e.message : e}`); });
+  }, {description: 'every area left of the next one, polled: an order a package computes lands after the viewer reports it has drawn'});
+
 // --- the row a click made current -------------------------------------------------------------------
 
 /* A click on a crowded canvas makes current whatever row the viewer hit-tests on top at that point,
