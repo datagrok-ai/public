@@ -7,7 +7,6 @@ import {BasicTable, BoolInput, ChoiceInput, Control, Dialog, divH, divV, link, s
   TextInput} from '@datagrok-libraries/u2';
 import type {MessageInput, ReadonlySignal, TableColumn} from '@datagrok-libraries/u2';
 import {messageInput} from '@datagrok-libraries/u2/src/dg/index.js';
-import '@datagrok-libraries/u2/css/table.css';
 import {installStyles} from './styles';
 
 export const named = <T extends HTMLElement>(el: T, name: string): T => {
