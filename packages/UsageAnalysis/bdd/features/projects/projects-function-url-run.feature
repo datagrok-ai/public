@@ -1,10 +1,10 @@
-@journey @serial @realizes:views.functions @realizes:views.projects
+@journey @realizes:views.functions @realizes:views.projects
 Feature: A function run straight from its URL
   /func/<Namespace>.<Name>?<param>=<value> opens a script's parameter form; &run=true runs it at
   once and shows only the result; the copy icon left of RUN gives such a link for the current
   values; a run link without a required value falls back to the form and names what is missing.
-  Two JavaScript scripts are written in the Scripts view (demog(rows) with a default, and one with a
-  required rows), and the namespace of the address is read from the Grok name the first script's
+  Two JavaScript scripts (demog(rows) with a default, and one with a required rows) are made
+  through the API (writing a script is the scripts features' subject), and the namespace of the address is read from the Grok name the first script's
   Links... dialog shows. Translated from the TestTrack case Projects/function-url-run.
 
   The addresses are opened in the same tab and typed (the md pastes them into a new one), each after
@@ -20,45 +20,30 @@ Feature: A function run straight from its URL
   claims the warning, the form and a run with the value then typed.
 
   The scripts are named with the run's time (letters and digits only) and removed when the feature
-  starts and ends. It is serial: the Scripts view's search is shared with the features that use it.
+  starts and ends.
 
   Background:
     Given user is logged in
+    And the context panel is open
     And the browse panel is open
-    And no script named "BDDUrlRunScript{time}" is on the server
-    And no script named "BDDUrlRunRequired{time}" is on the server
-
-  Scenario: Two scripts are written in the Scripts view
-    Given Platform tree node inside browse tree is expanded
-    And Platform---Functions tree node inside browse tree is expanded
-    When user clicks on Platform---Functions---Scripts tree node inside browse tree
-    Then the "Scripts" view should be current
-    When user clicks on New button
-    And user picks "JavaScript Script..." from the open menu
-    Then the "Template" view should be current
-    When user replaces the code of code editor with "//name: BDDUrlRunScript{time}"
-    And user appends "//language: javascript" to code editor
-    And user appends "//input: int rows = 10" to code editor
-    And user appends "//output: dataframe df" to code editor
-    And user appends "df = grok.data.demo.demog(rows);" to code editor
-    And user saves the script
-    Then 1 script named "BDDUrlRunScript{time}" should be on the server
-    When user closes the current view
-    Then the "Scripts" view should be current
-    When user clicks on New button
-    And user picks "JavaScript Script..." from the open menu
-    Then the "Template" view should be current
-    When user replaces the code of code editor with "//name: BDDUrlRunRequired{time}"
-    And user appends "//language: javascript" to code editor
-    And user appends "//input: int rows" to code editor
-    And user appends '//input: string label = "x"' to code editor
-    And user appends "//output: dataframe df" to code editor
-    And user appends "df = grok.data.demo.demog(rows);" to code editor
-    And user saves the script
-    Then 1 script named "BDDUrlRunRequired{time}" should be on the server
+    And a script "BDDUrlRunScript{time}" is on the server:
+      """
+      //language: javascript
+      //input: int rows = 10
+      //output: dataframe df
+      df = grok.data.demo.demog(rows);
+      """
+    And a script "BDDUrlRunRequired{time}" is on the server:
+      """
+      //language: javascript
+      //input: int rows
+      //input: string label = "x"
+      //output: dataframe df
+      df = grok.data.demo.demog(rows);
+      """
 
   Scenario: The script's Links... dialog gives its Grok name
-    When user closes the current view
+    When user opens the address "/scripts"
     Then the "Scripts" view should be current
     When user clears gallery search
     And user types "BDDUrlRunScript{time}" into gallery search
@@ -124,7 +109,7 @@ Feature: A function run straight from its URL
     When user opens the address "/func/Admin.BDDUrlRunRequired{time}?label=%22y%22&run=true"
     Then the "BDDUrlRunRequired{time}" view should be current
 
-  @known-failure @realizes:core#446
+  @known-failure:114 @realizes:core#446
   Scenario: The run link without a required value falls back to the form and names it (core#446)
     Then a warning balloon containing 'Unable to run "BDDUrlRunRequired{time}"' should have been shown
     And a warning balloon containing "rows" should have been shown

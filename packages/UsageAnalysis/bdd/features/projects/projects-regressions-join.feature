@@ -1,4 +1,4 @@
-@serial @realizes:views.projects @realizes:data.menu.join-tables
+@journey @realizes:views.projects @realizes:data.menu.join-tables
 Feature: Projects regressions: a copy saved after an in-place join
   GROK-20013 (done): a project copy saved after an in-place join onto a reopened join result did not
   open. The ticket's steps: a project with two SPGI tables joined into "result" is saved, closed and
@@ -14,10 +14,10 @@ Feature: Projects regressions: a copy saved after an in-place join
   columns of the joined table; what the saved copy stores is an API test (request document,
   section 5, E6).
 
-  Not in the feature: the copy reopened in a reloaded page. On localhost 1.28.0 (2026-10-12, two
-  runs) it opens with the in-place join applied a second time — the table views are "demog (2),
-  demog, result+demog-1000+demog-1000, demog-1000", the joined table's tab reads "result" — a
-  suspected defect described outside the repository, with the scenario in the request document.
+  The copy is then reopened in a new session of the page, as the ticket did: it opens (GROK-20013
+  is fixed), but with the in-place join applied a second time — the table views are "demog (2), demog,
+  result+demog-1000+demog-1000, demog-1000" (localhost, 2026-10-12 and 2026-10-19). That is a known
+  failure with no ticket yet, pinned to the claim of the views the copy should open with.
 
   The console is not claimed after a save: the Save dialog's preview logs "Unable to find element in
   cloned iframe" for some views (GROK-18606, won't fix); after the reopen it is. Both projects are
@@ -64,7 +64,7 @@ Feature: Projects regressions: a copy saved after an in-place join
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDRegJoin{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDRegJoin{time} gallery card
+    And user double-clicks on BDDRegJoin{time} gallery card and the project opens
     Then the open table views should be exactly "demog (2), demog, result"
     And no errors should have been logged
     Given the browse panel is open
@@ -95,3 +95,17 @@ Feature: Projects regressions: a copy saved after an in-place join
     And user clicks on OK button in "Save project" dialog
     Then the "Save project" dialog should close
     And an info balloon containing 'Project "BDDRegJoinCopy{time}" uploaded' should have been shown
+
+  # GROK-20013 was this copy not opening: it is opened in a new session of the page, as the ticket did
+  @known-failure:109 @realizes:GROK-20013
+  Scenario: The copy reopened in a new session comes back with the join applied once
+    When user closes all views
+    And user reloads the page
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDRegJoinCopy{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDRegJoinCopy{time} gallery card and the project opens
+    Then the open table views should be exactly "demog (2), demog, result+demog-1000, demog-1000"
+    And table "result+demog-1000" should have 5850 rows
+    And "Data loading error" dialog should be absent

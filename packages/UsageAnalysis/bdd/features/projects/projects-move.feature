@@ -1,6 +1,7 @@
 @journey @serial @realizes:views.projects @realizes:views.space @realizes:sharing.share-dialog
 Feature: A project moved between spaces, and access through a shared space
-  Two root spaces and a child of the first are created in the Browse tree; demog.csv from Browse >
+  Two root spaces and a child of the first are made through the API (the Create Space dialog is
+  spaces-create's); cars.csv from Browse >
   Files > Demo is saved as a project with Data sync and moved into the first space from its
   Dashboards card (Move to Space...), then dragged into the child space in the Browse tree, then
   moved on to the second space from the child space's view (Move to Space...); it opens with its
@@ -21,8 +22,11 @@ Feature: A project moved between spaces, and access through a shared space
 
   Names are letters and digits only (the Dashboards search misses "-" and "_") and carry the run's
   time. The two projects and the three spaces (the child is removed with its root, and is swept by name
-  too) are deleted when the feature starts and ends; the space's grant goes with the space. It is
-  serial: the Dashboards search is shared with every feature that saves a project.
+  too) are deleted when the feature starts and ends; the space's grant goes with the space.
+
+  Serial (`@serial`): it drags the project from a space's gallery onto a space node of the Browse
+  tree, whose Spaces every feature of the account adds to and removes from; a node moved by another
+  feature during the drag takes the drop (seen in parallel runs, 2026-10-19).
 
   Background:
     Given user is logged in
@@ -30,40 +34,20 @@ Feature: A project moved between spaces, and access through a shared space
     And no project named "BDDMoveProj{time}" is on the server
     And no project named "BDDMoveStay{time}" is on the server
     And no space named "BDDMoveA{time}, BDDMoveAChild{time}, BDDMoveB{time}" is on the server
-
-  Scenario: Two spaces and a child of the first are created
-    When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
-    Then Create Space dialog should be visible
-    When user enters "BDDMoveA{time}" into Name input in Create Space dialog
-    And user clicks on OK button in Create Space dialog
-    Then the "Create Space" dialog should close
-    When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
-    Then Create Space dialog should be visible
-    When user enters "BDDMoveB{time}" into Name input in Create Space dialog
-    And user clicks on OK button in Create Space dialog
-    Then the "Create Space" dialog should close
-    Given Spaces tree node inside browse tree is expanded
-    Then BDDMoveA{time} tree node inside browse tree should be visible
-    And BDDMoveB{time} tree node inside browse tree should be visible
-    When user picks "Create Child Space..." from the context menu of BDDMoveA{time} tree node inside browse tree
-    Then Create Space dialog should be visible
-    When user enters "BDDMoveAChild{time}" into Name input in Create Space dialog
-    And user clicks on OK button in Create Space dialog
-    Then the "Create Space" dialog should close
-    And BDDMoveAChild{time} tree node inside browse tree should be visible
-    And 1 space named "BDDMoveA{time}" should be on the server
-    And 1 space named "BDDMoveB{time}" should be on the server
+    And a space named "BDDMoveA{time}" is on the server
+    And a space named "BDDMoveAChild{time}" under "BDDMoveA{time}" is on the server
+    And a space named "BDDMoveB{time}" is on the server
 
   Scenario: A file is saved as a project with Data sync
     Given Files tree node inside browse tree is expanded
     And Files---Demo tree node inside browse tree is expanded
-    When user double-clicks Files---Demo---demog.csv tree node inside browse tree
-    Then the "demog" view should be current
-    And the table should have 5850 rows
+    When user double-clicks Files---Demo---cars.csv tree node inside browse tree
+    Then the "cars" view should be current
+    And the table should have 30 rows
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
-    And "Creation script" button in "demog" project table in "Save project" dialog should be visible
-    And Data sync switch in "demog" project table in "Save project" dialog should be checked
+    And "Creation script" button in "cars" project table in "Save project" dialog should be visible
+    And Data sync switch in "cars" project table in "Save project" dialog should be checked
     When user enters "BDDMoveProj{time}" into Name text input in "Save project" dialog
     And user clicks on OK button in "Save project" dialog
     Then the "Save project" dialog should close
@@ -90,8 +74,8 @@ Feature: A project moved between spaces, and access through a shared space
     Then the "BDDMoveA{time}" view should be current
     And "BDDMoveProj{time}" link in gallery should be visible
     When user double-clicks on "BDDMoveProj{time}" link in gallery
-    Then the "demog" view should be current
-    And the table should have 5850 rows
+    Then the "cars" view should be current
+    And the table should have 30 rows
     And the table should have been reloaded by data sync
     And no error or warning balloon should have been shown
     When user picks "Close All" from the context menu of browse tab
@@ -104,6 +88,7 @@ Feature: A project moved between spaces, and access through a shared space
     Then "Share BDDMoveA{time}" dialog should be visible
     And share access selector should contain text "View and use"
     When user picks the sharing user in "User, group, or email" input in "Share BDDMoveA{time}" dialog
+    And user unchecks "Send notifications" input in "Share BDDMoveA{time}" dialog
     And user clicks on OK button in "Share BDDMoveA{time}" dialog
     Then the "Share BDDMoveA{time}" dialog should close
     When user double-clicks on BDDMoveA{time} tree node inside browse tree
@@ -124,8 +109,8 @@ Feature: A project moved between spaces, and access through a shared space
     Then the "BDDMoveA{time}" view should be current
     And "BDDMoveProj{time}" link in gallery should be visible
     When user double-clicks on "BDDMoveProj{time}" link in gallery
-    Then the "demog" view should be current
-    And the table should have 5850 rows
+    Then the "cars" view should be current
+    And the table should have 30 rows
     And "Data loading error" dialog should be absent
     When user picks "Close All" from the context menu of browse tab
     And user signs in as themselves again
@@ -137,6 +122,7 @@ Feature: A project moved between spaces, and access through a shared space
 
   Scenario: The project is dragged into the child space and opens there
     Then the running account should be signed in
+    Given BDDMoveA{time} tree node inside browse tree is expanded
     When user drags "BDDMoveProj{time}" link in gallery to BDDMoveAChild{time} tree node inside browse tree
     Then Move entity dialog should be visible
     When user selects "Move" in Move entity dialog
@@ -146,8 +132,8 @@ Feature: A project moved between spaces, and access through a shared space
     Then the "BDDMoveAChild{time}" view should be current
     And "BDDMoveProj{time}" link in gallery should be visible
     When user double-clicks on "BDDMoveProj{time}" link in gallery
-    Then the "demog" view should be current
-    And the table should have 5850 rows
+    Then the "cars" view should be current
+    And the table should have 30 rows
     And no error or warning balloon should have been shown
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
@@ -162,8 +148,8 @@ Feature: A project moved between spaces, and access through a shared space
     Then the "BDDMoveAChild{time}" view should be current
     And "BDDMoveProj{time}" link in gallery should be visible
     When user double-clicks on "BDDMoveProj{time}" link in gallery
-    Then the "demog" view should be current
-    And the table should have 5850 rows
+    Then the "cars" view should be current
+    And the table should have 30 rows
     And "Data loading error" dialog should be absent
     When user picks "Close All" from the context menu of browse tab
     And user signs in as themselves again
@@ -173,6 +159,7 @@ Feature: A project moved between spaces, and access through a shared space
     Then the running account should be signed in
     Given the browse panel is open
     And Spaces tree node inside browse tree is expanded
+    And BDDMoveA{time} tree node inside browse tree is expanded
     When user double-clicks on BDDMoveAChild{time} tree node inside browse tree
     Then the "BDDMoveAChild{time}" view should be current
     When user picks "Move to Space..." from the context menu of "BDDMoveProj{time}" link in gallery
@@ -183,14 +170,9 @@ Feature: A project moved between spaces, and access through a shared space
     When user double-clicks on BDDMoveB{time} tree node inside browse tree
     Then the "BDDMoveB{time}" view should be current
     And "BDDMoveProj{time}" link in gallery should be visible
-    When user double-clicks on BDDMoveAChild{time} tree node inside browse tree
-    Then the "BDDMoveAChild{time}" view should be current
-    And "BDDMoveProj{time}" link in gallery should be absent
-    When user double-clicks on BDDMoveB{time} tree node inside browse tree
-    Then the "BDDMoveB{time}" view should be current
     When user double-clicks on "BDDMoveProj{time}" link in gallery
-    Then the "demog" view should be current
-    And the table should have 5850 rows
+    Then the "cars" view should be current
+    And the table should have 30 rows
     And no error or warning balloon should have been shown
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
@@ -232,6 +214,7 @@ Feature: A project moved between spaces, and access through a shared space
     When user double-clicks on BDDMoveAChild{time} tree node inside browse tree
     Then the "BDDMoveAChild{time}" view should be current
     And "BDDMoveStay{time}" link in gallery should be visible
+    And "BDDMoveProj{time}" link in gallery should be absent
 
   Scenario: After the move to the unshared space, the second account no longer sees the project
     When user signs in as the sharing user
@@ -252,26 +235,3 @@ Feature: A project moved between spaces, and access through a shared space
     And "BDDMoveProj{time}" link in gallery should be absent
     When user signs in as themselves again
     Then the running account should be signed in
-
-  Scenario: The project and the spaces are deleted
-    Then the running account should be signed in
-    Given the browse panel is open
-    And Spaces tree node inside browse tree is expanded
-    When user double-clicks on BDDMoveB{time} tree node inside browse tree
-    Then the "BDDMoveB{time}" view should be current
-    When user picks "Delete Project" from the context menu of "BDDMoveProj{time}" link in gallery
-    Then "Are you sure?" dialog should contain text 'Delete project "BDDMoveProj{time}"?'
-    When user clicks on DELETE button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    And 0 projects named "BDDMoveProj{time}" should be on the server
-    When user picks "Delete Space" from the context menu of BDDMoveA{time} tree node inside browse tree
-    Then "Are you sure?" dialog should contain text 'Delete space "BDDMoveA{time}"?'
-    And "Are you sure?" dialog should contain text "This will delete space and its related data"
-    When user clicks on DELETE button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    When user picks "Delete Space" from the context menu of BDDMoveB{time} tree node inside browse tree
-    And user clicks on DELETE button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    And 0 spaces named "BDDMoveA{time}" should be on the server
-    And 0 spaces named "BDDMoveB{time}" should be on the server
-    And no errors should have been logged

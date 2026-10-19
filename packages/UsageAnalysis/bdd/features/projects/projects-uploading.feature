@@ -1,4 +1,4 @@
-@serial @realizes:views.projects @realizes:data.menu.link-tables @realizes:file.menu.save.tables-as-project
+@realizes:views.projects @realizes:data.menu.link-tables @realizes:file.menu.save.tables-as-project
 Feature: Projects uploaded from different sources, with Data sync on and off
   Scenario 1, TestCase1: two tables opened from Browse > Files > Demo > northwind are linked
   selection-to-filter through Data > Link Tables..., the link is checked in the status bar of the
@@ -18,9 +18,8 @@ Feature: Projects uploaded from different sources, with Data sync on and off
   Before a reopened table's Creation script is claimed shown or hidden, its Data sync switch is
   claimed on or off, so a dialog that has not filled its rows cannot pass for "hidden". The pivot is configured through its own rows and chips (ShipCountry added to Group by, ShipVia to Pivot, the defaults removed, avg(OrderID) turned into count).
 
-  Parked (see the request document): TestCase2, 3 and 6 (the NorthwindTest query PostgresAll,
-  dev only; the Link Tables phrases are not in the library the General/bdd project sees) and
-  Scenario 3, TestCase8 (GROK-19103: Aggregate Rows of the NorthwindTest orders table, whose row
+  TestCase2 and 3 (the NorthwindTest query PostgresAll) are projects-northwind-uploading. Parked (see
+  the request document): TestCase6 (customers.csv from a space) and Scenario 3, TestCase8 (GROK-19103: Aggregate Rows of the NorthwindTest orders table, whose row
   count must be remembered), with their System:Datagrok versions; the proof that a reopened table is
   not a frame that stayed open. Here the reopen is claimed by each table view's rows and its
   data-sync mark. After the reopen the link is checked with customers' rows 3 and 4 (20 orders), not
@@ -30,8 +29,7 @@ Feature: Projects uploaded from different sources, with Data sync on and off
   The project (with its tables and views) is named with the run's time and removed before its row
   starts and again when the feature ends. The console errors are not claimed: the Save dialog's
   preview logs "Unable to find element in cloned iframe" for these views (GROK-18606, won't fix),
-  and a check that lets only that message through is requested in the request document. It is
-  serial: the Dashboards search and the uploads are shared with every feature that saves a project.
+  and a check that lets only that message through is requested in the request document.
 
   Background:
     Given user is logged in
@@ -85,7 +83,7 @@ Feature: Projects uploaded from different sources, with Data sync on and off
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
     And user enters "<Project>" into gallery search
-    And user double-clicks on <Project> gallery card
+    And user double-clicks on <Project> gallery card and the project opens
     Then the "customers" table view should open with 91 rows
     And the "orders" table view should open with 830 rows
     When user clicks on customers view
@@ -159,7 +157,7 @@ Feature: Projects uploaded from different sources, with Data sync on and off
     When user clicks on Dashboards tree node inside browse tree
     And user enters "<Project>" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on <Project> gallery card
+    And user double-clicks on <Project> gallery card and the project opens
     Then the "orders" table view should open with 830 rows
     And the "orders aggregation" table view should open with 40 rows
     When user clicks on orders view

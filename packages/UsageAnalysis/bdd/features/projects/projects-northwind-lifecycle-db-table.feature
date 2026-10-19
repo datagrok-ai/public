@@ -1,12 +1,8 @@
-@dev-only @journey @serial @realizes:views.projects @realizes:sharing.share-dialog
+@journey @serial @realizes:views.projects @realizes:sharing.share-dialog
 Feature: A project of the NorthwindTest orders table: saved, reopened and shared
-  Dev only: NorthwindTest (the Postgres connection Dbtests:PostgresTest of the Dbtests package,
-  listed as NorthwindTest under Browse > Databases > Postgres) exists only on dev.datagrok.ai; on
-  any other stand the tree has no such node and the first scenario fails. Run it with
-  DATAGROK_URL=https://dev.datagrok.ai DATAGROK_SERVER=dev, and with the budgets of a slow stand:
-  BDD_EXPECT_TIMEOUT=30000 and `run --timeout 300000` (on dev every "no project named" cleanup
-  lists all the stand's projects, 35-65 s each, and the Dashboards gallery answers a search in up to
-  30 s, past the default 120 s per test and afterAll hook and 15 s per check).
+  NorthwindTest is the Postgres connection PostgresTest of the DbTests package, listed as
+  NorthwindTest under Browse > Databases > Postgres; a stand without it, or where it cannot reach its
+  database, skips the feature (the gate in the Background).
 
   Test 2 of the md: NorthwindTest > Schemas > public > orders is opened with Get All (830 rows),
   saved through the ribbon's Save dialog with Data sync on and the creation script
@@ -22,15 +18,23 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
   along — NorthwindTest is listed — and the project opens with its 830 rows and no error dialog
   (intended, operator 2026-10-05; a project of a saved query does not bring its connection, see
   projects-northwind-lifecycle-query). The md's "recipient without access gets a Data loading error"
-  and the connection share after it were corrected in the md to this. The System:Datagrok version for
-  other stands is parked (its row counts differ per server and need a remembered row count).
+  and the connection share after it were corrected in the md to this. On core master of 2026-10-19 the
+  share does not bring the connection: the second account's tree still has no NorthwindTest, and its
+  open of the project stops on 'Unable to get project asset "PostgresTest"' with no dialog — that
+  scenario is a known failure, pinned at the tree. The System:Datagrok version for other stands is
+  parked (its row counts differ per server and need a remembered row count).
 
   The project name carries the run's time (letters and digits only); the project (with its table,
-  view and grant) is removed at the start and at the end. It is serial: the Dashboards search is
-  shared with every feature that saves a project.
+  view and grant) is removed at the start and at the end.
+
+  Serial (`@serial`): it sweeps the second account's grant on the NorthwindTest connection, which the
+  other NorthwindTest feature (lifecycle-query) gives and reads while it runs.
 
   Background:
     Given user is logged in
+    And the context panel is open
+    And the stand has a reachable "PostgresTest" connection
+    And the sharing user has no grant on the "PostgresTest" connection, now and when the feature ends
     And the browse panel is open
     And no project named "BDDNwLifeDbTable{time}" is on the server
 
@@ -71,7 +75,7 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDNwLifeDbTable{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDNwLifeDbTable{time} gallery card
+    And user double-clicks on BDDNwLifeDbTable{time} gallery card and the project opens
     Then the current view should be a TableView view
     And the "orders" view should be current
     And the table should have 830 rows
@@ -110,12 +114,16 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
     Then "Share BDDNwLifeDbTable{time}" dialog should be visible
     And share access selector should contain text "View and use"
     When user picks the sharing user in "User, group, or email" input in "Share BDDNwLifeDbTable{time}" dialog
+    And user unchecks "Send notifications" input in "Share BDDNwLifeDbTable{time}" dialog
     And user clicks on OK button in "Share BDDNwLifeDbTable{time}" dialog
     Then the "Share BDDNwLifeDbTable{time}" dialog should close
     When user clicks on BDDNwLifeDbTable{time} gallery card
     Then the context panel should show "BDDNwLifeDbTable{time}"
     And the sharing pane should list the sharing user
 
+  # the share does not bring the connection on core master of 2026-10-19: the tree does not list NorthwindTest,
+  # and the open stops on 'Unable to get project asset "PostgresTest"' (no ticket yet)
+  @known-failure:134
   Scenario: With the project shared, the second account sees the connection and opens the project with its rows
     When user closes all views
     When user signs in as the sharing user
@@ -127,7 +135,7 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDNwLifeDbTable{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDNwLifeDbTable{time} gallery card
+    And user double-clicks on BDDNwLifeDbTable{time} gallery card and the project opens
     Then the "orders" view should be current
     And the table should have 830 rows
     And "Data loading error" dialog should be absent

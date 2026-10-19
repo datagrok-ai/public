@@ -1,12 +1,8 @@
-@dev-only @journey @serial @realizes:views.projects
+@journey @realizes:views.projects
 Feature: A project of the NorthwindTest query PostgresAll: saved and reopened with its creation script
-  Dev only: NorthwindTest (the Postgres connection Dbtests:PostgresTest of the Dbtests package,
-  listed as NorthwindTest under Browse > Databases > Postgres) exists only on dev.datagrok.ai; on
-  any other stand the tree has no such node and the first scenario fails. Run it with
-  DATAGROK_URL=https://dev.datagrok.ai DATAGROK_SERVER=dev, and with the budgets of a slow stand:
-  BDD_EXPECT_TIMEOUT=30000 and `run --timeout 300000` (on dev every "no project named" cleanup
-  lists all the stand's projects, 35-65 s each, and the Dashboards gallery answers a search in up to
-  30 s, past the default 120 s per test and afterAll hook and 15 s per check).
+  NorthwindTest is the Postgres connection PostgresTest of the DbTests package, listed as
+  NorthwindTest under Browse > Databases > Postgres; a stand without it, or where it cannot reach its
+  database, skips the feature (the gate in the Background).
 
   Test 1 of the md: the saved query PostgresAll is run by a double-click under NorthwindTest (830
   rows), saved through the ribbon's Save dialog with Data sync on and its creation script calling
@@ -18,11 +14,11 @@ Feature: A project of the NorthwindTest query PostgresAll: saved and reopened wi
   a remembered row count).
 
   The project name carries the run's time (letters and digits only) and the project is removed
-  (with its table and view) at the start and at the end. It is serial: the Dashboards search is
-  shared with every feature that saves a project.
+  (with its table and view) at the start and at the end.
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
     And no project named "BDDNwLifeDbQuery{time}" is on the server
 
@@ -31,7 +27,7 @@ Feature: A project of the NorthwindTest query PostgresAll: saved and reopened wi
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
-    When user double-clicks on Databases---Postgres---NorthwindTest---PostgresAll tree node inside browse tree
+    When user double-clicks on Databases---Postgres---NorthwindTest---PostgresAll tree node inside browse tree and the query it runs completes
     Then the current view should be a TableView view
     And the "PostgresAll" view should be current
     And the table should have 830 rows
@@ -61,7 +57,7 @@ Feature: A project of the NorthwindTest query PostgresAll: saved and reopened wi
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDNwLifeDbQuery{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDNwLifeDbQuery{time} gallery card
+    And user double-clicks on BDDNwLifeDbQuery{time} gallery card and the project opens
     Then the current view should be a TableView view
     And the "PostgresAll" view should be current
     And the table should have 830 rows

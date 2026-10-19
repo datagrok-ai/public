@@ -9,8 +9,10 @@ sub_features_covered: [views.projects, GROK-19580]
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
+import '../../bindings/file-formats.js';
 import '../../bindings/flow.js';
 import '../../bindings/grid.js';
+import '../../bindings/queries.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -27,7 +29,7 @@ import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Projects regressions: a data-sync project with a published pivot saved as a zip", () => {
   const session = feature(test, "features/projects/projects-regressions-derived.feature", import.meta.url);
-  test("A data-sync project with a published pivot is saved as a zip from the gallery", {tag: ["@serial", "@realizes:views.projects", "@realizes:GROK-19580"]}, async ({browser}) => {
+  test("A data-sync project with a published pivot is saved as a zip from the gallery", {tag: ["@realizes:views.projects", "@realizes:GROK-19580"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(25, "Given user is logged in", () => loggedIn(page));
     await session.step(26, "And the browse panel is open", () => browsePanelOpen(page));

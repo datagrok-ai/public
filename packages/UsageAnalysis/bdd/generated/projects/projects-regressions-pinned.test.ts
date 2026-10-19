@@ -9,8 +9,10 @@ sub_features_covered: [views.projects, core#460]
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
+import '../../bindings/file-formats.js';
 import '../../bindings/flow.js';
 import '../../bindings/grid.js';
+import '../../bindings/queries.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -21,14 +23,14 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, doubleClickOn, enterInto, isExpanded, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, closeAllViews, dialogCloses, noProjectOnServer, reloadedByDataSync, savedWithDataSync, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, closeAllViews, dialogCloses, doubleClickOpensProject, noProjectOnServer, reloadedByDataSync, savedWithDataSync, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, pickFromAreaContextMenu, readingIs, readingReads, warningBalloonText} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {readingExcludes} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Projects regressions: a project with pinned rows", () => {
   const session = feature(test, "features/projects/projects-regressions-pinned.feature", import.meta.url);
-  test("The project with pinned rows reopens without errors, sorted and without HEIGHT", {tag: ["@serial", "@realizes:views.projects", "@realizes:core#460"]}, async ({browser}) => {
+  test("The project with pinned rows reopens without errors, sorted and without HEIGHT", {tag: ["@realizes:views.projects", "@realizes:core#460"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(21, "Given user is logged in", () => loggedIn(page));
     await session.step(22, "And the browse panel is open", () => browsePanelOpen(page));
@@ -64,7 +66,7 @@ test.describe("Projects regressions: a project with pinned rows", () => {
     await session.step(52, "And user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
     await session.step(53, "And user enters \"BDDRegPinned{time}\" into gallery search", () => enterInto(page, session.text("BDDRegPinned{time}"), el("gallery search")));
     await session.step(54, "And user clicks on \"Refresh\" icon inside gallery toolbar", () => clickOn(page, el("\"Refresh\" icon inside gallery toolbar")));
-    await session.step(55, "And user double-clicks on BDDRegPinned{time} gallery card", () => doubleClickOn(page, el(session.text("BDDRegPinned{time} gallery card"))));
+    await session.step(55, "And user double-clicks on BDDRegPinned{time} gallery card and the project opens", () => doubleClickOpensProject(page, el(session.text("BDDRegPinned{time} gallery card"))));
     await session.step(56, "Then the \"demog\" view should be current", () => viewIsCurrent(page, "demog"));
     await session.step(57, "And the table should have 5850 rows", () => rowCount(page, 5850));
     await session.step(58, "And the table should have been reloaded by data sync", () => reloadedByDataSync(page));

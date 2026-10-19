@@ -1,6 +1,6 @@
-@journey @serial @realizes:views.projects @realizes:sharing.share-dialog
+@journey @realizes:views.projects @realizes:sharing.share-dialog
 Feature: A project through its card in the Dashboards gallery
-  demog.csv opened from Browse > Files > Demo is saved through the ribbon's Save dialog, and every
+  cars.csv opened from Browse > Files > Demo is saved through the ribbon's Save dialog, and every
   later step goes through the project's card in Browse > Dashboards: the Share dialog, Rename, the
   Copy items, Add To Favorites (a submenu: Only for me, or a group), Save as Zip, reopening by a double click and Delete Project.
   Translated from the TestTrack case Projects/projects-ui-smoke.
@@ -24,10 +24,11 @@ Feature: A project through its card in the Dashboards gallery
   runs as (namespace "Admin"). Names are letters and digits only (the Dashboards search misses "-"
   and "_") and carry the run's time. The project, under both names, is deleted
   when the feature starts and ends, with its table, view and grant; the favorite the scenario
-  adds is removed by the scenario. It is serial: the save uploads a table the reopen reads back.
+  adds is removed by the scenario.
 
   Background:
     Given user is logged in
+    And the context panel is open
     And the browse panel is open
     And no project named "BDDSmoke{time}" is on the server
     And no project named "BDDSmokeRenamed{time}" is on the server
@@ -35,13 +36,13 @@ Feature: A project through its card in the Dashboards gallery
   Scenario: A file opened from its context menu is saved as a project
     Given Files tree node inside browse tree is expanded
     And Files---Demo tree node inside browse tree is expanded
-    When user picks "Open" from the context menu of Files---Demo---demog.csv tree node inside browse tree
-    Then the "demog" view should be current
-    And the table should have 5850 rows
+    When user picks "Open" from the context menu of Files---Demo---cars.csv tree node inside browse tree
+    Then the "cars" view should be current
+    And the table should have 30 rows
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
-    And "Creation script" button in "demog" project table in "Save project" dialog should be visible
-    And Data sync switch in "demog" project table in "Save project" dialog should be checked
+    And "Creation script" button in "cars" project table in "Save project" dialog should be visible
+    And Data sync switch in "cars" project table in "Save project" dialog should be checked
     When user enters "BDDSmoke{time}" into Name text input in "Save project" dialog
     And user clicks on OK button in "Save project" dialog
     Then the "Save project" dialog should close
@@ -58,10 +59,9 @@ Feature: A project through its card in the Dashboards gallery
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
     Then the "Projects" view should be current
-    When user remembers the gallery counter
-    And user enters "BDDSmoke{time}" into gallery search
+    When user enters "BDDSmoke{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    Then the gallery counter should be lower than remembered
+    Then gallery counter should have text "1"
     And BDDSmoke{time} gallery card should be visible
     # the Share dialog the save opened was cancelled: nobody else got access
     When user clicks on BDDSmoke{time} gallery card
@@ -82,6 +82,7 @@ Feature: A project through its card in the Dashboards gallery
     And user presses Enter
     And user presses Escape
     Then Details pane in context panel should contain text "#bddtag{time}"
+    And the project named "BDDSmoke{time}" should be tagged "bddtag{time}" on the server
     When user remembers the number of visible gallery card
     And user clears gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
@@ -158,7 +159,7 @@ Feature: A project through its card in the Dashboards gallery
     And user enters "BDDSmokeRenamed{time}" into gallery search
     And user picks "Save as Zip" from the context menu of BDDSmokeRenamed{time} gallery card
     Then a file "BDDSmokeRenamed{time}.zip" should have been downloaded
-    And the downloaded file "BDDSmokeRenamed{time}.zip" should contain text "demog"
+    And the downloaded file "BDDSmokeRenamed{time}.zip" should contain text "cars"
 
   Scenario: The card reopens the project with its data
     When user picks "Close All" from the context menu of browse tab
@@ -166,10 +167,10 @@ Feature: A project through its card in the Dashboards gallery
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDSmokeRenamed{time}" into gallery search
-    And user double-clicks on BDDSmokeRenamed{time} gallery card
-    Then the "demog" view should be current
-    And the table should have 5850 rows
-    And status bar should contain text "5,850"
+    And user double-clicks on BDDSmokeRenamed{time} gallery card and the project opens
+    Then the "cars" view should be current
+    And the table should have 30 rows
+    And status bar should contain text "Rows: 30"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -180,12 +181,11 @@ Feature: A project through its card in the Dashboards gallery
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDSmokeRenamed{time}" into gallery search
     Then BDDSmokeRenamed{time} gallery card should be visible
-    When user remembers the gallery counter
-    And user picks "Delete Project" from the context menu of BDDSmokeRenamed{time} gallery card
+    When user picks "Delete Project" from the context menu of BDDSmokeRenamed{time} gallery card
     Then "Are you sure?" dialog should contain text 'Delete project "BDDSmokeRenamed{time}"?'
     When user clicks on DELETE button in "Are you sure?" dialog
     Then the "Are you sure?" dialog should close
     And 0 projects named "BDDSmokeRenamed{time}" should be on the server
     When user clicks on Refresh icon in gallery toolbar
-    Then the gallery counter should be lower than remembered
+    Then gallery counter should have text "0"
     And BDDSmokeRenamed{time} gallery card should be absent

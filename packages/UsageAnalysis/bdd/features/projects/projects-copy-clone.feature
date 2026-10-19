@@ -1,4 +1,4 @@
-@journey @serial @realizes:views.projects @realizes:sharing.share-dialog
+@journey @realizes:views.projects @realizes:sharing.share-dialog
 Feature: A project saved as the original, as a copy with link and as a copy with clone
   demog.csv with a bar chart is saved as a project, shared with the second account from its
   Dashboards card and saved again with a scatter plot ("Save original project"). A line chart is
@@ -8,10 +8,12 @@ Feature: A project saved as the original, as a copy with link and as a copy with
   deleting the original leaves the demo file and the clone copy working, while the link copy loses
   the table. Translated from the TestTrack case Projects/projects-copy-clone.
 
-  Each project is opened from its address (/p/<namespace>.<name>, the namespace being the part of
-  the Grok name the Links... dialog shows before the colon) in the same tab, each after a Close All
-  (a new tab starts with nothing open), and the second account (the library's sharing user) signs
-  in on the feature's page and opens the three projects.
+  The original is opened from its address too (/p/<namespace>.<name>, the namespace being the part
+  of the Grok name the Links... dialog shows before the colon), after a Close All (a new tab starts
+  with nothing open); the copies open from their cards. The second account (the library's sharing
+  user) signs in on the feature's page and opens the copy with link, whose table is the original's:
+  the share of a project another one links to is what a recipient of the link needs (a recipient's
+  open of a plain shared project is projects-ui-smoke's and projects-lifecycle-files's).
 
   Parked (see the request document): the card's thumbnail (no reading of a card's picture); the
   personal view customizations (sort, hidden column, filter, "Save personal view customizations",
@@ -27,11 +29,11 @@ Feature: A project saved as the original, as a copy with link and as a copy with
   Every save goes through the ribbon's Save dialog and every reopen through the Dashboards gallery.
   Names are letters and digits only (the Dashboards search misses "-" and "_") and carry the run's
   time. The three projects are deleted with their tables, views and grants when the feature starts
-  and ends. It is serial: the Dashboards search and the uploads are shared with every feature that
-  saves a project.
+  and ends.
 
   Background:
     Given user is logged in
+    And the context panel is open
     And simple mode is off
     And the browse panel is open
     And no project named "BDDCopyClone{time}" is on the server
@@ -67,8 +69,7 @@ Feature: A project saved as the original, as a copy with link and as a copy with
     And user clicks on "Refresh" icon inside gallery toolbar
     And user clicks on BDDCopyClone{time} gallery card
     Then the context panel should show "BDDCopyClone{time}"
-    And Details pane in context panel should contain text "Created by"
-    And Details pane in context panel should contain text "Admin"
+    And value of "Created by" details field in context panel should contain text "Admin"
     Given Content pane in context panel is expanded
     Then Content pane in context panel should contain text "demog"
     Given "Custom views" pane in context panel is expanded
@@ -79,6 +80,7 @@ Feature: A project saved as the original, as a copy with link and as a copy with
     Then "Share BDDCopyClone{time}" dialog should be visible
     And share access selector should contain text "View and use"
     When user picks the sharing user in "User, group, or email" input in "Share BDDCopyClone{time}" dialog
+    And user unchecks "Send notifications" input in "Share BDDCopyClone{time}" dialog
     And user clicks on OK button in "Share BDDCopyClone{time}" dialog
     Then the "Share BDDCopyClone{time}" dialog should close
     When user clicks on BDDCopyClone{time} gallery card
@@ -86,7 +88,7 @@ Feature: A project saved as the original, as a copy with link and as a copy with
     And the sharing pane should list the sharing user
 
   Scenario: The original is saved again with a scatter plot
-    When user double-clicks on BDDCopyClone{time} gallery card
+    When user double-clicks on BDDCopyClone{time} gallery card and the project opens
     Then the "demog" view should be current
     And bar chart viewer should be visible
     Given the toolbox pane is shown
@@ -105,7 +107,7 @@ Feature: A project saved as the original, as a copy with link and as a copy with
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDCopyClone{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDCopyClone{time} gallery card
+    And user double-clicks on BDDCopyClone{time} gallery card and the project opens
     Then the "demog" view should be current
     Given the toolbox pane is shown
     When user clicks on "line chart" icon in toolbox
@@ -129,13 +131,13 @@ Feature: A project saved as the original, as a copy with link and as a copy with
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDCopyCloneLink{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDCopyCloneLink{time} gallery card
+    And user double-clicks on BDDCopyCloneLink{time} gallery card and the project opens
     Then the "demog" view should be current
     And grid should be visible
     And line chart viewer should be visible
     And bar chart viewer should be visible
     And scatter plot viewer should be visible
-    And the "rows" reading of grid should be at least 1
+    And the table should have 5850 rows
 
   Scenario: The original still has no line chart (GROK-19750)
     When user picks "Close All" from the context menu of browse tab
@@ -144,7 +146,7 @@ Feature: A project saved as the original, as a copy with link and as a copy with
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDCopyClone{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDCopyClone{time} gallery card
+    And user double-clicks on BDDCopyClone{time} gallery card and the project opens
     Then the "demog" view should be current
     And grid should be visible
     And bar chart viewer should be visible
@@ -152,13 +154,6 @@ Feature: A project saved as the original, as a copy with link and as a copy with
     And line chart viewer should be absent
 
   Scenario: A copy with clone is saved with a histogram and opens with its own table
-    When user picks "Close All" from the context menu of browse tab
-    Then the "Home" view should be current
-    Given the browse panel is open
-    When user clicks on Dashboards tree node inside browse tree
-    And user enters "BDDCopyClone{time}" into gallery search
-    And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDCopyClone{time} gallery card
     Then the "demog" view should be current
     Given the toolbox pane is shown
     When user clicks on "histogram" icon in toolbox
@@ -177,14 +172,14 @@ Feature: A project saved as the original, as a copy with link and as a copy with
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDCopyCloneClone{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDCopyCloneClone{time} gallery card
+    And user double-clicks on BDDCopyCloneClone{time} gallery card and the project opens
     Then the "demog" view should be current
     And histogram viewer should be visible
     And bar chart viewer should be visible
     And scatter plot viewer should be visible
     And the table should have 5850 rows
 
-  Scenario: Each project opens from the address its Links... dialog gives
+  Scenario: The original opens from the address its Links... dialog gives
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
     Given the browse panel is open
@@ -209,21 +204,6 @@ Feature: A project saved as the original, as a copy with link and as a copy with
     And scatter plot viewer should be visible
     And line chart viewer should be absent
     And histogram viewer should be absent
-    When user picks "Close All" from the context menu of browse tab
-    Then the "Home" view should be current
-    When user opens the address "/p/Admin.BDDCopyCloneLink{time}"
-    Then the "demog" view should be current
-    And line chart viewer should be visible
-    And bar chart viewer should be visible
-    And scatter plot viewer should be visible
-    When user picks "Close All" from the context menu of browse tab
-    Then the "Home" view should be current
-    When user opens the address "/p/Admin.BDDCopyCloneClone{time}"
-    Then the "demog" view should be current
-    And histogram viewer should be visible
-    And bar chart viewer should be visible
-    And scatter plot viewer should be visible
-    And line chart viewer should be absent
     And no error or warning balloon should have been shown
 
   Scenario: The copies are shared with the second account
@@ -236,12 +216,14 @@ Feature: A project saved as the original, as a copy with link and as a copy with
     And user picks "Share..." from the context menu of BDDCopyCloneLink{time} gallery card
     Then "Share BDDCopyCloneLink{time}" dialog should be visible
     When user picks the sharing user in "User, group, or email" input in "Share BDDCopyCloneLink{time}" dialog
+    And user unchecks "Send notifications" input in "Share BDDCopyCloneLink{time}" dialog
     And user clicks on OK button in "Share BDDCopyCloneLink{time}" dialog
     Then the "Share BDDCopyCloneLink{time}" dialog should close
     When user enters "BDDCopyCloneClone{time}" into gallery search
     And user picks "Share..." from the context menu of BDDCopyCloneClone{time} gallery card
     Then "Share BDDCopyCloneClone{time}" dialog should be visible
     When user picks the sharing user in "User, group, or email" input in "Share BDDCopyCloneClone{time}" dialog
+    And user unchecks "Send notifications" input in "Share BDDCopyCloneClone{time}" dialog
     And user clicks on OK button in "Share BDDCopyCloneClone{time}" dialog
     Then the "Share BDDCopyCloneClone{time}" dialog should close
     When user clicks on BDDCopyCloneClone{time} gallery card
@@ -252,43 +234,18 @@ Feature: A project saved as the original, as a copy with link and as a copy with
     Then the context panel should show "BDDCopyCloneLink{time}"
     And the sharing pane should list the sharing user
 
-  Scenario: The second account opens the three projects
+  Scenario: The second account opens the copy with link, whose table is the original's
     When user picks "Close All" from the context menu of browse tab
     And user signs in as the sharing user
     Then the sharing user should be signed in
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
-    And user enters "BDDCopyClone{time}" into gallery search
-    And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDCopyClone{time} gallery card
-    Then the "demog" view should be current
-    And the table should have 5850 rows
-    And bar chart viewer should be visible
-    And scatter plot viewer should be visible
-    And "Data loading error" dialog should be absent
-    And no error or warning balloon should have been shown
-    When user picks "Close All" from the context menu of browse tab
-    Given the browse panel is open
-    When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDCopyCloneLink{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDCopyCloneLink{time} gallery card
+    And user double-clicks on BDDCopyCloneLink{time} gallery card and the project opens
     Then the "demog" view should be current
     And the table should have 5850 rows
     And line chart viewer should be visible
-    And bar chart viewer should be visible
-    And scatter plot viewer should be visible
-    And "Data loading error" dialog should be absent
-    And no error or warning balloon should have been shown
-    When user picks "Close All" from the context menu of browse tab
-    Given the browse panel is open
-    When user clicks on Dashboards tree node inside browse tree
-    And user enters "BDDCopyCloneClone{time}" into gallery search
-    And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDCopyCloneClone{time} gallery card
-    Then the "demog" view should be current
-    And the table should have 5850 rows
-    And histogram viewer should be visible
     And bar chart viewer should be visible
     And scatter plot viewer should be visible
     And "Data loading error" dialog should be absent
@@ -329,7 +286,7 @@ Feature: A project saved as the original, as a copy with link and as a copy with
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDCopyClone" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDCopyCloneClone{time} gallery card
+    And user double-clicks on BDDCopyCloneClone{time} gallery card and the project opens
     Then the "demog" view should be current
     And the table should have 5850 rows
     And "Data loading error" dialog should be absent

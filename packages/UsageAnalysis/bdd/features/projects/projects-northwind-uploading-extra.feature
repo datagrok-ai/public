@@ -1,12 +1,8 @@
-@dev-only @serial @realizes:views.projects @realizes:file.menu.save.tables-as-project
+@realizes:views.projects @realizes:file.menu.save.tables-as-project
 Feature: Projects uploaded from a Get Top 100 result of the NorthwindTest orders table
-  Dev only: NorthwindTest (the Postgres connection Dbtests:PostgresTest of the Dbtests package,
-  listed as NorthwindTest under Browse > Databases > Postgres) exists only on dev.datagrok.ai; on
-  any other stand the tree has no such node and every row fails. Run it with
-  DATAGROK_URL=https://dev.datagrok.ai DATAGROK_SERVER=dev, and with the budgets of a slow stand:
-  BDD_EXPECT_TIMEOUT=30000 and `run --timeout 300000` (on dev every "no project named" cleanup
-  lists all the stand's projects, 35-65 s each, and the Dashboards gallery answers a search in up to
-  30 s, past the default 120 s per test and afterAll hook and 15 s per check).
+  NorthwindTest is the Postgres connection PostgresTest of the DbTests package, listed as
+  NorthwindTest under Browse > Databases > Postgres; a stand without it, or where it cannot reach its
+  database, skips the feature (the gate in the Background).
 
   The md's "Project from the Get Top 100 query result" as written, on the Northwind orders it names:
   Get Top 100 on NorthwindTest > Schemas > public > orders opens 100 of its 830 rows, its creation
@@ -29,6 +25,7 @@ Feature: Projects uploaded from a Get Top 100 result of the NorthwindTest orders
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
 
   Scenario Outline: A Get Top 100 result of the NorthwindTest orders is saved with Data sync <Sync>
@@ -63,7 +60,7 @@ Feature: Projects uploaded from a Get Top 100 result of the NorthwindTest orders
     When user clicks on Dashboards tree node inside browse tree
     And user enters "<Project>" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on <Project> gallery card
+    And user double-clicks on <Project> gallery card and the project opens
     Then the "orders" view should be current
     And the table should have 100 rows
     And the table should have been <how>

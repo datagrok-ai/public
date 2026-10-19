@@ -1,7 +1,7 @@
-@journey @serial @realizes:views.projects
+@journey @realizes:views.projects
 Feature: Projects regressions: two copies of a project saved without renaming
   GROK-19792 (done): two copies of one project saved with "Save a copy" without renaming showed the
-  same preview in the Dashboards gallery and carried the same name. demog stands for the SPGI table
+  same preview in the Dashboards gallery and carried the same name. cars stands for the SPGI table
   of the report. A project is saved through the ribbon's Save dialog, reopened from the Dashboards
   gallery, changed (a scatter plot added), saved again and copied twice; the gallery shows the
   three cards.
@@ -30,7 +30,7 @@ Feature: Projects regressions: two copies of a project saved without renaming
     Given no project named "BDDRegCopy{time}" is on the server
     And no project named "Copy of BDDRegCopy{time}" is on the server
     And no project named "Copy of BDDRegCopy{time} (2)" is on the server
-    And user opens demog dataset
+    And user opens cars dataset
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
     When user enters "BDDRegCopy{time}" into Name text input in "Save project" dialog
@@ -50,9 +50,9 @@ Feature: Projects regressions: two copies of a project saved without renaming
     And user clicks on Dashboards tree node inside browse tree
     And user enters "BDDRegCopy{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDRegCopy{time} gallery card
-    Then the "demog" view should be current
-    And the table should have 5850 rows
+    And user double-clicks on BDDRegCopy{time} gallery card and the project opens
+    Then the "cars" view should be current
+    And the table should have 30 rows
     Given the toolbox pane is shown
     When user clicks on "scatter plot" icon in toolbox
     Then scatter plot viewer should be visible
@@ -74,7 +74,7 @@ Feature: Projects regressions: two copies of a project saved without renaming
     Then there should be 3 visible gallery card
 
   # the display-name half of the fix (785187534f) was never merged; kept as a known failure by the operator's ruling
-  @known-failure @realizes:GROK-19792
+  @known-failure:80 @realizes:GROK-19792
   Scenario: The second copy saved without renaming gets a name of its own
     Then "Copy of BDDRegCopy{time}" gallery card should be visible
     And "Copy of BDDRegCopy{time} (2)" gallery card should be visible

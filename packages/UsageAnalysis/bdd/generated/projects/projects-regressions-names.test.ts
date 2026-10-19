@@ -9,8 +9,10 @@ sub_features_covered: [views.projects, GROK-19726, GROK-19788, GROK-18472, GROK-
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
+import '../../bindings/file-formats.js';
 import '../../bindings/flow.js';
 import '../../bindings/grid.js';
+import '../../bindings/queries.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -21,13 +23,13 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clickOn, doubleClickOn, enterInto, isExpanded, shouldBe, shouldHaveValue, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {rowCount, tableOpen} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, closeAllViews, dialogCloses, loadedAsSnapshot, noProjectOnServer, openDataset, projectsOnServer, reloadedByDataSync, savedAsSnapshot, savedWithDataSync, simpleModeOff, urlShouldContain, urlShouldNotContain, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, closeAllViews, dialogCloses, doubleClickOpensProject, loadedAsSnapshot, noProjectOnServer, openDataset, projectsOnServer, reloadedByDataSync, savedAsSnapshot, savedWithDataSync, simpleModeOff, urlShouldContain, urlShouldNotContain, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {infoBalloonText, noBalloons, noErrors, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Projects regressions: names of projects and their tables", () => {
   const session = feature(test, "features/projects/projects-regressions-names.feature", import.meta.url);
-  test("A project whose table was renamed to digits opens again, with Data sync On [mode=On, switch=checks, kept=with data sync, loaded=reloaded by data sync]", {tag: ["@serial", "@realizes:views.projects", "@realizes:GROK-19726"]}, async ({browser}) => {
+  test("A project whose table was renamed to digits opens again, with Data sync On [mode=On, switch=checks, kept=with data sync, loaded=reloaded by data sync]", {tag: ["@realizes:views.projects", "@realizes:GROK-19726"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(25, "Given user is logged in", () => loggedIn(page));
     await session.step(26, "And the browse panel is open", () => browsePanelOpen(page));
@@ -59,14 +61,14 @@ test.describe("Projects regressions: names of projects and their tables", () => 
     await session.step(55, "When user closes all views", () => closeAllViews(page));
     await session.step(56, "And user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
     await session.step(57, "And user enters \"BDDRegDigitsOn{time}\" into gallery search", () => enterInto(page, session.text("BDDRegDigitsOn{time}"), el("gallery search")));
-    await session.step(58, "And user double-clicks on BDDRegDigitsOn{time} gallery card", () => doubleClickOn(page, el(session.text("BDDRegDigitsOn{time} gallery card"))));
+    await session.step(58, "And user double-clicks on BDDRegDigitsOn{time} gallery card and the project opens", () => doubleClickOpensProject(page, el(session.text("BDDRegDigitsOn{time} gallery card"))));
     await session.step(59, "Then the \"12345\" view should be current", () => viewIsCurrent(page, "12345"));
     await session.step(60, "And the table should have 5850 rows", () => rowCount(page, 5850));
     await session.step(61, "And the table should have been reloaded by data sync", () => reloadedByDataSync(page));
     await session.step(62, "And no error or warning balloon should have been shown", () => noBalloons(page));
     await session.step(63, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A project whose table was renamed to digits opens again, with Data sync Off [mode=Off, switch=unchecks, kept=as a snapshot, loaded=loaded as a snapshot]", {tag: ["@serial", "@realizes:views.projects", "@realizes:GROK-19726"]}, async ({browser}) => {
+  test("A project whose table was renamed to digits opens again, with Data sync Off [mode=Off, switch=unchecks, kept=as a snapshot, loaded=loaded as a snapshot]", {tag: ["@realizes:views.projects", "@realizes:GROK-19726"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(25, "Given user is logged in", () => loggedIn(page));
     await session.step(26, "And the browse panel is open", () => browsePanelOpen(page));
@@ -98,14 +100,14 @@ test.describe("Projects regressions: names of projects and their tables", () => 
     await session.step(55, "When user closes all views", () => closeAllViews(page));
     await session.step(56, "And user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
     await session.step(57, "And user enters \"BDDRegDigitsOff{time}\" into gallery search", () => enterInto(page, session.text("BDDRegDigitsOff{time}"), el("gallery search")));
-    await session.step(58, "And user double-clicks on BDDRegDigitsOff{time} gallery card", () => doubleClickOn(page, el(session.text("BDDRegDigitsOff{time} gallery card"))));
+    await session.step(58, "And user double-clicks on BDDRegDigitsOff{time} gallery card and the project opens", () => doubleClickOpensProject(page, el(session.text("BDDRegDigitsOff{time} gallery card"))));
     await session.step(59, "Then the \"12345\" view should be current", () => viewIsCurrent(page, "12345"));
     await session.step(60, "And the table should have 5850 rows", () => rowCount(page, 5850));
     await session.step(61, "And the table should have been loaded as a snapshot", () => loadedAsSnapshot(page));
     await session.step(62, "And no error or warning balloon should have been shown", () => noBalloons(page));
     await session.step(63, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A project named with \"|\" and \"_\" is renamed from the gallery to a name with \"_\"", {tag: ["@serial", "@realizes:views.projects", "@realizes:GROK-19788", "@realizes:GROK-18472"]}, async ({browser}) => {
+  test("A project named with \"|\" and \"_\" is renamed from the gallery to a name with \"_\"", {tag: ["@realizes:views.projects", "@realizes:GROK-19788", "@realizes:GROK-18472"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(25, "Given user is logged in", () => loggedIn(page));
     await session.step(26, "And the browse panel is open", () => browsePanelOpen(page));
@@ -142,7 +144,7 @@ test.describe("Projects regressions: names of projects and their tables", () => 
     await session.step(102, "And no error or warning balloon should have been shown", () => noBalloons(page));
     await session.step(103, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A name reused after its project was deleted brings back only the new table, at the same address", {tag: ["@serial", "@realizes:views.projects", "@realizes:GROK-15135", "@realizes:GROK-20197"]}, async ({browser}) => {
+  test("A name reused after its project was deleted brings back only the new table, at the same address", {tag: ["@realizes:views.projects", "@realizes:GROK-15135", "@realizes:GROK-20197"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(25, "Given user is logged in", () => loggedIn(page));
     await session.step(26, "And the browse panel is open", () => browsePanelOpen(page));
@@ -181,7 +183,7 @@ test.describe("Projects regressions: names of projects and their tables", () => 
     await session.step(139, "And user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
     await session.step(140, "And user enters \"BDDRegReuse{time}\" into gallery search", () => enterInto(page, session.text("BDDRegReuse{time}"), el("gallery search")));
     await session.step(141, "And user clicks on \"Refresh\" icon inside gallery toolbar", () => clickOn(page, el("\"Refresh\" icon inside gallery toolbar")));
-    await session.step(142, "And user double-clicks on BDDRegReuse{time} gallery card", () => doubleClickOn(page, el(session.text("BDDRegReuse{time} gallery card"))));
+    await session.step(142, "And user double-clicks on BDDRegReuse{time} gallery card and the project opens", () => doubleClickOpensProject(page, el(session.text("BDDRegReuse{time} gallery card"))));
     await session.step(143, "Then the \"cars\" view should be current", () => viewIsCurrent(page, "cars"));
     await session.step(144, "And table \"cars\" should be open", () => tableOpen(page, "cars"));
     await session.step(145, "And demog view should be absent", () => shouldBe(page, el("demog view"), "absent"));
@@ -190,7 +192,7 @@ test.describe("Projects regressions: names of projects and their tables", () => 
     await session.step(148, "And no error or warning balloon should have been shown", () => noBalloons(page));
     await session.step(149, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A data-sync project renamed in the gallery is saved again with its table", {tag: ["@serial", "@realizes:views.projects", "@realizes:GROK-17700"]}, async ({browser}) => {
+  test("A data-sync project renamed in the gallery is saved again with its table", {tag: ["@realizes:views.projects", "@realizes:GROK-17700"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(25, "Given user is logged in", () => loggedIn(page));
     await session.step(26, "And the browse panel is open", () => browsePanelOpen(page));
@@ -243,7 +245,7 @@ test.describe("Projects regressions: names of projects and their tables", () => 
     await session.step(199, "And user clicks on \"Refresh\" icon inside gallery toolbar", () => clickOn(page, el("\"Refresh\" icon inside gallery toolbar")));
     await session.step(200, "Then BDDRegRenamed{time} gallery card should be visible", () => shouldBe(page, el(session.text("BDDRegRenamed{time} gallery card")), "visible"));
     await session.step(201, "And BDDRegRename{time} gallery card should be absent", () => shouldBe(page, el(session.text("BDDRegRename{time} gallery card")), "absent"));
-    await session.step(202, "When user double-clicks on BDDRegRenamed{time} gallery card", () => doubleClickOn(page, el(session.text("BDDRegRenamed{time} gallery card"))));
+    await session.step(202, "When user double-clicks on BDDRegRenamed{time} gallery card and the project opens", () => doubleClickOpensProject(page, el(session.text("BDDRegRenamed{time} gallery card"))));
     await session.step(203, "Then the \"demog\" view should be current", () => viewIsCurrent(page, "demog"));
     await session.step(204, "And the table should have 5850 rows", () => rowCount(page, 5850));
     await session.step(205, "And the table should have been reloaded by data sync", () => reloadedByDataSync(page));

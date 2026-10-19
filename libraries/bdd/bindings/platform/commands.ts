@@ -6,7 +6,7 @@ import {Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
 import type {ElementRef} from '../../src/runtime/args.js';
-import {click} from '../../src/runtime/gestures.js';
+import {click, dblclick} from '../../src/runtime/gestures.js';
 import {armQuery, closeTopMenu, columnsSince, menuNames, openTopMenu, pickTopMenu, visibleLabels, waitCommand} from '../../src/runtime/menus.js';
 
 const PATH = '"Bio > Analyze > Sequence Space..." — the labels as the menu shows them, separated by ">" or "|"';
@@ -67,6 +67,12 @@ export const clickRunsQuery = When('user clicks on {element} and the query it ru
   await click(page, target);
   await waitCommand(page, COMMAND_CAP);
 }, {tier: 'ui', description: 'the next data query call is watched from before the click to its end (onAfterRunAction of the platform)'});
+
+export const dblclickRunsQuery = When('user double-clicks on {element} and the query it runs completes', async (page: Page, target: ElementRef) => {
+  await armQuery(page);
+  await dblclick(page, target);
+  await waitCommand(page, COMMAND_CAP);
+}, {tier: 'ui', description: 'a query run from its Browse tree node, watched like its click twin from before the double click to the call\'s end'});
 
 export const commandCompleted = Then('the top menu command should have completed', async (page: Page) => {
   await waitCommand(page, COMMAND_CAP);

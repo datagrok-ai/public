@@ -1,4 +1,4 @@
-@serial @realizes:views.projects
+@realizes:views.projects
 Feature: Projects regressions: names of projects and their tables
   Regression guards for fixed Jira bugs about names: GROK-19726 (a table renamed to digits only),
   GROK-19788 and GROK-18472 (a project name with "|" and "_", renamed from the Dashboards gallery),
@@ -55,7 +55,7 @@ Feature: Projects regressions: names of projects and their tables
     When user closes all views
     And user clicks on Dashboards tree node inside browse tree
     And user enters "BDDRegDigits<mode>{time}" into gallery search
-    And user double-clicks on BDDRegDigits<mode>{time} gallery card
+    And user double-clicks on BDDRegDigits<mode>{time} gallery card and the project opens
     Then the "12345" view should be current
     And the table should have 5850 rows
     And the table should have been <loaded>
@@ -139,7 +139,7 @@ Feature: Projects regressions: names of projects and their tables
     And user clicks on Dashboards tree node inside browse tree
     And user enters "BDDRegReuse{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDRegReuse{time} gallery card
+    And user double-clicks on BDDRegReuse{time} gallery card and the project opens
     Then the "cars" view should be current
     And table "cars" should be open
     And demog view should be absent
@@ -199,7 +199,7 @@ Feature: Projects regressions: names of projects and their tables
     And user clicks on "Refresh" icon inside gallery toolbar
     Then BDDRegRenamed{time} gallery card should be visible
     And BDDRegRename{time} gallery card should be absent
-    When user double-clicks on BDDRegRenamed{time} gallery card
+    When user double-clicks on BDDRegRenamed{time} gallery card and the project opens
     Then the "demog" view should be current
     And the table should have 5850 rows
     And the table should have been reloaded by data sync

@@ -1,4 +1,4 @@
-@serial @realizes:views.projects
+@realizes:views.projects
 Feature: Projects regressions: a data-sync project with a published pivot saved as a zip
   Regression guard for GROK-19580 (Save as Zip of a data-sync project with a published pivot): demog
   is opened by a double-click in Browse > Files > Demo (it stands for SPGI in the report), a pivot

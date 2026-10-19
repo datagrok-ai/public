@@ -1,4 +1,4 @@
-@serial @realizes:views.projects
+@realizes:views.projects
 Feature: Projects regressions: a project with pinned rows
   core#460 (open; does not reproduce on localhost, core 1.28.0 bc64f40e47 — two runs, no error on
   the reopen, so this is a plain regression scenario): demog.csv from Browse > Files > Demo is sorted by AGE, HEIGHT is hidden, and
@@ -52,7 +52,7 @@ Feature: Projects regressions: a project with pinned rows
     And user clicks on Dashboards tree node inside browse tree
     And user enters "BDDRegPinned{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDRegPinned{time} gallery card
+    And user double-clicks on BDDRegPinned{time} gallery card and the project opens
     Then the "demog" view should be current
     And the table should have 5850 rows
     And the table should have been reloaded by data sync

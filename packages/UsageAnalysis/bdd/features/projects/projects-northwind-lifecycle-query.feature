@@ -1,12 +1,8 @@
-@dev-only @journey @serial @realizes:views.projects @realizes:sharing.share-dialog
+@journey @serial @realizes:views.projects @realizes:sharing.share-dialog
 Feature: A project of the user's own NorthwindTest query survives renaming the query
-  Dev only: NorthwindTest (the Postgres connection Dbtests:PostgresTest of the Dbtests package,
-  listed as NorthwindTest under Browse > Databases > Postgres) exists only on dev.datagrok.ai; on
-  any other stand the tree has no such node and the first scenario fails. Run it with
-  DATAGROK_URL=https://dev.datagrok.ai DATAGROK_SERVER=dev, and with the budgets of a slow stand:
-  BDD_EXPECT_TIMEOUT=30000 and `run --timeout 300000` (on dev every "no project named" cleanup
-  lists all the stand's projects, 35-65 s each, and the Dashboards gallery answers a search in up to
-  30 s, past the default 120 s per test and afterAll hook and 15 s per check).
+  NorthwindTest is the Postgres connection PostgresTest of the DbTests package, listed as
+  NorthwindTest under Browse > Databases > Postgres; a stand without it, or where it cannot reach its
+  database, skips the feature (the gate in the Background).
 
   As written in the md: a query is made in the Browse tree with New SQL Query... on NorthwindTest >
   Schemas > public > orders (select * from public.orders), saved under its own name, run from the
@@ -24,17 +20,23 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
   the Data loading error dialog when it opens the project (core#755; the dialog's message, which does
   not name the connection, is enough — operator 2026-10-12), set up by the scenario before it. Then
   the NorthwindTest connection is shared from its Browse tree node, and the second account opens the
-  project before the rename, and after the rename and the SQL change. The connection's grant is taken back through its Share dialog after the second open; a grant
-  left by a run that failed before that point is not swept (no step reads or removes a connection
-  grant outside the dialog — see the request document). The System:Datagrok version for other stands
-  is parked (row counts differ per server).
+  project before the rename, and after the rename and the SQL change. On core master of 2026-10-19
+  both of those opens stop on "Insufficient privileges to delete ViewInfo: <the query's name>", known
+  failures. The connection's grant is taken back through its Share dialog after the second open, and
+  swept when the feature starts and ends, since a run that failed before that point leaves it. The
+  System:Datagrok version for other stands is parked (row counts differ per server).
 
   The query and the project are named with the run's time (letters and digits only) and removed,
-  the query under both its names, at the start and at the end. It is serial: the Dashboards search
-  is shared with every feature that saves a project.
+  the query under both its names, at the start and at the end.
+
+  Serial (`@serial`): it shares the NorthwindTest connection with the second account, which the other
+  NorthwindTest feature that shares it reads as given or not; the grant is swept now and at feature end.
 
   Background:
     Given user is logged in
+    And the context panel is open
+    And the stand has a reachable "PostgresTest" connection
+    And the sharing user has no grant on the "PostgresTest" connection, now and when the feature ends
     And the browse panel is open
     And no project named "BDDNwLifeQProj{time}" is on the server
     And no query named "BDDNwLifeQ{time}, BDDNwLifeQRenamed{time}" is on the server
@@ -62,7 +64,7 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
-    When user double-clicks on Databases---Postgres---NorthwindTest---BDDNwLifeQ{time} tree node inside browse tree
+    When user double-clicks on Databases---Postgres---NorthwindTest---BDDNwLifeQ{time} tree node inside browse tree and the query it runs completes
     Then the current view should be a TableView view
     And the "BDDNwLifeQ{time}" view should be current
     And the table should have 830 rows
@@ -134,6 +136,9 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     When user clicks on Databases---Postgres---NorthwindTest tree node inside browse tree
     Then the sharing pane should list the sharing user
 
+  # with the connection shared, the open stops on "Insufficient privileges to delete ViewInfo: <the query's
+  # name>" on core master of 2026-10-19 (no ticket yet)
+  @known-failure:150
   Scenario: The second account opens the shared project
     When user closes all views
     When user signs in as the sharing user
@@ -142,7 +147,7 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDNwLifeQProj{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDNwLifeQProj{time} gallery card
+    And user double-clicks on BDDNwLifeQProj{time} gallery card and the project opens
     Then the current view should be a TableView view
     And the table should have 830 rows
     And the table should have been reloaded by data sync
@@ -178,7 +183,7 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDNwLifeQProj{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDNwLifeQProj{time} gallery card
+    And user double-clicks on BDDNwLifeQProj{time} gallery card and the project opens
     Then the current view should be a TableView view
     And the table should have 830 rows
     And the table should have been reloaded by data sync
@@ -202,18 +207,21 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     When user replaces the code of code editor with "select * from public.orders limit 100"
     And user clicks on Save button
     Then code editor should hold the code "select * from public.orders limit 100"
+    And the query "BDDNwLifeQRenamed{time}" on the server should read "limit 100"
     When user closes the current view
     When user reloads the page
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDNwLifeQProj{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDNwLifeQProj{time} gallery card
+    And user double-clicks on BDDNwLifeQProj{time} gallery card and the project opens
     Then the current view should be a TableView view
     And the table should have 100 rows
     And "Data loading error" dialog should be absent
     And no error or warning balloon should have been shown
 
+  # the open that stops on deleting the query's view, as before the rename
+  @known-failure:233
   Scenario: The second account opens the project after the rename and the SQL change (github-3550)
     When user closes all views
     When user signs in as the sharing user
@@ -222,7 +230,7 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDNwLifeQProj{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDNwLifeQProj{time} gallery card
+    And user double-clicks on BDDNwLifeQProj{time} gallery card and the project opens
     Then the current view should be a TableView view
     And the table should have 100 rows
     And "Data loading error" dialog should be absent

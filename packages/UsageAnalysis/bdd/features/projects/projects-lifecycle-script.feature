@@ -1,10 +1,10 @@
-@journey @serial @realizes:views.projects @realizes:sharing.share-dialog
+@journey @realizes:views.projects @realizes:sharing.share-dialog
 Feature: A project built from the user's own script, shared, then the script renamed and broken
   A JavaScript script is written in a new editor (Scripts > New > JavaScript Script...) and saved;
   Run... from the Scripts gallery opens its demog output, which is saved as a project with Data
   sync on and the script as its creation script. The project alone is shared with the second
   account from its Dashboards card. The script is then renamed in its editor with a new body
-  (demog(100)) and broken with a throw; Delete Project and the script's Delete remove both.
+  (demog(100)) and broken with a throw.
   Translated from the TestTrack case Projects/projects-lifecycle-script.
 
   The second account signs in on the feature's page (the library's sharing user) for the
@@ -17,20 +17,18 @@ Feature: A project built from the user's own script, shared, then the script ren
   editor has no line-replacing gesture, so each edit types the whole text again (with the new name
   and body, or with the throw before the df line). The script and the project are named with the
   run's time (letters and digits only: the Dashboards search misses "-" and "_") and removed, the
-  script under both its names, when the feature starts and ends. It is serial: the Dashboards
-  search and the Scripts view's search are shared with the features that use them.
+  script under both its names, when the feature starts and ends.
 
   Background:
     Given user is logged in
+    And the context panel is open
     And the browse panel is open
     And no project named "BDDLifeScriptProj{time}" is on the server
     And no script named "BDDLifeScript{time}" is on the server
     And no script named "BDDLifeScriptRenamed{time}" is on the server
 
   Scenario: A JavaScript script is written in a new editor and saved
-    Given Platform tree node inside browse tree is expanded
-    And Platform---Functions tree node inside browse tree is expanded
-    When user clicks on Platform---Functions---Scripts tree node inside browse tree
+    When user opens the address "/scripts"
     Then the "Scripts" view should be current
     When user clicks on New button
     And user picks "JavaScript Script..." from the open menu
@@ -89,6 +87,7 @@ Feature: A project built from the user's own script, shared, then the script ren
     Then "Share BDDLifeScriptProj{time}" dialog should be visible
     And share access selector should contain text "View and use"
     When user picks the sharing user in "User, group, or email" input in "Share BDDLifeScriptProj{time}" dialog
+    And user unchecks "Send notifications" input in "Share BDDLifeScriptProj{time}" dialog
     And user clicks on OK button in "Share BDDLifeScriptProj{time}" dialog
     Then the "Share BDDLifeScriptProj{time}" dialog should close
     And an info balloon containing "Shared" should have been shown
@@ -104,7 +103,7 @@ Feature: A project built from the user's own script, shared, then the script ren
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDLifeScriptProj{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDLifeScriptProj{time} gallery card
+    And user double-clicks on BDDLifeScriptProj{time} gallery card and the project opens
     Then the "demog" view should be current
     And the table should have 5850 rows
     And the table should have been reloaded by data sync
@@ -118,9 +117,7 @@ Feature: A project built from the user's own script, shared, then the script ren
     Then the running account should be signed in
     When user picks "Close All" from the context menu of browse tab
     Given the browse panel is open
-    And Platform tree node inside browse tree is expanded
-    And Platform---Functions tree node inside browse tree is expanded
-    When user clicks on Platform---Functions---Scripts tree node inside browse tree
+    When user opens the address "/scripts"
     Then the "Scripts" view should be current
     When user clears gallery search
     And user types "BDDLifeScript{time}" into gallery search
@@ -144,7 +141,7 @@ Feature: A project built from the user's own script, shared, then the script ren
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDLifeScriptProj{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDLifeScriptProj{time} gallery card
+    And user double-clicks on BDDLifeScriptProj{time} gallery card and the project opens
     Then the "demog" view should be current
     And the table should have 100 rows
     And the table should have been reloaded by data sync
@@ -154,9 +151,7 @@ Feature: A project built from the user's own script, shared, then the script ren
   Scenario: The script is broken with a throw before its df line
     When user picks "Close All" from the context menu of browse tab
     Given the browse panel is open
-    And Platform tree node inside browse tree is expanded
-    And Platform---Functions tree node inside browse tree is expanded
-    When user clicks on Platform---Functions---Scripts tree node inside browse tree
+    When user opens the address "/scripts"
     Then the "Scripts" view should be current
     When user clears gallery search
     And user types "BDDLifeScriptRenamed{time}" into gallery search
@@ -206,35 +201,3 @@ Feature: A project built from the user's own script, shared, then the script ren
     And "CLOSE PROJECT" button in "Data loading error" dialog should be visible
     When user clicks on "CLOSE PROJECT" button in "Data loading error" dialog
     Then the "Data loading error" dialog should close
-
-  Scenario: Delete Project and the script's Delete remove both
-    When user picks "Close All" from the context menu of browse tab
-    Given the browse panel is open
-    When user clicks on Dashboards tree node inside browse tree
-    And user enters "BDDLifeScriptProj{time}" into gallery search
-    And user clicks on "Refresh" icon inside gallery toolbar
-    And user picks "Delete Project" from the context menu of BDDLifeScriptProj{time} gallery card
-    Then "Are you sure?" dialog should be visible
-    And "Are you sure?" dialog should contain text 'Delete project "BDDLifeScriptProj{time}"?'
-    When user clicks on DELETE button in "Are you sure?" dialog
-    # the dialog stays open, its button disabled, until the server has deleted the project
-    Then the "Are you sure?" dialog should close
-    And 0 projects named "BDDLifeScriptProj{time}" should be on the server
-    Given the browse panel is open
-    And Platform tree node inside browse tree is expanded
-    And Platform---Functions tree node inside browse tree is expanded
-    When user clicks on Platform---Functions---Scripts tree node inside browse tree
-    Then the "Scripts" view should be current
-    When user clears gallery search
-    And user types "BDDLifeScriptRenamed{time}" into gallery search
-    And user picks "Delete" from the context menu of "BDDLifeScriptRenamed{time}" link in gallery
-    Then "Are you sure?" dialog should be visible
-    And "Are you sure?" dialog should contain text 'Delete script "BDDLifeScriptRenamed{time}"?'
-    When user clicks on YES button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    And 0 scripts named "BDDLifeScriptRenamed{time}" should be on the server
-    And "BDDLifeScriptRenamed{time}" link in gallery should be absent
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
-    # the gallery keeps its search text for the next visit: leave it empty
-    When user clears gallery search

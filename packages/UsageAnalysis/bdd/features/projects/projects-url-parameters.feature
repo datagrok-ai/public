@@ -1,7 +1,8 @@
-@journey @serial @realizes:views.projects @realizes:views.functions
+@journey @realizes:views.projects @realizes:views.functions
 Feature: A dashboard on a query with a parameter: Toolbox > Source, URL parameters and saved values
-  A query with a string parameter (typeName = "Project") is made on the Datagrok database's
-  entity_types with New SQL Query... and run from the Browse tree. Before the save, the copy icon of
+  A query with a string parameter (typeName = "Project") on the Datagrok database's entity_types
+  (made through the API: writing a query is the database features' subject) is run from the Browse
+  tree. Before the save, the copy icon of
   Toolbox > Source gives a /func/ link that runs the query; in the Save dialog the table's URL
   Parameters expose typeName, its alias is changed to "type", and after the save the same icon gives
   the dashboard's /p/ link. Reopened, the dashboard takes a new value typed into Source (the link
@@ -35,32 +36,20 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
   entity_types has no "Package" row on localhost (the md allows another value of its name column
   then), so "Script" stands for the md's "Package"; "Project" and "Script" are core entity types.
   Names are letters and digits only (the Dashboards search misses "-" and "_") and carry the run's
-  time. The query and the two projects are removed when the feature starts and ends. It is serial:
-  the Dashboards search is shared with every feature that saves a project.
+  time. The query and the two projects are removed when the feature starts and ends.
 
   Background:
     Given user is logged in
+    And the context panel is open
     And simple mode is off
     And the browse panel is open
     And no project named "BDDUrlParamProj{time}" is on the server
     And no project named "BDDUrlParamCopy{time}" is on the server
-    And no query named "BDDUrlParamQuery{time}" is on the server
-
-  Scenario: A query with a typeName parameter is made on entity_types
-    Given Databases tree node inside browse tree is expanded
-    And Databases---Postgres tree node inside browse tree is expanded
-    And Databases---Postgres---Datagrok tree node inside browse tree is expanded
-    And Databases---Postgres---Datagrok---Schemas tree node inside browse tree is expanded
-    And Databases---Postgres---Datagrok---Schemas---public tree node inside browse tree is expanded
-    When user picks "New SQL Query..." from the context menu of Databases---Postgres---Datagrok---Schemas---public---entity_types tree node inside browse tree
-    Then the current view should be a DataQueryView view
-    When user enters "BDDUrlParamQuery{time}" into Name input
-    And user replaces the code of code editor with '--input: string typeName = "Project"'
-    And user appends "select name from entity_types where name = @typeName" to code editor
-    And user clicks on Save button
-    Then 1 query named "BDDUrlParamQuery{time}" should be on the server
-    When user closes the current view
-    Then no errors should have been logged
+    And a query "BDDUrlParamQuery{time}" on "System:Datagrok" is on the server:
+      """
+      --input: string typeName = "Project"
+      select name from entity_types where name = @typeName
+      """
 
   Scenario: The query runs from the tree with its default value
     Given the browse panel is open
@@ -68,7 +57,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---Datagrok tree node inside browse tree is expanded
-    When user double-clicks on Databases---Postgres---Datagrok---BDDUrlParamQuery{time} tree node inside browse tree
+    When user double-clicks on Databases---Postgres---Datagrok---BDDUrlParamQuery{time} tree node inside browse tree and the query it runs completes
     Then the "BDDUrlParamQuery{time}" view should be current
     And the "rows" reading of grid should be 1
     And the "text of cell 1 of name" reading of grid should be "Project"
@@ -91,7 +80,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     And user clicks on "URL Parameters" button in "BDDUrlParamQuery{time}" project table in "Save project" dialog
     Then "URL alias" text input in "Save project" dialog should have value "typeName"
 
-  @known-failure @realizes:core#569
+  @known-failure:85 @realizes:core#569
   Scenario: The Share link line follows the name typed into the dialog
     Then "Save project" dialog should contain text ".BDDUrlParamProj{time}?typeName="
 
@@ -112,11 +101,11 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     And tooltip should contain text ".BDDUrlParamProj{time}?"
     And tooltip should not contain text "run=true"
 
-  @known-failure @realizes:core#630
+  @known-failure:106 @realizes:core#630
   Scenario: Right after the save, the Source link already carries the alias
     Then tooltip should contain text ".BDDUrlParamProj{time}?type=Project"
 
-  @known-failure @realizes:core#568
+  @known-failure:110 @realizes:core#568
   Scenario: Right after the save, Source offers the sliders icon
     Then sliders-h icon in Source pane in toolbox should be visible
     When user hovers over sliders-h icon in Source pane in toolbox
@@ -160,7 +149,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDUrlParamProj{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDUrlParamProj{time} gallery card
+    And user double-clicks on BDDUrlParamProj{time} gallery card and the project opens
     Then the "BDDUrlParamQuery{time}" view should be current
     And the "rows" reading of grid should be 1
     Given the toolbox pane is shown
@@ -176,6 +165,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     Then check icon in Source pane in toolbox should be visible
     And the clipboard should contain text ".BDDUrlParamProj{time}?type=Script"
 
+  @realizes:GROK-20006
   Scenario: The new value is saved into the project (GROK-20006)
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
@@ -189,7 +179,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDUrlParamProj{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDUrlParamProj{time} gallery card
+    And user double-clicks on BDDUrlParamProj{time} gallery card and the project opens
     Then the "BDDUrlParamQuery{time}" view should be current
     And the "text of cell 1 of name" reading of grid should be "Script"
     And the "rows" reading of grid should be 1
@@ -212,7 +202,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDUrlParamCopy{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDUrlParamCopy{time} gallery card
+    And user double-clicks on BDDUrlParamCopy{time} gallery card and the project opens
     Then the "BDDUrlParamQuery{time}" view should be current
     And the "text of cell 1 of name" reading of grid should be "Project"
     When user picks "Close All" from the context menu of browse tab
@@ -221,7 +211,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDUrlParamProj{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDUrlParamProj{time} gallery card
+    And user double-clicks on BDDUrlParamProj{time} gallery card and the project opens
     Then the "BDDUrlParamQuery{time}" view should be current
     And the "text of cell 1 of name" reading of grid should be "Script"
 
@@ -241,7 +231,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     And sliders-h icon in Source pane in toolbox should be visible
     And "Save dashboard to apply changes" text in toolbox should be hidden
 
-  @known-failure @realizes:core#630
+  @known-failure:239 @realizes:core#630
   Scenario: Saved with the parameter taken out, the Source link no longer carries it
     When user moves the pointer away from Source pane in toolbox
     And user hovers over copy icon in Source pane in toolbox
@@ -254,28 +244,3 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     When user opens the address "/p/Admin.BDDUrlParamProj{time}?type=Project"
     Then the "BDDUrlParamQuery{time}" view should be current
     And the "text of cell 1 of name" reading of grid should be "Script"
-
-  Scenario: The query and the projects are deleted
-    When user picks "Close All" from the context menu of browse tab
-    Then the "Home" view should be current
-    Given the browse panel is open
-    When user clicks on Dashboards tree node inside browse tree
-    And user enters "BDDUrlParam" into gallery search
-    And user clicks on "Refresh" icon inside gallery toolbar
-    And user picks "Delete Project" from the context menu of BDDUrlParamProj{time} gallery card
-    And user clicks on DELETE button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    When user picks "Delete Project" from the context menu of BDDUrlParamCopy{time} gallery card
-    And user clicks on DELETE button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    And 0 projects named "BDDUrlParamProj{time}" should be on the server
-    And 0 projects named "BDDUrlParamCopy{time}" should be on the server
-    When user clicks on "Refresh" icon inside browse toolbar
-    Given Databases tree node inside browse tree is expanded
-    And Databases---Postgres tree node inside browse tree is expanded
-    And Databases---Postgres---Datagrok tree node inside browse tree is expanded
-    When user collapses Databases---Postgres---Datagrok---BDDUrlParamQuery{time} tree node inside browse tree
-    And user picks "Delete" from the context menu of Databases---Postgres---Datagrok---BDDUrlParamQuery{time} tree node inside browse tree
-    And user clicks on DELETE button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    And 0 queries named "BDDUrlParamQuery{time}" should be on the server

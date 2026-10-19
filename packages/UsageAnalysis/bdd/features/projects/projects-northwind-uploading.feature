@@ -1,12 +1,8 @@
-@dev-only @serial @realizes:views.projects @realizes:data.menu.link-tables @realizes:file.menu.save.tables-as-project
+@realizes:views.projects @realizes:data.menu.link-tables @realizes:file.menu.save.tables-as-project
 Feature: Projects uploaded from the NorthwindTest query PostgresAll, linked and saved with Data sync on and off
-  Dev only: NorthwindTest (the Postgres connection Dbtests:PostgresTest of the Dbtests package,
-  listed as NorthwindTest under Browse > Databases > Postgres) and its query PostgresAll exist only
-  on dev.datagrok.ai; on any other stand the tree has no such node and every row fails. Run it with
-  DATAGROK_URL=https://dev.datagrok.ai DATAGROK_SERVER=dev, and with the budgets of a slow stand:
-  BDD_EXPECT_TIMEOUT=30000 and `run --timeout 300000` (on dev every "no project named" cleanup
-  lists all the stand's projects, 35-65 s each, and the Dashboards gallery answers a search in up to
-  30 s, past the default 120 s per test and afterAll hook and 15 s per check).
+  NorthwindTest is the Postgres connection PostgresTest of the DbTests package, listed as
+  NorthwindTest under Browse > Databases > Postgres; a stand without it, or where it cannot reach its
+  database, skips the feature (the gate in the Background).
 
   TestCase2 (PostgresAll run twice) and TestCase3 (customers.csv from Browse > Files > Demo >
   northwind and PostgresAll) of the TestTrack case Projects/uploading: the two tables are linked
@@ -29,11 +25,11 @@ Feature: Projects uploaded from the NorthwindTest query PostgresAll, linked and 
   remembered and whose Dashboards panel nodes have to be counted).
 
   The project (with its tables and views) is named with the run's time and removed before its row
-  starts and again when the feature ends. It is serial: the Dashboards search and the uploads are
-  shared with every feature that saves a project.
+  starts and again when the feature ends.
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And simple mode is off
     And the browse panel is open
 
@@ -85,7 +81,7 @@ Feature: Projects uploaded from the NorthwindTest query PostgresAll, linked and 
     When user clicks on Dashboards tree node inside browse tree
     And user enters "<Project>" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on <Project> gallery card
+    And user double-clicks on <Project> gallery card and the project opens
     Then the "<First view>" table view should open with <First rows> rows
     And the "<Second view>" table view should open with 830 rows
     When user clicks on <First view> view

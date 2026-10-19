@@ -9,8 +9,10 @@ sub_features_covered: [views.projects, GROK-19792]
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
+import '../../bindings/file-formats.js';
 import '../../bindings/flow.js';
 import '../../bindings/grid.js';
+import '../../bindings/queries.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -19,15 +21,15 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, doubleClickOn, enterInto, selectIn, shouldBe, shouldHaveValue, visibleCount} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, enterInto, selectIn, shouldBe, shouldHaveValue, visibleCount} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, closeAllViews, dialogCloses, noProjectOnServer, openDataset, toolboxPaneShown, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, closeAllViews, dialogCloses, doubleClickOpensProject, noProjectOnServer, openDataset, toolboxPaneShown, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {infoBalloonText} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Projects regressions: two copies of a project saved without renaming", () => {
   const session = feature(test, "features/projects/projects-regressions-copies.feature", import.meta.url);
-  test("Projects regressions: two copies of a project saved without renaming", {tag: ["@journey", "@serial", "@realizes:views.projects", "@known-failure", "@realizes:GROK-19792"]}, async ({browser}) => {
+  test("Projects regressions: two copies of a project saved without renaming", {tag: ["@journey", "@realizes:views.projects", "@known-failure:80", "@realizes:GROK-19792"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 2, page);
     await session.step(26, "Given user is logged in", () => loggedIn(page));
@@ -36,7 +38,7 @@ test.describe("Projects regressions: two copies of a project saved without renam
       await session.step(30, "Given no project named \"BDDRegCopy{time}\" is on the server", () => noProjectOnServer(page, session.text("BDDRegCopy{time}")));
       await session.step(31, "And no project named \"Copy of BDDRegCopy{time}\" is on the server", () => noProjectOnServer(page, session.text("Copy of BDDRegCopy{time}")));
       await session.step(32, "And no project named \"Copy of BDDRegCopy{time} (2)\" is on the server", () => noProjectOnServer(page, session.text("Copy of BDDRegCopy{time} (2)")));
-      await session.step(33, "And user opens demog dataset", () => openDataset(page, ds("demog")));
+      await session.step(33, "And user opens cars dataset", () => openDataset(page, ds("cars")));
       await session.step(34, "When user clicks on Save ribbon item", () => clickOn(page, el("Save ribbon item")));
       await session.step(35, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));
       await session.step(36, "When user enters \"BDDRegCopy{time}\" into Name text input in \"Save project\" dialog", () => enterInto(page, session.text("BDDRegCopy{time}"), el("Name text input in \"Save project\" dialog")));
@@ -56,9 +58,9 @@ test.describe("Projects regressions: two copies of a project saved without renam
       await session.step(50, "And user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
       await session.step(51, "And user enters \"BDDRegCopy{time}\" into gallery search", () => enterInto(page, session.text("BDDRegCopy{time}"), el("gallery search")));
       await session.step(52, "And user clicks on \"Refresh\" icon inside gallery toolbar", () => clickOn(page, el("\"Refresh\" icon inside gallery toolbar")));
-      await session.step(53, "And user double-clicks on BDDRegCopy{time} gallery card", () => doubleClickOn(page, el(session.text("BDDRegCopy{time} gallery card"))));
-      await session.step(54, "Then the \"demog\" view should be current", () => viewIsCurrent(page, "demog"));
-      await session.step(55, "And the table should have 5850 rows", () => rowCount(page, 5850));
+      await session.step(53, "And user double-clicks on BDDRegCopy{time} gallery card and the project opens", () => doubleClickOpensProject(page, el(session.text("BDDRegCopy{time} gallery card"))));
+      await session.step(54, "Then the \"cars\" view should be current", () => viewIsCurrent(page, "cars"));
+      await session.step(55, "And the table should have 30 rows", () => rowCount(page, 30));
       await session.step(56, "Given the toolbox pane is shown", () => toolboxPaneShown(page));
       await session.step(57, "When user clicks on \"scatter plot\" icon in toolbox", () => clickOn(page, el("\"scatter plot\" icon in toolbox")));
       await session.step(58, "Then scatter plot viewer should be visible", () => shouldBe(page, el("scatter plot viewer"), "visible"));
@@ -82,7 +84,7 @@ test.describe("Projects regressions: two copies of a project saved without renam
     await run.scenario("The second copy saved without renaming gets a name of its own", async () => {
       await session.step(79, "Then \"Copy of BDDRegCopy{time}\" gallery card should be visible", () => shouldBe(page, el(session.text("\"Copy of BDDRegCopy{time}\" gallery card")), "visible"));
       await session.step(80, "And \"Copy of BDDRegCopy{time} (2)\" gallery card should be visible", () => shouldBe(page, el(session.text("\"Copy of BDDRegCopy{time} (2)\" gallery card")), "visible"));
-    }, {knownFailure: true});
+    }, {knownFailure: true, line: 80});
     run.finish();
   });
 });

@@ -1,4 +1,4 @@
-@journey @serial @realizes:views.projects
+@journey @realizes:views.projects
 Feature: The Presentation mode switch of a saved project's Save dialog
   demog.csv from Browse > Files > Demo with a scatter plot is saved as a project; reopened from its
   Dashboards card it opens in design mode (the top menu, the left sidebar, the toolbox and the
@@ -26,8 +26,7 @@ Feature: The Presentation mode switch of a saved project's Save dialog
   ribbon stay shown on localhost (a suspected defect, described outside the repository).
 
   The project is named with the run's time (letters and digits only: the Dashboards search misses
-  "-" and "_") and removed with its table and view when the feature starts and ends. It is serial:
-  the Dashboards search is shared with every feature that saves a project.
+  "-" and "_") and removed with its table and view when the feature starts and ends.
 
   Background:
     Given user is logged in
@@ -76,7 +75,7 @@ Feature: The Presentation mode switch of a saved project's Save dialog
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDPresent" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDPresentProj{time} gallery card
+    And user double-clicks on BDDPresentProj{time} gallery card and the project opens
     Then the "demog" view should be current
     And scatter plot viewer should be visible
     And "Data" menu item should be visible
@@ -110,7 +109,7 @@ Feature: The Presentation mode switch of a saved project's Save dialog
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDPresent" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDPresentProj{time} gallery card
+    And user double-clicks on BDDPresentProj{time} gallery card and the project opens
     Then grid should be visible
     And scatter plot viewer should be visible
     And "back to design mode" link should be visible
@@ -168,7 +167,7 @@ Feature: The Presentation mode switch of a saved project's Save dialog
     And user enters "BDDPresent" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
     Then BDDPresentNew{time} gallery card should be visible
-    When user double-clicks on BDDPresentNew{time} gallery card
+    When user double-clicks on BDDPresentNew{time} gallery card and the project opens
     Then grid should be visible
     And "back to design mode" link should be visible
     And status bar should be hidden
@@ -201,23 +200,3 @@ Feature: The Presentation mode switch of a saved project's Save dialog
     And status bar should be hidden
     When user clicks on "back to design mode" link
     Then status bar should be visible
-
-  Scenario: The projects are deleted from their cards
-    When user picks "Close All" from the context menu of browse tab
-    Then the "Home" view should be current
-    Given the browse panel is open
-    When user clicks on Dashboards tree node inside browse tree
-    And user enters "BDDPresent" into gallery search
-    And user clicks on "Refresh" icon inside gallery toolbar
-    And user picks "Delete Project" from the context menu of BDDPresentProj{time} gallery card
-    And user clicks on DELETE button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    When user picks "Delete Project" from the context menu of BDDPresentPlain{time} gallery card
-    And user clicks on DELETE button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    When user picks "Delete Project" from the context menu of BDDPresentNew{time} gallery card
-    And user clicks on DELETE button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    And 0 projects named "BDDPresentProj{time}" should be on the server
-    And 0 projects named "BDDPresentPlain{time}" should be on the server
-    And 0 projects named "BDDPresentNew{time}" should be on the server

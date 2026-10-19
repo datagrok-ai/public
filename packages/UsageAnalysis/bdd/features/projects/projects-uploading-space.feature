@@ -1,11 +1,11 @@
-@journey @serial @realizes:views.projects @realizes:views.space @realizes:data.menu.link-tables @realizes:file.menu.save.tables-as-project
+@journey @realizes:views.projects @realizes:views.space @realizes:data.menu.link-tables @realizes:file.menu.save.tables-as-project
 Feature: Projects uploaded from files in a space, with Data sync on and off
-  The setup of the md: a space is created in the Browse tree and customers.csv and orders.csv are
-  copied into it from Browse > Files > Demo > northwind (drag onto the space, Copy). TestCase4 opens
-  both files from the space, TestCase5 customers.csv from the space and orders.csv from Files >
-  Demo > northwind. As in TestCase1 (projects-uploading), the two tables are linked
-  selection-to-filter through Data > Link Tables..., the link is checked in the status bar of
-  orders, and both are saved in one project through the ribbon's Save dialog with Data sync on and
+  The setup of the md: a space (made through the API: the Create Space dialog is spaces-create's)
+  gets copies of customers.csv and orders.csv from Browse > Files > Demo > northwind (drag onto the
+  space, Copy). TestCase4 opens both files from the space, TestCase5 customers.csv from the space
+  and orders.csv from Files > Demo > northwind. As in TestCase1 (projects-uploading), the two
+  tables are linked selection-to-filter through Data > Link Tables..., the link is checked in the
+  status bar of orders, and both are saved in one project through the ribbon's Save dialog with Data sync on and
   off; the project reopens from its Dashboards card with both tables and a link that still filters,
   and the Save dialog of the reopened project shows each table's Creation script only with Data
   sync. Translated from the TestTrack case Projects/uploading.
@@ -19,26 +19,19 @@ Feature: Projects uploaded from files in a space, with Data sync on and off
 
   Names are letters and digits only (the Dashboards search misses "-" and "_") and carry the run's
   time. The space (with its files) and the four projects (with their tables and views) are removed
-  when the feature starts and ends. It is serial: the Dashboards search and the uploads are shared
-  with every feature that saves a project.
+  when the feature starts and ends.
 
   Background:
     Given user is logged in
     And simple mode is off
     And the browse panel is open
-    And no space named "BDDUpSpace{time}" is on the server
+    And a space named "BDDUpSpace{time}" is on the server
     And no project named "BDDUpload4Sync{time}" is on the server
     And no project named "BDDUpload4NoSync{time}" is on the server
     And no project named "BDDUpload5Sync{time}" is on the server
     And no project named "BDDUpload5NoSync{time}" is on the server
 
   Scenario: A space holds copies of customers.csv and orders.csv
-    When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
-    Then Create Space dialog should be visible
-    When user enters "BDDUpSpace{time}" into Name input in Create Space dialog
-    And user clicks on OK button in Create Space dialog
-    Then the "Create Space" dialog should close
-    And 1 space named "BDDUpSpace{time}" should be on the server
     Given Spaces tree node inside browse tree is expanded
     And Files tree node inside browse tree is expanded
     And Files---Demo tree node inside browse tree is expanded
@@ -109,7 +102,7 @@ Feature: Projects uploaded from files in a space, with Data sync on and off
     When user clicks on Dashboards tree node inside browse tree
     And user enters "<Project>" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on <Project> gallery card
+    And user double-clicks on <Project> gallery card and the project opens
     Then the "customers" table view should open with 91 rows
     And the "orders" table view should open with 830 rows
     When user clicks on customers view

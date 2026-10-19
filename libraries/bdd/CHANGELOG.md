@@ -2,6 +2,13 @@
 
 ## v.next
 
+* Second account: Fixed a scenario that stopped while signed in as another account running every scenario after it as that account: a journey scenario that stopped, and a test that failed or is a known failure, sign the running account back in before the next one starts (`atScenarioStop`)
+* Locator: Fixed a gesture on a gallery card or link landing before the gallery had redrawn its search or refresh: a phrase naming a gallery or a card waits for the gallery grid's `aria-busy` to clear
+* Vocabulary: Added `user double-clicks on {element} and the project opens` (`grok.events.onProjectOpened` on a 120 s budget, kept in a `@known-failure` scenario; an error balloon or the Data loading error dialog ends it as a failure) and `user double-clicks on {element} and the query it runs completes`
+* Server fixtures: A killed run's folder of a file put into the user's files (`BDDx{time}/data.csv`) is swept by its family, dated by its `{time}`
+* Harness: Fixed a gallery view mode reaching the next feature on the page: the shell reset clears the galleries' view modes with the panes' expanded state (a feature that switched the Scripts view to cards left the next one without its script links)
+* Vocabulary: Added `the project named {string} should be tagged {string} on the server`, `the query {string} on the server should (not) read {string}` and `the sharing user has no grant on the {string} connection, now and when the feature ends`
+* Cleanup: Fixed the picture of a project deleted through the UI staying on the server: the harness records the pictures a page uploads during a feature and deletes them at its end
 * Harness: Fixed a failed scenario leaving its dialog over the next one when Escape does not close it (an editor that keeps Escape, such as the formula editor of Add New Column): the shell reset and a failed journey scenario click the topmost dialog's close icon, so a failure no longer leaves its dialog over the next scenario
 * Second account: Fixed a page reloaded after `the sharing user has no notifications` coming up signed in as the second account: minting its session took the login's Set-Cookie, which the page then sent on its next load
 * Context menus: Fixed a right-click on a tree row under a sticky group header (a root space under Spaces once the Browse tree is scrolled a row) landing on the header three times: the row is scrolled to the middle of its panel; a failed menu pick names what the right-click reached
