@@ -1,12 +1,13 @@
 /// Docs: [Grok Dapi](/docs/plans/grok-dapi/)
 import * as fs from 'fs';
 import * as path from 'path';
+import {randomUUID} from 'crypto';
 import {NodeDapi, BatchRequest, BatchOperation, InternalDataSource, PackageOpResult, mapPositionalParams} from '../utils/node-dapi';
 import {createClient, logSpecOf} from '../utils/server-client';
 import {printOutput, printBatchOutput, printError, setOutputFormat, OutputFormat} from '../utils/server-output';
 import {handleMigrate} from './server-migrate';
 import {handleDomains} from './server-domains';
-import {handleObserve, OBSERVE_USAGE} from './server-observe';
+import {handleObserve, OBSERVE_USAGE, printRequestLog} from './server-observe';
 import {isUuid} from '../utils/migrate/registry';
 import {resolveEntity} from '../utils/migrate/walker';
 
@@ -43,8 +44,9 @@ export async function server(argv: any): Promise<boolean> {
 
   let client;
   const logSpec = logSpecOf(argv);
+  const logId = logSpec || (entity === 'functions' && verb === 'run' && isDebug(argv)) ? randomUUID() : undefined;
   try {
-    client = await createClient(host, !!argv.admin, logSpec);
+    client = await createClient(host, !!argv.admin, logId ? {logId, spec: logSpec} : undefined);
   } catch (err: any) {
     // a bad alias, URL or key is not a usage error: no help dump, just the reason
     printError(err);
@@ -52,12 +54,6 @@ export async function server(argv: any): Promise<boolean> {
     return true;
   }
   const dapi = new NodeDapi(client);
-  let logged = false;
-  const printLog = client.onLog!;
-  client.onLog = (request, captured) => {
-    logged = true;
-    printLog(request, captured);
-  };
 
   try {
     // await each handler so a rejection lands in the catch below instead of
@@ -170,9 +166,14 @@ export async function server(argv: any): Promise<boolean> {
     return true;
   }
   finally {
-    if (logSpec && !logged && client.requests && !process.exitCode)
-      process.stderr.write(`--log: ${client.baseUrl} returned no log; it predates the datlas-log header\n`);
+    if (logId)
+      await printRequestLog(dapi, logId, output);
   }
+}
+
+/** `--debug` is not a declared boolean (grok publish reads it too), so it can arrive as a string. */
+function isDebug(argv: any): boolean {
+  return argv.debug !== undefined && argv.debug !== false && argv.debug !== 'false';
 }
 
 async function handleFilesPut(dapi: NodeDapi, rest: string[], output: OutputFormat): Promise<boolean> {
@@ -612,9 +613,9 @@ async function handleDescribe(dapi: NodeDapi, entityType: string | undefined, ou
 }
 
 async function handleFuncRun(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
-  // `--debug` is not a declared boolean (grok publish reads it too), so `--debug 'Pkg:f()'` hands it the call.
+  // `--debug 'Pkg:f()'` hands the call to --debug.
   let funcName = rest[0] ?? (typeof argv.debug === 'string' ? argv.debug : undefined);
-  const debug = argv.debug !== undefined && argv.debug !== false && argv.debug !== 'false';
+  const debug = isDebug(argv);
   if (!funcName) {
     printError(new Error('Usage: grok s functions run <Name:function(args...)> [--json params.json] [--debug]'));
     return false;
@@ -1044,14 +1045,13 @@ Options:
   --offset <n>          Start offset (default: 0)
   -r, --recursive       Recursive (for files list)
   --verbose             Print the stack of a runtime failure, not just its message
-  --log [<spec>]        Log every request of this command at <spec> and print what the server
-                        logged to stderr: verbose (default), standard, levels (error, warning,
-                        info, debug, audit, usage) and debug flags (db, storage, credentials, ...,
-                        or all), comma-separated. The settings apply to the request on the server
-                        too, so it prints and saves at them (grok s o timeline). Only that
-                        request's settings change; no permission is needed
-  --debug               functions run: a debug call; the server returns its log (a query's
-                        stages, as the query debugger shows them) to stderr, like --log
+  --log [<spec>]        Keep what this command's requests log at <spec>, then collect it from
+                        every server instance and print it to stderr: verbose (default),
+                        standard, levels (error, warning, info, debug, audit, usage) and debug
+                        flags (db, storage, credentials, ..., or all), comma-separated. Only
+                        these requests are affected; no permission is needed
+  --debug               functions run: a debug call, as the query debugger runs it; its log (the
+                        query's stages) prints the same way
   --json <file>         Read a JSON body from a file (save, functions run, batch, raw)
   --data '<json>'       Inline JSON body for raw
   -O, --output-file     Write table download to a file instead of stdout

@@ -4,7 +4,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 import {NodeDapi} from '../utils/node-dapi';
-import {createClient, logSpecOf} from '../utils/server-client';
+import {createClient} from '../utils/server-client';
 import {printOutput, printError, progressReporter, OutputFormat} from '../utils/server-output';
 import {BytesKind, DEFAULT_TYPES, nqNameOf, resolveTypes} from '../utils/migrate/registry';
 import * as bundle from '../utils/migrate/bundle';
@@ -187,8 +187,8 @@ async function handleTransfer(rest: string[], argv: any, output: OutputFormat): 
     printError(new Error(MIGRATE_USAGE));
     return false;
   }
-  const from = new NodeDapi(await createClient(String(argv.from), !!argv.admin, logSpecOf(argv)));
-  const to = new NodeDapi(await createClient(String(argv.to), !!argv.admin, logSpecOf(argv)));
+  const from = new NodeDapi(await createClient(String(argv.from), !!argv.admin));
+  const to = new NodeDapi(await createClient(String(argv.to), !!argv.admin));
   if (from.client.baseUrl === to.client.baseUrl)
     throw new Error(`--from and --to are the same server (${to.client.baseUrl}) — nothing to migrate`);
   if (argv['by-namespace']) {

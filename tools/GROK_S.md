@@ -538,30 +538,36 @@ the listing with `--prefix` first. `logs` read with the server's AWS role, or wi
 
 ### Logging one command (`--log`)
 
-`logger set --user` changes what a user logs for a while; `--log` does it for the requests of one
-command, and prints what they logged. It works on every `grok s` command, `grok s o` included:
+`logger set --user` changes what a user logs for a while; `--log` makes the server keep what the
+requests of one command log, and prints it at the end. It works on every `grok s` command, `grok s o`
+included:
 
 ```bash
 grok s functions run UsageAnalysis:Groups --log                # verbose: every level
 grok s functions run UsageAnalysis:Groups --log verbose,db     # and every SQL statement (the db debug flag)
 grok s users list --log debug,storage,credentials              # levels and flags; flags alone add debug
-grok s functions run 'MyPkg:MyQuery()' --debug --log           # the query's debug log and the server's, together
-grok s users list --log --output json 2>log.jsonl              # one JSON object per message
+grok s functions run 'MyPkg:MyQuery()' --debug                 # the query's own debug log, plus errors and warnings
+grok s users list --log --output json 2>log.jsonl              # one JSON object per record
 ```
+
+Every request of the command carries one `datlas-log-id` (a new UUID per command) and the spec in
+`datlas-log`. A command is often several requests, and each can land on a different isolate and
+server instance: each keeps what its request logged at the spec in memory, in a buffer for that id.
+Those records never reach the database, the console or a sync destination, and what the server logs
+the usual way does not change. When the command ends, `GET /log/requests/<logId>` gathers the
+buffers from every isolate of every instance over the message queue, hands them over and forgets
+them; the CLI prints them to stderr, so stdout keeps the result. A buffer nobody gathers is dropped
+after an hour. No permission is needed; another user's id takes `ViewTelemetry`.
+`grok s o logs request <logId>` gathers one id by hand.
 
 The spec is comma-separated: `verbose`, `standard`, the levels (`error`, `warning`, `info`, `debug`,
 `audit`, `usage`) and the debug flags of the logger settings (`db`, `socket`, `storage`, `credentials`,
-`docker`, `auth`, ... or `all`). It goes to the server in the `datlas-log` header and becomes that
-request's logger settings in place of the user's entry: the request prints and saves at them too, so
-its records are also in `grok s o timeline --session <id>` (the header line of each log names the
-session). The server answers with the response and its log in one envelope; the CLI prints the log
-to stderr, so stdout keeps the result. Unlike `logger set` it needs no permission: the settings
-live on that request only and are never stored.
+`docker`, `auth`, ... or `all`).
 
 `functions run --debug` sends `?debug=true`: the call runs as a debug call (not cached), the way the
-query debugger in the UI runs it, and its own log (connection, credentials, the query's stages, rows)
-comes back the same way. Without `--log` it carries only that call's log. Only what runs in Datlas itself is captured: a script that runs on a
-queue worker returns no log here (read it with `grok s o timeline`).
+query debugger in the UI runs it, and its own log (connection, the query's stages) is kept with the
+rest; without `--log` the spec is `error,warning`. Only what runs in Datlas is kept: a script that
+runs on a queue worker adds nothing here.
 
 ## Describing an entity type
 

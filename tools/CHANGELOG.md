@@ -2,8 +2,9 @@
 
 ## v.next
 
-* Added `grok s ... --log [<spec>]` on every `grok s` command (`grok s o` included): the requests run at ad-hoc logger settings (`verbose`, `standard`, levels, debug flags or `all`) sent in the `datlas-log` header, and what the server logged comes back with each response and prints to stderr
-* Added `grok s functions run ... --debug`: a debug call (`?debug=true`) whose own log, a query's stages as the query debugger shows them, prints the same way
+* Added `grok s ... --log [<spec>]` on every `grok s` command (`grok s o` included): its requests share a `datlas-log-id`, every server instance keeps what they log at the spec (`verbose`, `standard`, levels, debug flags or `all`) in memory only, and at the end the command gathers it and prints it to stderr
+* Added `grok s functions run ... --debug`: a debug call (`?debug=true`) whose own log, a query's stages as the query debugger shows them, is kept and printed the same way
+* Added `grok s o logs request <logId>`: gathers what the requests of one `--log` command logged
 * `grok api`: Fixed double plurals in table accessors (`categorieses` → `categories`)
 * Upgraded Puppeteer to v25, which drops the vulnerable `extract-zip` and `basic-ftp` transitive dependencies; Node.js 22.12+ is now required
 * `grok add app --domain`, `grok api --ui`: scaffold against `@datagrok-libraries/ems`

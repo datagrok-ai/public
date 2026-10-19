@@ -52,13 +52,16 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
                                        read them with timeline --session <id>
   logs capture stop <login|group>      Remove that expiring entry; one that holds other settings is left
                                        to logger set --remove
+  logs request <logId>                 What the requests of one command logged (grok s ... --log prints
+                                       its logId), gathered from every instance's memory; once only
 
 Durations are 30m (minutes), 24h, 7d, 2w; times are ISO 8601 (UTC without an offset) or
 relative, written with = (--from=-2h).
 
-Any grok s command takes --log [<spec>]: logger settings for its own requests (verbose, standard,
-levels, debug flags or all, comma-separated), and what they logged printed to stderr; functions run
---debug returns a debug call's log the same way.`;
+Any grok s command takes --log [<spec>]: its requests share one logId, every instance keeps what they
+log at <spec> (verbose, standard, levels, debug flags or all, comma-separated) in memory, and the
+command gathers and prints it to stderr at the end, as logs request does; functions run --debug adds
+the debug call's own log.`;
 
 const UNIT_MS: Record<string, number> = {m: 60000, h: 3600000, d: 86400000, w: 604800000};
 
@@ -311,6 +314,12 @@ async function logs(dapi: NodeDapi, verb: string | undefined, rest: string[], ar
   }
   if (verb === 'container')
     return containerLogs(dapi, rest[0], argv, output);
+  if (verb === 'request' && rest[0] !== undefined) {
+    const rows = await readRequestLog(dapi, String(rest[0]));
+    printOutput(output === 'table' ? rows.map((r) => ({time: r.time, level: r.level, flag: r.flag ?? '',
+      source: r.source ?? '', message: r.message})) : rows, output);
+    return true;
+  }
   if (verb === 'archive' && rest[0] === 'list') {
     let objects: any[] = await dapi.raw('GET', `/log/archive/objects${buildQuery({connection, prefix: argv.prefix,
       limit: argv.limit, format: 'json'})}`) ?? [];
@@ -327,8 +336,39 @@ async function logs(dapi: NodeDapi, verb: string | undefined, rest: string[], ar
     return true;
   }
   throw new Error('Usage: grok s observe logs cloud [--group <g>] ... | logs container [<name|id>] | ' +
-    'logs archive list [--prefix <p>] | logs archive read <key> | logs capture [<login|group>] | ' +
+    'logs archive list [--prefix <p>] | logs archive read <key> | logs request <logId> | logs capture [<login|group>] | ' +
     'logs capture stop <login|group>');
+}
+
+/// `GET /log/requests/<logId>`: what every isolate of every instance kept in memory for the id, as JSON lines,
+/// oldest first. Gathering hands the records over, so a second read returns none.
+async function readRequestLog(dapi: NodeDapi, logId: string): Promise<any[]> {
+  return await dapi.raw('GET', `/log/requests/${encodeURIComponent(logId)}`) ?? [];
+}
+
+/** After a command run with `--log`: its log on stderr, so stdout keeps the result; JSON lines under `--output json`. */
+export async function printRequestLog(dapi: NodeDapi, logId: string, output: OutputFormat): Promise<void> {
+  let rows: any[];
+  try {
+    rows = await readRequestLog(dapi, logId);
+  }
+  catch (e: any) {
+    process.stderr.write(`--log: could not read the log of ${logId}: ${e?.message ?? e}\n`);
+    return;
+  }
+  if (output === 'json') {
+    for (const r of rows)
+      process.stderr.write(JSON.stringify({logId, ...r}) + '\n');
+    return;
+  }
+  process.stderr.write(`── log ${logId}: ${rows.length} record${rows.length === 1 ? '' : 's'} (grok s o logs request ${logId})\n`);
+  for (const r of rows) {
+    const tags = [r.flag, r.source].filter(Boolean).join(' ');
+    process.stderr.write(`${String(r.time ?? '').substring(11, 23)} ${String(r.level ?? '').toUpperCase().padEnd(7)} ` +
+      `${tags ? `[${tags}] ` : ''}${r.message ?? ''}\n`);
+    if (r.stackTrace)
+      process.stderr.write(String(r.stackTrace).replace(/^/gm, '    ') + '\n');
+  }
 }
 
 /// `logs container`: the server only cuts a container's log by line count, so the window and --grep apply here.
