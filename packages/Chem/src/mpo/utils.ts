@@ -293,8 +293,10 @@ export function deepEqual<T>(current: T, original: T): boolean {
     return true;
   }
 
-  for (const key in original) {
-    if (!deepEqual(current[key], original[key]))
+  const cur = current as Record<string, unknown>;
+  const orig = original as Record<string, unknown>;
+  for (const key of new Set([...Object.keys(cur), ...Object.keys(orig)])) {
+    if (!deepEqual(cur[key], orig[key]))
       return false;
   }
   return true;
