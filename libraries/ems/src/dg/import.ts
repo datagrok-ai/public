@@ -222,10 +222,11 @@ class ImportFlow {
           const verdict = VERDICTS[verdicts.get(i)?.predicted ?? ''];
           return verdict === undefined ? '' : badge(verdict.label, {variant: verdict.variant});
         }}]),
-      ...mapping.map(([target, column]) => ({
-        name: target, header: ImportFlow._caption(this, target),
-        render: (i: number) => text(frame.get(column, i)),
-      }))],
+      ...mapping.map(([target, name]) => {
+        const column = frame.columns.byName(name);
+        return {name: target, header: ImportFlow._caption(this, target),
+          render: (i: number) => text(ImportFlow._valueOrNull(column, i))};
+      })],
       cellState: {
         isChanged: () => false,
         errorOf: (key, target) => {
@@ -295,14 +296,17 @@ class ImportFlow {
   /** The mapped rows, under their target names — what is posted, and the only thing that is. */
   private _payload(frame: DG.DataFrame, mapping: [string, string][], count: number):
     Record<string, unknown>[] {
-    const rows: Record<string, unknown>[] = [];
-    for (let i = 0; i < count; i++) {
-      const row: Record<string, unknown> = {};
-      for (const [target, column] of mapping)
-        row[target] = frame.get(column, i);
-      rows.push(row);
+    const rows: Record<string, unknown>[] = Array.from({length: count}, () => ({}));
+    for (const [target, name] of mapping) {
+      const column = frame.columns.byName(name);
+      for (let i = 0; i < count; i++)
+        rows[i][target] = ImportFlow._valueOrNull(column, i);
     }
     return rows;
+  }
+
+  private static _valueOrNull(column: DG.Column, i: number): unknown {
+    return column.isNone(i) ? null : column.get(i);
   }
 
   /** Only the options the form offers; an absent one is left to the server's default. */

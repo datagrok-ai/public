@@ -59,6 +59,7 @@ export async function computeMpo(
   createDesirabilityColumns: boolean = false,
   preview: boolean = false,
   calculator?: MpoCalculator,
+  profileName: string = getMpoScoreColumnName(profile.name),
 ): Promise<string[]> {
   const mappedProperties: Record<string, PropertyDesirability> = {};
   for (const [propName, prop] of Object.entries(profile.properties)) {
@@ -66,7 +67,6 @@ export async function computeMpo(
     mappedProperties[columnName] = prop;
   }
 
-  const profileName = getMpoScoreColumnName(profile.name);
   if (!processed) {
     const existingCol = df.col(profileName);
     if (existingCol)
@@ -207,7 +207,7 @@ export function createProfileForDf(df: DG.DataFrame): DesirabilityProfile {
   const props: {[key: string]: PropertyDesirability} = {};
   let count = 0;
   for (const col of df.columns.numerical) {
-    if (!isMpoNumericColumn(col))
+    if (!isMpoNumericColumn(col) || col.name.startsWith('~'))
       continue;
     if (count >= MAX_MPO_PROPERTIES)
       break;
@@ -254,8 +254,10 @@ export function deepEqual<T>(current: T, original: T): boolean {
     return true;
   }
 
-  for (const key in original) {
-    if (!deepEqual(current[key], original[key]))
+  const cur = current as Record<string, unknown>;
+  const orig = original as Record<string, unknown>;
+  for (const key of new Set([...Object.keys(cur), ...Object.keys(orig)])) {
+    if (!deepEqual(cur[key], orig[key]))
       return false;
   }
   return true;

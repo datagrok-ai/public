@@ -15,18 +15,22 @@ export type ChartSpec =
     minHeight: number,
     // radar vs PC plot switch above a multi-scalar chart
     scalarChartSwitch: boolean,
+    // shared vs independent y scale switch above a multi-value line chart
+    sharedScaleSwitch: boolean,
   };
 
 const hint = (text: string): ChartSpec => ({kind: 'hint', text});
 
-const viewer = (type: string, options: Record<string, any>, minHeight: number, scalarChartSwitch = false): ChartSpec =>
-  ({kind: 'viewer', type, options, minHeight, scalarChartSwitch});
+const viewer = (
+  type: string, options: Record<string, any>, minHeight: number, scalarChartSwitch = false, sharedScaleSwitch = false,
+): ChartSpec => ({kind: 'viewer', type, options, minHeight, scalarChartSwitch, sharedScaleSwitch});
 
 export function chartSpec(
   comparison: Comparison | null,
   hasSelection: boolean,
   scalarChartType: ScalarChartType,
   radarAvailable: boolean,
+  sharedScale = true,
 ): ChartSpec {
   if (!hasSelection)
     return hint('Select what to compare above');
@@ -59,10 +63,13 @@ export function chartSpec(
   const {valueColumnNames} = comparison;
   if (comparison.isKeyIndex) {
     // multi-value suggestions need a line-chartable index, but the index may switch to a
-    // string column after selection
+    // string column after selection, and datetime mixed with numeric charts only as elapsed time
     if (valueColumnNames.length > 1) {
-      return hint('Multiple values cannot chart over a categorical index — pick a numeric or datetime ' +
-        'index, or select a single value');
+      return hint(comparison.mixedTimeIndex ?
+        'Datetime and numeric indexes chart together only in the relative timeseries mode — set it ' +
+          'on every table, or select a single value' :
+        'Multiple values cannot chart over a categorical index — pick a numeric or datetime ' +
+          'index, or select a single value');
     }
     return viewer(DG.VIEWER.BAR_CHART, {
       valueColumnName: comparison.valueColumnName,
@@ -88,10 +95,14 @@ export function chartSpec(
     }, 300);
   }
 
+  const shareable = valueColumnNames.length > 1 && comparison.sameUnits;
+  const shared = shareable && sharedScale;
   return viewer(DG.VIEWER.LINE_CHART, {
     xColumnName: comparison.indexColumnName,
     yColumnNames: valueColumnNames,
-    splitColumnNames: comparison.splitColumnName ? [RUN_COLUMN, comparison.splitColumnName] : [RUN_COLUMN],
-    multiAxis: false,
-  }, 250 * Math.max(1, valueColumnNames.length));
+    splitColumnNames: [RUN_COLUMN, comparison.stepColumnName, comparison.splitColumnName]
+      .filter((name): name is string => !!name),
+    multiAxis: shared,
+    yGlobalScale: shared,
+  }, shared ? 250 : 250 * Math.max(1, valueColumnNames.length), false, shareable);
 }

@@ -170,7 +170,6 @@ export type PipelineReturnConfiguration<P> = PipelineLinkConfigurationBase<P> & 
 
 export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'nodemeta' | 'selector', // selector for API compat
-  actions?: undefined;
   handler: SelectorHandler;
   runOnInit?: undefined;
   sequential?: boolean;
@@ -207,20 +206,30 @@ export type RuleLogic = RulesLogic<RuleOps>;
 export type RuleExpr = RuleLogic | RuleExpr[];
 export type RuleTargets = string | string[];
 
-/** An effect's own condition, combined with the rule's `when`. */
-type RuleEffectWhen = {when?: RuleLogic};
+/** An effect's own condition, combined with the rule's `when`. `separate` runs the effect in a link of its own
+ *  whose `from` holds only the inputs it reads (with the rule's `when` and its sources); `additionalTriggers`
+ *  adds inputs it does not read and implies `separate`. */
+type RuleEffectOptions = {when?: RuleLogic, separate?: boolean, additionalTriggers?: RuleTargets};
 
-export type RuleMetaEffect = RuleEffectWhen & (
+export type RuleMetaEffect = RuleEffectOptions & (
   | {effect: 'hide' | 'show', targets: RuleTargets}
+  /** Hides or shows the action with id `action` on the nodes of the `actions` aliases. */
+  | {effect: 'hideAction' | 'showAction', targets: RuleTargets, action: string}
+  /** Sets the description field (`title`, `description`, `tags`, `body`) the target's query ends with. */
+  | {effect: 'describe', targets: RuleTargets, value: RuleExpr}
   | {effect: 'items', targets: RuleTargets, items: RuleExpr}
   | {effect: 'meta', targets: RuleTargets, meta: Record<string, RuleExpr>});
 
-export type RuleValidatorEffect = RuleEffectWhen & (
-  | {effect: 'error' | 'warning' | 'notification', targets: RuleTargets, message: RuleExpr}
+/** A button on a message: the action with id `action` on the node of the `actions` alias. */
+export type RuleMessageAction = {actions: string, action: string, actionName: RuleExpr, additionalParams?: RuleExpr};
+
+export type RuleValidatorEffect = RuleEffectOptions & (
+  | {effect: 'error' | 'warning' | 'notification', targets: RuleTargets, message: RuleExpr,
+    actions?: RuleMessageAction[]}
   /** Writes a source's verdicts: `isError` items as errors, the rest as warnings. */
   | {effect: 'verdicts', targets: RuleTargets, source: string});
 
-export type RuleDataEffect = RuleEffectWhen & (
+export type RuleDataEffect = RuleEffectOptions & (
   | {effect: 'set', targets: RuleTargets, value: RuleExpr, restriction?: RestrictionType}
   | {effect: 'clear', targets: RuleTargets, restriction?: RestrictionType}
   /** Writes each key of the `values` object to the target alias of the same name;
@@ -251,6 +260,7 @@ export type RuleSource =
   {table: DG.DataFrame | string | {csv: string, options?: DG.CsvImportOptions}};
 
 export type SourceKind = RuleSource extends infer S ? S extends unknown ? keyof S : never : never;
+export type SourceSpec<K extends SourceKind> = Extract<RuleSource, Record<K, unknown>>[K];
 
 export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'rule';
@@ -262,7 +272,6 @@ export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   debounce?: number;
   runOnInit?: boolean;
   handler?: undefined;
-  actions?: undefined;
   params?: undefined;
 };
 
@@ -288,7 +297,7 @@ export type PipelineCheckConfiguration<P> = {
 export type PipelineLinkConfigurationInput<P> = PipelineLinkConfiguration<P> | PipelineRuleConfiguration<P> | PipelineCheckConfiguration<P>;
 
 /** Action fields shared between config-time (ActionInfo<P>) and the UI-facing ViewAction.
- *  Excludes runtime-only matcher fields (showWhen/hideWhen) and UI-only fields (uuid/visible). */
+ *  Excludes the visibility fields (showWhen/hideWhen) and the UI-only uuid. */
 export type ActionInfoBase = {
   id: string;
   position: ActionPositions;
@@ -304,10 +313,10 @@ export type ActionInfoBase = {
 
 export type ActionInfo<P> = ActionInfoBase & {
   runOnInit?: undefined;
-  /** LQL string or array. Action's ViewAction.visible is true only when all
-   *  required entries match. (optional) entries are ignored. Empty / absent => no positive gate. */
+  /** LQL string or array. The action is hidden unless every required entry matches a node.
+   *  (optional) entries are ignored. Empty / absent => no positive gate. */
   showWhen?: P;
-  /** LQL string or array. Action's ViewAction.visible is false when any entry matches.
+  /** LQL string or array. The action is hidden when any entry matches a node.
    *  Mirrors the link-level `not` field. Empty / absent => no negative gate. */
   hideWhen?: P;
 };

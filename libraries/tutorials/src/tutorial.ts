@@ -864,9 +864,9 @@ export abstract class Tutorial extends DG.Widget {
   /** Prompts the user to open the "Add New Column" dialog, waits for it to open and returns it. */
   protected async openAddNCDialog(instructions: string = 'Open the "Add New Column" dialog',
     description: string = ''): Promise<DG.Dialog> {
-    const addNCIcon = () => $('div.d4-ribbon-item').has('i.svg-add-new-column')[0] ?? null;
+    const addNCIcon = $('div.d4-ribbon-item').has('i.svg-add-new-column')[0];
     return await this.openDialog(instructions, 'Add New Column', addNCIcon, description,
-      () => $(addNCIcon()!).find('i.svg-add-new-column')[0]!.click());
+      () => $(addNCIcon).find('i.svg-add-new-column')[0]!.click());
   }
 
   /** Prompts the user to select a menu item in the context menu. */

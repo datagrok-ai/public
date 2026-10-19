@@ -2,6 +2,7 @@
 
 ## v.next
 
+* u2: Took u2's stylesheet from u2 itself (installed once per page, the newest copy any package carries) instead of the EMS sheet bundle; republish with the other u2 packages
 * Fixed `app.spec.json`: `u2-domain-source` moved to the components tray, so the spec renders
 * EMS: imports from `@datagrok-libraries/ems`
 * GROK-20298: Locations: New container from the selected location — a ribbon button, disabled with "Select a location first" until a node is picked, opens the Containers app narrowed to that node's subtree, named "Containers in &lt;location&gt;", with every draft it creates starting in that location and its site

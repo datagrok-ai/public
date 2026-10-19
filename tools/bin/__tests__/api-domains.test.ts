@@ -348,6 +348,18 @@ describe('generateDomainClients', () => {
     expect(code).toMatch(/interface SampleInsert \{[^}]*  seq\?: number;/);
   });
 
+  it('accessors: the plural of the singular, as the platform derives a table\'s plural name', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      for (const name of ['categories', 'order_details', 'status', 'analysis', 'box'])
+        m.tables[name] = {columns: {name: {type: 'string'}}};
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    for (const accessor of ['samples', 'categories', 'orderDetails', 'statuses', 'analyses', 'boxes'])
+      expect(code).toContain(`  get ${accessor}() {`);
+  });
+
   it('external storage: rows carry id only, remote names are metadata, no expand map, no transaction', () => {
     const dir = makePackage();
     mutateManifest(dir, (m) => {
@@ -615,6 +627,15 @@ describe('generateDomainClients', () => {
     const {result, output} = runCapturingLog(dir);
     expect(result).toBe(false);
     expect(output).toContain(`table 'sample' emits interface 'SampleRow' already generated`);
+    expect(fs.existsSync(dbPath(dir))).toBe(false);
+  });
+
+  it('rejects two tables of one schema that get the same accessor', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.samples = {columns: {name: {type: 'string'}}});
+    const {result, output} = runCapturingLog(dir);
+    expect(result).toBe(false);
+    expect(output).toContain(`tables 'sample' and 'samples' both get the accessor 'samples'`);
     expect(fs.existsSync(dbPath(dir))).toBe(false);
   });
 

@@ -23,6 +23,8 @@ const SHARING_PASSWORD = process.env.DATAGROK_SHARING_PASSWORD || '';
 const AUTH_STATE = path.resolve(__dirname, '..', '.auth.json');
 // The top "Current object" ribbon repeats the entity name as a hidden 0x0 link label.
 const LINK_LABEL = '.d4-link-label:not(.grok-context-ribbon *)';
+// Since core#840 a favorite space is an expandable tree node, not a link label
+const FAV_NODE = '.grok-browse-favorite > .d4-tree-view-node > .d4-tree-view-group-label:visible';
 
 // ===========================================================================
 // Helpers
@@ -642,7 +644,7 @@ test('6. Favorites: add and remove space from favorites', async () => {
         .find((e) => e.textContent?.trim() === 'Favorites') as HTMLElement | undefined;
       if (el) el.click();
     });
-    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${FAV}$`) }).first()).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator(FAV_NODE).filter({ hasText: new RegExp(`^${FAV}$`) }).first()).toBeVisible({ timeout: 8_000 });
 
     // Verify in sidebar favorites pane (star icon)
     await page.locator('.d4-tab-header-stripe.layout-sidebar.vertical > div:nth-child(6)').click();
@@ -659,7 +661,7 @@ test('6. Favorites: add and remove space from favorites', async () => {
         .find((e) => e.textContent?.trim() === 'Favorites') as HTMLElement | undefined;
       if (el) el.click();
     });
-    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${FAV}$`) }).first()).not.toBeVisible({ timeout: 8_000 });
+    await expect(page.locator(FAV_NODE).filter({ hasText: new RegExp(`^${FAV}$`) }).first()).not.toBeVisible({ timeout: 8_000 });
 
     // Verify gone from sidebar favorites pane
     await page.locator('.d4-tab-header-stripe.layout-sidebar.vertical > div:nth-child(6)').click();

@@ -163,6 +163,18 @@ class EventTargetBase {
   }
 
   dispatchEvent(event) {
+    // the browser's window.event: the event being dispatched, while its listeners run
+    const outer = globalThis.event;
+    globalThis.event = event;
+    try {
+      return this._dispatch(event);
+    }
+    finally {
+      globalThis.event = outer;
+    }
+  }
+
+  _dispatch(event) {
     event.target = this;
     const path = [];
     for (let node = this; node; node = node.parentNode)

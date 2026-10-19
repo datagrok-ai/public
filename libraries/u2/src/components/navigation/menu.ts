@@ -17,6 +17,9 @@ export interface MenuItemOptions {
   shortcut?: string;
   enabled?: boolean;
   check?: boolean;
+  /** Grey text after the label — what the item stands for ("hydroxyl · O[*:2]"); the details of one
+   * menu start in one column. */
+  detail?: string;
 }
 
 export type MenuState = 'closed' | 'open' | 'submenu-open';
@@ -189,9 +192,11 @@ export class Menu {
     panel.setAttribute('role', 'menu');
     const level: MenuLevel = {depth, panel, entries: [], active: -1, openIndex: -1,
       scope: this._scope!.child('menu-level')};
+    const detailed = nodes.some((n) => n.options?.detail !== undefined);
+    panel.classList.toggle('u2-menu-detailed', detailed);
     for (const node of nodes) {
       const itemPath = path === '' ? node.label : `${path} > ${node.label}`;
-      const el = this._renderNode(node, depth, level.entries.length, itemPath);
+      const el = this._renderNode(node, depth, level.entries.length, itemPath, detailed);
       level.entries.push({node, el, path: itemPath});
       panel.append(el);
     }
@@ -204,7 +209,7 @@ export class Menu {
     return level;
   }
 
-  private _renderNode(node: MenuNode, depth: number, index: number, path: string): HTMLElement {
+  private _renderNode(node: MenuNode, depth: number, index: number, path: string, detailed: boolean): HTMLElement {
     if (node.kind === 'separator') {
       const sep = document.createElement('div');
       sep.className = 'u2-menu-separator';
@@ -239,7 +244,18 @@ export class Menu {
     const accel = document.createElement('span');
     accel.className = isGroup ? 'u2-menu-arrow' : 'u2-menu-shortcut';
     accel.textContent = isGroup ? '' : (options.shortcut ?? '');
-    el.append(icon, label, accel);
+    el.append(icon, label);
+    // an item of a detailed menu with no detail of its own ("Edit definition…") lets its label run on
+    // across the details' column, so a long label does not push every detail right
+    label.classList.toggle('u2-menu-label-wide', detailed && options.detail === undefined);
+    if (options.detail !== undefined) {
+      const detail = document.createElement('span');
+      detail.className = 'u2-menu-detail';
+      detail.dataset.u2Part = 'item-detail';
+      detail.textContent = options.detail;
+      el.append(detail);
+    }
+    el.append(accel);
     return el;
   }
 

@@ -1,5 +1,5 @@
 import {
-  Handler, MetaHandler, RuleDataEffect, RuleExpr, RuleMetaEffect, RuleSource, RuleValidatorEffect, Validator,
+  Handler, MetaHandler, RuleDataEffect, RuleExpr, RuleMetaEffect, RuleSource, RuleValidatorEffect, SelectorHandler,
 } from '../config/PipelineConfiguration';
 import {ValidationResult} from '../data/common-types';
 import {IControllerBase} from '../RuntimeControllers';
@@ -60,9 +60,38 @@ export const ruleMetaHandler: MetaHandler = ({controller}) => {
   });
 };
 
+export const ruleNodeMetaHandler: SelectorHandler = ({controller}) => {
+  const {when, effects, sources} = ruleParams<RuleMetaEffect>(controller);
+  return withContext(controller, sources, (ctx) => {
+    const ruleOn = isOn(when, ctx);
+    // like items and meta, an effect that is off adds nothing, so it never erases another one's value
+    const descriptions = new Map<string, any>();
+    for (const effect of effects) {
+      const on = ruleOn && isOn(effect.when, ctx);
+      for (const target of ruleTargets(effect.targets)) {
+        if (effect.effect === 'describe') {
+          if (on)
+            descriptions.set(target, evaluate(effect.value, ctx));
+          else if (!descriptions.has(target))
+            descriptions.set(target, undefined);
+        } else if (effect.effect === 'hideAction' || effect.effect === 'showAction')
+          controller.setActionVisible(target, effect.action, effect.effect === 'showAction' ? on : !on);
+      }
+    }
+    for (const [target, value] of descriptions)
+      controller.setDescriptionItem(target, value);
+  });
+};
+
 const severityKey = {error: 'errors', warning: 'warnings', notification: 'notifications'} as const;
 
-export const ruleValidatorHandler: Validator = ({controller}) => {
+type ValidationTarget = IControllerBase & {
+  setValidation(name: string, validation?: ValidationResult): void,
+  getValidationAction?(name: string, actionId: string): string | undefined,
+};
+
+// validator and pipeline validator controllers share this shape
+export const ruleValidatorHandler = ({controller}: {controller: ValidationTarget}) => {
   const {when, effects, sources} = ruleParams<RuleValidatorEffect>(controller);
   return withContext(controller, sources, (ctx) => {
     const ruleOn = isOn(when, ctx);
@@ -88,8 +117,19 @@ export const ruleValidatorHandler: Validator = ({controller}) => {
           .filter((item) => item != null).map((item) => String(item));
         if (!descriptions.length)
           continue;
+        // an action that is not found on the actions node is left out, as validators do
+        const actions = (effect.actions ?? []).flatMap((item) => {
+          const action = controller.getValidationAction?.(item.actions, item.action);
+          if (!action)
+            return [];
+          const additionalParams = item.additionalParams === undefined ? undefined :
+            evaluate(item.additionalParams, ctx);
+          return [{actionName: String(evaluate(item.actionName, ctx)), action, ...(additionalParams != null ?
+            {additionalParams} : {})}];
+        });
         const result = results[target] ??= {};
-        (result[severityKey[effect.effect]] ??= []).push(...descriptions.map((description) => ({description})));
+        (result[severityKey[effect.effect]] ??= []).push(...descriptions.map((description) =>
+          actions.length ? {description, actions} : {description}));
       }
     }
     for (const [target, result] of Object.entries(results))

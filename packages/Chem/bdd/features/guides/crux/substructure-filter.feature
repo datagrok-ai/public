@@ -1,10 +1,12 @@
-@guide @sketcher-controls
+@guide @sketcher-controls @serial
 Feature: Filter a table by a query drawn in Crux
   A guide: how do I filter the molecules of a table by a substructure query with an atom list? The Structure filter's
   Sketch opens Crux in query mode, and the filter follows the drawing as it is drawn: a benzene ring keeps the
   molecules that hold one; making one of its atoms a list of carbon or nitrogen keeps those with a pyridine too. Demo
   data: spgi-100, 100 molecules. The rows the filter passes are counted after each step. The feature drives Crux's own
   controls (@sketcher-controls): a run that pins another sketcher skips it.
+  Serial (`@serial`): it filters while the sketcher is open, by Filter as you draw, the account's setting that
+  card-interplay and ketcher-sketch clear; they take turns.
 
   Scenario: Filter by a benzene ring, then widen the query with an atom list
     Given user is logged in

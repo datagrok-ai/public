@@ -521,6 +521,65 @@ M  END
     sketcherDialogs.forEach((it) => it.close());
   });
 
+  // a card restored from a layout gets its molecule from applyState in a view of its own: both cards keep the SMILES
+  // the query was typed as (after a project was reopened, they named it by SMARTS)
+  test('a filter card restored with a SMILES keeps it, and so does the card it syncs with', async () => {
+    const df = await readDataframe('tests/sar-small_test.csv');
+    await grok.data.detectSemanticTypes(df);
+    const tv = grok.shell.addTableView(df);
+    let tv2: DG.TableView | undefined;
+    const card = async (view: DG.TableView): Promise<SubstructureFilter> => {
+      const fg = view.getFiltersGroup({createDefaultFilters: false});
+      let found: SubstructureFilter | undefined;
+      await awaitCheck(() => (found = fg.filters.find((f: any) => f?.columnName === 'smiles') as SubstructureFilter) !== undefined,
+        'the substructure card was not added', 10000);
+      return found!;
+    };
+    try {
+      tv.getFiltersGroup({createDefaultFilters: false}).updateOrAdd(
+        {type: DG.FILTER_TYPE.SUBSTRUCTURE, column: 'smiles', columnName: 'smiles', molBlock: 'c1ccncc1'}, false);
+      const first = await card(tv);
+      await awaitCheck(() => !first.calculating && df.filter.trueCount < df.rowCount, 'the query did not filter', 15000);
+      const filtered = df.filter.trueCount;
+      const layout = tv.saveLayout();
+      tv2 = grok.shell.addTableView(df);
+      tv2.loadLayout(layout);
+      const second = await card(tv2);
+      await awaitCheck(() => !second.calculating && second.currentMolecule !== '', 'the restored card has no query', 15000);
+      await delay(1000);
+      expect(df.filter.trueCount, filtered);
+      for (const [name, f] of [['restored', second], ['first', first]] as [string, SubstructureFilter][]) {
+        expect(f.currentMolecule, 'c1ccncc1', `the ${name} card's molecule`);
+        expect(f.filterSummary, 'c1ccncc1_Contains', `the ${name} card's summary`);
+      }
+    } finally {
+      tv2?.close();
+      tv.close();
+    }
+  });
+
+  // the typed molecule kept for its own molblock must not swallow a query feature drawn on it, which leaves its SMILES
+  test('a ring bond count drawn on a typed molecule is an edit', async () => {
+    const df = await readDataframe('tests/sar-small_test.csv');
+    await grok.data.detectSemanticTypes(df);
+    const dialogs: DG.Dialog[] = [];
+    const filter = await createFilter('smiles', df, dialogs);
+    try {
+      filter.sketcher.setSmiles('c1ccncc1');
+      await awaitCheck(() => filter.currentMolecule === 'c1ccncc1' && !filter.calculating, 'the typed query did not filter',
+        10000);
+      const mol = chemCommonRdKit.getRdKitModule().get_mol('c1ccncc1');
+      const ringBondCount = mol.get_molblock().replace('M  END', 'M  RBC  1   1   2\nM  END');
+      mol.delete();
+      filter.sketcher.setMolFile(ringBondCount);
+      await awaitCheck(() => filter.currentMolecule.includes('M  RBC'),
+        `the drawn ring bond count was taken for no edit: the filter keeps ${filter.currentMolecule}`, 10000);
+    } finally {
+      dialogs.forEach((it) => it.close());
+      filter.detach();
+    }
+  });
+
   test('runMultipleUseASFilter', async () => { //#2628 (https://github.com/datagrok-ai/public/issues/2628)
     const df = await readDataframe('tests/sar-small_test.csv');
     await grok.data.detectSemanticTypes(df);

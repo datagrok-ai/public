@@ -52,7 +52,7 @@ export function setMultiMode(state: TargetSelection, on: boolean): TargetSelecti
 }
 
 /**
- * Drops multi-value keys whose target vanished; merely conflicting targets stay selected.
+ * Drops multi-value keys whose target vanished; merely incompatible targets stay selected.
  * Losing every key exits the mode; a vanished anchor moves to a still-charted value.
  */
 export function reconcileTargets(state: TargetSelection, keys: Set<string>): TargetSelection {

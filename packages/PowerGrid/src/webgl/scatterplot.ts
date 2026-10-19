@@ -17,19 +17,16 @@ const enum Attr { X, Y, Color, Size, Type, Selected }
 const CONTEXT_ATTRIBUTES: WebGLContextAttributes = {alpha: true, premultipliedAlpha: true, antialias: false,
   depth: false, stencil: false, preserveDrawingBuffer: false, failIfMajorPerformanceCaveat: true};
 
-let capabilities: {maxPointSize: number, renderer: string} | null | undefined;
-/** Why the plots are not drawn with WebGL 2 here, once the probe found it unusable. */
-let unavailable = '';
+let capabilities: {maxPointSize: number} | null | undefined;
 
 function webGLCapabilities() {
   if (capabilities === undefined) {
     const gl = document.createElement('canvas').getContext('webgl2', CONTEXT_ATTRIBUTES);
     // the browser flags its own software fallback only; one picked by a flag or a policy shows in the renderer name
     const info = gl?.getExtension('WEBGL_debug_renderer_info');
-    const renderer: string = info ? gl!.getParameter(info.UNMASKED_RENDERER_WEBGL) : 'an unnamed GPU';
-    const software = info && /swiftshader|llvmpipe|softpipe|software|basic render/i.test(renderer);
-    capabilities = gl && !software ? {maxPointSize: gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1], renderer} : null;
-    unavailable = !gl ? 'no hardware WebGL 2' : software ? `software WebGL 2 (${renderer})` : '';
+    const software = info && /swiftshader|llvmpipe|softpipe|software|basic render/i
+      .test(gl!.getParameter(info.UNMASKED_RENDERER_WEBGL));
+    capabilities = gl && !software ? {maxPointSize: gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1]} : null;
     gl?.getExtension('WEBGL_lose_context')?.loseContext();
   }
   return capabilities;
@@ -39,11 +36,6 @@ export function isWebGLAvailable(): boolean {
   return webGLCapabilities() != null;
 }
 
-export function webGLUnavailable(): string {
-  webGLCapabilities();
-  return unavailable;
-}
-
 /** The point sprite of a marker, as `SHAPE_VERTEX` sizes it for the widest stroke. */
 function spriteSize(markerSize: number, border: number, dpr: number): number {
   return 2 * Math.ceil((markerSize / 2 + Math.max(border, 3)) * dpr + 1);
@@ -51,15 +43,10 @@ function spriteSize(markerSize: number, border: number, dpr: number): number {
 
 const renderers = new Renderers<ScatterPlotGL>();
 
-/** Why WebGL cannot draw [sc], or null: the largest marker has to fit in a point sprite, and a context be free for a
- * plot that has none yet. */
-export function whyNotWebGL(sc: DG.ScatterPlotViewer, look: CheckLook): string | null {
+/** The largest marker fits in a point sprite, and a context is free for a plot that has none yet. */
+export function isWebGLRenderValid(sc: DG.ScatterPlotViewer, look: CheckLook): boolean {
   const sprite = spriteSize(largestMarker(sc, look), look.markerBorderWidth, window.devicePixelRatio);
-  const maxPointSize = webGLCapabilities()!.maxPointSize;
-  if (sprite > maxPointSize)
-    return `markers of ${sprite} px exceed the largest WebGL point sprite, ${maxPointSize} px`;
-  return renderers.get(sc) != null || renderers.count < MAX_RENDERERS ? null :
-    `${MAX_RENDERERS} other plots already draw with WebGL`;
+  return sprite <= webGLCapabilities()!.maxPointSize && (renderers.get(sc) != null || renderers.count < MAX_RENDERERS);
 }
 
 /** Draws [sc], or releases its renderer when not [show]; answers the canvas drawn on. */
@@ -119,7 +106,6 @@ function colorBytes(argb: number): [number, number, number, number] {
 
 
 class ScatterPlotGL extends ScatterRenderer {
-  protected readonly engine = `WebGL 2 on ${webGLCapabilities()!.renderer}`;
   private readonly gl: WebGL2RenderingContext;
   private readonly dotProgram: Program;
   /** By the marker kind they fix, or `ANY_KIND`; compiled on first use. */
@@ -211,26 +197,6 @@ class ScatterPlotGL extends ScatterRenderer {
       this.draw(program, frame, 'selected');
     }
     gl.bindVertexArray(null);
-  }
-
-  /** Polls a fence: WebGL has no promise for the GPU finishing, and a sync wait would stall the frame it times. */
-  protected gpuDone(): Promise<void> {
-    const gl = this.gl;
-    const fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
-    if (!fence)
-      return Promise.resolve();
-    gl.flush();
-    return new Promise((resolve) => {
-      const poll = () => {
-        if (gl.isContextLost() || gl.getSyncParameter(fence, gl.SYNC_STATUS) == gl.SIGNALED) {
-          gl.deleteSync(fence);
-          resolve();
-        }
-        else
-          setTimeout(poll, 1);
-      };
-      poll();
-    });
   }
 
   /** The row under [pt] in the frame last drawn, or null before the first frame or off the canvas. */

@@ -134,6 +134,26 @@ category('Add new column', () => {
     expect(t.col('parsed errors'), null);
   });
 
+  test('rows that fail: the value editor opened right after typing takes the type the formula returns', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromStrings('n', ['12', 'many', '30'])]);
+    const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0]
+      .prepare({table: t, name: 'filled', expression: 'ParseInt(${n})'}));
+    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    try {
+      await dlg.showErrorBehaviorPopup();
+      expect(dlg.errorBehavior.valueType, DG.COLUMN_TYPE.INT);
+      Object.assign(dlg.errorBehavior, {useValue: true, value: 7});
+      expect(dlg.getErrorBehaviorParam()?.valueOnError, 7);
+    } finally {
+      // the popup starts listening for the click that closes it only after it has opened
+      await awaitCheck(() => {
+        document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+        return document.querySelector('.add-new-column-error-popup') == null;
+      }, 'the popup did not close', 3000);
+      dlg.close();
+    }
+  });
+
   test('a suggested error column name follows the result name, a typed one stays', async () => {
     const t = DG.DataFrame.fromColumns([DG.Column.fromStrings('s', ['2023-01-05', 'n/a'])]);
     const expression = 'DateParse(${s})';
@@ -145,7 +165,7 @@ category('Add new column', () => {
       input.dispatchEvent(new Event('change', {bubbles: true}));
     };
     try {
-      dlg.showErrorBehaviorPopup();
+      await dlg.showErrorBehaviorPopup();
       const popup = document.querySelector('.add-new-column-error-popup')!;
       const popupInput = (label: string) => Array.from(popup.querySelectorAll('.ui-input-root'))
         .find((root) => root.querySelector('label')?.textContent?.includes(label))!.querySelector('input')!;
@@ -341,6 +361,32 @@ category('Add new column', () => {
     const preview = await add('p', 'plain text');
     expect(preview, t.col('p')!.get(0), 'the plain text preview is not the text the column gets');
     expect(preview, '1 + 1');
+  });
+
+  test('an empty formula adds an empty column of the picked type', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.INT, 'n', [1, 2])]);
+    const cases: [string, string, string][] = [['auto (string)', 'e', DG.COLUMN_TYPE.STRING],
+      [DG.COLUMN_TYPE.INT, 'e (2)', DG.COLUMN_TYPE.INT], [DG.COLUMN_TYPE.DATE_TIME, 'e (3)', DG.COLUMN_TYPE.DATE_TIME],
+      ['plain text', 'e (4)', DG.COLUMN_TYPE.STRING]];
+    for (const [picked, name, type] of cases) {
+      const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0].prepare({table: t}));
+      try {
+        await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+        dlg.inputName!.value = 'e';
+        dlg.inputType!.value = picked;
+        await dlg.updatePreview('', false);
+        expect(dlg.error, '', `type ${picked} refuses an empty formula`);
+        expect(dlg.gridPreview!.dataFrame.col('e')?.type, type, `the preview of ${picked}`);
+        await dlg.addNewColumnAction();
+      }
+      finally {
+        dlg.close();
+      }
+      const col = t.col(name);
+      expect(col?.type, type, `the column added for ${picked}`);
+      expect(col!.isEmpty, true, `${name} has values`);
+      expect(col!.getTag(DG.Tags.Formula) == null, true, `${name} has a formula`);
+    }
   });
 
   test('insert function on click', async () => {

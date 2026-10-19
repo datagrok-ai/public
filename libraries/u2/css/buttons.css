@@ -61,6 +61,10 @@
   padding: 0 10px;
   font-size: var(--dg-font-size-xs);
   letter-spacing: 1px;
+}
+
+/* a disabled one keeps the disabled skin: white on this fill was unreadable */
+.d4-ribbon-item .u2-btn.u2-btn-primary:not(:disabled) {
   background: var(--dg-accent-secondary);
 }
 
@@ -74,6 +78,9 @@
 
 .d4-toolbox .u2-btn.u2-btn-primary {
   font-weight: var(--dg-font-weight-regular);
+}
+
+.d4-toolbox .u2-btn.u2-btn-primary:not(:disabled) {
   background: var(--dg-accent-secondary);
 }
 

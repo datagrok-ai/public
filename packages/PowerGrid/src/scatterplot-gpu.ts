@@ -3,23 +3,18 @@
  * the `isWebGPUAvailable`, `isWebGPURenderValid`, `_scWebGPURender` and `_scWebGPUPointHitTest` package functions,
  * named before the WebGL backend existed. */
 import * as DG from 'datagrok-api/dg';
-import {adapterName, disposeWebGPURenderers, scWebGPUPointHitTest, scWebGPURender} from './webgpu/scatterplot';
-import {disposeWebGLRenderers, isWebGLAvailable, scWebGLPointHitTest, scWebGLRender, webGLUnavailable,
-  whyNotWebGL} from './webgl/scatterplot';
-import {readCheckLook, whyOnCpu} from './scatterplot-look';
-import {scatterDebug} from './scatterplot-debug';
+import {disposeWebGPURenderers, scWebGPUPointHitTest, scWebGPURender} from './webgpu/scatterplot';
+import {disposeWebGLRenderers, isWebGLAvailable, isWebGLRenderValid, scWebGLPointHitTest,
+  scWebGLRender} from './webgl/scatterplot';
+import {isGpuRenderable, readCheckLook} from './scatterplot-look';
 
 type Backend = 'WebGPU' | 'WebGL';
 
 let gpuDevice: GPUDevice | null = null;
 const failed = new Set<Backend>();
 
-/** [requested] is when the device was asked for, for the debug log. */
-export function setGPUDevice(device: GPUDevice | null, requested: number): void {
+export function setGPUDevice(device: GPUDevice | null): void {
   gpuDevice = device;
-  scatterDebug.log(device ? `WebGPU device ready in ${Math.round(performance.now() - requested)} ms, ` +
-    `${Math.round(performance.now())} ms after the page started: ${adapterName(device)}` :
-    `no WebGPU device: ${navigator.gpu ? 'the browser offers no adapter' : 'the browser has no WebGPU'}`);
   // WebGPU reports errors as events, not exceptions
   device?.addEventListener('uncapturederror', (e) => fail('WebGPU', (e as GPUUncapturedErrorEvent).error));
   device?.lost.then((info) => fail('WebGPU', info.message));
@@ -50,18 +45,11 @@ export function isGpuAvailable(): boolean {
 }
 
 export function isGpuRenderValid(sc: DG.ScatterPlotViewer): boolean {
-  const start = scatterDebug.now();
   const current = backend();
   const look = readCheckLook(sc);
-  const reason = !current ? `no GPU engine: ${noBackendReason()}` :
-    whyOnCpu(sc, look) ?? (current == 'WebGL' ? whyNotWebGL(sc, look) : null);
-  scatterDebug.checked(sc, start, reason);
-  return reason == null;
-}
-
-function noBackendReason(): string {
-  return `${failed.has('WebGPU') ? 'WebGPU failed' : 'no WebGPU device'}, ` +
-    (failed.has('WebGL') ? 'WebGL failed' : webGLUnavailable());
+  if (!current || !isGpuRenderable(sc, look))
+    return false;
+  return current == 'WebGPU' || isWebGLRenderValid(sc, look);
 }
 
 export function gpuRender(sc: DG.ScatterPlotViewer, show: boolean): void {
@@ -83,20 +71,15 @@ export function gpuRender(sc: DG.ScatterPlotViewer, show: boolean): void {
 }
 
 export async function gpuPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Point): Promise<number> {
-  const start = scatterDebug.now();
   const current = backend();
   try {
     const row = current == 'WebGPU' ? await scWebGPUPointHitTest(sc, pt) :
       current == 'WebGL' ? scWebGLPointHitTest(sc, pt) : null;
-    if (row != null) {
-      scatterDebug.hitTest(current!, start);
+    if (row != null)
       return row;
-    }
   }
   catch (error) {
     fail(current!, error);
   }
-  const row = sc.hitTest(pt.x, pt.y);
-  scatterDebug.hitTest('the CPU', start);
-  return row;
+  return sc.hitTest(pt.x, pt.y);
 }
