@@ -1,3 +1,4 @@
+import {map} from 'rxjs/operators';
 import {
   Handler, MetaHandler, RuleDataEffect, RuleExpr, RuleMetaEffect, RuleSource, RuleValidatorEffect, SelectorHandler,
 } from '../config/PipelineConfiguration';
@@ -14,17 +15,14 @@ function ruleParams<E>(controller: IControllerBase) {
   };
 }
 
-// rules without sources stay synchronous so they remain batchable
+// rules whose sources resolve synchronously stay synchronous, so they remain batchable
 function withContext(
   controller: IControllerBase, sources: Record<string, RuleSource> | undefined, run: (ctx: RuleContext) => void,
 ) {
   const base = buildRuleContext(controller);
   if (!sources)
     return run(base);
-  const resolved = resolveSources(controller, sources, base);
-  if (resolved instanceof Promise)
-    return resolved.then((values) => run({...base, ...values}));
-  return run({...base, ...resolved});
+  return resolveSources(controller, sources, base).pipe(map((values) => run({...base, ...values})));
 }
 
 function matchedTargets<E extends {targets?: string | string[]}>(controller: IControllerBase, effect: E) {
@@ -85,7 +83,10 @@ export const ruleNodeMetaHandler: SelectorHandler = ({controller}) => {
 
 const severityKey = {error: 'errors', warning: 'warnings', notification: 'notifications'} as const;
 
-type ValidationTarget = IControllerBase & {setValidation(name: string, validation?: ValidationResult): void};
+type ValidationTarget = IControllerBase & {
+  setValidation(name: string, validation?: ValidationResult): void,
+  getValidationAction?(name: string, actionId: string): string | undefined,
+};
 
 // validator and pipeline validator controllers share this shape
 export const ruleValidatorHandler = ({controller}: {controller: ValidationTarget}) => {
@@ -114,8 +115,19 @@ export const ruleValidatorHandler = ({controller}: {controller: ValidationTarget
           .filter((item) => item != null).map((item) => String(item));
         if (!descriptions.length)
           continue;
+        // an action that is not found on the actions node is left out, as validators do
+        const actions = (effect.actions ?? []).flatMap((item) => {
+          const action = controller.getValidationAction?.(item.actions, item.action);
+          if (!action)
+            return [];
+          const additionalParams = item.additionalParams === undefined ? undefined :
+            evaluate(item.additionalParams, ctx);
+          return [{actionName: String(evaluate(item.actionName, ctx)), action, ...(additionalParams != null ?
+            {additionalParams} : {})}];
+        });
         const result = results[target] ??= {};
-        (result[severityKey[effect.effect]] ??= []).push(...descriptions.map((description) => ({description})));
+        (result[severityKey[effect.effect]] ??= []).push(...descriptions.map((description) =>
+          actions.length ? {description, actions} : {description}));
       }
     }
     for (const [target, result] of Object.entries(results))
