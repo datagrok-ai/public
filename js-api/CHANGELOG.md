@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Sketcher: A sketcher in the context panel (a molecule column's Filter pane) no longer makes its drawing the current object: the panel showed the molecule instead of the column, and the pane, the sketcher with it, went at every stroke. Nor does a sketcher out of the page (`Sketcher.isInContextPanel`)
+* U2: With debug tracking on (`DG.U2.debug`), `effect()` and `own()` on a control warn once per call site when the same site registers from a second `each()` row or effect run that the control does not live in: what it registers outlives each of them and piles up
+* Sketcher: A molecule lookup (a name, an identifier) answered after a newer value was set no longer overwrites it, and one that finds nothing keeps the drawing and says `Could not recognize "…"` instead of clearing it
 * U2: Breaking: An effect's every run gets its own child scope, disposed before the next run and with the owner, so what a run builds dies with it
 * U2: Errors in effects, bound handlers (including a rejected promise a bound handler returns), listeners and cleanups are reported — the scope's `onError`, then its parents, then `Scope.onUnhandledError` — instead of thrown at whoever wrote the signal; one throwing cleanup no longer stops the rest
 * U2: Added parent/child scopes with labels, `bind`, `run`, `listen`, `setTimeout`, `setInterval`, `requestFrame`, `abortSignal` and `reportError`; a child disposed early leaves its parent

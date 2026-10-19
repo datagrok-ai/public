@@ -59,7 +59,7 @@ export class ChipsInput extends Input<string[], ChipsInputOptions> {
     const value = this.value.peek() ?? [];
     const pruned = value.filter((v) => keep.has(v));
     if (pruned.length !== value.length)
-      Input.system(() => this.value.value = pruned);
+      this.systemWrite(pruned);
   }
 
   /** One item per chip, keyed by its value; the pressed ones are the selection. */

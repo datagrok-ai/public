@@ -385,6 +385,8 @@ export declare const STRINGS: {
     readonly dropOnCanvas: 'Drop the file on the canvas';
     /** A reaction pasted or dropped (spike formats, F12, IO-031): refused, saying so; a written one is the engine's error, in its words. */
     readonly reactionsRefused: 'Reactions are not supported';
+    /** A ChemDraw reaction scheme pasted or dropped as CDXML (spike backlog-audit; the ui-critic, milestone 4): how to take its structures. */
+    readonly cdxmlReactionRefused: 'Reactions are not supported: copy the structures without the arrow';
     /**
      * ChemDraw's text (spike cdxml, X3, X5): a dropped binary CDX file, which is not read; a paste with no text, which is what
      * a page sees of ChemDraw's own copy, with the way to copy CDXML text there; the CDXML module that did not load.
@@ -887,6 +889,14 @@ export declare const STRINGS: {
     readonly readoutHidden: 'Hidden';
     /** P and M too (spike atropisomers; milestone-6-fixes, F6: the ui-critic's note at milestone 6, the setting names them). */
     readonly settingStereoLabels: 'Show R, S, E, Z, P and M labels';
+    /**
+     * How the stereo labels are written (spike labels-2; STEREO-010): as RDKit and ChemDraw write them, (R) beside a centre
+     * and its group beside it; or as a registration standard writes them, R bare for an ABS centre, or1 and (R) for an OR
+     * centre, &1 alone for an AND centre.
+     */
+    readonly settingStereoLabelStyle: 'Stereo label style';
+    readonly stereoLabelStyleStandard: 'Standard: (R), abs, or1, &1';
+    readonly stereoLabelStyleRegistration: 'Registration: R, or1 (R), &1';
     readonly settingStereoFlag: 'Show the stereo flag';
     readonly settingUnspecified: 'Draw unspecified double bonds crossed';
     /** Which carbons are labelled (spike later-quick-2, ATOM-025): none, terminal carbons (CH\u2083), or every carbon. */

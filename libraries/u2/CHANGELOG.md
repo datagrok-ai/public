@@ -2,6 +2,50 @@
 
 ## v.next
 
+* Styles: Added a console warning, once per page, when a package built before stylesheet revisions injects its own copy of the u2 CSS over the installed revision: the packages that bundle u2 need republishing
+* Tooltip: Keyboard focus shows a bound tooltip too (a click's focus does not), the tooltip is `role="tooltip"`, and its anchor lists it in `aria-describedby` while it shows, beside its own ids
+* ColumnsInput: The control says its popup is a dialog (`aria-haspopup="dialog"`, the popup `role="dialog"`, "Choose columns") — a checklist with OK / CANCEL, not a listbox
+* RadioInput: `buttons: true` lays its buttons out in a row again (the stacked editor rule outranked it)
+* Buttons: A disabled primary button in a view ribbon or the toolbox keeps the disabled skin (it stayed teal under grey text, unreadable)
+* Inputs: In a right-aligned form or a dialog, a required caption's asterisk hangs in the gap before the editor, so its text ends where every other caption's does (it was pushed off the column)
+* DateInput: In a form a date (140px) and a date-time (170px) keep their own width, as a number does, instead of stretching across a wide row; the calendar popup keeps its own width instead of taking the field's (new `Overlay.show(anchor, content, scope, {matchWidth: false})`)
+* Wizard: In a dialog the wizard fills the body, so BACK / NEXT / FINISH sit at the bottom like a dialog footer instead of under a short step
+* Inputs: `tooltipText` shows u2's tooltip over the caption, as the platform's `setTooltip` does (over the whole input when it has none), and is the editor's `aria-description`; it no longer sets a native `title` on the root, which the hover never showed inside a form and bdd could not read
+* Menu: Added `detail` to an item's options — grey text after the label saying what the item stands for ("hydroxyl · O[*:2]"); the details of one menu start in one column
+* Form: `addButtons(build, {align, host})` — `host` places the form's button row elsewhere (a footer pinned under a form that scrolls) and its primary button keeps the platform's form-button blue there; `align: 'start'` starts the buttons at the row's left
+* Form: Added `addColumns(inputs, {minWidth, columns, host})` — short fields two (or `columns`) to a row, every column's captions and editors in line and each editor filling its column (a choice and a number too), one to a row where two would go under `minWidth`
+* Form: Added `quiet` (the `u2-quiet` class on any other host) — values read as text: an editor's underline shows while it is hovered, focused, empty or wrong, a key/value row's buttons while it is hovered or focused, and editors take the host's background; an input marks itself `u2-input-empty` while it holds nothing
+* Accordion: `addPane(title, content, {expanded, icon, hint, validity, persistKey})` — a folded pane says what it holds (a signal, or an element for a live summary), shows the problem inside it in place of the hint, and remembers the user's open or close (`pane.userSet`); the older `(expanded, icon)` arguments still work
+* Accordion: Added `flush` — titles and content start at the left edge, in line with the captions of a form around it, the chevron at the header's end
+* Badges: Added `statusLine(problem, otherwise)` — the line beside an action: what it will do, or why it cannot yet, in the error color after a warning mark; two lines at most, the whole text its tooltip, `role="status"`
+* Elements: Added `effect(fn)` — an effect owned by whoever is building (an `each()` row), stopped with it, as `on()` is for listeners; `Tooltip.bind` defaults to that owner too
+* Section: A `hint` may be an element (a summary with swatches); `chevron: 'end'` puts the chevron after the title and hint, always shown, for a header placed in a row of its own (Details beside a Save) — it stays the section's toggle and keeps its error marker there
+* Accordion: A pane's `validity` shows in its items (`invalid`)
+* Form: In a `quiet` form a value too long for its box ends in an ellipsis until it is edited
+* Dialog: OK's reasons read top to bottom, the form's fields first
+* Section: The title keeps its width and the hint gives way; the hint hides while the section is open
+* NumberInput: A decimal in a whole-number field says "Must be a whole number"; ColorInput: the swatch's accessible name says which colour
+* Form: Captions are measured at their own width while a form aligns, so a form nested in one gone tall no longer takes the row's width as its label column (the column stuck wide after one narrow moment)
+* Styles: u2's stylesheet installs itself, once per page: the first u2 control loaded inserts one `<style data-u2-styles data-revision>` after the platform's stylesheets and before every package's (a package's CSS wins a tie with u2's whatever order packages load in), and a newer copy from another package replaces its text in place, so the page runs the newest u2 CSS whatever order packages load in. Packages no longer import `css/*.css` (only `icons.css` and `theme-dark.css` stay importable); a standalone host that links the sheets opts out with `<meta name="u2-styles" content="linked">`; `css/styles.lock.json` holds the revision: `npm run styles -- --bump` mints the next one with a CSS change (a build keeps the committed one, and CI fails on a stale lock)
+* Icons: The `icon()` sizing classes (`u2-icon-small`, `-medium`, `-large`, `-action`) moved from the opt-in `icons.css` into the stylesheet every page gets
+* Inputs: Added `onInput` (and the `userInput` event) — the user's own edits only, never a write from code, `reset`, `follow` or the input's pruning (`systemWrite`, marked on the input, so even inside a user's event); `onChanged` still hears the program's writes, as the platform's does
+* Inputs: Added `error` (the message the input shows: a required verdict waits for the touch) and `touched` beside `validity` (the verdict from the start)
+* Inputs: Added the `width` option (px or a CSS length) — the editor's own width in any form, over the fitted widths; a row narrower than it shrinks it
+* ChoiceInput: `items` may be a signal, followed live; the value may arrive before its item
+* Form: Labels align in a microtask after the form is built, before the first paint, instead of an animation frame later; `layoutNow()` aligns at once
+* Form: Added `labelWidth` (a fixed column) and `labelColumn` with `LabelColumn` (one column shared by several forms — the tabs of an editor, a header over a body — measured off hidden captions' text too)
+* Form: Added `error`, the first message a counted input shows, and `problem`, the first verdict with its caption ("Name: Value can't be empty"), beside `validity`
+* Form: Added `addGroup(caption, inputs, {captionsAfter, host})` — one caption in the label column over several inputs side by side
+* TabStrip: A tab takes a `validity` signal and marks itself; a tab whose content is a Form answers with the form's shown error; `content` may be a control; `eager` places element contents at once, hidden, so a form on a tab not yet visited measures its captions
+* Section: Added `hint` (what the body holds, shown while folded), `validity` (marks the header, and replaces the hint while folded) and `persistKey` with `userSet` (remembers the user's own open or close)
+* Buttons: `button()` takes `disabled` — `true`, or the reason, which becomes its tooltip; live as a signal — and `tooltip` (a string or a function)
+* Dialog: Added `okDisabled(reason)`; a disabled OK says why in its tooltip — the reason, or the form's first verdict ("Name: Value can't be empty")
+* Elements: Added `on(el, type, handler)` — a listener owned by whoever is building, removed with it
+* ColorInput: The swatch has a hairline at rest, so a white color shows on a white form
+* Tooltip: An empty text shows no tooltip
+* Scope: With u2 debug tracking on (dev, tests, the bdd leak audit), `effect()` / `own()` on a control called again from a different `each()` row or effect run warns once per call site: what it registers would pile up with every rebuild
+* Docs: `tests/docs-drift.test.js` fails when the README, the recipes, the manifest's usage or the two shipped contracts name an API that does not exist; the README has the install, the rules that matter and testing
+
 * Form: Fixed a form built hidden (in a collapsed section, behind a toggle) keeping a misaligned label column once shown; every caption-left form now re-aligns when its size changes
 * Form: Added `remove(input)`; an input disposed with its row (an `each()` key, a rebuilt section) now leaves the form instead of still failing its validity
 * Inputs: `addOptions` is public, so a caller can put its own icon on an input's options rail, as with Dart's `InputBase.addOptions`

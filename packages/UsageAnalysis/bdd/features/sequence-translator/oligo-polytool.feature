@@ -2,12 +2,15 @@
 Feature: Bio | PolyTool on a custom-notation column: Convert and Combine Sequences
   cyclized.csv holds 14 cyclic peptides in a custom notation (`seqs`, e.g.
   R-F-C(1)-T-G-H-F-Y-G-H-F-Y-G-H-F-Y-P-C(1)-meI). PolyTool Convert with Get HELM on turns it into a
-  HELM column and a column of V3000 molfiles; Combine Sequences refuses to run with no table chosen and, with
+  HELM column and a molfile column; Combine Sequences refuses to run with no table chosen and, with
   seqs combined with itself, opens a new table of every pair. Translated from the TestTrack case
   SequenceTranslator/oligo-nucleotide-grid, Block G.
 
   The table is opened from Browse > Files > App Data, as a user does: the custom notation is set by
   SequenceTranslator's notation refiner when the file's columns are detected.
+
+  The values the two commands compute (the HELM and the molfiles of all 14 rows, the combined sequences) are
+  SequenceTranslator's package tests 'PolyTool: Convert' (cyclized.csv) and 'PolyTool: Combine Sequences'.
 
   Background:
     Given user is logged in
@@ -40,10 +43,6 @@ Feature: Bio | PolyTool on a custom-notation column: Convert and Combine Sequenc
     And "transformed(seqs)" column should have semantic type "Macromolecule"
     And "transformed(seqs)" column should have units "helm"
     And "molfile(seqs)" column should have semantic type "Molecule"
-    And the value of "transformed(seqs)" column in row 1 should be "PEPTIDE1{R.F.C.T.G.H.F.Y.G.H.F.Y.G.H.F.Y.P.C.[meI]}$PEPTIDE1,PEPTIDE1,3:R3-18:R3$$$V2.0"
-    And "transformed(seqs)" column should have no missing values
-    And "molfile(seqs)" column should have no missing values
-    And every value of "molfile(seqs)" column should contain "V3000"
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
@@ -67,6 +66,5 @@ Feature: Bio | PolyTool on a custom-notation column: Convert and Combine Sequenc
     Then the "Combined Sequences" view should be current
     And the table should have 196 rows
     And the table should have the columns "Combined Sequences"
-    And the value of "Combined Sequences" column in row 1 should be "R-F-C(1)-T-G-H-F-Y-G-H-F-Y-G-H-F-Y-P-C(1)-meI-R-F-C(1)-T-G-H-F-Y-G-H-F-Y-G-H-F-Y-P-C(1)-meI"
     And no error or warning balloon should have been shown
     And no errors should have been logged

@@ -27,6 +27,14 @@ export function calculateStepsDependencies(state: BaseTree<StateTreeNode>, links
     }
     if (inputInfos.length === 0)
       addOutputDeps(state, deps, link);
+    // a node meta link that only sets actions visibility has no outputs to schedule it by
+    const {spec, outputs, actionsUUID} = link.matchInfo;
+    if (spec.type === 'nodemeta' && Object.keys(outputs).length === 0 && actionsUUID.size) {
+      const uuid = state.getNode(link.prefix).getItem().uuid;
+      const depData = deps.get(uuid) ?? new DependenciesData();
+      depData.links.add(link.uuid);
+      deps.set(uuid, depData);
+    }
   }
   return deps;
 }

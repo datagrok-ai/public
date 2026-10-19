@@ -125,7 +125,8 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     editor.className = 'u2-columns';
     editor.tabIndex = 0;
     editor.setAttribute('role', 'button');
-    editor.setAttribute('aria-haspopup', 'listbox');
+    // the popup is a dialog: a checklist with OK / CANCEL, not a listbox that commits on pick
+    editor.setAttribute('aria-haspopup', 'dialog');
     editor.setAttribute('aria-expanded', 'false');
     this._summary = span('', 'u2-columns-summary');
     editor.append(this._summary, span('', 'u2-columns-chevron'));
@@ -188,7 +189,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
       return;
     const renamed = value.slice();
     renamed[index] = newName;
-    Input.system(() => this.value.value = renamed);
+    this.systemWrite(renamed);
   }
 
   private _prune(): void {
@@ -196,7 +197,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     const value = this.value.peek();
     const kept = value.filter((name) => available.includes(name));
     if (kept.length !== value.length)
-      Input.system(() => this.value.value = kept);
+      this.systemWrite(kept);
     else
       this._renderSummary(value); // the 'All' threshold moves with the column count
   }
@@ -272,6 +273,8 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
       host.removeEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
       cg.close();
     });
+    host.setAttribute('role', 'dialog');
+    host.setAttribute('aria-label', 'Choose columns');
     Overlay.show(this._control, host, scope);
     cg.grid.autoSize(600, 300);
     const width = this._control.getBoundingClientRect().width;
@@ -401,6 +404,8 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
       popup.removeEventListener('keydown', onPopupKeyDown);
       popup.removeEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
     });
+    popup.setAttribute('role', 'dialog');
+    popup.setAttribute('aria-label', 'Choose columns');
     Overlay.show(this._control, popup, scope);
     search.root.querySelector<HTMLElement>('input')?.focus();
   }

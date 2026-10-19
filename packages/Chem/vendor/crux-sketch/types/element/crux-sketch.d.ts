@@ -1,7 +1,7 @@
 import { type SketcherSettings } from '../core/settings.js';
 import { type SketcherStrings } from '../core/strings.js';
 import { type ReadoutItem } from '../core/readout-items.js';
-import type { HostKeys, DrawnPositions, RenderDetail, SketcherLayout, SketcherTool, SketchSelection, SketchNotice, AnalysisPanel, AtomColours, ChangeDetail, KeymapProfile, MethylLabels, Density, SetValueOptions, PngOptions, SketcherFormat, SketchAnalysis, SketchError, SketchWarning, WarningMarks, SketcherApi, SketcherEventType, SketcherListener, SketcherMode, StereoDisplay, StereoPanel, SketchStereo, ToolbarConfig, UnspecifiedDoubleBonds } from '../core/types.js';
+import type { HostKeys, DrawnPositions, RenderDetail, SketcherLayout, SketcherTool, SketchSelection, SketchNotice, AnalysisPanel, AtomColours, ChangeDetail, KeymapProfile, MethylLabels, Density, SetValueOptions, PngOptions, SketcherFormat, SketchAnalysis, SketchError, SketchWarning, WarningMarks, SketcherApi, SketcherEventType, SketcherListener, SketcherMode, StereoDisplay, StereoLabelStyle, StereoPanel, SketchStereo, ToolbarConfig, UnspecifiedDoubleBonds } from '../core/types.js';
 export declare const TAG = "crux-sketch";
 /**
  * The events of `<crux-sketch>`: an element's, with `change` and `error` as CustomEvents whose
@@ -30,8 +30,8 @@ export interface CruxSketchElement {
  * `<crux-sketch>` (H29; API-002), defined when the module is imported: the sketcher as a custom element, with every member
  * of the handle `createSketcher` gives (`SketcherApi`), and `ready`, which resolves once it is ready, and `toolbar`, its
  * toolbars' configuration. Its attributes are `value`, `mode`, `atom-colours`, `keymap`, `warning-marks`, `analysis-panel`,
- * `stereo-labels`, `stereo-flag`, `unspecified-double-bonds`, `locale`, `methyl-labels`, `cxsmiles-coordinates`, `density`
- * and `persist-settings`, each setting the property of its name; changes made before it is ready are applied in order
+ * `stereo-labels`, `stereo-label-style`, `stereo-flag`, `unspecified-double-bonds`, `locale`, `methyl-labels`,
+ * `cxsmiles-coordinates`, `density` and `persist-settings`, each setting the property of its name; changes made before it is ready are applied in order
  * once it is (API-003). Its events are DOM events too (`change`, `error`, `settings`, `render`, `selection`, `notice`; API-053, API-061, API-017, API-047). Its
  * typings declare it an `HTMLElement` with this API: Lit, which it is built with and which is bundled, is no part of its
  * type, so that a host type-checks it with nothing installed (spike api-v1, R1).
@@ -60,6 +60,14 @@ export declare class CruxSketchElement extends HTMLElement implements SketcherAp
      */
     get stereoLabels(): StereoDisplay;
     set stereoLabels(value: StereoDisplay);
+    /**
+     * How the stereo labels are written (spike labels-2; STEREO-010): `'standard'` (the default) or `'registration'` (an ABS
+     * centre its CIP label bare, an OR centre its group and CIP label, an AND centre its group alone), read back as the value
+     * in force by HTML's rule for enumerated attributes. Setting it redraws at once: no change event, no undo step, and the
+     * getters as they were. The `stereo-label-style` attribute sets it too, and so does the Settings dialog.
+     */
+    get stereoLabelStyle(): StereoLabelStyle;
+    set stereoLabelStyle(value: StereoLabelStyle);
     /**
      * The stereo flag (S8, STEREO-018): `'shown'` (the default) or `'hidden'`, read back as the value in force. Setting it
      * redraws at once, and is no edit. The `stereo-flag` attribute sets it too.
