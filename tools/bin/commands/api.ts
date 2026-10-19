@@ -353,8 +353,8 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
   const choicesAliases: {[alias: string]: string} = {};
 
   const choicesAlias = (tableName: string, columnName: string, values: any[]): string | null => {
-    // JSON escapes every special character; the literal is then respelled single-quoted
-    const literals = values.map((v) => `'${JSON.stringify(v).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, `\\'`)}'`);
+    // JSON.stringify escapes every special character; inside single quotes only ' needs one more
+    const literals = values.map((v) => `'${JSON.stringify(v).slice(1, -1).replace(/'/g, `\\'`)}'`);
     const valueSet = literals.join(' | ');
     let alias = utils.snakeToCamelCase(tableName) + utils.snakeToCamelCase(columnName);
     if (choicesAliases[alias] !== undefined && choicesAliases[alias] !== valueSet)
