@@ -131,8 +131,7 @@ export class DesirabilityModeDialog {
         const cats = this.mappedCol?.isCategorical ?
           this.mappedCol.categories.map((c: string) => ({name: c, desirability: 1})) : undefined;
         this.prop = createDefaultCategorical(original.weight, cats);
-      }
-      else
+      } else
         this.prop = createDefaultNumerical(original.weight);
 
       buildContent();
@@ -151,8 +150,7 @@ export class DesirabilityModeDialog {
           prop.mean ??= previewEditor.getDefaultMean();
           prop.sigma ??= previewEditor.getDefaultSigma();
           this.onUpdate({mean: prop.mean, sigma: prop.sigma});
-        }
-        else if (prop.mode === DesirabilityMode.Sigmoid) {
+        } else if (prop.mode === DesirabilityMode.Sigmoid) {
           prop.x0 ??= previewEditor.getDefaultX0();
           prop.k ??= previewEditor.getDefaultK();
           this.onUpdate({x0: prop.x0, k: prop.k});
