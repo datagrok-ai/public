@@ -220,8 +220,12 @@ export type RuleMetaEffect = RuleEffectOptions & (
   | {effect: 'items', targets: RuleTargets, items: RuleExpr}
   | {effect: 'meta', targets: RuleTargets, meta: Record<string, RuleExpr>});
 
+/** A button on a message: the action with id `action` on the node of the `actions` alias. */
+export type RuleMessageAction = {actions: string, action: string, actionName: RuleExpr, additionalParams?: RuleExpr};
+
 export type RuleValidatorEffect = RuleEffectOptions & (
-  | {effect: 'error' | 'warning' | 'notification', targets: RuleTargets, message: RuleExpr}
+  | {effect: 'error' | 'warning' | 'notification', targets: RuleTargets, message: RuleExpr,
+    actions?: RuleMessageAction[]}
   /** Writes a source's verdicts: `isError` items as errors, the rest as warnings. */
   | {effect: 'verdicts', targets: RuleTargets, source: string});
 

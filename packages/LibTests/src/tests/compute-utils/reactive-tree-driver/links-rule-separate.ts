@@ -49,6 +49,9 @@ const set = (node: FuncCallNode, values: Record<string, any>) => {
 const get = (node: FuncCallNode, io: string) => node.getStateStore().getState(io);
 const meta = (node: FuncCallNode, io: string) => bridge(node).meta[io].value;
 
+// extra links or fields fail too
+const expectExactLinks = (pconf: any, expected: any) =>
+  expectDeepEqual(linksOf(pconf), expected, {forbidAdditionalProps: true});
 const linksOf = (pconf: any) => Object.fromEntries(pconf.links.map((link: any) =>
   [link.id, {from: link.from.map((io: any) => io.name), to: link.to.map((io: any) => io.name)}]));
 
@@ -176,7 +179,7 @@ category('ComputeUtils: Driver rule separate effects', async () => {
       when: 'eq(route, "oral")',
       effects: ['set(k, 1.5, separate: true)'],
     }]));
-    expectDeepEqual(linksOf(pconf), {'oralKa::data:1': {from: ['route'], to: ['k']}});
+    expectExactLinks(pconf, {'oralKa::data:1': {from: ['route'], to: ['k']}});
     const values: any[] = [];
     run(pconf, (tree, flush) => {
       const model = nodeAt(tree, 1);
@@ -198,7 +201,7 @@ category('ComputeUtils: Driver rule separate effects', async () => {
       to: 't:model/tolerance',
       effects: ['set(t, 0.0001, separate: true)'],
     }]));
-    expectDeepEqual(linksOf(pconf), {'defaults::data:1': {from: [], to: ['t']}});
+    expectExactLinks(pconf, {'defaults::data:1': {from: [], to: ['t']}});
     const values: any[] = [];
     run(pconf, (tree, flush) => {
       const model = nodeAt(tree, 1);
@@ -348,7 +351,7 @@ category('ComputeUtils: Driver rule separate effects', async () => {
 category('ComputeUtils: Driver rule separate effects expansion', async () => {
   test('A separate effect gets its own link with the inputs it reads', async () => {
     const pconf = await getProcessedConfig(pk(solver(`set(t, ${TOLERANCE}, separate: true)`)));
-    expectDeepEqual(linksOf(pconf), {
+    expectExactLinks(pconf, {
       'solver::meta': {from: ['method', 'unit'], to: ['k']},
       'solver::data:1': {from: ['method'], to: ['t']},
     });
@@ -363,7 +366,7 @@ category('ComputeUtils: Driver rule separate effects expansion', async () => {
       when: 'not(missing(w))',
       effects: ['set(t, 1, when: eq(r, "oral"), separate: true)'],
     }]));
-    expectDeepEqual(linksOf(pconf), {'r::data:1': {from: ['w', 'r'], to: ['t']}});
+    expectExactLinks(pconf, {'r::data:1': {from: ['w', 'r'], to: ['t']}});
   });
 
   test('Additional triggers imply separate and keep the rule input order', async () => {
@@ -374,7 +377,7 @@ category('ComputeUtils: Driver rule separate effects expansion', async () => {
       to: 's:model/subject',
       effects: [{effect: 'clear', targets: 's', when: {'!': [{missing: ['p']}]}, additionalTriggers: ['u', 'c']}],
     }]));
-    expectDeepEqual(linksOf(pconf), {'r::data:1': {from: ['c', 'u', 'p'], to: ['s']}});
+    expectExactLinks(pconf, {'r::data:1': {from: ['c', 'u', 'p'], to: ['s']}});
   });
 
   test('A rule whose effects are all separate has no family links', async () => {
@@ -475,11 +478,12 @@ category('ComputeUtils: Driver rule separate effects expansion', async () => {
 
   test('Formulas take separate and additional triggers on every effect', async () => {
     expectDeepEqual(compileEffect('set(t, 1, separate: true, additionalTriggers: [a, b])'),
-      {effect: 'set', targets: 't', value: 1, separate: true, additionalTriggers: ['a', 'b']});
+      {effect: 'set', targets: 't', value: 1, separate: true, additionalTriggers: ['a', 'b']},
+      {forbidAdditionalProps: true});
     expectDeepEqual(compileEffect('clear(t, additionalTriggers: a)'),
-      {effect: 'clear', targets: 't', additionalTriggers: 'a'});
+      {effect: 'clear', targets: 't', additionalTriggers: 'a'}, {forbidAdditionalProps: true});
     expectDeepEqual(compileEffect('meta(t, units: "K", separate: true)'),
-      {effect: 'meta', targets: 't', meta: {units: 'K'}, separate: true});
+      {effect: 'meta', targets: 't', meta: {units: 'K'}, separate: true}, {forbidAdditionalProps: true});
     expectThrows(() => compileEffect('set(t, 1, separate: 1)'), /separate must be true or false/);
     expectThrows(() => compileEffect('clear(t, additionalTriggers: "a")'),
       /additionalTriggers are an input alias or a list of them/);

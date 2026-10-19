@@ -23,6 +23,7 @@ import './tests/compute-utils/reactive-tree-driver/links-check-expressions';
 import './tests/compute-utils/reactive-tree-driver/links-rule-sources';
 import './tests/compute-utils/reactive-tree-driver/links-rule-formula';
 import './tests/compute-utils/reactive-tree-driver/links-rule-separate';
+import './tests/compute-utils/reactive-tree-driver/links-rule-message-actions';
 import './tests/compute-utils/reactive-tree-driver/driver-states';
 import './tests/compute-utils/reactive-tree-driver/links-rule-workflow';
 import './tests/compute-utils/reactive-tree-driver/links-value-annotations';

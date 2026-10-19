@@ -3,7 +3,7 @@ import {AnnotationLinkKind, LinkSpecString} from '../data/common-types';
 import {
   PipelineCheckConfiguration, PipelineLinkConfiguration, PipelineLinkConfigurationBase,
   PipelineLinkConfigurationInput, PipelineMetaConfiguration, PipelineRuleConfiguration, PipelineValidatorConfiguration,
-  RuleEffect, RuleExpr, RuleSource, SourceKind, SourceSpec,
+  RuleEffect, RuleExpr, RuleMessageAction, RuleSource, SourceKind, SourceSpec,
 } from './PipelineConfiguration';
 import {CALL, CheckOptions, expandChecks, TABLE, TARGET, VALUE, validateCheckOptions} from './checks';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
@@ -20,7 +20,7 @@ import {DriverLogger, reportError} from '../data/Logger';
 const metaEffects = new Set(['hide', 'show', 'items', 'meta']);
 const validatorEffects = new Set(['error', 'warning', 'notification', 'verdicts']);
 const dataEffects = new Set(['set', 'clear', 'assign']);
-const nodeEffects = new Set(['error', 'warning', 'notification']);
+const messageEffects = new Set(['error', 'warning', 'notification']);
 const actionEffects = new Set(['hideAction', 'showAction']);
 const driverValues = new Set(['$position', '$steps']);
 
@@ -220,13 +220,17 @@ function effectExpressions(effect: RuleEffect): RuleExpr[] {
   case 'meta': return Object.values(effect.meta);
   case 'error':
   case 'warning':
-  case 'notification': return [effect.message];
+  case 'notification': return [effect.message, ...(effect.actions ?? []).flatMap((item) =>
+    item.additionalParams === undefined ? [item.actionName] : [item.actionName, item.additionalParams])];
   case 'verdicts': return [];
   case 'set': return [effect.value];
   case 'assign': return [effect.values];
   default: return [];
   }
 }
+
+const offeredActions = (effect: RuleEffect): RuleMessageAction[] =>
+  (effect as {actions?: RuleMessageAction[]}).actions ?? [];
 
 // typed per kind, so a new RuleSource kind fails the build until it says which inputs it reads
 const sourceInputs: {[K in SourceKind]: (spec: SourceSpec<K>) => string[]} = {
@@ -251,7 +255,9 @@ function ruleLink(
 ): PipelineLinkConfiguration<LinkSpecString> {
   switch (family) {
   case 'meta': return {...link, type: 'meta', handler: ruleMetaHandler};
-  case 'validator': return {...link, type: 'validator', handler: ruleValidatorHandler, debounce: rule.debounce};
+  case 'validator':
+    return {...link, type: 'validator', handler: ruleValidatorHandler, debounce: rule.debounce,
+      ...(actions.length ? {actions} : {})};
   case 'data': return {...link, type: 'data', handler: ruleDataHandler, runOnInit: rule.runOnInit};
   case 'nodemeta': return {...link, type: 'nodemeta', handler: ruleNodeMetaHandler, actions};
   case 'pipelineValidator':
@@ -419,7 +425,7 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
     if (!toAliases.has(target))
       throw new Error(`Rule ${id}: effect ${effect.effect} targets unknown output alias ${target}`);
     if (nodeAliases.has(target)) {
-      if (!nodeEffects.has(effect.effect))
+      if (!messageEffects.has(effect.effect))
         throw new Error(`Rule ${id}: (node) alias ${target} takes only error, warning or notification`);
       return 'pipelineValidator';
     }
@@ -457,11 +463,23 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
           throw new Error(`Rule ${id}: additionalTriggers of ${effect.effect} names unknown input alias ${alias}`);
       }
     }
+    const offered = offeredActions(effect);
+    if (!Array.isArray(offered) || (offered.length && !messageEffects.has(effect.effect)))
+      throw new Error(`Rule ${id}: actions are a list of message buttons, on error, warning or notification only`);
+    for (const item of offered) {
+      if (!actionAliases.has(item.actions))
+        throw new Error(`Rule ${id}: message action references unknown actions alias ${item.actions}`);
+      if (typeof item.action !== 'string' || !item.action)
+        throw new Error(`Rule ${id}: message action on ${item.actions} needs an action id`);
+      targeted.add(item.actions);
+    }
     if ((effect.effect === 'hideAction' || effect.effect === 'showAction') &&
       (typeof effect.action !== 'string' || !effect.action))
       throw new Error(`Rule ${id}: ${effect.effect} needs an action id`);
     for (const target of effectTargets(effect)) {
       const family = targetFamily(effect, target);
+      if (family === 'pipelineValidator' && offered.length)
+        throw new Error(`Rule ${id}: (node) alias ${target} messages take no actions`);
       if (families.has(effect) && families.get(effect) !== family)
         throw new Error(`Rule ${id}: effect ${effect.effect} mixes targets of different kinds`);
       families.set(effect, family);
@@ -539,7 +557,8 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
         when, effects: linkEffects, ...(linkSources ? {sources: linkSources} : {}), ...(readsSteps ? {readsSteps} : {}),
       },
     };
-    const typed = ruleLink(family, link, rule, raws(actionAliases, targets));
+    const actionNames = new Set([...targets, ...linkEffects.flatMap(offeredActions).map((item) => item.actions)]);
+    const typed = ruleLink(family, link, rule, raws(actionAliases, actionNames));
     linkAliasesOf.set(typed, {to: targets, from: inputs});
     return typed;
   };

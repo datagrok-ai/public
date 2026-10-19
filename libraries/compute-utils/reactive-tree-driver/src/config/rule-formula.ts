@@ -2,7 +2,8 @@ import {Grammars, IToken, Parser} from 'ebnf';
 import {RestrictionType} from '../data/common-types';
 import {driverOpNames, isLiteral, scopedOps} from '../runtime/rule-expressions';
 import {
-  PipelineCheckConfiguration, PipelineRuleConfiguration, RuleEffect, RuleExpr, RuleLogic, RuleSource, SourceKind,
+  PipelineCheckConfiguration, PipelineRuleConfiguration, RuleEffect, RuleExpr, RuleLogic, RuleMessageAction, RuleSource,
+  SourceKind,
 } from './PipelineConfiguration';
 
 /* eslint-disable max-len */
@@ -66,9 +67,9 @@ const effectCalls = {
   describe: {positional: ['targets', 'value'], options: []},
   items: {positional: ['targets', 'items'], options: []},
   meta: {positional: ['targets'], options: ['meta']},
-  error: {positional: ['targets', 'message'], options: []},
-  warning: {positional: ['targets', 'message'], options: []},
-  notification: {positional: ['targets', 'message'], options: []},
+  error: {positional: ['targets', 'message'], options: ['actions']},
+  warning: {positional: ['targets', 'message'], options: ['actions']},
+  notification: {positional: ['targets', 'message'], options: ['actions']},
   verdicts: {positional: ['targets', 'source'], options: []},
   set: {positional: ['targets', 'value'], options: ['restriction']},
   clear: {positional: ['targets'], options: ['restriction']},
@@ -194,6 +195,8 @@ function expression(node: IToken, text: string, inElement = false): any {
       throw new FormulaError(`${name} is an effect call and cannot be used inside an expression`, node, text);
     if (has(sourceCalls, name))
       throw new FormulaError(`${name} is a source call and cannot be used inside an expression`, node, text);
+    if (name === 'action')
+      throw new FormulaError('action is only allowed in the actions option of a message', node, text);
     if (name === 'obj') {
       if (positional.length)
         throw new FormulaError('obj takes named arguments only', positional[0], text);
@@ -249,6 +252,30 @@ function aliases(node: IToken, text: string, message: string): string | string[]
 }
 
 const targets = (node: IToken, text: string) => aliases(node, text, 'Targets are an output alias or a list of them');
+
+// each element is one button of the message, the ActionItem it becomes
+function messageActions(node: IToken, text: string): RuleMessageAction[] {
+  const shape = 'actions are a list of action(alias, "id", name) calls';
+  if (node.type !== 'Array')
+    throw new FormulaError(shape, node, text);
+  return node.children.map((child) => {
+    if (child.type !== 'Call' || child.children[0].text !== 'action')
+      throw new FormulaError(shape, child, text);
+    const {positional, named} = callParts(child, text);
+    arity('action', positional, ['actions', 'action', 'actionName'], child, text);
+    const item: RuleMessageAction = {
+      actions: alias(positional[0], text, 'The actions alias'),
+      action: stringLiteral(positional[1], text, 'The action id'),
+      actionName: expression(positional[2], text),
+    };
+    for (const [key, arg] of Object.entries(named)) {
+      if (key !== 'additionalParams')
+        throw new FormulaError(`action has no option ${key} (expected additionalParams)`, arg, text);
+      item.additionalParams = expression(arg, text);
+    }
+    return item;
+  });
+}
 
 function alias(node: IToken, text: string, what: string): string {
   if (node.type !== 'Ref' || node.text.includes('.'))
@@ -341,6 +368,8 @@ export function compileEffect(text: string): RuleEffect {
         arg, body);
     } else if (key === 'targets')
       effect.targets = targets(arg, body);
+    else if (key === 'actions')
+      effect.actions = messageActions(arg, body);
     else if (key === 'restriction') {
       const restriction = stringLiteral(arg, body, 'restriction');
       if (!has(restrictions, restriction))
