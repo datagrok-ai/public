@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
+import {defer, forkJoin, from, isObservable, Observable, of} from 'rxjs';
+import {catchError, concatMap, defaultIfEmpty, map, shareReplay, take, tap} from 'rxjs/operators';
 import {IControllerBase} from '../RuntimeControllers';
 import {RuleExpr, RuleSource, SourceKind, SourceSpec} from '../config/PipelineConfiguration';
 import {evaluate, RuleContext, usedAliases} from './rule-expressions';
@@ -12,23 +14,23 @@ let warnedNoEval = false;
 // the annotation's own validators, resolved and run by the platform (1.28+)
 function annotationVerdicts(
   controller: IControllerBase, spec: {input: string, call?: string},
-): ValidatorVerdict[] | Promise<ValidatorVerdict[]> {
+): Observable<ValidatorVerdict[]> {
   if (!spec.call || !controller.hasCall(spec.call))
-    return [];
+    return of([]);
   const call = controller.getFirst<DG.FuncCall | undefined>(spec.call);
   if (!call)
-    return [];
+    return of([]);
   if (typeof (call as any).evalParamValidators !== 'function') {
     if (!warnedNoEval) {
       warnedNoEval = true;
       console.warn('RTD: FuncCall.evalParamValidators is not available on this platform, named validators are skipped');
     }
-    return [];
+    return of([]);
   }
   const io = controller.getMatchedPositions(spec.input)[0]?.ioName;
   if (!io)
-    return [];
-  return call.evalParamValidators(io).catch((e) => [failed('', e)]);
+    return of([]);
+  return defer(() => call.evalParamValidators(io)).pipe(catchError((e) => of([failed('', e)])));
 }
 
 function failed(name: string, e: unknown): ValidatorVerdict {
@@ -38,42 +40,31 @@ function failed(name: string, e: unknown): ValidatorVerdict {
 
 // the documented validator contract: one argument, null/true valid, string is the
 // message, false is a generic failure naming the function
-async function callValidator(name: string, value: any): Promise<ValidatorVerdict | undefined> {
+function callValidator(name: string, value: any): Observable<ValidatorVerdict | undefined> {
   const func = DG.Func.byName(name);
   if (!func)
-    return failed(name, 'function not found');
+    return of(failed(name, 'function not found'));
   const param = func.inputs[0]?.name;
   if (!param)
-    return failed(name, 'validator takes no input');
-  try {
-    const result = await grok.functions.call(name, {[param]: value});
-    if (result == null || result === true)
-      return undefined;
-    if (result === false)
-      return {message: `Validation failed: ${name}`, isError: true, isHelper: false};
-    return {message: String(result), isError: true, isHelper: false};
-  } catch (e) {
-    return failed(name, e);
-  }
+    return of(failed(name, 'validator takes no input'));
+  return defer(() => grok.functions.call(name, {[param]: value})).pipe(
+    map((result): ValidatorVerdict | undefined => result == null || result === true ? undefined :
+      {message: result === false ? `Validation failed: ${name}` : String(result), isError: true, isHelper: false}),
+    catchError((e) => of(failed(name, e))),
+  );
 }
 
-function namedVerdicts(value: any, names: string[]): Promise<ValidatorVerdict[]> {
-  return Promise.all(names.map((name) => callValidator(name, value)))
-    .then((verdicts) => verdicts.filter((verdict): verdict is ValidatorVerdict => !!verdict));
-}
-
-// synchronous whenever nothing is called (absent value, mock mode, old platform), so those
+// synchronous whenever nothing is called (absent value, no names, mock mode, old platform), so those
 // links stay batchable and virtual-time tests see their results immediately
-function resolveValidators(
-  controller: IControllerBase, spec: ValidatorsSource,
-): ValidatorVerdict[] | Promise<ValidatorVerdict[]> {
-  if (spec.names) {
-    const value = controller.getFirst(spec.input);
-    if (value == null || value === '')
-      return [];
-    return namedVerdicts(value, spec.names);
-  }
-  return annotationVerdicts(controller, spec);
+function resolveValidators(controller: IControllerBase, spec: ValidatorsSource): Observable<ValidatorVerdict[]> {
+  if (!spec.names)
+    return annotationVerdicts(controller, spec);
+  const value = controller.getFirst(spec.input);
+  if (value == null || value === '' || !spec.names.length)
+    return of([]);
+  return forkJoin(spec.names.map((name) => callValidator(name, value))).pipe(
+    map((verdicts) => verdicts.filter((verdict): verdict is ValidatorVerdict => !!verdict)),
+  );
 }
 
 export type ChoicesVerdict = {
@@ -281,44 +272,44 @@ const resolvers: {[K in SourceKind]: (controller: IControllerBase, spec: SourceS
   table: (_controller, spec) => resolveTable(spec),
 };
 
+// a resolver or a js fn returns a value, a promise or an observable; a source takes the first value
+function toSource$(value: unknown): Observable<any> {
+  const value$ = isObservable(value) ? value : value instanceof Promise ? from(value) : of(value);
+  return value$.pipe(take(1), defaultIfEmpty<any>(undefined));
+}
+
 /** Resolves the values a rule declares in `sources`; each alias becomes a context variable.
- *  A source reads the sources declared before it and waits only for those still pending.
- *  Returns a plain object when nothing had to be awaited. */
+ *  A source reads the sources declared before it and waits only for those it reads.
+ *  Emits synchronously when nothing has to be awaited. */
 export function resolveSources(
   controller: IControllerBase, sources: Record<string, RuleSource> | undefined, ctx: RuleContext = {$all: {}},
-): Record<string, any> | Promise<Record<string, any>> {
-  const values: Record<string, any> = {};
+): Observable<Record<string, any>> {
+  const values: Record<string, Observable<any>> = {};
   const constants = new Set<string>();
   const cache = controller.sourceCache;
   for (const [alias, source] of Object.entries(sources ?? {})) {
     const constant = isConstant(source, constants);
     if (constant)
       constants.add(alias);
-    const cached = constant && !!cache;
-    if (cached && cache.has(alias)) {
-      values[alias] = cache.get(alias);
+    const cached = constant ? cache?.get(alias) : undefined;
+    if (cached) {
+      values[alias] = cached;
       continue;
     }
     // expandRule has checked the source, so it has exactly one known kind
     const kind = Object.keys(source)[0] as SourceKind;
-    const resolve = (sourceCtx: RuleContext) =>
-      (resolvers[kind] as SourceResolver)(controller, (source as Record<SourceKind, unknown>)[kind], sourceCtx);
+    const spec = (source as Record<SourceKind, unknown>)[kind];
     const read = sourceReads(source).filter((name) => Object.hasOwn(values, name));
-    const withRead = (results: any[]) =>
-      resolve({...ctx, ...Object.fromEntries(read.map((name, idx) => [name, results[idx]]))});
-    const value = read.some((name) => values[name] instanceof Promise) ?
-      Promise.all(read.map((name) => values[name])).then(withRead) :
-      withRead(read.map((name) => values[name]));
-    if (cached) {
-      cache.set(alias, value);
-      if (value instanceof Promise)
-        value.catch(() => cache.delete(alias));
-    }
-    values[alias] = value;
+    const value$ = (read.length ? forkJoin(read.map((name) => values[name])) : of([])).pipe(
+      concatMap((results) => toSource$((resolvers[kind] as SourceResolver)(controller, spec,
+        {...ctx, ...Object.fromEntries(read.map((name, idx) => [name, results[idx]]))}))),
+      tap({error: () => cache?.delete(alias)}),
+      // a source read by several others runs once, and a loaded cached one replays synchronously
+      shareReplay({bufferSize: 1, refCount: false}),
+    );
+    if (constant)
+      cache?.set(alias, value$);
+    values[alias] = value$;
   }
-  const aliases = Object.keys(values);
-  if (!aliases.some((alias) => values[alias] instanceof Promise))
-    return values;
-  return Promise.all(aliases.map((alias) => values[alias]))
-    .then((results) => Object.fromEntries(aliases.map((alias, idx) => [alias, results[idx]])));
+  return Object.keys(values).length ? forkJoin(values) : of({});
 }

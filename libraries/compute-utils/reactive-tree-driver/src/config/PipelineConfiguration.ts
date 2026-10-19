@@ -244,7 +244,7 @@ export type RuleEffect = RuleMetaEffect | RuleValidatorEffect | RuleDataEffect;
  *  on the io behind `input`; without `names` it runs the io's own annotation validators
  *  through the platform, using the `(call)` input that expansion adds as `call`.
  *  `js` calls `fn` with the values of the `args` input or earlier source aliases on every run of the
- *  rule; a returned promise is awaited. */
+ *  rule; a returned promise or observable gives its first value. */
 export type RuleSource =
   {validators: {input: string, names?: string[], call?: string}} |
   /** The annotation `choices` of the io behind `input`, evaluated by the platform (1.28+) through the step's
