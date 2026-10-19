@@ -17,11 +17,13 @@ Feature: Oligo Toolkit: the Translator and Structure tools
   The prefilled Axolabs sample `Afcgacsu` (Nucleotides `ACGACU`) carries the detection and copy
   checks that pass on 1.11.5.
 
-  GROK-20959 is a known failure, pinned to the balloon that should name the strand. GROK-20806 (a second
-  conversion of the same column) is fixed: both columns stay, the second named "(2)"; Convert writes HELM.
+  GROK-20959 is fixed: the refusal names the sequence. It is claimed in one step, since a balloon claim takes
+  the balloon it matched and a second claim on it finds none. GROK-20806 (a second conversion of the same
+  column) is fixed: both columns stay, the second named "(2)"; Convert writes HELM.
 
-  bulk-translation-axolabs.csv has a sixth, empty row, so the five sequences
-  are claimed row by row rather than by "no missing values".
+  The translations themselves (the Axolabs sample's, the typed HELMs', none for an unreadable code), the
+  values of the bulk conversion and the GROK-20958 refresh are SequenceTranslator's package tests
+  'Formats support', 'Translator: bulk' and 'Translator: app'.
 
   The single-sequence format selector has no caption; it is named "Single sequence format". Not
   claimed: whether the structure picture drew a molecule — the picture is Chem's renderer, tested by
@@ -61,13 +63,8 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
-  Scenario: The prefilled Axolabs sequence is detected and translated to the other formats
+  Scenario: The prefilled Axolabs sequence is detected as Axolabs
     Then "Single sequence format" choice input should have the value "Axolabs"
-    And "Nucleotides" table row should contain the text "ACGACU"
-    And "HELM" table row should contain the text "RNA1{[fR](A)p.[25r](C)p.[25r](G)p.[25r](A)p.[25r](C)[sp].[25r](U)}$$$$"
-    And "BioSpring" table row should contain the text "27867*5"
-    And "Mermade12" table row should contain the text "IFGEfH"
-    And "Axolabs" table row should be absent
     And no errors should have been logged
 
   Scenario: A click on a translation copies it
@@ -78,8 +75,6 @@ Feature: Oligo Toolkit: the Translator and Structure tools
   Scenario: A typed HELM switches the format selector to HELM and is translated to nucleotides without an error (GROK-20958)
     When user types "RNA1{r(A)p.r(C)p.r(G)p.r(U)}$$$$" into text area
     Then "Single sequence format" choice input should have the value "HELM"
-    And "HELM" table row should be absent
-    And "Nucleotides" table row should contain the text "ACGU"
     When user clicks on "ACGU" link
     Then an info balloon containing "Copied" should have been shown
     And the clipboard should have the text "ACGU"
@@ -95,7 +90,6 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     When user types "RNA1{r(A)p.r(C)p.[meI]}$$$$" into text area
     Then "Single sequence format" choice input should have the value "HELM"
     And "Nucleotides" table row should not contain the text "ACGU"
-    And "HELM" table row should be absent
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
@@ -104,7 +98,6 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     Then "Single sequence format" choice input should have the value "Axolabs"
     And the "-webkit-text-fill-color" style of "QQ" text should contain "rgb(255, 0, 0)"
     And "Nucleotides" table row should be absent
-    And "HELM" table row should be absent
     When user types "Afcgacsu" into text area
     Then "Nucleotides" table row should contain the text "ACGACU"
     And no error or warning balloon should have been shown
@@ -138,17 +131,11 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     Then the "bulk-translation-axolabs" view should be current
     And the table should have a column "AxolabsSequences (Nucleotides)"
     And "AxolabsSequences (Nucleotides)" column should have semantic type "Macromolecule"
-    And the value of "AxolabsSequences (Nucleotides)" column in row 1 should be "ACGUACGU"
-    And the value of "AxolabsSequences (Nucleotides)" column in row 2 should be "UCGUACGU"
-    And the value of "AxolabsSequences (Nucleotides)" column in row 3 should be "CCGUACGU"
-    And the value of "AxolabsSequences (Nucleotides)" column in row 4 should be "ACUACGU"
-    And the value of "AxolabsSequences (Nucleotides)" column in row 5 should be "ACGUACGU"
     When user clicks on the tab of the "Oligo Translator" view
     When user selects "HELM" in "Output format" input
     And user clicks on Convert button
     Then the "bulk-translation-axolabs" view should be current
     And the table should have a column "AxolabsSequences (HELM)"
-    And every value of "AxolabsSequences (HELM)" column should match "^RNA1\{"
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
@@ -184,14 +171,12 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     And the downloaded file should contain "M  END"
     And no errors should have been logged
 
-  @known-failure:195
   Scenario: Save SDF with an antisense strand that cannot be converted is refused by name (GROK-20959)
     Given user watches downloads
     When user clicks on STRUCTURE tab
     And user types "Afcgacsu" into SS text area
     And user types "NOTASEQUENCE" into AS text area
     And user clicks on "Save SDF" button
-    Then a warning balloon containing "Unable to save SDF:" should have been shown
-    And a warning balloon containing "NOTASEQUENCE" should have been shown
+    Then a warning balloon containing "Unable to save SDF: Unable to detect the format of the sequence 'NOTASEQUENCE'" should have been shown
     And no file should have been downloaded
     And no errors should have been logged

@@ -78,6 +78,8 @@ Feature: The Scripts view and a script's context panel
     And user selects "cars" in Table input in "BddScriptBrowser{time}" dialog
     And user clicks on OK button in "BddScriptBrowser{time}" dialog
     Then the "BddScriptBrowser{time}" dialog should close
+    # the panel counts once, when it renders: the fresh view is opened after the server has logged the run
+    Given the server has logged activity on the "BddScriptBrowser{time}" script
     # the panel renders the current object once: a fresh Scripts view shows the script anew
     When user closes the current view
     And user opens the Scripts view

@@ -34,7 +34,8 @@
 
 /* button variant: the radio itself is off-screen, the label is the target; laid out as a row of
    buttons 4px apart, raised ones white on the accent (ui.css:945-959) */
-.u2-radio-buttons {
+.u2-radio-buttons,
+.u2-input-editor.u2-radio.u2-radio-buttons {
   flex-direction: row;
   align-items: center;
   padding: var(--dg-space-xs) 0;

@@ -3,6 +3,7 @@ import {StateTreeNode} from './StateTreeNodes';
 import {MatchedIO} from './link-matching';
 import {DriverLogger, reportError} from '../data/Logger';
 import {Link} from './Link';
+import {getOriginalConfig} from '../config/config-processing-utils';
 
 export class DependenciesData {
   nodes: Set<string> = new Set();
@@ -69,9 +70,12 @@ export function calculateIoDependencies(state: BaseTree<StateTreeNode>, links: L
         if (depsData[ioName] == null)
           depsData[ioName] = {};
         if (depType === 'data') {
-          if (depsData[ioName][depType]) {
-            const prevUuid = depsData[ioName][depType] as string;
-            const prevSpecId = links.find((l) => l.uuid === prevUuid)?.matchInfo.spec.id ?? prevUuid;
+          const prevUuid = depsData[ioName][depType] as string | undefined;
+          const prev = prevUuid ? links.find((l) => l.uuid === prevUuid) : undefined;
+          // the separate effects of one rule may write the same io, as the rule's own effects do
+          const sameRule = !!prev && getOriginalConfig(prev.matchInfo.spec) === getOriginalConfig(link.matchInfo.spec);
+          if (prevUuid && !sameRule) {
+            const prevSpecId = prev?.matchInfo.spec.id ?? prevUuid;
             const newSpecId = link.matchInfo.spec.id;
             reportError(
               'warning',

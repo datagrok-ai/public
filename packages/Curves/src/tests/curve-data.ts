@@ -15,7 +15,12 @@ export function renderedRows(json: string, name: string, width: number = 400, he
   col.semType = FitConstants.FIT_SEM_TYPE;
   const df = DG.DataFrame.fromColumns([col]);
   df.name = name;
+  return renderedDataRows(getOrCreateParsedChartData(df.cell(0, 'curve')), width, height);
+}
 
+/** {@link renderedRows} of chart data already parsed, the options of its levels merged in. */
+export function renderedDataRows(data: IFitChartData, width: number = 400, height: number = 300):
+  {rows: {text: string, x: number, y: number}[], data: IFitChartData, dataBox: DG.Rect} {
   const rows: {text: string, x: number, y: number}[] = [];
   const g = ui.canvas(width, height).getContext('2d')!;
   const fillText = g.fillText.bind(g);
@@ -25,7 +30,6 @@ export function renderedRows(json: string, name: string, width: number = 400, he
   }) as any;
 
   const rect = new DG.Rect(0, 0, width, height);
-  const data = getOrCreateParsedChartData(df.cell(0, 'curve'));
   new FitChartCellRenderer().renderCurves(g, rect, data);
   const axesNames = shownAxesNames(rect, data);
   const dataBox = layoutChart(rect, axesNames.x, axesNames.y, isTitleShown(rect, data))[0];

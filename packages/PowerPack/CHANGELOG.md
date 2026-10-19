@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Add New Column: Changed OK with an empty formula to add a plain empty column of the picked type (auto gives a string column) with no formula, where a picked type was refused as a mismatch
+* Add New Column: Fixed the value for the rows that fail being dropped on OK when the gear was opened before the preview had computed the formula's type; the gear is named "Rows that fail"
+* Tests: Added BDD features for calculated columns in Add New Column: the result type and validation, Edit Column Formula, a script in a formula, the rows that fail and Append Tables
 * u2: Stopped bundling u2's stylesheets (nor the standalone Font Awesome fonts); u2 installs its stylesheet once per page, the newest copy any package carries
 * EMS: imports `domains` from `@datagrok-libraries/ems`
 * GROK-20298: Added `editDomainBinding` (`tags: domainAuthoring`, `meta.mode: edit`; `createDomainBinding` is `meta.mode: create`) — the u2 "Edit binding" dialog over a registered external binding (Design › Review › Saved), the function the platform's "Edit binding..." command on a binding's node runs

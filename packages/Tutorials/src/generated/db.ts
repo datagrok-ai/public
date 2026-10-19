@@ -462,37 +462,37 @@ export type NorthwindDemoTransactionOp =
 
 /** Typed clients for the `northwind_demo` domain schema tables (lazy — no import-time side effects). */
 export const northwindDemoDb = {
-  get categorieses() {
+  get categories() {
     return grok.dapi.domains.table<CategoriesRow, CategoriesInsert, CategoriesColumn, CategoriesExpand>('northwind_demo.categories');
   },
-  get supplierses() {
+  get suppliers() {
     return grok.dapi.domains.table<SuppliersRow, SuppliersInsert, SuppliersColumn, SuppliersExpand>('northwind_demo.suppliers');
   },
-  get productses() {
+  get products() {
     return grok.dapi.domains.table<ProductsRow, ProductsInsert, ProductsColumn, ProductsExpand>('northwind_demo.products');
   },
-  get customerses() {
+  get customers() {
     return grok.dapi.domains.table<CustomersRow, CustomersInsert, CustomersColumn, CustomersExpand>('northwind_demo.customers');
   },
-  get employeeses() {
+  get employees() {
     return grok.dapi.domains.table<EmployeesRow, EmployeesInsert, EmployeesColumn, EmployeesExpand>('northwind_demo.employees');
   },
-  get shipperses() {
+  get shippers() {
     return grok.dapi.domains.table<ShippersRow, ShippersInsert, ShippersColumn, ShippersExpand>('northwind_demo.shippers');
   },
-  get regionses() {
+  get regions() {
     return grok.dapi.domains.table<RegionsRow, RegionsInsert, RegionsColumn, RegionsExpand>('northwind_demo.regions');
   },
-  get territorieses() {
+  get territories() {
     return grok.dapi.domains.table<TerritoriesRow, TerritoriesInsert, TerritoriesColumn, TerritoriesExpand>('northwind_demo.territories');
   },
-  get employeeTerritorieses() {
+  get employeeTerritories() {
     return grok.dapi.domains.table<EmployeeTerritoriesRow, EmployeeTerritoriesInsert, EmployeeTerritoriesColumn, EmployeeTerritoriesExpand>('northwind_demo.employee_territories');
   },
-  get orderses() {
+  get orders() {
     return grok.dapi.domains.table<OrdersRow, OrdersInsert, OrdersColumn, OrdersExpand>('northwind_demo.orders');
   },
-  get orderDetailses() {
+  get orderDetails() {
     return grok.dapi.domains.table<OrderDetailsRow, OrderDetailsInsert, OrderDetailsColumn, OrderDetailsExpand>('northwind_demo.order_details');
   },
   transaction<T extends NorthwindDemoTransactionOp[]>(ops: [...T]):

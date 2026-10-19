@@ -3,125 +3,129 @@ feature: projects
 realizes_atlas: [projects.cp.upload-save-reopen-golden]
 realizes: [views.projects]
 priority: p0
-target_layer: manual-only
+target_layer: playwright
 coverage_type: regression
-manual_only_reason: |
-  The run mutates a shared server folder in a coordinated time window and
-  needs write permissions the automated test account lacks, so human QA sets
-  up the folder change and verifies the reopened project by hand.
 related_bugs: []
 ---
 
-# Custom Creation Scripts — UI-only manual scenario
+# Custom creation script — the project picks up the newest file on reopen
 
-Verify that a project bound to a JS creation-script as its data source
-correctly re-executes the script on reopen and resolves the latest
-data — specifically, that the script picks up file-storage changes
-made between save and reopen. The creation script in this scenario
-selects the CSV file with the highest numeric suffix from
-`System:DemoFiles/chem`; the test mutates that folder between save
-and reopen, then verifies the reopened project loads the new highest-
-suffixed file.
+A project's table comes from your own script. The script reads a folder
+in **My files** and returns the CSV file with the highest number at the
+end of its name. The project is saved with **Data sync**, a file with a
+higher number is added to the folder, and the reopened project must
+show the new file's rows, not the rows it was saved with.
 
 ## Setup
 
-1. **Filesystem prerequisite:** the path `System:DemoFiles/chem`
-   must exist on the test server and contain at least one CSV file
-   with a numeric suffix in its filename (e.g. `chem_data_001.csv`,
-   `compounds_v42.csv`). The creation script in step 1 throws if
-   the folder is empty.
-2. **Destructive shared-state caveat:** step 4 mutates
-   `System:DemoFiles/chem`. Concurrent test runs OR other tests
-   reading the same folder will see the mutation. Coordinate timing
-   with team OR perform the mutation in a controlled window. Restore
-   the folder to a known state in Cleanup.
-3. **Browser session authentication:** test-user session with
-   read+write access to `System:DemoFiles/chem` and project-creation
-   rights (the test account on dev currently lacks write access — manual run
-   may require elevated credentials).
-
-## Manual scenario
-
-### Creation-script-on-reopen rebuild verification
-
-1. **Run the creation script** (inline below). The script lists
-   CSV files in `System:DemoFiles/chem`, sorts by numeric suffix in
-   the filename, selects the file with the highest suffix, and
-   produces a dataframe from its contents. Run via the platform's
-   script-execution UI (e.g. `Tools` > `Scripting` > paste +
-   Run, OR `grok.functions.eval(...)` in the browser console for a
-   programmatic run).
+1. Log in as the test user.
+2. Names in this test: folder `ccsTest`, script `ccsScript`, project
+   `ccsProject`.
+3. **Create the folder.**
+   - Go to **Browse > Files**.
+   - Right-click **My files** and choose **Create folder...**.
+   - Replace *Folder name* with `ccsTest`.
+   - Click **OK**.
+4. **Put the first file into it.**
+   - Go to **Browse > Files > Demo**.
+   - Drag `cars.csv` onto the `ccsTest` folder under **My files** in
+     the Browse tree.
+   - In **My files > ccsTest**, right-click `cars.csv` and choose
+     **Rename...**.
+   - Change the name to `data1.csv`.
+   - Click **OK**.
+   - **Verify:** `ccsTest` holds only `data1.csv`.
+5. **Create the script.**
+   - Go to **Browse > Platform > Functions > Scripts**.
+   - Click **NEW** and choose **JavaScript Script...**.
+   - Replace the template with the text below.
+   - Click **SAVE** in the editor.
+   - **Verify:** the balloon *Script saved.* appears.
 
    ```js
-   //name: getLastCreatedFile_by_numeric_suffix
+   //name: ccsScript
    //language: javascript
    //output: dataframe result
-
-   const csvFiles = await grok.dapi.files.list('System:DemoFiles/chem', true, 'csv');
-
+   const folder = grok.shell.user.project.name + ':Home/ccsTest/';
+   const csvFiles = await grok.dapi.files.list(folder, false, 'csv');
    if (csvFiles.length === 0)
-       throw new Error('No CSV files found in System:DemoFiles/chem');
-
-   // Function to extract a numeric suffix from the file name
-   function getNumberSuffix(name) {
-       const match = name.match(/(\d+)(?=\.csv$)/);
-       return match ? parseInt(match[1], 10) : -1; // -1 if no number is found
-   }
-
-   // Sort files by numeric suffix in ascending order
-   csvFiles.sort((a, b) => getNumberSuffix(a.fileName) - getNumberSuffix(b.fileName));
-
-   // Select the file with the highest numeric suffix
-   const lastFile = csvFiles[csvFiles.length - 1];
-
-   const csv = await grok.dapi.files.readAsText(lastFile.fullPath);
-   result = DG.DataFrame.fromCsv(csv);
+     throw new Error('No CSV files found in ' + folder);
+   const suffix = (name) => { const m = name.match(/(\d+)(?=\.csv$)/); return m ? parseInt(m[1], 10) : -1; };
+   csvFiles.sort((a, b) => suffix(a.fileName) - suffix(b.fileName));
+   result = DG.DataFrame.fromCsv(await grok.dapi.files.readAsText(csvFiles[csvFiles.length - 1].fullPath));
    ```
 
-   Verify the script produces a dataframe and the result table
-   opens in the workspace.
+## Scenario
 
-2. **Add some viewers and save the project with Data Sync enabled.**
-   On the dataframe from step 1, add 1+ viewers (e.g. a scatter
-   plot, bar chart, or any viewer of choice) to the table view.
-   Trigger **File** > **Save Project**. In the Save Project dialog,
-   ensure the **Data Sync** toggle is **ON** (this binds the script
-   as the project's creation script — the script will re-run on
-   project open). Name the project (e.g.
-   `Custom_Creation_Script_Test`) and click **OK**.
-3. **Close All.** Close all open views and viewers. Verify the
-   workspace is clear.
-4. **Update any CSV file in the `System:DemoFiles/chem` folder.**
-   Either:
-   - **Add a new CSV file with a HIGHER numeric suffix** than any
-     existing file (e.g. if highest existing suffix is 042, add
-     `chem_data_999.csv`), OR
-   - **Rename an existing file to add or increase its numeric
-     suffix** (e.g. rename `compounds.csv` →
-     `compounds_999.csv`).
-   Either action makes a different file the "highest-suffixed",
-   so the creation script's selection should change on reopen.
-   *(WARNING: this is a destructive mutation of shared filesystem
-   state. Restore in Cleanup.)*
-5. **Open the saved project and verify on reopen:**
-   - **No errors occur** — the project opens without console
-     errors (F12), and no error balloon appears.
-   - **The most recently created or modified file in the `chem`
-     folder is loaded** — the dataframe in the reopened project
-     reflects the contents of the file added or renamed in step 4
-     (i.e. the file with the highest numeric suffix at reopen
-     time, NOT the file that was highest at save time).
+1. **Run the script.**
+   - Go to **Browse > Platform > Functions > Scripts**.
+   - Click the refresh icon.
+   - Right-click `ccsScript` and choose **Run...**.
+   - **Verify:** the `result` view opens with **Rows: 30** in the status
+     bar (the rows of `data1.csv`).
 
-## Cleanup responsibility
+2. **Add a viewer and save the project.**
+   - In **Toolbox > Viewers**, click **Bar chart**.
+   - Click **SAVE** on the ribbon.
+   - **Verify:** **Data sync** is ON for `result`.
+   - Expand **CREATION SCRIPT**.
+   - **Verify:** it shows a call of `ccsScript`.
+   - Enter `ccsProject` as the name.
+   - Click **OK**.
+   - **Verify:** the balloon *Project "ccsProject" uploaded.* appears.
+   - In the **Share** dialog, click **CANCEL**.
 
-After the manual run, restore environment to keep it idempotent:
+3. **Close everything.**
+   - Right-click the left sidebar and select **Close All**.
+   - **Verify:** no table view is open.
 
-1. **Delete the saved project** `Custom_Creation_Script_Test` via UI
-   (Browse > Dashboards > right-click > Delete) or CLI
-   (`grok s projects delete Custom_Creation_Script_Test`).
-2. **Restore `System:DemoFiles/chem`** to its pre-mutation state:
-   - If a new file was added in step 4, delete it.
-   - If a file was renamed in step 4, rename it back.
+4. **Add a file with a higher number.**
+   - Go to **Browse > Files > Demo**.
+   - Drag `iris.csv` onto the `ccsTest` folder under **My files**.
+   - In **My files > ccsTest**, right-click `iris.csv` and choose
+     **Rename...**.
+   - Change the name to `data2.csv`.
+   - Click **OK**.
+   - **Verify:** `ccsTest` holds `data1.csv` and `data2.csv`.
+
+5. **Reopen the project.**
+   - Go to **Browse > Dashboards**.
+   - Type `ccsProject` into the search box.
+   - Click the refresh icon.
+   - Double-click the `ccsProject` tile.
+   - **Verify:** the `result` view opens with **Rows: 150** (the rows of
+     `data2.csv`, not the 30 it was saved with).
+   - **Verify:** the view has the bar chart.
+   - **Verify:** no error balloon and no **Data loading error** dialog
+     appear.
+
+## Cleanup
+
+- Right-click the left sidebar and select **Close All**.
+- In **Browse > Dashboards**, right-click the `ccsProject` tile and
+  choose **Delete Project**. Click **DELETE** and wait until the dialog
+  closes.
+- In **Scripts**, right-click `ccsScript` and choose **Delete**. Click
+  **YES**.
+- In **Browse > Files > My files**, right-click `ccsTest` and choose
+  **Delete...**. Confirm.
+
+## Expected results
+
+- A table produced by your own script is saved with the script as its
+  creation script.
+- On reopen the script runs again and the table shows what the script
+  returns now: the newest file's rows.
+
+## Automation notes
+
+- Copying a demo file into **My files** by dragging it onto the folder
+  in the Browse tree is read from `files_view.dart` (a drop onto a
+  folder of another connection copies the file); it was not run by hand
+  while writing this file. The two files are setup, not the subject, so
+  an automated run may write them through the JS API.
+- The confirmation text of **Delete...** for a folder was not checked
+  in source.
 
 ---
 {

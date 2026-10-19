@@ -456,6 +456,77 @@ category('Crux sketcher', () => {
     }
   }, {timeout: 60000});
 
+  // The product owner (2026-10-19): a stroke in a molecule column's Filter pane made the drawing the current object, so
+  // the panel showed the molecule instead of the column, and the pane, its sketcher with it, went at every stroke. A
+  // sketcher in the context panel never makes its drawing the current object (js-api's Sketcher.isInContextPanel). Here
+  // a sketcher is put in the panel on its own, so no filtering is involved; the Filter pane itself, drawn on with a real
+  // pointer, is sketcher/crux-hosts.feature's.
+  test('strokes in a sketcher in the context panel leave the current object as it is', async () => {
+    grok.chem.currentSketcherType = 'Crux';
+    const showContextPanel = grok.shell.windows.showContextPanel;
+    const host = new DG.chem.Sketcher();
+    const shown = ui.divV([host.root], {style: {width: '400px', height: '450px'}});
+    try {
+      grok.shell.windows.showContextPanel = true;
+      grok.shell.o = shown;
+      await awaitCheck(() => shown.closest('.grok-prop-panel') !== null, 'the sketcher is not in the context panel', 10000);
+      await host.sketcherReady();
+      await delay(SETTLE_MS);
+      const s = {host, changes: () => 0} as unknown as OpenSketcher;
+      press(s, 'bond.single');
+      const c = canvasBox(s);
+      for (const [i, across] of [[1, 0.3], [2, 0.7]]) {
+        pressAt(s, {x: c.x + c.width * across, y: c.y + c.height / 2});
+        await delay(SETTLE_MS);
+        expect(cruxElement(s)!.isEmpty, false, `Crux after stroke ${i}`);
+        expect(grok.shell.o === shown, true, `the current object after stroke ${i}: ${grok.shell.o?.constructor?.name}`);
+      }
+    } finally {
+      grok.shell.windows.showContextPanel = showContextPanel;
+      grok.shell.o = null;
+    }
+  }, {timeout: 60000});
+
+  // The same in a molecule column's Filter pane, with the filtering a stroke starts: there the filter does not make the
+  // filtered rows the current object either (SubstructureFilter.requestFilter). A stroke of pointer events only, more
+  // than 2 s after the pane opened: core's own guard (2 s after a mousedown in the pane or a header expanded) misses it.
+  test('a stroke in the context panel\'s filter pane leaves the column the current object', async () => {
+    const df = DG.DataFrame.fromCsv(`smiles\n${SMILES}\nOCO\nCCO`);
+    await grok.data.detectSemanticTypes(df);
+    grok.chem.currentSketcherType = 'Crux';
+    const showContextPanel = grok.shell.windows.showContextPanel;
+    const tv = grok.shell.addTableView(df);
+    try {
+      grok.shell.windows.showContextPanel = true;
+      // the new view makes its own current object (debounced) first: the column is made current after it
+      await delay(1500);
+      grok.shell.o = df.col('smiles');
+      const filterHeader = () => [...document.querySelectorAll<HTMLElement>('.grok-prop-panel .d4-accordion-pane-header')]
+        .find((h) => h.textContent?.trim() === 'Filter');
+      await awaitCheck(() => filterHeader() !== undefined, 'no Filter pane in the context panel', 10000);
+      if (!filterHeader()!.classList.contains('expanded'))
+        filterHeader()!.click();
+      const paneCrux = () => document.querySelector<CruxElement>('.grok-prop-panel .crux-sketcher crux-sketch');
+      await awaitCheck(() => paneCrux()?.getAttribute('aria-busy') === 'false', 'no ready Crux in the Filter pane', 15000);
+      const el = paneCrux()!;
+      await delay(2100);
+      expect(paneCrux() === el, true, `the pane was rebuilt before the stroke (current: ${grok.shell.o?.constructor?.name})`);
+      const s ={host: {sketcher: {root: el.closest('.crux-sketcher')}}} as unknown as OpenSketcher;
+      press(s, 'bond.single');
+      const c = canvasBox(s);
+      pressAt(s, {x: c.x + c.width * 0.3, y: c.y + c.height / 2});
+      await awaitCheck(() => df.filter.trueCount < df.rowCount, 'the stroke did not filter the table', 15000);
+      await delay(SETTLE_MS);
+      const o = grok.shell.o;
+      expect(o instanceof DG.Column ? `column ${o.name}` : `${o?.constructor?.name}`, 'column smiles',
+        'the current object after the stroke');
+      expect(paneCrux() === el, true, 'Crux still in the Filter pane');
+    } finally {
+      grok.shell.windows.showContextPanel = showContextPanel;
+      tv.close();
+    }
+  }, {timeout: 60000});
+
   test('smiles', async () => {
     const s = await openCrux();
     try {

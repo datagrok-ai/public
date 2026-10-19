@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {IControllerBase} from '../RuntimeControllers';
-import {RuleExpr, RuleSource, SourceKind} from '../config/PipelineConfiguration';
+import {RuleExpr, RuleSource, SourceKind, SourceSpec} from '../config/PipelineConfiguration';
 import {evaluate, RuleContext, usedAliases} from './rule-expressions';
 
 export type ValidatorVerdict = {message: string, isError: boolean, isHelper: boolean};
@@ -251,7 +251,6 @@ async function resolveQuery(spec: QuerySource, ctx: RuleContext) {
   return connection.query('adhoc', sql).apply(args);
 }
 
-type SourceSpec<K extends SourceKind> = Extract<RuleSource, Record<K, unknown>>[K];
 type SourceResolver = (controller: IControllerBase, spec: any, ctx: RuleContext) => any;
 
 // typed per kind, so a new RuleSource kind fails the build until it gets a resolver
