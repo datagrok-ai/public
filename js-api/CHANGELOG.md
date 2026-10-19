@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Fixed `ConnectionDataSource.byType` returning the raw Dart object instead of a `ConnectionDataSource`, so every getter on its result was undefined
+* Fixed `ConnectionDataSource.byType` returning a raw Dart object
 * Sketcher: A sketcher in the context panel (a molecule column's Filter pane) no longer makes its drawing the current object: the panel showed the molecule instead of the column, and the pane, the sketcher with it, went at every stroke. Nor does a sketcher out of the page (`Sketcher.isInContextPanel`)
 * U2: With debug tracking on (`DG.U2.debug`), `effect()` and `own()` on a control warn once per call site when the same site registers from a second `each()` row or effect run that the control does not live in: what it registers outlives each of them and piles up
 * Sketcher: A molecule lookup (a name, an identifier) answered after a newer value was set no longer overwrites it, and one that finds nothing keeps the drawing and says `Could not recognize "…"` instead of clearing it
