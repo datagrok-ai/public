@@ -63,9 +63,10 @@ slider handles, a Shift-drag selection and Escape, the Table property).
 
 ## Answered
 
-- **Which tab a stacked heat map comes back on** (lead, 2026-10-19: expected). After the layout loads,
-  the panel shows the Histogram tab, not the Heat map tab that was active at the save; the layout does not
-  keep the active tab. `heat-map-layout.feature` switches to the Heat map tab itself before claiming it.
+- **Which tab a stacked heat map comes back on** (lead, 2026-10-19: not a heat map bug — an improvement for
+  layouts, core#931). After the layout loads, the panel shows the Histogram tab, not the Heat map tab that
+  was active at the save; a layout does not keep the active tab of stacked viewers. `heat-map-layout.feature`
+  switches to the Heat map tab itself before claiming it; once core#931 lands that switch can go.
 
 ## Won't do
 
