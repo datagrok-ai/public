@@ -621,8 +621,9 @@ agent refuses to start, so every turn ends in an `error` "The assistant could no
 provider refuses the credentials (the reasons are in each provider's subsection), when `provider` names no
 provider of the runtime, or when `TEST_UPSTREAM` is not an allowed host. The server itself stays up; the
 log shows the reason as `agent: warm spare failed to start: …`. A key the provider rejects ends the turn in
-an `error` with the provider's message; a 401 adds a hint naming the credential to check. An answer the
-provider's safety filter stops mid-stream ends in an `error` that says so, not with the cut-off text.
+an `error` with the provider's message, or the title of the HTML page a proxy answered with; a 401 adds a
+hint naming the credential to check. An answer the provider's safety filter stops mid-stream ends in an
+`error` that says so, not with the cut-off text.
 
 **Models and prices.** The runtime ships a model catalog,
 [`models.yaml`](../dockerfiles/claude-runtime/agent/grokky_agent/models.yaml): each catalog model's family
@@ -818,6 +819,53 @@ Checked against a test stub and request probes, not yet against a live workspace
 - Azure Databricks serves GPT through Databricks' ADI Services, which an admin may have to set up first.
 - Structured output: Databricks documents `output_config.format` for Claude Opus, Sonnet and Haiku 5.5, not
   for Fable 5.1.
+
+#### Custom endpoint
+
+`provider` `Custom`: the customer's own gateway or self-hosted service (a LiteLLM proxy, vLLM, a corporate
+gateway) in Anthropic's or OpenAI's format.
+
+| Credential | Value |
+|---|---|
+| `baseUrl` | The endpoint's https URL; plain http only to `127.0.0.1`, `localhost`, `[::1]` or `host.docker.internal`; no user info, query or fragment |
+| `apiFormat` | The format of every call: `anthropic-messages` (`POST <baseUrl>/v1/messages`, a trailing `/v1` dropped first), `openai-responses` (`POST <baseUrl>/responses`) or `openai-chat-completions` (`POST <baseUrl>/chat/completions`), so an OpenAI-format URL usually ends in `/v1` |
+| `apiKey` | The endpoint's key, sent as `Authorization: Bearer` in every format |
+| `model` | Required: a catalog model's id, sent as is (`claude-sonnet-5-5`), or `<id>=<catalog model>` for the endpoint's own name (`gw-sonnet=claude-sonnet-5-5`) |
+| `fastModel` | Optional, in the same forms; by default `model` |
+
+Only these one or two models are offered. Each one's catalog model gives its context window, image input and
+the prices every call is charged at: Anthropic's and OpenAI's list prices, not the gateway's.
+
+The key goes as a Bearer token because the common endpoints take it that way: vLLM takes nothing else (on its
+`/v1/messages` too), LiteLLM reads it first, Anthropic's gateway guide has Claude Code users try it when a
+gateway's header is unknown, and Anthropic's API itself accepts a Console key as one. Hermes would send a key
+string as `x-api-key` on the Anthropic format, so the provider hands it the key as a callable; to
+`api.anthropic.com` itself Hermes still sends a Console key as `x-api-key`. A gateway that reads its key from
+another header only is not supported. An agent refuses a missing or unknown `apiFormat`, a missing or other
+`baseUrl`, a `model` neither in the catalog nor mapped to it, and a Claude subscription token bound for
+`api.anthropic.com` in any format.
+
+What to watch out for:
+
+- Nothing checks the endpoint before the first turn: a wrong URL, format or model shows in that turn's error,
+  with a hint naming the credentials to check after a 401, a 404 or no answer at all (`Connection error.`).
+- On the Anthropic format Hermes picks the thinking parameters by the model id. An id without `claude` in it
+  (`gw-sonnet`) gets the legacy `thinking.type: enabled`, which Claude 5 models refuse with a 400: Hermes
+  repeats the call without it, once per session, and the turn's effort is lost. Name Claude models by an id
+  that contains the catalog name (`claude-sonnet-5-5`, `corp-claude-sonnet-5-5`).
+- Compatibility layers drop or refuse what they do not support. Anthropic's OpenAI-compatible API
+  (`https://api.anthropic.com/v1`, `openai-chat-completions`) answers, calls tools and reads images, but
+  refuses the non-strict `response_format` the runtime sends ("API Error: 400
+  response_format.json_schema.strict: Input should be True"), so structured turns (Execute, search ranking,
+  query matching) fail there, and it caches no prompts: call Claude in `anthropic-messages`. A layer that
+  drops the output format instead leaves the reply to the validation and its five attempts.
+- Chat Completions carries `reasoning_effort` on every call (`none` when the turn names no effort); when an
+  endpoint rejects the field by name, Hermes sends the call again without it. For model ids with `gpt-5` or
+  `codex` in them it leads with a `developer` message instead of a `system` one.
+- The Responses format stores nothing (`store: false`) and asks for the encrypted reasoning
+  (`include: ["reasoning.encrypted_content"]`), resending the whole history on every call.
+- To a local host, Hermes also asks Ollama's and llama.cpp's metadata routes (`/api/tags`, `/v1/props`, …),
+  and `/models` and `/v1/models` with the key; expect 404s for them in the endpoint's log.
 
 ### Build and run
 
