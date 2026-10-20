@@ -93,7 +93,8 @@ jobs:
               job_test_env=''
               if [ -n "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ] && \
                   [[ "$(jq  -r '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]] && \
-                  [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" != "docking" ]]; then
+                  [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" != "docking" ]] && \
+                  [[ '${{ github.ref }}' != refs/heads/release/* ]]; then
                 MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
                 job_name='Build, test'
                 job_test_env='Datagrok'
@@ -142,7 +143,7 @@ jobs:
                 if [[ $npm_version != ${current_version} ]]; then
                   if [ "$(awk -F. '{print $1}' <<<$current_version)" -gt "0" ]; then
                     if [[ $unpublished_deps == "" ]]; then
-                      if [[ '${{ github.ref }}' == 'refs/heads/master' ]]; then
+                      if [[ '${{ github.ref }}' == 'refs/heads/master' ]] || [[ '${{ github.ref }}' == refs/heads/release/* ]]; then
                         publish="publish"
                         MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                         job_name+=' and publish to NPM'
