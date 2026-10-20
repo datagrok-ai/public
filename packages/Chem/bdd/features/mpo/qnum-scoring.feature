@@ -33,8 +33,8 @@ Feature: MPO scores a qualified-number property by the Score as option of its cu
 
   The Lipophilicity curve of ADME Test ends at 5 with 0.5, so a row of Caco2 -6 (1) and Solubility 0 (1)
   scores (0.8 + 1) / 2.8 = 0.64286 when its Lipophilicity is beyond 5, and 1.00000 at Lipophilicity 2.
-  Until the fix agreed on public#4291 the bound ">6" keeps the curve's end value 0.5 and its row scores
-  0.82143, while the exact 6 already scores 0.
+  Before the fix agreed on public#4291 the bound ">6" kept the curve's end value 0.5 and its row scored
+  0.82143, while the exact 6 scored 0.
 
   The profiles a scenario saves are deleted when it ends, together with any other profile the user
   saved meanwhile.
@@ -211,7 +211,6 @@ Feature: MPO scores a qualified-number property by the Score as option of its cu
     And the "MPO BDD MPO min {run}" cell of row 4 should be displayed as "0.50000"
     And the "MPO BDD MPO min {run}" cell of row 1 should be displayed as "0.50000"
 
-  @known-failure:230
   Scenario: A bound wholly past the end of the curve scores 0, like an exact value there
     Given user opens a table "qnum past the curve" with:
       | smiles   | Caco2 | Lipophilicity | Solubility |

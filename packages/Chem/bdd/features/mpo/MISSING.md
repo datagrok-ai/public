@@ -16,6 +16,9 @@ written with the existing steps only: no library, binding or code change.
   table's own columns after Cancel.
 - **Cancel in the curve settings kept the changed Score as** (public#4324). Fixed in `541f52dd10`;
   `qnum-scoring.feature` claims Score as is back and the score unchanged.
+- **A bound wholly past the end of the curve kept the curve's end value** (asked on public#4291): on ADME
+  Test's Lipophilicity, ending at 5 with 0.5, `>6` scored 0.5 while the exact `6` scored 0. Fixed in
+  `360702be5d`: such a bound scores 0 like an exact value there, which `qnum-scoring.feature` claims.
 - **Two features deleting each other's profiles.** The cleanup of `no MPO profile named {string} is on the
   server` deletes every profile the user saved during a scenario, so `profile-editor.feature` is `@serial`
   like `qnum-scoring.feature`. A narrower cleanup is still asked for below.

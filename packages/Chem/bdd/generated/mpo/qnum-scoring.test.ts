@@ -21,7 +21,7 @@ import {columnType, displayedInRow} from '@datagrok-libraries/bdd/bindings/platf
 import {newColumnNamed, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {autostartsCompleted, browsePanelOpen, closeCurrentView, dialogCloses, openTableOf, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {infoBalloonText, noBalloons, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("MPO scores a qualified-number property by the Score as option of its curve", () => {
   const session = feature(test, "features/mpo/qnum-scoring.feature", import.meta.url);
@@ -224,25 +224,23 @@ test.describe("MPO scores a qualified-number property by the Score as option of 
     await session.step(211, "And the \"MPO BDD MPO min {run}\" cell of row 4 should be displayed as \"0.50000\"", () => displayedInRow(page, session.text("MPO BDD MPO min {run}"), 4, "0.50000"));
     await session.step(212, "And the \"MPO BDD MPO min {run}\" cell of row 1 should be displayed as \"0.50000\"", () => displayedInRow(page, session.text("MPO BDD MPO min {run}"), 1, "0.50000"));
   });
-  test("A bound wholly past the end of the curve scores 0, like an exact value there", {tag: ["@serial", "@known-failure:230"]}, async ({browser}) => {
+  test("A bound wholly past the end of the curve scores 0, like an exact value there", {tag: ["@serial"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(43, "Given user is logged in", () => loggedIn(page));
     await session.step(44, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(45, "And the shipped MPO profile \"ADME Test\" is on the server", () => shippedMpoProfile(page, "ADME Test"));
     await session.step(46, "And no MPO profile named \"BDD MPO qnum {run}, BDD MPO qnum app {run}\" is on the server", () => noMpoProfile(page, session.text("BDD MPO qnum {run}, BDD MPO qnum app {run}")));
     await session.step(47, "And user opens a table \"adme qnum\" with:", () => openTableOf(page, "adme qnum", [["smiles","Caco2","Lipophilicity","Solubility"],["c1ccccc1","<-5","2","0"],["CCO",">-5","2","0"],["c1ccncc1","-6","2","0"],["CC(=O)O","<-9","2","0"],["CCN","","2","0"]]), [["smiles","Caco2","Lipophilicity","Solubility"],["c1ccccc1","<-5","2","0"],["CCO",">-5","2","0"],["c1ccncc1","-6","2","0"],["CC(=O)O","<-9","2","0"],["CCN","","2","0"]]);
-    await knownFailure(async () => {
-      await session.step(216, "Given user opens a table \"qnum past the curve\" with:", () => openTableOf(page, "qnum past the curve", [["smiles","Caco2","Lipophilicity","Solubility"],["c1ccccc1","-6","6","0"],["CCO","-6",">6","0"],["c1ccncc1","-6","2","0"]]), [["smiles","Caco2","Lipophilicity","Solubility"],["c1ccccc1","-6","6","0"],["CCO","-6",">6","0"],["c1ccncc1","-6","2","0"]]);
-      await session.step(221, "Then \"Lipophilicity\" column should have type \"qnum\"", () => columnType(page, "Lipophilicity", "qnum"));
-      await session.step(222, "When user picks \"Chem > Calculate > MPO Score...\" from the top menu", () => pickFromTopMenu(page, "Chem > Calculate > MPO Score..."));
-      await session.step(223, "And user selects \"✓ ADME Test\" in Profile input in \"MPO Score\" dialog", () => selectIn(page, "✓ ADME Test", el("Profile input in \"MPO Score\" dialog")));
-      await session.step(224, "And user clicks on OK button in \"MPO Score\" dialog", () => clickOn(page, el("OK button in \"MPO Score\" dialog")));
-      await session.step(225, "Then the \"MPO Score\" dialog should close", () => dialogCloses(page, "MPO Score"));
-      await session.step(226, "And no error or warning balloon should have been shown", () => noBalloons(page));
-      await session.step(227, "And a new column \"MPO ADME Test\" should have been added", () => newColumnNamed(page, "MPO ADME Test"));
-      await session.step(228, "And the \"MPO ADME Test\" cell of row 3 should be displayed as \"1.00000\"", () => displayedInRow(page, "MPO ADME Test", 3, "1.00000"));
-      await session.step(229, "And the \"MPO ADME Test\" cell of row 1 should be displayed as \"0.64286\"", () => displayedInRow(page, "MPO ADME Test", 1, "0.64286"));
-      await session.step(230, "And the \"MPO ADME Test\" cell of row 2 should be displayed as \"0.64286\"", () => displayedInRow(page, "MPO ADME Test", 2, "0.64286"));
-    }, 230);
+    await session.step(215, "Given user opens a table \"qnum past the curve\" with:", () => openTableOf(page, "qnum past the curve", [["smiles","Caco2","Lipophilicity","Solubility"],["c1ccccc1","-6","6","0"],["CCO","-6",">6","0"],["c1ccncc1","-6","2","0"]]), [["smiles","Caco2","Lipophilicity","Solubility"],["c1ccccc1","-6","6","0"],["CCO","-6",">6","0"],["c1ccncc1","-6","2","0"]]);
+    await session.step(220, "Then \"Lipophilicity\" column should have type \"qnum\"", () => columnType(page, "Lipophilicity", "qnum"));
+    await session.step(221, "When user picks \"Chem > Calculate > MPO Score...\" from the top menu", () => pickFromTopMenu(page, "Chem > Calculate > MPO Score..."));
+    await session.step(222, "And user selects \"✓ ADME Test\" in Profile input in \"MPO Score\" dialog", () => selectIn(page, "✓ ADME Test", el("Profile input in \"MPO Score\" dialog")));
+    await session.step(223, "And user clicks on OK button in \"MPO Score\" dialog", () => clickOn(page, el("OK button in \"MPO Score\" dialog")));
+    await session.step(224, "Then the \"MPO Score\" dialog should close", () => dialogCloses(page, "MPO Score"));
+    await session.step(225, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(226, "And a new column \"MPO ADME Test\" should have been added", () => newColumnNamed(page, "MPO ADME Test"));
+    await session.step(227, "And the \"MPO ADME Test\" cell of row 3 should be displayed as \"1.00000\"", () => displayedInRow(page, "MPO ADME Test", 3, "1.00000"));
+    await session.step(228, "And the \"MPO ADME Test\" cell of row 1 should be displayed as \"0.64286\"", () => displayedInRow(page, "MPO ADME Test", 1, "0.64286"));
+    await session.step(229, "And the \"MPO ADME Test\" cell of row 2 should be displayed as \"0.64286\"", () => displayedInRow(page, "MPO ADME Test", 2, "0.64286"));
   });
 });
