@@ -197,7 +197,10 @@ export class GridTutorial extends Tutorial {
       'or to the beginning of its visible ' +
       'part. The same is true for the arrows on the right that help you move columns to the grid end.<br>Make sure ' +
       'that the new order is HEIGHT, WEIGHT, STARTED, followed by all other columns.',
-    () => grid.columns.setOrder(['HEIGHT', 'WEIGHT', 'STARTED', ...this.t!.columns.names()]));
+    () => {
+      const first = ['HEIGHT', 'WEIGHT', 'STARTED'];
+      grid.columns.setOrder([...first, ...this.t!.columns.names().filter((name) => !first.includes(name))]);
+    });
 
     const initialRowHeight = grid.props.rowHeight;
     await this.action('Increase row height', interval(1000).pipe(filter(() => grid.props.rowHeight > initialRowHeight)),
