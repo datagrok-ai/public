@@ -612,7 +612,7 @@ code, not tested).
 | `region` | The provider's region, where its hosts are regional |
 | `apiFormat` | A custom endpoint's request format: `anthropic-messages`, `openai-responses` or `openai-chat-completions` |
 | `model` | The model a turn runs on when the browser names none: one of the provider's model ids, or `<id>=<catalog model>` for a model the admin names, such as a deployment |
-| `fastModel` | The model for quick calls (search ranking, query matching, the benchmark's judge), in the same forms; by default the provider's fast model, else `model` |
+| `fastModel` | The model for quick calls (search ranking, query matching, the benchmark's judge), in the same forms; by default `model`, so quick calls stay with its vendor and region, and only without `model` the provider's fast model. Quick calls are frequent: a cheaper `fastModel` lowers their cost |
 
 The server takes these (and `TEST_UPSTREAM`, see [Configure](#configure)) out of its environment at
 startup and sends them to each agent in its `init` line (`PROVIDER_CREDENTIALS` in `src/constants.ts`); the
@@ -632,9 +632,9 @@ hint naming the credential to check. An answer the provider's safety filter stop
 (`claude` or `gpt`), context window, image input, and prices in USD per million tokens (input, output, cache
 reads and writes, and the long-context rates where a long prompt is billed at other rates), with the
 pricing pages they come from. Each provider maps its model ids to catalog models (`model_ids` of its class)
-and names its default and fast model; `model` and `fastModel` change those two, and map a model the admin
-names to the catalog model it runs. Claude is called in Anthropic's Messages format and GPT in OpenAI's
-Responses format, unless a provider says otherwise. A turn runs only on one of the provider's models: the
+and names its default and fast model; `model` and `fastModel` change those two (`model` alone both), and map a
+model the admin names to the catalog model it runs. Claude is called in Anthropic's Messages format and GPT in
+OpenAI's Responses format, unless a provider says otherwise. A turn runs only on one of the provider's models: the
 browser names one or none, and any other model ends the turn with an error, so the cost limit always has a
 price. The agent prices every model call, compression included, at its catalog model's rates; Hermes gets
 each model's context window and image input (the catalog's, unless the provider hosts the model for text
@@ -762,11 +762,11 @@ OpenAI's own prices: `global.anthropic.claude-haiku-5-5` (fast), `global.anthrop
 `global.anthropic.claude-opus-5-5`, `global.anthropic.claude-fable-5-1`, and `global.openai.gpt-6-astra`,
 `…gpt-6.1-sol`, `…gpt-6-sol`, `…gpt-6-luna`, `…gpt-5.6-sol`, `…gpt-5.6-terra` and `…gpt-5.6-luna`. A global
 profile may serve a request from any commercial region. To keep requests in one geography, name its
-geographic profiles with `model` and `fastModel`, e.g. `eu.anthropic.claude-sonnet-5-5=claude-sonnet-5-5` and
-`eu.anthropic.claude-haiku-5-5=claude-haiku-5-5`. Claude 5.5 has `us.`, `eu.` and `au.` profiles (Haiku and
-Opus also `jp.`), Fable 5.1 and GPT `us.` (GPT-5.6 Terra and Luna also `in.`); Opus 5.5 also runs in-region in
-`eu-west-2` (`anthropic.claude-opus-5-5`). Geographic and in-region profiles cost 10% more, which the cost
-limit does not count. Model ids and prices: each model's card under
+geographic profile with `model` (quick calls then run on it too), and a cheaper one with `fastModel`, e.g.
+`eu.anthropic.claude-sonnet-5-5=claude-sonnet-5-5` and `eu.anthropic.claude-haiku-5-5=claude-haiku-5-5`. Claude
+5.5 has `us.`, `eu.` and `au.` profiles (Haiku and Opus also `jp.`), Fable 5.1 and GPT `us.` (GPT-5.6 Terra and
+Luna also `in.`); Opus 5.5 also runs in-region in `eu-west-2` (`anthropic.claude-opus-5-5`). Geographic and
+in-region profiles cost 10% more, which the cost limit does not count. Model ids and prices: each model's card under
 [Endpoint availability](https://docs.aws.amazon.com/bedrock/latest/userguide/models-endpoint-availability.html).
 
 What to watch out for:

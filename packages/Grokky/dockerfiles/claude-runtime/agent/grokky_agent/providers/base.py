@@ -28,7 +28,8 @@ class Provider(ABC):
 
     name: ClassVar[str]
     # The provider's model ids, each with the catalog model it runs, and its default and fast model. The `model` and
-    # `fastModel` credentials change the two, and add a model the admin names as `<id>=<catalog model>`.
+    # `fastModel` credentials change the two, and add a model the admin names as `<id>=<catalog model>`; `model`
+    # alone is the fast model too, as the provider's own may run in another region or at another vendor.
     model_ids: ClassVar[dict[str, str]] = {}
     default_model: ClassVar[str | None] = None
     fast_model: ClassVar[str | None] = None
@@ -37,7 +38,8 @@ class Provider(ABC):
         self.test_upstream = credentials.get('TEST_UPSTREAM')
         self.models = dict(self.model_ids)
         self.default = self._model(credentials, 'model', self.default_model)
-        self.fast = self._model(credentials, 'fastModel', self.fast_model or self.default)
+        self.fast = self._model(credentials, 'fastModel',
+                                self.fast_model if self.fast_model and not credentials.get('model') else self.default)
 
     @abstractmethod
     def connection(self, model: str) -> Connection:
