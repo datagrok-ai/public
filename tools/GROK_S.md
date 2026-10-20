@@ -556,8 +556,10 @@ server instance: each keeps what its request logged at the spec in memory, in a 
 Those records never reach the database, the console or a sync destination, and what the server logs
 the usual way does not change. When the command ends, `GET /log/requests/<logId>` gathers the
 buffers from every isolate of every instance over the message queue, hands them over and forgets
-them; the CLI prints them to stderr, so stdout keeps the result. A buffer nobody gathers is dropped
-after an hour. No permission is needed; another user's id takes `ViewTelemetry`.
+them; the CLI prints them to stderr, so stdout keeps the result. The gather also adds what the
+server saved the usual way for the command's session at the levels of the spec (errors, warnings, audit),
+skipping copies of records it already has, so an instance that died before it could answer still
+shows its saved errors. A buffer nobody gathers is dropped after an hour. No permission is needed; another user's id takes `ViewTelemetry`.
 `grok s o logs request <logId>` gathers one id by hand.
 
 The spec is comma-separated: `verbose`, `standard`, the levels (`error`, `warning`, `info`, `debug`,
