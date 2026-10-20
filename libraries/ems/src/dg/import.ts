@@ -224,8 +224,9 @@ class ImportFlow {
         }}]),
       ...mapping.map(([target, name]) => {
         const column = frame.columns.byName(name);
+        const float32 = ImportFlow._isFloat32(column);
         return {name: target, header: ImportFlow._caption(this, target),
-          render: (i: number) => text(ImportFlow._valueOrNull(column, i))};
+          render: (i: number) => text(ImportFlow._valueOrNull(column, i, float32))};
       })],
       cellState: {
         isChanged: () => false,
@@ -299,14 +300,31 @@ class ImportFlow {
     const rows: Record<string, unknown>[] = Array.from({length: count}, () => ({}));
     for (const [target, name] of mapping) {
       const column = frame.columns.byName(name);
+      const float32 = ImportFlow._isFloat32(column);
       for (let i = 0; i < count; i++)
-        rows[i][target] = ImportFlow._valueOrNull(column, i);
+        rows[i][target] = ImportFlow._valueOrNull(column, i, float32);
     }
     return rows;
   }
 
-  private static _valueOrNull(column: DG.Column, i: number): unknown {
-    return column.isNone(i) ? null : column.get(i);
+  private static _valueOrNull(column: DG.Column, i: number, float32: boolean): unknown {
+    return column.isNone(i) ? null : float32 ? ImportFlow._shortest(column.get(i) as number) : column.get(i);
+  }
+
+  /** A float column is stored in 32 bits unless it was made double precision — what a file opened
+   * in the platform gives — and its `get` answers the widened value: 3.0999999046325684 for 3.10. */
+  private static _isFloat32(column: DG.Column): boolean {
+    return column.type === 'double' && column.getRawData() instanceof Float32Array;
+  }
+
+  /** The shortest decimal that is the same float32: the number the file had. */
+  private static _shortest(value: number): number {
+    for (let digits = 1; digits < 9; digits++) {
+      const shortest = Number(value.toPrecision(digits));
+      if (Math.fround(shortest) === value)
+        return shortest;
+    }
+    return value;
   }
 
   /** Only the options the form offers; an absent one is left to the server's default. */
