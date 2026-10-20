@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import {fromEvent} from 'rxjs';
 
-import {category, expect, test, delay, testEvent, before} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, delay, testEvent, before, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
@@ -65,6 +65,29 @@ category('renderers', () => {
 
   test('scatterPlotTooltip', async () => {
     await _testScatterPlotTooltip();
+  });
+
+  // Refreshing a table keeps the grid columns, which held a renderer back reading the old table's column
+  test('rendersRefreshedTable', async () => {
+    const path = 'System:AppData/Bio/samples/FASTA.csv';
+    const df: DG.DataFrame = await grok.functions.call('OpenFile', {fullPath: path});
+    await grok.data.detectSemanticTypes(df);
+    df.setTag(DG.Tags.CreationScript, `OpenFile("${path}")`);
+    const tv = grok.shell.addTableView(df);
+    try {
+      tv.grid.columns.setVisible(['Sequence']);
+      await awaitGrid(tv.grid);
+      const gridCol = tv.grid.columns.byName('Sequence')!;
+      expect(!!gridCol.temp.rendererBack, true);
+
+      await tv.reloadData();
+      await awaitCheck(() => tv.dataFrame !== df, 'Table was not refreshed', 10000);
+      await awaitGrid(tv.grid);
+      expect(tv.grid.columns.byName('Sequence')!.dart === gridCol.dart, true);
+      expect(gridCol.temp.rendererBack.tableCol.dart === gridCol.column!.dart, true);
+    } finally {
+      tv.close();
+    }
   });
 
   async function _rendererMacromoleculeFasta() {

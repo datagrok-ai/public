@@ -28,6 +28,7 @@ export function getGridCellColTemp<TValue, TBack extends CellRendererBackBase<TV
 
   if (!temp)
     throw new Error(`Grid cell renderer back store (GridColumn or Column) not found.`);
+  CellRendererBackBase.dropForOtherColumn(temp, tableCol);
   return [gridCol, tableCol, temp];
 }
 
@@ -114,6 +115,15 @@ export abstract class CellRendererBackBase<TValue> extends CellRendererBackStub 
     for (const sub of this.subs)
       sub.unsubscribe();
     this.destroyed = true;
+  }
+
+  /** The grid keeps a grid column's temp when it re-points the grid column to another table column */
+  static dropForOtherColumn(temp: { rendererBack?: CellRendererBackBase<any> }, tableCol: DG.Column | null): void {
+    const back = temp.rendererBack;
+    if (back && tableCol && back.tableCol?.dart !== tableCol.dart) {
+      back.destroy();
+      delete temp.rendererBack;
+    }
   }
 
   protected invalidateGrid(): void {
