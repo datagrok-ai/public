@@ -93,7 +93,7 @@ Message types are defined in [`dockerfiles/claude-runtime/src/types.ts`](../dock
 | `abort` | Cancel an in-progress query | `sessionId` |
 | `input_response` | Reply to an `input_request` (browser tool result or user answer) | `sessionId`, `requestId`, `value` |
 | `sync_user_files` | Trigger a skills/knowledge sync | `apiKey`, `mcpServerUrl`, `scope?`, `packageName?` |
-| `models` | Ask for the runtime's models: answered once one of its agents has started, or with the reason none could | — |
+| `models` | Ask for the runtime's models: answered once one of its agents has started, or with the reason it could not. Until one has, a request waits for an agent that is starting, or starts one, a spare the next chat takes; after a failure the next request tries again | — |
 
 Notes on `user_message` fields:
 
@@ -576,7 +576,7 @@ See the [process model](#process-model).
 | `HERMES_MAX_PROCESSES` | 12 | live agent processes, spares included; at the cap the least recently used idle session is evicted (logged `agent: evicting session … (LRU, cap 12)`) |
 | `HERMES_IDLE_TTL_MS` | 900000 | an idle session's process is evicted after this (logged `… (idle N min)`); its next turn reloads it |
 | `HERMES_MAX_SESSIONS` | 200 | live plus parked sessions; past it the oldest parked session is deleted (logged `agent: dropped the stored state of session …`) and gets `session_reset` |
-| `HERMES_WARM_SPARES` | 2 | agent processes started ahead of need |
+| `HERMES_WARM_SPARES` | 2 | agent processes started ahead of need; with 0, a `models` request before the first chat still starts one |
 | `HERMES_READY_TIMEOUT_MS` | 30000 | an agent that has not answered `ready` by then is disposed; its turn errors |
 | `HERMES_COMPRESSION_THRESHOLD_TOKENS` | 160000 | history compression trigger (estimated prompt tokens) |
 | `HERMES_LOG_STDERR` | unset | any value forwards every agent stderr line to the runtime log |

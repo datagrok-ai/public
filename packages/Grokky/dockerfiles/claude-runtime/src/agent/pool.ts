@@ -29,15 +29,14 @@ const redact = (text: string) => (PROVIDER_ENV.apiKey ? text.split(PROVIDER_ENV.
   .replace(/\bsk-[\w.…-]+/g, 'sk-<redacted>');
 
 let models: AgentModels | undefined;
-let startFailure: Error | undefined;
-const modelWaiters: {resolve: (m: AgentModels) => void; reject: (e: Error) => void}[] = [];
 
-/** The provider's models, as the first agent to start reported them; until one has, its startup failure. */
-export function agentModels(): Promise<AgentModels> {
-  if (models)
-    return Promise.resolve(models);
-  return startFailure ? Promise.reject(startFailure) :
-    new Promise((resolve, reject) => modelWaiters.push({resolve, reject}));
+/** The provider's models, as the first agent to start reported them. Until one has, a request waits for an agent
+ * that is starting, or starts one (a spare the next session takes): the answer is that agent's models or its failure,
+ * and the next request tries again. */
+export async function agentModels(): Promise<AgentModels> {
+  if (!models)
+    await ([...all].find((p) => !p.started && !p.disposed) ?? await startSpare()).ready;
+  return models!;
 }
 
 export interface AgentProcess {
@@ -148,13 +147,6 @@ async function spawnProcess(reload?: ParkedSession): Promise<AgentProcess> {
       throw new Error(`the agent startup did not finish in ${readyMs / 1000} s`);
     p.started = true;
   });
-  p.ready.catch((e: Error) => {
-    if (p.disposed)
-      return;
-    startFailure = e;
-    for (const w of modelWaiters.splice(0))
-      w.reject(e);
-  });
   readline.createInterface({input: proc.stdout}).on('line', (line) => {
     let ev: AgentProcessEvent;
     try {
@@ -166,8 +158,6 @@ async function spawnProcess(reload?: ParkedSession): Promise<AgentProcess> {
       ev.message = redact(ev.message);
     if (ev.type === 'ready') {
       models ??= {models: ev.models, defaultModel: ev.defaultModel, fastModel: ev.fastModel};
-      for (const w of modelWaiters.splice(0))
-        w.resolve(models);
       started();
     } else if (ev.type === 'fatal')
       failed(new Error(ev.message));
@@ -234,23 +224,27 @@ export function dispose(p: AgentProcess, reason: string): void {
   forget(p);
 }
 
+function startSpare(): Promise<AgentProcess> {
+  const entry = {proc: spawnProcess(), claimed: false};
+  starting.push(entry);
+  entry.proc.then(async (s) => {
+    try {
+      await s.ready;
+      if (!entry.claimed)
+        spares.push(s);
+    } catch (e: any) {
+      console.warn('agent: warm spare failed to start:', e.message);
+      dispose(s, 'spare failed');
+    }
+  }).catch((e) => console.warn('agent: warm spare spawn failed:', e.message))
+    .finally(() => starting.splice(starting.indexOf(entry), 1));
+  return entry.proc;
+}
+
 function topUpSpares(): void {
   const unclaimed = () => starting.filter((e) => !e.claimed).length;
-  while (spares.length + unclaimed() < WARM_SPARES && all.size < MAX_PROCESSES) {
-    const entry = {proc: spawnProcess(), claimed: false};
-    starting.push(entry);
-    entry.proc.then(async (s) => {
-      try {
-        await s.ready;
-        if (!entry.claimed)
-          spares.push(s);
-      } catch (e: any) {
-        console.warn('agent: warm spare failed to start:', e.message);
-        dispose(s, 'spare failed');
-      }
-    }).catch((e) => console.warn('agent: warm spare spawn failed:', e.message))
-      .finally(() => starting.splice(starting.indexOf(entry), 1));
-  }
+  while (spares.length + unclaimed() < WARM_SPARES && all.size < MAX_PROCESSES)
+    startSpare();
 }
 
 async function takeSpare(): Promise<AgentProcess | undefined> {
