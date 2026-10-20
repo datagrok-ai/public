@@ -296,10 +296,16 @@ class ImportFlow {
   private _payload(frame: DG.DataFrame, mapping: [string, string][], count: number):
     Record<string, unknown>[] {
     const rows: Record<string, unknown>[] = Array.from({length: count}, () => ({}));
+    // an empty cell of a new row is left out so the column takes its default (STATE-CONTRACT §5);
+    // what one means on an upsert is not ruled, so it is still sent
+    const insert = this._batchOptions().mode === 'insert';
     for (const [target, name] of mapping) {
       const cell = ImportFlow._cell(frame.columns.byName(name));
-      for (let i = 0; i < count; i++)
-        rows[i][target] = cell(i);
+      for (let i = 0; i < count; i++) {
+        const value = cell(i);
+        if (value !== null || !insert)
+          rows[i][target] = value;
+      }
     }
     return rows;
   }
