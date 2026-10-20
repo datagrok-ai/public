@@ -754,6 +754,37 @@ category('Dapi: domain frame editor', () => {
     }
   });
 
+  test('new rows: an empty required column with a default is left to the server', async () => {
+    const name = `zzd${`${Date.now()}`.slice(-8)}`;
+    const created = await grok.dapi.domains.createSchema(name, {friendlyName: 'Default probe'});
+    try {
+      await grok.dapi.domains.schema(name).apply({ifVersion: created.version, tables: {
+        ticket: {
+          businessKey: ['code'],
+          columns: {
+            code: {type: 'string', required: true, unique: true},
+            status: {type: 'string', required: true, default: 'open'},
+          },
+        },
+      }});
+      const tickets = grok.dapi.domains.table(`${name}.ticket`);
+      const editor = await DomainFrameEditor.create(tickets as any);
+      const row = editor.addRow({code: 'T1'});
+      expect(editor.errorOf(row, 'status'), null, 'an empty column with a default was marked on a new row');
+      expect(editor.validate(), 0, 'an empty column with a default blocks the new row');
+      expect(await editor.save(), true, 'the new row was refused');
+      const saved = await tickets.first({filter: {property: 'code', operator: '=', value: 'T1'} as any}) as any;
+      expect(saved.status, 'open', 'the server default did not land');
+      // a saved row sends what the cell holds, so clearing it there is still an error
+      editor.setValue(row, 'status', null);
+      expect(editor.errorOf(row, 'status')?.message, 'Value can\'t be empty',
+        'clearing a required column of a saved row was accepted');
+      editor.detach();
+    } finally {
+      await grok.dapi.domains.schema(name).delete();
+    }
+  });
+
   test('immutable keys: typed on a new row, never patched on a persisted one', async () => {
     const prefix = `fe-imm-${stamp()}`;
     await seed(prefix, 1);
