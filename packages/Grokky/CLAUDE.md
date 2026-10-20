@@ -231,8 +231,9 @@ per context (connection ID, view, etc.), each with full message history and UI s
 ### Claude Runtime Client (`src/claude/runtime-client.ts`)
 
 Singleton WebSocket client. Discovers `claude-runtime` and `mcp-server` containers via `grok.dapi.docker`,
-then exposes RxJS subjects for streaming events. API: `send()`, `abort()`, `respondToInput()`, and
-promise-based `query()` for one-shot structured-output calls.
+then exposes RxJS subjects for streaming events. API: `send()`, `abort()`, `respondToInput()`,
+promise-based `query()` for one-shot structured-output calls, and `models()`, the runtime's model ids with its
+default and fast model.
 
 ### Executable Blocks (`src/claude/exec-blocks.ts`)
 
@@ -275,10 +276,14 @@ by active code. All active AI features now route through `ClaudeRuntimeClient`.
 
 ## Model credentials
 
-The only model credential is the `claude-runtime` container's `apiKey`, an Anthropic Console API key; the
-browser names each turn's model, and `agent/grokky_agent/models.yaml` lists the models a turn may use with
-their prices. Claude subscription logins are not supported: Anthropic allows them only in its own
-applications. Details: [Credentials](docs/CLAUDE_CODE_FLOW.md#credentials).
+The model provider and its key are the `claude-runtime` container's credentials: `provider` (Anthropic by
+default), `apiKey`, and as the provider needs them `baseUrl`, `region`, `apiFormat`, `model` and `fastModel`.
+Each provider is a class in `agent/grokky_agent/providers/` that checks them and maps its model ids to the
+catalog in `agent/grokky_agent/models.yaml` (family, context window, image input, prices); a turn runs only
+on the provider's models. The runtime reports them to the browser (`ClaudeRuntimeClient.models()`): Help and
+Execute use the default model, search ranking and query matching the fast one. Claude subscription logins
+are not supported: Anthropic allows them only in its own applications. Details:
+[Credentials](docs/CLAUDE_CODE_FLOW.md#credentials).
 
 ## Rebuilding the container images
 

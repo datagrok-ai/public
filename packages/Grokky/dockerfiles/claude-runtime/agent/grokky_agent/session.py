@@ -124,7 +124,7 @@ class Session:
         self.spillover = spillover
         self.key = uuid.uuid4().hex
         self.agent: hermes.Agent | None = None
-        self.model = models.DEFAULT
+        self.model = provider.default
         self.history: list[JsonObject] = []
         self.hermes_session: str | None = None
         # The turn whose run is in progress (the hooks act for it), and the latest one received, which gate feedback
@@ -219,19 +219,19 @@ class Session:
         t.in_flight.discard(f'aux:{api_request_id}')
         self._account(t, usage or {}, api_duration)
 
-    def llm_request(self, request: JsonObject | None = None, **_: Any) -> hermes.RequestOverride:
+    def llm_request(self, request: JsonObject | None = None, api_mode: str = '', **_: Any) -> hermes.RequestOverride:
         t = self.turn
         if t is None or request is None:
-            return {'request': self.provider.refused_request(), 'source': 'grokky'}
+            return {'request': self.provider.refused_request(api_mode), 'source': 'grokky'}
         # Hermes also calls the model on its own: after an empty or thinking-only reply, for a summary at its own limit.
         if t.api_calls >= t.max_calls:
             self._stop(t, 'turns')
-            return {'request': self.provider.refused_request(), 'source': 'grokky'}
+            return {'request': self.provider.refused_request(api_mode), 'source': 'grokky'}
         # Hermes sends its own request when this raises, so a patch that fails sends the refusal.
         try:
-            patched = self.provider.patch_request(request, t.system_prompt, t.schema)
+            patched = self.provider.patch_request(api_mode, request, t.system_prompt, t.schema)
         except Exception:
-            patched = self.provider.refused_request()
+            patched = self.provider.refused_request(api_mode)
         return {'request': patched, 'source': 'grokky'}
 
     def receive(self, cmd: TurnCommand | ContinueCommand) -> Turn:
@@ -243,9 +243,13 @@ class Session:
 
     def start_turn(self, cmd: TurnCommand, t: Turn) -> None:
         self.restore = cmd.get('restore') or self.restore
-        model = cmd.get('model') or models.DEFAULT
-        if model not in models.PRICES:
-            self.emit({'type': 'error', 'message': f'Unknown model "{model}": use one of {", ".join(models.PRICES)}'})
+        model = cmd.get('model') or self.provider.default
+        if model not in self.provider.models:
+            self.emit({'type': 'error',
+                       'message': f'Unknown model "{model}": use one of {", ".join(self.provider.models)}'})
+            return
+        if cmd.get('images') and not models.CATALOG[self.provider.models[model]]['images']:
+            self.emit({'type': 'error', 'message': f'The model {model} does not accept images'})
             return
         problem = structured.schema_error(t.schema) if t.schema is not None else None
         if problem:
@@ -292,7 +296,7 @@ class Session:
 
     def build_agent(self, model: str, hermes_session: str | None = None) -> hermes.Agent:
         self.hermes_session = hermes_session or uuid.uuid4().hex
-        self.agent = hermes.new_agent(model, self.provider.connection(), self.hermes_session, self.store,
+        self.agent = hermes.new_agent(model, self.provider.connection(model), self.hermes_session, self.store,
                                       self._toolsets(), self._on_delta)
         self.model = model
         self.emit({'type': 'session', 'id': self.hermes_session})
@@ -403,7 +407,7 @@ class Session:
     def _account(self, t: Turn, usage: Usage, api_duration: float | None) -> None:
         t.tokens.add(usage)
         t.api_seconds += api_duration or 0.0
-        t.cost += models.cost(self.model, usage)
+        t.cost += models.cost(self.provider.models[self.model], usage)
         if t.cost > t.max_cost:
             self._stop(t, 'budget')
 

@@ -19,7 +19,8 @@ class Connection(TypedDict):
     provider: str
     api_mode: str
     base_url: str
-    api_key: str
+    # On the Anthropic Messages API Hermes sends a callable's key as Bearer, a string as x-api-key.
+    api_key: str | Callable[[], str]
 
 
 class ConversationResult(TypedDict, total=False):

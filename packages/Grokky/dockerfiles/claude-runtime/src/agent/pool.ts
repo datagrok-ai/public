@@ -4,7 +4,7 @@ import {randomUUID} from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as readline from 'node:readline';
-import type {AgentCommand, AgentProcessEvent} from '../types';
+import type {AgentCommand, AgentModels, AgentProcessEvent} from '../types';
 import {AGENT_DIR, AGENT_PYTHON, HERMES_HOMES, PLUGIN_DIR, PROVIDER_ENV} from '../constants';
 import {IDLE, killTree, raceIdle, startOrphanReaper} from '../watchdog';
 
@@ -24,7 +24,21 @@ const STDERR_TAIL_LINES = 40;
 // Unexpected exits in a row after which a session's store is dropped: the chat then recovers from the transcript.
 const MAX_CRASHES = 2;
 
-const redactKeys = (line: string) => line.replace(/\bsk-[\w.…-]+/g, 'sk-<redacted>');
+// The configured key and anything key-shaped, wherever an agent's output reaches the log or the browser.
+const redact = (text: string) => (PROVIDER_ENV.apiKey ? text.split(PROVIDER_ENV.apiKey).join('<redacted>') : text)
+  .replace(/\bsk-[\w.…-]+/g, 'sk-<redacted>');
+
+let models: AgentModels | undefined;
+let startFailure: Error | undefined;
+const modelWaiters: {resolve: (m: AgentModels) => void; reject: (e: Error) => void}[] = [];
+
+/** The provider's models, as the first agent to start reported them; until one has, its startup failure. */
+export function agentModels(): Promise<AgentModels> {
+  if (models)
+    return Promise.resolve(models);
+  return startFailure ? Promise.reject(startFailure) :
+    new Promise((resolve, reject) => modelWaiters.push({resolve, reject}));
+}
 
 export interface AgentProcess {
   proc: ChildProcessWithoutNullStreams;
@@ -116,7 +130,7 @@ async function spawnProcess(reload?: ParkedSession): Promise<AgentProcess> {
   readline.createInterface({input: proc.stderr}).on('line', (raw) => {
     if (!raw)
       return;
-    const line = redactKeys(raw);
+    const line = redact(raw);
     p.stderrTail.push(line);
     if (p.stderrTail.length > STDERR_TAIL_LINES)
       p.stderrTail.shift();
@@ -134,6 +148,13 @@ async function spawnProcess(reload?: ParkedSession): Promise<AgentProcess> {
       throw new Error(`the agent startup did not finish in ${readyMs / 1000} s`);
     p.started = true;
   });
+  p.ready.catch((e: Error) => {
+    if (p.disposed)
+      return;
+    startFailure = e;
+    for (const w of modelWaiters.splice(0))
+      w.reject(e);
+  });
   readline.createInterface({input: proc.stdout}).on('line', (line) => {
     let ev: AgentProcessEvent;
     try {
@@ -141,9 +162,14 @@ async function spawnProcess(reload?: ParkedSession): Promise<AgentProcess> {
     } catch {
       return console.warn(`agent[${tag}]: a stdout line is not an event`);
     }
-    if (ev.type === 'ready')
+    if (ev.type === 'error' || ev.type === 'fatal')
+      ev.message = redact(ev.message);
+    if (ev.type === 'ready') {
+      models ??= {models: ev.models, defaultModel: ev.defaultModel, fastModel: ev.fastModel};
+      for (const w of modelWaiters.splice(0))
+        w.resolve(models);
       started();
-    else if (ev.type === 'fatal')
+    } else if (ev.type === 'fatal')
       failed(new Error(ev.message));
     else if (ev.type === 'session') {
       if (p.restore !== undefined)

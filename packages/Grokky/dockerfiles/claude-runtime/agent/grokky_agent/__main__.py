@@ -13,7 +13,7 @@ ctypes.CDLL(None).prctl(PR_SET_DUMPABLE, 0, 0, 0, 0)
 
 from pathlib import Path  # noqa: E402
 
-from . import config, hermes, models, providers, session  # noqa: E402
+from . import config, hermes, providers, session  # noqa: E402
 from .protocol import Command, ContinueCommand, Event, InitCommand, TurnCommand  # noqa: E402
 
 TurnQueue = queue.Queue[tuple[TurnCommand | ContinueCommand, session.Turn]]
@@ -47,7 +47,7 @@ def main() -> int:
         emit({'type': 'fatal', 'message': str(e)})
         return 1
     settings = init['settings']
-    config.write_home(Path(os.environ['HERMES_HOME']), settings)
+    config.write_home(Path(os.environ['HERMES_HOME']), settings, provider.hermes_models())
     session.current = s = session.Session(emit, provider, settings['homes'], hermes.open_store(),
                                           hermes.tool_registry(), hermes.spillover_dir())
     hermes.load_plugins()
@@ -55,8 +55,9 @@ def main() -> int:
         emit({'type': 'fatal', 'message': 'the Grokky plugin did not load'})
         return 1
     if settings['warm']:
-        s.build_agent(models.DEFAULT)
-    emit({'type': 'ready'})
+        s.build_agent(provider.default)
+    emit({'type': 'ready', 'models': list(provider.models), 'defaultModel': provider.default,
+          'fastModel': provider.fast})
 
     # Turns run on one worker: a cancel and the browser's answers must reach a turn while it runs.
     turns: TurnQueue = queue.Queue()

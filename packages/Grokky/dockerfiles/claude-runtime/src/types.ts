@@ -49,6 +49,14 @@ export interface InputResponseMessage {
   value: unknown;
 }
 
+/** The provider's model ids a turn may name, with the one a turn without a model runs on and the one for quick
+ * calls (ranking, matching); the browser asks with `{type: 'models'}`. */
+export interface AgentModels {
+  models: string[];
+  defaultModel: string;
+  fastModel: string;
+}
+
 export interface TurnMetrics {
   inputTokens: number | null;
   outputTokens: number | null;
@@ -75,7 +83,9 @@ export type OutgoingMessage =
   | {type: 'queued'; sessionId: string}
   | {type: 'aborted'; sessionId: string}
   | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: unknown}
-  | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]};
+  | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]}
+  | ({type: 'models'} & AgentModels)
+  | {type: 'models'; error: string};
 
 // One agent turn
 
@@ -134,7 +144,7 @@ export type AgentCommand =
   | {type: 'browser_result'; id: string; value?: unknown; error?: string};
 
 export type AgentProcessEvent =
-  | {type: 'ready'}
+  | ({type: 'ready'} & AgentModels)
   | {type: 'fatal'; message: string}
   | {type: 'session'; id: string}
   | {type: 'text'; text: string}

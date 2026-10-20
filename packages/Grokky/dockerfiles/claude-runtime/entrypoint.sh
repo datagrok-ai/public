@@ -12,7 +12,12 @@ exec env -i \
     DATAGROK_API_URL="${DATAGROK_API_URL:-}" \
     provider="${provider:-}" \
     apiKey="${apiKey:-}" \
-    ANTHROPIC_UPSTREAM="${ANTHROPIC_UPSTREAM:-}" \
+    baseUrl="${baseUrl:-}" \
+    region="${region:-}" \
+    apiFormat="${apiFormat:-}" \
+    model="${model:-}" \
+    fastModel="${fastModel:-}" \
+    TEST_UPSTREAM="${TEST_UPSTREAM:-}" \
     HERMES_MAX_PROCESSES="${HERMES_MAX_PROCESSES:-}" \
     HERMES_IDLE_TTL_MS="${HERMES_IDLE_TTL_MS:-}" \
     HERMES_WARM_SPARES="${HERMES_WARM_SPARES:-}" \

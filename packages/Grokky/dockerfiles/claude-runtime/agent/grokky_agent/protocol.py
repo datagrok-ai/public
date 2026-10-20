@@ -88,6 +88,9 @@ class Metrics(TypedDict):
 
 class ReadyEvent(TypedDict):
     type: Literal['ready']
+    models: list[str]
+    defaultModel: str
+    fastModel: str
 
 
 class FatalEvent(TypedDict):

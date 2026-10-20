@@ -1,8 +1,6 @@
-# Hermes' config.yaml for every session; config.py adds the skills directory and the compression threshold.
-# Hermes' own additions to the prompt and the loop are off: the runtime owns both.
-model:
-  context_length: 1000000  # every model in models.yaml
-  supports_vision: true
+# Hermes' config.yaml for every session; config.py adds the skills directory, the compression threshold and each
+# model's context window and image input (model_overrides). Hermes' own additions to the prompt and the loop are off:
+# the runtime owns both.
 agent:
   verify_on_stop: false
   intent_ack_continuation: false
@@ -43,3 +41,5 @@ logging:
   level: WARNING  # INFO logs the start of every prompt where the other sessions (same uid) can read it
 model_catalog:
   enabled: false
+openrouter:
+  response_cache: false  # it would answer a repeated request with the stored reply

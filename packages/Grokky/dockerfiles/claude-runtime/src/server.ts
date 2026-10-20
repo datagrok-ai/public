@@ -11,7 +11,7 @@ import {emit} from './stream-filter';
 import type {WsSender} from './stream-filter';
 import {handleMessage, handleAbort, handleInputResponse, handleDisconnect} from './session';
 import {claimTask, releaseTask} from './tasks';
-import {disposeAll, startPool} from './agent/pool';
+import {agentModels, disposeAll, startPool} from './agent/pool';
 
 const PORT = 5355;
 
@@ -63,6 +63,12 @@ app.get('/ws', upgradeWebSocket(() => {
 
       if (data.type === 'input_response') {
         handleInputResponse(sender, data);
+        return;
+      }
+
+      if (data.type === 'models') {
+        agentModels().then((models) => emit(sender, {type: 'models', ...models}),
+          (e) => emit(sender, {type: 'models', error: `The assistant could not start: ${e.message}`}));
         return;
       }
 
