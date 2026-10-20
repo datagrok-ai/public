@@ -11,6 +11,12 @@
   color: var(--dg-text-color);
 }
 
+/* in a dialog the wizard fills the body, so its buttons sit at the bottom like the dialog's footer
+   instead of floating under a short step */
+.u2-dialog-content > .u2-wizard {
+  height: 100%;
+}
+
 .u2-wizard-steps {
   display: flex;
   align-items: center;

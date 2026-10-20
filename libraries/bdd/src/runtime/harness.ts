@@ -15,10 +15,12 @@ import {leave} from './args.js';
 import {type AuditOutcome, auditScenario, leakCheck, type LoggedError, markLeakBaseline, settleAudit, shouldAudit,
   trackLeaks} from './audit.js';
 import {failure, isSkip, isWaitFailure, journeyFailure, reasonOf, StepFailure} from './failure.js';
+import {DIALOG_CLOSE} from './gestures.js';
 import * as guide from './guide.js';
 import {explain} from './locate.js';
 import {logMemory, rendererMb} from './memory.js';
 import {whileExpectedToFail} from './patience.js';
+import {deletePictures} from './server.js';
 import {takeBalloons} from './viewers.js';
 
 export {auditModes, markLeakBaseline} from './audit.js';
@@ -61,7 +63,7 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
     auditedInJourney.add(page);
   return {
     async scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean; line?: number}): Promise<void> {
-      const overlays = page ? await openOverlays(page) : 0;
+      const overlays = page ? await openOverlayCounts(page) : {all: 0, dialogs: 0};
       try {
         if (page) {
           takeErrors(page);
@@ -80,8 +82,11 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
           failed.push({name, error: failedElsewhere(e, options.line!)});
         // a scenario that stopped midway leaves its dialog or menu over the viewers the next one uses;
         // those open before it (a dialog the Background opened for every scenario) stay
-        if (page)
+        if (page) {
           await closeOverlays(page, overlays);
+          await scenarioRestores.get(page)?.().catch((r) =>
+            console.warn(`bdd: what "${name}" changed could not be put back: ${r instanceof Error ? r.message.split('\n')[0] : r}`));
+        }
         return;
       }
       if (options?.knownFailure)
@@ -138,7 +143,8 @@ function featureFile(specUrl: string, path: string): string {
 
 const HOME_VIEW = 'datagrok';
 // what Escape closes: dialogs and popup menus of both UI generations
-const CLOSABLE = '[data-u2="dialog"], [data-u2="menu"], .d4-dialog, .d4-menu-popup';
+const DIALOGS = '[data-u2="dialog"], .d4-dialog';
+const CLOSABLE = `${DIALOGS}, [data-u2="menu"], .d4-menu-popup`;
 // transient notifications, taken away as their close icons would
 const NOTICES = '[data-u2="notify"] > *, .d4-balloon, .ui-hint-popup';
 
@@ -176,6 +182,22 @@ export async function resizeWindow(page: Page, width: number, height: number): P
   await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done(null)))));
 }
 
+// the pictures a page uploaded (a Save dialog's, the Layouts pane's) since its feature started: the server keeps a
+// picture when its project or layout goes, so they go at feature end, whatever deleted the entity they were made for
+const uploadedPictures = new WeakMap<Page, Set<string>>();
+
+function watchPictures(page: Page): void {
+  if (uploadedPictures.has(page))
+    return;
+  const ids = new Set<string>();
+  uploadedPictures.set(page, ids);
+  page.on('request', (request) => {
+    const id = request.method() === 'POST' ? /\/entities\/picture\/([^/?]+)\/?(?:\?|$)/.exec(request.url())?.[1] : undefined;
+    if (id)
+      ids.add(id);
+  });
+}
+
 /** Runs when the feature ends, whatever its scenarios did — for state a step created on the server
  * (a project, an uploaded table); a page that crashed runs none, and the feature fails for them. */
 export function atFeatureEnd(page: Page, cleanup: () => Promise<void>, first = false): void {
@@ -185,6 +207,15 @@ export function atFeatureEnd(page: Page, cleanup: () => Promise<void>, first = f
     list.unshift(cleanup);
   else
     list.push(cleanup);
+}
+
+const scenarioRestores = new WeakMap<Page, () => Promise<void>>();
+
+/** What a scenario that stopped midway (a journey's, a test that failed or is a known failure) must put back before
+ * the next one starts — the account it signed in as, which it signs out of only at its end. One per page; a later
+ * call replaces it. */
+export function atScenarioStop(page: Page, restore: () => Promise<void>): void {
+  scenarioRestores.set(page, restore);
 }
 
 /** The two console errors the browser raises about something that is not the platform's code.
@@ -301,6 +332,9 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
     const audit = shouldAudit(info);
     const outcome: AuditOutcome = audit && !inJourney ?
       await audited(() => auditScenario(p, () => takeLoggedErrors(p))) : {ran: [], findings: []};
+    if (!audit)
+      await scenarioRestores.get(p)?.().catch((r) =>
+        console.warn(`bdd: what "${info.title}" changed could not be put back: ${r instanceof Error ? r.message.split('\n')[0] : r}`));
     await resetShell(p);
     if (audit) {
       const leaks = await audited(() => leakCheck(p));
@@ -318,6 +352,13 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
     else if (page && !page.isClosed()) {
       const list = cleanups.get(page) ?? [];
       cleanups.delete(page);
+      const pictures = uploadedPictures.get(page);
+      if (pictures?.size) {
+        const p = page;
+        const ids = [...pictures];
+        pictures.clear();
+        list.push(() => deletePictures(p, ids));
+      }
       // a cleanup deletes what is still there, so one that failed on a request the stand dropped under load (nginx
       // answering 502 when its connection to Datlas fails) is run again before the feature fails for it
       for (const [i, cleanup] of list.entries()) {
@@ -368,6 +409,7 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
           shared = await shared.context().newPage();
         shared ??= await (await browser.newContext()).newPage();
         watchErrors(shared);
+        watchPictures(shared);
         await trackLeaks(shared);
         await guide.attach(shared);
         page = shared;
@@ -431,13 +473,26 @@ async function settleWork(page: Page): Promise<void> {
 }
 
 /** Dialogs and menus closed the platform's way: Escape, as many times as there are open ones. */
-const openOverlays = (page: Page): Promise<number> =>
-  page.locator(CLOSABLE).filter({visible: true}).count().catch(() => 0);
+const openOverlays = (page: Page, selector = CLOSABLE): Promise<number> =>
+  page.locator(selector).filter({visible: true}).count().catch(() => 0);
 
-/** Escape, the topmost first, while more dialogs and menus are open than `keep`. */
-async function closeOverlays(page: Page, keep = 0): Promise<void> {
-  for (let i = 0; i < 3 && await openOverlays(page) > keep; i++)
+type OverlayCounts = {all: number; dialogs: number};
+const openOverlayCounts = async (page: Page): Promise<OverlayCounts> =>
+  ({all: await openOverlays(page), dialogs: await openOverlays(page, DIALOGS)});
+
+/** Escape, the topmost first, while more dialogs and menus are open than `keep`. Escape goes to the focused
+ * element, and an editor that keeps it (the formula editor of Add New Column) leaves its dialog open: then the
+ * topmost dialog's close icon, as a person would. */
+async function closeOverlays(page: Page, keep: OverlayCounts = {all: 0, dialogs: 0}): Promise<void> {
+  for (let i = 0; i < 3 && await openOverlays(page) > keep.all; i++)
     await page.keyboard.press('Escape').catch(() => undefined);
+  // dialogs counted apart from menus: a menu Escape leaves open must not cost a dialog the Background opened
+  for (let i = 0; i < 3 && await openOverlays(page, DIALOGS) > keep.dialogs; i++) {
+    const close = page.locator(DIALOGS).filter({visible: true}).last().locator(DIALOG_CLOSE).first();
+    if (await close.count().catch(() => 0) === 0)
+      break;
+    await close.click({timeout: 2000}).catch(() => undefined);
+  }
 }
 
 /** Everything closed and the Home view current — the state the next scenario starts from. A page
@@ -470,8 +525,10 @@ export async function resetShell(page: Page): Promise<void> {
       w.grok.shell.windows.presentationMode = false;
     w.grok.shell.closeAll();
     // a context pane's expanded state is kept per accordion in localStorage (accordion.dart): what one
-    // feature expanded would build, server-backed or not, in every later feature on the page
-    for (const key of Object.keys(localStorage).filter((k) => k.startsWith('Accordion:')))
+    // feature expanded would build, server-backed or not, in every later feature on the page; a gallery's
+    // view mode too (data_source_card_view.dart), so a feature that switched the Scripts view to cards left
+    // the next one without the links it looks for
+    for (const key of Object.keys(localStorage).filter((k) => /^(Accordion:|card-view-render-mode-|domains-render-mode-)/.test(k)))
       localStorage.removeItem(key);
     return Array.from(document.querySelectorAll('.d4-dialog, [data-u2="dialog"]'))
       .filter((e) => (e as HTMLElement).offsetParent !== null).map((e) => e.getAttribute('name') ?? e.tagName).join(', ');

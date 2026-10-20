@@ -153,4 +153,169 @@ category('Dapi: permissions', () => {
       await grok.dapi.spaces.delete(space);
     }
   });
+
+  test('a database connection: View and use gives query/schema/files but no edit; Full access gives all', async () => {
+    const name = `ApiTestsPerm${DG.Utils.randomString(6)}`;
+    const connection = await grok.dapi.connections.save(DG.DataConnection.create(name,
+      {dataSource: 'Postgres', server: 'localhost', port: 1, db: 'apitests', login: 'apitests', password: 'apitests'}));
+    const use = ['View', 'Edit', 'Delete', 'Share',
+      'DataConnection.Query', 'DataConnection.GetSchema', 'DataConnection.ListFiles'];
+    try {
+      await grok.dapi.permissions.grant(connection, grantee.group, false);
+      expect((await held(connection, use)).join(),
+        'View,DataConnection.Query,DataConnection.GetSchema,DataConnection.ListFiles');
+      const edit = await asGrantee(() => thrown(async () => {
+        const c = await grok.dapi.connections.find(connection.id);
+        c.parameters['server'] = 'changed.example';
+        await grok.dapi.connections.save(c);
+      }));
+      expect(edit != null, true, 'the grantee saved the connection');
+      expect((await grok.dapi.connections.find(connection.id)).parameters['server'], 'localhost',
+        'the grantee changed the connection parameters');
+      await grok.dapi.permissions.revoke(connection, grantee.group);
+      await grok.dapi.permissions.grant(connection, grantee.group, true);
+      expect((await held(connection)).join(), BASIC.join());
+    }
+    finally {
+      await grok.dapi.permissions.revoke(connection, grantee.group);
+      await grok.dapi.connections.delete(connection);
+    }
+  });
+
+  test('a query: the View-and-use grantee cannot edit its SQL or re-share it', async () => {
+    const dg = await grok.dapi.connections.filter('name = "Datagrok"').first();
+    const q = await grok.dapi.queries.save(dg.query(`ApiTestsPerm${DG.Utils.randomString(6)}`, 'select 1 as x'));
+    try {
+      await grok.dapi.permissions.grant(q, grantee.group, false);
+      expect((await held(q, ['View', 'Edit', 'Delete', 'Share', 'DataQuery.Execute'])).join(), 'View,DataQuery.Execute');
+      const edit = await asGrantee(() => thrown(async () => {
+        const saved = await grok.dapi.queries.find(q.id);
+        saved.query = 'select 2 as x';
+        await grok.dapi.queries.save(saved);
+      }));
+      expect(edit != null, true, 'the grantee edited the query SQL');
+      expect((await grok.dapi.queries.find(q.id)).query, 'select 1 as x', 'the SQL changed');
+      const reshare = await asGrantee(() => thrown(() => grok.dapi.permissions.grant(q, allUsers, false)));
+      expect(String(reshare?.message ?? reshare).includes('You don\'t have a permission to share this object'), true,
+        `the grantee shared the query further: ${reshare}`);
+    }
+    finally {
+      await grok.dapi.permissions.revoke(q, grantee.group);
+      await grok.dapi.queries.delete(q);
+    }
+  });
+
+  test('a table: View and use lets the grantee read the data but not change it; Full access gives all', async () => {
+    const df = DG.DataFrame.fromCsv('x,y\n1,2\n3,4');
+    df.name = `ApiTestsPerm${DG.Utils.randomString(6)}`;
+    const id = await grok.dapi.tables.uploadDataFrame(df);
+    const table = await grok.dapi.tables.find(id);
+    try {
+      await grok.dapi.permissions.grant(table, grantee.group, false);
+      expect((await held(table, ['View', 'Edit', 'Delete', 'Share', 'Table.ReadData'])).join(), 'View,Table.ReadData');
+      expect(await asGrantee(() => grok.dapi.tables.getTable(id).then((t) => t.rowCount)), 2,
+        'the grantee cannot read the table data');
+      await grok.dapi.permissions.revoke(table, grantee.group);
+      await grok.dapi.permissions.grant(table, grantee.group, true);
+      expect((await held(table)).join(), BASIC.join());
+    }
+    finally {
+      await grok.dapi.permissions.revoke(table, grantee.group);
+      await grok.dapi.tables.delete(await grok.dapi.tables.find(id));
+    }
+  });
+
+  test('a layout: the View-and-use grantee sees it but cannot save or delete it; Full access gives all', async () => {
+    const view = grok.shell.addTableView(grok.data.demo.demog(20));
+    const draft = view.saveLayout();
+    draft.name = `ApiTestsPerm${DG.Utils.randomString(6)}`;
+    view.close();
+    const layout = await grok.dapi.layouts.save(draft);
+    try {
+      await grok.dapi.permissions.grant(layout, grantee.group, false);
+      expect((await held(layout)).join(), 'View');
+      const edit = await asGrantee(() => thrown(async () => {
+        const l = await grok.dapi.layouts.find(layout.id);
+        l.name = `${l.name}X`;
+        await grok.dapi.layouts.save(l);
+      }));
+      expect(edit != null, true, 'the grantee saved the layout');
+      expect(await asGrantee(() => thrown(() => grok.dapi.layouts.delete(layout))) != null, true,
+        'the grantee deleted the layout');
+      await grok.dapi.permissions.revoke(layout, grantee.group);
+      await grok.dapi.permissions.grant(layout, grantee.group, true);
+      expect((await held(layout)).join(), BASIC.join());
+    }
+    finally {
+      await grok.dapi.permissions.revoke(layout, grantee.group);
+      await grok.dapi.layouts.delete(layout);
+    }
+  });
+
+  test('a model: the View-and-use grantee sees it but cannot change, delete or share it', async () => {
+    const name = `ApiTestsPerm${DG.Utils.randomString(6)}`;
+    const created = await fetch(`${grok.dapi.root}/ml`, {method: 'POST', credentials: 'include',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({'#type': 'PredictiveModelInfo', name, friendlyName: name, input: [], output: []})});
+    expect(created.status, 200, 'the model was not created');
+    const model = await grok.dapi.models.filter(`name = "${name}"`).first();
+    try {
+      await grok.dapi.permissions.grant(model, grantee.group, false);
+      expect((await held(model)).join(), 'View');
+      const edit = await asGrantee(() => thrown(async () => {
+        const m = await grok.dapi.models.find(model.id);
+        m.friendlyName = 'edited by the grantee';
+        await grok.dapi.models.save(m);
+      }));
+      expect(edit != null, true, 'the grantee edited the model');
+      expect(await asGrantee(() => thrown(() => grok.dapi.models.delete(model))) != null, true,
+        'the grantee deleted the model');
+      const reshare = await asGrantee(() => thrown(() => grok.dapi.permissions.grant(model, allUsers, false)));
+      expect(String(reshare?.message ?? reshare).includes('You don\'t have a permission to share this object'), true,
+        `the grantee shared the model further: ${reshare}`);
+      await grok.dapi.permissions.revoke(model, grantee.group);
+      expect((await held(model, ['View'])).join(), '', 'after the revoke');
+    }
+    finally {
+      await grok.dapi.permissions.revoke(model, grantee.group);
+      await grok.dapi.models.delete(model);
+    }
+  });
+
+  test('a share with notifications reaches the grantee; without them it does not', async () => {
+    const viewId = (await (await fetch(`${grok.dapi.root}/privileges/types/Project/permissions`)).json())
+      .find((p: any) => p.name === 'View').id;
+    // No JS wrapper carries notify/message, so the dialog's endpoint is called directly.
+    const makeScript = () => grok.dapi.scripts.save(DG.Script.create(
+      `//name: ApiTestsPerm${DG.Utils.randomString(6)}\n//language: javascript\nlet x = 1;`));
+    const share = async (entity: _DG.Entity, notify: boolean) => {
+      const project = await (await fetch(`${grok.dapi.root}/projects/for_entity/${entity.id}`)).json();
+      const res = await fetch(`${grok.dapi.root}/privileges/permissions/list?notify=${notify}`, {method: 'POST',
+        credentials: 'include', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify([{entityId: project.id, userGroup: {id: grantee.group.id}, permission: {id: viewId}}])});
+      expect(res.ok, true, `share failed: ${res.status}`);
+    };
+    const notified = () => asGrantee(() => grok.dapi.users.notifications.forCurrentUser().list({pageSize: 100}));
+    const notifying = await makeScript();
+    const silent = await makeScript();
+    try {
+      const before = (await notified()).map((n) => n.id);
+      await share(notifying, true);
+      const after = await notified();
+      const fresh = after.filter((n) => !before.includes(n.id));
+      expect(fresh.some((n) => (n.text ?? '').includes(notifying.id)), true,
+        'the grantee got no notification naming the shared entity');
+
+      const before2 = (await notified()).map((n) => n.id);
+      await share(silent, false);
+      expect((await notified()).filter((n) => !before2.includes(n.id)).length, 0,
+        'a silent share still notified the grantee');
+    }
+    finally {
+      await grok.dapi.permissions.revoke(notifying, grantee.group);
+      await grok.dapi.permissions.revoke(silent, grantee.group);
+      await grok.dapi.scripts.delete(notifying);
+      await grok.dapi.scripts.delete(silent);
+    }
+  });
 });

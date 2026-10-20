@@ -113,6 +113,15 @@ category('scaffold tree', () => {
     tv.close();
   });
 
+  test('opens when the current view is not a table view', async () => {
+    grok.shell.addView(DG.View.create());
+    const table = sarSmall.clone();
+    const viewer = DG.Viewer.fromType(ScaffoldTreeViewer.TYPE, table);
+    await awaitCheck(() => viewer.props.moleculeColumnName === 'smiles', 'molecule column is not set', 3000);
+    expect(viewer.props.Table, table.name);
+    grok.shell.closeAll();
+  });
+
   async function editStructure(scaffoldTree: ScaffoldTreeViewer, group: DG.TreeViewGroup, smiles: string) {
     await scaffoldTree.openEditSketcher(group);
     scaffoldTree.wrapper?.sketcher.setSmiles(smiles);

@@ -1,4 +1,4 @@
-import { before, category, expect, expectArray, test } from '@datagrok-libraries/test/src/test';
+import { before, category, expect, expectArray, expectExceptionAsync, test } from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -108,15 +108,12 @@ category('Shell', () => {
   }, {skipReason: nodeSkip});
 
   test('createByType', async () => {
-    expect(DG.View.createByType(DG.View.PACKAGES).root instanceof HTMLElement, true);
-    let error = '';
-    try {
+    const v = DG.View.createByType(DG.View.PACKAGES);
+    expect(v.root instanceof HTMLElement, true);
+    v.close();
+    await expectExceptionAsync(async () => {
       DG.View.createByType('unknown-view-type');
-    }
-    catch (e: any) {
-      error = `${e?.message ?? e}`;
-    }
-    expect(error.includes('Unknown view type: unknown-view-type'), true);
+    }, (e) => `${e?.message ?? e}`.includes('Unknown view type: unknown-view-type'));
   }, {skipReason: nodeSkip});
 
   test('sideBar', async () => {

@@ -21,6 +21,8 @@ export class Tooltip {
       const el = document.createElement('div');
       el.className = 'u2-tooltip';
       el.dataset.u2 = 'tooltip';
+      el.id = 'u2-tooltip';
+      el.setAttribute('role', 'tooltip');
       el.style.cssText = 'position: fixed; left: 0; top: 0; display: none; pointer-events: none;';
       Overlay.host.append(el);
       Tooltip._root = el;
@@ -50,13 +52,22 @@ export class Tooltip {
       }
     };
     const leave = () => Tooltip.hide();
+    // keyboard focus shows it too, so a keyboard user reaches the same text; a click's focus does not
+    const focus = (e: Event) => {
+      if (Tooltip._keyboardFocus(e.target as Element))
+        enter();
+    };
     el.addEventListener('pointerenter', enter);
     el.addEventListener('pointerleave', leave);
     el.addEventListener('pointerdown', leave);
+    el.addEventListener('focusin', focus);
+    el.addEventListener('focusout', leave);
     owner.own(() => {
       el.removeEventListener('pointerenter', enter);
       el.removeEventListener('pointerleave', leave);
       el.removeEventListener('pointerdown', leave);
+      el.removeEventListener('focusin', focus);
+      el.removeEventListener('focusout', leave);
       // the pending show too: an element torn down under the pointer never gets its pointerleave,
       // so a timer left running would show the tooltip against an anchor that is no longer there
       if (Tooltip._anchor === el || Tooltip._pending === el)
@@ -76,7 +87,10 @@ export class Tooltip {
     else
       root.append(content);
     root.style.display = 'block';
+    if (Tooltip._anchor !== undefined && Tooltip._anchor !== anchor)
+      Tooltip._describe(Tooltip._anchor, false);
     Tooltip._anchor = anchor;
+    Tooltip._describe(anchor, true);
     document.addEventListener('pointerdown', Tooltip._onPointerDown, true);
     document.addEventListener('keydown', Tooltip._onKeyDown);
     document.addEventListener('scroll', Tooltip._onScroll, true);
@@ -97,6 +111,7 @@ export class Tooltip {
     Tooltip._pending = undefined;
     if (!Tooltip.isVisible)
       return;
+    Tooltip._describe(Tooltip._anchor!, false);
     Tooltip._anchor = undefined;
     Tooltip._hiddenAt = Date.now();
     document.removeEventListener('pointerdown', Tooltip._onPointerDown, true);
@@ -105,6 +120,27 @@ export class Tooltip {
     const root = Tooltip.root;
     root.style.display = 'none';
     root.textContent = '';
+  }
+
+  /** The anchor names the open tooltip in its `aria-describedby`, beside whatever it already lists. */
+  private static _describe(anchor: HTMLElement, on: boolean): void {
+    const ids = (anchor.getAttribute('aria-describedby') ?? '').split(/\s+/)
+      .filter((id) => id !== '' && id !== 'u2-tooltip');
+    if (on)
+      ids.push('u2-tooltip');
+    if (ids.length > 0)
+      anchor.setAttribute('aria-describedby', ids.join(' '));
+    else
+      anchor.removeAttribute('aria-describedby');
+  }
+
+  private static _keyboardFocus(el: Element | null): boolean {
+    try {
+      return el?.matches(':focus-visible') ?? false;
+    }
+    catch (_) {
+      return false;
+    }
   }
 
   private static _onPointerDown = () => Tooltip.hide();

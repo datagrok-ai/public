@@ -393,7 +393,7 @@ export class View extends ViewBase {
   static readonly QUERIES = 'queries';
   static readonly SCRIPTS = 'scripts';
   static readonly USERS = 'users';
-  static readonly PACKAGES = 'packages';
+  static readonly PACKAGES = 'Plugins';
   static readonly PACKAGE_REPOSITORIES = 'repositories';
   static readonly JS_EDITOR = 'js';
   static readonly BROWSE = 'browse';

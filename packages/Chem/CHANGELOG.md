@@ -2,7 +2,15 @@
 
 ## v.next
 
+* [core#874](https://github.com/datagrok-ai/core/issues/874): Scaffold Tree: Fixed an error when the viewer was opened while the current view was not a table view
 * [#4291](https://github.com/datagrok-ai/public/issues/4291): Chem: MPO: Add support for qnum values
+* [core#875](https://github.com/datagrok-ai/core/issues/875): Analysis: Fixed Activity Cliffs and Chemical Space adding their scatter plot to a different table with the same name when the original view was closed during the run
+* Tests: `Crux sketcher: strokes in a sketcher in the context panel leave the current object as it is` and the BDD scenario "Strokes in a molecule column's Filter pane leave the column the current object" (`sketcher/crux-hosts.feature`): js-api's sketcher made each drawing in the Filter pane the current object, so the panel switched at every stroke
+* Substructure filter: Fixed a query typed as SMILES turning into SMARTS on a card restored from a layout or a project: its sketcher handed the molecule back as a molblock, which replaced the typed string
+* Tests: Moved the BDD features that clear Filter as you draw (an account setting) or filter while the sketcher is open to the serial lane: in a full run, a query round trip filtered by the previous stroke while another worker had the option cleared
+* [#4291](https://github.com/datagrok-ai/public/issues/4291): MPO: Add support for qnum values
+* [#4324](https://github.com/datagrok-ai/public/issues/4324): MPO: Fixed Cancel in the property curve settings keeping the changed Score as
+* [#4323](https://github.com/datagrok-ai/public/issues/4323): MPO: Fixed Cancel keeping the score column the preview added, and OK leaving the columns of previously picked profiles
 * Tests: `sketcher testing: a sketcher fills its dialog`: every sketcher, in a dialog as it opens, in one shown with a size and with the invalid-molecule warning shown, reaches the bottom of the dialog's body and is not covered there (js-api's in-place sketcher left a margin under it)
 * Substructure search: A query molblock with an uncharged pentavalent nitrogen (a nitro drawn `N(=O)=O`, an azide `N=N#N`, a pyridine N-oxide `N=O`, from any sketcher) is read sanitized, as one with an H count query is: RDKit makes the group charge-separated, as the molecules searched hold it. Read unsanitized it matched no row (a nitrobenzene: none of smiles.csv's 75). Every other query molblock is read as before
 * Substructure search: An H count query on a ring NH in a Kekulé V2000 molblock (OpenChemLib's indole, `hhh` 2) matches its rows: RDKit's V2000 reader gives an atom with an `hhh` no implicit H, so that read sanitized the nitrogen was a radical and its ring not aromatic, and the query matched nothing (its V3000 twin, `HCOUNT`, matched). Such an atom, uncharged, is given the H its query asks for at least (its valence field), when its bonds are single, double or triple and RDKit can then sanitize it
