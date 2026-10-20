@@ -40,7 +40,7 @@ export class ColorInput extends Input<string, ColorInputOptions> {
     this._swatch = swatch;
     swatch.type = 'button';
     swatch.className = 'u2-color-swatch';
-    swatch.setAttribute('aria-label', 'Pick a color');
+    swatch.setAttribute('aria-label', typeof this.options.label === 'string' ? `Pick ${this.options.label}` : 'Pick a color');
 
     // the native picker is the popup; it is never the tab target, the swatch is
     const picker = document.createElement('input');

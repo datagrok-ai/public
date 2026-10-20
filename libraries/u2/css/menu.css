@@ -80,3 +80,37 @@
   margin: 5px 0;
   background: var(--dg-steel-3);
 }
+
+/* a menu whose items carry details (MenuItemOptions.detail) is one table: the icon, the label, the
+   details starting in one column, the shortcut */
+.u2-menu.u2-menu-detailed {
+  display: grid;
+  grid-template-columns: 16px auto minmax(0, 1fr) auto;
+  column-gap: var(--dg-space-s);
+}
+
+.u2-menu-detailed > .u2-menu-item {
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.u2-menu-detailed > .u2-menu-separator {
+  grid-column: 1 / -1;
+}
+
+/* spanning the flexible details' column, such a label never widens the labels' own */
+.u2-menu-detailed .u2-menu-label-wide {
+  grid-column: 2 / 4;
+}
+
+.u2-menu-detail {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-menu-detail:not(:empty) {
+  padding-left: var(--dg-space-m);
+}

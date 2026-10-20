@@ -138,15 +138,12 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
   async getContextValue(gridCell: DG.GridCell): Promise<any> { return contextValue(gridCell); }
 
-  /** [fitIdentities] key the fits for a caller with no grid cell; only here are the log options final. */
-  renderCurves(g: CanvasRenderingContext2D, screenBounds: DG.Rect, data: IFitChartData, gridCell?: DG.GridCell,
-    fitIdentities?: (string | undefined)[]): void {
-    g.save();
-    g.beginPath();
-    g.rect(screenBounds.x, screenBounds.y, screenBounds.width, screenBounds.height);
-    g.clip();
-
-    const isRenderedOnGrid = gridCell?.grid && gridCell?.grid.dart && g.canvas === gridCell?.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
+  /** Where the chart of [data] goes in [screenBounds]: its boxes, the fits, and the data bounds the axes span,
+   * which take in the curves as well as the points. [fitIdentities] key the fits for a caller with no grid cell;
+   * [canvas] is what the chart is drawn on, the grid's own for the grid's fit cache. */
+  layOutChart(screenBounds: DG.Rect, data: IFitChartData, gridCell?: DG.GridCell, fitIdentities?: (string | undefined)[],
+    canvas?: HTMLCanvasElement) {
+    const isRenderedOnGrid = gridCell?.grid && gridCell?.grid.dart && canvas === gridCell?.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
     // a merged series is fitted at index 0, the key real series 0 uses
     const useFitCache = isRenderedOnGrid && !data.chartOptions?.mergeSeries;
     const tableCell = gridCell?.cell;
@@ -198,6 +195,19 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       fits.map((fit) => fit?.fitFunc.hasAsymptotes ? fit.curve : null), data.chartOptions);
 
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
+    return {dataBox, xAxisBox, yAxisBox, dataBounds, fits, chartLogOptions, useFitCache, tableCell, viewport};
+  }
+
+  /** [fitIdentities] key the fits for a caller with no grid cell; only here are the log options final. */
+  renderCurves(g: CanvasRenderingContext2D, screenBounds: DG.Rect, data: IFitChartData, gridCell?: DG.GridCell,
+    fitIdentities?: (string | undefined)[]): void {
+    g.save();
+    g.beginPath();
+    g.rect(screenBounds.x, screenBounds.y, screenBounds.width, screenBounds.height);
+    g.clip();
+
+    const {dataBox, xAxisBox, yAxisBox, dataBounds, fits, chartLogOptions, useFitCache, tableCell, viewport} =
+      this.layOutChart(screenBounds, data, gridCell, fitIdentities, g.canvas);
     const minSize = Math.min(dataBox.width, dataBox.height);
     // TODO: make thinner
     const ratio = minSize > 100 ? 1 : 0.2 + (minSize / 100) * 0.8;

@@ -12,7 +12,7 @@ import {newestMatchingDistinct, newestMatchingFilled} from '../bindings/platform
 import {setTableTag, tableTagIsFile} from '../bindings/platform/data.js';
 import {taskBarFinished, taskBarShown, watchTaskBar} from '../bindings/platform/events.js';
 import {openTableOf, SKETCHER_CONTROLS_TAG, sketcherPin} from '../bindings/platform/steps.js';
-import {fixtureFamilies, isStaleFixture, serviceGap} from '../src/runtime/server.js';
+import {fixtureFamilies, isStaleFixture, RUN_SUFFIX, serviceGap} from '../src/runtime/server.js';
 import {el} from '../src/runtime/args.js';
 import {select} from '../src/runtime/gestures.js';
 import {hitArea, readValue} from '../src/runtime/viewers.js';
@@ -208,13 +208,19 @@ test('a known failure pinned to a line passes only when the step at that line fa
 });
 
 test('a fixture of a dead run is stale after an hour; a live, a foreign or an unsuffixed one is not', () => {
-  const families = fixtureFamilies(['BDD-GL-Group-1789927107045', 'BDD-Share-Model-2f1c9c3e-0b1a-4c2d-8e9f-0123456789ab', 'BDD-CP-Root']);
-  assert.deepEqual(families, ['BDD-GL-Group', 'BDD-Share-Model']);
+  const families = fixtureFamilies(['BDD-GL-Group-1789927107045', 'BDD-Share-Model-2f1c9c3e-0b1a-4c2d-8e9f-0123456789ab', 'BDD-CP-Root',
+    'BddDouble1789927107045']);
+  assert.deepEqual(families, ['BDD-GL-Group', 'BDD-Share-Model', 'BddDouble']);
   const now = 1789930000000;
   const old = now - 2 * 3600 * 1000;
   const at = (name: string, createdOn: number) => ({name, friendlyName: name, createdOn});
   assert.equal(isStaleFixture(at('BDD-GL-Group-1789900000000', old), families, now), true);
   assert.equal(isStaleFixture(at('BDD-Share-Model-9f8e7d6c-5b4a-4321-8765-ba9876543210', old), families, now), true);
+  assert.equal(isStaleFixture(at('BddDouble1789900000000', old), families, now), true);
+  // a {time} suffix is the fixture's start, with or without its dash; a {run} one dates nothing
+  assert.equal(Number(RUN_SUFFIX.exec('bdd-sm-schema-1789900000000')?.[1]), 1789900000000);
+  assert.equal(Number(RUN_SUFFIX.exec('BddDouble1789900000000')?.[1]), 1789900000000);
+  assert.equal(RUN_SUFFIX.exec('BDD-Share-Model-9f8e7d6c-5b4a-4321-8765-ba9876543210')?.[1], undefined);
   assert.equal(isStaleFixture(at('BDD-GL-Group-1789900000000', now - 5 * 60 * 1000), families, now), false);
   assert.equal(isStaleFixture(at('BDD-GL-Renamed-1789900000000', old), families, now), false);
   assert.equal(isStaleFixture(at('BDD-GL-Group', old), families, now), false);

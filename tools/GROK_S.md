@@ -36,6 +36,7 @@ browser or a logged-in session.
 | See what fields an entity type has                          | `grok s describe connections`                          |
 | Hit any undocumented endpoint                               | `grok s raw GET /users/current` / `raw POST <path> --data '{...}'` |
 | Check server + per-module health                            | `grok s healthcheck [--module <name>]`                 |
+| Server build, uptime, DB pool, requests in flight           | `grok s status`                                        |
 | Problems, alerts, problem rules, logger settings, errors, cloud logs | `grok s observe problems list --alert-status open` (alias `grok s o`) |
 | Bulk operations in one round-trip                           | `grok s batch <entity> <verb> --json items.json`       |
 | Move entities dev to prod (bundle, or instance to instance) | `grok s pull ... --out ./bundle` / `grok s migrate ... --from dev --to prod` |
@@ -496,6 +497,20 @@ that reports no services (a dev stack) prints `(no services reported)`; `--modul
 module the server does not report exits 1. Requires a valid dev key (standard `grok s` auth).
 For an anonymous liveness probe — load balancer, k8s readiness — hit `/admin/health` directly;
 it's on the server's unauthenticated allowlist.
+
+### Server status
+
+```bash
+grok s status                                  # build, uptime, DB pool, HTTP connections
+grok s status --output json                    # {server, extended}
+grok s status --output quiet                   # just the version
+```
+
+Reads `GET /info/server` and `GET /info/server?extended=true`: `Version`, `Branch`, `Commit`,
+build `Date`, `Uptime`, `Requests` served, `Used Connections` / `Pool Connections` of the DB pool,
+`Isolate`, `Service network`, `webRoot`, and the `Http Server` connection counts. For an admin the
+extended call replaces the active-connection count with the requests in flight per endpoint
+(`{"GET /api/...": n}`), printed as a table; for anyone else the two responses are the same.
 
 ## Problems, logging and errors (`grok s observe`, alias `grok s o`)
 

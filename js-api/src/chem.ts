@@ -37,6 +37,20 @@ $$$$`
 
 let extractors: Func[];  // id => molecule
 
+function getExtractors(): Func[] {
+  if (extractors == null) {
+    try {
+      extractors = Func.find({meta: {role: FUNC_TYPES.CONVERTER}}).filter(it => it.outputs.filter(o => o.semType == SEMTYPE.MOLECULE).length);
+    } catch {
+      extractors = [];
+    }
+    // nameToSmiles matches almost any text, so the specific converters are tried first
+    const index = extractors.map(it => it.name.toLowerCase()).indexOf('nametosmiles');
+    if (index >= 0)
+      extractors.push(extractors.splice(index, 1)[0]);
+  }
+  return extractors;
+}
 
 /** Cheminformatics-related routines */
 export namespace chem {
@@ -181,7 +195,8 @@ export namespace chem {
     sketcherFunctions: Func[] = [];
     sketcherDialogOpened = false;
 
-    /** Whether the currently drawn molecule becomes the current object as you sketch it */
+    /** Whether the currently drawn molecule becomes the current object as you sketch it; never in the context panel
+     * ({@link isInContextPanel}) */
     syncCurrentObject: boolean = true;
 
     listeners: (() => void)[] = [];
@@ -210,6 +225,8 @@ export namespace chem {
     _highlight = true;
     /** Message from the validation function for the last value set, or null. */
     error: string | null = null;
+    /** Numbers the molecule lookups {@link setValue} starts: only the latest one's answer is applied. */
+    private _lookup = 0;
     errorDiv = ui.divText('Malformed molecule');
     alighInput: InputBase;
     highlightInput: InputBase;
@@ -372,27 +389,35 @@ export namespace chem {
 
     /** Sets SMILES, MOLBLOCK, or any other molecule representation */
     setValue(x: string) {
-      const index = extractors.map(it => it.name.toLowerCase()).indexOf('nametosmiles');
-      const el = extractors.splice(index, 1)[0];
-      extractors.splice(extractors.length, 0, el);
-
-      const extractor = extractors
+      const extractor = getExtractors()
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
-          if (extractor != null && !checkSmiles(x) && !isMolBlock(x)) {
-            this.calculating = true;
-            extractor
-              .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
-              .then((mol) => {
-                mol ? this.setMolecule(mol) : this.setMolecule('');
-              }).catch(() => {
-                this.setMolecule('');
-              }).finally(() => {
-                this.calculating = false;
-              });
+      const lookup = ++this._lookup;
+      if (extractor != null && !checkSmiles(x) && !isMolBlock(x)) {
+        this.calculating = true;
+        // a lookup answered after a newer value was set is dropped; one that finds nothing keeps the drawing
+        const recognized = (mol: string | null | undefined) => {
+          if (lookup !== this._lookup)
+            return;
+          if (mol)
+            this.setMolecule(mol);
+          else {
+            this.error = `Could not recognize "${x}"`;
+            this.updateInvalidMoleculeWarning();
           }
-          else
-            this.setMolecule(x);
+        };
+        extractor
+          .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
+          .then(recognized, () => recognized(null))
+          .finally(() => {
+            if (lookup === this._lookup)
+              this.calculating = false;
+          });
+      }
+      else {
+        this.calculating = false;
+        this.setMolecule(x);
+      }
     }
 
     /** Runs the validation function from the constructor, sets {@link error} and toggles the warning. */
@@ -488,6 +513,13 @@ export namespace chem {
     /** True when the implementation is shown in a popup (not in the dialog a thumbnail in a popup opens). */
     isInPopupContainer(): boolean {
       return !!this.host.closest('.d4-popup-host');
+    }
+
+    /** True when the sketcher is in the context panel (a column's Filter pane, say). There a drawing is not made the
+     * current object (see {@link syncCurrentObject}): the panel would show the molecule instead of what holds the
+     * sketcher, and the sketcher would go with it at the first edit. */
+    isInContextPanel(): boolean {
+      return !!this.root.closest('.grok-prop-panel');
     }
 
     /** Resizes the current implementation to its host. */
@@ -637,13 +669,6 @@ export namespace chem {
       const molInputDiv = ui.div();
       $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
 
-      if (extractors == null) {
-        try {
-          extractors = Func.find({meta: {role: FUNC_TYPES.CONVERTER}}).filter(it => it.outputs.filter(o => o.semType == SEMTYPE.MOLECULE).length);
-        } catch {
-          extractors = [];
-        }
-      }
       let optionsIcon = ui.iconFA('bars', (event: MouseEvent) => {
         const menuHost = ui.div([], {style: {position: 'fixed', zIndex: '100'}});
         this.host.parentElement?.prepend(menuHost);
@@ -783,15 +808,16 @@ export namespace chem {
         ui.setUpdateIndicator(this.host, false);
         this._sketcherTypeChanged = false;
         this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
+          // read before the listeners run: a filter's listener filters the table, and the context panel, rebuilt, takes
+          // the sketcher out of it; a sketcher out of the page is no one drawing
+          const sync = this.syncCurrentObject && this.root.isConnected && !this.isInContextPanel();
           const molFile = this.getMolFile();
           this.validate(molFile);
           this.onChanged.next(null);
           for (let callback of this.listeners)
             callback();
-          if (this.syncCurrentObject) {
-            if (!Sketcher.isEmptyMolfile(molFile))
-              grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
-          }
+          if (sync && !Sketcher.isEmptyMolfile(molFile))
+            grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
         });
         // a value set while the implementation initialized was only stored, and is newer than the one taken above, which
         // is set otherwise, as stored: with the setter of its notation, not guessed from the string; an empty one is not

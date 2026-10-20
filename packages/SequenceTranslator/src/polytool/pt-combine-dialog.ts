@@ -2,6 +2,27 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+/** Every way to take one value from each list in turn, the values joined by the separator. */
+export function combineSequences(cols: string[][], separator: string): string[] {
+    let curIndex = 0;
+    const totalLength = cols.reduce((acc, c) => acc * c.length, 1);
+    const result: string[] = new Array(totalLength).fill(null);
+
+    const dfs = (cur: string, depth: number) => {
+        if (depth === cols.length) {
+            result[curIndex++] = cur;
+            return;
+        }
+        const actCur = `${cur}${cur ? separator : ''}`;
+        const col = cols[depth];
+        for (let i = 0; i < cols[depth].length; i++) {
+            dfs(actCur + col[i], depth + 1);
+        }
+    }
+    dfs('', 0);
+    return result;
+}
+
 export async function getPTCombineDialog() {
 
     const createEditor = () => {
@@ -94,27 +115,11 @@ export async function getPTCombineDialog() {
             const columns = values.map((v) => v.column);
             const separator = separatorInput.value;
             const cols = columns.map((c, i) => tables[i]!.col(c!)!.toList().filter((v) => !!v));
-            // do a DFS to generate all combinations
-            let curIndex = 0;
-            const totalLength = cols.reduce((acc, c) => acc * c.length, 1);
-            if (totalLength > 10_000_000) {
+            if (cols.reduce((acc, c) => acc * c.length, 1) > 10_000_000) {
                 grok.shell.error('Too many combinations. Maximum allowed is 10M');
                 return;
             }
-            const result: string[] = new Array(totalLength).fill(null);
-
-            const dfs = (cur: string, depth: number) => {
-                if (depth === cols.length) {
-                    result[curIndex++] = cur;
-                    return;
-                }
-                const actCur = `${cur}${cur ? separator : ''}`;
-                const col = cols[depth];
-                for (let i = 0; i < cols[depth].length; i++) {
-                    dfs(actCur + col[i], depth + 1);
-                }
-            }
-            dfs('', 0);
+            const result = combineSequences(cols, separator);
             const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('Combined Sequences', result)]);
             df.name = 'Combined Sequences';
             await df.meta.detectSemanticTypes();

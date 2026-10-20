@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#916](https://github.com/datagrok-ai/core/issues/916): Dendrogram: Fixed hovering a viewer in another view of the table throwing "Cannot read properties of null (reading 'mouseOverRowIdx')" after the view with the tree was closed
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Chem and Bio | Analyze | Hierarchical Clustering are disabled until the current table has a molecule or macromolecule column, and ML | Cluster | Hierarchical Clustering unless the current view is a table view, instead of warning
 * Dendrogram viewer: Fixed a tree with nodes that have no branch length (most newick strings leave it off the root) drawing nothing and taking no hover or click
 * Tests: Added centroid and median linkage tests over merges that invert (GROK-19595): the wasm cluster matrix keeps merge order and every leaf, and hierarchical clustering attaches a full tree; they replace the BDD centroid scenario

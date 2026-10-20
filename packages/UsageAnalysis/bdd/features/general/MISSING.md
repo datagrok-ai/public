@@ -26,6 +26,14 @@ fast). Section numbers are the first list's.
 - **§18, the search syntax.** The cases are ddt matcher tests (`core/shared/ddt/test/data_frame/
   matcher_test.dart`, "search box: …"); the quoted value and the year alone are skipped there until
   GROK-20229 is fixed.
+- **Find and Replace (2026-10-18 review of `find-and-replace.feature`).** The five known failures (core#887–891)
+  were fixed in core and their tags removed; the dialog's part stays a scenario (an invalid pattern refused
+  with its message, a replace with no rows in scope announced and undo kept), the pattern cases are ddt unit
+  tests of `findAndReplace` beside the core fixes (`data_utils_test.dart`: case and whole words, anchors, an
+  empty search and replacement, number queries and ranges, dates, bools, numbers held as text, the row scopes
+  with the preview flagging the rows replaced). Find what's message for a predicate naming no column
+  (core#838) is the input's tooltip, read with the existing hover and tooltip steps; core#891's balloon is
+  `an info balloon containing …`, so no new step was needed.
 
 ## Still open
 
@@ -44,6 +52,8 @@ Nothing planned.
 - **§8, Change password.** The mismatched confirmation would need a gate on the account having a password
   (`User.hasPassword`, which the JS `DG.User` does not expose); the refusal of a wrong current password is the
   server's answer, a datlas test.
+- **An ApiTests call of `ReplaceValues` through `grok.functions`.** No JS API of its own to cover: the column
+  predicates and their JSON are ddt `func_test.dart`, the replacement the ddt tests above.
 - **§13a, a query drawn in the HELM substructure filter.** It needs a name on the filter's clickable panel and an
   element for its editor dialog (`Bio/src/widgets/bio-substructure-filter-helm.ts`).
 

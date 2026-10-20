@@ -52,7 +52,8 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   // assigned in createEditor, which the base constructor runs before field initializers
   private declare _input: HTMLInputElement;
   private declare _slider: HTMLInputElement | null;
-  private declare _bad: Signal<boolean>;
+  /** Why the text in the field is no value, while it is not. */
+  private declare _bad: Signal<string | null>;
 
   constructor(options: NumberInputOptions = {}) {
     super(options, null);
@@ -97,7 +98,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   }
 
   protected createEditor(): HTMLElement {
-    this._bad = signal(false);
+    this._bad = signal<string | null>(null);
     this._slider = null;
     const input = document.createElement('input');
     this._input = input;
@@ -118,7 +119,8 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     });
     this.scope.listen(input, 'input', () => {
       const parsed = this._parse(input.value);
-      this._bad.value = parsed === undefined;
+      this._bad.value = parsed !== undefined ? null :
+        this._int && FLOAT.test(input.value.trim()) ? 'Must be a whole number' : 'Not a number';
       if (parsed === undefined || this.options.commitOn === 'change')
         return;
       const before = this.value.peek();
@@ -153,7 +155,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
       editor.append(slider);
 
     // registered here, before the base builds its validation effect, so the effect tracks `_bad`
-    this.addValidator(() => this._bad.value ? 'Not a number' : null);
+    this.addValidator(() => this._bad.value);
     this.addValidator((value) => this._outOfRange(value));
     return editor;
   }
@@ -239,7 +241,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   }
 
   protected resetEditor(): void {
-    this._bad.value = false;
+    this._bad.value = null;
     this._input.value = this._format(this.value.peek());
     this._syncSlider();
   }
@@ -251,7 +253,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   }
 
   private _set(value: number | null): void {
-    this._bad.value = false;
+    this._bad.value = null;
     this.value.value = value;
     this._input.value = this._format(this.value.peek());
     this._syncSlider();

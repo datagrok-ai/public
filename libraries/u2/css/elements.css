@@ -6,6 +6,32 @@
   display: none !important;
 }
 
+/* icon() sizing hooks */
+.u2-icon {
+  color: currentColor;
+}
+
+.u2-icon-small {
+  font-size: 12px;
+}
+
+.u2-icon-medium {
+  font-size: 16px;
+}
+
+.u2-icon-large {
+  font-size: 20px;
+}
+
+.u2-icon-action {
+  color: var(--dg-text-color-light);
+  cursor: pointer;
+}
+
+.u2-icon-action:hover {
+  color: var(--dg-accent);
+}
+
 .u2-div-v {
   display: flex;
   flex-direction: column;

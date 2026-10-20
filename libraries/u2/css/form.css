@@ -25,6 +25,15 @@
   min-width: var(--u2-form-label-width, 100px);
 }
 
+/* while a form measures its captions (form.ts _measureLabels): each at its own text's width, whatever
+   skin a form around it applies */
+.u2-form.u2-form-measuring .u2-input-label,
+.u2-form.u2-form-measuring .ui-input-label {
+  flex-basis: auto !important;
+  width: max-content !important;
+  min-width: 0 !important;
+}
+
 /* platform caption skin: grey, right-aligned in the label column (ui.css:1068-1075) —
    bridged platform inputs (.ui-input-label) share it */
 .u2-form .u2-input-label,
@@ -159,6 +168,20 @@
   max-width: 150px;
 }
 
+/* a date is a short value too: its own width, the calendar toggle beside it, never across the row */
+.u2-form:not(.u2-form-wide):not(.u2-form-tall) .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-date,
+.u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-date {
+  flex: none;
+  width: 140px;
+  max-width: 140px;
+}
+
+.u2-form:not(.u2-form-wide):not(.u2-form-tall) .u2-input-root:not(.u2-input-fill)[data-u2='datetime-input'] .u2-input-editor.u2-date,
+.u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='datetime-input'] .u2-input-editor.u2-date {
+  width: 170px;
+  max-width: 170px;
+}
+
 .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='bigint-input'] > .u2-input-box > input.u2-input-editor,
 .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='qnum-input'] > .u2-input-box > input.u2-input-editor {
   max-width: 150px;
@@ -238,11 +261,74 @@
   width: auto;
 }
 
+/* Form.addGroup: one caption in the label column, the inputs side by side after it, wrapping under
+   the editors when the row is short */
+.u2-form-group {
+  display: flex;
+  align-items: flex-start;
+}
+
+.u2-form-group > .u2-form-group-label {
+  flex: none;
+}
+
+.u2-form-group-items {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--dg-space-xl);
+  min-width: 0;
+}
+
+.u2-form .u2-form-group-items > .u2-input-root {
+  flex: none;
+  padding: 0;
+}
+
+.u2-form .u2-form-group-items .u2-input-label {
+  min-width: 0;
+}
+
+.u2-form .u2-form-group-items > .u2-input-caption-after > .u2-input-label {
+  margin-left: var(--dg-space-s);
+  color: var(--dg-text-color);
+  text-align: left;
+}
+
+.u2-form .u2-form-group-items .u2-input-error {
+  padding-left: 0;
+}
+
+/* tall: the caption takes its own line, the inputs keep theirs side by side under it */
+.u2-form-tall .u2-form-group {
+  flex-wrap: wrap;
+  padding-top: var(--dg-space-m);
+}
+
+.u2-form.u2-form-tall .u2-form-group-items .u2-input-root {
+  flex-wrap: nowrap;
+  padding-top: 0;
+}
+
+.u2-form.u2-form-tall .u2-form-group-items .u2-input-label {
+  flex-basis: auto;
+  font-size: var(--dg-font-size);
+}
+
+.u2-form.u2-form-tall .u2-form-group-items .u2-input-root .u2-input-box {
+  flex: none;
+}
+
 .u2-form-buttons {
   display: flex;
   justify-content: flex-end;
   gap: var(--dg-space-m);
   margin-top: var(--dg-space-l);
+}
+
+.u2-form-buttons.u2-form-buttons-start {
+  justify-content: flex-start;
 }
 
 /* ui.buttonsInput: the buttons start where the editors do */
@@ -256,14 +342,18 @@
 }
 
 /* a raised button in a form is the platform's form button, blue-2 and 12px in
-   (grok.css .ui-form .ui-btn.ui-btn-raised) */
+   (grok.css .ui-form .ui-btn.ui-btn-raised) — in the form's button row too, wherever addButtons placed it */
 .u2-form .u2-btn-primary:not(:disabled),
 .u2-form .u2-btn-primary:hover:not(:disabled),
-.u2-form .u2-btn-primary:active:not(:disabled) {
+.u2-form .u2-btn-primary:active:not(:disabled),
+.u2-form-buttons .u2-btn-primary:not(:disabled),
+.u2-form-buttons .u2-btn-primary:hover:not(:disabled),
+.u2-form-buttons .u2-btn-primary:active:not(:disabled) {
   background: var(--dg-blue-2);
 }
 
-.u2-form .u2-btn-primary {
+.u2-form .u2-btn-primary,
+.u2-form-buttons .u2-btn-primary {
   padding: 0 12px;
 }
 
@@ -373,4 +463,42 @@
 .u2-func-form-history-popup .u2-fch {
   flex: 1;
   min-width: 0;
+}
+
+/* Form.addColumns: equal columns of caption + editor. A track's floor is the larger of
+   --u2-form-column-min and an equal share of the row, so auto-fill makes at most
+   --u2-form-columns of them, and fewer — down to one — once that many would go under the minimum */
+.u2-form-columns {
+  --u2-form-column-gap: var(--dg-space-xxl);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(var(--u2-form-column-min, 200px),
+    (100% - (var(--u2-form-columns, 2) - 1) * var(--u2-form-column-gap)) / var(--u2-form-columns, 2))), 1fr));
+  column-gap: var(--u2-form-column-gap);
+  align-items: start;
+}
+
+/* the cells carry the row pitch themselves */
+.u2-form-rows > .u2-form-columns {
+  padding: 0;
+}
+
+.u2-form-columns > .u2-input-root {
+  min-width: 0;
+}
+
+/* a field's editor fills its cell, so the editors of a column share both edges — a choice fitted to its
+   longest item and a number's 150px included, which would otherwise leave one short underline under
+   another. The part attribute outweighs the auto form's width rules (a choice's select, 0,6,1) */
+.u2-form.u2-form .u2-form-columns[data-u2-part='columns'] > .u2-input-root:not(.u2-input-fill) > .u2-input-box {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+}
+
+.u2-form.u2-form .u2-form-columns[data-u2-part='columns'] > .u2-input-root:not(.u2-input-fill):is([data-u2='text-input'],
+  [data-u2='choice-input'], [data-u2='number-input'], [data-u2='date-input'], [data-u2='suggest-input']) > .u2-input-box > .u2-input-editor {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: none;
 }

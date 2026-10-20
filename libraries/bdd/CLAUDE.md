@@ -68,7 +68,8 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
 `DG.Widget.addStatusProvider` (a package's own areas and readings on a native widget, e.g. the
 WebLogo glyphs Peptides draws in grid headers), the annotation regions' `region "<title>" title`
 hit areas and `title strip top` / `title strip right` / `region titles shown` readings
-(`AnnotationRegionsMixin.addStatus`).
+(`AnnotationRegionsMixin.addStatus`), `aria-busy` on a gallery grid from a search keystroke until its latest refresh
+has drawn (`data_source_card_view.dart`; a gesture on a gallery card or link waits for it).
 
 ## What never becomes a feature — hard rule
 
@@ -145,7 +146,8 @@ prove it is gone. That covers:
 - what the UI makes on the side: the layout and project a query or script save writes, the chat a
   Chats pane post creates, the grant a Share dialog adds, the picture a Save dialog or the Layouts
   pane stores (`<pictureId>.png`, which the server keeps when the project or the layout goes — the
-  library's project and layout sweeps delete it; the thumbnails the server cuts from it,
+  library's project and layout sweeps delete it, and the harness deletes every picture the page uploaded
+  during the feature at its end, since a project deleted through the UI takes its picture's id with it; the thumbnails the server cuts from it,
   `<pictureId>_<width>.png`, have no delete and stay), the notification a share sends (made with
   Send notifications off unless it is claimed);
 - changes to things the feature does not own: a connection's identifiers configuration, a catalog's
@@ -190,7 +192,7 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   analysis a scenario left running reopens its closed table and makes it current in the next feature;
   a menu command's `onAfterRunAction` can come before its work ends — then Escape for dialogs and
   menus, `ui.tooltip.hide`, notices removed, `closeAll`, the context panes' expanded state
-  (`Accordion:*` in `localStorage`) cleared, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
+  (`Accordion:*` in `localStorage`) and the galleries' view modes (`card-view-render-mode-*`) cleared, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
   Datagrok pages in one browser. The renderer keeps what every feature left (closed views and their
   viewers stay reachable, ~60 MB a feature; a Chem feature starts RDKit's pool of a worker per core
   but two, ~1.2 GB on 32 cores), so after `BDD_PAGE_MAX_FEATURES` features (25) or once the renderer,
@@ -203,7 +205,9 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   call fails): the harness marks it on `crash`, skips its feature-end cleanups (they call into it;
   the feature fails naming how many did not run) and replaces it in a new context, since a feature
   may have signed the old one in as another account. A journey
-  scenario that fails closes its dialogs and menus (Escape) before the next scenario starts.
+  scenario that fails closes its dialogs and menus (Escape) before the next scenario starts, and signs
+  the running account back in when it stopped as another one (`atScenarioStop`), as `afterEach` does after a test
+  that failed or is a known failure.
 - **`user is logged in` only resets when the page is in the shell**; it sets `simpleMode` (view
   tabs hidden — switch views by name), clears the error and balloon floors, installs the in-page
   runtime. It waits for the PowerPack Home widgets to finish loading first, so what a widget logs
@@ -410,10 +414,16 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   `@Prop(name:)` set one; two properties sharing a caption must be named. `annotate` prefixes the
   element's tag (`div-`, `span-`, `icon-`…) and turns `:_; *\[]{}|` into dashes — the `dart` match
   tries that form; a sketch box's name sits on its `.d4-host`, not on `.d4-sketch-item`.
+- A balloon claim takes the balloon it matched (the read is destructive; the others go back): a second claim on
+  the same balloon fails. Claim a balloon once.
 - A context menu of a non-viewer element is opened at a point of its visible part that
   `elementFromPoint` gives back to it: a tree row runs past its panel's edge, and a panel docked a
   moment ago (the console) covers part of a gallery. `scrollIntoView` is the last resort — it moves
-  overflow-hidden ancestors too, and the page with them.
+  overflow-hidden ancestors too, and the page with them — and `block: 'nearest'` leaves a row under a sticky
+  header where it is (the browse tree's Spaces over its first space once the tree is scrolled a row): then `center`.
+- A session minted in the page for another account (`sessionOf`) is fetched with `credentials: 'omit'`: the dev-key
+  login answers with a Set-Cookie of the new session, and the browser took it, so the page went on as the running
+  account while its next reload, features later, signed in as the second one (sticky-meta came up as bddsecond).
 - An entity saved through the JS API gets its first Activity entry late, and a counting pane hides
   at 0: claim its count (`should count at least`), never the pane's presence right after the save.
 - A guide films without the `selenium` body class, so the page looks as a person's does: a panel's title

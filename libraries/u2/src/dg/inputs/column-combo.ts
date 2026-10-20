@@ -137,7 +137,7 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
       this._table.onColumnsChanged.subscribe(() => this._prune()),
       onColumnRenamed(this._table, (oldName, newName) => {
         if (this.value.peek() === oldName)
-          Input.system(() => this.value.value = newName);
+          this.systemWrite(newName);
       }),
     ];
     this._unfollow = () => {
@@ -149,7 +149,7 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
   private _prune(): void {
     const value = this.value.peek();
     if (value !== null && !this.names().includes(value))
-      Input.system(() => this.value.value = null);
+      this.systemWrite(null);
   }
 
   /** A pick is a USER edit: the signal write plus the native `change` a select would have

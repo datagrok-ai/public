@@ -103,10 +103,11 @@ Feature: The Filters tutorial
     And no rows where "AGE" is "39" should pass the filter
     And no rows where "AGE" is "61" should pass the filter
 
+    # the step is done once the column is made, from the menu or any other entry point
     When user picks "Filter to Column..." from the filter panel menu
+    And user clicks on OK button in dialog
     Then the tutorial step "Save the current filter as a column" should be done
-    When user clicks on OK button in dialog
-    Then the table should have a column "AGE: [40,60]"
+    And the table should have a column "AGE: [40,60]"
 
     When user picks "Save or Apply > Save..." from the filter panel menu
     Then the tutorial step "Save the filter configuration as \"AGE: [40,60]\"" should be done

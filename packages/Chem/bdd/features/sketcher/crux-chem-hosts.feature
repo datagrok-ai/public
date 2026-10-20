@@ -1,4 +1,4 @@
-@sketcher-controls
+@sketcher-controls @serial
 Feature: Crux in Chem's hosts
   Crux Sketch, pinned as the session's sketcher, in the places Chem opens a sketcher beyond the cell editor: the options
   menu's Recent and Favorites, a molblock column's cell editor, the Sketch item of a molecule's menu, the substructure
@@ -11,6 +11,8 @@ Feature: Crux in Chem's hosts
   the card filters by), the cells, the viewers' readings, a balloon. Typing into the host's molecule field is not
   drawing (the host then keeps the typed string): every claim about Crux's own output draws.
   The feature drives Crux's own controls (@sketcher-controls): a run that pins another sketcher skips it.
+  Serial (`@serial`): HOST-055 clears Filter as you draw, the account's setting (`chem-filter` user settings); the
+  features that filter while the sketcher is open take turns with it.
 
   Background:
     Given user is logged in

@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {readdirSync, readFileSync, existsSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {join} from 'node:path';
+import {join, sep} from 'node:path';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, Registry, SpecContext, renderSpec, registerAll, notify} from '@datagrok-libraries/u2';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
@@ -127,7 +127,7 @@ function shippedSpecs() {
   }
   for (const file of readdirSync(RECIPES).filter((f) => f.endsWith('.md'))) {
     const text = readFileSync(join(RECIPES, file), 'utf8');
-    for (const [, block] of text.matchAll(/```json\n([\s\S]*?)```/g)) {
+    for (const [, block] of text.matchAll(/```json\r?\n([\s\S]*?)```/g)) {
       const spec = JSON.parse(block);
       if (spec.$schema === 'dg-ui/1')
         specs.push({from: `docs/recipes/${file}`, spec});
@@ -156,7 +156,7 @@ const SPECS = shippedSpecs();
 
 test('the shipped specs are found: Stockroom\'s app and the spec-app recipe', () => {
   const from = SPECS.map((s) => s.from);
-  assert.ok(from.some((f) => f.endsWith('Stockroom/src/app.spec.json')), from.join(', '));
+  assert.ok(from.some((f) => f.split(sep).join('/').endsWith('Stockroom/src/app.spec.json')), from.join(', '));
   assert.ok(from.includes('docs/recipes/spec-app.md'), from.join(', '));
 });
 

@@ -17,6 +17,9 @@ it is what `rows of word` reports, and it is why filtering must move the counts.
 unchanged by a filter that leaves at least one row of it, so a claim about filtering that compares
 names only proves nothing.
 
+Labels longer than `MAX_WORD_LENGTH` (50) are drawn truncated with "…"; areas, readings, selection
+and tooltip use the full value.
+
 The column is picked in `onTableAttached` (`:107`): the first string column with more than 1 and at
 most `MAX_UNIQUE_CATEGORIES_NUMBER = 500` distinct values. On **demog-1000** that is RACE —
 Caucasian 896, Other 62, Black 27, Asian 15; SEX is F 553 / M 447; USUBJID has 1000 distinct values

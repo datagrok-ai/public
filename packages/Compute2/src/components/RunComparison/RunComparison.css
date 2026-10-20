@@ -102,6 +102,8 @@
 .c2-mapping-row { align-items: center; gap: 6px; }
 .c2-mapping-unit .ui-input-editor { width: 90px; }
 .c2-mapping-factor .ui-input-editor { width: 90px; text-align: right; }
+.c2-mapping-unmatched-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.c2-mapping-unmatched-scroll { max-height: 220px; overflow-y: auto; }
 
 /* the expand chevron takes the whole cell, row padding included, so a click near it
    never lands on the row and changes the selection */

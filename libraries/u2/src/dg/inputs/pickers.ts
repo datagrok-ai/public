@@ -279,11 +279,11 @@ export class ColumnPicker extends Input<string | null, ColumnPickerOptions> {
       table.onColumnsChanged.subscribe(() => {
         const value = this.value.peek();
         if (value !== null && !names().includes(value))
-          Input.system(() => this.value.value = null);
+          this.systemWrite(null);
       }),
       onColumnRenamed(table, (oldName, newName) => {
         if (this.value.peek() === oldName)
-          Input.system(() => this.value.value = newName);
+          this.systemWrite(newName);
       }),
     ];
     this.own(() => {

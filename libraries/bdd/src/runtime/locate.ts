@@ -11,6 +11,7 @@ import {contextFirst, describeNoun, KindSplit, NounRef, parseNoun} from '../noun
 import type {KindEntry, MatchStrategy} from '../registry.js';
 import {contextOf, ElementRef} from './args.js';
 import * as guide from './guide.js';
+import {expect, pollMs} from './patience.js';
 
 export {describeNoun, parseNoun};
 
@@ -131,14 +132,25 @@ export async function locate(page: Page, target: ElementRef | string, within?: L
   return loc;
 }
 
+/** A gallery redraws its items when the search it was given lands, 500 ms after the keystroke, and again when a refresh
+ * returns; the grid is aria-busy until then (data_source_card_view.dart). A gesture made earlier on a card or a link in
+ * it lands on an item the redraw replaces, or finds none (the Scripts and Dashboards galleries under several workers). */
+async function settleGalleries(page: Page): Promise<void> {
+  await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('.grok-gallery-grid[aria-busy="true"]'))
+    .filter((e) => (e as HTMLElement).offsetParent !== null).length).catch(() => 0),
+  {message: 'a gallery still busy with its search or its refresh', timeout: pollMs(30000)}).toBe(0);
+}
+
 /** The element a gesture or a state check acts on: the visible matches of the phrase (a Dart menu
  * keeps a zero-size mirror of every item under "Properties..."; a closed view leaves its viewers
  * behind). Several visible matches stay ambiguous — Playwright's strict mode reports them, and the
  * failure lists them (`explain`); an ordinal counts the visible ones too. An item of a u2 collection
- * that is not rendered is revealed first (`revealed`); `locate` never reveals. No roundtrip of its
- * own otherwise. */
+ * that is not rendered is revealed first (`revealed`); `locate` never reveals. A phrase naming a gallery
+ * or a card waits for the galleries to settle first; no roundtrip of its own otherwise. */
 export async function locateActionable(page: Page, target: ElementRef | string, within?: Locator): Promise<Locator> {
   const ref = refOf(page, target);
+  if (/gallery|card/i.test(ref.raw))
+    await settleGalleries(page);
   let loc = await locateRef(page, ref, within);
   if (await revealed(page, ref, loc, within))
     loc = await locateRef(page, ref, within);
@@ -418,7 +430,11 @@ function byLabel(page: Page, base: Base, kind: KindEntry, q: string): Locator {
   if (direct.every((s) => s.startsWith(':scope >')))
     return base.locator(direct.map((s) => s.slice(':scope >'.length).trim()).join(', '), {hasText: exactText(q)})
       .locator('xpath=parent::*').and(page.locator(kind.selector));
-  return base.locator(kind.selector).filter({has: page.locator(label, {hasText: exactText(q)})});
+  // a host does not go by the label of an input nested in it (a multi-choice by its items' labels), except a u2
+  // bridge, whose label is its inner Dart root's
+  const nested = `:scope:not([data-u2="dart-input"]) :is(.ui-input-root, [data-u2$="-input"]) :is(${label})`;
+  return base.locator(kind.selector).filter({has: page.locator(label, {hasText: exactText(q)})})
+    .filter({hasNot: page.locator(nested, {hasText: exactText(q)})});
 }
 
 /** Appends an attribute selector to every alternative of a comma-separated selector list. */

@@ -123,7 +123,9 @@ Feature: A chain of calculated columns recalculates on a formula edit and surviv
     And every value of "Weight3" column should equal "Weight2" column plus 50
     And every value of "Weight4" column should be the decimal log of "Weight3" column minus 0.1
     Given the context panel is open
-    When user clicks on the "header Weight3" area of grid
+    # the context panel covers the last columns: half a header shows only its menu icon, which opens a popup
+    When user scrolls the grid to the "Weight3" column
+    And user clicks on the "header Weight3" area of grid
     Then the context panel should show "Weight3"
     Given Formula pane in context panel is expanded
     Then formula pane editor in Formula pane in context panel should hold the code "${Weight2} + 50"
