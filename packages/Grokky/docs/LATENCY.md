@@ -5,6 +5,10 @@ full code sweep of the turn path (browser → WS → runtime → SDK → model �
 the earlier speculative version — several of its guesses are now disproven (see "Disproven" at the end).
 Refs are to `dockerfiles/claude-runtime/src/` unless noted. Raw runs: `files/benchmarks/`.
 
+The measurements were taken on the Claude Agent SDK runtime. The runtime now runs Hermes Agent, one
+process per chat session ([CLAUDE_CODE_FLOW.md](CLAUDE_CODE_FLOW.md)); 2a, 2b and the SDK items below
+are updated for it, and the numbers need a re-run before they are relied on.
+
 ## Measured baseline (Sonnet, effort=high, thinking=1500)
 
 19 prompts × 3 reps through the real pipeline (`Grokky:runBenchmark`):
@@ -72,20 +76,22 @@ action turn = 2 round-trips — exactly the measured 11 s histogram. Cap is 3 St
 
 ### Tier 2 — cut the ~12–14 s fixed intercept
 
-**2a. Persistent streaming session** ([session.ts:331](../dockerfiles/claude-runtime/src/session.ts#L331)).
-Every turn spawns a fresh SDK `query()` = fresh CLI subprocess + **transcript JSONL reload from disk
-(grows with history)** + plugin scan + MCP re-handshake. The SDK's streaming-input mode keeps one
-process per session and pushes messages into it. Refactor touches the turn queue / abort / fork in
-`session.ts`. Est. ~1–2 s/turn plus the history-reload growth.
+**2a. Persistent session process** — in place: each chat session keeps one agent process
+([agent/pool.ts](../dockerfiles/claude-runtime/src/agent/pool.ts)) that holds the conversation in
+memory between turns, and new chats start on a warm spare. Only a session evicted for idleness or at the
+process cap reloads its history from disk. Not yet re-measured.
 
-**2b. mcp-server handshake** ([mcp-server/src/index.ts:345](../dockerfiles/mcp-server/src/index.ts#L345)).
-The HTTP `datagrok` MCP server gets `initialize` + `tools/list` **per turn**, through two proxies,
-and constructs a fresh `McpServer` + transport per request. Falls out of 2a for free; otherwise
-cache the server instance.
+**2b. mcp-server handshake** ([mcp-server/src/index.ts](../dockerfiles/mcp-server/src/index.ts#L72)).
+The agent registers the `datagrok` MCP server once per process and reconnects only when the user's key
+or URL changes (`_set_mcp` in
+[session.py](../dockerfiles/claude-runtime/agent/grokky_agent/session.py)). The mcp-server still
+constructs a fresh `McpServer` + transport per HTTP request, through two proxies; cache the server
+instance if that shows up in a profile.
 
 **2c. The rest of the intercept is model-side first-segment latency** (thinking + generation at
-effort high before the first token/tool). The thinking budget (1500,
-[query-options.ts:279](../dockerfiles/claude-runtime/src/query-options.ts#L279)) exists for the
+effort high before the first token/tool). The thinking setting (effort `high` for full-mode turns in
+[session.ts](../dockerfiles/claude-runtime/src/session.ts), applied as the agent's `reasoning_config` in
+[session.py](../dockerfiles/claude-runtime/agent/grokky_agent/session.py)) exists for the
 grounding rule; after 1a lands, A/B a reduced/disabled budget **for action turns** via the harness.
 
 ### Tier 3 — browser-side (real, smaller; two cliffs)
@@ -140,11 +146,11 @@ small talk from the grounding gate's second API call.
   call replying `NO_REVISION`. Small talk is now exempt (gate not armed at all — measured on
   "hello": 2 calls → 1, 9.3 s → 6.0 s). The remaining case — real answers that made no tool call —
   still pays the extra call; that is an accuracy feature and needs a `help`-category A/B (Tier 1a).
-- Staged user workspace symlinks the repo's `CLAUDE.md`, `.claude/`, **`.kg/`** into the model's cwd
-  ([staged-workspace.ts:22](../dockerfiles/claude-runtime/src/user/staged-workspace.ts#L22)). The
-  repo CLAUDE.md instructs a `.kg/scripts/qq.py` query first (self-installs a venv, ~30 s) — a live
-  timeout mechanism if the SDK version auto-loads subtree CLAUDE.mds. Exclude those entries; **pin
-  the SDK** (currently `>=0.2.0`, [package.json](../dockerfiles/claude-runtime/package.json)).
+- ~~Staged user workspace symlinks the repo's `CLAUDE.md` and `.claude/` into the model's cwd~~ — **DONE**:
+  both are excluded ([staged-workspace.ts](../dockerfiles/claude-runtime/src/user/staged-workspace.ts)),
+  and the agent loads no context files (`skip_context_files` in
+  [session.py](../dockerfiles/claude-runtime/agent/grokky_agent/session.py)), so no repo `CLAUDE.md` or
+  `AGENTS.md` instructions reach the model unless it reads them.
 
 ## Confirmed non-issues / disproven earlier guesses
 

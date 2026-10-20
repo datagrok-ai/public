@@ -6,7 +6,7 @@
 // pub serve — browser-side tool calls are answered from a per-case stub table instead.
 //
 // Everything a turn observably did comes back in the result: which tools ran (in order),
-// how many browser round-trips, the code each exec ran, timings, and SDK token/cost metrics.
+// how many browser round-trips, the code each exec ran, timings, and token/cost metrics.
 
 import {WebSocket} from 'ws';
 
@@ -54,7 +54,7 @@ export class RuntimeDriver {
    * @param prompt        user message
    * @param opts.sessionId    reuse to continue a conversation (resume path)
    * @param opts.taskId     id of the queued admission task (queue-task.ts)
-   * @param opts.model        'haiku' | 'sonnet' | 'opus' — omit for the runtime default
+   * @param opts.model        a model id such as 'claude-haiku-5-5' — omit for the runtime default
    * @param opts.systemPromptMode  'bash' | 'none' — omit for the full Datagrok prompt
    * @param opts.stubs        per-tool overrides, merged over DEFAULT_STUBS
    * @param opts.clientTools  view-tool defs to declare for this turn
