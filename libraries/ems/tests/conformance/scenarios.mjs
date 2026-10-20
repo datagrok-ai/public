@@ -4,8 +4,8 @@
    drifts from the other is a red test here, not a surprise in the browser.
 
    The fixture both harnesses build: table `folder` — `code` (string, required, the business key),
-   `name` (string, the name column), `parent_id` (ref → `folder`), `hierarchy: true`, soft delete
-   on. Plain ESM importing NOTHING, so a package with no u2 link can run it too. */
+   `name` (string, the name column), `parent_id` (ref → `folder`), `tags` (string_list),
+   `hierarchy: true`, soft delete on. Plain ESM importing NOTHING, so a package with no u2 link can run it too. */
 
 /** @type {import('./scenarios.d.ts').ConformanceScenario[]} */
 export const scenarios = [
@@ -292,6 +292,25 @@ export const scenarios = [
       t.equal(second.last !== first.last, true, 'and the token moved');
       const scoped = await table.probe({filter: 'code = "prb-a"'});
       t.equal(scoped.count, 1, 'a scoped read still counts rows');
+    },
+  },
+  {
+    name: 'string_list: a filter tests the elements, an empty or missing list has none',
+    requires: [],
+    seed: [
+      {key: 'a', code: 'tl-a', name: 'A', tags: ['x', 'y']},
+      {key: 'b', code: 'tl-b', name: 'B', tags: ['z']},
+      {key: 'c', code: 'tl-c', name: 'C', tags: []},
+      {key: 'd', code: 'tl-d', name: 'D'},
+    ],
+    async run(table, ids, t) {
+      const codes = async (filter) =>
+        (await table.query({filter, limit: 100})).map((row) => row.code.slice(3)).sort().join('');
+      for (const [filter, expected] of [['tags = "x"', 'a'], ['tags in ("x", "z")', 'ab'], ['tags != "x"', 'bcd'],
+        ['tags not in ("x", "z")', 'cd'], ['tags is null', 'cd'], ['tags is not null', 'ab'],
+        ['tags like "y"', 'a'], ['tags starts "z"', 'b'], ['tags !like "y"', 'bcd'], ['tags matches "^[xz]$"', 'ab']])
+        t.equal(await codes(filter), expected, filter);
+      await t.rejects(() => table.query({filter: 'tags > "x"', limit: 10}));
     },
   },
 ];
