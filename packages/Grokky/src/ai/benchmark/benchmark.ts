@@ -3,8 +3,9 @@
 // Drives the golden prompt suite (files/benchmark/suite.yaml) through the SAME runtime path the
 // panel uses (workspace context + view tools + real datagrok-exec/verify round-trips), times each
 // turn client-side (TTFT / total / tool round-trips), reads the server-side token/cost metrics the
-// runtime forwards on `final`, scores each prompt (deterministic assert + Haiku judge), and downloads
-// a JSON + Markdown report tagged with a config label so runs are comparable across latency levers.
+// runtime forwards on `final`, scores each prompt (deterministic assert + a judge on the runtime's
+// fast model), and downloads a JSON + Markdown report tagged with a config label so runs are
+// comparable across latency levers.
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -238,7 +239,7 @@ async function runTurn(client: ClaudeRuntimeClient, prompt: string, view: DG.Vie
   });
 }
 
-// ---- Deterministic assert + Haiku judge -------------------------------------------------
+// ---- Deterministic assert + fast-model judge --------------------------------------------
 
 /** Runs one assert expression. Returns the verdict plus the error text when the expression
  * itself threw — a broken assert must be distinguishable from a model failure, not silently false.

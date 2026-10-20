@@ -300,7 +300,9 @@ session. A Responses call keeps a one-line neutral instruction in `none` mode: H
 instructions and fills empty ones with its own identity. Full mode runs with thinking at `high` effort;
 `bash` and `none` turns ask for no thinking and run without gates, which Hermes maps per model: off on Haiku
 5.5, between tool calls only on Sonnet 5.5, Opus 5.5 and Fable 5.1 keep their adaptive thinking, which they
-cannot turn off, and GPT gets reasoning effort `none`.
+cannot turn off, and GPT gets reasoning effort `none`, except GPT-6.1 Sol and GPT-6 Astra, which always reason
+and reject `none`: their Responses calls carry no effort on any provider, so they reason at their default
+(medium) (`always_reasons` in `models.yaml`, applied in `Provider.patch_request`).
 
 `DATAGROK_PROMPT` instructs the model to:
 
@@ -643,6 +645,16 @@ agent's `ready` event reports the provider's model ids with its default and fast
 for them (`models`, `ClaudeRuntimeClient.models()`): Help and Execute run on the default, search ranking and
 query matching on the fast model, and the benchmark offers the list.
 
+**Claude's thinking.** Hermes sends Claude's signed thinking back only to hosts that can check Anthropic's
+signatures (Hermes' `agent/anthropic_thinking_policy.py`): a URL that contains `anthropic.com`, Bedrock's
+`bedrock-runtime` hosts, Vertex AI, and the `/anthropic` routes of Azure's `services.ai.azure` and
+`openai.azure` hosts, so the Anthropic, Bedrock and Azure providers, and a custom endpoint at one of those
+hosts. There Claude sees its thinking from every earlier turn when its model id contains `claude` (each
+provider's own ids do), and otherwise from the turn's own tool calls only. Everywhere else, so on OpenRouter,
+on Databricks and at a custom endpoint on another host, Hermes removes Claude's thinking from every earlier
+message, the turn's own tool calls included: the requests stay valid, but Claude does not see its earlier
+reasoning, and no Hermes setting changes that.
+
 Each provider's specifics follow in a subsection of its own. A provider is a `Provider` subclass
 (`providers/base.py`) in a module of `providers/`, which registers it under its `name`.
 
@@ -684,11 +696,11 @@ that does not start with `sk-or-`. Watch out for:
   longest possible answer, 128,000 output tokens ($1.28 on Sonnet 5.5, $6.40 on Fable 5.1 or GPT-6 Astra).
 - Attribution: requests name Datagrok as the app (`HTTP-Referer: https://datagrok.ai`, `X-Title: Datagrok`)
   instead of Hermes, so OpenRouter counts the usage toward Datagrok in its public app rankings.
+- Claude's thinking: OpenRouter is not a host Hermes sends Claude's signed thinking back to, so Claude does
+  not see its earlier reasoning here (see **Claude's thinking** above).
 - Not verified with a live key: Hermes names Claude by Anthropic's own id on the Messages API
   (`claude-sonnet-5-5`); the request patch puts OpenRouter's id back, but the compression call goes out as
-  Hermes builds it, relying on OpenRouter to map Anthropic's ids. OpenRouter says that GPT-6.1 Sol and
-  GPT-6 Astra, which always reason, reject the effort `none` that turns without thinking send (bash and
-  prompt-less turns), so prefer the other GPT models for `model` and `fastModel`.
+  Hermes builds it, relying on OpenRouter to map Anthropic's ids.
 
 #### OpenAI
 
@@ -777,8 +789,10 @@ What to watch out for:
   `aws_review`.
 - GPT's global profiles are not offered from every region (GPT-6 Astra's from 18); elsewhere a turn on them
   ends in Bedrock's error.
-- AWS documents JSON Schema output of GPT-6 Astra, Sol and Luna and of GPT-5.6 for non-streaming calls only, and
-  Hermes streams: structured output on those models is unverified.
+- Structured output on GPT: AWS documents JSON Schema output of GPT-6 Astra, Sol and Luna and of GPT-5.6 for
+  strict, non-streaming calls only, while Grokky streams and asks for non-strict output, then validates the
+  reply and retries (up to five attempts). It is unverified there: a reply that ignores the schema is retried,
+  and a call Bedrock refuses ends the turn in Bedrock's error.
 - Bedrock checks the key itself: one without a Bedrock prefix ends the turn in
   `Invalid API Key format: Must start with pre-defined prefix`, a wrong or revoked one in
   `Authentication failed: Please make sure your API Key is valid.` (403 on Claude's route, 401 on GPT's), and a
@@ -798,8 +812,11 @@ by their Unity Gateway model service names: `system.ai.claude-haiku-5-5` (fast),
 `system.ai.gpt-6-sol`, `system.ai.gpt-6-1-sol`, `system.ai.gpt-6-astra`, `system.ai.gpt-5-6-luna`,
 `system.ai.gpt-5-6-terra` and `system.ai.gpt-5-6-sol`. A serving endpoint of the workspace (a pay-per-token one
 such as `databricks-claude-opus-5-5`, or an external model's) goes in `model` or `fastModel` as
-`<endpoint>=<catalog model>`. An agent refuses a missing key, a key with whitespace or control characters, and a
-`baseUrl` of any other form (a path, a port, a query, Google Cloud's legacy regional URL). Docs:
+`<endpoint>=<catalog model>`. **The default, Claude Sonnet 5.5, takes no images on Databricks**: a turn with
+images on it ends in an error. For images, set `model` to a model that takes them, such as
+`system.ai.claude-opus-5-5` (and `fastModel` to `system.ai.claude-haiku-5-5` to keep quick calls cheap). An
+agent refuses a missing key, a key with whitespace or control characters, and a `baseUrl` of any other form (a
+path, a port, a query, Google Cloud's legacy regional URL). Docs:
 [Anthropic Messages](https://docs.databricks.com/aws/en/machine-learning/model-serving/query-anthropic-messages),
 [OpenAI Responses](https://docs.databricks.com/aws/en/machine-learning/model-serving/query-openai-responses),
 [supported models](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/supported-models).
@@ -807,14 +824,11 @@ Checked against a test stub and request probes, not yet against a live workspace
 
 - Prices: Databricks bills its own rates; the cost limit prices each call at the catalog's list prices, an
   approximation.
-- Images: Databricks hosts Claude Sonnet 5.5 for text only, so a turn with images on it ends in an error.
 - Endpoint names: Hermes picks Claude's thinking parameters by the model name. Name a Claude endpoint after its
   model (containing `claude-sonnet-5-5`, say); under any other name, turns that ask for reasoning get the older
   parameters (`budget_tokens`, `temperature`), which Claude 5.x rejects.
-- Claude's thinking: Hermes sends Claude's signed thinking back only to the Claude hosts it knows (Anthropic,
-  Bedrock, Vertex AI, Azure AI Foundry), so here it removes Claude's thinking from the earlier messages, the
-  turn's own tool calls included. The requests stay valid, but Claude does not see its earlier reasoning; no
-  Hermes setting changes that.
+- Claude's thinking: a Databricks workspace is not a host Hermes sends Claude's signed thinking back to, so
+  Claude does not see its earlier reasoning here, not even within a turn (see **Claude's thinking** above).
 - GPT: Databricks documents `store` as unsupported on the Responses route for the models it hosts (a 400 when
   set), while Hermes sends `store: false` on every Responses request; whether Databricks takes `false` is not
   verified yet. Each call resends the history with GPT's encrypted reasoning (`include`), so the reasoning
@@ -856,6 +870,9 @@ What to watch out for:
   (`gw-sonnet`) gets the legacy `thinking.type: enabled`, which Claude 5 models refuse with a 400: Hermes
   repeats the call without it, once per session, and the turn's effort is lost. Name Claude models by an id
   that contains the catalog name (`claude-sonnet-5-5`, `corp-claude-sonnet-5-5`).
+- Claude's thinking: Hermes sends it back only to the hosts that check Anthropic's signatures (see **Claude's
+  thinking** above); at any other gateway host Claude does not see its earlier reasoning, not even within a
+  turn.
 - Compatibility layers drop or refuse what they do not support. Anthropic's OpenAI-compatible API
   (`https://api.anthropic.com/v1`, `openai-chat-completions`) answers, calls tools and reads images, but
   refuses the non-strict `response_format` the runtime sends ("API Error: 400

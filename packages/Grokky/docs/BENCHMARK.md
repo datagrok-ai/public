@@ -30,10 +30,10 @@ Per turn it records:
 **Accuracy** is hybrid (chosen to keep authoring effort low):
 - **Deterministic** — most viewer/analysis/codegen prompts carry a JS `assert` checked against the
   live workspace after the turn. Reproducible, zero judge cost.
-- **LLM-judge** — free-text answers (Help Q&A, "what's the average…") are graded by a **Haiku**
-  call against a short `rubric`, returning pass/score/reason. Every rep that produced text is
-  judged and the verdict is the majority, with a score floor — judging one rep while timing three
-  let the same defect flip pass/fail between runs.
+- **LLM-judge** — free-text answers (Help Q&A, "what's the average…") are graded by a call on the
+  runtime's **fast model** (by default Haiku on Anthropic) against a short `rubric`, returning
+  pass/score/reason. Every rep that produced text is judged and the verdict is the majority, with a
+  score floor — judging one rep while timing three let the same defect flip pass/fail between runs.
 
 ### Assertion policy — assert what was asked for
 
