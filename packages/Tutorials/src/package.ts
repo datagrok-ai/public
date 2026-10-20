@@ -32,18 +32,7 @@ export class PackageFunctions {
   static trackOverview() : void {
 
     const tutorialRunners = tracks.map((track) => new TutorialRunner(track));
-    const root = ui.div([
-      ...tutorialRunners.map((runner) => runner.root),
-      ui.panel([], {id: 'tutorial-child-node', style: {paddingTop: '10px'}}),
-    ], 'tutorials-root');
-
-    const existingTutorials = document.querySelector('.tutorials-root') as HTMLElement;
-    if (existingTutorials) {
-      const existingDock = grok.shell.dockManager.findNode(existingTutorials);
-      if (existingDock)
-        grok.shell.dockManager.close(existingDock);
-    }
-    grok.shell.dockManager.dock(root, DG.DOCK_TYPE.LEFT, null, 'Tutorials', 0.22);
+    TutorialRunner.dock(tutorialRunners.map((runner) => runner.root));
     setPath(window.location.pathname, tutorialRunners);
   }
 
