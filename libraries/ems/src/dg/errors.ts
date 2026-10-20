@@ -13,9 +13,9 @@ import {DgDomainBackend} from './backend.js';
 /** How both backends word the veto on restoring a child whose parent is still deleted
  * (the server's `_checkParentsLive`, the memory backend's `restore` arm): a column and the table
  * it points at. Matched
- * by its shape wherever it stands, whatever the code says: over the platform backend the server's
- * `restrict` reaches this as the session's refusal text ("Cannot save: …"), whose code is
- * `'refused'` — the sentence is the only thing both paths share. */
+ * by its shape wherever it stands, whatever the code says. Over the platform backend the js-api
+ * editor words the server's `restrict` itself (`DomainFrameEditor.restrictRefusal`), and that
+ * sentence is what its balloon and the status line say. */
 const RESTRICT_PARENT = /Column "(.+?)" references a deleted row in "(.+?)"/;
 
 export class DomainErrors {
