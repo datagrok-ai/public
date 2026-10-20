@@ -710,6 +710,41 @@ ChatGPT or Codex login, or a workload identity token, which lasts at most an hou
 - A 401 hint names `apiKey` and `baseUrl`: a project with data residency must be called at its region's
   host.
 
+#### Azure
+
+`provider` `Azure`; `apiKey` a key of the resource (in the Foundry portal, a deployment's Details tab);
+`baseUrl` the resource without a path: `https://<resource>.services.ai.azure.com` for a Microsoft Foundry
+resource, which serves Claude and GPT, or `https://<resource>.openai.azure.com` for an Azure OpenAI resource,
+GPT only; `model` (required) and `fastModel` the deployments to use, each as `<deployment>=<catalog model>`,
+or as the deployment name alone when that is a catalog model id, as Azure names a deployment by default
+(`claude-sonnet-5-5`, `gpt-6-sol`). The provider offers only these deployments; without `fastModel` the
+default model is also the fast one. A Claude deployment's name must contain its model id and no dot
+(`claude-opus-5-5-eu=claude-opus-5-5`): Hermes picks a Claude request's thinking and sampling settings by the
+model name, so under another name Opus 5.5 and Fable 5.1 would get thinking with a token budget, which they
+refuse, and it turns the dots of a `claude-…` name into hyphens. Of the catalog's models Azure deploys Claude
+Opus, Sonnet and Haiku 5.5 and, in preview on Anthropic's infrastructure, Fable 5.1; GPT 6.1 Sol, 6 Astra,
+Sol and Luna, and 5.6 Sol, Terra and Luna
+([Claude in Foundry](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-claude),
+[models sold by Azure](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure)).
+
+Claude is called through the Messages API at `<baseUrl>/anthropic/v1/messages` with the key in `x-api-key`;
+GPT through the Responses API of the
+[v1 API](https://learn.microsoft.com/en-us/azure/foundry/openai/api-version-lifecycle) at
+`<baseUrl>/openai/v1/responses`, without `api-version`, with the key as Bearer: OpenAI's client sends it so,
+as in Microsoft's v1 examples with a resource key. Hermes would send a key to any `azure.com` Anthropic
+address as Bearer, which Azure documents for Entra ID tokens only; `hermes.new_agent` turns Hermes' list of
+such hosts off, so a string key always goes in `x-api-key` and only a callable one as Bearer. To Azure's
+hosts Hermes also adds `api-version=2025-04-15` and the 1M-context beta to Claude calls, and replays less
+encrypted reasoning on GPT calls; a stub sees this only when it answers as the resource
+(`TEST_UPSTREAM=https://<resource>.services.ai.azure.com:<port>`).
+
+An agent refuses a missing key or one with whitespace or control characters, a `baseUrl` of any other form
+(a path, a port, another host or cloud, http), a Claude deployment on an `openai.azure.com` resource or under
+another name, a missing `model`, and a deployment mapped to a model outside the catalog. A 401 adds a hint
+to check `apiKey`; a 404, Azure's answer to an unknown deployment, one to check `baseUrl`, `model` and
+`fastModel`. Microsoft Entra ID sign-in is not supported yet, so a resource with key access turned off
+refuses every call.
+
 #### Bedrock
 
 `provider` `Bedrock`; `apiKey` an Amazon Bedrock API key; `region` the AWS commercial region the key was
