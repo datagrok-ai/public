@@ -1,9 +1,10 @@
-/* The seven findings of the phase-1 external review, reproduced against the phase-2 code. A `todo`
+/* The findings of the phase-1 external review, reproduced against the phase-2 code, and later
+   regressions that need the real js-api (the restore veto under a trashed parent). A `todo`
    test is one that FAILS today (the finding stands) — it asserts the behaviour the fix would give,
    and node reports it without failing the suite; a plain test is one that PASSES, recording what
    the code actually does where the review asked a question or got the shape wrong.
 
-   Findings 3 and 5 run the REAL compiled js-api (`domains-editor.js`, `domains-session.js`) through
+   Findings 3 and 5 and the restore veto run the REAL compiled js-api (`domains-editor.js`, `domains-session.js`) through
    a resolve hook: its ESM is webpack-shaped (extensionless relative imports, CSS imports), which
    node cannot load on its own. */
 

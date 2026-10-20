@@ -12,10 +12,9 @@ import {DgDomainBackend} from './backend.js';
 
 /** How both backends word the veto on restoring a child whose parent is still deleted
  * (the server's `_checkParentsLive`, the memory backend's `restore` arm): a column and the table
- * it points at. Matched
- * by its shape wherever it stands, whatever the code says. Over the platform backend the js-api
- * editor words the server's `restrict` itself (`DomainFrameEditor.restrictRefusal`), and that
- * sentence is what its balloon and the status line say. */
+ * it points at, matched by its shape wherever it stands, whatever the code says. An immediate
+ * `DomainTable.restore` throws it as is on either backend; over the platform a staged restore is
+ * worded by the js-api editor instead (`DomainFrameEditor.restrictRefusal`). */
 const RESTRICT_PARENT = /Column "(.+?)" references a deleted row in "(.+?)"/;
 
 export class DomainErrors {

@@ -587,7 +587,7 @@ scoped('a vetoed restore is worded as a restore: the row, and what to bring back
   await flush();
   assert.equal(document.body.querySelector('.u2-notify-error')?.textContent,
     'Cannot restore "Aspirin": its project was deleted too. Restore the project first.');
-  // over the platform the session hands the sentence on under its own code: the shape decides
+  // whatever code carries it and whatever leads it, the shape decides
   assert.equal(DomainErrors.message({code: 'refused',
     message: 'Cannot save: Column "project_id" references a deleted row in "project"'}, trash),
   'Cannot restore "Aspirin": its project was deleted too. Restore the project first.');
