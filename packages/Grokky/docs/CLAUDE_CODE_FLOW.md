@@ -634,10 +634,11 @@ names to the catalog model it runs. Claude is called in Anthropic's Messages for
 Responses format, unless a provider says otherwise. A turn runs only on one of the provider's models: the
 browser names one or none, and any other model ends the turn with an error, so the cost limit always has a
 price. The agent prices every model call, compression included, at its catalog model's rates; Hermes gets
-each model's context window and image input, and a turn with images on a model without image input ends
-with an error. The agent's `ready` event reports the provider's model ids with its default and fast model,
-and the browser asks for them (`models`, `ClaudeRuntimeClient.models()`): Help and Execute run on the
-default, search ranking and query matching on the fast model, and the benchmark offers the list.
+each model's context window and image input (the catalog's, unless the provider hosts the model for text
+only: `Provider.images`), and a turn with images on a model without image input ends with an error. The
+agent's `ready` event reports the provider's model ids with its default and fast model, and the browser asks
+for them (`models`, `ClaudeRuntimeClient.models()`): Help and Execute run on the default, search ranking and
+query matching on the fast model, and the benchmark offers the list.
 
 Each provider's specifics follow in a subsection of its own. A provider is a `Provider` subclass
 (`providers/base.py`) in a module of `providers/`, which registers it under its `name`.
@@ -654,6 +655,44 @@ applications, such as Claude Code, never in a third-party product
 ([Claude Code legal and compliance](https://code.claude.com/docs/en/legal-and-compliance#authentication-and-credential-use)).
 The check applies to whatever key goes to `api.anthropic.com` (`Provider.refuse_subscription_token`), and
 only there: other hosts take JWTs (Entra ID, Databricks OAuth).
+
+#### Databricks
+
+`provider` `Databricks`; `apiKey` a Databricks personal access token (`dapi…`) of a user or service principal
+that may query the models (an OAuth access token works too, but lasts only about an hour); `baseUrl` the
+workspace URL, without a path: `https://<workspace>.cloud.databricks.com` (AWS),
+`https://adb-<id>.<n>.azuredatabricks.net` (Azure) or `https://<id>.<n>.gcp.databricks.com` (Google Cloud).
+Hermes calls the workspace's AI Gateway with the token as Bearer: Claude in the Messages format at
+`/ai-gateway/anthropic/v1/messages`, GPT in the Responses format at `/ai-gateway/openai/v1/responses`. Models,
+by their Unity Gateway model service names: `system.ai.claude-haiku-5-5` (fast), `system.ai.claude-sonnet-5-5`
+(default), `system.ai.claude-opus-5-5`, `system.ai.claude-fable-5-1`, `system.ai.gpt-6-luna`,
+`system.ai.gpt-6-sol`, `system.ai.gpt-6-1-sol`, `system.ai.gpt-6-astra`, `system.ai.gpt-5-6-luna`,
+`system.ai.gpt-5-6-terra` and `system.ai.gpt-5-6-sol`. A serving endpoint of the workspace (a pay-per-token one
+such as `databricks-claude-opus-5-5`, or an external model's) goes in `model` or `fastModel` as
+`<endpoint>=<catalog model>`. An agent refuses a missing key, a key with whitespace or control characters, and a
+`baseUrl` of any other form (a path, a port, a query, Google Cloud's legacy regional URL). Docs:
+[Anthropic Messages](https://docs.databricks.com/aws/en/machine-learning/model-serving/query-anthropic-messages),
+[OpenAI Responses](https://docs.databricks.com/aws/en/machine-learning/model-serving/query-openai-responses),
+[supported models](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/supported-models).
+Checked against a test stub and request probes, not yet against a live workspace. Watch out for:
+
+- Prices: Databricks bills its own rates; the cost limit prices each call at the catalog's list prices, an
+  approximation.
+- Images: Databricks hosts Claude Sonnet 5.5 for text only, so a turn with images on it ends in an error.
+- Endpoint names: Hermes picks Claude's thinking parameters by the model name. Name a Claude endpoint after its
+  model (containing `claude-sonnet-5-5`, say); under any other name, turns that ask for reasoning get the older
+  parameters (`budget_tokens`, `temperature`), which Claude 5.x rejects.
+- Claude's thinking: Hermes sends Claude's signed thinking back only to the Claude hosts it knows (Anthropic,
+  Bedrock, Vertex AI, Azure AI Foundry), so here it removes Claude's thinking from the earlier messages, the
+  turn's own tool calls included. The requests stay valid, but Claude does not see its earlier reasoning; no
+  Hermes setting changes that.
+- GPT: Databricks documents `store` as unsupported on the Responses route for the models it hosts (a 400 when
+  set), while Hermes sends `store: false` on every Responses request; whether Databricks takes `false` is not
+  verified yet. Each call resends the history with GPT's encrypted reasoning (`include`), so the reasoning
+  carries across a turn's tool calls.
+- Azure Databricks serves GPT through Databricks' ADI Services, which an admin may have to set up first.
+- Structured output: Databricks documents `output_config.format` for Claude Opus, Sonnet and Haiku 5.5, not
+  for Fable 5.1.
 
 ### Build and run
 
