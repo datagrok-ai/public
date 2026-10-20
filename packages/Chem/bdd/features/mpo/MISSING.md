@@ -41,13 +41,7 @@ written with the existing steps only: no library, binding or code change.
 5. **OK's calculation.** A step that waits for the `Chem:mpoCalculate` call OK makes and fails if it threw.
    OK's errors are caught and shown as a balloon (`analysis/mpo.ts`, `runMpoCalculation`); the features claim
    the dialog closed and no error balloon, while the preview writes the same column.
-6. **A bound reaching past the end of the curve** — a question, asked in
-   [public#4291](https://github.com/datagrok-ai/public/issues/4291#issuecomment-6272160108). An exact value
-   outside the curve scores 0, while a bound keeps the curve's end value: on ADME Test's Lipophilicity
-   (curve ending at 5 → 0.5) an exact `6` scores 0 and `>6` scores 0.5 with every Score as option. The
-   features do not depend on the answer: Caco2's curve is 0 at both ends, and the `>10` row of the flat-curve
-   scenario is not claimed.
-7. **API tests** (statistics `mapColumnDesirability` / `MpoCalculator`, Chem `mpoScoreByProfile`); none
+6. **API tests** (statistics `mapColumnDesirability` / `MpoCalculator`, Chem `mpoScoreByProfile`); none
    exist yet:
    - the three Score as options for `<x` and `>x` on rising, falling and peaked curves; a bound inside a flat
      part (the same in every option), a bound wholly outside the curve, an inverted curve;

@@ -16,8 +16,8 @@ Feature: MPO scores a qualified-number property by the Score as option of its cu
   "<-9" lies wholly left of the curve and scores 0 with every option; the exact -6 scores 1. Least
   favorable gives 0.71429, 0.71429, 1.00000, 0.71429; Limit value 0.85714 for both bounds; Most
   favorable 1.00000 for "<-5" and 0.85714 for ">-5". The empty Caco2 of row 5 leaves its score empty
-  (Exclude row, the default for a missing value). Both ends of the Caco2 curve are 0, so these numbers
-  hold whether the values a bound allows beyond the curve count as its end value or as 0. The full
+  (Exclude row, the default for a missing value). A value beyond the ends of a curve scores 0, an exact
+  one and a bound alike (the answer on public#4291); both ends of the Caco2 curve are 0 anyway. The full
   matrix of the three options, a log10 curve, an inverted one and MPO Score by Profile are asked for as
   API tests of the statistics library and Chem (none exist yet); this feature claims the gestures. The
   score read after OK is the one OK computed: the dialog has closed, which it does once the calculation
@@ -30,6 +30,11 @@ Feature: MPO scores a qualified-number property by the Score as option of its cu
   The default flat curve of a new profile starts at the qnum column's minimum, so the row holding the
   smallest exact value sits on the curve's edge and scores like the rest (it scored 0 before the fix of
   the comment on public#4291).
+
+  The Lipophilicity curve of ADME Test ends at 5 with 0.5, so a row of Caco2 -6 (1) and Solubility 0 (1)
+  scores (0.8 + 1) / 2.8 = 0.64286 when its Lipophilicity is beyond 5, and 1.00000 at Lipophilicity 2.
+  Until the fix agreed on public#4291 the bound ">6" keeps the curve's end value 0.5 and its row scores
+  0.82143, while the exact 6 already scores 0.
 
   The profiles a scenario saves are deleted when it ends, together with any other profile the user
   saved meanwhile.
@@ -205,3 +210,21 @@ Feature: MPO scores a qualified-number property by the Score as option of its cu
     And the "MPO BDD MPO min {run}" cell of row 2 should be displayed as "0.50000"
     And the "MPO BDD MPO min {run}" cell of row 4 should be displayed as "0.50000"
     And the "MPO BDD MPO min {run}" cell of row 1 should be displayed as "0.50000"
+
+  @known-failure:230
+  Scenario: A bound wholly past the end of the curve scores 0, like an exact value there
+    Given user opens a table "qnum past the curve" with:
+      | smiles   | Caco2 | Lipophilicity | Solubility |
+      | c1ccccc1 | -6    | 6             | 0          |
+      | CCO      | -6    | >6            | 0          |
+      | c1ccncc1 | -6    | 2             | 0          |
+    Then "Lipophilicity" column should have type "qnum"
+    When user picks "Chem > Calculate > MPO Score..." from the top menu
+    And user selects "✓ ADME Test" in Profile input in "MPO Score" dialog
+    And user clicks on OK button in "MPO Score" dialog
+    Then the "MPO Score" dialog should close
+    And no error or warning balloon should have been shown
+    And a new column "MPO ADME Test" should have been added
+    And the "MPO ADME Test" cell of row 3 should be displayed as "1.00000"
+    And the "MPO ADME Test" cell of row 1 should be displayed as "0.64286"
+    And the "MPO ADME Test" cell of row 2 should be displayed as "0.64286"
