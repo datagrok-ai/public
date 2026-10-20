@@ -19,7 +19,7 @@ const CSS = `
 .u2-card.pp-portfolio .u2-card-title { font-size: 14px; font-weight: 600; white-space: normal; }
 .u2-card.pp-portfolio .u2-card-header { align-items: flex-start; }
 .pp-portfolio:hover, .pp-card:hover { background: var(--u2-hover, rgba(0,0,0,.04)); }
-.pp-portfolio.pp-selected, .pp-card.pp-selected { border-color: var(--u2-accent, #2083d5); box-shadow: 0 0 0 1px var(--u2-accent, #2083d5); }
+.pp-portfolio.pp-selected, .pp-tile.pp-selected { border-color: var(--u2-accent, #2083d5); box-shadow: 0 0 0 1px var(--u2-accent, #2083d5); }
 .pp-search-box { gap: 4px; margin-bottom: 6px; }
 .pp-search-results, .pp-recent { gap: 3px; }
 .pp-search-hit { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--u2-border, #e0e0e0); cursor: pointer; gap: 1px; }
@@ -105,11 +105,10 @@ const CSS = `
 /* u2 pins its editors to the platform's fixed widths; in the package's forms and filter rows they take the room there is */
 .pp-save-run > .u2-input-root:not([data-u2='bool-input']) { width: 100%; }
 /* basis 0: a long option (a run's description) must not push the editor under its label */
-.pp-save-run > .u2-input-root:not([data-u2='bool-input']) > .u2-input-box,
-.pp-fill > .u2-input-root > .u2-input-box { flex: 1 1 0; min-width: 0; }
+.pp-save-run > .u2-input-root:not([data-u2='bool-input']) > .u2-input-box { flex: 1 1 0; min-width: 0; }
 /* as specific as u2's own text-box pin (.u2-input-root[data-u2='text-input'] > .u2-input-box > input.u2-input-editor) */
-.pp-save-run > .u2-input-root[data-u2]:not([data-u2='bool-input']) > .u2-input-box > .u2-input-editor,
-.pp-fill > .u2-input-root[data-u2] > .u2-input-box > .u2-input-editor { width: 100%; box-sizing: border-box; }
+.pp-save-run > .u2-input-root[data-u2]:not([data-u2='bool-input']) > .u2-input-box > .u2-input-editor { width: 100%; box-sizing: border-box; }
+/* u2's fill stretches the editor inside its input; in a row, the input itself takes the room */
 .pp-fill > .u2-input-root { flex: 1 1 0; min-width: 0; }
 [data-u2-name="decision-results"] > .pp-unit { align-items: flex-start; }
 .pp-checklist > .u2-input-root { padding: 0; }
@@ -117,9 +116,6 @@ const CSS = `
    and the rationale box, as wide as the gate panel */
 .u2-input-root.pp-grow { flex: 1 1 0; min-width: 120px; padding: 0; }
 .u2-input-root.pp-wide { width: 100%; padding: 0; }
-.u2-input-root.pp-grow > .u2-input-box, .u2-input-root.pp-wide > .u2-input-box { flex: 1 1 0; min-width: 0; }
-.u2-input-root.pp-grow[data-u2] > .u2-input-box > .u2-input-editor,
-.u2-input-root.pp-wide[data-u2] > .u2-input-box > .u2-input-editor { width: 100%; box-sizing: border-box; }
 /* the evidence ticks read as a checklist: box first, so the boxes line up, and a long label wraps in a narrow panel */
 .pp-evidence-picker > .u2-input-root { padding: 0; align-items: center; }
 .pp-evidence-picker > .u2-input-root > .u2-input-box { order: -1; margin-right: 4px; }

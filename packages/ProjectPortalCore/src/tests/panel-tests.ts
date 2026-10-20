@@ -99,7 +99,7 @@ category('Portal: the board chooses, the program page works, the context panel a
     const o = grok.shell.o;
     expect(o?.id ?? o?.dataset?.u2Name, o?.id ? kin1.id : 'program-panel', 'the program\'s record (or its panel) is in the context panel');
     expect(shown('stage-board') && !shown('program-page'), true, 'the board stays');
-    expect(q('program-exs-kin1')!.classList.contains('pp-selected'), true);
+    expect(q('program-exs-kin1')!.classList.contains('u2-card-selected'), true);
     await v.showProgram('EX-SMD', kin1.id);
     expect(!shown('stage-board') && shown('program-page'), true, 'the page takes the board\'s place');
     expect(v.path.value.endsWith('/EX-SMD/EXS-KIN1'), true);

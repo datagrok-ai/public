@@ -1,7 +1,7 @@
 /** The views' u2 building blocks: a dialog with named, busy-guarded action buttons, labelled
  * inputs that carry a data-u2-name, a table whose rows can be named, and the discussion composer.
- * They fill the gaps u2's Dialog and BasicTable leave for this package (no getButton, no busy state,
- * no close hook, no row hook) so each view does not repeat the workaround. */
+ * u2's Dialog keeps its busy state and error row for OK alone; the package's dialogs have several
+ * actions, each of which holds the others while it runs, so the guard stays here. */
 import * as grok from 'datagrok-api/grok';
 import {BasicTable, BoolInput, ChoiceInput, Control, Dialog, divH, divV, link, signal, span, TextArea,
   TextInput} from '@datagrok-libraries/u2';
@@ -107,24 +107,15 @@ export function openDialog(opts: DialogOptions, build: () => DialogParts): Porta
   const parts = dlg.runInScope(build);
   for (const c of Array.isArray(parts.content) ? parts.content : [parts.content])
     dlg.add(c);
-  const bar = dlg.root.querySelector('.u2-dialog-buttons')!;
   for (const b of parts.buttons ?? []) {
     dlg.addButton(b.label, () => void press(b.name), {primary: b.primary});
-    // addButton answers the dialog, not the button: the one just added is the last in the bar
-    const el = named(bar.lastElementChild as HTMLButtonElement, b.name);
+    const el = named(dlg.getButton(b.label)!, b.name);
     buttons.set(b.name, el);
     dlg.effect(() => el.disabled = busy.value || (b.enabled ? !b.enabled.value : false));
   }
-  // u2's Dialog has no close hook: follow isOpen, and dispose once it goes from open to closed
-  let shown = false;
-  dlg.effect(() => {
-    if (dlg.isOpen.value)
-      shown = true;
-    else if (shown) {
-      opts.onClose?.();
-      setTimeout(() => dlg.dispose());
-    }
-  });
+  // closing disposes the dialog and what it holds
+  if (opts.onClose)
+    dlg.onClose(opts.onClose);
   dlg.show({width: opts.width, height: opts.height});
   return Object.assign(dlg, {press});
 }
@@ -132,18 +123,13 @@ export function openDialog(opts: DialogOptions, build: () => DialogParts): Porta
 /** A single-line text input; [name] lands on the input's root, as the old field wrappers had it. */
 export const text = (name: string, label?: string,
   o: {placeholder?: string, value?: string, search?: boolean, inline?: boolean, tooltipText?: string,
-    onChanged?: (v: string) => void} = {}): TextInput =>
+    fill?: boolean, onChanged?: (v: string) => void} = {}): TextInput =>
   new TextInput({name, label, ...o});
 
 /** A multi-line text input, [rows] lines tall to start with; it grows with the text. */
-export function area(name: string, label?: string,
-  o: {placeholder?: string, value?: string, rows?: number} = {}): TextArea {
-  const {rows, ...rest} = o;
-  const input = new TextArea({name, label, autoGrow: true, ...rest});
-  if (rows)
-    input.root.querySelector('textarea')!.rows = rows;
-  return input;
-}
+export const area = (name: string, label?: string,
+  o: {placeholder?: string, value?: string, rows?: number, fill?: boolean} = {}): TextArea =>
+  new TextArea({name, label, autoGrow: true, ...o});
 
 /** A native select over {code, name} options. With [blank], an option of that text stands for no
  * choice (value ''); without it, the value starts at [value] or the first option. Read the value
@@ -170,26 +156,24 @@ export const check = (name: string, label?: string, value = false,
   o: {enabled?: boolean, tooltipText?: string, onChanged?: (v: boolean) => void} = {}): BoolInput =>
   new BoolInput({name, label, value, ...o});
 
-/** A u2 BasicTable whose rows can be named, classed and titled, which BasicTable cannot do itself.
- * Its cells wrap (styles.ts), as the hand-built tables did, so a wide table fits its dialog.
- * The rows are fixed: a table over changing items needs a fresh call. */
+/** A u2 BasicTable whose rows can be named, classed and titled. Its cells wrap (styles.ts), as the
+ * hand-built tables did, so a wide table fits its dialog. */
 export function table<T>(name: string, columns: TableColumn<T>[], items: T[],
   rows: {name?: (item: T, i: number) => string | null, cls?: (item: T, i: number) => string | null,
     title?: (item: T, i: number) => string | null} = {}): BasicTable<T> {
-  const t = new BasicTable<T>({columns, items});
-  t.root.dataset.u2Name = name;
-  t.root.classList.add('pp-table');
-  t.root.querySelectorAll<HTMLElement>('tr.u2-table-row').forEach((tr, i) => {
-    const n = rows.name?.(items[i], i);
+  const t = new BasicTable<T>({columns, items, row: (item, i, tr) => {
+    const n = rows.name?.(item, i);
     if (n)
       tr.dataset.u2Name = n;
-    const c = rows.cls?.(items[i], i);
+    const c = rows.cls?.(item, i);
     if (c)
       tr.classList.add(...c.split(' '));
-    const tip = rows.title?.(items[i], i);
+    const tip = rows.title?.(item, i);
     if (tip)
       tr.title = tip;
-  });
+  }});
+  t.root.dataset.u2Name = name;
+  t.root.classList.add('pp-table');
   return t;
 }
 
@@ -219,12 +203,14 @@ export function composer(opts: {name: string, placeholder: string, onSend: (mark
  * classes (pp-gap ...); [stop] keeps the click from the row it sits in, which opens something else. */
 export function linkTo(text: string, name: string, onClick: () => void,
   o: {cls?: string, title?: string, stop?: boolean} = {}): HTMLAnchorElement {
-  const el = named(link(text, onClick), name);
+  const el = named(link(text, (e) => {
+    if (o.stop)
+      e.stopPropagation();
+    onClick();
+  }), name);
   if (o.cls)
     el.classList.add(...o.cls.split(' '));
   if (o.title)
     el.title = o.title;
-  if (o.stop)
-    el.addEventListener('click', (e) => e.stopPropagation());
   return el;
 }

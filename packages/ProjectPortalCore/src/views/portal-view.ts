@@ -5,7 +5,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {badge, button, Card, Control, divV, divH, Scope, signal, span} from '@datagrok-libraries/u2';
-import type {BadgeVariant} from '@datagrok-libraries/u2';
+import type {BadgeVariant, Signal} from '@datagrok-libraries/u2';
 import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
 import {portalDb, PortfolioRow, ProgramRow, StageModelRow, StageRow, StageTransitionRow} from '../generated/db';
 import {ContextCriterion, programContext, ProgramContext, programData, readinessFor, setCriterion, stagesOf,
@@ -137,7 +137,7 @@ export class PortalView {
   private readonly detail = named(divV([], 'pp-detail'), 'program-detail');
   private readonly page = named(divV([this.detail], 'pp-program-page'), 'program-page');
   /** Find a program across portfolios, and the ones opened last: the top of the landing column. */
-  private readonly searchInput = text('program-search-input', undefined, {search: true,
+  private readonly searchInput = text('program-search-input', undefined, {search: true, fill: true,
     placeholder: 'Find a program: code, name, alias',
     tooltipText: 'Searches every portfolio you can see, by code, name, target or a registry alias'});
   private readonly searchResults = named(divV([], 'pp-search-results'), 'search-results');
@@ -154,6 +154,8 @@ export class PortalView {
   private stages: StageRow[] = [];
   private programs: ProgramRow[] = [];
   private selected: string | null = null;
+  /** The board cards' selected state, by program. */
+  private readonly cardSelection = new Map<string, Signal<boolean>>();
   /** The stage whose criteria the gate panel shows; null = the program's next stage. */
   private viewedStage: string | null = null;
   /** Where the last run saved from this page went, by program id. */
@@ -474,7 +476,11 @@ export class PortalView {
   }
 
   private card(x: ProgramRow): HTMLElement {
-    const card = new Card({title: x.name, onClick: () => void this.selectProgram(x.id).catch(this.failed), children: [
+    // the open program is marked with u2's selected state, which [markSelected] moves; a click selects
+    // through [selectProgram], so the card is not selectable itself
+    const selected = signal(x.id === this.selected);
+    this.cardSelection.set(x.id, selected);
+    const card = new Card({title: x.name, selected, onClick: () => void this.selectProgram(x.id).catch(this.failed), children: [
       divH([
         badge(x.status ?? 'active', {variant: statusVariant[x.status ?? 'active'] ?? 'default'}),
         ...(x.modality ? [span(x.modality, 'pp-muted')] : []),
@@ -482,13 +488,9 @@ export class PortalView {
         ...(pinOf(this.pins, {programId: x.id, spaceId: x.space_id}) ? [named(span('pinned', 'pp-pinned-mark'), `pinned-${slug(x.code)}`)] : []),
       ], 'pp-card-meta'),
     ]});
-    // the open program is marked here, not with u2's selected state: that one only comes with selectable,
-    // where a click toggles it
     card.root.classList.add('pp-card');
     card.root.title = `${x.code}: click for a summary, double-click to open`;
     card.root.addEventListener('dblclick', () => void this.openProgram(x.id).catch(this.failed));
-    if (x.id === this.selected)
-      card.root.classList.add('pp-selected');
     return named(card.root, `program-${slug(x.code)}`);
   }
 
@@ -743,10 +745,8 @@ export class PortalView {
 
   /** Marks [program]'s card on the board, and only it. */
   private markSelected(program: ProgramRow | null): void {
-    for (const el of Array.from(this.board.querySelectorAll('.pp-card')))
-      el.classList.remove('pp-selected');
-    if (program)
-      this.board.querySelector(`[data-u2-name="program-${slug(program.code)}"]`)?.classList.add('pp-selected');
+    for (const [id, selected] of this.cardSelection)
+      selected.value = id === program?.id;
   }
 
   /** A click on a board card: the program's record in the context panel, its card and Open program.
@@ -862,7 +862,7 @@ export class PortalView {
         readiness.score === 0 ? 'error' : 'warning'}),
     ], 'pp-readiness'), 'readiness-score') : null;
 
-    const rationale = area('rationale-input', undefined, {placeholder: 'Rationale', rows: 2});
+    const rationale = area('rationale-input', undefined, {placeholder: 'Rationale', rows: 2, fill: true});
     rationale.root.classList.add('pp-wide');
     const verdict = verdictFor(ctx, 'advance');
     const reasons = named(divV(verdict.reasons.map((r) => span(r, 'pp-reason'))), 'gate-reasons');
@@ -1641,7 +1641,7 @@ export class PortalView {
     rows.push(check('evidence-snapshot', 'Snapshot now', !!this.picked.snapshot, {
       tooltipText: 'Freeze the stage, criteria, selected runs and the program dataset now, before the decision, and attach it',
       onChanged: (on) => this.picked.snapshot = on}).root);
-    const link = text('evidence-link-input', undefined, {placeholder: 'Link or file path to attach'});
+    const link = text('evidence-link-input', undefined, {placeholder: 'Link or file path to attach', fill: true});
     link.root.classList.add('pp-grow');
     const add = named(button('Attach', () => {
       const item = linkEvidence(link.value.value);
@@ -1756,7 +1756,7 @@ export class PortalView {
       [span('None: the portfolio\'s groups decide', 'pp-muted')], 'pp-units'), 'program-roles'));
     if (this.roles.manage) {
       // u2 has a user picker and a one-source entity picker, not one over users and groups: a login or group name
-      const who = text('role-principal-input', undefined, {placeholder: 'Group or user login'});
+      const who = text('role-principal-input', undefined, {placeholder: 'Group or user login', fill: true});
       who.root.classList.add('pp-grow');
       const role = choice('role-choice', undefined, PROGRAM_ROLES.map((r) => ({code: r, name: PROGRAM_ROLE_LABELS[r]})), 'viewer',
         {inline: true});

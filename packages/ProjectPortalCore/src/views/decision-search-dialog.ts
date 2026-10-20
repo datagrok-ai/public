@@ -21,7 +21,7 @@ export async function openDecisionSearchDialog(o: DecisionSearchOptions): Promis
   const q: DecisionQuery = {portfolio: o.current ?? '', withoutSync: true};
   const text = (name: string, placeholder: string, key: 'text' | 'program' | 'gate') => {
     let timer: any = null;
-    const input = textInput(name, undefined, {placeholder, inline: true});
+    const input = textInput(name, undefined, {placeholder, inline: true, fill: true});
     input.effect(() => {
       const v = input.value.value;
       clearTimeout(timer);
