@@ -3,7 +3,8 @@ ARG NODE_IMAGE=node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f122
 
 # Hermes' own package manager builds the venv, as Hermes' Dockerfile does: CPython and uv come from
 # pm/lock.json (sha256-verified) into HERMES_RUNTIME_DIR, which the venv links to, so the path is kept.
-# uv is needed for the build only; the lock pins CPython's unstripped build (2 x 108 MB of debug symbols).
+# uv is needed for the build only. Of the unstripped CPython the lock pins, only libpython is stripped: GNU strip
+# breaks the x86-64 python executable, whose .dynstr lies outside any segment.
 # The sealed venv records Hermes' editable install but not its .pth; hermes_project.pth puts /opt/hermes on
 # the path so the agent imports Hermes from any cwd.
 FROM ${NODE_IMAGE} AS hermes
@@ -19,8 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
       --out /opt/hermes/.venv --sealed --extra anthropic --extra mcp && \
     echo /opt/hermes > "$(/opt/hermes/.venv/bin/python -c 'import site; print(site.getsitepackages()[0])')/hermes_project.pth" && \
     rm -rf "$HERMES_RUNTIME_DIR"/uv-* && \
-    strip --strip-debug "$(readlink -f "$HERMES_RUNTIME_DIR"/python-*/bin/python3)" \
-      "$HERMES_RUNTIME_DIR"/python-*/lib/libpython3.*.so.1.0 && \
+    strip --strip-debug "$HERMES_RUNTIME_DIR"/python-*/lib/libpython3.*.so.1.0 && \
     git rev-parse HEAD > COMMIT && \
     rm -rf .git tests website apps web ui-tui optional-skills && \
     /opt/hermes/.venv/bin/python -c "import run_agent, anthropic, mcp, jsonschema, ruamel.yaml"
