@@ -19,7 +19,8 @@ class Connection(TypedDict):
     provider: str
     api_mode: str
     base_url: str
-    # On the Anthropic Messages API Hermes sends a callable's key as Bearer, a string as x-api-key.
+    # On the Anthropic Messages API Hermes sends a string key as x-api-key (send_keys_by_type) and a callable's as
+    # Bearer, except to api.anthropic.com, which gets a Console key as x-api-key either way.
     api_key: str | Callable[[], str]
 
 
@@ -89,13 +90,17 @@ class PluginContext(Protocol):
     def register_middleware(self, kind: str, callback: Hook) -> object: ...
 
 
+def send_keys_by_type() -> None:
+    """Hermes would send a string key as Bearer to the hosts on its list, Azure's among them, which documents keys in
+    x-api-key or api-key and Bearer for Entra ID: without the list the key's type decides (Connection), on every
+    Anthropic client of the process."""
+    import agent.anthropic_adapter as anthropic_adapter
+    anthropic_adapter._requires_bearer_auth = lambda base_url: False
+
+
 def new_agent(model: str, connection: Connection, session_id: str, store: SessionStore, toolsets: list[str],
               on_delta: Callable[[str | None], None]) -> Agent:
-    import agent.anthropic_adapter as anthropic_adapter
     from run_agent import AIAgent
-    # Hermes would send a string key as Bearer to the hosts on its list, Azure's among them, which documents keys in
-    # x-api-key or api-key and Bearer for Entra ID: the key's type decides (Connection), on every Anthropic client.
-    anthropic_adapter._requires_bearer_auth = lambda base_url: False
     agent: Agent = AIAgent(model=model, **connection, quiet_mode=True, session_id=session_id, session_db=store,
                            enabled_toolsets=toolsets, skip_context_files=True, skip_memory=True,
                            skip_background_review=True, stream_delta_callback=on_delta)

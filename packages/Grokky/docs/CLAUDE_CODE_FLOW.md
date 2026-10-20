@@ -736,8 +736,9 @@ GPT through the Responses API of the
 [v1 API](https://learn.microsoft.com/en-us/azure/foundry/openai/api-version-lifecycle) at
 `<baseUrl>/openai/v1/responses`, without `api-version`, with the key as Bearer: OpenAI's client sends it so,
 as in Microsoft's v1 examples with a resource key. Hermes would send a key to any `azure.com` Anthropic
-address as Bearer, which Azure documents for Entra ID tokens only; `hermes.new_agent` turns Hermes' list of
-such hosts off, so a string key always goes in `x-api-key` and only a callable one as Bearer. To Azure's
+address as Bearer, which Azure documents for Entra ID tokens only; each agent turns Hermes' list of such hosts
+off once at startup (`hermes.send_keys_by_type`), so a string key always goes in `x-api-key` and only a
+callable one as Bearer. To Azure's
 hosts Hermes also adds `api-version=2025-04-15` and the 1M-context beta to Claude calls, and replays less
 encrypted reasoning on GPT calls; a stub sees this only when it answers as the resource
 (`TEST_UPSTREAM=https://<resource>.services.ai.azure.com:<port>`).

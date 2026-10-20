@@ -47,11 +47,9 @@ class Provider(ABC):
         Hermes would pick a provider and a credential itself."""
 
     def api_mode(self, model: str) -> ApiMode:
-        """The request format the model is called in."""
         return FAMILY_API_MODES[models.CATALOG[self.models[model]]['family']]
 
     def images(self, model: str) -> bool:
-        """Whether the model takes image input on this provider."""
         return models.CATALOG[self.models[model]]['images']
 
     def patch_request(self, api_mode: str, request: JsonObject, system_prompt: str,
@@ -70,9 +68,6 @@ class Provider(ABC):
         if reasoning:
             out['reasoning'] = reasoning
         return out
-
-    def refused_request(self, api_mode: str) -> JsonObject:
-        return formats.refused(api_mode)
 
     def error_hint(self, status: int | None) -> str:
         """Added to a failed call's message, e.g. what to check for a rejected key."""

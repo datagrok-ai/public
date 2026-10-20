@@ -46,6 +46,5 @@ class DatabricksProvider(Provider):
         return model not in TEXT_ONLY and super().images(model)
 
     def error_hint(self, status: int | None) -> str:
-        # 401: the token is not valid; 403: its user or service principal may not use the workspace or the model.
         return (' (check the apiKey container credential: a token of this workspace whose user or service principal '
                 'may query the model)') if status in (401, 403) else ''

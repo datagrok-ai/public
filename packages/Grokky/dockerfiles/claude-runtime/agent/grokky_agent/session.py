@@ -7,7 +7,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from . import browser_tools, guard, hermes, models, structured
+from . import browser_tools, formats, guard, hermes, models, structured
 from .models import Usage
 from .protocol import BrowserResultCommand, ContinueCommand, Emit, JsonObject, McpServer, Metrics, TurnCommand
 from .providers import Provider
@@ -226,16 +226,16 @@ class Session:
     def llm_request(self, request: JsonObject | None = None, api_mode: str = '', **_: Any) -> hermes.RequestOverride:
         t = self.turn
         if t is None or request is None:
-            return {'request': self.provider.refused_request(api_mode), 'source': 'grokky'}
+            return {'request': formats.refused(api_mode), 'source': 'grokky'}
         # Hermes also calls the model on its own: after an empty or thinking-only reply, for a summary at its own limit.
         if t.api_calls >= t.max_calls:
             self._stop(t, 'turns')
-            return {'request': self.provider.refused_request(api_mode), 'source': 'grokky'}
+            return {'request': formats.refused(api_mode), 'source': 'grokky'}
         # Hermes sends its own request when this raises, so a patch that fails sends the refusal.
         try:
             patched = self.provider.patch_request(api_mode, request, t.system_prompt, t.schema)
         except Exception:
-            patched = self.provider.refused_request(api_mode)
+            patched = formats.refused(api_mode)
         return {'request': patched, 'source': 'grokky'}
 
     def receive(self, cmd: TurnCommand | ContinueCommand) -> Turn:

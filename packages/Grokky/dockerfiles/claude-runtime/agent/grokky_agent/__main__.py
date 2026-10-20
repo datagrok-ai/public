@@ -54,6 +54,7 @@ def main() -> int:
     if not s.hooks_registered:
         emit({'type': 'fatal', 'message': 'the Grokky plugin did not load'})
         return 1
+    hermes.send_keys_by_type()
     if settings['warm']:
         s.build_agent(provider.default)
     emit({'type': 'ready', 'models': list(provider.models), 'defaultModel': provider.default,

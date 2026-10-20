@@ -1,12 +1,13 @@
 import re
 from typing import ClassVar
 
+from ..formats import ApiMode
 from ..hermes import Connection
 from .base import Credentials, Provider, ProviderError
 
 # The AWS commercial regions: GovCloud has no global inference profiles, and China has a domain of its own.
 REGION = re.compile(r'(af|ap|ca|eu|il|me|mx|sa|us)-[a-z]+-\d{1,2}')
-PATHS ={'anthropic_messages': '/anthropic', 'codex_responses': '/openai/v1'}
+ROUTES: dict[ApiMode, str] = {'anthropic_messages': '/anthropic', 'codex_responses': '/openai/v1'}
 
 
 class BedrockProvider(Provider):
@@ -32,7 +33,7 @@ class BedrockProvider(Provider):
             raise ProviderError('The region container credential must name the AWS commercial region the Bedrock API '
                                 'key was created in, such as us-east-1')
         host = f'https://bedrock-runtime.{region}.amazonaws.com'
-        self._base_urls = {mode: self.endpoint(host + path) for mode, path in PATHS.items()}
+        self._base_urls = {mode: self.endpoint(host + path) for mode, path in ROUTES.items()}
 
     def connection(self, model: str) -> Connection:
         mode = self.api_mode(model)
