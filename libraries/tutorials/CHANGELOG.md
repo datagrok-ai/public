@@ -1,5 +1,9 @@
 # tutorials changelog
 
+## v.next
+
+* Tutorial: A running tutorial shows its current step in a bar docked on top; `showAllSteps()` opens the full pane
+
 ## 1.7.10 (2026-10-19)
 
 * Tutorial: `Tutorial.closeActive()` closes the tutorial in progress, so a tutorial the user leaves no longer keeps running in the background

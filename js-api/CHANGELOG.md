@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#857](https://github.com/datagrok-ai/core/issues/857): Fixed `View.PACKAGES` and `VIEW_TYPE.PACKAGES` to be `'Plugins'`, the platform's plugins view type, and removed `View.BROWSE`, which has no view factory, from `View.ALL_VIEW_TYPES`, so `View.createByType` no longer crashes on them
 * Domains: Added `DomainColumn`; `orderBy` takes it, so an FK path no longer type-checks as a sort key
 * Fixed `ConnectionDataSource.byType` returning a raw Dart object
 * Sketcher: A sketcher in the context panel (a molecule column's Filter pane) no longer makes its drawing the current object: the panel showed the molecule instead of the column, and the pane, the sketcher with it, went at every stroke. Nor does a sketcher out of the page (`Sketcher.isInContextPanel`)

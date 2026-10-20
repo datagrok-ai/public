@@ -24,6 +24,7 @@ import './tests/oligo-linkers-tests';
 import './tests/oligo-cell-editor-tests';
 import './tests/oligo-converters-tests';
 import './tests/pattern-bulk-translate-tests';
+import './tests/translator-app-tests';
 import './tests/translator-tests';
 
 import {OligoToolkitTestPackage} from './tests/utils';

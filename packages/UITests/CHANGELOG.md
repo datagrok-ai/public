@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core-857: Shell: Fixed View.createByType failing for the packages view type
 * Tests: `Viewers` (close, Reset/Set default properties), `View: Events` layout events and `lineChart.api` now add viewers to a freshly added — and therefore active — table view. A view that is not active has a zero-sized dock area, so `DockView.addViewer` queues the viewer instead of docking it: it never reaches `view.viewers`, is missing from `saveLayout()`, and default settings are not applied.
 * Tests: `Viewers: Core Viewers` excludes `Scaffold Tree` — it is a Chem JS viewer, and the JsViewers filter runs before Chem is loaded, so it leaked into the core-viewer list and timed out.
 * Tests: `pca` drives `ML | Analyze | PCA...` through the view ribbon menu (as `cluster` does); `grok.shell.topMenu` is the app-level menu and its ML group has no `Analyze` child.
