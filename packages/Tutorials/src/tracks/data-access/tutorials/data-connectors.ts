@@ -13,7 +13,7 @@ export class DataConnectorsTutorial extends Tutorial {
   get description() {
     return 'Direct connection to data sources and databases using the connector server';
   }
-  get steps() { return 12; }
+  get steps() { return 11; }
 
   get icon() {
     return '💾🔗';

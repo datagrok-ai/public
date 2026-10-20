@@ -77,7 +77,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
   get description() {
     return 'Learn how to model processes defined by ordinary differential equations with Diff Studio';
   }
-  get steps() {return 15;}
+  get steps() {return 14;}
 
   get icon() {
     return '📈🧮';

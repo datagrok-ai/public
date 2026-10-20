@@ -14,7 +14,7 @@ export class ScriptingTutorial extends Tutorial {
   get description() {
     return 'Scripting is an integration mechanism with languages for statistical computing';
   }
-  get steps() { return 11; }
+  get steps() { return 10; }
 
   get icon() {
     return '📜💻';

@@ -5,6 +5,7 @@ import $, { Cash } from 'cash-dom';
 import { filter } from 'rxjs/operators';
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import wu from 'wu';
+import {selectionMade} from './utils';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
 
 
@@ -17,7 +18,7 @@ export class FiltersTutorial extends Tutorial {
       'and visual assessment of column values';
   }
 
-  get steps() { return 18; }
+  get steps() { return 17; }
 
   get icon() {
     return '🔍🎚️';
@@ -95,7 +96,7 @@ export class FiltersTutorial extends Tutorial {
     const rowCountSelect = 'When you click on a row count, the corresponding rows ' +
       'get selected, taking into account the current filter. They are highlighted ' +
       'in orange both in filters and other viewers.';
-    await this.action('Click on a non-empty row count', this.t!.onSelectionChanged, null, rowCountSelect,
+    await this.action('Click on a non-empty row count', selectionMade(this.t!), null, rowCountSelect,
       () => this.t!.selection.copyFrom(this.t!.filter));
 
     await this.action('Filter the dataset to only females of Asian or Black origin',
@@ -136,7 +137,7 @@ export class FiltersTutorial extends Tutorial {
       `either pick bins one by one or drag a rectangle to form a group. If you hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while ` +
       'clicking, you will toggle the bin\'s selection. Note that other filters reflect the proportion ' +
       'of the selected rows.';
-    await this.action('Select one of the histogram bins', this.t!.onSelectionChanged, null, selectionInfo,
+    await this.action('Select one of the histogram bins', selectionMade(this.t!), null, selectionInfo,
       () => this.t!.selection.init((i) => this.t!.get('AGE', i) < 30));
 
     const indicatorsInfo = 'Current and mouse-over records are shown below the histogram ' +

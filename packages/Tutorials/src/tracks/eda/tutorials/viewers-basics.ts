@@ -5,7 +5,7 @@ import { distinctUntilChanged, filter, map, mergeMap, switchMap, takeUntil } fro
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import { from, fromEvent, interval, merge, Observable, Subscription } from 'rxjs';
 import $ from 'cash-dom';
-import { elementClick } from './utils';
+import { elementClick, selectionMade } from './utils';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
 
 export class ViewersTutorial extends Tutorial {
@@ -108,7 +108,7 @@ export class ViewersTutorial extends Tutorial {
       merge(this.t!.onMouseOverRowGroupChanged, this.t!.onMouseOverRowChanged), null, hover);
 
     const selection = 'Select points by dragging a rectangle on a viewer while holding <b>Shift</b>.';
-    await this.action('Select points on the scatter plot', this.t!.onSelectionChanged, null, selection,
+    await this.action('Select points on the scatter plot', selectionMade(this.t!), null, selection,
       () => this.t!.selection.init((i) => this.t!.get('HEIGHT', i) > 180));
 
     const selectionSync = 'Note that the selection is synchronized between ' +
@@ -117,11 +117,11 @@ export class ViewersTutorial extends Tutorial {
       'and grid. The same concept applies to the rest of the viewers, such as a pie chart ' +
       'or histogram. To select multiple data points, click on a segment while holding <b>Shift</b>. ' +
       `To deselect, hold <b>${platformKeyMap['Ctrl'][this.platform]}+Shift</b> while clicking. To invert, hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while clicking.`;
-    await this.action('Select one of the bins on the histogram', this.t!.onSelectionChanged, null, selectionSync,
+    await this.action('Select one of the bins on the histogram', selectionMade(this.t!), null, selectionSync,
       () => this.t!.selection.init((i) => this.t!.get('AGE', i) >= 40 && this.t!.get('AGE', i) < 50));
 
     const sunburstSelect = 'Click a <b>Sunburst</b> segment: every row under that branch is selected and synced to the other viewers.';
-    await this.action('Click a Sunburst segment to select its rows', this.t!.onSelectionChanged, null, sunburstSelect,
+    await this.action('Click a Sunburst segment to select its rows', selectionMade(this.t!), null, sunburstSelect,
       () => this.t!.selection.init((i) => this.t!.get('SEX', i) === 'F'));
 
     const currentRecord = 'Move the mouse over records on the scatter plot and grid, ' +
