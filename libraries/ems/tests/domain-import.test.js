@@ -175,6 +175,21 @@ scoped('the preview is the backend\'s dry run: its verdicts, its counts, its iss
   assert.equal(await running, null);
 });
 
+scoped('an issue names the column by the caption the mapping showed, not the db name', async () => {
+  const memory = backend();
+  const {running} = await opened(memory,
+    frame(['project_id', 'title', 'state'], [{project_id: 'p1', title: 'A', state: 'urgent'}]));
+  await toMapping();
+  named('state').value.value = 'priority';
+  await flush();
+  await toPreview();
+  const issues = document.body.querySelector('.u2-domain-import-issues').textContent;
+  assert.match(issues, /Priority/);
+  assert.doesNotMatch(issues, /priority/, 'the target as the user mapped it');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
 scoped('the dry run is posted once per entry into the step, not per keystroke', async () => {
   const memory = backend();
   const posts = [];
