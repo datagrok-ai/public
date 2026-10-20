@@ -494,7 +494,7 @@ Runtime paths are relative to [`dockerfiles/claude-runtime/`](../dockerfiles/cla
 | [`agent/grokky_agent/hermes.py`](../dockerfiles/claude-runtime/agent/grokky_agent/hermes.py) | Every Hermes API the driver calls, typed |
 | [`agent/grokky_agent/protocol.py`](../dockerfiles/claude-runtime/agent/grokky_agent/protocol.py) | The JSON-lines protocol (`AgentCommand` / `AgentProcessEvent` in `src/types.ts`) |
 | [`agent/grokky_agent/structured.py`](../dockerfiles/claude-runtime/agent/grokky_agent/structured.py) | Output-schema check (`jsonschema`) |
-| [`agent/grokky_agent/providers/`](../dockerfiles/claude-runtime/agent/grokky_agent/providers/) | `Provider` base (model credentials, format per family, test upstream, Hermes model metadata) and one module per provider (`AnthropicProvider`): credential checks, model ids, connection |
+| [`agent/grokky_agent/providers/`](../dockerfiles/claude-runtime/agent/grokky_agent/providers/) | `Provider` base (model credentials, format per family, test upstream, Hermes model metadata) and one module per provider (Anthropic, OpenRouter, OpenAI, Azure, Bedrock, Databricks, Custom): credential checks, model ids, connection |
 | [`dockerfiles/mcp-server/src/index.ts`](../dockerfiles/mcp-server/src/index.ts) | MCP tool registry |
 | [`dockerfiles/mcp-server/src/api-client.ts`](../dockerfiles/mcp-server/src/api-client.ts) | HTTP client to Datagrok API |
 | [`src/claude/runtime-client.ts`](../src/claude/runtime-client.ts) | Browser WebSocket client, RxJS subjects, `ClaudeRuntimeClient` singleton |

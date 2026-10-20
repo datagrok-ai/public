@@ -278,7 +278,8 @@ by active code. All active AI features now route through `ClaudeRuntimeClient`.
 
 The model provider and its key are the `claude-runtime` container's credentials: `provider` (Anthropic by
 default), `apiKey`, and as the provider needs them `baseUrl`, `region`, `apiFormat`, `model` and `fastModel`.
-Each provider is a class in `agent/grokky_agent/providers/` that checks them and maps its model ids to the
+Each provider (Anthropic, OpenRouter, OpenAI, Azure, Bedrock, Databricks, Custom) is a class in
+`agent/grokky_agent/providers/` that checks them and maps its model ids to the
 catalog in `agent/grokky_agent/models.yaml` (family, context window, image input, prices); a turn runs only
 on the provider's models. The runtime reports them to the browser (`ClaudeRuntimeClient.models()`): Help and
 Execute use the default model, search ranking and query matching the fast one. Claude subscription logins
