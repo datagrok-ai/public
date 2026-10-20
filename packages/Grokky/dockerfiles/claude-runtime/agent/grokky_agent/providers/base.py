@@ -124,7 +124,7 @@ class Provider(ABC):
                                     'name a model as <id>=<catalog model>')
             return fallback
         model, _, name = (part.strip() for part in value.partition('='))
-        if name:
+        if model and name:
             if name not in models.CATALOG:
                 raise ProviderError(f'The {credential} container credential must map an id to a catalog model, one of '
                                     f'{", ".join(models.CATALOG)}')
