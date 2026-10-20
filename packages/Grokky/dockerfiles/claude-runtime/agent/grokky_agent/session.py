@@ -248,7 +248,7 @@ class Session:
             self.emit({'type': 'error',
                        'message': f'Unknown model "{model}": use one of {", ".join(self.provider.models)}'})
             return
-        if cmd.get('images') and not models.CATALOG[self.provider.models[model]]['images']:
+        if cmd.get('images') and not self.provider.images(model):
             self.emit({'type': 'error', 'message': f'The model {model} does not accept images'})
             return
         problem = structured.schema_error(t.schema) if t.schema is not None else None

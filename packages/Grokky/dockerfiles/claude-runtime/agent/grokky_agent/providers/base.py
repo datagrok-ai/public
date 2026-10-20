@@ -48,6 +48,10 @@ class Provider(ABC):
         """The request format the model is called in."""
         return FAMILY_API_MODES[models.CATALOG[self.models[model]]['family']]
 
+    def images(self, model: str) -> bool:
+        """Whether the model takes image input on this provider."""
+        return models.CATALOG[self.models[model]]['images']
+
     def patch_request(self, api_mode: str, request: JsonObject, system_prompt: str,
                       output_schema: JsonObject | None) -> JsonObject:
         """The outgoing request with the turn's system prompt, if any, and output format."""
@@ -76,9 +80,8 @@ class Provider(ABC):
         """Hermes' metadata of each model (config.yaml `model_overrides`), by Hermes provider id."""
         overrides: dict[str, JsonObject] = {}
         for model, name in self.models.items():
-            m = models.CATALOG[name]
             overrides.setdefault(self.connection(model)['provider'], {})[model] = {
-                'context_window': m['context'], 'supports_vision': m['images']}
+                'context_window': models.CATALOG[name]['context'], 'supports_vision': self.images(model)}
         return overrides
 
     def endpoint(self, url: str) -> str:
