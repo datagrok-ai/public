@@ -655,6 +655,37 @@ applications, such as Claude Code, never in a third-party product
 The check applies to whatever key goes to `api.anthropic.com` (`Provider.refuse_subscription_token`), and
 only there: other hosts take JWTs (Entra ID, Databricks OAuth).
 
+#### OpenRouter
+
+`provider` `OpenRouter`; `apiKey` an OpenRouter API key (`sk-or-…`), sent as Bearer. Claude goes to
+OpenRouter's Anthropic Messages API (`https://openrouter.ai/api/v1/messages`), GPT to its Responses API
+(`https://openrouter.ai/api/v1/responses`, which keeps nothing: every call carries the whole history). Models,
+by OpenRouter id: `anthropic/claude-haiku-5.5` (fast), `anthropic/claude-sonnet-5.5` (default),
+`anthropic/claude-opus-5.5`, `anthropic/claude-fable-5.1`, `openai/gpt-6-luna`, `openai/gpt-6-sol`,
+`openai/gpt-6.1-sol`, `openai/gpt-6-astra`, `openai/gpt-5.6-luna`, `openai/gpt-5.6-terra` and
+`openai/gpt-5.6-sol`; to run on GPT by default, set `model` and `fastModel`, e.g. `openai/gpt-6-sol` and
+`openai/gpt-6-luna`. An agent refuses a missing key, a key with whitespace or control characters, and a key
+that does not start with `sk-or-`. Watch out for:
+
+- Routing: OpenRouter sends each request to one of the model's hosts (Anthropic, Google Vertex, Azure, Amazon
+  Bedrock, …), weighted by price, among those the account's settings allow
+  ([provider routing](https://openrouter.ai/docs/guides/routing/provider-selection)): those settings decide
+  who sees the data. OpenRouter lists no structured output for Claude on Bedrock, so a Claude turn with an
+  output schema asks for hosts that support all its parameters (`provider.require_parameters`); GPT hosts
+  without structured output lack JSON output too, which OpenRouter already routes around.
+- Cost: the limit uses the catalog prices, which are OpenRouter's list prices. Its regional hosts (such as
+  Vertex in the US or Azure in the EU) charge 10% more and may serve a request, so the bill can run up to 10%
+  over the runtime's figure. OpenRouter reports each answer's cost, but Hermes does not pass it on.
+- Credit: OpenRouter refuses a request (402) when the credit left on the account or key cannot pay for its
+  longest possible answer, 128,000 output tokens ($1.28 on Sonnet 5.5, $6.40 on Fable 5.1 or GPT-6 Astra).
+- Attribution: requests name Datagrok as the app (`HTTP-Referer: https://datagrok.ai`, `X-Title: Datagrok`)
+  instead of Hermes, so OpenRouter counts the usage toward Datagrok in its public app rankings.
+- Not verified with a live key: Hermes names Claude by Anthropic's own id on the Messages API
+  (`claude-sonnet-5-5`); the request patch puts OpenRouter's id back, but the compression call goes out as
+  Hermes builds it, relying on OpenRouter to map Anthropic's ids. OpenRouter says that GPT-6.1 Sol and
+  GPT-6 Astra, which always reason, reject the effort `none` that turns without thinking send (bash and
+  prompt-less turns), so prefer the other GPT models for `model` and `fastModel`.
+
 #### Bedrock
 
 `provider` `Bedrock`; `apiKey` an Amazon Bedrock API key; `region` the AWS commercial region the key was
