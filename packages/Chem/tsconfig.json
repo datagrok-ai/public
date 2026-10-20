@@ -54,6 +54,7 @@
     // "preserveSymlinks": true,                    /* Do not resolve the real path of symlinks. */
     // "allowUmdGlobalAccess": true,                /* Allow accessing UMD globals from modules. */
     "typeRoots": ["./node_modules/@webgpu/types", "./node_modules/@types"],
+    "paths": {"@datagrok-libraries/statistics/src/*": ["./node_modules/@datagrok-libraries/statistics/dist/src/*"]},
     /* Source Map Options */
     // "sourceRoot": "",                            /* Specify the location where debugger should locate TypeScript files instead of source locations. */
     // "mapRoot": "",                               /* Specify the location where debugger should locate map files instead of generated locations. */
