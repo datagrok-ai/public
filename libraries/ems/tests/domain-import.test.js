@@ -329,11 +329,14 @@ scoped('an empty cell of a new row is left out, so the column takes its default;
   };
   const {running} = await opened(memory, new DG.DataFrame([{name: 'project_id', type: 'string'},
     {name: 'number', type: 'int'}, {name: 'title', type: 'string'}, {name: 'priority', type: 'string'}],
-  [{project_id: 'p1', number: 30, title: 'A', priority: 'high'}, {project_id: 'p1', number: 31, title: 'B', priority: null}]));
+  [{project_id: 'p1', number: 30, title: 'A', priority: 'high'},
+    {project_id: 'p1', number: 31, title: 'B', priority: null},
+    {project_id: 'p1', number: 0, title: 'C', priority: 'low'}]));
   await toMapping();
   await toPreview();
   assert.deepEqual(posts[0].rows, [{project_id: 'p1', number: 30, title: 'A', priority: 'high'},
-    {project_id: 'p1', number: 31, title: 'B'}], 'insert: the empty cell is absent, as a new row in a form leaves it');
+    {project_id: 'p1', number: 31, title: 'B'}, {project_id: 'p1', number: 0, title: 'C', priority: 'low'}],
+  'insert: the empty cell is absent, as a new row in a form leaves it; a 0 is a value and is sent');
 
   // an empty cell on an upsert (clear the field, or leave it) is not ruled: it keeps being sent
   fire(buttonNamed('BACK'), 'click');
