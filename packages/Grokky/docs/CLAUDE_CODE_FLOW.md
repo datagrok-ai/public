@@ -655,6 +655,30 @@ applications, such as Claude Code, never in a third-party product
 The check applies to whatever key goes to `api.anthropic.com` (`Provider.refuse_subscription_token`), and
 only there: other hosts take JWTs (Entra ID, Databricks OAuth).
 
+#### OpenAI
+
+`provider` `OpenAI`; `apiKey` an API key of an OpenAI project (`sk-proj-…`; a service account's or user's
+key works too). Hermes calls the Responses API at `https://api.openai.com/v1` with the key as Bearer, and
+nothing is stored (`store: false`). A project with data residency is called at its region's host: `baseUrl`
+`https://<region>.api.openai.com`, region `us`, `eu`, `ae`, `au`, `ca`, `jp`, `in`, `sg`, `kr` or `gb`
+([Your data](https://developers.openai.com/api/docs/guides/your-data)); any other `baseUrl` is refused.
+Models: `gpt-6-luna` (fast: the cheapest), `gpt-6-sol`, `gpt-6.1-sol` (default: OpenAI's balance of
+intelligence and cost, near Astra at a fifth of its price), `gpt-6-astra`, `gpt-5.6-luna`, `gpt-5.6-terra`
+and `gpt-5.6-sol`. An agent refuses a missing key, a key with whitespace or control characters, a JWT (a
+ChatGPT or Codex login, or a workload identity token, which lasts at most an hour) and an Admin API key
+(`sk-admin-…`), which works only on OpenAI's administration endpoints. Watch out for:
+
+- GPT-6 Astra may not be open to every account: a turn on it then ends in OpenAI's error naming the model.
+- Requests ask for no reasoning summary (Grokky shows none, and summaries may need a verified
+  organization). Streaming the newest models may still need one: OpenAI's error then says so, and the
+  organization is verified in the OpenAI platform's organization settings.
+- GPT-6 Astra and GPT-6.1 Sol cannot turn reasoning off: a turn without an effort runs at their default
+  (medium).
+- The catalog has Standard prices. Regional processing costs 10% more for models released on or after
+  2026-03-05, which the cost limit does not count.
+- A 401 hint names `apiKey` and `baseUrl`: a project with data residency must be called at its region's
+  host.
+
 ### Build and run
 
 ```bash
