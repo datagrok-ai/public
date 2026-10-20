@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Domains: Fixed `DomainFrameEditor` refusing a new row that leaves a required column with a default empty ("Value can't be empty"): the server fills the default
 * [core#857](https://github.com/datagrok-ai/core/issues/857): Fixed `View.PACKAGES` and `VIEW_TYPE.PACKAGES` to be `'Plugins'`, the platform's plugins view type, and removed `View.BROWSE`, which has no view factory, from `View.ALL_VIEW_TYPES`, so `View.createByType` no longer crashes on them
 * Domains: Added `DomainColumn`; `orderBy` takes it, so an FK path no longer type-checks as a sort key
 * Fixed `ConnectionDataSource.byType` returning a raw Dart object
