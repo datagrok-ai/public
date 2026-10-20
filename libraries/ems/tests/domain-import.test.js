@@ -282,6 +282,24 @@ scoped('only the mapped columns are posted, under their target names', async () 
   assert.deepEqual(result.rows.map((r) => r.status), ['inserted']);
 });
 
+scoped('a float column read from a file lands as the number typed, not its float32 widening', async () => {
+  const memory = backend();
+  // a CSV opened in Datagrok holds floats as float32: the cell reads back widened
+  const typed = [3.1, 0.1, 19.99];
+  const source = new DG.DataFrame([{name: 'project_id', type: 'string'}, {name: 'number', type: 'int'},
+    {name: 'title', type: 'string'}, {name: 'weight', type: 'double'}],
+  typed.map((w, i) => ({project_id: 'p1', number: 10 + i, title: `F${i}`, weight: Math.fround(w)})));
+  const {running} = await opened(memory, source);
+  await toMapping();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  assert.deepEqual(typed.map((_, i) => issues(memory).find((r) => r.title === `F${i}`)?.weight), typed);
+  fire(buttonNamed('CLOSE'), 'click');
+  await running;
+});
+
 scoped('upsert merges by the business key instead of inserting again', async () => {
   const memory = backend();
   const {running} = await opened(memory,
