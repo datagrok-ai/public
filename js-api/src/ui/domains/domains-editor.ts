@@ -370,6 +370,10 @@ export class DomainFrameEditor implements IFrameEditor {
    * other per-row caches, which is the safe direction: a pristine row that lost
    * its mark counts as a change, never the other way round. */
   private _pristine = new Set<number>();
+  /** The columns of each `'new'` row written so far — the {@link addRow} values and every
+   * {@link setValue}/{@link commitEdit} — by draft id, which survives the index shifts that reset
+   * the per-row caches. */
+  private _touched = new Map<string, Set<string>>();
   private _changeCount = 0;
   private _suspend = false;
   private _saving = false;
@@ -733,8 +737,11 @@ export class DomainFrameEditor implements IFrameEditor {
         for (const name of Object.keys(values))
           if (this._df.columns.contains(name))
             this._col(name).set(row, values[name], false);
-      if (this._df.columns.contains('id'))
-        this._col('id').set(row, DomainFrameEditor.draftId(), false);
+      if (this._df.columns.contains('id')) {
+        const draft = DomainFrameEditor.draftId();
+        this._col('id').set(row, draft, false);
+        this._touched.set(draft, new Set(Object.keys(values ?? {})));
+      }
       this._col(DomainFrameEditor.STATE_COLUMN).set(row, 'new', false);
     });
     this._validateRow(row);
@@ -831,6 +838,7 @@ export class DomainFrameEditor implements IFrameEditor {
       }
     });
     this._unguarded.clear();
+    this._touched.clear();
     this._resetCaches();
     this._df.rows.requestFilter();
     this._fire();
@@ -885,8 +893,9 @@ export class DomainFrameEditor implements IFrameEditor {
    * `'$<draftId>'` reference the server resolves; a literal leading `$` is
    * escaped as `$$`. An empty cell of a NEW row is LEFT OUT of the insert rather
    * than sent as an explicit null, so the column takes its server-side default (a
-   * bool cell has no empty state and is always sent, so a NOT NULL bool default is
-   * not preserved); a column with no default and no value is rejected by the server's own
+   * bool cell has no empty state, so a bool goes out only when it was set — by
+   * {@link addRow} or an edit — or when its column is required with no default); a column
+   * with no default and no value is rejected by the server's own
    * nullability check (and by {@link validate} before that). Clearing a cell of a
    * MODIFIED row does send null — that is an edit, not an omission.
    *
@@ -915,7 +924,7 @@ export class DomainFrameEditor implements IFrameEditor {
         const values: {[column: string]: any} = {};
         for (const name of insertable) {
           const v = this._wire(row, name);
-          if (v != null && name !== 'id')
+          if (v != null && name !== 'id' && !this._unsetBool(id, name))
             values[name] = DomainFrameEditor._refValue(v);
         }
         const op: DomainTransactionOp = {op: 'insert', table: table, values: values, onDuplicate: 'error'};
@@ -1077,6 +1086,7 @@ export class DomainFrameEditor implements IFrameEditor {
         }
         if (op.op === 'insert') {
           result.inserted++;
+          this._touched.delete(`${op.ref}`);
           if (r.id != null && this._df.columns.contains('id'))
             this._df.set('id', row, `${r.id}`);
           // The frame defaults (false) would read the just-created row as locked;
@@ -1540,6 +1550,16 @@ export class DomainFrameEditor implements IFrameEditor {
     return toWire(value);
   }
 
+  /** Whether the bool [column] of the new row [draftId] was never set and the server can fill it:
+   * the frame shows `false` there for want of an empty state, so only a required column with no
+   * default still takes that `false`. */
+  private _unsetBool(draftId: any, column: string): boolean {
+    const p = this._propByName.get(column);
+    const touched = this._touched.get(`${draftId}`);
+    return p?.propertyType === TYPE.BOOL && touched != null && !touched.has(column) &&
+      (p.nullable || p.defaultValue != null);
+  }
+
   /** Whether [row] exists on the server: it carries an id that is not a draft. */
   private _isPersisted(row: number): boolean {
     const id = this._wire(row, 'id');
@@ -1563,6 +1583,8 @@ export class DomainFrameEditor implements IFrameEditor {
         delete changes[column];
       this._setJson(DomainFrameEditor.CHANGES_COLUMN, row, changes);
     }
+    else
+      this._touched.get(`${this._wire(row, 'id')}`)?.add(column);
     // Read after the bookkeeping: whether the value would be DROPPED depends on
     // the change entry this call has just recorded (or removed).
     const message = this._droppedValue(row, column) ?? invalid;
