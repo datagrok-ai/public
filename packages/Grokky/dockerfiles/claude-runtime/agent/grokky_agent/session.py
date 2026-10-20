@@ -21,9 +21,10 @@ STREAM_EVENT = 'receiving stream response'
 # Bounds the connect, the MCP handshake and the tool listing: Node's idle watchdog ends a silent turn after 90 s.
 MCP_CONNECT_TIMEOUT = 30
 MCP_SERVER = 'datagrok'
-# Hermes reports a failed call as "Error code: 400 - {...'message': '<provider text>'}", or with the HTML page a proxy
-# or gateway answered instead; the user sees the text, or the page's title.
-PROVIDER_MESSAGE = re.compile(r"'message': '((?:[^'\\]|\\.)*)'|\"message\": \"((?:[^\"\\]|\\.)*)\"|"
+# Hermes reports a failed call as "Error code: 400 - {...'message': '<provider text>'}" (a text with an apostrophe in
+# double quotes, JSON in double quotes), or with the HTML page a proxy or gateway answered instead; the user sees the
+# text, or the page's title.
+PROVIDER_MESSAGE = re.compile(r"""['"]message['"]: (?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")|"""
                               r"(?i:<title>\s*([^<]+?)\s*</title>)")
 # api_request_error's reason when the provider's safety filter stops an answer; its message is the cut-off answer.
 SAFETY_FILTER = 'content_policy_blocked'
