@@ -1315,15 +1315,15 @@ export class DomainFrameEditor implements IFrameEditor {
    * the key itself where it carries none: on the UPDATE path the id is the row being SAVED
    * (`repository.dart` `_mapPgError(rt, x, id: id)`), which names the wrong row. */
   async duplicateRefusal(row: number, e?: DomainValidationError): Promise<string> {
-    const key = this._clashOf(e);
-    const values = key.map((c) => this._wire(row, c)).filter((v) => v != null && `${v}` !== '');
-    if (values.length !== key.length)
-      return this._duplicateText(key);
+    const columns = this._clashOf(e);
+    const values = columns.map((c) => this._wire(row, c)).filter((v) => v != null && `${v}` !== '');
+    if (columns.length === 0 || values.length !== columns.length)
+      return this._duplicateText(columns);
     const self = `${this._wire(row, 'id') ?? ''}`;
     const id = `${e?.rows?.[0]?.id ?? ''}`;
-    const owner = id !== '' && id !== self ? await this._nameOf(id) : await this._keyHolder(key, values, self);
-    return owner == null ? this._duplicateText(key)
-      : `${key.map((c) => this._captionOf(c)).join(', ')} ${values.join(', ')} already belongs to ${owner}`;
+    const owner = id !== '' && id !== self ? await this._nameOf(id) : await this._keyHolder(columns, values, self);
+    return owner == null ? this._duplicateText(columns)
+      : `${columns.map((c) => this._captionOf(c)).join(', ')} ${values.join(', ')} already belongs to ${owner}`;
   }
 
   /** "Ethanol still has 3 containers; remove or reassign them first": the server names the child
@@ -1756,10 +1756,11 @@ export class DomainFrameEditor implements IFrameEditor {
     return caption == null || caption === '' ? column : caption;
   }
 
-  /** The columns a unique refusal is about: the ones the server names, else the business key. */
+  /** The columns a unique refusal is about: the ones the server names, else the business key —
+   * also where it names something that is not a column here (a relation, `rel.name`). */
   private _clashOf(e?: DomainValidationError): string[] {
-    const column = e?.rows?.[0]?.errors?.find((x) => x.code === 'unique')?.column;
-    return column == null || column === '' ? this._info.businessKey ?? [] : column.split(',');
+    const columns = `${e?.rows?.[0]?.errors?.find((x) => x.code === 'unique')?.column ?? ''}`.split(',');
+    return columns.every((c) => this._propByName.has(c)) ? columns : this._info.businessKey ?? [];
   }
 
   /** The refusal a unique clash on [columns] gets where the row already holding the value is unknown. */
@@ -1784,8 +1785,8 @@ export class DomainFrameEditor implements IFrameEditor {
     }
   }
 
-  /** The display name of the row already holding [values] on the business key, read back by the
-   * key itself and skipping [selfId] (the row being saved); null when the table has no name
+  /** The display name of the row already holding [values] on the unique [key] columns, read back
+   * by those values and skipping [selfId] (the row being saved); null when the table has no name
    * column, or nobody else holds the key where the caller can see it. */
   private async _keyHolder(key: string[], values: any[], selfId: string): Promise<string | null> {
     const column = this._info.nameColumn;

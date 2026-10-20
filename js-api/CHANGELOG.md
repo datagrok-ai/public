@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Domains: Fixed `DomainFrameEditor` naming the business key when a save clashes on another unique column: the refusal names the clashing column, also on a table with no business key
+* Domains: Fixed `DomainFrameEditor` naming the business key instead of the clashing unique column in a duplicate refusal
 * [core#857](https://github.com/datagrok-ai/core/issues/857): Fixed `View.PACKAGES` and `VIEW_TYPE.PACKAGES` to be `'Plugins'`, the platform's plugins view type, and removed `View.BROWSE`, which has no view factory, from `View.ALL_VIEW_TYPES`, so `View.createByType` no longer crashes on them
 * Domains: Added `DomainColumn`; `orderBy` takes it, so an FK path no longer type-checks as a sort key
 * Fixed `ConnectionDataSource.byType` returning a raw Dart object

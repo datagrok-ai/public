@@ -532,7 +532,8 @@ category('Dapi: domain frame editor', () => {
             email: {type: 'string', unique: true, friendlyName: 'E-mail'},
           },
         },
-        task: {
+        work_item: {
+          singularName: 'Work item',
           columns: {
             code: {type: 'string', required: true, unique: true, friendlyName: 'Code'},
             title: {type: 'string'},
@@ -540,24 +541,26 @@ category('Dapi: domain frame editor', () => {
         },
       }});
       const people = grok.dapi.domains.table(`${name}.person`);
-      const tasks = grok.dapi.domains.table(`${name}.task`);
+      const workItems = grok.dapi.domains.table(`${name}.work_item`);
       await people.insert({code: 'P1', name: 'Ann', email: 'ann@x.org'});
-      await tasks.insert({code: 'T1', title: 'First'});
+      await workItems.insert({code: 'T1', title: 'First'});
 
       const personEditor = await DomainFrameEditor.create(people as any);
       const bob = personEditor.addRow({code: 'P2', name: 'Bob', email: 'ann@x.org'});
-      expect(await personEditor.save(), false, 'a duplicate e-mail was accepted');
-      const clash = `${personEditor.errorOf(bob, 'email')?.message}`;
-      expect(clash.includes('E-mail'), true, `the refusal does not name the clashing column: ${clash}`);
-      expect(clash.includes('Badge'), false, `the refusal names the business key instead: ${clash}`);
+      const session = new DG.DomainSession([personEditor], {quiet: true});
+      expect(await session.save(), false, 'a duplicate e-mail was accepted');
+      expect(session.lastRefusal?.message, 'E-mail ann@x.org already belongs to Ann', 'the refusal names the wrong column');
+      expect(personEditor.errorOf(bob, 'email')?.message, session.lastRefusal?.message,
+        'the cell and the refusal say different things');
+      session.dispose();
       personEditor.detach();
 
-      const taskEditor = await DomainFrameEditor.create(tasks as any);
-      const again = taskEditor.addRow({code: 'T1', title: 'Again'});
-      expect(await taskEditor.save(), false, 'a duplicate code was accepted');
-      const keyless = `${taskEditor.errorOf(again, 'code')?.message}`;
-      expect(keyless.includes('Code'), true, `the refusal of a table with no business key names nothing: ${keyless}`);
-      taskEditor.detach();
+      const itemEditor = await DomainFrameEditor.create(workItems as any);
+      const again = itemEditor.addRow({code: 'T1', title: 'Again'});
+      expect(await itemEditor.save(), false, 'a duplicate code was accepted');
+      expect(itemEditor.errorOf(again, 'code')?.message, 'A work item with this Code already exists',
+        'the refusal on a table with no business key names the wrong column');
+      itemEditor.detach();
     } finally {
       await grok.dapi.domains.schema(name).delete();
     }
