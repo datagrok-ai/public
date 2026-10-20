@@ -26,6 +26,11 @@ function lineY(xs: number[], line: DesirabilityLine, x: number): number {
 }
 
 function lineRange(xs: number[], line: DesirabilityLine, a: number, b: number, inv: boolean, out: number[]): void {
+  const last = xs.length - 1;
+  if (b < xs[0] || a > xs[last]) {
+    out[0] = out[1] = 0;
+    return;
+  }
   const ya = lineY(xs, line, a);
   const yb = lineY(xs, line, b);
   let lo = Math.min(ya, yb);
