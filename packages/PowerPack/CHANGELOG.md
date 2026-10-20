@@ -28,6 +28,7 @@
 * Home: Fixed every Home page load writing back all the widget settings it had read, which undid a widget hidden or shown on another page of the same account
 * GROK-21108: Removed the "Group favorites" context menu; the platform's "Add to favorites" menu covers groups
 * Spotlight: Workspace shows, beside a model's preview, the widgets of package functions with `meta.role: workspaceModelPanel` (`panel(model: func): widget`, null to show nothing); a failing panel is logged and left out
+* Spotlight: Workspace previews a selected item of no known kind (a domain record, say) with its handler's `renderCard` and Open, where it showed only "Use Open to work with this item"
 * Viewer gallery: A table view opened before the package's autostart ran kept the core Add viewer icon; every open view is configured now
 * GROK-21019: Add New Column: Fixed the dialog dropping the error behavior of the call it was opened with
 * GROK-21019: Add New Column: Added the gear next to the type that sets what happens to the rows the formula fails on: left empty or filled with a value, optionally with a column of per-row messages
