@@ -8,7 +8,7 @@ let v: DG.View;
 
 category('Packages', async () => {
   before(async () => {
-    v = DG.View.createByType('packages');
+    v = DG.View.createByType(DG.View.PACKAGES);
   });
 
   // test('Credentials', async () => {
