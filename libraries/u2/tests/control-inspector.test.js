@@ -16,8 +16,7 @@ const {controlPropDescriptors, controlProperties, registerControlInspector, disp
   controlAt, noControl} = await import('../src/dg/shell/control-inspector.js');
 const DG = await import('datagrok-api/dg');
 
-registerControlInspector();
-registerControlInspector();
+const registrations = [registerControlInspector(), registerControlInspector()];
 
 function inspector(name, body) {
   test(name, async () => {
@@ -79,7 +78,7 @@ inspector('a grid edit writes through to the control', async () => {
   const grid = controlProperties(input);
   document.body.append(grid.root);
   const field = (name) => [...grid.root.querySelectorAll('.u2-propgrid-row')]
-    .find((r) => r.querySelector('.u2-propgrid-name')?.textContent === name)
+    .find((r) => r.dataset.u2Item === name)
     ?.querySelector('input');
 
   const value = field('value');
@@ -148,4 +147,52 @@ inspector('a control the registry does not describe says so instead of rendering
   assert.match(empty.renderProperties(noControl).textContent, /not a u2 component/);
   disposePanel();
   bare.dispose();
+});
+
+inspector('ten renders leave one live panel, and the context panel kill disposes it', () => {
+  const input = new TextInput({label: 'Name', value: 'Aspirin'});
+  const handler = DG.ObjectHandler.forEntity(input);
+  const live = Scope.liveCount;
+  handler.renderProperties(input);
+  const onePanel = Scope.liveCount - live;
+  assert.ok(onePanel > 0);
+  let root;
+  for (let i = 0; i < 10; i++)
+    root = handler.renderProperties(input);
+  assert.equal(Scope.liveCount - live, onePanel, 'only the last panel is alive');
+
+  globalThis.grok_Widget_Kill(root);
+  assert.equal(Scope.liveCount, live, 'killing what the panel shows disposes it');
+  DG.platform.reset();
+  input.dispose();
+});
+
+inspector('a platform widget keeps the platform handler; only u2 controls get the inspector', () => {
+  const widget = new DG.Widget(document.createElement('div'));
+  assert.equal(Control.is(widget), true, 'every DG.Widget is a Control');
+  assert.notEqual(DG.ObjectHandler.forEntity(widget)?.type, 'u2-control');
+});
+
+inspector('the inspector stops claiming controls once every registration is undone', () => {
+  const input = new TextInput({label: 'Name'});
+  const extra = registerControlInspector();
+  extra();
+  extra();
+  assert.equal(DG.ObjectHandler.forEntity(input)?.type, 'u2-control', 'undoing one twice counts once');
+
+  const handler = DG.ObjectHandler.forEntity(input);
+  handler.renderProperties(input);
+  const live = Scope.liveCount;
+  for (const off of registrations)
+    off();
+  assert.ok(Scope.liveCount < live, 'the open panel went with the last registration');
+  assert.equal(DG.ObjectHandler.forEntity(input), null);
+  assert.equal(DG.ObjectHandler.forEntity(noControl), null);
+  assert.equal(DG.ObjectHandler.registered.filter((h) => h.type === 'u2-control').length, 1,
+    'the platform keeps the handler; it just declines');
+
+  registrations.splice(0, registrations.length, registerControlInspector());
+  assert.equal(DG.ObjectHandler.forEntity(input)?.type, 'u2-control');
+  DG.platform.reset();
+  input.dispose();
 });

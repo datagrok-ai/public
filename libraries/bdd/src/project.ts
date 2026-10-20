@@ -5,6 +5,7 @@
 import {existsSync, readdirSync, readFileSync, statSync} from 'node:fs';
 import {basename, dirname, join, relative, resolve, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import type {AllowEntry} from './runtime/layout.js';
 
 export const PACKAGE_NAME = '@datagrok-libraries/bdd';
 /** The directory holding this build's `bindings/`: `dist/` when running compiled, the library root
@@ -21,9 +22,30 @@ export interface BindingSource {
   specifierFor(file: string): string;
 }
 
+/** What an automatic audit does with its findings: fail the scenario, report them (a warning and a
+ * `bdd-audit` annotation), or not run. */
+export type AuditMode = 'fail' | 'report' | 'off';
+
+/** The audits the harness runs after every passing scenario on a u2 page (src/runtime/audit.ts). Each
+ * allowlist entry says why the finding is not a defect. */
+export interface AuditConfig {
+  layout?: AuditMode;
+  errors?: AuditMode;
+  leaks?: AuditMode;
+  allow?: {
+    layout?: AllowEntry[];
+    /** Regex sources: `message` must match the logged text, and `url`, when given, where it came from. */
+    errors?: {message: string; url?: string; reason: string}[];
+    /** Regex sources over what a leaked record is (a scope's label, `interval timer`, `window keydown
+     * listener`) and its creation stack; every one given must match. */
+    leaks?: {label?: string; stack?: string; reason: string}[];
+  };
+}
+
 export interface ProjectConfig {
   /** Library tiers beyond the base ones, by directory name under `bindings/tiers/`. */
   tiers?: string[];
+  audits?: AuditConfig;
 }
 
 export interface Project {

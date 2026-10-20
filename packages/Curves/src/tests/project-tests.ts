@@ -1,7 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
+import {createDefaultChartData} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {changeCurvesOptions} from '../fit/fit-options';
 import {getColumnChartOptions, getOrCreateParsedChartData} from '../fit/fit-chart-data';
 
@@ -16,6 +18,9 @@ async function createTableView(tableName: string): Promise<DG.TableView> {
   await grok.data.detectSemanticTypes(df);
   return grok.shell.addTableView(df);
 }
+
+/** The projects the tests saved, deleted after the category; a project takes its table and layout with it. */
+const savedProjects: DG.Project[] = [];
 
 async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise<void> {
   const project = DG.Project.create();
@@ -35,7 +40,7 @@ async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise
   await grok.dapi.tables.uploadDataFrame(tv.dataFrame);
   await grok.dapi.tables.save(tableInfo);
   await grok.dapi.views.save(layoutInfo);
-  await grok.dapi.projects.save(project);
+  savedProjects.push(await grok.dapi.projects.save(project));
   const projId = project.id;
   // the fit cell renderer keeps painting while the view tears down, and closeAll() surfaces that as
   // an unhandled exception - let the grid settle first
@@ -85,9 +90,52 @@ async function runSaveAndOpenProjectTest(dataSync?: boolean): Promise<void> {
 }
 
 category('projects', () => {
+  after(async () => {
+    for (const p of savedProjects)
+      await grok.dapi.projects.delete(p);
+  });
+
   test('column-level option survives a project', async () => {
     await runSaveAndOpenProjectTest();
     await delay(100);
+  }, {timeout: 120000});
+
+  test('painting a table leaves its dataframe tags alone, so its layout saves', async () => {
+    // platforms up to 1.27.x fail to encode a layout whose table carries a dataframe '.%' tag
+    const df = await grok.dapi.files.readCsv(`System:AppData/Curves/${DEMO_FILE}`);
+    df.name = 'curvesPaintedLayout';
+    // what Curves before 1.13 left on every table it painted
+    df.setTag(FitConstants.TAG_FIT_LEGACY, JSON.stringify(createDefaultChartData()));
+    await grok.data.detectSemanticTypes(df);
+    const tv = grok.shell.addTableView(df);
+    let layout: DG.ViewLayout | null = null;
+    try {
+      for (const col of df.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE))
+        getOrCreateParsedChartData(df.cell(0, col.name), false);
+      await delay(500);
+      expect(df.getTag(FitConstants.TAG_FIT) == null, true, 'reading the options tagged the dataframe');
+      layout = await grok.dapi.layouts.save(tv.saveLayout());
+    } finally {
+      if (layout)
+        await grok.dapi.layouts.delete(layout);
+      tv.close();
+    }
+  }, {timeout: 60000});
+
+  test('curve columns are curves again in a reopened project', async () => {
+    // GROK-14876
+    const tv = await createTableView(DEMO_FILE);
+    const curveColumns = tv.dataFrame.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE).map((c) => c.name);
+    expect(curveColumns.length, 5, `the demo has five curve columns, found ${curveColumns}`);
+    await saveAndOpenProject(tv);
+    try {
+      await awaitCheck(() => curveColumns.every((name) =>
+        grok.shell.tv?.dataFrame?.col(name)?.semType === FitConstants.FIT_SEM_TYPE),
+      `the reopened project lost a curve column: ${curveColumns}`, 30000);
+    } finally {
+      await delay(500);
+      grok.shell.closeAll();
+    }
   }, {timeout: 120000});
 
   test('column-level option survives a datasync project', async () => {

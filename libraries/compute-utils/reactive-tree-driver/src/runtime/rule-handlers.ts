@@ -1,0 +1,169 @@
+import {map} from 'rxjs/operators';
+import {
+  Handler, MetaHandler, RuleDataEffect, RuleExpr, RuleMetaEffect, RuleSource, RuleValidatorEffect, SelectorHandler,
+} from '../config/PipelineConfiguration';
+import {ValidationResult} from '../data/common-types';
+import {IControllerBase} from '../RuntimeControllers';
+import {buildRuleContext, evaluate, isOn, ruleTargets, RuleContext} from './rule-expressions';
+import {resolveSources, ValidatorVerdict} from './rule-sources';
+
+function ruleParams<E>(controller: IControllerBase) {
+  return {
+    when: controller.getParam('when') as RuleExpr | undefined,
+    effects: (controller.getParam('effects') ?? []) as E[],
+    sources: controller.getParam('sources') as Record<string, RuleSource> | undefined,
+  };
+}
+
+// rules whose sources resolve synchronously stay synchronous, so they remain batchable
+function withContext(
+  controller: IControllerBase, sources: Record<string, RuleSource> | undefined, run: (ctx: RuleContext) => void,
+) {
+  const base = buildRuleContext(controller);
+  if (!sources)
+    return run(base);
+  return resolveSources(controller, sources, base).pipe(map((values) => run({...base, ...values})));
+}
+
+function matchedTargets<E extends {targets?: string | string[]}>(controller: IControllerBase, effect: E) {
+  const outputs = controller.getMatchedOutputs();
+  if (effect.targets == null)
+    return [...outputs];
+  return ruleTargets(effect.targets).filter((target) => outputs.has(target));
+}
+
+export const ruleMetaHandler: MetaHandler = ({controller}) => {
+  const {when, effects, sources} = ruleParams<RuleMetaEffect>(controller);
+  return withContext(controller, sources, (ctx) => {
+    const ruleOn = isOn(when, ctx);
+    const metas: Record<string, Record<string, any>> = {};
+    for (const effect of effects) {
+      const on = ruleOn && isOn(effect.when, ctx);
+      for (const target of matchedTargets(controller, effect)) {
+        const meta = metas[target] ??= {};
+        if (effect.effect === 'hide')
+          meta.hidden = on;
+        else if (effect.effect === 'show')
+          meta.hidden = !on;
+        else if (effect.effect === 'items' && on)
+          meta.items = evaluate(effect.items, ctx);
+        else if (effect.effect === 'meta' && on) {
+          for (const [key, expr] of Object.entries(effect.meta))
+            meta[key] = evaluate(expr, ctx);
+        }
+      }
+    }
+    for (const [target, meta] of Object.entries(metas))
+      controller.setViewMeta(target, meta);
+  });
+};
+
+export const ruleNodeMetaHandler: SelectorHandler = ({controller}) => {
+  const {when, effects, sources} = ruleParams<RuleMetaEffect>(controller);
+  return withContext(controller, sources, (ctx) => {
+    const ruleOn = isOn(when, ctx);
+    // like items and meta, an effect that is off adds nothing, so it never erases another one's value
+    const descriptions = new Map<string, any>();
+    for (const effect of effects) {
+      const on = ruleOn && isOn(effect.when, ctx);
+      for (const target of ruleTargets(effect.targets)) {
+        if (effect.effect === 'describe') {
+          if (on)
+            descriptions.set(target, evaluate(effect.value, ctx));
+          else if (!descriptions.has(target))
+            descriptions.set(target, undefined);
+        } else if (effect.effect === 'hideAction' || effect.effect === 'showAction')
+          controller.setActionVisible(target, effect.action, effect.effect === 'showAction' ? on : !on);
+      }
+    }
+    for (const [target, value] of descriptions)
+      controller.setDescriptionItem(target, value);
+  });
+};
+
+const severityKey = {error: 'errors', warning: 'warnings', notification: 'notifications'} as const;
+
+type ValidationTarget = IControllerBase & {
+  setValidation(name: string, validation?: ValidationResult): void,
+  getValidationAction?(name: string, actionId: string): string | undefined,
+};
+
+// validator and pipeline validator controllers share this shape
+export const ruleValidatorHandler = ({controller}: {controller: ValidationTarget}) => {
+  const {when, effects, sources} = ruleParams<RuleValidatorEffect>(controller);
+  return withContext(controller, sources, (ctx) => {
+    const ruleOn = isOn(when, ctx);
+    const results: Record<string, ValidationResult | undefined> = {};
+    for (const effect of effects) {
+      const on = ruleOn && isOn(effect.when, ctx);
+      for (const target of matchedTargets(controller, effect)) {
+        results[target] ??= undefined;
+        if (!on)
+          continue;
+        if (effect.effect === 'verdicts') {
+          const verdicts: ValidatorVerdict[] = ctx[effect.source] ?? [];
+          if (!verdicts.length)
+            continue;
+          const result = results[target] ??= {};
+          for (const {message, isError} of verdicts)
+            (result[isError ? 'errors' : 'warnings'] ??= []).push({description: message});
+          continue;
+        }
+        // an array message yields one item per element, an empty array none; empty values add nothing
+        const message = evaluate(effect.message, ctx);
+        const descriptions = (Array.isArray(message) ? message : [message])
+          .filter((item) => item != null).map((item) => String(item));
+        if (!descriptions.length)
+          continue;
+        // an action that is not found on the actions node is left out, as validators do
+        const actions = (effect.actions ?? []).flatMap((item) => {
+          const action = controller.getValidationAction?.(item.actions, item.action);
+          if (!action)
+            return [];
+          const additionalParams = item.additionalParams === undefined ? undefined :
+            evaluate(item.additionalParams, ctx);
+          return [{actionName: String(evaluate(item.actionName, ctx)), action, ...(additionalParams != null ?
+            {additionalParams} : {})}];
+        });
+        const result = results[target] ??= {};
+        (result[severityKey[effect.effect]] ??= []).push(...descriptions.map((description) =>
+          actions.length ? {description, actions} : {description}));
+      }
+    }
+    for (const [target, result] of Object.entries(results))
+      controller.setValidation(target, result);
+  });
+};
+
+export const ruleDataHandler: Handler = ({controller}) => {
+  const {when, effects, sources} = ruleParams<RuleDataEffect>(controller);
+  return withContext(controller, sources, (ctx) => {
+    const ruleOn = isOn(when, ctx);
+    for (const effect of effects) {
+      const on = ruleOn && isOn(effect.when, ctx);
+      const values = effect.effect === 'assign' && on ? evaluate(effect.values, ctx) : undefined;
+      for (const target of matchedTargets(controller, effect)) {
+        if (effect.effect === 'set') {
+          if (on)
+            controller.setAll(target, evaluate(effect.value, ctx), effect.restriction ?? 'none');
+          else
+            controller.clearRestriction(target);
+        } else if (effect.effect === 'clear' && on)
+          controller.setAll(target, null, effect.restriction ?? 'none');
+        else if (effect.effect === 'assign') {
+          if (!on)
+            controller.clearRestriction(target);
+          else if (values != null && typeof values === 'object') {
+            const key = effect.ignoreCase ?
+              Object.keys(values).find((name) => name.toLowerCase() === target.toLowerCase()) :
+              target in values ? target : undefined;
+            if (key !== undefined)
+              controller.setAll(target, values[key], effect.restriction ?? 'none');
+            else
+              controller.clearRestriction(target);
+          }
+        }
+      }
+    }
+  });
+};

@@ -16,6 +16,36 @@
       "type": "string",
       "description": "Manifest version (semver recommended). Recorded in the registry on deploy."
     },
+    "storage": {
+      "type": "object",
+      "description": "Where the rows live. Absent = domain: the platform creates and owns the tables. external: the tables already exist in the database of the named platform connection and are read through it (no row security, soft delete, audit, relations, constraints, property schemas or extensions; read-only unless 'writable'); every table then declares its remote primary key as businessKey, and 'table'/'column' carry the remote names when they differ from the declared ones.",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"enum": ["domain", "external"]},
+        "connection": {
+          "type": "string",
+          "minLength": 1,
+          "description": "external: the qualified name of the platform connection to read through ('Package:Connection'); required."
+        },
+        "schema": {
+          "$ref": "#/definitions/remoteIdentifier",
+          "description": "external: the schema inside the remote database (e.g. 'public', 'dbo'); required."
+        },
+        "catalog": {
+          "$ref": "#/definitions/remoteIdentifier",
+          "description": "external: the catalog/database, for targets that have one."
+        },
+        "writable": {
+          "type": "boolean",
+          "default": false,
+          "description": "external: rows may be inserted, patched and deleted through the connection (one remote transaction per request, keyed by businessKey; on ClickHouse, which commits every statement, a request is one multi-row INSERT and patch/delete/upsert are refused). The publisher must hold Query, AddRows, ChangeValues and RemoveRows on the connection; a table opts out with its own 'writable': false."
+        }
+      },
+      "if": {"properties": {"kind": {"const": "external"}}},
+      "then": {"required": ["connection", "schema"]},
+      "else": {"properties": {"connection": false, "schema": false, "catalog": false, "writable": false}}
+    },
     "extensible": {
       "type": "object",
       "description": "Opt-in for user extensions of this schema. Users holding the Extend permission on the schema entity may then add their own tables; per-table column extension is opted in with the table's own 'extensible' flag. User objects are retained across plugin upgrades and never appear in generated typed clients.",
@@ -64,11 +94,26 @@
         {"not": {"type": "string", "pattern": "^x_"}}
       ]
     },
+    "remoteIdentifier": {
+      "description": "A name inside the remote database, verbatim (spaces allowed, the connector quotes it); it may not contain brackets, quotes, backslashes or dots.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[^\\[\\]\"'`\\\\.]+$"
+    },
     "table": {
       "type": "object",
       "required": ["columns"],
       "additionalProperties": false,
       "properties": {
+        "table": {
+          "$ref": "#/definitions/remoteIdentifier",
+          "description": "External storage only: the remote table's name when it differs from the declared one (e.g. 'Order Details')."
+        },
+        "writable": {
+          "type": "boolean",
+          "description": "Writable external storage only: false keeps this table read-only while the rest of the binding accepts writes."
+        },
         "securityMode": {
           "enum": ["table", "master", "row"],
           "default": "table",
@@ -93,6 +138,11 @@
           "type": "boolean",
           "default": true,
           "description": "Per-table in-transaction audit trail (before/after diffs, history, restore)."
+        },
+        "hierarchy": {
+          "type": "boolean",
+          "default": false,
+          "description": "The table is a tree: it must declare exactly one ref column targeting itself, which becomes its parent column. Enables the ancestor path endpoint and the 'under' subtree filter term."
         },
         "extensible": {
           "type": "boolean",
@@ -140,26 +190,49 @@
         },
         "constraints": {
           "type": "object",
-          "description": "Table-level CHECK constraints keyed by constraint name. The expression may reference this table's relational columns, literals, comparison/arithmetic operators and a whitelist of keywords and immutable functions; it is normalized before it reaches the DDL.",
+          "description": "Table-level CHECK constraints keyed by constraint name. {\"check\": <sql>} references this table's relational columns, literals, comparison/arithmetic operators and a whitelist of keywords and immutable functions, normalized before it reaches the DDL. {\"expr\": <filter>, \"message\"?} is the platform filter grammar over this table's relational columns (literals, lists, null, a bare column name on the right of a comparison) — compiled to the same CHECK, and validated client-side by forms before the write, with the message shown on violation.",
           "propertyNames": {"$ref": "#/definitions/identifier"},
           "additionalProperties": {
             "type": "object",
-            "required": ["check"],
-            "additionalProperties": false,
-            "properties": {
-              "check": {"type": "string"}
-            }
+            "oneOf": [
+              {
+                "required": ["check"],
+                "additionalProperties": false,
+                "properties": {"check": {"type": "string"}}
+              },
+              {
+                "required": ["expr"],
+                "additionalProperties": false,
+                "properties": {"expr": {"type": "string"}, "message": {"type": "string"}}
+              }
+            ]
           }
         },
         "grants": {
           "type": "object",
-          "description": "Permissions granted on the table entity at deploy time, keyed by group name (a platform group such as 'All users' or 'Developers'); each lists the permissions to grant.",
+          "description": "Permissions granted on the table entity at deploy time, keyed by group name (a platform group such as 'All users' or 'Developers'); each lists the permissions to grant: view, edit, delete, or a custom permission this table declares.",
           "minProperties": 1,
           "additionalProperties": {
             "type": "array",
             "minItems": 1,
-            "items": {"enum": ["view", "edit", "delete"]}
+            "items": {"$ref": "#/definitions/identifier"}
           }
+        },
+        "permissions": {
+          "description": "Custom permissions an app gates its actions on, grantable on the table entity next to View/Edit/Delete/Share and answered as access.can.<name> and the per-row ~can_<name> column: a list of names, or name -> {description?}. Names are identifiers of at most 32 characters; view, edit, delete, share and extend are reserved.",
+          "oneOf": [
+            {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/identifier"}},
+            {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": {"$ref": "#/definitions/identifier"},
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {"description": {"type": "string"}}
+              }
+            }
+          ]
         },
         "relations": {
           "type": "object",
@@ -235,7 +308,11 @@
       "properties": {
         "type": {
           "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "file", "json", "user", "group"],
-          "description": "Property type; ref = FK to another table in this manifest; user/group = aliases of ref Core.users / ref Core.groups (semantic type User / Group); file = a file://<connection>/<path> string into platform file storage (semantic type File); json = a jsonb-backed opaque object (filters, sorts, facets and aggregates refuse it)."
+          "description": "Property type; ref = FK to another table in this manifest; user/group = aliases of ref Core.users / ref Core.groups (semantic type User / Group); file = a file://<connection>/<path> string into platform file storage (semantic type File); json = a jsonb-backed opaque object (filters, sorts, facets and aggregates refuse it). An external storage admits string, int, float, bool, datetime and same-manifest ref only."
+        },
+        "column": {
+          "$ref": "#/definitions/remoteIdentifier",
+          "description": "External storage only: the remote column's name when it differs from the declared one (e.g. 'OrderID')."
         },
         "required": {"type": "boolean", "default": false},
         "unique": {
@@ -297,7 +374,19 @@
         "default": {
           "description": "Default value for new rows / UI inputs."
         },
-        "format": {"type": "string"}
+        "format": {"type": "string"},
+        "editor": {
+          "enum": ["textarea", "switch", "slider", "color", "tags", "markdown"],
+          "description": "Input editor hint for forms and dialogs (lower-case; stored as the platform InputType name on the column's property; markdown renders as a text area until the platform bridges its markdown input)."
+        },
+        "searchable": {
+          "type": "boolean",
+          "description": "The query `search` key matches this column (string only); a table declaring none searches its name column."
+        },
+        "filter": {
+          "type": "string",
+          "description": "Ref columns only: a filter-grammar expression over the target table that narrows the picker's candidates; `$name` binds to the owning row's column of that name (a dependent picker), e.g. \"country_id = $country_id\"."
+        }
       }
     }
   }

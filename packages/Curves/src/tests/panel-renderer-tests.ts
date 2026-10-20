@@ -246,7 +246,7 @@ category('panel and renderer', () => {
     }
   });
 
-  test('options stored under the legacy tag are read and migrate onto the layout-carried one', async () => {
+  test('options stored under the legacy tag are read, and move onto the layout-carried one when written', async () => {
     // only '.%' tags reach a layout, so options in '.fit' never travelled to a fresh table
     expect(FitConstants.TAG_FIT.startsWith('.%'), true, 'the fit tag is no longer carried by layouts');
 
@@ -255,8 +255,15 @@ category('panel and renderer', () => {
     col.setTag(FitConstants.TAG_FIT_LEGACY, JSON.stringify({chartOptions: {logX: true}}));
 
     expect(getColumnChartOptions(col).chartOptions!.logX, true, 'options under the legacy tag were ignored');
-    expect(JSON.parse(col.getTag(FitConstants.TAG_FIT)).chartOptions.logX, true,
-      'reading did not migrate the options onto the layout-carried tag');
+    expect(col.getTag(FitConstants.TAG_FIT) == null, true, 'reading the options wrote a tag');
+
+    changeCurvesOptions(DG.Viewer.grid(df).cell('curve', 0),
+      {property: {name: 'showCurveConfidenceInterval'}, value: false} as unknown as DG.InputBase,
+      'seriesOptions', 'Column');
+    const stored = JSON.parse(col.getTag(FitConstants.TAG_FIT)) as IFitChartData;
+    expect(stored.chartOptions!.logX, true, 'the legacy options were lost when the column was written');
+    expect(stored.seriesOptions!.showCurveConfidenceInterval, false, 'the change was not stored');
+    expect(col.getTag(FitConstants.TAG_FIT_LEGACY) == null, true, 'both tags now hold the options');
   });
 
   test('the panel offers the label names the cell carries', async () => {
@@ -338,6 +345,27 @@ category('panel and renderer', () => {
       'with one curve the aggregate is that curve, so it should not be drawn');
     // and the mode falls back to per series rather than drawing nothing at all
     expect(drawn.some((t) => t.startsWith('IC50')), true, 'the single curve should still show its own');
+
+    const offered = (logIC50s: number[]) =>
+      chartPropertiesFor(JSON.parse(multiSeriesCurveJson(logIC50s)) as IFitChartData).map((p) => p.name);
+    expect(offered([-6.5]).some((name) => name === 'statisticsMode' || name === 'aggrType'), false,
+      'the Options pane of a one-curve cell should offer no summary');
+    expect(offered([-7, -5]).includes('statisticsMode') && offered([-7, -5]).includes('aggrType'), true,
+      'the one of a two-curve cell should');
+  });
+
+  test('a click on a second curve cell right after the first makes that one current', async () => {
+    // the first click used to freeze the current object for a second, and the Context Panel kept its panes
+    const tv = grok.shell.addTableView(curveTable('panelSecondClick', true));
+    try {
+      const renderer = new FitChartCellRenderer();
+      renderer.onClick(tv.grid.cell('curve', 0), new MouseEvent('click'));
+      renderer.onClick(tv.grid.cell('curve', 1), new MouseEvent('click'));
+      const current = grok.shell.o;
+      expect(current instanceof DG.GridCell && current.gridRow === 1, true, `the second cell should be current, not ${current}`);
+    } finally {
+      tv.close();
+    }
   });
 
   test('the panel offers droplines only for a fit that has asymptotes', async () => {

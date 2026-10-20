@@ -102,7 +102,7 @@ category('UI: Inputs', () => {
         case 'tableInput':
           grok.shell.addTableView(grok.data.demo.demog());
           grok.shell.addTableView(grok.data.demo.randomWalk());
-          onChanged(key, value, [t.col('height'), t.col('weight')]);
+          onChanged(key, value, t);
           break;
       }
     }

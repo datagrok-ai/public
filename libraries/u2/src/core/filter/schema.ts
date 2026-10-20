@@ -1,6 +1,7 @@
 import {clone, find, isFlat, isGroup, optionsEquals, parentOf, valueEquals, walk} from './model.js';
 import type {FilterGroup, FilterNode, FilterKind, FilterScalar, FilterValue, FilterProblem, Lock}
   from './model.js';
+import type {FilterOperator} from './operators.js';
 import type {IProperty} from '../property-like.js';
 import type {ObjectRenderer} from '../object-renderer.js';
 import type {Input, InputOptions} from '../input-base.js';
@@ -15,7 +16,16 @@ export interface FilterProperty extends IProperty {
 export interface FilterValueItem { value: FilterScalar; label?: string; count?: number }
 export interface FilterSchema {
   properties: FilterProperty[];
-  values?: (prop: FilterProperty, query: string, signal: AbortSignal) => Promise<FilterValueItem[]>;
+  /** Narrows what the builder and the query box OFFER on a property, out of the operators the
+   * registry answers for its kind — an operator the schema knows cannot apply here (`under` off
+   * a column whose target is not a hierarchy). The registry entry itself is untouched, so a
+   * filter that already names one still parses and still runs. */
+  operators?: (prop: FilterProperty, offered: FilterOperator[]) => FilterOperator[];
+  /** `context.operator` is the operator the value is being typed for, where the surface knows it:
+   * the candidates for `under` are the rows of the hierarchy it walks, not the values the column
+   * happens to hold. */
+  values?: (prop: FilterProperty, query: string, signal: AbortSignal,
+    context?: {operator?: string}) => Promise<FilterValueItem[]>;
   /** One FK hop. */
   resolveRef?: (prop: FilterProperty) => Promise<FilterSchema>;
   renderer?: (prop: FilterProperty) => ObjectRenderer<any> | undefined;

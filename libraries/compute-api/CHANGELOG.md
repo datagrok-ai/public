@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Exported the `isFuncCallState`, `isStaticPipelineState` and `isDynamicPipelineState` guards; the newly exported workflow types come through with the type re-export
+
+## 0.8.0 (2026-09-23)
+
 * Removed `testPipeline` (the Compute test-runner feature was removed)
 
 ## 0.7.6 (2026-06-04)

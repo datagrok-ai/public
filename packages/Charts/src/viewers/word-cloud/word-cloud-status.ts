@@ -1,11 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import type {WordCloudViewer} from './word-cloud-viewer';
-
-type Box = {x: number, y: number, width: number, height: number};
+import {Box, Readings} from '../../utils/utils';
 
 type LaidWord = {name: string, box: Box, font: string};
-
-type Readings = {[name: string]: number | string | boolean};
 
 /** Where the layout put every word it managed to draw, in CSS px of the chart canvas. The series'
  * graphic elements are the only record the layout leaves, and a word it dropped has none — so an
@@ -25,7 +22,7 @@ function laidOutWords(chart: any): LaidWord[] {
       rect.applyTransform(transform);
     const style = el.style ?? {};
     words.push({
-      name: String(data.getName(i)),
+      name: data.getRawDataItem(i).word,
       box: {x: rect.x, y: rect.y, width: rect.width, height: rect.height},
       font: `${style.fontWeight ?? ''} ${style.fontFamily ?? ''}`.trim(),
     });

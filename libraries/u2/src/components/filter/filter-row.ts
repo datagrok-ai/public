@@ -181,8 +181,9 @@ export class FilterRow extends Control {
     this._valueHost = div([], 'u2-fb-values');
     this._remove = removeButton(() => this._host.remove(this.id));
     this._problem = textPart('u2-fb-problem', 'problem');
+    this._valueHost.append(this._problem);
     this.root.append(this._handle, this._prop.root, this._propText, this._op.root, this._opText, this._valueHost,
-      this._remove, this._problem);
+      this._remove);
     this.own(() => this._releaseEditors());
   }
 
@@ -231,11 +232,13 @@ export class FilterRow extends Control {
       editor.setEnabled(lock !== 'all');
   }
 
+  // the problem line stays the value column's last child: it reads under the value it is about
   private _releaseEditors(): void {
     this._editorScope?.dispose();
     this._editorScope = undefined;
     this._editors = [];
     this._valueHost.textContent = '';
+    this._valueHost.append(this._problem);
   }
 
   private _buildEditors(cond: FilterCondition, prop: FilterProperty | null, op: FilterOperator | undefined): void {
@@ -250,7 +253,7 @@ export class FilterRow extends Control {
       else if (op.editor === 'range') {
         const [lo, hi] = FilterRow._bounds(cond);
         this._mount(this._scalarEditor(prop, lo, (v) => this._writeBound(0, v)), 'value');
-        this._valueHost.append(span('and', 'u2-fb-and'));
+        this._valueHost.insertBefore(span('and', 'u2-fb-and'), this._problem);
         this._mount(this._scalarEditor(prop, hi, (v) => this._writeBound(1, v)), 'value2');
       } else
         this._mount(this._singleEditor(cond, prop), 'value');
@@ -260,7 +263,7 @@ export class FilterRow extends Control {
   private _mount(editor: ValueEditor, part: 'value' | 'value2'): void {
     editor.root.classList.add(`u2-fb-${part}`);
     editor.root.dataset.u2Part = part;
-    this._valueHost.append(editor.root);
+    this._valueHost.insertBefore(editor.root, this._problem);
     this._editors.push(editor);
   }
 
@@ -283,7 +286,8 @@ export class FilterRow extends Control {
   private _singleEditor(cond: FilterCondition, prop: FilterProperty): ValueEditor {
     const custom = this._host.editors?.(prop, {inline: true, value: cond.value, onChanged: (v) => this._change(v)});
     return custom ? valueEditor(custom, (v) => v) :
-      this._scalarEditor(prop, Array.isArray(cond.value) ? undefined : cond.value, (v) => this._change(v));
+      this._scalarEditor(prop, Array.isArray(cond.value) ? undefined : cond.value, (v) => this._change(v),
+        cond.operator);
   }
 
   private _listEditor(cond: FilterCondition, prop: FilterProperty): ValueEditor {
@@ -308,7 +312,7 @@ export class FilterRow extends Control {
 
   /** The core kind defaults; `onChange` gets `undefined` for a cleared editor. */
   private _scalarEditor(prop: FilterProperty, initial: FilterScalar | undefined,
-    onChange: (v: FilterScalar | undefined) => void): ValueEditor {
+    onChange: (v: FilterScalar | undefined) => void, operator?: string): ValueEditor {
     const kind = kindOf(prop);
     if (prop.choices) {
       const text = (v: FilterScalar | undefined) => v === undefined || v === null ? null : String(v);
@@ -318,7 +322,7 @@ export class FilterRow extends Control {
     }
     const values = this._host.schema.values;
     if (kind === KIND.REF && values) {
-      const input = new RefInput({inline: true, prop, schema: this._host.schema,
+      const input = new RefInput({inline: true, prop, schema: this._host.schema, operator,
         value: isRef(initial) ? initial : null, onChanged: (v) => onChange(v ?? undefined)});
       return scalarEditor(input, (v) => input.value.value = isRef(v) ? v : null);
     }

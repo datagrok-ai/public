@@ -1,3 +1,5 @@
+import {COLUMN_TYPE, TYPE} from './u2core/const.js';
+export {COLUMN_TYPE, TYPE, TYPES_SCALAR, SEMTYPE} from './u2core/const.js';
 
 /** @enum {AGG} */
 export enum AGG {
@@ -63,20 +65,6 @@ export enum JOIN_TYPE {
   RIGHT = 'right'
 }
 
-/** @enum {COLUMN_TYPE} */
-export enum COLUMN_TYPE {
-  STRING = 'string',
-  INT = 'int',
-  FLOAT = 'double',
-  BOOL = 'bool',
-  BYTE_ARRAY = 'byte_array',
-  DATE_TIME = 'datetime',
-  BIG_INT = 'bigint',
-  QNUM = 'qnum',
-  DATA_FRAME = 'dataframe',
-  OBJECT = 'object',
-}
-
 /** Column filters that are broader than a concrete column type.
  * Note that datetime columns are numerical, so use NUMERICAL_NO_DATE_TIME to exclude them.
  * @enum {COLUMN_TYPE_FILTER} */
@@ -89,57 +77,6 @@ export enum COLUMN_TYPE_FILTER {
   NO_MISSING_VALUES = 'no missing values',
 }
 
-
-/** @enum {TYPE} */
-export enum TYPE {
-  INT = 'int',
-  BIG_INT = 'bigint',
-  FLOAT = 'double',
-  NUM = 'num',
-  QNUM = 'qnum',
-  BOOL = 'bool',
-  STRING = 'string',
-  STRING_LIST = 'string_list',
-  DATE_TIME = 'datetime',
-  OBJECT = 'object',
-  BYTE_ARRAY = 'byte_array',
-  DATA_FRAME = 'dataframe',
-  DATA_FRAME_LIST = 'dataframe_list',
-  CELL = 'cell',
-  COLUMN = 'column',
-  COLUMN_LIST = 'column_list',
-  GRAPHICS = 'graphics',
-  FILE = 'file',
-  BLOB = 'blob',
-  ROW_FILTER = 'tablerowfiltercall',
-  COLUMN_FILTER = 'colfiltercall',
-  BIT_SET = 'bitset',
-  MAP = 'map',
-  DYNAMIC = 'dynamic',
-  VIEWER = 'viewer',  // [ViewerBase] subclasses
-  LIST = 'list',
-  /** @deprecated Use {@link TYPE.SEMANTIC_VALUE}. Removed in 1.29. */
-  SEM_VALUE = 'semantic_value',
-  FUNC = 'func',
-  FUNC_CALL = 'funccall',
-  PROPERTY = 'property',
-  CATEGORICAL = 'categorical',
-  NUMERICAL = 'numerical',
-  GRID_CELL_RENDER_ARGS = 'GridCellRenderArgs',
-
-  ELEMENT = 'element',
-  VIEW = 'view',
-  TABLE_VIEW = 'TableView',
-  USER = 'User',
-  MENU = 'Menu',
-  PROJECT = 'Project',
-  SEMANTIC_VALUE = 'semantic_value',
-  EVENT_DATA = 'event_data',
-  PROGRESS_INDICATOR = 'progressindicator',
-  CREDENTIALS = 'Credentials',
-  SCRIPT_ENVIRONMENT = 'ScriptEnvironment',
-  NOTEBOOK = 'Notebook'
-}
 
 /** How a property relates to its owner in the database ({@link Property.relationKind}).
  * @enum {RELATION_KIND} */
@@ -173,8 +110,6 @@ export enum FILTER_TYPE {
   COLUMN_FREE_TEXT = 'column-free-text',
   SUBSTRUCTURE = 'Chem:substructureFilter'
 }
-
-export const TYPES_SCALAR = new Set([TYPE.INT, TYPE.BIG_INT, TYPE.FLOAT, TYPE.NUM, TYPE.BOOL, TYPE.STRING]);
 
 /** @enum {VIEWER_PROPERTY_TYPE} */
 export enum VIEWER_PROPERTY_TYPE {
@@ -224,51 +159,6 @@ export enum VIEW_TYPE {
 }
 
 ///////
-/** @enum {SEMTYPE} */
-export const SEMTYPE = {
-  EMAIL: 'Email Address',
-  URL: 'URL',
-  PHONE_NUMBER: 'Phone Number',
-  CITY: 'City',
-  COUNTRY: 'Country',
-  GENDER: 'Gender',
-  STATE: 'State',
-  COUNTY: 'County',
-  PLACE_NAME: 'Place Name',
-  ZIP_CODE: 'Zip Code',
-  AREA_CODE: 'Area Code',
-  STREET_ADDRESS: 'Street Address',
-  TEXT: 'Text',
-  DURATION: 'Duration',
-
-  LATITUDE: 'Latitude',
-  LONGITUDE: 'Longitude',
-
-  IP_ADDRESS: 'IP Address',
-
-  MOLECULE: 'Molecule',
-  MACROMOLECULE: 'Macromolecule',
-  MOLECULE3D: 'Molecule3D',
-
-  CONCENTRATION: 'Concentration',
-  VOLUME: 'Volume',
-
-  PDB_ID: 'PDB_ID',
-  NEWICK: 'Newick',
-  HELM: 'HELM',
-  SUBSTRUCTURE: 'Substructure',
-  MONEY: 'Money',
-  IMAGE: 'Image',
-  FILE: 'File',
-  CHEMICAL_REACTION: 'ChemicalReaction',
-
-  IC50: 'IC50',  //	[nM, µM] Half-maximal inhibitory concentration (lower = more potent)
-  EC50: 'EC50',  // [nM, µM] Half-maximal effective concentration
-  Ki: 'Ki',      // [nM, µM] Inhibition constant (binding affinity to target)
-
-  FUNCTION_NAME: 'FunctionName',  // namespace-qualified function name, such as 'Chem:SmilesToMw'
-}
-
 export const UNITS = {
   Molecule : {
     SMILES: 'smiles',
@@ -458,6 +348,14 @@ export const FUNC_TYPES = {
   AI_ENGINE: 'aiEngine',
 
   NOTATION_REFINER: 'notationRefiner',
+
+  /** Resolves a `/domains/<schema>/<table>[/<keyOrId>]` address to a view
+    * Signature: domainRouteView(address: string): View | null */
+  DOMAIN_ROUTES: 'domainRoutes',
+
+  /** Opens the "Create domain schema" dialog over a database connection
+    * Signature: createDomainBinding(connection?: DataConnection, schema?: string, table?: string, catalog?: string): string | null */
+  DOMAIN_AUTHORING: 'domainAuthoring',
 }
 
 
@@ -643,6 +541,16 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.NOTATION_REFINER,
     description: 'Refines the biological sequence notation based on company specific rules',
     signature: 'notationRefiner(column: Column, stats: any, separator: string): bool'
+  },
+  {
+    role: FUNC_TYPES.DOMAIN_ROUTES,
+    description: 'Resolves a /domains/<schema>/<table>[/<keyOrId>] address to a view',
+    signature: 'domainRouteView(address: string): View | null'
+  },
+  {
+    role: FUNC_TYPES.DOMAIN_AUTHORING,
+    description: 'Opens the "Create domain schema" dialog over a database connection; answers the created schema\'s name',
+    signature: 'createDomainBinding(connection?: DataConnection, schema?: string, table?: string, catalog?: string): string | null'
   }
 ]
 
@@ -876,6 +784,10 @@ export enum EVENT_TYPE {
   VIEW_RENAMED = 'grok-view-renamed',
   VIEW_CHANGED = 'grok-view-changed',
   VIEW_CHANGING = 'grok-view-changing',
+
+  // Browse events
+  BROWSE_TREE_REFRESHED = 'd4-browse-tree-refreshed',
+  TREE_NODE_CHILDREN_LOADED = 'd4-tree-view-child-node-children-loaded',
 
   // Object events
   CURRENT_OBJECT_CHANGED = 'd4-current-object-changed',

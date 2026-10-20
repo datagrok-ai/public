@@ -6,8 +6,8 @@ function addWidgetToTree(widget, parentGroup) {
   const label = widget.type + (childCount === 0 ? '' : '(' + childCount + ')');
   const group = parentGroup.group(label, widget, false);
 
-  // Only widgets that opt in expose these (DomainGrid / DomainForm do); the base
-  // Widget has neither, so a plain widget contributes just its label.
+  // Only widgets that opt in expose these; the base Widget has neither, so a
+  // plain widget contributes just its label.
   const functions = typeof widget.getFunctions === 'function' ? widget.getFunctions() : null;
   if (functions && functions.length > 0) {
     const funcNode = group.group('Functions (' + functions.length + ')', null, false);

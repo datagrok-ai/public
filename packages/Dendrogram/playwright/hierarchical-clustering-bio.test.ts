@@ -366,7 +366,9 @@ test('Dendrogram / Hierarchical Clustering (Bio) — sequence-default dialog + L
       expect(newCols[0], 'new column name follows Cluster (N.NN) format').toMatch(/^Cluster\s*\(\d+(\.\d{1,2})?\)$/);
       // Tie the created column to the settled threshold captured from the dialog (Clusters=5 request).
       const nameThreshold = Number(newCols[0].match(/\(([\d.]+)\)/)![1]);
-      expect(nameThreshold, 'column-name threshold matches settled dialog threshold').toBeCloseTo(Number(result.settledThreshold), 2);
+      // the name carries the threshold rounded to 2 places, so 0.125 becomes 0.13
+      expect(Math.abs(nameThreshold - Number(result.settledThreshold)), 'column-name threshold matches settled dialog threshold')
+        .toBeLessThanOrEqual(0.005 + 1e-9);
 
       const colInfo = await page.evaluate((colName: string) => {
         const col = grok.shell.tv.dataFrame.col(colName)!;

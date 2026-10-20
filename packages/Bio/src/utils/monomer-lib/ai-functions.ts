@@ -23,6 +23,7 @@ import {DuplicateMonomerManager} from './monomer-manager/duplicate-monomer-manag
 import {deleteMonomerLibraryByName, mergeActiveLibrariesInto, refreshLibraryControlsForm}
   from './library-file-manager/ui';
 import type {MonomerCollectionsView} from './monomer-collections-view';
+import {CollectionDialogs} from './collection-dialogs';
 
 const AI_NAMESPACE = 'BioMonomerAI';
 
@@ -228,7 +229,8 @@ function monomerManagerFunctions(): DG.Func[] {
           polymerType: monomer.polymerType,
           monomerType: monomer.monomerType,
           ...(monomer.naturalAnalog ? {naturalAnalog: monomer.naturalAnalog} : {}),
-          rGroups: (monomer.rgroups ?? []).map((r) => ({label: r.label, capGroupSmiles: r.capGroupSmiles})),
+          rGroups: (monomer.rgroups ?? []).map((r) => ({label: r.label, capGroupName: r.capGroupName,
+            capGroupSmiles: r.capGroupSMILES ?? r.capGroupSmiles})),
           ...(monomer.author ? {author: monomer.author} : {}),
           ...(monomer.createDate ? {created: monomer.createDate} : {}),
         };
@@ -246,8 +248,8 @@ function monomerManagerFunctions(): DG.Func[] {
       }),
 
     aiFunc('setMonomerFormFields', 'dynamic setMonomerFormFields(view view, map fields)',
-      'Set fields of the monomer edit form. Keys: molecule (SMILES), symbol, name, polymerType (PEPTIDE, RNA, CHEM), monomerType (Backbone, Branch, Terminal), naturalAnalog, id. Returns the validation state',
-      async (view: any, fields: {[key: string]: unknown}) => {
+      'Set fields of the monomer edit form. Keys: molecule (SMILES), symbol, name, polymerType (PEPTIDE, RNA, CHEM), monomerType (Backbone, Branch, Terminal), naturalAnalog, id, and R1, R2... to cap an R group of the structure (H, OH, Allyl, Br, Cl, Alkyne, Azide, I, F, NH2, Me, Ac, OMe, SH, Et). Returns the validation state',
+      async (view: any, fields: {[key: string]: string | number | null}) => {
         const mgr = monomerManagerOf(view);
         if (!fields || !Object.keys(fields).length)
           return {success: false, error: 'Pass fields as a map, e.g. molecule, symbol, name'};
@@ -335,7 +337,7 @@ function collectionsViewOf(view: any): MonomerCollectionsView {
 }
 
 function canEditCollection(c: MonomerCollection): boolean {
-  return !c.updatedBy || c.updatedBy === DG.User.current().login;
+  return CollectionDialogs.canEdit(c, DG.User.current().login);
 }
 
 /** Which of [symbols] the merged monomer library does not know (any polymer type). */

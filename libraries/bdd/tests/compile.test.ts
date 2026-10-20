@@ -93,6 +93,80 @@ test('a @journey feature is one test: the background once, every scenario a soft
   assert.match(code, /import \{ds, el, feature, journey\} from '@datagrok-libraries\/bdd\/runtime';/);
 });
 
+test('a @known-failure scenario outside a journey runs its own steps as the expected failure, the background plainly', () => {
+  const {code, diagnostics} = compile(`Feature: Toolbox
+  Background:
+    Given user opens spgi dataset
+
+  @known-failure
+  Scenario: Add a viewer
+    When user clicks on scatter plot icon on toolbox
+
+  Scenario Outline: Several viewers
+    When user clicks on <viewer> icon on toolbox
+    Examples:
+      | viewer    |
+      | histogram |
+
+    @known-failure
+    Examples:
+      | viewer    |
+      | bar chart |
+`);
+  assert.equal(diagnostics.filter((d) => d.level === 'error').length, 0);
+  assert.match(code, /test\("Add a viewer", \{tag: \["@known-failure"\]\}, async \(\{browser\}\) => \{\n    const page = await session\.page\(browser\);\n    await session\.step\(3, "Given user opens spgi dataset"[^\n]*\n    await knownFailure\(async \(\) => \{\n      await session\.step\(7, /);
+  assert.match(code, /test\("Several viewers \[viewer=bar chart\]", \{tag: \["@known-failure"\]\}[^\n]*\n[^\n]*\n[^\n]*\n    await knownFailure\(async \(\) => \{/);
+  assert.doesNotMatch(code.split('Several viewers [viewer=histogram]')[1].split('test(')[0], /knownFailure/);
+  assert.match(code, /import \{ds, el, feature, knownFailure\} from '@datagrok-libraries\/bdd\/runtime';/);
+});
+
+test('@known-failure:<line> pins the step expected to fail, and must name a step of its scenario', () => {
+  const pinned = compile(`Feature: Toolbox
+  @known-failure:4
+  Scenario: Add a viewer
+    Given user opens spgi dataset
+    When user clicks on scatter plot icon on toolbox
+`);
+  assert.equal(pinned.diagnostics.filter((d) => d.level === 'error').length, 0);
+  assert.match(pinned.code, /\n    \}, 4\);\n  \}\);/);
+  const journeyPinned = compile(`@journey
+Feature: Toolbox
+  @known-failure:5
+  Scenario: Add a viewer
+    Given user opens spgi dataset
+    When user clicks on scatter plot icon on toolbox
+`);
+  assert.match(journeyPinned.code, /\}, \{knownFailure: true, line: 5\}\);/);
+  const wrong = compile(`Feature: Toolbox
+  @known-failure:9
+  Scenario: Add a viewer
+    When user clicks on scatter plot icon on toolbox
+`);
+  assert.match(wrong.diagnostics.map((d) => d.message).join('\n'), /@known-failure:9 names no step of this scenario/);
+});
+
+test('@skip declares the test skipped; a journey skips as a whole', () => {
+  const {code, diagnostics} = compile(`Feature: Toolbox
+  @skip
+  Scenario: Add a viewer
+    When user clicks on scatter plot icon on toolbox
+
+  Scenario: Another
+    When user clicks on scatter plot icon on toolbox
+`);
+  assert.equal(diagnostics.filter((d) => d.level === 'error').length, 0);
+  assert.match(code, /\n  test\.skip\("Add a viewer", \{tag: \["@skip"\]\}/);
+  assert.match(code, /\n  test\("Another"/);
+  assert.match(compile('@journey @skip ' + FEATURE).code, /\n  test\.skip\("Toolbox"/);
+  const scenarioInJourney = compile(`@journey
+Feature: Toolbox
+  @skip
+  Scenario: Add a viewer
+    When user clicks on scatter plot icon on toolbox
+`);
+  assert.match(scenarioInJourney.diagnostics.map((d) => d.message).join('\n'), /tag the feature @skip/);
+});
+
 test('{widget} is an element phrase that names a viewer or a widget', () => {
   fns.setProp = When('user sets {string} property of {widget} to {string}', async () => undefined);
   const {code, diagnostics} = compile(`Feature: A
@@ -133,6 +207,26 @@ test('unbound steps, unknown elements and unknown datasets are errors with point
   assert.match(code, /throw new Error\('no step definition matches this step'\)/);
 });
 
+test('a @guide scenario without "simple mode is off" is an error at the scenario', () => {
+  fns.simpleModeOff = Given('simple mode is off', async () => undefined);
+  const {diagnostics} = compile(`@guide
+Feature: A
+  Scenario: Shown in the full shell
+    Given user opens spgi dataset
+    And simple mode is off
+    When user clicks on toolbox
+
+  Scenario: Forgot the shell
+    Given user opens spgi dataset
+    When user clicks on toolbox
+`);
+  const errors = diagnostics.filter((d) => d.level === 'error');
+  assert.equal(errors.length, 1);
+  assert.equal(errors[0].line, 8);
+  assert.match(errors[0].message, /a @guide scenario runs in the full shell: add "And simple mode is off"/);
+  assert.equal(compile(FEATURE).diagnostics.filter((d) => d.level === 'error').length, 0);
+});
+
 test('ambiguous definitions are reported, not picked', () => {
   fns.clickOn2 = When('user clicks on {element}', async () => undefined);
   const {diagnostics} = compile(`Feature: A
@@ -161,6 +255,22 @@ test('data tables and doc strings are passed as trailing arguments', () => {
       | method     | clustal |
 `);
   assert.match(code, /fillIn\(page, \[\["name input","Batch 7"\],\["method","clustal"\]\]\)/);
+});
+
+test('a "# caption:" comment right above a step is its caption in a guide, passed after the body', () => {
+  const {code} = compile(`Feature: A
+  Scenario: B
+    # caption: Open the toolbox
+    When user clicks on toolbox
+    # a note, not a caption
+    Then toolbox should be visible
+    # caption: The toolbox shows
+    # (it is the shell's)
+    Then toolbox should be hidden
+`);
+  assert.match(code, /clickOn\(page, el\("toolbox"\)\), undefined, "Open the toolbox"\);/);
+  assert.match(code, /shouldBe\(page, el\("toolbox"\), "visible"\)\);/);
+  assert.match(code, /shouldBe\(page, el\("toolbox"\), "hidden"\), undefined, "The toolbox shows"\);/);
 });
 
 test('a step that enters a context switches the vocabulary and emits the switch', () => {

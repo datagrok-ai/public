@@ -3,7 +3,7 @@ import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync}
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {after, before, test} from 'node:test';
-import {scaffold} from '../src/init.js';
+import {libraryDependency, scaffold} from '../src/init.js';
 import {PACKAGE_NAME} from '../src/project.js';
 
 let tmp: string;
@@ -83,4 +83,17 @@ test('init refuses a directory without package.json', () => {
   const dir = join(tmp, 'nowhere');
   mkdirSync(dir);
   assert.throws(() => scaffold(dir), /not a package/);
+});
+
+test('inside its pnpm workspace the library is a workspace dependency, outside the globs it is a path', () => {
+  const root = join(tmp, 'ws');
+  mkdirSync(join(root, 'libraries', 'bdd'), {recursive: true});
+  mkdirSync(join(root, 'packages', 'Demo'), {recursive: true});
+  mkdirSync(join(root, 'scratch', 'Other'), {recursive: true});
+  writeFileSync(join(root, 'pnpm-workspace.yaml'), 'packages:\n  - packages/*\n  - libraries/*\n\ncatalog:\n  x: ^1\n');
+  const lib = join(root, 'libraries', 'bdd');
+  assert.equal(libraryDependency(join(root, 'packages', 'Demo'), lib, '1.2.3'), 'workspace:^');
+  assert.equal(libraryDependency(join(root, 'scratch', 'Other'), lib, '1.2.3'), 'file:../../libraries/bdd',
+    'a directory no workspace glob names cannot take workspace:^');
+  assert.equal(libraryDependency(join(root, 'packages', 'Demo'), join(root, 'node_modules', 'x', 'bdd'), '1.2.3'), '^1.2.3');
 });

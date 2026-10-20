@@ -20,7 +20,9 @@ export class CommunityWidget extends DG.Widget {
           .slice(0, 10)
           .map((t: any) => ui.link(t.title, `https://community.datagrok.ai/t/${t.slug}`), 'Open in new tab');
         this.root.appendChild(ui.divV(links));
-      });
+      })
+      // a stand without internet access, or the forum down
+      .catch(() => this.root.appendChild(ui.divText('The community forum cannot be reached.')));
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Community');

@@ -21,6 +21,7 @@ export interface MolStats {
   numHeavy: number;
   countByZ: Map<number, number>;
   numAromatic: number;
+  numAromaticRings: number;
   numUnsaturatedNonAromatic: number;
   hasIsotope: boolean;
   hasCharge: boolean;
@@ -49,16 +50,18 @@ export function computeMolStats(mol: RDMol): MolStats {
 
   const aromaticAtoms = new Set<number>();
   const aromaticBonds = new Set<number>();
+  const atomRings: number[][] = [];
   for (const e of (m.extensions ?? []) as any[]) {
     if (e.name === 'rdkitRepresentation') {
       for (const i of e.aromaticAtoms ?? []) aromaticAtoms.add(i);
       for (const i of e.aromaticBonds ?? []) aromaticBonds.add(i);
+      for (const r of e.atomRings ?? []) atomRings.push(r);
     }
   }
 
   const stats: MolStats = {
     numHeavy: 0, countByZ: new Map(),
-    numAromatic: 0, numUnsaturatedNonAromatic: 0,
+    numAromatic: 0, numAromaticRings: 0, numUnsaturatedNonAromatic: 0,
     hasIsotope: false, hasCharge: false, hasRadical: false,
     symbols: [],
   };
@@ -79,11 +82,18 @@ export function computeMolStats(mol: RDMol): MolStats {
     if (aromaticAtoms.has(i)) stats.numAromatic++;
   }
 
-  const bonds = (m.bonds ?? []) as any[];
+  const bonds = (m.bonds ?? []) as {bo?: number; atoms: number[]}[];
+  const aromaticPairs = new Set<string>();
   for (let i = 0; i < bonds.length; i++) {
-    const bo = bonds[i].bo ?? dbo;
-    if (bo > 1 && !aromaticBonds.has(i)) stats.numUnsaturatedNonAromatic++;
+    if (aromaticBonds.has(i)) {
+      // Both directions, so the ring walk below can look a bond up without ordering its ends.
+      const [a, b] = bonds[i].atoms;
+      aromaticPairs.add(`${a}-${b}`).add(`${b}-${a}`);
+    } else if ((bonds[i].bo ?? dbo) > 1) stats.numUnsaturatedNonAromatic++;
   }
+  // Same rule as RDKit's NumAromaticRings: every bond of the ring is aromatic.
+  stats.numAromaticRings = atomRings.filter((ring) =>
+    ring.every((a, k) => aromaticPairs.has(`${a}-${ring[(k + 1) % ring.length]}`))).length;
 
   return stats;
 }
@@ -125,6 +135,8 @@ export function applyProductFilters(
     return {pass: false, reason: 'max_num_halogens'};
   if (specs.max_num_aromatic_atoms >= 0 && stats.numAromatic > specs.max_num_aromatic_atoms)
     return {pass: false, reason: 'max_num_aromatic_atoms'};
+  if (specs.max_num_aromatic_rings >= 0 && stats.numAromaticRings > specs.max_num_aromatic_rings)
+    return {pass: false, reason: 'max_num_aromatic_rings'};
   if (specs.max_num_unsaturated_nonaromatic_bonds >= 0 &&
       stats.numUnsaturatedNonAromatic > specs.max_num_unsaturated_nonaromatic_bonds)
     return {pass: false, reason: 'max_num_unsaturated_nonaromatic_bonds'};

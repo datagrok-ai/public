@@ -104,12 +104,13 @@ async function setNumberFormatViaPanel(page: Page, value: string): Promise<void>
   await page.evaluate(() => { grok.shell.windows.showContextPanel = false; });
 
   // the gear opens the property grid for THIS viewer; a click that lands while the context
-  // panel is still closing shows nothing, so it is re-issued until the row exists
+  // panel is still closing shows nothing, so it is re-issued until the row exists. After Close All
+  // the panel keeps showing the closed view's Forms viewer, so a row alone does not prove ownership
   await expect.poll(async () => page.evaluate((v) => {
     const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
     if (vw.props.numberFormat === v) return true;
     const row = document.querySelector('[name="prop-number-format"]') as HTMLElement | null;
-    if (!row) {
+    if (!row || grok.shell.o?.dart !== vw.dart) {
       (vw?.root?.closest('.panel-base')
         ?.querySelector('.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null)?.click();
       return false;

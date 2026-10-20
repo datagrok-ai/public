@@ -42,7 +42,7 @@ export interface RDMol {
   //   allBondsExplicit: bool, allHsExplicit: bool, doRandom: bool, rootedAtAtom: int,
   //   includeDativeBonds: bool, ignoreAtomMapNumbers: bool
   get_smiles(details?: string): string;
-  get_cxsmiles(): string;
+  get_cxsmiles(details?: string): string;
   get_smarts(): string;
   get_cxsmarts(): string;
   get_molblock(details?: string): string;
@@ -66,11 +66,8 @@ export interface RDMol {
   get_atom_pair_fp_as_uint8array(details?: string): Uint8Array;
   get_maccs_fp_as_uint8array(): Uint8Array;
   get_frags(details?: string): {
-    molIterator: MolList,
-    mappings: {
-      frags: Array<number>,
-      fragsMolAtomMapping: Array<Array<number>>,
-    },
+    molList: MolList,
+    mappings: string,
   };
   get_mmpa_frags(minCuts: number, maxCuts: number, maxCutsBonds: number): {cores: MolList, sidechains: MolList};
   get_avalon_fp_as_uint8array(details?: string): Uint8Array;

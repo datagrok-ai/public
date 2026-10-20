@@ -5,17 +5,18 @@ import * as DG from 'datagrok-api/dg';
 
 import type {BuilderType} from '../escher_src/src/Builder';
 import type {CobraModelData, ReactionBounds, SamplingFunctionResult} from '../escher_src/src/ts/types';
-import type {PrecomputedExtremePoints} from './cobra/sampler-wrapper';
+import type {PrecomputedWarmup} from './cobra/sampler-wrapper';
 import {
-  sampleFluxAveragesWasm, sampleFluxAveragesPython, computeExtremePointsPython, samplesToDataFrame,
+  sampleFluxesWasm, sampleFluxesPython, computeWarmupPython, samplesToDataFrame, aggregatedFluxLabel,
 } from './utils';
-import type {FluxSamplingResult} from './utils';
+import type {FluxAggregation, FluxSamplingResult} from './utils';
 
 /** Sampling parameters reused verbatim from the main "Sample Reactions" dialog. */
 export type TimeCourseSamplingParams = {
   samples: number;
   thinning: number;
   bins: number;
+  aggregation: FluxAggregation;
   addDf: boolean;
   runInPython: boolean;
   usePythonFBA: boolean;
@@ -25,7 +26,7 @@ type StepBounds = Map<string, ReactionBounds>;
 
 type TimeCourseStep = {
   index: number;
-  reactionData: {[id: string]: number}; // per-reaction average flux -> map colors
+  reactionData: {[id: string]: number}; // per-reaction aggregated flux -> map colors
   distribution: SamplingFunctionResult; // per-reaction flux histograms -> reaction tooltip
   bounds: {[name: string]: ReactionBounds}; // interpolated bounds applied when this step is selected
   dataSource: string;
@@ -42,8 +43,6 @@ export function applyStepDistribution(builder: BuilderType, dist: SamplingFuncti
   const target = builder.reaction_sampling_distribution;
   if (!target)
     return;
-  target.lower_bound = dist.lower_bound;
-  target.upper_bound = dist.upper_bound;
   target.data.clear();
   for (const [k, v] of dist.data)
     target.data.set(k, v);
@@ -179,9 +178,9 @@ function showTimeCourseSlider(builder: BuilderType, steps: TimeCourseStep[], ori
 }
 
 // --------------------------------------------------------------------------
-// Per-step average flux summary (table + line chart)
+// Per-step aggregated flux summary (table + line chart)
 // --------------------------------------------------------------------------
-/** Reaction ids that carry averages, in model order, with any unknown ids appended. */
+/** Reaction ids that carry aggregated fluxes, in model order, with any unknown ids appended. */
 function summaryReactionIds(cobraModel: CobraModelData, steps: TimeCourseStep[]): string[] {
   const present = new Set<string>();
   for (const s of steps) {
@@ -195,10 +194,11 @@ function summaryReactionIds(cobraModel: CobraModelData, steps: TimeCourseStep[])
 
 /**
  * Add the time-course summary: one row per step, a numeric `step` column (1..n) followed by one
- * column per reaction holding that step's average flux. A multi-axis line chart is docked over the
+ * column per reaction holding that step's aggregated flux. A multi-axis line chart is docked over the
  * grid so the trends are what the user sees when the view opens.
  */
-function addStepAveragesView(cobraModel: CobraModelData, steps: TimeCourseStep[], highlight: string[]) {
+function addStepFluxView(cobraModel: CobraModelData, steps: TimeCourseStep[], highlight: string[],
+  aggregation: FluxAggregation) {
   if (!steps.length)
     return;
   const reactionIds = summaryReactionIds(cobraModel, steps);
@@ -209,9 +209,9 @@ function addStepAveragesView(cobraModel: CobraModelData, steps: TimeCourseStep[]
   const fluxCols = reactionIds.map((id) =>
     DG.Column.float(id, steps.length).init((i) => steps[i].reactionData[id] ?? null));
   const df = DG.DataFrame.fromColumns([stepCol, ...fluxCols]);
-  df.name = 'Time-course average flux';
+  df.name = `Time-course ${aggregatedFluxLabel(aggregation)}`;
 
-  const title = `Average flux per step (${steps.length} steps)`;
+  const title = `${aggregation} flux per step (${steps.length} steps)`;
   // default the chart to the reactions whose bounds were interpolated — those are the ones that move
   const inDf = new Set(reactionIds);
   const preferred = highlight.filter((id) => inDf.has(id));
@@ -223,7 +223,7 @@ function addStepAveragesView(cobraModel: CobraModelData, steps: TimeCourseStep[]
     xColumnName: 'step',
     yColumnNames,
     multiAxis: true,
-    yAxisTitle: 'Average flux',
+    yAxisTitle: `${aggregation} flux`,
     multiAxisLegendPosition: 'RightCenter',
   });
   // ratio 1 => the chart takes the whole view, hiding the grid underneath
@@ -641,12 +641,12 @@ export async function runTimeCourseSampling(
         const model = builder.model_data!;
         let res: FluxSamplingResult | null;
         if (params.runInPython)
-          res = await sampleFluxAveragesPython(model, params.bins, params.samples, params.thinning);
+          res = await sampleFluxesPython(model, params.bins, params.samples, params.thinning, params.aggregation);
         else {
-          let precomputed: PrecomputedExtremePoints | undefined;
+          let precomputed: PrecomputedWarmup | undefined;
           if (params.usePythonFBA)
-            precomputed = await computeExtremePointsPython(model);
-          res = await sampleFluxAveragesWasm(model, params.bins, params.samples, params.thinning, precomputed);
+            precomputed = await computeWarmupPython(model);
+          res = await sampleFluxesWasm(model, params.bins, params.samples, params.thinning, params.aggregation, precomputed);
         }
         if (!res)
           throw new Error('infeasible reaction bounds');
@@ -679,8 +679,9 @@ export async function runTimeCourseSampling(
       if (i - d >= 0 && sampled[i - d]) return sampled[i - d]!;
       if (i + d < steps && sampled[i + d]) return sampled[i + d]!;
     }
-    return {reactionData: {}, distribution: {upper_bound: 0, lower_bound: 0, data: new Map<string, number[]>()}};
+    return {reactionData: {}, distribution: {data: new Map()}};
   };
+  const fluxLabel = aggregatedFluxLabel(params.aggregation);
   const stepResults: TimeCourseStep[] = [];
   for (let i = 0; i < steps; i++) {
     const ok = sampled[i] !== null;
@@ -691,14 +692,14 @@ export async function runTimeCourseSampling(
       distribution: data.distribution,
       bounds: stepBoundsArr[i],
       dataSource: ok ?
-        `Time-course step ${i + 1}/${steps}` :
-        `Time-course step ${i + 1}/${steps} (infeasible — showing nearest sampled step)`,
+        `Time-course step ${i + 1}/${steps}, ${fluxLabel}` :
+        `Time-course step ${i + 1}/${steps}, ${fluxLabel} (infeasible — showing nearest sampled step)`,
     });
   }
   if (failed.length)
     grok.shell.warning(`Steps ${failed.map((i) => i + 1).join(', ')} had infeasible bounds and could not be sampled; their frames reuse the nearest sampled step.`);
 
-  addStepAveragesView(cobraModel, stepResults, affected.map((r) => r.id));
+  addStepFluxView(cobraModel, stepResults, affected.map((r) => r.id), params.aggregation);
 
   // expose the managed scrubber; it selects step 1 (applying its bounds, histograms and colors)
   showTimeCourseSlider(builder, stepResults, original);

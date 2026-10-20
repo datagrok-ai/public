@@ -2,8 +2,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import {searchResultsStatus} from '@datagrok-libraries/ml/src/viewers/search-base-viewer';
 import '../../css/chem.css';
-import {Subject, Subscription} from 'rxjs';
+import {Observable, Subject, Subscription} from 'rxjs';
 import {AVAILABLE_FPS} from '../constants';
 import {pickTextColorBasedOnBgColor} from '../utils/ui-utils';
 
@@ -15,6 +16,10 @@ export enum RowSourceTypes {
   Selected = 'Selected',
   FilteredSelected = 'FilteredSelected',
 }
+
+export const sameRows = (a: DG.BitSet, b: DG.BitSet | null): boolean =>
+  b !== null && a.length === b.length && a.clone().xor(b, false).trueCount === 0;
+
 export class ChemSearchBaseViewer extends DG.JsViewer {
   isEditedFromSketcher: boolean = false;
   gridSelect: boolean = false;
@@ -41,7 +46,48 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   renderCompleted = new Subject<void>();
   isComputing = false;
   rowSource: string;
+  /** The rows of the row source the cards were last searched among. */
+  protected searchedRows: DG.BitSet | null = null;
   error = '';
+  private _renderPending = 0;
+  private _onRendered = new Subject<void>();
+
+  /** Fires when the last scheduled or running render has finished — what automation settles on
+   * with [isRenderPending]. */
+  get onRendered(): Observable<void> {return this._onRendered;}
+
+  /** Whether a scheduled or running render still owes a frame. The cards are rebuilt by an async
+   * compute, so the DOM being populated says nothing about it. */
+  get isRenderPending(): boolean {return this._renderPending > 0;}
+
+  /** Readings a subclass adds to the ones {@link chemSearchStatus} reports. */
+  protected readings(): {[name: string]: number | string | boolean} { return {}; }
+
+  /** What a Chem search shows beside its cards (`search-results` reports the cards themselves): the
+   * metric and fingerprint of the header, the card size, the rows the cards show as a set and the
+   * properties under them. */
+  private chemSearchStatus(): {values: {[name: string]: number | string | boolean}} {
+    const cards = Array.from(this.root.querySelectorAll('[data-row]')) as HTMLElement[];
+    const sizes = new Set<string>();
+    for (const card of cards) {
+      const canvas = card.querySelector('canvas');
+      if (canvas)
+        sizes.add(`${parseInt(canvas.style.width)}x${parseInt(canvas.style.height)}`);
+    }
+    const last = cards[cards.length - 1];
+    const properties = !last ? [] : Array.from(last.querySelectorAll('.chem-similarity-prop-label'))
+      .map((l) => l.textContent ?? '').filter((l) => l !== '');
+    return {values: {
+      'metric': this.distanceMetric,
+      'fingerprint': this.fingerprint,
+      'size': this.size,
+      'row source': this.rowSource,
+      'header': this.metricsLink?.textContent?.trim() ?? '',
+      'card row set': cards.map((c) => Number(c.getAttribute('data-row'))).sort((a, b) => a - b).join(', '),
+      'card sizes': Array.from(sizes).join(', '),
+      'card properties': properties.join(', '),
+      ...this.readings()}};
+  }
 
   /** Upper bound for the `limit` property; subclasses override to widen it. Must stay a getter —
    * it's read in the base constructor, before subclass field initializers would run. */
@@ -53,7 +99,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.limit = this.int('limit', 12, {min: 1, max: this.maxLimit});
     this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
-    this.rowSource = this.string('rowSource', this.rowSourceChoices[0], {choices: this.rowSourceChoices});
+    this.rowSource = this.string('rowSource', RowSourceTypes.Filtered, {choices: this.rowSourceChoices});
     this.moleculeColumnName = this.addProperty('moleculeColumnName', DG.TYPE.COLUMN, '', {semType: DG.SEMTYPE.MOLECULE});
     this.name = name;
     this.moleculeProperties = this.columnList('moleculeProperties', [],
@@ -86,11 +132,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
           await this.render(compute);
         }));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
-        .subscribe(async (_: any) =>
-          await this.render(this.rowSource === RowSourceTypes.Selected || this.rowSource === RowSourceTypes.FilteredSelected)));
-      this.subs.push(DG.debounce((this.dataFrame.onFilterChanged), 50)
-        .subscribe(async (_: any) =>
-          await this.render(this.rowSource === RowSourceTypes.Filtered || this.rowSource === RowSourceTypes.FilteredSelected)));
+        .subscribe(async (_: any) => await this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
         .subscribe(async (_: any) => await this.render(false)));
       this.subs.push(DG.debounce((this.dataFrame.onMetadataChanged), 50)
@@ -98,9 +140,18 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
       this.moleculeColumnName = this.moleculeColumn?.name ?? '';
     }
+    this.addStatusProvider('search-results', () => searchResultsStatus(this.root, this.moleculeColumnName, this.limit));
+    this.addStatusProvider('chem-search', () => this.chemSearchStatus());
     await this.render(true);
   }
 
+
+  /** The platform calls this when the rows of the row source change: the filter in Filtered mode, the
+   * selection in Selected mode, either of them in FilteredSelected, and the mode itself. */
+  onSourceRowsChanged(): void {
+    if (this.initialized && !sameRows(this.getRowSourceIndexes(), this.searchedRows))
+      this.debouncedRender();
+  }
 
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
@@ -125,7 +176,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     const metricsButton = ui.link(` ${this.distanceMetric}, ${this.fingerprint}`, () => {
       if (!grok.shell.windows.showContextPanel)
         grok.shell.windows.showContextPanel = true;
-      grok.shell.o = object;
+      grok.shell.setCurrentObject(object, true, true);
     }, 'Distance metric and fingerprint', '');
     Object.keys(options).forEach((it: any) => metricsButton.style[it] = options[it]);
     // remove the specific link element we previously added, so any other persistent
@@ -140,8 +191,12 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   protected async debouncedRender(computeData = true): Promise<void> {
     if (this._debRenderTimeout)
       clearTimeout(this._debRenderTimeout);
+    else
+      this._renderPending++;
     this._debComputeFlag = this._debComputeFlag || computeData;
     this._debRenderTimeout = setTimeout(async () => {
+      this._debRenderTimeout = null;
+      this._renderPending--;
       const flag = this._debComputeFlag;
       this._debComputeFlag = false;
       await this.render(flag);
@@ -149,6 +204,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   }
 
   async render(computeData = true): Promise<void> {
+    this._renderPending++;
     try {
       if (!this.moleculeColumn) {
         ui.empty(this.root);
@@ -162,6 +218,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         this.isComputing = false;
         this.renderCompleted.next();
       }
+      if (--this._renderPending === 0)
+        this._onRendered.next();
     }
   }
 

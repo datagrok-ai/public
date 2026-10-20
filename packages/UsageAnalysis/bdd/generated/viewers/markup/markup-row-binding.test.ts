@@ -7,13 +7,19 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.markup]
 --- */
 import {test} from '@playwright/test';
-import '../../../bindings/spaces.js';
+import '../../../bindings/biostructure.js';
+import '../../../bindings/connections.js';
+import '../../../bindings/file-formats.js';
+import '../../../bindings/flow.js';
+import '../../../bindings/grid.js';
+import '../../../bindings/queries.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {currentRowValue, filterPasses, selectAllRows, selectNoRows, selectWhereIs, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
@@ -29,7 +35,7 @@ test.describe("Markup column references, table expressions and the current row",
     const run = journey(test, 4, page);
     await session.step(19, "Given user is logged in", () => loggedIn(page));
     await session.step(20, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(21, "And user adds a markup viewer with:", () => addViewerWith(page, "markup", [["content","Age: ${AGE} Sex: ${SEX}"]]));
+    await session.step(21, "And user adds a markup viewer with:", () => addViewerWith(page, "markup", [["content","Age: ${AGE} Sex: ${SEX}"]]), [["content","Age: ${AGE} Sex: ${SEX}"]]);
     await session.step(23, "And user makes row 1 current", () => makeRowCurrent(page, 1));
     await session.step(24, "Then 1000 rows should pass the filter", () => filterPasses(page, 1000));
     await session.step(25, "And the \"current row\" reading of markup viewer should be 1", () => readingIs(page, "current row", el("markup viewer"), 1));

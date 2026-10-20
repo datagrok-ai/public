@@ -24,6 +24,10 @@ export async function typeIntoOpenPicker(page: Page, column: string): Promise<st
 export async function closePicker(page: Page): Promise<void> {
   if (await page.locator(BACKDROP).count() === 0) return;
   await page.keyboard.press('Escape');
+  // Escape is lost when focus has left the popup (the same loss that ate the typed name), so
+  // fall back to the outside mousedown the popup also closes on.
+  if (!await page.waitForFunction((b) => !document.querySelector(b), BACKDROP, {timeout: 1000}).then(() => true, () => false))
+    await page.evaluate(() => document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})));
   await expect.poll(() => page.locator(BACKDROP).count(), {
     timeout: 10_000,
     intervals: [30, 60, 120, 250, 500, 1000],
@@ -38,7 +42,7 @@ export async function openHeaderPicker(page: Page): Promise<boolean> {
   await page.mouse.move(0, 0);
   const opened = await page.evaluate(() => {
     const combos = [...document.querySelectorAll(
-      '[name="viewer-Filters"] .d4-filter-group-header [name="div-column-combobox-"]')];
+      '[name="viewer-Filters"] .d4-filter-group-header [name="div-column-combobox-add-filter"]')];
     const combo = combos.find((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
     if (!combo) return false;
     document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));

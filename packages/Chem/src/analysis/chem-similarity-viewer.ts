@@ -6,7 +6,7 @@ import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-meth
 import $ from 'cash-dom';
 import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
-import {ChemSearchBaseViewer, SIMILARITY} from './chem-search-base-viewer';
+import {ChemSearchBaseViewer, SIMILARITY, sameRows} from './chem-search-base-viewer';
 import {malformedDataWarning} from '../utils/malformed-data-utils';
 import '../../css/chem.css';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
@@ -24,7 +24,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   searchAsYouSketch: boolean;
   sketcherDebounceMs: number;
   targetMoleculeIdx: number = 0;
-  /** Bitset of all rows similar to the reference (passing the cutoff) — drives select & filter. */
+  /** Bitset of all rows similar to the reference (passing the cutoff), whatever the row source: the filter
+   * narrows to it, so it cannot depend on the filter. */
   simBitset: DG.BitSet | null = null;
   /** Cached per-row similarity scores, reused for cheap re-slicing when only `limit` changes. */
   simScores: Float32Array | null = null;
@@ -130,11 +131,11 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       this.dataFrame?.rows.requestFilter();
   }
 
-  /** Selects every row passing the cutoff — the same set the filter narrows to. One-shot, like any
-   * platform selection: press Esc to clear, Ctrl/Shift-click rows to refine. */
+  /** Selects every row of the row source passing the cutoff. One-shot, like any platform selection:
+   * press Esc to clear, Ctrl/Shift-click rows to refine. */
   selectSimilar(): void {
     if (this.dataFrame && this.simBitset)
-      this.dataFrame.selection.copyFrom(this.simBitset);
+      this.dataFrame.selection.copyFrom(this.getRowSourceIndexes().and(this.simBitset, false));
   }
 
   /** Toggles the collaborative filter on/off and re-runs filtering. */
@@ -146,6 +147,16 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
 
   isReferenceMolecule(idx: number): boolean {
     return idx === this.targetMoleculeIdx && !this.isEditedFromSketcher;
+  }
+
+  protected readings(): {[name: string]: number | string | boolean} {
+    const scores = this.scores ? Array.from({length: this.scores.length}, (_, i) => this.scores!.get(i)) : [];
+    return {
+      'target row': this.targetMoleculeIdx,
+      'cutoff': this.cutoff,
+      'scores': scores.map((s) => s.toFixed(2)).join(', '),
+      'min score': scores.length === 0 ? -1 : Math.min(...scores),
+    };
   }
 
   async renderInternal(computeData: boolean): Promise<void> {
@@ -179,6 +190,9 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
             const res = await chemSimilarityBitset(moleculeColumn, this.targetMolecule,
               this.distanceMetric as BitArrayMetrics, this.cutoff, this.fingerprint as Fingerprint);
+            // closed while the search ran (its table detached, as a test closing its view does): nothing to show
+            if (!this.dataFrame)
+              return;
             if (!res) {
               this.closeWithError(`Malformed molecule cannot be used for similarity search`, progressBar);
               return;
@@ -200,11 +214,18 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         this.closeWithError(this.error, progressBar);
         return;
       }
-      // Rebuild the top-`limit` display only when the similar set or `limit` changed; a pure redraw
-      // (selection, resize) reuses the cached columns, and a `limit` change re-slices without refingerprinting.
+      // Rebuild the top-`limit` display only when the similar set, the rows of the row source or `limit`
+      // changed; a pure redraw (selection, resize) reuses the cached columns, and the other changes re-slice
+      // the cached scores without refingerprinting.
+      const sourceRows = this.getRowSourceIndexes();
+      const sourceChanged = !sameRows(sourceRows, this.searchedRows);
+      this.searchedRows = sourceRows;
       if (this.simBitset && this.simScores && this.moleculeColumn &&
-        (this.simBitset !== this.displayBitset || this.limit !== this.displayLimit)) {
-        const df = similarityResultDf(this.moleculeColumn, this.simScores, this.simBitset, this.limit);
+        (sourceChanged || this.simBitset !== this.displayBitset || this.limit !== this.displayLimit)) {
+        const shown = sourceRows.clone().and(this.simBitset, false);
+        if (!this.isEditedFromSketcher) // the reference molecule leads the cards wherever its row is
+          shown.set(this.targetMoleculeIdx, this.simBitset.get(this.targetMoleculeIdx), false);
+        const df = similarityResultDf(this.moleculeColumn, this.simScores, shown, this.limit);
         this.molCol = df.getCol('smiles');
         this.idxs = df.getCol('indexes');
         this.scores = df.getCol('score');
@@ -257,6 +278,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
               grid.style.backgroundColor = '#d3f8bd';
           }
           $(grid).addClass(divClass);
+          grid.setAttribute('data-row', `${idx}`);
+          grid.setAttribute('name', `card-${idx}`);
           grid.addEventListener('click', (event: MouseEvent) => {
             if (this.dataFrame && this.idxs) {
               if (event.shiftKey || event.altKey)

@@ -14,7 +14,6 @@
     "directory": "packages/ApiTests"
   },
   "dependencies": {
-    "@datagrok-libraries/domain-ui": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "cash-dom": "catalog:",
@@ -32,7 +31,7 @@
     "tsx": "^4.20.6"
   },
   "scripts": {
-    "build": "grok build",
+    "build": "grok api && grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
     "test": "grok test",

@@ -103,7 +103,8 @@ expected_results:
       Each of the three non-numeric operators builds the row set it names:
       `SEX equals F`, `RACE contains an` and `STARTED after 01/01/1991` each
       commit exactly one rule and leave df.filter.trueCount equal to the row
-      count computed independently off that column for that predicate, with the
+      count computed independently off that column for that predicate (`after`
+      is inclusive: rows at local midnight of the named day count), with the
       filter summary naming the column. Each expected count is asserted to be
       strictly between 0 and 5850 BEFORE the comparison, so an operator that did
       nothing could not satisfy it.

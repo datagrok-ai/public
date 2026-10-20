@@ -28,6 +28,14 @@ category('top menu activity cliffs', async () => {
       DG.Test.isInBenchmark ? 16 : 2, !DG.Test.isInBenchmark);
   }, {timeout: 20000, benchmark: true, benchmarkTimeout: 180000});
 
+  test('activityCliffs.cutoff20', async () => {
+    await _testActivityCliffsOpen(await readDataframe('tests/activity_cliffs_test.csv'), 'smiles', 'Activity', 20, 52);
+  });
+
+  test('activityCliffs.cutoff95', async () => {
+    await _testActivityCliffsOpen(await readDataframe('tests/activity_cliffs_test.csv'), 'smiles', 'Activity', 95, 1);
+  });
+
   test('activityCliffsOpen.molV2000', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/spgi-100.csv'), 'Structure', 'Chemical Space X', 80, 1);
   }, {timeout: 20000});
@@ -54,6 +62,27 @@ category('top menu activity cliffs', async () => {
     } finally {
       grok.shell.closeAll();
       DG.Balloon.closeAll();
+    }
+  });
+
+  test('activityCliffs.viewReopenedDuringRun', async () => {
+    const df = await readDataframe('tests/activity_cliffs_test.csv');
+    await grok.data.detectSemanticTypes(df);
+    const tv = grok.shell.addTableView(df);
+    const encodingFunc = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
+    try {
+      const run = PackageFunctions.activityCliffs(df, df.col('smiles')!, df.col('Activity')!, 80,
+        DimReductionMethods.UMAP, BitArrayMetricsNames.Tanimoto, encodingFunc, undefined, undefined, true);
+      tv.close();
+      const reopened = df.clone();
+      reopened.name = df.name;
+      const reopenedView = grok.shell.addTableView(reopened);
+      await run;
+      expect(grok.shell.tv.dataFrame === df, true);
+      expect(Array.from(reopenedView.viewers).some((v) => v.type === DG.VIEWER.SCATTER_PLOT), false);
+      expect(Array.from(grok.shell.tv.viewers).some((v) => v.type === DG.VIEWER.SCATTER_PLOT), true);
+    } finally {
+      grok.shell.closeAll();
     }
   });
 

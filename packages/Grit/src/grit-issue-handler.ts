@@ -29,7 +29,7 @@ export function warmLookups(): Promise<Map<string, string>> {
     .then((tables) => lookupNames = new Map(tables.flat().map((r) => [r.id, r.name])));
 }
 
-function lookupName(id?: string): string | null {
+export function lookupName(id?: string): string | null {
   return id == null ? null : lookupNames?.get(id) ?? null;
 }
 

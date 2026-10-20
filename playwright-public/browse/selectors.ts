@@ -44,6 +44,12 @@ export const TREE_NODE_LABEL_ANY = `${TREE_NODE_GROUP_LABEL}, ${TREE_NODE_ITEM_L
 export const TREE_NODE_CONTAINER = '.d4-tree-view-node';
 export const TREE_EXPAND_ARROW = '.d4-tree-view-tri';
 export const TREE_EXPAND_ARROW_EXPANDED = '.d4-tree-view-tri.d4-tree-view-tri-expanded';
+// The group's children host. Its data-state is the readiness signal — "loaded" only once every
+// child the expansion asked for is in the DOM. TREE_EXPAND_ARROW_EXPANDED is user intent: the
+// class is added synchronously by the click, before the request goes out.
+export const TREE_CHILDREN_HOST_CLASS = 'd4-tree-view-group-host';
+export const TREE_CHILDREN_HOST = `.${TREE_CHILDREN_HOST_CLASS}`;
+export const TREE_CHILDREN_LOADED = `${TREE_CHILDREN_HOST}[data-state="loaded"]`;
 export const TREE_NODE_DROP = '.d4-tree-view-node.d4-tree-drop';
 
 // Динамические локаторы — по имени узла.
@@ -85,7 +91,7 @@ export const CONTEXT_MENU = '.d4-menu-item-container.d4-vert-menu.d4-menu-popup'
 export const CONTEXT_MENU_ITEM = '.d4-menu-item.d4-menu-item-vert';
 export const CONTEXT_MENU_ITEM_LABEL = '.d4-menu-item-label';
 
-// По атрибуту d4-name="<точное имя пункта>" (например d4-name="Add to favorites").
+// По атрибуту d4-name="<точное имя пункта>" (например d4-name="Add To Favorites").
 export const contextMenuItemByName = (page: Page, d4Name: string): Locator =>
   page.locator(`${CONTEXT_MENU_ITEM}[d4-name="${d4Name}"]`).first();
 
@@ -95,7 +101,7 @@ export const contextMenuItem = (page: Page, text: string): Locator =>
 
 // Точные тексты пунктов меню на dev (важно: регистр и многоточия).
 export const CONTEXT_MENU_BROWSE = 'Browse';
-export const CONTEXT_MENU_ADD_FAVORITES = 'Add to favorites';
+export const CONTEXT_MENU_ADD_FAVORITES = 'Add To Favorites';
 export const CONTEXT_MENU_SHARE = 'Share...';
 export const CONTEXT_MENU_RENAME = 'Rename...';
 export const CONTEXT_MENU_DELETE = 'Delete...';

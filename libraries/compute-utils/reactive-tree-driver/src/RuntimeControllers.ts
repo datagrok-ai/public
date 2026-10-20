@@ -22,7 +22,13 @@ export interface IControllerBase {
   getMatchedPositions(name: string): MatchedNodeInfo[];
   /** Position of the base node for base-instantiated links. */
   getBasePosition(): MatchedNodeInfo | undefined;
+  /** Number of child steps of the node the link is defined on. */
+  getStepsCount(): number;
   getAdditionalParam(name: string): any | undefined;
+  /** Static per-link parameter from the link `params` config. */
+  getParam(name: string): any | undefined;
+  /** Per-link store for sources that read no input. */
+  sourceCache?: Map<string, any>;
   hasCall(name: string): boolean;
 }
 
@@ -52,11 +58,6 @@ export interface IRuntimeReturnController extends IControllerBase {
 export interface IRuntimeValidatorController extends IControllerBase {
   setValidation(name: string, validation?: ValidationResult | undefined): void;
   getValidationAction(id: string, actionId: string): string | undefined;
-  /** True when the action has no `showWhen`/`hideWhen` or its condition currently matches.
-   *  Returns false if the action is not visible OR the name/actionId pair is not known.
-   *  This is a pure query — `getValidationAction` is not gated by visibility, so a validator
-   *  can still surface hidden actions in its result if it chooses to. */
-  isActionVisible(name: string, actionId: string): boolean;
 }
 
 export interface IRuntimePipelineValidatorController extends IControllerBase {
@@ -71,6 +72,10 @@ export interface IRuntimeMetaController extends IControllerBase {
 
 export interface INameSelectorController extends IControllerBase {
   setDescriptionItem(name: string, description: any): void;
+  /** Shows or hides the action `actionId` on the node of the `actions` query `name`. Like meta, a later
+   *  link overrides an earlier one, `showWhen`/`hideWhen` included. Not calling it in a run withdraws
+   *  the link's earlier call; a run that throws keeps it. */
+  setActionVisible(name: string, actionId: string, visible: boolean): void;
 }
 
 export interface IRuntimePipelineMutationController extends IControllerBase {

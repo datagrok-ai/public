@@ -2,6 +2,10 @@ Feature: Peptide SAR demo dashboard
   The demo analyzes the aligned FASTA peptides with negative logarithmic activity
   scaling and MCL clustering at a similarity threshold of 94.
 
+  Not translated: reaching the demo through the Demo gallery (Browse > Demo > Bioinformatics >
+  Peptide SAR) — the feature checks the registration that puts it there and runs its entry point;
+  the gallery's own navigation is the Browse suite's subject.
+
   Scenario: The demo builds a working dashboard on Simple peptides
     Given user is logged in
     And the Peptides package is initialized
@@ -17,9 +21,12 @@ Feature: Peptide SAR demo dashboard
     And "AlignedSequence" column should have tag "aligned" equal to "SEQ.MSA"
     And the table should have a column "15"
     And the table should not have a column "16"
+    And the "header 2" area of grid should be at least 100 pixels tall
+    And the "header 2" area of grid should be painted in at least 2 colors
     And the SAR setting "activityScaling" should be "-lg"
     And the SAR activity column should use "-lg" scaling
     And the SAR setting "mclSettings.threshold" should be "94"
+    And the "completed threshold" reading of MCL viewer should be 94
     And the table should have a column "Cluster (MCL)"
     And the open tableview should have 1 Sequence Variability Map viewer
     And the open tableview should have 1 Most Potent Residues viewer

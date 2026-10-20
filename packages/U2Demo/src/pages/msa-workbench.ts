@@ -27,11 +27,10 @@ export function msaWorkbenchPage(): HTMLElement {
   const settingsOn = signal(false);
   const toolbar = new Toolbar({ariaLabel: 'Workbench toolbar'});
   toolbar.name = 'workbenchToolbar';
-  toolbar.addButton('Open', () => openDatasetDialog(), {icon: '📂', tooltip: 'Open a dataset'});
-  toolbar.addButton('Run', () => openMsaDialog(), {icon: '▶', tooltip: 'Run the alignment'});
-  const toolbarSave = button('Save', () => notify.info('Saved from the toolbar'));
-  toolbarSave.dataset.u2Name = 'toolbarSave';
-  toolbar.add(toolbarSave);
+  toolbar.addButton('Open', () => openDatasetDialog(), {icon: 'folder-open', tooltip: 'Open a dataset'});
+  toolbar.addButton('Run', () => openMsaDialog(), {icon: 'play', tooltip: 'Run the alignment'});
+  toolbar.addButton('Save', () => notify.info('Saved from the toolbar'), {icon: 'save', tooltip: 'Save the alignment'});
+  toolbar.root.querySelector<HTMLElement>('[data-u2-item="Save"]')!.dataset.u2Name = 'toolbarSave';
   toolbar.addSeparator();
   toolbar.addToggle('Settings', settingsOn, {tooltip: 'Show the settings panel'});
 
@@ -72,6 +71,7 @@ export function msaWorkbenchPage(): HTMLElement {
   // --- settings -----------------------------------------------------------------------------------
   const settings = new Section({title: 'Settings'});
   settings.name = 'settingsPanel';
+  settings.root.classList.add('u2demo-msa-card');
   settings.body.append(new ChoiceInput({label: 'Theme', name: 'theme', items: ['light', 'dark'], value: 'light'}).root);
   toolbar.effect(() => settings.root.hidden = !settingsOn.value);
 
@@ -110,7 +110,7 @@ export function msaWorkbenchPage(): HTMLElement {
   }
 
   const header = divH([h1('MSA workbench'), toolbar.root], 'u2demo-msa-header');
-  const layout = div([alignmentPanel, divV([results, settings.root])], 'u2demo-msa-layout');
+  const layout = div([alignmentPanel, divV([results, settings.root], 'u2demo-msa-column')], 'u2demo-msa-layout');
   const root = divV([header, layout], 'u2demo-page u2demo-msa');
   root.dataset.u2Name = 'msaWorkbench';
   return root;

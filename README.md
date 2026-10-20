@@ -18,21 +18,21 @@ The platform is very extensible, and almost anything could be implemented as a p
 * Scientific methods implemented in R, Python, or Julia
 * File metadata extractors, such as [Tika](packages/Tika/README.md)
 * Custom predictive models that work with the
-  built-in [predictive modeling](help/learn/predictive-modeling.md)
+  built-in [predictive modeling](https://datagrok.ai/help/learn)
   , such as [TensorFlow.js](packages/TensorFlow.js/README.md)
 * Platform enhancements, such as [PowerPack](packages/PowerPack/README.md)
   or [UsageAnalysis](packages/UsageAnalysis)
-* ... and other types of extensions documented [here](help/develop/packages/extensions.md).
+* ... and other types of extensions documented [here](https://datagrok.ai/help/develop/packages/extensions).
 
 These open-source packages are free to use by anyone, although for
 the [public environment](https://public.datagrok.ai)
 there are some restrictions related to the server computational capacities. Organizations that
 deploy Datagrok
-[on their premises](help/develop/admin/architecture.md#deployment) also can access public packages.
+[on their premises](https://datagrok.ai/help/develop/under-the-hood/architecture) also can access public packages.
 In addition to that, enterprises typically establish their own private repositories that contain
 proprietary extensions.
 
-For developers: check out [getting started](help/develop/develop.md)
+For developers: check out [getting started](https://datagrok.ai/help/develop)
 and [contributor's guide](CONTRIB.md).
 
 ## Building
@@ -47,12 +47,12 @@ Datagrok grants free license to academic institutions to use it in any context, 
 educational. Moreover, publishing scientific methods as Datagrok packages provides a number of
 unique benefits that are specifically important to academia:
 
-* [Reproducible and scalable computations](help/compute/compute.md)
+* [Reproducible and scalable computations](https://datagrok.ai/help/compute)
 * Making your research globally available by
-  using [data augmentation](help/discover/data-augmentation.md) capabilities. The platform
+  using [data augmentation](https://datagrok.ai/help/explore/data-augmentation) capabilities. The platform
   proactively suggests contextual actions and enriches the current object
-  using [functions](help/datagrok/functions/function.md)
-  implemented in [R, Python, Julia, Matlab, or other language](help/compute/scripting/scripting/scripting.mdxx). In other
+  using [functions](https://datagrok.ai/help/datagrok/concepts/functions)
+  implemented in [R, Python, Julia, Matlab, or other language](https://datagrok.ai/help/compute/scripting). In other
   words, Datagrok not only can run a function, but also suggests _what_ could be derived from your
   dataset. This cross-pollination of knowledge could be transformative within and across a broad
   range of scientific disciplines.

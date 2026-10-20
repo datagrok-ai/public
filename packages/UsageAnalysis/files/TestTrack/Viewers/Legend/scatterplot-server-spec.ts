@@ -6,6 +6,8 @@ import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-lo
 import * as v from '../../helpers/viewers';
 import {deleteEntities, layoutRoundTrip, projectRoundTrip} from './persistence';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 // The server lane of the scatterplot legend scenarios: the layout and project round-trips of Sc1,
 // Sc3 and Sc5. The viewer behaviour is proven in scatterplot-spec.ts on the local lane; the state
 // each round-trip carries is set up here through the API.
@@ -39,7 +41,7 @@ test('Legend scatterplot — Color + Marker combined: layout and project persist
   test.setTimeout(900_000);
   stepErrors.length = 0;
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
 
   await softStep('Setup: Color=Series + Marker=Series, first category recoloured', async () => {
@@ -83,7 +85,7 @@ test('Legend scatterplot — in-viewer filter: layout round-trip', async ({page}
   test.setTimeout(600_000);
   stepErrors.length = 0;
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
 
   await softStep('Setup: two scatters, Marker+Color=Stereo Category, same in-viewer filter', async () => {
@@ -124,7 +126,7 @@ test('Legend scatterplot — grid color coding: layout and project persistence',
   test.setTimeout(900_000);
   stepErrors.length = 0;
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
 
   await softStep('Setup: scatter + box + PC plots, Chemical Space X linear scheme with text-apply', async () => {

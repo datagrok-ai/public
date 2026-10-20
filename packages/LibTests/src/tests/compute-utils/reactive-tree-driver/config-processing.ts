@@ -117,4 +117,33 @@ category('ComputeUtils: Driver config processing', async () => {
     const pconf = await getProcessedConfig(config);
     await snapshotCompare(pconf, 'Process config with globalId ref');
   });
+
+  test('A processing run prepares each function once to read its annotations', async () => {
+    const config: PipelineConfiguration = {
+      id: 'p',
+      type: 'static',
+      steps: [{id: 's1', nqName: 'LibTests:TestAdd2'}, {id: 's2', nqName: 'LibTests:TestAdd2'}],
+      links: [{
+        id: 'l', from: 'in_(template):s1/inputs(LibTests:TestAdd2)', to: 'out_(template):s2/inputs(LibTests:TestAdd2)',
+      }],
+    };
+    const original = DG.Func.prototype.prepare;
+    let prepared = 0;
+    DG.Func.prototype.prepare = function(this: DG.Func, ...args: any[]) {
+      if (this.nqName.toLowerCase() === 'libtests:testadd2')
+        prepared++;
+      return (original as any).apply(this, args);
+    };
+    try {
+      const pconf = await getProcessedConfig(config);
+      expectDeepEqual(prepared, 1, {prefix: 'One run'});
+      const steps = (pconf as any).steps;
+      expectDeepEqual(steps.map((step: any) => step.io.length), [3, 3], {prefix: 'Both steps get the io'});
+      expectDeepEqual(steps[0].io !== steps[1].io, true, {prefix: 'Own io per step'});
+      await getProcessedConfig(config);
+      expectDeepEqual(prepared, 2, {prefix: 'Next run reads again'});
+    } finally {
+      DG.Func.prototype.prepare = original;
+    }
+  });
 });

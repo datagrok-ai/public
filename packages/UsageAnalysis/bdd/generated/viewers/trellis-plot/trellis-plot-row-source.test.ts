@@ -7,13 +7,19 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.trellis-plot]
 --- */
 import {test} from '@playwright/test';
-import '../../../bindings/spaces.js';
+import '../../../bindings/biostructure.js';
+import '../../../bindings/connections.js';
+import '../../../bindings/file-formats.js';
+import '../../../bindings/flow.js';
+import '../../../bindings/grid.js';
+import '../../../bindings/queries.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {addCategoricalFilter, clearSelection, filterPasses, filterPassesAll, noneSelected, selectWhereIs, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
@@ -29,7 +35,7 @@ test.describe("Trellis plot row source", () => {
     const run = journey(test, 11, page);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await session.step(14, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(15, "And user adds a trellis plot viewer with:", () => addViewerWith(page, "trellis plot", [["X Column Names","SEX"],["Y Column Names","RACE"],["Viewer Type","Scatter plot"],["Pack Categories","false"]]));
+    await session.step(15, "And user adds a trellis plot viewer with:", () => addViewerWith(page, "trellis plot", [["X Column Names","SEX"],["Y Column Names","RACE"],["Viewer Type","Scatter plot"],["Pack Categories","false"]]), [["X Column Names","SEX"],["Y Column Names","RACE"],["Viewer Type","Scatter plot"],["Pack Categories","false"]]);
     await session.step(20, "Then the \"cells\" reading of trellis plot viewer should be 8", () => readingIs(page, "cells", el("trellis plot viewer"), 8));
     await session.step(21, "And trellis plot viewer should show 1000 rows", () => showsRows(page, el("trellis plot viewer"), 1000));
     await run.scenario("On Click Filter moves Row Source to All, and Filtered moves On Click back to None", async () => {

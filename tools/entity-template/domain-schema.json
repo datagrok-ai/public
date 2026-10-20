@@ -1,0 +1,12 @@
+{
+  "name": "#{SCHEMA}",
+  "version": "1.0.0",
+  "tables": {
+    "#{TABLE}": {
+      "columns": {
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true},
+        "description": {"type": "string", "editor": "textarea"}
+      }
+    }
+  }
+}

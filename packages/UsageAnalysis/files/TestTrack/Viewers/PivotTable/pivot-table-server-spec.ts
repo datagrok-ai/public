@@ -160,7 +160,11 @@ test('Pivot Table — layout and project persistence', async ({page}) => {
 
   await softStep('Inner grid look Scenario 6 Step 10: driving the ribbon Save opens the Save-project dialog with no error (project-persistence entry point)', async () => {
     const consoleErrors: string[] = [];
-    const onConsole = (m: any) => { if (m.type() === 'error' && !/cloned iframe/i.test(m.text())) consoleErrors.push(m.text()); };
+    // a stand that ships no help docs 404s on the context help page, which is not the viewer's error
+    const helpDoc404 = (m: any) => /Failed to load resource/.test(m.text()) && /\/help\/.*\.md$/.test(m.location().url);
+    const onConsole = (m: any) => {
+      if (m.type() === 'error' && !/cloned iframe/i.test(m.text()) && !helpDoc404(m)) consoleErrors.push(m.text());
+    };
     page.on('console', onConsole);
     try {
       await page.locator('[name="button-Save"]').first().click();

@@ -101,8 +101,6 @@ class Builder {
 
 
     this.reaction_sampling_distribution = {
-      lower_bound: -25,
-      upper_bound: 25,
       data: new Map()
     };
 
@@ -412,8 +410,6 @@ class Builder {
           throw new Error('Sampling function did not return any data');
         if (d.cancled)
           return; // do not update the distribution if sampling was canceled
-        this.reaction_sampling_distribution.lower_bound = d.lower_bound;
-        this.reaction_sampling_distribution.upper_bound = d.upper_bound;
         this.reaction_sampling_distribution.data.clear();
         for (const [key, value] of d.data)
           this.reaction_sampling_distribution.data.set(key, value);

@@ -14,6 +14,7 @@ import {MoleculeImage} from '../../common/view/components/molecule-img';
 import {APP_NAME} from '../../common/view/const';
 import {IsolatedAppUIBase} from '../../common/view/isolated-app-ui';
 import {getLinkedMolfile, saveSdf, StrandData} from '../model/oligo-structure';
+import {MonomerNotFoundError} from '../model/monomer-code-parser';
 import {ITranslationHelper} from '../../../types';
 
 import {_package} from '../../../package';
@@ -182,8 +183,9 @@ class StructureAppLayout {
       if (Object.values(strandData).some((data) => data.strand !== ''))
         molfile = this.getMolfile(strandData.ss, strandData.as, strandData.as2);
     } catch (err) {
-      const errStr = errorToConsole(err);
-      console.error(errStr);
+      // unconvertible input is not an app error: Save SDF reports it, the preview just stays empty
+      if (!(err instanceof MonomerNotFoundError))
+        console.error(errorToConsole(err));
     }
     const molImgObj = new MoleculeImage(molfile);
     await molImgObj.drawMolecule(this.moleculeImgDiv, 650, 150);

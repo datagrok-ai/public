@@ -232,8 +232,10 @@ smoke('TabStrip: activation, lazy content built once, close', () => {
   assert.equal(tabs.activeTab.value, 'a');
   assert.equal(alpha.getAttribute('aria-selected'), 'true');
 
+  const closed = [];
+  tabs.on('tabClosed', (id) => closed.push(id));
   tabs.closeTab('b');
-  assert.equal(tabs.onTabClosed.value, 'b');
+  assert.deepEqual(closed, ['b']);
   assert.equal(tabs.root.querySelectorAll('.u2-tabs-tab').length, 1);
   tabs.dispose();
 });
@@ -379,6 +381,38 @@ smoke('Splitter: keyboard resize clamps at minSize', () => {
   fire(sash, 'dblclick');
   assert.deepEqual(splitter.sizes.value, [0.5, 0.5]);
   splitter.dispose();
+});
+
+smoke('Splitter: a smaller splitter re-clamps every panel at minSize; a drag does not focus the sash', () => {
+  const splitter = mount(new Splitter([span('a'), span('b'), span('c')],
+    {direction: 'horizontal', minSize: 100, sizes: [0.5, 0.45, 0.05]}));
+  const resized = (width) => {
+    splitter.root.clientWidth = width;
+    ResizeObserver.instances.find((o) => o.targets.includes(splitter.root)).callback([]);
+  };
+  resized(1000);
+  const [a, b, c] = splitter.sizes.value;
+  assert.ok(Math.abs(c - 0.1) < 1e-9, `the short panel is back at minSize, got ${c}`);
+  assert.ok(Math.abs(a - 0.47333) < 1e-4 && Math.abs(b - 0.42667) < 1e-4, 'the rest gave it up by their room');
+  assert.ok(Math.abs(a + b + c - 1) < 1e-9);
+
+  resized(250);
+  for (const size of splitter.sizes.value)
+    assert.ok(Math.abs(size - 1 / 3) < 1e-9, `no room for minSize: equal shares, got ${splitter.sizes.value}`);
+
+  const sash = splitter.root.querySelector('.u2-sash');
+  fire(sash, 'pointerdown', {button: 0, pointerId: 1, clientX: 100});
+  assert.notEqual(document.activeElement, sash, 'a pointer drag leaves no focus band on the sash');
+  fire(sash, 'pointerup');
+  splitter.dispose();
+});
+
+smoke('Splitter: a panel given as a control is owned and disposed with the splitter', () => {
+  const owned = new Control();
+  const splitter = mount(new Splitter([owned, span('right')], {direction: 'horizontal'}));
+  assert.equal(splitter.root.querySelector('.u2-splitter-panel').firstChild, owned.root);
+  splitter.dispose();
+  assert.equal(owned.scope.isDisposed, true);
 });
 
 smoke('Splitter: a sizes list that does not match the panels falls back to equal shares', () => {

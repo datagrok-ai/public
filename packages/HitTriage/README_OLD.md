@@ -35,7 +35,7 @@ pipeline on demand, should any step change and new source data appear.
 
 ## Data Access
 
-Datagrok's built-in [data query](../../help/access/access.md#data-query) framework is used as a foundation for data access.
+Datagrok's built-in [data query](https://datagrok.ai/help/access#data-query) framework is used as a foundation for data access.
 Out-of-the box, it provides the following capabilities that are relevant to this project:
 
 1. Ability to access any data source (db, files, web service) efficiently
@@ -54,7 +54,7 @@ For calculated data, Datagrok's functions framework is used. It allows to define
 descriptors) that would be executed on the set of molecules.
 
 For retrieving additional information from external sources, the system uses
-[parameterized queries](../../help/access/access.md#data-query).
+[parameterized queries](https://datagrok.ai/help/access#data-query).
 
 ## Data Storage
 
@@ -96,7 +96,7 @@ gets shown in the context panel on the right.
 
 ## Visualization and Reporting Outcomes
 
-* Built-in [viewers](../../help/visualize/viewers/viewers.md)
+* Built-in [viewers](https://datagrok.ai/help/visualize/viewers)
 * Export to Excel / PDF
 * Share outcomes as URLs
 

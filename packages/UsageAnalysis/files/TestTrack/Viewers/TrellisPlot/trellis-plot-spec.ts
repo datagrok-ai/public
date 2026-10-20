@@ -277,7 +277,13 @@ async function clickMenuItemInGroup(page: Page, group: string, item: string): Pr
 
 async function clickTopLevelMenuItem(page: Page, item: string): Promise<void> {
   await page.locator('.d4-menu-popup').last().waitFor({timeout: 10000});
-  await page.evaluate((l) => (window as any).__menuLeaf(null, l), item);
+  // __menuLeaf scans nested labels too, and the inner scatter plot nests its own "Reset View"
+  await page.evaluate(async (l) => {
+    const find = () => Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
+      .find((e) => (e as HTMLElement).innerText.trim() === l && !e.parentElement?.parentElement?.closest('.d4-menu-item'));
+    const target = await (window as any).__poll(find, (e: Element | undefined) => !!e, 5000);
+    (target?.closest('.d4-menu-item') as HTMLElement | null)?.click();
+  }, item);
 }
 
 async function ensureStyleExpanded(page: Page): Promise<void> {
@@ -868,7 +874,7 @@ test('Trellis plot — global scale, axes visibility, range sliders', async ({pa
       expect(after[1]).not.toBe(before[1]);
 
       await page.locator(CELLS).first().click({button: 'right', position: {x: 6, y: 6}});
-      await clickTopLevelMenuItem(page, 'Reset Inner Range Sliders');
+      await clickTopLevelMenuItem(page, 'Reset View');
       const resetH = await v.pollValue(() => v.trellisCellHashes(page, [idxA, idxB]),
         (h) => h[0] === before[0] && h[1] === before[1], 1500, 50);
       expect(resetH[0] === before[0]).toBe(true);
@@ -1337,6 +1343,10 @@ test('Trellis plot — on click, keyboard navigation, filter formula, undo/redo'
     await armDfEvent(page, 'onSelectionChanged');
     await page.keyboard.press('Escape');
     await awaitArmedDfEvent(page, 900);
+    // the grid clears the selection on Escape at once, the trellis drops its current cell on a 50ms
+    // debounce; switching to Filter before that re-applies the stale cell and a later click loses it
+    await page.waitForFunction(() => document.querySelector(
+      '[name="viewer-Trellis-plot"] .d4-trellis-cell-current') === null, null, {timeout: 2000});
     const selAfterEsc = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
     expect(selAfterEsc).toBe(0);
 
@@ -1425,6 +1435,7 @@ test('Trellis plot — on click, keyboard navigation, filter formula, undo/redo'
 
     await page.evaluate(async () => {
       const w = window as any;
+      w.__panelSub?.unsubscribe?.();
       for (const vw of Array.from(grok.shell.tv.viewers) as any[]) if (vw.type === 'Trellis plot') vw.close();
       await w.__poll(() => document.querySelector('[name="viewer-Trellis-plot"]'), (e: Element | null) => !e, 600, 40);
       const tp = grok.shell.tv.addViewer('Trellis plot') as any;
@@ -1438,6 +1449,8 @@ test('Trellis plot — on click, keyboard navigation, filter formula, undo/redo'
       }, w.__tpCells, 1800, tp);
     });
     await expect(cellLocator).toHaveCount(canonicalCellCount);
+    // the fresh viewer's first paint lands after its cells exist and wipes a current cell clicked before it
+    await v.waitForViewerQuiet(page, 'Trellis plot', {gapMs: 500, capMs: 3000});
 
     const navCats = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
@@ -2010,6 +2023,8 @@ test('Trellis plot — selectors, full screen, auto layout, title, legend', asyn
         tp.props.xColumnNames = ['SEX'];
         tp.props.yColumnNames = ['RACE'];
         tp.props.viewerType = 'Box plot';
+        // Show All Categories dependsOn Category1 && Category2: without a second category it is disabled
+        tp.setOptions({innerViewerLook: {category2ColumnName: 'CONTROL'}});
         tp.props.legendVisibility = 'Always';
       }, (window as any).__tpCells, 2500));
       await expect(page.locator(CELLS)).toHaveCount(canonicalCellCount);

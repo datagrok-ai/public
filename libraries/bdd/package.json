@@ -26,6 +26,7 @@
     "bin",
     "dist",
     "bindings",
+    "tool",
     "README.md",
     "KNOWN_FAILURES.md"
   ],
@@ -44,7 +45,9 @@
     "list-steps": "tsx src/cli.ts list-steps",
     "typecheck": "grok tsc --noEmit -p .",
     "test:unit": "tsx --test tests/*.test.ts",
-    "test": "npm run build && npm run check && npm run test:unit",
+    "vocab": "node tool/gen-u2-kinds.mjs",
+    "vocab:check": "node tool/gen-u2-kinds.mjs --check",
+    "test": "npm run build && npm run vocab:check && npm run check && npm run test:unit",
     "test:suite": "npm run build && node bin/grok-bdd.js run",
     "prepublishOnly": "npm run build"
   },

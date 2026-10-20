@@ -13,4 +13,7 @@ shell's chrome inside your view — use it.**
 | [shell-integration](shell-integration.md) | Any app or view meant to run in the platform |
 | [entity-browser](entity-browser.md) | A list of server objects with details — the master-detail shape |
 | [list-item-rendering](list-item-rendering.md) | Rendering rich items (reports, mail, issues) in a list |
-| [forms-and-details](forms-and-details.md) | Editing an object, or showing a read-only detail pane |
+| [forms-and-details](forms-and-details.md) | Editing an object, or showing a read-only detail pane; multi-step flows |
+| [specs](specs.md) | Writing a dg-ui/1 spec: live binds, structural props, events, plugins (`installEms`) |
+
+Domain (EMS) recipes: [libraries/ems/docs/recipes/](../../../ems/docs/recipes/).

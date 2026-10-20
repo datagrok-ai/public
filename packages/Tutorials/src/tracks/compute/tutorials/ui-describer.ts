@@ -115,8 +115,16 @@ export function runDescriber(tour: Tour): HTMLButtonElement {
 
   const btnsText = tour.btnsText ?? DEFAULT_BTNS_TEXT;
 
+  /** Names a wizard button by its role. Callers may pass an empty label — the compute tutorials do
+   * — so the text is not an identity for either a screen reader or automation. */
+  const named = (btn: HTMLButtonElement, role: string): HTMLButtonElement => {
+    btn.setAttribute('name', `button-tour-${role}`);
+    btn.setAttribute('aria-label', role);
+    return btn;
+  };
+
   // Create "Next" button
-  const nextBtn = ui.button(btnsText.next, () => {
+  const nextBtn = named(ui.button(btnsText.next, () => {
     popup.remove();
     clearSpotlight();
 
@@ -126,10 +134,10 @@ export function runDescriber(tour: Tour): HTMLButtonElement {
 
     ++idx;
     step();
-  });
+  }), 'next');
 
   // Create "Prev" button
-  const prevBtn = ui.button(btnsText.prev, () => {
+  const prevBtn = named(ui.button(btnsText.prev, () => {
     const action = pages[idx].prevBtnAction;
     if (action != null)
       action();
@@ -138,17 +146,17 @@ export function runDescriber(tour: Tour): HTMLButtonElement {
     popup.remove();
     clearSpotlight();
     step();
-  });
+  }), 'prev');
 
   // Create "Done" button
-  const doneBtn = ui.button(btnsText.done, () => {
+  const doneBtn = named(ui.button(btnsText.done, () => {
     popup.remove();
     clearSpotlight();
     overlay.remove();
 
     if (tour.doneBtnAction != null)
       tour.doneBtnAction();
-  });
+  }), 'done');
 
   // Container for buttons, aligned to the right
   const btnsDiv = ui.divH([prevBtn, nextBtn, doneBtn]);

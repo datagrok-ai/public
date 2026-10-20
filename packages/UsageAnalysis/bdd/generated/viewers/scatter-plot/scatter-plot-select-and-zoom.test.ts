@@ -7,13 +7,19 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.scatter-plot]
 --- */
 import {test} from '@playwright/test';
-import '../../../bindings/spaces.js';
+import '../../../bindings/biostructure.js';
+import '../../../bindings/connections.js';
+import '../../../bindings/file-formats.js';
+import '../../../bindings/flow.js';
+import '../../../bindings/grid.js';
+import '../../../bindings/queries.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {pressKey} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {clearSelection, filterPasses, filterPassesAll, filterTo, noneSelected, onlyOfSelected, resetFilter, selectFirstRows, selectedPassFilter, selectedRowCount, someSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
@@ -29,7 +35,7 @@ test.describe("Scatter plot selection and viewport navigation", () => {
     const run = journey(test, 7, page);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(17, "And user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["X","WEIGHT"],["Y","HEIGHT"]]));
+    await session.step(17, "And user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["X","WEIGHT"],["Y","HEIGHT"]]), [["X","WEIGHT"],["Y","HEIGHT"]]);
     await session.step(20, "Then scatter plot viewer should show 872 rows", () => showsRows(page, el("scatter plot viewer"), 872));
     await session.step(21, "And no rows should be selected", () => noneSelected(page));
     await run.scenario("A drag selects the markers inside it, a second drag adds, Control+Shift takes them out", async () => {
@@ -49,7 +55,7 @@ test.describe("Scatter plot selection and viewport navigation", () => {
       await session.step(37, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The selection survives a jitter change", async () => {
-      await session.step(40, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Jitter Size","20"],["Jitter Size Y","15"]]));
+      await session.step(40, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Jitter Size","20"],["Jitter Size Y","15"]]), [["Jitter Size","20"],["Jitter Size Y","15"]]);
       await session.step(43, "And user drags a selection box over the \"view\" area of scatter plot viewer", () => dragSelectionOverArea(page, "view", el("scatter plot viewer")));
       await session.step(44, "Then some rows should be selected", () => someSelected(page));
       await session.step(45, "When user remembers the \"rows selected\" reading of scatter plot viewer", () => rememberReading(page, "rows selected", el("scatter plot viewer")));
@@ -59,7 +65,7 @@ test.describe("Scatter plot selection and viewport navigation", () => {
       await session.step(49, "When user drags a deselection box over the \"view\" area of scatter plot viewer", () => dragDeselectionOverArea(page, "view", el("scatter plot viewer")));
       await session.step(50, "Then the \"rows selected\" reading of scatter plot viewer should be lower than before", () => readingLower(page, "rows selected", el("scatter plot viewer")));
       await session.step(51, "When user clears the row selection", () => clearSelection(page));
-      await session.step(52, "And user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Jitter Size","0"],["Jitter Size Y","0"]]));
+      await session.step(52, "And user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Jitter Size","0"],["Jitter Size Y","0"]]), [["Jitter Size","0"],["Jitter Size Y","0"]]);
       await session.step(55, "Then no rows should be selected", () => noneSelected(page));
       await session.step(56, "And no errors should have been logged", () => noErrors(page));
     });

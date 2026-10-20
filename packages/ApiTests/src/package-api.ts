@@ -14,13 +14,6 @@ export namespace queries {
 }
 
 export namespace funcs {
-  /**
-   * A complete browse/CRUD app over apitests.item, from domain-ui defaults alone
-   */
-  export async function domainItemsApp(path?: string ): Promise<DG.View> {
-    return await grok.functions.call('APITests:DomainItemsApp', { path });
-  }
-
   export async function getTable(name: string , path?: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('APITests:GetTable', { name, path });
   }
@@ -55,10 +48,6 @@ export namespace funcs {
 
   export async function testIntAsync(a: number ): Promise<number> {
     return await grok.functions.call('APITests:TestIntAsync', { a });
-  }
-
-  export async function customStringInput(params: any ): Promise<any> {
-    return await grok.functions.call('APITests:CustomStringInput', { params });
   }
 
   export async function testOutputAnnotationJoinDf(data: DG.DataFrame , col: DG.Column ): Promise<DG.DataFrame> {

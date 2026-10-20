@@ -7,17 +7,23 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.pivot-table]
 --- */
 import {test} from '@playwright/test';
-import '../../../bindings/spaces.js';
+import '../../../bindings/biostructure.js';
+import '../../../bindings/connections.js';
+import '../../../bindings/file-formats.js';
+import '../../../bindings/flow.js';
+import '../../../bindings/grid.js';
+import '../../../bindings/queries.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {pivotedAggregationMatches} from '../../../bindings/pivot-table.js';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe, shouldHaveText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {pivotedAggregationMatches} from '@datagrok-libraries/bdd/bindings/tiers/viewers/pivot-table';
 import {addViewer, clickArea, hasArea, hasNoArea, noErrors, propertyShouldBe, readingIs, readingReads, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -91,14 +97,14 @@ test.describe("Pivot table — the frame around the aggregation", () => {
       await session.step(79, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The title bar shows the title and the description obeys its visibility mode", async () => {
-      await session.step(82, "When user sets properties of pivot table viewer:", () => setProperties(page, el("pivot table viewer"), [["Show Title","true"],["Title","Cross tab"]]));
+      await session.step(82, "When user sets properties of pivot table viewer:", () => setProperties(page, el("pivot table viewer"), [["Show Title","true"],["Title","Cross tab"]]), [["Show Title","true"],["Title","Cross tab"]]);
       await session.step(85, "Then title of pivot table viewer should have text \"Cross tab\"", () => shouldHaveText(page, el("title of pivot table viewer"), "Cross tab"));
-      await session.step(86, "When user sets properties of pivot table viewer:", () => setProperties(page, el("pivot table viewer"), [["Description","Rows by disease"],["Description Visibility Mode","Always"]]));
+      await session.step(86, "When user sets properties of pivot table viewer:", () => setProperties(page, el("pivot table viewer"), [["Description","Rows by disease"],["Description Visibility Mode","Always"]]), [["Description","Rows by disease"],["Description Visibility Mode","Always"]]);
       await session.step(89, "Then description of pivot table viewer should be visible", () => shouldBe(page, el("description of pivot table viewer"), "visible"));
       await session.step(90, "And description of pivot table viewer should have text \"Rows by disease\"", () => shouldHaveText(page, el("description of pivot table viewer"), "Rows by disease"));
       await session.step(91, "When user sets \"Description Visibility Mode\" property of pivot table viewer to \"Never\"", () => setProperty(page, "Description Visibility Mode", el("pivot table viewer"), "Never"));
       await session.step(92, "Then description of pivot table viewer should be hidden", () => shouldBe(page, el("description of pivot table viewer"), "hidden"));
-      await session.step(93, "When user sets properties of pivot table viewer:", () => setProperties(page, el("pivot table viewer"), [["Title",""],["Description",""],["Description Visibility Mode","Auto"]]));
+      await session.step(93, "When user sets properties of pivot table viewer:", () => setProperties(page, el("pivot table viewer"), [["Title",""],["Description",""],["Description Visibility Mode","Auto"]]), [["Title",""],["Description",""],["Description Visibility Mode","Auto"]]);
       await session.step(97, "Then the \"aggregated rows\" reading of pivot table viewer should be 6", () => readingIs(page, "aggregated rows", el("pivot table viewer"), 6));
       await session.step(98, "And no errors should have been logged", () => noErrors(page));
     });

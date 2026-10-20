@@ -13,6 +13,8 @@ import {Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 import {monomerLibForTestsSummary} from '../utils/monomer-lib/consts';
 
+const CORE_LIBRARY_PATH = 'System:AppData/Bio/monomer-libraries/HELMCoreLibrary.json';
+
 
 category('monomerLibraries', () => {
   let monomerLibHelper: IMonomerLibHelper;
@@ -89,5 +91,21 @@ category('monomerLibraries', () => {
     const resOverMon = overriddenMonomerLib.getMonomer(overMon.polymerType, overMon.symbol);
     if (resOverMon) resOverMon.lib = undefined; // cleanup to prevent infinite recursive comparison
     expectObject(resOverMon as any, overMon);
+  });
+
+  test('shippedCoreLibraryFile', async () => {
+    const monomers = JSON.parse(await grok.dapi.files.readAsText(CORE_LIBRARY_PATH));
+    expect(Array.isArray(monomers) && monomers.length > 0, true, `${CORE_LIBRARY_PATH} is no array of monomers`);
+    const bad = monomers.filter((m: any) => !m?.symbol || !(m.molfile || m.smiles)).map((m: any) => m?.symbol);
+    expect(bad.length, 0, `monomers without a symbol or a molfile/smiles: ${bad.join(', ')}`);
+  });
+
+  test('standardiseCoreLibrary', async () => {
+    const library = await grok.dapi.files.readAsText(CORE_LIBRARY_PATH);
+    const monomers: any[] = JSON.parse(await grok.functions.call('Bio:standardiseMonomerLibrary', {library: library}));
+    expect(monomers.length >= 500, true, `standardized library holds ${monomers.length} monomers`);
+    for (const [polymerType, symbol] of [['PEPTIDE', 'A'], ['PEPTIDE', 'meI'], ['RNA', 'A']])
+      expect(monomers.some((m) => m.symbol === symbol && m.polymerType === polymerType), true,
+        `standardized library lacks ${polymerType} monomer ${symbol}`);
   });
 });

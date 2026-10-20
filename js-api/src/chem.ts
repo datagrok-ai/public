@@ -37,6 +37,20 @@ $$$$`
 
 let extractors: Func[];  // id => molecule
 
+function getExtractors(): Func[] {
+  if (extractors == null) {
+    try {
+      extractors = Func.find({meta: {role: FUNC_TYPES.CONVERTER}}).filter(it => it.outputs.filter(o => o.semType == SEMTYPE.MOLECULE).length);
+    } catch {
+      extractors = [];
+    }
+    // nameToSmiles matches almost any text, so the specific converters are tried first
+    const index = extractors.map(it => it.name.toLowerCase()).indexOf('nametosmiles');
+    if (index >= 0)
+      extractors.push(extractors.splice(index, 1)[0]);
+  }
+  return extractors;
+}
 
 /** Cheminformatics-related routines */
 export namespace chem {
@@ -73,11 +87,22 @@ export namespace chem {
   /** A common interface that all sketchers should implement */
   export abstract class SketcherBase extends Widget {
     onChanged: Subject<any> = new Subject<any>();
+    /** Fires each time a drawing the implementation shows has landed on the page, as a viewer's `onViewerRendered`
+     * does: with {@link isRenderPending}, what automated tests wait on instead of a timeout (the BDD library's settles
+     * wait on both). An implementation that draws asynchronously fires it once per drawing; the base never does. */
+    onRendered: Subject<void> = new Subject<void>();
     host?: Sketcher;
     _name: string = '';
 
     constructor() {
       super(ui.box());
+    }
+
+    /** True while a change is on its way to the page (a drawing, a held gesture), as a viewer's `isRenderPending`:
+     * what a test waits on instead of a timeout, with {@link onRendered}. Undefined when the implementation does not
+     * say, as the base does not. */
+    get isRenderPending(): boolean | undefined {
+      return undefined;
     }
 
     /**
@@ -132,6 +157,9 @@ export namespace chem {
   }
 
 
+  /** A molecule string and the notation it is in, as {@link SketcherBase.explicitMol} holds one. */
+  type NotatedMolecule = NonNullable<SketcherBase['explicitMol']>;
+
   /** Molecule sketcher with pluggable implementations (OpenChemLib, Ketcher, Marvin, ...), inplace or as a
    * thumbnail that opens the sketcher in a dialog. Read the molecule with {@link getSmiles}, {@link getMolFile}
    * or {@link getSmarts}, set it with {@link setMolecule}, listen on {@link onChanged}.
@@ -153,10 +181,22 @@ export namespace chem {
     onAlignedChanged: Subject<boolean> = new Subject<boolean>();
     /** Fires when the "highlight" substructure-filter option is toggled. */
     onHighlightChanged: Subject<boolean> = new Subject<boolean>();
+    /** Fires when an implementation is ready: initialized, listened to, and showing the molecule the host holds. It fires
+     * once for every implementation that becomes ready, so a switch of sketcher (the ≡ menu) fires it again; and it
+     * fires synchronously at that moment, so a subscriber acts before any user input reaches the implementation.
+     * See {@link sketcherReady}. */
+    onSketcherReady: Subject<SketcherBase> = new Subject<SketcherBase>();
+    /** The implementation announced ready by {@link onSketcherReady}, until the next switch of sketcher begins. */
+    private _readySketcher: SketcherBase | null = null;
+    /** Counts the switches of sketcher begun, so that only the latest one announces its implementation. */
+    private _switches = 0;
+    /** True once {@link createSketcher} has built the DOM. */
+    private _created = false;
     sketcherFunctions: Func[] = [];
     sketcherDialogOpened = false;
 
-    /** Whether the currently drawn molecule becomes the current object as you sketch it */
+    /** Whether the currently drawn molecule becomes the current object as you sketch it; never in the context panel
+     * ({@link isInContextPanel}) */
     syncCurrentObject: boolean = true;
 
     listeners: (() => void)[] = [];
@@ -166,6 +206,8 @@ export namespace chem {
     _smarts: string | null = null;
     /** Molblock notation of the last value set: V2000 or V3000. */
     molFileUnits = Notation.MolBlock;
+    /** Counts the values set, so that one set while an implementation initializes is shown once it is ready. */
+    private _valuesSet = 0;
 
     loader: HTMLDivElement = ui.loader();
     extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
@@ -183,6 +225,8 @@ export namespace chem {
     _highlight = true;
     /** Message from the validation function for the last value set, or null. */
     error: string | null = null;
+    /** Numbers the molecule lookups {@link setValue} starts: only the latest one's answer is applied. */
+    private _lookup = 0;
     errorDiv = ui.divText('Malformed molecule');
     alighInput: InputBase;
     highlightInput: InputBase;
@@ -261,6 +305,7 @@ export namespace chem {
 
     /** Sets the molecule from SMILES; runs validation. */
     setSmiles(x: string): void {
+      this._valuesSet++;
       this.validate(x);
       this._smiles = x;
       this._molfile = null;
@@ -284,6 +329,7 @@ export namespace chem {
 
     /** Sets the molecule from a molblock, V2000 or V3000; runs validation. */
     setMolFile(x: string): void {
+      this._valuesSet++;
       this.validate(x);
       this._molfile = x;
       this._smiles = null;
@@ -303,6 +349,7 @@ export namespace chem {
 
     /** Sets the query pattern from SMARTS; runs validation. */
     setSmarts(x: string): void {
+      this._valuesSet++;
       this.validate(x);
       this._smarts = x;
       this._molfile = null;
@@ -342,27 +389,35 @@ export namespace chem {
 
     /** Sets SMILES, MOLBLOCK, or any other molecule representation */
     setValue(x: string) {
-      const index = extractors.map(it => it.name.toLowerCase()).indexOf('nametosmiles');
-      const el = extractors.splice(index, 1)[0];
-      extractors.splice(extractors.length, 0, el);
-
-      const extractor = extractors
+      const extractor = getExtractors()
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
-          if (extractor != null && !checkSmiles(x) && !isMolBlock(x)) {
-            this.calculating = true;
-            extractor
-              .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
-              .then((mol) => {
-                mol ? this.setMolecule(mol) : this.setMolecule('');
-              }).catch(() => {
-                this.setMolecule('');
-              }).finally(() => {
-                this.calculating = false;
-              });
+      const lookup = ++this._lookup;
+      if (extractor != null && !checkSmiles(x) && !isMolBlock(x)) {
+        this.calculating = true;
+        // a lookup answered after a newer value was set is dropped; one that finds nothing keeps the drawing
+        const recognized = (mol: string | null | undefined) => {
+          if (lookup !== this._lookup)
+            return;
+          if (mol)
+            this.setMolecule(mol);
+          else {
+            this.error = `Could not recognize "${x}"`;
+            this.updateInvalidMoleculeWarning();
           }
-          else
-            this.setMolecule(x);
+        };
+        extractor
+          .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
+          .then(recognized, () => recognized(null))
+          .finally(() => {
+            if (lookup === this._lookup)
+              this.calculating = false;
+          });
+      }
+      else {
+        this.calculating = false;
+        this.setMolecule(x);
+      }
     }
 
     /** Runs the validation function from the constructor, sets {@link error} and toggles the warning. */
@@ -416,7 +471,10 @@ export namespace chem {
       this.molInput.addEventListener('keydown', (e) => {
         if (e.key == 'Enter') {
           const newSmilesValue: string = (e?.target as HTMLTextAreaElement).value;
-          if (this.getSmiles() !== newSmilesValue)
+          // A text the sketcher shows as it was set changes nothing; any other is set. Compared with that string, not with
+          // the drawing's SMILES: a query has none, and reading it warned that SMARTS cannot be converted to SMILES each
+          // time a text was entered over a query drawn
+          if (this.sketcher?.explicitMol?.value !== newSmilesValue)
             this.setValue(newSmilesValue);
           e.stopImmediatePropagation();
         }
@@ -438,9 +496,30 @@ export namespace chem {
         this._mode = SKETCHER_MODE.EXTERNAL;
     }
 
-    /** True when the sketcher is hosted in a popup. */
+    /** Resolves to the implementation once it is ready ({@link onSketcherReady}): at once when the current one is ready
+     * and no switch of sketcher is under way, else at the next announcement. A switch begun before the call (the ≡ menu,
+     * a thumbnail's dialog opening) is waited for. Await it instead of polling `sketcher.isInitialized`. */
+    sketcherReady(): Promise<SketcherBase> {
+      if (this._readySketcher !== null && this._readySketcher === this.sketcher)
+        return Promise.resolve(this._readySketcher);
+      return new Promise((resolve) => {
+        const sub = this.onSketcherReady.subscribe((sketcher) => {
+          sub.unsubscribe();
+          resolve(sketcher);
+        });
+      });
+    }
+
+    /** True when the implementation is shown in a popup (not in the dialog a thumbnail in a popup opens). */
     isInPopupContainer(): boolean {
-      return !!this.root.closest('.d4-popup-host');
+      return !!this.host.closest('.d4-popup-host');
+    }
+
+    /** True when the sketcher is in the context panel (a column's Filter pane, say). There a drawing is not made the
+     * current object (see {@link syncCurrentObject}): the panel would show the molecule instead of what holds the
+     * sketcher, and the sketcher would go with it at the first edit. */
+    isInContextPanel(): boolean {
+      return !!this.root.closest('.grok-prop-panel');
     }
 
     /** Resizes the current implementation to its host. */
@@ -451,7 +530,12 @@ export namespace chem {
       }
     }
 
+    /** Builds the sketcher's DOM, inplace or external, once: 100 ms after construction, or earlier when a host that needs
+     * it now calls it (the substructure filter, once its card is in the page: the mode is then known). */
     createSketcher() {
+      if (this._created)
+        return;
+      this._created = true;
       this.sketcherFunctions = Func.find({meta: {role: FUNC_TYPES.MOLECULE_SKETCHER}});
       this.setExternalModeForSubstrFilter();
       if (this._mode === SKETCHER_MODE.INPLACE)
@@ -483,7 +567,9 @@ export namespace chem {
     };
 
     createMoleculeTooltip(currentMolfile: string): HTMLElement{
-      const molfileHandler = MolfileHandler.getInstance(currentMolfile);
+      // a molecule typed as SMILES is held as it was typed, and the handler reads molblocks only
+      const molfile = isMolBlock(currentMolfile) ? currentMolfile : convert(currentMolfile, Notation.Smiles, Notation.MolBlock);
+      const molfileHandler = MolfileHandler.getInstance(molfile);
       const maxDelta = 10; // in case deltaX or deltaY exceeds maxDelata we assume molecule is large one and draw it in a tooltip
       const zoom = 20; // coefficient we use to calculate size of canvas to feet molecule
       const xCoords = molfileHandler.x;
@@ -495,7 +581,7 @@ export namespace chem {
           Math.pow((yCoords[bondedAtoms[0][0] - 1] - yCoords[bondedAtoms[0][1] - 1]), 2));
         const deltaX = (Math.max(...xCoords) - Math.min(...xCoords))/distance;
         const deltaY = (Math.max(...yCoords) - Math.min(...yCoords))/distance;
-        tooltip = (deltaX > maxDelta || deltaY > maxDelta) ? this.drawToCanvas(deltaX*zoom, deltaY*zoom, currentMolfile) : ui.divText('Click to edit');
+        tooltip = (deltaX > maxDelta || deltaY > maxDelta) ? this.drawToCanvas(deltaX*zoom, deltaY*zoom, molfile) : ui.divText('Click to edit');
       } else {
         tooltip = ui.divText('Click to edit');
       }
@@ -540,8 +626,10 @@ export namespace chem {
       this.extSketcherDiv.onclick = () => {
         if (!this.sketcherDialogOpened) {
           this.sketcherDialogOpened = true;
-          //in case explicit mol has been set and hasn't been changed - use it as saved molecule
-          let savedMolFile = this.sketcher?.explicitMol?.value ?? this.getMolFile();
+          // The molecule Cancel goes back to, in its notation: the caller's string while the implementation shows it as it
+          // was set (a SMARTS or a SMILES entered, which set as a molblock no implementation read: the sketcher reopened
+          // empty after a Cancel), else the molecule held, as stored or as drawn
+          const saved = this._heldNotated();
 
           const hostDlg = ui.dialog();
           hostDlg.add(this.createInplaceModeSketcher())
@@ -554,7 +642,7 @@ export namespace chem {
             })
             .onCancel(() => {
               closeDlg();
-              this.setMolFile(savedMolFile!);
+              this._setNotated(saved);
             })
             .show({ resizable: true });
           // deferred apply relies on the OK button, so the checkbox is only shown in the dialog
@@ -581,13 +669,6 @@ export namespace chem {
       const molInputDiv = ui.div();
       $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
 
-      if (extractors == null) {
-        try {
-          extractors = Func.find({meta: {role: FUNC_TYPES.CONVERTER}}).filter(it => it.outputs.filter(o => o.semType == SEMTYPE.MOLECULE).length);
-        } catch {
-          extractors = [];
-        }
-      }
       let optionsIcon = ui.iconFA('bars', (event: MouseEvent) => {
         const menuHost = ui.div([], {style: {position: 'fixed', zIndex: '100'}});
         this.host.parentElement?.prepend(menuHost);
@@ -609,6 +690,7 @@ export namespace chem {
         
         Menu.popup()
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.getSmiles()))
+          .item('Copy as CXSMILES', () => navigator.clipboard.writeText(convert(this.getMolFile(), Notation.Unknown, Notation.CxSmiles)))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.getMolFile()))
           .group('Recent')
           .items(Sketcher.getCollection(Sketcher.RECENT_KEY).map((m) => ui.tools.click(this.drawToCanvas(150, 60, m), () => this.setMolecule(m))), () => { })
@@ -620,16 +702,22 @@ export namespace chem {
           .endGroup()
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
-            if (currentSketcherType === friendlyName)
-              return;
+            // The pick is the session's sketcher, and the account's from now on, sent to the server at once (a page
+            // reloaded right after keeps it); and this host's, which may hold another than the session's (a host made
+            // before the session's last switch): it switches unless it holds the pick already.
             currentSketcherType = friendlyName;
-            grok.userSettings.add(STORAGE_NAME, KEY, friendlyName);
-            this.sketcherType = currentSketcherType;
+            if (grok.userSettings.getValue(STORAGE_NAME, KEY) !== friendlyName) {
+              grok.userSettings.add(STORAGE_NAME, KEY, friendlyName);
+              grok.userSettings.flush();
+            }
+            if (this._sketcherType === friendlyName)
+              return;
+            this.sketcherType = friendlyName;
             if (!this.resized)
               this._autoResized = true;
           },
             {
-              isChecked: (item) => item === currentSketcherType, toString: item => item,
+              isChecked: (item) => item === this._sketcherType, toString: item => item,
               radioGroup: 'sketcher type'
             })
           .show({element: menuHost, x: this.host.parentElement ? calculatePopupPosition(this.host.parentElement) : 10, y: 10});
@@ -639,26 +727,54 @@ export namespace chem {
       this.calculating = false;
       this.sketcherType = currentSketcherType;
 
+      // A column that fills its parent: the input row takes its own height, the host what is left, and the
+      // invalid-molecule warning, drawn over the sketcher, none (css/styles.css, .chem-inplace-sketcher). It replaces a
+      // height of 90%, a fudge for the input row: in a box sized from outside (a resized dialog, a dialog shown with a
+      // size) it left a margin under the sketcher, a tenth of the box less the row, and at 100% the row pushed the
+      // sketcher's bottom under the footer.
       this.inplaceSketcherDiv = ui.div([
         molInputDiv,
         this.loader,
         this.host,
-        this.invalidMoleculeWarning], {style: {height: '90%'}});
+        this.invalidMoleculeWarning], 'chem-inplace-sketcher');
 
       return this.inplaceSketcherDiv;
     }
 
     // id that tracks id of changing sketcher type, so that multiple waitfordoms do not accumulate.
     private _sketcherChangeId = 0; 
+    /** The sketcher this host shows, or is switching to: its options menu checks it. */
+    private _sketcherType: string | null = null;
     private _setSketcherType(sketcherType: string): void {
-      const getMolecule = async () => {
-        //in case explicit molecule has been set into sketcher and hasn't been changed - return as is
-        if (this.sketcher?.explicitMol)
-          return this.sketcher?.explicitMol.value;
-        return this._smiles === null ? this._molfile === null ? this._smarts === null ? this.getMolFile() :
-          await this.getSmarts() : this.getMolFile() : this.getSmiles();
+      this._sketcherType = sketcherType;
+      const valuesSet = this._valuesSet;
+      // a switch begins: sketcherReady() waits for the implementation it brings
+      const switchId = ++this._switches;
+      this._readySketcher = null;
+      // The molecule the implementation this switch brings is to show, in its notation. While the implementation shows
+      // the caller's string as it was set (its explicitMol), that string. Once the user has drawn on it, its drawing, which
+      // the value last set no longer describes: as SMARTS when that value was a query given as SMARTS, else as a molblock,
+      // which holds whatever was drawn (a query's atom lists, its coordinates) where SMILES holds no query (a query drawn
+      // over a SMILES typed in the field came back empty, or without its query). Else, none initialized, the value stored.
+      const getMolecule = async (): Promise<NotatedMolecule | null> => {
+        const shown = this.sketcher?.explicitMol;
+        if (shown)
+          return {notation: shown.notation, value: shown.value};
+        const molblock = this.molFileUnits === Notation.MolBlock ? 'molblock' : 'molblockV3000';
+        if (this.sketcher?.isInitialized) {
+          return this._smarts !== null ? {notation: 'smarts', value: (await this.getSmarts()) ?? ''} :
+            {notation: molblock, value: this.getMolFile()};
+        }
+        return this._molfile !== null ? {notation: molblock, value: this._molfile} :
+          this._smarts !== null ? {notation: 'smarts', value: this._smarts} :
+          this._smiles !== null ? {notation: 'smiles', value: this._smiles} : null;
       };
       getMolecule().then(async (molecule) => {
+        // What the implementation shows is the host's molecule from here on, stored in its notation (unless a value was set
+        // meanwhile): an implementation that reads the host's molecule as it initializes (Ketcher) reads the drawing, not
+        // the value last set, which the drawing replaced
+        if (molecule !== null && this._valuesSet === valuesSet)
+          this._storeNotated(molecule);
         this._sketcherTypeChanged = true; //variable to check if refresh should be called on filter
         this._setSketcherSize(); //set default size to show update indicator
         ui.setUpdateIndicator(this.host, true);
@@ -672,29 +788,95 @@ export namespace chem {
         if(currentSketcherType !== sketcherType) //in case sketcher type has been changed while previous sketcher was loading
           return;
         const sketcher = await sketcherFunc!.apply();
+        // A later switch began while the function applied (a package not in the browser's cache loads for seconds): the
+        // sketcher chosen then is the host's, and this one, never shown, is let go
+        if (switchId !== this._switches || localChangeId !== this._sketcherChangeId) {
+          sketcher?.detach();
+          return;
+        }
         this.sketcher = sketcher; //setting this.sketcher only after ensuring that this is last selected sketcher
         ui.empty(this.host);
         this.host.appendChild(this.sketcher!.root);
         this._setSketcherSize(); //update sketcher size according to base sketcher width and height
         if (this.isInPopupContainer()) //workaround for sketcher not to be truncated when showed in a popup menu in the end of the screen (on last dataframe column)
           this.host.style.minWidth = `0px`;
-        await this.sketcher!.init(this);
+        await sketcher.init(this);
+        // A later switch began while this one initialized: the host, its change subscription and its molecule are that
+        // switch's now
+        if (switchId !== this._switches || this.sketcher !== sketcher)
+          return;
         ui.setUpdateIndicator(this.host, false);
         this._sketcherTypeChanged = false;
         this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
+          // read before the listeners run: a filter's listener filters the table, and the context panel, rebuilt, takes
+          // the sketcher out of it; a sketcher out of the page is no one drawing
+          const sync = this.syncCurrentObject && this.root.isConnected && !this.isInContextPanel();
           const molFile = this.getMolFile();
           this.validate(molFile);
           this.onChanged.next(null);
           for (let callback of this.listeners)
             callback();
-          if (this.syncCurrentObject) {
-            if (!Sketcher.isEmptyMolfile(molFile))
-              grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
-          }
+          if (sync && !Sketcher.isEmptyMolfile(molFile))
+            grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
         });
-        if (molecule)
-          this.setMolecule(molecule!, this._smarts !== null);
+        // a value set while the implementation initialized was only stored, and is newer than the one taken above, which
+        // is set otherwise, as stored: with the setter of its notation, not guessed from the string; an empty one is not
+        // loaded: the implementation starts empty, and Ketcher takes strokes before it is ready, which loading it would wipe
+        if (this._valuesSet !== valuesSet ||
+          (molecule !== null && molecule.value && !Sketcher.isEmptyMolfile(molecule.value)))
+          this._setStoredMolecule();
+        // Ready: initialized, listened to, showing the host's molecule. Announced here, synchronously, so a subscriber
+        // acts before any user input; unless a later switch has begun, whose implementation will be announced instead.
+        if (switchId === this._switches && this.sketcher === sketcher) {
+          this._readySketcher = sketcher;
+          this.onSketcherReady.next(sketcher);
+        }
       });
+    }
+
+    /** The molecule the host holds, in its notation, unconverted: the caller's string while the implementation shows it
+     * as it was set; else, none initialized, the value stored (a SMARTS or a SMILES as it is); else the drawing, as a
+     * molblock (V3000 when the value last set was). */
+    private _heldNotated(): NotatedMolecule {
+      const shown = this.sketcher?.explicitMol;
+      if (shown)
+        return {notation: shown.notation, value: shown.value};
+      if (!this.sketcher?.isInitialized) {
+        if (this._smarts !== null)
+          return {notation: 'smarts', value: this._smarts};
+        if (this._smiles !== null)
+          return {notation: 'smiles', value: this._smiles};
+      }
+      return {notation: this.molFileUnits === Notation.MolBlock ? 'molblock' : 'molblockV3000', value: this.getMolFile()};
+    }
+
+    /** Sets a molecule with the setter of its notation. */
+    private _setNotated({notation, value}: NotatedMolecule): void {
+      if (notation === 'smarts')
+        this.setSmarts(value);
+      else if (notation === 'smiles')
+        this.setSmiles(value);
+      else
+        this.setMolFile(value);
+    }
+
+    private _setStoredMolecule(): void {
+      if (this._molfile !== null)
+        this.setMolFile(this._molfile);
+      else if (this._smarts !== null)
+        this.setSmarts(this._smarts);
+      else if (this._smiles !== null)
+        this.setSmiles(this._smiles);
+    }
+
+    /** Stores a molecule as the host's, in its notation, as its setter stores it, without setting it on the
+     * implementation or validating it again. */
+    private _storeNotated({notation, value}: NotatedMolecule): void {
+      this._smiles = notation === 'smiles' ? value : null;
+      this._smarts = notation === 'smarts' ? value : null;
+      this._molfile = notation === 'molblock' || notation === 'molblockV3000' ? value : null;
+      if (this._molfile !== null)
+        this.molFileUnits = value && value.includes('V3000') ? Notation.V3KMolBlock : Notation.MolBlock;
     }
 
     private _setSketcherSize() {
@@ -724,11 +906,13 @@ export namespace chem {
       }
     }
 
+    /** True for an empty value: '' or a molblock with no atoms, V2000 or V3000 (WHITE_MOLBLOCK_V_3000 included, whose
+     * header is two lines, not three). */
     static isEmptyMolfile(molFile: string): boolean {
       const rowWithAtomsAndNotation = molFile && molFile.split("\n").length >= 4 ? molFile.split("\n")[3] : '';
       return (molFile == null || molFile == '' ||
        (rowWithAtomsAndNotation.trimStart()[0] === '0' && rowWithAtomsAndNotation.trimEnd().endsWith('V2000')) ||
-       (rowWithAtomsAndNotation.trimEnd().endsWith('V3000') && molFile.includes('COUNTS 0')));
+       (molFile.includes('V3000') && /^M  V30 COUNTS 0 /m.test(molFile)));
     }
 
 

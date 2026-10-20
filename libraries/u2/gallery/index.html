@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <!-- the pages link the sheets they show; u2 controls must not install the whole stylesheet too -->
+  <meta name="u2-styles" content="linked">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>u2 gallery</title>
   <link rel="icon" href="data:,">
@@ -10,7 +12,7 @@
     "@floating-ui/core":"../node_modules/@floating-ui/core/dist/floating-ui.core.mjs",
     "@floating-ui/utils":"../node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs",
     "@floating-ui/utils/dom":"../node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs",
-    "datagrok-api/u2core":"../node_modules/datagrok-api/src/u2core/index.js"}}</script>
+    "datagrok-api/u2core":"../node_modules/datagrok-api/dist/src/u2core/index.js"}}</script>
   <link rel="stylesheet" href="../css/tokens.css">
   <link rel="stylesheet" href="../css/theme-dark.css">
   <!-- the context panel's property grid; ids match the pages' injectOnce so nothing loads twice -->
@@ -227,7 +229,8 @@
         ['section', 'Section'], ['dialog', 'Dialog'], ['form', 'Form'], ['wizard', 'Wizard'],
         ['card', 'Card & stat card']]],
       ['Collections', [['list', 'Virtual list'], ['tree', 'Tree'], ['table', 'Table'],
-        ['functions-browser', 'Functions browser'], ['propgrid', 'Property grid']]],
+        ['data-table', 'Data table'], ['functions-browser', 'Functions browser'],
+        ['propgrid', 'Property grid']]],
       ['Navigation & actions', [['menu', 'Menu'], ['toolbar', 'Toolbar'],
         ['breadcrumbs', 'Breadcrumbs'], ['buttons', 'Buttons & groups'], ['icons', 'Icons']]],
       ['Feedback & display', [['tooltip', 'Tooltip'], ['notify', 'Notifications'],
@@ -254,7 +257,8 @@
       if (!navSyncing && node && groupOf(node.id) && location.hash.slice(1) !== node.id)
         location.hash = node.id;
     });
-    const propsGrid = new PropertyGrid();
+    const propsGrid = new PropertyGrid({onChanged: (change) =>
+      selected?.getProperties().find((p) => p.name === change.name)?.set?.(selected.propertyTarget, change.value)});
     const propsTitle = document.getElementById('props-title');
     document.getElementById('props-host').append(propsGrid.root);
     const EDITABLE = new Set(['string', 'int', 'double', 'bool', 'string_list']);
@@ -281,12 +285,6 @@
       if (control)
         selectControl(control);
     });
-    new U2Scope().effect(() => {
-      const change = propsGrid.onChanged.value;
-      if (change && selected)
-        selected.getProperties().find((p) => p.name === change.name)?.set?.(selected.propertyTarget, change.value);
-    });
-
     window.addEventListener('hashchange', route);
     try {
       const u2 = await import('../src/index.js');

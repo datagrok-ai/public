@@ -5,7 +5,10 @@ Feature: Scatter plot property surface
   min/max columns, the context menu as a path to the tools, title and description, and the Lines
   category — Lines Order draws the connecting lines and enables Lines By, which defaults to the
   color column so naming that same column changes nothing. Selection, zoom, filtering, the axes,
-  the tooltip, the labels and the trend lines have features of their own. One journey on
+  the tooltip, the labels and the trend lines have features of their own. Last, `scatter-plot-ui.md`'s
+  Data > Table: the plot rebound to spgi-100 re-picks its columns, rebound back it draws demog-1000
+  again, and its own Filter formula (`${AGE} > 44`: 466 of the 872 rows with a HEIGHT) narrows the
+  markers and leaves the table's filter alone. One journey on
   demog-1000, X = WEIGHT, Y = HEIGHT; every scenario puts back what it changed.
 
   Background:
@@ -139,4 +142,28 @@ Feature: Scatter plot property surface
     Then scatter plot viewer should not have a "lines" area
     And "Lines By" property should be disabled
     And scatter plot viewer should have less ink than before
+    And no errors should have been logged
+
+  Scenario: Data > Table rebinds the plot to another table and back, and the Filter formula narrows it
+    Given user opens spgi dataset
+    And user switches to the "demog-1000" table view
+    When user sets "table" property of scatter plot viewer to "spgi-100"
+    Then scatter plot viewer should be bound to table "spgi-100"
+    And "X" property of scatter plot viewer should not be "WEIGHT"
+    And "X" property of scatter plot viewer should not be ""
+    And "Y" property of scatter plot viewer should not be "HEIGHT"
+    And the "rows shown" reading of scatter plot viewer should be at least 1
+    When user sets "table" property of scatter plot viewer to "demog-1000"
+    Then scatter plot viewer should be bound to table "demog-1000"
+    And "X" property of scatter plot viewer should not be ""
+    And the "rows shown" reading of scatter plot viewer should be at least 1
+    When user sets properties of scatter plot viewer:
+      | X | WEIGHT |
+      | Y | HEIGHT |
+    Then scatter plot viewer should show 872 rows
+    When user sets "Filter" property of scatter plot viewer to "${AGE} > 44"
+    Then scatter plot viewer should show 466 rows
+    And all rows should pass the filter
+    When user sets "Filter" property of scatter plot viewer to ""
+    Then scatter plot viewer should show 872 rows
     And no errors should have been logged

@@ -163,15 +163,29 @@ class EventTargetBase {
   }
 
   dispatchEvent(event) {
+    // the browser's window.event: the event being dispatched, while its listeners run
+    const outer = globalThis.event;
+    globalThis.event = event;
+    try {
+      return this._dispatch(event);
+    }
+    finally {
+      globalThis.event = outer;
+    }
+  }
+
+  _dispatch(event) {
     event.target = this;
     const path = [];
     for (let node = this; node; node = node.parentNode)
       path.push(node);
     for (let i = path.length - 1; i > 0 && !event._stopped; i--)
       path[i]._invoke(event, true);
-    if (!event._stopped)
+    // stopped on the way down: the target never sees it, as in a browser
+    const reached = !event._stopped;
+    if (reached)
       this._invoke(event, true);
-    if (!event._done)
+    if (reached && !event._done)
       this._invoke(event, false);
     if (event.bubbles) {
       for (let i = 1; i < path.length && !event._stopped; i++)
@@ -607,7 +621,15 @@ class Element extends Node {
 
   select() {}
 
+  /** A checkbox or a radio activates before the event fires, as the browser does — a test that
+   * clicks one must see the same `checked` and the same `change` a user's click produces. */
   click() {
+    if (this.tagName === 'INPUT' && (this.type === 'checkbox' || this.type === 'radio')) {
+      this.checked = this.type === 'radio' ? true : !this.checked;
+      this.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      this.dispatchEvent(new DomEvent('change', {bubbles: true}));
+      return;
+    }
     this.dispatchEvent(new MouseEvent('click', {bubbles: true}));
   }
 
@@ -836,9 +858,10 @@ function getComputedStyle(el) {
 }
 
 const windowTarget = new EventTargetBase();
+const location = {href: 'http://localhost/', pathname: '/', search: '', hash: ''};
 
 Object.assign(globalThis, {
-  window: globalThis, document, Node, Text, Element, HTMLElement, HTMLDivElement, HTMLInputElement,
+  window: globalThis, document, location, Node, Text, Element, HTMLElement, HTMLDivElement, HTMLInputElement,
   HTMLTextAreaElement, HTMLSelectElement, HTMLButtonElement, HTMLAnchorElement, HTMLOptionElement,
   ShadowRoot, DOMRect, Option, Event: DomEvent, CustomEvent, KeyboardEvent, MouseEvent, PointerEvent,
   WheelEvent, MutationObserver, ResizeObserver, getComputedStyle, requestAnimationFrame,
@@ -865,4 +888,5 @@ export function flush() {
 export function resetDom() {
   document.body.replaceChildren();
   document.activeElement = document.body;
+  location.search = '';
 }

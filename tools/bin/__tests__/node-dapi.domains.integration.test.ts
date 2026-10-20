@@ -23,7 +23,7 @@ beforeAll(async () => {
     dapi = new NodeDapi(await NodeApiClient.login(url, key));
     await dapi.domains.createSchema(SCHEMA, 'CLI test', 'grok s domains integration test');
     created = true;
-    await dapi.domains.applySchema(SCHEMA, {tables: {widget: {
+    await dapi.domains.applySchema(SCHEMA, {ifVersion: '1', tables: {widget: {
       businessKey: ['sku'],
       columns: {
         sku: {type: 'string', required: true, unique: true},
@@ -110,7 +110,8 @@ describe('NodeDomainsDataSource (integration)', () => {
     expect(grants.some((g: any) => g.group.id === group.id && g.permission === 'Edit')).toBe(true);
     await dapi.domains.revoke(entityId, group.id);
     expect((await dapi.domains.grants(entityId)).some((g: any) => g.group.id === group.id)).toBe(false);
-    const caps = await dapi.domains.capabilities(SCHEMA, 'widget');
-    expect(caps).toMatchObject({canView: true, securityMode: 'table', hasBusinessKey: true});
+    const access = await dapi.domains.access(SCHEMA, 'widget');
+    expect(access).toMatchObject({can: {view: true}, securityMode: 'table', hasBusinessKey: true});
+    expect(access.fields.id).toBeDefined();
   });
 });

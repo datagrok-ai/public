@@ -20,20 +20,29 @@ export type StepFunCallInitialConfig = {
 
 export type InstanceConfRec<C> = {
   steps?: InstanceConfRec<C>[];
+  skipOnInit?: boolean;
 } & C;
 
 export type InstanceConfRecInput<C> = {
   steps?: Array<ItemId | InstanceConfRecInput<C>>;
+  skipOnInit?: boolean;
 } & C;
 
-export type PipelineInstanceConfig = InstanceConfRec<StepDynamicInitialConfig | StepFunCallInitialConfig>;
-export type PipelineInstanceConfigInput = InstanceConfRecInput<StepDynamicInitialConfig | StepFunCallInitialConfig>;
+type InstanceConfItem = InstanceConfRec<StepDynamicInitialConfig | StepFunCallInitialConfig>;
+type InstanceConfItemInput = InstanceConfRecInput<StepDynamicInitialConfig | StepFunCallInitialConfig>;
+
+type InstanceConfBody = Omit<InstanceConfItem, 'id'>;
+type InstanceConfBodyInput = Omit<InstanceConfItemInput, 'id'>;
+
+// the root is located by the target path, so its id is never read
+export type PipelineInstanceConfig = InstanceConfBody & {id?: ItemId};
+export type PipelineInstanceConfigInput = InstanceConfBodyInput & {id?: ItemId};
 
 export function normalizeIdRef<T extends {id: ItemId}>(s: ItemId | T): T {
   return typeof s === 'string' ? ({id: s} as T) : s;
 }
 
-export function normalizePipelineInstanceConfig(c: PipelineInstanceConfigInput): PipelineInstanceConfig {
+export function normalizePipelineInstanceConfig<I extends {id?: ItemId}>(c: InstanceConfBodyInput & I): InstanceConfBody & I {
   return {
     ...c,
     steps: c.steps?.map((s) => normalizePipelineInstanceConfig(normalizeIdRef(s))),
@@ -57,7 +66,7 @@ export type PipelineOutline = PipelineStateRec<StepFunCallStateBase, {}>;
 export type PipelineState = PipelineStateRec<StepFunCallState, PipelineInstanceRuntimeData>;
 export type PipelineSerializedState = PipelineStateRec<StepFunCallSerializedState, {}>;
 
-export function isFuncCallState(state: PipelineState): state is StepFunCallState {
+export function isFuncCallState<S extends {type: 'funccall'}, T>(state: PipelineStateRec<S, T>): state is S {
   return state.type === 'funccall';
 }
 
@@ -65,11 +74,11 @@ export function isFuncCallSerializedState(state: PipelineSerializedState): state
   return state.type === 'funccall';
 }
 
-export function isStaticPipelineState(state: PipelineState): state is PipelineStateStatic<StepFunCallState, PipelineInstanceRuntimeData> {
+export function isStaticPipelineState<S extends {type: 'funccall'}, T>(state: PipelineStateRec<S, T>): state is PipelineStateStatic<S, T> {
   return state.type === 'static';
 }
 
-export function isDynamicPipelineState(state: PipelineState): state is PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> {
+export function isDynamicPipelineState<S extends {type: 'funccall'}, T>(state: PipelineStateRec<S, T>): state is PipelineStateDynamic<S, T> {
   return isDynamicType(state.type);
 }
 
@@ -87,10 +96,6 @@ export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateDy
 
 export type ViewAction = ActionInfoBase & {
   uuid: string;
-  /** Result of evaluating showWhen / hideWhen against the current tree.
-   *  `true` when no condition is set. Compute2 uses this to decide whether
-   *  to render the action; RTD itself does not filter or gate on it. */
-  visible: boolean;
 };
 
 export type StepFunCallStateBase = {
@@ -118,10 +123,10 @@ export type StepFunCallState = {
 
 export type PipelineInstanceRuntimeData = {
   actions: ViewAction[] | undefined;
-  approversGroup: string | undefined;
   disableHistory: boolean;
   customExports: CustomExport[] | undefined;
   disableDefaultExport?: boolean;
+  compactView: boolean;
   structureCheckResults?: ValidationResult | undefined;
   forceNavigate: boolean;
 }

@@ -1,2 +1,0 @@
-# Cassandra config files are mounted into a Linux container and must use LF
-* text eol=lf

@@ -4,11 +4,45 @@ import * as DG from 'datagrok-api/dg';
 import {
   AggregationCode, AGG_CODE, CacheEntry, CategoricalDesirability, ColumnDesirability, CURRENT_MPO_VERSION,
   DESIRABILITY_PROFILE_TYPE, DesirabilityLine, DesirabilityMode, DesirabilityProfile, HoistedColumn, MpoResult,
-  MpoScale, NumericalDesirability, PropertyDesirability, RowState, WeightedAggregation,
+  MpoScale, NumericalDesirability, PropertyDesirability, QualifierPolicy, RowState, WeightedAggregation,
 } from './mpo-types';
 
 // mpo-types is the types/constants barrel for this module; re-export it so consumers keep importing from './mpo'.
 export * from './mpo-types';
+
+function lineY(xs: number[], line: DesirabilityLine, x: number): number {
+  const last = xs.length - 1;
+  if (x <= xs[0])
+    return line[0][1];
+  for (let k = 0; k < last; ++k) {
+    if (x <= xs[k + 1]) {
+      const x1 = xs[k];
+      const x2 = xs[k + 1];
+      const y1 = line[k][1];
+      return x1 === x2 ? y1 : y1 + (line[k + 1][1] - y1) * (x - x1) / (x2 - x1);
+    }
+  }
+  return line[last][1];
+}
+
+function lineRange(xs: number[], line: DesirabilityLine, a: number, b: number, inv: boolean, out: number[]): void {
+  const ya = lineY(xs, line, a);
+  const yb = lineY(xs, line, b);
+  let lo = Math.min(ya, yb);
+  let hi = Math.max(ya, yb);
+  for (let k = 0; k < xs.length; ++k) {
+    if (xs[k] > a && xs[k] < b) {
+      lo = Math.min(lo, line[k][1]);
+      hi = Math.max(hi, line[k][1]);
+    }
+  }
+  out[0] = inv ? 1 - hi : lo;
+  out[1] = inv ? 1 - lo : hi;
+}
+
+export function qualifierPolicy(d: NumericalDesirability): QualifierPolicy {
+  return d.qualifiers ?? QualifierPolicy.Worst;
+}
 
 /// Scores one value the way `mapColumnDesirability` scores a whole column: log domain, and inversion
 /// applied only to a value the curve covers, so out-of-range stays 0 rather than flipping to 1.
@@ -131,7 +165,7 @@ export function applyDesirabilityPatch(prop: PropertyDesirability, patch: Partia
   Object.assign(prop, patch);
   if (!isNumerical(prop))
     return;
-  if (prop.mode === DesirabilityMode.Freeform && 'line' in patch)
+  if (prop.mode === DesirabilityMode.Freeform && 'line' in patch && prop.freeformLine)
     prop.freeformLine = prop.line;
   refreshDesirabilityLine(prop);
 }
@@ -151,7 +185,7 @@ export function rangeNumericalToColumn(prop: NumericalDesirability, col: DG.Colu
   prop.line = [];
 }
 
-export const MPO_NUMERIC_TYPES = new Set<string>([DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT]);
+export const MPO_NUMERIC_TYPES = new Set<string>([DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.QNUM]);
 
 export function isMpoNumericColumn(col: DG.Column): boolean {
   return MPO_NUMERIC_TYPES.has(col.type);
@@ -208,7 +242,7 @@ export function migrateProfile(raw: DesirabilityProfile): DesirabilityProfile {
 export function desirabilityKey(d: PropertyDesirability): string {
   const dom = isNumerical(d) && d.scale === MpoScale.Log ? `|${d.min ?? ''}|${d.max ?? ''}` : '';
   return isNumerical(d) ?
-    `n|${JSON.stringify(d.line)}|${JSON.stringify(d.missingValues ?? null)}|${d.inverted ? 1 : 0}|${d.scale === MpoScale.Log ? 'log' : 'lin'}${dom}` :
+    `n|${JSON.stringify(d.line)}|${JSON.stringify(d.missingValues ?? null)}|${d.inverted ? 1 : 0}|${d.scale === MpoScale.Log ? 'log' : 'lin'}${dom}|q:${qualifierPolicy(d)}` :
     `c|${JSON.stringify((d as CategoricalDesirability).categories)}|${JSON.stringify(d.missingValues ?? null)}`;
 }
 
@@ -228,6 +262,7 @@ export function hoistColumns(dataFrame: DG.DataFrame, columns: DG.Column[]): Hoi
       // For categorical columns the null sentinel is the raw index of the '' category — isNone(i) ⇔ raw[i] === valNull.
       valNull: isCat ? cats!.indexOf('') : (col.type === DG.COLUMN_TYPE.INT ? DG.INT_NULL : DG.FLOAT_NULL),
       isCat,
+      isQnum: col.type === DG.COLUMN_TYPE.QNUM,
       cats,
       catScore: isCat ?
         new Map((template as CategoricalDesirability).categories.map((c) => [c.name, c.desirability])) : null,
@@ -239,34 +274,41 @@ export function hoistColumns(dataFrame: DG.DataFrame, columns: DG.Column[]): Hoi
   return hoisted;
 }
 
-/// The expensive, cacheable phase: column-major sweep of the raw array mapping values to desirability scores
-/// (desirabilityScore inlined). Depends only on column data + line + missing-value handling, never on weights.
+/// The expensive, cacheable phase: column-major sweep of the raw array mapping values to desirability scores.
+/// Depends only on column data + line + missing-value handling, never on weights.
 export function mapColumnDesirability(h: HoistedColumn, rowCount: number): ColumnDesirability {
-  const {raw, valNull, isCat, cats, catScore} = h;
+  const {raw, valNull, isCat, cats, catScore, isQnum} = h;
   const line = isCat ? null : (h.template as NumericalDesirability).line;
   const inv = !isCat && (h.template as NumericalDesirability).inverted === true;
   const log = !isCat && (h.template as NumericalDesirability).scale === MpoScale.Log;
   const floorX = log ? domainMinX(h.template as NumericalDesirability) : 0;
-  const xs = log && line ? line.map((p) => Math.log10(Math.max(floorX, p[0]))) : null;
+  const xs = line ? line.map((p) => {
+    const x = log ? Math.max(floorX, p[0]) : p[0];
+    const value = isQnum ? DG.Qnum.getValue(x) : x;
+    return log ? Math.log10(value) : value;
+  }) : null;
   const segN = line ? line.length : 0;
-  const loX = segN ? (log ? xs![0] : line![0][0]) : 0;
-  const hiX = segN ? (log ? xs![segN - 1] : line![segN - 1][0]) : 0;
+  const loX = segN ? xs![0] : 0;
+  const hiX = segN ? xs![segN - 1] : 0;
   const mv = h.template.missingValues;
   // The RowState a missing value resolves to (Bail/Skip mark the row; Contribute means substitute defaultScore).
   const missState = !mv || mv.strategy === 'exclude' ? RowState.Bail :
     mv.strategy === 'skip' ? RowState.Skip : RowState.Contribute;
   const defaultScore = mv && mv.strategy === 'default' ? mv.score : 0;
+  const policy = isCat ? QualifierPolicy.Worst : qualifierPolicy(h.template as NumericalDesirability);
+  const range = [0, 0];
 
   const D = new Float32Array(rowCount);
   let state: Uint8Array | null = null; // lazily allocated on the first skip/bail row
 
   for (let i = 0; i < rowCount; ++i) {
-    if (raw[i] === valNull || (log && raw[i] <= 0)) {
+    const q = isQnum ? DG.Qnum.getQ(raw[i]) : DG.QNUM_EXACT;
+    const v = isQnum ? DG.Qnum.getValue(raw[i]) : raw[i];
+    if (v === valNull || (isQnum && isNaN(v)) || (log && v <= 0 && q !== DG.QNUM_GREATER)) {
       if (missState !== RowState.Contribute) {
         (state ??= new Uint8Array(rowCount))[i] = missState;
         D[i] = NaN;
-      }
-      else
+      } else
         D[i] = defaultScore;
       continue;
     }
@@ -275,29 +317,23 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
       if (s == null) {
         (state ??= new Uint8Array(rowCount))[i] = RowState.Bail;
         D[i] = NaN;
-      }
-      else
+      } else
         D[i] = s;
       continue;
     }
-    // Inlined desirabilityScore over the column's line.
-    const x = log ? Math.log10(raw[i]) : raw[i];
-    let score = 0;
-    let matched = false;
-    if (segN !== 0 && x >= loX && x <= hiX) {
-      for (let k = 0; k < segN - 1; ++k) {
-        const x1 = log ? xs![k] : line![k][0];
-        const x2 = log ? xs![k + 1] : line![k + 1][0];
-        if (x >= x1 && x <= x2) {
-          const y1 = line![k][1];
-          score = x1 === x2 ? y1 : y1 + (line![k + 1][1] - y1) * (x - x1) / (x2 - x1);
-          matched = true;
-          break;
-        }
+    if ((q === DG.QNUM_LESS || q === DG.QNUM_GREATER) && segN !== 0) {
+      const x = log ? (v > 0 ? Math.log10(v) : -Infinity) : v;
+      lineRange(xs!, line!, q === DG.QNUM_LESS ? -Infinity : x, q === DG.QNUM_LESS ? x : Infinity, inv, range);
+      if (policy !== QualifierPolicy.Limit || range[0] === range[1]) {
+        D[i] = policy === QualifierPolicy.Best ? range[1] : range[0];
+        continue;
       }
     }
-    // Out-of-range / no matching segment always scores 0, regardless of inversion; only the defined curve flips.
-    D[i] = matched ? (inv ? 1 - score : score) : 0;
+    // Out-of-range always scores 0, regardless of inversion; only the defined curve flips.
+    const x = log ? Math.log10(v) : v;
+    const covered = segN !== 0 && x >= loX && x <= hiX;
+    const y = covered ? lineY(xs!, line!, x) : 0;
+    D[i] = covered && inv ? 1 - y : y;
   }
   return {D, state};
 }

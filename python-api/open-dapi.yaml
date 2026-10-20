@@ -56,9 +56,53 @@ paths:
     post:
       operationId: createSchema
       summary: create schema
-      description: "Creates an empty user-managed domain schema; body {name, friendlyName?, description?}. The physical PostgreSQL schema is 'usr_<name>'; tables are added afterwards via the apply endpoint. Requires the CreateDomainSchema global privilege; the creator receives the full permission set on the schema entity."
+      description: "Creates a user-managed domain schema; body {name, friendlyName?, description?, manifest?}. Without a manifest the schema is born empty (physical PostgreSQL schema 'usr_<name>'; tables are added afterwards via the apply endpoint). With one — it must bind an external storage — the schema is registered in one call as 'ext_<name>' after a live validation of the binding: {id, name, pgSchema, version, binding: {status, validatedOn}}. [dryRun] runs every check and writes nothing: {status: 'ok', issues: []} or the refusal the create would give. Requires the CreateDomainSchema global privilege (and, for a binding, Query on the connection); the creator receives the full permission set on the schema entity."
       tags:
         - domains
+      parameters:
+        - name: dryRun
+          in: query
+          required: false
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
+  /domains/schemas/draft:
+    post:
+      operationId: draftSchema
+      summary: draft schema
+      description: "Drafts an external schema from a live introspection; body {connection (qualified name or id), schema, catalog?, tables?: [remote names]}. Answers {manifest, inventory: {tables, columns, relations}, diagnostics}: a parseable manifest for the requested (default: every bindable) table, and the inventory of what the draft does not declare and why. Requires CreateDomainSchema plus GetSchema and Query on the connection."
+      tags:
+        - domains
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
+  /domains/schemas/{schema}/draft:
+    post:
+      operationId: draftBinding
+      summary: draft binding
+      description: "The live catalog of a registered external binding for its editor: the same answer as the draft, over the binding's own connection, remote schema and catalog; body {tables?: [remote names]} (send `{}` for every bindable table). Requires Edit on the schema entity plus GetSchema and Query on the connection — no CreateDomainSchema; a locally stored schema answers 422 `unsupported`."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -84,11 +128,59 @@ paths:
       responses:
         "200":
           description: Successful response
+  /domains/schemas/{schema}/access:
+    get:
+      operationId: getSchemaAccess
+      summary: get schema access
+      description: "The lossless access snapshot of a schema for its editor: {tables: {<logical>: {entityId, remote, canShare, grants, coreSchema: {entityId, canShare, grants}}}, columns: {'<table>.<column>': {state: unrestricted | restricted, schemaId?, canShare, view?, edit?, other?}}, version, incarnation}, read in one transaction. Grants are the DIRECT rows on the entity as [{group: {id, friendlyName, personal}, permissions}] — complete sets, nothing inherited — and are answered only where the caller holds Share on the target (a column's is its table's core schema); elsewhere `canShare: false` and the lists are null (unknown, not empty). The core schema's grants are informational: the apply edits table grants and relational column restrictions only. `version` and `incarnation` are what an edit sends back as ifVersion / ifIncarnation. Requires View or Edit on the schema entity."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+  /domains/schemas/{schema}/snapshot:
+    get:
+      operationId: getSchemaSnapshot
+      summary: get schema snapshot
+      description: "The declaration snapshot the schema was last registered against (MIGRATIONS.md §2); 404 when none is recorded."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+  /domains/schemas/{schema}/validate:
+    post:
+      operationId: validateSchema
+      summary: validate schema
+      description: "Re-validates an external schema's binding against its warehouse (external-bindings §9.2) — the connection policy, the credential proof and the declared tables — and records the outcome: {schema, status, validatedOn, issues}. Requires Edit on the schema entity; a schema stored locally answers 422 `unsupported`."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
   /domains/schemas/{schema}/apply:
     post:
       operationId: applySchema
       summary: apply schema
-      description: "Applies a partial manifest: body {tables?, propertySchemas?, dropTables?, ifVersion?, confirmDestructive?}. Named tables replace their current definition wholesale; untouched tables come from the registry. [dryRun] returns the change plan (with live row counts for anything dropped) without applying; a destructive plan requires confirmDestructive; a stale ifVersion is a 409. On a user-managed schema this requires Edit and ifVersion tracks the schema's apply counter. On a package-managed schema it is the user-extension path instead: it requires Extend, the body additionally accepts `extend: {table: {columns: {...}}}` for tables the plugin opted in, only user-owned objects may be written, and ifVersion tracks ext_version while the plugin's own version stays frozen."
+      description: "Applies a partial manifest: body {tables?, propertySchemas?, dropTables?, friendlyName?, description?, storage?, access?, ifVersion, ifIncarnation?, confirmDestructive?}. Named tables replace their current definition wholesale; untouched tables come from the registry. [dryRun] returns the change plan (with live row counts for anything dropped; registration-only, with what a drop loses and the filters it leaves broken, for an external binding; `metadata` for a rename) without applying; a destructive plan requires confirmDestructive; a stale ifVersion is a 409. `access` = {grant: [{table, group, permission}], revoke: [{table, group, permission}], restrict: [{table, column, grant?: [{group, permission}], revoke?: [{group, permission}]}], unrestrict: [{table, column}]} travels with the manifest change and is executed in the same transaction, after the registry write: a column added and restricted in one apply is never visible to existing readers, and `writable` turned on with an Edit revoked has no window. Every op is a delta by permission triple, idempotent (the answer reports each op's `effect`, `none` for a no-op, as resolved under the lock); `restrict` splits the column out of the everyone-visible core schema and applies its triples to the per-column schema; `unrestrict` merges it back. Every op needs Share on its target (a column's: the table's core schema) or the whole apply is refused (403 `access-forbidden`); a target the same apply drops is refused (`access-target-dropped`), an unknown group `unknown-group`. On a user-managed schema this requires Edit (re-checked under the lock) and ifVersion is required — the schema's apply counter, checked again under the deploy lock together with ifIncarnation (the manifest's `incarnation`: a schema deleted and re-created starts over at version 1, so a token from before answers 409 too). ifIncarnation stays optional on the wire; every client of ours sends it. On a package-managed schema it is the user-extension path instead: it requires Extend, the body additionally accepts `extend: {table: {columns: {...}}}` for tables the plugin opted in, only user-owned objects may be written, and ifVersion tracks ext_version while the plugin's own version stays frozen."
       tags:
         - domains
       parameters:
@@ -400,7 +492,7 @@ paths:
     post:
       operationId: batchRows
       summary: batch rows
-      description: "Bulk upload (§5.6); the body format is selected by Content-Type: application/json (row-object array, bare or under 'rows'), text/csv, or application/octet-stream (d42 DataFrame). No server-side Parquet — see PLAN.md phase-2 decision 1 (clients convert via the Arrow package). The generated dapi2 client method is a non-functional stub (it sends no body): use grok.dapi.domains.table(...).batch (JS) or raw HTTP with a JSON/CSV/d42 body instead."
+      description: "Bulk upload (§5.6); the body format is selected by Content-Type: application/json (row-object array, bare or under 'rows'), text/csv, or application/octet-stream (d42 DataFrame). No server-side Parquet — see PLAN.md phase-2 decision 1 (clients convert via the Arrow package). The generated dapi2 client method is a non-functional stub (it sends no body): use grok.dapi.domains.table(...).batch (JS) or raw HTTP with a JSON/CSV/d42 body instead. `?validateOnly=true` (u2 x EMS 1-4) previews the same run and writes nothing: the answer is {validateOnly, rowCount, willInsert, willUpdate, willSkip, errorCount, rows: [{index, predicted, existingId?, errors?}]}, a shape of its own so a predicted insert is never read as a write."
       tags:
         - domains
       parameters:
@@ -444,11 +536,38 @@ paths:
       responses:
         "200":
           description: Successful response
+  /domains/{schema}/{table}/update:
+    post:
+      operationId: updateRows
+      summary: update rows
+      description: "Filtered bulk update: body {filter, values, limit?}. Applies [values] to up to [limit] (default and max 1000) matching rows the caller may edit, oldest first, in ONE transaction; a per-row refusal aborts the whole request. Returns {'updated': n, 'hasMore': bool}. 'filter' and 'values' are both required — an empty filter would be a full-table edit."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
   /domains/{schema}/transaction:
     post:
       operationId: runTransaction
       summary: run transaction
-      description: "Ordered per-op results, shaped like the single-op endpoints; any failure rolls the whole transaction back and the error body carries 'opIndex'. [ops] is the ops list; a {'ops': [...]} wrapper is also accepted over the wire (`@RequestBody() dynamic`, not `List` — see insertRows)."
+      description: "Ordered per-op results, shaped like the single-op endpoints; any failure rolls the whole transaction back and the error body carries 'opIndex'. An op is insert|update|delete|restore; a `restore` carries 'id' alone and undoes a landed soft delete — the Delete grant, not a new permission, and a parent's restore is ordered before its child's. [ops] is the ops list; a {'ops': [...]} wrapper is also accepted over the wire (`@RequestBody() dynamic`, not `List` — see insertRows)."
       tags:
         - domains
       parameters:
@@ -653,6 +772,48 @@ paths:
       responses:
         "200":
           description: Successful response
+  /domains/{schema}/{table}/access:
+    get:
+      operationId: getAccess
+      summary: get access
+      description: "Table-level access of the current user, composed by the server from the predicates the reads and writes apply: {can: {view, insert, edit, delete, share}, fields: {<column>: editable | readonly}, travelableRelations, securingTable, securityMode, audit, hasBusinessKey, support}. `support` is caller-independent — {systemColumns, writes, deleted, restore, audit, version, ancestors, probe, watch} — and says what the table can do at all, so a client offers only what the server declared. A restricted column is absent from `fields`; read-only registrations answer every write false and every field readonly; grants reaching individual rows show up in the `~can_edit`/`~can_delete`/`~can_share` (null off row mode) columns of a `withAccess` read instead."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+  /domains/{schema}/{table}/version:
+    get:
+      operationId: getVersion
+      summary: get version
+      description: "The table's change token: {seq, at}. `seq` moves once per write transaction that touched the table's rows and `at` is null until the first write, so a live client polls one indexed read instead of an aggregate. Requires View on the securing entity (403 `forbidden`)."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
   /domains/{schema}/{table}/{id}:
     get:
       operationId: getRow
@@ -673,6 +834,16 @@ paths:
         - name: id
           in: path
           required: true
+          schema:
+            type: string
+        - name: withAccess
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: deleted
+          in: query
+          required: false
           schema:
             type: string
       responses:
@@ -732,6 +903,32 @@ paths:
       responses:
         "200":
           description: Successful response
+  /domains/{schema}/{table}/{id}/restore:
+    post:
+      operationId: restoreRow
+      summary: restore row
+      description: "Undo of [deleteRow]: clears the soft delete of a trashed row under the caller's Delete grant. Returns {'id', 'restored': true, 'version'}; a row whose FK points at a deleted parent is refused with a 409 naming it."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
   /domains/{schema}/{table}/{id}/promote:
     post:
       operationId: promoteRow
@@ -761,6 +958,32 @@ paths:
     get:
       operationId: rowAudit
       summary: row audit
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+  /domains/{schema}/{table}/{id}/path:
+    get:
+      operationId: ancestors
+      summary: ancestors
+      description: "Strict ancestors of a row on a `hierarchy` table: [{id, name}] root first, the row itself excluded, truncated at the first ancestor the caller may not see. A table that is not a hierarchy is a 422 `unsupported`."
       tags:
         - domains
       parameters:

@@ -1,4 +1,5 @@
 {
+  "search.followSymlinks": false,
   "cucumber.features": [
     "bdd/features/**/*.feature"
   ],

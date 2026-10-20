@@ -13,6 +13,8 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
+import {readDataframe} from './utils';
+
 category('Scoring', () => {
   /* eslint-disable max-len */
   const sequence = 'sequence';
@@ -82,6 +84,65 @@ PEPTIDE1{[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[
       const tgtScore = table.get(expectedSimilarity, i);
       expectFloat(resScore, tgtScore, 0.01,
         `Wrong similarity score for sequence at position ${i}`);
+    }
+  });
+
+  function expectEveryRowScored(scoresCol: DG.Column<number>): void {
+    for (let i = 0; i < scoresCol.length; i++)
+      expect(!scoresCol.isNone(i) && !isNaN(scoresCol.get(i)!), true, `row ${i} has no ${scoresCol.name} score`);
+  }
+
+  test('Similarity-shortReference', async () => {
+    const scoresCol = await grok.functions.call('Bio:sequenceSimilarityScoring',
+      {table: table, macromolecule: seqCol, reference: shortReference}) as DG.Column<number>;
+    expectEveryRowScored(scoresCol);
+  });
+
+  test('Similarity-longReference', async () => {
+    const scoresCol = await grok.functions.call('Bio:sequenceSimilarityScoring',
+      {table: table, macromolecule: seqCol, reference: longReference}) as DG.Column<number>;
+    expectEveryRowScored(scoresCol);
+  });
+
+  test('Similarity-peaksOnReference', async () => {
+    const df = await readDataframe('tests/filter_HELM.csv');
+    await grok.data.detectSemanticTypes(df);
+    const helmCol: DG.Column<string> = df.getCol('HELM string');
+    for (const refIdx of [0, 2]) {
+      const scoresCol = await grok.functions.call('Bio:sequenceSimilarityScoring',
+        {table: df, macromolecule: helmCol, reference: helmCol.get(refIdx)}) as DG.Column<number>;
+      expectEveryRowScored(scoresCol);
+      expect(scoresCol.stats.uniqueCount >= 2, true, `similarity to row ${refIdx} is the same for every row`);
+      expect(scoresCol.get(refIdx), scoresCol.stats.max, `similarity to row ${refIdx} does not peak on it`);
+    }
+  });
+
+  test('seqIdentity', async () => {
+    const ref = 'MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW';
+    expectFloat(await grok.functions.call('Bio:seqIdentity', {seq: ref, ref: ref}), 1, 0.001);
+    const changed: number = await grok.functions.call('Bio:seqIdentity',
+      {seq: 'MDYKETLLMPKTAAAAAAAANKEPQIQEKW', ref: ref});
+    expect(changed > 0.1 && changed < 0.99, true, `identity of a changed sequence: ${changed}`);
+  });
+
+  test('seqIdentity-emptySeq', async () => {
+    const res = await grok.functions.call('Bio:seqIdentity',
+      {seq: '', ref: 'PEPTIDE1{D.E.F.G}|PEPTIDE2{C.E}$PEPTIDE1,PEPTIDE2,2:R3-1:R1$$$V2.0'});
+    expect(res == null, true, `identity of an empty sequence: ${res}`);
+  });
+
+  test('sequenceAlignment', async () => {
+    const seq1 = 'MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW';
+    const cases: [string, string, string, number][] = [
+      ['Global alignment', 'BLOSUM62', 'MIEVFLFGIVLGLIPITLAGLFVTAYLQYRRGDQLDL', 37],
+      ['Local alignment', 'BLOSUM45', 'AAAAKETLLMPKTDFPAAAA', 12],
+    ];
+    for (const [alignType, alignTable, seq2, minLength] of cases) {
+      const res = await grok.functions.call('Bio:sequenceAlignment',
+        {alignType: alignType, alignTable: alignTable, gap: -10, seq1: seq1, seq2: seq2});
+      const length = Math.min(res.seq1.length, res.seq2.length);
+      expect(length >= minLength, true,
+        `${alignType} with ${alignTable}: ${length} aligned positions, expected at least ${minLength}`);
     }
   });
 });

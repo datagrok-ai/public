@@ -34,7 +34,10 @@ export class PackageHost {
         await runtime.startDatagrok({apiUrl: apiUrl, detached: true});
         logInfo(`Loading package ${this.settings.packageName}` +
           `${this.settings.packageVersion ? ` (expected version ${this.settings.packageVersion})` : ''}...`);
-        const pkg = await runtime.loadPackage(this.settings.packageName);
+        const pkg = await runtime.loadPackage(this.settings.packageName).catch((e: any) => {
+          throw new Error(`Failed to load package ${this.settings.packageName} from ${apiUrl}: ${e.message}` +
+            (e.cause ? ` (${e.cause.code ?? e.cause.message})` : ''));
+        });
         logInfo(`Loaded package ${pkg.name} v${pkg.version}, ${pkg.functions.length} functions registered`);
         return pkg;
       })();

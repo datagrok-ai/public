@@ -377,6 +377,10 @@ export async function addMvaResults(input: PlsInput, names: MvaNames, components
 function addMvaViewers(input: MvaInput, names: MvaNames, analysisType: PLS_ANALYSIS): void {
   const sourceTable = input.table;
   const view = grok.shell.tableView(sourceTable.name);
+
+  if (!view)
+    return;
+
   const loadingsRegrCoefsTable = grok.shell.table(names.analysisTable);
   const explVarsDF = grok.shell.table(names.explVarTable);
   const model: MvaModel = JSON.parse(sourceTable.getTag(MVA_MODEL_TAG)!);

@@ -4,6 +4,7 @@
 import * as DG from 'datagrok-api/dg';
 import {Control} from '../../core/component.js';
 import {Signal, ReadonlySignal, rawEffect} from '../../core/signals.js';
+import {host} from './host.js';
 
 type ChromeItem = Control | HTMLElement;
 
@@ -11,6 +12,8 @@ export interface AppViewOptions {
   name: string;
   /** The view content — disposed through the platform kill channel when the view closes. */
   content: Control;
+  /** What else the view owns — the sources behind its controls — disposed with the content. */
+  own?: {dispose(): void}[];
   /** Ribbon panel groups → `view.setRibbonPanels`. Main view controls (filter, refresh, mode
    * switches, menu bar) belong here, not inside the content area. */
   ribbon?: ChromeItem[][];
@@ -28,15 +31,12 @@ export interface AppViewOptions {
 
 export function appView(options: AppViewOptions): DG.ViewBase {
   const content = options.content;
-  const view = DG.View.fromRoot(content.root);
+  const view = DG.View.fromRoot(host(content));
   view.name = options.name;
   // the app's automation scope root: page-level selectors compose from the view down
   // ([data-u2-name="Reports"] … [data-u2-name="org"]); an explicitly named content wins
   if (content.name === undefined)
     content.name = options.name;
-  // core contract (2026-08): a docked pane's ✕ kills elements carrying this attribute
-  content.root.setAttribute('data-kill-on-close', 'true');
-  DG.Widget.registerCleanup(content.root, () => content.dispose());
 
   const place = (item: ChromeItem): HTMLElement => {
     if (!Control.is(item))
@@ -68,6 +68,9 @@ export function appView(options: AppViewOptions): DG.ViewBase {
     const items = (Array.isArray(status) ? status : [status]) as ChromeItem[];
     view.statusBarPanels = items.map(panel);
   }
+  // after the chrome: disposal runs in reverse, so the sources outlive the controls reading them
+  for (const owned of options.own ?? [])
+    content.own(() => owned.dispose());
   const path = options.path;
   if (typeof path === 'string')
     (view as DG.View).path = path;

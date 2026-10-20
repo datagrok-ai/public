@@ -1,11 +1,12 @@
 import {Observable, BehaviorSubject, asapScheduler, merge} from 'rxjs';
 import {map, scan, debounceTime} from 'rxjs/operators';
 import {BaseTree, TreeNode} from '../data/BaseTree';
-import {PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
+import * as DG from 'datagrok-api/dg';
+import {PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
 import {ConsistencyInfo, FuncCallStateInfo, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
 import {LinksState} from './LinksState';
 import {ValidationResult} from '../data/common-types';
-import {mergeValidationResults} from '../utils';
+import {copyDataFrame, mergeValidationResults} from '../utils';
 
 export function toStateRec(
   node: TreeNode<StateTreeNode>,
@@ -40,6 +41,27 @@ export function toSerializedStateRec(
     return item;
   });
   return {...state, steps};
+}
+
+function copyValue(val: any) {
+  return val instanceof DG.DataFrame ? copyDataFrame(val) : val;
+}
+
+export function toInstanceConfigRec(node: TreeNode<StateTreeNode>): PipelineInstanceConfig & {id: string} {
+  const item = node.getItem();
+  const id = item.config.id;
+  if (isFuncCallNode(item)) {
+    const withOutputs = !item.instancesWrapper.isOutputOutdated$.value;
+    const ios = item.config.io!.filter((io) => io.direction === 'input' || withOutputs);
+    const initialValues = Object.fromEntries(
+      ios.map((io) => [io.id, copyValue(item.instancesWrapper.getState(io.id))]));
+    return {id, initialValues};
+  }
+  const store = item.getStateStore();
+  const initialValues = Object.fromEntries(
+    store.getStateNames().map((name) => [name, copyValue(store.getState(name))]));
+  const steps = node.getChildren().map((child) => toInstanceConfigRec(child.item));
+  return {id, initialValues, skipOnInit: true, steps};
 }
 
 export function getValidations(nodeTree: BaseTree<StateTreeNode>) {

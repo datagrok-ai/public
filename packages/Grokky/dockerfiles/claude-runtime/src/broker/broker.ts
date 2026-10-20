@@ -28,16 +28,21 @@ export interface BrokerConfig {
   region?: string;
   foundryApiKey?: string;
   foundryResource?: string;
+  databricksToken?: string;
   models: {opus?: string; sonnet?: string; haiku?: string};
-  upstreams: {anthropic: string; bedrock?: string; foundry?: string};
+  upstreams: {anthropic: string; bedrock?: string; foundry?: string; databricks?: string};
 }
 
 export function resolveConfig(env: NodeJS.ProcessEnv = process.env): BrokerConfig {
   const provider = env['provider'] || 'Anthropic';
   const credentialsPath = env['CREDENTIALS_PATH'] || '/home/broker/.claude/.credentials.json';
 
+  const databricks = parseDatabricksUrl(env['DATABRICKS_URL']);
+
   let mode: BrokerMode;
-  if (provider === 'Bedrock')
+  if (databricks)
+    mode = 'databricks';
+  else if (provider === 'Bedrock')
     mode = 'bedrock';
   else if (provider === 'Microsoft Foundry')
     mode = 'foundry';
@@ -57,15 +62,27 @@ export function resolveConfig(env: NodeJS.ProcessEnv = process.env): BrokerConfi
     region: env['region'],
     foundryApiKey: env['foundryApiKey'],
     foundryResource: env['foundryResource'],
-    models: {opus: env['opusModel'], sonnet: env['sonnetModel'], haiku: env['haikuModel']},
+    databricksToken: env['DATABRICKS_TOKEN'],
+    models: databricks ?
+      {opus: databricks.endpoint, sonnet: databricks.endpoint, haiku: databricks.endpoint} :
+      {opus: env['opusModel'], sonnet: env['sonnetModel'], haiku: env['haikuModel']},
     upstreams: {
       anthropic: env['ANTHROPIC_UPSTREAM'] || 'https://api.anthropic.com',
       bedrock: env['BEDROCK_UPSTREAM'] ||
         (env['region'] ? `https://bedrock-runtime.${env['region']}.amazonaws.com` : undefined),
       foundry: env['FOUNDRY_UPSTREAM'] ||
         (env['foundryResource'] ? `https://${env['foundryResource']}.services.ai.azure.com/anthropic` : undefined),
+      databricks: databricks?.upstream,
     },
   };
+}
+
+/** `https://<host>/serving-endpoints/<name>/invocations` → the workspace's Anthropic Messages route, `<name>` as the model. */
+export function parseDatabricksUrl(raw?: string): {upstream: string; endpoint: string} | undefined {
+  if (!raw)
+    return undefined;
+  const url = new URL(raw);
+  return {upstream: `${url.origin}/serving-endpoints/anthropic`, endpoint: url.pathname.split('/')[2]};
 }
 
 function readSubscription(path: string): OAuthCreds | undefined {
@@ -287,8 +304,20 @@ class FoundryProvider extends Provider {
   }
 }
 
+class DatabricksProvider extends Provider {
+  readonly mode = 'databricks' as const;
+  hasCredential(): boolean { return !!this.cfg.databricksToken; }
+  async forward(req: http.IncomingMessage, res: http.ServerResponse, pathname: string, search: string): Promise<void> {
+    if (!this.cfg.upstreams.databricks || !this.cfg.databricksToken)
+      return send(res, 500, {error: 'databricks selected but DATABRICKS_URL or DATABRICKS_TOKEN is missing'});
+    return proxy(req, res, this.cfg.upstreams.databricks + pathname + search,
+      {'Authorization': `Bearer ${this.cfg.databricksToken}`});
+  }
+}
+
 function makeProvider(cfg: BrokerConfig): Provider {
   switch (cfg.mode) {
+    case 'databricks': return new DatabricksProvider(cfg);
     case 'bedrock': return new BedrockProvider(cfg);
     case 'foundry': return new FoundryProvider(cfg);
     case 'anthropic': return new AnthropicProvider(cfg);

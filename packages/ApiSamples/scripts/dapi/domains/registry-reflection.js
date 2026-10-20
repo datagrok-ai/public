@@ -1,4 +1,4 @@
-// Domain registry reflection + permission-driven capabilities: the runtime metadata
+// Domain registry reflection + permission-driven access: the runtime metadata
 // reflective UI components consume to work on ANY domain table without codegen.
 
 const table = 'grit.issue'; // any '<schema>.<table>' registered on this server
@@ -16,14 +16,14 @@ const info = await grok.dapi.domains.registry.tableInfo(table);
 grok.shell.info(`name column: ${info.nameColumn}, business key: ${info.businessKey}\n` +
   `children: ${info.childTables.map((c) => `${c.schema}.${c.table} via ${c.fkColumn} ("${c.label}")`).join(', ')}`);
 
-// Effective capabilities of the CURRENT user — server-truth permission probes on
-// the securing entity plus writable columns under column security. Gate UI
+// Effective access of the CURRENT user — server-truth permission probes on
+// the securing entity plus per-field editability under column security. Gate UI
 // affordances on this object instead of hand-wiring permission checks; it is
 // cached until a grant change (grant/revoke through the client invalidate it,
 // call grok.dapi.domains.invalidateUiCaches() after out-of-band changes).
-const caps = await grok.dapi.domains.table(table).capabilities();
-grok.shell.info(`insert: ${caps.canInsert}, edit: ${caps.canEdit}, delete: ${caps.canDelete}\n` +
-  `writable columns: ${caps.writableColumns.join(', ')}`);
+const access = await grok.dapi.domains.table(table).access();
+grok.shell.info(`insert: ${access.can.insert}, edit: ${access.can.edit}, delete: ${access.can.delete}\n` +
+  `editable columns: ${Object.keys(access.fields).filter((c) => access.fields[c] === 'editable').join(', ')}`);
 
 // Batched display-name resolution: ids → 'name column value → business key → id'.
 // Requests coalesce into one fetch per table — cheap to call per rendered cell.

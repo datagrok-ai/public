@@ -74,7 +74,7 @@ Feature: Markup chrome — Edit content, the title bar and the strip under the c
     Given user adds a markup viewer with:
       | content | one line |
     Then markup viewer should have a "content" area
-    And markup viewer should not have an "empty space" area
+    And the "content" and "view" areas of markup viewer should be the same height
     When user opens the viewer menu of markup viewer
     Then the open menu should list "Edit content..."
     When user closes the context menu

@@ -5,6 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {armBalloonRecorder, readRecordedBalloons} from '../helpers/balloons';
 import {openChemMenuItemFast as openChemMenuItem} from './chem-fast-helpers';
 
 declare const grok: any;
@@ -16,9 +17,9 @@ declare const grok: any;
 //     the toSource value verbatim (chembl, pubchem). A bare `select.value = …` assignment leaves the
 //     ui.input.choice model at its default (→ wrong-named column); Playwright's selectOption drives the
 //     model correctly and is what this spec uses (re-probed on dev 2026-08-22: chembl, 993/1000 resolved).
-//   [name="dialog-Biochemical-Properties"] with .biochem-calc-nav-item rows (each an input[type=checkbox]
+//   [name="dialog-Chemical-Properties"] with .biochem-calc-nav-item rows (each an input[type=checkbox]
 //     + span label: Chemical Properties, logD, logP, pI, pKa) and [name="input-host-Molecules"] —
-//     Biochemical Properties dialog (Chem | Calculate | Biochemical Properties, no "..." suffix).
+//     Chemical Properties calculator dialog (Chem | Calculate | Chemical Properties..., GROK-20277).
 //     Chemical Properties appends MW; logP appends clogP (both 1000/1000 finite on dev 2026-08-22).
 //   [name="dialog-Generate-Conformers"] with a .d4-input-molecule-canvas molecule input that opens a
 //     sketcher dialog (input[placeholder*="SMILES"]) on click — Generate Conformers (Chem | Calculate |
@@ -29,6 +30,7 @@ declare const grok: any;
 test.use(specTestOptions);
 
 const MOL_COL = 'canonical_smiles';
+const CALC_DIALOG = '[name="dialog-Chemical-Properties"]';
 
 // technical: pentane, deliberately NOT the script's default "CCCC" (Chem/scripts/generate_conformers.py:7);
 // it is canonical under RDKit, so the output `smiles` column reads back verbatim.
@@ -40,6 +42,22 @@ const OCL_PROPERTY_NAMES = ['MW', 'HBA', 'HBD', 'LogP', 'LogS', 'PSA',
 
 async function columnNames(page: Page): Promise<string[]> {
   return page.evaluate(() => grok.shell.t.columns.names());
+}
+
+// The calculator dialog discovers its functions and builds their editors asynchronously, so the
+// dialog root is visible well before the navigator and the molecule selector exist.
+async function openCalculatorDialog(page: Page): Promise<void> {
+  const dialog = page.locator(CALC_DIALOG);
+  await dialog.waitFor({timeout: 15000});
+  await dialog.locator('.biochem-calc-nav-item').first().waitFor({timeout: 30000});
+  await dialog.locator('[name="input-host-Molecules"]').first().waitFor({timeout: 30000});
+}
+
+// OK swaps the editor for a same-named progress dialog, which makes every later
+// [name="dialog-Chemical-Properties"] read strict-mode-ambiguous; wait the whole stack out.
+async function okCalculatorDialog(page: Page): Promise<void> {
+  await page.locator(`${CALC_DIALOG} [name="button-OK"]`).first().click();
+  await page.waitForFunction(() => (grok.shell.dialogs ?? []).length === 0, null, {timeout: 60000});
 }
 
 async function pollForColumn(page: Page, before: string[], capMs: number): Promise<string[]> {
@@ -62,7 +80,7 @@ async function tablesWithName(page: Page, substr: string): Promise<string[]> {
     .map((t: any) => t.name), substr);
 }
 
-test('Chem: Calculate — Map Identifiers, Biochemical Properties, Generate Conformers', async ({page}) => {
+test('Chem: Calculate — Map Identifiers, Chemical Properties, Generate Conformers', async ({page}) => {
   test.setTimeout(900_000);
 
   await loginToDatagrok(page);
@@ -148,19 +166,19 @@ test('Chem: Calculate — Map Identifiers, Biochemical Properties, Generate Conf
     expect(probe.rowCount, 'the grid row count must be unchanged after the second pass').toBe(probe.baseline);
   });
 
-  await softStep('S2.4: Chem → Calculate → Biochemical Properties, select Chemical Properties, OK; MW is appended and every one of its rows is numeric, none echoing the SMILES, row count == baseline', async () => {
+  await softStep('S2.4: Chem → Calculate → Chemical Properties, select Chemical Properties, OK; MW is appended and every one of its rows is numeric, none echoing the SMILES, row count == baseline', async () => {
     const before = await columnNames(page);
-    await openChemMenuItem(page, 'Biochemical Properties', {delayMs: 700});
-    await page.locator('[name="dialog-Biochemical-Properties"]').waitFor({timeout: 15000});
+    await openChemMenuItem(page, 'Chemical Properties...', {delayMs: 700});
+    await openCalculatorDialog(page);
     const molInDialog = await page.evaluate(() => {
-      const dlg = document.querySelector('[name="dialog-Biochemical-Properties"]');
+      const dlg = document.querySelector('[name="dialog-Chemical-Properties"]');
       return dlg?.querySelector('[name="input-host-Molecules"]')?.textContent?.includes('canonical_smiles') ?? false;
     });
-    expect(molInDialog, 'the Biochemical Properties dialog must show the canonical_smiles Molecule column').toBe(true);
-    const navItem = page.locator('[name="dialog-Biochemical-Properties"] .biochem-calc-nav-item')
+    expect(molInDialog, 'the Chemical Properties dialog must show the canonical_smiles Molecule column').toBe(true);
+    const navItem = page.locator('[name="dialog-Chemical-Properties"] .biochem-calc-nav-item')
       .filter({hasText: 'Chemical Properties'});
     await navItem.locator('input[type="checkbox"]').check({force: true});
-    await page.locator('[name="dialog-Biochemical-Properties"] [name="button-OK"]').click();
+    await okCalculatorDialog(page);
     const added = await pollForColumn(page, before, 90000);
     const probe = await page.evaluate(({added, baseline}) => {
       const t = grok.shell.t;
@@ -211,15 +229,20 @@ test('Chem: Calculate — Map Identifiers, Biochemical Properties, Generate Conf
     firstPassColumns = added;
   });
 
-  await softStep('S2.5: re-open Biochemical Properties, select a second (logP) calculator, OK; the second pass must append clogP and nothing else, finite on every row', async () => {
+  await softStep('S2.5: re-open Chemical Properties, select a second (logP) calculator, OK; the second pass must append clogP and nothing else, finite on every row', async () => {
     const before = await columnNames(page);
-    await openChemMenuItem(page, 'Biochemical Properties', {delayMs: 700});
-    await page.locator('[name="dialog-Biochemical-Properties"]').waitFor({timeout: 15000});
-    const navItem = page.locator('[name="dialog-Biochemical-Properties"] .biochem-calc-nav-item')
+    await openChemMenuItem(page, 'Chemical Properties...', {delayMs: 700});
+    await openCalculatorDialog(page);
+    const navItem = page.locator('[name="dialog-Chemical-Properties"] .biochem-calc-nav-item')
       .filter({hasText: /^logP$/});
     await navItem.locator('input[type="checkbox"]').check({force: true});
-    await page.locator('[name="dialog-Biochemical-Properties"] [name="button-OK"]').click();
+    // Unlike the OCL Chemical Properties pass above, logP is the server-side python script
+    // Chem:CalculateLogP (scripts/biochemical-calculators/calc_logP.py), so a stalled or failing
+    // scripting backend shows up here as "nothing was appended". Quote the balloons in that case.
+    await armBalloonRecorder(page);
+    await okCalculatorDialog(page);
     const added = await pollForColumn(page, before, 120000);
+    const logPSaid = added.length ? [] : (await readRecordedBalloons(page)).map((b) => `${b.cls}: ${b.text}`);
     const probe = await page.evaluate(({added, baseline, firstPass}) => {
       const t = grok.shell.t;
       const finite = added.filter((n: string) => {
@@ -239,7 +262,8 @@ test('Chem: Calculate — Map Identifiers, Biochemical Properties, Generate Conf
       .toBe(firstPassColumns.length);
     // technical: logP is OCL CrippenClogP — exactly one column, clogP, a different kind from MW.
     expect(added.map((n) => n.replace(/ \(\d+\)$/, '')),
-      `the logP pass must append its own clogP column and nothing else; appended: ${JSON.stringify(added)}`)
+      `the logP pass must append its own clogP column and nothing else; appended: ${JSON.stringify(added)}; ` +
+      `balloons raised meanwhile: ${JSON.stringify(logPSaid)}`)
       .toEqual(['clogP']);
     expect(probe.finiteCols,
       `every row of the appended clogP column must hold a finite number; appended: ${JSON.stringify(added)}`)
@@ -275,13 +299,20 @@ test('Chem: Calculate — Map Identifiers, Biochemical Properties, Generate Conf
     const sketcher = page.locator('.d4-dialog').filter({has: page.locator('input[placeholder*="SMILES" i]')});
     await sketcher.locator('[name="button-OK"]').first().click();
     await sketcher.first().waitFor({state: 'detached', timeout: 15000});
+    await armBalloonRecorder(page);
     await page.locator('[name="dialog-Generate-Conformers"] [name="button-OK"]').click();
+    // The run is a server-side python script, so a dead or mis-provisioned scripting
+    // environment otherwise costs the whole 180 s and reports only "no table". Watch the
+    // balloon channel too, and quote what it said in the failure.
     await page.waitForFunction(() =>
-      grok.shell.tables.some((t: any) => t.name.toLowerCase().includes('conformer')),
+      grok.shell.tables.some((t: any) => t.name.toLowerCase().includes('conformer')) ||
+      [...document.querySelectorAll('.d4-balloon.error')].length > 0,
     null, {timeout: 180000}).catch(() => {});
     const names = await tablesWithName(page, 'conformer');
+    const said = names.length ? [] : (await readRecordedBalloons(page)).map((b) => `${b.cls}: ${b.text}`);
     expect(names.length,
-      'Generate Conformers must produce a conformers table within 180 s — no such table means the run did not complete')
+      'Generate Conformers must produce a conformers table within 180 s — no such table means the run did not ' +
+      `complete; balloons raised meanwhile: ${JSON.stringify(said)}`)
       .toBeGreaterThan(0);
     {
       const probe = await page.evaluate(({name, molecule}) => {

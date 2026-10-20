@@ -9,7 +9,7 @@ core onto Datagrok lifecycle, events, and value editors.
 |---|---|
 | `toSignal` / `toObservable` | rxjs ↔ signals, both directions |
 | `leakReport()` | live u2 scopes vs registered widgets |
-| `appView({name, content, ribbon?, toolbox?, status?})` | a u2 component tree as a platform view, riding the shell's own chrome |
+| `appView({name, content, own?, ribbon?, toolbox?, status?})` | a u2 component tree as a platform view, riding the shell's own chrome; chrome controls and whatever `own` lists (the sources) are disposed with the content |
 | `designerView(spec, options?)` | the spec designer as a view: live canvas, structure tree in the toolbox, Design/Run toggle, selection path in the status bar |
 | `registerSpecNodeHandler()` | the `ObjectHandler` that renders a selected spec node (`SpecNodeRef`) in the context panel |
 | `makeDesignerDroppable({element, active, onDragActive, onDrop})` | the platform's drag channel pointed at an element: a file or a function dragged out of Browse arrives as a `DropReading` (`readDrop`), each item ready for `dropNode` to make a `u2-func-source` of it |
@@ -426,3 +426,7 @@ Every field reports as it is typed except `name`, which reports on commit — bl
 keys its records by that name (the example above does), and per keystroke `dose` → `name` would
 rename the property through `n`, `na` and `nam` on the way. Pass `validators: {name: …}` to refuse a
 name the caller cannot take: the message shows on the field, and the record keeps the name it had.
+
+## Domain controls
+
+Moved to `@datagrok-libraries/ems` — see [ems/docs/dg.md](../../../ems/docs/dg.md).

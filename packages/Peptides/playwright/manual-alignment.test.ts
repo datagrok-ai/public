@@ -276,8 +276,8 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
   });
 
   await softStep('Scenario 1 (steps 6-7 invariant): Apply path produced no null-receiver error', async () => {
-    const errs = await page.evaluate(() => {
-      return grok.shell.lastError ? String(grok.shell.lastError) : '';
+    const errs = await page.evaluate(async () => {
+      return String((await grok.shell.lastError) ?? '');
     });
     expect(errs.match(/null|undefined.*reading|setTrue/i)?.length ?? 0,
       `Apply path produced a null-receiver shell error: ${errs}`).toBe(0);
@@ -406,7 +406,7 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
       try { model.fireBitsetChanged('WebLogo'); }
       catch (e) { broadcastThrew = String(e); }
       await new Promise((r) => setTimeout(r, 1500));
-      const lastErr = grok.shell.lastError ? String(grok.shell.lastError) : '';
+      const lastErr = String((await grok.shell.lastError) ?? '');
       return {hasBroadcast, broadcastThrew, lastErr};
     });
     expect(result.hasBroadcast, 'model.fireBitsetChanged not present on the post-edit PeptidesModel').toBe(true);

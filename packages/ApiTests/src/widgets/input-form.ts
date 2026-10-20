@@ -283,117 +283,6 @@ category('Widgets: InputForm API', () => {
   });
 }, {owner: 'dkovalyov@datagrok.ai'});
 
-
-category('Widgets: InputForm w/ custom input', () => {
-  let inputs = {} as Record<string, DG.InputBase>;
-  let funcCall: DG.FuncCall;
-  let newFuncCall: DG.FuncCall;
-  let form: DG.InputForm;
-
-
-  function updateInputs(): void {
-    inputs = {
-      'stringInput': form.getInput('stringInput') ?? null,
-      'intInput': form.getInput('intInput') ?? null,
-      'doubleInput': form.getInput('doubleInput') ?? null,
-      'boolInput': form.getInput('boolInput') ?? null,
-      'choiceInput': form.getInput('choiceInput') ?? null,
-      'tableInput': form.getInput('tableInput') ?? null,
-    };
-  }
-
-  before(async () => {
-    funcCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
-
-    form = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true});
-
-    inputs = {
-      'stringInput': form.getInput('stringInput') ?? null,
-      'intInput': form.getInput('intInput') ?? null,
-      'doubleInput': form.getInput('doubleInput') ?? null,
-      'boolInput': form.getInput('boolInput') ?? null,
-      'choiceInput': form.getInput('choiceInput') ?? null,
-      'tableInput': form.getInput('tableInput') ?? null,
-    };
-    const customInput = await grok.functions.eval('ApiTests:CustomStringInput');
-    //@ts-ignore
-    form.replaceInput('stringInput', customInput);
-  });
-
-  // this test shows possible API for custom inputs of DG.InputForm
-  test('replace input by custom', async () => {
-    expect(inputs['stringInput'].value, 'test');
-    expect(funcCall.inputs['stringInput'], 'test');
-    expect(inputs['stringInput'].root.style.backgroundColor, 'aqua');
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
-
-  test('form to funccall bind', async () => {
-    inputs['stringInput'].value = 'test2';
-
-    expect(inputs['stringInput'].value, 'test2');
-    expect(funcCall.inputs['stringInput'], 'test2');
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
-
-  test('funcall to form bind', async () => {
-    funcCall.inputs['stringInput'] = 'test2';
-
-    expect(inputs['stringInput'].value, 'test2');
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
-
-  test('form on input change observable', async () => {
-    const changedInputPropNames = [] as string[];
-    const changeSub = form.onInputChanged.subscribe((ed: DG.EventData<DG.InputArgs>) => {
-      changedInputPropNames.push(ed.args.input.property.name);
-    });
-
-    inputs['stringInput'].value = 'test2';
-
-    expectArray(
-      changedInputPropNames,
-      ['stringInput'],
-    );
-    changeSub.unsubscribe();
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
-
-  test('form to funccall bind after replace', async () => {
-    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
-    form.source = newFuncCall;
-    updateInputs();
-
-    inputs['stringInput'].value = 'test2';
-
-    expect(newFuncCall.inputs['stringInput'], 'test2');
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
-
-  test('funccall to form bind after replace', async () => {
-    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
-    form.source = newFuncCall;
-    updateInputs();
-
-    newFuncCall.inputs['stringInput'] = 'test';
-
-    expect(inputs['stringInput'].value, 'test');
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
-
-  test('form on input change observable after replace', async () => {
-    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
-    form.source = newFuncCall;
-    updateInputs();
-
-    const changedInputPropNames = [] as string[];
-    form.onInputChanged.pipe(take(1)).subscribe((ed: DG.EventData<DG.InputArgs>) => {
-      changedInputPropNames.push(ed.args.input.property.name);
-    });
-
-    inputs['stringInput'].value = 'test2';
-
-    expectArray(
-      changedInputPropNames,
-      ['stringInput'],
-    );
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
-}, {owner: 'dkovalyov@datagrok.ai'});
-
 function expectNullOrUndefined(value: any): void {
   expect(value === null || value === undefined, true);
 }
@@ -429,5 +318,117 @@ category('Widgets: InputForm validation and events', () => {
     form.validateInputs();
     expect(fired, 1);
     sub.unsubscribe();
+  });
+}, {owner: 'dkovalyov@datagrok.ai'});
+
+category('Widgets: InputForm skipLogic', () => {
+  let script: DG.Script;
+  let choicesCalls = 0;
+  const tick = (ms = 150) => new Promise((r) => setTimeout(r, ms));
+  const numTable = () => DG.DataFrame.fromColumns([DG.Column.fromList('double', 'num', [1, 2, 3])]);
+  const invalid = (input: DG.InputBase) => input.input.classList.contains('d4-invalid');
+  const shown = (input: DG.InputBase) => input.root.style.display !== 'none';
+
+  before(async () => {
+    if (DG.Func.find({name: 'ApiTestsSkipLogicChoices'}).length === 0) {
+      grok.functions.register({
+        signature: 'dataframe ApiTestsSkipLogicChoices()',
+        run: () => {
+          choicesCalls++;
+          return DG.DataFrame.fromColumns([DG.Column.fromStrings('v', ['p', 'q'])]);
+        },
+      });
+      grok.functions.register({
+        signature: 'dataframe ApiTestsSkipLogicHelper(int n)',
+        run: (n: number) => DG.DataFrame.fromColumns([DG.Column.fromList('int', 'x', [1, 2, 3].slice(0, n ?? 3))]),
+      });
+    }
+    script = DG.Script.create(`//name: ApiTestsSkipLogicForm
+//language: javascript
+//input: string mode = "A"
+//input: string note = "n"
+//input: double d = 3.14
+//input: int ranged = 5 {min: 0; max: 10}
+//input: string code = "12ab" {validator: startsWith(value, "12")}
+//input: int shown = 1 {visible: mode == "B"}
+//input: int locked = 1 {enabled: mode == "B"}
+//input: int open = 1 {enabled: mode == "A"}
+//input: string dyn {choices: ApiTestsSkipLogicChoices()}
+//input: dataframe table
+//input: column col
+//input: dataframe helped {editor: ApiTestsSkipLogicHelper}
+//output: int res
+res = 1;`);
+  });
+
+  const build = async (options: object, preset: {[name: string]: any}) => {
+    const fc = script.prepare();
+    for (const [name, value] of Object.entries(preset))
+      fc.setParamValue(name, value);
+    choicesCalls = 0;
+    const form = await DG.InputForm.forFuncCall(fc, options);
+    document.body.append(form.root);
+    await tick();
+    return {fc, form};
+  };
+
+  test('writes nothing into the call', async () => {
+    const view = grok.shell.addTableView(numTable());
+    try {
+      const {fc, form} = await build({skipLogic: true}, {});
+      form.root.remove();
+      expect(fc.getParamValue('d') == null);
+      expect(fc.getParamValue('table') == null);
+      expect(fc.getParamValue('col') == null);
+      expect(choicesCalls, 0);
+    }
+    finally {
+      view.close();
+    }
+  });
+
+  test('keeps a table the host set on an editor: input', async () => {
+    const helped = DG.DataFrame.fromColumns([DG.Column.fromList('int', 'x', [10, 20])]);
+    const {fc, form} = await build({skipLogic: true}, {helped});
+    form.root.remove();
+    const value = fc.getParamValue('helped');
+    expect(value instanceof DG.DataFrame && value.rowCount === 2);
+  });
+
+  test('does not validate', async () => {
+    const preset = {mode: 'A', note: 'n', ranged: 50, code: 'xyz'};
+    const plain = await build({twoWayBinding: true}, preset);
+    plain.form.root.remove();
+    expect(plain.form.validateInputs(), false);
+
+    const {form} = await build({twoWayBinding: true, skipLogic: true}, preset);
+    form.root.remove();
+    expect(form.validateInputs(), true);
+    expect(form.isValid, true);
+    expect(!invalid(form.getInput('ranged')));
+    expect(!invalid(form.getInput('code')));
+  });
+
+  test('leaves visibility, enabled state and marks to the host', async () => {
+    const {form} = await build({twoWayBinding: true, skipLogic: true}, {mode: 'A', note: 'n'});
+    try {
+      expect(shown(form.getInput('shown')));
+      expect(form.getInput('locked').enabled, true);
+      form.getInput('locked').enabled = true;
+      form.getInput('open').enabled = false;
+      form.getInput('shown').root.style.display = 'flex';
+      form.getInput('note').input.classList.add('d4-invalid');
+      form.getInput('mode').value = 'C';
+      await tick();
+      form.validateInputs();
+      await tick();
+      expect(form.getInput('locked').enabled, true);
+      expect(form.getInput('open').enabled, false);
+      expect(shown(form.getInput('shown')));
+      expect(invalid(form.getInput('note')));
+    }
+    finally {
+      form.root.remove();
+    }
   });
 }, {owner: 'dkovalyov@datagrok.ai'});

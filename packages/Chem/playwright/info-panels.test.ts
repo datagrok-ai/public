@@ -1,9 +1,8 @@
-/* ---
-sub_features_covered: [chem.notation.detect-smiles, chem.panels, chem.panels.descriptors, chem.panels.drug-likeness, chem.panels.highlights, chem.panels.identifiers, chem.panels.pharmacophore, chem.panels.properties, chem.panels.rendering, chem.panels.structural-alerts, chem.panels.structure-2d, chem.panels.structure-3d, chem.panels.toxicity, chem.rendering, chem.rendering.molecule-cell, chem.rendering.rdkit-renderer]
---- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {settleContextPanes, waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -34,6 +33,7 @@ async function expandAndVerifyPanes(
     const h = Array.from(document.querySelectorAll('.d4-accordion-pane-header')).map(x => x.textContent || '');
     return names.some((n) => h.some((t) => new RegExp(n, 'i').test(t)));
   }, expectedPanes, {timeout: 20000}).catch(() => {});
+  await settleContextPanes(page, 2500);
   const seen = await page.evaluate(() =>
     Array.from(document.querySelectorAll('.d4-accordion-pane-header'))
       .map(h => h.textContent!.trim()));
@@ -45,9 +45,8 @@ async function expandAndVerifyPanes(
 test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async ({page}) => {
   test.setTimeout(600_000);
   await loginToDatagrok(page);
-  await page.waitForFunction(() => (window as any).grok?.shell != null, null, {timeout: 30000});
-
-  // ===== Phase A — smiles-50 column + cell walk =====
+  // What the flat post-login settle covered is the Chem menubar root being in the DOM.
+  await waitForChemMenuRoot(page);
 
   await softStep('Phase A — Step 1: Open smiles-50.csv', async () => {
     await page.evaluate(async () => {
@@ -77,14 +76,24 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
   });
 
   await softStep('Phase A — Step 3: Click canonical_smiles column header → column-context Panel', async () => {
-    await page.evaluate(() => {
+    // The first grok.shell.o assignment after a table opens can be dropped while the shell is
+    // still binding its own current object, which leaves the TABLE context panel up and the
+    // column panes below reading off the wrong context. Set and re-check.
+    await page.evaluate(async () => {
       const col = grok.shell.t.col('canonical_smiles');
-      grok.shell.o = col;
+      grok.shell.windows.showContextPanel = true;
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        grok.shell.o = col;
+        await new Promise((r) => setTimeout(r, 200));
+        if (grok.shell.o === col) return;
+      }
     });
     await page.waitForFunction(() => {
       const h = Array.from(document.querySelectorAll('.d4-accordion-pane-header')).map(x => x.textContent || '');
       return h.some(t => /Chemistry|Rendering|Highlight/i.test(t));
     }, null, {timeout: 30000}).catch(() => {});
+    await settleContextPanes(page, 2500);
   });
 
   await softStep('Phase A — Step 4: Walk Chemistry/Biology/Structure info panels (column context)', async () => {
@@ -180,10 +189,7 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
 
   // ===== Phase B — Multi-format coverage =====
 
-  type Variant = {id: string; format: string; path: string; opener: 'csv' | 'openFile' | 'inline'};
-  // SMARTS fixture is written here rather than read from a checked-in dataset: the previous path
-  // pointed into another package's AppData, where no such file exists, so the variant silently
-  // skipped itself on every run. Values are quoted because SMARTS contain commas.
+  type Variant = {id: string; format: string; path: string; opener: 'csv' | 'openFile' | 'inline'; bestEffort?: boolean};
   // The SMARTS variant used to read a file that exists in no package, so it skipped itself on every
   // run. Build the frame in memory rather than writing a fixture — this test does not need file
   // storage, and dev's has been unreliable today (Home: writes vanish, Chem AppData writes hang).

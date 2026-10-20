@@ -9,7 +9,8 @@ import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
 import {typeVerified, withKeys} from './gestures.js';
-import {locate} from './locate.js';
+import * as guide from './guide.js';
+import {locate, reachable} from './locate.js';
 import {Balloon, Box, evaluate, installViewerRuntime, Reading} from './viewer-runtime.js';
 
 export * from './viewer-runtime.js';
@@ -29,6 +30,12 @@ export async function onViewer<R>(page: Page, target: ElementRef, fn: (el: Eleme
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
   return loc.evaluate(fn as (el: SVGElement | HTMLElement, arg: unknown) => R, arg);
+}
+
+/** `onViewer` on the match a pointer can reach (`reachable`); of several, the first, as `onViewer` takes. */
+export async function onReachable<R>(page: Page, target: ElementRef, fn: (el: Element, arg: any) => R | Promise<R>, arg?: unknown): Promise<R> {
+  await installViewerRuntime(page);
+  return (await reachable(page, target)).first().evaluate(fn as (el: SVGElement | HTMLElement, arg: unknown) => R, arg);
 }
 
 export function centerOf(box: Box): {x: number; y: number} {
@@ -56,7 +63,11 @@ async function awaitArea(page: Page, target: ElementRef, name: string, negate: b
 export async function hitArea(page: Page, target: ElementRef, name: string, beforeChange = false): Promise<Box> {
   if (beforeChange)
     await onViewer(page, target, (el) => (window as any).__bdd.settle(el, 300), undefined).catch(() => undefined);
-  return (await awaitArea(page, target, name, false, beforeChange))!;
+  const box = (await awaitArea(page, target, name, false, beforeChange))!;
+  // a gesture follows: a guide lights the area it aims at, not the viewer round it
+  if (beforeChange)
+    guide.locatedArea(page, box);
+  return box;
 }
 
 export async function expectHasArea(page: Page, target: ElementRef, name: string, negate = false): Promise<void> {
@@ -82,6 +93,12 @@ export async function setProperties(page: Page, target: ElementRef, entries: [st
   await onViewer(page, target, (el, [e, cap]) => (window as any).__bdd.writeProperties(el, e, cap), [entries, capMs] as [[string, string][], number]);
 }
 
+/** The properties written under `user adds a … viewer with:` — to the viewer `addViewer` just
+ * created, which a phrase naming the type would not reach when the view already had one. */
+export async function setPropertiesOfAdded(page: Page, entries: [string, string][], capMs = 300): Promise<void> {
+  await evaluate(page, ([e, cap]) => (window as any).__bdd.writePropertiesOfAdded(e, cap), [entries, capMs] as [[string, string][], number]);
+}
+
 export function readProperty(page: Page, target: ElementRef, caption: string, expected = ''): Promise<string> {
   return onViewer(page, target, (el, [c, x]) => (window as any).__bdd.readProperty(el, c, x), [caption, expected] as [string, string]);
 }
@@ -104,13 +121,14 @@ export function baselineAll(page: Page): Promise<void> {
 /** Waits until no viewer of any open table view has a refresh or a repaint pending — after a
  * change that reaches them all, so the next step's baseline is the state after it. */
 export function settleAll(page: Page): Promise<void> {
-  return evaluate(page, async () => {
-    const b = (window as any).__bdd;
-    for (const view of Array.from((window as any).grok.shell.tableViews ?? []) as any[]) {
-      for (const v of Array.from(view.viewers ?? []) as any[])
-        await b.quiet(v);
-    }
-  }, undefined);
+  return evaluate(page, () => (window as any).__bdd.settleAll(), undefined);
+}
+
+/** A change every viewer answers, in one round trip: every viewer's baseline, then `body` in the
+ * page, then every viewer has drawn it. `body` is sent as source, the way a page function is. */
+export function changeAll<A>(page: Page, body: (arg: A) => void, arg: A): Promise<void> {
+  return evaluate(page, ([src, a]) => (window as any).__bdd.changeAll(new Function(`return (${src});`)(), a),
+    [body.toString(), arg] as [string, A]);
 }
 
 /** Resolves once the viewer has nothing pending (`capMs` for a viewer without the signal). */
@@ -127,10 +145,25 @@ export async function expectBoundTable(page: Page, target: ElementRef, name: str
 /** A reading of the viewer as it is now; a name the viewer does not report fails naming the
  * readings it does. */
 export async function readValue(page: Page, target: ElementRef, name: string): Promise<unknown> {
+  const r = await readingOf(page, target, name);
+  if (r instanceof MissingReading)
+    throw new Error(String(r));
+  return r;
+}
+
+/** What a poll reads instead of a throw, which would end it: a package registers its provider
+ * after its own async work (Activity Cliffs after the embedding), so a reading can arrive after
+ * the viewer. No claim is satisfied by it; its text is what the failure shows. */
+export class MissingReading {
+  constructor(readonly text: string) {}
+  toString(): string { return this.text; }
+}
+
+export async function readingOf(page: Page, target: ElementRef, name: string): Promise<unknown> {
   const r: Reading = await onViewer(page, target, (el, n) => (window as any).__bdd.valueChange(el, n), name);
-  if (r.now === undefined || r.now === null)
-    throw new Error(`${target.phrase} has no "${name}" reading; it reports: ${r.has.join(', ') || 'no readings'}`);
-  return r.now;
+  return r.now === undefined || r.now === null
+    ? new MissingReading(`${target.phrase} has no "${name}" reading; it reports: ${r.has.join(', ') || 'no readings'}`)
+    : r.now;
 }
 
 export type ReadingCompare = 'equal' | 'lower' | 'higher' | 'differ' | 'same';
@@ -151,8 +184,13 @@ export async function expectReading(page: Page, target: ElementRef, name: string
       return last.now === value;
     if (last.before === undefined || last.before === null)
       return `no "${name}" reading at the snapshot`;
-    if (compare === 'differ' || compare === 'same')
-      return (last.now !== last.before) === (compare === 'differ');
+    if (compare === 'differ' || compare === 'same') {
+      // numbers that went through a world-to-screen round trip differ in the last digits
+      const same = typeof last.now === 'number' && typeof last.before === 'number' ?
+        Math.abs(last.now - last.before) <= 1e-9 * Math.max(1, Math.abs(last.now), Math.abs(last.before)) :
+        last.now === last.before;
+      return same !== (compare === 'differ');
+    }
     if (typeof last.now !== 'number' || typeof last.before !== 'number')
       return `"${name}" is not a number`;
     return compare === 'lower' ? last.now < last.before : last.now > last.before;
@@ -176,7 +214,15 @@ export async function expectReading(page: Page, target: ElementRef, name: string
   }
 }
 
-export function rememberReading(page: Page, target: ElementRef, name: string): Promise<void> {
+/** A reading a viewer adds once it has drawn (a trellis cell's signature after its inner viewer is
+ * rebuilt) is waited for like a hit area, up to 5 s, before it is remembered. */
+export async function rememberReading(page: Page, target: ElementRef, name: string): Promise<void> {
+  let last = '';
+  await expect.poll(async () => {
+    const r = await readingOf(page, target, name);
+    last = r instanceof MissingReading ? String(r) : '';
+    return last === '';
+  }).toBe(true).catch((e) => { throw last ? new Error(last) : e; });
   return onViewer(page, target, (el, n) => { (window as any).__bdd.rememberValue(el, n); }, name);
 }
 
@@ -201,6 +247,27 @@ export async function expectRememberedReading(page: Page, target: ElementRef, na
   }
 }
 
+/** A numeric reading against the one remembered: strictly higher or strictly lower — for a change
+ * that has a direction, which "not as remembered" does not state. */
+export async function expectRememberedDirection(page: Page, target: ElementRef, name: string, direction: 'higher' | 'lower'): Promise<void> {
+  let last: Reading = {has: []};
+  const holds = async (): Promise<boolean | string> => {
+    last = await onViewer(page, target, (el, n) => (window as any).__bdd.rememberedValue(el, n), name);
+    if (last.before === undefined)
+      return `"${name}" was not remembered`;
+    if (typeof last.now !== 'number' || typeof last.before !== 'number')
+      return `"${name}" is not a number`;
+    return direction === 'higher' ? last.now > last.before : last.now < last.before;
+  };
+  try {
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    throw new Error(`"${name}" of ${target.phrase} is ${String(last.now)}, not ${direction} than the remembered ${String(last.before)}` +
+      (last.now === undefined || last.now === null ? `; the viewer reports: ${last.has.join(', ') || 'no readings'}` : ''));
+  }
+}
+
 /** The area's rectangle against the snapshot's: taller or wider than before. */
 export async function expectAreaGrew(page: Page, target: ElementRef, area: string, dimension: 'taller' | 'wider' | 'shorter' | 'narrower'): Promise<void> {
   let last: {before?: Box; now?: Box; has: string[]} = {has: []};
@@ -221,6 +288,18 @@ export async function expectAreaGrew(page: Page, target: ElementRef, area: strin
     throw new Error(`the "${area}" area of ${target.phrase} is not ${dimension} than before (before ${JSON.stringify(last.before)}, now ${JSON.stringify(last.now)}` +
       (last.now ? ')' : `; it has: ${last.has.join(', ') || 'none'})`));
   }
+}
+
+/** The rectangles of several areas of one viewer, from one layout and once it is quiet — in the
+ * viewer's own coordinates, so they compare with each other and with a remembered one whatever the
+ * page did around the viewer. */
+export async function areaRects(page: Page, target: ElementRef, names: string[]): Promise<Box[]> {
+  const {boxes, has} = await onViewer(page, target, (el, n) => (window as any).__bdd.quietAreaRects(el, n), names) as
+    {boxes: (Box | undefined)[]; has: string[]};
+  const missing = names.find((_, i) => boxes[i] === undefined);
+  if (missing !== undefined)
+    throw new Error(`${target.phrase} has no "${missing}" area; it has: ${has.join(', ') || 'none'}`);
+  return boxes as Box[];
 }
 
 export async function expectAreaSize(page: Page, target: ElementRef, area: string, dimension: 'tall' | 'wide', min: number): Promise<void> {
@@ -252,6 +331,10 @@ export function takeBalloons(page: Page): Promise<Balloon[]> {
   return evaluate(page, () => (window as any).__bdd.takeBalloons(), undefined);
 }
 
+export function putBalloons(page: Page, back: Balloon[]): Promise<void> {
+  return evaluate(page, (b) => { (window as any).__bdd.putBalloons(b); }, back);
+}
+
 // --- size and layout -----------------------------------------------------------------------------------
 
 export async function resize(page: Page, target: ElementRef, width: number | null, height: number | null): Promise<void> {
@@ -262,26 +345,49 @@ export async function restoreSize(page: Page, target: ElementRef): Promise<void>
   await onViewer(page, target, (el) => (window as any).__bdd.restoreSize(el, 500), undefined);
 }
 
-export function saveLayout(page: Page): Promise<void> {
-  return evaluate(page, () => { (window as any).__bdd.saveLayout(); }, undefined);
+/** Keeps the layout of the current table view in the page, under a name ('' for the unnamed one). */
+export function saveLayout(page: Page, name = ''): Promise<void> {
+  return evaluate(page, (n) => { (window as any).__bdd.saveLayout(n); }, name);
 }
 
-/** Saves the layout through the server and returns its id; the caller registers the deletion. */
-export function saveLayoutToServer(page: Page): Promise<string> {
+/** The named layouts kept in the page go: the runtime outlives a feature on the page. */
+export function forgetLayouts(page: Page): Promise<void> {
+  return evaluate(page, () => { (window as any).__bdd.forgetLayouts(); }, undefined);
+}
+
+/** Saves the layout through the server under a name of its run's family; the caller registers the deletion. */
+export function saveLayoutToServer(page: Page): Promise<{id: string; family: string}> {
   return evaluate(page, () => (window as any).__bdd.saveLayoutToServer(), undefined);
+}
+
+export function layoutOnServer(page: Page, id: string): Promise<boolean> {
+  return page.evaluate((i) => (window as any).__bdd.layoutOnServer(i), id);
 }
 
 export function deleteLayout(page: Page, id: string): Promise<void> {
   return page.evaluate((i) => (window as any).__bdd.deleteLayout(i), id);
 }
 
-export function loadLayout(page: Page): Promise<void> {
-  return evaluate(page, () => (window as any).__bdd.loadLayout(), undefined);
+export function loadLayout(page: Page, name = ''): Promise<void> {
+  return evaluate(page, (n) => (window as any).__bdd.loadLayout(n), name);
 }
 
 // --- area gestures ------------------------------------------------------------------------------------
 
 export {withKeys};
+
+/** Wheel notches over the centre of an area, with keys held (Control zooms where a plain wheel
+ * scrolls). */
+export async function wheelOverArea(page: Page, target: ElementRef, area: string, direction: string, times = 1, keys: string[] = []): Promise<void> {
+  if (direction !== 'up' && direction !== 'down')
+    throw new Error(`the wheel scrolls up or down, not "${direction}"`);
+  const c = centerOf(await hitArea(page, target, area, true));
+  await page.mouse.move(c.x, c.y);
+  await withKeys(page, keys, async () => {
+    for (let i = 0; i < times; i++)
+      await page.mouse.wheel(0, direction === 'up' ? -600 : 600);
+  });
+}
 
 /** A plain drag from the centre of one hit area to the centre of another (a column header to a
  * new place, a range handle to a bin), with keys held; the baseline is taken before the drag. */
@@ -296,19 +402,27 @@ export async function dragArea(page: Page, target: ElementRef, from: string, to:
   });
 }
 
-/** A drag of the area's centre by a distance in a direction (a resizer, a splitter). */
-export async function dragAreaBy(page: Page, target: ElementRef, area: string, px: number, direction: string): Promise<void> {
+/** The pointer offset of a drag by a distance in a direction. */
+export function dragDelta(px: number, direction: string): {dx: number; dy: number} {
   const d = direction.toLowerCase();
   if (!['left', 'right', 'up', 'down'].includes(d))
     throw new Error(`a drag goes left, right, up or down, not "${direction}"`);
-  const c = centerOf(await hitArea(page, target, area, true));
-  const dx = d === 'left' ? -px : d === 'right' ? px : 0;
-  const dy = d === 'up' ? -px : d === 'down' ? px : 0;
-  await page.mouse.move(c.x, c.y);
+  return {dx: d === 'left' ? -px : d === 'right' ? px : 0, dy: d === 'up' ? -px : d === 'down' ? px : 0};
+}
+
+/** The mouse pressed at a point and moved by the offset in two steps. */
+export async function dragFrom(page: Page, at: {x: number; y: number}, delta: {dx: number; dy: number}): Promise<void> {
+  await page.mouse.move(at.x, at.y);
   await page.mouse.down();
-  await page.mouse.move(c.x + dx / 2, c.y + dy / 2);
-  await page.mouse.move(c.x + dx, c.y + dy);
+  await page.mouse.move(at.x + delta.dx / 2, at.y + delta.dy / 2);
+  await page.mouse.move(at.x + delta.dx, at.y + delta.dy);
   await page.mouse.up();
+}
+
+/** A drag of the area's centre by a distance in a direction (a resizer, a splitter). */
+export async function dragAreaBy(page: Page, target: ElementRef, area: string, px: number, direction: string): Promise<void> {
+  const delta = dragDelta(px, direction);
+  await dragFrom(page, centerOf(await hitArea(page, target, area, true)), delta);
 }
 
 /** A drag across the inner 80% of an area with keys held: Shift selects, Control+Shift removes

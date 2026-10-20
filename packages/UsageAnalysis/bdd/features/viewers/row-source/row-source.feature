@@ -2,278 +2,213 @@
 Feature: Row Source, the same contract on seven viewers
   Which rows a viewer draws is its own `Filter` formula intersected with the row set its `Row
   Source` names: Filtered, All, Selected, SelectedOrCurrent, FilteredSelected, MouseOverGroup,
-  CurrentRow or MouseOverRow. Seven viewers sit on one table view with the same `${AGE} > 44`
-  filter, so every scenario states one row source and reads the same number off all of them —
-  a viewer that ignores the setting, or that answers the table's filter when it was told not to,
-  is the one number out of line.
-  demog-1000, whose AGE and WEIGHT have no blanks: 1000 rows, 519 with AGE > 44, 214 of those with
-  SEX M, 463 of those Caucasian and 5 Asian, and 69 of the 152 rows with AGE in 42..47. Row 3 has AGE 58, row 1
-  has AGE 26 — so making row 1 current adds nothing the filter keeps.
-  The pie chart is the mouse-over-group source for the other six (the bar chart is the source for
-  the pie chart), which is why it is the one viewer this journey leaves on Filtered; the scatter
-  plot is the mouse-over-row source, so it is the one left on Filtered in that scenario.
-  The last scenario is the spec's second half: the scatter plot rebound to spgi-100 (100 rows, 54
-  of them R_ONE or S_UNKN, its current row among them), where the same row sources have to answer that
-  table instead.
+  CurrentRow or MouseOverRow. The seven viewers of the md sit on one table view with the same
+  `${AGE} > 44` filter; every row source is one outline, and every row of its examples is one
+  viewer switched to that row source while the other six stay on Filtered — so a viewer that
+  ignores the setting, or answers the table's filter when it was told not to, fails its own row.
+  Each scenario puts the viewer back on Filtered and clears what it selected or filtered.
+  demog-1000, whose AGE and WEIGHT have no blanks (the md's HEIGHT has 128, which a scatter plot
+  and a PC plot would not draw, so WEIGHT stands in for it): 1000 rows, 519 with AGE > 44, 214 of
+  those with SEX M; 463 of those Caucasian and 5 Asian; 69 of the 152 rows with AGE in 42..47, 29
+  of them M. Row 3 has AGE 58, row 1 has AGE 26 — the filter keeps the first and drops the second,
+  so under SelectedOrCurrent a current row 3 outside the selection must not be added to it (69, not
+  70), and under MouseOverRow the hovered row is read off the table before the empty viewer is
+  blamed on the filter. Row Source and Filter are set as properties and the Filter Panel card and the
+  selection through the API (the md does it in the Context Panel and the Filter Panel); the claims
+  read the viewers' own `rows shown`, which for all but the scatter plot is the row set the viewer
+  filtered, not the marks it drew.
+  The md's Filter Panel filter is a SEX card; it is taken off by checking both categories again.
+  The grid is the mouse-over-row source for all seven viewers.
+  MouseOverGroup is `row-source-mouse-over-group.feature`: the hovered group outlives the hover,
+  so its empty state needs a table nothing was hovered on, which a journey cannot give each row.
+  The md's second half — the same viewers rebound to spgi-100 — is `row-source-rebound.feature`.
 
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
     And user adds a scatter plot viewer with:
-      | xColumnName | AGE    |
-      | yColumnName | WEIGHT |
-      | filter      | ${AGE} > 44 |
+      | xColumnName     | AGE         |
+      | yColumnName     | WEIGHT      |
+      | colorColumnName | RACE        |
+      | filter          | ${AGE} > 44 |
     And user adds a line chart viewer with:
-      | xColumnName  | AGE    |
-      | yColumnNames | WEIGHT |
+      | xColumnName  | AGE         |
+      | yColumnNames | WEIGHT      |
       | filter       | ${AGE} > 44 |
     And user adds a histogram viewer with:
-      | valueColumnName | AGE |
+      | valueColumnName | AGE         |
       | filter          | ${AGE} > 44 |
     And user adds a bar chart viewer with:
-      | valueColumnName | AGE  |
-      | splitColumnName | RACE |
+      | valueColumnName | AGE         |
+      | splitColumnName | RACE        |
       | filter          | ${AGE} > 44 |
     And user adds a pie chart viewer with:
-      | categoryColumnName | RACE |
+      | categoryColumnName | RACE        |
       | filter             | ${AGE} > 44 |
     And user adds a box plot viewer with:
-      | categoryColumnNames | RACE |
-      | valueColumnName     | AGE  |
+      | categoryColumnNames | RACE        |
+      | valueColumnName     | AGE         |
       | filter              | ${AGE} > 44 |
     And user adds a pc plot viewer with:
       | columnNames | AGE, WEIGHT |
       | filter      | ${AGE} > 44 |
     Then "rowSource" property of scatter plot viewer should be "Filtered"
+    And "rowSource" property of pie chart viewer should be "Filtered"
     And the table should have 1000 rows
 
-  Scenario: Filtered answers the table's filter and the viewer's at once
-    Then scatter plot viewer should show 519 rows
-    And line chart viewer should show 519 rows
-    And histogram viewer should show 519 rows
-    And bar chart viewer should show 519 rows
-    And pie chart viewer should show 519 rows
-    And box plot viewer should show 519 rows
-    And pc plot viewer should show 519 rows
-    When user filters rows where "SEX" is "M"
+  Scenario Outline: Filtered — <viewer> answers the filter panel and its own filter at once
+    Then <viewer> viewer should show <own filter> rows
+    When user adds a categorical filter on "SEX" keeping "M"
     Then 447 rows should pass the filter
-    And scatter plot viewer should show 214 rows
-    And line chart viewer should show 214 rows
-    And histogram viewer should show 214 rows
-    And bar chart viewer should show 214 rows
-    And pie chart viewer should show 214 rows
-    And box plot viewer should show 214 rows
-    And pc plot viewer should show 214 rows
-    When user resets the filter
+    And <viewer> viewer should show <both filters> rows
+    When user adds a categorical filter on "SEX" keeping "F, M"
     Then all rows should pass the filter
-    And scatter plot viewer should show 519 rows
+    And <viewer> viewer should show <own filter> rows
     And no errors should have been logged
 
-  Scenario: All ignores the table's filter and keeps the viewer's
-    When user sets "rowSource" property of scatter plot viewer to "All"
-    And user sets "rowSource" property of line chart viewer to "All"
-    And user sets "rowSource" property of histogram viewer to "All"
-    And user sets "rowSource" property of bar chart viewer to "All"
-    And user sets "rowSource" property of box plot viewer to "All"
-    And user sets "rowSource" property of pc plot viewer to "All"
-    And user filters rows where "SEX" is "M"
-    Then 447 rows should pass the filter
-    And scatter plot viewer should show 519 rows
-    And line chart viewer should show 519 rows
-    And histogram viewer should show 519 rows
-    And bar chart viewer should show 519 rows
-    And box plot viewer should show 519 rows
-    And pc plot viewer should show 519 rows
-    And pie chart viewer should show 214 rows
-    When user resets the filter
-    Then no errors should have been logged
+    Examples:
+      | viewer       | own filter | both filters |
+      | scatter plot | 519        | 214          |
+      | line chart   | 519        | 214          |
+      | histogram    | 519        | 214          |
+      | bar chart    | 519        | 214          |
+      | pie chart    | 519        | 214          |
+      | box plot     | 519        | 214          |
+      | pc plot      | 519        | 214          |
 
-  Scenario: Selected shows nothing until rows are selected, then the selected rows the filter keeps
-    When user sets "rowSource" property of scatter plot viewer to "Selected"
-    And user sets "rowSource" property of line chart viewer to "Selected"
-    And user sets "rowSource" property of histogram viewer to "Selected"
-    And user sets "rowSource" property of bar chart viewer to "Selected"
-    And user sets "rowSource" property of box plot viewer to "Selected"
-    And user sets "rowSource" property of pc plot viewer to "Selected"
+  Scenario Outline: All — <viewer> ignores the filter panel and keeps its own filter
+    When user sets "rowSource" property of <viewer> viewer to "All"
+    And user adds a categorical filter on "SEX" keeping "M"
+    Then 447 rows should pass the filter
+    And grid should show 447 rows
+    And <viewer> viewer should show <own filter> rows
+    When user adds a categorical filter on "SEX" keeping "F, M"
+    And user sets "rowSource" property of <viewer> viewer to "Filtered"
+    Then <viewer> viewer should show <own filter> rows
+    And no errors should have been logged
+
+    Examples:
+      | viewer       | own filter |
+      | scatter plot | 519        |
+      | line chart   | 519        |
+      | histogram    | 519        |
+      | bar chart    | 519        |
+      | pie chart    | 519        |
+      | box plot     | 519        |
+      | pc plot      | 519        |
+
+  Scenario Outline: Selected — <viewer> is empty until rows are selected, then shows the selected rows its filter keeps
+    When user sets "rowSource" property of <viewer> viewer to "Selected"
     Then no rows should be selected
-    And scatter plot viewer should show 0 rows
-    And line chart viewer should show 0 rows
-    And histogram viewer should show 0 rows
-    And bar chart viewer should show 0 rows
-    And box plot viewer should show 0 rows
-    And pc plot viewer should show 0 rows
+    And <viewer> viewer should show 0 rows
     When user selects rows where "AGE" is between 42 and 47
     Then 152 rows should be selected
-    And scatter plot viewer should show 69 rows
-    And line chart viewer should show 69 rows
-    And histogram viewer should show 69 rows
-    And bar chart viewer should show 69 rows
-    And box plot viewer should show 69 rows
-    And pc plot viewer should show 69 rows
-    And no errors should have been logged
-
-  Scenario: SelectedOrCurrent adds the current row only when the filter keeps it
-    When user makes row 1 current
-    And user sets "rowSource" property of scatter plot viewer to "SelectedOrCurrent"
-    And user sets "rowSource" property of line chart viewer to "SelectedOrCurrent"
-    And user sets "rowSource" property of histogram viewer to "SelectedOrCurrent"
-    And user sets "rowSource" property of bar chart viewer to "SelectedOrCurrent"
-    And user sets "rowSource" property of box plot viewer to "SelectedOrCurrent"
-    And user sets "rowSource" property of pc plot viewer to "SelectedOrCurrent"
-    Then "AGE" of the current row should be "26"
-    And scatter plot viewer should show 69 rows
-    And histogram viewer should show 69 rows
-    And pc plot viewer should show 69 rows
+    And <viewer> viewer should show <selected> rows
     When user clears the row selection
-    And user makes row 3 current
-    Then "AGE" of the current row should be "58"
-    And scatter plot viewer should show 1 rows
-    And line chart viewer should show 1 rows
-    And histogram viewer should show 1 rows
-    And bar chart viewer should show 1 rows
-    And box plot viewer should show 1 rows
-    And pc plot viewer should show 1 rows
-    And no errors should have been logged
-
-  Scenario: FilteredSelected is empty without a selection and intersects with it
-    When user sets "rowSource" property of scatter plot viewer to "FilteredSelected"
-    And user sets "rowSource" property of line chart viewer to "FilteredSelected"
-    And user sets "rowSource" property of histogram viewer to "FilteredSelected"
-    And user sets "rowSource" property of bar chart viewer to "FilteredSelected"
-    And user sets "rowSource" property of box plot viewer to "FilteredSelected"
-    And user sets "rowSource" property of pc plot viewer to "FilteredSelected"
-    Then no rows should be selected
-    And scatter plot viewer should show 0 rows
-    And line chart viewer should show 0 rows
-    And histogram viewer should show 0 rows
-    And bar chart viewer should show 0 rows
-    And box plot viewer should show 0 rows
-    And pc plot viewer should show 0 rows
-    When user selects rows where "AGE" is between 42 and 47
-    Then scatter plot viewer should show 69 rows
-    And line chart viewer should show 69 rows
-    And histogram viewer should show 69 rows
-    And bar chart viewer should show 69 rows
-    And box plot viewer should show 69 rows
-    And pc plot viewer should show 69 rows
-    When user clears the row selection
+    Then <viewer> viewer should show 0 rows
+    When user sets "rowSource" property of <viewer> viewer to "Filtered"
     Then no errors should have been logged
 
-  Scenario: MouseOverGroup is empty until a category is hovered elsewhere
-    When user sets "rowSource" property of scatter plot viewer to "MouseOverGroup"
-    And user sets "rowSource" property of line chart viewer to "MouseOverGroup"
-    And user sets "rowSource" property of histogram viewer to "MouseOverGroup"
-    And user sets "rowSource" property of bar chart viewer to "MouseOverGroup"
-    And user sets "rowSource" property of box plot viewer to "MouseOverGroup"
-    And user sets "rowSource" property of pc plot viewer to "MouseOverGroup"
-    Then scatter plot viewer should show 0 rows
-    And histogram viewer should show 0 rows
-    And box plot viewer should show 0 rows
-    And pc plot viewer should show 0 rows
-    When user hovers over the "slice Caucasian" area of pie chart viewer
-    Then scatter plot viewer should show 463 rows
-    And line chart viewer should show 463 rows
-    And histogram viewer should show 463 rows
-    And box plot viewer should show 463 rows
-    And pc plot viewer should show 463 rows
-    And no errors should have been logged
+    Examples:
+      | viewer       | selected |
+      | scatter plot | 69       |
+      | line chart   | 69       |
+      | histogram    | 69       |
+      | bar chart    | 69       |
+      | pie chart    | 69       |
+      | box plot     | 69       |
+      | pc plot      | 69       |
 
-  Scenario: The pie chart takes its group from the bar chart the same way
-    When user sets "rowSource" property of bar chart viewer to "Filtered"
-    And user sets "rowSource" property of pie chart viewer to "MouseOverGroup"
-    And user hovers over the "bar Asian" area of bar chart viewer
-    Then pie chart viewer should show 5 rows
-    When user hovers over the "bar Caucasian" area of bar chart viewer
-    Then pie chart viewer should show 463 rows
-    And no errors should have been logged
-
-  Scenario: CurrentRow shows the one row when the filter keeps it and nothing when it does not
-    When user sets "rowSource" property of scatter plot viewer to "CurrentRow"
-    And user sets "rowSource" property of line chart viewer to "CurrentRow"
-    And user sets "rowSource" property of histogram viewer to "CurrentRow"
-    And user sets "rowSource" property of bar chart viewer to "CurrentRow"
-    And user sets "rowSource" property of box plot viewer to "CurrentRow"
-    And user sets "rowSource" property of pc plot viewer to "CurrentRow"
+  Scenario Outline: SelectedOrCurrent — <viewer> shows the selection, and without one the current row its filter keeps
+    When user selects rows where "AGE" is between 42 and 47
     And user makes row 3 current
-    Then scatter plot viewer should show 1 rows
-    And line chart viewer should show 1 rows
-    And histogram viewer should show 1 rows
-    And bar chart viewer should show 1 rows
-    And box plot viewer should show 1 rows
-    And pc plot viewer should show 1 rows
+    And user sets "rowSource" property of <viewer> viewer to "SelectedOrCurrent"
+    Then "AGE" of the current row should be "58"
+    And <viewer> viewer should show <selected> rows
+    When user clears the row selection
+    Then <viewer> viewer should show 1 rows
     When user makes row 1 current
     Then "AGE" of the current row should be "26"
-    And scatter plot viewer should show 0 rows
-    And histogram viewer should show 0 rows
-    And pc plot viewer should show 0 rows
+    And <viewer> viewer should show 0 rows
+    When user sets "rowSource" property of <viewer> viewer to "Filtered"
+    Then no errors should have been logged
+
+    Examples:
+      | viewer       | selected |
+      | scatter plot | 69       |
+      | line chart   | 69       |
+      | histogram    | 69       |
+      | bar chart    | 69       |
+      | pie chart    | 69       |
+      | box plot     | 69       |
+      | pc plot      | 69       |
+
+  Scenario Outline: FilteredSelected — <viewer> shows the selected rows that pass the filter panel and its own filter
+    When user sets "rowSource" property of <viewer> viewer to "FilteredSelected"
+    Then no rows should be selected
+    And <viewer> viewer should show 0 rows
+    When user selects rows where "AGE" is between 42 and 47
+    Then <viewer> viewer should show <selected> rows
+    When user adds a categorical filter on "SEX" keeping "M"
+    Then <viewer> viewer should show <selected and filtered> rows
+    When user adds a categorical filter on "SEX" keeping "F, M"
+    And user clears the row selection
+    And user sets "rowSource" property of <viewer> viewer to "Filtered"
+    Then all rows should pass the filter
     And no errors should have been logged
 
-  Scenario: MouseOverRow follows the row the pointer is over
-    When user sets "rowSource" property of scatter plot viewer to "Filtered"
-    And user sets "rowSource" property of line chart viewer to "MouseOverRow"
-    And user sets "rowSource" property of histogram viewer to "MouseOverRow"
-    And user sets "rowSource" property of bar chart viewer to "MouseOverRow"
-    And user sets "rowSource" property of box plot viewer to "MouseOverRow"
-    And user sets "rowSource" property of pc plot viewer to "MouseOverRow"
-    And user moves the pointer away from scatter plot viewer
-    Then line chart viewer should show 0 rows
-    And histogram viewer should show 0 rows
-    And box plot viewer should show 0 rows
-    And pc plot viewer should show 0 rows
-    When user hovers over the "marker of row 3" area of scatter plot viewer
-    Then the "hovered row" reading of scatter plot viewer should be at least 1
-    And line chart viewer should show 1 rows
-    And histogram viewer should show 1 rows
-    And bar chart viewer should show 1 rows
-    And box plot viewer should show 1 rows
-    And pc plot viewer should show 1 rows
-    When user moves the pointer away from scatter plot viewer
-    Then histogram viewer should show 0 rows
-    And pc plot viewer should show 0 rows
+    Examples:
+      | viewer       | selected | selected and filtered |
+      | scatter plot | 69       | 29                    |
+      | line chart   | 69       | 29                    |
+      | histogram    | 69       | 29                    |
+      | bar chart    | 69       | 29                    |
+      | pie chart    | 69       | 29                    |
+      | box plot     | 69       | 29                    |
+      | pc plot      | 69       | 29                    |
+
+  Scenario Outline: CurrentRow — <viewer> shows the current row when its filter keeps it and nothing when it does not
+    When user sets "rowSource" property of <viewer> viewer to "CurrentRow"
+    And user makes row 3 current
+    Then <viewer> viewer should show 1 rows
+    When user makes row 1 current
+    Then "AGE" of the current row should be "26"
+    And <viewer> viewer should show 0 rows
+    When user sets "rowSource" property of <viewer> viewer to "Filtered"
+    Then <viewer> viewer should show 519 rows
     And no errors should have been logged
 
-  Scenario: Back on Filtered every viewer answers the table again
-    When user sets "rowSource" property of pie chart viewer to "Filtered"
-    And user sets "rowSource" property of scatter plot viewer to "Filtered"
-    And user sets "rowSource" property of line chart viewer to "Filtered"
-    And user sets "rowSource" property of histogram viewer to "Filtered"
-    And user sets "rowSource" property of bar chart viewer to "Filtered"
-    And user sets "rowSource" property of box plot viewer to "Filtered"
-    And user sets "rowSource" property of pc plot viewer to "Filtered"
-    Then scatter plot viewer should show 519 rows
-    And line chart viewer should show 519 rows
-    And histogram viewer should show 519 rows
-    And bar chart viewer should show 519 rows
-    And pie chart viewer should show 519 rows
-    And box plot viewer should show 519 rows
-    And pc plot viewer should show 519 rows
+    Examples:
+      | viewer       |
+      | scatter plot |
+      | line chart   |
+      | histogram    |
+      | bar chart    |
+      | pie chart    |
+      | box plot     |
+      | pc plot      |
+
+  Scenario Outline: MouseOverRow — <viewer> follows the row the pointer is over in the grid, within its filter
+    When user sets "rowSource" property of <viewer> viewer to "MouseOverRow"
+    And user moves the pointer away from grid
+    Then <viewer> viewer should show 0 rows
+    When user hovers over the "cell 3 of AGE" area of grid
+    Then the mouse-over row of the table should be 3
+    And <viewer> viewer should show 1 rows
+    When user hovers over the "cell 1 of AGE" area of grid
+    Then the mouse-over row of the table should be 1
+    And <viewer> viewer should show 0 rows
+    When user moves the pointer away from grid
+    And user sets "rowSource" property of <viewer> viewer to "Filtered"
+    Then <viewer> viewer should show 519 rows
     And no errors should have been logged
 
-  Scenario: Rebound to another table, a viewer keeps the contract with that table's rows
-    Given user opens spgi dataset
-    And user switches to the "demog-1000" table view
-    When user sets "table" property of scatter plot viewer to "spgi-100"
-    Then scatter plot viewer should be bound to table "spgi-100"
-    When user sets properties of scatter plot viewer:
-      | xColumnName | Chemical Space X |
-      | yColumnName | Chemical Space Y |
-      | filter      | ${Stereo Category} in ["R_ONE", "S_UNKN"] |
-    Then scatter plot viewer should show 54 rows
-    When user sets "rowSource" property of scatter plot viewer to "All"
-    Then scatter plot viewer should show 54 rows
-    When user sets "rowSource" property of scatter plot viewer to "Selected"
-    Then scatter plot viewer should show 0 rows
-    When user sets "rowSource" property of scatter plot viewer to "CurrentRow"
-    Then scatter plot viewer should show 1 rows
-    When user sets properties of scatter plot viewer:
-      | filter      |        |
-      | rowSource   | Filtered |
-    Then scatter plot viewer should show 100 rows
-    When user sets properties of scatter plot viewer:
-      | table       | demog-1000 |
-      | xColumnName | AGE        |
-      | yColumnName | WEIGHT     |
-      | filter      | ${AGE} > 44 |
-    Then scatter plot viewer should be bound to table "demog-1000"
-    And scatter plot viewer should show 519 rows
-    And no errors should have been logged
+    Examples:
+      | viewer       |
+      | scatter plot |
+      | line chart   |
+      | histogram    |
+      | bar chart    |
+      | pie chart    |
+      | box plot     |
+      | pc plot      |

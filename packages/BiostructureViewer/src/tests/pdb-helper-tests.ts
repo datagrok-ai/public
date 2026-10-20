@@ -20,4 +20,6 @@ async function _testPdbToDf(): Promise<void> {
   const df: DG.DataFrame = await ph.pdbToDf(pdbCnt, '1bdq');
   expect(df.rowCount, 198);
   expectArray(df.columns.names(), Object.values(PdbResDataFrame.ColNames));
+  expect(df.getCol(PdbResDataFrame.ColNames.compId).type, DG.COLUMN_TYPE.STRING);
+  expect(df.get(PdbResDataFrame.ColNames.compId, 0), 'PRO');
 }

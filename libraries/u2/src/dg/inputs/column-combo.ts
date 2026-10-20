@@ -13,6 +13,7 @@ import {VirtualList} from '../../components/collections/list.js';
 import {TextInput} from '../../components/inputs/text-input.js';
 import {onColumnRenamed} from './pickers.js';
 import {columnRenderer} from '../entities/column-renderer.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 const ROW_HEIGHT = 24;
 
@@ -39,12 +40,12 @@ export interface ColumnInputOptions2 extends InputOptions<string | null> {
  * (`column_combo_box.dart:203-220`) — no mouse-wheel cycling and no hover-preview writes
  * (divergences #17/#14). */
 export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
-  private _table!: DG.DataFrame | null;
-  private _filter: ((column: DG.Column) => boolean) | undefined;
-  private _control!: HTMLElement;
-  private _summary!: HTMLElement;
-  private _unfollow: (() => void) | undefined;
-  private _popupScope: Scope | undefined;
+  private declare _table: DG.DataFrame | null;
+  private declare _filter: ((column: DG.Column) => boolean) | undefined;
+  private declare _control: HTMLElement;
+  private declare _summary: HTMLElement;
+  private declare _unfollow: (() => void) | undefined;
+  private declare _popupScope: Scope | undefined;
 
   constructor(options: ColumnInputOptions2) {
     super(options, null);
@@ -53,6 +54,18 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
 
   get table(): DG.DataFrame | null {
     return this._table;
+  }
+
+  /** Whether the dropdown is open. */
+  getState(): ReturnType<Input<string | null>['getState']> {
+    return {...super.getState(), open: this._popupScope !== undefined};
+  }
+
+  /** The columns on offer, the picked one selected. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const value = this.value.peek();
+    return Input.itemsState(this.names().map((name, index) => ({key: name, label: name, index,
+      selected: name === value, rendered: false})), opts?.all);
   }
 
   /** The filtered column names of the bound table. */
@@ -88,8 +101,8 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
     this._summary = span('', 'u2-columns-summary');
     editor.append(this._summary, span('', 'u2-columns-chevron'));
     this._reflectTable();
-    this._listen(editor, 'click', () => this._togglePopup());
-    this._listen(editor, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.scope.listen(editor, 'click', () => this._togglePopup());
+    this.scope.listen(editor, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
     this.effect(() => this._renderSummary(this.value.value));
     this._follow();
     this.own(() => {
@@ -124,7 +137,7 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
       this._table.onColumnsChanged.subscribe(() => this._prune()),
       onColumnRenamed(this._table, (oldName, newName) => {
         if (this.value.peek() === oldName)
-          Input.system(() => this.value.value = newName);
+          this.systemWrite(newName);
       }),
     ];
     this._unfollow = () => {
@@ -136,7 +149,7 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
   private _prune(): void {
     const value = this.value.peek();
     if (value !== null && !this.names().includes(value))
-      Input.system(() => this.value.value = null);
+      this.systemWrite(null);
   }
 
   /** A pick is a USER edit: the signal write plus the native `change` a select would have
@@ -394,10 +407,5 @@ export class ColumnInput extends Input<string | null, ColumnInputOptions2> {
       return;
     scope.dispose();
     this._control.setAttribute('aria-expanded', 'false');
-  }
-
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

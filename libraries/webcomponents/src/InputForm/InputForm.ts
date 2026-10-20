@@ -9,6 +9,7 @@ export class InputForm extends HTMLElement {
   private formInst?: DG.InputForm;
   private skipDefaultInit = true;
   skipTableAutoFill = false;
+  skipLogic = false;
   private formChanges$ = new Subject<DG.InputForm | undefined>();
   private formGeneration = 0;
 
@@ -67,7 +68,8 @@ export class InputForm extends HTMLElement {
     if (!funcCall)
       this.formInst = undefined;
     else {
-      const form = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true, skipDefaultInit: this.skipDefaultInit, skipTableAutoFill: this.skipTableAutoFill} as any);
+      const form = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true, skipDefaultInit: this.skipDefaultInit,
+        skipTableAutoFill: this.skipTableAutoFill, skipLogic: this.skipLogic} as any);
       if (generation !== this.formGeneration)
         return;
       this.formInst = form;

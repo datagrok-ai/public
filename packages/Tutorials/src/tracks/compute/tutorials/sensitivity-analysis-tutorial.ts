@@ -4,10 +4,11 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {filter, map} from 'rxjs/operators';
-import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
+import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, describeElements, singleDescription, closeWindows, PAUSE, getLegendDiv, getBallFlightModelLegend} from './utils';
-import {runDescriber, Tour, DescriptionPage} from './ui-describer';
+import {getElement, getView, closeWindows, PAUSE, getLegendDiv, getBallFlightModelLegend, inputRootByCaption,
+  toggleSwitch} from './utils';
+import {runDescriber} from './ui-describer';
 import '../../../../css/ui-describer.css';
 
 /** Monte Carlo viewers description */
@@ -19,7 +20,7 @@ const monteCarloViewersInfo = [
       '🔼 the larger **Angle**, the greater **Max height**',
       '🔽 the larger **Max distance**, the shorter **Max height**',
     ],
-  ),  
+  ),
   `# Variations 🔀
   
    Multidimensional visualization of the relationship between **Angle** and the simulated values of **Max Distance** and **Max Height**.`,
@@ -65,6 +66,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
   demoTable: string = '';
   helpUrl: string = LINK.SENS_AN;
+  prerequisites: TutorialPrerequisites = {packages: ['Compute2', 'DiffStudio']};
 
   protected async _run() {
     this.header.textContent = this.name;
@@ -75,12 +77,12 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     closeWindows();
 
     // 1. Open Apps
-    let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
-    let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
-    if (browseHeader === null)      
+    const browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
+    const browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+    if (browseHeader === null)
       browseIcon.click();
 
-    const browsePanel = grok.shell.browsePanel;    
+    const browsePanel = grok.shell.browsePanel;
     const appsGroupRoot = await getElement(browsePanel.root, 'div[name="tree-Apps"]');
     if (appsGroupRoot === null) {
       grok.shell.warning('Failed to open Apps');
@@ -90,20 +92,21 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     const appView = grok.shell.view('Apps');
     if ((appView !== null) && (appView !== undefined))
       appView.close();
-    
+
     await this.action(
       'Open Apps',
       fromEvent(appsGroupRoot, 'click'),
       appsGroupRoot,
       'Go to <b>Browse</b> and click <b>Apps</b>',
+      () => appsGroupRoot.click(),
     );
 
     await new Promise((resolve) => setTimeout(resolve, PAUSE));
-    
-    appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
+
+    appsGroupRoot.dispatchEvent(new Event('dblclick', {bubbles: true, cancelable: true}));
 
     // 2. Run Model catalog
-    const galleryGrid = await getElement(document,'div[class="grok-gallery-grid"]');
+    const galleryGrid = await getElement(document, 'div[class="grok-gallery-grid"]');
     if (galleryGrid === null) {
       grok.shell.warning('Failed to open apps');
       return;
@@ -111,12 +114,12 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     browseIcon.click();
 
-    let name = 'Model-Hub';;
-    const modelCatalogIcn = await getElement(galleryGrid,`div[name="div-${name}"]`);
-    name = name.replace('-',' ');
+    let name = 'Model-Hub'; ;
+    const modelCatalogIcn = await getElement(galleryGrid, `div[name="div-${name}"]`);
+    name = name.replace('-', ' ');
 
     if (modelCatalogIcn === null) {
-      grok.shell.warning(`${name} not found: install the Compute package`);
+      grok.shell.warning(`${name} not found: install the Compute2 package`);
       return;
     }
 
@@ -125,14 +128,15 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       fromEvent(modelCatalogIcn, 'dblclick'),
       modelCatalogIcn,
       `Double-click the ${name} icon`,
+      () => modelCatalogIcn.dispatchEvent(new MouseEvent('dblclick', {bubbles: true})),
     );
 
     // 3. Run model
     const rootDiv = document.querySelector('div[id="rootDiv"]') as HTMLElement;
     const modelIconRoot = await getElement(rootDiv, 'span.d4-link-label[name="span-ballFlight"]');
-      if (modelIconRoot === null) {
-        grok.shell.warning(`${name} run timeout exceeded`);
-        return;
+    if (modelIconRoot === null) {
+      grok.shell.warning(`${name} run timeout exceeded`);
+      return;
     }
 
     await this.action(
@@ -140,6 +144,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       fromEvent(modelIconRoot, 'dblclick'),
       modelIconRoot,
       'Double click <b>Ball flight</b>.',
+      Tutorial.apiSkip(() => DG.Func.find({package: 'DiffStudio', name: 'ballFlight'})[0].prepare().edit()),
     );
 
     // 4. Play
@@ -167,7 +172,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       btnsText: {done: 'OK', next: '', prev: ''},
     });
 
-    await this.action('Click "OK"', fromEvent(btnToClick, 'click'));
+    await this.action('Click "OK"', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     // 5. Run sens.analysis
     this.title('Analysis');
@@ -176,15 +181,15 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     const ribbonPannels = modelView.getRibbonPanels();
     if (ribbonPannels.length < 1) {
       grok.shell.warning('Failed to run model analysis features');
-      return;      
+      return;
     }
-    
+
     const rightPanel = ribbonPannels[0];
     if (rightPanel.length < 3) {
       grok.shell.warning('Failed to load model analysis features');
-      return;      
+      return;
     }
-    
+
     const senAnIcnRoot = rightPanel[2];
 
     await this.action(
@@ -192,6 +197,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       fromEvent(senAnIcnRoot, 'click'),
       senAnIcnRoot,
       'Click the "Run sensitivity analysis" icon on the top panel.',
+      () => senAnIcnRoot.querySelector('i')!.click(),
     );
 
     // 6. Set samples
@@ -203,13 +209,15 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     const sensAnFormRoot = await getElement(sensAnView.root, 'div.ui-div.ui-form');
     const children = sensAnFormRoot!.children;
+    // by caption, from the model's own parameter declarations - see DiffStudio ballFlight
+    const input = (caption: string) => inputRootByCaption(sensAnFormRoot!, caption)!;
 
     // switch off trajectory
-    const trajectoryDiv = children[23];
-    const trajectorySwitcherWgt = trajectoryDiv.querySelector('div.ui-input-switch.ui-input-switch-on') as HTMLElement;
+    const trajectorySwitcherWgt = input('Trajectory')
+      .querySelector('div.ui-input-switch.ui-input-switch-on') as HTMLElement;
     trajectorySwitcherWgt.click();
 
-    const samplesInputRoot = children[1] as HTMLElement;
+    const samplesInputRoot = input('Samples');
     const samplesInputEditor = samplesInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
     const samplesSource = fromEvent(samplesInputEditor, 'input').pipe(map((_) => samplesInputEditor.value), filter((val) => val === '100'));
 
@@ -220,16 +228,19 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       samplesSource,
       samplesInputRoot,
       'Increase <b>Samples</b> to get more accurate results.',
+      () => Tutorial.setInputValue(samplesInputEditor, '100'),
     );
 
     // 7. Switch Angle
-    const angleFitInputRoot = children[16] as HTMLElement;
+    const angleFitInputRoot = input('Angle');
     const angleSwitcher = angleFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
       'Toggle the "Angle" parameter',
       fromEvent(angleSwitcher, 'click'),
       angleSwitcher,
+      '',
+      () => toggleSwitch(angleSwitcher),
     );
 
     // 8. Run sens.analysis
@@ -240,9 +251,10 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     await this.action(
       'Run sensitivity analysis',
-      fromEvent(runIcnRoot, 'click'),//runSensAnPromise,
+      fromEvent(runIcnRoot, 'click'), //runSensAnPromise,
       runIcnRoot,
       `Click the <b>Run</b> button or the <b>Run</b> icon on the top panel.`,
+      () => runIcnRoot.click(),
     );
 
     // 9. Explore viewers
@@ -266,7 +278,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       }),
     });
 
-    await this.action('Explore each viewer', fromEvent(btnToClick, 'click'));
+    await this.action('Explore each viewer', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     // 10. Optimization
     this.title('Optimization');
@@ -295,7 +307,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       btnsText: {done: 'ok', next: '', prev: ''},
     });
 
-    await this.action('Explore the solution', fromEvent(btnToClick, 'click'));
+    await this.action('Explore the solution', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     // 12. Parameters' impact
 
@@ -306,7 +318,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     this.describe(`Explore which of the throw parameters has the most significant impact on
     <b>Max distance</b> and <b>Max height</b>. The ${ui.link('Sobol', LINK.SOBOL).outerHTML} method provides a quantitative assessment of the parameters' impact.`);
 
-    const methodInputRoot = children[0] as HTMLElement;
+    const methodInputRoot = input('Method');
     const methodChoiceRoot = methodInputRoot.querySelector('select.ui-input-editor') as HTMLSelectElement;
     const methodSource = fromEvent(methodChoiceRoot, 'input').pipe(map((_) => methodChoiceRoot.value), filter((val) => val === 'Sobol'));
 
@@ -314,23 +326,29 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Set "Method" to "Sobol"',
       methodSource,
       methodInputRoot,
+      '',
+      () => Tutorial.setInputValue(methodChoiceRoot, 'Sobol'),
     );
 
     // 13. Switch Velocity
-    const velocityFitInputRoot = children[12] as HTMLElement;
+    const velocityFitInputRoot = input('Velocity');
     const velocitySwitcher = velocityFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
       'Toggle the "Velocity" parameter',
       fromEvent(velocitySwitcher, 'click'),
       velocitySwitcher,
+      '',
+      () => toggleSwitch(velocitySwitcher),
     );
 
     // 14. Run sens.analysis
     await this.action(
       'Run sensitivity analysis',
-      fromEvent(runIcnRoot, 'click'),//runSensAnPromise,
+      fromEvent(runIcnRoot, 'click'), //runSensAnPromise,
       runIcnRoot,
+      '',
+      () => runIcnRoot.click(),
     );
 
     // 15. Explore viewers
@@ -353,13 +371,13 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       }),
     });
 
-    await this.action('Explore each viewer', fromEvent(btnToClick, 'click'));
+    await this.action('Explore each viewer', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 16. The Grid  method note
     panelRoot.style.width = '300px';
-    const methodLabelRoot = children[0] as HTMLElement;//.querySelector('label.ui-label') as HTMLElement;
+    const methodLabelRoot = input('Method');
     btnToClick = runDescriber({
       pages: [{
         root: methodLabelRoot,
@@ -370,9 +388,9 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       btnsText: {done: 'clear', next: '', prev: ''},
     });
 
-    await this.action('Click "Clear"', fromEvent(btnToClick, 'click'));
+    await this.action('Click "Clear"', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     this.describe(`Apply ${ui.link('Sensitivity Analysis', LINK.SENS_AN).outerHTML} to both ${name} and 
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);
-  } // _run   
+  } // _run
 } // SensitivityAnalysisTutorial

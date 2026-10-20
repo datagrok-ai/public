@@ -2,10 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {fromEvent, interval, Observable, Subject, Subscription} from 'rxjs';
-import {filter, first, map} from 'rxjs/operators';
+import {from, fromEvent, interval, merge, Observable, Subject, Subscription} from 'rxjs';
+import {filter, first, map, switchMap} from 'rxjs/operators';
 import {Track} from './track';
 import {awardBadge} from './utils/badges-utils';
+
+
+/** What a step can point a hint at: an element, or a function that resolves one every time the
+ * hint repositions. Pass a function whenever the target is rebuilt while the step is up — a ribbon
+ * item, a re-rendered toolbar — or the highlight is left behind on the replaced node. */
+export type HintTarget = HTMLElement | (() => HTMLElement | null);
 
 
 /** A base class for tutorials */
@@ -35,6 +41,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   static readonly APP_PATH = '/apps/Tutorials/Tutorials';
+  static readonly APP_TITLE = 'Tutorials';
 
   get path(): string {
     const removeSpaces = (s: string) => s.replaceAll(' ', '');
@@ -65,13 +72,28 @@ export abstract class Tutorial extends DG.Widget {
   activity: HTMLDivElement = ui.div([], 'tutorials-root-description');
   status: boolean = false;
   closed: boolean = false;
+  private currentRun: Promise<void> | null = null;
   completed: boolean = false;
   activeHints: HTMLElement[] = [];
   progressDiv: HTMLDivElement = ui.divV([], 'tutorials-root-progress');
   progress: HTMLProgressElement = ui.element('progress');
   progressSteps: HTMLDivElement = ui.divText('');
+  private barSection: HTMLElement = ui.span([], 'tutorials-bar-section');
+  private barInstruction: HTMLElement = ui.element('b');
+  private barDescription: HTMLElement = ui.div([], 'tutorials-root-description');
+  private barStep: HTMLDivElement = ui.div([this.barInstruction, this.barDescription],
+    'tutorials-bar-step grok-tutorial-step-description');
+  private allStepsIcon: HTMLElement = ui.iconFAB('list', () => this.showAllSteps(!this.allStepsShown), 'All steps');
+  private titleSeparator: HTMLDivElement = ui.div([], 'd4-ribbon-separator');
+  private barRow: HTMLDivElement = ui.divH([this.allStepsIcon, ui.div([], 'd4-ribbon-separator'), this.barSection,
+    ui.div([], 'd4-ribbon-separator'), this.barStep], 'tutorials-bar-row');
+  private bar: HTMLDivElement = ui.div([this.barRow], 'tutorials-bar');
+  private appPane: {element: HTMLElement, ratio: number} | null = null;
 
   static DATA_STORAGE_KEY: string = 'tutorials';
+  static SKIP_DELAY_MS: number = 30000;
+  // docked once: docking the bar again to fit a step takes the keyboard focus from the view
+  private static readonly BAR_HEIGHT: number = 72;
   static SERVICES: {[service: string]: string} = {
     'jupyter': 'Jupyter',
     'grokCompute': 'GrokCompute',
@@ -86,7 +108,7 @@ export abstract class Tutorial extends DG.Widget {
       try {
         const parsedInfo = JSON.parse(info);
         neededStatus = parsedInfo.isCompleted;
-      } catch (e) {
+      } catch {
 
       } finally {
         this.status = !!neededStatus;
@@ -111,16 +133,18 @@ export abstract class Tutorial extends DG.Widget {
   updateProgress(track: any) {
     const tutorials = this.track?.tutorials!;
     const id = tutorials.indexOf(this);
-    const trackRoot = $(`.tutorials-track[data-name ='${track?.name}']`);
+    const pane = $(this.appPane?.element ?? document);
+    const trackRoot = pane.find(`.tutorials-track[data-name ='${track?.name}']`);
     const root = trackRoot.find(`.tutorials-card[data-name='${track.tutorials[id].name}']`);
     root.find('.tutorials-card-status').show();
+    root.attr('data-status', 'done');
     root.find('.tutorials-card-title').css('color', 'var(--grey-4)');
     root.find('.tutorials-card-description').css('color', 'var(--grey-4)');
     root.find('.ui-image').css('mix-blend-mode', 'luminosity').css('opacity', '0.7');
     trackRoot
       .find('progress')
       .prop('value', (100/track.tutorials.length*(track.completed)).toFixed());
-    const progressNodes = $(`.tutorials-track[data-name ='${track?.name}'] > .tutorials-track-details`).children();
+    const progressNodes = trackRoot.children('.tutorials-track-details').children();
     progressNodes.first().text(trackRoot.find('progress').prop('value')+'% complete');
     progressNodes.last().text(String(track.completed+' / '+track.tutorials.length));
   }
@@ -135,7 +159,33 @@ export abstract class Tutorial extends DG.Widget {
     grok.shell.windows.showBrowse = true;
   }
 
+  private static active: Tutorial | null = null;
+
+  static closeActive(): void {
+    const t = Tutorial.active;
+    if (t != null && (t.appPane != null || (t.currentRun != null && !t.closed)))
+      t.close();
+  }
+
   async start(): Promise<void> {
+    Tutorial.active = this;
+    while (this.currentRun != null) {
+      this.closed = true;
+      this.onClose.next();
+      this._closeAll();
+      await this.currentRun.catch(() => {});
+      this.clearRoot();
+    }
+    const run: Promise<void> = this._start().finally(() => {
+      if (this.currentRun === run)
+        this.currentRun = null;
+    });
+    this.currentRun = run;
+    await run;
+  }
+
+  private async _start(): Promise<void> {
+    this.closed = false;
     this._addHeader();
 
     const tutorials = this.track?.tutorials;
@@ -144,14 +194,10 @@ export abstract class Tutorial extends DG.Widget {
       return;
     }
 
+    this._enterBarMode();
     if (this.prerequisites.packages && Array.isArray(this.prerequisites.packages) &&
       this.prerequisites.packages.length > 0) {
-      const missingPackages = [];
-      for (const p of this.prerequisites.packages) {
-        const packages = await grok.dapi.packages.list({filter: `shortName = "${p}"`});
-        if (!packages.length || !(packages[0] instanceof DG.Package))
-          missingPackages.push(p);
-      }
+      const missingPackages = this.prerequisites.packages.filter((p) => DG.Func.find({package: p}).length === 0);
       if (missingPackages.length) {
         grok.shell.error(`Please install package${missingPackages.length === 1 ? '' : 's'} ${
           missingPackages.join(', ')} to start the tutorial`);
@@ -171,19 +217,24 @@ export abstract class Tutorial extends DG.Widget {
     }
 
     const id = tutorials.indexOf(this);
+    if (this.closed)
+      return;
 
     if (this.demoTable) {
       this._t = await grok.data.getDemoTable(this.demoTable);
       grok.shell.addTableView(this._t);
       this._setViewPath();
     }
-    this.closed = false;
 
     try {
       await this._run();
     } catch (error) {
       // If the tutorial was closed during execution, exit without error
-      if (!this.closed) return Promise.reject(error);
+      if (!this.closed) {
+        this._exitBarMode();
+        this.showFailure(error);
+        return;
+      }
     }
 
     this.endSection();
@@ -200,19 +251,27 @@ export abstract class Tutorial extends DG.Widget {
     this.completed = !this.closed;
     const dataToSave = JSON.stringify({date: new Date().toUTCString(), isCompleted: this.completed});
     await grok.userSettings.add(Tutorial.DATA_STORAGE_KEY, this.name, dataToSave);
+    if (this.completed)
+      grok.events.fireCustomEvent('tutorial-completed', {tutorial: this.name, track: this.track?.name});
     const statusMap = await this.track?.updateStatus();
+    if (this.closed)
+      return;
 
+    this.barInstruction.innerHTML = desc.replace('<br>', ' ');
+    this.barDescription.textContent = '';
+    const finish = (this.appPane ? this.barDescription : this.root);
     if (statusMap && Object.values(statusMap).every((v) => v)) {
-      this.root.append(ui.div([
+      finish.append(ui.divH([
         ui.divText(this.track?.name + ' is complete!'),
         ui.bigButton('Complete', ()=>{
           this.updateProgress(this.track);
+          this._exitBarMode();
           this._closeAll();
           this.clearRoot();
           $('.tutorial').show();
           $('#tutorial-child-node').html('');
         }),
-      ]));
+      ], {style: {alignItems: 'center'}}));
     } else if (statusMap) {
       // Find the first uncompleted tutorial in the track. Give preference to the first tutorial
       // after the current one, if there are uncompleted tutorials both before and after it.
@@ -234,27 +293,28 @@ export abstract class Tutorial extends DG.Widget {
         console.error('Corrupted status map.');
         nextId = id + 1;
       }
-      const tutorialNode = $('#tutorial-child-node');
+      const tutorialNode = $(this.appPane?.element ?? document).find('#tutorial-child-node');
       const nextTutorial = tutorials[nextId];
-      this.root.append(ui.divV([
-        ui.divText(`Next "${nextTutorial.name}"`, {style: {margin: '5px 0'}}),
-        ui.divH([
-          ui.bigButton('Start', () => {
-            this.updateProgress(this.track);
-            this.clearRoot();
-            tutorialNode.html('');
-            tutorialNode.append(nextTutorial.root);
-            nextTutorial.start();
-          }),
-          ui.button('Cancel', () => {
-            this.updateProgress(this.track);
-            this._closeAll();
-            this.clearRoot();
-            $('.tutorial').show();
-            tutorialNode.html('');
-          }),
-        ], {style: {marginLeft: '-4px'}}),
-      ]));
+      finish.append(ui.divH([
+        ui.divText(`Next "${nextTutorial.name}"`),
+        ui.bigButton('Start', () => {
+          this.updateProgress(this.track);
+          nextTutorial.appPane = this._leaveBar();
+          this.clearRoot();
+          tutorialNode.html('');
+          tutorialNode.append(nextTutorial.root);
+          nextTutorial.clearRoot();
+          nextTutorial.start();
+        }),
+        ui.button('Cancel', () => {
+          this.updateProgress(this.track);
+          this._exitBarMode();
+          this._closeAll();
+          this.clearRoot();
+          $('.tutorial').show();
+          tutorialNode.html('');
+        }),
+      ], {style: {alignItems: 'center'}}));
     }
   }
 
@@ -271,6 +331,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   close(): void {
+    this._exitBarMode();
     this.clearRoot();
     this.closed = true;
     this.onClose.next();
@@ -282,6 +343,9 @@ export abstract class Tutorial extends DG.Widget {
   _addHeader(): void {
     this.progressDiv.append(this.progress);
     this.progress.max = this.steps;
+    this.progress.setAttribute('role', 'progressbar');
+    this.progress.setAttribute('aria-label', 'Tutorial progress');
+    this._updateProgressAria();
 
     this.progressSteps = ui.divText(`Step: ${this.progress.value} of ${this.steps}`);
     this.progressDiv.append(this.progressSteps);
@@ -311,7 +375,63 @@ export abstract class Tutorial extends DG.Widget {
     this.headerDiv.append(closeTutorial);
   }
 
+  private _enterBarMode(): void {
+    const dm = grok.shell.dockManager;
+    if (this.appPane == null) {
+      const element = this.root.closest<HTMLElement>('.tutorials-root');
+      const node = element ? dm.findNode(element) : null;
+      if (element == null || node == null)
+        return;
+      this.appPane = {element, ratio: node.container.containerElement.offsetWidth / dm.element.clientWidth};
+      dm.close(node);
+    }
+    this.headerDiv.append(this.titleSeparator);
+    this.barRow.prepend(this.mainHeader);
+    if (dm.findNode(this.bar) == null)
+      dm.dock(this.bar, DG.DOCK_TYPE.TOP, null, Tutorial.APP_TITLE, Tutorial.BAR_HEIGHT / dm.element.clientHeight);
+  }
+
+  private _leaveBar(): {element: HTMLElement, ratio: number} | null {
+    const pane = this.appPane;
+    if (pane == null)
+      return null;
+    this.appPane = null;
+    grok.shell.dockManager.close(this.bar);
+    this.titleSeparator.remove();
+    this.root.prepend(this.mainHeader);
+    return pane;
+  }
+
+  private _exitBarMode(): void {
+    const shown = this.allStepsShown;
+    const pane = this._leaveBar();
+    if (pane != null && !shown)
+      grok.shell.dockManager.dock(pane.element, DG.DOCK_TYPE.LEFT, null, Tutorial.APP_TITLE, pane.ratio);
+  }
+
+  private get allStepsShown(): boolean {
+    return this.appPane != null && grok.shell.dockManager.findNode(this.appPane.element) != null;
+  }
+
+  /** Shows or hides all steps while the tutorial runs in the bar. */
+  showAllSteps(show: boolean): void {
+    const pane = this.appPane;
+    if (pane == null || show === this.allStepsShown)
+      return;
+    const dm = grok.shell.dockManager;
+    if (!show) {
+      dm.close(pane.element);
+      return;
+    }
+    // docked next to the bar's sibling, the pane goes under the bar
+    const bar = dm.findNode(this.bar)!;
+    const rest = Array.from(bar.parent.children).find((n) => !n.container.containerElement.contains(this.bar))!;
+    dm.dock(pane.element, DG.DOCK_TYPE.LEFT, rest, Tutorial.APP_TITLE, pane.ratio);
+    this.root.querySelector('[aria-current="step"]')?.scrollIntoView({block: 'nearest'});
+  }
+
   title(text: string, startSection: boolean = false): void {
+    this.barSection.textContent = text;
     const h3 = ui.h3(text);
     if (this.currentSection) {
       if (startSection) {
@@ -351,16 +471,13 @@ export abstract class Tutorial extends DG.Widget {
     this.currentSection = undefined;
   }
 
-  _placeHints(hint: HTMLElement | HTMLElement[]) {
-    if (hint instanceof HTMLElement) {
-      this.activeHints.push(hint);
-      ui.hints.addHintIndicator(hint, false);
-    } else if (Array.isArray(hint)) {
-      this.activeHints.push(...hint);
-      hint.forEach((h) => {
-        if (h != null)
-          ui.hints.addHintIndicator(h, false);
-      });
+  _placeHints(hint: HintTarget | HintTarget[]) {
+    for (const h of Array.isArray(hint) ? hint : [hint]) {
+      if (h == null)
+        continue;
+      // a function target lets the blob follow a rebuilt element (a ribbon item), instead of being
+      // left on the node that was replaced
+      this.activeHints.push(ui.hints.addHintIndicator(h, false));
     }
   }
 
@@ -383,7 +500,8 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   async action(instructions: string, completed: Observable<any> | Promise<void>,
-    hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<void> {
+    hint: HintTarget | HintTarget[] | null = null, description: string = '',
+    skip?: (() => unknown) | null): Promise<void> {
     if (this.closed)
       return;
 
@@ -410,7 +528,15 @@ export abstract class Tutorial extends DG.Widget {
       instructionIndicator,
       instructionDiv,
     ], 'grok-tutorial-entry');
+    const step = this.progress.value;
+    entry.setAttribute('role', 'checkbox');
+    entry.setAttribute('aria-label', instructions);
+    entry.setAttribute('aria-checked', 'false');
+    entry.setAttribute('aria-current', 'step');
+    entry.dataset.step = `${step}`;
     descriptionDiv.innerHTML = description;
+    this.barInstruction.textContent = instructions;
+    this.barDescription.innerHTML = description;
 
     if (this.currentSection) {
       this.currentSection.append(entry);
@@ -421,15 +547,55 @@ export abstract class Tutorial extends DG.Widget {
     }
     descriptionDiv.scrollIntoView();
 
-    const currentStep = completed instanceof Promise ? completed : this.firstEvent(completed);
-    await currentStep;
+    const skipped = new Subject<void>();
+    let stepDone = false;
+    let skipTimer: ReturnType<typeof setTimeout> | undefined;
+    const showSkipLater = () => {
+      if (!stepDone) {
+        skipTimer = setTimeout(() => this.appPane ? this.barInstruction.after(skipIcon!) : entry.append(skipIcon!),
+          Tutorial.SKIP_DELAY_MS);
+      }
+    };
+    const skipIcon = skip === null ? null : ui.iconFAB('step-forward', async () => {
+      skipIcon!.remove();
+      try {
+        await skip?.();
+        if (!skip || Tutorial.apiSkips.has(skip)) {
+          skipped.next();
+          return;
+        }
+      } catch (e) {
+        console.error('Tutorial step could not be performed on skip', this.name, e);
+      }
+      showSkipLater();
+    }, 'Stuck? Click to skip this step');
+    if (skipIcon)
+      showSkipLater();
 
-    instructionDiv.classList.add('grok-tutorial-entry-success');
-    instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
+    const succeeded = await this.firstEvent(merge(completed instanceof Promise ? from(completed) : completed, skipped));
+    stepDone = true;
+    clearTimeout(skipTimer);
+    skipIcon?.remove();
+    if (this.closed) {
+      sub.unsubscribe();
+      return;
+    }
+
+    entry.removeAttribute('aria-current');
+    if (succeeded) {
+      instructionDiv.classList.add('grok-tutorial-entry-success');
+      instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
+      entry.setAttribute('aria-checked', 'true');
+      grok.events.fireCustomEvent('tutorial-step-completed',
+        {tutorial: this.name, step: step, instruction: instructions});
+    } else
+      entry.setAttribute('aria-invalid', 'true');
 
     if (hint != null)
-      this._removeHints(hint);
+      this._removeHints(this.activeHints);
     sub.unsubscribe();
+    if (!succeeded)
+      throw new Error(`Step "${instructions}" could not complete`);
 
     // if (this.manualMode && manual !== false) {
     //   const nextStepIcon = ui.iconFA('forward', undefined, 'Next step');
@@ -452,18 +618,44 @@ export abstract class Tutorial extends DG.Widget {
     this.progress.value++;
     this.progressSteps.innerHTML = '';
     this.progressSteps.append(`Step: ${this.progress.value} of ${this.steps}`);
+    this._updateProgressAria();
+  }
+
+  _updateProgressAria(): void {
+    this.progress.setAttribute('aria-valuenow', `${this.progress.value}`);
+    this.progress.setAttribute('aria-valuemax', `${this.steps}`);
   }
 
   clearRoot(): void {
     this.completed = false;
     this.progress.value = 1;
-    $(this.root).children().each((idx, el) => el.classList.contains('tutorials-main-header') ?
-      ($(this.headerDiv).empty(), $(this.progressDiv).empty()) : $(el).empty());
+    this.barSection.textContent = this.barInstruction.textContent = this.barDescription.textContent = '';
+    $(this.headerDiv).empty();
+    $(this.progressDiv).empty();
+    $(this.root).children().not(this.mainHeader).empty();
   }
 
-  firstEvent(eventStream: Observable<any>): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      let eventSub: Subscription;
+  private showFailure(error: any): void {
+    const details = `Tutorial "${this.name}" failed at step ${this.progress.value}: ${error?.stack ?? error}`;
+    const restart = ui.bigButton('Restart', () => {
+      this._closeAll();
+      this.clearRoot();
+      this.start();
+    });
+    const copy = ui.button([ui.iconFA('copy'), 'Copy details'], () => navigator.clipboard.writeText(details));
+    const title = ui.element('b');
+    title.textContent = 'This tutorial can\'t continue';
+    (this.currentSection ?? this.activity).append(ui.divV([
+      title,
+      ui.divText('Something went wrong. Restart to try again, or copy the details for support.'),
+      ui.divH([restart, copy]),
+    ], 'tutorials-failure'));
+  }
+
+  /** Resolves true when the step's event came, false when its stream failed (the step could not
+   * complete, and is shown so), and does not settle as a success when the tutorial is closed. */
+  firstEvent(eventStream: Observable<any>): Promise<boolean> {
+    return new Promise<boolean>((resolve, reject) => {
       const closeSub = this.onClose.subscribe(() => {
         eventSub?.unsubscribe();
         closeSub.unsubscribe();
@@ -471,11 +663,12 @@ export abstract class Tutorial extends DG.Widget {
         // eslint-disable-next-line
         reject();
       });
-      eventSub = eventStream.pipe(first()).subscribe({
-        next: () => (closeSub.unsubscribe(), resolve()),
-        error: (e) => (console.error('Tutorial step could not complete', this.name, e), closeSub.unsubscribe(), resolve()),
+      const eventSub: Subscription = eventStream.pipe(first()).subscribe({
+        next: () => (closeSub.unsubscribe(), resolve(true)),
+        error: (e) => (console.error('Tutorial step could not complete', this.name, e), closeSub.unsubscribe(),
+        resolve(false)),
       });
-    }).catch((_) => console.log('Closing tutorial', this.name));
+    }).catch((_) => (console.log('Closing tutorial', this.name), false));
   }
 
   /** Closes all visual components that were added when working on tutorial, e.g., table views. */
@@ -499,8 +692,74 @@ export abstract class Tutorial extends DG.Widget {
     return (filter ? nodes.filter(filter) : nodes)[0] ?? null;
   }
 
+  /** Polls [get] every 100 ms until it returns something, for up to [timeoutMs]; null when it never
+   * does. Steps wait on this for a control the platform builds a moment after its host appears —
+   * they used to be preceded by a fixed sleep for it, or to give up and skip themselves, which
+   * shifts every step number after them. */
+  static async waitFor<T>(get: () => T | null | undefined, timeoutMs = 10000): Promise<T | null> {
+    for (let waited = 0; waited < timeoutMs; waited += 100) {
+      const found = get();
+      if (found != null)
+        return found;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return null;
+  }
+
+  static setInputValue(editor: HTMLInputElement | HTMLSelectElement, value: string): void {
+    editor.value = value;
+    editor.dispatchEvent(new Event('input', {bubbles: true}));
+    editor.dispatchEvent(new Event('change', {bubbles: true}));
+  }
+
+  private awaitElement(element: HTMLElement, selector: string,
+    filter: ((idx: number, el: Element) => boolean) | null = null, timeoutMs = 10000): Promise<EleLoose | null> {
+    return Tutorial.waitFor(() => this.getElement(element, selector, filter), timeoutMs);
+  }
+
   protected get menuRoot(): HTMLElement {
     return grok.shell.v.ribbonMenu.root;
+  }
+
+  private static apiSkips = new WeakSet<() => unknown>();
+
+  static apiSkip(perform: () => unknown): () => unknown {
+    Tutorial.apiSkips.add(perform);
+    return perform;
+  }
+
+  static setCodeEditorText(root: HTMLElement, text: string): void {
+    const cm5 = ($(root).find('.CodeMirror')[0] as any)?.CodeMirror;
+    if (cm5 != null) {
+      cm5.setValue(text);
+      return;
+    }
+    const view = Tutorial.codeMirrorView(root);
+    view?.dispatch({changes: {from: 0, to: view.state.doc.length, insert: text}});
+  }
+
+  static codeMirrorView(root: HTMLElement): any {
+    const content: any = root.querySelector('.cm-content');
+    const link = content?.cmTile ?? content?.cmView;
+    return link?.view ?? link?.rootView?.view ?? null;
+  }
+
+  static clickCell(grid: DG.Grid, column: string, row: number): void {
+    const cell = grid.cell(column, row).bounds;
+    const rect = grid.overlay.getBoundingClientRect();
+    const init = {bubbles: true, clientX: rect.left + cell.midX, clientY: rect.top + cell.midY};
+    for (const type of ['mousedown', 'mouseup', 'click'])
+      grid.overlay.dispatchEvent(new MouseEvent(type, init));
+  }
+
+  static async runContextMenu(target: HTMLElement, label: string): Promise<void> {
+    const rect = target.getBoundingClientRect();
+    target.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, button: 2,
+      clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2}));
+    const item = await Tutorial.waitFor(() => $('.d4-menu-popup').last().find('.d4-menu-item-label')
+      .filter((_, el) => el.textContent?.trim().toLowerCase() === label.toLowerCase())
+      .closest('.d4-menu-item')[0] ?? null);
+    item!.click();
   }
 
   protected getMenuItem(name: string, horizontalMenu?: boolean): HTMLElement | null {
@@ -511,7 +770,8 @@ export abstract class Tutorial extends DG.Widget {
   protected getSidebarHints(paneName: string, commandName: string): HTMLElement[] {
     const pane = grok.shell.sidebar.getPane(paneName);
     const command = this.getElement(pane.content, `div.d4-toggle-button[data-view=${commandName}]`) ??
-      this.getElement(pane.content, 'div.d4-toggle-button', (idx, el) => el.textContent?.toLowerCase() === commandName.toLowerCase())!;
+      this.getElement(pane.content, 'div.d4-toggle-button',
+        (idx, el) => el.textContent?.toLowerCase() === commandName.toLowerCase())!;
     return [pane.header, command];
   }
 
@@ -536,6 +796,7 @@ export abstract class Tutorial extends DG.Widget {
       })),
       view.type === 'TableView' ? getViewerIcon((<DG.TableView>view).toolboxPage.accordion.root) : null,
       description,
+      () => grok.shell.tv.addViewer(Object.values(DG.VIEWER).find((v) => v.toLowerCase() === name) ?? name),
     );
 
     return viewer!;
@@ -544,8 +805,13 @@ export abstract class Tutorial extends DG.Widget {
   /** Prompts the user to put the specified value into a dialog input. */
   protected async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string,
     value: string, description: string = '', historyHint: boolean = false, count: number = 0): Promise<void> {
-    const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption.toLowerCase() == caption.toLowerCase())[count];
-    if (inp == null) return;
+    // a dialog builds its inputs a moment after it opens; callers used to sleep for this
+    const inp = await Tutorial.waitFor(() =>
+      dlg.inputs.filter((input: DG.InputBase) => input.caption.toLowerCase() == caption.toLowerCase())[count]);
+    if (inp == null) {
+      console.error('Tutorial step skipped: no dialog input', this.name, caption, count);
+      return;
+    }
     await this.action(instructions,
       new Observable((subscriber: any) => {
         if (inp.stringValue === value) subscriber.next(inp.stringValue);
@@ -555,45 +821,49 @@ export abstract class Tutorial extends DG.Widget {
       }),
       historyHint ? this.getElement(dlg.root, 'i.fa-history.d4-command-bar-icon') : inp.root,
       description,
+      () => {inp.stringValue = value;},
     );
   }
 
   /** A helper method to access text inputs in a view. */
   protected async textInpAction(root: HTMLElement, instructions: string,
     caption: string, value: string, description: string = ''): Promise<void> {
-    const inputRoot = this.getElement(root, 'div.ui-input-root', (idx, inp) =>
+    const inputRoot = await this.awaitElement(root, 'div.ui-input-root', (idx, inp) =>
       $(inp).find('label.ui-label.ui-input-label')[0]?.textContent?.toLowerCase() === caption.toLowerCase());
-    if (inputRoot == null) return;
+    if (inputRoot == null) {
+      console.error('Tutorial step skipped: no text input', this.name, caption);
+      return;
+    }
     const input = this.getElement(inputRoot, 'input.ui-input-editor') as HTMLInputElement;
     const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
-    await this.action(instructions, source, inputRoot, description);
+    await this.action(instructions, source, inputRoot, description, () => Tutorial.setInputValue(input, value));
   }
 
   /** A helper method to access choice inputs in a view. */
   protected async choiceInputAction(root: HTMLElement, instructions: string,
     caption: string, value: string, description: string = '') {
-    let inputRoot = null;
-    let select: HTMLSelectElement;
-    $(root).find('.ui-input-root .ui-input-label span').each((idx, el) => {
-      if (el.innerText === caption) {
-        inputRoot = el.parentElement?.parentElement;
-        if (inputRoot)
-          select = this.getElement(inputRoot, 'select') as HTMLSelectElement;
-      }
-    });
-    if (select! == null) return;
+    const inputRoot = await this.awaitElement(root, 'div.ui-input-root', (idx, inp) =>
+      $(inp).find('.ui-input-label span')[0]?.innerText === caption && $(inp).find('select').length > 0);
+    const select = inputRoot == null ? null : this.getElement(inputRoot, 'select') as HTMLSelectElement;
+    if (select == null) {
+      console.error('Tutorial step skipped: no choice input', this.name, caption);
+      return;
+    }
     const source = fromEvent(select, 'change');
     await this.action(instructions, select.value === value ?
       new Promise<void>((resolve) => resolve()) :
       source.pipe(map((_) => select.value), filter((v: string) => v === value)),
-    inputRoot, description);
+    inputRoot, description, () => Tutorial.setInputValue(select, value));
   };
 
   private async prepareColumnInpAction(root: HTMLElement, instructions: string, caption: string, columnName: string,
     description: string, inputSelector: string, valueSelector: string, intervalPeriod: number = 1000): Promise<void> {
-    const columnInput = this.getElement(root, inputSelector, (idx, inp) =>
+    const columnInput = await this.awaitElement(root, inputSelector, (idx, inp) =>
       this.getElement(inp as HTMLElement, 'label.ui-label.ui-input-label')?.textContent === caption);
-    if (columnInput == null) return;
+    if (columnInput == null) {
+      console.error('Tutorial step skipped: no column input', this.name, caption);
+      return;
+    }
     const source = interval(intervalPeriod).pipe(
       map((_) => this.getElement(columnInput, valueSelector)?.textContent),
       filter((value) => value === columnName));
@@ -617,15 +887,26 @@ export abstract class Tutorial extends DG.Widget {
 
   protected async buttonClickAction(root: HTMLElement, instructions: string,
     caption: string, description: string = '') {
-    const btn = this.getElement(root, 'button.ui-btn', (idx, btn) => btn.textContent?.toLowerCase() === caption.toLowerCase());
-    if (btn == null) return;
+    const btn = await this.awaitElement(root, 'button.ui-btn',
+      (idx, btn) => btn.textContent?.toLowerCase() === caption.toLowerCase());
+    if (btn == null) {
+      console.error('Tutorial step skipped: no button', this.name, caption);
+      return;
+    }
     const source = fromEvent(btn, 'click');
-    await this.action(instructions, source, btn, description);
+    await this.action(instructions, source, btn, description, () => btn.click());
   };
+
+  protected async dialogOkAction(dialog: DG.Dialog, instructions: string = 'Click "OK"',
+    description: string = ''): Promise<void> {
+    await this.action(instructions, dialog.onClose, dialog.getButton('OK'), description,
+      () => dialog.getButton('OK').click());
+  }
 
   /** Prompts the user to open a view of the specified type, waits for it to open and returns it. */
   protected async openViewByType(instructions: string, type: string,
-    hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<DG.View> {
+    hint: HintTarget | HintTarget[] | null = null, description: string = '',
+    skip?: () => unknown): Promise<DG.View> {
     let view: DG.View;
 
     // If the view was opened earlier, we find it and wait until it becomes current.
@@ -644,14 +925,15 @@ export abstract class Tutorial extends DG.Widget {
       })) : grok.shell.v.type === view.type ?
         new Promise<void>((resolve, _) => resolve()) :
         grok.events.onCurrentViewChanged.pipe(filter((_) => grok.shell.v.type === view.type)),
-    hint, description);
+    hint, description, view! == null ? skip ?? null : () => {grok.shell.v = view;});
 
     return view!;
   }
 
   /** Prompts the user to open a dialog with the specified title, waits for it to open and returns it. */
   protected async openDialog(instructions: string, title: string,
-    hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<DG.Dialog> {
+    hint: HintTarget | HintTarget[] | null = null, description: string = '',
+    skip?: () => unknown): Promise<DG.Dialog> {
     let dialog: DG.Dialog;
 
     await this.action(instructions, grok.events.onDialogShown.pipe(filter((dlg) => {
@@ -660,7 +942,7 @@ export abstract class Tutorial extends DG.Widget {
         return true;
       }
       return false;
-    })), hint, description);
+    })), hint, description, skip ?? null);
 
     return dialog!;
   }
@@ -669,24 +951,18 @@ export abstract class Tutorial extends DG.Widget {
   protected async openAddNCDialog(instructions: string = 'Open the "Add New Column" dialog',
     description: string = ''): Promise<DG.Dialog> {
     const addNCIcon = $('div.d4-ribbon-item').has('i.svg-add-new-column')[0];
-    return await this.openDialog(instructions, 'Add New Column', addNCIcon, description);
+    return await this.openDialog(instructions, 'Add New Column', addNCIcon, description,
+      () => $(addNCIcon).find('i.svg-add-new-column')[0]!.click());
   }
 
   /** Prompts the user to select a menu item in the context menu. */
   protected async contextMenuAction(instructions: string, label: string,
-    hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<void> {
-    const commandClick = new Promise<void>((resolve, reject) => {
-      const sub = grok.events.onContextMenu.subscribe((data) => {
-        data.args.menu.onContextMenuItemClick.pipe(
-          filter((mi) => (new DG.Menu(mi)).toString().toLowerCase() === label.toLowerCase()),
-          first()).subscribe((_: any) => {
-          sub.unsubscribe();
-          resolve();
-        });
-      });
-    });
-
-    await this.action(instructions, commandClick, hint, description);
+    hint: HintTarget | HintTarget[] | null = null, description: string = '',
+    skip?: HTMLElement | (() => unknown)): Promise<void> {
+    const commandClick = grok.events.onContextMenu.pipe(switchMap((data) => data.args.menu.onContextMenuItemClick),
+      filter((mi) => (new DG.Menu(mi)).toString().toLowerCase() === label.toLowerCase()));
+    await this.action(instructions, commandClick, hint, description, skip instanceof HTMLElement ?
+      () => Tutorial.runContextMenu(skip, label) : skip && Tutorial.apiSkip(skip));
   }
 }
 

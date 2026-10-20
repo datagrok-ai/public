@@ -9,7 +9,8 @@ Feature: Tile viewer form designer
   in, not to the factory default. Then the contrast the state pair exists for: an auto-generated
   card is rebuilt when a column leaves the table and a column that had no field takes the freed
   slot, while a designed card keeps exactly the fields it was given — the departed column's field
-  stays on it, empty.
+  stays on it, empty. In both states the column leaves through the same gesture, a right-click on
+  its field and Remove (GROK-19983).
   One journey on demog-1000 — 11 columns, a card of ten fields, SEVERITY the column the relevance
   score leaves over.
 
@@ -141,7 +142,7 @@ Feature: Tile viewer form designer
     And the "fields shown" reading of tile viewer should be 10
     And the "fields" reading of tile viewer should contain "AGE"
     When user remembers the fields of tile viewer
-    And user removes "AGE" column
+    And user picks "Remove" from the context menu of the "field AGE of row 1" area of tile viewer
     Then the table should not have a column "AGE"
     And the table should have 10 columns
     And the "fields shown" reading of tile viewer should be 10

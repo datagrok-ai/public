@@ -75,11 +75,13 @@ export class AutorunScheduler {
     // A removed node's connection-removal events have already been fed separately.
     if (edit.kind === 'node-removed') return;
     if (edit.kind === 'node-added') {
-      // A live node dropped ready-to-run (a file dragged from the files tree)
-      // must run at once; readiness is re-checked at fire time, so a bare
-      // toolbox drop schedules and then quietly no-ops.
-      if (this.enabled || !this.isLiveNode(edit.nodeId)) return;
-      this.dirty.add(edit.nodeId);
+      // Toggle on: `affected` holds the node only when it is ready as dropped (a
+      // script whose inputs all have defaults). Toggle off: a live node dropped
+      // ready-to-run (a file dragged from the files tree); readiness is re-checked
+      // at fire time, so a bare toolbox drop schedules and then quietly no-ops.
+      const ids = this.enabled ? [...affected] : this.isLiveNode(edit.nodeId) ? [edit.nodeId] : [];
+      if (ids.length === 0) return;
+      for (const id of ids) this.dirty.add(id);
       this.schedule();
       return;
     }

@@ -6,6 +6,13 @@ import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, Scope} from '../src/index.js';
 import {Wizard} from '../src/components/containers/wizard.js';
+import {Dialog} from '../src/components/containers/dialog.js';
+import {Overlay} from '../src/core/overlay.js';
+
+test('an unknown start step is refused', () => {
+  assert.throws(() => new Wizard({steps: [{id: 'a', title: 'A', content: document.createElement('div')}],
+    start: 'nope'}), /no step "nope"/);
+});
 
 function wizard(name, body) {
   test(name, async () => {
@@ -209,5 +216,343 @@ wizard('dialog mode: finishes, cancels on close, and disposes clean', () => {
   assert.deepEqual(outcome, ['cancel', 'cancel', 'finish']);
   assert.equal(dialog.isOpen.value, false, 'FINISH closes the dialog');
 
+  scope.dispose();
+});
+
+wizard('a `done` step is terminal: no BACK, no CANCEL, and NEXT reads CLOSE', () => {
+  const scope = new Scope();
+  const outcome = [];
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: [
+      {id: 'one', title: 'One', content: content('One', 'free')},
+      {id: 'report', title: 'Report', content: content('Report', 'written'), done: true},
+    ],
+    onFinish: () => outcome.push('finish'),
+    onCancel: () => outcome.push('cancel'),
+  }));
+  w.openInDialog('Import');
+  assert.equal(footer(w, 'NEXT').textContent, 'NEXT');
+  assert.notEqual(footer(w, 'CANCEL').style.display, 'none');
+  w.next();
+  assert.equal(footer(w, 'FINISH'), undefined, 'the work is done: there is nothing to finish');
+  assert.equal(footer(w, 'CLOSE').textContent, 'CLOSE');
+  assert.equal(footer(w, 'BACK').style.display, 'none', 'nothing to go back to');
+  assert.equal(footer(w, 'CANCEL').style.display, 'none', 'and nothing to cancel');
+  footer(w, 'CLOSE').click();
+  assert.deepEqual(outcome, ['finish']);
+  scope.dispose();
+});
+
+wizard('a step\'s actions stand before NEXT on that step only, and the footer waits on one', async () => {
+  let release;
+  const ran = [];
+  const w = new Wizard({steps: [
+    {id: 'one', title: 'One', content: content('One', 'free')},
+    {id: 'review', title: 'Review', content: content('Review', 'last'), finishText: 'CREATE',
+      actions: [{text: 'VALIDATE', run: () => { ran.push('validate'); return new Promise((r) => release = r); }}]},
+  ]});
+  document.body.append(w.root);
+  assert.equal(footer(w, 'VALIDATE').style.display, 'none', 'hidden off its step');
+  w.next();
+  assert.equal(footer(w, 'VALIDATE').style.display, '');
+  assert.equal(footer(w, 'CREATE').textContent, 'CREATE', 'the last step reads its own finish text');
+  w.status.textContent = 'Ready';
+  assert.equal(w.root.querySelector('.u2-wizard-status').textContent, 'Ready');
+
+  footer(w, 'VALIDATE').click();
+  assert.deepEqual(ran, ['validate']);
+  assert.equal(footer(w, 'CREATE').disabled, true, 'the footer waits');
+  assert.equal(footer(w, 'VALIDATE').disabled, true);
+  assert.equal(footer(w, 'BACK').disabled, true);
+  release();
+  await flush();
+  assert.equal(footer(w, 'CREATE').disabled, false);
+  assert.equal(footer(w, 'VALIDATE').disabled, false);
+  w.dispose();
+});
+
+wizard('an action follows its visible signal on its own step, without re-activating the step', async () => {
+  const shown = signal(true);
+  let activated = 0;
+  const w = new Wizard({steps: [
+    {id: 'one', title: 'One', content: content('One', 'free'),
+      actions: [{text: 'CHECK', run: () => undefined}]},
+    {id: 'two', title: 'Two', content: content('Two', 'last'), onActivate: () => activated++,
+      actions: [{text: 'VALIDATE', run: () => undefined, visible: shown}]},
+  ]});
+  document.body.append(w.root);
+  assert.equal(footer(w, 'CHECK').style.display, '', 'no visible signal: shown');
+  shown.value = false;
+  assert.equal(footer(w, 'VALIDATE').style.display, 'none', 'off its step whatever the signal');
+  w.next();
+  const after = activated;
+  assert.equal(footer(w, 'VALIDATE').style.display, 'none');
+  shown.value = true;
+  assert.equal(footer(w, 'VALIDATE').style.display, '');
+  shown.value = false;
+  assert.equal(footer(w, 'VALIDATE').style.display, 'none');
+  assert.equal(activated, after, 'flipping the signal does not re-activate the step');
+  assert.equal(footer(w, 'CHECK').style.display, 'none', 'the other step\'s action stays hidden');
+  w.dispose();
+});
+
+wizard('an async finish answering false keeps the dialog open; true closes it', async () => {
+  const scope = new Scope();
+  let answer = false;
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: [{id: 'one', title: 'One', content: content('One', 'free')}],
+    onFinish: () => Promise.resolve(answer),
+  }));
+  const dialog = w.openInDialog('Create');
+  footer(w, 'FINISH').click();
+  assert.equal(footer(w, 'FINISH').disabled, true, 'waiting on the finish');
+  await flush();
+  assert.equal(dialog.isOpen.value, true, 'refused: still open');
+  assert.equal(w.completed.value, false);
+  assert.equal(footer(w, 'FINISH').disabled, false);
+  answer = true;
+  footer(w, 'FINISH').click();
+  await flush();
+  assert.equal(w.completed.value, true);
+  assert.equal(dialog.isOpen.value, false);
+  scope.dispose();
+});
+
+wizard('while a finish runs, the rail, CANCEL, the close button and Esc are blocked', async () => {
+  const scope = new Scope();
+  let release;
+  const outcome = [];
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: steps(undefined),
+    onFinish: () => new Promise((r) => release = () => r(true)),
+    onCancel: () => outcome.push('cancel'),
+  }));
+  const dialog = w.openInDialog('Create');
+  w.next();
+  w.next();
+  footer(w, 'FINISH').click();
+  assert.equal(footer(w, 'CANCEL').disabled, true);
+  assert.equal(w.root.classList.contains('u2-wizard-busy'), true);
+  fire(markers(w)[0], 'click');
+  assert.equal(w.currentStep.value, 'three', 'the rail does not move');
+  w.back();
+  assert.equal(w.currentStep.value, 'three');
+  footer(w, 'CANCEL').click();
+  dialog.root.querySelector('.u2-dialog-close').click();
+  fire(dialog.root, 'keydown', {key: 'Escape'});
+  assert.equal(dialog.isOpen.value, true, 'nothing closes a wizard mid-finish');
+  release();
+  await flush();
+  assert.equal(w.completed.value, true);
+  assert.equal(dialog.isOpen.value, false);
+  assert.deepEqual(outcome, [], 'a committed finish is never a cancel');
+  scope.dispose();
+});
+
+wizard('a step\'s commit runs on NEXT (reading nextText): false keeps the step; a done step closes as a finish', async () => {
+  const scope = new Scope();
+  const outcome = [];
+  let answer = false;
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: [
+      {id: 'review', title: 'Review', content: content('Review', 'last'), nextText: 'CREATE',
+        commit: () => Promise.resolve(answer)},
+      {id: 'report', title: 'Report', content: content('Report', 'written'), done: true},
+    ],
+    onFinish: () => outcome.push('finish'),
+    onCancel: () => outcome.push('cancel'),
+  }));
+  const dialog = w.openInDialog('Create');
+  assert.equal(footer(w, 'CREATE').textContent, 'CREATE');
+  footer(w, 'CREATE').click();
+  assert.equal(footer(w, 'CREATE').disabled, true, 'the footer waits on the commit');
+  await flush();
+  assert.equal(w.currentStep.value, 'review', 'refused: the step stays');
+  answer = true;
+  footer(w, 'CREATE').click();
+  await flush();
+  assert.equal(w.currentStep.value, 'report');
+  dialog.root.querySelector('.u2-dialog-close').click();
+  assert.deepEqual(outcome, ['finish'], 'closing a done step is the CLOSE button');
+  assert.equal(w.completed.value, true);
+  scope.dispose();
+});
+
+wizard('WO-A5.1 #1: goTo forward passes the gate of every step on the way; back is free; a done step stays reachable', () => {
+  const gate = signal(null);
+  const w = new Wizard({steps: [
+    {id: 'one', title: 'One', content: content('One', 'free')},
+    {id: 'two', title: 'Two', content: content('Two', 'gated'), canProceed: gate},
+    {id: 'three', title: 'Three', content: content('Three', 'free')},
+    {id: 'report', title: 'Report', content: content('Report', 'written'), done: true},
+  ]});
+  document.body.append(w.root);
+  w.next();
+  w.next();
+  w.goTo('one');
+  assert.equal(w.currentStep.value, 'one', 'back to a visited step');
+  gate.value = 'Fix step two first';
+  w.goTo('three');
+  assert.equal(w.currentStep.value, 'one', 'the gate of two stands between');
+  fire(markers(w)[2], 'click');
+  assert.equal(w.currentStep.value, 'one', 'the rail as well');
+  gate.value = null;
+  w.goTo('three');
+  assert.equal(w.currentStep.value, 'three');
+  w.next();
+  assert.equal(w.currentStep.value, 'report');
+  w.goTo('one');
+  assert.equal(w.currentStep.value, 'one', 'a done step goes back to the start (the import report does)');
+  w.goTo('report');
+  assert.equal(w.currentStep.value, 'report', 'and a visited done step is reached through open gates');
+  w.dispose();
+});
+
+wizard('WO-A5.1 #13: a plain Enter does not close a done step, and NEXT pressed into it lets go of the focus', () => {
+  const scope = new Scope();
+  const outcome = [];
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: [
+      {id: 'one', title: 'One', content: content('One', 'free')},
+      {id: 'report', title: 'Report', content: content('Report', 'written'), done: true},
+    ],
+    onFinish: () => outcome.push('finish'),
+  }));
+  w.openInDialog('Import');
+  footer(w, 'NEXT').focus();
+  footer(w, 'NEXT').click();
+  assert.equal(w.currentStep.value, 'report');
+  assert.notEqual(document.activeElement, footer(w, 'CLOSE'), 'a second Enter does not land on CLOSE');
+  assert.ok(w.root.contains(document.activeElement), 'focus stays inside the dialog (Esc, Tab trap)');
+  const panel = w.root.querySelectorAll('.u2-wizard-panel')[1];
+  fire(panel, 'keydown', {key: 'Enter'});
+  assert.deepEqual(outcome, [], 'Enter leaves the report open');
+  fire(panel, 'keydown', {key: 'Enter', ctrlKey: true});
+  assert.deepEqual(outcome, ['finish'], 'Ctrl+Enter is the explicit close');
+  scope.dispose();
+});
+
+wizard('A5 re-verify: nothing goes back to a step whose commit went through; a focus dropped on the body comes back', async () => {
+  const scope = new Scope();
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: [
+      {id: 'design', title: 'Design', content: content('Design', 'free')},
+      {id: 'review', title: 'Review', content: content('Review', 'last'), nextText: 'CREATE',
+        commit: () => Promise.resolve(true)},
+      {id: 'created', title: 'Created', content: content('Created', 'written'), done: true},
+    ],
+  }));
+  w.openInDialog('Create');
+  w.next();
+  assert.equal(w.currentStep.value, 'review');
+  footer(w, 'CREATE').focus();
+  footer(w, 'CREATE').click();
+  document.activeElement?.blur?.();
+  await flush();
+  assert.equal(w.currentStep.value, 'created');
+  assert.ok(w.root.contains(document.activeElement), 'focus back inside the dialog');
+  w.goTo('review');
+  assert.equal(w.currentStep.value, 'created', 'the committed step stays behind');
+  w.goTo('design');
+  w.back();
+  assert.equal(w.currentStep.value, 'created', 'nor anything before it');
+  scope.dispose();
+});
+
+wizard('Enter on a control inside the content is the control\'s own; from a text input or the panel it advances', () => {
+  const panel = document.createElement('div');
+  const input = document.createElement('input');
+  input.type = 'text';
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  const box = document.createElement('input');
+  box.type = 'checkbox';
+  const chip = document.createElement('button');
+  chip.className = 'u2-chip';
+  const option = document.createElement('div');
+  option.setAttribute('role', 'option');
+  panel.append(input, remove, box, chip, option);
+  const w = new Wizard({steps: [{id: 'one', title: 'One', content: panel}, {id: 'two', title: 'Two', content: content('Two', 'x')},
+    {id: 'three', title: 'Three', content: content('Three', 'y')}]});
+  document.body.append(w.root);
+  for (const el of [remove, box, chip, option]) {
+    const handled = fire(el, 'keydown', {key: 'Enter'});
+    assert.equal(w.currentStep.value, 'one', `${el.className || el.getAttribute('role') || el.type}: not advanced`);
+    assert.equal(handled, true, 'left to the control (not defaultPrevented)');
+  }
+  assert.equal(fire(input, 'keydown', {key: 'Enter'}), false, 'a text input: the default action');
+  assert.equal(w.currentStep.value, 'two');
+  fire(w.root.querySelectorAll('.u2-wizard-panel')[1], 'keydown', {key: 'Enter'});
+  assert.equal(w.currentStep.value, 'three', 'the panel itself too');
+  w.dispose();
+});
+
+wizard('in a dialog, Enter on a content button does not press OK; from a text input it does', () => {
+  let ok = 0;
+  const dialog = new Dialog('Pick').onOK(() => ok++);
+  const input = document.createElement('input');
+  input.type = 'text';
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  dialog.add(input).add(remove).show();
+  assert.equal(fire(remove, 'keydown', {key: 'Enter'}), true);
+  assert.equal(ok, 0, 'the button keeps its Enter');
+  assert.equal(dialog.isOpen.value, true);
+  assert.equal(fire(input, 'keydown', {key: 'Enter'}), false);
+  assert.equal(ok, 1);
+  assert.equal(dialog.isOpen.value, false);
+  dialog.dispose();
+});
+
+wizard('NEXT follows a nextText signal: the wording moves with the state, and the last step keeps its own', () => {
+  const text = signal('SAVE');
+  const w = new Wizard({steps: [
+    {id: 'one', title: 'One', content: content('One', 'free'), nextText: text},
+    {id: 'two', title: 'Two', content: content('Two', 'last')}]});
+  document.body.append(w.root);
+  assert.equal(footer(w, 'SAVE').textContent, 'SAVE');
+  text.value = 'REOPEN';
+  assert.equal(footer(w, 'SAVE'), undefined);
+  assert.equal(footer(w, 'REOPEN').textContent, 'REOPEN');
+  w.next();
+  assert.equal(footer(w, 'FINISH').textContent, 'FINISH');
+  w.back();
+  assert.equal(footer(w, 'REOPEN').textContent, 'REOPEN');
+  w.dispose();
+});
+
+wizard('Esc reaches the modal dialog on top once focus fell out of it onto the body; a dialog underneath waits its turn', () => {
+  const scope = new Scope();
+  const outcome = [];
+  const w = Scope.runWith(scope, () => new Wizard({steps: steps(undefined), onCancel: () => outcome.push('cancel')}));
+  const dialog = w.openInDialog('Set up');
+  const inner = Scope.runWith(scope, () => Dialog.create('Pick').show({modal: true}));
+  document.body.focus();
+  fire(document.body, 'keydown', {key: 'Escape'});
+  assert.deepEqual([inner.isOpen.value, dialog.isOpen.value], [false, true], 'the one on top closes');
+  fire(document.body, 'keydown', {key: 'Escape'});
+  assert.equal(dialog.isOpen.value, false);
+  assert.deepEqual(outcome, ['cancel']);
+  const plain = Scope.runWith(scope, () => Dialog.create('Aside').show());
+  fire(document.body, 'keydown', {key: 'Escape'});
+  assert.equal(plain.isOpen.value, true, 'a modeless dialog takes no stray Escape');
+  plain.close();
+  const again = Scope.runWith(scope, () => Dialog.create('Pick').show({modal: true}));
+  const anchor = document.createElement('button');
+  again.add(anchor);
+  const popup = document.createElement('div');
+  Overlay.show(anchor, popup, scope);
+  fire(document.body, 'keydown', {key: 'Escape'});
+  assert.equal(again.isOpen.value, true, 'a popup above the dialog owns the Escape');
+  assert.equal(popup.isConnected, false, 'and closes on it');
+  const platform = document.createElement('div');
+  platform.className = 'd4-dialog';
+  platform.style.zIndex = String(Overlay.nextDialogZ());
+  document.body.append(platform);
+  fire(document.body, 'keydown', {key: 'Escape'});
+  assert.equal(again.isOpen.value, true, 'a platform dialog opened above it does too');
+  platform.remove();
+  fire(document.body, 'keydown', {key: 'Escape'});
+  assert.equal(again.isOpen.value, false);
   scope.dispose();
 });

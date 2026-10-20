@@ -9,8 +9,10 @@ export {mulberry32, deriveWorkerSeeds} from './prng';
 export {applyBlqStrategy} from './blq';
 export {findCmax} from './cmax';
 export {lambdaZBestFit, lambdaZManual} from './lambda-z';
-export {estimateC0, insertC0, C0_DEFAULT_METHODS} from './c0';
-export type {C0Method, C0Options} from './c0';
+export {estimateC0, estimateC0Detailed, insertC0, C0_DEFAULT_METHODS} from './c0';
+export type {C0Options} from './c0';
+export {augmentProfile} from './augment';
+export type {AugmentedProfile} from './augment';
 export {
   halfLifeFromLambdaZ,
   clearance,

@@ -311,6 +311,7 @@ export class PackageFunctions {
     const df = treeHelper.newickToDf(newickString, file.fileName.slice(0, -4));
 
     const viewerRoot = ((await df.plot.fromType('PhylocanvasGL', {})) as DG.JsViewer).root;
+    viewerRoot.setAttribute('name', 'viewer-PhylocanvasGL');
     viewerRoot.style.setProperty('width', '100%', 'important');
     viewerRoot.style.setProperty('height', '100%', 'important');
 
@@ -321,6 +322,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'meta': {},
     'top-menu': 'Bio | Analyze | Hierarchical Clustering...',
+    'requiresSemType': 'Macromolecule',
     'name': 'Hierarchical Clustering (Sequences)',
     'description': 'Calculates hierarchical clustering on features and injects tree to grid'
     })
@@ -331,6 +333,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Analyze | Hierarchical Clustering...',
+    'requiresSemType': 'Molecule',
     'name': 'Hierarchical Clustering (Molecules)',
     'description': 'Calculates hierarchical clustering on features and injects tree to grid'
     })
@@ -341,6 +344,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Cluster | Hierarchical Clustering...',
+    'requiresTableView': true,
     'name': 'Hierarchical Clustering (All)',
     'description': 'Calculates hierarchical clustering on features and injects tree to grid'
     })

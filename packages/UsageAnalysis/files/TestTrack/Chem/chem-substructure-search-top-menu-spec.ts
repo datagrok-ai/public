@@ -116,11 +116,25 @@ async function cardQueryContains(page: Page, molBlock: string, smarts: string): 
   }, {mb: molBlock, q: smarts});
 }
 
+// The sketcher backend mounts lazily — Ketcher renders its toolbars ~9 s after the SMILES input
+// becomes visible, and every keystroke that lands before that is dropped, so the query is never
+// committed and the filter stays on the empty molecule.
+async function waitForSketcherBackend(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const d = Array.from(document.querySelectorAll('.d4-dialog'))
+      .find((x) => x.querySelector('input[placeholder*="SMILES" i]'));
+    if (!d) return false;
+    return (d.querySelector('.Ketcher-root')?.querySelectorAll('button').length ?? 0) > 5
+      || !!d.querySelector('canvas');
+  }, null, {timeout: 60_000});
+}
+
 async function typeQueryIntoOpenSketcher(
   page: Page, smiles: string, opts: {expectZero?: boolean} = {},
 ): Promise<number> {
   const input = page.locator(SMILES_INPUT).first();
   await input.waitFor({state: 'visible', timeout: 20_000});
+  await waitForSketcherBackend(page);
   const baseline = await readTrueCount(page);
   await input.click();
   await input.fill('');
@@ -137,7 +151,11 @@ async function typeQueryIntoOpenSketcher(
       return zero ? (c === 0 && settled) : (c !== base && settled);
     },
     {base: baseline, zero: opts.expectZero === true},
-    {timeout: 20_000, polling: 400},
+    // The first substructure query over the whole column builds the RDKit search library in the
+    // web workers; on a cold, loaded stand that lands well past the 20 s this used to allow
+    // (CI 401 timed out at 20 s and CI 423 at 90 s, while dev does the same step in 10 s). The
+    // test's own budget is 360 s, so the wait is what varies, never the assertion.
+    {timeout: 180_000, polling: 400},
   );
   return readTrueCount(page);
 }

@@ -179,7 +179,7 @@ int hclust_fast(int n, float* distmat, int method, int* merge, float* height) {
   }
   
   int* order = new int[n];
-  if (method == HCLUST_METHOD_MEDIAN) {
+  if (method == HCLUST_METHOD_MEDIAN || method == HCLUST_METHOD_CENTROID) {
     generate_R_dendrogram<true>(merge, height, order, Z2, n);
   } else {
     generate_R_dendrogram<false>(merge, height, order, Z2, n);

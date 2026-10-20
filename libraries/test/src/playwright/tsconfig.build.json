@@ -7,7 +7,8 @@
     "target": "es2020",
     "lib": [
       "es2022",
-      "dom"
+      "dom",
+      "dom.iterable"
     ],
     "strict": false,
     "noImplicitAny": false,

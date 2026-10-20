@@ -2,7 +2,12 @@
 Feature: Sequence Space
   Bio | Analyze | Sequence Space... reduces a sequence column to two embedding columns and docks a
   scatter plot over them; run with the defaults, then again with another method and metric — the
-  second run must be a second result, computed with what was edited.
+  second run must be a second result, computed with what was edited, clustered again.
+
+  The HELM and MSA runs of the manual cases are tested in Bio src/tests/sequence-space-test.ts
+  ('sequenceSpaceHelm', 'sequenceSpaceMsa'), the project save and reopen of the result
+  (bio-lifecycle-macromolecule-column S3, GROK-19928) in src/tests/projects-tests.ts
+  ('sequence_space').
 
   Background:
     Given user is logged in
@@ -49,6 +54,7 @@ Feature: Sequence Space
     Then the top menu command should have completed
     And a new column "Embed_X_2" should have been added
     And a new column "Embed_Y_2" should have been added
+    And a new column matching "^Cluster \(DBSCAN\)" should have been added
     And second scatter plot viewer should be visible
     And "X" property of second scatter plot viewer should be "Embed_X_2"
     And "Description" property of second scatter plot viewer should contain "method: t-SNE"

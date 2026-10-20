@@ -1,0 +1,11 @@
+id,smiles
+1,O=C(O)CNC(=O)OCC1c2ccccc2-c2ccccc21
+2,CC(NC(=O)OCC1c2ccccc2-c2ccccc21)C(=O)O
+3,CC(C)C(NC(=O)OCC1c2ccccc2-c2ccccc21)C(=O)O
+4,CC(C)CC(NC(=O)OCC1c2ccccc2-c2ccccc21)C(=O)O
+5,O=C(O)C(Cc1ccccc1)NC(=O)OCC1c2ccccc2-c2ccccc21
+6,NCC(=O)O
+7,CC(N)C(=O)O
+8,CC(C)C(N)C(=O)O
+9,NC(Cc1ccccc1)C(=O)O
+10,OC(=O)c1ccccc1

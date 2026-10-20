@@ -144,7 +144,7 @@ Key methods: `detectSeparator()`, `detectAlphabet()`, `getAlphabetSimilarity()`,
 
 | File | Class | Purpose |
 |---|---|---|
-| `web-logo-viewer.ts` | `WebLogoViewer` | Canvas-based sequence logo viewer (~1430 lines). Renders monomer frequency/composition per position. Modes: Entropy (information content height) and Full (equal height). Supports aggregation by column, horizontal range slider, tooltips, click-to-filter. Properties: sequenceColumnName, positionWidth, startPosition, endPosition, mode, etc. |
+| `web-logo-viewer.ts` | `WebLogoViewer` | Canvas-based sequence logo viewer (~1430 lines). Renders monomer frequency/composition per position. Modes: Entropy (information content height) and Full (equal height). Supports aggregation by column, horizontal range slider, tooltips, click-to-filter. Properties: sequenceColumnName, positionWidth, startPosition, endPosition, mode, etc. The `profile` property draws a profile supplied by another package instead of the column's composition: the first function with `meta.role: webLogoProfile`, `(table, column, profile) => WebLogoProfile` (`libraries/bio/src/viewers/web-logo.ts`), returns per-position monomer heights and optionally the column position aligned to each (for click-to-select); e.g. HMM's profile HMM logos. |
 | `vd-regions-viewer.ts` | `VdRegionsViewer` | Antibody V-domain regions viewer (~530 lines). Displays FR1-4, CDR1-3 regions for Heavy/Light chains in a grid, each cell containing a child WebLogo. Supports IMGT-style nomenclature, fit-to-width, chain/region filtering. |
 | `utils.ts` | — | Single helper: `isReallyChanged(a, b, eps)` |
 
@@ -167,7 +167,7 @@ Key methods: `detectSeparator()`, `detectAlphabet()`, `getAlphabetSimilarity()`,
 | `composition-analysis-widget.ts` | `getCompositionAnalysisWidget()` — monomer composition table with color-coded counts for a single cell value |
 | `representations.ts` | `getMacromoleculeColumnPropertyPanel()` — UI for renderer settings: font size, max monomer length, gap length, color coding scheme, reference sequence, multiline mode |
 | `to-atomic-level-widget.ts` | `toAtomicLevelSingle()` (seq→molfile), `toAtomicLevelWidget()` (2D molecule drawing), `molecular3DStructureWidget()` (3D NGL viewer) |
-| `sequence-scrolling-widget.ts` | `handleSequenceHeaderRendering()` — MSA column header with WebLogo + conservation tracks, viewport-aware lazy caching (50-position chunks), click to dock position statistics viewer |
+| `sequence-scrolling-widget.ts` | `handleSequenceHeaderRendering()` — MSA column header with WebLogo + conservation tracks, viewport-aware lazy caching (50-position chunks), click to dock position statistics viewer. Installs the headers of every long non-HELM, known-alphabet column of a grid in one synchronous pass (re-run on columns added/removed, semantic types detected, the grid's table changed) and repaints the grid after it; the ruler names positions by the column's `.positionNames`, so regions extracted from a numbered aligned column keep the scheme's numbering |
 | `monomer-info-widget.ts` | `getMonomerInfoWidget()` — info-panel widget for `Monomer` semtype cells; renders the monomer card with structure, library origin and R-group info |
 | `package-settings-editor-widget.ts` | `PackageSettingsEditorWidget` — Bio package global settings form |
 
@@ -217,6 +217,7 @@ To add a new alignment engine (in this or any other package):
 3. All **remaining parameters** are engine-specific configuration (method, gap penalties, etc.) and will be rendered automatically in the MSA dialog under "Alignment parameters".
 4. The function must **create and return** the aligned output column with appropriate metadata tags (`meta.units`, `semType`, `aligned`, `alphabet`, `separator`, etc.). Different engines can produce different output notations (e.g. PepSeA produces separator notation with `.` delimiter).
 5. The MSA dialog handles clustering and row selection — the engine function receives a single column to align.
+6. *Canonical sequences*: by default engines are offered only for non-canonical columns (HELM, separator with an unknown alphabet), which they receive as HELM. An engine with `meta.acceptsCanonical: 'true'` is also offered for canonical DNA/RNA/protein columns (next to Kalign, which stays the default) and receives them as FASTA (e.g. HMM's `alignToProfile`, hmmalign).
 
 Example (decorator style):
 ```typescript
@@ -240,7 +241,7 @@ See `pepseaMsa()` in `package.ts` and `alignWithPepsea()` in `pepsea.ts` for a c
 
 | File | Purpose |
 |---|---|
-| `utils/annotations/numbering-ui.ts` | `showNumberingSchemeDialog()` — generic dialog for applying antibody numbering. Discovers registered engines via `DG.Func.find({meta: {role: 'antibodyNumbering'}})`, reads the selected engine's `scheme` parameter `choices` to populate the scheme dropdown (updates when the engine changes), runs the chosen engine, and applies the result (regions/annotations + aligned column). |
+| `utils/annotations/numbering-ui.ts` | `showNumberingSchemeDialog()` — generic dialog for applying antibody numbering. Discovers registered engines via `DG.Func.find({meta: {role: 'antibodyNumbering'}})` (engines of other packages first, so an installed one is the default and the built-in immunum the fallback), reads the selected engine's `scheme` parameter `choices` to populate the scheme dropdown (updates when the engine changes), shows the engine's extra parameters as options, runs the chosen engine, and applies the result (regions/annotations + aligned column). |
 | `utils/antibody-numbering/number-antibody.ts` | `numberAntibodyColumn()` — built-in Bio engine. Runs immunum in a worker, builds the result DataFrame in the shape the dialog expects (`position_names`, `chain_type`, `annotations_json`, `numbering_detail`, `numbering_map`). |
 | `utils/antibody-numbering/immunum-client.ts` | Worker client: spawns a **fresh worker per call** and terminates it before returning so the WASM instance is freed. Request/response is one `MessageChannel` round-trip. |
 | `utils/antibody-numbering/immunum.worker.ts` | Worker entry — fetches `immunum_bg.wasm` from the dist/ directory (resolved via `self.location`), initializes the module, caches an `Annotator` per (scheme, chains) tuple for the lifetime of the worker, converts immunum's `Map<posCode, residue>` + `query_start` into the per-row result shape. |
@@ -251,7 +252,7 @@ See `pepseaMsa()` in `package.ts` and `alignWithPepsea()` in `pepsea.ts` for a c
 
 | File | Purpose |
 |---|---|
-| `annotation-manager.ts` | `AnnotationManager` — model layer. Owns the per-column annotation list, persists to/from the column's `.annotations` tag (JSON `SeqAnnotation[]`), exposes add/update/remove + change observable for UI re-renders |
+| `annotation-manager.ts` | Re-exports `@datagrok-libraries/bio/src/utils/macromolecule/annotation-manager` (moved to the library so other packages write annotations the same way): the per-column annotation list in the column's `.annotations` tag (JSON `SeqAnnotation[]`), per-row hits in the hidden companion column, add/remove/merge helpers |
 | `annotation-manager-ui.ts` | `showAnnotationManagerDialog()` — UI for viewing/editing the annotations on a macromolecule column (region, motif, liability entries) |
 | `annotation-actions.ts` | Toolbar/context-menu actions that hook annotation creation off cell selection or position ranges |
 | `liability-scanner.ts` | `scanLiabilitiesOnColumn()` — scans macromolecule sequences for sequence-liability motifs (deamidation, oxidation, glycosylation, etc.); records hits as `SeqAnnotation`s with `LiabilitySeverity` |
@@ -284,6 +285,7 @@ To add a new engine (in this package or any other):
 3. The returned DataFrame **must** have the 5 string columns listed above with exactly those names — the numbering-ui dialog reads them by name.
 4. `position_names` / `numbering_detail` / `numbering_map` must agree: every code in `position_names` must key `numbering_map` and have a matching entry in `numbering_detail`.
 5. `annotations_json` is a JSON-serialized array of region definitions with `start` / `end` as scheme position codes (strings like `"1"`, `"105"`), **not** char indices. Use `SCHEME_REGIONS` from `@datagrok-libraries/bio/src/utils/macromolecule/numbering-schemes` for the canonical boundaries.
+6. *Optional engine options*: any parameters after `scheme` (e.g. preferred species, a score threshold) are shown by the dialog under the scheme, built from their declarations (`choices`, `initialValue`, `caption`, `description`), and passed by name. Give each a default so callers that pass only `(df, seqCol, scheme)` keep working.
 
 Reference implementation: `immunumAntibodyNumbering()` in `package.ts` and `numberAntibodyColumn()` in `utils/antibody-numbering/number-antibody.ts`.
 
@@ -296,7 +298,7 @@ Existing engines:
 | File | Purpose |
 |---|---|
 | `numbering-ui.ts` | `showNumberingSchemeDialog()` — generic dialog that discovers `meta.role: 'antibodyNumbering'` engines, populates the scheme dropdown from the chosen engine's `scheme` param `choices`, runs the engine, and applies its result (annotations + aligned column). See "Adding a New Antibody Numbering Engine" |
-| `annotation-manager.ts` | `AnnotationManager` — owns the per-column `RowAnnotationData[]`, persists to a column tag, fires events when annotations change. Backbone for the `manageAnnotations` UI |
+| `annotation-manager.ts` | Re-export of the library's annotation storage helpers (per-row `RowAnnotationData` in the companion column). Backbone for the `manageAnnotations` UI |
 | `annotation-manager-ui.ts` | UI for `Bio | Annotate | Manage Annotations...` — table + buttons for creating / editing / removing per-row annotations |
 | `annotation-actions.ts` | Annotation actions registry — bulk operations (clear, copy from another column, etc.) and the right-click action set wired into the cell renderer |
 | `liability-scanner.ts` | Liability rules engine — scans macromolecule sequences for chemistry liabilities (deamidation `NG`, oxidation `M`, …) and emits `SeqAnnotationHit[]` keyed by `LiabilitySeverity` |
@@ -392,6 +394,12 @@ vocabulary). What the package exposes for them, and must keep:
   `monomer <M> at position <label>` (CSS px of the canvas, the last laid-out range); readings
   `positions shown`, `rows shown`, `rows selected`. `isRenderPending` is true from a render
   request to the paint; `onRendered` fires after every render pass.
+- The MSA header over a long sequence column (`MSAScrollingHeader`, installed by
+  `widgets/sequence-scrolling-widget.ts`) adds to the grid's status, while the header is on screen,
+  the readings `header tracks of <col>` (the tracks shown, top to bottom: `Conservation, WebLogo,
+  Annotations`) and `header positions of <col>` (the names on its ruler), and a
+  `position <name> of <col> header` hit area over each visible position's WebLogo stack. Positions
+  are named by the column's `.positionLabels` / `.positionNames` tags (1-based indices without them).
 - `SequenceSearchBaseViewer` (similarity and diversity search): `isRenderPending` while a render
   (the compute included) is on its way, `onRendered` after each; readings `source column` and
   `limit`, plus `target row` / `neighbours` / `neighbour set` (similarity: the neighbour rows as
@@ -439,6 +447,7 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | `msa-tests.ts` | Multiple sequence alignment |
 | `pepsea-tests.ts` | PepSeA Docker MSA |
 | `antibody-numbering-tests.ts` | Immunum antibody numbering worker + DataFrame shape (IMGT/Kabat, heavy/light, empty-input handling) |
+| `liability-scanner-tests.ts` | Scan Liabilities rules: hits and their positions, the annotation and summary count columns |
 | `to-atomic-level-tests.ts` | Sequence → molfile conversion |
 | `to-atomic-level-ui-tests.ts` | Atomic level UI widgets |
 | `activity-cliffs-tests.ts` | Activity cliff detection |

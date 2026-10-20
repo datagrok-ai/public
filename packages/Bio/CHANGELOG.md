@@ -2,6 +2,43 @@
 
 ## v.next
 
+* [core#880](https://github.com/datagrok-ai/core/issues/880): Save as FASTA: Fixed an error when clicking OK with no sequence column selected
+* Manage Monomers: Replaced the editor's tabs with one layout: the sketcher first, taking the height the fields leave down to a floor; the fields scrolling on their own — the symbol, name and types two to a row (one to a row in a narrow dock), the R groups as small chips that wrap (a click opens a menu of the 15 common caps, each with its friendly name and SMILES and the current one checked, so changing a cap takes two clicks; Edit definition opens the fields a library stores under the chips), and Details (natural analog, ID, colors, properties); and, pinned at the bottom, Save, a line saying where it saves or why it cannot yet, and the Details toggle with the colors as dots and the property count. Details opens above its toggle. Every field keeps its underline, as wide as the others in its column, with its caption right-aligned beside it as in every platform form; nothing clipped in a narrow dock
+* Manage Monomers: The editor follows the grid's current row until the user changes the monomer or starts a new one, and again after a save; a saved monomer becomes the grid's current row again; saving over a symbol or a structure the library has asks first, the loaded monomer included
+* Manage Monomers: Aligned the whole editor on one label column; captions drop the editor's own word (Library, Symbol, Name, Polymer, Type, Analog, ID); Save's tooltip names the field ("Name: Value can't be empty")
+* Monomer Collections: Rebuilt the view with u2: search, New Collection and Refresh in the ribbon, the count in the status bar, cards that show up to 24 monomers and say how many more, Edit and Delete disabled with the reason for collections of other authors, and one set of dialogs (New, Edit, Delete, Duplicate, Merge) shared with the context panel; OK says why it is disabled
+* Manage Monomers: Rebuilt the monomer editor with u2: each R group is a choice of the 15 common cap groups (H, OH, Allyl, Br, Cl, Alkyne, Azide, I, F, NH2, Me, Ac, OMe, SH, Et) read from the library definition however it is written; Save says why it is disabled; dialogs offer CANCEL
+* Manage Monomers: Fixed the copilot's monomer details leaving out the cap SMILES of every library monomer
+* Manage Monomers: Fixed Fix All turning every nested meta value (monomer colors included) into text; it now says how many monomers it fixed
+* Manage Monomers: The editor fits narrow screens (captions go above inputs), and Save/Add follows the chosen polymer type
+* Manage Monomers: The CSV export's Capped Molecule, the monomer details and the natural-analog suggestion close each R group with its actual cap (OMe, Ac, Azide, ...), not its name in brackets, which was no molecule
+* Manage Monomers: Switching or creating a library clears the editor, a new library name gets its .json, meta values keep their types on save, the editor shows the colors the grid draws and writes them only when changed, and a closed editor panel comes back with Add or Edit
+* [public#4226](https://github.com/datagrok-ai/public/issues/4226): Menu: Similarity Search, Diversity Search, Composition, Convert Sequence Notation, Compare sequences, MSA, Apply Numbering Scheme, Manage Annotations, Scan Liabilities and Subsequence Search are disabled until the current table has a macromolecule column, and Activity Cliffs, Sequence Space and Extract Region unless the current view is such a table, instead of failing or warning
+* Manage Monomers: Fixed an error logged when the monomer table reloads within half a second of a save (the scroll to the saved monomer ran on the replaced table)
+* WebLogo: Counts each sequence once per render instead of once per position, and averages, sums, minima and maxima of the value column directly (100,000 sequences: 3.5 s to open and 11.5 s with a value column before)
+* Apply Numbering Scheme: Applies results row by row without keeping every row's parsed map and cells, and writes per-row annotations with one change event (100,000 rows crashed the tab); the same single event for Scan Liabilities
+* Apply Numbering Scheme, MSA: An engine's description shows its first sentence, the rest in the tooltip
+* WebLogo: Fixed the position width becoming infinite when the viewer first renders with no positions (data still loading), which left the slider collapsed at 0 until dragged; a saved infinite or zero width falls back to the default
+* MSA: A long engine description wraps instead of widening the dialog
+* Apply Numbering Scheme: An engine from another package (e.g. HMM's ANARCI) is the default when installed; the built-in immunum stays available as the fallback
+* Apply Numbering Scheme: Fixed an engine with options (HMM's ANARCI) offering only IMGT when the dialog was opened again
+* WebLogo: Added the Profile property: draws a sequence profile supplied by another package (functions with `meta.role: webLogoProfile`, e.g. HMM's profile HMM logos) with the viewer's own layout, scrolling and colors; when the column is aligned to the profile, clicking a letter selects the rows that have it there (in `@datagrok-libraries/bio`)
+* Annotations: Moved the annotation storage helpers (`annotation-manager.ts`) to `@datagrok-libraries/bio` so other packages write annotations the same way; Bio re-exports them
+* Tests: The BDD features no longer repeat what the package tests cover (project round trips, notation permutations, renderer checks); the MSA dialog's engine switch on a HELM column is claimed again (it contacts no container)
+* Demo: Fixed Similarity, Diversity clustering the next demo's table ("Could not resolve column sequence") when that one opened within a second
+* GROK-21049: Activity Cliffs: Fixed the "Column already exists" error when run alongside another embedding analysis
+* Demo: Fixed Similarity, Diversity returning before its layout was applied, which then landed on whatever view was open next
+* Tests: Added package tests for Scan Liabilities (rule hits and positions, the annotation and count columns), Similarity against another row and a shorter or longer reference (GROK-20963), Sequence Space and Activity Cliffs on HELM and MSA, an antibody numbering's project round trip and an MSA column of multi-letter monomers converted to HELM; the BDD features keep the dialogs and leave these numbers to the tests, and the project round-trip tests delete their projects
+
+## 2.28.4 (2026-09-29)
+
+* MSA header: Numbered positions by the column's position names on the ruler and in the WebLogo tooltip, so a region extracted from a numbered aligned column (Extract Region, or Extract CDR3 from the cell menu) keeps the scheme's numbering, e.g. CDR3 from 105 instead of 1 (in `@datagrok-libraries/bio`)
+* MSA header: Fixed long columns sometimes left without the header: it now repaints once installed, shows on a column wider than the view, and a new column no longer shrinks the shared header height; a scrolled-away header no longer blocks clicks on other columns' headers (in `@datagrok-libraries/bio`)
+* Tests: Added `render/msa-header.feature` — both chains get the header, and CDR3 extracted either way is ruled from 105; the header reports its tracks, ruler names and positions through the grid's status
+
+* Manage Monomer Libraries: Deleting a library removes its file first, so its row leaves the list as soon as the file is gone instead of after a settings save and a reload of every library
+* Similarity scoring: Fixed blank scores for sequences whose length differs from the reference's; the score covers the reference's positions, as identity does (in `@datagrok-libraries/bio`)
+* Tests: BDD suite closed its gaps against the TestTrack cases and the old Playwright specs: HELM and MSA runs of Analyze and Convert, the empty current row (GROK-16111), Molecules to HELM, the FASTA file handler and exporter, project round-trips, monomer library CRUD, BILN rendering; every feature states what it does not translate
 * Fixed sequence and monomer context panels staying on the previous cell when a grid cell is clicked within two seconds of expanding a section (core grid fix).
 * Tests: Atomic-level conversion selects the standard HELM library so custom monomers on the stand cannot change the fixture's chemistry, and restores the previous selection afterwards.
 * Tests: Monomer library uploads support stands with only Files storage as well as stands with multiple storage providers.

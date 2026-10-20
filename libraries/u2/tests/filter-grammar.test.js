@@ -73,6 +73,24 @@ for (const entry of corpus.entries) {
   });
 }
 
+/* The corpus' second half, through u2's own evaluator: every `matches` entry but `under` (which needs a
+   store to walk, and runs over the memory backend in EMS's `filter-corpus.test.js`) masked over the
+   fixture rows, so a change to the evaluator is red here and not only in a dependent's suite. */
+const PROPERTY_TYPE = {string: 'string', int: 'int', float: 'double', bool: 'bool', datetime: 'datetime', ref: 'string'};
+const fixtureRows = corpus.fixture.rows.map(({parent, ...values}) => ({id: values.code, ...values,
+  ...(parent === undefined ? {} : {parent_id: parent})}));
+const fixtureFrame = Filters.recordsFrame(fixtureRows, [{name: 'id', propertyType: 'string'},
+  ...Object.entries(corpus.fixture.columns).map(([name, c]) => ({name, propertyType: PROPERTY_TYPE[c.type]}))]);
+
+for (const entry of corpus.entries.filter((e) => e.matches !== undefined && !/\bunder\b/.test(e.input))) {
+  test(`corpus ${entry.id}: the evaluator selects ${JSON.stringify(entry.matches)}`, async () => {
+    const {root, problems} = Filters.parse(entry.input);
+    assert.deepEqual(problems, []);
+    const mask = await Filters.toMask(fixtureFrame, root);
+    assert.deepEqual(fixtureRows.filter((_, i) => mask.get(i)).map((r) => r.code).sort(), entry.matches);
+  });
+}
+
 test('parseTree: blank text is the empty tree, a syntax problem carries the farthest position', () => {
   assert.deepEqual(Filters.parseTree(''), {tree: [], errors: []});
   assert.deepEqual(Filters.parseTree('  \t '), {tree: [], errors: []});
@@ -224,4 +242,42 @@ test('completionContext: connector after a value, a tag or ")"', () => {
   assert.equal(ctx('age > 5 not na|').prefix, 'na');
   assert.equal(ctx('age > 5 not hidden |').expect, 'connector');
   assert.equal(Filters.completionContext('name = 1 not ', 13, schema).expect, 'property');
+});
+
+test('under: the hierarchy subtree term, its refusals and its canonical string', () => {
+  const tree = (text) => Filters.parseTree(text).tree;
+  const root = '9d1c1e8a-0000-4000-8000-000000000001';
+  assert.deepEqual(tree(`location_id under "${root}"`),
+    [{property: 'location_id', operator: 'under', value: root}]);
+  assert.deepEqual(tree('id under $root'), [{property: 'id', operator: 'under', value: {$param: 'root'}}]);
+  assert.deepEqual(tree(`a = 1 and location_id under "${root}"`),
+    [{property: 'a', operator: '=', value: 1}, 'and',
+      {property: 'location_id', operator: 'under', value: root}]);
+  for (const text of ['location_id under parent_id', `location_id under ("${root}")`, 'location_id under'])
+    assert.equal(Filters.parseTree(text).errors.length, 1, text);
+  assert.equal(canonicalOf(`location_id under "${root}"`), `location_id under "${root}"`);
+  assert.equal(ctx('location_id un|').expect, 'operator', 'under completes as an operator');
+  assert.equal(ctx('name under |').expect, 'value');
+});
+
+test('column references and $params: the two phase-2 terms, their refusals and canonical strings', () => {
+  const tree = (text) => Filters.parseTree(text).tree;
+  assert.deepEqual(tree('end_date >= start_date'), [{property: 'end_date', operator: '>=', value: {$column: 'start_date'}}]);
+  assert.deepEqual(tree('a = b'), [{property: 'a', operator: '=', value: {$column: 'b'}}]);
+  assert.deepEqual(tree('country_id = $country_id'), [{property: 'country_id', operator: '=', value: {$param: 'country_id'}}]);
+  assert.deepEqual(tree('x in ($a, 5)'), [{property: 'x', operator: '=', value: [{$param: 'a'}, 5]}]);
+  assert.deepEqual(tree('name like $q'), [{property: 'name', operator: 'like', value: {$param: 'q'}}], 'kept for the binder');
+  assert.deepEqual(tree('name starts $q'), [{property: 'name', operator: 'like', value: {$param: 'q'}}]);
+  assert.deepEqual(tree('x between $lo and $hi'),
+    [[{property: 'x', operator: '>=', value: {$param: 'lo'}}, 'and', {property: 'x', operator: '<=', value: {$param: 'hi'}}]]);
+  assert.deepEqual(tree('a = true'), [{property: 'a', operator: '=', value: true}], 'a literal is never a column');
+  for (const [text, message] of [['a like b', 'Expected a value'], ['a = b.c', 'Expected a value'],
+    ['a = b(', 'Expected a value'], ['x = $', 'Expected a parameter name'], ['x = $1', 'Expected a parameter name']]) {
+    const {errors} = Filters.parseTree(text);
+    assert.equal(errors.length, 1, text);
+    assert.equal(errors[0].message, message, text);
+  }
+  assert.deepEqual(Filters.parseTree('x = $').errors[0].position, {start: 5, end: 5});
+  for (const canonical of ['end_date >= start_date', 'country_id = $country_id', 'x in ($a, 5)', 'name like $q'])
+    assert.equal(canonicalOf(canonical), canonical);
 });

@@ -183,3 +183,13 @@ plot.meta.formulaLines.addLine({
   color: '#ff0000',
   width: 10
 });
+
+/**
+ * The tokens X and Y mean "whatever column is on that axis", so the line follows the axes.
+ */
+plot.meta.formulaLines.addLine({
+  title: 'Y = X + 25',
+  formula: 'Y = X + 25',
+  color: '#0000ff',
+  width: 2
+});

@@ -378,6 +378,21 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     }
   });
 
+  // GROK-15176: a heavy atom flagged MASS=1 makes a downstream standardizer reject the molfile
+  test('singleSeqNoIsotopeFlag', async () => {
+    const results: [string, string][] = [
+      ['toAtomicLevelSingleSeq', await grok.functions.call('Bio:toAtomicLevelSingleSeq', {sequence: 'ACDEFGHIK'})],
+      ['seq2atomic', await grok.functions.call('Bio:seq2atomic',
+        {seq: 'PEPTIDE1{A.C.D.E.F.G.H.I.K}$$$$V2.0', nonlinear: true})],
+    ];
+    for (const [name, molfile] of results) {
+      expect(molfile.includes('V3000') && molfile.includes('M  V30 BEGIN CTAB'), true, `${name}: not a V3000 molfile`);
+      const flagged = molfile.split('\n')
+        .filter((l) => /^M {2}V30 \d+ [A-Za-z]+ /.test(l) && / MASS=1\b/.test(l) && !/^M {2}V30 \d+ [HD] /.test(l));
+      expect(flagged.length, 0, `${name}: heavy atoms with MASS=1: ${flagged.join('; ')}`);
+    }
+  });
+
   async function _testToAtomicLevel(
     df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper
   ): Promise<DG.Column | null> {

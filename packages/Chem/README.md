@@ -40,7 +40,7 @@ The following features are still in the core, but we plan to move them out to th
 
 ## Sketcher
 
-Supports multiple sketchers (MarvinJS, OpenChemLib, Ketcher).
+Supports multiple sketchers (MarvinJS, OpenChemLib, Ketcher, Crux).
 
 You can set the default Sketcher in the package property so that new users won't have to switch on the first use manually:
 
@@ -49,7 +49,7 @@ You can set the default Sketcher in the package property so that new users won't
 3. Go to the **Context Pane > Settings**.
 4. Set **Sketcher** to the desired default sketcher.
 
-![default sketcher](../../help/uploads/gifs/default-sketcher.gif)
+![default sketcher](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/gifs/default-sketcher.gif)
 
 ## Favorite and recent structures
 
@@ -86,7 +86,7 @@ where d.chembl_id = @id
 
 ![molecule queries](help/molecule-queries.gif)
 
-A molecule query does not have to be a database query, any [function](../../help/datagrok/concepts/functions/functions.md)
+A molecule query does not have to be a database query, any [function](https://datagrok.ai/help/datagrok/concepts/functions)
 will do. For instance, InChi query is implemented as a Python script.
 
 ## Elemental analysis

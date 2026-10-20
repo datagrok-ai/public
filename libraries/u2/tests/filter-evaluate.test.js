@@ -39,9 +39,15 @@ const bigs = column('big', TYPE.BIG_INT, new Int32Array(0),
   {length: 5, get: (i) => [12345678901234567890n, null, 5n, -1n, 7n][i]});
 const lists = column('tags', TYPE.LIST, new Int32Array(0),
   {length: 5, get: (i) => [['Aspirin', 'nsaid'], null, [], ['Ibuprofen'], ['x', 'ASP']][i]});
+const ints2 = column('m', TYPE.INT, Int32Array.from([1, 6, 3, INT_NULL, -3]));
+const dates2 = column('e', TYPE.DATE_TIME, Float64Array.from([
+  micros('2026-09-01T00:00:00Z'), micros('2026-09-02T00:00:00Z'), micros('2026-09-03T00:00:00Z'), FLOAT_NULL,
+  micros('2026-01-01T00:00:00Z')]));
+const strings2 = column('t', TYPE.STRING, Int32Array.from([0, 1, 2, 3, 3]), {categories: ['Aspirin', 'Ibuprofen', 'x', '']});
 const frame = {
   rowCount: 5,
-  column: (name) => [ints, floats32, floats64, dates, bools, strings, bigs, lists].find((c) => c.name === name) ?? null,
+  column: (name) => [ints, floats32, floats64, dates, bools, strings, bigs, lists, ints2, dates2, strings2]
+    .find((c) => c.name === name) ?? null,
 };
 
 async function rows(nodes, options = {}) {
@@ -214,6 +220,35 @@ test('bitset operators run async between sync ones and see the column and the si
   }
 });
 
+test('column vs column: the six comparators row-wise, a null on either side never passes, dates by time', async () => {
+  const against = (property, operator, column) => one(property, operator, {column});
+  assert.deepEqual(await against('n', '=', 'm'), [0, 4]);
+  assert.deepEqual(await against('n', '!=', 'm'), [1]);
+  assert.deepEqual(await against('n', '<', 'm'), [1]);
+  assert.deepEqual(await against('n', '<=', 'm'), [0, 1, 4]);
+  assert.deepEqual(await against('n', '>', 'm'), []);
+  assert.deepEqual(await against('n', '>=', 'm'), [0, 4], 'row 2 (n null) and row 3 (m null) never pass');
+  assert.deepEqual(await against('d', '>', 'e'), [1]);
+  assert.deepEqual(await against('d', '<=', 'e'), [0, 4]);
+  assert.deepEqual(await against('s', '=', 't'), [0], 'strings by their text, exact');
+  assert.deepEqual(await against('s', '!=', 't'), [1], '"" is null on either side');
+  assert.deepEqual(await against('n', '<', 'f'), [4], 'int against float');
+  assert.deepEqual(await rows([Filters.cond('n', '=', {column: 'm'}), Filters.cond('b', '=', true)]), [0]);
+  await assert.rejects(one('n', '=', {column: 'nope'}), (e) => e instanceof FilterError &&
+    e.problems[0].code === 'unknown-property' && /Unknown column "nope"/.test(e.message));
+  await assert.rejects(one('s', 'like', {column: 't'}), (e) => e instanceof FilterError && /does not accept a column/.test(e.message));
+});
+
+test('an unbound $param throws not-expressible naming it; bound through Filters.bind it evaluates', async () => {
+  await assert.rejects(one('n', '=', {param: 'x'}), (e) => e instanceof FilterError &&
+    e.problems[0].code === 'not-expressible' && e.message === 'Unbound parameter "$x"');
+  await assert.rejects(one('n', 'in', [1, {param: 'x'}]), /Unbound parameter "\$x"/);
+  const root = Filters.group('and', [Filters.cond('n', '>', {param: 'lo'}), Filters.cond('s', 'like', {param: 'q'})]);
+  const bound = Filters.bind(root, {lo: 4, q: 'asp'});
+  assert.deepEqual(Array.from((await Filters.toMask(frame, bound, {now: NOW})).getSelectedIndexes()), [3]);
+  assert.deepEqual(root.nodes[0].value, {param: 'lo'}, 'bind copies');
+});
+
 test('errors: an unknown column and an operator without a DataFrame form throw FilterError with the node id', async () => {
   Filters.resetIds('');
   await assert.rejects(rows([Filters.cond('nope', '=', 1)]), (e) => e instanceof FilterError &&
@@ -264,4 +299,38 @@ test('abort: an aborted signal rejects before the first leaf and between leaves'
   } finally {
     off();
   }
+});
+
+/* `toCheckMask` — the SQL CHECK reading of the same tree: a comparison against a null cell is
+   UNKNOWN, and/or/not are Kleene's, and a row is refused only where the tree is FALSE
+   (`domain_manifest_rules.dart`). The corpus: `a` = -1, 1, NULL; `b` is NULL throughout. */
+const checkFrame = {
+  rowCount: 3,
+  column: (name) => ({
+    a: column('a', TYPE.INT, Int32Array.from([-1, 1, INT_NULL])),
+    b: column('b', TYPE.INT, Int32Array.from([INT_NULL, INT_NULL, INT_NULL])),
+  })[name] ?? null,
+};
+
+const admits = async (query) => Array.from((await Filters.toCheckMask(checkFrame,
+  Filters.parse(query).root)).getSelectedIndexes());
+const passes = async (query) => Array.from((await Filters.toMask(checkFrame,
+  Filters.parse(query).root)).getSelectedIndexes());
+
+test('check: a comparison against a null cell is unknown, and unknown is admitted', async () => {
+  assert.deepEqual(await admits('a > 0'), [1, 2], 'false refuses, unknown does not');
+  assert.deepEqual(await passes('a > 0'), [1], 'a WHERE keeps the two-valued reading');
+  assert.deepEqual(await admits('b > 0'), [0, 1, 2], 'every cell null: nothing is refused');
+});
+
+test('check: and/or/not are Kleene\'s — false and unknown is false', async () => {
+  assert.deepEqual(await admits('a > 0 and b > 0'), [1, 2],
+    'a = -1 with b empty is FALSE, as Postgres refuses it');
+  assert.deepEqual(await admits('a > 0 or b > 0'), [0, 1, 2], 'false or unknown is unknown');
+  // a group's own `not`: the grammar pushes a negated comparison into its operator instead
+  const negated = Filters.group('and', [Filters.cond('a', '>', 0)], {not: true});
+  assert.deepEqual(Array.from((await Filters.toCheckMask(checkFrame, negated)).getSelectedIndexes()), [0, 2],
+    'not unknown is unknown; not true is false');
+  assert.deepEqual(await admits('b = null and a > 0'), [1, 2], 'a null test is never unknown');
+  assert.deepEqual(await admits('b != null and a > 0'), [], 'and it can be plainly false');
 });

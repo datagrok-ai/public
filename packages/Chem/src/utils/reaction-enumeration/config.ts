@@ -12,12 +12,18 @@ export interface ProductsSpecs {
   max_num_metals: number;
   max_num_halogens: number;
   max_num_aromatic_atoms: number;
+  max_num_aromatic_rings: number;
   max_num_unsaturated_nonaromatic_bonds: number;
   only_these_atoms_allowed: string[];
   remove_radicals: boolean;
   remove_isotope_information: boolean;
   remove_charged_species: boolean;
 }
+
+export const AGGREGATIONS = ['sum', 'multiply', 'avg', 'min', 'max'] as const;
+export type Aggregation = typeof AGGREGATIONS[number];
+/** Column name → its aggregations over the route, one result column each; [] keeps the per-step columns only. */
+export type PropagatedColumns = Record<string, Aggregation[]>;
 
 // No file-path fields: the app never auto-loads a file from config, so a persisted name could only
 // go stale and mislead.
@@ -27,8 +33,13 @@ export interface EnumerationSpecs {
   bb_smiles_column: string;
   reagent_smiles_column: string;
   reaction_name_col: string;
+  template_propagated_columns: PropagatedColumns;
+  bb_propagated_columns: PropagatedColumns;
+  reagent_propagated_columns: PropagatedColumns;
   depth_first: boolean;
   num_rounds: number;
+  apply_until_fails: boolean;
+  max_cycles: number;
 }
 
 export interface EnumeratorConfig {
@@ -36,15 +47,17 @@ export interface EnumeratorConfig {
   max_num_components: number;
   max_num_routes_per_compound: number;
   max_num_combinations_per_template: number;
+  max_num_products_per_step: number;
   products_specs: ProductsSpecs;
   enumeration: EnumerationSpecs;
 }
 
 export const DEFAULT_CONFIG: EnumeratorConfig = {
   keep_building_blocks_in_final_output: false,
-  max_num_components: 4,
+  max_num_components: -1,
   max_num_routes_per_compound: -1,
   max_num_combinations_per_template: -1,
+  max_num_products_per_step: -1,
   products_specs: {
     exclusion_smarts_products_file_smarts_col: 'SMARTS',
     max_num_heavy_atoms: -1,
@@ -57,6 +70,7 @@ export const DEFAULT_CONFIG: EnumeratorConfig = {
     max_num_metals: 0,
     max_num_halogens: -1,
     max_num_aromatic_atoms: -1,
+    max_num_aromatic_rings: -1,
     max_num_unsaturated_nonaromatic_bonds: 5,
     only_these_atoms_allowed: ['C', 'H', 'O', 'N', 'S', 'P'],
     remove_radicals: true,
@@ -69,8 +83,13 @@ export const DEFAULT_CONFIG: EnumeratorConfig = {
     bb_smiles_column: 'SMILES',
     reagent_smiles_column: 'SMILES',
     reaction_name_col: 'reaction_name',
+    template_propagated_columns: {},
+    bb_propagated_columns: {},
+    reagent_propagated_columns: {},
     depth_first: true,
     num_rounds: 2,
+    apply_until_fails: false,
+    max_cycles: 5,
   },
 };
 
@@ -96,13 +115,29 @@ function validateShape(partial: any, defaults: any, path: string, errors: string
         errors.push(`'${path}${k}' must be a list of strings.`);
     } else if (typeof expected === 'object') {
       // An array or primitive here would otherwise recurse as if it were the section's object,
-      // validating nothing, or throw a raw TypeError instead of this function's own message.
-      if (actual != null && (typeof actual !== 'object' || Array.isArray(actual)))
+      // validating nothing, or throw a raw TypeError instead of this function's own message. A null
+      // top-level section reads as empty, but a null map inside a section would replace its default.
+      const wrongType = actual != null && (typeof actual !== 'object' || Array.isArray(actual));
+      if (wrongType || (actual === null && path !== ''))
         errors.push(`'${path}${k}' must be an object.`);
       else
         validateShape(actual ?? {}, expected, `${path}${k}.`, errors);
     } else if (typeof actual !== typeof expected || (typeof expected === 'number' && !Number.isFinite(actual)))
       errors.push(`'${path}${k}' must be a ${typeof expected}.`);
+  }
+}
+
+/** validateShape checks these maps against their empty defaults, so it never reaches their entries. */
+function validatePropagatedColumns(en: {[key: string]: unknown} | undefined, errors: string[]): void {
+  for (const key of ['template_propagated_columns', 'bb_propagated_columns', 'reagent_propagated_columns']) {
+    const map = en?.[key];
+    if (!map || typeof map !== 'object' || Array.isArray(map)) continue;
+    for (const [col, aggs] of Object.entries(map)) {
+      if (!Array.isArray(aggs) || !aggs.every((a) => (AGGREGATIONS as readonly unknown[]).includes(a))) {
+        errors.push(`'enumeration.${key}.${col}' must be a list drawn from ${AGGREGATIONS.join(', ')} ` +
+          '(an empty list for none).');
+      }
+    }
   }
 }
 
@@ -114,6 +149,7 @@ export function configFromYaml(text: string): EnumeratorConfig {
     throw new Error('YAML did not parse to an object.');
   const errors: string[] = [];
   validateShape(raw, DEFAULT_CONFIG, '', errors);
+  validatePropagatedColumns((raw as {enumeration?: {[key: string]: unknown}}).enumeration, errors);
   if (errors.length > 0) throw new Error(`Invalid config: ${errors.join('; ')}`);
   return mergeWithDefaults(raw as Partial<EnumeratorConfig>);
 }

@@ -2,9 +2,9 @@
 sub_features_covered: [sequencetranslator.detectors.context-menu-macromolecule, sequencetranslator.oligo-renderer.cell-editor, sequencetranslator.oligo-renderer.cell-renderer, sequencetranslator.oligo-renderer.convert-helm-to-oligo, sequencetranslator.oligo-renderer.copy-as-helm, sequencetranslator.oligo-renderer.copy-as-image, sequencetranslator.oligo-renderer.oligo-panel, sequencetranslator.oligo-renderer.open-helm-editor, sequencetranslator.oligo-renderer.structures-panel, sequencetranslator.polytool.combine-sequences-top-menu, sequencetranslator.polytool.convert-top-menu, sequencetranslator.polytool.enumerate-helm-top-menu]
 --- */
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {loginToDatagrok, clipboardTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
-test.use(specTestOptions);
+test.use(clipboardTestOptions);
 
 const SIRNA_PATH = 'System:AppData/SequenceTranslator/samples/sirna-demo.csv';
 const CYCLIZED_PATH = 'System:AppData/SequenceTranslator/samples/cyclized.csv';

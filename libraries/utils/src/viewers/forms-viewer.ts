@@ -47,6 +47,7 @@ export class FormsViewer extends DG.JsViewer {
   columnHeadersDiv: HTMLDivElement;
   virtualView: DG.VirtualView;
   columnLabelWidth: number = 0;
+  cardSize: DG.Point | null = null;
   currentRowIndicator = ui.div('', 'd4-multi-form-form-indicator d4-multi-form-form-indicator-current-row');
   mouseOverRowIndicator = ui.div('', 'd4-multi-form-form-indicator d4-multi-form-form-indicator-mouse-over-row');
   splitColLeft: HTMLElement;
@@ -154,6 +155,11 @@ export class FormsViewer extends DG.JsViewer {
     ui.tooltip.bind(this.mouseOverRowIndicator, 'Mouse over row');
 
     this.root.addEventListener('contextmenu', () => this.contextMenuRowIdx = -1, true);
+    // a card re-rendered under the pointer goes without its mouseleave, so leaving the viewer clears the row
+    this.root.addEventListener('mouseleave', () => {
+      if (this.dataFrame && this.dataFrame.mouseOverRowIdx >= 0)
+        this.dataFrame.mouseOverRowIdx = -1;
+    });
 
     ui.tools.waitForElementInDom(this.root).then((_) => {
       this.columnHeadersDiv.style.setProperty('overflow', 'hidden', 'important');
@@ -323,6 +329,7 @@ export class FormsViewer extends DG.JsViewer {
     const form = this.renderForm(0, true);
     form.classList.add('temp');
     document.body.appendChild(form);
+    this.cardSize = new DG.Point(form.offsetWidth, form.offsetHeight);
 
     for (const name of this.fieldsColumnNames) {
       const formField = form.querySelector('[column="' + name + '"]') as HTMLInputElement;
@@ -496,6 +503,14 @@ export class FormsViewer extends DG.JsViewer {
       form.append(this.mouseOverRowIndicator);
     if (this.showCurrentRow && savedIdx === this.currentRowPos)
       form.append(this.currentRowIndicator);
+    // the virtual view sizes its layout by its first item, so a card for no row keeps a real card's size
+    if (row === -1) {
+      if (this.cardSize) {
+        form.style.minWidth = `${this.cardSize.x}px`;
+        form.style.minHeight = `${this.cardSize.y}px`;
+      }
+      return form;
+    }
     if (pinned) {
       const pinnedRowIndicator = ui.div('', 'd4-multi-form-form-indicator');
       pinnedRowIndicator.style.backgroundColor = DG.Color.toHtml(DG.Color.scatterPlotMarker);
@@ -554,6 +569,8 @@ export class FormsViewer extends DG.JsViewer {
   }
 
   render() {
+    if (this.dataFrame == null)
+      return;
     const grid = this.getGrid();
 
     if (this.pinnedRowIndexes.some((i) => i >= this.dataFrame.rowCount))

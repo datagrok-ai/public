@@ -222,6 +222,34 @@ category('MolstarViewer', () => {
     await delay(DebounceIntervals.currentRow * 2.5);
   }, {timeout: 70000});
 
+  test('auto-columns', async () => {
+    const pdbDf = await _package.files.readCsv('pdb_data.csv');
+    const pdbView = grok.shell.addTableView(pdbDf);
+    await awaitGrid(pdbView.grid);
+    const pdbViewer = (await pdbDf.plot.fromType('Biostructure')) as unknown as MolstarViewer;
+    pdbView.dockManager.dock(pdbViewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
+    await Promise.all([awaitGrid(pdbView.grid), pdbViewer.awaitRendered(15000)]);
+    expect(pdbViewer.biostructureIdColumnName, 'pdb');
+    expect(pdbViewer.ligandColumnName, null, 'the structure column is not its own ligand');
+
+    const sdfCnt: Uint8Array = await _package.files.readAsBytes('samples/1bdq-obs-pred.sdf');
+    const df: DG.DataFrame = (await grok.functions.call('Chem:importSdf', {bytes: sdfCnt}))[0];
+    const view = grok.shell.addTableView(df);
+    await awaitGrid(view.grid);
+    const viewer = (await df.plot.fromType('Biostructure')) as unknown as MolstarViewer;
+    view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
+    await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
+    expect(viewer.biostructureIdColumnName, null);
+    expect(viewer.ligandColumnName, 'molecule');
+
+    const pdbData: BiostructureData = {binary: true, ext: 'pdb',
+      data: await _package.files.readAsBytes('samples/1bdq-wo-ligands.pdb')};
+    viewer.setOptions({[msvPROPS.dataJson]: BiostructureDataJson.fromData(pdbData)});
+    await awaitCheck(() => viewer.root.querySelector('.msp-plugin') != null,
+      'the structure chosen for a viewer with a ligand column is not shown', 15000);
+    await viewer.awaitRendered(15000);
+  }, {timeout: 60000});
+
   test('open_file_shares', async () => {
     const waitForElement = async (selector: string, errorMsg: string, timeout = 2000) => {
       await awaitCheck(() => !!viewer.root.querySelector(selector), errorMsg, timeout);
@@ -241,7 +269,7 @@ category('MolstarViewer', () => {
       return node as HTMLElement;
     };
 
-    const df = await _package.files.readCsv('pdb_data.csv');
+    const df = grok.data.demo.demog(20);
     const view = grok.shell.addTableView(df);
     await awaitGrid(view.grid);
 

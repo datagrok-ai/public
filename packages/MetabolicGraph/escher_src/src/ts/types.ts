@@ -195,10 +195,15 @@ export interface SettingsType {
   runFBA?: () => Promise<void>
 }
 
+/** Histogram of one reaction's sampled fluxes: `counts` split [min, max] into equal-width bins. */
+export type FluxHistogram = {
+  min: number
+  max: number
+  counts: number[]
+}
+
 export type SamplingFunctionResult = {
-  upper_bound: number;
-  lower_bound: number;
-  data: Map<string, number[]>;
+  data: Map<string, FluxHistogram>;
   cancled?: boolean;
 }
 
@@ -227,9 +232,7 @@ export interface D3DragEvent {
 export type Coord = {x: number, y: number}
 
 export type ReactionSamplingDistribution = {
-  lower_bound: number
-  upper_bound: number
-  data: Map<IDType, number[]> // reaction_id -> [values of distribution counts]
+  data: Map<IDType, FluxHistogram> // reaction_id -> histogram over that reaction's own flux range
 }
 
 export interface TooltipComponentProps {

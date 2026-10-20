@@ -1,11 +1,9 @@
-import * as grok from 'datagrok-api/grok';
-import {v4 as uuidv4} from 'uuid';
-import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
-import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
-import {LinkSpec, MatchInfo, matchNodeLink} from './link-matching';
+import {BaseTree, NodePathSegment} from '../data/BaseTree';
+import {StateTreeNode} from './StateTreeNodes';
+import {MatchedIO} from './link-matching';
 import {DriverLogger, reportError} from '../data/Logger';
 import {Link} from './Link';
-import {parseLinkIO} from '../config/LinkSpec';
+import {getOriginalConfig} from '../config/config-processing-utils';
 
 export class DependenciesData {
   nodes: Set<string> = new Set();
@@ -30,6 +28,14 @@ export function calculateStepsDependencies(state: BaseTree<StateTreeNode>, links
     }
     if (inputInfos.length === 0)
       addOutputDeps(state, deps, link);
+    // a node meta link that only sets actions visibility has no outputs to schedule it by
+    const {spec, outputs, actionsUUID} = link.matchInfo;
+    if (spec.type === 'nodemeta' && Object.keys(outputs).length === 0 && actionsUUID.size) {
+      const uuid = state.getNode(link.prefix).getItem().uuid;
+      const depData = deps.get(uuid) ?? new DependenciesData();
+      depData.links.add(link.uuid);
+      deps.set(uuid, depData);
+    }
   }
   return deps;
 }
@@ -64,9 +70,12 @@ export function calculateIoDependencies(state: BaseTree<StateTreeNode>, links: L
         if (depsData[ioName] == null)
           depsData[ioName] = {};
         if (depType === 'data') {
-          if (depsData[ioName][depType]) {
-            const prevUuid = depsData[ioName][depType] as string;
-            const prevSpecId = links.find((l) => l.uuid === prevUuid)?.matchInfo.spec.id ?? prevUuid;
+          const prevUuid = depsData[ioName][depType] as string | undefined;
+          const prev = prevUuid ? links.find((l) => l.uuid === prevUuid) : undefined;
+          // the separate effects of one rule may write the same io, as the rule's own effects do
+          const sameRule = !!prev && getOriginalConfig(prev.matchInfo.spec) === getOriginalConfig(link.matchInfo.spec);
+          if (prevUuid && !sameRule) {
+            const prevSpecId = prev?.matchInfo.spec.id ?? prevUuid;
             const newSpecId = link.matchInfo.spec.id;
             reportError(
               'warning',
@@ -85,49 +94,45 @@ export function calculateIoDependencies(state: BaseTree<StateTreeNode>, links: L
   return deps;
 }
 
-export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?: DriverLogger) {
-  const defaultValidators = state.traverse(state.root, (acc, node, path) => {
-    const item = node.getItem();
-    if (!isFuncCallNode(item))
-      return acc;
-    const validators = item.config.io?.map((io) => {
-      if (io.nullable || io.direction === 'output')
-        return;
-      const spec: LinkSpec = {
-        id: `::${io.id}`,
-        from: parseLinkIO(`in:${io.id}`, io.direction),
-        to: parseLinkIO(`out:${io.id}`, io.direction),
-        type: 'validator',
-        handler({controller}) {
-          const val = controller.getFirst('in');
-          if (val == null || val === '')
-            controller.setValidation('out', ({errors: [{description: 'Missing value'}]}));
-          else
-            controller.setValidation('out', undefined);
-        },
-      };
-      const minfo: MatchInfo = {
-        spec,
-        inputs: {
-          'in': [{
-            path: [],
-            ioName: io.id,
-          }],
-        },
-        outputs: {
-          'out': [{
-            path: [],
-            ioName: io.id,
-          }],
-        },
-        actions: {},
-        inputsUUID: new Map(),
-        outputsUUID: new Map(),
-        isDefaultValidator: true,
-      };
-      return new Link(path, minfo, 0, logger);
-    }).filter((x) => !!x);
-    return [...acc, ...(validators ?? [])];
-  }, [] as Link[]);
-  return defaultValidators;
+const isUnlinked = (link: Link, alias: string) => !!link.matchInfo.spec.to?.find((io) => io.name === alias)?.unlinked;
+
+const targetKey = (state: BaseTree<StateTreeNode>, link: Link, info: MatchedIO) =>
+  `${state.getNode([...link.prefix, ...info.path]).getItem().uuid}/${info.ioName}`;
+
+// ios written by data links of the config, keyed by node uuid and io name; `$linked` outputs yield to them
+function dataLinkTargets(state: BaseTree<StateTreeNode>, links: Link[]) {
+  const targets = new Set<string>();
+  for (const link of links) {
+    if ((link.matchInfo.spec.type ?? 'data') !== 'data')
+      continue;
+    for (const [alias, infos] of Object.entries(link.matchInfo.outputs)) {
+      if (isUnlinked(link, alias))
+        continue;
+      for (const info of infos)
+        targets.add(targetKey(state, link, info));
+    }
+  }
+  return targets;
+}
+
+/** Drops from `$linked` outputs the ios that other data links write. */
+export function pruneLinkedTargets(state: BaseTree<StateTreeNode>, links: Link[]) {
+  const written = dataLinkTargets(state, links);
+  for (const link of links) {
+    const {outputs, outputsUUID} = link.matchInfo;
+    for (const [alias, infos] of Object.entries(outputs)) {
+      if (!isUnlinked(link, alias))
+        continue;
+      const kept = infos.map((info) => !written.has(targetKey(state, link, info)));
+      if (kept.every((keep) => keep))
+        continue;
+      if (kept.some((keep) => keep)) {
+        outputs[alias] = infos.filter((_, idx) => kept[idx]);
+        outputsUUID.set(alias, (outputsUUID.get(alias) ?? []).filter((_, idx) => kept[idx]));
+      } else {
+        delete outputs[alias];
+        outputsUUID.delete(alias);
+      }
+    }
+  }
 }

@@ -45,10 +45,11 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
             progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
 
           this.isComputing = true;
+          this.searchedRows = this.getRowSourceIndexes();
           this.renderMolIds =
             await chemDiversitySearch(
               this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit,
-              this.fingerprint as Fingerprint, this.getRowSourceIndexes(), this.tooltipUse);
+              this.fingerprint as Fingerprint, this.searchedRows, this.tooltipUse);
         }
       } catch (e: any) {
         grok.shell.error(e.message);
@@ -92,6 +93,8 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         }
 
         $(grid).addClass(divClass);
+        grid.setAttribute('data-row', `${this.renderMolIds[i]}`);
+        grid.setAttribute('name', `card-${this.renderMolIds[i]}`);
         grid.addEventListener('click', (event: MouseEvent) => {
           if (this.dataFrame) {
             if (event.shiftKey || event.altKey)

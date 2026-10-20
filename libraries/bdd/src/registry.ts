@@ -83,16 +83,22 @@ export interface ContextEntry extends ElementEntry {
 }
 
 /** `exact-text` is Playwright's own text engine (the innermost element whose text is the qualifier),
- * independent of the kind's selector. */
-export type MatchStrategy = 'name' | 'label' | 'text' | 'exact-text' | 'title' | 'aria' | 'placeholder' | 'dart';
+ * independent of the kind's selector. `accessible` is the label the browser associates (`<label for>`,
+ * aria-labelledby, aria-label) with the root or an element inside it; `item` is a u2 item key
+ * (`data-u2-item`). */
+export type MatchStrategy = 'name' | 'label' | 'text' | 'exact-text' | 'title' | 'aria' | 'placeholder' | 'dart' |
+  'accessible' | 'item';
 
 export interface KindDef {
   /** Base locator for candidates of this kind. */
   selector: string;
   aliases?: string[];
-  /** How the qualifier ("sequence column" in "sequence column input") narrows the candidates,
-   * in priority order — the first strategy that finds something wins. */
+  /** How the qualifier ("sequence column" in "sequence column input") narrows the candidates —
+   * the first strategy that finds something wins. Applied in the R9 order (`effectiveOrder` in
+   * runtime/locate.ts): what the user sees first, `name` after it, `dart` where it is declared. */
   match: MatchStrategy[];
+  /** Items of a u2 collection: matched by data-u2-item, revealed for a gesture when not rendered. */
+  items?: boolean;
   /** Where the kind keeps its caption (the input label, the dialog title) for `label`/`title`. */
   labelSelector?: string;
   /** Dart `name=` conventions for the qualifier; `{q}` is the qualifier with spaces as dashes.
@@ -149,19 +155,23 @@ function describeTaken(taken: ElementEntry): string {
   return taken.context ? `"${taken.name}" of ${taken.context.name}` : `element "${taken.name}" [${taken.selector}]`;
 }
 
-function register(entry: ElementEntry, keys: string[]): void {
+/** Every key checked before any is set: a taken name (compared lowercased) registers nothing. */
+function register<T>(map: Map<string, T>, entry: T, keys: string[], clash: (key: string, taken: T) => string): void {
   for (const key of keys) {
-    const taken = elementByName.get(key);
+    const taken = map.get(key);
     if (taken)
-      throw new Error(`element "${key}" is already registered as ${describeTaken(taken)} — names are global; rename it, or register app names on a context`);
+      throw new Error(clash(key, taken));
   }
   for (const key of keys)
-    elementByName.set(key, entry);
+    map.set(key, entry);
 }
+
+const elementClash = (key: string, taken: ElementEntry): string => `element "${key}" is already registered as ` +
+  `${describeTaken(taken)} — names are global; rename it, or register app names on a context`;
 
 export function element(name: string, def: ElementDef): ElementEntry {
   const entry: ElementEntry = {...def, name: normalizePhrase(name)};
-  register(entry, keysOf(name, def.aliases));
+  register(elementByName, entry, keysOf(name, def.aliases), elementClash);
   return entry;
 }
 
@@ -170,7 +180,7 @@ export function alias(name: string, target: string): void {
   const entry = elementByName.get(normalizePhrase(target));
   if (!entry)
     throw new Error(`alias "${name}": element "${target}" is not registered (register it first)`);
-  register(entry, [normalizePhrase(name)]);
+  register(elementByName, entry, [normalizePhrase(name)], elementClash);
 }
 
 export function context(name: string, def: ElementDef): ContextEntry {
@@ -202,7 +212,7 @@ export function context(name: string, def: ElementDef): ContextEntry {
     lookup: (phrase) => local.get(normalizePhrase(phrase)),
     elements: () => [...new Set(local.values())],
   };
-  register(ctx, keysOf(name, def.aliases));
+  register(elementByName, ctx, keysOf(name, def.aliases), elementClash);
   for (const key of keysOf(name, def.aliases))
     contextByName.set(key, ctx);
   return ctx;
@@ -217,8 +227,8 @@ export function kind(name: string, def: KindDef): KindEntry {
 
 export function dataset(name: string, def: DatasetDef): DatasetEntry {
   const entry: DatasetEntry = {...def, name: normalizePhrase(name)};
-  for (const key of keysOf(name, def.aliases))
-    datasetByName.set(key, entry);
+  register(datasetByName, entry, keysOf(name, def.aliases), (key, taken) => `dataset "${key}" is already registered ` +
+    `as "${taken.name}" (${taken.path}) — names are global; use it, or pick another name`);
   return entry;
 }
 

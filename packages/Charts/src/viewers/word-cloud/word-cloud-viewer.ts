@@ -9,11 +9,13 @@ import 'echarts-wordcloud';
 import $ from 'cash-dom';
 import {Observable, Subject} from 'rxjs';
 
-import {ERROR_CLASS, MessageHandler, unsubscribeAll} from '../../utils/utils';
+import {ERROR_CLASS, LayoutSettler, MessageHandler, unsubscribeAll} from '../../utils/utils';
 import {laidOutWordCount, wordCloudStatus} from './word-cloud-status';
 
 
 const MAX_UNIQUE_CATEGORIES_NUMBER = 500;
+/** Drawn labels are cut here; echarts-wordcloud rasterizes each word on a canvas as wide as its text. */
+const MAX_WORD_LENGTH = 50;
 /** How long a render waits for a host it can measure, in 100 ms steps, before finishing on the
  * picture that is up. */
 const SIZE_WAITS = 10;
@@ -43,6 +45,7 @@ export class WordCloudViewer extends DG.JsViewer {
   private _error: string | null = null;
   private _renderPending = 0;
   private _renderTimer: any = null;
+  private _layout = new LayoutSettler();
   private _sizeWaits = 0;
   private _onRendered = new Subject<void>();
 
@@ -136,6 +139,7 @@ export class WordCloudViewer extends DG.JsViewer {
     if (this._renderTimer !== null)
       clearTimeout(this._renderTimer);
     this._renderTimer = null;
+    this._layout.cancel();
     this._renderPending = 0;
     super.detach();
   }
@@ -149,22 +153,17 @@ export class WordCloudViewer extends DG.JsViewer {
     this.renderFinished();
   }
 
-  private renderFinished(attempt = 0) {
+  private renderFinished() {
     this._renderTimer = null;
     if (this._renderPending === 0)
       return;
     // The counts are in place before `setOption`, so a status read between the two would report
-    // four words over no picture. The layout that places the words runs in the macrotask
-    // `setOption` queues and zrender paints them on the frame after that, so neither the canvas nor
-    // `finished` says the cloud is there — the boxes it left do.
-    const owed = this._error === null && !!this.wordColumnName &&
-      (this.root.querySelector('canvas') === null || laidOutWordCount(this.chart) === 0);
-    if (owed && attempt < 20) {
-      this._renderTimer = setTimeout(() => requestAnimationFrame(() => this.renderFinished(attempt + 1)));
-      return;
-    }
-    this._renderPending = 0;
-    this._onRendered.next();
+    // four words over no picture — the frame is owed until the layout has placed the words
+    this._layout.settle(() => this._error === null && !!this.wordColumnName &&
+      (this.root.querySelector('canvas') === null || laidOutWordCount(this.chart) === 0), () => {
+      this._renderPending = 0;
+      this._onRendered.next();
+    });
   }
 
   render() {
@@ -221,7 +220,8 @@ export class WordCloudViewer extends DG.JsViewer {
     }
     this._counts = counts;
     const data = Array.from(counts, ([name, value]) => ({
-      name: name,
+      name: name.length > MAX_WORD_LENGTH ? `${name.substring(0, MAX_WORD_LENGTH)}…` : name,
+      word: name,
       value: value,
       textStyle: {
         color: DG.Color.toHtml(DG.Color.getCategoryColor(strColumn, name)),
@@ -267,12 +267,12 @@ export class WordCloudViewer extends DG.JsViewer {
 
     this.chart
       .on('mouseover', (d: any) => ui.tooltip.showRowGroup(table, (i) => {
-        return d.name === strColumn.get(i);
+        return d.data.word === strColumn.get(i);
       }, d.event.event.x + 10, d.event.event.y + 10))
       .on('mouseout', () => ui.tooltip.hide())
       .on('mousedown', (d: any) => {
         table.selection.handleClick((i) => {
-          return d.name === strColumn.get(i);
+          return d.data.word === strColumn.get(i);
         }, d.event.event);
       });
 

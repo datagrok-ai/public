@@ -170,6 +170,8 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
   searchIcon.classList.add('vg-search-icon');
 
   recentViewersRoot.innerHTML = '';
+  recentViewersRoot.setAttribute('name', 'viewer-gallery-recent');
+  rootViewers.setAttribute('name', 'viewer-gallery-list');
   const recentNames = getRecentViewersList();
 
   if (recentNames.length > 0) {
@@ -181,7 +183,7 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
     let hasValidRecents = false;
     for (const name of recentNames) {
       if (allViewersMap[name]) {
-        recentViewersRoot.append(renderCard(allViewersMap[name].list, allViewersMap[name].idx));
+        recentViewersRoot.append(renderCard(allViewersMap[name].list, allViewersMap[name].idx, true));
         hasValidRecents = true;
       }
     }
@@ -203,13 +205,16 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
     ui.label('Relative tags:'),
     generateTags(),
   ], 'vg-tags');
+  tags.setAttribute('name', 'viewer-gallery-tag-panel');
 
-  const root = ui.divH([
-    ui.block([recentBlock, viewersCount, rootViewers], 'viewer-gallery-root'),
-    tags,
-  ]);
+  const gallery = ui.block([recentBlock, viewersCount, rootViewers], 'viewer-gallery-root');
+  gallery.setAttribute('name', 'viewer-gallery-root');
+  const root = ui.divH([gallery, tags]);
 
-  dlg.add(ui.block([ui.div([searchIcon, search.input], 'd4-search-ba')], 'vg-controls grok-gallery-search-bar'));
+  const controls = ui.block([ui.div([searchIcon, search.input], 'd4-search-ba')], 'vg-controls grok-gallery-search-bar');
+  controls.setAttribute('name', 'viewer-gallery-controls');
+  search.input.setAttribute('name', 'viewer-gallery-search');
+  dlg.add(controls);
   dlg.add(root);
   dlg.showModal(true);
 
@@ -257,7 +262,9 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
   let i = 0;
   for (const v of list) {
     let isViewerEnabled = true;
-    if (v.package.name === 'Charts') {
+    const pkg = v.package;
+    const pkgName = pkg?.name ?? '';
+    if (pkgName === 'Charts') {
       const viewerTestData = CHARTS_VIEWERS_TEST_DATA[v.friendlyName];
       if (viewerTestData !== undefined) {
         if (!viewerTestData.checkFunc(table))
@@ -265,11 +272,11 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
       }
       else
         isViewerEnabled = false;
-    } else if ((v.package.name === 'Chem' || v.package.name === 'Bio' || v.package.name === 'Peptides') && BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName])
+    } else if ((pkgName === 'Chem' || pkgName === 'Bio' || pkgName === 'Peptides') && BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName])
       isViewerEnabled = BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].checkFunc(table);
-    else if ((v.package.name === 'Dendrogram' || v.package.name === 'PhyloTreeViewer') && TREE_VIEWERS_TEST_DATA[v.friendlyName])
+    else if ((pkgName === 'Dendrogram' || pkgName === 'PhyloTreeViewer') && TREE_VIEWERS_TEST_DATA[v.friendlyName])
       isViewerEnabled = TREE_VIEWERS_TEST_DATA[v.friendlyName].checkFunc(table);
-    else if (v.package.name === 'Curves' && CURVES_VIEWERS_TEST_DATA[v.friendlyName])
+    else if (pkgName === 'Curves' && CURVES_VIEWERS_TEST_DATA[v.friendlyName])
       isViewerEnabled = CURVES_VIEWERS_TEST_DATA[v.friendlyName].checkFunc(table);
     else {
       if (v.options['showInGallery'] === 'false')
@@ -284,12 +291,12 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
           BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].tooltip : TREE_VIEWERS_TEST_DATA[v.friendlyName] ?
           TREE_VIEWERS_TEST_DATA[v.friendlyName].tooltip : CURVES_VIEWERS_TEST_DATA[v.friendlyName] ?
           CURVES_VIEWERS_TEST_DATA[v.friendlyName].tooltip : 'Viewer cannot be created from viewer gallery',
-        icon: (v.options['icon'] != undefined) ? `${v.package.webRoot.endsWith('/') ?
-          v.package.webRoot : v.package.webRoot + '/'}${v.options['icon']}` : 'svg-project',
+        icon: (v.options['icon'] != undefined && pkg != null) ? `${pkg.webRoot.endsWith('/') ?
+          pkg.webRoot : pkg.webRoot + '/'}${v.options['icon']}` : 'svg-project',
         description: v.description,
         keywords: (v.options['keywords'] != null) ? v.options['keywords'] : '',
         group: '',
-        package: v.package.name,
+        package: pkgName,
         type: 'js-viewer',
       },
     });
@@ -342,7 +349,7 @@ function setTabIndex(root: HTMLDivElement) {
     root.children[i].setAttribute('tabindex', String(i + 1));
 }
 
-function renderCard(viewers: { [v: string]: { [k: string]: any } }, index: string) {
+function renderCard(viewers: { [v: string]: { [k: string]: any } }, index: string, recent = false) {
   let icon: HTMLElement;
   const viewer = viewers[index];
 
@@ -362,9 +369,15 @@ function renderCard(viewers: { [v: string]: { [k: string]: any } }, index: strin
   }
   const name = ui.label(viewer.name);
   name.classList.add('card-label');
+  name.setAttribute('name', `card-label-${recent ? 'recent-' : ''}${viewer.name}`);
   const card = ui.div([
     ui.divH([icon!, name]),
   ], `d4-item-card viewer-gallery vg-card-small${viewer.enabled ? '' : ' disabled'}`);
+  card.setAttribute('name', `viewer-card-${recent ? 'recent-' : ''}${viewer.name}`);
+  card.setAttribute('role', 'button');
+  card.setAttribute('aria-label', viewer.name);
+  if (!viewer.enabled)
+    card.setAttribute('aria-disabled', 'true');
 
   if (viewer.enabled) {
     card.addEventListener('click', () => {
@@ -394,6 +407,7 @@ function renderCard(viewers: { [v: string]: { [k: string]: any } }, index: strin
 
 function generateTags() {
   const root = ui.div([]);
+  root.setAttribute('name', 'viewer-gallery-tags');
   const list = [];
   for (const i in viewers)
     list.push(viewers[i].group);
@@ -401,13 +415,18 @@ function generateTags() {
   for (const i in jsViewers)
     list.push(jsViewers[i].group);
 
-  for (const i in jsViewers)
-    list.push(jsViewers[i].package);
+  for (const i in jsViewers) {
+    if (jsViewers[i].package)
+      list.push(jsViewers[i].package);
+  }
 
   const tags = [...new Set(list)];
 
   for (const i in tags) {
     const tag = ui.div(tags[i], 'd4-tag');
+    tag.setAttribute('name', `viewer-tag-${tags[i]}`);
+    tag.setAttribute('role', 'button');
+    tag.setAttribute('aria-label', tags[i]);
     tag.addEventListener('click', () => {
       search.value = tags[i];
       search.fireChanged();

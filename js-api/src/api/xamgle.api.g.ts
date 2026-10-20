@@ -21,6 +21,9 @@ export interface SettingsInterface {
   /** Show full screen link on docked viewers */
   dockShowFullScreenLink: boolean;
 
+  /** Show minimize link on docked viewers; a minimized viewer lives on the ribbon until restored */
+  allowViewerMinimization: boolean;
+
   /** Show notification when a file is imported */
   notifyOnFileImport: boolean;
 
@@ -70,7 +73,14 @@ export interface SettingsInterface {
   /** Log user clicks */
   logActivity: boolean;
 
+  /** Top-menu groups hidden from the view ribbon, by label (e.g. `ML`). */
   hiddenMenus: Array<string>;
+
+  /** Named ribbon panels hidden from the view ribbon. */
+  hiddenRibbonPanels: Array<string>;
+
+  /** Current object dropdown in the view ribbon; 'Auto' hides it while the context panel is docked. */
+  contextRibbon: string;
 
   showCurrentRowInProperties: boolean;
 
@@ -127,11 +137,11 @@ export interface SettingsInterface {
 
   enableIndexedDBTablesCache: boolean;
 
-  allowViewerMinimization: boolean;
-
   viewersToTrellis: boolean;
 
   enableDomainDatabases: boolean;
+
+  domainsDartUi: boolean;
 
   dateFormat: string;
 

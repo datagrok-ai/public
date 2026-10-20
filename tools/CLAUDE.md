@@ -121,6 +121,18 @@ When a package has a `dockerfiles/` directory, `grok publish` automatically mana
 
 **Practical implication:** editing any file inside `dockerfiles/<name>/` will cause `grok publish` to rebuild that container image on the next publish, without needing `--rebuild-docker`.
 
+**Publish traps:**
+- `grok publish` runs `npm run build` / `pnpm run build` itself (`buildPackage`); `--skip-check`
+  only skips checks, and `--rebuild` skips the local build rather than forcing one.
+- With no local image and a transient error on the fallback lookup, CLI <= 6.5.10 published
+  `image: null` and the container went to `error`; 6.5.11+ builds instead.
+- A republish renames a package's containers to `<name>_1`.
+- Outside the pnpm workspace, a fresh `npm install` in a package may pull ts-loader 9.6.x /
+  webpack 5.109, which cannot resolve `datagrok-api/*` (tsc can); reuse a known-good
+  `node_modules` (ts-loader 9.5.7 / webpack 5.106) and junction `node_modules/datagrok-api` to a
+  built js-api (`cmd /c mklink /J`).
+- Long publishes outlive a 10-minute agent tool limit; run them detached and poll a log.
+
 ### Testing Framework
 
 Tests use Puppeteer for headless browser automation:
@@ -207,7 +219,7 @@ Based on `node:22-bookworm-slim`. Pre-installed:
 #### Entrypoint (`entrypoint.sh`)
 
 1. **Repo detection:** checks if `/workspace/repo` is the public repo (has `.git` + `js-api/`) or monorepo (`public/js-api/`)
-2. **Auto-clone:** if workspace is not the public repo, sparse-clones it to `$DG_PUBLIC_DIR` (default `/workspace/datagrok`) — excludes `connectors/`, `docker/`, `environments/`, `python-api/`, etc. for speed. Branch resolved as: `DG_PUBLIC_BRANCH` > `DG_VERSION` mapped to branch > `master` fallback
+2. **Auto-clone:** if workspace is not the public repo, sparse-clones it to `$DG_PUBLIC_DIR` (default `/workspace/datagrok`) — excludes `docker/`, `environments/`, `python-api/`, etc. for speed. Branch resolved as: `DG_PUBLIC_BRANCH` > `DG_VERSION` mapped to branch > `master` fallback
 3. **Workspace linking:** for non-public repos, symlinks `/workspace/repo` into the cloned repo's `packages/` dir and links `.claude`/`CLAUDE.md` at `/workspace/` for context discovery
 4. **Grok config:** auto-creates `~/.grok/config.yaml` pointing to `http://datagrok:8080/api` with key `admin` (only if config doesn't already exist)
 
@@ -220,7 +232,7 @@ Based on `node:22-bookworm-slim`. Pre-installed:
 | `demo` | + world, test_db, northwind |
 | `full` | + grok_spawner, JKG, demo DBs |
 
-See `.devcontainer/PACKAGES_DEV.md` for detailed usage docs, architecture diagram, MCP plugin setup (Jira/GitHub), and troubleshooting.
+See `.devcontainer/PACKAGES_DEV.md` for detailed usage docs, architecture diagram, MCP plugin setup (GitHub/Jira), and troubleshooting.
 
 ### `grok server` / `grok s` Command
 

@@ -11,7 +11,7 @@ import {
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {fitFunctions, fitFunctionDescriptions, fitSeriesProperties, getStatisticProperty, DEFAULT_FIT_FUNCTION} from '@datagrok-libraries/statistics/src/fit/fit-engine';
-import {getColumnChartOptions, getDataFrameChartOptions, CHART_OPTIONS, SERIES_OPTIONS} from './fit-chart-data';
+import {getColumnChartOptions, getDataFrameChartOptions, storeChartOptions, CHART_OPTIONS, SERIES_OPTIONS} from './fit-chart-data';
 import {isNativeFormat} from './curve-converter';
 
 // Options a statistic can depend on; everything else only repaints. errorModel weights the objective
@@ -172,10 +172,10 @@ export function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBa
 
   let columns: DG.Column[];
   if (manipulationLevel === MANIPULATION_LEVEL.DATAFRAME) {
-    gridCell.cell.dataFrame.tags[FitConstants.TAG_FIT] = JSON.stringify(chartOptions);
+    storeChartOptions(gridCell.cell.dataFrame.tags, chartOptions);
     columns = gridCell.cell.dataFrame.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE);
   } else {
-    gridCell.cell.column.tags[FitConstants.TAG_FIT] = JSON.stringify(chartOptions);
+    storeChartOptions(gridCell.cell.column.tags, chartOptions);
     columns = [gridCell.cell.column];
   }
 
@@ -186,7 +186,7 @@ export function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBa
       if (section)
         delete (section as any)[propertyName];
       unclaim(columnChartOptions, options, propertyName);
-      column.tags[FitConstants.TAG_FIT] = JSON.stringify(columnChartOptions);
+      storeChartOptions(column.tags, columnChartOptions);
     }
     if (!isNativeFormat(column))
       continue;

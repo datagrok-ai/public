@@ -6,6 +6,7 @@ import {createClient} from '../utils/server-client';
 import {printOutput, printBatchOutput, printError, setOutputFormat, OutputFormat} from '../utils/server-output';
 import {handleMigrate} from './server-migrate';
 import {handleDomains} from './server-domains';
+import {handleObserve, OBSERVE_USAGE} from './server-observe';
 import {isUuid} from '../utils/migrate/registry';
 import {resolveEntity} from '../utils/migrate/walker';
 
@@ -13,7 +14,8 @@ import {resolveEntity} from '../utils/migrate/walker';
 const ENTITY_TYPES: Record<string, string> = {queries: 'DataQuery', scripts: 'Script', reports: 'UserReport'};
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files', 'tables'];
-const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token'];
+const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'status', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token',
+  'observe', 'o'];
 const VERBS = ['list', 'count', 'get', 'delete'];
 
 export async function server(argv: any): Promise<boolean> {
@@ -34,6 +36,10 @@ export async function server(argv: any): Promise<boolean> {
     console.log(HELP_SERVER);
     return true;
   }
+  if ((entity === 'observe' || entity === 'o') && !verb) {
+    console.log(OBSERVE_USAGE);
+    return true;
+  }
 
   let client;
   try {
@@ -52,6 +58,7 @@ export async function server(argv: any): Promise<boolean> {
     if (['pull', 'push', 'migrate', 'diff', 'bundle'].includes(entity))
       return await handleMigrate(dapi, entity, [verb, ...rest].filter(Boolean), argv, output);
     if (entity === 'domains') return await handleDomains(dapi, verb, rest, argv, output);
+    if (entity === 'observe' || entity === 'o') return await handleObserve(dapi, verb, rest[0], rest.slice(1), argv, output);
     if (entity === 'batch') return await handleBatch(dapi, argv, verb, rest, output);
     // Shell scripts that used to curl /users/login/dev get a token the same way
     // every other command does, whatever credential the config holds.
@@ -59,6 +66,7 @@ export async function server(argv: any): Promise<boolean> {
     if (entity === 'raw') return await handleRaw(dapi, verb, rest, argv, output);
     if (entity === 'describe') return await handleDescribe(dapi, verb ?? rest[0], output);
     if (entity === 'healthcheck') return await handleHealthcheck(dapi, argv, output);
+    if (entity === 'status') return await handleStatus(dapi, output);
     if (entity === 'sync') return await handleSync(dapi, verb, rest, argv, output);
     if (entity === 'functions' && verb === 'run') return await handleFuncRun(dapi, rest, argv, output);
     if (entity === 'functions' && verb === 'list') return await handleFunctionsList(dapi, argv, limit, offset, filter, output);
@@ -92,6 +100,7 @@ export async function server(argv: any): Promise<boolean> {
     if (entity === 'groups' && (verb === 'list-members' || verb === 'list-memberships')) return await handleGroupListMembers(dapi, verb, rest, argv, output);
     if (entity === 'users' && verb === 'block') return await handleUserBlock(dapi, rest, output);
     if (entity === 'users' && verb === 'unblock') return await handleUserUnblock(dapi, rest, output);
+    if (entity === 'users' && verb === 'invite') return await handleUserInvite(dapi, rest, argv, output);
     if (entity === 'tables' && verb === 'download') return await handleTablesDownload(dapi, rest, argv, output);
     if (entity === 'tables' && verb === 'upload') return await handleTablesUpload(dapi, rest, output);
     if (entity === 'packages' && verb === 'install') return await handlePackagesInstall(dapi, rest, argv, output);
@@ -192,6 +201,20 @@ async function handleUserUnblock(dapi: NodeDapi, rest: string[], output: OutputF
   const user = await dapi.users.find(rest[0]);
   await dapi.users.unblock(user);
   if (output !== 'quiet') console.log(`Unblocked ${user?.login ?? rest[0]}`);
+  return true;
+}
+
+async function handleUserInvite(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  const email = rest[0] !== undefined ? String(rest[0]) : undefined;
+  const prefix = argv.prefix !== undefined ? String(argv.prefix) : undefined;
+  if (argv['send-email'] && (!email || prefix !== undefined)) {
+    printError(new Error('Usage: grok s users invite <email> --send-email (no --prefix: only a link has a code)'));
+    return false;
+  }
+  const link = await dapi.users.invite(email, !!argv['send-email'], prefix);
+  if (output === 'json') printOutput({email: email ?? null, link: link || null}, output);
+  else if (link) console.log(link);
+  else if (output !== 'quiet') console.log(`Invitation sent to ${email}`);
   return true;
 }
 
@@ -480,11 +503,9 @@ async function handleRaw(dapi: NodeDapi, method: string | undefined, rest: strin
 }
 
 async function handleSync(dapi: NodeDapi, subject: string | undefined, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
-  // `grok s sync` subcommands. Mirrors the API surface in
-  // core/server/datlas/lib/src/routers/sync.dart — pairs / setups /
-  // runs are read-only here; `run` triggers an actual push and prints
-  // the per-item summary. Full reference in
-  // core/docs/plans/instance-sync.md (Phase 7 / operational polish).
+  // Read-only mirror of core/server/datlas/lib/src/routers/sync.dart. A setup is an
+  // EntitySyncFunc (/entity_sync_funcs); the server has no run route, runs come from
+  // the UI or the setup's schedule.
   const verb = rest[0];
   // a 1.27 server has no /sync routes at all: report that as "not found", not as a failure
   const callSync = async (method: string, path: string, body?: any): Promise<any> => {
@@ -504,36 +525,22 @@ async function handleSync(dapi: NodeDapi, subject: string | undefined, rest: str
   if (subject === 'setups' && verb === 'list') {
     const pairId = argv.pair ?? rest[1];
     if (!pairId) { printError(new Error('Usage: grok s sync setups list --pair <pair-id>')); return false; }
-    const setups = await callSync('GET', `/sync/pairs/${encodeURIComponent(pairId)}/setups`);
+    const setups = await callSync('GET', `/entity_sync_funcs?pairId=${encodeURIComponent(pairId)}`);
     printOutput(setups, output);
     return true;
   }
   if (subject === 'setup' && verb === 'get') {
     const id = rest[1];
     if (!id) { printError(new Error('Usage: grok s sync setup get <setup-id>')); return false; }
-    const setup = await callSync('GET', `/sync/setups/${encodeURIComponent(id)}`);
+    const setup = await callSync('GET', `/entity_sync_funcs/${encodeURIComponent(id)}`);
     printOutput(setup, output);
     return true;
   }
-  if (subject === 'run') {
-    // grok s sync run <setup-id>
-    const id = rest[1] ?? verb;
-    if (!id) { printError(new Error('Usage: grok s sync run <setup-id>')); return false; }
-    const result = await callSync('POST', `/sync/setups/${encodeURIComponent(id)}/run`, {});
-    if (output === 'json' || output === 'csv') { printOutput(result, output); return true; }
-    if (output === 'quiet') { console.log(result?.runId ?? ''); return true; }
-    if (!result) { printError(new Error(`Sync setup ${id} not found, or server has no /sync routes.`)); return false; }
-    console.log(`Run ${result?.runId} → ${result?.remoteUrl} (${result?.status})`);
-    if (result?.counts) {
-      const cs = Object.keys(result.counts).filter(k => (result.counts[k] ?? 0) > 0)
-        .map(k => `${result.counts[k]} ${k}`).join(', ');
-      if (cs) console.log(`  ${cs}`);
-    }
-    const items = Array.isArray(result?.items) ? result.items : [];
-    if (items.length) {
-      console.log('\nItems:');
-      printOutput(items, 'table');
-    }
+  if (subject === 'setup' && verb === 'runs') {
+    const id = rest[1];
+    if (!id) { printError(new Error('Usage: grok s sync setup runs <setup-id>')); return false; }
+    const runs = await callSync('GET', `/entity_sync_funcs/${encodeURIComponent(id)}/runs`);
+    printOutput(runs, output);
     return true;
   }
   printError(new Error(
@@ -541,7 +548,7 @@ async function handleSync(dapi: NodeDapi, subject: string | undefined, rest: str
     '  grok s sync pairs list [--status active|pending|revoked]\n' +
     '  grok s sync setups list --pair <pair-id>\n' +
     '  grok s sync setup get <setup-id>\n' +
-    '  grok s sync run <setup-id>'));
+    '  grok s sync setup runs <setup-id>'));
   return false;
 }
 
@@ -571,6 +578,34 @@ async function handleHealthcheck(dapi: NodeDapi, argv: any, output: OutputFormat
     throw new Error(`Module '${module}' is not reported by the server`);
   else if (output !== 'quiet')
     console.log('(no services reported)');
+  return true;
+}
+
+async function handleStatus(dapi: NodeDapi, output: OutputFormat): Promise<boolean> {
+  const [info, extended] = await Promise.all([dapi.serverStatus(), dapi.serverStatus(true)]);
+  if (output === 'json') {
+    printOutput({server: info, extended}, output);
+    return true;
+  }
+  if (output === 'quiet') {
+    console.log(info?.Version ?? '');
+    return true;
+  }
+  const http = info?.['Http Server'];
+  const fields = {...info, 'Http Server': undefined};
+  const width = Math.max(...Object.keys(fields).map((k) => k.length)) + 2;
+  for (const [k, v] of Object.entries(fields))
+    if (v !== undefined) console.log(`${(k + ':').padEnd(width)}${v ?? ''}`);
+  if (http)
+    console.log(`${'Http Server:'.padEnd(width)}total ${http.total}, active ${http.active}, idle ${http.idle}, closing ${http.closing}`);
+  // Non-admins get the plain count back; admins get {"METHOD url": inFlight}.
+  const active = extended?.['Http Server']?.active;
+  if (active && typeof active === 'object') {
+    console.log('');
+    const rows = Object.entries(active).map(([request, count]) => ({request, count}));
+    if (rows.length) printOutput(rows, output);
+    else console.log('(no requests in flight)');
+  }
   return true;
 }
 
@@ -901,6 +936,7 @@ Manage a Datagrok server from the command line.
 Entities:
   users, groups, functions, connections, queries, scripts, packages, reports, files, tables
   (plus domains, shares, batch, raw, describe, healthcheck, sync, pull/push/migrate/diff/bundle below)
+  observe (alias o): problems, problem rules, logger settings, errors, timeline, cloud logs; grok s observe prints its verbs
 
 Verbs:
   list      List entities (--filter, --limit, --offset)
@@ -920,6 +956,8 @@ Special commands:
   grok s raw <METHOD> <path> [--json f | --data j]    Any API endpoint; path is API-relative (/users/current), /api prefix optional
   grok s describe <entity|type>                       Fields of an entity type (registry record + a live sample)
   grok s healthcheck [--module <name>]                Check server + per-module health
+  grok s status                                       Server build, uptime, DB pool and HTTP connections
+                                                      (/info/server); admins also see requests in flight
   grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
                                                       Share an entity with one or more groups
   grok s shares list <entity-id-or-name>              List who an entity is shared with
@@ -938,6 +976,10 @@ Special commands:
                                                       List parent groups
   grok s users block <id-or-login>                    Block a user from the platform
   grok s users unblock <id-or-login>                  Unblock a previously blocked user
+  grok s users invite [<email>] [--prefix <P>] [--send-email]
+                                                      Invite a user; prints a login link (no email sent).
+                                                      --prefix starts the code with <P> (e.g. ALEX-);
+                                                      --send-email mails the invitation instead
   grok s tables upload <name> <file.csv|file.d42>     Upload a CSV or d42 binary as a Datagrok table
   grok s tables download <name|Project:Table|id> [-O <file>]
                                                       Download a table as CSV (stdout by default)
@@ -967,7 +1009,7 @@ Special commands:
   grok s domains aggregate <schema.table> --measures 'count,sum(x) as t' [--group-by a,b] [--filter <expr>]
   grok s domains transaction <schema> --json ops.json  Ordered insert/update/delete ops, atomically
   grok s domains audit <schema>|<schema.table> [<id>] [--limit n]
-  grok s domains capabilities <schema.table>          What the current user may do on the table
+  grok s domains access <schema.table>                What the current user may do on the table, per field
   grok s domains grants <schema>|<schema.table>       Direct permission grants on a schema or table
   grok s domains grant <schema>|<schema.table> <group>[,...] [--access View|Edit|Delete|Share|Extend]
   grok s domains revoke <schema>|<schema.table> <group>[,...] [--access <permission>]
@@ -978,8 +1020,8 @@ Special commands:
   grok s batch manifest.json                          Run a workflow manifest
   grok s sync pairs list [--status <s>]               List cross-instance sync pairs (status: active|pending|revoked)
   grok s sync setups list --pair <pair-id>            List the named sync setups under a pair
-  grok s sync setup get <setup-id>                    Inspect a setup (selections, direction, last run)
-  grok s sync run <setup-id>                          Trigger a push run; prints per-item outcome
+  grok s sync setup get <setup-id>                    Inspect a setup (entries, direction, last run)
+  grok s sync setup runs <setup-id>                   A setup's past runs (per-item outcome in options.syncResult)
 
 Pull / push / migrate options:
   --out <dir>           Bundle directory to write (pull; merges into an existing bundle)

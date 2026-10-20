@@ -1,10 +1,14 @@
 /* `npm run e2e:local` — preconditions, one browser, every check file, one results.json.
    Preconditions are the whole difference between this lane and a stand: pub serve must be up
    (it is the only server involved) and the package must be staged into web/local/pkg/.
-   `--only <substring>` runs the check files whose name contains it. */
+   `--only <substring>` runs the check files whose name contains it; `--lane <name>[,<name>…]`
+   (or `U2_E2E_LANES`) runs exactly those lanes — a lane is a check file, and its name is the
+   prefix its PASS/FAIL lines print (`filters`, `leak`, `u2demo-inputs`, …). `--checks <dir>` runs
+   another library's check files (every `*.spec.mjs` there, by name) in the same booted client. */
 import {execFileSync} from 'child_process';
 import {existsSync, readdirSync} from 'fs';
 import {join, resolve} from 'path';
+import {pathToFileURL} from 'url';
 import {ARTIFACTS, E2E_DIR, LOCAL_URL, note, ok, openApp, openLocal, report, results, shot} from './local.mjs';
 import {APP} from './lib.mjs';
 
@@ -14,11 +18,16 @@ const GROK_CORE = join(REPO, 'core/tools/grok-core/bin/grok-core.js');
 
 /** Every file opens with its own fixture, so the order is a convention — except `leak`, which
  * closes every view and reopens the app: it stays last. */
-const FILES = ['view-and-panel', 'editing', 'metadata-and-navigation', 'multi-select-and-guards',
+const U2_FILES = ['view-and-panel', 'editing', 'metadata-and-navigation', 'multi-select-and-guards',
   'tray-and-sources', 'pickers', 'full-build', 'seeded-panes', 'platform-drop', 'icon-input', 'viewers',
   'func-form', 'funcs-pane', 'func-call-history', 'func-form-async', 'func-form-tables', 'pickers-parity',
   'func-form-expressions', 'binding', 'card', 'tour', 'message-input',
-  'u2demo-nav', 'u2demo-routing', 'u2demo-inputs', 'u2demo-inspector', 'u2demo-source', 'filters', 'leak'];
+  'u2demo-nav', 'u2demo-routing', 'u2demo-inputs', 'u2demo-inspector', 'u2demo-source', 'filters',
+  'leak'];
+const checksAt = process.argv.indexOf('--checks');
+const CHECKS = checksAt < 0 ? join(E2E_DIR, 'checks') : resolve(process.argv[checksAt + 1]);
+const FILES = checksAt < 0 ? U2_FILES :
+  readdirSync(CHECKS).filter((f) => f.endsWith('.spec.mjs')).map((f) => f.slice(0, -'.spec.mjs'.length)).sort();
 
 async function pubServeIsUp() {
   try {
@@ -45,14 +54,26 @@ if (onlyAt >= 0 && !only) {
   console.error(`u2 e2e: --only needs a check-file name — one of ${FILES.join(', ')}`);
   process.exit(2);
 }
-const selected = FILES.filter((name) => name.includes(only));
+const laneAt = process.argv.indexOf('--lane');
+const laneArg = laneAt < 0 ? (process.env.U2_E2E_LANES ?? '') : (process.argv[laneAt + 1] ?? '');
+if (laneAt >= 0 && !laneArg) {
+  console.error(`u2 e2e: --lane needs a lane name — one of ${FILES.join(', ')}`);
+  process.exit(2);
+}
+const lanes = laneArg.split(',').map((name) => name.trim()).filter((name) => name !== '');
+const unknown = lanes.filter((name) => !FILES.includes(name));
+if (unknown.length > 0) {
+  console.error(`u2 e2e: unknown lane ${unknown.join(', ')} — one of ${FILES.join(', ')}`);
+  process.exit(2);
+}
+const selected = FILES.filter((name) => name.includes(only) && (lanes.length === 0 || lanes.includes(name)));
 if (selected.length === 0) {
   console.error(`u2 e2e: no check file matches --only "${only}" — one of ${FILES.join(', ')}`);
   process.exit(2);
 }
 const suites = [];
 for (const name of selected)
-  suites.push({name, ...await import(`./checks/${name}.spec.mjs`)});
+  suites.push({name, ...await import(pathToFileURL(join(CHECKS, `${name}.spec.mjs`)).href)});
 
 const started = Date.now();
 if (!await pubServeIsUp()) {

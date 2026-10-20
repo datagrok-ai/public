@@ -27,7 +27,9 @@ async function checkPalette(page) {
   await filter.fill('button');
   await page.waitForTimeout(150);
   const filtered = await items.count();
-  ok('editing/1a/palette-lists-and-filters', all > 10 && filtered === 1 &&
+  // the palette filters on tag + label + description + usage, so a word can match a domain
+  // registration's usage text too; the button itself must be among the survivors
+  ok('editing/1a/palette-lists-and-filters', all > 10 && filtered > 0 && filtered < 6 &&
     await paletteItem(page, 'u2-button').isVisible(),
   `${all} items, ${filtered} after filtering on "button"`);
 

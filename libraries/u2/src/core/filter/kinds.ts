@@ -1,5 +1,5 @@
 import {TYPE} from 'datagrok-api/u2core';
-import {KIND, isRef, isSpan} from './model.js';
+import {KIND, isColumnRef, isParam, isRef, isSpan} from './model.js';
 import type {FilterKind, FilterValue} from './model.js';
 import type {FilterProperty} from './schema.js';
 import {resolveSpan} from '../span.js';
@@ -29,11 +29,15 @@ function scalarOut(v: unknown, now: Date): unknown {
     return resolveSpan(v.span, now).toISOString();
   if (isRef(v))
     return v.id;
+  if (isColumnRef(v))
+    return {$column: v.column};
+  if (isParam(v))
+    return {$param: v.param};
   return v;
 }
 
 /** A model value as the domain tree carries it: ISO dates, spans resolved against `now`,
- * ref ids, lists element-wise. */
+ * ref ids, column references as `{$column}`, parameters as `{$param}`, lists element-wise. */
 export function domainValue(value: FilterValue | undefined, ctx: {now: Date}): unknown {
   return Array.isArray(value) ? value.map((v) => scalarOut(v, ctx.now)) : scalarOut(value, ctx.now);
 }

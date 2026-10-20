@@ -111,6 +111,42 @@ category('Grit: issue CRUD', () => {
     }
   });
 
+  // What the app's ⋯ > "Bulk edit…" posts: one value into the selected rows through
+  // POST .../issue/update, each row patched on its own so versions and audit lines are per row.
+  test('bulk close: updateWhere over a selection', async () => {
+    const open = await lookupId(gritDb.statuses, {name: 'open'});
+    const closed = await lookupId(gritDb.statuses, {name: 'closed'});
+    const [project] = await gritDb.projects.insert({key: unique('T'), name: 'Bulk close'});
+    const ids: string[] = [];
+    try {
+      for (const title of ['A', 'B', 'C']) {
+        const [r] = await gritDb.issues.insert({project_id: project.id, title, status_id: open});
+        ids.push(r.id);
+      }
+      const selected = ids.slice(0, 2);
+      const report = await gritDb.issues.updateWhere(
+        `id in (${selected.map((id) => `"${id}"`).join(', ')})`, {status_id: closed});
+      expect(report.updated, 2);
+      expect(report.hasMore, false);
+
+      expect(await gritDb.issues.count(`project_id = "${project.id}" and status_id = "${closed}"`), 2);
+      expect((await gritDb.issues.get(ids[2])).status_id, open,
+        'a row outside the selection must not be touched');
+
+      const audit = await gritDb.issues.audit(selected[0]);
+      expect(audit.map((a) => a.op).join(','), 'insert,update');
+      expect(audit[1].after.status_id, closed);
+      expect((await gritDb.issues.get(selected[0])).version, 2, 'one version step per row');
+
+      expect(await throws(() => gritDb.issues.updateWhere(`id in ("${ids[2]}")`, {number: 9})), true,
+        'an assigned number stays immutable in bulk too');
+    } finally {
+      for (const id of ids)
+        await gritDb.issues.delete(id);
+      await gritDb.projects.delete(project.id);
+    }
+  });
+
   test('labels: N:N join cascades with the issue', async () => {
     const [project] = await gritDb.projects.insert({key: unique('T'), name: 'Labels'});
     const [issue] = await gritDb.issues.insert({project_id: project.id, title: 'Labeled'});

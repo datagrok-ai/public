@@ -37,6 +37,8 @@ related_bugs:
     status: fixed
   - id: GROK-17081
     status: fixed
+  - id: GROK-20912
+    status: open
   - id: GROK-16598
     status: fixed
 ---
@@ -141,7 +143,9 @@ Switching the table always rebuilds the card for the new table's columns, whethe
 1. Make sure the tiles are in a single lane (clear the Lanes grouping)
 2. Scroll the lane down with the mouse wheel until it is well away from the top, and note which patient is the first card shown
 3. Add another viewer to the same view (for example a histogram)
-4. Verify the lane is still scrolled to the same place and still starts with the same patient — the tiles are not re-based to the top
+4. Verify the lane is still scrolled to the same place and still starts with the same patient — the tiles are not re-based to the top. The lane may settle up to one tile row higher, on the start of the row that was on top
+5. Close the other viewer with the X in its title bar
+6. Verify the lane is still scrolled to the same place and still starts with the same patient (GROK-20912: it resets to the top)
 
 ## Automation notes
 
@@ -199,7 +203,10 @@ Switching the table always rebuilds the card for the new table's columns, whethe
   client puts the position back ~800 ms later, the `?mode=local` client never does and stays on
   row 0. The step therefore waits for the lane read to return to its pre-dock value (capped at the
   2 s it replaced) and scrolls to mid-range rather than to the clamp, where the browser itself moves
-  scrollTop when the lane shortens.
+  scrollTop when the lane shortens. The restored position snaps to the start of the top tile row
+  (95 px above the wheel position on dev, 2026-09-17), so the step allows less than one row pitch.
+  The histogram is added from the Toolbox icon and closed with the title-bar X, the path of the
+  GROK-20912 recording; the close check is wrapped in knownOpenBug('GROK-20912').
 - WAITS: no fixed sleeps. A tile click waits for the current-row/selection stamp to move; a
   property change waits for the viewer's own `onViewerRendered` (armed before the set) or polls the
   exact predicate the step asserts, capped at the sleep it replaced; the scroll step settles the

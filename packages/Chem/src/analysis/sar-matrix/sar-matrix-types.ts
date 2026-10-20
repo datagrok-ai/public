@@ -41,8 +41,10 @@ export interface CoreCluster {
 }
 
 /** `unmeasured` is a compound the dataset already holds whose activity is missing. It is kept apart
- *  from `empty` so the Free-Wilson fill cannot propose synthesizing something that already exists. */
-export type SarMatrixCellKind = 'real' | 'virtual' | 'empty' | 'unmeasured';
+ *  from `empty` so the Free-Wilson fill cannot propose synthesizing something that already exists.
+ *  `impossible` is a combination the R-groups cannot form (no attachment point for the substituent);
+ *  it is never predicted. */
+export type SarMatrixCellKind = 'real' | 'virtual' | 'empty' | 'unmeasured' | 'impossible';
 
 export interface SarMatrixCell {
   kind: SarMatrixCellKind;

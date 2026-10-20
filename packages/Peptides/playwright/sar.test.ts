@@ -129,8 +129,8 @@ test('SAR — Launch and verify viewers (context-panel entry path)', async ({pag
     expect(state.viewers, 'Sequence Variability Map must persist after reload').toContain('Sequence Variability Map');
     expect(state.viewers, 'Most Potent Residues must persist after reload').toContain('Most Potent Residues');
     expect(state.svmHasCanvas, 'Sequence Variability Map did not re-render its canvas').toBe(true);
-    const errors = await page.evaluate(() =>
-      (grok.shell.lastError ? [String(grok.shell.lastError)] : []));
+    const errors = await page.evaluate(async () =>
+      ((e) => e ? [String(e)] : [])(await grok.shell.lastError));
     expect(errors.filter((e) => /setTrue|null/.test(e)).length,
       `GROK-19145 invariant: post-OK compute produced a null-receiver error: ${errors.join('; ')}`).toBe(0);
   });

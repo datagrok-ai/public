@@ -222,7 +222,8 @@ async function invokeViewFunction(args: any): Promise<any> {
   }
   const params: {[key: string]: any} = {...(args?.parameters ?? {})};
   // the targeted widget (when a ref was passed) — injected into `widget`-typed inputs,
-  // the calling convention of shared widget-action vocabularies (see DomainGrid)
+  // the calling convention of shared widget-action vocabularies (one Func per action,
+  // taking the widget it acts on)
   const targetWidget = args?.widget != null && args.widget !== '' ? resolveWidgetRef(view, args.widget) : null;
   for (const inp of f.inputs) {
     if (inp.name in params)

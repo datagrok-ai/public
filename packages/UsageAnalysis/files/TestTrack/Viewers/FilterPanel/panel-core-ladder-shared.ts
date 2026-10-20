@@ -159,11 +159,11 @@ export async function categoryRowPoint(page: Page, column: string, category: str
     if (idx < 0) return null;
     const overlayOf = () => Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
       .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === column)
-      ?.querySelector('[name="viewer-Grid"] [name="overlay"]') as HTMLElement | null | undefined;
+      ?.querySelector('[name="filter-grid"] [name="overlay"]') as HTMLElement | null | undefined;
     const needed = top + pitch * (idx + 1);
     const canvasOf = () => Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
       .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === column)
-      ?.querySelector('[name="viewer-Grid"] canvas[name="canvas"]') as HTMLCanvasElement | null | undefined;
+      ?.querySelector('[name="filter-grid"] canvas[name="canvas"]') as HTMLCanvasElement | null | undefined;
     // the row exists once the card body is tall enough AND its band carries paint: a click that
     // reaches the overlay before the grid has drawn the row finds nothing under it
     const rowPainted = () => {

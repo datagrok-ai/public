@@ -1,4 +1,4 @@
-import {FilterError, KIND} from './model.js';
+import {FilterError, KIND, isColumnRef, isParam} from './model.js';
 import type {FilterCondition, FilterKind, DomainConditionNode} from './model.js';
 import type {FilterProperty} from './schema.js';
 import {domainValue, kindOf} from './kinds.js';
@@ -150,14 +150,22 @@ const EDITORS: FilterOperator['editor'][] = ['default', 'range', 'list', 'none']
 const ORDERED: FilterKind[] = [KIND.INT, KIND.FLOAT, KIND.BIG_INT, KIND.DATE_TIME];
 const LISTABLE: FilterKind[] = [KIND.STRING, KIND.INT, KIND.FLOAT, KIND.BIG_INT, KIND.REF];
 const TEXT: FilterKind[] = [KIND.STRING, KIND.STRING_LIST];
+/** What `under` applies to: a ref column, and the string-kinded `id` column of a hierarchy table. */
+const SUBTREE: FilterKind[] = [KIND.REF, KIND.STRING];
 
 /** Escapes LIKE metacharacters. */
 export function escapeLike(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
 }
 
-function likeValue(c: FilterCondition, shape: (v: string) => string): string {
-  return c.options?.raw === true ? String(c.value) : shape(escapeLike(String(c.value ?? '')));
+/** A column reference or a `$param` as the domain tree carries it — never shaped into a
+ * pattern; the binder or the server shapes it — else the text `shape` answers. */
+function textValue(c: FilterCondition, shape: () => string): unknown {
+  return isColumnRef(c.value) ? {$column: c.value.column} : isParam(c.value) ? {$param: c.value.param} : shape();
+}
+
+function likeValue(c: FilterCondition, shape: (v: string) => string): unknown {
+  return textValue(c, () => c.options?.raw === true ? String(c.value) : shape(escapeLike(String(c.value ?? ''))));
 }
 
 const node = (property: string, operator: string, value?: unknown): DomainConditionNode =>
@@ -228,6 +236,13 @@ export const CORE_OPERATORS: FilterOperator[] = [
     domain: (c, _prop, ctx) => node(c.property, '!=', domainValue(c.value, ctx)),
     mask: where((x, list: MaskCell[]) => !list.includes(x)),
   },
+  {
+    // The hierarchy subtree term: the server walks the target's parent column
+    // recursively, so — like `fuzzy` — it has no DataFrame form and stays
+    // domain-only (an evaluation attempt is the standard 'not-expressible').
+    id: 'under', label: 'is under', arity: 1, kinds: SUBTREE, editor: 'default',
+    domain: (c, _prop, ctx) => node(c.property, 'under', domainValue(c.value, ctx)),
+  },
   likeShape('like', 'contains', TEXT, 'like', (v) => `%${v}%`, (s, v) => s.includes(v)),
   {
     id: '!like', label: 'does not contain', arity: 1, kinds: TEXT, editor: 'default',
@@ -238,21 +253,21 @@ export const CORE_OPERATORS: FilterOperator[] = [
   likeShape('ends', 'ends with', [KIND.STRING], 'like', (v) => `%${v}`, (s, v) => s.endsWith(v)),
   {
     id: 'matches', label: 'matches regex', arity: 1, kinds: [KIND.STRING], editor: 'default',
-    domain: (c) => node(c.property, '~*', String(c.value)),
+    domain: (c) => node(c.property, '~*', textValue(c, () => String(c.value))),
     mask: regexMask(false),
   },
   {
     id: '!matches', label: 'does not match', arity: 1, kinds: [KIND.STRING], editor: 'default',
-    domain: (c) => node(c.property, '!~*', String(c.value)),
+    domain: (c) => node(c.property, '!~*', textValue(c, () => String(c.value))),
     mask: regexMask(true),
   },
   {
     id: 'fuzzy', label: 'is similar to', arity: 1, kinds: [KIND.STRING], editor: 'default',
     domain: (c) => {
-      const value = String(c.value);
+      const value = textValue(c, () => String(c.value));
       const threshold = typeof c.options?.threshold === 'number' ? c.options.threshold : null;
       return [{property: c.property, operator: 'fuzzy', threshold, value}, 'or',
-        node(c.property, 'like', `%${value}%`)];
+        node(c.property, 'like', textValue(c, () => `%${String(c.value)}%`))];
     },
   },
   {

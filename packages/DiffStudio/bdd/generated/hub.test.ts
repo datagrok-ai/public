@@ -27,7 +27,7 @@ test.describe("The app's hub, and the Open model menu", () => {
       await session.step(9, "Given user opens the Diff Studio app", () => openApp(page));
       await session.step(10, "Then the \"Diff Studio\" view should be current", () => viewIsCurrent(page, "Diff Studio"));
       await session.step(11, "And Create button should be visible", () => shouldBe(page, el("Create button"), "visible"));
-      await session.step(12, "When user double-clicks on Bioreactor hub card", () => doubleClickOn(page, el("Bioreactor hub card")));
+      await session.step(12, "When user double-clicks on Bioreactor hub card inside library section", () => doubleClickOn(page, el("Bioreactor hub card inside library section")));
       await session.step(13, "Then the \"Bioreactor\" view should be current", () => viewIsCurrent(page, "Bioreactor"));
       await session.step(14, "And \"Process mode\" input should be visible", () => shouldBe(page, el("\"Process mode\" input"), "visible"));
     });

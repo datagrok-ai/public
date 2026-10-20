@@ -1,13 +1,17 @@
-import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
+import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink, isActionVisible} from './link-matching';
-import {Action, Link} from './Link';
+import {AnnotationLinkKind} from '../data/common-types';
+import {Action, Link, STRUCTURE_VISIBILITY} from './Link';
 import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest, identity, EMPTY, asapScheduler} from 'rxjs';
 import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap, finalize} from 'rxjs/operators';
 import {DriverLogger} from '../data/Logger';
 import {getLinksDiff} from './links-diff';
 import {ViewAction} from '../config/PipelineInstance';
-import {calculateStepsDependencies, calculateIoDependencies, createDefaultValidators, DependenciesData, IoDeps} from './links-dependencies';
+import {
+  calculateStepsDependencies, calculateIoDependencies, DependenciesData, IoDeps,
+  pruneLinkedTargets,
+} from './links-dependencies';
 
 export interface LinksData {
   uuid: string;
@@ -18,6 +22,10 @@ export interface LinksData {
   matchInfo: MatchInfo;
 }
 
+// annotation checks run only with the annotationChecks option and stay out of links info and the link log
+export const isAnnotationCheck = (spec: {annotation?: AnnotationLinkKind}) =>
+  spec.annotation === 'check' || spec.annotation === 'required';
+
 export class LinksState {
   private closed$ = new Subject<true>();
   private linksUpdates = new Subject<true>();
@@ -26,7 +34,7 @@ export class LinksState {
   public links: Map<string, Link> = new Map();
   public actions: Map<string, Action> = new Map();
   public nodesActions: Map<string, Action[]> = new Map();
-  public actionsVisibility: Map<string, boolean> = new Map();
+  public hiddenActions$ = new BehaviorSubject<ReadonlySet<string>>(new Set());
   public stepsDependencies: Map<string, DependenciesData> = new Map();
   public ioDependencies: Map<string, IoDeps> = new Map();
 
@@ -38,7 +46,7 @@ export class LinksState {
   private batchTrigger$ = new Subject<void>();
 
   constructor(
-    private defaultValidators: boolean = false,
+    private annotationChecks: boolean = false,
     private logger?: DriverLogger,
     batchLinks: boolean = false,
   ) {
@@ -71,13 +79,16 @@ export class LinksState {
     const oldLinks = [...this.links.values()];
     const oldActions = [...this.actions.values()];
 
-    const [links, addedLinks] = this.updateLinks(state, oldLinks);
-    this.links = new Map(links.map((link) => [link.uuid, link] as const));
-
-    const [actions, nodesActions, actionsVisibility] = this.updateActions(state, oldActions);
+    const [actions, nodesActions] = this.updateActions(state, oldActions);
     this.actions = new Map(actions.map((link) => [link.uuid, link] as const));
     this.nodesActions = nodesActions;
-    this.actionsVisibility = actionsVisibility;
+
+    const [links, addedLinks] = this.updateLinks(state, oldLinks);
+    this.links = new Map(links.map((link) => [link.uuid, link] as const));
+    const linkIds = new Set(this.links.keys());
+    for (const action of this.actions.values())
+      action.pruneVisibility(linkIds);
+    this.updateHiddenActions();
 
     this.stepsDependencies = calculateStepsDependencies(state, links);
     this.ioDependencies = calculateIoDependencies(state, links, this.logger);
@@ -87,7 +98,7 @@ export class LinksState {
       const newMeta = addedLinks.filter((link) => !this.isDataLink(link));
       this.linksUpdates.next(true);
       return concat(
-        of(this.wireLinks(state)),
+        of(this.wireLinks(state, true)),
         this.runNewInits(state),
         this.runLinks(state, this.toLinksMap(newData), false),
         this.runLinks(state, this.toLinksMap(newMeta), true),
@@ -100,7 +111,7 @@ export class LinksState {
         of(this.wireLinks(state)),
         this.runNewInits(state),
         this.runLinks(state, initLinks, false),
-        (this.defaultValidators || this.forceInitialMetaRun) ? of(null).pipe(delay(0, asapScheduler), concatMap(() => this.runLinks(state, metaMap, true))) : of(null),
+        (this.annotationChecks || this.forceInitialMetaRun) ? of(null).pipe(delay(0, asapScheduler), concatMap(() => this.runLinks(state, metaMap, true))) : of(null),
       ).pipe(toArray(), mapTo(undefined));
     }
   }
@@ -109,17 +120,31 @@ export class LinksState {
     const actions = this.nodesActions.get(uuid);
     if (actions) {
       return actions.map(({uuid, spec: {id, position, description, menuCategory, friendlyName, icon, confirmationMessage, visibleOn}}) =>
-        ({uuid, id, position, description, menuCategory, friendlyName, icon, confirmationMessage, visibleOn, visible: this.actionsVisibility.get(uuid) ?? true}));
+        ({uuid, id, position, description, menuCategory, friendlyName, icon, confirmationMessage, visibleOn}));
     }
     return actions;
   }
 
+  public isActionVisible(uuid: string) {
+    return this.actions.get(uuid)?.isVisible() ?? true;
+  }
+
+  public updateHiddenActions() {
+    const hidden = new Set<string>();
+    for (const action of this.actions.values()) {
+      if (!action.isVisible())
+        hidden.add(action.uuid);
+    }
+    const prev = this.hiddenActions$.value;
+    if (hidden.size !== prev.size || [...hidden].some((uuid) => !prev.has(uuid)))
+      this.hiddenActions$.next(hidden);
+  }
+
   public updateLinks(state: BaseTree<StateTreeNode>, oldLinks: Link[]) {
     const newLinks = this.createStateLinks(state);
-    if (this.defaultValidators) {
-      const validators = createDefaultValidators(state, this.logger);
-      newLinks.push(...validators);
-    }
+    pruneLinkedTargets(state, newLinks);
+    if (this.annotationChecks)
+      newLinks.push(...this.createStateLinks(state, isAnnotationCheck));
     return this.mergeLinks(oldLinks, newLinks, 'link');
   }
 
@@ -127,10 +152,13 @@ export class LinksState {
     const newActions = this.createStateActions(state);
     const [mergedActions] = this.mergeLinks(oldActions, newActions, 'action');
     const nodeActions = new Map<string, Action[]>;
-    const actionsVisibility = new Map<string, boolean>();
     for (const action of mergedActions) {
       const owningNode = state.getNode(action.prefix);
-      actionsVisibility.set(action.uuid, isActionVisible(owningNode, action.spec));
+      // withdrawn rather than set to visible, like orphaned meta
+      if (isActionVisible(owningNode, action.spec))
+        action.removeVisibility(STRUCTURE_VISIBILITY);
+      else
+        action.setVisibility(STRUCTURE_VISIBILITY, false);
       const visibleOn = action.spec.visibleOn;
       let targetUuid: string;
       if (visibleOn) {
@@ -145,7 +173,7 @@ export class LinksState {
       acts.push(action);
       nodeActions.set(targetUuid, acts);
     }
-    return [mergedActions, nodeActions, actionsVisibility] as const;
+    return [mergedActions, nodeActions] as const;
   }
 
   private mergeLinks<L extends Link>(oldLinks: L[], newLinks: L[], prefix: 'link' | 'action'): [L[], L[]] {
@@ -156,15 +184,15 @@ export class LinksState {
       if (!toRemove.has(oldLink.uuid))
         mergedLinks.push(oldLink);
       else {
-        if (this.logger && !oldLink.matchInfo.isDefaultValidator)
-          this.logger.logLink(`${prefix}Removed`, {linkUUID: oldLink.uuid, prefix: oldLink.prefix, basePath: oldLink.matchInfo.basePath, id: oldLink.matchInfo.spec.id});
+        if (this.logger && !isAnnotationCheck(oldLink.matchInfo.spec))
+          this.logger.logLink(`${prefix}Removed`, {linkUUID: oldLink.uuid, prefix: oldLink.prefix, basePath: oldLink.matchInfo.basePath, id: oldLink.matchInfo.spec.id, annotation: oldLink.matchInfo.spec.annotation});
         oldLink.destroy();
       }
     }
     for (const newLink of newLinks) {
       if (toAdd.has(newLink.uuid)) {
-        if (this.logger && !newLink.matchInfo.isDefaultValidator)
-          this.logger.logLink(`${prefix}Added`, {linkUUID: newLink.uuid, prefix: newLink.prefix, basePath: newLink.matchInfo.basePath, id: newLink.matchInfo.spec.id});
+        if (this.logger && !isAnnotationCheck(newLink.matchInfo.spec))
+          this.logger.logLink(`${prefix}Added`, {linkUUID: newLink.uuid, prefix: newLink.prefix, basePath: newLink.matchInfo.basePath, id: newLink.matchInfo.spec.id, annotation: newLink.matchInfo.spec.annotation});
         mergedLinks.push(newLink);
         addedLinks.push(newLink);
       }
@@ -172,15 +200,17 @@ export class LinksState {
     return [mergedLinks, addedLinks] as const;
   }
 
-  public createStateLinks(state: BaseTree<StateTreeNode>) {
+  public createStateLinks(
+    state: BaseTree<StateTreeNode>, include: (spec: LinkSpec) => boolean = (spec) => !isAnnotationCheck(spec),
+  ) {
     const links = state.traverse(state.root, (acc, node, path) => {
-      const item = node.getItem();
-      const {config} = item;
-      const matchedLinks = (config.links ?? [])
+      const matchedLinks = (node.getItem().config.links ?? [])
+        .filter(include)
         .map((link) => matchNodeLink(node, link))
         .filter((x) => !!x)
         .flat();
       const links = matchedLinks.map((minfo) => {
+        this.resolveActions(node, minfo);
         const spec = minfo.spec;
         const debounce = (spec.type === 'validator' || spec.type === 'pipelineValidator')
           ? (spec.debounce ?? (this.batchLinks ? 0 : undefined))
@@ -191,6 +221,18 @@ export class LinksState {
       return [...acc, ...links];
     }, [] as Link[]);
     return links;
+  }
+
+  private resolveActions(node: TreeNode<StateTreeNode>, minfo: MatchInfo) {
+    for (const [name, paths] of Object.entries(minfo.actions)) {
+      const actions = paths.length ? this.nodesActions.get(node.getNode(paths[0].path).getItem().uuid) ?? [] : [];
+      const ids = new Map<string, string[]>();
+      for (const action of actions) {
+        const id = action.matchInfo.spec.id;
+        ids.set(id, ids.get(id) ?? []).get(id)!.push(action.uuid);
+      }
+      minfo.actionsUUID.set(name, ids);
+    }
   }
 
   public createStateActions(state: BaseTree<StateTreeNode>) {
@@ -280,7 +322,7 @@ export class LinksState {
   public runNewInits(state: BaseTree<StateTreeNode>) {
     const obs = state.traverse(state.root, (acc, node, path) => {
       const item = node.getItem();
-      if (!isFuncCallNode(item) && !this.runnedInit.has(item.uuid) && item.config.onInit) {
+      if (!isFuncCallNode(item) && !item.skipOnInit && !this.runnedInit.has(item.uuid) && item.config.onInit) {
         const minfo = matchNodeLink(node, item.config.onInit, path);
         if (!minfo)
           return acc;
@@ -325,19 +367,22 @@ export class LinksState {
   }
 
 
-  public wireLinks(state: BaseTree<StateTreeNode>) {
+  public wireLinks(state: BaseTree<StateTreeNode>, isMutation = false) {
     for (const [, link] of this.links) {
       link.wire(state, this);
       link.setActive();
     }
     for (const [, action] of this.actions)
       action.wire(state, this);
-    this.triggerPipelineValidators();
+    this.triggerStructureLinks(isMutation);
   }
 
-  private triggerPipelineValidators() {
+  // they read the tree structure, so a rewire is their input change;
+  // data links keep the values of a created or loaded workflow, as they do without $steps
+  private triggerStructureLinks(isMutation: boolean) {
     for (const [, link] of this.links) {
-      if (link.isPipelineValidator)
+      const readsSteps = link.matchInfo.spec.params?.readsSteps && (isMutation || !this.isDataLink(link));
+      if (link.isPipelineValidator || readsSteps)
         link.trigger();
     }
   }
@@ -355,8 +400,10 @@ export class LinksState {
     this.closed$.next(true);
   }
 
-  public getLinksInfo(): LinksData[] {
-    const links = [...this.links.values()].filter((l) => !l.matchInfo.isDefaultValidator).map((l) => ({id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: false, matchInfo: l.matchInfo}));
+  public getLinksInfo(includeAnnotationChecks = false): LinksData[] {
+    const links = [...this.links.values()]
+      .filter((l) => includeAnnotationChecks || !isAnnotationCheck(l.matchInfo.spec))
+      .map((l) => ({id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: false, matchInfo: l.matchInfo}));
     const actions = [...this.actions.values()].map((l) => ({id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: true, matchInfo: l.matchInfo}));
     return [...links, ...actions];
   }
@@ -380,10 +427,6 @@ export class LinksState {
 
   public isOnInitDataLink(link: Link) {
     return (!link.matchInfo.spec.type || link.matchInfo.spec.type === 'data') && link.matchInfo.spec.runOnInit;
-  }
-
-  public isDefaultValidatorLink(link: Link) {
-    return link.matchInfo.isDefaultValidator;
   }
 
   private getLinkRunObs(linkUUID: string) {

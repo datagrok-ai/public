@@ -1,4 +1,5 @@
 {
+    "search.followSymlinks": false,
     "cSpell.words": [
         "ADME",
         "ADMET",
@@ -77,11 +78,16 @@
         "webservice",
         "Webservices"
     ],
-
     "files.exclude": {
         "**/*-test.side": {},
-        "**/*.d.ts": {"when": "$(basename).ts"},
-        "**/*.js": {"when": "$(basename).ts"},
-        "**/*.map": {"when": "$(basename).map"}
+        "**/*.d.ts": {
+            "when": "$(basename).ts"
+        },
+        "**/*.js": {
+            "when": "$(basename).ts"
+        },
+        "**/*.map": {
+            "when": "$(basename).map"
+        }
     }
 }

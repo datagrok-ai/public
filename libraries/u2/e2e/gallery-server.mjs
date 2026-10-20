@@ -9,22 +9,22 @@ import {fileURLToPath} from 'node:url';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const SERVED = ['gallery', 'css', 'src', 'vendor', 'node_modules/@floating-ui',
-  'node_modules/datagrok-api/src/u2core', 'node_modules/datagrok-api/src/const.js'];
+  'node_modules/datagrok-api/dist/src/u2core', 'node_modules/datagrok-api/dist/src/const.js'];
 const MIME = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.json': 'application/json', '.map': 'application/json',
   '.woff2': 'font/woff2', '.svg': 'image/svg+xml'};
 
 /** Listens on a free loopback port; `close()` resolves once the port is actually released. */
-export function startGalleryServer() {
+export function startGalleryServer(root = ROOT, served = SERVED) {
   const server = createServer(async (req, res) => {
     try {
       let path = decodeURIComponent(req.url.split(/[?#]/)[0]).replace(/^\/+/, '');
       if (path === '' || path.endsWith('/'))
         path += 'index.html';
       const rel = normalize(path).split('\\').join('/');
-      const file = join(ROOT, rel);
-      if (!file.startsWith(ROOT) || !SERVED.some((dir) => rel === dir || rel.startsWith(`${dir}/`)))
+      const file = join(root, rel);
+      if (!file.startsWith(root) || !served.some((dir) => rel === dir || rel.startsWith(`${dir}/`)))
         return void res.writeHead(403).end('forbidden');
       try {
         await stat(file);

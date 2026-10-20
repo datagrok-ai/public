@@ -21,7 +21,7 @@ MolNotation.CxSmiles = 'cxsmiles';
 
 // datagrok libraries dependencies
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {getMolSafe} from './mol-creation_rdkit';
+import {getMolSafe, isSmilesSyntax} from './mol-creation_rdkit';
 import {getRdKitService} from './chem-common-rdkit';
 
 
@@ -35,6 +35,8 @@ Malformed
 
   0  0  0  0  0  0            999 V3000
 M  END`;
+
+const cxWithoutCoordsJSON = JSON.stringify({CX_ALL_BUT_COORDS: true});
 
 /**
  * Convert between the following notations: SMILES, SMARTS, Molfile V2000 and Molfile V3000
@@ -71,6 +73,10 @@ export function _convertMolNotation(
             mol!.set_new_coords();
           mol.normalize_depiction(1);
           mol.straighten_depiction(false);
+          // SMILES stereo is absolute, and so is the molblock's (its chiral flag): without the flag, a reader that honours
+          // it (Ketcher's Indigo) took the centres as relative, and the molecule cell editor wrote them back as an AND group
+          if (moleculeString.includes('@'))
+            mol.set_prop('_MolFileChiralFlag', '1');
         }
         if (addHs) {
           try {
@@ -85,8 +91,8 @@ export function _convertMolNotation(
         result = mol.get_v3Kmolblock();
       if (targetNotation === MolNotation.Smarts)
         result = mol.get_smarts(); // @ts-ignore
-      if (targetNotation === MolNotation.CxSmiles)
-        result = mol.get_cxsmiles(); // @ts-ignore
+      if (targetNotation === MolNotation.CxSmiles) // @ts-ignore temporary until chem-meta update
+        result = mol.get_cxsmiles(cxWithoutCoordsJSON); // @ts-ignore
       if (targetNotation === MolNotation.CxSmarts)
         result = mol.get_cxsmarts();
       // if (targetNotation === MolNotation.Inchi)
@@ -107,6 +113,13 @@ export function molToMolblock(molStr: string, module: RDModule): string {
 
 export function molToSmiles(molStr: string, module: RDModule): string {
   return _convertMolNotation(molStr, MolNotation.Unknown, MolNotation.Smiles, module);
+}
+
+/** A molecule string as SMILES, as Copy SMILES gives it: the string itself when it is written in SMILES syntax alone, else
+ * RDKit's SMILES of it (a molblock, a SMARTS, a CXSMILES, whose extension a SMILES does not carry: one was copied as it
+ * stood unless SMARTS syntax was read in its extension, `&1` or `$Q_e$`). */
+export function asSmiles(molStr: string, module: RDModule): string {
+  return isSmilesSyntax(molStr) ? molStr : molToSmiles(molStr, module);
 }
 
 export async function convertNotationForColumn(molecules: DG.Column<string>, targetNotation: MolNotation, kekulize = false): Promise<string[]> {

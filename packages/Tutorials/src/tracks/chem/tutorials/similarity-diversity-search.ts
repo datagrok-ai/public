@@ -2,11 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
+import {fromEvent, interval} from 'rxjs';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {Observable} from 'rxjs';
 import $ from 'cash-dom';
-import { _package } from '../../../package';
-import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
+import {_package} from '../../../package';
+import {getPlatform, Platform, platformKeyMap} from '../../shortcuts';
 
 
 export class SimilarityDiversitySearchTutorial extends Tutorial {
@@ -25,7 +26,7 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
   get icon() {
     return '🔍🧬';
   }
-  
+
   helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#similarity-and-diversity-search';
   demoTable: string = '';
   prerequisites: TutorialPrerequisites = {packages: ['Chem']};
@@ -53,28 +54,30 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     let sim: DG.Viewer;
     let div: DG.Viewer;
     await this.action('On the Top Menu, click Chem > Search > Similarity Search...',
-    grok.events.onViewerAdded.pipe(filter((data: DG.EventData) => {
-      if (data.args.viewer.type === 'Chem Similarity Search')
-        sim = data.args.viewer;
-      return !!sim;
-    })), this.getMenuItem('Chem', true));
+      grok.events.onViewerAdded.pipe(filter((data: DG.EventData) => {
+        if (data.args.viewer.type === 'Chem Similarity Search')
+          sim = data.args.viewer;
+        return !!sim;
+      })), () => this.getMenuItem('Chem', true), '', () => grok.shell.tv.addViewer('Chem Similarity Search'));
 
     await this.action('Next, click Chem > Search > Diversity Search...',
-    grok.events.onViewerAdded.pipe(filter((data: DG.EventData) => {
-      if (data.args.viewer.type === 'Chem Diversity Search')
-        div = data.args.viewer;
-      return !!div;
-    })), this.getMenuItem('Chem', true));
+      grok.events.onViewerAdded.pipe(filter((data: DG.EventData) => {
+        if (data.args.viewer.type === 'Chem Diversity Search')
+          div = data.args.viewer;
+        return !!div;
+      })), () => this.getMenuItem('Chem', true), '', () => grok.shell.tv.addViewer('Chem Diversity Search'));
 
     this.title('Explore the dataset using similarity and diversity viewers', true);
     this.describe(`The similarity and diversity viewers are interactive and are synchronized with each other,
     the chemical spreadsheet (grid), and other viewers.`);
 
     await this.action('On the Most similar structures viewer, click the molecule next to the reference molecule',
-    this.t.onCurrentRowChanged, undefined, 'Note how it’s now the current molecule in the grid');
+      this.t.onCurrentRowChanged, undefined, 'Note how it’s now the current molecule in the grid',
+      () => this.t!.currentRowIdx = this.t!.currentRowIdx === 0 ? 1 : 0);
 
     await this.action('Now, click any molecule in the diversity viewer',
-    this.t.onCurrentRowChanged, undefined, 'Note the change in the similarity viewer');
+      this.t.onCurrentRowChanged, undefined, 'Note the change in the similarity viewer',
+      () => this.t!.currentRowIdx = this.t!.currentRowIdx === 0 ? 1 : 0);
 
     this.title('Lock in a reference molecule', true);
     this.describe(`By default, a reference molecule in the similarity viewer follows the current row.
@@ -82,23 +85,17 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
 
     //await this.contextMenuAction('Right-click the similarity viewer and select Properties...', 'Properties...');
 
-    await this.action('Hover over similarity viewer and click gear icon in the right top corner of the viewer to open settings',
-      new Observable((subscriber: any) => {
-        $('.grok-icon.grok-font-icon-settings').one('click', () => subscriber.next(true));
-      }), sim!.root.parentElement?.parentElement?.getElementsByClassName('grok-font-icon-settings')[0] as HTMLElement);
+    // the gear sits in the viewer's title bar, outside its root; only this viewer's gear counts
+    const simGear = () => sim!.root.parentElement?.parentElement
+      ?.getElementsByClassName('grok-font-icon-settings')[0] as HTMLElement ?? null;
+    await this.action(
+      'Hover over similarity viewer and click gear icon in the right top corner of the viewer to open settings',
+      fromEvent(document, 'click').pipe(filter((e) => simGear() != null && simGear().contains(e.target as Node))),
+      simGear, '', () => simGear()!.click());
 
-    await this.action('Under Misc, clear the Follow Current Row checkbox', new Observable((subscriber: any) => {
-      const observer = new MutationObserver((mutationsList, observer) => {
-        mutationsList.forEach((m) => {
-          //@ts-ignore
-          if (m.attributeName === 'class' && m.target.innerText === 'Follow Current Row') {
-            subscriber.next(true);
-            observer.disconnect();
-          }
-        });
-      });
-      observer.observe($('.grok-prop-panel').get(0)!, {subtree: true, attributes: true});
-    }));
+    await this.action('Under Misc, clear the Follow Current Row checkbox',
+      interval(200).pipe(filter(() => sim!.props.followCurrentRow === false)), undefined, '',
+      () => sim!.setOptions({followCurrentRow: false}));
 
     // let j = 0;
     // await this.action('Click anywhere in the viewer and in the grid', this.t.onCurrentRowChanged.pipe(filter(() => {
@@ -112,18 +109,24 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     the structure or by pasting its identifier. For this tutorial, let’s paste the molecule's SMILES.`);
 
     const d = await this.openDialog('On the reference molecule, click the Edit icon', '',
-      $('.grok-icon.fal.fa-pen.similarity-search-edit.chem-mol-view-icon').get(0));
+      () => $('.d4-chem-similarity-search .chem-similarity-search-edit').get(0) ?? null, '',
+      () => $('.d4-chem-similarity-search .chem-similarity-search-edit').get(0)!.click());
 
     const MOL = 'CNc1nc(Nc2ccc(Br)cc2)nc(N)c1[N+](=O)[O-]';
     const copyButton = ui.button(ui.iconFA('clone'), () => {}, 'Copy molecule');
-    copyButton.setAttribute('onclick', `navigator.clipboard.writeText('${MOL}')`)
+    copyButton.setAttribute('onclick', `navigator.clipboard.writeText('${MOL}')`);
     copyButton.style.height = 'initial';
     copyButton.style.margin = '0';
-    await this.action('Set new reference molecule', 
+    await this.action('Set new reference molecule',
       d.onClose, undefined, `In the sketcher, paste<br>
       <b>${MOL}</b>${copyButton.outerHTML}<br>
       Press <b>${platformKeyMap['Enter'][this.platform]}</b> to apply.<br>
-      Then, click <b>OK</b>`);
+      Then, click <b>OK</b>`, () => {
+        const smiles = d.root.querySelector('input[placeholder^="SMILES"]') as HTMLInputElement;
+        smiles.value = MOL;
+        smiles.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
+        d.getButton('OK').click();
+      });
 
     this.title('Get insights using Context Panel', true);
     this.describe(`As you explore the dataset, the <b>Context Panel</b> dynamically updates to show data
@@ -131,11 +134,13 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     this in the similarity viewer, keeping the focus on the chosen reference molecule while exploring other data.<br>
     In this case, to view information about a molecule on the <b>Context Panel</b>, you need to access it directly
     from the viewer. Let’s explore information about the reference molecule.`);
-    
+
     await this.contextMenuAction('Hover over the reference molecule, click the More icon, and then Explore', 'Explore',
-      $('.d4-chem-similarity-search .grok-icon.fal.fa-ellipsis-v.chem-mol-view-icon.pep-more-icon').get(0),
-      'The Context Panel updates with relevant information');
-    
+      () => $('.d4-chem-similarity-search .grok-icon.fal.fa-ellipsis-v.chem-mol-view-icon.pep-more-icon')
+        .get(0) ?? null,
+      'The Context Panel updates with relevant information',
+      () => grok.shell.setCurrentObject(DG.SemanticValue.fromValueType(MOL, DG.SEMTYPE.MOLECULE), false));
+
     // let k = 0;
     // await this.action('Explore Context Panel', new Observable((subscriber: any) => {
     //   const func = () => {
@@ -153,34 +158,32 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     this.describe(`You can change search parameters and other settings anytime. To do so, use the viewer’s settings.
     For now, let’s add some data on the molecule cards.`);
 
-    await this.action('In the top right corner of the diversity viewer, click Tanimoto, Morgan', new Observable((subscriber: any) => {
-      $('.d4-chem-diversity-search .ui-link').on('click', () => subscriber.next(true));
-    }), $('.d4-chem-diversity-search .ui-link').get(0));
+    await this.action('In the top right corner of the diversity viewer, click Tanimoto, Morgan',
+      new Observable((subscriber: any) => {
+        $('.d4-chem-diversity-search .ui-link').on('click', () => subscriber.next(true));
+      }), () => $('.d4-chem-diversity-search .ui-link').get(0) ?? null, '',
+      () => $('.d4-chem-diversity-search .ui-link').get(0)!.click());
 
-    await this.action('Select NumValenceElectrons column', new Observable((subscriber: any) => {
-      const observer = new MutationObserver((mutationsList, observer) => {
-        mutationsList.forEach((m) => {
-          //@ts-ignore
-          if (m.target.innerText === '1 / 31' || m.target.innerText === '1 / 32') {
-            subscriber.next(true);
-            observer.disconnect();
-          }
-        });
-      });
-      observer.observe($('.grok-prop-panel').get(0)!, {subtree: true, childList: true});
-    }), undefined, `On the <b>Context Panel</b>:
+    // the diversity viewer's link made it the current object: the column goes to its Molecule Properties
+    await this.action('Select NumValenceElectrons column',
+      interval(200).pipe(filter(() =>
+        ((div!.props.moleculeProperties ?? []) as string[]).includes('NumValenceElectrons'))),
+      undefined, `On the <b>Context Panel</b>:
     <ol><li>Under <b>Misc</b>, Next to <b>Molecule Properties</b>, click the column selector icon ('...').</li>
     <li>Select this column: <b>NumValenceElectrons</b>.</li>
-    <li>Click <b>OK</b>.</li></ol>`);
+    <li>Click <b>OK</b>.</li></ol>`, () => div!.setOptions({moleculeProperties: ['NumValenceElectrons']}));
 
     this.title('Color-code for quick profiling', true);
     this.describe(`Datagrok viewers can pick up color coding from the grid. Let’s color code the newly added values.
     You can further adjust the color setting in the viewer’s properties.`);
 
-    await this.action('Add Color Coding for NumValenceElectrons column', this.t.onMetadataChanged.pipe(filter((data: DG.EventData) => {
-      return data.args.change === 'set' && data.args.key === '.color-coding-type' && data.args.value === 'Linear' &&
-        data.args.source.name === 'NumValenceElectrons';
-    })), undefined, `<ol><li>In the grid, locate the <b>NumValenceElectrons</b> column and right-click its header.</li>
-    <li>Select <b>Color Coding</b> > <b>Linear</b></li></ol>`);
+    await this.action('Add Color Coding for NumValenceElectrons column',
+      this.t.onMetadataChanged.pipe(filter((data: DG.EventData) => {
+        return data.args.change === 'set' && data.args.key === '.color-coding-type' &&
+          data.args.value === 'Linear' && data.args.source.name === 'NumValenceElectrons';
+      })), undefined,
+      `<ol><li>In the grid, locate the <b>NumValenceElectrons</b> column and right-click its header.</li>
+    <li>Select <b>Color Coding</b> > <b>Linear</b></li></ol>`,
+      () => this.t!.col('NumValenceElectrons')!.meta.colors.setLinear());
   }
 }
