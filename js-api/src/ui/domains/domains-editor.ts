@@ -370,9 +370,7 @@ export class DomainFrameEditor implements IFrameEditor {
    * other per-row caches, which is the safe direction: a pristine row that lost
    * its mark counts as a change, never the other way round. */
   private _pristine = new Set<number>();
-  /** The columns of each `'new'` row written so far — the {@link addRow} values and every
-   * {@link setValue}/{@link commitEdit} — by draft id, which survives the index shifts that reset
-   * the per-row caches. */
+  /** Columns set on each `'new'` row, by draft id: unlike a row index it survives {@link _resetCaches}. */
   private _touched = new Map<string, Set<string>>();
   private _changeCount = 0;
   private _suspend = false;
@@ -700,6 +698,8 @@ export class DomainFrameEditor implements IFrameEditor {
     const original = column in this.changesOf(row) ? undefined : this._wire(row, column);
     this._write(() => this._df.set(column, row, value));
     this._track(row, column, original);
+    if (value == null)
+      this._touched.get(`${this._wire(row, 'id')}`)?.delete(column);
   }
 
   /** Tracks a cell the GRID already wrote (its `onCellValueEdited` path); the
@@ -740,7 +740,7 @@ export class DomainFrameEditor implements IFrameEditor {
       if (this._df.columns.contains('id')) {
         const draft = DomainFrameEditor.draftId();
         this._col('id').set(row, draft, false);
-        this._touched.set(draft, new Set(Object.keys(values ?? {})));
+        this._touched.set(draft, new Set(Object.keys(values ?? {}).filter((k) => values![k] != null)));
       }
       this._col(DomainFrameEditor.STATE_COLUMN).set(row, 'new', false);
     });
@@ -1035,6 +1035,7 @@ export class DomainFrameEditor implements IFrameEditor {
     this._write(() => {
       for (let row = this._df.rowCount - 1; row >= 0; row--)
         if (this.stateOf(row) === 'deleted' && !this._isPersisted(row)) {
+          this._touched.delete(`${this._wire(row, 'id')}`);
           this._df.rows.removeAt(row, 1, false);
           dropped++;
         }
@@ -1395,6 +1396,7 @@ export class DomainFrameEditor implements IFrameEditor {
     const df = await this.client.queryDf(spec ?? {});
     this._query = spec;
     this._unsubscribe();
+    this._touched.clear();
     this._df = df;
     this._bind(df);
     this._onRefreshed.next(df);
@@ -1550,9 +1552,7 @@ export class DomainFrameEditor implements IFrameEditor {
     return toWire(value);
   }
 
-  /** Whether the bool [column] of the new row [draftId] was never set and the server can fill it:
-   * the frame shows `false` there for want of an empty state, so only a required column with no
-   * default still takes that `false`. */
+  /** A bool cell shows `false` for want of an empty state: unset, it goes out only where nothing else can fill it. */
   private _unsetBool(draftId: any, column: string): boolean {
     const p = this._propByName.get(column);
     const touched = this._touched.get(`${draftId}`);

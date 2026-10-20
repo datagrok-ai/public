@@ -377,6 +377,10 @@ category('Dapi: domain frame editor', () => {
       editor.addRow({sku: 'untouched'});
       editor.setValue(editor.addRow({sku: 'unchecked'}), 'active', false);
       editor.addRow({sku: 'prefilled', active: false, archived: false});
+      editor.addRow({sku: 'nulled', active: null, archived: null});
+      const reset = editor.addRow({sku: 'reset'});
+      editor.setValue(reset, 'active', false);
+      editor.setValue(reset, 'active', null);
       expect(await editor.save(), true, 'the new rows were refused');
       const read = async (sku: string) =>
         await flags.first({filter: {property: 'sku', operator: '=', value: sku} as any}) as any;
@@ -388,6 +392,10 @@ category('Dapi: domain frame editor', () => {
       const prefilled = await read('prefilled');
       expect(prefilled.active, false, 'a bool prefilled by addRow was not sent');
       expect(prefilled.archived, false, 'a bool prefilled by addRow was not sent');
+      const nulled = await read('nulled');
+      expect(nulled.active, true, 'a null prefill counted as set');
+      expect(nulled.archived, null, 'a null prefill counted as set');
+      expect((await read('reset')).active, true, 'a bool set back to null was still sent');
       editor.detach();
     } finally {
       await grok.dapi.domains.schema(name).delete();
