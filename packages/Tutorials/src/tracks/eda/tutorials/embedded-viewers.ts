@@ -79,7 +79,9 @@ export class EmbeddedViewersTutorial extends Tutorial {
       interval(1000).pipe(
         map((_) => (trellis.getOptions() as {[key: string]: any }).look.innerViewerLook.colorColumnName),
         filter((name: string | undefined) => name === 'AGE')),
-      await waitForElement(() => trellis.root.querySelector<HTMLElement>('[name="div-column-combobox-color"]')),
+      // the strip names the Color input prop-view-color; only platforms after 1.27 also name its combo box
+      await waitForElement(() => trellis.root.querySelector<HTMLElement>(
+        '[name="prop-view-color"], [name="div-column-combobox-color"]')),
       'The properties of the inner scatter plot are shown in the strip at the top of the Trellis plot. ' +
       'Click the <b>Color</b> selector there and choose AGE. You can also find it in the context panel.',
       () => trellis.setOptions({innerViewerLook: {
