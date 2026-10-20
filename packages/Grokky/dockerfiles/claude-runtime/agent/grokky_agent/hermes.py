@@ -91,7 +91,11 @@ class PluginContext(Protocol):
 
 def new_agent(model: str, connection: Connection, session_id: str, store: SessionStore, toolsets: list[str],
               on_delta: Callable[[str | None], None]) -> Agent:
+    import agent.anthropic_adapter as anthropic_adapter
     from run_agent import AIAgent
+    # Hermes would send a string key as Bearer to the hosts on its list, Azure's among them, which documents keys in
+    # x-api-key or api-key and Bearer for Entra ID: the key's type decides (Connection), on every Anthropic client.
+    anthropic_adapter._requires_bearer_auth = lambda base_url: False
     agent: Agent = AIAgent(model=model, **connection, quiet_mode=True, session_id=session_id, session_db=store,
                            enabled_toolsets=toolsets, skip_context_files=True, skip_memory=True,
                            skip_background_review=True, stream_delta_callback=on_delta)
