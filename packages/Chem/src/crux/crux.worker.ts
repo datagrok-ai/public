@@ -1,12 +1,95 @@
-//@ts-ignore
-import initCrux, {Collection, CollectionBuilder} from './crux_wasm.js';
+// The Crux worker: Chem's one Crux file (vendor/chem-wasm), instantiated from the Module the main thread compiled
+// (engine/crux-module.ts). Substructure search over column segments; in Crux mode ("Chemical engine") descriptors, the
+// scaffold tree, and RDKit's own worker code run on Crux (fingerprints, structural alerts).
+import initChemWasm, * as chemWasm from '../../vendor/chem-wasm/chem_wasm.js';
+import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import type {CruxCollection, CruxWorkerApi} from './crux-api';
+import {RdKitServiceWorker} from '../rdkit-service/rdkit-service-worker';
+import {MAX_MOL_CACHE_SIZE} from '../rdkit-service/rdkit-service-worker-base';
+import {getMolSafe} from '../utils/mol-creation_rdkit';
 
+const crux = chemWasm as unknown as CruxWorkerApi;
 const ctx: Worker = self as any;
-const collections = new Map<string, Collection>();
+const collections = new Map<string, CruxCollection>();
+/** The RDKit worker's code over the Crux module, which answers RDKit.js's calls: the same fingerprints (Morgan r2/2048
+ * after remove_hs, pattern, ...) as the RDKit pool's (the alerts: {@link structuralAlerts}, the same matching). Made on
+ * first use, without its molecule cache (its budget spent from the start): each job parses its molecules and frees
+ * them. */
+let rdkitShaped: RdKitServiceWorker | null = null;
+function rdkitShapedWorker(): RdKitServiceWorker {
+  if (!rdkitShaped) {
+    rdkitShaped = new RdKitServiceWorker(chemWasm as unknown as RDModule, '');
+    rdkitShaped._cacheCounter = MAX_MOL_CACHE_SIZE;
+  }
+  return rdkitShaped;
+}
+
+/** The rows of `molecules` with a molecule Crux cannot read: the RDKit pool does them (engine/worker-jobs.ts). */
+function unread(molecules: string[], done: (i: number) => boolean): number[] {
+  const rows: number[] = [];
+  for (let i = 0; i < molecules.length; i++) {
+    if (!molecules[i] || done(i))
+      continue;
+    const mol = getMolSafe(molecules[i], {}, chemWasm as unknown as RDModule).mol;
+    if (mol)
+      mol.delete();
+    else
+      rows.push(i);
+  }
+  return rows;
+}
+
+/**
+ * Which molecules match each rule's SMARTS, as the RDKit worker's `getStructuralAlerts` matches them (a rule's flag is
+ * set by its first matching SMARTS), each molecule parsed once; and the rows with a molecule Crux cannot read.
+ */
+function structuralAlerts(alerts: {[rule: string]: string[]}, molecules: string[]):
+  {alerts: {[rule: string]: boolean[]}, unread: number[]} {
+  const module = chemWasm as unknown as RDModule;
+  const queries = Object.entries(alerts).map(([rule, smarts]) => [rule, smarts.map((s) => {
+    try {
+      return module.get_qmol(s);
+    } catch {
+      return null;
+    }
+  })] as const);
+  const found: {[rule: string]: boolean[]} = {};
+  for (const [rule] of queries)
+    found[rule] = new Array<boolean>(molecules.length).fill(false);
+  const unread: number[] = [];
+  try {
+    for (let i = 0; i < molecules.length; i++) {
+      const mol = getMolSafe(molecules[i], {}, module).mol;
+      if (!mol) {
+        if (molecules[i])
+          unread.push(i);
+        continue;
+      }
+      try {
+        for (const [rule, smarts] of queries) {
+          for (const query of smarts) {
+            try {
+              if (query && mol.get_substruct_match(query) !== '{}') {
+                found[rule][i] = true;
+                break;
+              }
+            } catch {}
+          }
+        }
+      } finally {
+        mol.delete();
+      }
+    }
+  } finally {
+    for (const [, smarts] of queries)
+      smarts.forEach((query) => query?.delete());
+  }
+  return {alerts: found, unread};
+}
 
 /** Builds the collection of one index segment; returns the (segment-local) rows crux could not parse. */
 function build(key: string, smiles: string[]): Uint32Array {
-  const builder = new CollectionBuilder(true);
+  const builder = new crux.CollectionBuilder(true);
   // what RDKit's default read rejects, the way RDKit reads it without Kekulize (Chem's getMolSafe retry)
   builder.setLenient(true);
   const failed: number[] = [];
@@ -31,18 +114,38 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
   const port = e.ports[0];
   try {
     let result;
-    if (op === 'module::init')
-      await initCrux({module_or_path: args[0]});
-    else if (op === 'build')
+    if (op === 'module::init') {
+      await initChemWasm({module_or_path: args[0]});
+      chemWasm.use_legacy_stereo_perception(false); // as the RDKit workers (rdkit.worker.ts)
+    } else if (op === 'build')
       result = build(args[0], args[1]);
     else if (op === 'search')
       result = collections.get(args[0])!.substructureSearch(args[1], 0);
     else if (op === 'drop')
       drop(args[0]);
-    else
+    else if (op === 'calcDescriptors')
+      result = JSON.parse(crux.calcDescriptors(args[0], args[1]));
+    else if (op === 'scaffoldTree')
+      result = crux.scaffoldTree(args[0], args[1], args[2]);
+    else if (op === 'getFingerprints') {
+      const fps = await rdkitShapedWorker().getFingerprints(args[0], args[1], args[2]);
+      result = {...fps, unread: unread(args[1], (i) => fps.fps[i] !== null)};
+    } else if (op === 'getStructuralAlerts')
+      result = structuralAlerts(args[0], args[1]);
+    else if (op === 'fail::test') // tests: a job that fails with this message
+      throw new Error(args[0]);
+    else if (op === 'busy::test') { // tests: a job that keeps the worker busy, as a long Crux call does
+      const end = performance.now() + args[0];
+      let spins = 0;
+      while (performance.now() < end)
+        spins++;
+      result = spins;
+    } else
       throw new Error(`Unknown operation: ${op}`);
     port.postMessage({op: op, retval: result});
   } catch (err: any) {
-    port.postMessage({error: err instanceof Error ? err.message : String(err)});
+    // a trap reported as one: the service restarts the workers for it (and not for a refusal)
+    port.postMessage({error: err instanceof WebAssembly.RuntimeError ? `RuntimeError: ${err.message}` :
+      err instanceof Error ? err.message : String(err)});
   }
 });

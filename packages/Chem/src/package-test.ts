@@ -14,6 +14,7 @@ import './tests/cell-panel-tests';
 
 import './tests/substructure-search-tests';
 import './tests/crux-substructure-search-tests';
+import './tests/chemical-engine-tests';
 import './tests/crux-sketcher-tests';
 import './tests/rendering-tests';
 import './tests/rendering-scatter-plot-tooltip-tests';
