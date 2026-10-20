@@ -519,6 +519,50 @@ category('Dapi: domain frame editor', () => {
     }
   });
 
+  test('duplicate refusal on a unique column that is not the business key names that column', async () => {
+    const name = `zzu${`${Date.now()}`.slice(-8)}`;
+    const created = await grok.dapi.domains.createSchema(name, {friendlyName: 'Unique probe'});
+    try {
+      await grok.dapi.domains.schema(name).apply({ifVersion: created.version, tables: {
+        person: {
+          businessKey: ['code'],
+          columns: {
+            code: {type: 'string', required: true, unique: true, friendlyName: 'Badge'},
+            name: {type: 'string', isName: true},
+            email: {type: 'string', unique: true, friendlyName: 'E-mail'},
+          },
+        },
+        task: {
+          columns: {
+            code: {type: 'string', required: true, unique: true, friendlyName: 'Code'},
+            title: {type: 'string'},
+          },
+        },
+      }});
+      const people = grok.dapi.domains.table(`${name}.person`);
+      const tasks = grok.dapi.domains.table(`${name}.task`);
+      await people.insert({code: 'P1', name: 'Ann', email: 'ann@x.org'});
+      await tasks.insert({code: 'T1', title: 'First'});
+
+      const personEditor = await DomainFrameEditor.create(people as any);
+      const bob = personEditor.addRow({code: 'P2', name: 'Bob', email: 'ann@x.org'});
+      expect(await personEditor.save(), false, 'a duplicate e-mail was accepted');
+      const clash = `${personEditor.errorOf(bob, 'email')?.message}`;
+      expect(clash.includes('E-mail'), true, `the refusal does not name the clashing column: ${clash}`);
+      expect(clash.includes('Badge'), false, `the refusal names the business key instead: ${clash}`);
+      personEditor.detach();
+
+      const taskEditor = await DomainFrameEditor.create(tasks as any);
+      const again = taskEditor.addRow({code: 'T1', title: 'Again'});
+      expect(await taskEditor.save(), false, 'a duplicate code was accepted');
+      const keyless = `${taskEditor.errorOf(again, 'code')?.message}`;
+      expect(keyless.includes('Code'), true, `the refusal of a table with no business key names nothing: ${keyless}`);
+      taskEditor.detach();
+    } finally {
+      await grok.dapi.domains.schema(name).delete();
+    }
+  });
+
   test('refuse: a refusal the host detected reaches onRefused', async () => {
     const prefix = `fe-refused-${stamp()}`;
     await seed(prefix, 1);
