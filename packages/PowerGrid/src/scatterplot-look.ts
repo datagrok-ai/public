@@ -87,12 +87,13 @@ export function isGpuRenderable(sc: DG.ScatterPlotViewer, look: CheckLook): bool
     // a datetime axis by a time unit plots a derived column the dataframe does not hold
     return col != null && AXIS_TYPES.has(col.type) && !(col.type == DG.COLUMN_TYPE.DATE_TIME && map);
   };
+  const isOrdered = (name: string, order: string) => !!order && df.col(name)?.type == DG.COLUMN_TYPE.STRING;
   // the GPU canvas goes between the plot's canvas and its overlay; a matrix plot cell keeps the canvas only
   const {canvas, overlay} = plotCanvases(sc);
   return canvas.isConnected && overlay?.parentElement === canvas.parentElement &&
     look.zoomAndFilter != 'pack and zoom by filter' && !look.jitterSize && !look.jitterSizeY &&
-    // a category order moves the categories to slots the GPU data does not hold
-    !look.xCategoryOrder && !look.yCategoryOrder &&
+    // a category order moves the categories to slots the GPU data does not hold; it is kept, unused, on a numeric axis
+    !isOrdered(look.xColumnName, look.xCategoryOrder) && !isOrdered(look.yColumnName, look.yCategoryOrder) &&
     isAxis(look.xColumnName, look.xMap) && isAxis(look.yColumnName, look.yMap) &&
     // the canvas renderer draws labels next to the markers, the dot renderer draws none
     (isDotRenderer(look) || !look.labelColumnNames?.length || look.displayLabels == 'Never');

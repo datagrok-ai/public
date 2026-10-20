@@ -6,12 +6,14 @@ Feature: Box plot category order
   gives the column's own order back, and APPLY TO ALL VIEWERS is off while nothing orders the
   categories. The Category Order property opens the same dialog from the context panel, an order by
   another column survives that column's rename, a Bin Color keeps each box's color through a reorder,
-  and with two category levels the dialog orders the boxes inside each outer group, which keeps its place.
+  and with two category levels the dialog orders the boxes inside each outer group, which keeps its place
+  also when a filter leaves fewer boxes than the combinations the order ranks.
   The order of the boxes is claimed through the `category <label>` areas the box plot draws under
   them. demog-1000, AGE by RACE: Asian 15 rows, Black 27, Caucasian 896, Other 62; average WEIGHT
   Asian 70.52, Other 74.16, Caucasian 79.49, Black 88.23 (as bin colors: Other light blue #6868ff,
   Caucasian near white). With SEX first, median AGE orders the
-  women Asian 44, Caucasian 47, Other 48, Black 49.5 (the men keep the alphabetical order).
+  women Asian 44, Caucasian 47, Other 48, Black 49.5 (the men keep the alphabetical order); with RACE filtered
+  to Asian and Other, four boxes stay of the eight combinations ranked.
   How each mode ranks the categories (ties, missing values, the semantic properties) is the Dart
   test `d4 | Axes | Category Order` and ApiTests `Viewers: category order`; APPLY TO ALL VIEWERS is
   in category-order/category-order-across-viewers.feature. One journey; every scenario puts the
@@ -155,15 +157,24 @@ Feature: Box plot category order
       | Category 2 | RACE |
     Then the "category F | Black" area of box plot viewer should lie to the left of the "category F | Caucasian" area
     When user picks "Order..." from the context menu of the "x axis" area of box plot viewer
-    Then "Order categories" dialog should be visible
-    And "Order by" input in "Order categories" dialog should not offer the choice "Manual"
-    When user selects "Aggregated value" in "Order by" input in "Order categories" dialog
+    Then "Order categories: RACE" dialog should be visible
+    And "Order by" input in "Order categories: RACE" dialog should not offer the choice "Manual"
+    When user selects "Aggregated value" in "Order by" input in "Order categories: RACE" dialog
     Then the "category F | Caucasian" area of box plot viewer should lie to the left of the "category F | Other" area
     And the "category F | Other" area of box plot viewer should lie to the left of the "category F | Black" area
     And the "category F | Black" area of box plot viewer should lie to the left of the "category M | Asian" area
     And the "category M | Black" area of box plot viewer should lie to the left of the "category M | Caucasian" area
-    When user selects "Default" in "Order by" input in "Order categories" dialog
-    And user clicks on "CLOSE" button in "Order categories" dialog
+    When user filters rows where "RACE" is one of "Asian, Other"
+    Then the "category F | Asian" area of box plot viewer should lie to the left of the "category F | Other" area
+    And the "category F | Other" area of box plot viewer should lie to the left of the "category M | Asian" area
+    And the "category M | Asian" area of box plot viewer should lie to the left of the "category M | Other" area
+    When user resets the filter
+    And user selects "Alphabetical" in "Order by" input in "Order categories: RACE" dialog
+    And user selects "Descending" in "Direction" input in "Order categories: RACE" dialog
+    Then the "category F | Other" area of box plot viewer should lie to the left of the "category F | Asian" area
+    And the "category F | Asian" area of box plot viewer should lie to the left of the "category M | Other" area
+    When user selects "Default" in "Order by" input in "Order categories: RACE" dialog
+    And user clicks on "CLOSE" button in "Order categories: RACE" dialog
     Then the "category F | Black" area of box plot viewer should lie to the left of the "category F | Caucasian" area
     When user sets properties of box plot viewer:
       | Category 1 | RACE |

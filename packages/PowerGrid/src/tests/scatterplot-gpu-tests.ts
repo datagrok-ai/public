@@ -188,9 +188,8 @@ category('Scatter plot: GPU', () => {
     Object.assign(sp.props, {zoomAndFilter: 'filter by zoom', xColumnName: 'race',
       xCategoryOrder: '{"manual":["Other"]}'});
     expect(isGpuRenderValid(sp), false);
-    Object.assign(sp.props, {xCategoryOrder: '', yCategoryOrder: '{"manual":["Other"]}'});
-    expect(isGpuRenderValid(sp), false);
-    sp.props.yCategoryOrder = '';
+    // an order left on an axis turned numeric does not apply
+    sp.props.xColumnName = 'height';
     expect(isGpuRenderValid(sp), true);
   });
 });
