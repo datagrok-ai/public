@@ -328,7 +328,7 @@ cannot turn off, and GPT gets reasoning effort `none`.
 | `abort(sessionId)` | Cancel an in-progress query |
 | `respondToInput(sessionId, requestId, value)` | Reply to an `input_request` |
 | `query(message, options?)` | One-shot promise-based call with timeout; wraps send/subscribe/cleanup |
-| `models()` | The runtime's model ids, default and fast model (asked once, then cached) |
+| `models()` | The runtime's model ids, default and fast model (asked once per connection, then cached: a restarted runtime may have other credentials; a connection that closes fails the pending request) |
 | `syncUserFiles(scope?, packageName?)` | Trigger a skills/knowledge sync |
 | `isResumable(sessionId)` | Whether the runtime holds this session (drives `resumeExpected`) |
 | `expectResume(sessionId)` | Marks a session the runtime may still hold (a chat reopened from the history) |

@@ -173,8 +173,10 @@ export class ClaudeRuntimeClient {
       }
     };
 
+    // The runtime may come back with other credentials, and so other models.
     this.ws.onclose = () => {
       this.ws = null;
+      this._models = null;
       this.onClose.next();
     };
 
@@ -229,21 +231,31 @@ export class ClaudeRuntimeClient {
     return this._skillNames ?? [];
   }
 
-  /** The runtime's models, known once one of its agents has started. */
+  /** The runtime's models, known once one of its agents has started; asked again on the next connection. */
   models(): Promise<RuntimeModels> {
     this._models ??= this.ensureConnected().then(() => new Promise<RuntimeModels>((resolve, reject) => {
       const timer = window.setTimeout(() => {
-        sub.unsubscribe();
+        done();
         reject(new Error('the AI runtime did not report its models'));
       }, 60_000);
-      const sub = this._onModels.subscribe((m) => {
+      const subs = [
+        this._onModels.subscribe((m) => {
+          done();
+          if (m.error)
+            reject(new Error(m.error));
+          else
+            resolve({models: m.models, defaultModel: m.defaultModel, fastModel: m.fastModel});
+        }),
+        this.onClose.subscribe(() => {
+          done();
+          reject(new Error('AI runtime: connection lost'));
+        }),
+      ];
+      const done = () => {
         window.clearTimeout(timer);
-        sub.unsubscribe();
-        if (m.error)
-          reject(new Error(m.error));
-        else
-          resolve({models: m.models, defaultModel: m.defaultModel, fastModel: m.fastModel});
-      });
+        for (const s of subs)
+          s.unsubscribe();
+      };
       this.ws!.send(JSON.stringify({type: 'models'}));
     })).catch((e) => {
       this._models = null;
