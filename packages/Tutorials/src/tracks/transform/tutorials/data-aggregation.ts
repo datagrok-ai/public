@@ -118,7 +118,7 @@ export class AggregationTutorial extends Tutorial {
       findColTag(aggRoot, 'med(WEIGHT)', () => $(aggRoot).find(colTagSelector).length === 1), ageAggr,
       'To change the aggregation function, right-click the "avg(WEIGHT), ' +
       'select <b>Aggregation</b> from the context menu, and choose <b>med</b>.',
-      () => pivotViewer.setOptions({aggregateColumnNames: ['WEIGHT'], aggregateAggTypes: ['med']}),
+      () => pivotViewer.setOptions({aggregateAggTypes: ['med'], aggregateColumnNames: ['WEIGHT']}),
     );
 
 
