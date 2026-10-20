@@ -2,7 +2,7 @@
 
 ## v.next
 
-* ObjectForm: A `string_list` property edits as a list (it showed a disabled text box), and a value held as JSON array text, as a domain DataFrame cell is, reads item by item
+* ObjectForm: Fixed a `string_list` property showing a disabled text box; it now edits as a list, and a value held as JSON array text (a domain DataFrame cell) reads item by item
 * Styles: Added a console warning, once per page, when a package built before stylesheet revisions injects its own copy of the u2 CSS over the installed revision: the packages that bundle u2 need republishing
 * Tooltip: Keyboard focus shows a bound tooltip too (a click's focus does not), the tooltip is `role="tooltip"`, and its anchor lists it in `aria-describedby` while it shows, beside its own ids
 * ColumnsInput: The control says its popup is a dialog (`aria-haspopup="dialog"`, the popup `role="dialog"`, "Choose columns") — a checklist with OK / CANCEL, not a listbox

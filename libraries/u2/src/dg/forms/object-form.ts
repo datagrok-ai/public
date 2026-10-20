@@ -557,7 +557,7 @@ export class ObjectForm extends Form {
       return null;
     try {
       const parsed = JSON.parse(s);
-      return Array.isArray(parsed) ? parsed : null;
+      return Array.isArray(parsed) && parsed.every((x) => typeof x === 'string') ? parsed : null;
     } catch {
       return null;
     }

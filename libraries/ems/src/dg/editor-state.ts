@@ -84,11 +84,12 @@ export class EditorEditState implements EditState {
   setValue(key: string, column: string, value: unknown): void {
     const at = this.indexOf(key);
     if (at >= 0)
-      this.editor.setValue(at, column, value);
+      this.editor.setValue(at, column, this._cell(column, value));
   }
 
   newRow(values: Record<string, unknown> = {}, options?: {pristine?: boolean}): string {
-    const at = this.editor.addRow(values, options);
+    const cells = Object.fromEntries(Object.entries(values).map(([column, v]) => [column, this._cell(column, v)]));
+    const at = this.editor.addRow(cells, options);
     if (at < 0)
       throw new Error(`${this.editor.table}: cannot add a row while the batch is being saved`);
     return FrameRows.keyOf(this.df as unknown as DataFrameLike, at);
@@ -144,6 +145,12 @@ export class EditorEditState implements EditState {
 
   /** The first blocking problem on a row that is neither deleted nor restored — what the editor's
    * own save refuses on. */
+  /** A list going into a string column — a `string_list` as the domain frame carries it — is its
+   * JSON array text: what the frame read, and what the server parses back into the list. */
+  private _cell(column: string, value: unknown): unknown {
+    return Array.isArray(value) && this.df.columns.byName(column)?.type === 'string' ? JSON.stringify(value) : value;
+  }
+
   private _validity(): string | null {
     const editor = this.editor;
     for (let row = 0; row < this.df.rowCount; row++) {
