@@ -14,7 +14,7 @@ export class DashboardTutorial extends Tutorial {
     return 'Creation of interactive dashboards';
   }
   get steps(): number {
-    return 27;
+    return 26;
   }
 
   get icon(): string {
@@ -75,22 +75,21 @@ export class DashboardTutorial extends Tutorial {
 
     const query = 'select * from starbucks_us where state = @state;';
     const paramAnnotation = '--input: string state';
-    const queryDescription = 'As you can see, the query uses one parameter identifying the state. ' +
-      'Let\'s add an annotation for it. After that, we will be able to pass a state name into the query.';
-    const paramQueryDescription = 'Your query should now consist of two lines: a comment with parameter ' +
+    const queryDescription = `Enter the query:<br><b>${paramAnnotation}</b><br><b>${query}</b><br>` +
+      `The query uses one parameter identifying the state, and the first line, <b>${paramAnnotation}</b>, ` +
+      'is its annotation. ' +
+      'With it, we will be able to pass a state name into the query. ' +
+      'Your query should consist of two lines: a comment with parameter ' +
       'annotation and the "select" statement that makes use of this parameter.';
 
-    await this.action(`Add "${query}" to the editor`,
-      interval(1000).pipe(filter(() => $(dqv.root).find('pre.CodeMirror-line > span')
-        .filter((idx, el) => el.textContent?.trim() === query)[0] != null)),
-      null, queryDescription, () => Tutorial.setCodeEditorText(dqv.root, query),
-    );
-
-    await this.action(`Add "${paramAnnotation}" as the first line of the query`,
+    const editorText = (): string => ($(dqv.root).find('.CodeMirror')[0] as any)?.CodeMirror?.getValue() ??
+      Tutorial.codeMirrorView(dqv.root)?.state.doc.toString() ?? '';
+    await this.action('Enter the query with its parameter annotation',
       interval(1000).pipe(filter(() => {
-        const lines = $(dqv.root).find('pre.CodeMirror-line > span');
-        return lines.length > 0 && lines[0] !== undefined && lines[0].textContent?.trim() === paramAnnotation;
-      })), null, paramQueryDescription, () => Tutorial.setCodeEditorText(dqv.root, `${paramAnnotation}\n${query}`));
+        const lines = editorText().split('\n').map((line) => line.trim());
+        return lines[0] === paramAnnotation && lines.slice(1).includes(query);
+      })), () => $(dqv.root).find('.CodeMirror, .cm-editor')[0] ?? null, queryDescription,
+      () => Tutorial.setCodeEditorText(dqv.root, `${paramAnnotation}\n${query}`));
 
     await this.buttonClickAction(
       (grok.shell.windows.simpleMode ? $('.layout-dockarea .d4-ribbon') : $('.d4-ribbon'))[0]!,
