@@ -45,11 +45,17 @@ export async function askHelpLLMProvider(prompt: string, sessionId?: string) : P
 //description: Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.
 //input: string label { description: Config label for this run, e.g. baseline / medium-effort }
 //input: int reps { optional: true; description: Repetitions per prompt (default 3) }
-//input: string model { optional: true; choices: ["claude-haiku-5-5","claude-sonnet-5-5","claude-opus-5-5"]; description: Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default. }
+//input: string model { optional: true; choices: Grokky:runtimeModels; description: Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default. }
 //input: string only { optional: true; description: Run only part of the suite: comma-separated categories, difficulties, or prompt substrings. }
 //output: string result
 export async function runBenchmark(label: string, reps?: number, model?: string, only?: string) : Promise<string> {
   return await PackageFunctions.runBenchmark(label, reps, model, only);
+}
+
+//description: The model ids the AI runtime offers
+//output: list<string> result
+export async function runtimeModels() : Promise<string[]> {
+  return await PackageFunctions.runtimeModels();
 }
 
 //description: Holds the admission slot for one AI chat turn streaming over the browser WebSocket - see queue-task.ts

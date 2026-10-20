@@ -11,7 +11,7 @@ import * as DG from 'datagrok-api/dg';
 import * as jsyaml from 'js-yaml';
 
 import {_package} from '../../package';
-import {ClaudeRuntimeClient, ClaudeModel, TurnServerMetrics} from '../../claude/runtime-client';
+import {ClaudeRuntimeClient, TurnServerMetrics} from '../../claude/runtime-client';
 import {viewFunctionTools} from '../view-tools';
 import {executeSingleBlock, runVerification, buildWorkspaceContext} from '../../claude/exec-blocks';
 
@@ -134,7 +134,7 @@ async function freshTable(name: string): Promise<DG.DataFrame> {
 // ---- One measured turn — mirrors runClaudeStreaming() but headless -----------------------
 
 async function runTurn(client: ClaudeRuntimeClient, prompt: string, view: DG.ViewBase | null,
-  model?: ClaudeModel, systemPromptMode?: string, difficulty?: string): Promise<RepTurn> {
+  model?: string, systemPromptMode?: string, difficulty?: string): Promise<RepTurn> {
   // A bare turn declares no tools: the readiness probe must not be gated, graded or tool-driven.
   const viewTools = systemPromptMode === 'none' ? {defs: [], runners: new Map()} : viewFunctionTools();
   const ctx = view ? buildWorkspaceContext() : '';
@@ -322,7 +322,8 @@ async function judge(client: ClaudeRuntimeClient, prompt: string, answer: string
   // flip a correct answer to failed on transient grounds.
   for (let attempt = 0; ; attempt++) {
     try {
-      const r = await client.query(jp, {model: ClaudeModel.Haiku, outputSchema: JUDGE_SCHEMA, systemPromptMode: 'none'});
+      const r = await client.query(jp, {model: (await client.models()).fastModel, outputSchema: JUDGE_SCHEMA,
+        systemPromptMode: 'none'});
       return {pass: !!r.pass, score: typeof r.score === 'number' ? r.score : (r.pass ? 1 : 0), reason: r.reason ?? ''};
     } catch (e: any) {
       if (attempt >= 1)
@@ -346,7 +347,7 @@ function stats(values: (number | null | undefined)[]): Stats {
 // ---- Orchestration ----------------------------------------------------------------------
 
 async function runPrompt(client: ClaudeRuntimeClient, p: SuitePrompt, reps: number,
-  model?: ClaudeModel): Promise<PromptResult> {
+  model?: string): Promise<PromptResult> {
   const turns: RepTurn[] = [];
   for (let i = 0; i < reps; i++) {
     const preViews = openTableViews();
@@ -565,13 +566,12 @@ function downloadText(filename: string, text: string): void {
 }
 
 /** Runs the benchmark suite and downloads a `benchmark-<label>.{json,md}` report.
- * `model` pins every turn to one model (a `ClaudeModel` id) — that is how the control arms
+ * `model` pins every turn to one model (an id the runtime reports) — that is how the control arms
  * for a model comparison are produced without redeploying the runtime. Omit for the runtime default. */
 export async function runBenchmark(label: string, reps: number, model?: string,
   only?: string): Promise<string> {
   label = sanitizeLabel(label);
   reps = reps && reps > 0 ? Math.floor(reps) : 3;
-  const pinned = model as ClaudeModel | undefined;
   const client = ClaudeRuntimeClient.getInstance();
   await client.ensureConnected();
   const all = await loadSuite();
@@ -587,7 +587,7 @@ export async function runBenchmark(label: string, reps: number, model?: string,
     // systemPromptMode 'none' is essential, not an optimisation: under the full prompt the
     // GroundingGate blocks a content-free probe and sends the model off reading help pages until
     // the turn timeout, so the probe measures the gate rather than whether the runtime is up.
-    const probe = await runTurn(client, 'Reply with exactly: READY', null, ClaudeModel.Haiku, 'none');
+    const probe = await runTurn(client, 'Reply with exactly: READY', null, (await client.models()).fastModel, 'none');
     if (probe.ok && probe.content.trim()) break;
     if (i === READY_ATTEMPTS - 1)
       return `Runtime never became ready (${READY_ATTEMPTS} probes) — is the claude-runtime container up?`;
@@ -599,21 +599,21 @@ export async function runBenchmark(label: string, reps: number, model?: string,
     const w = suite[0];
     const preViews = openTableViews();
     const view = w.table ? grok.shell.addTableView(await freshTable(w.table)) : null;
-    await runTurn(client, w.prompt, view, pinned);
+    await runTurn(client, w.prompt, view, model);
     for (const v of openTableViews()) if (preViews.indexOf(v) < 0) try {v.close();} catch {}
   } catch (e) {console.warn('benchmark: warm-up failed', e);}
 
   const results: PromptResult[] = [];
   for (let i = 0; i < suite.length; i++) {
     grok.shell.info(`Benchmark "${label}": ${i + 1}/${suite.length} — ${suite[i].category}`);
-    results.push(await runPrompt(client, suite[i], reps, pinned));
+    results.push(await runPrompt(client, suite[i], reps, model));
   }
 
   const hasTokens = results.some((r) => r.inputTokens.n > 0);
   const when = new Date().toISOString();
-  const report: BenchReport = {label, when, reps, model: pinned ?? 'default', hasTokens,
+  const report: BenchReport = {label, when, reps, model: model ?? 'default', hasTokens,
     ...(only ? {only} : {}), results};
-  const markdown = buildMarkdown(label, when, reps, results, hasTokens, pinned ?? 'default', only);
+  const markdown = buildMarkdown(label, when, reps, results, hasTokens, model ?? 'default', only);
   downloadText(`benchmark-${label}.json`, JSON.stringify(report, null, 2));
   downloadText(`benchmark-${label}.md`, markdown);
   // Persist server-side too, so compareBenchmarks() can diff runs across configs and a headless

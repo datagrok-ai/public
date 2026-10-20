@@ -1,10 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {ClaudeModel, ClaudeRuntimeClient, FinalEvent, ImageAttachment} from '../claude/runtime-client';
+import {ClaudeRuntimeClient, FinalEvent, ImageAttachment} from '../claude/runtime-client';
 
 export class ClaudeEngine extends DG.AIEngine {
   id = 'claude';
-  name = 'Claude (Grokky)';
+  name = 'Grokky';
 
   private client = ClaudeRuntimeClient.getInstance();
 
@@ -13,7 +13,7 @@ export class ClaudeEngine extends DG.AIEngine {
   }
 
   async models(): Promise<string[]> {
-    return Object.values(ClaudeModel);
+    return (await this.client.models()).models;
   }
 
   async chat(options: DG.AIChatOptions = {}): Promise<DG.AIChat> {
@@ -47,15 +47,15 @@ class ClaudeChat extends DG.AIChat {
       forSession(client.onChunk, (e) => { chunks.push(e.content); wake(); }),
       forSession(client.onFinal, (e) => { final = e; wake(); }),
       forSession(client.onError, (e) => fail(new Error(e.message))),
-      forSession(client.onSessionReset, () => fail(new Error('Claude runtime: the session was lost'))),
-      client.onClose.subscribe(() => fail(new Error('Claude runtime: connection lost'))),
+      forSession(client.onSessionReset, () => fail(new Error('AI runtime: the session was lost'))),
+      client.onClose.subscribe(() => fail(new Error('AI runtime: connection lost'))),
     ];
     options.signal?.addEventListener('abort', onAbort);
     try {
       if (options.signal?.aborted)
         throw options.signal.reason;
       client.send(sessionId, this.started || !systemPrompt ? prompt : `${systemPrompt}\n\n${prompt}`, {
-        systemPromptMode: 'none', model: model as ClaudeModel | undefined, outputSchema: options.schema, images,
+        systemPromptMode: 'none', model, outputSchema: options.schema, images,
       });
       while (!final || chunks.length) {
         if (chunks.length)
@@ -88,7 +88,7 @@ class ClaudeChat extends DG.AIChat {
   /** The runtime forwards images only. */
   private static encode(a: DG.AIAttachment): Promise<ImageAttachment> {
     if (a.type !== 'image')
-      throw new Error(`Claude engine: ${a.type} attachments are not supported`);
+      throw new Error(`Grokky engine: ${a.type} attachments are not supported`);
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve({

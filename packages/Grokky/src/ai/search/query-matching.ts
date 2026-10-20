@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../../package';
-import {ClaudeRuntimeClient, ClaudeModel} from '../../claude/runtime-client';
+import {ClaudeRuntimeClient} from '../../claude/runtime-client';
 import {RENDERED_EVENT} from '../ui';
 
 export interface QueryMatchResult {
@@ -148,7 +148,9 @@ Analyze the user request and return a JSON object with:
 `;
 
   try {
-    const rawResult = await ClaudeRuntimeClient.getInstance().query(`${systemPrompt}\n\n${userPrompt}`, {outputSchema: schema, model: ClaudeModel.Haiku});
+    const client = ClaudeRuntimeClient.getInstance();
+    const rawResult = await client.query(`${systemPrompt}\n\n${userPrompt}`,
+      {outputSchema: schema, model: (await client.models()).fastModel});
     if (rawResult.searchPattern === NO_MATCH)
       return null;
     const parametersRecord: Record<string, string> = {};

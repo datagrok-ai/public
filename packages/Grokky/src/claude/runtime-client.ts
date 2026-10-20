@@ -1,12 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
 
-export const ClaudeModel = {
-  Haiku: 'claude-haiku-5-5',
-  Sonnet: 'claude-sonnet-5-5',
-  Opus: 'claude-opus-5-5',
-} as const;
-export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
+/** The model ids the runtime's provider offers: a turn names one of them, or runs on `defaultModel`; `fastModel` is
+ * for quick calls such as ranking and matching. */
+export type RuntimeModels = {models: string[], defaultModel: string, fastModel: string};
 
 export type ChunkEvent = {sessionId: string, content: string};
 export type ImageAttachment = {mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp', data: string};
@@ -49,6 +46,8 @@ export class ClaudeRuntimeClient {
   public onClose = new rxjs.Subject<void>();
   private _skillNames: string[] | null = null;
   private _resumable = new Set<string>();
+  private _models: Promise<RuntimeModels> | null = null;
+  private _onModels = new rxjs.Subject<RuntimeModels & {error?: string}>();
 
   private constructor() {}
 
@@ -117,7 +116,7 @@ export class ClaudeRuntimeClient {
     }
 
     if (!this.ws)
-      throw new Error('Claude runtime container is not running');
+      throw new Error('AI runtime container is not running');
 
     this.ws.onmessage = (event: MessageEvent) => {
       let data: any;
@@ -168,6 +167,9 @@ export class ClaudeRuntimeClient {
           this._skillNames = data.files.map((f: string) => f.replace(/\.[^.]+$/, ''));
         this.onSyncStatus.next({status: data.status, message: data.message, files: data.files});
         break;
+      case 'models':
+        this._onModels.next(data);
+        break;
       }
     };
 
@@ -190,7 +192,7 @@ export class ClaudeRuntimeClient {
     this._resumable.add(sessionId);
   }
 
-  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel;
+  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: string;
     taskId?: string; clientTools?: {name: string; description: string; inputSchema?: object}[];
     images?: ImageAttachment[]}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
@@ -227,6 +229,29 @@ export class ClaudeRuntimeClient {
     return this._skillNames ?? [];
   }
 
+  /** The runtime's models, known once one of its agents has started. */
+  models(): Promise<RuntimeModels> {
+    this._models ??= this.ensureConnected().then(() => new Promise<RuntimeModels>((resolve, reject) => {
+      const timer = window.setTimeout(() => {
+        sub.unsubscribe();
+        reject(new Error('the AI runtime did not report its models'));
+      }, 60_000);
+      const sub = this._onModels.subscribe((m) => {
+        window.clearTimeout(timer);
+        sub.unsubscribe();
+        if (m.error)
+          reject(new Error(m.error));
+        else
+          resolve({models: m.models, defaultModel: m.defaultModel, fastModel: m.fastModel});
+      });
+      this.ws!.send(JSON.stringify({type: 'models'}));
+    })).catch((e) => {
+      this._models = null;
+      throw e;
+    });
+    return this._models;
+  }
+
   abort(sessionId: string): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       return;
@@ -247,7 +272,7 @@ export class ClaudeRuntimeClient {
     this.ws.send(payload);
   }
 
-  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel,
+  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: string,
     systemPromptMode?: string, timeoutMs?: number}): Promise<any> {
     await this.ensureConnected();
     const sid = options?.sessionId ?? `query-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
