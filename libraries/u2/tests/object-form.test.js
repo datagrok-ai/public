@@ -540,6 +540,10 @@ form('a string_list property edits as a list, its JSON array text read item by i
   inputOf(f, 'tags').value.value = ['e'];
   assert.deepEqual(source.tags, ['e']);
   f.dispose();
+
+  const numbers = mount(propertyForm([prop('tags', 'string_list')], {tags: '[1,2]'}));
+  assert.deepEqual(inputOf(numbers, 'tags').value.value, ['[1', '2]'], 'only a list of strings is read as JSON');
+  numbers.dispose();
 });
 
 /* WO-6 — access-aware forms: a hidden field is absent, a readonly one is caption + value text
