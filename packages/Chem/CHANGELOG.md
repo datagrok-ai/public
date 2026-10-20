@@ -2,6 +2,15 @@
 
 ## v.next
 
+* [#4291](https://github.com/datagrok-ai/public/issues/4291): MPO: Add support for qnum values
+* [#4324](https://github.com/datagrok-ai/public/issues/4324): MPO: Fixed Cancel in the property curve settings keeping the changed Score as
+* [#4323](https://github.com/datagrok-ai/public/issues/4323): MPO: Fixed Cancel keeping the score column the preview added, and OK leaving the columns of previously picked profiles
+* GROK-20824: MPO: Fixed the profile description picking up the title's text styling when styled text was pasted into it
+* GROK-20821: MPO: Fixed the dataset list ignoring newly opened tables
+* GROK-20831: MPO: Fixed truncated profile descriptions not expanding on click after saving a profile
+
+## 1.17.15 (2026-09-02)
+
 * SAR Matrix: Fixed the SAR Transfer tab rebuilding the whole panel (grid flicker, list scroll jumping to the top) on expanding/collapsing a series or selecting a transfer — the list now toggles and swaps in place like the SAR Matrix navigator
 * Fixed the package build failing on `TS2610` — `name` is an accessor on the u2 `Component` base, so the viewer overrides it with its own accessor instead of redeclaring it as a property
 * Fixed Gasteiger Partial Charges panel on current RDKit — `GetSimilarityMapFromWeights` now requires an explicit `MolDraw2DCairo` drawer (passed by keyword, so pre-2023.09 RDKit still works)
