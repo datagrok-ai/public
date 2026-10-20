@@ -1278,12 +1278,12 @@ export class DomainFrameEditor implements IFrameEditor {
 
   /** `rows[0].errors[{column, message}]` of a rejected op onto that row's cells;
    * an error naming no known column marks every changed cell of the row. [duplicateText] is what
-   * a business-key clash says — {@link refusalFor}'s sentence, so the cell, the status line
+   * a unique clash says — {@link refusalFor}'s sentence, so the cell, the status line
    * reading it and the balloon all say the same thing. */
   mapValidationError(e: DomainValidationError, failing: DomainPendingOp, duplicateText?: string): void {
     const row = failing.row;
     const errors = e.rows?.[0]?.errors ?? [];
-    const duplicate = duplicateText ?? this._duplicateText();
+    const duplicate = duplicateText ?? this._duplicateText(this._clashOf(e));
     let mapped = false;
     for (const columnError of errors)
       if (columnError.column != null && this._df.columns.contains(columnError.column)) {
@@ -1299,7 +1299,7 @@ export class DomainFrameEditor implements IFrameEditor {
     this._fire();
   }
 
-  /** What a refused save means to the user, in the table's own vocabulary — the business key and
+  /** What a refused save means to the user, in the table's own vocabulary — the clashing value and
    * the row that already holds it, the children that keep a row alive. The server's own message
    * stands where the refusal is not one this editor can put in the table's words. */
   async refusalFor(e: any, failing: DomainPendingOp): Promise<string> {
@@ -1315,14 +1315,14 @@ export class DomainFrameEditor implements IFrameEditor {
    * the key itself where it carries none: on the UPDATE path the id is the row being SAVED
    * (`repository.dart` `_mapPgError(rt, x, id: id)`), which names the wrong row. */
   async duplicateRefusal(row: number, e?: DomainValidationError): Promise<string> {
-    const key = this._info.businessKey ?? [];
+    const key = this._clashOf(e);
     const values = key.map((c) => this._wire(row, c)).filter((v) => v != null && `${v}` !== '');
     if (values.length !== key.length)
-      return this._duplicateText();
+      return this._duplicateText(key);
     const self = `${this._wire(row, 'id') ?? ''}`;
     const id = `${e?.rows?.[0]?.id ?? ''}`;
     const owner = id !== '' && id !== self ? await this._nameOf(id) : await this._keyHolder(key, values, self);
-    return owner == null ? this._duplicateText()
+    return owner == null ? this._duplicateText(key)
       : `${key.map((c) => this._captionOf(c)).join(', ')} ${values.join(', ')} already belongs to ${owner}`;
   }
 
@@ -1756,10 +1756,16 @@ export class DomainFrameEditor implements IFrameEditor {
     return caption == null || caption === '' ? column : caption;
   }
 
-  /** The refusal a business-key clash gets where the row already holding the key is unknown. */
-  private _duplicateText(): string {
-    const key = (this._info.businessKey ?? []).map((c) => this._captionOf(c)).join(', ');
-    return `A ${this._info.singularName.toLowerCase()} with this ${key} already exists`;
+  /** The columns a unique refusal is about: the ones the server names, else the business key. */
+  private _clashOf(e?: DomainValidationError): string[] {
+    const column = e?.rows?.[0]?.errors?.find((x) => x.code === 'unique')?.column;
+    return column == null || column === '' ? this._info.businessKey ?? [] : column.split(',');
+  }
+
+  /** The refusal a unique clash on [columns] gets where the row already holding the value is unknown. */
+  private _duplicateText(columns: string[]): string {
+    const captions = columns.map((c) => this._captionOf(c)).join(', ');
+    return `A ${this._info.singularName.toLowerCase()} with this ${captions} already exists`;
   }
 
   /** The display name of a row of this table, read back by id; null when the table has no name
