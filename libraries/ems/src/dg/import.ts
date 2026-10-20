@@ -286,7 +286,7 @@ class ImportFlow {
       for (const error of row.errors ?? []) {
         total++;
         if (issues.length < ISSUE_CAP)
-          issues.push({row: row.index, column: error.column ?? '', message: error.message});
+          issues.push({row: row.index, column: ImportFlow._caption(this, error.column ?? ''), message: error.message});
       }
     }
     if (issues.length > 0)
@@ -464,7 +464,7 @@ class ImportFlow {
       for (const error of errors) {
         total++;
         if (issues.length < ISSUE_CAP)
-          issues.push({row: row.index, column: error.column ?? '', message: error.message});
+          issues.push({row: row.index, column: ImportFlow._caption(this, error.column ?? ''), message: error.message});
       }
       if (errors.length === 0 && row.status === 'duplicate') {
         total++;

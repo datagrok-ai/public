@@ -330,7 +330,7 @@ scoped('a refused row leaves nothing behind and the report says so', async () =>
   assert.match(shown, /Import aborted — 1 row has errors/);
   assert.match(shown, /Uncheck "All or nothing" to import the 1 valid row and skip the rest\./,
     'an aborted all-or-nothing run says what to change');
-  assert.match(shown, /title/, 'the per-row report names the column the row was refused on');
+  assert.match(shown, /Title/, 'the per-row report names the column the row was refused on, by its caption');
   assert.match(shown, /Value can't be empty/);
   assert.match(shown, /Source row/, 'the issue lines are headed by the source row they are about');
   fire(buttonNamed('CLOSE'), 'click');
