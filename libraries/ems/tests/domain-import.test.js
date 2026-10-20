@@ -318,6 +318,38 @@ scoped('a double-precision float column is posted as it holds', async () => {
   await running;
 });
 
+scoped('an empty cell of a new row is left out, so the column takes its default; an upsert still sends it', async () => {
+  const memory = backend();
+  const posts = [];
+  const table = memory.tableSync('grit.issue');
+  const real = table.validate.bind(table);
+  table.validate = (rows, options) => {
+    posts.push({rows, options});
+    return real(rows, options);
+  };
+  const {running} = await opened(memory, new DG.DataFrame([{name: 'project_id', type: 'string'},
+    {name: 'number', type: 'int'}, {name: 'title', type: 'string'}, {name: 'priority', type: 'string'}],
+  [{project_id: 'p1', number: 30, title: 'A', priority: 'high'}, {project_id: 'p1', number: 31, title: 'B', priority: null}]));
+  await toMapping();
+  await toPreview();
+  assert.deepEqual(posts[0].rows, [{project_id: 'p1', number: 30, title: 'A', priority: 'high'},
+    {project_id: 'p1', number: 31, title: 'B'}], 'insert: the empty cell is absent, as a new row in a form leaves it');
+
+  // an empty cell on an upsert (clear the field, or leave it) is not ruled: it keeps being sent
+  fire(buttonNamed('BACK'), 'click');
+  await flush();
+  fire(buttonNamed('BACK'), 'click');
+  await flush();
+  named('mode').value.value = 'upsert';
+  await flush();
+  await toMapping();
+  await toPreview();
+  assert.equal(posts.at(-1).options.mode, 'upsert');
+  assert.deepEqual(posts.at(-1).rows[1], {project_id: 'p1', number: 31, title: 'B', priority: null});
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
 scoped('upsert merges by the business key instead of inserting again', async () => {
   const memory = backend();
   const {running} = await opened(memory,
