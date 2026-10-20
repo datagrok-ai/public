@@ -27,6 +27,11 @@ export const SYSTEM_COLUMNS: readonly (readonly [name: string, type: string, cap
 export class DgDomainBackend implements DomainBackend {
   private readonly _tables = new Map<string, Promise<DgDomainTable>>();
 
+  constructor() {
+    // a committed apply from any surface (Edit schema, a script) changes what a handle was read from
+    grok.events.onEvent('d4-domain-schema-altered').subscribe(() => this.invalidate());
+  }
+
   table(address: string): Promise<DomainTableLike> {
     let loading = this._tables.get(address);
     if (loading === undefined) {

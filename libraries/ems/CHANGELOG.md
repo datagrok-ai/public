@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Domain app: A table opened after a schema apply (Edit schema..., a script) reads the applied columns; the cached table handles used to keep the columns, required flags and choices from the first open until a page reload
 * [public#4320](https://github.com/datagrok-ai/public/issues/4320): Import: Fixed an empty numeric CSV cell being posted as the missing-value marker (-2147483648, 2.68e-34) instead of null
 * Styles: `src/dg/styles.ts` imports EMS's own sheets only; u2's stylesheet installs itself once per page
 * Tests: Fixed the spec-install test on Windows (path separators, CRLF recipe fences)
