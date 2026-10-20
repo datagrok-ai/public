@@ -2,7 +2,6 @@ import re
 from typing import ClassVar
 
 from ..hermes import Connection
-from ..protocol import JsonObject
 from .base import Credentials, Provider, ProviderError
 
 API = 'https://api.openai.com/v1'
@@ -10,9 +9,6 @@ API = 'https://api.openai.com/v1'
 # https://developers.openai.com/api/docs/guides/your-data
 REGIONS = ('us', 'eu', 'ae', 'au', 'ca', 'jp', 'in', 'sg', 'kr', 'gb')
 BASE_URL = re.compile(rf'https://((?:{"|".join(REGIONS)})\.)?api\.openai\.com(?:/v1)?/?')
-# `effort: none` is a 400 on these (https://developers.openai.com/api/docs/guides/reasoning). Hermes omits it for them
-# only on api.openai.com, so the model's default effort applies; a regional host gets the same.
-REASONING_ALWAYS_ON = {'gpt-6-astra', 'gpt-6.1-sol'}
 
 
 class OpenAIProvider(Provider):
@@ -53,17 +49,6 @@ class OpenAIProvider(Provider):
     def connection(self, model: str) -> Connection:
         return {'provider': 'custom', 'api_mode': self.api_mode(model), 'base_url': self._base_url,
                 'api_key': self._key}
-
-    def patch_request(self, api_mode: str, request: JsonObject, system_prompt: str,
-                      output_schema: JsonObject | None) -> JsonObject:
-        out = super().patch_request(api_mode, request, system_prompt, output_schema)
-        # Grokky shows no reasoning summary, and summaries may need a verified organization.
-        reasoning = {k: v for k, v in (out.pop('reasoning', None) or {}).items() if k != 'summary'}
-        if reasoning.get('effort') == 'none' and self.models.get(out.get('model', '')) in REASONING_ALWAYS_ON:
-            reasoning = {}
-        if reasoning:
-            out['reasoning'] = reasoning
-        return out
 
     def error_hint(self, status: int | None) -> str:
         return (' (check the apiKey container credential, an API key of an OpenAI project, and for a project with '

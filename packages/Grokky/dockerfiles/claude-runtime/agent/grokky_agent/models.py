@@ -23,6 +23,7 @@ class Model(TypedDict):
     family: Literal['claude', 'gpt']
     context: int
     images: bool
+    always_reasons: NotRequired[bool]
     prices: Pricing
 
 

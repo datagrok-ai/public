@@ -51,7 +51,19 @@ class Provider(ABC):
     def patch_request(self, api_mode: str, request: JsonObject, system_prompt: str,
                       output_schema: JsonObject | None) -> JsonObject:
         """The outgoing request with the turn's system prompt, if any, and output format."""
-        return formats.patch(api_mode, request, system_prompt, output_schema)
+        out = formats.patch(api_mode, request, system_prompt, output_schema)
+        if api_mode != 'codex_responses':
+            return out
+        # Grokky shows no reasoning summary, and summaries may need a verified organization. Hermes asks a model it
+        # does not know by name (a provider's prefixed id, a deployment) for `effort: none`, which one that always
+        # reasons rejects; without an effort it reasons at its default.
+        reasoning = {k: v for k, v in (out.pop('reasoning', None) or {}).items() if k != 'summary'}
+        catalog = models.CATALOG.get(self.models.get(out.get('model', ''), ''))
+        if reasoning.get('effort') == 'none' and catalog and catalog.get('always_reasons'):
+            reasoning = {}
+        if reasoning:
+            out['reasoning'] = reasoning
+        return out
 
     def refused_request(self, api_mode: str) -> JsonObject:
         return formats.refused(api_mode)
