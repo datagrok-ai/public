@@ -171,8 +171,8 @@ function likeValue(c: FilterCondition, shape: (v: string) => string): unknown {
 const node = (property: string, operator: string, value?: unknown): DomainConditionNode =>
   value === undefined ? {property, operator} : {property, operator, value};
 
-const where = (test: (cell: MaskCell, value: any) => boolean) =>
-  (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}): BitArray => ColumnEvaluator.where(col, c, ctx, test);
+const where = (test: (cell: MaskCell, value: any) => boolean, negate: boolean = false) =>
+  (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}): BitArray => ColumnEvaluator.where(col, c, ctx, test, negate);
 
 /** Case-insensitive text test, the server's ILIKE; a `{raw: true}` LIKE pattern goes through a RegExp. */
 const textMask = (test: (s: string, v: string) => boolean, negate: boolean = false) =>
@@ -180,13 +180,13 @@ const textMask = (test: (s: string, v: string) => boolean, negate: boolean = fal
     const raw = c.options?.raw === true ? ColumnEvaluator.likeRegExp(String(c.value)) : null;
     const v = String(c.value ?? '').toLowerCase();
     return ColumnEvaluator.where(col, c, ctx, (cell) =>
-      (raw ? raw.test(String(cell)) : test(String(cell).toLowerCase(), v)) !== negate);
+      raw ? raw.test(String(cell)) : test(String(cell).toLowerCase(), v), negate);
   };
 
 const regexMask = (negate: boolean) =>
   (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}): BitArray => {
     const re = new RegExp(String(c.value), 'i');
-    return ColumnEvaluator.where(col, c, ctx, (cell) => re.test(String(cell)) !== negate);
+    return ColumnEvaluator.where(col, c, ctx, (cell) => re.test(String(cell)), negate);
   };
 
 const compare = (op: string, label: string): FilterOperator => ({
@@ -205,14 +205,14 @@ const likeShape = (id: string, label: string, kinds: FilterKind[], operator: str
 
 export const CORE_OPERATORS: FilterOperator[] = [
   {
-    id: '=', label: 'equals', arity: 1, kinds: ALL, editor: 'default',
+    id: '=', label: 'equals', arity: 1, kinds: KINDS, editor: 'default',
     domain: (c, _prop, ctx) => node(c.property, '=', domainValue(c.value, ctx)),
     mask: where((x, v) => x === v),
   },
   {
-    id: '!=', label: 'not equals', arity: 1, kinds: ALL, editor: 'default',
+    id: '!=', label: 'not equals', arity: 1, kinds: KINDS, editor: 'default',
     domain: (c, _prop, ctx) => node(c.property, '!=', domainValue(c.value, ctx)),
-    mask: where((x, v) => x !== v),
+    mask: where((x, v) => x === v, true),
   },
   compare('>', 'greater than'),
   compare('>=', 'at least'),
@@ -227,14 +227,14 @@ export const CORE_OPERATORS: FilterOperator[] = [
     mask: where((x, [lo, hi]) => x >= lo && x <= hi),
   },
   {
-    id: 'in', label: 'is one of', arity: 'n', kinds: LISTABLE, editor: 'list',
+    id: 'in', label: 'is one of', arity: 'n', kinds: [...LISTABLE, KIND.STRING_LIST], editor: 'list',
     domain: (c, _prop, ctx) => node(c.property, '=', domainValue(c.value, ctx)),
     mask: where((x, list: MaskCell[]) => list.includes(x)),
   },
   {
-    id: 'not in', label: 'is not one of', arity: 'n', kinds: LISTABLE, editor: 'list',
+    id: 'not in', label: 'is not one of', arity: 'n', kinds: [...LISTABLE, KIND.STRING_LIST], editor: 'list',
     domain: (c, _prop, ctx) => node(c.property, '!=', domainValue(c.value, ctx)),
-    mask: where((x, list: MaskCell[]) => !list.includes(x)),
+    mask: where((x, list: MaskCell[]) => list.includes(x), true),
   },
   {
     // The hierarchy subtree term: the server walks the target's parent column
@@ -249,15 +249,15 @@ export const CORE_OPERATORS: FilterOperator[] = [
     domain: (c) => node(c.property, 'not like', likeValue(c, (v) => `%${v}%`)),
     mask: textMask((s, v) => s.includes(v), true),
   },
-  likeShape('starts', 'starts with', [KIND.STRING], 'like', (v) => `${v}%`, (s, v) => s.startsWith(v)),
-  likeShape('ends', 'ends with', [KIND.STRING], 'like', (v) => `%${v}`, (s, v) => s.endsWith(v)),
+  likeShape('starts', 'starts with', TEXT, 'like', (v) => `${v}%`, (s, v) => s.startsWith(v)),
+  likeShape('ends', 'ends with', TEXT, 'like', (v) => `%${v}`, (s, v) => s.endsWith(v)),
   {
-    id: 'matches', label: 'matches regex', arity: 1, kinds: [KIND.STRING], editor: 'default',
+    id: 'matches', label: 'matches regex', arity: 1, kinds: TEXT, editor: 'default',
     domain: (c) => node(c.property, '~*', textValue(c, () => String(c.value))),
     mask: regexMask(false),
   },
   {
-    id: '!matches', label: 'does not match', arity: 1, kinds: [KIND.STRING], editor: 'default',
+    id: '!matches', label: 'does not match', arity: 1, kinds: TEXT, editor: 'default',
     domain: (c) => node(c.property, '!~*', textValue(c, () => String(c.value))),
     mask: regexMask(true),
   },

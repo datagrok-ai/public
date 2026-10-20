@@ -168,12 +168,18 @@ test('bigint: rows go through get(i); number and digit-string values compare as 
   assert.deepEqual(await one('big', 'is not null'), [0, 2, 3, 4]);
 });
 
-test('string list: rows go through get(i); like is "some element contains", !like "none does"; null is null', async () => {
+test('string list: rows go through get(i); a condition asks about the elements; null and [] are empty', async () => {
   assert.deepEqual(await one('tags', 'like', 'asp'), [0, 4]);
-  assert.deepEqual(await one('tags', '!like', 'asp'), [2, 3], 'an empty list contains nothing; null never passes');
+  assert.deepEqual(await one('tags', '!like', 'asp'), [1, 2, 3], 'no element contains it: a null or empty list included');
   assert.deepEqual(await one('tags', 'like', 'Aspirin%', {options: {raw: true}}), [0]);
-  assert.deepEqual(await one('tags', 'is null'), [1]);
-  assert.deepEqual(await one('tags', 'is not null'), [0, 2, 3, 4]);
+  assert.deepEqual(await one('tags', '=', 'nsaid'), [0]);
+  assert.deepEqual(await one('tags', '!=', 'nsaid'), [1, 2, 3, 4]);
+  assert.deepEqual(await one('tags', 'in', ['Ibuprofen', 'x']), [3, 4]);
+  assert.deepEqual(await one('tags', 'not in', ['Ibuprofen', 'x']), [0, 1, 2]);
+  assert.deepEqual(await one('tags', 'starts', 'ibu'), [3]);
+  assert.deepEqual(await one('tags', 'matches', '^x$'), [4]);
+  assert.deepEqual(await one('tags', 'is null'), [1, 2]);
+  assert.deepEqual(await one('tags', 'is not null'), [0, 3, 4]);
 });
 
 test('groups: and, or, not, nesting; an empty group is all-true; the tail beyond length stays clear', async () => {

@@ -45,13 +45,20 @@ export class ColumnEvaluator {
     return kindOf({name: col.name, type: col.type});
   }
 
-  /** The rows holding null — never a bool (the platform has no null slot there). */
+  /** The rows holding null — never a bool (the platform has no null slot there); a string list
+   * with no element is empty too, as the server reads it. */
   static nulls(col: MaskColumnLike): BitArray {
     const kind = ColumnEvaluator.kindOf(col);
     if (kind === KIND.BOOL)
       return new BitArray(col.length);
-    if (kind === KIND.BIG_INT || kind === KIND.STRING_LIST)
+    if (kind === KIND.BIG_INT)
       return BitArray.create(col.length, (i) => col.get!(i) == null);
+    if (kind === KIND.STRING_LIST) {
+      return BitArray.create(col.length, (i) => {
+        const x = col.get!(i);
+        return x == null || (Array.isArray(x) && x.length === 0);
+      });
+    }
     const raw = col.getRawData();
     if (kind === KIND.INT)
       return BitArray.create(col.length, (i) => raw[i] === INT_NULL);
@@ -61,12 +68,14 @@ export class ColumnEvaluator {
     return BitArray.create(col.length, (i) => (categories[raw[i]] ?? '') === '');
   }
 
-  /** The rows whose non-null cell passes `test` against the condition's value converted to the
-   * column's kind (a list element-wise); nulls never pass — the SQL reading every other target
-   * has. Strings are tested once per category, bools once per side; a string list is tested as
-   * its elements joined by newlines, so `like` reads "some element contains" and `!like` "none does". */
+  /** The rows whose non-null cell passes `test` — or fails it, with `negate` — against the
+   * condition's value converted to the column's kind (a list element-wise); nulls never pass — the
+   * SQL reading every other target has. Strings are tested once per category, bools once per side.
+   * A string list asks about its elements, as the server does: some element passes `test`, or with
+   * `negate` none does — a null or empty list included. */
   static where(col: MaskColumnLike, c: FilterCondition, ctx: {now: Date},
-    test: (cell: MaskCell, value: any) => boolean): BitArray {
+    test: (cell: MaskCell, value: any) => boolean, negate: boolean = false): BitArray {
+    const pass = (cell: MaskCell, value: any) => test(cell, value) !== negate;
     const kind = ColumnEvaluator.kindOf(col);
     const raw = kind === KIND.BIG_INT || kind === KIND.STRING_LIST ? null : col.getRawData();
     const f32 = raw instanceof Float32Array;
@@ -74,25 +83,25 @@ export class ColumnEvaluator {
     const value = Array.isArray(c.value) ? c.value.map(convert) : convert(c.value as FilterScalar);
     switch (kind) {
       case KIND.BOOL: {
-        const hit = [test(false, value), test(true, value)];
+        const hit = [pass(false, value), pass(true, value)];
         return BitArray.create(col.length, (i) => hit[(raw![i >>> 5] >>> (i & 31)) & 1]);
       }
       case KIND.BIG_INT:
         return BitArray.create(col.length, (i) => {
           const x = col.get!(i);
-          return x != null && test(BigInt(x as bigint | number | string), value);
+          return x != null && pass(BigInt(x as bigint | number | string), value);
         });
       case KIND.STRING_LIST:
         return BitArray.create(col.length, (i) => {
           const x = col.get!(i);
-          return Array.isArray(x) && test(x.join('\n'), value);
+          return (Array.isArray(x) && x.some((e) => e != null && test(String(e), value))) !== negate;
         });
       case KIND.INT:
-        return BitArray.create(col.length, (i) => raw![i] !== INT_NULL && test(raw![i], value));
+        return BitArray.create(col.length, (i) => raw![i] !== INT_NULL && pass(raw![i], value));
       case KIND.FLOAT: case KIND.DATE_TIME:
-        return BitArray.create(col.length, (i) => !isFloatNull(raw![i]) && test(raw![i], value));
+        return BitArray.create(col.length, (i) => !isFloatNull(raw![i]) && pass(raw![i], value));
       default: {
-        const hit = (col.categories ?? []).map((s) => s !== '' && test(s, value));
+        const hit = (col.categories ?? []).map((s) => s !== '' && pass(s, value));
         return BitArray.create(col.length, (i) => hit[raw![i]] === true);
       }
     }
