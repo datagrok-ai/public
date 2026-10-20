@@ -829,7 +829,7 @@ gateway) in Anthropic's or OpenAI's format.
 
 | Credential | Value |
 |---|---|
-| `baseUrl` | The endpoint's https URL; plain http only to `127.0.0.1`, `localhost`, `[::1]` or `host.docker.internal`; no user info, query or fragment |
+| `baseUrl` | The endpoint's https URL, with an ASCII host; no user info, query or fragment. Plain http is refused, to a local host too: a tool of any session could listen on that port (say `[::1]:4000` beside a sidecar that listens on IPv4 only) and take the key and every conversation |
 | `apiFormat` | The format of every call: `anthropic-messages` (`POST <baseUrl>/v1/messages`, a trailing `/v1` dropped first), `openai-responses` (`POST <baseUrl>/responses`) or `openai-chat-completions` (`POST <baseUrl>/chat/completions`), so an OpenAI-format URL usually ends in `/v1` |
 | `apiKey` | The endpoint's key, sent as `Authorization: Bearer` in every format |
 | `model` | Required: a catalog model's id, sent as is (`claude-sonnet-5-5`), or `<id>=<catalog model>` for the endpoint's own name (`gw-sonnet=claude-sonnet-5-5`) |
@@ -903,8 +903,10 @@ the new image.
 - The user's Datagrok key reaches the agent in each `turn` command as the MCP headers (`x-user-api-key`,
   and `Authorization` for the datlas container proxy).
 - The provider key and the conversation go only to the provider's own hosts: a fixed address, or the
-  admin's `baseUrl` under the provider's host rule. `TEST_UPSTREAM` can send them only to a local host, or to
-  the provider's own host on another port. Nothing else in the image filters the agents' traffic.
+  admin's `baseUrl` under the provider's host rule, always over https: on plain http, to a local host too,
+  any session's tools could listen on the port and take them. Only `TEST_UPSTREAM`, for tests, sends them
+  elsewhere: to a local host, over plain http too, or over https to the provider's own host on another port.
+  Nothing else in the image filters the agents' traffic.
 - Hermes never borrows a Claude Code login (`auth.adopt_external_logins: false`), and logs at `WARNING`:
   `INFO` would write the start of every prompt into `agent.log`, which other agents can read.
 - The access guard (`agent/grokky_agent/guard.py`) refuses tool calls that name another user's

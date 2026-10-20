@@ -4,11 +4,13 @@ from typing import ClassVar
 from .. import models
 from ..formats import API_FORMATS, ApiMode
 from ..hermes import Connection
-from .base import LOCAL_HOST, Credentials, Provider, ProviderError
+from .base import Credentials, Provider, ProviderError
 
 # The model clients append their route to the path and cannot carry user info, a query or a fragment. A host with a
-# trailing dot is refused: Hermes drops the dot and would take api.anthropic.com. for api.anthropic.com.
-BASE_URL = re.compile(rf'(https?://{LOCAL_HOST}|https://[\w-]+(\.[\w-]+)*)(:\d+)?(/[^?#\s]*)?')
+# trailing dot or outside ASCII is refused: Hermes drops the dot, and IDNA may map a fullwidth letter onto its ASCII
+# one, either of which can turn another host into api.anthropic.com. Only https: over plain http, to a local host too,
+# a tool of any session could listen on that port and take the key and the conversations.
+BASE_URL = re.compile(r'https://[\w-]+(\.[\w-]+)*(:\d+)?(/[^?#\s]*)?', re.ASCII)
 # What to check after a failed call, by its HTTP status; without one nothing answered as the API (a connection error,
 # a login page instead of an event stream).
 HINTS: dict[int | None, str] = {
@@ -35,9 +37,8 @@ class CustomProvider(Provider):
         self._api_mode = API_FORMATS[api_format]
         url = credentials.get('baseUrl') or ''
         if not BASE_URL.fullmatch(url):
-            raise ProviderError("The baseUrl container credential must be the endpoint's https URL (http only to "
-                                '127.0.0.1, localhost, [::1] or host.docker.internal), without user info, a query or '
-                                'a fragment')
+            raise ProviderError("The baseUrl container credential must be the endpoint's https URL, without user "
+                                'info, a query or a fragment')
         self._base_url = self.endpoint(url)
         self.refuse_subscription_token(credentials.get('apiKey') or '', self._base_url)
         self._key = self.api_key(credentials, 'the key the endpoint takes as a Bearer token')
