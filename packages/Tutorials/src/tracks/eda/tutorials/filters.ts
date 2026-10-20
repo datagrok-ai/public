@@ -172,7 +172,7 @@ export class FiltersTutorial extends Tutorial {
       'Choose <b>Save or apply | Save...</b> in the context menu ' +
       'and keep the default name <b>AGE: [40,60]</b>.', async () => {
         await Tutorial.runContextMenu(filters.root, 'Save...');
-        (await Tutorial.waitFor(() => DG.Dialog.getOpenDialogs().find((d) => d.title === 'Save filter preset')))!
+        (await Tutorial.waitFor(() => DG.Dialog.getOpenDialogs().find((d) => d.title?.startsWith('Save filter'))))!
           .getButton('OK').click();
       });
 
