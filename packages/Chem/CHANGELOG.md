@@ -1,6 +1,6 @@
 # Chem changelog
 
-## v.next
+## 1.17.16 (2026-10-20)
 
 * [#4291](https://github.com/datagrok-ai/public/issues/4291): MPO: Add support for qnum values
 * [#4324](https://github.com/datagrok-ai/public/issues/4324): MPO: Fixed Cancel in the property curve settings keeping the changed Score as
