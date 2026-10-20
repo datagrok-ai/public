@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {filter} from 'rxjs/operators';
+import {filter, switchMap} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {Observable, combineLatest} from 'rxjs';
 import $ from 'cash-dom';
@@ -55,7 +55,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     `Note that as you draw, the chemical spreadsheet (grid) dynamically updates to show only the molecules with the
     specified substructure, highlighting it in each molecule.<br>Click <b>OK</b>.`);
 
-    const v = [...tv.viewers].find((v) => v.type === DG.VIEWER.FILTERS);
+    const filters = () => [...tv.viewers].find((v) => v.type === DG.VIEWER.FILTERS) as DG.FilterGroup | undefined;
     const setSmilesFilter = (state: {[key: string]: any}) =>
       tv.getFiltersGroup().updateOrAdd({type: DG.FILTER_TYPE.SUBSTRUCTURE, column: 'smiles', ...state});
     await this.action('Change substructure', d.onClose, undefined, '', () => {
@@ -67,7 +67,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     this.title('Remove the substructure filter', true);
     this.describe(`Use the <b>Filter Panel</b> on the left to clear the substructure filter`);
 
-    await this.buttonClickAction(v!.root, 'In the filter panel, click CLEAR', 'Clear');
+    await this.buttonClickAction(filters()!.root, 'In the filter panel, click CLEAR', 'Clear');
 
     this.title('Use current molecule to filter by substructure', true);
 
@@ -84,8 +84,8 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
         return true;
       }
       return false;
-    })), v!.root.querySelector('.chem-canvas') as HTMLElement, '',
-      () => (v!.root.querySelector('.chem-canvas') as HTMLElement).click());
+    })), filters()?.root.querySelector('.chem-canvas') as HTMLElement, '',
+      () => (filters()!.root.querySelector('.chem-canvas') as HTMLElement).click());
 
     await this.dialogOkAction(d_!, 'Click OK');
 
@@ -104,8 +104,8 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
           }
         });
       });
-      observer.observe(v!.root.querySelector('.d4-flex-col.d4-filter')!, {subtree: true, attributes: true});
-    }), v?.root.querySelector('.d4-flex-col.d4-filter') as HTMLElement,
+      observer.observe(filters()!.root.querySelector('.d4-flex-col.d4-filter')!, {subtree: true, attributes: true});
+    }), filters()?.root.querySelector('.d4-flex-col.d4-filter') as HTMLElement,
     `<ol><li>On the <b>Filter Panel</b>, hover over a molecule and click the <b>Gear</b> icon.</li>
     <li>From the dropdown, select <b>Not contains<b>.</li><ol>`,
     Tutorial.apiSkip(() => setSmilesFilter({searchType: 'Not contains',
@@ -123,8 +123,9 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
           }
         });
       });
-      observer.observe(v!.root.querySelector('.d4-flex-col.ui-div.chem-filter.d4-filter-element')!, {attributes: true});
-    }), v?.root.querySelector('.d4-flex-col.d4-filter') as HTMLElement, '',
+      observer.observe(filters()!.root.querySelector('.d4-flex-col.ui-div.chem-filter.d4-filter-element')!,
+        {attributes: true});
+    }), filters()?.root.querySelector('.d4-flex-col.d4-filter') as HTMLElement, '',
     Tutorial.apiSkip(() => tv.getFiltersGroup().setEnabled({type: DG.FILTER_TYPE.SUBSTRUCTURE, column: 'smiles'}, false)));
 
     this.title('Add more filters', true);
@@ -132,10 +133,13 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     Then, in the dialog, in addition to <b>smiles</b>, select <b>NOCount</b> and <b>NumRotatableBonds</b>, and click <b>OK</b>`);
 
     const exp = ['NOCount', 'NumRotatableBonds', 'smiles'];
-    await this.action('Select columns to be used as filers', v?.onEvent('d4-filter-added').pipe(filter(() => {
-      const filt = v.getOptions().look.filters;
-      return filt.length === 3 && filt.every((f: any) => exp.includes(f.column));
-    }))!, $('.panel-titlebar.panel-titlebar-tabhost .grok-icon.grok-font-icon-menu').get(0), '',
+    await this.action('Select columns to be used as filers', grok.events.onDialogShown.pipe(
+      filter((d) => d.title === 'Select columns...'),
+      switchMap((d) => d.onClose),
+      filter(() => {
+        const filt = filters()?.getOptions().look.filters;
+        return filt?.length === 3 && filt.every((f: any) => exp.includes(f.column));
+      })), $('.panel-titlebar.panel-titlebar-tabhost .grok-icon.grok-font-icon-menu').get(0), '',
     Tutorial.apiSkip(() => {
       tv.getFiltersGroup().updateOrAdd({type: DG.FILTER_TYPE.HISTOGRAM, column: 'NOCount'});
       tv.getFiltersGroup().updateOrAdd({type: DG.FILTER_TYPE.HISTOGRAM, column: 'NumRotatableBonds'});

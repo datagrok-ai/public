@@ -172,7 +172,9 @@ export class DifferentialEquationsTutorial extends Tutorial {
       return;
     }
 
-    const lotkaVolterraElement = modelElements[2] as HTMLElement;
+    // by name: the library's order is not the tutorial's to rely on
+    const lotkaVolterraElement = (Array.from(modelElements) as HTMLElement[])
+      .find((e) => e.textContent?.includes('Lotka-Volterra')) ?? modelElements[2] as HTMLElement;
 
     await this.action(
       'Run the Lotka-Volterra model',
@@ -182,10 +184,13 @@ export class DifferentialEquationsTutorial extends Tutorial {
       () => lotkaVolterraElement.dispatchEvent(new MouseEvent('dblclick', {bubbles: true})),
     );
 
-    await new Promise((resolve) => setTimeout(resolve, DELAY));
-
     // 4. Explore elements
-    const dsView = grok.shell.v as DG.TableView;
+    const dsView = await getViewWithElement('div.ui-form') as DG.TableView | null;
+    if (dsView === null) {
+      grok.shell.warning('Failed to run the Lotka-Volterra model');
+      return;
+    }
+
     const dsViewRoot = dsView.root;
     const inputsPanel = dsViewRoot.querySelector('div[class="panel-base splitter-container-horizontal"]') as HTMLElement;
     let uiFormRoot = dsViewRoot.querySelector('div.ui-form') as HTMLElement;
@@ -397,8 +402,12 @@ export class DifferentialEquationsTutorial extends Tutorial {
       return;
 
     inputRoots = uiFormRoot.querySelectorAll('div.ui-input.ui-input-root.ui-input-float');
+    // found by caption, since the eta parameter the learner added shifts every input after Predator
+    const editorOf = (caption: string) => (Array.from(inputRoots) as HTMLElement[])
+      .find((r) => r.querySelector('label')?.textContent?.trim().toLowerCase() === caption.toLowerCase())
+      ?.querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
 
-    const preyEditor = inputRoots[3].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
+    const preyEditor = editorOf('Prey');
     await this.action(
       'Set "Prey" to 2',
       interval(100).pipe(filter(() => preyEditor.value == '2')),
@@ -407,7 +416,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       () => Tutorial.setInputValue(preyEditor, '2'),
     );
 
-    const deltaEditor = inputRoots[8].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
+    const deltaEditor = editorOf('delta');
     await this.action(
       'Set "Delta" to 0.1',
       interval(100).pipe(filter(() => deltaEditor.value == '0.1')),
@@ -417,7 +426,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     );
 
     // 13. Play with inputs
-    let finishEditor = inputRoots[1].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
+    let finishEditor = editorOf('Finish');
     await this.action(
       'Set "Finish" to 150',
       interval(100).pipe(filter(() => finishEditor.value == '150')),

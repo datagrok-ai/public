@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {BehaviorSubject, Observable} from 'rxjs';
+import {BehaviorSubject, Observable, interval} from 'rxjs';
 import $ from 'cash-dom';
 import { _package } from '../../../package';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
@@ -94,9 +94,11 @@ export class ActivityCliffsTutorial extends Tutorial {
       v.root.addEventListener('mousemove', onMousemove);
     }));
 
-    await this.action('To view only the cliffs, toggle Show only cliffs.', new Observable((subscriber: any) => {
-      $('.ui-input-switch').one('click', () => subscriber.next(true));
-    }), $('.ui-input-switch').get(0), '', () => $('.ui-input-switch').get(0)!.click());
+    // the switch filters the table to the cliffs and says so in a tag; any other switch on the page does not
+    const cliffsSwitch = () => v.root.querySelector('.cliffs_div .ui-input-switch') as HTMLElement ?? null;
+    await this.action('To view only the cliffs, toggle Show only cliffs.',
+      interval(200).pipe(filter(() => !!v.dataFrame.getTag('filterCliffs'))), cliffsSwitch(), '',
+      () => cliffsSwitch().click());
 
     this.title('Zoom in on the area of interest', true);
     this.describe(`On the scatterplot, the marker color corresponds to the activity level, and the size represents

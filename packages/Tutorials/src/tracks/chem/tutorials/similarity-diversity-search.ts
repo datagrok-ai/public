@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
+import {fromEvent, interval} from 'rxjs';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {Observable} from 'rxjs';
 import $ from 'cash-dom';
@@ -84,24 +85,16 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
 
     //await this.contextMenuAction('Right-click the similarity viewer and select Properties...', 'Properties...');
 
-    const simGear = sim!.root.parentElement?.parentElement?.getElementsByClassName('grok-font-icon-settings')[0] as HTMLElement;
+    // the gear sits in the viewer's title bar, outside its root; only this viewer's gear counts
+    const simGear = () => sim!.root.parentElement?.parentElement
+      ?.getElementsByClassName('grok-font-icon-settings')[0] as HTMLElement ?? null;
     await this.action('Hover over similarity viewer and click gear icon in the right top corner of the viewer to open settings',
-      new Observable((subscriber: any) => {
-        $('.grok-icon.grok-font-icon-settings').one('click', () => subscriber.next(true));
-      }), simGear, '', () => simGear.click());
+      fromEvent(document, 'click').pipe(filter((e) => simGear() != null && simGear().contains(e.target as Node))),
+      simGear(), '', () => simGear()!.click());
 
-    await this.action('Under Misc, clear the Follow Current Row checkbox', new Observable((subscriber: any) => {
-      const observer = new MutationObserver((mutationsList, observer) => {
-        mutationsList.forEach((m) => {
-          //@ts-ignore
-          if (m.attributeName === 'class' && m.target.innerText === 'Follow Current Row') {
-            subscriber.next(true);
-            observer.disconnect();
-          }
-        });
-      });
-      observer.observe($('.grok-prop-panel').get(0)!, {subtree: true, attributes: true});
-    }), undefined, '', Tutorial.apiSkip(() => sim!.setOptions({followCurrentRow: false})));
+    await this.action('Under Misc, clear the Follow Current Row checkbox',
+      interval(200).pipe(filter(() => sim!.props.followCurrentRow === false)), undefined, '',
+      () => sim!.setOptions({followCurrentRow: false}));
 
     // let j = 0;
     // await this.action('Click anywhere in the viewer and in the grid', this.t.onCurrentRowChanged.pipe(filter(() => {
@@ -115,8 +108,8 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     the structure or by pasting its identifier. For this tutorial, let’s paste the molecule's SMILES.`);
 
     const d = await this.openDialog('On the reference molecule, click the Edit icon', '',
-      $('.grok-icon.fal.fa-pen.similarity-search-edit.chem-mol-view-icon').get(0), '',
-      () => $('.grok-icon.fal.fa-pen.similarity-search-edit.chem-mol-view-icon').get(0)!.click());
+      $('.d4-chem-similarity-search .chem-similarity-search-edit').get(0), '',
+      () => $('.d4-chem-similarity-search .chem-similarity-search-edit').get(0)!.click());
 
     const MOL = 'CNc1nc(Nc2ccc(Br)cc2)nc(N)c1[N+](=O)[O-]';
     const copyButton = ui.button(ui.iconFA('clone'), () => {}, 'Copy molecule');
@@ -168,18 +161,11 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     }), $('.d4-chem-diversity-search .ui-link').get(0), '',
     () => $('.d4-chem-diversity-search .ui-link').get(0)!.click());
 
-    await this.action('Select NumValenceElectrons column', new Observable((subscriber: any) => {
-      const observer = new MutationObserver((mutationsList, observer) => {
-        mutationsList.forEach((m) => {
-          //@ts-ignore
-          if (m.target.innerText === '1 / 31' || m.target.innerText === '1 / 32') {
-            subscriber.next(true);
-            observer.disconnect();
-          }
-        });
-      });
-      observer.observe($('.grok-prop-panel').get(0)!, {subtree: true, childList: true});
-    }), undefined, `On the <b>Context Panel</b>:
+    // the diversity viewer's link made it the current object: the column goes to its Molecule Properties
+    await this.action('Select NumValenceElectrons column',
+      interval(200).pipe(filter(() =>
+        ((div!.props.moleculeProperties ?? []) as string[]).includes('NumValenceElectrons'))),
+      undefined, `On the <b>Context Panel</b>:
     <ol><li>Under <b>Misc</b>, Next to <b>Molecule Properties</b>, click the column selector icon ('...').</li>
     <li>Select this column: <b>NumValenceElectrons</b>.</li>
     <li>Click <b>OK</b>.</li></ol>`, () => div!.setOptions({moleculeProperties: ['NumValenceElectrons']}));

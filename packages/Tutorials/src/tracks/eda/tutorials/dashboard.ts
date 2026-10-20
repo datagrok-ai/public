@@ -51,8 +51,8 @@ export class DashboardTutorial extends Tutorial {
       (el.textContent ?? '')?.startsWith('Postgres'))[0]!;
 
     const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
-      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "Add connection..."`,
-      () => Tutorial.runContextMenu(providerRoot, 'Add connection...'));
+      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "New connection..."`,
+      () => Tutorial.runContextMenu(providerRoot, 'New connection...'));
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -65,12 +65,12 @@ export class DashboardTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Password" to "KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF"', 'Password', 'KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF');
     await this.dialogOkAction(dlg);
 
-    const starbucksNodes = $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
-      el.textContent === 'Starbucks');
+    const starbucksNode = () => $(providerRoot).closest('.d4-tree-view-group').find('div.d4-tree-view-group-label')
+      .filter((idx, el) => el.textContent === connectionName).last()[0] ?? null;
     const dqv = await this.openViewByType(`Create a data query to the "${connectionName}" data connection`,
-      'DataQueryView', starbucksNodes[starbucksNodes.length - 1],
+      'DataQueryView', starbucksNode(),
       `Open the context menu on Postgres | ${connectionName} and click "New Query..."`,
-      () => Tutorial.runContextMenu(starbucksNodes[starbucksNodes.length - 1]!, 'New Query...'));
+      () => Tutorial.runContextMenu(starbucksNode()!, 'New Query...'));
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -162,10 +162,13 @@ export class DashboardTutorial extends Tutorial {
       () => grok.shell.closeAll());
 
     await DG.delay(1000);
-    const dashboardsLabel = $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]!;
+    // the tree is rebuilt after Close all, so the row is looked up on every poll; a click anywhere in it counts
+    const dashboardsNode = () => ($('div.d4-tree-view-item-label')
+      .filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]
+      ?.closest('.d4-tree-view-node') as HTMLElement) ?? null;
 
-    await this.action('Open browse and click on Dashboards', elementClick(() => dashboardsLabel), dashboardsLabel, '',
-      () => dashboardsLabel.click());
+    await this.action('Open browse and click on Dashboards', elementClick(dashboardsNode), dashboardsNode(), '',
+      () => dashboardsNode()!.click());
 
     await this.action('Find and open your project',
       grok.events.onProjectOpened.pipe(filter(isSavedProject)), null,

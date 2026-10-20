@@ -57,16 +57,9 @@ export class MultivariateAnalysisTutorial extends Tutorial {
 
     dlg.add(ui.input.column('Names', {table: this.t!, filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.STRING)}));
 
-    let viewers = [] as DG.Viewer[];
-
     dlg.addButton('RUN', () => {
       dlg.close();
       plsDlg.getButton('RUN').click();
-
-      setTimeout(() => {
-        viewers = [...(grok.shell.v as DG.TableView).viewers];
-        //console.log(viewers);
-      }, 2000);
     }, undefined, 'Perform multivariate analysis');
 
     dlg.show();
@@ -144,17 +137,22 @@ export class MultivariateAnalysisTutorial extends Tutorial {
       }
     };
 
-    setTimeout(async () => {
-      viewerRoots = [
-        viewers[1].root, // Observed vs. Predicted scatterplot
-        viewers[4].root, // Scores scatterplot
-        viewers[3].root, // Loadings scatterplot
-        viewers[6].root, // Variable importance bar chart
-        viewers[5].root, // Explained variances bar chart
-      ];
-
+    // the analysis adds its viewers asynchronously (the model is computed in a web worker): the
+    // walk starts once every one it describes is there, found by its title rather than its position
+    const titles = ['Observed vs. Predicted', 'Scores', 'Loadings', 'Variable Importance', 'Explained Variance'];
+    const byTitle = () => {
+      const viewers = [...(grok.shell.v as DG.TableView).viewers];
+      const found = titles.map((t) => viewers.find((v) => v.props.title === t));
+      return found.every((v) => v != null) ? found.map((v) => v!.root) : null;
+    };
+    Tutorial.waitFor(byTitle, 60000).then((roots) => {
+      if (roots == null) {
+        console.error('Tutorial step skipped: the analysis viewers never appeared', this.name);
+        return;
+      }
+      viewerRoots = roots;
       step();
-    }, 2100);
+    });
 
     await this.action('Explore each viewer', new Observable((subscriber: any) => {
       //@ts-ignore

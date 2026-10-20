@@ -47,8 +47,8 @@ export class DataConnectorsTutorial extends Tutorial {
     })[0];
 
     const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
-      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "Add connection..."`,
-      () => Tutorial.runContextMenu($(providerRoot).find('.d4-tree-view-group-label')[0]!, 'Add connection...'));
+      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "New connection..."`,
+      () => Tutorial.runContextMenu($(providerRoot).find('.d4-tree-view-group-label')[0]!, 'New connection...'));
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -77,9 +77,11 @@ export class DataConnectorsTutorial extends Tutorial {
         const res = call.outputs.get('result');
         return call.func.name === 'GetStarbucksUS' &&
           res instanceof DG.DataFrame && res?.rowCount === 13509;
-      })), null, '', () => {
+      })), null, '', async () => {
         Tutorial.setCodeEditorText(dqv.root, 'select * from starbucks_us');
-        $(dqv.getRibbonPanels().flat()).find('i.fa-play').filter((_, el) => el.offsetParent != null)[0]!.click();
+        // the Play icon is rebuilt once the query has text
+        (await Tutorial.waitFor(() => $(dqv.getRibbonPanels().flat()).find('i.fa-play')
+          .filter((_, el) => el.offsetParent != null)[0]))!.click();
       },
     );
   }

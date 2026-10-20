@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {Observable, combineLatest, interval} from 'rxjs';
-import $, {Cash} from 'cash-dom';
+import {Observable, combineLatest, fromEvent, interval} from 'rxjs';
+import $ from 'cash-dom';
 import { _package } from '../../../package';
 
 
@@ -82,30 +82,20 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     this.describe(`Once the analysis is complete, the R-group columns are added to the table,
     along with a trellis plot for visual exploration.<br>Let’s set up the visualization.`);
 
-    const trellisGear = v!.root.parentElement?.parentElement?.getElementsByClassName('grok-font-icon-settings')[0] as HTMLElement;
+    // the gear sits in the trellis title bar, outside its root; only this viewer's gear counts
+    const trellisGear = () => v!.root.parentElement?.parentElement
+      ?.getElementsByClassName('grok-font-icon-settings')[0] as HTMLElement ?? null;
     await this.action('In the trellis plot, click the gear icon for the embedded viewer',
-      new Observable((subscriber: any) => {
-        $('.grok-icon.grok-font-icon-settings').one('click', () => subscriber.next(true));
-      }), trellisGear,
+      fromEvent(document, 'click').pipe(filter((e) => trellisGear() != null &&
+        trellisGear().contains(e.target as Node))), trellisGear(),
       `The <b>Context Panel</b> on the right now shows the settings for the trellis plot and the pie chart.`,
-      () => trellisGear.click());
+      () => trellisGear()!.click());
 
     grok.shell.windows.showContextPanel = true;
-    const getPieChartHeader = () => {
-      const propPanel = document.getElementsByClassName('grok-prop-panel');
-      if (propPanel.length)
-        return propPanel[0].querySelector('[name="Pie chart"]');
-    }
-    await this.action('Go to Pie chart tab', new Observable((subscriber: any) => {
-      const observer = new MutationObserver((mutationsList, observer) => {
-        const pieChartH = getPieChartHeader() as HTMLElement;
-        if (pieChartH.classList.contains('selected')) {
-          subscriber.next(true);
-          observer.disconnect();
-        }
-      });
-      observer.observe($('.grok-prop-panel').get(0)!, { childList: true, subtree: true });
-    }), getPieChartHeader() as HTMLElement, '', () => (getPieChartHeader() as HTMLElement).click());
+    const pieChartTab = () => document.querySelector('.grok-prop-panel [name="Pie chart"]') as HTMLElement ?? null;
+    await this.action('Go to Pie chart tab',
+      interval(200).pipe(filter(() => pieChartTab()?.classList.contains('selected') ?? false)), pieChartTab(), '',
+      () => pieChartTab()!.click());
 
     const innerLook = () => (v!.getOptions().look as any).innerViewerLook ?? {};
     await this.action('Under Pie chart tab > Data, set Category to LC/MS',
@@ -146,34 +136,38 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     //     $('.d4-accordion-pane-header').filter((_, el) => el.textContent === 'Distributions').length > 0;
     // })), undefined, 'Note changes on the pie charts');
 
-    let pane: Cash;
+    // the pane exists only while a RowGroup is the current object, which the previous step
+    // establishes — so it is resolved per tick, not once when this step is built
+    const distrHeader = (): HTMLElement | null => $('.d4-accordion-pane-header')
+      .filter((_, el) => el.textContent === 'Distributions').get(0) ?? null;
+
     await this.action('On the Context Panel, expand the Distributions pane',
       new Observable((subscriber: any) => {
-        pane = $('.d4-accordion-pane-header').filter((_, el) => el.textContent === 'Distributions');
-        if (pane.hasClass('expanded'))
+        const header = distrHeader();
+        if (header != null && $(header).hasClass('expanded')) {
           subscriber.next(true);
-        pane.on('click', () => subscriber.next(true));
-      }), $('.d4-accordion-pane-header').filter((_, el) => el.textContent === 'Distributions').get(0));
-
-    const getDistrLineChart = () => {
-      const distrPane = document.getElementsByClassName('d4-accordion-pane-content d4-pane-distributions expanded');
-      if (distrPane.length) {
-        const canvases = distrPane[0].getElementsByTagName('canvas');
-        if (canvases.length)
-          return canvases[0] as HTMLElement;
-      }
-      return undefined;
-    }
-    await this.action('In the pane, hover over line charts to see dictibutions', new Observable((subscriber: any) => {
-      const onMousemove = async () => {
-        if ($('.d4-tooltip').css('display') === 'block') {
-          await DG.delay(1000);
-          subscriber.next(true);
-          document.getElementsByClassName('d4-accordion-pane-content d4-pane-distributions expanded')[0]!.removeEventListener('mousemove', onMousemove);
+          return;
         }
-      };
-      document.getElementsByClassName('d4-accordion-pane-content d4-pane-distributions expanded')[0]!!.addEventListener('mousemove', onMousemove);
-    }), getDistrLineChart());
+        // delegated, so it does not matter whether the pane is in the DOM yet
+        const onClick = (e: Event) => {
+          const el = (e.target as HTMLElement).closest('.d4-accordion-pane-header');
+          if (el != null && el.textContent === 'Distributions')
+            subscriber.next(true);
+        };
+        document.addEventListener('click', onClick, true);
+        return () => document.removeEventListener('click', onClick, true);
+      }), distrHeader(), '', Tutorial.apiSkip(() => distrHeader()?.click()));
+
+    const distrLineChart = () =>
+      document.querySelector('.d4-pane-distributions.expanded canvas') as HTMLElement ?? null;
+    // the pane is rebuilt as the selection changes, so the pointer is followed on the document; the
+    // tooltip shows once the pointer rests, after the last move
+    let overPane = false;
+    const paneMoves = fromEvent(document, 'mousemove')
+      .subscribe((e) => overPane = (e.target as HTMLElement).closest?.('.d4-pane-distributions') != null);
+    await this.action('In the pane, hover over line charts to see distributions',
+      interval(200).pipe(filter(() => overPane && $('.d4-tooltip').css('display') === 'block')), distrLineChart());
+    paneMoves.unsubscribe();
 
     this.title('Get a different view', true);
     this.describe(`The trellis plot initially shows pie charts, but you can change visualizations to
