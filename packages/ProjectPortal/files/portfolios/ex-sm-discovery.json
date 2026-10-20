@@ -1,0 +1,292 @@
+{
+  "code": "EX-SMD",
+  "name": "Example Small Molecule Discovery",
+  "setting": "discovery",
+  "modalityClass": "small_molecule",
+  "stageAuthority": "portal",
+  "programNoun": "Project",
+  "workspaceRoot": "Example Small Molecule Discovery",
+  "workstreams": ["Chemistry", "Biology", "DMPK", "CompChem"],
+  "description": "Example portfolio on synthetic data. Its registry has no stage, so gate decisions are made and recorded in the portal.",
+  "schedule": "every 6h",
+  "owners": ["admin"],
+  "autoAdvance": {"through": "H2L", "countWaivers": false},
+  "groups": {
+    "viewers": "Portal EX-SMD Viewers",
+    "contributors": "Portal EX-SMD Contributors",
+    "approvers": "Portal EX-SMD Approvers"
+  },
+  "askSme": {"channel": "discussion", "note": "Example: an EX-SMD approver answers within two working days."},
+  "personas": {
+    "default": "chemist",
+    "groups": [{"group": "Portal EX-SMD Approvers", "persona": "lead"}],
+    "panels": {"biologist": ["quick_actions", "data", "dmta", "observations", "compounds", "feed"]}
+  },
+  "workUnits": ["campaign", "series"],
+  "seriesMaturity": ["hit", "validated", "lead", "optimized", "candidate"],
+  "workUnitFeeds": [
+    {
+      "code": "example-sm-series",
+      "kind": "series",
+      "connection": "System:Datagrok",
+      "sql": "SELECT * FROM (VALUES\n    ('EXS-KIN1', 'KIN-A', 'Aminopyrimidines', 'validated', 'active', 'c1cc(N)ncn1'),\n    ('EXS-KIN1', 'KIN-B', 'Indazoles', 'hit', 'backup', 'c1ccc2[nH]ncc2c1'),\n    ('EXS-PRO2', 'PRO-A', 'Ketoamides', 'hit', 'active', NULL),\n    ('EXS-GPC3', 'GPC-A', 'Spiropiperidines', 'validated', 'active', 'C1CCC2(CC1)CCNCC2'))\n  AS u(program, code, name, maturity, status, scaffold)"
+    },
+    {
+      "code": "example-sm-campaigns",
+      "kind": "campaign",
+      "connection": "System:Datagrok",
+      "sql": "SELECT * FROM (VALUES\n    ('EXS-KIN1', 'HTS-K1', 'Kinase K1 primary screen', 'screening', 'closed', 'succeeded', 'Find hit series against K1', '2026-01-12'),\n    ('EXS-KIN1', 'DMTA-K1-07', 'KIN-A DMTA cycle 7', 'dmta_cycle', 'active', 'open', 'Improve permeability, keep potency', '2026-09-01'),\n    ('EXS-PRO2', 'HTS-P2', 'Protease P2 primary screen', 'screening', 'active', 'open', 'Find hit series against P2', '2026-06-03'),\n    ('EXS-ION4', 'HTS-C4', 'Ion channel C4 screen', 'screening', 'closed', 'abandoned', 'Find hit series against C4', '2025-11-20'),\n    ('EXS-XYZ9', 'HTS-X9', 'A screen for a project the registry does not list', 'screening', 'active', 'open', NULL, '2026-07-07'))\n  AS u(program, code, name, type, status, outcome, objective, started_on)"
+    }
+  ],
+  "compoundFeed": {
+    "system": "example-sm-compounds",
+    "connection": "System:Datagrok",
+    "sql": "SELECT * FROM (VALUES\n    ('EXS-KIN1', 'EXC-1001', NULL, 'Nc1nccc(-c2ccc(F)cc2)n1', 'lead', 'EXC-1001-01|EXC-1001-02'),\n    ('EXS-KIN1', 'EXC-1002', NULL, 'Nc1nccc(-c2ccc(Cl)cc2)n1', 'lead', 'EXC-1002-01|EXC-1002-02'),\n    ('EXS-KIN1', 'EXC-1003', NULL, 'Nc1nccc(-c2ccc(C)cc2)n1', 'lead', 'EXC-1003-01'),\n    ('EXS-KIN1', 'EXC-1004', NULL, 'Nc1nccc(-c2ccccc2O)n1', 'lead', 'EXC-1004-01'),\n    ('EXS-KIN1', 'EXC-1005', NULL, 'Nc1nccc(-c2ccc(OC)cc2)n1', 'lead', 'EXC-1005-01'),\n    ('EXS-KIN1', 'EXC-1006', NULL, 'Nc1nccc(-c2cccnc2)n1', 'lead', 'EXC-1006-01'),\n    ('EXS-KIN1', 'EXC-1007', NULL, 'Nc1nccc(-c2ccsc2)n1', 'backup', 'EXC-1007-01'),\n    ('EXS-KIN1', 'EXC-1008', NULL, 'Nc1nccc(-c2ccc(C#N)cc2)n1', 'backup', 'EXC-1008-01'),\n    ('EXS-KIN1', 'EXC-1101', NULL, 'c1ccc2[nH]ncc2c1', 'explored', NULL),\n    ('EXS-KIN1', 'EXC-1102', NULL, 'Cc1ccc2[nH]ncc2c1', 'explored', NULL),\n    ('EXS-KIN1', 'EXC-1103', NULL, 'Clc1ccc2[nH]ncc2c1', 'discontinued', NULL),\n    ('EXS-PRO2', 'EXC-2001', NULL, 'CC(=O)C(=O)NCc1ccccc1', 'hit', NULL),\n    ('EXS-PRO2', 'EXC-2002', NULL, 'CC(=O)C(=O)NCc1ccc(F)cc1', 'hit', NULL),\n    ('EXS-PRO2', 'EXC-2003', NULL, 'CC(=O)C(=O)NCc1ccncc1', 'explored', NULL),\n    ('EXS-GPC3', 'EXC-3001', 'Tool compound T1', 'c1ccc(CN2CCC3(CC2)CCNCC3)cc1', 'lead', NULL),\n    ('EXS-GPC3', 'EXC-3002', NULL, 'Fc1ccc(CN2CCC3(CC2)CCNCC3)cc1', 'lead', NULL),\n    ('EXS-GPC3', 'EXC-3003', NULL, 'Clc1ccc(CN2CCC3(CC2)CCNCC3)cc1', 'backup', NULL),\n    ('EXS-KIN1', 'EXC-3001', 'Tool compound T1', 'c1ccc(CN2CCC3(CC2)CCNCC3)cc1', 'tool', NULL),\n    ('EXS-XYZ9', 'EXC-9001', NULL, 'CCO', 'hit', NULL))\n  AS c(program, compound, name, smiles, role, batches)"
+  },
+  "programData": {
+    "name": "SAR table",
+    "connection": "System:Datagrok",
+    "leadRoles": ["lead", "backup", "candidate"],
+    "sql": "SELECT * FROM (VALUES\n    ('EXS-KIN1', 'EXC-1001', 'KIN-A', 'validated', 'lead', 0.02, 45, 12.0, 8, 22),\n    ('EXS-KIN1', 'EXC-1002', 'KIN-A', 'validated', 'lead', 0.035, 60, 9.5, 11, NULL),\n    ('EXS-KIN1', 'EXC-1003', 'KIN-A', 'validated', 'lead', 0.05, 30, 15.1, 6, 35),\n    ('EXS-KIN1', 'EXC-1004', 'KIN-A', 'validated', 'lead', 0.11, 80, 7.2, 14, NULL),\n    ('EXS-KIN1', 'EXC-1005', 'KIN-A', 'validated', 'lead', 0.24, 25, 11.0, 9, 18),\n    ('EXS-KIN1', 'EXC-1006', 'KIN-A', 'validated', 'lead', 0.3, NULL, NULL, NULL, NULL),\n    ('EXS-KIN1', 'EXC-1007', 'KIN-A', 'validated', 'backup', 0.45, 55, NULL, NULL, NULL),\n    ('EXS-KIN1', 'EXC-1008', 'KIN-A', 'validated', 'backup', 0.5, 40, 8.8, NULL, NULL),\n    ('EXS-KIN1', 'EXC-1101', 'KIN-B', 'hit', 'explored', 3.2, NULL, NULL, NULL, NULL),\n    ('EXS-KIN1', 'EXC-1102', 'KIN-B', 'hit', 'explored', 8.0, NULL, NULL, NULL, NULL),\n    ('EXS-KIN1', 'EXC-1103', 'KIN-B', 'hit', 'explored', 12.5, NULL, NULL, NULL, NULL),\n    ('EXS-PRO2', 'EXC-2001', 'PRO-A', 'hit', 'explored', 2.5, NULL, NULL, NULL, NULL),\n    ('EXS-PRO2', 'EXC-2002', 'PRO-A', 'hit', 'explored', 4.0, NULL, NULL, NULL, NULL),\n    ('EXS-PRO2', 'EXC-2003', 'PRO-A', 'hit', 'explored', 12.0, NULL, NULL, NULL, NULL),\n    ('EXS-GPC3', 'EXC-3001', 'GPC-A', 'validated', 'lead', 0.4, 70, 14.0, 7, 30),\n    ('EXS-GPC3', 'EXC-3002', 'GPC-A', 'validated', 'lead', 0.8, 52, 10.2, 12, 4.5),\n    ('EXS-GPC3', 'EXC-3003', 'GPC-A', 'validated', 'backup', 1.5, 95, 18.3, 5, 40))\n  AS d(program, compound, series, series_maturity, role, ic50_um, solubility_um, papp, clint, herg_ic50_um)\nWHERE program = @program"
+  },
+  "programDatasets": [
+    {
+      "code": "assays",
+      "name": "Assay results",
+      "description": "One row per compound and assay run: the measurements the SAR table summarizes. Synthetic.",
+      "connection": "System:Datagrok",
+      "sql": "SELECT * FROM (VALUES\n    ('EXS-KIN1', 'EXC-1001', 'KIN1 IC50', 0.018, 'uM', '2026-05-04'),\n    ('EXS-KIN1', 'EXC-1001', 'KIN1 IC50', 0.022, 'uM', '2026-05-18'),\n    ('EXS-KIN1', 'EXC-1002', 'KIN1 IC50', 0.035, 'uM', '2026-05-04'),\n    ('EXS-KIN1', 'EXC-1003', 'KIN1 IC50', 0.05, 'uM', '2026-05-04'),\n    ('EXS-KIN1', 'EXC-1001', 'Solubility', 45, 'uM', '2026-05-11'),\n    ('EXS-KIN1', 'EXC-1002', 'Solubility', 60, 'uM', '2026-05-11'),\n    ('EXS-KIN1', 'EXC-1003', 'Solubility', 30, 'uM', '2026-05-11'),\n    ('EXS-KIN1', 'EXC-1001', 'hERG IC50', 22, 'uM', '2026-06-01'),\n    ('EXS-GPC3', 'EXC-3001', 'GPC3 IC50', 0.4, 'uM', '2026-04-20'),\n    ('EXS-GPC3', 'EXC-3002', 'GPC3 IC50', 0.8, 'uM', '2026-04-20'))\n  AS a(program, compound, assay, value, units, run_date)\nWHERE program = @program",
+      "viewers": [{"type": "Box plot", "options": {"categoryColumnNames": ["assay"], "valueColumnName": "value"}}]
+    }
+  ],
+  "attention": [
+    {
+      "code": "herg_unmeasured",
+      "name": "Potent, hERG not measured",
+      "severity": "warning",
+      "condition": {"where": [{"column": "ic50_um", "op": "<", "value": 0.5}], "measured": ["herg_ic50_um"]},
+      "message": "{compound}: IC50 {ic50_um} uM, no hERG IC50"
+    },
+    {
+      "code": "lead_no_solubility",
+      "name": "Lead without solubility",
+      "severity": "warning",
+      "condition": {"scope": "lead_set", "measured": ["solubility_um"]},
+      "message": "{compound} ({role}): no solubility"
+    },
+    {
+      "code": "herg_liability",
+      "name": "hERG IC50 under 10 uM",
+      "severity": "critical",
+      "condition": {"where": [{"column": "herg_ic50_um", "op": "<", "value": 10}]},
+      "message": "{compound}: hERG IC50 {herg_ic50_um} uM"
+    }
+  ],
+  "catalogue": {
+    "models": [
+      {
+        "code": "ProjectPortal:SolubilityEstimate",
+        "name": "Solubility estimate (example)",
+        "category": "Physchem",
+        "description": "Synthetic stand-in for a solubility measurement: an invented function of potency.",
+        "status": "experimental",
+        "card": {
+          "version": "1.0",
+          "question": "Roughly what solubility should we expect for a compound not yet measured?",
+          "intendedUse": "Shows how a predictive model is suggested for a missing assay. Not for decisions: the numbers are invented.",
+          "applicability": "Small molecules of a validated series, Hit-to-Lead and Lead Optimization.",
+          "performance": "Not validated: an example.",
+          "limitations": "Uses only potency; ignores structure.",
+          "owner": "Example Computational Chemistry",
+          "approval": "draft",
+          "appliesTo": {"tasks": ["physchem"], "stages": ["H2L", "LO"], "modalities": ["Small Molecule"], "workUnits": ["series"], "predicts": ["solubility_um"]}
+        }
+      },
+      {
+        "code": "ProjectPortal:HergRisk",
+        "name": "hERG risk (example)",
+        "category": "ADMET",
+        "description": "Synthetic stand-in for a hERG IC50 measurement: an invented function of potency.",
+        "status": "experimental",
+        "card": {
+          "version": "1.0",
+          "question": "Is a compound likely to block hERG below 10 uM before it is measured?",
+          "intendedUse": "Shows how a predictive model is suggested for a missing safety assay. Not for decisions: the numbers are invented.",
+          "applicability": "Small molecules from Lead Optimization to candidate selection.",
+          "performance": "Not validated: an example.",
+          "limitations": "Uses only potency; ignores structure, basicity and lipophilicity.",
+          "owner": "Example Computational Chemistry",
+          "approval": "draft",
+          "appliesTo": {"tasks": ["ADMET"], "stages": ["LO", "CS"], "modalities": ["Small Molecule"], "predicts": ["herg_ic50_um"]}
+        }
+      }
+    ]
+  },
+  "stageModel": {
+    "code": "EX-SMD-V1",
+    "name": "Example Small Molecule Discovery",
+    "version": "1.0",
+    "setting": "discovery",
+    "description": "Target validation through preclinical candidate. Criteria are mostly data conditions on the lead set.",
+    "stages": [
+      {
+        "code": "TV",
+        "name": "Target Validation",
+        "ordinal": 1,
+        "phase": "Exploratory",
+        "isGate": false
+      },
+      {
+        "code": "HF",
+        "name": "Hit Finding",
+        "ordinal": 2,
+        "phase": "Exploratory",
+        "criteria": [
+          {
+            "code": "assay_ready",
+            "name": "Primary assay validated (Z' ≥ 0.5)",
+            "kind": "data_condition",
+            "rule": "assay.z_prime >= 0.5"
+          }
+        ],
+        "folders": ["Biology/Assay Development"]
+      },
+      {
+        "code": "H2L",
+        "name": "Hit-to-Lead",
+        "ordinal": 3,
+        "phase": "Lead generation",
+        "aliases": [
+          "Hit to Lead"
+        ],
+        "criteria": [
+          {
+            "code": "validated_series",
+            "name": "≥1 validated series with SAR",
+            "kind": "data_condition",
+            "rule": "≥1 series at validated maturity or beyond with ≥3 compounds",
+            "condition": {
+              "scope": "series",
+              "where": [
+                {
+                  "column": "series_maturity",
+                  "op": "in",
+                  "value": [
+                    "validated",
+                    "lead",
+                    "optimized",
+                    "candidate"
+                  ]
+                }
+              ],
+              "minCount": 3
+            }
+          },
+          {
+            "code": "potency",
+            "name": "Potency < 1 µM on ≥1 compound",
+            "kind": "data_condition",
+            "rule": "IC50 < 1 µM on ≥1 compound",
+            "condition": {
+              "where": [
+                {
+                  "column": "ic50_um",
+                  "op": "<",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "code": "LO",
+        "name": "Lead Optimization",
+        "ordinal": 4,
+        "phase": "Lead generation",
+        "aliases": [
+          "Lead Opt"
+        ],
+        "criteria": [
+          {
+            "code": "adme_panel",
+            "name": "ADME panel on ≥10 lead-series compounds",
+            "kind": "data_condition",
+            "rule": "solubility, permeability (Papp) and clearance (CLint) on ≥10 lead-set compounds",
+            "condition": {
+              "scope": "lead_set",
+              "measured": ["solubility_um", "papp", "clint"],
+              "minCount": 10
+            }
+          },
+          {
+            "code": "herg_margin",
+            "name": "hERG IC50 ≥ 10 µM on a lead-set compound",
+            "kind": "data_condition",
+            "rule": "hERG IC50 ≥ 10 µM on ≥1 lead-set compound",
+            "required": false,
+            "condition": {
+              "scope": "lead_set",
+              "where": [
+                {
+                  "column": "herg_ic50_um",
+                  "op": ">=",
+                  "value": 10
+                }
+              ]
+            }
+          }
+        ],
+        "folders": ["DMPK/In vivo PK"]
+      },
+      {
+        "code": "CS",
+        "name": "Candidate Selection",
+        "ordinal": 5,
+        "phase": "Candidate",
+        "criteria": [
+          {
+            "code": "candidate_profile",
+            "name": "Candidate profile document",
+            "kind": "document"
+          },
+          {
+            "code": "nominate",
+            "name": "Nomination decision",
+            "kind": "decision"
+          }
+        ],
+        "folders": ["Candidate Package"]
+      },
+      {
+        "code": "PCD",
+        "name": "Preclinical Candidate",
+        "ordinal": 6,
+        "phase": "Candidate",
+        "isTerminal": true,
+        "criteria": [
+          {
+            "code": "dc_decision",
+            "name": "Development candidate decision",
+            "kind": "decision"
+          }
+        ],
+        "folders": ["Candidate Package/Development Handover"]
+      }
+    ]
+  },
+  "feeds": [
+    {
+      "code": "example-sm-projects",
+      "system": "example-sm-registry",
+      "connection": "System:Datagrok",
+      "sql": "WITH reg(code, status, target, therapeutic_area) AS (VALUES\n    ('EXS-KIN1', 'ACTIVE', 'Kinase K1', 'Oncology'),\n    ('EXS-PRO2', 'ACTIVE', 'Protease P2', 'Immunology'),\n    ('EXS-GPC3', 'ACTIVE', 'GPCR G3', 'Neuroscience'),\n    ('EXS-ION4', 'INACTIVE', 'Ion channel C4', 'Neuroscience'),\n    ('EXS-EPI5', 'ACTIVE', 'Bromodomain B5', 'Oncology'))\nSELECT code, code AS name, status, 'Small Molecule' AS modality, target, therapeutic_area FROM reg",
+      "mapping": {
+        "status": {
+          "ACTIVE": "active",
+          "INACTIVE": "terminated"
+        }
+      }
+    }
+  ]
+}

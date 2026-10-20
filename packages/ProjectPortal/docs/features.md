@@ -1,0 +1,654 @@
+# Feature reference
+
+How each part of Project Portal behaves, feature by feature. The package [README](../README.md) is the
+usage guide; this is the design-level detail behind it. Ids in parentheses (F-nn, FR-nn, PORT-nn, PLAT-nn) are
+the product's feature, requirement, story and platform-ask ids; they are kept so the history can be traced, and
+nothing here depends on them. Open decisions per feature are in [build-log.md](build-log.md), platform issues in
+[platform-findings.md](platform-findings.md).
+
+All examples use the synthetic portfolios the package ships (EX-SMD, EX-BIOD, EX-BIOC).
+
+## Example history
+
+A registry feed carries programs, not their past. Where the portal owns the stage (EX-SMD, EX-BIOD), a
+feed places nothing, so every example program would stay unstaged. `files/examples/history.json` holds
+the rest, all invented and dated in the past: gate decisions with rationale and evidence, criteria
+recorded met, observations and a follow.
+
+- **`seedExamples(dryRun)`** writes what is missing (admins only, EX-* portfolios only). A dry run, the
+  default, lists it. A second run writes nothing. It also links the example documents.
+- **Decisions.** Advances walk each program's model one stage at a time from its first stage. Each
+  carries the gate's readiness as evidence, and sometimes a link. Holds and a no-go (terminate) stand
+  where the registry status agrees, so a sync does not undo them. In EX-BIOC, where the registry owns
+  the stage, they are decision records (go, hold) that move nothing.
+- **Never forced.** A decision already in the gate log (same kind and rationale) is skipped. A program
+  someone has moved since is left alone, and the report says so. A criterion already recorded is not
+  overwritten.
+- **Straight to the gate log.** The decisions keep their own dates, so they make no approval request,
+  snapshot or workspace folder.
+- **What it gives** (stand, 2026-10-09). EX-SMD: EXS-KIN1 and EXS-GPC3 at H2L, EXS-PRO2 and EXS-ION4
+  (terminated) at TV. The history leaves EXS-EPI5 unstaged, the one deliberate empty gate (on the
+  stand an earlier decision put it at TV). EX-BIOD: EXB-101 at LG, EXB-102, EXB-103 (on hold) and EXB-105 at TI,
+  EXB-104 unstaged (handed to EX-BIOC). Ready for the next gate: EXS-PRO2, EXB-102, EXB-104 in EX-BIOC.
+  EXS-KIN1 lacks the ADME panel for LO and gets the solubility model suggested.
+
+## Workspace per portfolio
+
+- `buildWorkspace` creates a Spaces tree: the portfolio's `workspaceRoot`, a folder per program named `CODE · Name`, and the portfolio's `workstreams` under each program.
+- Compounds, plates, results and predictions are never folders.
+- It is additive: it creates what is missing and never renames, moves or deletes. It records each program's folder on the program row (`space_id`), so a program renamed in its registry keeps its folder, and the report names the difference.
+- The root is shared View to viewers and Edit to contributors, and its folders inherit that. Unlike program rows, spaces accept the grant, so the workspace is isolated per portfolio today.
+- **It grows with the stage (PORT-35).** A stage declares `folders`, paths under the program's folder (`Candidate Package`, `DMPK/In vivo PK`). A program has the folders of every stage it has reached: the builder adds them, and a gate decision that advances a program adds the new stage's folders at once when its workspace exists. A program that recycles keeps them.
+- **Unit-operation folders from a program's flow (optional, `flowFolders`).** A portfolio that declares `flowFolders` gets one folder per step of each process flow its programs run: `CODE · Name/Drug Substance/02 - Production bioreactor`. A program's flows come from the `program_flow` rows a loader wrote (steps in `process_step`), which win for their process type, else from the flows the file declares, picked by its rules by modality, highest priority first. The pick is made at each build; nothing is written to `program_flow`. `placement: process_type` (the default) puts the steps under a folder named for the process type, reusing a workstream of that name; `program` puts them straight under the program's folder. `fromStage` holds them back until a program reaches that stage. Like every other folder: additive, shown by a dry run, reused on a rebuild, never deleted. The build's notes name the programs that got them and the flow. EX-BIOC declares `EX-MAB-DS` (five steps) for its antibodies from D2. Without `flowFolders` the builder reads no flow and makes no such folder.
+- **A sync builds the folders of new programs.** After a real sync, every program of the portfolio without a folder under the root gets one: new programs, and any other the workspace lacks. The builder runs for those programs only, so each gets its workstreams, its stage and flow folders, its row linked into the folder and its program roles' grants. A program that has ended (completed, terminated) or whose folder is parked gets none. Programs with a folder are not looked into. Without this, a viewer could not see a new program until someone ran `buildWorkspace`: a program row reaches viewers only through its folder.
+- The sync report and its history say what was built (`EX-SMD folders: built for P (6 folder(s))`, and `folders` in `sync_log.changes`). A dry run lists the programs that would get one, the new programs from the feed included. A portfolio whose workspace was never built is not built by a sync; the report says so (`workspace "…" is not built yet, so n program(s) have no folder; buildWorkspace builds it`). A folder that fails is reported and does not fail the sync. Applying needs one of the portfolio's approvers, as the sync does. `buildMissingFolders` in `src/workspace.ts`; pure rule `programsWithoutFolder` in `src/model/workspace-plan.ts`.
+- **Orphans are reported; the builder never touches them (FR-22).** Every full build, and `workspaceOrphans`, lists root folders no program claims and the folders of programs that are terminated, transitioned, completed or missing from their feed.
+- **Records have their own folders.** A sync run (`sync_log`) is linked into `_Sync history` under the root, and a request with no program folder (a model card's) into `_Approvals`, so only the portfolio's people read them. Each folder is made on demand and inherits the root's grants. The root lists the program folders only: Browse groups a space's children into Spaces, Files and Others once there are more than 25 of more than one kind. The builder and the orphan report leave both folders alone. Before 0.3.0 these records were linked into the root itself; `moveRecordsOutOfRoot(code, dryRun)` links each into its folder, then removes its link in the root (the record stays). A dry run is the default; applying needs one of the portfolio's approvers. Run twice, it finds nothing.
+- **Parking is a separate, explicit step.** `parkOrphans(code, dryRun, folders)` moves the listed folders (or the ones named, by path or space id) into `_Parked/<date>` under the root. A dry run is the default. Applying needs one of the portfolio's approvers. A move keeps the folder's id, files, subfolders and grants. Each move is recorded in `parked_folder` (from where, to where, why, who, when). `unparkFolder(id)` moves one back, by the record's id or the folder's, unless a folder of the same name took its place; an emptied `_Parked/<date>`, then `_Parked`, is removed. `parkedFolders(code, all)` lists them. `_Parked` is never itself an orphan, and the builder neither rebuilds a parked program folder nor makes a new one ("folder parked; not rebuilt").
+- **Deleting is out of scope.** Nothing here deletes a workspace folder; removing a parked folder is a person's call, by hand.
+- **In the app.** The ribbon's **Workspace** (Advanced mode) shows the orphan report with **Preview park**, **Park** on each folder and **Park all** for approvers, and the parked folders with **Unpark**.
+
+## Finding a portfolio
+
+- **Browse.** Under Apps › Project Portal, a node per portfolio the user can see, by name. A click opens that portfolio: in the portal on screen, else in a new preview of the app.
+- **One portfolio** opens straight away. **Several** open on the landing page: the search box, Recent, and a card per portfolio with its program count and stage model.
+- **A portfolio's page** shows that portfolio only. With several, **Portfolios ›** in its header goes back to the landing page; Browse switches directly.
+- **The program page** takes the main area in place of the board, with the portfolio (and, with several, **Portfolios ›**) above it to go back. A search hit, Recent, a My programs tile, a favorite opened from the Workspace and an address open it straight away: the user already knows which program they want. The panels flow into two columns when the view is wide enough. The program's actions are not under its title: opening the page puts the program in the context panel (below), which then shows whatever is clicked on the page (a run, a document, a model card).
+- **On the board** a card is for choosing: a click marks it and puts the program in the context panel, with **Open program** (the portfolio's noun: *Open project*). A double-click opens the page directly.
+- **The program in the context panel.** Wherever a program is clicked (a board card, a table row, a My programs tile, a favorite in the Workspace) or opened, the context panel shows its record: the program's card (the My programs tile: portfolio, stage and track, status, next gate and readiness, attention, new data), a star to add or remove it from the user's favorites (the platform's favorites), **Open program** unless its page is on screen, and *Actions*: **Show in portfolio**, **Follow** / **Unfollow**, **Open workspace** (or **Build its folder** for an approver), **Add to <the portfolio's viewers'> favorites** for an approver, **Provenance**, **Ask SME…**, **Data package**. A change made there redraws the page when it shows the program.
+- **Right-click.** A program's record, wherever the platform lists it (the Workspace and Favorites on Home, Browse), has in its context menu **Open** and **Show in portfolio** first, then the platform's own items: *Add To Favorites* (a submenu: *Only for me* and each of the user's groups, checked where the program is already a favorite) and *Create URL alias…* last. The program's panel keeps its star (the user's own favorite) and, for a portfolio's approver, the viewers group's favorite.
+
+## Finding a program
+
+- **One box, every portfolio.** The top of the landing page searches the programs of every portfolio the user can see (what the server lets them read; nothing else is searched). It matches the code, the name, the target and every short text or number in the program's `details`, which is where a registry feed puts extra columns. So an alias such as a molecule number is searchable without any configuration. Texts over 60 characters are prose and not searched.
+- **Order.** Exact match first, then the start of the code, the start of another term, the start of a word, anywhere. Case, dashes, underscores and dots are ignored ("abc-12" finds "ABC_12"). At least two characters; at most 12 hits. A hit found by an alias says which ("molecule code: …").
+- **Opening.** A hit opens the program in its own portfolio, switching the board. Enter opens the first hit; Escape clears the box.
+- **Recent.** The 8 programs the user opened last, newest first, kept in the platform's user settings (`ProjectPortal` / `recent`), so they follow the user to another browser. A program that is gone or no longer shared is skipped, not shown.
+- `findPrograms(query)` and `recentPrograms()` return the same lists as tables.
+
+## Work units
+
+A portfolio enables the work units it uses (`workUnits`): discovery typically campaign and series,
+development study and process stage. `workUnitFeeds` deliver them from a source system, one feed per
+kind, each row naming its `program` by code. They sync after the programs, by the same rules:
+- keyed by program and code, so a re-run changes nothing;
+- the kind's own columns are mapped and checked against their choices; anything else lands in `details`;
+- a row for a program the portfolio does not hold is rejected and reported;
+- a unit its feed stops delivering is flagged `missing_from_feed`, never deleted; a unit added by hand is left alone;
+- series maturity is checked against the portfolio's `seriesMaturity`, and drift is warned.
+
+A work unit is never a folder of compounds (FR-26). The program page lists the units by kind.
+
+## Compounds in programs
+
+A portfolio's `compoundFeed` (registry `system`, `connection`, `sql`) returns one row per program and
+compound: `program`, `compound` (the registration code), `role`, and `name`, `smiles`, `aliases`,
+`batches` when present. Sync runs after the programs and work units:
+- one `compound` row per registry code, however many programs hold it; a tool compound serves several programs with a different role in each;
+- the registry moves a role, and the change is logged in `compound_role_change`;
+- `setCompoundRole` changes a role by hand, with a rationale; that link becomes manual, and later syncs report the registry's role without overwriting it (the `program_flow` rule);
+- a link the feed drops is flagged `missing_from_feed`, never deleted.
+
+Which programs hold a compound is under each program's security; the compound rows themselves are
+readable by all users, as a registry usually is. Rows are written one by one, which suits a
+portfolio's lead and candidate sets, not a full 10⁶-compound registry (NFR-01): bulk binding waits
+on EMS over external databases (PLAT-13).
+
+## Data conditions and readiness
+
+A data condition is evaluated, not ticked. The portfolio declares a **program dataset**
+(`programData`): one SQL on a named connection, with `@program` standing for the program's code,
+returning one row per compound, lot or whatever unit the criteria count. A criterion's `condition`
+is a declarative predicate over those rows, the one rule language of [architecture.md](architecture.md#2-schema-design-rules), rule 10:
+
+```json
+{"scope": "lead_set", "measured": ["solubility_um", "papp", "clint"], "minCount": 10}
+{"scope": "series", "where": [{"column": "series_maturity", "op": "in", "value": ["validated", "lead"]}], "minCount": 3}
+{"where": [{"column": "purpose", "op": "=", "value": "tox"}, {"column": "released", "op": "=", "value": true}]}
+```
+
+- **Scope.** `program` counts every row. `lead_set` counts rows whose `role` is a lead role (`leadRoles`,
+  default lead, backup, candidate). `series` groups rows by `series`, and needs `minSeries` series
+  (default 1) to reach `minCount` each.
+- **Operators.** `<` `<=` `>` `>=` `=` `!=` `in` `not_in` `present` `absent`. A blank never compares.
+- **Measured.** A row qualifies only with a value in every measured column; the rows that miss one
+  are named in the gap list.
+- **Readiness** (`programReadiness`) evaluates every criterion of a stage: data conditions from the
+  data, documents and decisions from `criterion_status`. A recorded waiver wins; a recorded "met"
+  does not outvote the data. It returns met over required, a score, and the gap list.
+- **A gate with no required criteria is not ready.** There is nothing to measure, so it has no score:
+  the gate panel, the portfolio table (`readiness` empty, `ready` false, `gaps` "no criteria defined"),
+  the My programs tile and `programReadiness` say "no criteria" instead of 100%. Auto-advance never moves a
+  program through it. In the examples only a first stage that is not a gate (TV, TI) has none.
+- **The gate uses it.** Advancing needs the evaluated conditions met (or waived). On advance the
+  portal writes what the data said into `criterion_status.evidence`, beside the decision.
+- A data condition with only a free-text `rule` is still recorded by hand.
+
+## The portfolio table
+
+The Table button on the board opens the portfolio as a Datagrok table view, at
+`/apps/ProjectPortal/Portal/<code>/table`. All portfolios opens every portfolio you can see as
+one table, at `/apps/ProjectPortal/Portal/table`; there, the portfolio column is a filter.
+- **Rows.** One per program: stage (a category in the model's order), days in stage, next stage, required criteria met over total, a readiness score and a ready flag, compounds by role, work units by kind, whether a workspace exists. Unstaged programs read `Unstaged`.
+- **Days in stage** count from the last transition into the current stage (`stage_transitions`), or from the program's creation when it never moved.
+- **Readiness** is the gate panel's own computation (`readinessFor`).
+- **Fast to read.** The data is read in a fixed number of batched queries. Only the program dataset is read per program, a few at a time, because its SQL selects by `@program`.
+- **Filters and viewers.** The view opens with the filter panel, programs by stage and modality, days in stage, the readiness matrix (programs × the criteria of their next stage, state as color) and compounds by role.
+  - The matrix and the compound roles are tables of their own, linked to the programs by id, so the filters drive every viewer.
+- **Clicking a row** puts the program in the context panel, as a board card does; its **Open program** opens the program's page in the Project Portal.
+- `portfolioTable(portfolio)` returns the same programs table to scripts.
+
+## Model runs
+
+A model run is saved to a program with `saveModelRun(call, portfolio, program, ...)`. The package
+ships one model to try it on: `FedBatchTiter` (`scripts/fed-batch-titer.js`, `meta.role: model`),
+a synthetic fed-batch titer model for EX-BIOC. It takes feed rate, temperature, duration and seeding
+density, and returns the final titer, peak cell density, final viability and a daily time course.
+The numbers are invented for the example.
+
+Saving a run does four things:
+- **Annotates the call.** The call's options carry `portalPortfolio`, `portalProgram`, `portalStage`
+  (the stage at run), `portalUnitOperation`, `portalRunType`, `portalPurpose`, and the `title`,
+  `description` and `tags` the Compute run history shows. Options persist with the call and can be
+  queried (`options.portalProgram = "EXB-203"`).
+- **Saves it.** Dataframe inputs and outputs are uploaded first and shared with the portfolio's
+  viewers. The call itself has no ACL.
+- **Links it into the workspace.** The run is linked, not moved, into the folder the program's
+  current stage declares (a run at D5 goes to `Drug Substance/Process Lock`), into a folder named in
+  `folder`, or into the program folder.
+- **Records a `model_run`.** The row carries the stage at run, unit operation, run type, purpose
+  and the catalogued `model` (by the function's nqName). A gate criterion selects it with
+  `selectRunForCriterion`: the run becomes the `selected` artifact, an earlier one `superseded`,
+  and the criterion is met unless it was waived.
+
+## Model catalogue and model cards
+
+A portfolio file declares its model catalogue under `catalogue` (F-12, FR-50):
+
+```json
+"catalogue": {
+  "unitOperations": [{"code": "EX-PROD", "name": "Production bioreactor", "ordinal": 2}],
+  "runTypes": [{"code": "EX-SIM", "name": "Simulated", "definition": "..."}],
+  "models": [{"code": "ProjectPortal:FedBatchTiter", "name": "Fed-batch titer (example)",
+    "unitOperations": ["EX-PROD"], "defaultRunType": "EX-SIM",
+    "card": {"version": "1.0", "question": "What final titer ...?", "intendedUse": "...",
+      "inputs": [{"name": "feedRate", "units": "% v/v per day", "min": 0, "max": 6}],
+      "applicability": "...", "performance": "...", "lineage": "...", "owner": "...", "approval": "draft"}}]
+}
+```
+
+- **A model is its function.** Its code is the function's nqName (`Package:Name`), the handle that survives a release.
+- **Checked with the set.** A model may name a unit operation or run type that any portfolio of the set declares. A code two portfolios declare must be declared the same way; a model two portfolios declare lists both.
+- **Loaded with the portfolios, idempotently.** Rows are matched by code. A model's portfolios and unit operations only grow, so loading one portfolio never drops another's claim. Runs saved before the model was catalogued are linked to it.
+- **One card per model version** (`model_card`); `model.current_version` names the current one, and older cards stay as lineage.
+- **The card is written around the question** (PORT-41): question, intended use, inputs with their validity range, outputs, applicability, performance, lineage, limitations, owner, approval (`draft`, `in_review`, `approved`, `retired`). Inputs and outputs the card does not list come from the function's signature; a listed one takes what it leaves out (caption, units) from the function.
+- **Where it shows.** The program page lists the program's saved runs; a run's model opens its card. `modelCard(model)` returns the card as a widget. In the Workspace tab on Home, a pinned model shows its card beside its own preview: Power Pack shows the widgets of functions with `meta.role: workspaceModelPanel`, and `workspaceModelCard(model)` is one (nothing for a function the catalogue does not list). This needs a Power Pack with that role (after 1.8.3).
+- **In the context panel.** Select a catalogued model anywhere (Model Hub, Browse, a search result) and the context panel gets a **Model card** pane with its card. It is labelled with the portfolios whose catalogue lists the model, the user's only (`In the catalogue of EX-BIOC`); an admin sees all of them. A model of none of the user's portfolios gets no pane, nor does any other function. Cards are per model, so a model two portfolios list shows one card under both. The platform offers `meta.role: panel` functions for data only (tables, columns, cells, files), not for functions, so the package adds the pane when a function's context panel is built, as Compute2 adds its REST pane. For that the package loads when the platform starts (`portalAutostart`). The check is cheap: the codes of the catalogued models are read once per session, so another function costs no query. `modelCardPanel(model)` returns the same widget, or nothing.
+- A package with a catalogue but no portfolio hands it over with `loadModelCatalogue(catalogue, portfolio)`.
+
+The example catalogue (EX-BIOC) declares five unit operations, three run types and `FedBatchTiter`
+with a draft card. The codes carry the `EX-` prefix because unit operations and run types are global.
+
+## Model recommendation
+
+A card may say where its model applies (F-13, FR-51). Every key is optional; a key left out matches anything:
+
+```json
+"appliesTo": {"tasks": ["physchem"], "stages": ["H2L", "LO"], "modalities": ["Small Molecule"],
+  "workUnits": ["series"], "predicts": ["solubility_um"], "rank": 1}
+```
+
+- **Missing assays.** For the gate the program page shows (the next stage, or the stage clicked on the track), each open data condition lists the columns it needs that rows lack: `measured` columns on the rows that pass `where`, and columns compared with a number in `where` on the rows in scope. A column matched against a value or list (`series_maturity in [...]`) classifies a row and is not an assay. A criterion with only a rule in words is listed without a column. With a series, only its rows count.
+- **Suggested models.** Candidates are the models the portfolio's catalogue declares, and any model whose card declares `appliesTo`. A deprecated model or a retired card is never suggested. Each declared key must match: stages (the program's stage or the one it works towards), modality, work-unit kind (the portfolio's, or `series` for a series), and the task when one is asked for. Order: models predicting a missing column, then the more keys matched, then approved, in review, draft, then `rank`, then name.
+- **Program page.** *Missing assays for <stage>* says which rows lack what, and which suggested model predicts it meanwhile. *Suggested models* lists each with why; the name opens its card, **Run** opens its dialog filled in from the program: a dataframe input gets the program dataset (opened as a table), inputs named `program`, `portfolio` or `series` get those codes.
+- `recommendModels(portfolio, program, stage, series, task)` returns one row per suggested model (model, name, rank, predicts, matched, reasons, approval, installed). `missingAssays(portfolio, program, stage, series)` returns one row per missing column.
+
+EX-SMD declares two synthetic models, `SolubilityEstimate` and `HergRisk`: tiny scripts that compute an
+invented number from potency. They exist to show the flow; their cards say so.
+
+## Predictions
+
+What a catalogued predictive model said about each compound of a discovery program, kept per model
+version (F-22, FR-58/103).
+
+- **The record.** A `prediction` row: program, compound (code, and the registry compound when the code is one), model (catalogue code), model version (the card's version), the program-data column it stands in for (`predicts`), the value, units (read off the column name: `_um` is uM), and the scoring run (`model_run_id`, and its `run_id`). Master-secured through the program. Removing the run removes its predictions.
+- **Batch scoring.** `scoreCompounds(portfolio, program, model)` runs the model once over the program dataset, its dialog's own prefill (the table, the program's codes). The card's `appliesTo.predicts` names the columns; the output column holding each is `predicted_<col>`, `estimated_<col>`, `<col>_predicted`, `<col>_pred`, `<col>_estimate` or `pred_<col>`, never the measured copy. The call is saved with `saveModelRun` (purpose screening, title `Scoring · <model> <version> · <program>`), so provenance reads prediction → run → model.
+- **Idempotent per version.** When every compound already has a prediction from this model version, nothing runs. Otherwise one run, and only the compounds not yet scored are stored; what is stored is never rewritten. A new card version scores again.
+- **Predicted vs measured.** Per model and column, the latest prediction per compound joined with the program dataset's measured value of the same column: how many were measured, the mean absolute error, Pearson's r.
+- **Program page** (discovery portfolios, or wherever predictions exist; behind More in Simple mode). **Score** beside **Run** on a suggested model whose card names what it predicts. *Predictions (n)*: per model and column the fit, the first 12 compounds predicted and measured, **Predicted vs measured** (a table view with a scatter plot), and Provenance of the scoring run. Each compound listed shows its predictions. A missing assay shows the stored predictions of the compounds lacking it ("Predicted: EXC-1006 34.1 uM (...)") before the models that could predict it; `missingAssays` has a `predicted` column.
+- **Elsewhere.** The activity feed has a `prediction` entry per scoring run; provenance has a *Predictions* node under the scoring run.
+- **Functions.** `scoreCompounds(portfolio, program, model)` and `programPredictions(portfolio, program, model)` (compound, predicts, model, version, predicted, measured, units, model run).
+
+## Program data
+
+Each portfolio declares its program dataset, `programData`: one SQL on a named connection, with
+`@program` for the program's code (F-09). Data conditions are evaluated over it, and the program
+page opens it with **Open data** as a table view named after the program (`EXS-KIN1 · Kinase
+inhibitor`). A portfolio may name it and further datasets beside it:
+
+```json
+"programData": {"name": "SAR table", "connection": "System:Datagrok", "sql": "... WHERE program = @program"},
+"programDatasets": [{"code": "assays", "name": "Assay results", "connection": "System:Datagrok",
+  "sql": "... WHERE program = @program",
+  "viewers": [{"type": "Box plot", "options": {"categoryColumnNames": ["assay"], "valueColumnName": "value"}}]}]
+```
+
+- **One button per dataset:** *Open data* for the program dataset, *Open Assay results* for a further one.
+- **Viewers** are the platform's, with its property names. Without any, the defaults follow the portfolio's setting. Discovery: a scatter plot of the first two numeric columns, coloured by the first category, and a histogram. Development: a bar chart over the first category, and a histogram. The program column is never used. A viewer naming a column the table lacks is skipped.
+- **Governed:** the query runs as the user on a connection shared with them, and the program is read under row security first.
+- `programData(portfolio, program, dataset)` returns the table; `openProgramData(portfolio, program, dataset)` opens it.
+
+## Compounds needing attention
+
+A portfolio may declare `attention` rules over its program dataset (F-17). A rule uses the
+condition language of the criteria (scope, `where`, `measured`), but it flags rows instead of
+counting them:
+
+```json
+"attention": [
+  {"code": "herg_unmeasured", "name": "Potent, hERG not measured", "severity": "warning",
+   "condition": {"where": [{"column": "ic50_um", "op": "<", "value": 0.5}], "measured": ["herg_ic50_um"]},
+   "message": "{compound}: IC50 {ic50_um} uM, no hERG IC50"},
+  {"code": "lead_no_solubility", "name": "Lead without solubility",
+   "condition": {"scope": "lead_set", "measured": ["solubility_um"]}}
+]
+```
+
+- **What trips a rule.** A row trips it when the scope admits it and every `where` predicate holds. If the rule names `measured` columns, the row must also lack at least one of them. `minCount` and `minSeries` do not apply.
+- **Severity** is `critical`, `warning` (the default) or `info`. **Message** fills `{column}` with the row's value and `{missing}` with what it lacks. Without a message, a line names the rule, the values it tested and what is missing.
+- **An item** is the row's `compound`, `id`, `code`, `lot` or `name`. It counts once, however many rules it trips.
+- **Program page.** *Needs attention (n)* shows a count per rule that trips, then each flagged item with its rules and messages. A click opens the program dataset with that row current and every flagged row selected.
+- **Portfolio table.** An `attention` column (flagged items, a filter) and `attention rules` (the count per rule). Both are hidden for a portfolio without rules. A program whose data cannot be read has no count.
+- `programAttention(portfolio, program)` returns one row per item and rule: item, rule, rule name, severity, message.
+- **Examples.** EX-SMD: potent but hERG not measured, a lead without solubility, hERG IC50 under 10 µM. EX-BIOC: a tox lot not released.
+
+## Scheduled sync
+
+A sync runs on call: the board's **Sync** button, `syncPortfolio`, `syncAllPortfolios`. A portfolio
+may also declare a `schedule` and `owners` (F-01):
+
+```json
+"schedule": "every 6h",
+"owners": ["admin"]
+```
+
+- **Schedule.** An interval (`every 6h`, `30m`, `1d`, at least 15 minutes) or a five-field cron line in UTC (`0 6 * * 1-5`, `@daily`). When both day fields are set, either matching is enough, as in cron.
+- **`syncDuePortfolios(codes)`** syncs the portfolios whose schedule is due, discovery first. A portfolio without a schedule is never touched; `codes` (comma-separated) narrows the check further. A sync is due when the portfolio has never synced, or the next slot after the last run's start has come. Any run counts, by hand or failed.
+- **Sync history.** Every sync, by schedule or by hand, is a `sync_run` row: started, finished, trigger, who, counts of created, updated and flagged rows, unresolved stage spellings, error, the report, and the per-program changes. A dry run is not recorded, and a sync never fails because its history could not be written. The board's **Sync history** shows the schedule, the next slot, the owners and the last 20 runs. `syncHistory(portfolio)` returns the runs as a table.
+- **Owners are notified** in the platform's notifications (the bell) after a scheduled run that changed or flagged something, failed, or found different unresolved spellings or overlaps than the run before. The server lets a user notify another user only with the Edit users permission; otherwise the run records who could not be reached.
+- **Per-program changes** (new, fields changed, stage moved, no longer in the feed, work units, compounds added, role changes, advanced by data) are on the result and in `sync_run.changes`.
+- **New data for followers.** After the feeds, every sync checks the followed programs for new data (see below).
+- **Nothing runs by itself yet.** The platform schedules only server-side scripts and queries (`#schedule:`), not a package's JavaScript functions, so the package cannot register its own schedule. Something must call `syncDuePortfolios` (see [platform-findings.md](platform-findings.md), issue 9).
+- The examples declare schedules: EX-SMD every 6 h, EX-BIOD daily at 06:00 UTC, EX-BIOC weekdays at 06:00 UTC. Owner: `admin`.
+
+## Following a program: new-data notification
+
+A user follows a program, or one of its series, and hears when new results land (F-11, FR-83).
+
+- **Follows** are rows of `follow`: user, program, optional work unit (kind and code), and two snapshots of the program dataset: as last checked for news, and as at the user's last visit. Each user writes their own. Unfollowing turns the row off (`active`); following again turns it back on with a fresh baseline.
+- **The snapshot** is cheap and conservative: rows, filled cells (so a value landing in a blank cell of a wide SAR table counts), and, when `programData.watermark` names a column that only grows (a run date, an increasing id), its largest value. With a watermark, rows past the last value are new, so a replaced row counts; without one, only growth in the counts is news. Rows or values that disappear, or a value overwritten by another, are never reported. A series follow looks only at rows whose `series` column is that series.
+- **When.** After every sync, by hand or by schedule, and on `checkNewData(code)`. Only followed programs are read, one query each. Following takes the data as it stands as the baseline, so what is already there is never news.
+- **Telling.** Each follower with news gets one notification per portfolio in the platform's notifications (the bell), the same route the sync uses for owners: `EXS-KIN1: 1 new row, 4 new values`. Nothing external. A sync run by a user without Edit users can notify only themselves.
+- **Program page.** **Follow**/**Unfollow** beside Open workspace, and Follow/Unfollow on each series row. A follower sees *What's new since your last visit* once per open of the program; the visit is then recorded.
+- `followProgram(portfolio, program, series)` and `unfollowProgram(...)` do the same by code.
+
+## Pinned programs: My programs on Home
+
+Adding a program to favorites favorites the program's own record (its `portal.program` row as a platform entity),
+the user's own or a group's; the portal stores nothing. The program shows in the Workspace on Home under its name.
+A favorite added or removed anywhere (the program page, the star, the Workspace) is the same favorite. Before 0.3.0
+the favorite was the program's workspace folder; such a favorite still counts, and removing the program removes it
+too.
+
+- **The star.** **Add to favorites** / **Remove from favorites** on the program's card in the context panel, wherever
+  the program is clicked or opened. No workspace folder is needed. Only a program whose record the platform does not find cannot be added; the
+  button says why. An approver also gets **Add to <the portfolio's viewers'> favorites** (a group favorite) and, when
+  the folder is missing, **Build its folder** (this program's folders only). A viewer can add a program to their own
+  favorites.
+- **Workspace.** The favorite is listed by the program's name, with a flask icon. Selecting it previews its card
+  (Power Pack shows the card of an item whose package registered a handler for it; needs a Power Pack after 1.8.3);
+  Open, a double click or **Open** on its context menu opens the program's page in the Project Portal. This works
+  once the package is loaded, which the My programs widget on Home does. Without it, the Workspace shows the bare
+  record.
+- **Board and table.** A pinned program's card says *pinned*; the portfolio table has a `pinned` column.
+- **Home.** The **My programs** widget: a tile per pinned program the user can see, across portfolios. A tile shows
+  code and name, portfolio, stage and its place on the track, status, the next gate's readiness (or *ready*), the
+  attention count and *new data* when a followed program has news the user has not seen. A group's pin is marked
+  *for <group>*. A click selects the tile and puts the program in the context panel; a double-click opens its page.
+  With nothing pinned, the widget says how to pin.
+- **How it is read.** One call for the user's favorites, one for their groups' (`getFavoritesForGroups`), the
+  programs by id (and by `space_id` for an old folder favorite), then the portfolio table's facts for those programs only, so readiness and attention are
+  the table's (`readinessFor`). A program row the user cannot see gives no tile.
+- **The widget** is a `meta.role: dashboard` function (`myProgramsWidget`, `meta.order: 2`), which Home lists.
+  The user removes it with its close icon and brings it back under *Customize widgets…*; Home has no reordering.
+  It reads again each time Home comes back into view.
+- **Address.** `/apps/ProjectPortal/Portal/<portfolio>/<program>` opens a program's page; the app keeps the
+  address current as programs are opened.
+- `pinProgram(portfolio, program, group)`, `unpinProgram(...)` and `pinnedPrograms()` do the same by code. Pure
+  rules in `src/model/pinning.ts`.
+
+## Activity feed
+
+What happened to a program, newest first, read from the portal's own records (F-21, FR-81). No
+event store: each record already says who did what and when.
+
+- **Kinds.** Gate decisions (by an approver, the registry or the data), evidence, runs saved, runs selected for a criterion, documents linked and approved, snapshots, compound role changes, registry changes and work-unit changes the sync saw, new data, program roles (`role`), approved model cards (`model_card`), and observations (`observation`). Evidence attached within two minutes of its decision is folded into the decision's entry ("with 2 pieces of evidence"); evidence added later is its own entry.
+- **Sources.** `stage_transition`, `evidence`, `model_run`, `criterion_artifact`, `document`, `program_snapshot`, `compound_role_change`, the portfolio's last 50 `sync_run` rows (each run's change for the program, and the new-data lines followers were told, kept in `sync_run.changes.newData`), and each follow's last news with `follow.news_on`. Program roles come from `program_role` as they stand: the latest grant or removal per group, by `granted_by` at `granted_on`; the table keeps no history, so an earlier role of the same group is not an entry. Model cards: the approved cards of the models the program's runs and predictions used, at `approved_on`, by the last reviewer of the approval request when the workflow approved it. The same news line told twice within 15 minutes (two followers, or a sync and a check) is one entry. Stage moves and role changes are read from the gate log and the role history, not from the sync's changes, so nothing shows twice.
+- **A series.** Narrowed to a series, the feed keeps what is tagged with it (`series KIN-A: new`, `EXS-KIN1 series KIN-A: 2 new values`) and what is about its compounds (from the program dataset's `series` and `compound` columns): the series' "what is new".
+- **Program page.** *Activity (n)* with a kind filter (each kind with its count), a series filter when the program has series, eight entries a page, Newer/Older. An entry over a record has **Provenance**. Each series row has **Activity**, which narrows the section to it. In Simple mode the section is behind More.
+- **My feed.** The ribbon's **My feed** opens everything the user follows: each followed program's feed, or for a program followed only by series, the series' part. A click on the program code opens it.
+- **Functions.** `programFeed(portfolio, program, series, kinds, limit)` and `myFeed(kinds, limit)` return the feed as a table (at, portfolio, program, kind, what, who, work unit, record); `kinds` is comma-separated.
+
+## Observations
+
+A curated conclusion on a program, one of its series, campaigns or studies, or a compound it holds
+(F-26, FR-76/106): "KIN-A: para-substitution buys potency, not solubility."
+- **What it holds.** What it is about, a title, the finding, who and when, and the evidence it rests on: the program's saved runs (by run id) and snapshots, a link or a file path, names frozen when written. Table `observation`, master-secured through the program.
+- **Who.** The program's contributors and approvers record them, also where the registry owns the stage and after the program ended. It must be about something the program holds: its own series, campaigns or studies (the kinds its portfolio enables) or its compounds.
+- **Never edited.** Its author or an approver retracts it, with a reason; it stays, marked, with who and when.
+- **Program page.** *Observations (n)*, current first and newest first, with **Add observation…** and **Retract**.
+- **Activity feed.** Kind `observation`: recorded, and retracted. One about a series, campaign or study is tagged with it, and one about a compound with the compound, so a series' feed shows both.
+- **Functions.** `addObservation(portfolio, program, subject, code, title, finding, evidenceKind, evidenceTarget)`, `retractObservation(id, reason)`, `observations(portfolio, program, subject, code)`.
+
+## Discussion and Ask SME
+
+Questions, answers and the reasoning behind a decision stay with the program (F-51), not in email or chat.
+- **Where it lives.** The platform's own chat on the program's workspace folder: the one its **Chats** panel shows on the folder. Whoever may open the folder reads and posts, viewers included; another portfolio's users see nothing. A program without a folder has no discussion yet. No portal table.
+- **Threads.** A post is about the program in general, a gate criterion, a saved run or a document. The platform has no threads, so the portal writes what a post is about, and whom a question asks, in its first line (`Re: criterion "hERG IC50 ≥ 10 µM" · pp:criterion:<id>`) and groups posts by it. A post written in the platform's Chats panel lands in General.
+- **Program page.** *Discussion (n)*: a box to post, **Ask SME…**, then the threads, newest first, each with its last three posts. A thread's title opens what it is about (the criterion on the gate panel, a run's or a document's provenance). **Reply**, **Cite in the next decision** (approvers) and **Open in Chats** (the platform's page). **Discuss** and **Ask SME** sit beside each gate criterion, saved run and document. Shown in Simple mode; behind More where a persona's panels leave it out.
+- **Decisions.** **Cite in the next decision** attaches the thread's address to the next gate decision's evidence (a link). The thread then shows *Led to:* that decision, and the decision's evidence opens the thread.
+- **Ask SME.** **Ask SME…** on the program's header (and beside a criterion, run or document) opens the question, the context that goes with it (portfolio, program, stage, the next gate and its readiness, the open criteria, the item it is about, the program's address in the app) and who is asked. The question and its context go into the discussion, marked as a question. The people asked are told in the platform's notifications.
+- **Who is asked.** The portfolio's `askSme` (optional): `{channel: discussion | group | user | external, group, users: [login], external: {kind, address}, note}`. Default (`discussion`): the portfolio's approvers and the program's approver roles. `group`: a group's members. `user`: the logins listed. `external` is a placeholder: nothing leaves the platform; the dialog says so and the approvers are told. The dialog also takes logins to ask instead. `note` shows above the question.
+- **Notifications.** The server lets only a user manager notify someone else. For everyone else the question is posted and the line says who was not told; they find it in the discussion and the activity.
+- **Activity feed.** Kinds `discussion` and `question`.
+- **Examples.** `seedExamples` posts two threads on EXS-KIN1: one on the hERG criterion, one question on the ADME panel. Idempotent.
+- **Functions.** `programDiscussion(portfolio, program)`, `postToDiscussion(portfolio, program, text, aboutKind, about)`, `askSme(portfolio, program, question, aboutKind, about, logins)`.
+- **Platform gaps.** Platform findings 38 to 45.
+
+## Design sets and selection sets
+
+Discovery records of what was proposed and picked (F-23, FR-101/102). Never folders.
+- **A design set** extends one series of the program: a name, its source (`enumerated`, `generative`, `manual`), what the score is, and the proposals (`design_proposal`: label, SMILES, score, rank). Ranked by score when written, higher first unless lower is better; ties share a rank; unscored ones are last. Each proposal is chosen for synthesis or not, with who and when of the last change; it records its compound's code once registered.
+- **A selection set** is a hit list: compounds of the program, the campaign they were picked from, the rationale, who and when.
+- **Who.** Contributors and approvers, not on an ended program.
+- **Program page.** *Design sets (n)* where the portfolio has series: each set with its series, source and `6 proposed · 4 chosen for synthesis · best KIN-A-D01`; a click opens its proposals by rank, with Chosen ticks and **Save**, and **Open as table** (the structures as a Molecule column). **New design set…** takes a table open in the platform: a Molecule column (or one named smiles or structure), labels from label/id/name/code (else numbered), a score column. **New selection set…** ticks the program's compounds. *Selection sets* lists the hit lists.
+- **Functions.** `createDesignSet(portfolio, program, series, name, source, proposals, scoreColumn, scoreName, lowerIsBetter)`, `designSets(portfolio, program)`, `chooseForSynthesis(portfolio, program, designSet, labels, chosen)`, `createSelectionSet(portfolio, program, name, campaign, rationale, compounds)`, `selectionSets(portfolio, program)`, `loadExampleDesignSets()`.
+- **Example.** EXS-KIN1: *KIN-A para-substituents* (enumerated, six proposals, four chosen; three of them are the registered EXC-1001 to EXC-1003) and *KIN-A cycle 7, permeability* (generative, three), and the hit list *K1 screen: indazole hits* from HTS-K1. `loadExampleDesignSets` loads them, EX-* only, once.
+
+## DMTA status
+
+Where each compound of a discovery program stands in the design → make → test → analyze loop (F-24, FR-105).
+Request objects (F-49) do not exist yet, so each stage is derived from what the portal has:
+
+| Stage | From | Date |
+|---|---|---|
+| designed | a proposal of a design set | the set's `designed_on` |
+| requested | a proposal chosen for synthesis | `chosen_on` |
+| made | the compound is registered in the program (registry projection) | none: the registry gives no date |
+| tested | the first row of the compound in the assay results | its date column |
+| analyzed | a current observation on the compound, or its role set by hand | when written |
+
+- **Which compound.** A proposal is the compound it became: its recorded code, else a registered compound with the same SMILES (exact, not canonical). Until then it goes by its design label.
+- **Tested from.** `dmta.tested: {dataset, compoundColumn, dateColumn}` in the portfolio file, else the first dataset with a compound column and a date column (`run_date`, `tested_on`, `date`, …), further datasets before the program dataset.
+- **Pluggable.** A portfolio may name functions in `dmta.sources` (Package:Function, inputs `portfolio` and `program`) that return a table of `compound`, `stage`, `on` and optionally `source` and `series`; a package may call `registerDmtaSource` in code. A request system's status plugs in here until request objects exist.
+- **Cycle time.** Per series, the median whole days from designed to tested over the compounds with both dates.
+- **Program page.** *DMTA (n)* in discovery portfolios: a line per series (`KIN-A: 14 compounds · 9 designed, 6 requested, 8 made, 3 tested · cycle 14 days (median of 3)`), what could not be read, and **Open status** (the table per compound).
+- **Functions.** `dmtaStatus(portfolio, program)`, `dmtaCycles(portfolio, program)`.
+
+## Modes and quick actions per persona
+
+The board has a **Mode** and a **Persona** select (F-08, FR-30–32). Both are the user's own and are
+remembered in the platform's user settings (`grok.userSettings`, entry `ProjectPortal`), so they
+follow the user to another browser.
+
+- **Advanced** (the default) shows the whole program page, as before.
+- **Simple** keeps the heavier sections behind **More**: missing assays and suggested models, needs attention, saved runs, history. The gate, the work units and the compounds stay. The ribbon drops Sync history, Export and All portfolios.
+- **Quick actions** head the program page: one card per action the persona uses most, each opening something the page already does. A card that cannot be used now is dimmed and says why on hover.
+
+| Persona | Cards |
+|---|---|
+| Chemist | Open data (the SAR table), needs attention, missing assays, suggested models, follow |
+| Biologist | Open further data (assay results), open data, missing assays, follow, open workspace |
+| Modeler | Suggested models, save a run, choose a run, missing assays, open data |
+| Process scientist | Save a run, choose a run, open data, open workspace, follow |
+| Lead | Gate decision, portfolio table, needs attention, follow, open workspace |
+
+- **Which persona.** The one the user chose. Until they choose, the portfolio's mapping of groups to personas decides (the first group the user is in), then its default, then the setting: chemist in discovery, process scientist in development.
+- **A portfolio may declare its own** (optional):
+
+```json
+"personas": {"default": "chemist",
+  "groups": [{"group": "Portal EX-SMD Approvers", "persona": "lead"}],
+  "cards": {"modeler": ["suggested_models", "save_run",
+    {"name": "Portfolio as a table", "function": "ProjectPortal:portfolioTable"}]}}
+```
+
+  A card is an action code (`open_data`, `open_other_data`, `needs_attention`, `missing_assays`, `suggested_models`, `save_run`, `choose_run`, `follow`, `open_workspace`, `gate_decision`, `portfolio_table`) or a function. A function gets `portfolio`, `program` and `stage` when it has inputs by those names; a view it returns opens, a table opens as a table view. A persona the file leaves out keeps the core's cards.
+- EX-SMD and EX-BIOC map their approvers to the lead persona; their defaults are chemist and process scientist.
+- **Panels per persona (F-31, FR-34).** A portfolio may compose the program page per persona with `personas.panels`:
+
+```json
+"personas": {"panels": {"biologist": ["quick_actions", "data", "dmta", "observations", "compounds", "feed"]}}
+```
+
+  The listed panels show in that order, in either mode; the rest wait behind **More (n)**, which names them on hover, and show after it once opened. A note under the header says the page is composed. A persona the file leaves out keeps the whole page, and Simple mode keeps its sections behind More as before. The header (title, status, the program's actions, what is new) always shows. Panels: `quick_actions`, `data`, `gate` (registry stage, lineage, the stage track, the criteria and the decision), `approvals`, `documents`, `work_units`, `compounds`, `observations`, `design_sets`, `dmta`, `recommendation`, `predictions`, `attention`, `saved_runs`, `roles`, `snapshots`, `feed`, `history`. The config check refuses an unknown persona or panel and a panel listed twice. EX-SMD composes the biologist's page.
+
+## Program roles
+
+A program may have its own viewers, contributors and approvers, on top of the portfolio's three
+groups (F-16, FR-90). A role is held by a group or by a user (the user's personal group). Roles nest:
+an approver may do what a contributor may. A program role only adds; it never takes away what the
+portfolio's groups give.
+
+- **Stored** in `program_role`: program, group, role, who granted it and when. One row per program and group; removing a role turns the row off (`active`).
+- **Managed** on the program page (*Program roles*, behind More in Simple mode) and with `setProgramRole(portfolio, program, principal, role)`, by the portfolio's approvers only. A program approver cannot change roles. `programRoles(portfolio, program)` lists them.
+- **Enforced in the app** where the portfolio's groups are: a program approver records gate decisions (and Met / Waive), a program contributor or approver selects runs. `recordDecision` and `selectRunForCriterion` check again before they write. Letting data advance a whole portfolio stays with the portfolio's approvers.
+- **The workspace folder** of the program is shared to match: View to viewers, Edit to contributors and approvers. Removing a role removes the grant. The portfolio's own groups are never touched. A folder built later gets the roles from the builder.
+- **The program row is shared through its folder.** Program rows refuse grants (GROK-21041, see [platform-findings.md](platform-findings.md), issue 1). The row is linked into its workspace folder, so a role's View on the folder reaches the row; Edit on the row does not. `syncRowGrants` in `src/program-roles.ts` applies the same grants to the row; it runs when `ROW_GRANTS` is set to true. Once GROK-21041 is fixed, set it, and the same table drives the row grants. The two isolation tests stay unchanged as the acceptance check.
+- `program_role` is table-secured: View for all users, Edit only for the portfolios' approvers groups, on the server (see *Write permissions on portal tables*). Which portfolio's programs an approver manages is the app's check.
+
+## Decisions with evidence
+
+A gate decision rests on evidence (F-25, FR-71/74). The decision is the gate-log entry
+(`stage_transition`: program, decision, from, to, who, when, rationale, source); the `evidence` table
+says what it rested on. There is no separate `decision` table.
+
+- **What a piece is.** `kind` (`model_run`, `snapshot`, `file`, `url`, `criterion`), `target`, a soft reference (a run's `run_id`, a file path, a URL, a gate criterion's id, a snapshot's id) as plain text with no foreign key, and `name` and `context` frozen when attached (a run's model, the criterion it was selected for, who chose it and why; a criterion's state, basis and what the data said). `role` is `readiness` for a criterion as the gate saw it, `supporting` for the rest.
+- **It survives its target.** The history looks each target up again: a run renamed shows `(now <new title>)`, a run deleted shows `(gone; as recorded)` and a click shows what was recorded. URLs are not fetched.
+- **When deciding.** The gate panel suggests the gate's readiness (one tick for its required criteria) and the run selected for each of its criteria, all ticked. Untick what the decision does not rest on; type a link or a file path and **Attach**. Advance, Hold and Terminate write the ticked pieces beside the gate-log entry.
+- **By API and by data.** `recordDecision` without a list writes the suggestion, so an advance by data records its readiness the same way (the free-text `stage_transition.evidence` is kept). An empty list writes none. A piece that fails its check is reported and left out; the decision stands.
+- **Afterwards.** The program's history lists each decision with its evidence, each piece clickable: a run shows its saved call in the context panel, a criterion shows its stage's gate, a URL opens, a CSV file opens as a table. `addEvidence(portfolio, program, kind, target, name, decision)` adds a piece to a recorded decision (default the latest), dated when added; the program's approvers only. `decisionEvidence(portfolio, program, decision)` lists decisions and evidence, with each target's state (`live`, `renamed`, `gone`, `unchecked`).
+- `evidence` is master-secured through the program, like the gate log.
+- **Where the registry owns the stage.** Advance, Hold and Terminate stay off: the registry moves the program on a sync. The gate panel offers **Outcome** (Go, Hold, No-go) and **Record decision for <gate>** instead, with the same evidence picker. A record is a gate-log entry with decision `record`, from the program's stage to the stage the gate leads into, its `outcome`, the rationale (required) and the ticked evidence. It never moves the program or changes its status; the history and the feed say "decision recorded; stage set by registry", and days in stage ignore it. Approvers only, as for gate decisions. `addEvidence` adds to a record later, as to any decision. `recordGateDecisionRecord(portfolio, program, outcome, rationale, gate)` does it by API.
+- **Searching decisions.** **Decisions** on the ribbon opens a search over the gate log of every portfolio the user can see: words (all must appear) in the rationale, outcome, stages or evidence names and targets; a program (exact code, or part of its name); a gate (a stage code, or part of its name, the decision went to or came from); a portfolio. Registry moves (`sync`) are left out by default; "Only with evidence" narrows further. Newest first, 50 shown; a result opens its program. `findDecisions(text, portfolio, program, gate, withSync)` returns the same as a table.
+
+## Program snapshots
+
+A snapshot freezes a program at one time (F-32, FR-15), so a decision can point at what the team
+saw, not at what the data says today.
+
+- **What it holds.** `program_snapshot`: when and by whom, a label and note, the stage and status, every criterion that applies with its state (the next gate's data conditions as evaluated, with what the data said), the run selected for each criterion, and the program dataset. Every column is write-once; nothing in the package updates or deletes a snapshot.
+- **The table** is written as a CSV file to the program's workspace folder (`snapshot-<program>-<time>Z.csv`), and its SHA-256 is kept on the row. Opening the snapshot reads the file back and says whether it still holds what was frozen (intact, changed, missing). A program without a workspace folder keeps the table's size and fingerprint only, and the note says so. A failed write of the row removes the file it wrote.
+- **Taking one.** **Snapshot now** on the program page (*Snapshots*, behind More in Simple mode), `snapshotProgram(portfolio, program, label, note)`, or **Snapshot now** in the gate panel when deciding: taken before the decision changes anything and attached as evidence. Contributors and approvers of the portfolio or the program.
+- **Reading one.** Each snapshot on the program page, and each snapshot in a decision's evidence, opens read-only: stage, criteria, runs, the table's state, and **Open table**, a table view with editing off. `programSnapshots(portfolio, program)` lists them.
+
+## Documents
+
+A document is a record over one file (F-27, FR-70), so a gate's document criteria point at real
+files with a version and a status, not at a tick.
+
+- **What it holds.** `document`: the file's full path as the platform reads it (`System:AppData/...`, or a file of the program's workspace folder, `Space:Program:Files/name`), the folder when it is the program's, its kind, title, version, status (`draft`, `approved`, `superseded`), who wrote and linked it and when, who approved it and when, and the document criterion it answers.
+- **Kinds** come from the portfolio's optional `documentKinds` (`[{code, name, description}]`). Without it, each document criterion's code is a kind. `other` is always there.
+- **Approval meets the criterion.** Approving a document meets the criterion it answers unless the criterion was waived, the same way selecting a run does. A draft puts a criterion that was not started in progress. Approving a newer version supersedes the older approved document of the same kind and criterion. A superseded or withdrawn document never un-meets a criterion. Contributors and approvers link drafts; only approvers approve.
+- **Document cards** on the program page (*Documents*): one per document criterion of the current gate (the program's stage) and the next, each with its state, its documents (approved first, newest version first; each opens: text in a dialog, CSV as a table, anything else downloads), what is missing, the run selected for the criterion, and the decisions that cite one of its documents. **Link document…** picks a file of the program folder, takes a path, or uploads a file into the folder; a file of the same name is never overwritten. Documents no card shows (no criterion, or another stage's) follow the cards.
+- **As evidence.** A document is evidence of kind `file`, its path the target and its record in the context. The gate panel suggests the approved documents of the gate's criteria, ticked; `addEvidence` takes a document by id or path; the history finds a document by its record (renamed, gone).
+- **Functions.** `programDocuments(portfolio, program)` lists a program's documents; `linkDocument(portfolio, program, path, criterion, kind, title, version, status)` links a file or changes the document over it. `loadExampleDocuments()` links the synthetic EX-BIOC documents in `files/documents/` (EX-* portfolios only).
+- `document` is master-secured through the program, like the gate log.
+
+## Evidence tables
+
+The evidence behind a document criterion, generated into a document (F-40, FR-72), so a written
+document can say which runs, data and decisions it rests on.
+
+- **What goes in.** For one document criterion of a program: the run selected for it, with the saved call's inputs and outputs and their units; the program's newest snapshot, with the criterion's state as frozen and up to 25 rows of its table; the data conditions of the criterion's gate, as readiness evaluates them now; the decisions whose evidence cites the criterion, its run, or a document over it that a person wrote. A part with nothing in it says so in one row.
+- **What comes out.** One table (`section, source, ref, item, value, units, state, on`), written twice into the program's workspace folder: a CSV and a Markdown file with a table per section (`evidence-<criterion>-<program>-v<n>-<time>Z.md`). The Markdown file is linked as a new draft document over the criterion, kind `evidence_table` when the portfolio declares it, else `other`, version 1, 2, 3 per criterion. It goes on like any document: approved directly, or submitted where the portfolio asks for approval.
+- **What it records.** `document.generated`: the criterion, when and by whom, each source (`run`, `snapshot`, `condition:<code>`, `decision:<id>`) with its soft reference and a content hash, one hash over all of them, and the CSV's path and SHA-256.
+- **Again.** Generating again makes the next version. Older generated drafts of the criterion are superseded at once; an approved one stays approved until the new version is approved, which supersedes it the usual way.
+- **In the app.** **Generate evidence table** on each document card (contributors and approvers); **Table** on a generated document opens its CSV as a table view. `generateEvidenceTable(portfolio, program, criterion)` does the same and returns the table.
+- **Evidence changed since written** (F-41, FR-73). The same sources are read again and compared with the record: another run selected, a newer snapshot, a data verdict that changed, a decision added or no longer citing it. Any difference makes the document stale. The card shows **stale** and what changed, with **Regenerate** (the next version; older drafts superseded, an approved one kept until the new one is approved). The program page stores what it finds on `document.evidence_check`; the activity feed shows a stale document as an entry.
+- **Who is told.** After every sync (as for new data) and on `checkEvidenceChanges(code)`, each stale document's author and the program's followers are told in the platform's notifications, once per state of the evidence. Superseded documents are not checked.
+- Pure assembly in `src/model/evidence-tables.ts`; the platform side in `src/evidence-tables.ts`. Needs the program's workspace folder.
+
+## Approval workflow
+
+A portfolio may ask for a second person (F-30, FR-57). It is the ArtifactAlignment pattern
+(publish, pending, approved) rebuilt on the portal's own tables. Off by default: without `approval`
+every decision and approval takes effect at once, as before.
+
+- **Opting in.** `approval: {decisions: ["advance", "terminate"], artifacts: ["document", "model_card"], approvers: 1}`. `decisions` are gate decisions (advance, recycle, hold, terminate; portal authority only). `artifacts` are documents and model cards. `approvers` is how many approvers other than the proposer must approve (1 to 5, default 1).
+- **A decision becomes a proposal.** An approver's advance or terminate is stored in `approval_request` as pending, with its rationale, the stage it goes to, and the evidence frozen now (the gate panel's ticks, a snapshot taken now). The program does not move. Only one decision per program waits at a time. `recordDecision` refuses such a decision unless it carries out the pending request.
+- **Review.** Another approver (a portfolio approver or a program approver) approves or rejects it with a rationale. The proposer cannot; they may withdraw it. On the last approval it goes through `recordDecision` as the reviewer: gate log (source as proposed), evidence, workspace folders. A rejection is logged on the request; nothing changes. The proposer is told in the platform's notifications. If the decision cannot take effect any more (the gate is no longer met), the review is not kept and the request stays pending.
+- **Advance by data.** In a portfolio with both `autoAdvance` and approval of advance, data proposes the move instead of making it (source `data`), once per program. Any approver may approve a proposal by data, the one who ran the sync included. The sync report says "waiting for approval".
+- **Documents.** A draft or rejected document is **Submitted for approval** (contributors and approvers): draft → submitted → approved or rejected. Approving goes through the same path as before: the criterion is met, the older version superseded. A submitted document cannot be changed or approved directly.
+- **Model cards.** `submitModelCard(portfolio, model, version)`: draft → in review → approved or rejected, for a model in the portfolio's catalogue. Reloading the catalogue keeps an approval the workflow set.
+- **Approvers are told.** A new proposal or submission is posted to the platform's notifications of each approver who may review it: the members of the portfolio's approvers group (nested groups included) and of the program's approver roles; for a model card, the portfolio's approvers. Never the proposer; at most 25. The notice says what waits, who proposed it and why. The server lets a user notify others only when they may edit users; otherwise the request still shows under **Waiting for me**. The result (`2 of 2 approver(s) notified`) is on the proposal, in the info balloon, and on the `submitDocument` and `submitModelCard` reports.
+- **In the app.** The gate panel's buttons say **Propose advance to …** and **Propose termination**, and are off while a decision waits. *Waiting for approval* on the program page (both modes) lists the program's requests: Approve and Reject with a rationale for an approver who did not propose it, Withdraw for the proposer, the last three closed. The history says who proposed and who approved a decision. The ribbon's **Waiting for me** lists every pending request the user may review, across portfolios.
+- **Example.** EX-BIOD asks for one approver on advance, terminate, documents and model cards. No existing test or scenario decides in EX-BIOD.
+- `approval_request` is table-secured: View for all users, Edit only for the portfolios' contributors groups (approvers are nested in them), on the server. Who reviews which request is the app's check. Master security through the program would hide a request from every approver but the program's author until GROK-21041 is fixed.
+
+## Write permissions on portal tables
+
+Package functions run in the user's browser, so a check in them is the app's, not the server's: anyone can call
+the domain API from the console. What the server enforces is the table's security mode and its grants.
+
+- **Workflow tables.** `program_role` and `parked_folder`: Edit for each portfolio's approvers group.
+  `approval_request`: Edit for each portfolio's contributors group (approvers are nested in it). All users keep
+  View only. Nobody but admins deletes: the app never deletes these rows. Loading a portfolio grants its groups and
+  takes All users' Edit away; `securePortalTables(dryRun)` does it for every portfolio. Both need Share on the
+  tables, which admins and the publisher hold; without it the load report says `write permissions not set`.
+- **Why at load time.** The schema now declares View only, but a redeploy never revokes a grant it made before,
+  so an existing server keeps All users' Edit until the revoke runs.
+- **Tables secured through the program row** (gate log, criterion status, evidence, documents, snapshots, runs,
+  predictions, observations, design and selection sets, work units, program compounds, flows): a write needs Edit
+  on the program row. Only its author (the sync) and admins hold it today, since program rows refuse grants
+  (GROK-21041).
+- **Reference tables** (stage models, stages, criteria, portfolios, the catalogue and model cards, compounds,
+  process flows, sync runs, feeds): View for all users or none; only admins write.
+- **Still open.** `follow` is writable by every user, each user's own follow and everyone else's. Narrowing it
+  to the author needs row security, and the server refuses changing the security mode of a deployed table. A
+  portfolio's approvers can write another portfolio's `program_role` rows from the console, and a contributor can
+  write any request's status and reviews: the server grants per table, not per row.
+
+## Data access of the portfolio's groups
+
+A program dataset runs its SQL in the viewer's own session. The server then asks for View and Query
+(`DataConnection.Query`) on the connection; without Query a viewer gets `Connection "Query" permission required`.
+The portal shares its own tables and folders when a portfolio loads, but a data connection belongs to whoever set it
+up, so the portal only checks it and never grants.
+
+- **What is checked.** Each connection the portfolio's datasets (`programData`, `programDatasets`) and feeds use,
+  against each of its groups (viewers, contributors, approvers): does the group hold View and Query?
+- **Parent groups count.** The check reads the group's effective grants from the server's privileges route
+  (`/privileges/permissions?entityId&groupId&all=true`), which includes its parent groups (All users among them) and
+  grants through projects. A share with the viewers covers the contributors and approvers nested in them.
+  `grok.dapi.permissions.get` lists only View and Edit groups, so it cannot answer this.
+- **Feeds are reported, not required.** A feed runs as whoever syncs (an admin or the scheduler), so a connection
+  only feeds use shows `not needed` when the groups lack it.
+- **Unknown.** A caller who cannot see the connection, or may not read its sharing, gets `unknown` with the reason,
+  never an error.
+- **Where it shows.** `dataAccessAudit(code)` returns the report as text, `dataAccessTable(code)` as a table (one
+  row per portfolio, connection and group, with the fix); every portfolio when no code is given. Loading a portfolio
+  adds a `warning:` line per group that cannot query a dataset's connection, with the fix
+  (`share <connection> with <group>: View + Query`). The board shows a **data access** notice
+  (`data-access-notice`, **Details** opens the table) to the portfolio's approvers and admins only: they can share
+  the connection or ask its owner. Viewers and contributors see nothing.
+- **The fix.** In the connection's sharing dialog, View with Query ticked. From code, `grok.dapi.permissions.grant(
+  connection, group, false)` gives the group the whole Use set, Query included.
+
+## Provenance
+
+From any portal record, what it rests on and what rests on it (F-28, FR-75): data → model run →
+document → decision, and back. The graph is the portal's own records; nothing new is stored.
+
+- **Nodes.** The program, its decisions (gate-log entries), model runs, the tables their saved calls read and wrote, the catalogued model a run used, documents, snapshots, gate criteria, the program dataset, a compound, and the files and links a decision cites.
+- **Edges** run from what something rests on to what rests on it: a compound is in the program dataset; the dataset is frozen in a snapshot; a run reads its input tables and its model and writes its output tables; the run selected for a criterion feeds the documents answering it (or the criterion when none does); a document answers its criterion; a generated evidence table rests on what it was written from (the run, the snapshot, the gate's data conditions and the decisions it lists, from `document.generated`), so a walk goes from a decision through the table to the run and its data; each piece of a decision's evidence points at the decision; a decision moves the program. Evidence is an edge, not a node: starting from a piece of evidence starts from its target. A cited record deleted since is still a node, named as the evidence froze it.
+- **The walk** goes `depth` steps (default 4) each way, breadth first. A compound's programs (up to 10) are read when the walk starts from a compound; otherwise one program's records. Saved calls are read for their tables for the 40 newest runs.
+- **In the app.** **Provenance** on the program page, beside each decision and each piece of evidence in the history, and beside each saved run, document and snapshot. The dialog shows *Rests on* and *Used by* as indented trees; a click opens the record (a run's call in the context panel, a snapshot, a document's file, the program data, a model card, a table, another program on its page), and **Trace** starts the walk again from it.
+- **Functions.** `provenance(kind, id, depth)` returns `{start, nodes, edges}` (kind: program, decision, evidence, model_run, snapshot, document, compound; a run's `run_id` and a compound's code work as ids). `showProvenance(kind, id)` opens the dialog.
+
+## Data package manifest
+
+What a program's gate case rests on, one line each (F-43, FR-43, PORT-11). Started as a view: the
+lines are read from the portal's records each time; nothing is stored or authored.
+
+- **Lines.** The criteria of every stage the program has reached and of the next one, with their state and whether it was recorded or evaluated from data now. Documents, with version, status, kind, and who linked or approved them and when. Generated evidence tables, with what they were written from and *evidence changed* when the last check found it stale. Saved runs, with model, unit operation, run type, purpose, who ran them and the criteria they are selected for. The program's datasets, with their connection. Snapshots.
+- **Columns.** Section, Item, Stage, Criterion, Status, Version, Source, By, On, Reference (a file path, a saved call's id, a snapshot id, a dataset code).
+- **In the app.** **Data package** on the program page opens it in a dialog with a one-line summary (`4 criteria · 1 run · 1 dataset`). **Open as table** puts it in a table view; **Download CSV** saves `<CODE>-data-package-<date>.csv`.
+- **Functions.** `dataPackage(portfolio, program)` returns the table; `dataPackageCsv(portfolio, program)` the CSV text.
+- Pure assembly and CSV in `src/model/data-package.ts`; the reads in `src/data-package.ts`.
+
+## Stage advance driven by data
+
+Off by default. A portfolio whose stages the portal owns may let data move its programs, up to a
+limit stage, so the top gates still need an approver:
+
+```json
+"autoAdvance": {"through": "H2L", "countWaivers": false}
+```
+
+- **When a program moves.** It is active, already in its model, and its next stage is not past `through`. That stage has required criteria, and every one was evaluated met from the program's data. It moves one stage per pass.
+- **What never counts.** A waiver, unless `countWaivers` is true: a waiver is a person's call. A criterion recorded met by hand, a document or a decision: not data. A stage with no required criteria: nothing for data to decide.
+- **What never moves.** Held, terminated, completed, transitioned or missing programs. Unstaged programs: entering the model is a decision. Programs whose data cannot be read.
+- **How it is recorded.** Like an approver's advance (`recordDecision`): a `stage_transition` with `decision` advance and `source` data, `evidence` naming each criterion and what the data said, the data conditions' results kept on `criterion_status`, and the new stage's folders added to the workspace. Approvers' decisions are logged with source `approver`, registry changes with `registry`.
+- **When it runs.** After every sync of the portfolio, by hand or by schedule; the run's report and history name each program it moved (`EXS-GPC3: advanced by data HF → H2L`), and owners hear of it. Or on call: `autoAdvancePortfolio(code, dryRun)`. A dry run (the default) lists what would move and why each other program stays. Applying needs the caller to be an approver, as a manual advance does.
+- **In the app.** Sync history says how far data advances stages and has **Preview advance by data**. The program's history marks a move `(by data)`; hover for the evidence.
+- **It is a field, not a third stage authority.** Stage authority says who owns the stage (registry or portal); auto-advance is a way the portal decides, so the gate rules, the approver groups and the feed's handling stay as they are.
+- The example EX-SMD lets data advance through Hit-to-Lead. A program at Hit Finding whose data shows a validated series and a sub-micromolar compound enters Hit-to-Lead on the next sync. Once the example history is seeded, EXS-KIN1 and EXS-GPC3 are already at Hit-to-Lead and Lead Optimization needs an approver, so a sync moves nothing.
+
+## Choosing the run a criterion rests on
+
+A criterion can rest on a model run (F-15). It says so in the portfolio file:
+
+```json
+{"code": "process_description", "name": "Locked process description", "kind": "document",
+ "artifact": "model_run", "runFilter": {"unitOperations": ["EX-PROD"]}}
+```
+
+- **The filter** narrows the program's runs by `unitOperations`, `runTypes` and `models` (catalogue codes; a model by its nqName). Every list it has must match; a run without the code does not pass. No filter offers every run.
+- **The gate panel** shows the run selected for the criterion (who, when, why) and the runs it superseded. **Choose run…** opens the dialog.
+- **The dialog** lists the runs the filter admits and says how many it leaves out. Tick two or more to compare them: inputs, then outputs, labelled from the function with units, what differs in bold, a table output by its row count. Pick one and give a rationale.
+- **Who may choose:** the portfolio's contributors and approvers, also where the registry owns the stage. Choosing a run is evidence, not a stage decision. Not on a program that has ended. `selectRunForCriterion` asks again before it writes.
+- **What a choice does** is unchanged: the run becomes `selected`, the one before `superseded` (kept, shown as history), and the criterion is met unless it was waived.
+- `criterionRuns(programId, criterionId)` and `runComparison(items)` return what the panel and the dialog show.
+
+## Comparing a criterion's runs in Compute2
+
+Runs of different models for one criterion are compared in Compute2, not in the portal (F-29).
+- **Compare in Compute2…** sits beside Choose run… on a criterion that rests on a run, once it has two candidates.
+- The dialog lists the candidates by model (newest first, the selected one marked) and the steps in Compare Runs: pick each model, select its runs in the history (Ctrl+click; Cmd+click on a Mac), Add selected runs, pick a value under Compare. Across models the tool matches inputs and outputs by name and units.
+- **Open Compare Runs** opens `Compute2:CompareRuns`; the dialog stays open beside it. Where Compute2 is not installed the button is off and says so. **Compare here** opens the portal's own side by side (one model). **Open as table** lists the runs with their run ids.
+- **Not seeded.** Compare Runs takes no runs as input today, so the portal cannot hand them over. A run without a saved call is listed but cannot be added.
+- **Your own runs only.** Compare Runs' history lists only the current user's runs. A run another user saved is listed as "saved by another user" and left out of the steps; Open Compare Runs needs two of your own runs with a saved call.
+- `criterionRunsToCompare(portfolio, program, criterion)` returns the list as a table.
+
+## Saving a run from the app
+
+The **Save to program** dialog (F-14, FR-53) asks for portfolio, program, unit operation, run type,
+purpose and an optional title, then calls `saveModelRun` and says where the run was linked
+(`Saved to EXB-203 at D5, linked into …/Drug Substance/Process Lock`).
+- **Filled in before you touch it.** From the program page: its portfolio and program. Otherwise from the call's own annotations when it was saved before, else from the model's catalogue: its first portfolio you can see, its first unit operation, its default run type. A code the lists do not hold is left blank.
+- **Programs you can see.** The program list is the portfolio's programs under row security, running ones first.
+- **Validity.** An input outside the card's validity range is a warning, not a refusal.
+- **Where it opens.**
+  - After every run of a catalogued model, a balloon offers *Save to program…* (for 20 s). It follows runs from any run view, the function dialog and Compute's included, once the package has loaded in the session (opening the app loads it).
+  - A run's context menu (`Save to program…`), wherever the platform shows one for a FuncCall.
+  - The program page's **Save a run…** button, over this session's runs of catalogued models.
+  - `saveRunToProgram(call)` from a script.
+- Compute2's RichFunctionView has no extension point for a third-party action, so the dialog is not a button in its ribbon.
+
+`model_run.func_call`, the soft reference to the saved call, cannot be written today (platform
+gap GROK-21042, see [platform-findings.md](platform-findings.md), issue 20). Every row also holds `run_id`, the call's id as plain text. The insert tries the
+soft reference first and writes the row without it when the server refuses, so the reference is
+written once the platform is fixed. **Migration debt:** rows without `func_call` need it backfilled
+from `run_id` then (`func_call` is write-once through the API, so this is a SQL migration), after
+which `func_call` can be made required again.
