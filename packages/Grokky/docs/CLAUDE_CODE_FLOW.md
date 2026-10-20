@@ -655,6 +655,41 @@ applications, such as Claude Code, never in a third-party product
 The check applies to whatever key goes to `api.anthropic.com` (`Provider.refuse_subscription_token`), and
 only there: other hosts take JWTs (Entra ID, Databricks OAuth).
 
+#### Bedrock
+
+`provider` `Bedrock`; `apiKey` an Amazon Bedrock API key; `region` the AWS commercial region the key was
+created in, such as `us-east-1` (a key works only in its own region; GovCloud and the China regions are not
+supported). Hermes calls Bedrock's `bedrock-runtime` endpoint in that region: Claude on its Anthropic Messages
+API at `https://bedrock-runtime.<region>.amazonaws.com/anthropic` with the key in `x-api-key`, GPT on its
+OpenAI Responses API at `…/openai/v1` with the key as Bearer. No AWS SDK, SigV4 or Converse API is involved.
+
+Models are global cross-Region inference profiles, which every commercial region reaches at Anthropic's and
+OpenAI's own prices: `global.anthropic.claude-haiku-5-5` (fast), `global.anthropic.claude-sonnet-5-5` (default),
+`global.anthropic.claude-opus-5-5`, `global.anthropic.claude-fable-5-1`, and `global.openai.gpt-6-astra`,
+`…gpt-6.1-sol`, `…gpt-6-sol`, `…gpt-6-luna`, `…gpt-5.6-sol`, `…gpt-5.6-terra` and `…gpt-5.6-luna`. A global
+profile may serve a request from any commercial region. To keep requests in one geography, name its
+geographic profiles with `model` and `fastModel`, e.g. `eu.anthropic.claude-sonnet-5-5=claude-sonnet-5-5` and
+`eu.anthropic.claude-haiku-5-5=claude-haiku-5-5`. Claude 5.5 has `us.`, `eu.` and `au.` profiles (Haiku and
+Opus also `jp.`), Fable 5.1 and GPT `us.` (GPT-5.6 Terra and Luna also `in.`); Opus 5.5 also runs in-region in
+`eu-west-2` (`anthropic.claude-opus-5-5`). Geographic and in-region profiles cost 10% more, which the cost
+limit does not count. Model ids and prices: each model's card under
+[Endpoint availability](https://docs.aws.amazon.com/bedrock/latest/userguide/models-endpoint-availability.html).
+
+What to watch out for:
+
+- Use a long-term key: a short-term one expires within 12 hours, and nothing renews it.
+- The key's IAM user needs access to the models; Fable 5.1 also needs the account's data retention mode
+  `aws_review`.
+- GPT's global profiles are not offered from every region (GPT-6 Astra's from 18); elsewhere a turn on them
+  ends in Bedrock's error.
+- AWS documents JSON Schema output of GPT-6 Astra, Sol and Luna and of GPT-5.6 for non-streaming calls only, and
+  Hermes streams: structured output on those models is unverified.
+- Bedrock checks the key itself: one without a Bedrock prefix ends the turn in
+  `Invalid API Key format: Must start with pre-defined prefix`, a wrong or revoked one in
+  `Authentication failed: Please make sure your API Key is valid.` (403 on Claude's route, 401 on GPT's), and a
+  key from another region in `Credential should be scoped to a valid region`. A 401 or 403 adds a hint naming
+  `apiKey` and `region`.
+
 ### Build and run
 
 ```bash
