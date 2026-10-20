@@ -923,7 +923,6 @@ scoped('a constraint over two columns is read with SQL null semantics: an empty 
   src.dispose();
 });
 
-
 scoped('a draft leaves a required column with a default to the server: neither required nor marked', async () => {
   emsBackends.domain = new MemoryDomainBackend({name: 'desk', tables: {
     ticket: {businessKey: ['code'], columns: {
@@ -939,6 +938,9 @@ scoped('a draft leaves a required column with a default to the server: neither r
   assert.equal(create.input('status').required, false, 'the insert omits it and the server fills the default');
   assert.equal(create.input('status').root.classList.contains('u2-input-required'), false);
   assert.equal(create.input('code').required, true, 'a column with no default still has to be filled');
+  create.input('code').value.value = 'T2';
+  await flush();
+  assert.equal(create.validate(), true, 'the draft with only its key typed is ready to save');
   create.dispose();
   draft.dispose();
   const src = table.source();
