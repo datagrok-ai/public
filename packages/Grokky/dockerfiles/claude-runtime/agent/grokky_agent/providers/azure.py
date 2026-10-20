@@ -31,16 +31,19 @@ class AzureProvider(Provider):
             raise ProviderError('The baseUrl container credential must be the Azure resource: '
                                 'https://<resource>.services.ai.azure.com, or https://<resource>.openai.azure.com '
                                 'for GPT only')
-        claude = sorted(m for m, name in self.models.items() if models.CATALOG[name]['family'] == 'claude')
+        claude = [(c, d) for c, d in (('model', self.default), ('fastModel', self.fast))
+                  if models.CATALOG[self.models[d]]['family'] == 'claude']
         if claude and resource[1] == 'openai':
-            raise ProviderError(f'Claude ({", ".join(claude)}) needs a Microsoft Foundry resource, '
-                                'https://<resource>.services.ai.azure.com: an Azure OpenAI resource serves GPT only')
+            raise ProviderError(f'The {claude[0][0]} container credential names a Claude deployment, which needs a '
+                                'Microsoft Foundry resource, https://<resource>.services.ai.azure.com: an Azure OpenAI '
+                                'resource serves GPT only')
         # Hermes picks a Claude request's thinking and sampling settings by the model name, and turns the dots of a
         # claude-* name into hyphens: under another name Opus 5.5 and Fable 5.1 would get thinking they refuse.
-        for d in claude:
+        for credential, d in claude:
             if self.models[d] not in d or '.' in d:
-                raise ProviderError(f'The Claude deployment "{d}" needs a name that contains its model id and no dot, '
-                                    f'as Azure names it by default ({self.models[d]})')
+                raise ProviderError(f'The {credential} container credential names a Claude deployment, whose name '
+                                    f'must contain its model id ({self.models[d]}) and no dot, as Azure names it by '
+                                    'default')
         self._base_urls = {mode: self.endpoint(resource[0] + path) for mode, path in ROUTES.items()}
         self._key = self.api_key(credentials, 'a key of the Azure resource')
 

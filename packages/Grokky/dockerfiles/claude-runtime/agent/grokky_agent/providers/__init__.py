@@ -14,7 +14,7 @@ PROVIDERS: dict[str, type[Provider]] = {p.name: p for p in Provider.__subclasses
 def from_credentials(credentials: Credentials) -> Provider:
     name = credentials.get('provider') or 'Anthropic'
     if name not in PROVIDERS:
-        raise ProviderError(f'Unsupported provider "{name}" in the container credentials')
+        raise ProviderError(f'The provider container credential must be one of {", ".join(PROVIDERS)}')
     return PROVIDERS[name](credentials)
 
 

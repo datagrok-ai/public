@@ -93,7 +93,7 @@ class Provider(ABC):
         real = urlsplit(url)
         if not re.fullmatch(rf'(https?://{LOCAL_HOST}|https://{re.escape(real.hostname or "")})(:\d+)?/?',
                             self.test_upstream):
-            raise ProviderError(f'TEST_UPSTREAM may only name a local test host or {real.hostname}')
+            raise ProviderError("TEST_UPSTREAM may only name a local test host, or the provider's own host over https")
         upstream = urlsplit(self.test_upstream)
         return urlunsplit(real._replace(scheme=upstream.scheme, netloc=upstream.netloc))
 
@@ -124,10 +124,10 @@ class Provider(ABC):
         model, _, name = (part.strip() for part in value.partition('='))
         if name:
             if name not in models.CATALOG:
-                raise ProviderError(f'The {credential} container credential maps "{model}" to "{name}", which is not '
-                                    f'a catalog model: use one of {", ".join(models.CATALOG)}')
+                raise ProviderError(f'The {credential} container credential must map an id to a catalog model, one of '
+                                    f'{", ".join(models.CATALOG)}')
             self.models[model] = name
         elif model not in self.models:
-            raise ProviderError(f'The {credential} container credential names "{model}", which {self.name} does not '
-                                'offer: name one of its models, or a model as <id>=<catalog model>')
+            raise ProviderError(f'The {credential} container credential must be one of '
+                                f'{", ".join([*self.models, "<id>=<catalog model>"])}')
         return model

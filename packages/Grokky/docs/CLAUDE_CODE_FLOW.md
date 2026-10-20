@@ -620,7 +620,9 @@ agent's provider (`agent/grokky_agent/providers/`) checks them and passes the ke
 agent refuses to start, so every turn ends in an `error` "The assistant could not start: …", when its
 provider refuses the credentials (the reasons are in each provider's subsection), when `provider` names no
 provider of the runtime, or when `TEST_UPSTREAM` is not an allowed host. The server itself stays up; the
-log shows the reason as `agent: warm spare failed to start: …`. A key the provider rejects ends the turn in
+log shows the reason as `agent: warm spare failed to start: …`. The reason names the credential and the
+values it takes, never the value it holds: it reaches every user's error, and a key pasted into the wrong
+credential must not. A key the provider rejects ends the turn in
 an `error` with the provider's message, or the title of the HTML page a proxy answered with; a 401 adds a
 hint naming the credential to check. An answer the provider's safety filter stops mid-stream ends in an
 `error` that says so, not with the cut-off text.
