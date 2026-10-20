@@ -66,7 +66,7 @@ The status updates streaming in real time, ending with the URL. The audience see
 
 ## Works today (verified)
 
-- Claude Opus + MCP can sequence multi-step plans through the Claude Agent SDK runtime.
+- Claude Opus + MCP can sequence multi-step plans through the Grokky agent runtime.
 - `agents/` folder file-sync exists and is verified (`packages/Grokky/src/package.ts:62-75`; spec in `docs/IMPLEMENTATION.md`). Files in `agents/` appear in the Claude container at `/users/{userId}/agents/`.
 - **Chem standardization:** `Chem:canonicalize` (`packages/Chem/src/package.ts:2513`) and `Chem:removeWaterAndSalts` (`:3010`).
 - **Structural alerts:** `Chem:Structural Alerts` registered function; rule sets verified at `packages/Chem/src/widgets/structural-alerts.ts:6-8` (PAINS, BMS, SureChEMBL, MLSMR, Dundee, Inpharmatica, LINT, Glaxo).

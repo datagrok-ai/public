@@ -1,10 +1,11 @@
-// System prompt assembly. The prefix these produce is re-read on every API call of every turn
-// (measured at ~28k tokens/call, see docs/BENCHMARK.md), so anything that silently bloats it is a
-// per-turn tax — which is exactly what the frontmatter stripper did: it was written LF-only while
-// the skills are checked in CRLF, so it matched nothing and inlined each skill's YAML header.
+// System prompt assembly. The prefix these produce is re-read on every API call of every turn, so anything that
+// silently bloats it is a per-turn tax.
 
+const path = require('node:path');
 const test = require('node:test');
 const assert = require('node:assert');
+
+process.env.GROKKY_PLUGIN_DIR = path.join(__dirname, '..', 'plugin');
 const {buildSystemPrompt} = require('../dist/prompts.js');
 
 test('bash and none modes stay minimal', () => {
@@ -38,16 +39,19 @@ test('the full prompt prefers widget quick functions for viewer-targeted request
   assert.match(full, /preference, not a hard rule/i, 'the rule must stay soft');
 });
 
-// Only meaningful when the skills are present (they are inside the image and in a dev checkout);
-// skipped rather than failed elsewhere so the suite stays runnable without the plugin.
-test('inlined skills carry no YAML frontmatter', (t) => {
+test('inlined skills carry no YAML frontmatter', () => {
   const full = buildSystemPrompt();
-  if (!full.includes('## Inlined Skills'))
-    return t.skip('plugin skills not mounted at /app/plugin');
+  assert.ok(full.includes('## Inlined Skills'), 'the inlined skills are missing');
   const inlined = full.slice(full.indexOf('## Inlined Skills'));
   assert.ok(!/^name:\s/m.test(inlined), 'frontmatter leaked into the system prompt');
   assert.ok(!/^description:\s/m.test(inlined), 'frontmatter leaked into the system prompt');
   assert.ok(!/^---\s*$/m.test(inlined.replace(/^---$/gm, (m, i) =>
     // the section separator between skills is a legitimate '---'
     inlined.slice(0, i).includes('### ') ? '' : m)), 'stray frontmatter delimiters');
+});
+
+test('the full prompt warns that search_files lists hidden directories and matches names only', () => {
+  const full = buildSystemPrompt('datagrok');
+  assert.match(full, /`search_files` with `target: "files"` matches file names only/);
+  assert.match(full, /hidden directories such as `\.git`/);
 });

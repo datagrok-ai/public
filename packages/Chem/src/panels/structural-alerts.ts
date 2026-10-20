@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {RdKitService} from '../rdkit-service/rdkit-service';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
+import {alertsByEngine} from '../engine/worker-jobs';
 
 export type RuleId = 'PAINS' | 'BMS' | 'SureChEMBL' | 'MLSMR' | 'Dundee' | 'Inpharmatica' | 'LINT' | 'Glaxo';
 export type RuleSet = {[rule in RuleId]: boolean};
@@ -9,7 +10,7 @@ export const STRUCT_ALERTS_RULES_NAMES = ['PAINS', 'BMS', 'SureChEMBL', 'MLSMR',
 
 export async function runStructuralAlertsDetection(moleculeCol: DG.Column<string>, ruleSet: RuleSet,
   alertsDf: DG.DataFrame,
-  rdkitService: RdKitService): Promise<DG.DataFrame> {
+  rdkitService: Pick<RdKitService, 'getStructuralAlerts'>): Promise<DG.DataFrame> {
   const ruleSetCol: DG.Column<string> = alertsDf.getCol('rule_set_name');
   const ruleSetColCategories = ruleSetCol.categories;
   const ruleSetColData = ruleSetCol.getRawData();
@@ -37,7 +38,8 @@ export async function runStructuralAlertsDetection(moleculeCol: DG.Column<string
 }
 
 export async function getStructuralAlertsByRules(molecules: DG.Column, ruleSet: RuleSet): Promise<DG.DataFrame | undefined> {
-  const rdkitService = await chemCommonRdKit.getRdKitService();
+  // by the "Chemical engine" setting: the RDKit pool, or in Crux mode the Crux pool (RDKit's behind it)
+  const rdkitService = alertsByEngine;
   const alertsDf = await grok.data.loadTable(chemCommonRdKit.getRdKitWebRoot() + 'files/alert-collection.csv');
   const progress = DG.TaskBarProgressIndicator.create('Detecting structural alerts...');
   try {

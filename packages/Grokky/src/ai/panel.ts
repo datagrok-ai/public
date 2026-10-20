@@ -1158,10 +1158,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       conv.uiMessages.forEach((msg) => {
         this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true, messageOptions: msg.messageOptions, execCode: msg.execCode}); // no loader
       });
-      // The runtime never saw this conversation (page reloads drop its session; a live session
-      // holds a DIFFERENT conversation). Starting a fresh session is enough: it is not resumable,
-      // so the next send attaches restoredTranscript() and follow-ups have the actual history.
       this.resetSession();
+      // Chat history is per browser, so only the user who saved the chat resumes its runtime session.
+      const meta = conv.meta;
+      if (meta?.sessionId && meta.userId === grok.shell.user.id) {
+        this._sessionId = meta.sessionId;
+        ClaudeRuntimeClient.getInstance().expectResume(meta.sessionId);
+      }
       this.afterConversationLoad(conv);
       //grok.shell.info(`Loaded conversation: ${conv.initialPrompt.substring(0, 50)}...`);
     } catch (error) {
@@ -1174,8 +1177,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     // do nothing in base class
   }
 
-  protected getConversationMeta(): any {
-    return undefined;
+  protected getConversationMeta(): {sessionId: string, userId: string} {
+    return {sessionId: this._sessionId, userId: grok.shell.user.id};
   }
 
   public async saveCurrentConversation(initialPrompt?: string) {

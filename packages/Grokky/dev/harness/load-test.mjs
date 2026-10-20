@@ -20,7 +20,7 @@
 //                    still streams over the WebSocket — mirrors src/claude/queue-task.ts.
 //                    Uses the --host server (default localhost) for the task REST auth.
 //   --mode full|bash full = prompts from the pool through the real Datagrok prompt (default);
-//                    bash = `echo` via systemPromptMode:'bash' — real CLI subprocess + API call
+//                    bash = `echo` via systemPromptMode:'bash' — real agent turn + API call
 //                    per turn at a fraction of the cost, for finding infrastructure limits
 //   --prompts FILE   prompt pool, one per line, # comments (default: files/benchmark/suite.yaml)
 //   --think LO-HI    seconds between a user's turns (default 3-8; 0-0 = none)
@@ -30,7 +30,7 @@
 //   --url WS         runtime (default ws://localhost:5355/ws — `node dev/runtime.mjs up`)
 //   --host ALIAS     ~/.grok/config.yaml server whose key is sent as apiKey (per-user sync)
 //   --api-key K      explicit apiKey
-//   --model M        haiku | sonnet | opus (default: runtime default)
+//   --model M        a model id, e.g. claude-haiku-5-5 (default: runtime default)
 //   --container NAME docker container to sample cpu/mem/pids from (default grokky-dev-runtime;
 //                    --no-docker to skip)
 //   --label NAME     log file name (default <mode>-<users>u-<timestamp>)

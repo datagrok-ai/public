@@ -318,8 +318,8 @@ async function judge(client: ClaudeRuntimeClient, prompt: string, answer: string
   const jp = `You are grading an AI assistant's answer against a rubric. Be strict but fair.\n\n` +
     `USER PROMPT:\n${prompt}\n\nASSISTANT ANSWER:\n${answer || '(empty)'}\n\nRUBRIC:\n${rubric}\n\n` +
     `Return pass (boolean), score (0..1), and a one-line reason.`;
-  // One retry: a judge call that times out (query() now has a timeout; the runtime watchdog can
-  // kill a wedged CLI) must not flip a correct answer to failed on transient grounds.
+  // One retry: a judge call that times out (the runtime watchdog can kill a wedged agent) must not
+  // flip a correct answer to failed on transient grounds.
   for (let attempt = 0; ; attempt++) {
     try {
       const r = await client.query(jp, {model: ClaudeModel.Haiku, outputSchema: JUDGE_SCHEMA, systemPromptMode: 'none'});
@@ -480,7 +480,7 @@ function buildMarkdown(label: string, when: string, reps: number, results: Promp
     lines.push(`| **Cost** | ${usd(costSum)} total` +
       (passed ? ` · ${usd(costSum / passed)} per passed prompt` : '') + ` |`);
   } else
-    lines.push(`| **Cost** | ⚠️ unavailable — rebuild the claude-runtime image to forward SDK usage |`);
+    lines.push(`| **Cost** | ⚠️ unavailable — no turn reported usage metrics |`);
   lines.push('');
 
   // Per-difficulty rollup: a blended number hides where a configuration actually differs. This
@@ -565,7 +565,7 @@ function downloadText(filename: string, text: string): void {
 }
 
 /** Runs the benchmark suite and downloads a `benchmark-<label>.{json,md}` report.
- * `model` pins every turn to one tier ('haiku' | 'sonnet' | 'opus') — that is how the control arms
+ * `model` pins every turn to one model (a `ClaudeModel` id) — that is how the control arms
  * for a model comparison are produced without redeploying the runtime. Omit for the runtime default. */
 export async function runBenchmark(label: string, reps: number, model?: string,
   only?: string): Promise<string> {
@@ -627,7 +627,7 @@ export async function runBenchmark(label: string, reps: number, model?: string,
   const passed = scored.filter((r) => r.accuracyPass).length;
   const msg = `Benchmark "${label}" complete — ${suite.length} prompts × ${reps} reps, ` +
     `accuracy ${passed}/${scored.length}. Report downloaded.` +
-    (hasTokens ? '' : ' (Token metrics unavailable — rebuild claude-runtime image.)');
+    (hasTokens ? '' : ' (Token metrics unavailable: no turn reported them.)');
   grok.shell.info(msg);
   return msg;
 }

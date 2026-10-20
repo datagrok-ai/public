@@ -3,13 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {_package} from '../package';
-import {getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {Fingerprint} from '../utils/chem-common';
 import {SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType,
   getTerminateEventName} from '../constants';
 import {CruxColumnIndex, CruxSegment, CruxService} from './crux-service';
 import {getCruxSmarts} from './crux-smarts';
+import {chemSetting} from '../engine/chem-engine';
 
 export enum SubstructureSearchEngine {
   RDKit = 'RDKit',
@@ -32,23 +33,27 @@ export function setSubstructureSearchEngine(engine: SubstructureSearchEngine | n
   engineOverride = engine;
 }
 
+/** The engine of Contains / Not contains: Crux (the default) unless the setting says RDKit; a saved value stays. */
 export function getSubstructureSearchEngine(): SubstructureSearchEngine {
   if (engineOverride)
     return engineOverride;
-  try {
-    return _package.settings?.[SUBSTRUCTURE_SEARCH_ENGINE_PROPERTY] === SubstructureSearchEngine.Crux ?
-      SubstructureSearchEngine.Crux : SubstructureSearchEngine.RDKit;
-  } catch {
-    return SubstructureSearchEngine.RDKit;
-  }
+  return chemSetting(SUBSTRUCTURE_SEARCH_ENGINE_PROPERTY) === SubstructureSearchEngine.RDKit ?
+    SubstructureSearchEngine.RDKit : SubstructureSearchEngine.Crux;
 }
 
 export function getCruxService(): Promise<CruxService> {
-  cruxService ??= CruxService.create(getRdKitWebRoot()!).catch((e) => {
+  cruxService ??= CruxService.create().catch((e) => {
     cruxService = null;
     throw e;
   });
   return cruxService;
+}
+
+/** Tests: the next search starts the Crux service anew (from the loader); the current one's workers are let go. */
+export async function resetCruxServiceForTests(): Promise<void> {
+  const service = await cruxService?.catch(() => null);
+  cruxService = null;
+  service?.terminateForTests();
 }
 
 export function isCruxSearch(searchType: SubstructureSearchType): boolean {

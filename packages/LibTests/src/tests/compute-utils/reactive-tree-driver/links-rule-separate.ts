@@ -324,16 +324,16 @@ category('ComputeUtils: Driver rule separate effects', async () => {
     });
   });
 
-  test('A separate node message reading only the step count runs on rewire', async () => {
+  test('A separate node message reading only the step count follows the count', async () => {
     const pconf = await scenarios([], [{
       id: 'stepsRequired',
       type: 'rule',
-      from: 'm:first(model)/method',
+      from: ['m:first(model)/method', 'n:count()'],
       to: 'scenarios(node)',
-      effects: ['error(scenarios, "Add a step", when: eq($steps, 0), separate: true)'],
+      effects: ['error(scenarios, "Add a step", when: eq(n, 0), separate: true)'],
     }]);
-    expectDeepEqual(pconf.links!.map((link) => [link.id, link.from.length, link.params?.readsSteps]),
-      [['stepsRequired::pipelineValidator:1', 0, true]]);
+    expectDeepEqual(pconf.links!.map((link) => [link.id, link.from.map((io) => io.name)]),
+      [['stepsRequired::pipelineValidator:1', ['n']]]);
     testScheduler.run(({flush}) => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, batchLinks: true});
       tree.init().subscribe();
@@ -436,19 +436,19 @@ category('ComputeUtils: Driver rule separate effects expansion', async () => {
     expectDeepEqual(Object.keys(byId['r::meta'].params.sources), ['opts', 'advice']);
   });
 
-  test('Data frame mutations and step count reads follow the separate link', async () => {
+  test('Data frame mutations and count inputs follow the separate link', async () => {
     const pconf = await getProcessedConfig(pk([{
       id: 'r',
       type: 'rule',
-      from: ['p:data/profile', 'm:model/method'],
+      from: ['p:data/profile', 'm:model/method', 'n:count()'],
       to: ['t:model/tolerance', 'k:model/ka'],
       dataFrameMutations: ['p', 'm'],
-      effects: ['set(t, if(eq(m, "LSODA"), 1, 2), separate: true)', 'hide(k, when: eq($steps, 0), separate: true)'],
+      effects: ['set(t, if(eq(m, "LSODA"), 1, 2), separate: true)', 'hide(k, when: eq(n, 0), separate: true)'],
     }]));
     const links = pconf.links! as any[];
-    expectDeepEqual(links.map((link) => [link.id, link.dataFrameMutations, link.params.readsSteps]), [
-      ['r::data:1', ['m'], undefined],
-      ['r::meta:2', [], true],
+    expectDeepEqual(links.map((link) => [link.id, link.dataFrameMutations, link.from.map((io: any) => io.name)]), [
+      ['r::data:1', ['m'], ['m']],
+      ['r::meta:2', [], ['n']],
     ]);
   });
 

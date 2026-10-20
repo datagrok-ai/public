@@ -48,7 +48,6 @@ class ClaudeChat extends DG.AIChat {
       forSession(client.onFinal, (e) => { final = e; wake(); }),
       forSession(client.onError, (e) => fail(new Error(e.message))),
       forSession(client.onSessionReset, () => fail(new Error('Claude runtime: the session was lost'))),
-      forSession(client.onAuthRequired, () => fail(new Error('Claude runtime: authentication required'))),
       client.onClose.subscribe(() => fail(new Error('Claude runtime: connection lost'))),
     ];
     options.signal?.addEventListener('abort', onAbort);

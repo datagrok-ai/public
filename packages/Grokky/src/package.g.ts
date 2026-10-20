@@ -45,7 +45,7 @@ export async function askHelpLLMProvider(prompt: string, sessionId?: string) : P
 //description: Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.
 //input: string label { description: Config label for this run, e.g. baseline / medium-effort }
 //input: int reps { optional: true; description: Repetitions per prompt (default 3) }
-//input: string model { optional: true; choices: ["haiku","sonnet","opus"]; description: Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default. }
+//input: string model { optional: true; choices: ["claude-haiku-5-5","claude-sonnet-5-5","claude-opus-5-5"]; description: Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default. }
 //input: string only { optional: true; description: Run only part of the suite: comma-separated categories, difficulties, or prompt substrings. }
 //output: string result
 export async function runBenchmark(label: string, reps?: number, model?: string, only?: string) : Promise<string> {
