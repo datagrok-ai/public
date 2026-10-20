@@ -162,9 +162,10 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed[] {
       const excludeIds = excludeArgs.filter((c) => c.type === 'Id').map((c) => c.text);
       const excludeKinds = excludeArgs.filter((c) => c.type === 'ExcludeKind').map((c) => c.text.slice(1).trim());
       const unknownKind = excludeKinds.find((kind) => !ioExcludeKinds.includes(kind as IOExcludeKind));
-      const kindList = ioExcludeKinds.map((k) => '$' + k).join(' or ');
-      if (unknownKind)
+      if (unknownKind) {
+        const kindList = ioExcludeKinds.map((k) => '$' + k).join(' or ');
         throw new Error(`Link io ${io}: unknown exclusion $${unknownKind}, use ${kindList}`);
+      }
       if (isBase || isAction || isNot || isVisibility)
         throw new Error(`Link io ${io}: '${ioExpand}' selector is not allowed in ${ioType} queries`);
       return {
