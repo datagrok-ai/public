@@ -27,6 +27,7 @@ import './dapi/files-list';
 import './dapi/functions';
 import './dapi/fetch';
 import './dapi/groups';
+import './dapi/chats';
 import './dapi/dapi';
 import './dapi/cloud-logs';
 import './dapi/log-timeline';

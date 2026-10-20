@@ -153,6 +153,8 @@ export class Permission {
 
   static DELETE_COMMENTS = 'DeleteComments';
 
+  static IMPORT_COMMENTS = 'ImportComments';
+
   static ADMIN_SYSTEM_CONNECTIONS = 'AdminSystemConnections';
 
   static ADMIN_STICKY_META = 'AdminStickyMeta';

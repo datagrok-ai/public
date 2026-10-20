@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Chats: Added `grok.dapi.chats` (find by entity or reference, comments, post with replies and references, edit, import, watch), `DG.ChatWidget` and `grok.dapi.users.notifications.send` (#772, #770)
 * U2: Breaking: An effect's every run gets its own child scope, disposed before the next run and with the owner, so what a run builds dies with it
 * U2: Errors in effects, bound handlers (including a rejected promise a bound handler returns), listeners and cleanups are reported — the scope's `onError`, then its parents, then `Scope.onUnhandledError` — instead of thrown at whoever wrote the signal; one throwing cleanup no longer stops the rest
 * U2: Added parent/child scopes with labels, `bind`, `run`, `listen`, `setTimeout`, `setInterval`, `requestFrame`, `abortSignal` and `reportError`; a child disposed early leaves its parent

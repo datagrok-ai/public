@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Chats: Added tests for `grok.dapi.chats`, `DG.ChatWidget` and `grok.dapi.users.notifications.send`
 * GROK-21087: Read rows without a backing item as empty and create the item on edit
 * GROK-21058: Resolve renderers of grid-less value cells without dereferencing a null grid column
 
