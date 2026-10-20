@@ -223,10 +223,8 @@ class ImportFlow {
           return verdict === undefined ? '' : badge(verdict.label, {variant: verdict.variant});
         }}]),
       ...mapping.map(([target, name]) => {
-        const column = frame.columns.byName(name);
-        const float32 = ImportFlow._isFloat32(column);
-        return {name: target, header: ImportFlow._caption(this, target),
-          render: (i: number) => text(ImportFlow._valueOrNull(column, i, float32))};
+        const cell = ImportFlow._cell(frame.columns.byName(name));
+        return {name: target, header: ImportFlow._caption(this, target), render: (i: number) => text(cell(i))};
       })],
       cellState: {
         isChanged: () => false,
@@ -299,27 +297,23 @@ class ImportFlow {
     Record<string, unknown>[] {
     const rows: Record<string, unknown>[] = Array.from({length: count}, () => ({}));
     for (const [target, name] of mapping) {
-      const column = frame.columns.byName(name);
-      const float32 = ImportFlow._isFloat32(column);
+      const cell = ImportFlow._cell(frame.columns.byName(name));
       for (let i = 0; i < count; i++)
-        rows[i][target] = ImportFlow._valueOrNull(column, i, float32);
+        rows[i][target] = cell(i);
     }
     return rows;
   }
 
-  private static _valueOrNull(column: DG.Column, i: number, float32: boolean): unknown {
-    return column.isNone(i) ? null : float32 ? ImportFlow._shortest(column.get(i) as number) : column.get(i);
+  /** A cell as posted; a float column not made double precision reads back widened (3.10 →
+   * 3.0999999046325684), so it posts the shortest decimal of the same float32. */
+  private static _cell(column: DG.Column): (i: number) => unknown {
+    const float32 = column.type === 'double' && !(column as DG.FloatColumn).doublePrecision;
+    return (i) => column.isNone(i) ? null : float32 ? ImportFlow._shortest(column.get(i) as number) : column.get(i);
   }
 
-  /** A float column is stored in 32 bits unless it was made double precision — what a file opened
-   * in the platform gives — and its `get` answers the widened value: 3.0999999046325684 for 3.10. */
-  private static _isFloat32(column: DG.Column): boolean {
-    return column.type === 'double' && column.getRawData() instanceof Float32Array;
-  }
-
-  /** The shortest decimal that is the same float32: the number the file had. */
+  /** The shortest decimal that is the same float32. */
   private static _shortest(value: number): number {
-    for (let digits = 1; digits < 9; digits++) {
+    for (let digits = 1; digits <= 9; digits++) {
       const shortest = Number(value.toPrecision(digits));
       if (Math.fround(shortest) === value)
         return shortest;

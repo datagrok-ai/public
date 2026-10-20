@@ -300,6 +300,24 @@ scoped('a float column read from a file lands as the number typed, not its float
   await running;
 });
 
+scoped('a double-precision float column is posted as it holds', async () => {
+  const memory = backend();
+  const exact = Math.fround(3.1);
+  const source = new DG.DataFrame([{name: 'project_id', type: 'string'}, {name: 'number', type: 'int'},
+    {name: 'title', type: 'string'}, {name: 'weight', type: 'double'}],
+  [{project_id: 'p1', number: 20, title: 'D', weight: exact}]);
+  source.columns.byName('weight').doublePrecision = true;
+  const {running} = await opened(memory, source);
+  await toMapping();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  assert.equal(issues(memory).find((r) => r.title === 'D')?.weight, exact, 'a float64 value is not shortened');
+  fire(buttonNamed('CLOSE'), 'click');
+  await running;
+});
+
 scoped('upsert merges by the business key instead of inserting again', async () => {
   const memory = backend();
   const {running} = await opened(memory,
