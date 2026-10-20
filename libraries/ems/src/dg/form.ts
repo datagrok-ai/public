@@ -300,7 +300,7 @@ export class DomainForm extends Control {
     }
     // a draft may leave a column with a default empty: the insert omits it and the server fills it
     const properties = source.schema.properties.filter((p) => !system.has(p.name))
-      .map((p) => draft && p.nullable === false && !isEmpty(p.defaultValue) ? {...p, nullable: true} : p);
+      .map((p) => draft && p.nullable === false && p.defaultValue != null ? {...p, nullable: true} : p);
     const form = propertyForm(properties, row, {
       include: options.include, exclude: options.exclude, layout: options.layout, condensed: options.condensed,
       overrides, access: view,

@@ -409,6 +409,9 @@ export class MemoryEditState implements EditState {
     const state = row[Rows.STATE];
     if (!state || state === 'deleted' || state === 'restored')
       return null;
+    // a draft may leave it empty: the insert omits it and the backend fills the default
+    if (state === 'new' && isEmpty(row[prop.name!]) && prop.defaultValue != null)
+      return null;
     const changed = state === 'new' || this._originals.get(row)?.has(prop.name!) === true;
     return changed ? MemoryEditState.problemOf(prop, row[prop.name!]) : null;
   }
