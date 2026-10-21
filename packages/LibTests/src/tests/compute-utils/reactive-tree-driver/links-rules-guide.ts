@@ -5,7 +5,6 @@ import {getProcessedConfig} from
 import {compileExpression, compileRuleFormulas, compileSource} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/rule-formula';
 import {evaluate} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/rule-expressions';
-import {resolveSources} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/rule-sources';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {FuncCallNode, PipelineNodeBase} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
@@ -16,7 +15,7 @@ import {PipelineLinkConfigurationInput} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {createTestScheduler, errors, noCallController, warnings} from '../../../test-utils';
+import {createTestScheduler, errors, noCallController, resolvedSources, warnings} from '../../../test-utils';
 
 // the examples of help/compute/workflows/rules-and-checks.mdx, with Pkg: written as LibTests:
 
@@ -366,10 +365,10 @@ category('ComputeUtils: Driver rules guide cases', async () => {
     };
     const pconf: any = await getProcessedConfig(pk([allometric]));
     expectDeepEqual(pconf.links.map((link: any) => link.id), ['allometric::data']);
-    const {scaled} = await resolveSources(noCallController(), {scaled: compileSource(allometric.sources.scaled)},
+    const {scaled} = await resolvedSources(noCallController(), {scaled: compileSource(allometric.sources.scaled)},
       {$all: {}, weight: 70}) as any;
     expect(scaled, 5);
-    const {scaled: none} = await resolveSources(noCallController(), {scaled: compileSource(allometric.sources.scaled)},
+    const {scaled: none} = await resolvedSources(noCallController(), {scaled: compileSource(allometric.sources.scaled)},
       {$all: {}, weight: null}) as any;
     expect(none === null, true);
   });
@@ -388,10 +387,10 @@ category('ComputeUtils: Driver rules guide cases', async () => {
     expectDeepEqual(pconf.links.map((link: any) => link.id), ['toleranceAdvice::validator']);
     const controllerFor = (value: any) => ({getFirst: () => value}) as any;
     const source = {advice: compileSource(advice.sources.advice)};
-    expectDeepEqual(await resolveSources(controllerFor(0.01), source, {$all: {}}), {advice: [
+    expectDeepEqual(await resolvedSources(controllerFor(0.01), source, {$all: {}}), {advice: [
       {message: 'A tolerance above 0.001 can miss the absorption peak', isError: true, isHelper: false},
     ]});
-    expectDeepEqual(await resolveSources(controllerFor(0.0001), source, {$all: {}}), {advice: []});
+    expectDeepEqual(await resolvedSources(controllerFor(0.0001), source, {$all: {}}), {advice: []});
   });
 
   test('A query source binds its arguments', async () => {
@@ -630,9 +629,9 @@ category('ComputeUtils: Driver rules guide cases', async () => {
     const pconf = await scenarios([], [{
       id: 'stepsRequired',
       type: 'rule',
-      from: [],
+      from: 'n:count()',
       to: 'scenarios(node)',
-      when: 'eq($steps, 0)',
+      when: 'eq(n, 0)',
       effects: ['error(scenarios, "Add a data step and a model step")'],
     }]);
     testScheduler.run(({flush}) => {

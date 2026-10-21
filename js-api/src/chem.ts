@@ -195,7 +195,8 @@ export namespace chem {
     sketcherFunctions: Func[] = [];
     sketcherDialogOpened = false;
 
-    /** Whether the currently drawn molecule becomes the current object as you sketch it */
+    /** Whether the currently drawn molecule becomes the current object as you sketch it; never in the context panel
+     * ({@link isInContextPanel}) */
     syncCurrentObject: boolean = true;
 
     listeners: (() => void)[] = [];
@@ -514,6 +515,13 @@ export namespace chem {
       return !!this.host.closest('.d4-popup-host');
     }
 
+    /** True when the sketcher is in the context panel (a column's Filter pane, say). There a drawing is not made the
+     * current object (see {@link syncCurrentObject}): the panel would show the molecule instead of what holds the
+     * sketcher, and the sketcher would go with it at the first edit. */
+    isInContextPanel(): boolean {
+      return !!this.root.closest('.grok-prop-panel');
+    }
+
     /** Resizes the current implementation to its host. */
     resize() {
       if (this.sketcher?.isInitialized) {
@@ -800,15 +808,16 @@ export namespace chem {
         ui.setUpdateIndicator(this.host, false);
         this._sketcherTypeChanged = false;
         this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
+          // read before the listeners run: a filter's listener filters the table, and the context panel, rebuilt, takes
+          // the sketcher out of it; a sketcher out of the page is no one drawing
+          const sync = this.syncCurrentObject && this.root.isConnected && !this.isInContextPanel();
           const molFile = this.getMolFile();
           this.validate(molFile);
           this.onChanged.next(null);
           for (let callback of this.listeners)
             callback();
-          if (this.syncCurrentObject) {
-            if (!Sketcher.isEmptyMolfile(molFile))
-              grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
-          }
+          if (sync && !Sketcher.isEmptyMolfile(molFile))
+            grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
         });
         // a value set while the implementation initialized was only stored, and is newer than the one taken above, which
         // is set otherwise, as stored: with the setter of its notation, not guessed from the string; an empty one is not

@@ -1,0 +1,976 @@
+/* eslint-disable max-len, max-lines-per-function */
+/**
+ * The "Chemical engine" setting (src/engine/README.md): RDKit mode never fetches the Crux file; switching both ways and
+ * while the file loads; a failed load (simulated, and a missing file) and a failed worker job fall back; the renderer,
+ * `canvasMol`, `drawMolecule` and the SVG export in both engines, the renderer's caches per engine, the Crux heap over
+ * thousands of renders, the evicted molecules freed; descriptors and the scaffold tree from Crux against the chem-chem
+ * container and the Python script; the substructure search's Crux engine against RDKit; fingerprints, their caches,
+ * structural alerts and pharmacophore features from Crux against the RDKit pool.
+ */
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
+import {_package} from '../package-test';
+import {PackageFunctions, _package as chemPackage} from '../package';
+import {RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
+import * as chemCommonRdKit from '../utils/chem-common-rdkit';
+import {ChemicalEngine, chemSetting, cruxReady, engineInEffect, isCruxRequested, onEngineSwitch, requestedEngine,
+  setChemicalEngine} from '../engine/chem-engine';
+import {CRUX_WASM_FILE, cruxHeapBytes, cruxLoadFailed, cruxLoadRequests, cruxWasmUrl, holdCruxForTests, noteCruxError,
+  resetCruxLoaderForTests, setCruxFetchForTests, setCruxLoadFailureForTests, setCruxParseTrapForTests}
+  from '../engine/crux-module';
+import {calculateDescriptors, forgetCruxTreeForTests, getDescriptorsTree, setCruxDescriptorGapForTests}
+  from '../descriptors/descriptors-engine';
+import {cruxFallbackCount, cruxOrRdKitAsync} from '../engine/fallback';
+import * as container from '../docker/api';
+import {SubstructureSearchEngine, getCruxQuery, getCruxService, getSubstructureSearchEngine,
+  resetCruxServiceForTests, setSubstructureSearchEngine} from '../crux/crux-searches';
+import {Fingerprint} from '../utils/chem-common';
+import {FILTER_TYPES, chemGetDiversities, chemGetFingerprints, chemGetSimilarities, chemSubstructureSearchLibrary}
+  from '../chem-searches';
+import {alertsByEngine, fingerprintsByEngine, setCruxUnreadableForTests, structuralAlertsByEngine}
+  from '../engine/worker-jobs';
+import {RuleSet, runStructuralAlertsDetection} from '../panels/structural-alerts';
+import {PHARM_FAMILY_NAMES, PharmFamilySet, runPharmacophoreDetection} from '../panels/pharmacophore-features';
+import {CONTAINER_TIMEOUT, readDataframe} from './utils';
+import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG} from '../constants';
+
+/** The renderer's internals the tests read (the molecule's engine, a raster). */
+interface RendererInternals {
+  _fetchMol(molString: string, scaffolds: {molecule: string, color?: string}[], molRegenerateCoords: boolean,
+    scaffoldRegenerateCoords: boolean, details: object, alignByFirstSubstructure: boolean): {engine: ChemicalEngine,
+    molCtx: {mol: any}};
+  _fetchRender(width: number, height: number, molString: string, scaffolds: {molecule: string, color?: string}[],
+    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, alignByFirstSubstructure: boolean,
+    details?: object): ImageData;
+  cachedMoleculeCount: number;
+  _molToSvg(molString: string, w: number, h: number): string | null;
+}
+
+function newRenderer(): RendererInternals {
+  return new RDKitCellRenderer(chemCommonRdKit.getRdKitModule()) as unknown as RendererInternals;
+}
+
+/** Pixels with any ink (the renderer draws on a transparent background). */
+function inked(image: ImageData): number {
+  let n = 0;
+  for (let i = 3; i < image.data.length; i += 4)
+    n += image.data[i] > 0 ? 1 : 0;
+  return n;
+}
+
+function sameImage(a: ImageData, b: ImageData): boolean {
+  return a.width === b.width && a.height === b.height && a.data.every((v, i) => v === b.data[i]);
+}
+
+function molblockOf(smiles: string, v3000 = false): string {
+  const mol = chemCommonRdKit.getRdKitModule().get_mol(smiles);
+  try {
+    mol.set_new_coords();
+    return v3000 ? mol.get_v3Kmolblock() : mol.get_molblock();
+  } finally {
+    mol.delete();
+  }
+}
+
+const ASPIRIN = 'CC(=O)Oc1ccccc1C(=O)O';
+/** AZT monophosphate as the Crux sketcher wrote it (V3000, an MDLV30/STEABS collection): a reported bug, Crux's
+ * descriptors read it as nothing (a row of nulls; RDKit and the container read it). */
+const AZT_MP_V3000 = `
+     RDKit          2D
+
+  0  0  0  0  0  0  0  0  0  0999 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 23 24 0 0 0
+M  V30 BEGIN ATOM
+M  V30 1 C 6.615700 -0.062500 0.000000 0
+M  V30 2 C 6.615700 -0.887500 0.000000 0
+M  V30 3 N 5.903700 -1.295800 0.000000 0
+M  V30 4 C 5.191700 -0.887500 0.000000 0
+M  V30 5 N 5.191700 -0.062500 0.000000 0
+M  V30 6 C 5.903700 0.354200 0.000000 0
+M  V30 7 O 5.911500 1.179200 0.000000 0
+M  V30 8 O 4.482400 -1.300000 0.000000 0
+M  V30 9 C 7.328200 0.354200 0.000000 0
+M  V30 10 C 5.908300 -2.779200 0.000000 0
+M  V30 11 C 4.791600 -3.495900 0.000000 0
+M  V30 12 C 5.537500 -3.495900 0.000000 0
+M  V30 13 O 5.200000 -2.212500 0.000000 0
+M  V30 14 C 4.422400 -2.782600 0.000000 0
+M  V30 15 C 4.004200 -2.062500 0.000000 0
+M  V30 16 O 3.179200 -2.058300 0.000000 0
+M  V30 17 P 2.354200 -2.058300 0.000000 0
+M  V30 18 O 1.529200 -2.058300 0.000000 0
+M  V30 19 O 2.350000 -1.233300 0.000000 0
+M  V30 20 O 2.350000 -2.883300 0.000000 0
+M  V30 21 N 4.200000 -4.079200 0.000000 0
+M  V30 22 N 3.495800 -4.087500 0.000000 0 CHG=1
+M  V30 23 N 2.779200 -4.087500 0.000000 0 CHG=-1
+M  V30 END ATOM
+M  V30 BEGIN BOND
+M  V30 1 1 4 5
+M  V30 2 1 5 6
+M  V30 3 1 12 10
+M  V30 4 1 10 13
+M  V30 5 1 13 14
+M  V30 6 1 14 11
+M  V30 7 2 6 7
+M  V30 8 1 14 15 CFG=1
+M  V30 9 2 1 2
+M  V30 10 1 15 16
+M  V30 11 2 4 8
+M  V30 12 1 16 17
+M  V30 13 1 1 6
+M  V30 14 1 17 18
+M  V30 15 1 1 9
+M  V30 16 2 17 19
+M  V30 17 1 2 3
+M  V30 18 1 17 20
+M  V30 19 1 10 3 CFG=1
+M  V30 20 1 11 21 CFG=3
+M  V30 21 1 11 12
+M  V30 22 2 21 22
+M  V30 23 1 3 4
+M  V30 24 2 22 23
+M  V30 END BOND
+M  V30 BEGIN COLLECTION
+M  V30 MDLV30/STEABS ATOMS=(3 10 11 14)
+M  V30 END COLLECTION
+M  V30 END CTAB
+M  END`;
+/** 2D descriptors the descriptor tests compare (one of each kind: masses, counts, surface, logP, rings). */
+const DESCRIPTORS_2D = ['MolWt', 'HeavyAtomCount', 'NumHDonors', 'NumHAcceptors', 'TPSA', 'MolLogP', 'NumRotatableBonds',
+  'RingCount'];
+
+/** Where `actual`'s values differ from `expected`'s (beyond 1e-6 relative; text values read as numbers), or are null. */
+function descriptorDifferences(expected: DG.Column[], actual: DG.Column[]): string[] {
+  const differences: string[] = [];
+  const number = (c: DG.Column, i: number) => {
+    const v = c.isNone(i) ? null : c.get(i);
+    return v === null || v === '' ? null : Number(v);
+  };
+  for (const e of expected) {
+    const a = actual.find((c) => c.name === e.name);
+    for (let i = 0; i < e.length; i++) {
+      const [x, y] = [number(e, i), a ? number(a, i) : null];
+      if (y === null || x === null || Number.isNaN(y) || Math.abs(x - y) > 1e-6 * Math.max(1, Math.abs(x)))
+        differences.push(`${e.name} row ${i}: ${y} (the container's ${x})`);
+    }
+  }
+  return differences;
+}
+/** A ~600-atom peptide-like chain: a very large molecule for the grid. */
+const LARGE = 'N' + 'C(C)C(=O)N'.repeat(120) + 'CC(=O)O';
+
+category('chemical engine', () => {
+  before(async () => {
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
+  });
+
+  after(async () => {
+    setCruxLoadFailureForTests(null);
+    setChemicalEngine(null);
+    setSubstructureSearchEngine(null);
+  });
+
+  test('the settings reach the test bundle', async () => {
+    let own: string;
+    try {
+      own = JSON.stringify(chemPackage.settings);
+    } catch (e: any) {
+      own = `throws ${e?.message ?? e}`;
+    }
+    // package.ts's _package in this bundle is not the published package: chemSetting asks the published one
+    console.log(`chemical engine | in package-test.js, package.ts's _package "${chemPackage.name}" settings: ${own}; ` +
+      `chemSetting: ChemicalEngine ${chemSetting('ChemicalEngine')}, SubstructureSearchEngine ` +
+      `${chemSetting('SubstructureSearchEngine')}`);
+    expect(chemSetting('SubstructureSearchEngine') !== undefined || chemSetting('Sketcher') !== undefined, true,
+      'the settings of the published Chem are read');
+  });
+
+  test('the setting of the stand reaches the renderers', async () => {
+    // a run with the stand's Chemical Engine set to Crux (misc/crux/engine-setting.sh) draws with Crux here too
+    setChemicalEngine(null);
+    const engine = requestedEngine();
+    if (engine === ChemicalEngine.Crux)
+      expect(await cruxReady(), true, 'the Crux module loads');
+    const drawnBy = newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false).engine;
+    console.log(`chemical engine | the stand's setting: ${engine}; aspirin drawn by ${drawnBy}`);
+    expect(drawnBy, engine);
+  });
+
+  test('RDKit mode does not ask for the Crux file', async () => {
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const before = cruxLoadRequests().length;
+    const renderer = newRenderer();
+    for (const molecule of [ASPIRIN, molblockOf(ASPIRIN), 'c1ccccc1[N,O]', LARGE])
+      renderer._fetchRender(200, 100, molecule, [{molecule: 'c1ccccc1'}], false, false, false);
+    const canvas = document.createElement('canvas');
+    chemCommonRdKit.drawMoleculeToCanvas(0, 0, 200, 100, canvas, ASPIRIN, 'c1ccccc1');
+    PackageFunctions.drawMolecule(ASPIRIN, 200, 100, false);
+    expect(isCruxRequested(), false, 'descriptors and the scaffold tree go to the container and the script');
+    expect(engineInEffect(), ChemicalEngine.RDKit);
+    expect(cruxLoadRequests().slice(before).join(', '), '');
+  });
+
+  test('switching both ways', async () => {
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true, 'the Crux module loads');
+    const renderer = newRenderer();
+    expect(renderer._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.Crux);
+    setChemicalEngine(ChemicalEngine.RDKit);
+    expect(renderer._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.RDKit);
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(renderer._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.Crux);
+  });
+
+  test('a switch draws with RDKit until Crux is ready, then repaints', async () => {
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const renderer = newRenderer();
+    let repaints = 0;
+    const stop = onEngineSwitch(() => repaints++);
+    const release = holdCruxForTests();
+    try {
+      setChemicalEngine(ChemicalEngine.Crux);
+      expect(isCruxRequested(), true);
+      expect(renderer._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.RDKit,
+        'while the file loads');
+      expect(repaints, 0);
+      release();
+      expect(await cruxReady(), true);
+      expect(repaints > 0, true, 'the switch listeners (the grids\' repaint) ran once Crux was ready');
+      expect(renderer._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.Crux);
+    } finally {
+      release();
+      stop();
+    }
+  });
+
+  test('a load failure falls back to RDKit', async () => {
+    setChemicalEngine(ChemicalEngine.Crux);
+    setCruxLoadFailureForTests(new Error('simulated: chem_wasm_bg.wasm 404'));
+    try {
+      expect(isCruxRequested(), false, 'Crux mode with a failed load');
+      expect(engineInEffect(), ChemicalEngine.RDKit);
+      const renderer = newRenderer();
+      expect(renderer._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.RDKit);
+      expect(inked(renderer._fetchRender(200, 100, ASPIRIN, [], false, false, false)) > 0, true);
+      expect(await cruxReady(), false);
+    } finally {
+      setCruxLoadFailureForTests(null);
+    }
+    expect(await cruxReady(), true, 'Crux back once the simulated failure is cleared');
+  });
+
+  test('a missing Crux file falls back to RDKit', async () => {
+    // the real loader (fetch, compile) on a URL with no file behind it
+    setChemicalEngine(ChemicalEngine.Crux);
+    resetCruxLoaderForTests(cruxWasmUrl().replace(CRUX_WASM_FILE, 'no_such_chem_wasm_bg.wasm'));
+    try {
+      expect(await cruxReady(), false, 'the load fails');
+      expect(isCruxRequested(), false, 'Crux mode with a failed load');
+      expect(engineInEffect(), ChemicalEngine.RDKit);
+      const renderer = newRenderer();
+      expect(renderer._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.RDKit);
+      expect(inked(renderer._fetchRender(200, 100, ASPIRIN, [], false, false, false)) > 0, true);
+      const canvas = document.createElement('canvas');
+      chemCommonRdKit.drawMoleculeToCanvas(0, 0, 200, 100, canvas, ASPIRIN, null);
+      expect(inked(canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height)) > 0, true,
+        'canvasMol draws with RDKit');
+    } finally {
+      resetCruxLoaderForTests(null);
+    }
+    expect(await cruxReady(), true, 'the real file loads after the reset');
+    expect(newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.Crux);
+  });
+
+  test('a stalled Crux file falls back to RDKit and the container', async () => {
+    // a fetch that never settles: past the load's limit (2 s here, 60 s in a session) the descriptors tree comes from
+    // the container and the search runs on RDKit, with RDKit's hits
+    await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
+    const col = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
+    col.semType = DG.SEMTYPE.MOLECULE;
+    setChemicalEngine(ChemicalEngine.Crux);
+    setSubstructureSearchEngine(SubstructureSearchEngine.RDKit);
+    const rdkitHits: DG.BitSet = (await PackageFunctions.searchSubstructure(col, 'c1ccccc1', '')).get(0);
+    const containerTree = await container.getDescriptorsTree();
+    await resetCruxServiceForTests();
+    forgetCruxTreeForTests();
+    resetCruxLoaderForTests(null);
+    setCruxFetchForTests(() => new Promise<Response>(() => {}), 2000);
+    const started = performance.now();
+    try {
+      const tree = await getDescriptorsTree();
+      expect(cruxLoadFailed(), true, 'the stalled load has failed');
+      expect(JSON.stringify(tree), JSON.stringify(containerTree), 'the descriptors tree: the container\'s');
+      resetCruxLoaderForTests(null); // the search meets the stalled fetch too
+      setSubstructureSearchEngine(SubstructureSearchEngine.Crux);
+      const hits: DG.BitSet = (await PackageFunctions.searchSubstructure(col, 'c1ccccc1', '')).get(0);
+      expect(hits.toString(), rdkitHits.toString(), 'the search: RDKit\'s hits');
+      expect(performance.now() - started < 20000, true, 'within the limits, not hung');
+    } finally {
+      setCruxFetchForTests(null);
+      resetCruxLoaderForTests(null);
+      setSubstructureSearchEngine(null);
+    }
+    expect(await cruxReady(), true, 'Crux back after the reset');
+  }, {timeout: 60000 + CONTAINER_TIMEOUT});
+
+  test('a trap in a Crux call leaves RDKit for the session', async () => {
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    try {
+      noteCruxError(new Error('simulated: a molecule Crux refuses'));
+      expect(isCruxRequested(), true, 'an error other than a trap leaves Crux on');
+      noteCruxError(new WebAssembly.RuntimeError('simulated: unreachable'));
+      expect(isCruxRequested(), false, 'after a trap: RDKit');
+      expect(engineInEffect(), ChemicalEngine.RDKit);
+      expect(newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.RDKit);
+    } finally {
+      resetCruxLoaderForTests(null); // the next session's Crux
+    }
+    expect(await cruxReady(), true, 'Crux back after the reset');
+  });
+
+  test('a trap while Crux parses a molecule leaves RDKit for the session', async () => {
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    setCruxParseTrapForTests(true);
+    try {
+      const info = newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false);
+      expect(isCruxRequested(), false, 'the trap in get_mol marked Crux failed');
+      expect(info.engine, ChemicalEngine.RDKit, 'RDKit drew the molecule');
+    } finally {
+      setCruxParseTrapForTests(false);
+      resetCruxLoaderForTests(null); // the next session's Crux
+    }
+    expect(await cruxReady(), true, 'Crux back after the reset');
+  });
+
+  test('a repeatable Crux job error keeps the workers', async () => {
+    // only a trap, a timeout or a lost worker restarts them (and drops their search indexes)
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const service = await getCruxService();
+    const generation = service.generation;
+    let failure = '';
+    try {
+      await service.failJobForTests('simulated: no scaffold tree for these molecules');
+    } catch (e: any) {
+      failure = String(e?.message ?? e);
+    }
+    expect(failure.includes('simulated'), true, 'the job failed');
+    expect(service.generation, generation, 'the workers were kept');
+  });
+
+  test('Crux jobs: each chunk is timed from its own start', async () => {
+    // three chunks per worker, each keeping its worker busy 400 ms, within 1,000 ms each: all done, none timed out
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const service = await getCruxService();
+    const generation = service.generation;
+    const chunks = service.workerCount * 3;
+    expect(await service.busyChunksForTests(chunks, 400, 1000), chunks);
+    expect(service.generation, generation, 'no chunk timed out (no restart)');
+  }, {timeout: 60000});
+
+  test('a failed Crux worker job falls back to RDKit and restarts the workers', async () => {
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const service = await getCruxService();
+    const generation = service.generation;
+    const fallbacks = cruxFallbackCount('test job');
+    const answer = await cruxOrRdKitAsync('test job', () => service.failJobForTests(), async () => 'RDKit');
+    expect(answer, 'RDKit', 'the RDKit path answered');
+    expect(cruxFallbackCount('test job'), fallbacks + 1, 'the fallback is counted');
+    expect(service.generation, generation + 1, 'the workers restarted');
+    expect(isCruxRequested(), true, 'a worker\'s failure leaves Crux mode on');
+    const tree = JSON.parse(await service.scaffoldTree([ASPIRIN], 10, false));
+    expect(Array.isArray(tree) && tree.length > 0, true, 'the new workers compute');
+  });
+
+  test('renders in both engines', async () => {
+    const benzeneScaffold = molblockOf('c1ccccc1');
+    type Case = {name: string, molecule: string, scaffolds?: {molecule: string, color?: string}[], align?: boolean,
+      crux: boolean, ink: boolean};
+    const cases: Case[] = [
+      {name: 'empty', molecule: '', crux: true, ink: false},
+      {name: 'invalid', molecule: 'C1CC(', crux: false, ink: true}, // RDKit's error cross
+      {name: 'SMILES', molecule: ASPIRIN, crux: true, ink: true},
+      {name: 'molblock V2000', molecule: molblockOf(ASPIRIN), crux: true, ink: true},
+      {name: 'molblock V3000', molecule: molblockOf(ASPIRIN, true), crux: true, ink: true},
+      {name: 'SMARTS', molecule: 'c1ccccc1[N,O;!H0]', crux: true, ink: true},
+      {name: 'substructure highlight', molecule: ASPIRIN, scaffolds: [{molecule: 'c1ccccc1', color: '#ff0000'}],
+        crux: true, ink: true},
+      {name: 'aligned to a scaffold', molecule: ASPIRIN, scaffolds: [{molecule: benzeneScaffold}], align: true,
+        crux: true, ink: true},
+      {name: 'very large', molecule: LARGE, crux: true, ink: true},
+      {name: 'longer than Chem reads', molecule: 'C'.repeat(6000), crux: false, ink: true},
+    ];
+    const results: string[] = [];
+    for (const c of cases) {
+      const ink: {[engine: string]: number} = {};
+      for (const engine of [ChemicalEngine.RDKit, ChemicalEngine.Crux]) {
+        setChemicalEngine(engine);
+        if (engine === ChemicalEngine.Crux)
+          expect(await cruxReady(), true);
+        const renderer = newRenderer();
+        const info = renderer._fetchMol(c.molecule, c.scaffolds ?? [], false, false, {}, c.align ?? false);
+        const drawnBy = engine === ChemicalEngine.Crux && c.crux ? ChemicalEngine.Crux : ChemicalEngine.RDKit;
+        expect(info.engine, drawnBy, `${c.name}: drawn by`);
+        ink[engine] = inked(renderer._fetchRender(200, 100, c.molecule, c.scaffolds ?? [], false, false, c.align ?? false));
+        expect(ink[engine] > 0, c.ink, `${c.name} in ${engine}: inked`);
+      }
+      // the same picture to within a third of its ink (Crux draws as RDKit 2026.03, Chem's RDKit is 2024.09)
+      if (c.ink)
+        expect(Math.abs(ink.Crux - ink.RDKit) <= ink.RDKit / 3, true, `${c.name}: ink ${ink.RDKit} RDKit, ${ink.Crux} Crux`);
+      results.push(`${c.name}: ${ink.RDKit}/${ink.Crux}`);
+    }
+    console.log(`chemical engine | inked pixels RDKit/Crux: ${results.join('; ')}`);
+  });
+
+  test('canvasMol, drawMolecule and the SVG export draw with Crux', async () => {
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const counts = () => ['canvasMol', 'rendering', 'drawing'].map((c) => `${c} ${cruxFallbackCount(c)}`).join(', ');
+    const before = counts();
+    const canvas = document.createElement('canvas');
+    chemCommonRdKit.drawMoleculeToCanvas(0, 0, 200, 100, canvas, ASPIRIN, 'c1ccccc1');
+    expect(inked(canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height)) > 0, true,
+      'canvasMol inked');
+    const host = PackageFunctions.drawMolecule(ASPIRIN, 200, 100, false);
+    const drawn = (host instanceof HTMLCanvasElement ? host : host.querySelector('canvas'))!;
+    await awaitCheck(() => inked(drawn.getContext('2d')!.getImageData(0, 0, drawn.width, drawn.height)) > 0,
+      'drawMolecule did not ink its canvas', 10000);
+    const renderer = newRenderer();
+    expect(renderer._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.Crux);
+    const svg = renderer._molToSvg(ASPIRIN, 200, 100) ?? '';
+    expect(svg.includes('<svg') && svg.includes('</svg>'), true, 'an SVG');
+    expect(counts(), before, 'Crux drew them all (no fallback to RDKit)');
+  });
+
+  test('a scaffold on the column realigns the Crux pictures, and they come back without it', async () => {
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const df = await readDataframe('tests/smiles-50.csv');
+    const col = df.col('canonical_smiles')!;
+    col.semType = DG.SEMTYPE.MOLECULE;
+    const grid = DG.Viewer.grid(df);
+    const renderer = new RDKitCellRenderer(chemCommonRdKit.getRdKitModule());
+    const r = window.devicePixelRatio;
+    const canvas = document.createElement('canvas');
+    canvas.width = 200 * r;
+    canvas.height = 100 * r;
+    const g = canvas.getContext('2d', {willReadFrequently: true})!;
+    const picture = (row: number) => {
+      g.clearRect(0, 0, canvas.width, canvas.height);
+      const cell = grid.cell('canonical_smiles', row);
+      renderer.render(g, 0, 0, 200, 100, cell, cell.style);
+      return g.getImageData(0, 0, canvas.width, canvas.height);
+    };
+    /** Benzene as a sketcher draws it, its first atom at `deg` degrees. */
+    const benzene = (deg: number) => {
+      const f = (v: number) => v.toFixed(4).padStart(10);
+      const atoms = Array.from({length: 6}, (_, i) => (deg + 60 * i) * Math.PI / 180)
+        .map((a) => `${f(1.5 * Math.cos(a))}${f(1.5 * Math.sin(a))}    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0`);
+      const bonds = Array.from({length: 6}, (_, i) =>
+        `${String(i + 1).padStart(3)}${String((i + 1) % 6 + 1).padStart(3)}  ${i % 2 ? 1 : 2}  0`);
+      return ['', '  test', '', '  6  6  0  0  0  0  0  0  0  0999 V2000', ...atoms, ...bonds, 'M  END'].join('\n');
+    };
+    const rows = [0, 1, 4, 5, 6];
+    const counts = () => ['rendering', 'drawing'].map((c) => cruxFallbackCount(c)).join(',');
+    const fallbacks = counts();
+    const before = rows.map(picture);
+    col.setTag(ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, benzene(0));
+    const aligned = rows.map(picture);
+    expect(rows.filter((_, i) => sameImage(aligned[i], before[i])).join(','), '', 'rows a flat benzene leaves as they were');
+    // a structure whose benzene already lies as the scaffold's is not turned (RDKit 2026.03's alignment; HOST-063's
+    // first cell with a pointed benzene)
+    col.setTag(ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, benzene(90));
+    expect(sameImage(picture(0), before[0]), true, 'row 1 with a pointed benzene');
+    expect(sameImage(picture(1), before[1]), false, 'row 2 with a pointed benzene');
+    delete col.tags[ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG];
+    const cleared = rows.map(picture);
+    expect(rows.filter((_, i) => !sameImage(cleared[i], before[i])).join(','), '', 'rows not back without the scaffold');
+    expect(counts(), fallbacks, 'Crux drew them all');
+  });
+
+  test('caches are emptied on a switch', async () => {
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const renderer = newRenderer();
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList().slice(0, 20) as string[];
+    const rdkitInfos = smiles.map((s) => renderer._fetchMol(s, [], false, false, {}, false));
+    expect(renderer.cachedMoleculeCount, 20);
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const info = renderer._fetchMol(smiles[0], [], false, false, {}, false);
+    expect(info.engine, ChemicalEngine.Crux);
+    expect(renderer.cachedMoleculeCount, 1);
+    expect(rdkitInfos.every((i) => i.molCtx.mol === null), true, 'the RDKit molecules are freed');
+  });
+
+  test('evicted molecules are freed and drawn again', async () => {
+    // the cache holds 100 molecules: the first ones are evicted (and freed) by the time they are drawn again
+    for (const engine of [ChemicalEngine.RDKit, ChemicalEngine.Crux]) {
+      setChemicalEngine(engine);
+      await cruxReady();
+      const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList().slice(0, 150) as string[];
+      const renderer = newRenderer();
+      const first = smiles.slice(0, 20).map((s) => renderer._fetchMol(s, [], false, false, {}, false));
+      for (const s of smiles)
+        renderer._fetchRender(200, 100, s, [], false, false, false);
+      expect(first.every((i) => i.molCtx.mol === null), true, `${engine}: evicted molecules freed`);
+      expect(renderer.cachedMoleculeCount <= 100, true);
+      const highlight = [{molecule: 'c1ccccc1', color: '#00ff00'}];
+      const fresh = newRenderer();
+      for (const s of smiles.slice(0, 20)) {
+        const again = renderer._fetchRender(300, 150, s, highlight, false, false, false);
+        expect(sameImage(again, fresh._fetchRender(300, 150, s, highlight, false, false, false)), true,
+          `${engine}: ${s} drawn again as a fresh renderer draws it`);
+      }
+    }
+  });
+
+  test('the Crux heap does not grow over thousands of renders', async () => {
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList() as string[];
+    const renderer = newRenderer();
+    const pass = (w: number) => {
+      for (const s of smiles)
+        renderer._fetchRender(w, w / 2, s, [{molecule: 'c1ccccc1'}], false, false, false);
+    };
+    pass(200);
+    const warm = cruxHeapBytes();
+    pass(240);
+    pass(280);
+    pass(320);
+    const end = cruxHeapBytes();
+    console.log(`chemical engine | Crux heap ${warm} B after 1,000 renders, ${end} B after 4,000`);
+    expect(end - warm <= 8 * 1024 * 1024, true, `the heap grew ${end - warm} B over 3,000 renders`);
+  }, {timeout: 300000});
+
+  test('descriptors: Crux against the container', async () => {
+    await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const containerTree = await container.getDescriptorsTree();
+    const fallbacks = cruxFallbackCount('descriptorTree') + cruxFallbackCount('calcDescriptors');
+    const cruxTree = await getDescriptorsTree();
+    // what the dialog builds from: the groups (key, name, version) and their descriptors' names, in order; the texts
+    // (descriptions, tags) are reported: the stand's container image may run another chem.py than the package's
+    const outline = (tree: any) => JSON.stringify(Object.entries(tree).map(([key, g]: [string, any]) =>
+      [key, g.name, g.version, g.descriptors.map((d: any) => d.name)]));
+    expect(outline(cruxTree), outline(containerTree), 'the tree: groups and names');
+    const texts = (tree: any) => Object.values(tree).flatMap((g: any) => g.descriptors.map((d: any) =>
+      `${d.name}: ${d.description} [${d.tags}]`));
+    const [cruxTexts, containerTexts] = [texts(cruxTree), texts(containerTree)];
+    console.log(`chemical engine | descriptor tree texts: ${cruxTexts.filter((t, i) => t !== containerTexts[i]).length} ` +
+      `of ${cruxTexts.length} differ from the container's${JSON.stringify(cruxTree) === JSON.stringify(containerTree) ?
+        ' (the JSON is identical)' : ''}`);
+    const names: string[] = [];
+    const names3D = new Set<string>();
+    for (const tree of [containerTree, cruxTree]) {
+      for (const group of Object.values(tree) as any[]) {
+        for (const d of group.descriptors) {
+          if (tree === containerTree)
+            names.push(d.name);
+          if (d.tags?.includes('3D'))
+            names3D.add(d.name);
+        }
+      }
+    }
+    // the 2D names on 200 molecules, the 3D ones (the container embeds each molecule: slow; values reported only) on 10
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList().slice(0, 150);
+    const molblocks = (await readDataframe('tests/spgi-100.csv')).col('Structure')!.toList().slice(0, 50);
+    const molecules = DG.Column.fromStrings('molecules', [...smiles, ...molblocks, '', 'C1CC(']);
+    const few = DG.Column.fromStrings('molecules', [...smiles.slice(0, 6), ...molblocks.slice(0, 2), '', 'C1CC(']);
+    const [names2D, only3D] = [names.filter((n) => !names3D.has(n)), names.filter((n) => names3D.has(n))];
+    const expected = [...await container.calculateDescriptors(molecules, names2D),
+      ...only3D.length ? await container.calculateDescriptors(few, only3D) : []];
+    const actual = [...await calculateDescriptors(molecules, names2D),
+      ...only3D.length ? await calculateDescriptors(few, only3D) : []];
+    expect(cruxFallbackCount('descriptorTree') + cruxFallbackCount('calcDescriptors'), fallbacks,
+      'Crux calculated them (no fallback to the container)');
+    expect(actual.map((c) => c.name).sort().join(','), expected.map((c) => c.name).sort().join(','), 'names');
+    // 2D: within 1e-12 of the container's (relative, at least absolute 1e-12); 3D (the container embeds unseeded, so
+    // its values depend on what its process embedded before; Crux embeds as a fresh process does) and Ipc / AvgIpc
+    // (RDKit's own value is numpy summation-order noise on big molecules): reported only
+    const TOLERANCE = 1e-12;
+    const differences: string[] = [];
+    const reported: string[] = [];
+    // a container image from before GROK-20505 (commit 30215919ce) gives some descriptors as strings (a missing value
+    // 'None', numbers printed to some 8 digits): their values are compared as numbers within 1e-6, the type reported
+    const stringTyped: string[] = [];
+    for (const e of expected) {
+      const a = actual.find((c) => c.name === e.name)!;
+      if (a.type !== e.type) {
+        if (e.type === DG.COLUMN_TYPE.STRING)
+          stringTyped.push(`${e.name} (Crux ${a.type})`);
+        else
+          differences.push(`${e.name}: type ${a.type}, the container's ${e.type}`);
+      }
+      const number = (v: any) => typeof v !== 'string' ? v : ['', 'None', 'nan', 'NaN'].includes(v) ? null : Number(v);
+      const tolerance = e.type === DG.COLUMN_TYPE.STRING ? 1e-6 : TOLERANCE;
+      let bad = 0;
+      let maxRel = 0;
+      let first = '';
+      for (let i = 0; i < e.length; i++) {
+        // a missing value: the int / double column's null, or the string column's '' (or 'None', 'nan')
+        const x = e.isNone(i) ? null : number(e.get(i));
+        const y = a.isNone(i) ? null : number(a.get(i));
+        const same = x === null || y === null ? x === y :
+          Math.abs(x - y) / Math.max(1, Math.abs(x)) <= tolerance;
+        if (x !== null && y !== null)
+          maxRel = Math.max(maxRel, Math.abs(x - y) / Math.max(1, Math.abs(x)));
+        if (!same && bad++ === 0)
+          first = `, row ${i} ${JSON.stringify(e.get(i))} / ${JSON.stringify(a.get(i))}`;
+      }
+      if (names3D.has(e.name) || e.name === 'Ipc' || e.name === 'AvgIpc')
+        reported.push(`${e.name} ${bad}/${e.length} beyond ${TOLERANCE} (max ${maxRel.toPrecision(2)})`);
+      else if (bad > 0)
+        differences.push(`${e.name}: ${bad} of ${e.length} (max relative ${maxRel.toPrecision(2)}${first})`);
+    }
+    console.log(`chemical engine | ${names2D.length} 2D descriptors on ${molecules.length} molecules, ${only3D.length} ` +
+      `3D ones on ${few.length}; reported only: ` +
+      `${reported.join('; ')}; typed string by the container: ${stringTyped.join(', ') || 'none'}`);
+    expect(differences.join('; '), '', `2D descriptors beyond ${TOLERANCE}`);
+  }, {timeout: 600000 + CONTAINER_TIMEOUT});
+
+  test('descriptors: Crux reads the Crux sketcher\'s V3000 molblocks', async () => {
+    // a reported bug: the V3000 molblocks the Crux sketcher writes (an MDLV30/STEABS collection) came back as nulls
+    await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    // a molecule with a stereocenter drawn in Crux and read back as its V3000 molblock
+    const previous = grok.chem.currentSketcherType;
+    grok.chem.currentSketcherType = 'Crux';
+    const host = new DG.chem.Sketcher();
+    host.setSmiles('N[C@@H](C)C(=O)O');
+    const dialog = ui.dialog().add(host).show();
+    let drawn = '';
+    try {
+      await host.sketcherReady();
+      await delay(300);
+      drawn = host.sketcher!.molV3000;
+    } finally {
+      dialog.close();
+      grok.chem.currentSketcherType = previous;
+    }
+    expect(drawn.includes('V3000') && drawn.includes('CFG='), true, 'the sketcher\'s V3000 molblock with its stereocenter');
+    const molecules = DG.Column.fromStrings('molecules', [AZT_MP_V3000, drawn]);
+    const fallbacks = cruxFallbackCount('calcDescriptors');
+    const actual = await calculateDescriptors(molecules, DESCRIPTORS_2D);
+    expect(cruxFallbackCount('calcDescriptors'), fallbacks, 'Crux read them (no row from the container)');
+    const molWt = actual.find((c) => c.name === 'MolWt')!.get(0);
+    expect(Math.abs(molWt - 347.224) < 0.01, true, `AZT monophosphate's MolWt: ${molWt}`);
+    const expected = await container.calculateDescriptors(molecules, DESCRIPTORS_2D);
+    expect(descriptorDifferences(expected, actual).join('; '), '', 'the values, against the container\'s');
+  }, {timeout: 120000 + CONTAINER_TIMEOUT});
+
+  test('descriptors: a row Crux cannot read comes from the container', async () => {
+    // a gap in Crux's reader (a row of nulls for a molecule given) is recomputed on the container, counted and logged
+    await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const molecules = DG.Column.fromStrings('molecules', [ASPIRIN, 'CCO', 'c1ccccc1O', '', 'C1CC(']);
+    const expected = await container.calculateDescriptors(molecules, DESCRIPTORS_2D);
+    setCruxDescriptorGapForTests(['CCO']);
+    try {
+      const fallbacks = cruxFallbackCount('calcDescriptors');
+      const actual = await calculateDescriptors(molecules, DESCRIPTORS_2D);
+      expect(cruxFallbackCount('calcDescriptors'), fallbacks + 1, 'one fallback: the row Crux could not read');
+      const rowsWithValues = (columns: DG.Column[]) => columns.length ? Array.from({length: 3}, (_, i) => i) : [];
+      const pick = (columns: DG.Column[]) => columns.map((c) => DG.Column.fromList(c.type as DG.ColumnType, c.name,
+        rowsWithValues(columns).map((i) => c.get(i))));
+      expect(descriptorDifferences(pick(expected), pick(actual)).join('; '), '', 'the three molecules\' values');
+      expect(actual.every((c) => c.isNone(4)), true, 'a molecule neither reads stays empty');
+    } finally {
+      setCruxDescriptorGapForTests(null);
+    }
+  }, {timeout: 60000 + CONTAINER_TIMEOUT});
+
+  test('scaffold tree: Crux against the Python script', async () => {
+    const datasets: [string, string, number][] = [
+      ['tests/sar-small_test.csv', 'smiles', 1000], ['smiles.csv', 'canonical_smiles', 750],
+      ['tests/spgi-100.csv', 'Structure', 1000]];
+    const differences: string[] = [];
+    const layouts: string[] = [];
+    for (const [file, column, rows] of datasets) {
+      const all = await readDataframe(file);
+      const df = DG.DataFrame.fromColumns([all.col(column)!]);
+      if (df.rowCount > rows)
+        df.rows.removeAt(rows, df.rowCount - rows);
+      await grok.data.detectSemanticTypes(df);
+      setChemicalEngine(ChemicalEngine.RDKit);
+      const python = JSON.parse(await PackageFunctions.getScaffoldTree(df, 10, false));
+      setChemicalEngine(ChemicalEngine.Crux);
+      expect(await cruxReady(), true);
+      const fallbacks = cruxFallbackCount('scaffoldTree');
+      const crux = JSON.parse(await PackageFunctions.getScaffoldTree(df, 10, false));
+      expect(cruxFallbackCount('scaffoldTree'), fallbacks, `${file}: Crux built it (no fallback to the script)`);
+      // the structure (nodes, SMILES, children, their order) must be the script's; the nodes' MOL blocks are compared
+      // apart: wasm's libm moves a few coordinates in their last digits
+      const [pythonShape, cruxShape] = [python, crux].map((t) => JSON.stringify(t, (k, v) => k === 'scaffold' ? undefined : v));
+      if (cruxShape !== pythonShape)
+        differences.push(`${file}: ${firstDifference(JSON.parse(pythonShape), JSON.parse(cruxShape), '')}`);
+      const [pythonBlocks, cruxBlocks] = [python, crux].map((t) => molblocksOf(t));
+      layouts.push(`${file}: ${pythonBlocks.filter((b, i) => b !== cruxBlocks[i]).length} of ${pythonBlocks.length} MOL blocks differ`);
+    }
+    console.log(`chemical engine | scaffold tree MOL blocks, Crux against the script: ${layouts.join('; ')}`);
+    expect(differences.join('; '), '', 'the trees');
+  }, {timeout: 600000});
+
+  test('search: Crux finds what RDKit finds', async () => {
+    // the Crux engine set here, whatever the stand saved (its default is Crux; a stand may have saved RDKit)
+    const col = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
+    col.semType = DG.SEMTYPE.MOLECULE;
+    for (const query of ['c1ccccc1', 'C1CC1', 'C(=O)N', '[#7;R]', molblockOf('c1ccncc1')]) {
+      setSubstructureSearchEngine(SubstructureSearchEngine.Crux);
+      expect(getSubstructureSearchEngine(), SubstructureSearchEngine.Crux);
+      const label = query.includes('M  END') ? 'a molblock' : query;
+      expect(await getCruxQuery(query, '') !== null, true, `Crux searches ${label}`);
+      const crux: DG.BitSet = (await PackageFunctions.searchSubstructure(col, query, '')).get(0);
+      setSubstructureSearchEngine(SubstructureSearchEngine.RDKit);
+      expect(getSubstructureSearchEngine(), SubstructureSearchEngine.RDKit);
+      const rdkit: DG.BitSet = (await PackageFunctions.searchSubstructure(col, query, '')).get(0);
+      expect(crux.toString(), rdkit.toString(), `hits of ${label}`);
+    }
+    setSubstructureSearchEngine(null);
+  });
+
+  // batch 19b: fingerprints and structural alerts in Crux mode
+
+  /** Chem's molecules for the worker jobs: SMILES (smiles.csv), MOL blocks (spgi-100, mol1K), '' and an unreadable one. */
+  const jobMolecules = async () => [
+    ...(await readDataframe('smiles.csv')).col('canonical_smiles')!.toList(),
+    ...(await readDataframe('tests/spgi-100.csv')).col('Structure')!.toList(),
+    ...(await readDataframe('mol1K.csv')).col('molecule')!.toList().slice(0, 300),
+    '', 'C1CC(',
+  ] as string[];
+
+  test('fingerprints: Crux against the RDKit pool', async () => {
+    const molecules = await jobMolecules();
+    const rdkitPool = await chemCommonRdKit.getRdKitService();
+    const cruxPool = await getCruxService();
+    const report: string[] = [];
+    const tooMany: string[] = [];
+    for (const type of Object.values(Fingerprint)) {
+      const rdkit = await rdkitPool.getFingerprints(type, molecules, true);
+      const crux = await cruxPool.getFingerprints(type, molecules, true);
+      const differ: number[] = [];
+      for (let i = 0; i < molecules.length; i++) {
+        const [a, b] = [rdkit.fps[i], crux.fps[i]];
+        if ((a === null) !== (b === null) || (a && b && (a.length !== b.length || a.some((v, k) => v !== b[k]))))
+          differ.push(i);
+      }
+      // every differing molecule listed: RDKit 2024.09 (Chem's) against 2026.03 (Crux's)
+      report.push(`${type} ${molecules.length - differ.length}/${molecules.length} identical` +
+        (differ.length ? ` (differ: ${differ.map((i) => `#${i} ${rdkit.smiles?.[i] ?? crux.smiles?.[i]}`).join(', ')})` : ''));
+      if (differ.length > molecules.length / 50)
+        tooMany.push(`${type}: ${differ.length}`);
+    }
+    console.log(`chemical engine | fingerprints, Crux against the RDKit pool on ${molecules.length} molecules: ` +
+      report.join('; '));
+    expect(tooMany.join(', '), '', 'fingerprint types with more than 2 % of the molecules differing');
+  }, {timeout: 300000});
+
+  test('fingerprints and alerts: RDKit does the molecules Crux cannot read', async () => {
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const PHENOL = 'Oc1ccccc1';
+    const molecules = [ASPIRIN, PHENOL, 'CCN', '', 'C1CC('];
+    setCruxUnreadableForTests([PHENOL]);
+    try {
+      const fallbacks = cruxFallbackCount('fingerprints');
+      const crux = await fingerprintsByEngine(Fingerprint.Morgan, molecules, false);
+      const rdkit = await (await chemCommonRdKit.getRdKitService()).getFingerprints(Fingerprint.Morgan, molecules, false);
+      expect(crux.engine, ChemicalEngine.Crux);
+      expect(crux.fps[1]?.toString(), rdkit.fps[1]?.toString(), 'the molecule Crux could not read: RDKit\'s fingerprint');
+      expect(rdkit.fps[1] !== null, true);
+      expect(crux.fps[4], null, 'a molecule neither engine reads: none');
+      expect(cruxFallbackCount('fingerprints'), fallbacks + 1, 'one fallback: the molecule RDKit read');
+      const alerts = await structuralAlertsByEngine({'PAINS': ['[OX2H]c1ccccc1']}, molecules);
+      expect(alerts[0][1].join(','), 'false,true,false,false,false', 'RDKit matched the molecule Crux could not read');
+    } finally {
+      setCruxUnreadableForTests(null);
+    }
+    setChemicalEngine(ChemicalEngine.RDKit);
+  });
+
+  test('fingerprints: one engine\'s cache at a time, edits reach both engines', async () => {
+    const df = await readDataframe('smiles.csv');
+    const col = df.col('canonical_smiles')!;
+    col.semType = DG.SEMTYPE.MOLECULE;
+    const cached = () => ['~canonical_smiles.Morgan', '~canonical_smiles.Morgan.Crux'].filter((n) => !!df.col(n)).join(', ');
+    const asText = (fps: any[]) => fps.map((fp) => fp?.toString() ?? '');
+    const fresh = async () => { // the fingerprints of the column's current molecules, without its caches
+      const copy = DG.Column.fromStrings('smiles', col.toList());
+      DG.DataFrame.fromColumns([copy]).name = 'fresh';
+      copy.semType = DG.SEMTYPE.MOLECULE;
+      return asText(await chemGetFingerprints(copy, Fingerprint.Morgan, false));
+    };
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const rdkit = await chemGetFingerprints(col, Fingerprint.Morgan, false);
+    expect(cached(), '~canonical_smiles.Morgan');
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const fallbacks = cruxFallbackCount('fingerprints');
+    const crux = await chemGetFingerprints(col, Fingerprint.Morgan, false);
+    expect(cruxFallbackCount('fingerprints'), fallbacks, 'Crux computed them');
+    const same = rdkit.filter((fp, i) => (fp?.toString() ?? '') === (crux[i]?.toString() ?? '')).length;
+    console.log(`chemical engine | Morgan of smiles.csv through chemGetFingerprints: ${same}/${col.length} identical`);
+    expect(same >= col.length * 0.99, true);
+    // an edit read first in Crux mode (it consumes the column's change set), then in RDKit mode, and back
+    col.set(5, 'c1ccccc1O');
+    const cruxEdited = asText(await chemGetFingerprints(col, Fingerprint.Morgan, false));
+    expect(cruxEdited.every((fp, i) => fp === (i === 5 ? cruxEdited[5] : crux[i]?.toString() ?? '')), true);
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const rdkitEdited = asText(await chemGetFingerprints(col, Fingerprint.Morgan, false));
+    const rdkitFresh = await fresh();
+    expect(rdkitEdited[5], rdkitFresh[5], 'RDKit mode sees the edit Crux mode read');
+    expect(rdkitEdited.every((fp, i) => fp === rdkitFresh[i]), true, 'RDKit mode: the fingerprints of the molecules');
+    expect(cached(), '~canonical_smiles.Morgan');
+    col.set(6, 'CCO');
+    expect(asText(await chemGetFingerprints(col, Fingerprint.Morgan, false))[6], (await fresh())[6], 'RDKit mode reads its edit');
+    setChemicalEngine(ChemicalEngine.Crux);
+    const cruxAgain = asText(await chemGetFingerprints(col, Fingerprint.Morgan, false));
+    const cruxFresh = await fresh();
+    expect(cruxAgain[6], cruxFresh[6], 'Crux mode sees the edit RDKit mode read');
+    expect(cruxAgain.every((fp, i) => fp === cruxFresh[i]), true, 'Crux mode: the fingerprints of the molecules');
+    expect(cached(), '~canonical_smiles.Morgan.Crux', 'one engine\'s cache at a time');
+    setChemicalEngine(ChemicalEngine.RDKit);
+  }, {timeout: 120000});
+
+  test('Crux mode leaves the RDKit search its own fingerprints after edits', async () => {
+    // the RDKit substructure search refreshes its cached pattern fingerprints for edited rows: RDKit's, in Crux mode too
+    const rdkitSearch = (col: DG.Column, query: string) => {
+      setSubstructureSearchEngine(SubstructureSearchEngine.RDKit);
+      return chemSubstructureSearchLibrary(col, query, '', FILTER_TYPES.substructure, false, true);
+    };
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const col = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
+    await rdkitSearch(col, 'C1CC1');
+    col.set(0, 'C1CC1CCN');
+    col.set(500, 'c1ccccc1');
+    col.set(998, '');
+    await rdkitSearch(col, 'C1CC1'); // refreshes the edited rows' cached fingerprints
+    const edited = await rdkitSearch(col, 'c1ccccc1'); // reads them
+    const fresh = DG.Column.fromStrings('smiles', col.toList());
+    DG.DataFrame.fromColumns([fresh]).name = 'fresh';
+    fresh.semType = DG.SEMTYPE.MOLECULE;
+    const expected = await rdkitSearch(fresh, 'c1ccccc1');
+    expect(edited.equals(expected), true, `after edits ${edited.trueCount()} hits, without caches ${expected.trueCount()}`);
+    setSubstructureSearchEngine(null);
+    setChemicalEngine(ChemicalEngine.RDKit);
+  }, {timeout: 120000});
+
+  test('similarity and diversity in both engines', async () => {
+    const col = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
+    col.semType = DG.SEMTYPE.MOLECULE;
+    const query = 'O=C(O)c1ccccc1O';
+    const run = async (engine: ChemicalEngine) => {
+      setChemicalEngine(engine);
+      await cruxReady();
+      const similarities = (await chemGetSimilarities(col, query))!.toList() as number[];
+      const diverse = (await chemGetDiversities(col, 10))!.toList() as string[];
+      return {similarities, diverse};
+    };
+    const rdkit = await run(ChemicalEngine.RDKit);
+    const crux = await run(ChemicalEngine.Crux);
+    const differ = rdkit.similarities.filter((v, i) => Math.abs(v - crux.similarities[i]) > 1e-12).length;
+    // the diverse subset starts from a random molecule (getDiverseSubset): its members are not compared, its size is
+    console.log(`chemical engine | similarity to ${query}: ${col.length - differ}/${col.length} identical`);
+    expect(differ <= col.length / 100, true, `${differ} similarities differ`);
+    expect(crux.diverse.length, rdkit.diverse.length, 'the diverse subsets');
+    setChemicalEngine(ChemicalEngine.RDKit);
+  }, {timeout: 120000});
+
+  test('structural alerts: Crux against the RDKit pool', async () => {
+    const alertsDf = DG.DataFrame.fromCsv(await _package.files.readAsText('alert-collection.csv'));
+    const molecules = DG.Column.fromStrings('molecules', await jobMolecules());
+    const ruleSet: RuleSet = {'BMS': true, 'Dundee': true, 'Glaxo': true, 'Inpharmatica': true, 'LINT': true,
+      'MLSMR': true, 'PAINS': true, 'SureChEMBL': true};
+    const rdkit = await runStructuralAlertsDetection(molecules, ruleSet, alertsDf,
+      await chemCommonRdKit.getRdKitService());
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const fallbacks = cruxFallbackCount('structural alerts');
+    const crux = await runStructuralAlertsDetection(molecules, ruleSet, alertsDf, alertsByEngine);
+    expect(cruxFallbackCount('structural alerts'), fallbacks, 'Crux matched them');
+    const report: string[] = [];
+    const differences: string[] = [];
+    for (const column of rdkit.columns.toList()) {
+      const other = crux.col(column.name)!;
+      const rows = Array.from({length: column.length}, (_, i) => i).filter((i) => column.get(i) !== other.get(i));
+      report.push(`${column.name} ${column.stats.sum} hits`);
+      if (rows.length)
+        differences.push(`${column.name}: rows ${rows.slice(0, 10).join(', ')}${rows.length > 10 ? '...' : ''}`);
+    }
+    console.log(`chemical engine | structural alerts on ${molecules.length} molecules (RDKit): ${report.join('; ')}`);
+    expect(differences.join('; '), '', 'the alerts per rule');
+    setChemicalEngine(ChemicalEngine.RDKit);
+  }, {timeout: 300000});
+
+  test('pharmacophore features: Crux against the RDKit pool', async () => {
+    const featuresDf = await readDataframe('pharmacophore-features.csv');
+    const molecules = DG.Column.fromStrings('molecules', await jobMolecules());
+    const families = Object.fromEntries(PHARM_FAMILY_NAMES.map((f) => [f, true])) as PharmFamilySet;
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const rdkit = await runPharmacophoreDetection(molecules, families, featuresDf, alertsByEngine);
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const fallbacks = cruxFallbackCount('structural alerts');
+    const crux = await runPharmacophoreDetection(molecules, families, featuresDf, alertsByEngine);
+    expect(cruxFallbackCount('structural alerts'), fallbacks, 'Crux matched them');
+    const report: string[] = [];
+    const differences: string[] = [];
+    for (const column of rdkit.columns.toList()) {
+      const other = crux.col(column.name)!;
+      const rows = Array.from({length: column.length}, (_, i) => i).filter((i) => column.get(i) !== other.get(i));
+      report.push(`${column.name} ${column.stats.sum}`);
+      if (rows.length)
+        differences.push(`${column.name}: rows ${rows.slice(0, 10).join(', ')}${rows.length > 10 ? '...' : ''}`);
+    }
+    console.log(`chemical engine | pharmacophore features on ${molecules.length} molecules (RDKit): ${report.join('; ')}`);
+    expect(rdkit.columns.length > 0, true, 'the families');
+    expect(differences.join('; '), '', 'the features per family');
+    setChemicalEngine(ChemicalEngine.RDKit);
+  }, {timeout: 300000});
+});
+
+/** The `scaffold` MOL blocks of a scaffold tree, depth first. */
+function molblocksOf(tree: any): string[] {
+  const blocks: string[] = [];
+  const walk = (node: any) => {
+    if (Array.isArray(node))
+      node.forEach(walk);
+    else if (node && typeof node === 'object') {
+      if (typeof node.scaffold === 'string')
+        blocks.push(node.scaffold);
+      walk(node.child_nodes);
+    }
+  };
+  walk(tree);
+  return blocks;
+}
+
+/** Where two JSON values first differ, as a path. */
+function firstDifference(a: any, b: any, path: string): string {
+  if (typeof a !== typeof b || Array.isArray(a) !== Array.isArray(b) || a === null || b === null || typeof a !== 'object')
+    return a === b ? '' : `${path || '/'}: ${JSON.stringify(a)?.slice(0, 80)} vs ${JSON.stringify(b)?.slice(0, 80)}`;
+  const keys = Array.isArray(a) ? Array.from({length: Math.max(a.length, b.length)}, (_, i) => String(i)) :
+    Array.from(new Set([...Object.keys(a), ...Object.keys(b)]));
+  for (const k of keys) {
+    const d = firstDifference(a[k], b[k], `${path}/${k}`);
+    if (d)
+      return d;
+  }
+  return '';
+}

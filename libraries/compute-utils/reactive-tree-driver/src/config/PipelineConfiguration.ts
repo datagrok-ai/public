@@ -206,10 +206,12 @@ export type RuleLogic = RulesLogic<RuleOps>;
 export type RuleExpr = RuleLogic | RuleExpr[];
 export type RuleTargets = string | string[];
 
-/** An effect's own condition, combined with the rule's `when`. */
-type RuleEffectWhen = {when?: RuleLogic};
+/** An effect's own condition, combined with the rule's `when`. `separate` runs the effect in a link of its own
+ *  whose `from` holds only the inputs it reads (with the rule's `when` and its sources); `additionalTriggers`
+ *  adds inputs it does not read and implies `separate`. */
+type RuleEffectOptions = {when?: RuleLogic, separate?: boolean, additionalTriggers?: RuleTargets};
 
-export type RuleMetaEffect = RuleEffectWhen & (
+export type RuleMetaEffect = RuleEffectOptions & (
   | {effect: 'hide' | 'show', targets: RuleTargets}
   /** Hides or shows the action with id `action` on the nodes of the `actions` aliases. */
   | {effect: 'hideAction' | 'showAction', targets: RuleTargets, action: string}
@@ -218,12 +220,16 @@ export type RuleMetaEffect = RuleEffectWhen & (
   | {effect: 'items', targets: RuleTargets, items: RuleExpr}
   | {effect: 'meta', targets: RuleTargets, meta: Record<string, RuleExpr>});
 
-export type RuleValidatorEffect = RuleEffectWhen & (
-  | {effect: 'error' | 'warning' | 'notification', targets: RuleTargets, message: RuleExpr}
+/** A button on a message: the action with id `action` on the node of the `actions` alias. */
+export type RuleMessageAction = {actions: string, action: string, actionName: RuleExpr, additionalParams?: RuleExpr};
+
+export type RuleValidatorEffect = RuleEffectOptions & (
+  | {effect: 'error' | 'warning' | 'notification', targets: RuleTargets, message: RuleExpr,
+    actions?: RuleMessageAction[]}
   /** Writes a source's verdicts: `isError` items as errors, the rest as warnings. */
   | {effect: 'verdicts', targets: RuleTargets, source: string});
 
-export type RuleDataEffect = RuleEffectWhen & (
+export type RuleDataEffect = RuleEffectOptions & (
   | {effect: 'set', targets: RuleTargets, value: RuleExpr, restriction?: RestrictionType}
   | {effect: 'clear', targets: RuleTargets, restriction?: RestrictionType}
   /** Writes each key of the `values` object to the target alias of the same name;
@@ -233,11 +239,12 @@ export type RuleDataEffect = RuleEffectWhen & (
 
 export type RuleEffect = RuleMetaEffect | RuleValidatorEffect | RuleDataEffect;
 
-/** Values resolved before a rule evaluates. `validators` runs the named functions
+/** Values resolved before a rule evaluates, in declaration order: a `js`, `func` or `query` source may read
+ *  the sources declared before it. `validators` runs the named functions
  *  on the io behind `input`; without `names` it runs the io's own annotation validators
  *  through the platform, using the `(call)` input that expansion adds as `call`.
- *  `js` calls `fn` with the values of the `args` input aliases on every run of the
- *  rule; a returned promise is awaited. */
+ *  `js` calls `fn` with the values of the `args` input or earlier source aliases on every run of the
+ *  rule; a returned promise or observable gives its first value. */
 export type RuleSource =
   {validators: {input: string, names?: string[], call?: string}} |
   /** The annotation `choices` of the io behind `input`, evaluated by the platform (1.28+) through the step's
@@ -254,6 +261,7 @@ export type RuleSource =
   {table: DG.DataFrame | string | {csv: string, options?: DG.CsvImportOptions}};
 
 export type SourceKind = RuleSource extends infer S ? S extends unknown ? keyof S : never : never;
+export type SourceSpec<K extends SourceKind> = Extract<RuleSource, Record<K, unknown>>[K];
 
 export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'rule';

@@ -522,6 +522,10 @@ export const textColorCoded = Then('the text of {string} column should be color-
   await expect.poll(() => textColorCoding(page, column), {message: `"${column}" paints its text`}).toBe(true);
 }, {description: 'the grid column applies its coloring to the letters, not the cell background'});
 
+export const textNotColorCoded = Then('the text of {string} column should not be color-coded', async (page: Page, column: string) => {
+  await expect.poll(() => textColorCoding(page, column), {message: `"${column}" paints the cell background`}).toBe(false);
+}, {description: 'the grid column applies its coloring to the cell background, not the letters'});
+
 export const colorSchemeIs = Then('the color scheme of {string} column should be {string}', async (page: Page, column: string, colors: string) => {
   const want = list(colors).map((c) => c.replace(/^#/, '').toUpperCase());
   await expect.poll(() => evaluate(page, (c) => {

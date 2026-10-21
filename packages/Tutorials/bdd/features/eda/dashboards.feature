@@ -59,10 +59,10 @@ Feature: The Dashboards tutorial
     Given the tutorial step "Set \"Name\" to \"Stores in @state\"" should not be done yet
     When user enters "Stores in @state" into "Name" input
     Then the tutorial step "Set \"Name\" to \"Stores in @state\"" should be done
-    When user puts "select * from starbucks_us where state = @state;" on the first line of code editor
-    Then the tutorial step "Add \"select * from starbucks_us where state = @state;\" to the editor" should be done
     When user puts "--input: string state" on the first line of code editor
-    Then the tutorial step "Add \"--input: string state\" as the first line of the query" should be done
+    Then the tutorial step "Enter the query with its parameter annotation" should not be done yet
+    When user puts "select * from starbucks_us where state = @state;" on a new line after the line starting with "--input" in code editor
+    Then the tutorial step "Enter the query with its parameter annotation" should be done
     When user clicks on SAVE button
     Then the tutorial step "Save the query" should be done
     And 1 query named "Stores in @state" should be on the server
