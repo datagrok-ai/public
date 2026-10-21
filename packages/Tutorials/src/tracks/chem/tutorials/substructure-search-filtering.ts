@@ -71,7 +71,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
 
     this.title('Use current molecule to filter by substructure', true);
 
-    await this.contextMenuAction('In the grid, right-click any molecule and select Current Value > Use as flter', 'Use as filter', null, '',
+    await this.contextMenuAction('In the grid, right-click any molecule and select Current Value > Use as filter', 'Use as filter', null, '',
       () => setSmilesFilter({molBlock: DG.chem.convert(
         this.t!.get('smiles', Math.max(this.t!.currentRowIdx, 0)), DG.chem.Notation.Smiles,
         DG.chem.Notation.MolBlock)}));
@@ -107,7 +107,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
       observer.observe(filters()!.root.querySelector('.d4-flex-col.d4-filter')!, {subtree: true, attributes: true});
     }), filters()?.root.querySelector('.d4-flex-col.d4-filter') as HTMLElement,
     `<ol><li>On the <b>Filter Panel</b>, hover over a molecule and click the <b>Gear</b> icon.</li>
-    <li>From the dropdown, select <b>Not contains<b>.</li><ol>`,
+    <li>From the dropdown, select <b>Not contains</b>.</li></ol>`,
     Tutorial.apiSkip(() => setSmilesFilter({searchType: 'Not contains',
       molBlock: (tv.getFiltersGroup().getStates('smiles', DG.FILTER_TYPE.SUBSTRUCTURE)[0] as any)?.molBlock})));
 
@@ -129,11 +129,11 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     Tutorial.apiSkip(() => tv.getFiltersGroup().setEnabled({type: DG.FILTER_TYPE.SUBSTRUCTURE, column: 'smiles'}, false)));
 
     this.title('Add more filters', true);
-    this.describe(`In the top left corner of the <b>Filter Panel</b>, click the <b>Hamburger</b> icon and choose <b>Select columns...</b>.<br>
+    this.describe(`In the top left corner of the <b>Filter Panel</b>, click the <b>Hamburger</b> icon and choose <b>Select Columns...</b><br>
     Then, in the dialog, in addition to <b>smiles</b>, select <b>NOCount</b> and <b>NumRotatableBonds</b>, and click <b>OK</b>`);
 
     const exp = ['NOCount', 'NumRotatableBonds', 'smiles'];
-    await this.action('Select columns to be used as filers', grok.events.onDialogShown.pipe(
+    await this.action('Select columns to be used as filters', grok.events.onDialogShown.pipe(
       filter((d) => d.title === 'Select columns...'),
       switchMap((d) => d.onClose),
       filter(() => {

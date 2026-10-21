@@ -67,7 +67,7 @@ export class ScriptingTutorial extends Tutorial {
     const playBtn = $('div.d4-ribbon-item').has('i.grok-icon.fa-play')[0];
     let callEditorDlg = await this.openDialog('Run the script', sampleScriptName, playBtn,
       'Before a script gets executed, all its input parameters should be set. If there are any, a dialog like this one ' +
-      'will appear. Here we need provide only one input named "Table".',
+      'will appear. Here we need to provide only one input named "Table".',
       () => $(playBtn).find('i.fa-play')[0]!.click());
 
     await this.dlgInputAction(callEditorDlg, `Set "Table" to ${sampleDfName}`, 'Table', sampleDfName,

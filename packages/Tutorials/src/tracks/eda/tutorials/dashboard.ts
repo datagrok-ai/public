@@ -123,7 +123,7 @@ export class DashboardTutorial extends Tutorial {
     const projectPaneHints = [
       $('button.ui-btn').filter((idx, el) => el.textContent?.toLowerCase() === 'save')[0]!,
     ];
-    const uploadProjectInfo = 'Click on the "Save" button in the scratchpad.';
+    const uploadProjectInfo = 'Click on the "Save" button in the ribbon of the table view.';
 
     const projectName = 'Coffee sales dashboard';
     // every run of this tutorial leaves a dashboard with this name behind, so on a shared server

@@ -74,7 +74,7 @@ export class PeptidesSarTutorial extends Tutorial {
     this.describe(`In the <b>Peptides SAR</b> dialog, you can specify the sequence column, activity column, ` +
       `scaling method and clustering parameters.<br>
             Clustering parameters include distance metric, threshold, and others. <br>
-            Lets adjust the Similarity threshold to 90 and enable WebGPU acceleration for faster ` +
+            Let's adjust the Similarity threshold to 90 and enable WebGPU acceleration for faster ` +
       `clustering computation.`);
 
     await this.action('Click the Gear Icon (⚙)', gearIconClickEvent, gearIcon as HTMLElement, '',
@@ -258,7 +258,7 @@ export class PeptidesSarTutorial extends Tutorial {
             grok.shell.o.getElementsByClassName('d4-pane-mutation_cliffs_pairs')[0] as HTMLElement : null;
     if (mutationCliffsPanel) {
       const step8B2 = greenHint(mutationCliffsPanel, paragraphs(['Mutation Cliffs context panel shows sequence pairs ' +
-        'only differring at selected position, their activity distributions, and more']), 'left');
+        'only differing at selected position, their activity distributions, and more']), 'left');
       const step8B2Ok = ui.button('NEXT', () => {});
       step8B2.appendChild(step8B2Ok);
       const mutPanelNextPromise = nextOrHintGone(step8B2Ok, step8B2);
@@ -354,7 +354,7 @@ export class PeptidesSarTutorial extends Tutorial {
       .find((el) => el.textContent?.toLowerCase()?.includes('0 / 25'));
 
     const aggColumnsButton = aggColumnsHost!.querySelector('button') as HTMLButtonElement;
-    const lstHint = greenHint(contextPanelRoot, paragraphs(['Under <b>Aggregations</b>, choose position <b>14</b> ' +
+    const lstHint = greenHint(contextPanelRoot, paragraphs(['Under <b>Aggregation</b>, choose position <b>14</b> ' +
       '(Column named "14") and hit <b>OK</b> to add a <b>pie chart</b> distribution column.'],
     'Add aggregated column'), 'left');
     const lstAggRegationPromise = rxjs.fromEvent(aggColumnsButton, 'click').pipe(operators.take(1),

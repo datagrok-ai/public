@@ -133,7 +133,7 @@ export class ViewersTutorial extends Tutorial {
     this.title('Properties');
 
     const spProperties = 'To see the viewer\'s properties, click the settings icon in the scatter plot\'s header or ' +
-      'right-click the plot and select <b>Properties...</b>. There ' +
+      'right-click the plot and select <b>Properties...</b> There ' +
       'you can edit all properties of the viewer. Data-related properties are usually assembled on top under the ' +
       '<b>Data</b> category, while visual properties fall under various groups, such as <b>Colors</b>, ' +
       '<b>Markers</b> or <b>Axes</b>.';
