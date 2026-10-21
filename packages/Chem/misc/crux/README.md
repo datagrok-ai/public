@@ -8,7 +8,8 @@ open items with their analysis.
 
 - `src/crux/` — the integration: `crux-searches.ts` (engine switch, the crux counterpart of
   `chemSubstructureSearchLibrary`), `crux-service.ts` + `crux.worker.ts` (segmented column indexes over a worker
-  pool), `crux-smarts.ts` (RDKit query mol → SMARTS crux matches the same way).
+  pool; since 2026-10-20 the query is the molecule Chem's `getQueryMolSafe` builds on the Crux module, searched with
+  `Collection.substructureSearchMol`: `crux-smarts.ts`, the RDKit query mol → SMARTS translation, is gone).
 - `vendor/chem-wasm/` — Chem's one Crux file since 2026-10 (it replaced the search-only `src/crux/crux_wasm*`):
   crux-core's `crates/chem-wasm` built with everything Chem calls (RDKit.js's API for rendering, the search
   `Collection`, descriptors, the scaffold tree, the heavy calls), files replaced together:
@@ -59,7 +60,7 @@ The vendored build is named in `vendor/chem-wasm/VERSION.chem-wasm`. The Chem wo
 ## Verification
 
 Run from this folder, with Node 20 and the workspace installed (`grok setup`); they load Chem's own RDKit build and
-transpile Chem's query code (`utils/mol-creation_rdkit.ts`, `crux/crux-smarts.ts`) on the fly, so they check the
+transpile Chem's query code (`utils/mol-creation_rdkit.ts`) on the fly, so they check the
 code the package runs. Datasets: `<reddata>/data/demo/chem/chembl/chembl-100k.csv` and
 `<reddata>/data/demo/chem/smiles_1M.zip` (unzip first); SMARTS sets from `crux-bench/queries/bdb-*`.
 

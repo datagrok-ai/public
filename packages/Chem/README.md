@@ -63,8 +63,8 @@ Packages > Chem > Settings**, as above):
   both modes (`getRdKitModule`, `getRdKitService`); in Crux mode the pictures and values of the moved functions come
   from Crux.
 * **Substructure Search Engine** (Crux by default): the engine of Contains / Not contains searches. Crux indexes a
-  column once and searches it many times faster, with the same hits as RDKit; queries Crux cannot express run on
-  RDKit. A server where Chem's settings were saved before keeps the value saved (RDKit, the earlier default): an
+  column once and searches it many times faster, with the same hits as RDKit (every query feature, as RDKit
+  matches it); a query Crux cannot read runs on RDKit. A server where Chem's settings were saved before keeps the value saved (RDKit, the earlier default): an
   admin switches it here.
 
 ## Favorite and recent structures
@@ -230,6 +230,9 @@ To add a fragment use:
   ![add structural alert highlight](help/add_structural_alert_highlight.gif)
 
 ## Scaffold Tree
+
+The magic wand generates the tree from the molecule column. A column of more than 750 molecules is generated from a
+sample of 750 spread over the whole column (the same rows each time); the wand's tooltip and the progress say so.
 
 We have seamlessly integrated Scaffold Tree with molecule fragments highlighting. To utilize this feature, we have introduced two icons:
 

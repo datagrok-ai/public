@@ -2,13 +2,14 @@
 //   A  rows RDKit reads the way Chem parses a column (getMolSafe) and crux cannot parse,
 //   B  rows crux parses and RDKit cannot,
 //   C  rows both parse but crux reads differently: crux does not find the molecule with RDKit's own canonical SMILES
-//      as the query (translated by getCruxSmarts, as Chem translates queries) while RDKit does.
+//      as the query (the query getQueryMolSafe builds on the crux module, as Chem's crux search builds it) while RDKit
+//      does.
 //
 //   node census.mjs <csv|smi> [molecules]
 //
 // THREADS    worker threads (default: cores - 2)
 // OUT        a TSV of every disagreement
-// CRUX_WASM  a wasm-pack out dir to test instead of the build vendored in Chem
+// CRUX_WASM  a chem-wasm build's out dir to test instead of the build vendored in Chem
 import {writeFileSync} from 'fs';
 import {availableParallelism} from 'os';
 import {performance} from 'perf_hooks';
@@ -35,7 +36,7 @@ function classify(smiles) {
 async function censusRows(rows) {
   const rdkit = await loadRdkit();
   const {crux} = await loadCrux();
-  const {getMolSafe, getQueryMolSafe, getCruxSmarts} = await loadChemQueryCode();
+  const {getMolSafe, getQueryMolSafe} = await loadChemQueryCode();
   const unsanitized = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
   const counts = {};
   const count = (key) => counts[key] = (counts[key] ?? 0) + 1;
@@ -71,14 +72,17 @@ async function censusRows(rows) {
       }
       const canonical = mol.get_smiles();
       const qmol = getQueryMolSafe(canonical, '', rdkit);
-      const smarts = qmol ? getCruxSmarts(qmol) : null;
+      const cruxQmol = getQueryMolSafe(canonical, '', crux);
+      const smarts = cruxQmol?.get_smarts() ?? null;
       let cruxHit = null;
       try {
-        cruxHit = smarts === null ? null : collection.substructureSearch(smarts, 0).length === 1;
+        cruxHit = cruxQmol === null ? null : collection.substructureSearchMol(cruxQmol, 0).length === 1;
       } catch {
-        // crux cannot parse the query: Chem runs such a search on RDKit
+        // the search failed: Chem runs such a search on RDKit
+      } finally {
+        cruxQmol?.delete();
       }
-      if (cruxHit === null) {
+      if (cruxHit === null || qmol === null) {
         count('self: not checked (query runs on RDKit)');
         qmol?.delete();
         continue;
