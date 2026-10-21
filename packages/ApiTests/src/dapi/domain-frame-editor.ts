@@ -395,6 +395,8 @@ category('Dapi: domain frame editor', () => {
       const reset = editor.addRow({sku: 'reset'});
       editor.setValue(reset, 'archived', false);
       editor.setValue(reset, 'archived', null);
+      expect(Object.keys(editor.buildOps()[0].op.values!).sort().join(), 'active,confirmed,sku',
+        'an untouched row sends its prefilled default and its required bool, and no other bool');
       expect(await editor.save(), true, 'the new rows were refused');
       const rows = await flags.query({});
       const stored: {[sku: string]: (boolean | null)[]} = {
