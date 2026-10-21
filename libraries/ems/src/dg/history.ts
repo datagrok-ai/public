@@ -5,7 +5,7 @@
 import {emsBackends} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
 import {Component, Control, signal, AsyncSource, div, divH, span, timestamp, text, badge, AsyncView, Section,
-  VirtualList, Rows} from '@datagrok-libraries/u2';
+  VirtualList, Rows, ListInput} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, BadgeVariant, IProperty, RowView} from '@datagrok-libraries/u2';
 import type {AuditEntryLike} from '../core/domain-backend.js';
 import type {DomainSource} from '../core/domain-source.js';
@@ -90,9 +90,8 @@ export class DomainHistory extends Control {
       .map((prop) => ({prop, before: before[prop.name!], after: after[prop.name!]}));
   }
 
-  /** An audit cell as text: a list joined, a json object as JSON. */
   private static _display(raw: unknown): string {
-    return Array.isArray(raw) ? raw.map(text).join(', ') :
+    return Array.isArray(raw) ? ListInput.join(raw) :
       raw !== null && typeof raw === 'object' && raw.constructor === Object ? JSON.stringify(raw) : text(raw);
   }
 
