@@ -856,9 +856,8 @@ export class MemoryTable implements DomainTableLike {
   }
 
   private _isBool(condition: FilterCondition): boolean {
-    const value = condition.value;
     return this.properties.some((p) => p.name === condition.property && p.propertyType === 'bool') &&
-      !(typeof value === 'object' && value !== null && 'column' in value);
+      !Filters.isColumnRef(condition.value);
   }
 
   /** A bool condition read as SQL reads it: a null cell passes no comparison, and `is null` finds it. */
