@@ -298,6 +298,30 @@ scoped('finding 5: a standalone save leaves no subscription on the editor', {}, 
   assert.equal(editor.onChanged.observers.length, 0);
 });
 
+scoped('EMS-054: a duplicate or a replay naming no row rejects, by status, and touches no row', {}, async () => {
+  const {DomainTableClient} = await import('../../../js-api/dist/src/dapi.js');
+  const {DomainNotFoundError, DomainValidationError} = await import('../../../js-api/dist/src/domains.js');
+  // the server's answers when the existing row is not readable by the caller (core EMS-052)
+  const expected = {
+    'idempotent-replay': (e) => e instanceof DomainNotFoundError && /idempotency key/.test(e.message),
+    'duplicate': (e) => e instanceof DomainValidationError && e.isDuplicate,
+  };
+  for (const status of Object.keys(expected)) {
+    globalThis.grok_Dapi_Domains_Insert = async () => [{id: null, created: false, status}];
+    const client = new DomainTableClient({}, 'grit', 'issue');
+    const touched = [];
+    client.get = async (id) => (touched.push(['get', id]), null);
+    client.updateWithRetry = async (id) => (touched.push(['update', id]), {id, version: 2});
+    try {
+      await assert.rejects(client.save({title: 'Retried', idempotencyKey: '7c2f8d1e-0b5a-4c3e-9f1d-2a6b8c4d0e1f'}),
+        expected[status], status);
+      assert.deepEqual(touched, [], `${status}: no read or update of a null id`);
+    } finally {
+      delete globalThis.grok_Dapi_Domains_Insert;
+    }
+  }
+});
+
 // ─────────────────────────── 6. the delete-ordering rule ────────────────────────────────────────
 
 const SELF = {name: 'stock', tables: {location: {friendlyName: 'Locations', columns: {

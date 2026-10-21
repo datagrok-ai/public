@@ -1814,10 +1814,12 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
 
   /** Inserts a single row or a small array of rows; resolves to per-row reports
    * (`{id, created}`, or `{status: 'duplicate', existingId}` on a business-key match —
+   * `id`/`existingId` null when that row is not readable by the caller;
    * pass `options.errorOnDuplicate` to reject duplicates with a
    * {@link DomainValidationError} instead, its `isDuplicate` set).
    * For tables that declare `"idempotency": true`, pass an `idempotencyKey` (UUID) row field
-   * to make retries safe: a replay returns the existing id with `status: 'idempotent-replay'`.
+   * to make retries safe: a replay answers `status: 'idempotent-replay'` with the original row's
+   * id, null when that row is not readable by the caller.
    *
    * A payload may carry declared many-to-many relations as lists of target row ids
    * (`{title: 'Crash', labels: [id1, id2]}`); the junction rows are written in the same
@@ -2132,8 +2134,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * insert-or-update: the values are applied to the existing row as a versioned update
    * (retried on conflict), so save() never resolves a version-less row. An idempotency-key
    * replay applies nothing — the original insert already did — and resolves the existing
-   * row's fresh version (rejects {@link DomainNotFoundError} when that row is no longer
-   * visible). The unversioned
+   * row's fresh version. When the existing row is not readable by the caller, a duplicate
+   * rejects with a {@link DomainValidationError} (`isDuplicate`) and a replay with a
+   * {@link DomainNotFoundError}. The unversioned
    * (last-write-wins) update remains available ONLY by deliberately constructing
    * `{id}` without a version — never as a side effect of a duplicate. */
   async save(row: Partial<TRow> & {id?: string; version?: number}): Promise<TRow> {
@@ -2143,6 +2146,13 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
         values[k] = (row as any)[k];
     if (row.id == null) {
       const [res] = await this.insert(values);
+      // the server names no id when the caller cannot read the existing row
+      if (res.status === 'duplicate' && res.id == null)
+        throw new DomainValidationError('Duplicate business key', 409, {error: 'validation', rows: [
+          {index: 0, id: null, errors: [{column: '', code: 'unique', message: 'Duplicate business key'}]}]});
+      if (res.status === 'idempotent-replay' && res.id == null)
+        throw new DomainNotFoundError(`The row this idempotency key created is not available in ${this.schema}.` +
+          `${this.table}`, 404, {error: 'not-found', id: null});
       if (res.status === 'duplicate') {
         // The duplicate insert wrote NOTHING — land the caller's values on the
         // existing row under the optimistic check (fresh read + retry).

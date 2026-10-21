@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Domains: Fixed `DomainTableClient.save()` writing or reading by a null id when the existing row of a duplicate or an idempotency replay is not readable by the caller
 * Domains: Fixed `DomainFrameEditor` naming the business key instead of the clashing unique column in a duplicate refusal
 * Domains: Fixed `DomainFrameEditor` sending `false` for an untouched bool of a new row: the column now takes its server-side default (null for a nullable one); a required bool with no default is still sent as `false`
 * Domains: Fixed `DomainTableClient.save()` sending the `'~'` service columns and master-expand fields of a spread read row as column values, which the server refused
