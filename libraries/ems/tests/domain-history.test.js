@@ -134,6 +134,48 @@ scoped('the actor is the user\'s name, looked up once per id; a draft is not sav
   draft.dispose();
 });
 
+scoped('the trail loads a page at a time; scrolling near the end loads the older entries', async () => {
+  emsBackends.domain = backend();
+  const issue = emsBackends.domain.tableSync('grit.issue');
+  for (let i = 0; i < 60; i++) {
+    issue.history.push({id: 'i1', tx_id: `t${i}`, op: 'update', actor_id: null, ts: '2026-09-13T10:00:00Z',
+      before: {title: `T${i}`}, after: {title: `T${i + 1}`}});
+  }
+  const pages = [];
+  const audit = issue.audit.bind(issue);
+  Object.defineProperty(issue, 'audit', {configurable: true, value: (id, page) => {
+    pages.push(page);
+    return audit(id, page);
+  }});
+  const table = await domains.table('grit.issue');
+  const src = table.source({pageSize: 10});
+  await flush();
+  src.currentRow.value = src.rows.byKey('i1');
+  const history = domains.history(src);
+  await settle();
+  assert.deepEqual(pages, [{limit: 51, before: undefined}], 'one page and the entry that says there is more');
+  const list = history.view.root.querySelector('.u2-domain-history-lines');
+  list.clientHeight = 300;
+  list.scrollHeight = 50 * 40;
+  list.scrollTop = 0;
+  fire(list, 'scroll');
+  await settle();
+  assert.equal(pages.length, 1, 'away from the end nothing more is fetched');
+
+  list.scrollTop = 50 * 40 - 300;
+  fire(list, 'scroll');
+  await settle();
+  assert.deepEqual(pages[1], {limit: 51, before: 10}, 'the next page starts below the oldest entry shown');
+  list.scrollHeight = 60 * 40;
+  list.scrollTop = 60 * 40 - 300;
+  const rows = lines(history);
+  assert.equal(rows.at(-1).querySelector('.u2-domain-history-changes').textContent, 'title: T0 → T1',
+    'the oldest entry closes the list');
+  assert.equal(pages.length, 2, 'and once the trail is shown to its first entry nothing more is asked');
+  history.dispose();
+  src.dispose();
+});
+
 scoped('a table that keeps no history says so instead of showing an empty list', async () => {
   const memory = backend();
   const issue = memory.tableSync('grit.issue');
