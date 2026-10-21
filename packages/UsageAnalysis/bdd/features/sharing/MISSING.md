@@ -4,9 +4,12 @@ Gap round of 2026-10-21 over `TestTrack/Sharing`, `playwright-public/Sharing` (1
 steps of other old specs (Projects, Chat, Browse, Widgets, EDA, PowerPack). The features were written with
 today's steps only; what they need beyond that is listed here, as Gherkin where a scenario is ready.
 
-Covered by this round: `sharing-script`, `sharing-connection`, `sharing-layout`, `sharing-space-revoke`
-(the second account's side and the revoke), `sharing-access-levels` (Full access, All users),
-`sharing-chat` (two accounts in one chat), and the second account's side of EDA `models/share-model`.
+Covered by this round: `sharing-connection` (its Sharing pane after a share), `sharing-layout` (the
+second account applies a shared layout), `sharing-access-levels` (Full access, All users), `sharing-chat`
+(two accounts in one chat), and the second account applying a shared model in EDA `models/share-model`.
+Who may see, change, re-share or lose a shared entity is not a UI claim: it is
+`ApiTests/src/dapi/permissions.ts`, which this round extended (§7). A script or a space shared and
+taken back has no BDD feature for that reason.
 Projects (Olena's area) keeps its own parked items: raising a grant to Full access and the
 "Inherited from" row (`projects-lifecycle-files`, `projects-move`).
 
@@ -72,16 +75,18 @@ projects and spaces stay as well (rows in `permissions` whose entity is gone). C
 awaiting a hand check; until the platform removes an entity's project with the entity, the features
 cannot leave the stand as they found it.
 
-## 7. API tests to write
+## 7. API tests
 
-Not in `ApiTests/src/dapi/permissions.ts` yet:
+Added to `ApiTests/src/dapi/permissions.ts` by this round (localhost 2026-10-21, the category 15/15):
 
 - the owner keeps every privilege after every grant is revoked (old `sharing-all-users-and-owner` C,
   `sharing-edge-cases` 2);
-- a folder share gives read but not write, and files outside the folder stay closed (old
-  `share-files-and-spaces-permissions` A/B);
-- a script's View and use carries Execute (the existing test checks View only);
-- a space shared at View and use cannot be edited, deleted or shared further by the grantee (old
+- a space shared for viewing cannot be changed, deleted or shared further by the grantee (old
   `share-files-and-spaces-permissions` D);
-- sharing a connection shares nothing along with it (deleted TestTrack `share-connection-permissions`
-  D.3).
+- a connection shared on its own shares none of its queries (deleted TestTrack
+  `share-connection-permissions` D.3).
+
+Still to write: a folder share gives read but not write, and files outside the folder stay closed (old
+`share-files-and-spaces-permissions` A/B). A script has no Execute privilege of its own (its type lists
+only View, Edit, Delete and Share), so View is what lets the grantee run it, and the existing View and
+use test covers it.
