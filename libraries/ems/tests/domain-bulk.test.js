@@ -113,11 +113,12 @@ scoped('the checked columns are written to the selection; an unchecked one is le
   field('done').value.value = true;
   field('title').value.value = 'NOT WRITTEN';
   fire(buttonNamed('OK'), 'click');
-  assert.equal(await running, 2);
-  assert.match(balloon('info'), /Updated 2 issues/, 'the table\'s words, never "rows"');
+  assert.equal(await running, 1, 'Aspirin is already done: only the row the values change is written');
+  assert.match(balloon('info'), /Updated 1 issue\./, 'the table\'s words, never "rows"');
 
   const rows = issues(memory);
   assert.deepEqual(rows.map((r) => r.done), [true, false, true], 'the two selected rows only');
+  assert.deepEqual(rows.map((r) => r.version), [1, 1, 2]);
   assert.deepEqual(rows.map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen'],
     'the unchecked column was not in the request');
   source.dispose();
@@ -247,7 +248,7 @@ scoped('the list\'s own selection is the collection\'s, and only a user makes on
   await flush();
   field('done').value.value = true;
   fire(buttonNamed('OK'), 'click');
-  assert.equal(await running, 2);
+  assert.equal(await running, 1, 'Aspirin is already done');
   assert.deepEqual(issues(memory).map((r) => r.done), [true, false, true]);
 
   assert.deepEqual(source.selection.value.map((r) => r.id), ['i1', 'i3'],

@@ -5,7 +5,7 @@
    way the server orders it (forward `$ref`s, child-first deletes) and lands on every table it
    touches or on none. */
 import {uuid4} from 'datagrok-api/u2core';
-import {Filters, notify, Access, MemoryFrame, Rows, isEmpty} from '@datagrok-libraries/u2';
+import {Filters, notify, Access, MemoryFrame, Rows, isEmpty, Component} from '@datagrok-libraries/u2';
 import type {FilterCondition, FilterGroup, IProperty, AccessData, FieldAccess,
   MemoryColumn} from '@datagrok-libraries/u2';
 import {DomainBackendError, isUnscoped} from './domain-backend.js';
@@ -535,9 +535,10 @@ export class MemoryTable implements DomainTableLike {
   }
 
   /** The filtered bulk edit, as the server's `POST …/{table}/update`: a non-empty filter selects
-   * the LIVE rows the caller may edit, `values` is checked against the writable columns before
-   * anything is written, and at most `limit` rows (the server's cap of {@link maxUpdateWhereRows}
-   * at most) are patched inside ONE transaction — `hasMore` says the filter matched past the cap.
+   * the LIVE rows the caller may edit that `values` would change (so a rerun moves on), `values`
+   * is checked against the writable columns before anything is written, and at most `limit` rows
+   * (the server's cap of {@link maxUpdateWhereRows} at most) are patched inside ONE transaction —
+   * `hasMore` says the filter matched past the cap.
    * Any refusal rolls the whole batch back. */
   async updateWhere(filter: DomainQueryLike['filter'], values: Record<string, unknown>,
     options: {limit?: number} = {}): Promise<{updated: number, hasMore: boolean}> {
@@ -554,8 +555,13 @@ export class MemoryTable implements DomainTableLike {
     // as the server clamps it: a limit of 0 would report `hasMore` forever and write nothing
     const cap = Math.max(1, Math.min(options.limit ?? MemoryTable.maxUpdateWhereRows,
       MemoryTable.maxUpdateWhereRows));
-    // the Edit predicate narrows the selection silently, as the server's does
-    const matched = (await this._where({filter})).filter((row) => this._canEdit(row));
+    const instants = new Set(this.properties.filter((p) => (p.propertyType ?? p.type) === 'datetime')
+      .map((p) => p.name!));
+    const same = (column: string, a: unknown, b: unknown): boolean => instants.has(column) && a != null && b != null ?
+      MemoryTable._instant(a) === MemoryTable._instant(b) : Component.sameValue(a ?? null, b ?? null);
+    // the Edit predicate and the values narrow the selection silently, as the server's do
+    const matched = (await this._where({filter})).filter((row) => this._canEdit(row) &&
+      Object.entries(values).some(([column, value]) => !same(column, row[column], value)));
     const ids = matched.slice(0, cap).map((row) => String(row.id));
     await this.transaction(ids.map((id) => ({op: 'update' as const, table: this.address, id, values})));
     return {updated: ids.length, hasMore: matched.length > cap};
@@ -739,6 +745,13 @@ export class MemoryTable implements DomainTableLike {
     row.updated_on = now;
     row.author_id ??= this._author;
     return row;
+  }
+
+  /** A datetime's instant however it is spelled — a Date, a Dayjs or ISO text, zone-less text read as UTC as the
+   * server reads it. */
+  private static _instant(v: unknown): number {
+    return typeof v === 'string' ? Date.parse(v.includes('T') && !/(Z|[+-]\d\d:?\d\d)$/i.test(v) ? `${v}Z` : v) :
+      Number(v);
   }
 
   /** The row's own `~can_edit`, else the table's — the shape `query` projects. */

@@ -478,10 +478,18 @@ test('updateWhere: the filter selects, the cap limits, hasMore says the filter m
 
   assert.deepEqual(await issue.updateWhere('done = false', {priority: 'high'}, {limit: 1}),
     {updated: 1, hasMore: true}, 'the cap stops at limit and reports the rest');
-  assert.deepEqual(await issue.updateWhere('done = false', {priority: 'low'}, {limit: 9999}),
+  assert.deepEqual(await issue.updateWhere('done = false', {title: 'Clamped'}, {limit: 9999}),
     {updated: 2, hasMore: false}, 'and a limit past the cap is clamped down to it');
   assert.deepEqual(await issue.updateWhere('title starts "zzz"', {priority: 'high'}),
     {updated: 0, hasMore: false});
+});
+
+test('updateWhere: a datetime already holding the instant is not rewritten, however it is spelled', async () => {
+  const issue = await backend().table('grit.issue');
+  for (const due of ['2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00', '2026-01-01T02:00:00+02:00',
+    new Date('2026-01-01T00:00:00Z')])
+    assert.deepEqual(await issue.updateWhere('id = "i1"', {due}), {updated: 0, hasMore: false}, String(due));
+  assert.deepEqual(await issue.updateWhere('id = "i1"', {due: '2026-01-02'}), {updated: 1, hasMore: false});
 });
 
 test('updateWhere: the Edit predicate narrows the selection silently', async () => {
