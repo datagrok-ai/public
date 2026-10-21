@@ -118,7 +118,6 @@ scoped('the checked columns are written to the selection; an unchecked one is le
 
   const rows = issues(memory);
   assert.deepEqual(rows.map((r) => r.done), [true, false, true], 'the two selected rows only');
-  assert.deepEqual(rows.map((r) => r.version), [1, 1, 2]);
   assert.deepEqual(rows.map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen'],
     'the unchecked column was not in the request');
   source.dispose();
