@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 
 import {after, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
@@ -14,11 +15,15 @@ import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmp
 import {rGroupsMinilib} from '../analysis/r-group-analysis';
 import {getMCS} from '../utils/most-common-subs';
 import {decomposeClusters} from '../analysis/sar-matrix/sar-matrix-decompose';
+import {linkStaged} from '../analysis/sar-matrix/sar-matrix-assemble';
+import {LinkStages} from '../analysis/sar-matrix/sar-matrix-link';
 
 /**
  * MMPA fragmentation, R-group decomposition and FMCS in Crux mode ("Chemical engine"): engine/analysis-jobs.ts. Each
  * feature's result comes from the Crux workers (no RDKit worker asked, no fallback) and equals RDKit mode's on Chem's
  * test data, or RDKit 2026.03.6's where Chem's RDKit 2024.09 differs (said where).
+ * Fragment linking and molzip: in Crux mode the SAR matrix's joins by molzip, as the string assembly in RDKit mode;
+ * molzip's expected values are the pinned RDKit 2026.03.6's (Python `Chem.molzip`, the SMILES read again).
  */
 
 /** How many times the RDKit pool was asked for (each `getRdKitService()` counts). */
@@ -222,6 +227,64 @@ category('crux analyses', () => {
     expect(crux, rdkit, 'every cluster\'s records and positions');
     expect(rdkit.includes('records'), true, 'some cluster decomposed');
   }, {timeout: 60000});
+
+  test('fragment linking: molzip in Crux mode, as the string assembly in RDKit mode', async () => {
+    // the SAR matrix tests' joins: a single point, H, a point the core lacks, stereo by the fragment, a bridge
+    const cases: [string, LinkStages, {[position: string]: string}][] = [
+      ['c1ccc([*:1])cc1', [{R1: [1]}], {R1: 'C[*:1]'}],
+      ['c1ccc([*:1])cc1[*:2]', [{R1: [1], R2: [2]}], {R1: 'C[*:1]', R2: ''}],
+      ['c1ccc([*:1])cc1', [{R1: [1], R2: [2]}], {R1: 'C[*:1]', R2: 'Cl[*:2]'}],
+      ['c1ccc([*:1])cc1[*:3]', [{R1: [1]}], {R1: 'CC[*:1]'}],
+      ...['[*:1][C@@H](C)O', '[*:1][C@H](C)O', '[*:1]/C=C/C', '[*:1][C@](C)(F)Cl'].map((fragment) =>
+        ['c%11ccccc%11[*:1]', [{R1: [1]}], {R1: fragment}] as [string, LinkStages, {[position: string]: string}]),
+      ['C1CC(C[*:100])(N[*:1])C([*:101])N1[*:2]', [{R1: [1], R2: [2], R100: [100, 101]}],
+        {R1: 'CC(=O)[*:1]', R2: 'C[*:2]', R100: 'C(C[*:101])[*:100]'}],
+      ['O=C(N[*:1])c1cc([*:2])ccc1', [{R1: [1]}, {R2: [2]}], {R1: '[*:1]C1CC1', R2: 'Br[*:2]'}],
+    ];
+    const link = () => linkStaged(cases.map(([core]) => core), cases.map(([, plan]) => plan),
+      (i, position) => cases[i][2][position] ?? '');
+    const {rdkit, crux} = await inBothEngines(link, ['fragment linking']);
+    expect(JSON.stringify(crux), JSON.stringify(rdkit), 'each joined molecule');
+    expect(rdkit.every((s) => !!s), true, 'every case joined');
+  });
+
+  test('molzip: RDKit\'s molzip in both engines', async () => {
+    // [molecule, params, the pinned RDKit 2026.03.6's result] (scratch molzip_expected.py)
+    const cases: [string, object, string][] = [
+      ['C[*:1].N[*:1]', {}, 'CN'],
+      ['F[C@H]([*:1])Cl.[*:1]O', {}, 'O[C@@H](F)Cl'],
+      ['[*:1]c1ccc([*:2])cc1.[*:1]C(=O)O.[*:2]N', {}, 'Nc1ccc(C(=O)O)cc1'],
+      ['C1CC([*:1])CC1[*:2].[*:1]OC[*:2]', {}, 'C1CC2CC1CO2'],
+      ['CC([*:1])[*:2].O[*:1]', {}, 'CC(O)[*:2]'],
+      ['C/C=C/[*:1].[*:1]Br', {}, 'C/C=C/Br'],
+      ['C[1*].N[1*]', {Label: 'Isotope'}, 'CN'],
+      ['C[Xe].N[Xe]', {Label: 'AtomType', AtomSymbols: ['Xe']}, 'CN'],
+      ['CCO', {}, 'CCO'],
+      ['C[*:1].N[*:1].O[*:1]', {}, ''], // a label used twice: RDKit throws
+      ['[*:1]C(F)(F)(F).[*:1]=O', {}, ''], // over carbon's valence: RDKit throws
+      ['', {}, ''],
+      ['C1CC(', {}, ''],
+    ];
+    const molblock = (() => {
+      const mol = chemCommonRdKit.getRdKitModule().get_mol('C[*:1].N[*:1]');
+      const block = mol.get_molblock();
+      mol.delete();
+      return block;
+    })();
+    const molzip = async (molecules: string[], params?: object): Promise<string> =>
+      JSON.stringify(await grok.functions.call('Chem:molzip', {molecules, params}));
+    for (const engine of [ChemicalEngine.RDKit, ChemicalEngine.Crux]) {
+      setChemicalEngine(engine);
+      try {
+        for (const [molecule, params, expected] of cases)
+          expect(await molzip([molecule], params), JSON.stringify([expected]), `${engine}: ${molecule}`);
+        expect(await molzip([molblock, 'C[*:1].Cl[*:1]']), JSON.stringify(['CN', 'CCl']),
+          `${engine}: a MOL block of two pieces, and a second molecule`);
+      } finally {
+        setChemicalEngine(null);
+      }
+    }
+  });
 
   test('timing: RDKit and Crux', async () => {
     // a measurement, no check: with --benchmark only (it returns at once otherwise). Median of 3, each engine: MMPA

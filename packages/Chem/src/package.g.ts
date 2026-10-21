@@ -384,6 +384,14 @@ export async function performClusterMCS(molCol: DG.Column, clusterCol: DG.Column
   return await PackageFunctions.performClusterMCS(molCol, clusterCol);
 }
 
+//description: Joins the pieces of each molecule at their matching attachment points (RDKit's molzip, by Crux in both chemical engines): SMILES such as C[*:1].N[*:1] or MOL blocks of several fragments. Returns the joined molecules' canonical SMILES (an empty string for a molecule that is not joined)
+//input: list<string> molecules { description: Molecules that each hold their pieces }
+//input: object params { optional: true; description: RDKit's MolzipParams by name (Label, AtomSymbols, AtomProperty, EnforceValenceRules) }
+//output: list<string> result
+export async function molzip(molecules: string[], params?: any) : Promise<string[]> {
+  return await PackageFunctions.molzip(molecules, params);
+}
+
 //input: funccall call 
 //output: widget result
 //meta.role: editor

@@ -120,8 +120,9 @@ setting: `src/engine/README.md`. Tests: category `chemical engine`. Whole suites
 
 In Crux mode MMPA fragmentation, R-group decomposition and FMCS (`engine/analysis-jobs.ts`: `getMmpFrags`,
 `rGroupsMinilib`, `getMCS`, Cluster MCS, the SAR matrix's anchors and clusters) run on the Crux pool, the RDKit worker's
-own code on the Crux module (`crux/crux-analysis-jobs.ts`), with the RDKit pool behind them. Tests: category
-`crux analyses`.
+own code on the Crux module (`crux/crux-analysis-jobs.ts`), with the RDKit pool behind them. `molzip` (RDKit's molzip, a
+package function for other packages) runs on Crux in both modes, Chem's RDKit.js having none; in Crux mode the SAR
+matrix joins its fragments with it. Tests: category `crux analyses`.
 
 The one Crux file is `vendor/chem-wasm/` (crux-core's `crates/chem-wasm`, built with search, descriptors, the scaffold
 tree, rendering and the heavy calls in one wasm; its `VERSION.chem-wasm` names the crux-core revision and the build,

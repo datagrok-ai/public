@@ -1,7 +1,7 @@
 // The Crux worker: Chem's one Crux file (vendor/chem-wasm), instantiated from the Module the main thread compiled
 // (engine/crux-module.ts). Substructure search over column segments; in Crux mode ("Chemical engine") descriptors, the
 // scaffold tree, an activity cliff's MCS, and RDKit's own worker code run on Crux (fingerprints, structural alerts;
-// MMPA, R-groups and FMCS: crux-analysis-jobs.ts).
+// MMPA, R-groups, FMCS and fragment linking: crux-analysis-jobs.ts).
 import initChemWasm, * as chemWasm from '../../vendor/chem-wasm/chem_wasm.js';
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
@@ -205,7 +205,7 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
       result = JSON.parse(chemWasm.chemProperties(args[0], args[1]));
     else if (op === 'pairUncommonAtomsAndBonds')
       result = pairUncommonAtomsAndBonds(args[0], args[1], args[2]);
-    else if (Object.hasOwn(ANALYSIS_JOBS, op)) // MMPA, R-groups, FMCS (crux-analysis-jobs.ts)
+    else if (Object.hasOwn(ANALYSIS_JOBS, op)) // MMPA, R-groups, FMCS, fragment linking, molzip (crux-analysis-jobs.ts)
       result = await ANALYSIS_JOBS[op](rdkitShapedWorker(), chemWasm as unknown as RDModule, ...args);
     else if (op === 'fail::test') // tests: a job that fails with this message
       throw new Error(args[0]);

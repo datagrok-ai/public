@@ -129,7 +129,7 @@ import {scripts} from './package-api';
 import {cruxReady, isCruxRequested, onEngineSwitch} from './engine/chem-engine';
 import {cruxOrRdKitAsync} from './engine/fallback';
 import {getCruxService} from './crux/crux-searches';
-import {clusterMcsByEngine} from './engine/analysis-jobs';
+import {clusterMcsByEngine, molzip as molzipOnCrux, MolzipParams} from './engine/analysis-jobs';
 
 export {getMCS};
 export * from './package.g';
@@ -924,6 +924,17 @@ export class PackageFunctions {
     }
     PG.close();
     return mcsCol;
+  }
+
+  @grok.decorators.func({
+    name: 'molzip',
+    description: 'Joins the pieces of each molecule at their matching attachment points (RDKit\'s molzip, by Crux in both chemical engines): SMILES such as C[*:1].N[*:1] or MOL blocks of several fragments. Returns the joined molecules\' canonical SMILES (an empty string for a molecule that is not joined)',
+    outputs: [{name: 'result', type: 'list<string>'}],
+  })
+  static async molzip(
+    @grok.decorators.param({type: 'list<string>', options: {description: 'Molecules that each hold their pieces'}}) molecules: string[],
+    @grok.decorators.param({type: 'object', options: {optional: true, description: 'RDKit\'s MolzipParams by name (Label, AtomSymbols, AtomProperty, EnforceValenceRules)'}}) params?: MolzipParams): Promise<string[]> {
+    return molzipOnCrux(molecules, params ?? {});
   }
 
   @grok.decorators.editor({outputs: [{name: 'result', type: 'widget'}]})

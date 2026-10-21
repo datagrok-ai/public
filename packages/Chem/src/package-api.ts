@@ -558,6 +558,15 @@ export namespace funcs {
     return await grok.functions.call('Chem:PerformClusterMCS', { molCol, clusterCol });
   }
 
+  /**
+   * Joins the pieces of each molecule at their matching attachment points (RDKit's molzip, by Crux in both chemical engines): SMILES such as C[*:1].N[*:1] or MOL blocks of several fragments. Returns the joined molecules' canonical SMILES (an empty string for a molecule that is not joined)
+   * @param {any} molecules - Molecules that each hold their pieces
+   * @param {any} params - RDKit's MolzipParams by name (Label, AtomSymbols, AtomProperty, EnforceValenceRules)
+   */
+  export async function molzip(molecules: any , params?: any ): Promise<any> {
+    return await grok.functions.call('Chem:Molzip', { molecules, params });
+  }
+
   export async function chemSpaceEditor(call: any ): Promise<any> {
     return await grok.functions.call('Chem:ChemSpaceEditor', { call });
   }

@@ -103,6 +103,39 @@ interface McsAsJson {
   get_mcs_as_json(mols: MolList, details?: string): string;
 }
 
+/**
+ * RDKit's molzip where the module has it: Chem's Crux module (crux-core decision chem-wasm-ports), not Chem's RDKit.js
+ * 2024.09. The two-molecule form is RDKit.js's own; the one-molecule form (the pieces in one dot-disconnected
+ * molecule) is Crux's. `details`: RDKit's MolzipParams by name (`Label`, `AtomSymbols`, `AtomProperty`,
+ * `EnforceValenceRules`), as JSON.
+ */
+export interface Molzip {
+  molzip(a: RDMol, b: RDMol, details?: string): RDMol | null;
+  molzip(mol: RDMol, details?: string): RDMol | null;
+}
+
+/** Whether the module has RDKit's molzip ({@link Molzip}). */
+export function hasMolzip(module: RDModule): module is RDModule & Molzip {
+  return typeof (module as Partial<Molzip>).molzip === 'function';
+}
+
+/**
+ * The canonical SMILES of molzip's result, read again as Chem reads a molecule (getMolSafe: sanitized, explicit H
+ * atoms removed) since molzip does not sanitize its result; '' for none. Frees `zipped`.
+ */
+export function zippedSmiles(zipped: RDMol | null, module: RDModule): string {
+  if (!zipped)
+    return '';
+  let read: RDMol | null = null;
+  try {
+    read = getMolSafe(zipped.get_smiles(), {}, module).mol;
+    return read?.get_smiles() ?? '';
+  } finally {
+    read?.delete();
+    zipped.delete();
+  }
+}
+
 const MALFORMED_MOL_V2000 = `
 Malformed
 
@@ -825,11 +858,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
    * `attachIdx[p]` is the attachment number of fragment column `p` (R7 -> 7), or several numbers for a
    * fragment bonded to the core at more than one point (a bridge). It cannot be inferred from the
    * fragments: an empty fragment carries no `[*:N]` label, yet must still name which dummy to erase.
+   *
+   * On a module with RDKit's molzip (Chem's Crux module, {@link hasMolzip}) the core and its fragments are joined by
+   * molzip at their `[*:N]` pairs instead of the string assembly, and the result read again as above.
    */
   linkRGroupFragments(cores: string[], fragmentColumns: string[][], attachIdx: (number | number[])[]): string[] {
     const size = cores.length;
     const smiles = new Array<string>(size);
     const numbers = attachIdx.map((a) => Array.isArray(a) ? a : [a]);
+    const module = this._rdKitModule;
     for (let i = 0; i < size; i++) {
       // Collect the joins this core actually supports; erase dummies whose fragment is H.
       let core = cores[i];
@@ -840,14 +877,26 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           continue;
         const fragment = fragmentColumns[p][i];
         if (fragment)
-          joins.push({ns, fragment: moveStartRLabelToBranch(fragment)});
+          joins.push({ns, fragment});
         else {
           for (const n of ns)
             core = core.split(`[*:${n}]`).join('[H]');
         }
       }
 
-      const pieces = [moveStartRLabelToBranch(core), ...joins.map((j) => j.fragment)];
+      if (hasMolzip(module)) {
+        const read = [core, joins.map((j) => j.fragment).join('.')].map((m) => getMolSafe(m, {}, module).mol);
+        try {
+          smiles[i] = !read[0] || !read[1] ? '' : zippedSmiles(module.molzip(read[0], read[1]), module);
+        } catch {
+          smiles[i] = '';
+        } finally {
+          read.forEach((mol) => mol?.delete());
+        }
+        continue;
+      }
+
+      const pieces = [moveStartRLabelToBranch(core), ...joins.map((j) => moveStartRLabelToBranch(j.fragment))];
       const bonds = joins.reduce((count, join) => count + join.ns.length, 0);
       const digits = pickFreeRingDigits(pieces, bonds);
       if (digits.length < bonds) {

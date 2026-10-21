@@ -1,9 +1,11 @@
 // The Crux worker's analysis jobs (crux.worker.ts runs them; engine/analysis-jobs.ts sends them): MMPA fragmentation,
-// R-group decomposition and FMCS run the RDKit worker's own code (rdkit-service-worker-substructure.ts) on the Crux
-// module, which answers RDKit.js's calls.
+// R-group decomposition, FMCS and fragment linking run the RDKit worker's own code
+// (rdkit-service-worker-substructure.ts) on the Crux module, which answers RDKit.js's calls; molzip is RDKit's molzip,
+// which Chem's RDKit.js lacks.
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {RdKitServiceWorker} from '../rdkit-service/rdkit-service-worker';
-import type {IMmpFragmentsResult, IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
+import {IMmpFragmentsResult, IRGroupAnalysisResult, hasMolzip, zippedSmiles}
+  from '../rdkit-service/rdkit-service-worker-substructure';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
 import {CLUSTER_MCS_TIMEOUT_S} from './crux-api';
 
@@ -54,6 +56,29 @@ async function perCluster<C, R>(clusters: C[], molecules: (cluster: C) => string
   return results;
 }
 
+/**
+ * The pieces of each molecule joined by RDKit's molzip (`details`: MolzipParams as JSON), each molecule read as Chem's
+ * getMolSafe reads it, the result's canonical SMILES ({@link zippedSmiles}); '' for a molecule not read or one molzip
+ * refuses (a label used twice, a valence over the limit), and the first refusal's message.
+ */
+function molzip(module: RDModule, molecules: string[], details: string): {smiles: string[], error: string | null} {
+  if (!hasMolzip(module))
+    throw new Error('not supported by Crux: molzip'); // a Crux file older than crux-core's molzip
+  let error: string | null = null;
+  const smiles = molecules.map((molecule) => {
+    const read = molecule ? getMolSafe(molecule, {}, module) : null;
+    try {
+      return !read?.mol || read.isQMol ? '' : zippedSmiles(module.molzip(read.mol, details), module);
+    } catch (e: any) {
+      error ??= `${molecule}: ${e?.message ?? e}`;
+      return '';
+    } finally {
+      read?.mol?.delete();
+    }
+  });
+  return {smiles, error};
+}
+
 type Job = (worker: RdKitServiceWorker, module: RDModule, ...args: any[]) => unknown;
 
 /** The jobs by name (the Crux worker's `op`), each with the RDKit worker over the Crux module and the module. */
@@ -87,4 +112,12 @@ export const ANALYSIS_JOBS: {[op: string]: Job} = {
   /** Each cluster's R-group decomposition; null for one the RDKit pool does. */
   clusterRGroups: (worker, module, clusters: RGroupCluster[]) => perCluster(clusters, (c) => c.molecules, module,
     (c) => worker.rGroupAnalysis(c.molecules, c.core, c.coreIsQMol, c.options)),
+  /** RdKitServiceWorker.linkRGroupFragments of rows `[core, a fragment per column...]`: by molzip on Crux. */
+  linkRGroupFragments: (worker, module, rows: string[][], attachIdx: (number | number[])[]): string[] => {
+    if (!hasMolzip(module))
+      throw new Error('not supported by Crux: molzip');
+    return worker.linkRGroupFragments(rows.map((row) => row[0]),
+      attachIdx.map((_, p) => rows.map((row) => row[p + 1])), attachIdx);
+  },
+  molzip: (_worker, module, molecules: string[], details: string) => molzip(module, molecules, details),
 };

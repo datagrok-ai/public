@@ -42,13 +42,13 @@ const PAIR_MCS_MAX_BOND_MATCH_PAIRS = 10000;
  * (36 of the 185 peptide cliffs, 6.9 s at most with the setup; every other cliff took under 0.1 s). */
 const PAIR_MCS_TIMEOUT_S = 5;
 /**
- * The analyses' time limits (CruxService.mmpGetFragments and the rest): per molecule (`mmpa`, `rGroups`) or per
- * cluster, a cluster being one job (`clusterMCS`: FMCS's Timeout on Crux, crux-analysis-jobs.ts; `clusterRGroups`:
- * RdKitService.clusterRGroups' minute; both plus JOB_BASE_MS); `mcs` for one FMCS: RDKit's default FMCS Timeout, an
- * hour.
+ * The analyses' time limits (CruxService.mmpGetFragments and the rest): per molecule (`mmpa`, `rGroups`, `link`,
+ * `molzip`) or per cluster, a cluster being one job (`clusterMCS`: FMCS's Timeout on Crux, crux-analysis-jobs.ts;
+ * `clusterRGroups`: RdKitService.clusterRGroups' minute; both plus JOB_BASE_MS); `mcs` for one FMCS: RDKit's default
+ * FMCS Timeout, an hour.
  */
-const ANALYSIS_MS = {mmpa: 50, rGroups: 100, clusterMCS: CLUSTER_MCS_TIMEOUT_S * 1000, clusterRGroups: 60000,
-  mcs: 3600000};
+const ANALYSIS_MS = {mmpa: 50, rGroups: 100, link: 20, molzip: 20, clusterMCS: CLUSTER_MCS_TIMEOUT_S * 1000,
+  clusterRGroups: 60000, mcs: 3600000};
 /**
  * crux keeps ~380 bytes per indexed molecule (~1.1 GB at the limit, spread over the workers); least recently used
  * column indexes are dropped past this many rows.
@@ -473,7 +473,7 @@ export class CruxService {
   }
 
   // Analyses (engine/analysis-jobs.ts sends them, crux-analysis-jobs.ts runs them): the RDKit worker's own code on
-  // Crux, so the results have the RDKit pool's shapes.
+  // Crux, so the results have the RDKit pool's shapes; molzip, which Chem's RDKit.js lacks.
 
   /**
    * MMPA fragments as the RDKit pool's `mmpGetFragments` gives them, the molecules in chunks across the workers, and
@@ -578,6 +578,21 @@ export class CruxService {
     }
   }
 
+  /** The RDKit pool's `linkRGroupFragments`, joined by molzip, the rows in chunks across the workers. */
+  async linkRGroupFragments(cores: string[], fragmentColumns: string[][], attachIdx: (number | number[])[]):
+    Promise<string[]> {
+    const rows = cores.map((core, i) => [core, ...fragmentColumns.map((column) => column[i])]);
+    return (await this.inChunks(rows, ANALYSIS_MS.link, (worker, chunk) =>
+      worker.analysis<string[]>('linkRGroupFragments', [chunk, attachIdx]))).flat();
+  }
+
+  /** RDKit's molzip of each molecule's pieces (`details`: MolzipParams as JSON), the molecules in chunks across the
+   * workers: the joined molecules' SMILES ('' where one is not zipped) and the first refusal's message. */
+  async molzip(molecules: string[], details: string): Promise<{smiles: string[], error: string | null}> {
+    const parts = await this.inChunks(molecules, ANALYSIS_MS.molzip, (worker, chunk) =>
+      worker.analysis<{smiles: string[], error: string | null}>('molzip', [chunk, details]));
+    return {smiles: parts.flatMap((part) => part.smiles), error: parts.find((part) => part.error)?.error ?? null};
+  }
 
   /**
    * A job's result within `timeoutMs`. A wasm trap (the worker reports `RuntimeError: ...`; out of memory), a timeout

@@ -1,8 +1,9 @@
 /**
- * MMPA fragmentation, R-group decomposition and FMCS by the "Chemical engine" setting (README.md beside this file). In
- * Crux mode the Crux pool runs the RDKit worker's own code on the Crux module (crux/crux-analysis-jobs.ts), so the
- * results have the RDKit pool's shapes; the RDKit pool does the molecules or clusters Crux cannot, and the whole call
- * when Crux fails. In RDKit mode, the RDKit pool, as before.
+ * MMPA fragmentation, R-group decomposition, FMCS and fragment linking by the "Chemical engine" setting (README.md
+ * beside this file), and molzip. In Crux mode the Crux pool runs the RDKit worker's own code on the Crux module
+ * (crux/crux-analysis-jobs.ts), so the results have the RDKit pool's shapes; the RDKit pool does the molecules, rows or
+ * clusters Crux cannot, and the whole call when Crux fails. In RDKit mode, the RDKit pool, as before. molzip runs on
+ * Crux in both modes: Chem's RDKit.js (2024.09) has none.
  */
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {IMmpFragmentsResult, IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
@@ -126,4 +127,59 @@ export async function clusterRGroupsByEngine(clusters: RGroupCluster[]): Promise
     }
     return result;
   }, () => rdkit(clusters));
+}
+
+/**
+ * `RdKitService.linkRGroupFragments` (each row's core joined with its fragments, canonical SMILES, '' for none) by the
+ * engine in effect: in Crux mode by RDKit's molzip, the RDKit pool's string assembly for a row molzip does not join.
+ */
+export async function linkRGroupFragmentsByEngine(cores: string[], fragmentColumns: string[][],
+  attachIdx: (number | number[])[]): Promise<string[]> {
+  const rdkit = async (rows: number[] | null) => (await getRdKitService()).linkRGroupFragments(
+    rows ? rows.map((i) => cores[i]) : cores,
+    rows ? fragmentColumns.map((c) => rows.map((i) => c[i])) : fragmentColumns, attachIdx);
+  if (!isCruxRequested())
+    return rdkit(null);
+  return cruxOrRdKitAsync('fragment linking', async () => {
+    const smiles = await (await getCruxService()).linkRGroupFragments(forCrux(cores), fragmentColumns, attachIdx);
+    const rest = smiles.flatMap((s, i) => s ? [] : [i]);
+    if (rest.length) {
+      const patch = await rdkit(rest);
+      rest.forEach((i, k) => smiles[i] = patch[k]);
+      const done = rest.filter((_, k) => patch[k]);
+      if (done.length) {
+        warnCruxFallback('fragment linking', `RDKit joined ${done.length} rows molzip did not, e.g. ` +
+          cores[done[0]]);
+      }
+    }
+    return smiles;
+  }, () => rdkit(null));
+}
+
+/**
+ * RDKit's MolzipParams by name (`RDKit::MolzipParams`, Code/GraphMol/ChemTransforms/MolFragmenter.h), each optional
+ * with RDKit's default: `Label` (how pieces name their attachment points: `AtomMapNumber`, `[*:1]`, the
+ * default; `Isotope`, `[1*]`; `FragmentOnBonds`, the labels of RDKit's FragmentOnBonds; `AtomType`, the atoms of
+ * `AtomSymbols`; `AtomProperty`, the unsigned-int atom property `AtomProperty`); `EnforceValenceRules` (true: a join
+ * over an atom's valence is refused).
+ */
+export interface MolzipParams {
+  Label?: 'AtomMapNumber' | 'Isotope' | 'FragmentOnBonds' | 'AtomType' | 'AtomProperty';
+  AtomSymbols?: string[];
+  AtomProperty?: string;
+  EnforceValenceRules?: boolean;
+}
+
+/**
+ * RDKit's molzip (`molzip(mol, params)`, crux-core's port, run on the Crux pool in both engines): each molecule holds
+ * its pieces as fragments (SMILES `C[*:1].N[*:1]`, or a MOL block of several fragments), joined where two of them
+ * carry the same attachment point (a label without a partner stays a dummy atom). The joined molecules' canonical
+ * SMILES, '' for a molecule that does not read or that molzip refuses (a label used twice, a valence over the limit;
+ * the first refusal is logged). Throws when the Crux module does not load.
+ */
+export async function molzip(molecules: string[], params: MolzipParams = {}): Promise<string[]> {
+  const {smiles, error} = await (await getCruxService()).molzip(molecules, JSON.stringify(params));
+  if (error)
+    console.warn(`Chem | molzip did not join every molecule: ${error}`);
+  return smiles;
 }

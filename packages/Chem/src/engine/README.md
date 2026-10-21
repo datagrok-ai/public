@@ -38,6 +38,8 @@ the renderers empty their caches and the grids repaint.
 | MMPA fragmentation (`getMmpFrags`: MMP analysis, the SAR matrix's series and clusters; `engine/analysis-jobs.ts`) | the Crux workers run the RDKit worker's `mmpGetFragments` on the Crux module (`crux/crux-analysis-jobs.ts`), the molecules in chunks across the pool | the RDKit pool, per call and per molecule Crux does not read |
 | R-group decomposition (`rGroupsMinilib`: the R-group analysis dialog, `rGroupDecomposition`; the SAR matrix's clusters) | a Crux worker runs the RDKit worker's `rGroupAnalysis`, a SAR matrix cluster per job across the pool; a cancel ends the operation at once (the worker's result is dropped) | the RDKit pool, per call (a molecule Crux cannot read, a failure) and per cluster |
 | FMCS (`getMCS`: the R-group dialog's MCS; Cluster MCS, `performClusterMCS`; the SAR matrix's anchors) | a Crux worker runs the RDKit worker's `mostCommonStructure`; a cluster per job across the pool, within FMCS's own Timeout of 45 s ('' past it, as the RDKit pool gives a cluster whose worker it restarts after 45 s); Cluster MCS' SMILES from the main thread's Crux module | the RDKit pool, per call and per cluster Crux cannot read |
+| Fragment linking (the SAR matrix's `linkRGroupFragments`) | RDKit's molzip on the Crux workers: the RDKit worker's `linkRGroupFragments` joins by molzip where the module has it | the RDKit worker's string assembly, per call and per row molzip does not join |
+| `molzip` (a package function for Bio and other packages) | RDKit's molzip on the Crux workers, in both modes: Chem's RDKit.js has none | none: it throws when the Crux file does not load |
 
 Fingerprints by Crux are RDKit 2026.03's, Chem's RDKit is 2024.09: on Chem's test molecules (1,402) Morgan, pattern,
 MACCS and RDKit fingerprints are identical, atom-pair and topological-torsion ones differ on 17 and 16 molecules, each
@@ -80,6 +82,7 @@ from Crux:
 | `getMorganFingerprints`, `getFingerprints`, `getSimilarities`, `findSimilar`, `getDiversities` (Bio, Dendrogram, Flow, Chemspace, ...); `getStructuralAlerts`, `runPharmacophoreFeatures` | RDKit's (`getFingerprints`' FCFP and chirality options: Crux's) | Crux's (the same types and options: identical bits on Chem's datasets but where RDKit 2024.09 and 2026.03 differ) |
 | `getProperties`, `getChemPropertyFunction`, Chemical Properties (Admetica's MW, HitTriage) | OpenChemLib's | Crux's: RDKit's definitions (MW the average weight, not OpenChemLib's monoisotopic mass) |
 | `getMCS`, Cluster MCS (`clusterMCS`), `rGroupDecomposition`, MMP analysis | RDKit | Crux's: RDKit 2026.03's (an MCS SMARTS may name its atoms in another order than Chem's RDKit 2024.09, the same query) |
+| `molzip` | Crux's | Crux's |
 | every other function (`convertMolNotation`, `canonicalize`, `isSmiles`, `validateMolecule`, InChI, ...) | RDKit | RDKit |
 
 ## Moving a feature behind the setting
