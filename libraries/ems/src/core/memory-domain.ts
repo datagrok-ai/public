@@ -747,8 +747,7 @@ export class MemoryTable implements DomainTableLike {
     return row;
   }
 
-  /** A datetime's instant however it is spelled — a Date, a Dayjs or ISO text, zone-less text read as UTC as the
-   * server reads it. */
+  /** Zone-less ISO text is UTC, as the server reads it. */
   private static _instant(v: unknown): number {
     return typeof v === 'string' ? Date.parse(v.includes('T') && !/(Z|[+-]\d\d:?\d\d)$/i.test(v) ? `${v}Z` : v) :
       Number(v);
