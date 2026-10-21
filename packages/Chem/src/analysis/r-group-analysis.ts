@@ -267,7 +267,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     progressBar = DG.TaskBarProgressIndicator.create('R-Group analysis running...', {cancelable: true});
     // In Crux mode ("Chemical engine") the decomposition runs on a Crux worker: a cancel ends the operation at once
     // (the worker finishes the call and its result is dropped); the RDKit worker restarts as below where the RDKit
-    // pool is up (the decomposition may have fallen back to it).
+    // pool was started (the decomposition may have fallen back to it), never starting it for a cancel.
     const crux = isCruxRequested();
     let cancelCrux = () => {};
     const cruxCanceled = new Promise<undefined>((resolve) => cancelCrux = () => resolve(undefined));
@@ -276,7 +276,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     // the one actually running there; the operation then unwinds on its own in the background.
     cancelSub = progressBar.onCanceled.subscribe(() => {
       canceled = true;
-      if (!crux || _rdKitService)
+      if (!crux || (_rdKitService?.timesInitialized ?? 0) > 0)
         cancelChemOp(opId, [0]).catch(() => {});
       cancelCrux();
       progressBar?.close();

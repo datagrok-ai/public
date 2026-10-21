@@ -49,6 +49,10 @@ const PAIR_MCS_TIMEOUT_S = 5;
  */
 const ANALYSIS_MS = {mmpa: 50, rGroups: 100, link: 20, molzip: 20, clusterMCS: CLUSTER_MCS_TIMEOUT_S * 1000,
   clusterRGroups: 60000, mcs: 3600000};
+/** How often a cluster waiting for an idle worker looks again (CruxService.eachCluster). */
+const IDLE_POLL_MS = 50;
+/** How the calls of a worker CruxService.restartWorker replaced fail: not a reason to restart the pool (job()). */
+const WORKER_REPLACED = 'a Crux worker past its time limit was replaced';
 /**
  * crux keeps ~380 bytes per indexed molecule (~1.1 GB at the limit, spread over the workers); least recently used
  * column indexes are dropped past this many rows.
@@ -324,7 +328,9 @@ export class CruxService {
         }
       }));
     } finally {
-      if (--index.users === 0 && !index.lost)
+      // released when its last user is done, a lost one too (a worker replaced by restartWorker left its segments on
+      // the others; a drop sent to a new worker for keys it never had does nothing)
+      if (--index.users === 0)
         this.release(index);
     }
   }
@@ -523,17 +529,24 @@ export class CruxService {
   }
 
   /**
-   * The analysis job `op` per cluster, as the RDKit pool's processClusterQueue runs it: each worker takes the next
-   * cluster when its last is done; a cluster past `limitMs` is listed in `timedOut` and its worker replaced
-   * ({@link restartWorker}), and the other clusters go on. A cluster whose call fails (a trap, a lost worker) is null.
+   * The analysis job `op` per cluster, as the RDKit pool's processClusterQueue runs it: each cluster goes to a worker
+   * with no call in flight, so its time limit runs from its own start (a busy worker's queue is not its time), and a
+   * worker takes the next cluster when its last is done; a cluster past `limitMs` is listed in `timedOut` and its
+   * worker replaced ({@link restartWorker}), and the other clusters go on. A cluster whose call fails (a trap, a lost
+   * worker) is null.
    */
   private async eachCluster<R>(clusters: unknown[], limitMs: number, op: string, args: unknown[]):
     Promise<{results: (R | null)[], timedOut: number[]}> {
     const results = new Array<R | null>(clusters.length).fill(null);
     const timedOut: number[] = [];
+    limitMs = this.clusterLimitForTests ?? limitMs;
     let next = 0;
     await Promise.all(this.workers.map(async (_, w) => {
       while (next < clusters.length) {
+        if (this.workers[w].pendingCalls > 0) { // busy (a search, a long FMCS, its own init): look again later
+          await new Promise((resolve) => setTimeout(resolve, IDLE_POLL_MS));
+          continue;
+        }
         const i = next++;
         let timer: ReturnType<typeof setTimeout> | undefined;
         const late = new Promise<'late'>((resolve) => timer = setTimeout(() => resolve('late'), limitMs));
@@ -567,7 +580,7 @@ export class CruxService {
    * next search indexes the column again); the other workers and the other indexes stay.
    */
   private restartWorker(w: number): void {
-    this.workers[w].terminate();
+    this.workers[w].terminate(WORKER_REPLACED);
     this.workers[w] = new CruxWorkerClient();
     this.workers[w].moduleInit(this.module!).catch(() => {}); // a failed init is logged by the worker client
     for (const index of [...this.indexes.values()]) {
@@ -597,8 +610,8 @@ export class CruxService {
   /**
    * A job's result within `timeoutMs`. A wasm trap (the worker reports `RuntimeError: ...`; out of memory), a timeout
    * or a worker gone restarts the workers: they may hold a broken instance or a call that never ends; the next jobs and
-   * searches get new ones. Another failure (a molecule Crux refuses, a "not supported by Crux" call) keeps them and
-   * their search indexes.
+   * searches get new ones. Another failure (a molecule Crux refuses, a "not supported by Crux" call, a worker
+   * restartWorker replaced: WORKER_REPLACED) keeps them and their search indexes.
    */
   private async job<R>(work: Promise<R>, timeoutMs: number): Promise<R> {
     const generation = this.generation;
@@ -624,6 +637,19 @@ export class CruxService {
     for (const index of this.indexes.values())
       index.lost = true;
     this.indexes.clear();
+  }
+
+  /** Tests: the time limit of every cluster of {@link eachCluster} (null: each kind's own). */
+  clusterLimitForTests: number | null = null;
+
+  /** Tests: replaces worker `w`, as a cluster past its time limit does ({@link restartWorker}). */
+  restartWorkerForTests(w: number): void {
+    this.restartWorker(w);
+  }
+
+  /** Tests: a job that keeps worker `w` busy `ms` (as a long FMCS does), timed as jobs are ({@link job}). */
+  busyWorkerForTests(w: number, ms: number): Promise<unknown> {
+    return this.job(this.workers[w].busyForTests(ms), JOB_BASE_MS + ms);
   }
 
   /** Tests: a job that fails in its worker with `message` (by default as a trapped instance would: a restart). */

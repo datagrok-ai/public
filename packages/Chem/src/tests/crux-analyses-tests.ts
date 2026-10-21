@@ -286,6 +286,72 @@ category('crux analyses', () => {
     }
   });
 
+  test('a replaced worker: the index a search was using is freed on the other workers', async () => {
+    // CruxService.restartWorker drops the column indexes with a segment on the worker it replaces; one a search is
+    // using is released (its segments on the other workers freed) when the search ends
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true);
+      const service = await getCruxService();
+      const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList() as string[];
+      const index = await service.getIndex(column('molecules', [...smiles, ...smiles, ...smiles]));
+      await service.build(index, () => false);
+      expect(new Set(index.segments.map((segment) => segment.worker)).size > 1, true, 'indexed on several workers');
+      const search = service.search(index, 'c1ccccc1', '', () => {}, () => false);
+      service.restartWorkerForTests(index.segments[0].worker);
+      await search.catch(() => {});
+      expect(index.lost, true, 'the index is dropped');
+      expect(index.released.length, 0, 'its segments on the other workers are freed');
+    } finally {
+      setChemicalEngine(null);
+    }
+  });
+
+  test('Cluster MCS: a cluster waits for an idle worker, not behind a busy one', async () => {
+    // a long call on worker 0 (an FMCS, say): the clusters go to the idle workers, none past its time limit (1.5 s
+    // here), and the pool is not restarted
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const service = await getCruxService();
+    const sar = (await readDataframe('tests/sar-small_test.csv')).col('smiles')!.toList() as string[];
+    service.clusterLimitForTests = 1500;
+    try {
+      const generation = service.generation;
+      const busy = service.busyWorkerForTests(0, 4000);
+      await new Promise((resolve) => setTimeout(resolve, 200)); // the busy call posted
+      const {results, timedOut} = await service.clusterMCS([sar.slice(0, 6), sar.slice(6, 12), sar.slice(12)],
+        true, true);
+      expect(JSON.stringify(timedOut), '[]', 'clusters past their time limit');
+      expect(results.every((mcs) => !!mcs), true, 'every cluster has an MCS');
+      await busy;
+      expect(service.generation, generation, 'the pool was restarted');
+    } finally {
+      service.clusterLimitForTests = null;
+      setChemicalEngine(null);
+    }
+  }, {timeout: 60000});
+
+  test('a replaced worker\'s calls fail without restarting the pool', async () => {
+    // the jobs of a worker CruxService.restartWorker replaces fail (their callers fall back to RDKit); the other
+    // workers and their indexes stay
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true);
+      const service = await getCruxService();
+      const generation = service.generation;
+      const busy = service.busyWorkerForTests(1, 3000);
+      await new Promise((resolve) => setTimeout(resolve, 200)); // the busy call posted
+      service.restartWorkerForTests(1);
+      const failure = await busy.then(() => 'no failure', (e: any) => String(e?.message ?? e));
+      expect(failure.includes('was replaced'), true, failure);
+      expect(service.generation, generation, 'the pool was restarted');
+      // the new worker answers (a new client: the old one's terminate reason is not carried over)
+      expect(typeof await service.busyWorkerForTests(1, 10), 'number', 'the replacement answers');
+    } finally {
+      setChemicalEngine(null);
+    }
+  }, {timeout: 60000});
+
   test('timing: RDKit and Crux', async () => {
     // a measurement, no check: with --benchmark only (it returns at once otherwise). Median of 3, each engine: MMPA
     // fragmentation of the MMP demo (20,267 molecules), R-group decomposition of the R-group tests' benchmark table

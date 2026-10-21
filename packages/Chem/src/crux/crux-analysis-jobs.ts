@@ -2,7 +2,7 @@
 // R-group decomposition, FMCS and fragment linking run the RDKit worker's own code
 // (rdkit-service-worker-substructure.ts) on the Crux module, which answers RDKit.js's calls; molzip is RDKit's molzip,
 // which Chem's RDKit.js lacks.
-import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import type {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {RdKitServiceWorker} from '../rdkit-service/rdkit-service-worker';
 import {IMmpFragmentsResult, IRGroupAnalysisResult, hasMolzip, zippedSmiles}
   from '../rdkit-service/rdkit-service-worker-substructure';
@@ -31,12 +31,15 @@ function unreadRows(molecules: string[], module: RDModule): number[] {
  * them where fragmentMol returns false), where RdKitServiceWorker.mmpGetFragments gave no SMILES. */
 function noFragmentation(worker: RdKitServiceWorker, molecule: string): boolean {
   const mol = worker.getMolWithSmilesCheck(molecule);
+  let frags: ReturnType<RDMol['get_mmpa_frags']> | undefined;
   try {
-    const frags = mol?.get_mmpa_frags(1, 1, 20);
+    frags = mol?.get_mmpa_frags(1, 1, 20);
     return !!frags && !frags.cores && !frags.sidechains;
   } catch {
     return false;
   } finally {
+    frags?.cores?.delete();
+    frags?.sidechains?.delete();
     mol?.delete();
   }
 }
