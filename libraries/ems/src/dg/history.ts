@@ -135,9 +135,12 @@ export class DomainHistory extends Control {
     const scope = Scope.ambient!;
     let older = this._older;
     let loading = false;
-    scope.listen(list.root, 'scroll', async () => {
+    let reported = false;
+    // also when the pane is taller than the page: a list that does not fill it never scrolls
+    const more = async (): Promise<void> => {
       const el = list.root;
-      if (older === null || loading || el.scrollTop + el.clientHeight <= el.scrollHeight - NEAR_BOTTOM_ROWS * ITEM_HEIGHT)
+      if (older === null || loading || el.clientHeight === 0 ||
+        el.scrollTop + el.clientHeight <= el.scrollHeight - NEAR_BOTTOM_ROWS * ITEM_HEIGHT)
         return;
       loading = true;
       try {
@@ -146,13 +149,18 @@ export class DomainHistory extends Control {
           return;
         shown.value = shown.peek().concat(page.entries);
         older = page.older;
+        reported = false;
+        scope.setTimeout(() => void more());
       } catch (e) {
-        if (!scope.isDisposed)
+        if (!scope.isDisposed && !reported)
           DomainErrors.report(e, this.source);
+        reported = true;
       } finally {
         loading = false;
       }
-    });
+    };
+    scope.listen(list.root, 'scroll', () => more());
+    scope.setTimeout(() => void more());
     return list.root;
   }
 
