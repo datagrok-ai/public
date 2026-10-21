@@ -722,7 +722,6 @@ export class MemoryTable implements DomainTableLike {
     }
   }
 
-  /** The declared defaults of the columns an insert leaves empty — the server's column `DEFAULT`. */
   withDefaults(values: Row): Row {
     for (const prop of this.properties) {
       if (isEmpty(values[prop.name!]) && prop.defaultValue != null)

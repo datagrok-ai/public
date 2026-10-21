@@ -298,7 +298,6 @@ export class DomainForm extends Control {
       const extra: Partial<DomainPickOptions> = {filter, params: () => row, siblings: source.schema};
       overrides = {...overrides, [name]: {...overrides?.[name], ...extra}};
     }
-    // a draft may leave a column with a default empty: the insert omits it and the server fills it
     const properties = source.schema.properties.filter((p) => !system.has(p.name))
       .map((p) => draft && p.nullable === false && p.defaultValue != null ? {...p, nullable: true} : p);
     const form = propertyForm(properties, row, {

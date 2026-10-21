@@ -1588,7 +1588,6 @@ export class DomainFrameEditor implements IFrameEditor {
       return null;
     const col = this._df.columns.byName(column);
     const empty = col == null || col.isNone(row);
-    // buildOps leaves it out of the insert, and the server fills the default
     if (empty && property.defaultValue != null && this.stateOf(row) === 'new')
       return null;
     return DomainFrameEditor.validateCellValue(property, empty ? null : this._df.get(column, row));

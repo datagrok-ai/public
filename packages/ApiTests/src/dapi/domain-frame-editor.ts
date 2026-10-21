@@ -775,7 +775,6 @@ category('Dapi: domain frame editor', () => {
       expect(await editor.save(), true, 'the new row was refused');
       const saved = await tickets.first({filter: {property: 'code', operator: '=', value: 'T1'} as any}) as any;
       expect(saved.status, 'open', 'the server default did not land');
-      // a saved row sends what the cell holds, so clearing it there is still an error
       editor.setValue(row, 'status', null);
       expect(editor.errorOf(row, 'status')?.message, 'Value can\'t be empty',
         'clearing a required column of a saved row was accepted');
