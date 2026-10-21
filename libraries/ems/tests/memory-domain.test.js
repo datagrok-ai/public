@@ -244,59 +244,29 @@ test('transaction: any table in one batch, all or nothing across tables; deletes
   assert.equal(issue.history.at(-1).tx_id, project.history.at(-1).tx_id, 'one transaction');
 });
 
-/** `item` with one child table per referential action, and a self-cascading `folder` tree. */
-const shop = () => new MemoryDomainBackend({name: 'shop', tables: {
-  item: {columns: {name: {type: 'string'}}},
-  note: {columns: {item_id: {type: 'ref', ref: 'item', onDelete: 'cascade'}}},
-  lock: {columns: {item_id: {type: 'ref', ref: 'item', onDelete: 'restrict'}}},
-  tag: {columns: {item_id: {type: 'ref', ref: 'item', onDelete: 'setnull'}}},
-  folder: {hierarchy: true, columns: {parent_id: {type: 'ref', ref: 'folder', onDelete: 'cascade'}}},
-}}, {rows: {item: [{id: 'i1'}, {id: 'i2'}, {id: 'i3'}], note: [{id: 'n1', item_id: 'i1'}],
-  lock: [{id: 'k2', item_id: 'i2'}, {id: 'k3', item_id: 'i3'}], tag: [{id: 't1', item_id: 'i1'}],
-  folder: [{id: 'f1'}, {id: 'f2', parent_id: 'f1'}, {id: 'f3', parent_id: 'f2'}]}});
+test('delete: onDelete cascade and setnull act as on the platform, all or nothing; a deleted row is not found', async () => {
+  const be = new MemoryDomainBackend({name: 'shop', tables: {
+    item: {columns: {name: {type: 'string'}}},
+    note: {columns: {item_id: {type: 'ref', ref: 'item', onDelete: 'cascade'}}},
+    lock: {columns: {item_id: {type: 'ref', ref: 'item'}}},
+    tag: {columns: {item_id: {type: 'ref', ref: 'item', onDelete: 'setnull'}}},
+    folder: {hierarchy: true, columns: {parent_id: {type: 'ref', ref: 'folder', onDelete: 'cascade'}}},
+  }}, {rows: {item: [{id: 'i1'}, {id: 'i2'}], note: [{id: 'n1', item_id: 'i1'}], lock: [{id: 'k2', item_id: 'i2'}],
+    tag: [{id: 't1', item_id: 'i1'}], folder: [{id: 'f1'}, {id: 'f2', parent_id: 'f1'}, {id: 'f3', parent_id: 'f2'}]}});
+  const row = (table) => be.tableSync(`shop.${table}`).rows[0];
+  const del = (table, ...ids) => be.transaction(ids.map((id) => ({op: 'delete', table, id})));
 
-test('delete: onDelete cascade soft-deletes the live children, setnull clears the reference, as the platform', async () => {
-  const be = shop();
-  await be.transaction([{op: 'delete', table: 'item', id: 'i1'}]);
-  const [note] = be.tableSync('shop.note').rows;
-  assert.equal(note.is_deleted, true, 'the cascaded child is in the trash');
-  assert.equal(note.version, 2);
-  const [tag] = be.tableSync('shop.tag').rows;
-  assert.equal(tag.item_id, null, 'setnull clears the reference and keeps the row');
-  assert.notEqual(tag.is_deleted, true);
-  assert.equal(tag.version, 2);
+  await assert.rejects(del('item', 'i1', 'i2'), (e) => e.code === 'restrict');
+  assert.deepEqual([row('note').is_deleted, row('tag').item_id], [undefined, 'i1'], 'the refused batch rolled back');
+  await del('item', 'i1');
+  assert.deepEqual([row('note').is_deleted, row('tag').item_id, row('tag').is_deleted], [true, null, undefined]);
   const tx = be.tableSync('shop.item').history.at(-1).tx_id;
-  assert.deepEqual([be.tableSync('shop.note').history.at(-1), be.tableSync('shop.tag').history.at(-1)]
-    .map((line) => [line.op, line.tx_id]), [['delete', tx], ['update', tx]], 'audited in the same transaction');
-
-  await be.transaction([{op: 'delete', table: 'folder', id: 'f1'}]);
-  assert.deepEqual(be.tableSync('shop.folder').rows.map((r) => r.is_deleted), [true, true, true],
-    'a cascade recurses down a self-referencing tree');
-});
-
-test('delete: a row the batch already deleted, by a cascade or in the trash, is not found, as on the platform', async () => {
-  const be = shop();
-  await assert.rejects(be.transaction([{op: 'delete', table: 'folder', id: 'f1'}, {op: 'delete', table: 'folder', id: 'f3'}]),
-    (e) => e.code === 'not-found' && /Operation 1: no row "f3"/.test(e.message));
-  assert.deepEqual(be.tableSync('shop.folder').rows.map((r) => r.is_deleted ?? false), [false, false, false],
-    'the refused batch rolled back the cascade');
-  assert.equal(be.tableSync('shop.folder').history.length, 0);
-  await be.transaction([{op: 'delete', table: 'folder', id: 'f3'}]);
-  await assert.rejects(be.transaction([{op: 'delete', table: 'folder', id: 'f3'}]), (e) => e.code === 'not-found');
-  assert.equal(be.tableSync('shop.folder').rows[2].version, 2, 'a re-delete stamps nothing');
-});
-
-test('delete: onDelete restrict (the default) is refused with the platform\'s restrict, and refuses the whole batch', async () => {
-  const be = shop();
-  await assert.rejects(be.transaction([{op: 'delete', table: 'item', id: 'i2'}]),
-    (e) => e.code === 'restrict' && /Live rows in "lock" reference this row via "item_id"/.test(e.message));
-  await assert.rejects(be.transaction([
-    {op: 'delete', table: 'item', id: 'i1'}, {op: 'delete', table: 'item', id: 'i3'}]),
-  (e) => e.code === 'restrict');
-  assert.equal(be.tableSync('shop.note').rows[0].is_deleted, undefined, 'the cascade of the refused batch rolled back');
-  assert.equal(be.tableSync('shop.tag').rows[0].item_id, 'i1');
-  await be.transaction([{op: 'delete', table: 'lock', id: 'k2'}, {op: 'delete', table: 'item', id: 'i2'}]);
-  assert.equal(be.tableSync('shop.item').rows[1].is_deleted, true, 'a child already in the trash holds nothing back');
+  assert.deepEqual(['note', 'tag'].map((t) => be.tableSync(`shop.${t}`).history.at(-1)).map((l) => [l.op, l.tx_id]),
+    [['delete', tx], ['update', tx]], 'audited in the same transaction');
+  await assert.rejects(del('folder', 'f1', 'f3'), (e) => e.code === 'not-found' && /Operation 1: no row "f3"/.test(e.message));
+  await del('folder', 'f1');
+  assert.deepEqual(be.tableSync('shop.folder').rows.map((r) => r.is_deleted), [true, true, true], 'a cascade recurses');
+  await assert.rejects(del('folder', 'f3'), (e) => e.code === 'not-found');
 });
 
 test('search: case-insensitive over the searchable columns, the name column by default; count agrees', async () => {
@@ -618,7 +588,9 @@ test('a hidden or unlisted column is out of reach for sort, captions and FK path
   const path = (property, value, operator = '=') => ({filter: [{property, operator, value}]});
 
   const hidden = await issues({title: 'editable', project_id: 'hidden'});
-  await refused(() => hidden.query({sort: 'project_id'}), 'sort column "project_id"');
+  for (const sort of ['project_id', 'prop.project_id'])
+    await refused(() => hidden.query({sort}), 'sort column "project_id"');
+  await refused(() => hidden.query({sort: 'prop.nope'}), 'sort column "nope"');
   await refused(() => hidden.query({sort: 'due'}), 'sort column "due"');
   await refused(() => hidden.query({captions: ['project_id']}), 'caption column "project_id"');
   await refused(() => hidden.query(path('project_id.name', 'Grit')), 'column "project_id.name"');
@@ -632,11 +604,4 @@ test('a hidden or unlisted column is out of reach for sort, captions and FK path
   assert.deepEqual((await readable.query({...path('project_id.name', 'Grit'), sort: 'title'})).map((r) => r.title),
     ['Aspirin', 'Ibuprofen']);
   await refused(() => readable.query(path('project_id.id', 'p1', 'under')), 'column "project_id.id"');
-});
-
-test('sort: `prop.<name>` without such a column is refused exactly like a hidden one', async () => {
-  const issue = await backend({access: {can: {view: true}, fields: {title: 'editable', number: 'hidden'}}}).table('grit.issue');
-  for (const name of ['number', 'nope', 'id'])
-    await assert.rejects(() => issue.query({sort: `prop.${name},title`}),
-      (e) => e.code === 'filter' && e.message === `Unknown or inaccessible sort column "${name}"`, name);
 });

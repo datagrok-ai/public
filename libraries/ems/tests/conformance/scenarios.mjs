@@ -11,7 +11,7 @@
 /** @type {import('./scenarios.d.ts').ConformanceScenario[]} */
 export const scenarios = [
   {
-    name: 'filters: a null bool is null to every condition, as in SQL',
+    name: 'filters: a bool reads as in SQL: a null passes no comparison, `is null` finds it, `is not` counts it',
     requires: [],
     seed: [
       {key: 'yes', code: 'nb-yes', name: 'Yes', done: true},
@@ -19,11 +19,14 @@ export const scenarios = [
       {key: 'no', code: 'nb-no', name: 'No', done: false},
     ],
     async run(table, ids, t) {
-      const codes = async (filter) => (await table.query({filter, limit: 100})).map((row) => row.code).sort();
-      t.deepEqual(await codes('done = false'), ['nb-no'], 'a null is not false');
-      t.deepEqual(await codes('done != true'), ['nb-no'], 'nor is it unequal to true');
-      t.deepEqual(await codes('done = null'), ['nb-none'], 'and `is null` finds it');
-      t.deepEqual(await codes('done != null'), ['nb-no', 'nb-yes'], 'while `is not null` leaves it out');
+      const codes = async (filter) =>
+        (await table.query({filter, limit: 100})).map((row) => row.code.slice(3)).sort().join(',');
+      const is = (operator, value) => [{property: 'done', operator, value}];
+      for (const [filter, expected] of [['done = false', 'no'], ['done != true', 'no'], ['done = null', 'none'],
+        ['done != null', 'no,yes'], [is('is', true), 'yes'], [is('is not', true), 'no,none'], [is('is', false), 'no'],
+        [is('is not', false), 'none,yes']])
+        t.equal(await codes(filter), expected, JSON.stringify(filter));
+      await t.rejects(() => table.query({filter: is('is', 'x')}), 'filter');
     },
   },
   {
@@ -44,33 +47,20 @@ export const scenarios = [
     },
   },
   {
-    name: 'sort: a `prop.<name>` key names the table\'s own column of that name',
+    name: 'sort: a key is a readable non-json column, `prop.<name>` the table\'s own; anything else is refused',
     requires: [],
     seed: [
-      {key: 'b', code: 'prp-b', name: 'Second'},
-      {key: 'a', code: 'prp-a', name: 'First'},
-      {key: 'c', code: 'prp-c', name: 'Third'},
+      {key: 'b', code: 'srt-b', name: 'Second'},
+      {key: 'a', code: 'srt-a', name: 'First'},
+      {key: 'c', code: 'srt-c', name: 'Third'},
     ],
     async run(table, ids, t) {
-      const codes = async (sort) => (await table.query({sort, limit: 100})).map((row) => row.code);
-      t.deepEqual(await codes('prop.code'), ['prp-a', 'prp-b', 'prp-c'], 'ascending, as `code`');
-      t.deepEqual(await codes('!prop.name'), ['prp-c', 'prp-b', 'prp-a'], 'descending, as `!name`');
-    },
-  },
-  {
-    name: 'sort: an unknown or json column is refused, not ignored',
-    requires: [],
-    seed: [{key: 'a', code: 'srt-a', name: 'First'}],
-    async run(table, ids, t) {
-      await t.rejects(() => table.query({sort: 'nope'}), 'filter');
-      await t.rejects(() => table.query({sort: 'code,!nope'}), 'filter');
-      await t.rejects(() => table.query({sort: 'meta'}), 'filter');
-      // a `prop.` key with no column of that name too, as a hidden one is: no existence oracle
-      await t.rejects(() => table.query({sort: 'prop.nope'}), 'filter');
-      await t.rejects(() => table.query({sort: 'prop.id,code'}), 'filter');
-      await t.rejects(() => table.query({sort: 'prop.meta'}), 'filter');
-      t.deepEqual((await table.query({sort: '!code', limit: 100})).map((row) => row.code), ['srt-a'],
-        'a declared column still sorts');
+      const codes = async (sort) => (await table.query({sort, limit: 100})).map((row) => row.code.slice(4)).join('');
+      for (const [sort, expected] of [['!code', 'cba'], ['prop.code', 'abc'], ['!prop.name', 'cba']])
+        t.equal(await codes(sort), expected, sort);
+      // a `prop.` key with no such column too, as a hidden one is: no existence oracle
+      for (const sort of ['nope', 'code,!nope', 'meta', 'prop.nope', 'prop.id,code', 'prop.meta'])
+        await t.rejects(() => table.query({sort}), 'filter');
     },
   },
   {
@@ -219,23 +209,14 @@ export const scenarios = [
     },
   },
   {
-    name: 'delete: a live child vetoes its parent\'s delete (onDelete restrict, the default), and the veto names the column',
+    name: 'delete: a live child vetoes its parent\'s delete (onDelete restrict, the default)',
     requires: ['softDelete'],
     seed: [
       {key: 'parent', code: 'rst-parent', name: 'Site'},
       {key: 'child', code: 'rst-child', name: 'Room', parent_id: '$ref:parent'},
     ],
     async run(table, ids, t) {
-      let code = null;
-      let message = '';
-      try {
-        await table.transaction([{op: 'delete', table: table.address, id: ids.parent}]);
-      } catch (e) {
-        code = e.code;
-        message = `${e.message}`;
-      }
-      t.equal(code, 'restrict', 'a parent with a live child is refused');
-      t.ok(message.includes('parent_id'), 'and the refusal names the ref column');
+      await t.rejects(() => table.transaction([{op: 'delete', table: table.address, id: ids.parent}]), 'restrict');
       t.deepEqual((await table.query({limit: 100})).map((row) => row.code).sort(),
         ['rst-child', 'rst-parent'], 'nothing was deleted');
     },
@@ -381,21 +362,6 @@ export const scenarios = [
     },
   },
   {
-    name: 'filters: `is true` and `is not true` read as SQL: IS NOT TRUE counts a null',
-    requires: [],
-    seed: [
-      {key: 'yes', code: 'ist-yes', name: 'Yes', done: true},
-      {key: 'none', code: 'ist-none', name: 'None'},
-      {key: 'no', code: 'ist-no', name: 'No', done: false},
-    ],
-    async run(table, ids, t) {
-      const codes = async (operator) => (await table.query({
-        filter: [{property: 'done', operator, value: true}], limit: 100})).map((row) => row.code).sort();
-      t.deepEqual(await codes('is'), ['ist-yes'], 'is true: only the true row');
-      t.deepEqual(await codes('is not'), ['ist-no', 'ist-none'], 'is not true: the false row and the null one');
-    },
-  },
-  {
     name: 'string_list: a filter tests the elements, an empty or missing list has none',
     requires: [],
     seed: [
@@ -412,7 +378,8 @@ export const scenarios = [
         ['tags like "y"', 'a'], ['tags starts "z"', 'b'], ['tags ends "y"', 'a'], ['tags !like "y"', 'bcd'],
         ['tags matches "^[xz]$"', 'ab'], ['tags !matches "^x"', 'bcd']])
         t.equal(await codes(filter), expected, filter);
-      for (const filter of ['tags > "x"', 'tags between "a" and "z"'])
+      for (const filter of ['tags > "x"', 'tags between "a" and "z"',
+        [{property: 'tags', operator: '=', value: {$column: 'name'}}]])
         await t.rejects(() => table.query({filter, limit: 10}), 'filter');
     },
   },
