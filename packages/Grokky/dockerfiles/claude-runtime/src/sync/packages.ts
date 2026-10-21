@@ -137,8 +137,9 @@ export async function syncPackages(userDir: string, packageName?: string): Promi
   const toSync = packages.filter((pkg) => !wsPackages.has(pkg.name.toLowerCase()));
   console.log(`package-agents: syncing ${toSync.length} published package(s), ` +
     `skipping ${packages.length - toSync.length} workspace package(s)`);
-  for (let i = 0; i < toSync.length; i += SYNC_CONCURRENCY)
+  for (let i = 0; i < toSync.length; i += SYNC_CONCURRENCY) {
     await Promise.all(toSync.slice(i, i + SYNC_CONCURRENCY).map((pkg) =>
       syncSinglePackage(userDir, pkg, userCache).catch((e: any) =>
         console.warn(`package-agents: failed to sync ${pkg.name}: ${e.message}`))));
+  }
 }

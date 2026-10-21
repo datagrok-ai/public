@@ -2,6 +2,7 @@
 
 ## v.next
 
+- Enabled run history on the bioreactor configuration step.
 - Added the maximum volume, day count and feeding plan volume validators.
 - Added day numbers and final biomass to the day step titles.
 

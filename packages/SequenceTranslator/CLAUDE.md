@@ -319,7 +319,10 @@ Test entry: `package-test.ts` → imports each test file under `src/tests/`. Tes
 | `files-tests.ts` | files | CSV file-based integration tests |
 | `polytool-chain-from-notation-tests.ts` | PolyTool: Chain | Chain parsing, HELM conversion, rule application |
 | `polytool-chain-parse-notation-tests.ts` | PolyTool: Chain: parseNotation | Index translation, monomer counts |
-| `polytool-convert-tests.ts` | PolyTool: Convert | End-to-end conversion pipeline |
+| `polytool-convert-tests.ts` | PolyTool: Convert | End-to-end conversion pipeline, including all of `samples/cyclized.csv` |
+| `polytool-combine-tests.ts` | PolyTool: Combine Sequences | `combineSequences` (the Combine Sequences dialog's product of columns) |
+| `translator-tests.ts` | Translator: bulk / Translator: app | Bulk conversion of `samples/bulk-translation-axolabs.csv`; the Oligo Translator view refreshing its translations for a HELM with a monomer the library lacks (GROK-20958) |
+| `oligo-converters-tests.ts` | OligoRenderer: converters | Combine Sense + Antisense on `samples/sirna-demo.csv` |
 | `polytool-detectors-custom-notation-test.ts` | PolyTool: detectors | Semantic-type detection |
 | `polytool-enumerate-tests.ts` | PolyTool: Enumerate | Single / Parallel / Matrix enumeration |
 | `polytool-enumerate-breadth-tests.ts` | PolyTool: Enumerate | Breadth range enumeration |

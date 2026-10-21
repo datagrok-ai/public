@@ -19,20 +19,33 @@ const dbUiFile = 'db-ui.ts';
  * (u2 is a relative-path dependency without a `dg` subpath export). */
 const emsDgModule = '@datagrok-libraries/ems/src/dg';
 
-/** Naive English plural of a (snake_case) table name — `issue` → `issues`, `box` →
- * `boxes`, `category` → `categories`. */
+/** The platform's `StringUtils.toSingular` (ddt utils.dart): regular forms only; a noun already
+ * singular in `-is`/`-us`/`-ss` passes through. */
+function singularizeTableName(name: string): string {
+  if (name.length <= 2 || !name.endsWith('s') || /(ss|is|us)$/.test(name))
+    return name;
+  if (name.endsWith('ies') && name.length > 3)
+    return name.slice(0, -3) + 'y';
+  return /(xes|zzes|ches|shes|sses|tuses)$/.test(name) ? name.slice(0, -2) : name.slice(0, -1);
+}
+
+/** The platform's `StringUtils.toPlural` (ddt utils.dart) — `issue` → `issues`, `box` →
+ * `boxes`, `category` → `categories`, `analysis` → `analyses`. */
 function pluralizeTableName(name: string): string {
+  if (name.endsWith('is'))
+    return name.slice(0, -2) + 'es';
   if (/(s|x|z|ch|sh)$/.test(name))
     return name + 'es';
-  if (/[^aeiou_]y$/.test(name))
+  if (/[^aeiou]y$/.test(name))
     return name.slice(0, -1) + 'ies';
   return name + 's';
 }
 
 /** The camelCase plural property name a table gets on the schema client and under the
- * schema handle's `tables` (`issue_label` → `issueLabels`). */
+ * schema handle's `tables` (`issue_label` → `issueLabels`, `categories` → `categories`): the
+ * plural of the singular, as the platform derives a table's plural name. */
 export function tableProp(tableName: string): string {
-  return utils.snakeToCamelCase(pluralizeTableName(tableName), false);
+  return utils.snakeToCamelCase(pluralizeTableName(singularizeTableName(tableName)), false);
 }
 const domainSchemaPath = path.join(path.dirname(path.dirname(__dirname)), 'domain-schema.schema.json');
 /** The platform's own schema, whose tables a qualified ref may target (`Core.users`, ...). */
@@ -299,6 +312,7 @@ interface DomainGenColumn {
   insertType: string;   // Insert-side type (datetime accepts `Dayjs | string`)
   required: boolean;
   autoNumber?: boolean; // counter-filled on insert: always present on Row, optional on Insert
+  hasDefault?: boolean; // filled from `default` when an insert omits it: optional on Insert
   ref?: string;         // target table for 'ref' columns: in-manifest name, or qualified '<Schema>.<table>'
 }
 
@@ -353,7 +367,9 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
   const choicesAliases: {[alias: string]: string} = {};
 
   const choicesAlias = (tableName: string, columnName: string, values: any[]): string | null => {
-    const valueSet = values.map((v) => `'${v}'`).join(' | ');
+    // JSON.stringify escapes every special character; inside single quotes only ' needs one more
+    const literals = values.map((v) => `'${JSON.stringify(v).slice(1, -1).replace(/'/g, `\\'`)}'`);
+    const valueSet = literals.join(' | ');
     let alias = utils.snakeToCamelCase(tableName) + utils.snakeToCamelCase(columnName);
     if (choicesAliases[alias] !== undefined && choicesAliases[alias] !== valueSet)
       alias += utils.snakeToCamelCase(tableName);
@@ -363,8 +379,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     }
     if (choicesAliases[alias] === undefined) {
       choicesAliases[alias] = valueSet;
-      decls.push(wrapTokens(`export type ${alias} = `,
-        values.map((v) => `'${v}'`), ' | ', ';'));
+      decls.push(wrapTokens(`export type ${alias} = `, literals, ' | ', ';'));
     }
     return alias;
   };
@@ -445,7 +460,8 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
       columns.push({
         name: name, rawType: column.type, tsType: tsType,
         insertType: column.type === 'datetime' ? 'Dayjs | string' : tsType,
-        required: column.required === true, autoNumber: column.autoNumber != null, ref: ref,
+        required: column.required === true, autoNumber: column.autoNumber != null,
+        hasDefault: column.default != null, ref: ref,
       });
       return true;
     };
@@ -466,6 +482,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     return columns;
   }
 
+  const accessorTables = new Map<string, string>();
   for (const tableName of tableNames) {
     const typeName = utils.snakeToCamelCase(tableName);
     if (emittedTypes.has(typeName)) {
@@ -474,6 +491,13 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
       return null;
     }
     emittedTypes.add(typeName);
+    const accessor = tableProp(tableName);
+    if (accessorTables.has(accessor)) {
+      color.error(`${manifestPath}: tables '${accessorTables.get(accessor)}' and '${tableName}' ` +
+        `both get the accessor '${accessor}' (rename one of them)`);
+      return null;
+    }
+    accessorTables.set(accessor, tableName);
     const columns = collectColumns(tableName, manifest, false);
     if (columns == null)
       return null;
@@ -529,7 +553,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     const insertLines = [`/** Insert payload for \`${manifest.name}.${tableName}\`. */`,
       `export interface ${typeName}Insert {`];
     for (const c of columns)
-      insertLines.push(`  ${c.name}${c.required ? '' : '?'}: ${c.insertType};`);
+      insertLines.push(`  ${c.name}${c.required && !c.hasDefault ? '' : '?'}: ${c.insertType};`);
     for (const r of relations)
       insertLines.push(`  /** Link set: \`${r.target}\` row ids. */`, `  ${r.name}?: string[];`);
     if (table.idempotency === true)
@@ -596,6 +620,8 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
           `values: DG.DomainTxValues<${relations.length > 0 ? `${typeName}Update` : `Partial<${typeName}Row>`}>; ` +
           `expectedVersion?: number} |`,
         `  {op: 'delete'; table: '${tableName}'; id: string} |`);
+    if (!external && table.softDelete !== false)
+      txArms.push(`  {op: 'restore'; table: '${tableName}'; id: string} |`);
 
     // No datetime config: the client resolves datetime columns from the domain
     // registry itself (the Dayjs typing in <Table>Row stays true for every client).

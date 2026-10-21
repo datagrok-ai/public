@@ -6,7 +6,7 @@ import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {el, type ElementRef} from '../../src/runtime/args.js';
 import {expectState, type State} from '../../src/runtime/assertions.js';
 import {click, dblclick, drag, editorOf, setExpanded} from '../../src/runtime/gestures.js';
-import {atFeatureEnd} from '../../src/runtime/harness.js';
+import {atFeatureEnd, atScenarioStop} from '../../src/runtime/harness.js';
 import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
 import {cssString, escapeRegExp, exactText, locate} from '../../src/runtime/locate.js';
 import {armEvent, openContextMenuOf} from '../../src/runtime/viewer-menus.js';
@@ -264,11 +264,23 @@ export const taggedProjectOnServer = Given('a project named {string} tagged {str
   await page.evaluate(async ([n, t]) => {
     const project = DG.Project.create();
     project.name = n;
+    // a friendly name derived from a mixed-case name ("BD D- Grokky-…") hides the project from the name filter
+    project.friendlyName = n;
     project.tag(t);
     await grok.dapi.projects.save(project);
   }, [name, tag] as [string, string]);
   await expectNamedCount(page, 'projects', 'projects', name, 1);
 }, {tier: 'api', description: 'an empty project saved through the JS API with that entity tag, which a "#tag" search finds; an earlier one of the name goes first, and it is deleted at feature end'});
+
+/** A tag added in the Details pane is saved after the pane shows it: a "#tag" search sent before then finds nothing.
+ * The project is found in the complete listing (a name filter on projects finds nothing) and read whole by its id: a
+ * listed project carries no tags. */
+export const projectTaggedOnServer = Then('the project named {string} should be tagged {string} on the server', async (page: Page, name: string, tag: string) => {
+  const found = (await serverEntities(page, 'projects', '', false)).filter((p) => p.name === name || p.friendlyName === name);
+  expect(found.length, `projects named "${name}" on the server`).toBe(1);
+  await expect.poll(() => page.evaluate(async ([id, t]) => (await grok.dapi.projects.find(id)).hasTag(t), [found[0].id, tag] as [string, string]),
+    {message: `whether the project "${name}" carries the tag "${tag}" on the server`}).toBe(true);
+}, {tier: 'api', description: 'the entity tag as the server keeps it, which a "#tag" search of the gallery finds'});
 
 /* The "user's own" cleanups are for names a feature does not choose — a tutorial dictates them, and
    people who took it by hand saved theirs under the same names: those of other users stay. */
@@ -753,11 +765,15 @@ async function rememberOwnSession(page: Page): Promise<{token: string; login: st
   if (!own.token)
     throw new Error('the page holds no session of its own to come back to');
   ownSessions.set(page, own);
-  atFeatureEnd(page, async () => {
-    const back = ownSessions.get(page)!;
-    ownSessions.delete(page);
-    if (await page.evaluate(() => grok.shell.user?.login).catch(() => undefined) !== back.login)
+  const signBack = async (back: {token: string; login: string} | undefined): Promise<void> => {
+    if (back && await page.evaluate(() => grok.shell.user?.login).catch(() => undefined) !== back.login)
       await signInWithSession(page, back.token, back.login);
+  };
+  atScenarioStop(page, () => signBack(ownSessions.get(page)));
+  atFeatureEnd(page, async () => {
+    const back = ownSessions.get(page);
+    ownSessions.delete(page);
+    await signBack(back);
   }, true);
   return own;
 }
@@ -774,8 +790,9 @@ async function sessionOf(page: Page, login: string): Promise<string> {
       throw new Error(`no user "${l}" on the server`);
     const keyText = await (await fetch(`${grok.dapi.root}/users/${user.id}/dev_key`, {headers: {Authorization: auth}})).text();
     const key = keyText.startsWith('"') ? JSON.parse(keyText) : keyText;
-    const answer = await (await fetch(`${grok.dapi.root}/users/login/dev`, {method: 'POST', headers: {Authorization: `Dev ${key}`}}))
-      .json().catch(() => null);
+    // the login answers with a Set-Cookie of the new session: taken, it signs the page's next load in as that account
+    const answer = await (await fetch(`${grok.dapi.root}/users/login/dev`, {method: 'POST', headers: {Authorization: `Dev ${key}`},
+      credentials: 'omit'})).json().catch(() => null);
     if (!answer?.token)
       throw new Error(`the dev key of "${l}" was not exchanged for a session`);
     return answer.token as string;
@@ -850,6 +867,36 @@ async function deleteNotificationsOf(page: Page, login: string): Promise<void> {
   }, {message: `the notifications of ${login}`, timeout: pollMs(15000)}).toBe(0);
 }
 
+/* A grant the second account got on a connection the feature does not own (a package's): the Share dialog keeps it
+   where the JS API's permissions do not look ("has special permissions"), so it is listed and removed through the
+   privileges endpoint the dialog itself uses, and read back gone. A run that failed before its own take-back in the UI
+   leaves it otherwise, and the next run's "before the share" claim reads it. */
+async function removeSharingUserGrants(page: Page, connection: string): Promise<void> {
+  if (!/^bdd/i.test(sharingLogin()))
+    throw new Error(`the sharing account "${sharingLogin()}" is not a bdd fixture account: its grants are not the feature's to remove`);
+  const ids = await page.evaluate(async ([name, login]) => {
+    const found = (await grok.dapi.connections.list({pageSize: 5000})).filter((c: any) => c.friendlyName === name || c.name === name);
+    if (found.length !== 1)
+      throw new Error(`${found.length} connections named "${name}"`);
+    const user = await grok.dapi.users.filter(`login = ${JSON.stringify(login)}`).first();
+    if (!user)
+      throw new Error(`no user "${login}" on the server`);
+    return {entity: String(found[0].id), group: String(user.group.id)};
+  }, [connection, sharingLogin()] as [string, string]);
+  const api = await serverRequests(page);
+  const grants = async (): Promise<string[]> => (await api.get<{id: string; userGroup?: {id: string}}[]>(`/privileges/permissions/?entityId=${ids.entity}`))
+    .filter((p) => p.userGroup?.id === ids.group).map((p) => String(p.id));
+  for (const id of await grants())
+    await api.remove(`/privileges/permissions/${id}`);
+  await expect.poll(async () => (await grants()).length,
+    {message: `the grants of ${sharingLogin()} on the "${connection}" connection`, timeout: pollMs(15000)}).toBe(0);
+}
+
+export const sharingUserNoConnectionGrant = Given('the sharing user has no grant on the {string} connection, now and when the feature ends', async (page: Page, connection: string) => {
+  await removeSharingUserGrants(page, connection);
+  atFeatureEnd(page, () => removeSharingUserGrants(page, connection));
+}, {tier: 'api', description: 'the grants the second account holds on that connection (by name), removed through the privileges endpoint now and at feature end, read back gone'});
+
 export const sharingUserNoNotifications = Given('the sharing user has no notifications, now and when the feature ends', async (page: Page) => {
   await deleteNotificationsOf(page, sharingLogin());
   atFeatureEnd(page, () => deleteNotificationsOf(page, sharingLogin()));
@@ -871,6 +918,40 @@ export const expandShared = When('user expands {string} shared by the running ac
 export const openShared = When('user double-clicks on {string} shared by the running account', (page: Page, path: string) =>
   dblclick(page, sharedByRunningAccount(page, path)),
 {tier: 'ui', description: 'a node under My stuff > Shared with me > <the account the feature started with>'});
+
+/* A project opened from its card loads its tables first (data sync re-runs their creation scripts, a database query among
+   them) and adds its views after: under several workers that outlasts a check's 15 s. The platform says when the open is
+   done (grok.events.onProjectOpened), and an error balloon or the Data loading error dialog that it will not be, so the
+   wait keeps its budget in a @known-failure scenario, where a fixed open would not fit in the narrowed one. An open that
+   is meant to end in an error is claimed after a plain double click. */
+export const doubleClickOpensProject = When('user double-clicks on {element} and the project opens', async (page: Page, target: ElementRef) => {
+  await page.evaluate(() => {
+    const w = window as any;
+    for (const sub of w.__bddProjectOpened?.subs ?? [])
+      sub.unsubscribe();
+    const state: {opened: boolean; error: string; subs: {unsubscribe(): void}[]} = {opened: false, error: '', subs: []};
+    state.subs = [grok.events.onProjectOpened.subscribe(() => { state.opened = true; }),
+      grok.events.onEvent('d4-balloon-shown').subscribe((a: any) => {
+        if (a?.args?.type === 'error' && !state.error)
+          state.error = String(a?.args?.message ?? '');
+      })];
+    w.__bddProjectOpened = state;
+  });
+  await dblclick(page, target);
+  const message = `a project opened by the double click on ${target.phrase}`;
+  let outcome = 'loading';
+  await expect.poll(async () => outcome = await page.evaluate(() => {
+    const state = (window as any).__bddProjectOpened;
+    const loadingError = Array.from(document.querySelectorAll('.d4-dialog-title, .u2-dialog-title-text'))
+      .some((t) => t.textContent?.trim() === 'Data loading error');
+    return state?.opened ? 'opened' : state?.error ? `an error balloon: ${state.error}` : loadingError ? 'the Data loading error dialog' : 'loading';
+  }), {message, timeout: 120000}).not.toBe('loading');
+  await page.evaluate(() => {
+    for (const sub of (window as any).__bddProjectOpened?.subs ?? [])
+      sub.unsubscribe();
+  });
+  expect(outcome, message).toBe('opened');
+}, {tier: 'ui', description: 'the double click, then grok.events.onProjectOpened on a 120 s budget (kept in a @known-failure scenario): the tables loaded, the views on their way; an error balloon or the Data loading error dialog ends the wait as a failure'});
 
 export const dragShared = When('user drags {string} shared by the running account to {string} shared by the running account',
   (page: Page, source: string, target: string) => drag(page, sharedByRunningAccount(page, source), sharedByRunningAccount(page, target)),
@@ -2025,6 +2106,23 @@ export const queryNoTransformations = Then('the query {string} on the server sho
     {message: `the transformations of the query "${name}" on the server`, timeout: pollMs(30000)}).not.toContain(text);
 }, {tier: 'api', description: 'polled like its positive twin: a step the save has not written yet is not an absent step'});
 
+/** The text a saved query holds on the server, its header lines included: the editor's Save returns before the
+ * server has it, so a reopen of the editor right after can show the old text. */
+async function savedQueryText(page: Page, name: string): Promise<() => Promise<string>> {
+  const {id} = await serverEntityNamed(page, 'queries', name);
+  return () => page.evaluate(async (i) => String((await grok.dapi.queries.find(i))?.query ?? ''), id);
+}
+
+export const queryText = Then('the query {string} on the server should read {string}', async (page: Page, name: string, text: string) => {
+  await expect.poll(await savedQueryText(page, name),
+    {message: `the text of the query "${name}" on the server`, timeout: pollMs(30000)}).toContain(text);
+}, {tier: 'api', description: 'query.query — what the editor\'s Save stored, read back from the server'});
+
+export const queryTextNot = Then('the query {string} on the server should not read {string}', async (page: Page, name: string, text: string) => {
+  await expect.poll(await savedQueryText(page, name),
+    {message: `the text of the query "${name}" on the server`, timeout: pollMs(30000)}).not.toContain(text);
+}, {tier: 'api', description: 'polled like its positive twin: a save the server has not stored yet still reads the old text'});
+
 export const queryPostProcess = Then('the query {string} on the server should have a post-process containing {string}', async (page: Page, name: string, text: string) => {
   await expect.poll(async () => {
     try {
@@ -2150,6 +2248,15 @@ export const paneCountAtLeast = Then('the {string} pane of the context panel sho
   await expect.poll(async () => Number(await paneCountOf(page, pane) || '0'),
     {message: `the count the "${pane}" pane of the context panel shows`, timeout: pollMs(60000)}).toBeGreaterThanOrEqual(count);
 }, {description: 'a counting pane with at least that many entries — the platform records an entity made through the JS API with a delay of its own'});
+
+/** The pane counts the log once, when the panel renders the object: under load the server logs a run after a
+ * fresh view has already shown 0. */
+export const scriptLogged = Given('the server has logged activity on the {string} script', async (page: Page, name: string) => {
+  await expect.poll(() => page.evaluate(async (n) => {
+    const script = await grok.dapi.scripts.filter(`name = "${n}"`).first();
+    return script ? await grok.dapi.log.where({entityId: script.id}).count() : -1;
+  }, name), {message: `the server's log of the "${name}" script (-1: no such script)`, timeout: pollMs(60000)}).toBeGreaterThan(0);
+}, {tier: 'api', description: 'the log the Activity pane counts, read on the server until it has an entry'});
 
 /* --- the side panel ------------------------------------------------------------------------------ */
 

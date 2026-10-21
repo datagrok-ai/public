@@ -1,42 +1,6 @@
-export interface ToolInputs {
-  Read: {file_path?: string};
-  Write: {file_path?: string};
-  Edit: {file_path?: string};
-  Bash: {command?: string};
-  Glob: {pattern?: string; path?: string};
-  Grep: {pattern?: string; path?: string};
-  WebSearch: {query?: string};
-  WebFetch: {url?: string};
-  AskUserQuestion: {questions?: {question?: string}[]};
-}
+// Browser ↔ runtime WebSocket protocol
 
-/** The datagrok MCP server exposes one tool per domain, each dispatching on `op` — see
- * mcp-server/src/ops.ts. */
-export interface DomainToolInput {
-  op?: string;
-  args?: Record<string, any>;
-}
-
-export interface McpInputs {
-  datagrok_functions: DomainToolInput;
-  datagrok_files: DomainToolInput;
-  datagrok_projects: DomainToolInput;
-  datagrok_spaces: DomainToolInput;
-  datagrok_platform: DomainToolInput;
-  datagrok_exec: {code?: string};
-  datagrok_verify: {assertion?: string; description?: string};
-  datagrok_show_entities: {entities?: any[]};
-}
-
-export type ToolName = keyof ToolInputs;
-export type McpName = keyof McpInputs;
-
-export const ClaudeModel = {
-  Haiku: 'haiku',
-  Sonnet: 'sonnet',
-  Opus: 'opus',
-} as const;
-export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
+export type PromptMode = 'datagrok' | 'bash' | 'none';
 
 export interface ImageAttachment {
   mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
@@ -60,8 +24,8 @@ export interface UserMessage {
   apiKey?: string;
   mcpServerUrl?: string;
   outputSchema?: object;
-  systemPromptMode?: 'datagrok' | 'bash' | 'none';
-  model?: ClaudeModel;
+  systemPromptMode?: PromptMode;
+  model?: string;
   clientTools?: ClientToolDef[];
   /** Per-turn gate switches, for A/B experiments (benchmark arms, dev harness). Both default
    * true; the gates are quality mechanisms, not security boundaries, so a client may turn its
@@ -82,24 +46,9 @@ export interface InputResponseMessage {
   type: 'input_response';
   sessionId: string;
   requestId?: string;
-  value: any;
+  value: unknown;
 }
 
-export interface SyncMessage {
-  type: 'sync_user_files';
-  apiKey: string;
-  mcpServerUrl: string;
-  scope?: string;
-  packageName?: string;
-}
-
-export interface AuthStartMessage {type: 'auth_start'}
-export interface AuthCodeMessage {type: 'auth_code'; code: string}
-
-export type IncomingMessage =
-  UserMessage | AbortMessage | InputResponseMessage | SyncMessage | AuthStartMessage | AuthCodeMessage;
-
-/** Per-turn metrics forwarded from the SDK `result` message (see docs/BENCHMARK.md). */
 export interface TurnMetrics {
   inputTokens: number | null;
   outputTokens: number | null;
@@ -113,22 +62,88 @@ export interface TurnMetrics {
 
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
-  // `name` is the bare tool name (mcp prefix stripped) — lets harnesses assert on which path a
-  // turn actually took, not just how many tools it used. Absent for progress-only activity.
-  | {type: 'tool_activity'; sessionId: string; summary: string; name?: string}
+  // `name` is the bare tool name (mcp prefix stripped), so a harness can assert which path a turn took.
+  | {type: 'tool_activity'; sessionId: string; summary: string; name: string}
   // A gate (verifier / grounding) blocked the turn's Stop and a revision is being generated.
   // The visible answer stays; the revision streams hidden, and `final.revision` says whether it
   // replaces the original ('replaced') or the original stands ('kept').
   | {type: 'revision_start'; sessionId: string}
-  | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean;
+  | {type: 'final'; sessionId: string; content: string; structured_output?: unknown; unverified?: boolean;
       metrics?: TurnMetrics; revision?: 'kept' | 'replaced'}
   | {type: 'error'; sessionId: string; message: string}
   | {type: 'session_reset'; sessionId: string}
-  | {type: 'auth_required'; sessionId: string}
   | {type: 'queued'; sessionId: string}
   | {type: 'aborted'; sessionId: string}
-  | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: any}
-  | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]}
-  | {type: 'auth_url'; url: string}
-  | {type: 'auth_done'}
-  | {type: 'auth_error'; message: string};
+  | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: unknown}
+  | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]};
+
+// One agent turn
+
+/** A quality gate (verifier, grounding), fed every finished tool call of the turn and then its stop. */
+export interface TurnGate {
+  afterTool(toolName: string, args: Record<string, unknown>, result: string): void;
+  /** Feedback that continues the turn as a hidden revision, or undefined to let the turn end. */
+  atStop(): string | undefined;
+}
+
+export interface AgentTurnRequest {
+  sessionKey: string;
+  text: string;
+  images?: ImageAttachment[];
+  systemPrompt: string;
+  /** Reasoning effort; without one the agent asks for no thinking where the model allows it. */
+  effort?: 'high';
+  model?: string;
+  cwd: string;
+  userDir?: string;
+  /** The browser holds a transcript for this session: if the runtime has none, the turn resets instead. */
+  resumeExpected?: boolean;
+  outputSchema?: object;
+  clientTools?: ClientToolDef[];
+  /** The Datagrok MCP server, reached with the user's key in these headers. */
+  datagrokMcp?: {url: string; headers: Record<string, string>};
+  limits: {maxTurns: number; maxBudgetUsd: number};
+  gates: TurnGate[];
+  /** Round-trips a tool call to the browser; rejects on timeout or abort. */
+  awaitBrowser: (toolName: string, input: unknown, timeoutMs: number) => Promise<unknown>;
+  /** Aborts the turn: the agent is cancelled, nothing more is sent to it, and the event stream ends. */
+  signal: AbortSignal;
+}
+
+export type AgentEvent =
+  | {type: 'text'; text: string}
+  | {type: 'tool_activity'; name: string; summary: string}
+  | {type: 'activity'}
+  | {type: 'result'; text: string; structuredOutput?: unknown; metrics: TurnMetrics}
+  | {type: 'limit'; kind: 'turns' | 'budget'}
+  /** The session's stored history could not be restored; the browser replays its transcript. */
+  | {type: 'session_reset'}
+  | {type: 'error'; message: string};
+
+// Runtime ↔ agent process protocol (agent/grokky_agent), one JSON object per line
+
+export type AgentCommand =
+  | {type: 'init'; credentials: Record<string, string>;
+      settings: {homes: string; skillsDir: string; compressionThresholdTokens: number; warm: boolean}}
+  | ({type: 'turn';
+      /** The stored Hermes session a reloaded process continues. */
+      restore?: string} &
+      Omit<AgentTurnRequest, 'sessionKey' | 'resumeExpected' | 'gates' | 'awaitBrowser' | 'signal'>)
+  | {type: 'continue'; text: string}
+  | {type: 'cancel'}
+  | {type: 'browser_result'; id: string; value?: unknown; error?: string};
+
+export type AgentProcessEvent =
+  | {type: 'ready'}
+  | {type: 'fatal'; message: string}
+  | {type: 'session'; id: string}
+  | {type: 'text'; text: string}
+  | {type: 'activity'}
+  | {type: 'tool_start'; name: string; args: Record<string, unknown>}
+  | {type: 'tool_end'; name: string; args: Record<string, unknown>; result: string}
+  | {type: 'browser_call'; id: string; name: string; input: unknown; timeoutMs: number}
+  | {type: 'stopped'; text: string; structuredOutput?: unknown; metrics: TurnMetrics}
+  | {type: 'limit'; kind: 'turns' | 'budget'}
+  | {type: 'error'; message: string}
+  | {type: 'cancelled'}
+  | {type: 'session_lost'};

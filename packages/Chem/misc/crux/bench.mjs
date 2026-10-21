@@ -9,7 +9,7 @@
 //            pub serve port (default http://localhost:8888)
 // DEV_KEY    developer key (default admin)
 // CHROME     a Chrome executable to run instead of Playwright's own browser
-// It sets the user's Substructure Search Engine package property and leaves it on RDKit.
+// It sets the user's Substructure Search Engine package property and leaves it on Crux, the default.
 import {writeFileSync} from 'fs';
 import {loadRdkit, requireFromChem} from './node-env.mjs';
 
@@ -185,7 +185,7 @@ try {
     }
   }
 } finally {
-  await page.evaluate(() => window.__setEngine('RDKit'));
+  await page.evaluate(() => window.__setEngine('Crux'));
   await browser.close();
 }
 const out = process.env.OUT ?? 'crux-bench-results.json';

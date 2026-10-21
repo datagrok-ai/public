@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {awaitCheck, category, test, testViewer} from '@datagrok-libraries/test/src/test';
+import {awaitCheck, category, delay, test, testViewer} from '@datagrok-libraries/test/src/test';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {NodeType} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
@@ -34,5 +34,27 @@ category('GridWithTree', () => {
     await awaitCheck(() => {
       return $(tv.root).find('.ui-div canvas').length == 1;
     }, 'Injected tree not found', 200);
+  });
+
+  test('hover in another view after the tree view is closed', async () => {
+    const csv: string = await _package.files.readAsText('data/tree95df.csv');
+    const newickStr: string = await _package.files.readAsText('data/tree95.nwk');
+    const dataDf: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+
+    const treeTv: DG.TableView = grok.shell.addTableView(dataDf);
+    injectTreeForGridUI2(treeTv.grid, parseNewick(newickStr), 'id', 250);
+    const otherTv: DG.TableView = grok.shell.addTableView(dataDf);
+    try {
+      treeTv.close();
+      grok.shell.clearLastError();
+      dataDf.mouseOverRowIdx = 1;
+      await delay(100);
+      const error = await grok.shell.lastError;
+      if (error)
+        throw new Error(error);
+    }
+    finally {
+      otherTv.close();
+    }
   });
 });
