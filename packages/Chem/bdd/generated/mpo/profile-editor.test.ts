@@ -24,7 +24,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("The MPO profile editor, from the Browse tree to a deleted profile", () => {
   const session = feature(test, "features/mpo/profile-editor.feature", import.meta.url);
-  test("The MPO profile editor, from the Browse tree to a deleted profile", {tag: ["@journey", "@realizes:chem.cp.mpo-profile-crud", "@realizes:chem.int.mpo-profile-sync"]}, async ({browser}) => {
+  test("The MPO profile editor, from the Browse tree to a deleted profile", {tag: ["@serial", "@journey", "@realizes:chem.cp.mpo-profile-crud", "@realizes:chem.int.mpo-profile-sync"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 9, page);
     await session.step(31, "Given user is logged in", () => loggedIn(page));

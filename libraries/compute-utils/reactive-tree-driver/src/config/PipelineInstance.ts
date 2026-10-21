@@ -21,6 +21,8 @@ export type StepFunCallInitialConfig = {
 export type InstanceConfRec<C> = {
   steps?: InstanceConfRec<C>[];
   skipOnInit?: boolean;
+  isReadonly?: boolean;
+  sourceRunId?: string;
 } & C;
 
 export type InstanceConfRecInput<C> = {
@@ -104,6 +106,7 @@ export type StepFunCallStateBase = {
   uuid: string;
   friendlyName?: string;
   isReadonly: boolean;
+  sourceRunId?: string;
 }
 
 export type StepFunCallSerializedState = {
@@ -114,6 +117,7 @@ export type StepFunCallSerializedState = {
 
 export type StepFunCallState = {
   funcCall?: DG.FuncCall;
+  sourceRunTitle?: string;
   viewersHook?: ViewersHook;
   actions?: ViewAction[];
   enableHistory?: boolean;
@@ -139,6 +143,7 @@ export type PipelineInstanceBase<I, T> = {
   description: string | undefined;
   version: string | undefined;
   nqName: string | undefined;
+  sourceRunId?: string;
 } & I & T;
 
 // static

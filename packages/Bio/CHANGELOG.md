@@ -2,6 +2,8 @@
 
 ## v.next
 
+* [core#988](https://github.com/datagrok-ai/core/issues/988): Renderers: Fixed a scatter plot tooltip failing with "method not found on null" on a sequence difference column when no grid shows the table
+* [core#880](https://github.com/datagrok-ai/core/issues/880): Save as FASTA: Fixed an error when clicking OK with no sequence column selected
 * Manage Monomers: Replaced the editor's tabs with one layout: the sketcher first, taking the height the fields leave down to a floor; the fields scrolling on their own — the symbol, name and types two to a row (one to a row in a narrow dock), the R groups as small chips that wrap (a click opens a menu of the 15 common caps, each with its friendly name and SMILES and the current one checked, so changing a cap takes two clicks; Edit definition opens the fields a library stores under the chips), and Details (natural analog, ID, colors, properties); and, pinned at the bottom, Save, a line saying where it saves or why it cannot yet, and the Details toggle with the colors as dots and the property count. Details opens above its toggle. Every field keeps its underline, as wide as the others in its column, with its caption right-aligned beside it as in every platform form; nothing clipped in a narrow dock
 * Manage Monomers: The editor follows the grid's current row until the user changes the monomer or starts a new one, and again after a save; a saved monomer becomes the grid's current row again; saving over a symbol or a structure the library has asks first, the loaded monomer included
 * Manage Monomers: Aligned the whole editor on one label column; captions drop the editor's own word (Library, Symbol, Name, Polymer, Type, Analog, ID); Save's tooltip names the field ("Name: Value can't be empty")

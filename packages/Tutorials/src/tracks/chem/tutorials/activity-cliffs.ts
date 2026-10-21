@@ -102,7 +102,7 @@ export class ActivityCliffsTutorial extends Tutorial {
       `detected activity cliffs.<br>
     Let’s zoom in. Use <b>${platformKeyMap['Alt'][this.platform]} + Mouse Drag</b>.`);
 
-    await this.action(`Press Use ${platformKeyMap['Alt'][this.platform]} + Mouse Drag to zoom in`, v!.onZoomed,
+    await this.action(`Use ${platformKeyMap['Alt'][this.platform]} + Mouse Drag to zoom in`, v!.onZoomed,
       null, '', () => v.zoom(v.viewport.x, v.viewport.y, v.viewport.midX, v.viewport.midY));
 
     this.title('Explore the pairs of molecules', true);

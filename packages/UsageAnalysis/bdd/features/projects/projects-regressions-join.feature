@@ -14,10 +14,11 @@ Feature: Projects regressions: a copy saved after an in-place join
   columns of the joined table; what the saved copy stores is an API test (request document,
   section 5, E6).
 
-  The copy is then reopened in a new session of the page, as the ticket did: it opens (GROK-20013
-  is fixed), but with the in-place join applied a second time — the table views are "demog (2), demog,
-  result+demog-1000+demog-1000, demog-1000" (localhost, 2026-10-12 and 2026-10-19). That is a known
-  failure with no ticket yet, pinned to the claim of the views the copy should open with.
+  The copy is then reopened in a new session of the page, as the ticket did, and comes back with the
+  in-place join applied once — the table views are "demog (2), demog, result+demog-1000, demog-1000".
+  It used to reopen with the join applied a second time ("result+demog-1000+demog-1000"), a known
+  failure on localhost 2026-10-12 and 2026-10-19, fixed by core#959 (a data-synced table kept under
+  its saved name across replayed in-place steps).
 
   The console is not claimed after a save: the Save dialog's preview logs "Unable to find element in
   cloned iframe" for some views (GROK-18606, won't fix); after the reopen it is. Both projects are
@@ -97,7 +98,7 @@ Feature: Projects regressions: a copy saved after an in-place join
     And an info balloon containing 'Project "BDDRegJoinCopy{time}" uploaded' should have been shown
 
   # GROK-20013 was this copy not opening: it is opened in a new session of the page, as the ticket did
-  @known-failure:109 @realizes:GROK-20013
+  @realizes:GROK-20013
   Scenario: The copy reopened in a new session comes back with the join applied once
     When user closes all views
     And user reloads the page

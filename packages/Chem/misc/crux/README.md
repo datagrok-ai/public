@@ -8,18 +8,24 @@ open items with their analysis.
 
 - `src/crux/` — the integration: `crux-searches.ts` (engine switch, the crux counterpart of
   `chemSubstructureSearchLibrary`), `crux-service.ts` + `crux.worker.ts` (segmented column indexes over a worker
-  pool), `crux-smarts.ts` (RDKit query mol → SMARTS crux matches the same way).
-- `src/crux/crux_wasm*` — the crux build, three files from one `wasm-pack` run, replaced together:
-  - `crux_wasm_bg.wasm` — the engine itself; the only one that lands in `dist/` as a file;
-  - `crux_wasm.js` — the JS glue `wasm-bindgen` generates for exactly this binary (bundled into `package.js` and
-    the crux worker chunk);
-  - `crux_wasm.d.ts` — the glue's TypeScript declarations.
+  pool; since 2026-10-20 the query is the molecule Chem's `getQueryMolSafe` builds on the Crux module, searched with
+  `Collection.substructureSearchMol`: `crux-smarts.ts`, the RDKit query mol → SMARTS translation, is gone).
+- `vendor/chem-wasm/` — Chem's one Crux file since 2026-10 (it replaced the search-only `src/crux/crux_wasm*`):
+  crux-core's `crates/chem-wasm` built with everything Chem calls (RDKit.js's API for rendering, the search
+  `Collection`, descriptors, the scaffold tree, the heavy calls), files replaced together:
+  - `chem_wasm_bg.wasm` — the engine itself; it lands in `dist/` as a file (`rspack.config.js` `emit`);
+  - `chem_wasm.js` — the JS glue `wasm-bindgen` generates for exactly this binary (loaded lazily on the main thread by
+    `src/engine/crux-module.ts`, bundled into the crux worker chunk);
+  - `chem_wasm.d.ts` — the glue's TypeScript declarations;
+  - `VERSION.chem-wasm` (the crux-core revision, the feature set, the tools, the sizes) and `NOTICE.chem-wasm` (the
+    licences), both emitted to `dist/` beside the wasm (`vendor/` itself is not published, `.npmignore`).
+  What Chem calls beyond RDKit.js's API is typed in `src/crux/crux-api.ts`.
 - `src/tests/crux-substructure-search-tests.ts` — package test category `crux substructure search`.
 - This folder — the notes, the verification scripts and [`PARITY.md`](PARITY.md), the RDKit-parity ledger (not bundled,
   not published).
 
-The vendored build is crux-core `078ca7c` — branch `spike/rdkit-parity-gaps`, rebased on crux-core main a7e2f26 and
-not merged yet —, wasm-pack 0.13.1, Rust 1.95.0. The Chem worker calls `setLenient(true)` on it (`crux.worker.ts`).
+The vendored build is named in `vendor/chem-wasm/VERSION.chem-wasm`. The Chem worker calls `setLenient(true)` on it
+(`crux.worker.ts`).
 
 ## Setting up crux on a machine
 
@@ -36,27 +42,25 @@ not merged yet —, wasm-pack 0.13.1, Rust 1.95.0. The Chem worker calls `setLen
 - Rust: `rustup` with the toolchain `crux-core/rust-toolchain.toml` pins (1.95.0) and the `wasm32-unknown-unknown`
   target: `rustup-init -y --default-toolchain 1.95.0 --profile minimal -t wasm32-unknown-unknown`. On Windows it
   needs the MSVC build tools (Visual Studio Build Tools).
-- Build and vendor (about 1.5 minutes cold). wasm-pack writes a `*` `.gitignore` into its output folder, so never
-  point `--out-dir` at Chem:
+- Build and vendor Chem's one Crux file: crux-core's `crates/chem-wasm/build-ship.sh` builds a feature set with the
+  `wasm-ship` profile, wasm-bindgen (`--target web`) and wasm-opt into `crates/chem-wasm/pkg-web/<set>/` (git-ignored),
+  with `BUILD-INFO.json` (the crux-core revision, features, tools, sizes) and the generated `NOTICE`:
 
   ```bash
-  cd crux/crux-js
-  npx --yes wasm-pack@0.13.1 build ../crux-core/crates/crux-wasm --target web --release --out-name crux_wasm --out-dir ../../../crux-js/src/wasm
-  cp src/wasm/crux_wasm.js src/wasm/crux_wasm.d.ts src/wasm/crux_wasm_bg.wasm <reddata>/public/packages/Chem/src/crux/
+  cd crux/crux-core
+  bash crates/chem-wasm/build-ship.sh chem      # the set Chem ships: rendering, search, descriptors, the scaffold tree
+  cp crates/chem-wasm/pkg-web/chem/{chem_wasm.js,chem_wasm.d.ts,chem_wasm_bg.wasm} <reddata>/public/packages/Chem/vendor/chem-wasm/
+  cp crates/chem-wasm/pkg-web/chem/NOTICE <reddata>/public/packages/Chem/vendor/chem-wasm/NOTICE.chem-wasm
   ```
 
-  For a spike worktree, build its crate — wasm-pack resolves `--out-dir` against the crate, so the path changes too:
-
-  ```bash
-  npx --yes wasm-pack@0.13.1 build ../../crux-spikes/<slug>/crates/crux-wasm --target web --release --out-name crux_wasm --out-dir ../../../../crux/crux-js/src/wasm
-  ```
-
-  To check a build before vendoring it, point the scripts below at its output folder with `CRUX_WASM`.
+  then write `vendor/chem-wasm/VERSION.chem-wasm` from `BUILD-INFO.json` (the revision, features, tools and sizes), build Chem
+  and run the `chemical engine` and `crux substructure search` categories. To check a build before vendoring it, point
+  the scripts below at its output folder with `CRUX_WASM`.
 
 ## Verification
 
 Run from this folder, with Node 20 and the workspace installed (`grok setup`); they load Chem's own RDKit build and
-transpile Chem's query code (`utils/mol-creation_rdkit.ts`, `crux/crux-smarts.ts`) on the fly, so they check the
+transpile Chem's query code (`utils/mol-creation_rdkit.ts`) on the fly, so they check the
 code the package runs. Datasets: `<reddata>/data/demo/chem/chembl/chembl-100k.csv` and
 `<reddata>/data/demo/chem/smiles_1M.zip` (unzip first); SMARTS sets from `crux-bench/queries/bdb-*`.
 
@@ -77,10 +81,14 @@ code the package runs. Datasets: `<reddata>/data/demo/chem/chembl/chembl-100k.cs
   (`http://localhost:8082`, `http://localhost:8888`, `admin`; on the Mac dev stack both are `http://localhost:8889`, the
   API under `/api`); `STAND_WEB` must serve the client on the API's origin — package web workers cannot start
   cross-origin, so not the pub serve port. `CHROME=<path>` runs an installed Chrome when Playwright's own browser is
-  not installed. It leaves the engine property on RDKit.
-- Package tests: `grok test --host localhost --category "crux substructure search"`. To run the existing suites
-  (`substructure search`, `substructure filters`, `scaffold tree`) on crux, initialize `engineOverride` in
-  `crux-searches.ts` to `SubstructureSearchEngine.Crux` for the run — and put it back.
+  not installed. It leaves the engine property on Crux, the default.
+- Package tests: `grok test --host localhost --category "crux substructure search"`. Crux is the default engine of
+  Contains / Not contains since 2026-10; the existing suites (`substructure search`, `substructure filters`,
+  `scaffold tree`) run on it. To run them on RDKit, set **Substructure Search Engine** to RDKit on the stand
+  (`engine-setting.sh`) for the run — and put it back.
+- `bash engine-setting.sh show | set <RDKit|Crux> [<RDKit|Crux>] | restore` — Chem's **Chemical Engine** (and
+  **Substructure Search Engine**) on a stand through the server's API (the `grok` CLI), for whole runs in Crux mode:
+  package tests, the BDD suite, the tests of the packages that call Chem. `restore` puts back what `set` replaced.
 
 ## Results
 

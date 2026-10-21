@@ -309,22 +309,31 @@ test('Chem: Substructure Search via top menu — match / no-match / re-invoke re
     // Positive control: with no Filter Panel rendered both counts would be 0 and the
     // no-second-card check below would pass on there being no cards at all.
     expect(cardsBefore, 'the Filter Panel must be rendering the card for the card-count comparison to mean anything').toBeGreaterThan(0);
-    // Running a search caches helper columns on the dataframe (saveColumn, Chem/src/chem-searches.ts),
+    // An RDKit search caches helper columns on the dataframe (saveColumn, Chem/src/chem-searches.ts),
     // one of which holds canonical SMILES and is itself typed Molecule. It is no column to search,
     // so the re-invocation must still skip the picker; the count here keeps that from passing
-    // only because no helper was cached.
-    const molColsNow = await page.evaluate(() => grok.shell.t.columns.toList()
-      .filter((c: any) => c.semType === 'Molecule').map((c: any) => c.name as string));
-    console.log(`[probe] S2S1 before re-invoke: molCols=${molColsNow.length} ` +
+    // only because no helper was cached. A Crux search (the default unless the setting says RDKit)
+    // caches none, so there the picker check below stands on the single user-visible column.
+    const {molColsNow, engine} = await page.evaluate(async () => {
+      const chem = await grok.dapi.packages.filter('name = "Chem"').first();
+      return {
+        molColsNow: grok.shell.t.columns.toList()
+          .filter((c: any) => c.semType === 'Molecule').map((c: any) => c.name as string),
+        engine: ((await chem.getProperties()) ?? {}).SubstructureSearchEngine as string | undefined,
+      };
+    });
+    console.log(`[probe] S2S1 before re-invoke: engine=${engine} molCols=${molColsNow.length} ` +
       `${JSON.stringify(molColsNow)} cardsBefore=${cardsBefore}`);
-    expect(molColsNow.length,
-      `the searches already run must have cached a second Molecule-typed column, or skipping the ` +
-      `picker below proves nothing; columns seen: ${JSON.stringify(molColsNow)}`).toBeGreaterThan(1);
+    if (engine === 'RDKit') {
+      expect(molColsNow.length,
+        `the RDKit searches already run must have cached a second Molecule-typed column, or skipping the ` +
+        `picker below proves nothing; columns seen: ${JSON.stringify(molColsNow)}`).toBeGreaterThan(1);
+    }
 
     await openChemMenuItem(page, SUBSTRUCTURE_LEAF);
     await page.locator(SMILES_INPUT).first().waitFor({state: 'visible', timeout: 20_000});
     expect(await page.locator(PICKER_DIALOG).count(),
-      'the cached ~-prefixed helper is no column to search, so re-invoking must skip the column picker').toBe(0);
+      'one column is searchable (a cached ~-prefixed helper is no column to search), so re-invoking must skip the column picker').toBe(0);
     await page.waitForFunction((t) => grok.shell.t.filter.trueCount === t, total, {timeout: 20_000});
     const cardsAfter = await page.locator(FILTER_CARD).count();
     const cardAfter = await readCardState(page, MOL_COL);

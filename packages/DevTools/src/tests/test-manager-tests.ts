@@ -48,6 +48,33 @@ category('Test manager', () => {
     expect(testInfo.get('package', last), 'DevTools');
   });
 
+  // Older test libraries return no 'package' column (and, before 2024, no 'logs')
+  test('Tests details after running old test library tests', async () => {
+    const call = grok.functions.call;
+    const savedResults = testManager.testsResultsDf;
+    testManager.testsResultsDf = undefined;
+    grok.functions.call = async (name: string, params?: {}) => {
+      const res = await call.call(grok.functions, name, params);
+      if (name === 'DevTools:test') {
+        for (const col of ['logs', 'package'])
+          if (res.col(col))
+            res.columns.remove(col);
+      }
+      return res;
+    };
+    try {
+      testManager.selectedNode = testManager.tree.items.filter((it) => it.text === 'exist')[0];
+      await testManager.runTestsForSelectedNode();
+      const condition = {package: 'DevTools', category: 'FSE', name: 'exist'};
+      const testInfo = testManager.getTestsInfoGrid(condition, NODE_TYPE.TEST).testInfo;
+      expect(testInfo.rowCount, 1);
+    }
+    finally {
+      grok.functions.call = call;
+      testManager.testsResultsDf = savedResults;
+    }
+  });
+
 
   after(async () => {
     testManager.testManagerView.close();

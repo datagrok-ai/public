@@ -12,6 +12,8 @@ export type ActionSpec = DataActionConfiguraion<LinkIOParsed[]> | PipelineMutati
 export type MatchedIO = {
   path: Readonly<NodePath>;
   ioName?: string;
+  /** Set for a `count` query: the number of matching children of the node at `path`. */
+  count?: number;
 }
 
 export type MatchedNodePaths = Readonly<Array<MatchedIO>>;
@@ -185,6 +187,16 @@ function matchLinkIO(
   skipIO: boolean,
   useDescriptionStore: boolean,
 ): MatchedNodePaths {
+  const lastSegment = indexFromEnd(parsedLink.segments);
+  if (lastSegment?.type === 'selector' && lastSegment.selector === 'count') {
+    const parents = matchLinkIO(
+      rnode, currentIO, {...parsedLink, segments: parsedLink.segments.slice(0, -1)}, true, useDescriptionStore);
+    const ids = new Set(lastSegment.ids);
+    return parents.map(({path}) => ({
+      path,
+      count: rnode.getNode(path).getChildren().filter(({id}) => !ids.size || ids.has(id)).length,
+    }));
+  }
   const traverse = buildTraverseD([] as Readonly<NodePath>, (state: NodeTraverseState, currentPath, currentSegment?: number) => {
     const segment = parsedLink.segments[currentSegment!];
     const {pnode} = state;
