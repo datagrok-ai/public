@@ -854,5 +854,5 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 export function getUpdatedWidth(
   grid: DG.Grid | null | undefined, g: CanvasRenderingContext2D, x: number, w: number, dpr: number
 ): number {
-  return !!grid ? Math.max(Math.min(grid.canvas.width / dpr - x, w)) : Math.max(g.canvas.width / dpr - x, 0);
+  return grid?.dart ? Math.max(Math.min(grid.canvas.width / dpr - x, w)) : Math.max(g.canvas.width / dpr - x, 0);
 }
