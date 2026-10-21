@@ -4,6 +4,7 @@
 
 * Domains: Fixed `DomainTableClient.save()` sending the `'~'` service columns and master-expand fields of a spread read row as column values, which the server refused
 * Domains: `DomainFrameEditor` filled the column defaults the caller may write into a new row, so a required column with a default no longer blocks it
+* Domains: Capped `DomainTableClient.audit(id)` at the row's newest 100 events (still oldest first); added `{limit, before}` paging
 * [core#857](https://github.com/datagrok-ai/core/issues/857): Fixed `View.PACKAGES` and `VIEW_TYPE.PACKAGES` to be `'Plugins'`, the platform's plugins view type, and removed `View.BROWSE`, which has no view factory, from `View.ALL_VIEW_TYPES`, so `View.createByType` no longer crashes on them
 * Domains: Added `DomainColumn`; `orderBy` takes it, so an FK path no longer type-checks as a sort key
 * Fixed `ConnectionDataSource.byType` returning a raw Dart object

@@ -16,6 +16,9 @@ import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchR
 import type {EditState} from './edit-state.js';
 import {MemoryEditState} from './edit-state.js';
 
+/** A history line as kept: its `seq` is where it stands in the table's history. */
+type AuditLine = Omit<AuditEntryLike, 'seq'>;
+
 export interface MemoryColumnJson {
   type: string;
   required?: boolean;
@@ -230,7 +233,7 @@ export class MemoryDomainBackend implements DomainBackend {
       return refs.get(name);
     };
     const results: DomainTransactionResultLike[] = new Array(ops.length);
-    const audit: [MemoryTable, AuditEntryLike][] = [];
+    const audit: [MemoryTable, AuditLine][] = [];
     const tx = uuid4();
     const ts = new Date().toISOString();
     for (const index of order) {
@@ -355,8 +358,9 @@ export class MemoryTable implements DomainTableLike {
   readonly rows: Row[];
   /** Every ref column → its target address. */
   readonly refs: Record<string, string>;
-  /** What every transaction that touched this table recorded, oldest first. */
-  readonly history: AuditEntryLike[] = [];
+  /** What every transaction that touched this table recorded, oldest first; a line's place here
+   * is its `seq`. */
+  readonly history: AuditLine[] = [];
   /** One bump per transaction that wrote this table's rows — the memory twin of
    * `domain_tables.change_seq` (consolidation 1-5), so `probe` answers an unscoped read with a
    * token instead of a scan, exactly as `DgDomainTable` does. */
@@ -521,8 +525,10 @@ export class MemoryTable implements DomainTableLike {
     return this._backend.transaction(ops);
   }
 
-  audit(id: string): Promise<AuditEntryLike[]> {
-    return Promise.resolve(this.history.filter((line) => line.id === id));
+  audit(id: string, page: {limit?: number, before?: number} = {}): Promise<AuditEntryLike[]> {
+    const lines = this.history.map((line, seq) => ({...line, seq}))
+      .filter((line) => line.id === id && (page.before === undefined || line.seq < page.before));
+    return Promise.resolve(lines.slice(-Math.min(Math.max(page.limit ?? 100, 1), 1000)));
   }
 
   /** The soft delete undone, as the server's `POST …/{id}/restore`: a row whose ref column points
