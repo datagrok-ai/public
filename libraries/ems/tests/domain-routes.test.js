@@ -1,7 +1,7 @@
 /* `domains.route` (WO 3-7) over the memory backend: what a `/domains/<schema>/<table>` address
    resolves to — the u2 app as a view, the row a segment names (a business key, a composite one,
-   an id), the query and the search forwarded, an app already open taking the address instead, and
-   null wherever the platform keeps the address (a schema route, an unknown table). The fixture
+   an id), the query and the search forwarded, an app already open taking the address instead, a
+   not-found view for an unknown table, and null wherever the platform keeps the address. The fixture
    here is a table nothing refers to: the route builds the app with its panes, and the children
    pane's platform grid has no stub to build over. */
 
@@ -158,16 +158,42 @@ scoped('find-or-activate: an app already open takes the address and is answered 
   a.dispose();
 });
 
-scoped('null where the platform keeps the address: a schema route, a table the registry does not know',
+scoped('null where the platform keeps the address: a schema route, a table read that failed',
   async () => {
     emsBackends.domain = widgets();
     assert.equal(await domains.route('/domains'), null);
     assert.equal(await domains.route('/domains/demo'), null, 'the schema gallery stays Dart');
     assert.equal(await domains.route('/domains/demo/widget/A-1/extra'), null);
     assert.equal(await domains.route('/apps/Grit'), null);
-    assert.equal(await domains.route('/domains/demo/nope'), null, 'an unknown table falls back');
-    assert.equal(await domains.route('/domains/nope/widget'), null);
+    emsBackends.domain = {table: () => Promise.reject(new Error('Failed to fetch'))};
+    assert.equal(await domains.route('/domains/demo/widget'), null, 'a failed read says nothing about the table');
   });
+
+scoped('a table or schema the registry does not know opens a not-found view with nothing to act on', async () => {
+  emsBackends.domain = widgets();
+  for (const [address, name] of [['/domains/demo/nope', 'demo.nope'], ['/domains/nope/widget', 'nope.widget'],
+    ['/domains/demo/nope/A-1?x=1', 'demo.nope']]) {
+    const view = await domains.route(address);
+    assert.notEqual(view, null, `${address}: answered here, not by the platform's view of an empty table`);
+    assert.equal(view.root.textContent,
+      `No table matches "${name}". It may have been deleted, renamed, or you may not have access to it.`);
+    assert.equal(view.path, address, 'the address stays as typed');
+    assert.deepEqual(view.ribbonPanels, [], 'no New, no import');
+    assert.equal(DomainApp.live.size, 0, 'and no app behind it');
+    globalThis.grok_Widget_Kill(view.root);
+  }
+});
+
+scoped('over the platform an unknown table is the registry\'s "validation" refusal; any other refusal is not', async () => {
+  emsBackends.domain = {table: () => Promise.reject({code: 'validation', message: 'Unknown domain table "demo.nope"'})};
+  const view = await domains.route('/domains/demo/nope');
+  assert.notEqual(view, null, 'the code the platform sends opens the not-found view');
+  assert.match(view.root.textContent, /^No table matches "demo\.nope"\./);
+  globalThis.grok_Widget_Kill(view.root);
+
+  emsBackends.domain = {table: () => Promise.reject({code: 'forbidden', message: 'Forbidden'})};
+  assert.equal(await domains.route('/domains/demo/widget'), null, 'a refusal that is not "unknown" stays the platform\'s');
+});
 
 test('DomainAddress: the platform\'s row route, and what an address carries under an app\'s bases', () => {
   assert.deepEqual(DomainAddress.ROUTE.exec('/domains/demo/widget').slice(1),
