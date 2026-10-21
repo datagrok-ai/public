@@ -108,6 +108,8 @@ export class TimelinesView extends ClinicalCaseViewBase {
   }
 
   private subscribeToSelection() {
+    if (!this.resultTables)
+      return;
     const setPropPanel = async () => {
       const panel = await this.propertyPanel();
       if (panel)
@@ -186,6 +188,8 @@ export class TimelinesView extends ClinicalCaseViewBase {
 
 
   override async propertyPanel() {
+    if (!this.resultTables)
+      return super.propertyPanel();
     const selectedInd = this.resultTables.selection.getSelectedIndexes();
     //in case no events are selected on timelines plot and ae domain is checked - show most frequent AEs
     if (!selectedInd.length) {
