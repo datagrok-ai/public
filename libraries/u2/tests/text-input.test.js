@@ -120,3 +120,29 @@ smoke('follow: a re-read with an unchanged value leaves the field being typed in
   assert.equal(input.value.value, 'orders');
   input.dispose();
 });
+
+smoke('tooltipText: u2 tooltip over the caption, the editor\'s description; none over the editor', async () => {
+  const {Tooltip} = await import('../src/index.js');
+  const input = mount(new TextInput({label: 'Name', tooltipText: 'The compound\'s registered name'}));
+  const caption = input.root.querySelector('.u2-input-label');
+  assert.equal(input.root.title, '', 'no native title');
+  assert.equal(field(input).getAttribute('aria-description'), 'The compound\'s registered name');
+  fire(caption, 'pointerenter');
+  await new Promise((r) => setTimeout(r, 400));
+  assert.equal(Tooltip.root.textContent, 'The compound\'s registered name');
+  fire(caption, 'pointerleave');
+  input.tooltipText = '';
+  assert.equal(field(input).hasAttribute('aria-description'), false);
+  fire(caption, 'pointerenter');
+  await new Promise((r) => setTimeout(r, 400));
+  assert.equal(Tooltip.isVisible, false, 'an emptied tooltip shows nothing');
+  fire(caption, 'pointerleave');
+
+  const bare = mount(new TextInput({tooltipText: 'Filter rows'}));
+  fire(bare.root, 'pointerenter');
+  await new Promise((r) => setTimeout(r, 400));
+  assert.equal(Tooltip.root.textContent, 'Filter rows', 'no caption: the whole input carries it');
+  fire(bare.root, 'pointerleave');
+  input.dispose();
+  bare.dispose();
+});

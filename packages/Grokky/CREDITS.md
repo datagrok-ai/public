@@ -107,11 +107,12 @@ by the platform host and shared across all packages.
 
 ## 3. Fetched at runtime from third-party LLM providers (not bundled)
 
-Grokky is configured to send chat / completion / tool-use requests to one of
-several LLM providers (Anthropic Claude, OpenAI, AWS Bedrock, etc.) selected
-by the deployed Datagrok server's configuration. These provider services are
-governed by their own respective terms of service and are not redistributed by
-Datagrok.
+The `claude-runtime` container sends chat / tool-use requests to the
+Anthropic Messages API with the deployment's own Anthropic API key, and its
+web tools send queries and URLs to the free tiers of Exa, Parallel, Firecrawl
+and Keenable, the web-search backends Hermes Agent uses when none is configured.
+These services are governed by their own respective terms of service and are
+not redistributed by Datagrok.
 
 ---
 
@@ -119,31 +120,31 @@ Datagrok.
 
 Grokky ships two Docker images that run alongside the Datagrok platform.
 These are built and distributed separately from the JavaScript bundle.
-All listed components are under permissive licenses, except the Claude Agent
-SDK (proprietary, see below).
+All listed components are under permissive licenses, except three of Hermes' Python dependencies under
+the weak-copyleft MPL-2.0 (certifi, pathspec, and tqdm in part), shipped unmodified.
 
-### `dockerfiles/claude-runtime` — Claude Agent runtime (Hono + WebSocket)
+### `dockerfiles/claude-runtime` — Grokky AI runtime (Hono + WebSocket, Hermes Agent)
 
-Wraps the official Claude Agent SDK and streams structured events to the
-browser. Skills/knowledge-sync system included.
+Runs one Hermes Agent session per chat in a Python driver (`agent/`) and
+streams structured events to the browser. Skills/knowledge-sync system included.
 
 | Component                            | License    | Upstream                                          |
 |--------------------------------------|------------|---------------------------------------------------|
-| Node.js 20 (`node:20-slim` base)     | MIT (Node) | https://nodejs.org/                               |
-| @anthropic-ai/claude-agent-sdk       | Proprietary | https://github.com/anthropics/claude-agent-sdk   |
+| Node.js 22 (`node:22-trixie-slim` base) | MIT (Node) | https://nodejs.org/                            |
+| Hermes Agent (pinned commit) | MIT, © 2025 Nous Research | https://github.com/NousResearch/hermes-agent |
+| Hermes' locked Python dependencies (81 packages in `/opt/hermes/.venv`) | MIT, BSD, Apache-2.0, ISC, PSF-2.0; MPL-2.0: certifi, pathspec, tqdm (MPL-2.0 and MIT) | listed in Hermes' `uv.lock` |
+| anthropic, mcp, jsonschema, ruamel.yaml (Python, from Hermes' locked dependencies; used by the agent) | MIT | https://github.com/anthropics/anthropic-sdk-python, https://github.com/modelcontextprotocol/python-sdk, https://github.com/python-jsonschema/jsonschema, https://sourceforge.net/projects/ruamel-yaml/ |
+| CPython 3.14 (python-build-standalone, pinned in Hermes' `pm/lock.json`) | PSF-2.0 | https://www.python.org/            |
+| ripgrep (Debian package)             | MIT / Unlicense | https://github.com/BurntSushi/ripgrep        |
+| tini (Debian package)                | MIT        | https://github.com/krallin/tini                   |
 | @hono/node-server, @hono/node-ws     | MIT        | https://hono.dev/                                 |
 | hono                                 | MIT        | https://github.com/honojs/hono                    |
-| adm-zip                              | MIT        | https://github.com/cthackers/adm-zip              |
 | yaml                                 | ISC        | https://github.com/eemeli/yaml                    |
-| @zilliz/claude-context-mcp           | MIT        | https://github.com/zilliztech/claude-context      |
-
-The Claude Agent SDK is © Anthropic PBC, all rights reserved; its use is
-governed by Anthropic's Legal Agreements
-(https://code.claude.com/docs/en/legal-and-compliance).
 
 The image also clones `https://github.com/datagrok-ai/public.git` at build
 time into `/workspace`; the cloned source is the same MIT-licensed `public/`
-repository that this `CREDITS.md` lives in.
+repository that this `CREDITS.md` lives in. The documentation repository
+`https://github.com/datagrok-ai/help.git` (MIT) is cloned into `/workspace/help`.
 
 ### `dockerfiles/mcp-server` — Datagrok MCP server (HTTP transport)
 
@@ -152,7 +153,7 @@ Model Context Protocol tools.
 
 | Component                            | License    | Upstream                                          |
 |--------------------------------------|------------|---------------------------------------------------|
-| Node.js 20 (`node:20-slim` base)     | MIT (Node) | https://nodejs.org/                               |
+| Node.js 22 (`node:22-alpine` base)   | MIT (Node) | https://nodejs.org/                               |
 | @modelcontextprotocol/sdk            | MIT        | https://github.com/modelcontextprotocol/typescript-sdk |
 | @hono/node-server                    | MIT        | https://hono.dev/                                 |
 | hono                                 | MIT        | https://github.com/honojs/hono                    |

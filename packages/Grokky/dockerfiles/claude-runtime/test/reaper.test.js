@@ -1,14 +1,16 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const {startOrphanReaper, childProcesses} = require('../dist/watchdog');
+const {startOrphanReaper, isAgentProcess, descendantPids} = require('../dist/watchdog');
 
 const tick = (ms) => new Promise((r) => setTimeout(r, ms));
+// Every process counts as owned, so a sweep on Linux never kills anything of this machine's.
+const everyPid = {has: () => true};
 
-test('polls the active-query count on a schedule', async () => {
+test('polls the pool\'s owned pids on a schedule', async () => {
   let polls = 0;
   const timer = startOrphanReaper(() => {
     polls++;
-    return 1;
+    return everyPid;
   }, 10);
   await tick(60);
   clearInterval(timer);
@@ -16,13 +18,13 @@ test('polls the active-query count on a schedule', async () => {
 });
 
 test('returns an unref-ed timer so it cannot hold the process open', () => {
-  const timer = startOrphanReaper(() => 0, 10);
+  const timer = startOrphanReaper(() => everyPid, 10);
   // A reaper that kept the event loop alive would stop the container ever shutting down.
   assert.equal(typeof timer.hasRef === 'function' ? timer.hasRef() : false, false);
   clearInterval(timer);
 });
 
-test('survives an activeCount that throws instead of crashing the runtime', async () => {
+test('survives an ownedPids that throws instead of crashing the runtime', async () => {
   // This runs on a bare timer callback: an escaping throw is an uncaught exception that takes
   // down the whole runtime. The janitor must never kill the process it is cleaning up after.
   const timer = startOrphanReaper(() => {
@@ -30,36 +32,29 @@ test('survives an activeCount that throws instead of crashing the runtime', asyn
   }, 10);
   await tick(40);
   clearInterval(timer);
-  assert.ok(true, 'process still alive');
 });
 
-test('childProcesses reports pid, command and a monotonic startTime', () => {
-  const kids = childProcesses();
-  assert.ok(Array.isArray(kids));
-  for (const k of kids) {
-    assert.equal(typeof k.pid, 'number');
-    assert.equal(typeof k.command, 'string');
-    assert.equal(typeof k.startTime, 'number');
-  }
+test('isAgentProcess matches the agent module on the command line, whatever the interpreter', () => {
+  assert.ok(isAgentProcess('/opt/hermes/.venv/bin/python -m grokky_agent '));
+  assert.ok(isAgentProcess('/opt/hermes/.venv/bin/python3.14 -m grokky_agent'));
+  assert.ok(isAgentProcess('python3 -u -m grokky_agent '));
 });
 
-test('childProcesses reports no children for an implausible parent pid', () => {
-  assert.deepEqual(childProcesses(2147483646), []);
+test('isAgentProcess never matches a script a terminal tool call runs', () => {
+  assert.ok(!isAgentProcess('python3 analyze.py '));
+  assert.ok(!isAgentProcess('python3 -c print("-m grokky_agent is fine") '));
+  assert.ok(!isAgentProcess('python3 -m grokky_agent_tools '));
+  assert.ok(!isAgentProcess('python3 -m pytest grokky_agent '));
+  assert.ok(!isAgentProcess('bash -c ls /opt/grokky_agent-notes '));
+  assert.ok(!isAgentProcess('node /app/dist/server.js '));
 });
 
-// The surplus arithmetic is the safety-critical part: too eager and it kills a live turn, too
-// lax and the orphan keeps burning the container's only CPU. Exercised directly.
-const surplusOf = (agentCount, active) => agentCount - Math.max(0, active);
-
-test('surplus arithmetic never targets a process while queries are in flight', () => {
-  assert.equal(surplusOf(1, 1) > 0, false, 'one agent, one query — nothing to reap');
-  assert.equal(surplusOf(3, 3) > 0, false, 'three agents, three queries — all legitimate');
-  assert.equal(surplusOf(2, 3) > 0, false, 'fewer agents than queries — never negative-kill');
-});
-
-test('surplus arithmetic reclaims exactly the excess', () => {
-  assert.equal(surplusOf(1, 0), 1, 'one agent, no query — the orphan case');
-  assert.equal(surplusOf(3, 1), 2, 'two orphans alongside one live turn');
-  // A negative activeCount must not be read as "kill extra".
-  assert.equal(surplusOf(1, -5), 1);
+test('descendantPids collects the whole tree under a pid, at any depth, and nothing else', () => {
+  const table = [
+    {pid: 1, ppid: 0}, {pid: 10, ppid: 1}, {pid: 11, ppid: 10}, {pid: 12, ppid: 11}, {pid: 13, ppid: 11},
+    {pid: 14, ppid: 10}, {pid: 20, ppid: 1}, {pid: 21, ppid: 20},
+  ];
+  assert.deepEqual(descendantPids(10, table).sort((a, b) => a - b), [11, 12, 13, 14]);
+  assert.deepEqual(descendantPids(20, table), [21]);
+  assert.deepEqual(descendantPids(12, table), []);
 });

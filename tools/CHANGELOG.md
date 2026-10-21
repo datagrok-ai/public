@@ -2,6 +2,8 @@
 
 ## v.next
 
+* `grok s status`: server build, uptime, DB pool and HTTP connections from `/info/server`; for admins also the requests in flight (`?extended=true`)
+* `grok api`: Fixed double plurals in table accessors (`categorieses` → `categories`)
 * Upgraded Puppeteer to v25, which drops the vulnerable `extract-zip` and `basic-ftp` transitive dependencies; Node.js 22.12+ is now required
 * `grok add app --domain`, `grok api --ui`: scaffold against `@datagrok-libraries/ems`
 * GROK-20884: Added `grok s o errors get <signature|problem>`: each occurrence of an error with its time, user, function and session, so an error incident leads to its calls
@@ -12,6 +14,7 @@
 * GROK-20298: `grok s domains apply` sends the manifest JSON's `version` as the now-required `ifVersion` of a user-managed schema, accepts `--if-version current` to take the registered one, refuses such an apply without either, and forwards `friendlyName`, `description` and `storage` from the JSON for a user-managed schema (a package schema keeps its key set)
 * GROK-20298: `domain-schema.schema.json` accepts the root `storage` key (`{kind: external, connection, schema?, catalog?}`) and the remote-name keys `table`/`column`; `grok api` types an external table's rows with `id` only, an empty expand map, and emits no `<Schema>TransactionOp`/`transaction` for an external schema
 * Made `grok api` type a required column with a `default` as optional on `<Table>Insert`: the server fills it when an insert omits it
+* Fixed `grok api` emitting a choices type that does not compile, or holds a different value, when a choice contains `'` or `\`
 
 ## 6.7.8 (2026-10-13)
 

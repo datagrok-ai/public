@@ -23,7 +23,7 @@ export class TutorialRunner {
       if (existingDock)
         grok.shell.dockManager.close(existingDock);
     }
-    grok.shell.dockManager.dock(root, DG.DOCK_TYPE.LEFT, null, 'Tutorials', 0.22);
+    grok.shell.dockManager.dock(root, DG.DOCK_TYPE.LEFT, null, Tutorial.APP_TITLE, 0.22);
   }
 
   async run(t: Tutorial): Promise<void> {

@@ -28,6 +28,31 @@ test('loading u2 installs exactly one stylesheet, at this copy\'s revision', () 
   assert.ok(sheets()[0].textContent.includes('.u2-btn'));
 });
 
+test('an older build\'s own copy of the u2 sheet is reported once and left in place', () => {
+  fresh();
+  const legacy = document.createElement('style');
+  legacy.textContent = readFileSync(new URL('../css/inputs.css', import.meta.url), 'utf8');
+  const override = document.createElement('style');
+  override.textContent = '.my-pkg .u2-input-root{display:block}';
+  document.head.appendChild(legacy);
+  document.head.appendChild(override);
+  const warnings = [];
+  const warn = console.warn;
+  console.warn = (m) => warnings.push(m);
+  try {
+    assert.equal(Styles.legacyCopies(document), 1, 'a package that only restyles u2 is no legacy copy');
+    Styles.install('.c{}', 9, 'h9');
+    Styles.install('.c{}', 9, 'h9');
+  }
+  finally {
+    console.warn = warn;
+  }
+  assert.equal(warnings.filter((w) => w.includes('before stylesheet revisions')).length, 1);
+  assert.ok(legacy.isConnected, 'the old copy is reported, not removed');
+  legacy.remove();
+  override.remove();
+});
+
 test('a newer copy replaces the text in place; an older or identical one leaves it', () => {
   fresh();
   Styles.install('.a{}', 5, 'h5');

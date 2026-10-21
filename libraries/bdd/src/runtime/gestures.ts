@@ -18,7 +18,8 @@ const EDITOR = '.ui-input-editor';
 const EDITOR_PART = '[data-u2-part="editor"]';
 const OPTION = '[role="option"], .u2-menu-item, .u2-combobox-option, .d4-menu-item, .u2-list-row';
 const OPTION_LABEL = '.u2-fb-label, .u2-typeahead-text, .u2-typeahead-user-name, .u2-multi-select-text, .u2-menu-label';
-const CLOSE = '.u2-dialog-close, [aria-label="Close"], [name="icon-times"], .d4-dialog-close';
+/** The close icon of a dialog of either UI generation. */
+export const DIALOG_CLOSE = '.u2-dialog-close, [aria-label="Close"], [name="icon-times"], .d4-dialog-close';
 const TWISTIE = '.u2-tree-twistie, .d4-tree-view-tri';
 
 function gestureOf(page: Page, target: ElementRef): {click?: 'mouse' | 'dom'; type?: 'keyboard' | 'fill'} {
@@ -560,7 +561,7 @@ export async function toggle(page: Page, target: ElementRef): Promise<void> {
 
 export async function close(page: Page, target: ElementRef): Promise<void> {
   const loc = await locate(page, target);
-  const button = loc.locator(CLOSE).first();
+  const button = loc.locator(DIALOG_CLOSE).first();
   if (await button.count() > 0)
     await button.click();
   else

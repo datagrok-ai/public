@@ -345,6 +345,27 @@ category('panel and renderer', () => {
       'with one curve the aggregate is that curve, so it should not be drawn');
     // and the mode falls back to per series rather than drawing nothing at all
     expect(drawn.some((t) => t.startsWith('IC50')), true, 'the single curve should still show its own');
+
+    const offered = (logIC50s: number[]) =>
+      chartPropertiesFor(JSON.parse(multiSeriesCurveJson(logIC50s)) as IFitChartData).map((p) => p.name);
+    expect(offered([-6.5]).some((name) => name === 'statisticsMode' || name === 'aggrType'), false,
+      'the Options pane of a one-curve cell should offer no summary');
+    expect(offered([-7, -5]).includes('statisticsMode') && offered([-7, -5]).includes('aggrType'), true,
+      'the one of a two-curve cell should');
+  });
+
+  test('a click on a second curve cell right after the first makes that one current', async () => {
+    // the first click used to freeze the current object for a second, and the Context Panel kept its panes
+    const tv = grok.shell.addTableView(curveTable('panelSecondClick', true));
+    try {
+      const renderer = new FitChartCellRenderer();
+      renderer.onClick(tv.grid.cell('curve', 0), new MouseEvent('click'));
+      renderer.onClick(tv.grid.cell('curve', 1), new MouseEvent('click'));
+      const current = grok.shell.o;
+      expect(current instanceof DG.GridCell && current.gridRow === 1, true, `the second cell should be current, not ${current}`);
+    } finally {
+      tv.close();
+    }
   });
 
   test('the panel offers droplines only for a fit that has asymptotes', async () => {

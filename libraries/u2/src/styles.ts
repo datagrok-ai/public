@@ -14,6 +14,7 @@ export interface InstalledStyles {
 
 const SELECTOR = 'style[data-u2-styles]';
 let warned = false;
+let legacyWarned = false;
 
 export class Styles {
   /** This copy's revision and content hash. */
@@ -27,6 +28,11 @@ export class Styles {
     if (doc?.head === undefined || doc.head === null ||
       doc.querySelector('meta[name="u2-styles"][content="linked"]') !== null)
       return null;
+    if (!legacyWarned && Styles.legacyCopies(doc) > 0) {
+      legacyWarned = true;
+      console.warn('u2: a package built before stylesheet revisions injects its own copy of the u2 CSS, which overrides ' +
+        `revision ${revision}; republish the packages that bundle u2.`);
+    }
     let el = doc.head.querySelector<HTMLStyleElement>(SELECTOR);
     if (el === null) {
       el = doc.createElement('style');
@@ -58,6 +64,13 @@ export class Styles {
     const children = Array.from(head.children);
     const link = children.findIndex((el) => el.tagName === 'LINK' && el.getAttribute('rel') === 'stylesheet');
     return link < 0 ? null : children.slice(link + 1).find((el) => el.tagName === 'STYLE') ?? null;
+  }
+
+  /** The copies of u2's sheets an older build injected as plain styles: they come after the installed sheet and
+   * win over it. Told by u2's own top-level `.u2-input-root` rule, which a package's overrides do not restate. */
+  static legacyCopies(doc: Document = globalThis.document): number {
+    return Array.from(doc.head.querySelectorAll('style')).filter((el) => !el.hasAttribute('data-u2-styles') &&
+      /(^|}|\*\/)\s*\.u2-input-root\s*\{/.test(el.textContent ?? '')).length;
   }
 
   /** What the page runs, or null before any u2 copy installed. */

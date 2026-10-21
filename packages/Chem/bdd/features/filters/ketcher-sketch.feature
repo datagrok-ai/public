@@ -1,4 +1,4 @@
-@journey @sketcher-controls @realizes:filters.cp.chem-and-bio-filters
+@journey @sketcher-controls @realizes:filters.cp.chem-and-bio-filters @serial
 Feature: A structure drawn in Ketcher reaches the substructure card as drawn
   Chem | Search | Substructure Search... on smiles (1000 rows, molecule column canonical_smiles) adds a
   substructure card and opens its sketcher, here Ketcher. The benzene template placed on the canvas
@@ -10,9 +10,12 @@ Feature: A structure drawn in Ketcher reaches the substructure card as drawn
   and while the pointer is over the canvas, Ketcher holds the template's floating preview in its
   structure, so an export taken then read two rings (666 rows). The pointer drifts on over the canvas
   after every stroke here.
+  Serial (`@serial`): Filter as you draw is the account's setting (`chem-filter` user settings), and this feature clears
+  it; the features that filter while the sketcher is open take turns with it.
 
   Background:
     Given user is logged in
+    And the "chem-filter" user settings are put back at feature end
     And the molecule sketcher is "Ketcher"
     And the package autostarts have completed
     And user opens smiles dataset

@@ -449,3 +449,17 @@ ui('button: with no owner, the reason and the tooltip fall back to the title, an
   assert.equal(open.title, 'Open it');
   assert.equal(Scope.liveCount, live);
 });
+
+ui('tooltip: role tooltip, and the anchor is described by it only while it shows (keeping its own ids)', async () => {
+  const c = new Control();
+  const el = c.runInScope(() => button('Delete', () => {}, {tooltip: 'Delete the selected rows'}));
+  el.setAttribute('aria-describedby', 'own-hint');
+  document.body.append(el);
+  fire(el, 'pointerenter');
+  await new Promise((r) => setTimeout(r, 400));
+  assert.equal(Tooltip.root.getAttribute('role'), 'tooltip');
+  assert.equal(el.getAttribute('aria-describedby'), 'own-hint u2-tooltip');
+  fire(el, 'pointerleave');
+  assert.equal(el.getAttribute('aria-describedby'), 'own-hint', 'the link goes with the tooltip');
+  c.dispose();
+});

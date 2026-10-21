@@ -23,6 +23,9 @@ import {SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {filter} from 'rxjs/operators';
 import {cruxSubstructureSearch, getCruxQuery, isCruxSearch} from './crux/crux-searches';
+import {ChemicalEngine, isCruxRequested} from './engine/chem-engine';
+import {fingerprintsByEngine, fingerprintsKey} from './engine/worker-jobs';
+import {cruxModuleSync} from './engine/crux-module';
 
 
 const enum FING_COL_TAGS {
@@ -181,6 +184,12 @@ function saveColumn(col: DG.Column, data: (Uint8Array | string | null)[],
 
   const savedColumnName = '~' + col.name + '.' + tagName;
   const newCol = col.dataFrame.columns.getOrCreate(savedColumnName, colType);
+  // the other engine's cache of the same kind (`~col.Morgan` / `~col.Morgan.Crux`, src/engine/worker-jobs.ts) goes:
+  // the column's change set is consumed by the cache that reads it first, so a kept twin would miss later edits
+  const crux = fingerprintsKey(ChemicalEngine.Crux);
+  const twin = tagName.endsWith(crux) ? savedColumnName.slice(0, -crux.length) : savedColumnName + crux;
+  if (col.dataFrame.columns.contains(twin))
+    col.dataFrame.columns.remove(twin);
 
   newCol.init((i) => data[i]);
   newCol.meta.includeInCsvExport = false;
@@ -200,24 +209,29 @@ function saveColumn(col: DG.Column, data: (Uint8Array | string | null)[],
 * @param {number[] | null} changedRows - rows to recompute when reusing saved columns (null -> nothing changed)
 * */
 async function invalidateAndSaveColumns(molCol: DG.Column, fingerprintsType: Fingerprint, returnSmiles: boolean,
-  savedFpCol: DG.Column | null, savedSmilesCol: DG.Column | null, changedRows: number[] | null): Promise<IFpResult> {
-  const rdKitService = await getRdKitService();
+  savedFpCol: DG.Column | null, savedSmilesCol: DG.Column | null, changedRows: number[] | null,
+  requested: ChemicalEngine = ChemicalEngine.RDKit): Promise<IFpResult> {
+  // `requested`: the engine whose cache this is (the RDKit substructure search's own fingerprints are always RDKit's)
+  let engine = requested;
   const canReuse = !!savedFpCol && (!returnSmiles || !!savedSmilesCol);
 
   let fps: (Uint8Array | null)[];
   let smiles: (string | null)[] | null;
   if (!canReuse) {
-    // no saved columns to reuse -> compute the whole column
-    const fpRes = await rdKitService.getFingerprints(fingerprintsType, molCol.toList(), returnSmiles);
+    // no saved columns to reuse -> compute the whole column (by the "Chemical engine" setting: RDKit's or Crux's)
+    const fpRes = await fingerprintsByEngine(fingerprintsType, molCol.toList(), returnSmiles, requested);
     fps = fpRes.fps;
     smiles = fpRes.smiles;
+    engine = fpRes.engine;
   } else {
     // reuse saved fps/canonical smiles, recompute only the changed rows (none -> pure reuse)
     fps = savedFpCol!.toList();
     smiles = returnSmiles ? savedSmilesCol!.toList() : null;
     if (changedRows) {
       const changedMols = changedRows.map((i) => molCol.get(i));
-      const recomputed = await rdKitService.getFingerprints(fingerprintsType, changedMols, returnSmiles);
+      const recomputed = await fingerprintsByEngine(fingerprintsType, changedMols, returnSmiles, requested);
+      if (recomputed.engine !== engine) // the engine that filled the cache could not: the whole column again
+        return invalidateAndSaveColumns(molCol, fingerprintsType, returnSmiles, null, null, null, requested);
       for (let k = 0; k < changedRows.length; k++) {
         fps[changedRows[k]] = recomputed.fps[k];
         if (returnSmiles && recomputed.smiles)
@@ -226,10 +240,12 @@ async function invalidateAndSaveColumns(molCol: DG.Column, fingerprintsType: Fin
     }
   }
 
+  // the cached columns are per engine: RDKit's under their names, Crux's with a suffix
+  const key = fingerprintsKey(engine);
   returnSmiles ?
-    saveColumns(molCol, [fps, smiles!], [fingerprintsType, canonicalSmilesColName],
+    saveColumns(molCol, [fps, smiles!], [fingerprintsType + key, canonicalSmilesColName + key],
       [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
-    saveColumns(molCol, [fps], [fingerprintsType], [DG.COLUMN_TYPE.BYTE_ARRAY]);
+    saveColumns(molCol, [fps], [fingerprintsType + key], [DG.COLUMN_TYPE.BYTE_ARRAY]);
   return {fps, smiles};
 }
 
@@ -241,23 +257,28 @@ async function getUint8ArrayFingerprints(
     if (molCol.semType !== DG.SEMTYPE.MOLECULE && molCol.dataFrame)
       await molCol.dataFrame.meta.detectSemanticTypes();
 
-    const {cols, changedRows} = checkForSavedColumns(molCol, [fingerprintsType, canonicalSmilesColName]);
+    // the cached columns of the engine in effect ("Chemical engine"; src/engine/worker-jobs.ts)
+    const engine = isCruxRequested() ? ChemicalEngine.Crux : ChemicalEngine.RDKit;
+    const fpTag = fingerprintsType + fingerprintsKey(engine);
+    const smilesTag = canonicalSmilesColName + fingerprintsKey(engine);
+    const {cols, changedRows} = checkForSavedColumns(molCol, [fpTag, smilesTag]);
     const noChanges = changedRows === null;
-    const fgsCheck = cols[fingerprintsType] ?? null;
+    const fgsCheck = cols[fpTag] ?? null;
     if (returnSmiles) {
-      const smilesCheck = cols[canonicalSmilesColName] ?? null;
+      const smilesCheck = cols[smilesTag] ?? null;
       if (fgsCheck && smilesCheck && noChanges)
         return {fps: fgsCheck.toList(), smiles: smilesCheck.toList()};
       else {
         const fpResult = await invalidateAndSaveColumns(
-          molCol, fingerprintsType, true, fgsCheck, smilesCheck, changedRows);
+          molCol, fingerprintsType, true, fgsCheck, smilesCheck, changedRows, engine);
         return {fps: fpResult.fps, smiles: fpResult.smiles};
       }
     } else {
       if (fgsCheck && noChanges)
         return {fps: fgsCheck.toList(), smiles: null};
       else {
-        const fpResult = await invalidateAndSaveColumns(molCol, fingerprintsType, false, fgsCheck, null, changedRows);
+        const fpResult = await invalidateAndSaveColumns(molCol, fingerprintsType, false, fgsCheck, null, changedRows,
+          engine);
         return {fps: fpResult.fps, smiles: null};
       }
     }
@@ -514,7 +535,10 @@ export function chemGetFingerprint(molString: string, fingerprint: Fingerprint, 
   (error: Error) => any, convertToBitArray = true): BitArray {
   let mol = null;
   try {
-    mol = getMolSafe(molString, {}, getRdKitModule()).mol;
+    // in Crux mode the query's fingerprint is Crux's, as the column's are (RDKit's where Crux cannot read it)
+    const crux = isCruxRequested() ? cruxModuleSync() : null;
+    mol = crux ? getMolSafe(molString, {}, crux).mol : null;
+    mol ??= getMolSafe(molString, {}, getRdKitModule()).mol;
     if (mol) {
       const fp = getRDKitFpAsUint8Array(mol, fingerprint);
       return rdKitFingerprintToBitArray(fp) as BitArray;

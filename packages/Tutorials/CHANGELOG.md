@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#964](https://github.com/datagrok-ai/core/issues/964): Sticky Meta tutorial: Fixed the annotation step failing with "the schema for tutorial section never appeared" after clicking a molecule cell
 * [core#662](https://github.com/datagrok-ai/core/issues/662): Sticky Meta: Fixed an error when hovering the row header in the last tutorial step
 * [core#672](https://github.com/datagrok-ai/core/issues/672): Differential equations tutorial: Fixed the "This tutorial can't continue" failure when the Lotka-Volterra model opens slowly
 * Tutorials: Fixed tutorial steps showing up twice: reopening the Tutorials app while a tutorial is running now closes that tutorial instead of leaving it running in the background
