@@ -3,7 +3,7 @@
    no u2 in the core bundle — it calls the `domainRoutes` func PowerPack exposes over this. An app
    already open over the table takes the address instead of a second one being docked. */
 import type * as DG from 'datagrok-api/dg';
-import {Control, divV, span} from '@datagrok-libraries/u2';
+import {Control, div} from '@datagrok-libraries/u2';
 import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
 import {domains} from './facade.js';
 import type {DomainTable} from './facade.js';
@@ -40,7 +40,7 @@ export async function route(address: string): Promise<DG.ViewBase | null> {
       return null;
     const said = `No table matches "${schema}.${table}". It may have been deleted, renamed, or you may not ` +
       'have access to it.';
-    return appView({name: table, content: new Control(divV([span(said)], 'u2-async-empty')), path: base});
+    return appView({name: table, content: new Control(div([said], 'u2-async-empty')), path: rest});
   }
   // the platform's own address is the canonical one, and a list opened from it follows the server
   // like the app a package mounts does — two addresses onto one table must not behave differently
