@@ -617,6 +617,14 @@ category('DataFrame: ColumnList', () => {
     expect(typeof(df.get('newColumnVirtual', 1)), 'number');
   });
 
+  test('addNewVirtual bigint', async () => {
+    const big = DG.Column.fromBigInt64Array('big', BigInt64Array.from([1000, 1002, 1001].map(BigInt)));
+    const col = DG.DataFrame.create(3).columns.addNewVirtual('big', (i) => big.get(i), DG.TYPE.BIG_INT);
+    expect(col.get(0) === BigInt(1000), true);
+    expect(col.toList().every((x) => typeof x === 'bigint'), true);
+    expect(col.stats.max, 1002);
+  });
+
   test('byIndex', async () => {
     const df = createDf2();
     expect(df.columns.byIndex(1).getRawData().toString(), '1,4,2,3');

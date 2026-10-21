@@ -4,7 +4,7 @@
  */
 
 import {TYPE, ColumnType, SemType} from "../const";
-import {toJs} from "../wrappers";
+import {toDart, toJs} from "../wrappers";
 import {_getIterator, _toIterable} from "../utils_convert";
 import wu from "wu";
 import {IDartApi} from "../api/grok_api.g";
@@ -306,7 +306,10 @@ export class ColumnList {
       name: string,
       getValue: (ind: number) => any, type = TYPE.OBJECT,
       setValue: IndexSetter | null = null): Column {
-    return toJs(api.grok_ColumnList_AddNewVirtual(this.dart, name, getValue, setValue, type));
+    const bigInt = type === TYPE.BIG_INT;
+    const getter = bigInt ? (i: number) => toDart(getValue(i)) : getValue;
+    const setter = bigInt && setValue ? (i: number, v: any) => setValue(i, toJs(v)) : setValue;
+    return toJs(api.grok_ColumnList_AddNewVirtual(this.dart, name, getter, setter, type));
   }
 
   /** Removes column by name (case-insensitive).*/

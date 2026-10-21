@@ -488,6 +488,10 @@ export class BigIntColumn extends Column<BigInt> {
   set(i: number, value: BigInt | null, notify: boolean = true): void {
     api.grok_BigIntColumn_SetValue(this.dart, i, value?.toString(), notify);
   }
+
+  toList(): Array<BigInt | null> {
+    return Array.from({length: this.length}, (_, i) => this.get(i));
+  }
 }
 
 
