@@ -43,8 +43,10 @@ export class DgDomainBackend implements DomainBackend {
     return grok.dapi.domains.registry.resolveNames(table, [...ids]);
   }
 
-  /** Drops every handle, so the next source re-reads the registry — after a grant change. */
+  /** Drops every handle and the platform's access caches, so the next source re-reads the
+   * registry — after a grant change. */
   invalidate(): void {
+    grok.dapi.domains.invalidateUiCaches();
     this._tables.clear();
   }
 
@@ -53,8 +55,10 @@ export class DgDomainBackend implements DomainBackend {
    * what was saved. */
   async saveAll(edits: EditState[]): Promise<boolean> {
     const states = edits as EditorEditState[];
-    for (const state of states)
+    for (const state of states) {
       state.problem = null;
+      state.problemCode = null;
+    }
     const session = new DG.DomainSession(states.map((e) => e.editor), {quiet: true});
     try {
       if (await session.save())
@@ -66,7 +70,11 @@ export class DgDomainBackend implements DomainBackend {
       for (const state of states) {
         if (refusal !== null && (refusal.editor === null || refusal.editor === state.editor))
           state.problem = refusal.message;
+        state.problemCode = refusal?.code ?? null;
       }
+      // as `DomainErrors.report`: the server contradicted the access the affordances were built from
+      if (refusal?.code === 'forbidden')
+        this.invalidate();
       return false;
     } finally {
       session.dispose();

@@ -5,7 +5,6 @@
    is the memory backend's refusal (the gallery, the tests) or a failed load, and both are one
    message; a 403 additionally drops the access caches so the affordances re-gate. */
 import {emsBackends} from '../core/domain-backend.js';
-import * as grok from 'datagrok-api/grok';
 import {Rows, notify} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {DgDomainBackend} from './backend.js';
@@ -47,11 +46,8 @@ export class DomainErrors {
   /** One balloon; after a 403 the affordances were built from an access snapshot the server just
    * contradicted, so every cache of it goes. */
   static report(e: unknown, source?: DomainSource): void {
-    if (DomainErrors.codeOf(e) === 'forbidden') {
-      grok.dapi.domains.invalidateUiCaches();
-      if (emsBackends.domain instanceof DgDomainBackend)
-        emsBackends.domain.invalidate();
-    }
+    if (DomainErrors.codeOf(e) === 'forbidden' && emsBackends.domain instanceof DgDomainBackend)
+      emsBackends.domain.invalidate();
     notify.error(DomainErrors.message(e, source));
   }
 }

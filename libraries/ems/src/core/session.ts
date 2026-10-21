@@ -117,11 +117,15 @@ export class SharedSession implements DomainSession {
       try {
         if (!await emsBackends.domain!.saveAll(batch.map((s) => s.edit.peek()!))) {
           SharedSession._refused(batch);
+          if (batch.some((s) => s.edit.peek()?.problemCode === 'forbidden'))
+            this._reloadAccess();
           return false;
         }
       } catch (e) {
         for (const source of batch)
           source.fail(e);
+        if ((e as {code?: unknown} | null)?.code === 'forbidden')
+          this._reloadAccess();
         return false;
       } finally {
         for (const sub of heard)
@@ -170,6 +174,13 @@ export class SharedSession implements DomainSession {
   private static _hold(batch: readonly DomainSource[], saving: boolean): void {
     for (const source of batch)
       source.edit.peek()?.setSaving(saving);
+  }
+
+  /** After a 403, every source of the session re-reads its access, not just the batch: New on the
+   * list follows the list source. */
+  private _reloadAccess(): void {
+    for (const source of this._sources.peek())
+      void source.reloadAccess();
   }
 
   /** A backend that refused without throwing (the platform editor reports the server's error

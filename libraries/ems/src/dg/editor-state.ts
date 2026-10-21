@@ -18,6 +18,7 @@ export class EditorEditState implements EditState {
   /** The sentence the platform session worked out for the last refusal — see `DgDomainBackend`,
    * which is where it is captured, and `SharedSession._refused`, which says it. */
   problem: string | null = null;
+  problemCode: string | null = null;
 
   private readonly _subs: {unsubscribe(): void}[];
   /** Bumped on every editor change: the validity walk runs when it is read, not per keystroke. */
