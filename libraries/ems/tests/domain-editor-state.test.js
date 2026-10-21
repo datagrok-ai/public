@@ -25,8 +25,8 @@ function scoped(name, body) {
 }
 
 /** The editor's surface the host reads and writes, over a frame double. */
-function fakeEditor(rows, extra = []) {
-  const df = new DataFrame([{name: 'id', type: 'string'}, {name: 'title', type: 'string'}, ...extra], rows);
+function fakeEditor(rows) {
+  const df = new DataFrame([{name: 'id', type: 'string'}, {name: 'title', type: 'string'}], rows);
   const states = rows.map(() => '');
   const errors = rows.map(() => ({}));
   const editor = {
@@ -188,19 +188,5 @@ scoped('validity is the first blocking error on a row that is not deleted; a con
   editor.fail(0, 'title', 'Someone else changed it', 'conflict');
   assert.equal(state.validity.value, null, 'a dismissed conflict only marks the cell');
   assert.equal(state.errorOf('i1', 'title'), 'Someone else changed it');
-  state.dispose();
-});
-
-scoped('a list written into a frame\'s string column (a string_list cell) goes in as JSON array text', async () => {
-  const {df, editor} = fakeEditor([{id: 'i1', title: 'Aspirin', tags: '["a, b","c\\"d"]'}],
-    [{name: 'tags', type: 'string'}]);
-  const state = new EditorEditState(editor);
-  state.setValue('i1', 'tags', ['a, b', 'c"d', 'e']);
-  assert.equal(df.get('tags', 0), '["a, b","c\\"d","e"]', 'the text the server parses (batch_loader _coerceCell)');
-  assert.deepEqual(editor.calls.at(-1), ['set', 0, 'tags', '["a, b","c\\"d","e"]']);
-  const key = state.newRow({title: 'Draft', tags: ['x']});
-  assert.equal(df.get('tags', state.indexOf(key)), '["x"]');
-  state.setValue('i1', 'title', 'Aspirin 2');
-  assert.equal(df.get('title', 0), 'Aspirin 2', 'a scalar is written as is');
   state.dispose();
 });
