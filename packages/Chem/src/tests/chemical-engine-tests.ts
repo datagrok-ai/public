@@ -742,8 +742,10 @@ category('chemical engine', () => {
     }
     const workers = new Set(timing.chunks.map((c) => c.worker)).size;
     const distinct = molecules.categories.length;
-    const what = `${timing.chunks.length} chunks of ${timing.chunks[0].size} on ${workers} of ${timing.workers} workers`;
-    expect(timing.chunks[0].size, Math.ceil(distinct / timing.workers), what);
+    // the chunks are listed as they finish, so the last, smaller one may come first
+    const largest = Math.max(...timing.chunks.map((c) => c.size));
+    const what = `${timing.chunks.length} chunks of up to ${largest} on ${workers} of ${timing.workers} workers`;
+    expect(largest, Math.ceil(distinct / timing.workers), what);
     expect(workers, timing.chunks.length, `one chunk per worker: ${what}`);
     expect(workers > timing.workers / 2, true, what);
     // the same molecules in tens: each call its own chunking
