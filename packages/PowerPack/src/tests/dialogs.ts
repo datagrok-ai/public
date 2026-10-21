@@ -6,6 +6,7 @@ import {after, awaitCheck, before, category, expect, expectArray, expectFloat,
 import {AddNewColumnDialog} from '../dialogs/add-new-column';
 import {FormulaLinesDialog} from '../dialogs/formula-lines';
 import {FUNC_TESTS} from './utils';
+import {viewersDialog} from '../viewers-gallery';
 
 
 category('Dialogs', () => {
@@ -19,6 +20,14 @@ category('Dialogs', () => {
   test('FormulaLines', async () => {
     const dlg = new FormulaLinesDialog(df);
     await awaitCheck(() => isDialogPresent(dlg.dialog.title));
+  });
+
+  test('Viewer gallery with a package-less viewer', async () => {
+    grok.functions.register({signature: 'viewer PowerPackTestNoPackageViewer()',
+      run: () => DG.Viewer.grid(df), options: {role: DG.FUNC_TYPES.VIEWER}});
+    viewersDialog(grok.shell.tv, df);
+    await awaitCheck(() => isDialogPresent('Add Viewer'));
+    DG.Dialog.getOpenDialogs().find((d) => d.title === 'Add Viewer')?.close();
   });
 }, {clear: false});
 

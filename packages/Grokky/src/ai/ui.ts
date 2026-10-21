@@ -11,7 +11,7 @@ import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEven
   copyToClipboard} from '../utils';
 import {AIPanel, StreamingPanel} from './panel';
 import {AIWindowManager} from './ai-window';
-import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent, AuthUrlEvent, AuthErrorEvent} from '../claude/runtime-client';
+import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
 import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
 import {sendChatTurn} from '../claude/queue-task';
 import {UsageLimiter} from './usage-limiter';
@@ -304,89 +304,8 @@ function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HT
         ui.bigButton('OK', () => resolve(true)),
         ui.button('CANCEL', () => resolve(false)),
       ]),
-    ], 'grokky-auth-body'),
-  ], 'grokky-auth-widget');
-}
-
-function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
-  const errorDiv = ui.divText('', 'grokky-auth-error');
-
-  const submitBtn = ui.button('Submit', () => submitCode()) as HTMLButtonElement;
-  submitBtn.disabled = true;
-
-  const codeInput = ui.input.string('Authorization code', {
-    placeholder: 'Paste code here',
-    onValueChanged: () => {
-      submitBtn.disabled = !codeInput.value?.trim();
-      errorDiv.classList.add('grokky-auth-error');
-    },
-  });
-
-  const subs: rxjs.Subscription[] = [];
-  const cleanupSubs = () => subs.forEach((s) => s.unsubscribe());
-
-  const openLink = ui.link('Open authorization page', () => {
-    if (openLink.getAttribute('href'))
-      return;
-    const sub = client.onAuthUrl.subscribe((evt) => {
-      openLink.setAttribute('href', evt.url);
-      openLink.setAttribute('target', '_blank');
-      window.open(evt.url, '_blank');
-      sub.unsubscribe();
-    });
-    subs.push(sub);
-    client.startAuth();
-  });
-
-  const pendingStrip = ui.divV([
-    ui.divText('Session expired'),
-    ui.divText('Open the auth page and paste the code below'),
-  ], 'grokky-strip grokky-strip-pending');
-
-  const successStrip = ui.divV([
-    ui.divText('Session renewed'),
-    ui.divText('Re-send your message to continue'),
-  ], 'grokky-strip grokky-strip-success');
-  successStrip.style.display = 'none';
-
-  const pendingBody = ui.divV([openLink, codeInput.root, errorDiv, submitBtn], 'grokky-auth-body');
-
-  const widget = ui.div([pendingStrip, pendingBody, successStrip], 'grokky-auth-widget');
-
-  subs.push(
-    client.onAuthDone.subscribe(() => {
-      if (!widget.isConnected) {
-        cleanupSubs();
-        return;
-      }
-      pendingStrip.remove();
-      pendingBody.remove();
-      successStrip.style.display = '';
-      cleanupSubs();
-    }),
-    client.onAuthError.subscribe((evt) => {
-      if (!widget.isConnected) {
-        cleanupSubs();
-        return;
-      }
-      errorDiv.textContent = evt.message;
-      errorDiv.classList.remove('grokky-auth-error');
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Submit';
-      codeInput.input.focus();
-    }),
-  );
-
-  function submitCode(): void {
-    const code = codeInput.value?.trim();
-    if (!code)
-      return;
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Verifying…';
-    client.sendAuthCode(code);
-  }
-
-  return widget;
+    ], 'grokky-confirm-body'),
+  ], 'grokky-confirm-card');
 }
 
 async function runClaudeStreaming(
@@ -515,14 +434,6 @@ async function streamOnce(
       forSession(client.onError, (evt) => {
         panel.cancelInputRequest();
         endWithError(`Claude: ${evt.message}`);
-      });
-
-      forSession(client.onAuthRequired, () => {
-        panel.cancelInputRequest();
-        panel.clearStreaming();
-        panel.appendStreamedElement(buildAuthRenewalWidget(client));
-        cleanup();
-        resolve();
       });
 
       forSession(client.onAborted, async () => {

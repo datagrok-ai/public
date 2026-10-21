@@ -13,7 +13,9 @@ import {PipelineLinkConfigurationInput} from
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import * as DG from 'datagrok-api/dg';
-import {createTestScheduler, expectThrowsAsync, twoSteps, errors, warnings} from '../../../test-utils';
+import {
+  createTestScheduler, expectThrowsAsync, twoSteps, errors, warnings, resolvedSources, syncResult,
+} from '../../../test-utils';
 
 const ANNOTATED = 'LibTests:TestAnnotatedInputs';
 const NAMED = 'LibTests:TestNamedValidators';
@@ -375,22 +377,56 @@ category('ComputeUtils: Driver links check', async () => {
     const named = (...names: string[]) => ({verdicts: {validators: {input: 'value', names}}});
     const annotation = {verdicts: {validators: {input: 'value', call: 'call'}}};
     const tooBig = {verdicts: [{message: 'too big', isError: true, isHelper: false}]};
-    expectDeepEqual(await resolveSources(controllerFor(20), named('LibTests:MockValidator')), tooBig);
-    expectDeepEqual(await resolveSources(controllerFor(20, fc), annotation), tooBig);
-    expectDeepEqual(await resolveSources(controllerFor(1), named('LibTests:MockValidator')), {verdicts: []});
-    expectDeepEqual(await resolveSources(controllerFor(null), named('LibTests:MockValidator')), {verdicts: []});
-    expectDeepEqual(await resolveSources(controllerFor(20), named('LibTests:MockValidatorBool')),
+    expectDeepEqual(await resolvedSources(controllerFor(20), named('LibTests:MockValidator')), tooBig);
+    expectDeepEqual(await resolvedSources(controllerFor(20, fc), annotation), tooBig);
+    expectDeepEqual(await resolvedSources(controllerFor(1), named('LibTests:MockValidator')), {verdicts: []});
+    expectDeepEqual(await resolvedSources(controllerFor(null), named('LibTests:MockValidator')), {verdicts: []});
+    expectDeepEqual(await resolvedSources(controllerFor(20), named('LibTests:MockValidatorBool')),
       {verdicts: [{message: 'Validation failed: LibTests:MockValidatorBool', isError: true, isHelper: false}]});
-    expectDeepEqual(await resolveSources(controllerFor(1), named('LibTests:MockValidatorBool')), {verdicts: []});
-    const thrown: any = await resolveSources(controllerFor(1), named('LibTests:MockValidatorThrow'));
+    expectDeepEqual(await resolvedSources(controllerFor(1), named('LibTests:MockValidatorBool')), {verdicts: []});
+    const thrown: any = await resolvedSources(controllerFor(1), named('LibTests:MockValidatorThrow'));
     expect(thrown.verdicts.length, 1);
     expect(thrown.verdicts[0].isError, false);
     expect(thrown.verdicts[0].message.includes('boom'), true);
-    const unknown: any = await resolveSources(controllerFor(1), named('LibTests:NoSuchValidator'));
+    const unknown: any = await resolvedSources(controllerFor(1), named('LibTests:NoSuchValidator'));
     expect(unknown.verdicts[0].isError, false);
-    expectDeepEqual(await resolveSources(controllerFor(20, undefined), annotation), {verdicts: []});
-    expectDeepEqual(await resolveSources(controllerFor(20, {}), annotation), {verdicts: []});
-    expectDeepEqual(resolveSources(controllerFor(20), undefined), {});
+    expectDeepEqual(await resolvedSources(controllerFor(20, undefined), annotation), {verdicts: []});
+    expectDeepEqual(await resolvedSources(controllerFor(20, {}), annotation), {verdicts: []});
+    expectDeepEqual(syncResult(resolveSources(controllerFor(20), undefined)), {});
+  });
+
+  test('Validator source keeps the order of named validators', async () => {
+    const controller = {getFirst: () => 20} as any;
+    const source = {v: {validators: {input: 'value', names: ['LibTests:MockValidatorBool', 'LibTests:MockValidator']}}};
+    expectDeepEqual((await resolvedSources(controller, source)).v.map((verdict: any) => verdict.message),
+      ['Validation failed: LibTests:MockValidatorBool', 'too big']);
+  });
+
+  test('Validator source resolves synchronously when it calls nothing', async () => {
+    const controllerFor = (value: any, call?: any) => ({
+      hasCall: (name: string) => name === 'call' && call !== undefined,
+      getFirst: (name: string) => name === 'call' ? call : value,
+      getMatchedPositions: () => [{path: [], position: 0, ioName: 'x'}],
+    }) as any;
+    const named = (...names: string[]) => ({v: {validators: {input: 'value', names}}});
+    const annotation = {v: {validators: {input: 'value', call: 'call'}}};
+    expectDeepEqual(syncResult(resolveSources(controllerFor(null), named('LibTests:MockValidator'))), {v: []});
+    expectDeepEqual(syncResult(resolveSources(controllerFor(''), named('LibTests:MockValidator'))), {v: []});
+    expectDeepEqual(syncResult(resolveSources(controllerFor(20), named())), {v: []});
+    expectDeepEqual(syncResult(resolveSources(controllerFor(20), annotation)), {v: []});
+    expectDeepEqual(syncResult(resolveSources(controllerFor(20, null), annotation)), {v: []});
+    expectDeepEqual(syncResult(resolveSources(controllerFor(20, {}), annotation)), {v: []});
+  });
+
+  test('Validator source reports a failed annotation evaluation as a warning', async () => {
+    const call = {evalParamValidators: () => Promise.reject(new Error('down'))};
+    const controller = {
+      hasCall: () => true,
+      getFirst: (name: string) => name === 'call' ? call : 20,
+      getMatchedPositions: () => [{path: [], position: 0, ioName: 'x'}],
+    } as any;
+    expectDeepEqual(await resolvedSources(controller, {v: {validators: {input: 'value', call: 'call'}}}),
+      {v: [{message: 'Couldn\'t validate (down)', isError: false, isHelper: false}]});
   });
 
   test('Rules accept sources, verdicts and array messages', async () => {

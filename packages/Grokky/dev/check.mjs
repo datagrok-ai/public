@@ -3,9 +3,9 @@
 // runtime still serves a real turn end to end. Exits non-zero on any failure.
 //
 //   node dev/check.mjs          compile + unit + live smoke turn
-//   node dev/check.mjs --fast   compile + unit only (no model call, no quota spent)
+//   node dev/check.mjs --fast   compile + unit only (no model call)
 
-import {execFileSync, spawnSync} from 'node:child_process';
+import {execFileSync, execSync, spawnSync} from 'node:child_process';
 import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
 
@@ -13,6 +13,7 @@ const DEV = import.meta.dirname;
 const RUNTIME = path.join(DEV, '..', 'dockerfiles', 'claude-runtime');
 const MCP = path.join(DEV, '..', 'dockerfiles', 'mcp-server');
 const fast = process.argv.includes('--fast');
+const NODE_PASS = /^(?:# |ℹ )pass (\d+)$/m;
 
 function step(label, fn) {
   const t0 = Date.now();
@@ -32,9 +33,8 @@ step('compile', () => {
 });
 
 step('unit tests', () => {
-  const out = execFileSync('node', ['--test', 'test/'], {cwd: RUNTIME, encoding: 'utf8'});
-  const pass = out.match(/^# pass (\d+)$/m)?.[1] ?? '?';
-  return `(${pass} tests)`;
+  const out = execSync('npm test 2>&1', {cwd: RUNTIME, encoding: 'utf8'});
+  return `(${out.match(NODE_PASS)?.[1] ?? '?'} tests)`;
 });
 
 // The MCP server is a separate image with its own build, so a runtime-only check would miss a
@@ -42,7 +42,7 @@ step('unit tests', () => {
 step('mcp-server', () => {
   execFileSync('npx', ['tsc'], {cwd: MCP, encoding: 'utf8', shell: true});
   const out = execFileSync('node', ['--test', 'test/'], {cwd: MCP, encoding: 'utf8'});
-  return `(${out.match(/^# pass (\d+)$/m)?.[1] ?? '?'} tests)`;
+  return `(${out.match(NODE_PASS)?.[1] ?? '?'} tests)`;
 });
 
 // Cheap to check, expensive to get wrong: a malformed assert only surfaces ~20 minutes into a run.
@@ -66,7 +66,7 @@ step('live turn', () => {
   const script = `
     import('${driveUrl}').then(async ({driveOnce}) => {
       const r = await driveOnce('Reply with exactly: PONG',
-        {systemPromptMode: 'none', model: 'haiku', timeoutMs: 90000});
+        {systemPromptMode: 'none', model: 'claude-haiku-5-5', timeoutMs: 90000});
       if (!r.ok || !/PONG/.test(r.content)) {
         console.error('unexpected turn result:', JSON.stringify(r).slice(0, 400));
         process.exit(1);

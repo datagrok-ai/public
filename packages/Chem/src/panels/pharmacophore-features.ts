@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {RdKitService} from '../rdkit-service/rdkit-service';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
+import {alertsByEngine} from '../engine/worker-jobs';
 import {HIGHLIGHT_BY_SCAFFOLD_TAG} from '../constants';
 import {FAMILY_INFO, FAMILY_PRIORITY} from '../widgets/pharmacophore-features';
 import {IColoredScaffold} from '../rendering/rdkit-cell-renderer';
@@ -23,7 +24,7 @@ const FAMILY_LETTER_TO_ID: {[letter: string]: PharmFamilyId} = {
 
 export async function runPharmacophoreDetection(
   moleculeCol: DG.Column<string>, familySet: PharmFamilySet,
-  featuresDf: DG.DataFrame, rdkitService: RdKitService,
+  featuresDf: DG.DataFrame, rdkitService: Pick<RdKitService, 'getStructuralAlerts'>,
 ): Promise<DG.DataFrame> {
   const familyCol: DG.Column<string> = featuresDf.getCol('family');
   const smartsCol: DG.Column<string> = featuresDf.getCol('smarts');
@@ -82,7 +83,8 @@ export function buildPharmacophoreHighlightColumn(
 export async function getPharmacophoreFeaturesByFamilies(
   molecules: DG.Column<string>, familySet: PharmFamilySet,
 ): Promise<DG.DataFrame | undefined> {
-  const rdkitService = await chemCommonRdKit.getRdKitService();
+  // by the "Chemical engine" setting: the RDKit pool, or in Crux mode the Crux pool (RDKit's behind it)
+  const rdkitService = alertsByEngine;
   const featuresDf = await grok.data.loadTable(
     chemCommonRdKit.getRdKitWebRoot() + 'files/pharmacophore-features.csv');
   const progress = DG.TaskBarProgressIndicator.create('Detecting pharmacophores...');

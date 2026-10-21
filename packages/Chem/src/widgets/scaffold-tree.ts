@@ -788,8 +788,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.tree.root.classList.add(`scaffold-tree-${this.size}`);
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
 
-    const currentDf = grok.shell.tv.dataFrame;
-    this.Table = this.string('Table', currentDf.name, {fieldName: 'Table', category: 'Data', editor: 'table', nullable: false});
+    const currentDf = grok.shell.tv?.dataFrame;
+    this.Table = this.string('Table', currentDf?.name ?? '', {fieldName: 'Table', category: 'Data', editor: 'table', nullable: false});
 
     this.molColumns = currentDf?.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE) ?? [];
 
@@ -2518,6 +2518,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   onFrameAttached(dataFrame: DG.DataFrame): void {
+    if (!this.Table) {
+      this.Table = dataFrame.name;
+      this.molColumns = dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
+      this.molCol = this.molColumns.find((c) => c.name === this.moleculeColumnName) ?? this.molColumns[0] ?? null;
+      this.moleculeColumnName = this.molCol?.name ?? '';
+      this.summary = this.getFilterSum();
+    }
+
     attachScaffoldTreeAi(this);
     ui.empty(this.root);
 

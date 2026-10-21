@@ -2,20 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
 
 export const ClaudeModel = {
-  Haiku: 'haiku',
-  Sonnet: 'sonnet',
-  Opus: 'opus',
+  Haiku: 'claude-haiku-5-5',
+  Sonnet: 'claude-sonnet-5-5',
+  Opus: 'claude-opus-5-5',
 } as const;
 export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
 
 export type ChunkEvent = {sessionId: string, content: string};
 export type ImageAttachment = {mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp', data: string};
-/** `name` is the bare tool name (mcp prefix stripped); absent for progress-only activity. */
-export type ToolActivityEvent = {sessionId: string, summary: string, name?: string};
+/** `name` is the bare tool name (mcp prefix stripped). */
+export type ToolActivityEvent = {sessionId: string, summary: string, name: string};
 /** A runtime gate blocked the turn's Stop — a revision is being generated behind the visible
  * answer; `FinalEvent.revision` will say whether it replaces the original or the original stands. */
 export type RevisionStartEvent = {sessionId: string};
-/** Per-turn metrics the runtime forwards from the SDK `result` message (see docs/BENCHMARK.md). */
+/** Per-turn token, cost and timing metrics the runtime reports on `final` (see docs/BENCHMARK.md). */
 export type TurnServerMetrics = {
   inputTokens: number | null, outputTokens: number | null,
   cacheReadTokens: number | null, cacheCreationTokens: number | null,
@@ -27,8 +27,6 @@ export type ErrorEvent = {sessionId: string, message: string};
 export type SessionResetEvent = {sessionId: string};
 export type AbortedEvent = {sessionId: string};
 export type InputRequestEvent = {sessionId: string, requestId: string, toolName: string, input: any};
-export type AuthUrlEvent = {url: string};
-export type AuthErrorEvent = {message: string};
 
 export class ClaudeRuntimeClient {
   private static instance: ClaudeRuntimeClient | null = null;
@@ -49,10 +47,6 @@ export class ClaudeRuntimeClient {
   public onInputRequest = new rxjs.Subject<InputRequestEvent>();
   public onSyncStatus = new rxjs.Subject<{status: string; message?: string; files?: string[]}>();
   public onClose = new rxjs.Subject<void>();
-  public onAuthUrl = new rxjs.Subject<AuthUrlEvent>();
-  public onAuthDone = new rxjs.Subject<void>();
-  public onAuthError = new rxjs.Subject<AuthErrorEvent>();
-  public onAuthRequired = new rxjs.Subject<{sessionId: string}>();
   private _skillNames: string[] | null = null;
   private _resumable = new Set<string>();
 
@@ -139,8 +133,7 @@ export class ClaudeRuntimeClient {
         this.onChunk.next({sessionId: data.sessionId, content: data.content});
         break;
       case 'tool_activity':
-        this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary,
-          ...(data.name ? {name: data.name} : {})});
+        this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary, name: data.name});
         break;
       case 'revision_start':
         this.onRevisionStart.next({sessionId: data.sessionId});
@@ -156,6 +149,7 @@ export class ClaudeRuntimeClient {
         });
         break;
       case 'error':
+        this._resumable.add(data.sessionId);
         this.onError.next({sessionId: data.sessionId, message: data.message});
         break;
       case 'session_reset':
@@ -163,6 +157,7 @@ export class ClaudeRuntimeClient {
         this.onSessionReset.next({sessionId: data.sessionId});
         break;
       case 'aborted':
+        this._resumable.add(data.sessionId);
         this.onAborted.next({sessionId: data.sessionId});
         break;
       case 'input_request':
@@ -172,18 +167,6 @@ export class ClaudeRuntimeClient {
         if (data.status === 'done' && Array.isArray(data.files))
           this._skillNames = data.files.map((f: string) => f.replace(/\.[^.]+$/, ''));
         this.onSyncStatus.next({status: data.status, message: data.message, files: data.files});
-        break;
-      case 'auth_url':
-        this.onAuthUrl.next({url: data.url});
-        break;
-      case 'auth_done':
-        this.onAuthDone.next();
-        break;
-      case 'auth_error':
-        this.onAuthError.next({message: data.message});
-        break;
-      case 'auth_required':
-        this.onAuthRequired.next({sessionId: data.sessionId});
         break;
       }
     };
@@ -200,6 +183,11 @@ export class ClaudeRuntimeClient {
 
   isResumable(sessionId: string): boolean {
     return this._resumable.has(sessionId);
+  }
+
+  /** The runtime may still hold this session (a chat reopened from its history): the next turn resumes it. */
+  expectResume(sessionId: string): void {
+    this._resumable.add(sessionId);
   }
 
   send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel;
@@ -245,16 +233,6 @@ export class ClaudeRuntimeClient {
     this.ws.send(JSON.stringify({type: 'abort', sessionId}));
   }
 
-  startAuth(): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
-      throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
-    this.ws.send(JSON.stringify({type: 'auth_start'}));
-  }
-
-  sendAuthCode(code: string): void {
-    this.ws?.send(JSON.stringify({type: 'auth_code', code}));
-  }
-
   respondToInput(sessionId: string, requestId: string, value: any): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       return;
@@ -273,10 +251,7 @@ export class ClaudeRuntimeClient {
     systemPromptMode?: string, timeoutMs?: number}): Promise<any> {
     await this.ensureConnected();
     const sid = options?.sessionId ?? `query-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
-    // Never wait forever: if the runtime's watchdog kills a wedged turn, no final/error for this
-    // sid ever arrives, and an untimed query() then hangs its caller permanently (this hung a
-    // full benchmark arm in its judging phase). The default comfortably exceeds the runtime's own
-    // 90s idle watchdog, so it only fires when the turn is truly gone.
+    // Bounds a turn whose socket or runtime vanished: no final or error arrives then.
     const timeoutMs = options?.timeoutMs ?? 120_000;
     return new Promise((resolve, reject) => {
       const subs: {unsubscribe: () => void}[] = [];
@@ -322,10 +297,6 @@ export class ClaudeRuntimeClient {
     this.onInputRequest.complete();
     this.onSyncStatus.complete();
     this.onClose.complete();
-    this.onAuthUrl.complete();
-    this.onAuthDone.complete();
-    this.onAuthError.complete();
-    this.onAuthRequired.complete();
     this.onChunk = new rxjs.Subject<ChunkEvent>();
     this.onToolActivity = new rxjs.Subject<ToolActivityEvent>();
     this.onRevisionStart = new rxjs.Subject<RevisionStartEvent>();
@@ -336,9 +307,5 @@ export class ClaudeRuntimeClient {
     this.onInputRequest = new rxjs.Subject<InputRequestEvent>();
     this.onSyncStatus = new rxjs.Subject<{status: string; message?: string}>();
     this.onClose = new rxjs.Subject<void>();
-    this.onAuthUrl = new rxjs.Subject<AuthUrlEvent>();
-    this.onAuthDone = new rxjs.Subject<void>();
-    this.onAuthError = new rxjs.Subject<AuthErrorEvent>();
-    this.onAuthRequired = new rxjs.Subject<{sessionId: string}>();
   }
 }

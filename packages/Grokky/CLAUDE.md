@@ -3,7 +3,7 @@
 Grokky is the [AI for Datagrok](../../help/explore/ai/ai.md), enabling the following:
 1. A generic AI JS API for core and other plugins to use LLMs
 2. [Datagrok MCP server](dockerfiles/mcp-server/) so that Datagrok can be used by others
-3. [Claude Code environment](dockerfiles/claude-runtime) for
+3. [AI runtime](dockerfiles/claude-runtime) for
    - writing scripts
    - doing agentic work on behalf of the user, augmented with custom skills
    and company-specific knowledge on processes, infrastruture, etc.
@@ -17,7 +17,7 @@ Grokky is the [AI for Datagrok](../../help/explore/ai/ai.md), enabling the follo
    - Talk to your documents
 
 Ideal for enterprises. You deploy Datagrok in your private cloud, and provide 
-credentials for your enterprise Claude Code instance. Your data and tool usage
+your company's Anthropic API key. Your data and tool usage
 is safe, secure, governed, monitored and measured.
 
 See also [Grokky GitHub issues](https://github.com/datagrok-ai/public/issues/3710). 
@@ -188,16 +188,18 @@ Only affects rendering — the Datagrok system prompt is still active unless `no
 
 **`!cmd`**: executes the shell command via bash without `DATAGROK_PROMPT`. The `!` prefix is stripped and
 the message is sent with `systemPromptMode: 'bash'` (a minimal "output only stdout" system prompt defined in
-`claude-runtime/src/prompts.ts`). Works in any mode, independent of `rawRender`.
+`claude-runtime/src/prompts.ts`). Nothing streams: the answer is the model's final message, so a remark it makes
+before running the command is not shown. Works in any mode, independent of `rawRender`.
 `!!cmd` escapes to a literal `!cmd` prompt through the normal AI pipeline.
 
 **`/noprompt`**: client-side slash command intercepted in `setupShellAIPanelUI()` before reaching Claude.
 Calls `panel.enableNoPrompt()`: resets the session, clears output, enables `rawRender`, sets `_noPrompt = true`.
-All subsequent messages in that session use `systemPromptMode: 'none'` (empty system prompt — pure Claude Code).
+All subsequent messages in that session use `systemPromptMode: 'none'` (no system prompt at all).
 
-**System prompt is per-message, not per-session.** `buildOptions()` in `claude-runtime/src/query-options.ts` is called
-fresh for every WebSocket message. The `resume` field carries conversation history only, so `systemPromptMode`
-can vary per turn without restarting the session.
+**System prompt is per-message, not per-session.** Each turn carries its prompt to the session's agent
+process, whose `llm_request` middleware puts it on every model request (`patch_request` in
+`claude-runtime/agent/grokky_agent/providers/anthropic.py`), so `systemPromptMode` can vary per turn without
+restarting the session.
 
 ### AI UI Wiring (`src/ai/ui.ts`)
 
@@ -238,9 +240,9 @@ Processes two types of fenced blocks in Claude responses:
 - `` ```datagrok-exec `` — runs JS with `grok`/`ui`/`DG`/`view`/`t` globals
 - `` ```datagrok-entities `` — renders interactive entity cards (files, scripts, queries, connections, projects, spaces)
 
-The block formats (globals, JSON shapes, return-value rendering) are documented as Claude Code
-skills under `dockerfiles/claude-runtime/plugin/skills/` and loaded into the runtime as a local
-plugin. The inline system prompt only points Claude at these skills, keeping the prompt small.
+The block formats (globals, JSON shapes, return-value rendering) are documented as skills under
+`dockerfiles/claude-runtime/plugin/skills/`. The full-mode system prompt inlines the two core ones
+and lists the rest, which the model loads with the `skill_view` tool, keeping the prompt small.
 
 Also provides `buildViewContext()` — serializes the current view (table columns, script code) for Claude prompts.
 
@@ -256,7 +258,7 @@ Also provides `genDBConnectionMeta()` for generating and persisting LLM-friendly
 
 ### Docker Containers (`dockerfiles/`)
 
-- `claude-runtime/` — Hono + WebSocket server wrapping `@anthropic-ai/claude-agent-sdk`. Runs Claude sessions with a Datagrok-specific system prompt and resumable session support. Streams structured events to the browser: `chunk`, `tool_activity`, `final`, `error`, `aborted`, `queued`, `input_request`, `sync_status`, `auth_url` / `auth_done` / `auth_error`. The `src/` is split into `server.ts` (transport + `/ws` dispatch, auth subprocess, provider config, startup), `prompts.ts` (system prompts), `query-options.ts` (SDK query config + browser MCP tools + tool-activity summaries), and `session.ts` (session registry, streaming, turn queue, abort). Includes the skills & knowledge sync system (`src/sync/`, `src/user/`) — see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for the full spec. Ships a local Claude Code plugin (`plugin/`) with `datagrok-exec` and `datagrok-entities` skills describing the fenced-block formats; the plugin is attached for full-prompt sessions and skipped for `bash` / `none` modes.
+- `claude-runtime/` — Node server (Hono + WebSocket) driving [Hermes Agent](https://github.com/NousResearch/hermes-agent) (MIT): one `python -m grokky_agent` process per chat (`agent/grokky_agent/`) embeds Hermes' `AIAgent` and exchanges JSON lines with the server. The agent's tools are Hermes' native tools, the browser and view tools (`datagrok_exec`, `datagrok_verify`, `datagrok_show_entities`, `AskUserQuestion`, the view's `clientTools`) and the Datagrok MCP server's tools. Streams `chunk`, `tool_activity`, `revision_start`, `final`, `error`, `session_reset`, `aborted`, `queued`, `input_request` and `sync_status` to the browser. Ships the skills (`plugin/skills/`) and the skills & knowledge sync (`src/sync/`, `src/user/`, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md)). Design, files and operations: [docs/CLAUDE_CODE_FLOW.md](docs/CLAUDE_CODE_FLOW.md).
 - `mcp-server/` — MCP server (`@modelcontextprotocol/sdk`, HTTP transport) exposing Datagrok operations as tools: functions (list/get/call/create), files (list/download/upload), projects, spaces, and user info. Auth via per-request `x-user-api-key` / `x-datagrok-api-url` headers.
 
 ### Deprecated Code (`src/depr/`)
@@ -271,26 +273,17 @@ by active code. All active AI features now route through `ClaudeRuntimeClient`.
 - `CombinedAISearchAssistant.instance` — AI search routing
 - `UsageLimiter.getInstance()` — daily request limit enforcement
 
-## Subscription authorization (UI)
+## Model credentials
 
-On a Claude **subscription** (OAuth token in `.credentials.json`, not an API key) the token
-expires periodically. The panel renews it inline via a browser-relayed `claude auth login`: the user
-opens the OAuth page, pastes the returned code, and clicks **Submit**; on success the strip turns
-green and the message can be re-sent. `handleAuthStart` / `handleAuthCode` in
-[`server.ts`](dockerfiles/claude-runtime/src/server.ts) relay this to the **broker** (which runs the
-login as its own uid and owns `/home/broker/.claude/.credentials.json`, 0600 — unreadable by the
-agent uid); the broker injects the Bearer token at egress and refreshes it on 401. UI in
-[`src/ai/ui.ts`](src/ai/ui.ts); `auth_*` messages in [CLAUDE_CODE_FLOW.md](docs/CLAUDE_CODE_FLOW.md).
-See the credential-broker design in [`docs/`](docs/) for the full isolation model.
-
-| Session expired | Code pasted | Session renewed |
-|---|---|---|
-| ![](docs/images/auth-session-expired.png) | ![](docs/images/auth-code-entered.png) | ![](docs/images/auth-session-renewed.png) |
+The only model credential is the `claude-runtime` container's `apiKey`, an Anthropic Console API key; the
+browser names each turn's model, and `agent/grokky_agent/models.yaml` lists the models a turn may use with
+their prices. Claude subscription logins are not supported: Anthropic allows them only in its own
+applications. Details: [Credentials](docs/CLAUDE_CODE_FLOW.md#credentials).
 
 ## Rebuilding the container images
 
-`claude-runtime` and `mcp-server` code — `dockerfiles/*/src/`, the runtime `plugin/` skills and
-`prompts.ts`, the Dockerfiles — compiles **inside** the image. `grok publish` / `npm run build`
+`claude-runtime` and `mcp-server` code — `dockerfiles/*/src/`, the runtime's Python driver `agent/`,
+its `plugin/` skills and `prompts.ts`, the Dockerfiles — is built **into** the image. `grok publish` / `npm run build`
 rebuild only the browser bundle, not the images: rebuild the image (`docker build` in the container
 dir) and redeploy after any change under `dockerfiles/`, or the container keeps serving old code.
 

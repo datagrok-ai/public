@@ -118,7 +118,7 @@ category('ComputeUtils: Driver config processing', async () => {
     await snapshotCompare(pconf, 'Process config with globalId ref');
   });
 
-  test('A processing run prepares each function once to read its annotations', async () => {
+  test('Processing runs prepare a function once to read its annotations', async () => {
     const config: PipelineConfiguration = {
       id: 'p',
       type: 'static',
@@ -135,15 +135,29 @@ category('ComputeUtils: Driver config processing', async () => {
       return (original as any).apply(this, args);
     };
     try {
+      await getProcessedConfig(config);
+      expectDeepEqual(prepared <= 1, true, {prefix: 'First run'});
+      prepared = 0;
       const pconf = await getProcessedConfig(config);
-      expectDeepEqual(prepared, 1, {prefix: 'One run'});
       const steps = (pconf as any).steps;
       expectDeepEqual(steps.map((step: any) => step.io.length), [3, 3], {prefix: 'Both steps get the io'});
       expectDeepEqual(steps[0].io !== steps[1].io, true, {prefix: 'Own io per step'});
-      await getProcessedConfig(config);
-      expectDeepEqual(prepared, 2, {prefix: 'Next run reads again'});
+      await Promise.all([getProcessedConfig(config), getProcessedConfig(config)]);
+      expectDeepEqual(prepared, 0, {prefix: 'Later and overlapping runs'});
     } finally {
       DG.Func.prototype.prepare = original;
     }
+  });
+
+  test('Steps of one function do not share the checks of their io', async () => {
+    const config: PipelineConfiguration = {
+      id: 'p',
+      type: 'static',
+      steps: [{id: 's1', nqName: 'LibTests:TestAnnotatedInputs'}, {id: 's2', nqName: 'LibTests:TestAnnotatedInputs'}],
+    };
+    const steps = ((await getProcessedConfig(config)) as any).steps;
+    const checksOf = (step: any) => step.io.find((io: any) => io.id === 'v').checks;
+    checksOf(steps[0]).min = 100;
+    expectDeepEqual(checksOf(steps[1]).min, 0);
   });
 });
