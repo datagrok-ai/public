@@ -153,10 +153,12 @@ export class GridTutorial extends Tutorial {
       `you want to sort is current, simply press <b>${platformKeyMap['Ctrl'][this.platform]}+Shift+UP</b> in any cell to order its rows.`,
     () => grid.sort(['AGE'], [false]));
 
-    await this.action('Reset sorting in the grid', interval(1000).pipe(filter(() => grid.sortByColumns.length === 0)),
-      null, 'To clear sorting, right-click the column header and select <b>Sort > Reset</b>. The same can be achieved ' +
+    await this.action('Reset sorting in the grid', interval(1000).pipe(filter(() => {
+      const ageIdx = grid.sortByColumns.findIndex((col) => col.name === 'AGE');
+      return ageIdx === -1 || grid.sortTypes[ageIdx] == null;
+    })), null, 'To clear sorting, right-click the column header and select <b>Sort > Reset</b>. The same can be achieved ' +
       'by double-clicking the column header. It switches the state between three modes: descending, ascending, reset.',
-      () => grid.sort([]));
+    () => grid.sort([]));
 
     await this.action('Move columns HEIGHT, WEIGHT and STARTED to the beginning of the grid', interval(1000).pipe(
       filter(() => heightGridCol.idx === 1 && weightGridCol.idx === 2 && startedGridCol.idx === 3)), null, 'To reorder ' +
