@@ -298,9 +298,7 @@ export class DomainForm extends Control {
       const extra: Partial<DomainPickOptions> = {filter, params: () => row, siblings: source.schema};
       overrides = {...overrides, [name]: {...overrides?.[name], ...extra}};
     }
-    const properties = source.schema.properties.filter((p) => !system.has(p.name))
-      .map((p) => draft && p.nullable === false && p.defaultValue != null ? {...p, nullable: true} : p);
-    const form = propertyForm(properties, row, {
+    const form = propertyForm(source.schema.properties.filter((p) => !system.has(p.name)), row, {
       include: options.include, exclude: options.exclude, layout: options.layout, condensed: options.condensed,
       overrides, access: view,
       onChanged: (name, value) => {

@@ -413,8 +413,6 @@ export class MemoryEditState implements EditState {
     const state = row[Rows.STATE];
     if (!state || state === 'deleted' || state === 'restored')
       return null;
-    if (state === 'new' && isEmpty(row[prop.name!]) && prop.defaultValue != null)
-      return null;
     const changed = state === 'new' || this._originals.get(row)?.has(prop.name!) === true;
     return changed ? MemoryEditState.problemOf(prop, row[prop.name!]) : null;
   }

@@ -1593,10 +1593,8 @@ export class DomainFrameEditor implements IFrameEditor {
     if (property == null)
       return null;
     const col = this._df.columns.byName(column);
-    const empty = col == null || col.isNone(row);
-    if (empty && property.defaultValue != null && this.stateOf(row) === 'new')
-      return null;
-    return DomainFrameEditor.validateCellValue(property, empty ? null : this._df.get(column, row));
+    return DomainFrameEditor.validateCellValue(property,
+      col == null || col.isNone(row) ? null : this._df.get(column, row));
   }
 
   /**
