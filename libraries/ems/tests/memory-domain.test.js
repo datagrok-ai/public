@@ -117,6 +117,16 @@ test('transaction: insert, update with expectedVersion, delete; results per op',
   assert.equal(rows[2].created_on !== undefined && rows[2].updated_on !== undefined, true);
 });
 
+test('transaction: an insert that leaves a column with a default empty gets the declared default', async () => {
+  const ticket = await new MemoryDomainBackend({name: 'desk', tables: {ticket: {businessKey: ['code'], columns: {
+    code: {type: 'string', required: true},
+    status: {type: 'string', required: true, default: 'open'},
+  }}}}).table('desk.ticket');
+  await ticket.transaction([{op: 'insert', table: 'ticket', values: {code: 'T1'}}]);
+  await ticket.transaction([{op: 'insert', table: 'ticket', values: {code: 'T2', status: 'closed'}}]);
+  assert.deepEqual((await ticket.query()).map((r) => [r.code, r.status]), [['T1', 'open'], ['T2', 'closed']]);
+});
+
 test('transaction: a version conflict, a missing row or a required column refuses the WHOLE batch', async () => {
   const be = backend();
   const issue = await be.table('grit.issue');

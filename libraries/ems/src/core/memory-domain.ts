@@ -5,7 +5,7 @@
    way the server orders it (forward `$ref`s, child-first deletes) and lands on every table it
    touches or on none. */
 import {uuid4} from 'datagrok-api/u2core';
-import {Filters, notify, Access, MemoryFrame, Rows} from '@datagrok-libraries/u2';
+import {Filters, notify, Access, MemoryFrame, Rows, isEmpty} from '@datagrok-libraries/u2';
 import type {FilterCondition, FilterGroup, IProperty, AccessData, FieldAccess,
   MemoryColumn} from '@datagrok-libraries/u2';
 import {DomainBackendError, isUnscoped} from './domain-backend.js';
@@ -244,7 +244,7 @@ export class MemoryDomainBackend implements DomainBackend {
         audit.push([table, {id: rowId, tx_id: tx, op: name, actor_id: null, ts, before: prior, after: next}]);
       };
       if (op.op === 'insert') {
-        const row = table.stamp(values, 1);
+        const row = table.stamp(table.withDefaults(values), 1);
         table.check(row, index);
         rows.push(row);
         if (op.ref !== undefined)
@@ -721,6 +721,14 @@ export class MemoryTable implements DomainTableLike {
       if (problem !== null)
         throw new DomainBackendError('validation', `Operation ${index}: column "${prop.name}": ${problem}`);
     }
+  }
+
+  withDefaults(values: Row): Row {
+    for (const prop of this.properties) {
+      if (isEmpty(values[prop.name!]) && prop.defaultValue != null)
+        values[prop.name!] = prop.defaultValue;
+    }
+    return values;
   }
 
   stamp(row: Row, version: number): Row {
