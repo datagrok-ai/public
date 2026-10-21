@@ -129,7 +129,8 @@ export class RGroupsAnalysisTutorial extends Tutorial {
           });
         });
         observer.observe($('.grok-prop-panel').get(0)!, {childList: true, subtree: true});
-    })]), undefined, 'Note changes on the pie charts');
+    })]), undefined, 'Note changes on the pie charts',
+    Tutorial.apiSkip(() => this.t!.selection.init((i) => i < 20)));
 
     // await this.action('In the grid, press Shift + Drag Mouse Down', this.t.onSelectionChanged.pipe(filter(() => {
     //   return grok.shell.o.constructor.name === 'RowGroup' &&
