@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tree: Fixed children past `pageSize` (500) being unreachable: a full level ends in a "Load more…" row that reads the next page, and `expandTo` reads the pages its path needs instead of reporting an ancestor as not visible
 * [public#4320](https://github.com/datagrok-ai/public/issues/4320): Import: Fixed an empty numeric CSV cell being posted as the missing-value marker (-2147483648, 2.68e-34) instead of null
 * Styles: `src/dg/styles.ts` imports EMS's own sheets only; u2's stylesheet installs itself once per page
 * Tests: Fixed the spec-install test on Windows (path separators, CRLF recipe fences)

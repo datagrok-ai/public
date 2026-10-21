@@ -204,7 +204,7 @@ const METAS: ComponentMeta[] = [
       {name: 'expandTo', type: 'string', structural: true,
         description: 'A row id to reveal: its ancestors opened, the row selected.'},
       {name: 'pageSize', type: 'int', structural: true,
-        description: 'How many children one level loads (500 by default).'},
+        description: 'How many children one level reads at a time (500 by default); a full page ends in "Load more…".'},
       {name: 'selected', type: 'object', bindable: true,
         description: 'The selected row; read-only — bind a source\'s query to it.'},
     ],
