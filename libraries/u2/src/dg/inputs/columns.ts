@@ -125,7 +125,8 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     editor.className = 'u2-columns';
     editor.tabIndex = 0;
     editor.setAttribute('role', 'button');
-    editor.setAttribute('aria-haspopup', 'listbox');
+    // the popup is a dialog: a checklist with OK / CANCEL, not a listbox that commits on pick
+    editor.setAttribute('aria-haspopup', 'dialog');
     editor.setAttribute('aria-expanded', 'false');
     this._summary = span('', 'u2-columns-summary');
     editor.append(this._summary, span('', 'u2-columns-chevron'));
@@ -272,6 +273,8 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
       host.removeEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
       cg.close();
     });
+    host.setAttribute('role', 'dialog');
+    host.setAttribute('aria-label', 'Choose columns');
     Overlay.show(this._control, host, scope);
     cg.grid.autoSize(600, 300);
     const width = this._control.getBoundingClientRect().width;
@@ -401,6 +404,8 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
       popup.removeEventListener('keydown', onPopupKeyDown);
       popup.removeEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
     });
+    popup.setAttribute('role', 'dialog');
+    popup.setAttribute('aria-label', 'Choose columns');
     Overlay.show(this._control, popup, scope);
     search.root.querySelector<HTMLElement>('input')?.focus();
   }

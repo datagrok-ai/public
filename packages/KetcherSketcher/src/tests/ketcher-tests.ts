@@ -135,4 +135,22 @@ category('ketcher', async () => {
       conversions.map(() => '0').join(', '), 'the monomer library sent with each conversion (its length)');
   });
 
+  test('a SMARTS export waiting its turn when the sketcher closes', async () => {
+    const func = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}, name: 'ketcherSketcher'})[0];
+    const sketcher: KetcherSketcher = await func.apply();
+    const dialog = ui.dialog().add(sketcher.root).show();
+    try {
+      await awaitCheck(() => sketcher._sketcher !== null, 'Ketcher did not start', 20000);
+      const inTurn = (sketcher.constructor as any)._inTurn as <T>(c: () => Promise<T>) => Promise<T>;
+      const earlier = inTurn(() => delay(1500));
+      const smarts = sketcher.getSmarts();
+      await delay(300);
+      sketcher.detach();
+      await earlier;
+      expect(await smarts, '', 'the SMARTS of the closed sketcher');
+    } finally {
+      dialog.close();
+    }
+  }, {timeout: 40000});
+
 });

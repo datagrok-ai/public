@@ -44,6 +44,22 @@
   color: var(--dg-error);
 }
 
+/* right-aligned captions: the asterisk hangs in the gap before the editor, so a required caption's
+   text ends where every other caption's does */
+.u2-form:not(.u2-form-captions-left):not(.u2-form-tall) .u2-input-required > .u2-input-label,
+.u2-dialog-content > .u2-input-required > .u2-input-label {
+  position: relative;
+  justify-content: flex-end;
+  overflow: visible;
+}
+
+.u2-form:not(.u2-form-captions-left):not(.u2-form-tall) .u2-input-required > .u2-input-label::after,
+.u2-dialog-content > .u2-input-required > .u2-input-label::after {
+  position: absolute;
+  left: 100%;
+  margin-left: 1px;
+}
+
 .u2-input-editor {
   box-sizing: border-box;
   height: var(--dg-control-height);

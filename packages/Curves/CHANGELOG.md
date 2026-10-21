@@ -2,8 +2,12 @@
 
 ## v.next
 
+* Multi curve viewer: Added the axes it draws (`x range`, `y range`) and the number of points outside them to `getWidgetStatus()`; extracted the renderer's layout into one method (`layOutChart`) both use
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Data | Curves | Data to Curves is disabled unless the current view is a table view
 * [public#4306](https://github.com/datagrok-ai/public/issues/4306): Fixed the Context Panel replacing the Curves panes with the generic cell panes a second after a curve cell is clicked
+* Multi curve viewer: Added an automation surface: `getWidgetStatus()` reports the canvas, a hit area per legend row it drew and one for `+N more`, and readings of the curves shown and the legend (shown, corner, rows, shortened rows, hidden); `isRenderPending` and `onRendered` cover the debounced render after a current, mouse-over or selected row change
+* Multi curve viewer: Fixed **Show Legend**, **Statistics mode** and **Aggregation** reading empty in the Context Panel while the plot used their defaults: Show Legend was unchecked over a legend that was drawn, so the first click changed nothing
+* Curves: Fixed a click on a second curve cell within a second of the first leaving the first cell in the Context Panel. The click set the current object frozen for a second, so the panel kept the previous cell's panes and a Cell level option looked as if it had reached the next cell
 
 ## 1.13.3 (2026-09-23)
 

@@ -10,7 +10,7 @@ import {el, type ElementRef} from '../../src/runtime/args.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {guideDir} from '../../src/runtime/guide.js';
 import {locate} from '../../src/runtime/locate.js';
-import {fixtureFamilies, isStaleFixture} from '../../src/runtime/server.js';
+import {RUN_SUFFIX, fixtureFamilies, isStaleFixture} from '../../src/runtime/server.js';
 import {installViewerRuntime, pickMenuPath, settleAll} from '../../src/runtime/viewers.js';
 import {currentSimpleMode} from '../common/session.js';
 
@@ -148,6 +148,14 @@ async function putIntoUsersFiles(page: Page, name: string, write: (path: string)
       throw new Error(`the account has no home folder ${project}:Home on this stand`);
     return String(share.nqName);
   });
+  // a killed run's folder of the same family goes with its files; a folder has no date, so its {time} dates it
+  const folderFamilies = name.includes('/') ? fixtureFamilies([name.split('/')[0]]) : [];
+  if (folderFamilies.length > 0) {
+    const folders: string[] = await page.evaluate(async (dir) =>
+      (await grok.dapi.files.list(`${dir}/`, false)).filter((f: any) => f.isDirectory).map((f: any) => String(f.name)), home);
+    for (const f of folders.filter((n) => isStaleFixture({name: n, friendlyName: '', createdOn: Number(RUN_SUFFIX.exec(n)?.[1]) || 0}, folderFamilies)))
+      await deleteServerFile(page, `${home}/${f}`);
+  }
   const extension = /\.[^.]+$/.exec(name)?.[0] ?? '';
   const base = (file: string): string => file.endsWith(extension) ? file.slice(0, file.length - extension.length) : file;
   const families = fixtureFamilies([base(name)]);

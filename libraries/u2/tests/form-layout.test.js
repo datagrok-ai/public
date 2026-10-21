@@ -608,3 +608,23 @@ ui('addButtons: the row goes where `host` says, at the start when asked, and kee
     'a primary button in the row is the platform form button outside the form too');
   f.dispose();
 });
+
+test('stylesheet: dates keep their own width in a form; required marks hang past the caption', () => {
+  const form = readFileSync(new URL('../css/form.css', import.meta.url), 'utf8');
+  assert.match(form, /\.u2-form-auto\.u2-form-wide \.u2-input-root:not\(\.u2-input-fill\) \.u2-input-editor\.u2-date \{/,
+    'a date never stretches across a wide auto form');
+  assert.match(form, /\[data-u2='datetime-input'\] \.u2-input-editor\.u2-date \{\s*width: 170px;/);
+  const inputs = readFileSync(new URL('../css/inputs.css', import.meta.url), 'utf8');
+  const at = inputs.indexOf('.u2-form:not(.u2-form-captions-left):not(.u2-form-tall) .u2-input-required > .u2-input-label::after');
+  assert.notEqual(at, -1, 'right-aligned forms hang the asterisk');
+  assert.match(inputs.slice(at, inputs.indexOf('}', at)), /position: absolute;\s*left: 100%;/);
+  const wizard = readFileSync(new URL('../css/wizard.css', import.meta.url), 'utf8');
+  assert.match(wizard, /\.u2-dialog-content > \.u2-wizard \{\s*height: 100%;/, 'the wizard footer sits at the dialog bottom');
+  const buttons = readFileSync(new URL('../css/buttons.css', import.meta.url), 'utf8');
+  assert.match(buttons, /\.d4-ribbon-item \.u2-btn\.u2-btn-primary:not\(:disabled\) \{\s*background/,
+    'a disabled ribbon primary keeps the disabled skin');
+  assert.doesNotMatch(buttons, /\.d4-ribbon-item \.u2-btn\.u2-btn-primary \{[^}]*background/);
+  const radio = readFileSync(new URL('../css/radio.css', import.meta.url), 'utf8');
+  assert.match(radio, /\.u2-input-editor\.u2-radio\.u2-radio-buttons \{\s*flex-direction: row;/,
+    'the segmented radio outranks the stacked editor rule');
+});

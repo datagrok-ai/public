@@ -105,7 +105,7 @@ function projectRecord(report) {
     walk(s, s.file.replace(/\\/g, '/').replace(/\.test\.ts$/, ''));
   const root = report.config.rootDir;
   return {
-    name: /packages[\\/]([^\\/]+)[\\/]bdd/.exec(root)?.[1] ?? root,
+    name: /packages[\\/]([^\\/]+)[\\/]bdd/.exec(root)?.[1] ?? (/libraries[\\/]bdd([\\/]|$)/.test(root) ? 'bdd library' : root),
     start: report.stats.startTime,
     duration: Math.round(report.stats.duration),
     workers: report.config.metadata?.actualWorkers ?? report.config.workers,

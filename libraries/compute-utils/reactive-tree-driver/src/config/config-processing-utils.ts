@@ -4,7 +4,7 @@ import {AnnotationLinkKind, isDynamicType, ItemId, LinkSpecString, NqName} from 
 import {callHandler, indexFromEnd, IOTolerance, ToleranceSpec} from '../utils';
 import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
 import {normalizeIdRef} from './PipelineInstance';
-import {annotationCheckLinks, annotationRules, expandLink, narrowToFamilyTargets} from './rule-expansion';
+import {annotationCheckLinks, annotationRules, expandLink, narrowRuleLink} from './rule-expansion';
 import {CheckOptions, isOptionalAnnotation, parseAnnotationChecks, parseChoices} from './checks';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
@@ -61,15 +61,8 @@ function isPipelineConfigInitial(c: ConfigInitialTraverseItem): c is PipelineCon
 }
 
 export async function getProcessedConfig(conf: PipelineConfigurationInitial, logger?: DriverLogger): Promise<PipelineConfigurationProcessed> {
-  const ownsCache = funcIOCache == null;
-  funcIOCache ??= new Map();
-  try {
-    const pconf = await configProcessing(conf, new Map(), logger);
-    return pconf as PipelineConfigurationProcessed;
-  } finally {
-    if (ownsCache)
-      funcIOCache = undefined;
-  }
+  const pconf = await configProcessing(conf, new Map(), logger);
+  return pconf as PipelineConfigurationProcessed;
 }
 
 export type PipelineRefStore<T> = Map<string, Map<string | undefined, T>>;
@@ -262,14 +255,13 @@ function readTolerances(func: DG.Func, io: FuncCallIODescription[], logger?: Dri
   }
 }
 
-// io read from annotations, kept for one processing run; the FuncCall prepared to read them is dropped,
+// io read from annotations; the FuncCall prepared to read them is dropped,
 // calls that are run or saved are never taken from here
-let funcIOCache: Map<NqName, FuncCallIODescription[]> | undefined;
+const funcIOCache = new DG.LruCache<NqName, FuncCallIODescription[]>();
 
 function getFuncCallIO(nqName: NqName): FuncCallIODescription[] {
-  const cached = funcIOCache?.get(nqName) ?? readFuncCallIO(nqName);
-  funcIOCache?.set(nqName, cached);
-  return cached.map((io) => ({...io}));
+  return funcIOCache.getOrCreate(nqName, readFuncCallIO)
+    .map((io) => ({...io, ...(io.checks && {checks: {...io.checks}})}));
 }
 
 function readFuncCallIO(nqName: NqName): FuncCallIODescription[] {
@@ -309,7 +301,7 @@ function processActions<A extends ActionInput>(actionsInput: A[], logger?: Drive
 
 function processLinks(links: PipelineLinkConfigurationInput<LinkSpecString>[]) {
   return links.flatMap((link) => expandLink(link).map((expanded) =>
-    withOriginal(narrowToFamilyTargets(expanded, processLinkData(expanded)), link)));
+    withOriginal(narrowRuleLink(expanded, processLinkData(expanded)), link)));
 }
 
 // in place, so the links keep their originals

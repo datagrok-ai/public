@@ -118,7 +118,7 @@ function nodeRef(node: TreeNode<StateTreeNode>, path: Readonly<NodePath>): Inspe
 
 function formatMatched(paths: Record<string, MatchedNodePaths>) {
   return Object.fromEntries(Object.entries(paths).map(([name, matched]) =>
-    [name, matched.map((m) => formatNodePath(m.path, m.ioName))]));
+    [name, matched.map((m) => formatNodePath(m.path, m.count === undefined ? m.ioName : `count=${m.count}`))]));
 }
 
 function splitIO(io: {id: string, type?: string, direction?: string, nullable?: boolean}[]) {

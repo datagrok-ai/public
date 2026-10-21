@@ -40,7 +40,7 @@ export namespace funcs {
    * @param {string} label - Config label for this run, e.g. baseline / medium-effort
    * @param {number} reps - Repetitions per prompt (default 3)
    * @param {string} model - Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default.
-   *   choices: ["haiku","sonnet","opus"]
+   *   choices: ["claude-haiku-5-5","claude-sonnet-5-5","claude-opus-5-5"]
    * @param {string} only - Run only part of the suite: comma-separated categories, difficulties, or prompt substrings.
    */
   export async function runBenchmark(label: string , reps?: number , model?: string , only?: string ): Promise<string> {

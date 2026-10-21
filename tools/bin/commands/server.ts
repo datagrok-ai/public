@@ -14,7 +14,7 @@ import {resolveEntity} from '../utils/migrate/walker';
 const ENTITY_TYPES: Record<string, string> = {queries: 'DataQuery', scripts: 'Script', reports: 'UserReport'};
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files', 'tables'];
-const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token',
+const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'status', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token',
   'observe', 'o'];
 const VERBS = ['list', 'count', 'get', 'delete'];
 
@@ -66,6 +66,7 @@ export async function server(argv: any): Promise<boolean> {
     if (entity === 'raw') return await handleRaw(dapi, verb, rest, argv, output);
     if (entity === 'describe') return await handleDescribe(dapi, verb ?? rest[0], output);
     if (entity === 'healthcheck') return await handleHealthcheck(dapi, argv, output);
+    if (entity === 'status') return await handleStatus(dapi, output);
     if (entity === 'sync') return await handleSync(dapi, verb, rest, argv, output);
     if (entity === 'functions' && verb === 'run') return await handleFuncRun(dapi, rest, argv, output);
     if (entity === 'functions' && verb === 'list') return await handleFunctionsList(dapi, argv, limit, offset, filter, output);
@@ -580,6 +581,34 @@ async function handleHealthcheck(dapi: NodeDapi, argv: any, output: OutputFormat
   return true;
 }
 
+async function handleStatus(dapi: NodeDapi, output: OutputFormat): Promise<boolean> {
+  const [info, extended] = await Promise.all([dapi.serverStatus(), dapi.serverStatus(true)]);
+  if (output === 'json') {
+    printOutput({server: info, extended}, output);
+    return true;
+  }
+  if (output === 'quiet') {
+    console.log(info?.Version ?? '');
+    return true;
+  }
+  const http = info?.['Http Server'];
+  const fields = {...info, 'Http Server': undefined};
+  const width = Math.max(...Object.keys(fields).map((k) => k.length)) + 2;
+  for (const [k, v] of Object.entries(fields))
+    if (v !== undefined) console.log(`${(k + ':').padEnd(width)}${v ?? ''}`);
+  if (http)
+    console.log(`${'Http Server:'.padEnd(width)}total ${http.total}, active ${http.active}, idle ${http.idle}, closing ${http.closing}`);
+  // Non-admins get the plain count back; admins get {"METHOD url": inFlight}.
+  const active = extended?.['Http Server']?.active;
+  if (active && typeof active === 'object') {
+    console.log('');
+    const rows = Object.entries(active).map(([request, count]) => ({request, count}));
+    if (rows.length) printOutput(rows, output);
+    else console.log('(no requests in flight)');
+  }
+  return true;
+}
+
 async function handleDescribe(dapi: NodeDapi, entityType: string | undefined, output: OutputFormat): Promise<boolean> {
   if (!entityType) {
     printError(new Error('Usage: grok s describe <entity|type>   e.g. grok s describe connections, grok s describe Project'));
@@ -927,6 +956,8 @@ Special commands:
   grok s raw <METHOD> <path> [--json f | --data j]    Any API endpoint; path is API-relative (/users/current), /api prefix optional
   grok s describe <entity|type>                       Fields of an entity type (registry record + a live sample)
   grok s healthcheck [--module <name>]                Check server + per-module health
+  grok s status                                       Server build, uptime, DB pool and HTTP connections
+                                                      (/info/server); admins also see requests in flight
   grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
                                                       Share an entity with one or more groups
   grok s shares list <entity-id-or-name>              List who an entity is shared with

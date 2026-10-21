@@ -1,7 +1,7 @@
 # Developer keys
 upload.keys.json
 
-# Dev-loop subscription credentials for the local claude-runtime container (see dev/seed-creds.mjs)
+# Claude credentials an old dev loop (the SDK runtime) kept here: never commit them
 dev/.claude/
 files/benchmarks
 
@@ -36,3 +36,8 @@ dist/
 src/**/*.js
 myKey.txt
 
+# bdd (grok-bdd) run artifacts
+bdd/guides/
+bdd/test-results/
+bdd/e2e/
+bdd/.auth.json
