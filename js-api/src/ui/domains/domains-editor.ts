@@ -694,7 +694,7 @@ export class DomainFrameEditor implements IFrameEditor {
     if (this._busy('editing'))
       return;
     const original = column in this.changesOf(row) ? undefined : this._wire(row, column);
-    this._write(() => this._df.set(column, row, value));
+    this._write(() => this._df.set(column, row, this._cellOf(column, value)));
     this._track(row, column, original);
   }
 
@@ -738,7 +738,7 @@ export class DomainFrameEditor implements IFrameEditor {
       this._df.rows.addNew(null, false);
       for (const name of Object.keys(prefill))
         if (this._df.columns.contains(name))
-          this._col(name).set(row, prefill[name], false);
+          this._col(name).set(row, this._cellOf(name, prefill[name]), false);
       if (this._df.columns.contains('id'))
         this._col('id').set(row, DomainFrameEditor.draftId(), false);
       this._col(DomainFrameEditor.STATE_COLUMN).set(row, 'new', false);
@@ -1230,7 +1230,7 @@ export class DomainFrameEditor implements IFrameEditor {
           this._write(() => {
             for (const name of Object.keys(fresh))
               if (this._df.columns.contains(name))
-                this._df.set(name, row, fresh[name]);
+                this._df.set(name, row, this._cellOf(name, fresh[name]));
           });
         this._clearRowState(row);
         // The pre-reload values are gone: a snapshot of them would make the next
@@ -1439,6 +1439,12 @@ export class DomainFrameEditor implements IFrameEditor {
 
   private _col(name: string): Column<string> {
     return this._df.columns.byName(name) as Column<string>;
+  }
+
+  /** A value as its frame cell: a list (a `string_list`) in a string column is its JSON array text,
+   * which the server parses back into the list. */
+  private _cellOf(name: string, value: any): any {
+    return Array.isArray(value) && this._col(name)?.type === COLUMN_TYPE.STRING ? JSON.stringify(value) : value;
   }
 
   private _cache(name: string): Map<number, any> {

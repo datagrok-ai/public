@@ -406,3 +406,45 @@ scoped('finding 7b: a sibling source of the same table reloads after another one
   one.dispose();
   two.dispose();
 });
+
+// ─────────────── EMS-011: a list written into a string_list cell of the d42 frame ───────────────
+
+/** The frame surface `DomainFrameEditor` writes through: `tags` is a string column, as `queryDf`
+ * carries a string_list. */
+function stringListFrame(rows) {
+  const types = {id: 'string', title: 'string', tags: 'string', '~state': 'string'};
+  const column = (name) => ({name, type: types[name], get: (row) => rows[row][name],
+    set: (row, value) => { rows[row][name] = value; }});
+  return {
+    get rowCount() { return rows.length; },
+    columns: {contains: (name) => name in types, byName: (name) => name in types ? column(name) : null},
+    get: (name, row) => rows[row][name],
+    set: (name, row, value) => { rows[row][name] = value; },
+    rows: {addNew: () => rows.push({}), requestFilter: () => {}, insertAt: () => {}},
+  };
+}
+
+scoped('EMS-011: setValue, addRow and a conflict RELOAD put a list into a string cell as JSON text', {}, async () => {
+  const {DomainFrameEditor} = await import('../../../js-api/dist/src/ui/domains/domains-editor.js');
+  const {DomainObjectHandler} = await import('../../../js-api/dist/src/domains-ui.js');
+  const rows = [{id: 'i1', title: 'Aspirin', tags: '["a"]'}];
+  const editor = Object.create(DomainFrameEditor.prototype);
+  Object.assign(editor, {_df: stringListFrame(rows), _suspend: false, _busy: () => false, changesOf: () => ({}),
+    _wire: () => null, _track: () => {}, _validateRow: () => {}, _recount: () => {}, _fire: () => {},
+    _pristine: new Set(), _snapshots: new Map(), _clearRowState: () => {}, _onConflict: {next: () => {}},
+    _displayOf: () => 'Aspirin', client: {get: async () => ({id: 'i1', title: 'Aspirin', tags: ['x', 'y']})}});
+  editor.setValue(0, 'tags', ['a, b', 'c"d']);
+  assert.equal(rows[0].tags, '["a, b","c\\"d"]', 'the text the server parses (batch_loader _coerceCell)');
+  editor.setValue(0, 'title', 'Aspirin 2');
+  assert.equal(rows[0].title, 'Aspirin 2', 'a scalar is written as is');
+  const at = editor.addRow({title: 'Draft', tags: ['z']});
+  assert.equal(rows[at].tags, '["z"]');
+  const dialog = DomainObjectHandler.showConflictDialog;
+  DomainObjectHandler.showConflictDialog = async () => 'reload';
+  try {
+    assert.equal(await editor.resolveConflict({}, {row: 0, op: {id: 'i1'}}), true);
+  } finally {
+    DomainObjectHandler.showConflictDialog = dialog;
+  }
+  assert.equal(rows[0].tags, '["x","y"]', 'RELOAD takes the server\'s list (an array since core d8832708ef) as text');
+});

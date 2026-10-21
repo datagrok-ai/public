@@ -161,7 +161,7 @@ export function kindOf(prop: IProperty, assumeWritable = false): Kind {
   if (!prop.set && !assumeWritable)
     return 'readonly';
   const type = prop.propertyType ?? prop.type;
-  if (type === 'list')
+  if (type === 'list' || type === 'string_list')
     return 'list';
   if (type === 'map')
     return 'map';
@@ -524,7 +524,8 @@ export class ObjectForm extends Form {
       }
       case 'list':
         return Array.isArray(value) ? value :
-          (value === null || value === undefined || value === '' ? [] : ListInput.parse(String(value)));
+          (value === null || value === undefined || value === '' ? [] :
+            ObjectForm._jsonArray(String(value)) ?? ListInput.parse(String(value)));
       case 'map':
         return typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {};
       // the platform's own value (a FileInfo), handed to the platform's own editor untouched
@@ -548,6 +549,18 @@ export class ObjectForm extends Form {
       return keys.length === Object.keys(b).length && keys.every((k) => Object.is(a[k], b[k]));
     }
     return Object.is(a, b);
+  }
+
+  /** A domain `string_list` DataFrame cell holds its items as JSON array text. */
+  private static _jsonArray(s: string): unknown[] | null {
+    if (!s.startsWith('['))
+      return null;
+    try {
+      const parsed = JSON.parse(s);
+      return Array.isArray(parsed) && parsed.every((x) => x === null || typeof x === 'string') ? parsed : null;
+    } catch {
+      return null;
+    }
   }
 
   private static _isRecord(x: unknown): x is Record<string, unknown> {
