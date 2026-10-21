@@ -262,6 +262,17 @@ test('info: undeclared singular and plural are derived from the table name the w
     ['Category', 'Categories'], 'a declared friendly name is singularized by the same rules');
 });
 
+test('info: singular and plural come from the table name, never the friendly name, as the platform derives them', async () => {
+  const be = new MemoryDomainBackend({name: 'nw', tables: {order_details: {columns: {}},
+    location: {friendlyName: 'Stock locations', columns: {}}}});
+  const names = (n) => {
+    const info = be.tableSync(`nw.${n}`).info;
+    return [info.singularName, info.pluralName, info.friendlyName];
+  };
+  assert.deepEqual(names('order_details'), ['order_detail', 'order_details', undefined]);
+  assert.deepEqual(names('location'), ['location', 'locations', 'Stock locations'], 'the friendly name is its own field');
+});
+
 test('info: constraints, refFilters, permissions and childTables from the schema; access grants a declared permission', async () => {
   const be = backend();
   const issue = await be.table('grit.issue');
