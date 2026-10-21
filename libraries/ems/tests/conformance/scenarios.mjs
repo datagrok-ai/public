@@ -379,4 +379,19 @@ export const scenarios = [
       t.equal(scoped.count, 1, 'a scoped read still counts rows');
     },
   },
+  {
+    name: 'filters: `is true` and `is not true` read as SQL: IS NOT TRUE counts a null',
+    requires: [],
+    seed: [
+      {key: 'yes', code: 'ist-yes', name: 'Yes', done: true},
+      {key: 'none', code: 'ist-none', name: 'None'},
+      {key: 'no', code: 'ist-no', name: 'No', done: false},
+    ],
+    async run(table, ids, t) {
+      const codes = async (operator) => (await table.query({
+        filter: [{property: 'done', operator, value: true}], limit: 100})).map((row) => row.code).sort();
+      t.deepEqual(await codes('is'), ['ist-yes'], 'is true: only the true row');
+      t.deepEqual(await codes('is not'), ['ist-no', 'ist-none'], 'is not true: the false row and the null one');
+    },
+  },
 ];
