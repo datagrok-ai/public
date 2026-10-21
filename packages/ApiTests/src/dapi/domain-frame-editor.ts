@@ -357,6 +357,51 @@ category('Dapi: domain frame editor', () => {
     await cleanup(prefix);
   }
 
+  test('new rows: an untouched bool is left to the server, a set one is sent', async () => {
+    const name = `zzb${`${Date.now()}`.slice(-8)}`;
+    const created = await grok.dapi.domains.createSchema(name, {friendlyName: 'Bool probe'});
+    try {
+      await grok.dapi.domains.schema(name).apply({ifVersion: created.version, tables: {
+        flag: {
+          businessKey: ['sku'],
+          columns: {
+            sku: {type: 'string', required: true, unique: true},
+            active: {type: 'bool', required: true, default: true},
+            archived: {type: 'bool'},
+            confirmed: {type: 'bool', required: true},
+          },
+        },
+      }});
+      const flags = grok.dapi.domains.table(`${name}.flag`);
+      const editor = await DomainFrameEditor.create(flags as any);
+      editor.addRow({sku: 'untouched'});
+      editor.setValue(editor.addRow({sku: 'unchecked'}), 'active', false);
+      editor.addRow({sku: 'prefilled', active: false, archived: false});
+      editor.addRow({sku: 'nulled', active: null, archived: null});
+      const reset = editor.addRow({sku: 'reset'});
+      editor.setValue(reset, 'active', false);
+      editor.setValue(reset, 'active', null);
+      expect(await editor.save(), true, 'the new rows were refused');
+      const read = async (sku: string) =>
+        await flags.first({filter: {property: 'sku', operator: '=', value: sku} as any}) as any;
+      const untouched = await read('untouched');
+      expect(untouched.active, true, 'an untouched bool overrode the column default');
+      expect(untouched.archived, null, 'an untouched nullable bool was stored as false');
+      expect(untouched.confirmed, false, 'a required bool with no default was not sent');
+      expect((await read('unchecked')).active, false, 'an unchecked bool was not sent');
+      const prefilled = await read('prefilled');
+      expect(prefilled.active, false, 'a bool prefilled by addRow was not sent');
+      expect(prefilled.archived, false, 'a bool prefilled by addRow was not sent');
+      const nulled = await read('nulled');
+      expect(nulled.active, true, 'a null prefill counted as set');
+      expect(nulled.archived, null, 'a null prefill counted as set');
+      expect((await read('reset')).active, true, 'a bool set back to null was still sent');
+      editor.detach();
+    } finally {
+      await grok.dapi.domains.schema(name).delete();
+    }
+  });
+
   test('staged restore: one restore op, and the save brings the row back live', async () => {
     const prefix = `fe-restore-${stamp()}`;
     const ids = await seed(prefix, 2);
