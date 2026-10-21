@@ -28,6 +28,7 @@ Commands:
     testall     Run packages tests
     migrate     Migrate legacy tags to meta.role
     server (s)  Manage a Datagrok server (list/get/delete entities, run functions)
+    share       Share a local folder as a Datagrok connection (runs a Docker container)
 
 To get help on a particular command, use:
     grok <command> --help
@@ -168,6 +169,43 @@ Options:
 
 For CI, set GROK_PRIVATE_KEY to the private key JWK (raw or base64) instead of a
 config file. Read more: https://datagrok.ai/help/govern/access-control/keypair-authentication
+`;
+
+const HELP_SHARE = `
+Usage: grok share <folder> [--host <alias>] [--read-only] [--foreground] [--image <ref>] [--force]
+       grok share list [--host <alias>] [--output table|json|csv]
+       grok share start|stop|logs <share> [-f]
+       grok share rm <share> [--host <alias>]
+
+Share a local folder as a Datagrok connection. The share agent runs in Docker
+(restart policy unless-stopped, so it survives closing the terminal and, when
+Docker starts at sign-in, a reboot) and dials out to the server: no inbound port
+is opened. Sharing the same folder again resumes the same connection.
+
+grok share ~/data                  Share read-write on the default server
+grok share D:\\data --read-only    Others with access can only read
+grok share list                    Shares of this account, with their container state
+grok share stop "laptop data"      Stop serving; stays stopped after a reboot
+grok share rm 7ff0714e             Remove the container and delete the connection
+
+<share> is the share name, a connection id prefix (8+ characters), or the folder.
+
+Options:
+--host        Server alias from ~/.grok/config.yaml (default: the default server)
+--read-only   Mount the folder read-only; writes are refused
+--foreground  Run attached, removed on Ctrl+C (CI, debugging)
+--image       Agent image (default: the one the server names). The container is
+              recreated when the image reference changes; a new digest under
+              the same tag is not noticed (docker pull, then grok share rm and
+              share again)
+--force       Allow a drive root or the home folder
+-f            With logs: follow
+
+Requires Docker and a keypair (grok login <server>), which never leaves this
+machine: the container holds a key of its own, used only by this share and
+revoked by grok share rm or in Profile > Public keys. A localhost server is
+reached from the container as host.docker.internal (mapped to the host gateway
+on Linux and in WSL).
 `;
 
 const HELP_CONFIG = `
@@ -507,5 +545,6 @@ export const help = {
   server: HELP_SERVER,
   s: HELP_SERVER,
   setup: HELP_SETUP,
+  share: HELP_SHARE,
   help: HELP,
 };
