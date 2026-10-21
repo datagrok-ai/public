@@ -1,8 +1,8 @@
 // Node environment for the crux verification scripts: Chem's RDKit build, a crux wasm build, and Chem's own
-// query code (utils/mol-creation_rdkit.ts, crux/crux-smarts.ts) transpiled on the fly, so the scripts check
-// the code the package runs, not a copy of it.
+// query code (utils/mol-creation_rdkit.ts) transpiled on the fly, so the scripts check the code the package runs, not a
+// copy of it.
 import {createRequire} from 'module';
-import {mkdtempSync, readFileSync, writeFileSync} from 'fs';
+import {existsSync, mkdtempSync, readFileSync, writeFileSync} from 'fs';
 import {tmpdir} from 'os';
 import {join} from 'path';
 import {fileURLToPath, pathToFileURL} from 'url';
@@ -22,21 +22,22 @@ export async function loadRdkit() {
   return rdkit;
 }
 
-/** A crux wasm-pack build: the out dir in CRUX_WASM, or the build vendored in Chem. */
+/** A crux build (`--target web`): the out dir in CRUX_WASM (a chem-wasm or a crux-wasm build), or Chem's one Crux file
+ * (vendor/chem-wasm). */
 export async function loadCrux() {
-  const dir = process.env.CRUX_WASM ?? join(SRC, 'crux');
+  const dir = process.env.CRUX_WASM ?? join(CHEM_DIR, 'vendor', 'chem-wasm');
+  const name = existsSync(join(dir, 'chem_wasm.js')) ? 'chem_wasm' : 'crux_wasm';
   // the glue is an ES module and Chem's package.json does not declare one, so it is imported from an .mjs copy
-  const glue = join(tmp, 'crux_wasm.mjs');
-  writeFileSync(glue, readFileSync(join(dir, 'crux_wasm.js')));
+  const glue = join(tmp, `${name}.mjs`);
+  writeFileSync(glue, readFileSync(join(dir, `${name}.js`)));
   const crux = await import(pathToFileURL(glue).href);
-  const wasm = await crux.default({module_or_path: readFileSync(join(dir, 'crux_wasm_bg.wasm'))});
+  const wasm = await crux.default({module_or_path: readFileSync(join(dir, `${name}_bg.wasm`))});
   return {crux, wasm, dir};
 }
 
-/** getMolSafe / getQueryMolSafe from utils/mol-creation_rdkit.ts and getCruxSmarts from crux/crux-smarts.ts. */
+/** getMolSafe / getQueryMolSafe from utils/mol-creation_rdkit.ts (Chem's search builds the query with getQueryMolSafe,
+ * on RDKit and on the Crux module). */
 export async function loadChemQueryCode() {
-  const constants = readFileSync(join(SRC, 'constants.ts'), 'utf8');
-  const elementsTable = constants.match(/export const elementsTable[^=]*=\s*(\[[\s\S]*?\]);/)[1];
   const chemConstants = readFileSync(join(SRC, 'utils', 'chem-constants.ts'), 'utf8');
   const maxSmilesLength = chemConstants.match(/MAX_SMILES_LENGTH = (\d+)/)[1];
   const molCreation = await importChemModule('utils/mol-creation_rdkit.ts', [
@@ -47,12 +48,7 @@ export async function loadChemQueryCode() {
     // only reached for molblocks by isFragment / _isSmarts, which the search does not call on molblocks
     [/import \{MolfileHandler\} from .*;/, 'const MolfileHandler = undefined;'],
   ]);
-  const cruxSmarts = await importChemModule('crux/crux-smarts.ts', [
-    [/import \{elementsTable\} from '\.\.\/constants';/, `const elementsTable = ${elementsTable};`],
-    [/import \{hasRadicals\} from '\.\.\/utils\/mol-creation_rdkit';/,
-      `import {hasRadicals} from './utils_mol-creation_rdkit.mjs';`],
-  ]);
-  return {...molCreation, ...cruxSmarts};
+  return molCreation;
 }
 
 async function importChemModule(path, replacements) {

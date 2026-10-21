@@ -143,7 +143,7 @@ export class CalculatedColumnsTutorial extends Tutorial {
     await this.action(`Update the formula for "${columnName}" to round the values to 2 decimal places`,
       this.formulaApplied(columnName, 1.279, 2.029), null,
       'You can apply the new formula from the <b>Formula</b> pane of the context panel. Use the ' +
-      '"RoundFloat" function with two arguments (the previous expression column and the number of decimal places).' +
+      '"RoundFloat" function with two arguments (the previous expression column and the number of decimal places). ' +
       `Enter the new formula and click \'APPLY\' button. ` +
       `Pay attention to the "${columnNameBMI}" column. ` +
       `When we change the formula of the underlying column (that is, its metadata), ` +

@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Workflows: Nested pipelines have two history loads: Load completed run loads an editable copy, Load completed run (read-only) a locked one; read-only steps and pipelines show a lock on the left of their tree row; one loaded as is opens the original run from it, one based on a run (editable) has a branch icon at the end of its row instead; steps name the source run in the tooltip and menu; a loaded pipeline also has a line in its view to open the original run in a new view
+* Workflows: Steps with history have a lock ribbon icon next to history that loads a completed run read-only
+* Workflows: Fixed OpenWorkflowRun opening the default input dialog for runs of functions without a Compute2 editor, such as workflow steps; they open in the Rich Function View, nested pipeline runs in the Tree Wizard
+* Workflows: Read-only subtrees can no longer be duplicated, and duplicating a pipeline that contains one keeps it read-only
 * Workflows: Actions hidden by a node meta link (`setActionVisible`) are not shown
 * Run compare: Selected runs and workflow steps load in parallel; a run that fails to load no longer stops the others, and runs with steps that could not be loaded show a warning
 * Run compare: Empty index cells no longer show up as an `undefined` category on a categorical index

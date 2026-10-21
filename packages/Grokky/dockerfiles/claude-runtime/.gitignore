@@ -1,0 +1,13 @@
+# Local-only test suites
+test/LOCAL.md
+test/agent/
+test/container/
+test/fixtures/
+test/integration/
+test/live/
+test/agent-leak.test.js
+test/agent-pool.test.js
+test/agent-spares-cap.test.js
+test/agent-spares.test.js
+test/entrypoint.test.js
+test/tool-summary.test.js

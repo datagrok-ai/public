@@ -1,4 +1,4 @@
-@sketcher-controls
+@sketcher-controls @serial
 Feature: Crux in Chem's hosts
   Crux Sketch, pinned as the session's sketcher, in the places Chem opens a sketcher beyond the cell editor: the options
   menu's Recent and Favorites, a molblock column's cell editor, the Sketch item of a molecule's menu, the substructure
@@ -11,6 +11,8 @@ Feature: Crux in Chem's hosts
   the card filters by), the cells, the viewers' readings, a balloon. Typing into the host's molecule field is not
   drawing (the host then keeps the typed string): every claim about Crux's own output draws.
   The feature drives Crux's own controls (@sketcher-controls): a run that pins another sketcher skips it.
+  Serial (`@serial`): HOST-055 clears Filter as you draw, the account's setting (`chem-filter` user settings); the
+  features that filter while the sketcher is open take turns with it.
 
   Background:
     Given user is logged in
@@ -300,6 +302,7 @@ Feature: Crux in Chem's hosts
     Then an error balloon containing "Empty molecule cannot be used for similarity search" should have been shown
 
   # HOST-063: the pane writes the scaffold to the column, and the grid draws its structures aligned to it
+  # Cell 2, not cell 1: cell 1's phenyl already lies as the drawn benzene; RDKit 2024.09 turns it, RDKit 2026.03 and Crux leave it
   Scenario: A scaffold drawn in Crux in the column's Rendering pane realigns the structures, and its Clear realigns them back
     Given user opens smiles-50 dataset
     And the context panel is open
@@ -313,11 +316,11 @@ Feature: Crux in Chem's hosts
     When user clicks on crux benzene tool
     And user clicks on crux canvas
     And user clicks on OK button in sketcher dialog
-    Then the "cell 1 of canonical_smiles" area of grid should have repainted
+    Then the "cell 2 of canonical_smiles" area of grid should have repainted
     When user takes a snapshot of grid
     And user hovers over sketcher thumbnail in "Rendering" pane in context panel
     And user clicks on "Clear" button in "Rendering" pane in context panel
-    Then the "cell 1 of canonical_smiles" area of grid should have repainted
+    Then the "cell 2 of canonical_smiles" area of grid should have repainted
     And "Sketch" text in "Rendering" pane in context panel should be visible
 
   # HOST-064: the pane's new fragment is green until another colour is picked

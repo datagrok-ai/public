@@ -1,11 +1,13 @@
 import { type ReadoutItem } from './readout-items.js';
-import type { AnalysisPanel, AtomColours, AtomNumbers, KeymapProfile, MethylLabels, StereoDisplay, StereoPanel, UnspecifiedDoubleBonds, WarningMarks } from './types.js';
+import type { AnalysisPanel, AtomColours, AtomNumbers, KeymapProfile, MethylLabels, StereoDisplay, StereoLabelStyle, StereoPanel, UnspecifiedDoubleBonds, WarningMarks } from './types.js';
 /** The settings, whole: what `settings` reads and writes and what the `settings` event carries. */
 export interface SketcherSettings {
     readonly atomColours: AtomColours;
     readonly warningMarks: WarningMarks;
     readonly analysisPanel: AnalysisPanel;
     readonly stereoLabels: StereoDisplay;
+    /** How the stereo labels are written (spike labels-2): `'standard'` (the default) or `'registration'`. */
+    readonly stereoLabelStyle: StereoLabelStyle;
     readonly stereoFlag: StereoDisplay;
     readonly unspecifiedDoubleBonds: UnspecifiedDoubleBonds;
     readonly methylLabels: MethylLabels;

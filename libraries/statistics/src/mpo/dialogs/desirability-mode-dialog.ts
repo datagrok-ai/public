@@ -105,7 +105,8 @@ export class DesirabilityModeDialog {
   }
 
   show(): void {
-    const original = structuredClone(this.prop);
+    const live = this.prop;
+    const original = structuredClone(live);
 
     const dialog = ui.dialog({
       title: this.propertyName,
@@ -130,8 +131,7 @@ export class DesirabilityModeDialog {
         const cats = this.mappedCol?.isCategorical ?
           this.mappedCol.categories.map((c: string) => ({name: c, desirability: 1})) : undefined;
         this.prop = createDefaultCategorical(original.weight, cats);
-      }
-      else
+      } else
         this.prop = createDefaultNumerical(original.weight);
 
       buildContent();
@@ -150,8 +150,7 @@ export class DesirabilityModeDialog {
           prop.mean ??= previewEditor.getDefaultMean();
           prop.sigma ??= previewEditor.getDefaultSigma();
           this.onUpdate({mean: prop.mean, sigma: prop.sigma});
-        }
-        else if (prop.mode === DesirabilityMode.Sigmoid) {
+        } else if (prop.mode === DesirabilityMode.Sigmoid) {
           prop.x0 ??= previewEditor.getDefaultX0();
           prop.k ??= previewEditor.getDefaultK();
           this.onUpdate({x0: prop.x0, k: prop.k});
@@ -317,6 +316,14 @@ export class DesirabilityModeDialog {
         contentPanel.append(sectionHeader('VALUES WITH < OR >'), this.buildQualifierInput(this.prop));
     };
 
+    const replaceLive = (next: PropertyDesirability) => {
+      for (const key of Object.keys(live)) {
+        if (!(key in next))
+          Reflect.deleteProperty(live, key);
+      }
+      this.onUpdate(next);
+    };
+
     buildContent();
 
     dialog.add(contentPanel);
@@ -326,14 +333,14 @@ export class DesirabilityModeDialog {
       if (this.prop.functionType !== original.functionType)
         this.onTypeChanged?.(this.prop);
       else
-        this.onUpdate(this.prop);
+        replaceLive(this.prop);
       dialog.close();
     });
 
     dialog.onCancel(() => {
       dispose();
       this.prop = original;
-      this.onUpdate(original);
+      replaceLive(original);
       dialog.close();
     });
 
