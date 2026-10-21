@@ -186,7 +186,8 @@ describe('generateDomainClients', () => {
     expect(code).toContain('export type TestdbTransactionOp =');
     expect(code).toContain(
       `  {op: 'insert'; table: 'sample'; ref?: string; values: DG.DomainTxValues<SampleInsert>; onDuplicate?: 'error'} |`);
-    expect(code).toContain(`  {op: 'delete'; table: 'sample_event'; id: string};`);
+    expect(code).toContain(`  {op: 'delete'; table: 'sample'; id: string} |`);
+    expect(code).toContain(`  {op: 'restore'; table: 'sample_event'; id: string};`);
 
     // per-schema typed clients: LAZY getters (no import-time side effects), four
     // generics, PLURAL property names, no datetime config (the client resolves
@@ -227,6 +228,16 @@ describe('generateDomainClients', () => {
     expect(code).toContain(`export type IssueStateYIssueState = 'c' | 'd';`);
     expect(code).toMatch(/interface IssueStateRow \{[^}]*x\?: IssueStateX;/);
     expect(code).toMatch(/interface IssueStateRow \{[^}]*y\?: IssueStateYIssueState;/);
+  });
+
+  it('transaction: a hard-delete table gets no restore arm', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.sample_event.softDelete = false);
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    expect(code).toContain(`  {op: 'restore'; table: 'sample'; id: string} |`);
+    expect(code).not.toContain(`{op: 'restore'; table: 'sample_event'`);
+    expect(code).toContain(`  {op: 'delete'; table: 'sample_event'; id: string};`);
   });
 
   it('choices values with a quote or a backslash compile to the same literals', {timeout: 180_000}, () => {

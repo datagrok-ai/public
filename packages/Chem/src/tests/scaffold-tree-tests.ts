@@ -4,7 +4,10 @@ import {category, test, before, awaitCheck, delay, expect} from '@datagrok-libra
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {ScaffoldTreeViewer, updateVisibleNodes, value} from '../widgets/scaffold-tree';
+import {SCAFFOLD_TREE_MAX_MOLECULES, ScaffoldTreeViewer, scaffoldTreeSampleRows, updateVisibleNodes, value}
+  from '../widgets/scaffold-tree';
+import {ChemicalEngine, setChemicalEngine} from '../engine/chem-engine';
+import {PackageFunctions} from '../package';
 
 category('scaffold tree', () => {
   let mol1K: DG.DataFrame;
@@ -121,6 +124,76 @@ category('scaffold tree', () => {
     expect(viewer.props.Table, table.name);
     grok.shell.closeAll();
   });
+
+  /** smiles.csv's 1,000 molecules `times` times over, every 100th row empty: a large molecule table. */
+  async function largeTable(times: number): Promise<DG.DataFrame> {
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList() as string[];
+    const values = Array.from({length: smiles.length * times},
+      (_, i) => i % 100 === 99 ? '' : smiles[i % smiles.length]);
+    const col = DG.Column.fromStrings('smiles', values);
+    col.semType = DG.SEMTYPE.MOLECULE;
+    return DG.DataFrame.fromColumns([col]);
+  }
+
+  test('a large column is sampled to 750 molecules spread over it', async () => {
+    const values = (await largeTable(5)).col('smiles')!.toList() as string[];
+    const readable = (m: string) => !!m;
+    const rows = scaffoldTreeSampleRows(values, SCAFFOLD_TREE_MAX_MOLECULES, readable);
+    expect(rows.length, 750);
+    expect(rows.every((r, i) => i === 0 || r > rows[i - 1]), true, 'rows in order, none twice');
+    expect(rows.every((r) => values[r] !== ''), true, 'no empty molecule');
+    // the first and the last stretch (each values.length / 750 rows) give the first and the last row
+    const stretch = Math.ceil(values.length / SCAFFOLD_TREE_MAX_MOLECULES);
+    expect(rows[0] < stretch && rows[rows.length - 1] >= values.length - stretch, true,
+      `spread from ${rows[0]} to ${rows.at(-1)}`);
+    expect(scaffoldTreeSampleRows(values, SCAFFOLD_TREE_MAX_MOLECULES, readable).join(), rows.join(), 'deterministic');
+    const small = values.slice(0, 700);
+    expect(scaffoldTreeSampleRows(small, SCAFFOLD_TREE_MAX_MOLECULES, readable).length, 700,
+      'a small column: all rows');
+  });
+
+  test('Generate is open on a large table, from a 750-molecule sample its tooltip names', async () => {
+    const {tv, scaffoldTree} = openScaffoldTree(await largeTable(5));
+    await delay(500);
+    expect(scaffoldTree.generateBlockedReason(), null);
+    expect(scaffoldTree.generateHint(), 'Generate from a sample of 750 of 4,950 molecules');
+    expect(scaffoldTree._iconGenerate?.classList.contains('inactive'), false, 'Generate is enabled');
+    // the tree is generated from the sample (the script is not run here: the generated table is caught)
+    let generatedRows = -1;
+    scaffoldTree.finishGenerateTree = async (df: DG.DataFrame) => {
+      generatedRows = df.rowCount;
+    };
+    await scaffoldTree.generateTree();
+    expect(generatedRows, 750);
+    expect(scaffoldTree.generatedFrom, 'a sample of 750 of 4,950 molecules');
+    tv.close();
+    // a table of at most 750 molecules: as before, all of them
+    const small = openScaffoldTree(sarSmall);
+    await delay(500);
+    expect(small.scaffoldTree.generateBlockedReason(), null);
+    expect(small.scaffoldTree.generateHint(), 'Generate from molecular column');
+    small.tv.close();
+  });
+
+  test('the Python script on a 750-molecule sample', async () => {
+    // timing (the stand's Python): the tree the RDKit engine builds from the sample of a 4,950-molecule table
+    const values = (await largeTable(5)).col('smiles')!.toList() as string[];
+    const rows = scaffoldTreeSampleRows(values, SCAFFOLD_TREE_MAX_MOLECULES, (m) => !!m);
+    const sample = DG.Column.fromStrings('smiles', rows.map((r) => values[r]));
+    sample.semType = DG.SEMTYPE.MOLECULE;
+    const df = DG.DataFrame.fromColumns([sample]);
+    setChemicalEngine(ChemicalEngine.RDKit);
+    try {
+      const started = performance.now();
+      const tree = JSON.parse(await PackageFunctions.getScaffoldTree(df, 10, false));
+      const seconds = (performance.now() - started) / 1000;
+      console.log(`scaffold tree | the Python script on ${df.rowCount} molecules: ${seconds.toFixed(1)} s, ` +
+        `${tree.length} root scaffolds`);
+      expect(tree.length > 0, true);
+    } finally {
+      setChemicalEngine(null);
+    }
+  }, {timeout: 900000});
 
   async function editStructure(scaffoldTree: ScaffoldTreeViewer, group: DG.TreeViewGroup, smiles: string) {
     await scaffoldTree.openEditSketcher(group);

@@ -683,6 +683,26 @@ export declare const STRINGS: {
     /** An icon button's tooltip (spike reports-oct14, report 5): its name, then what it does or why it cannot. */
     readonly commandTip: '{name}: {tip}';
     /**
+     * Spike stereo-wording (docs/decisions/stereo-wording.md; the product owner, 2026-10-20: "other companies might have
+     * slightly different language preferences"): what each stereo choice means, in a chemist's words, as Signals' Guided
+     * Stereo writes a line beside each. Display only. The group menu shows a group's under its name, the panel's segments and
+     * chips show theirs as their tooltip and description, and a row's state is described by its own. A host gives its own
+     * wording through `strings`; an empty message shows none.
+     */
+    readonly stereoMeaningAbs: 'Absolute: this exact stereoisomer, as drawn';
+    readonly stereoMeaningOr: 'Relative (OR): a single isomer, as drawn or its mirror image (not known which)';
+    readonly stereoMeaningAnd: 'Mixture (AND): both the drawn isomer and its mirror image are present';
+    /** R or S (a centre's, P or M an axis's) in no group or in ABS; in an OR group; in an AND group (the AND wording, a call). */
+    readonly stereoMeaningKnown: 'Known absolute configuration';
+    readonly stereoMeaningRelativeOr: 'Relative configuration within its OR group';
+    readonly stereoMeaningRelativeAnd: 'Relative configuration within its AND group';
+    readonly stereoMeaningUnspecified: 'Configuration not specified';
+    readonly stereoMeaningEzKnown: 'Known double-bond geometry';
+    readonly stereoMeaningEzUnknown: 'Geometry unknown';
+    /** P or M on an atropisomer axis, and an axis without (a call: the pair in the same voice). */
+    readonly stereoMeaningAxisKnown: 'Known axial configuration';
+    readonly stereoMeaningAxisUnspecified: 'Axial configuration not specified';
+    /**
      * Spike abbreviations (docs/decisions/abbreviations.md, A5 to A8; I18N-006: the abbreviations' names are notations, never
      * translated, and are passed into these as they are): a contracted abbreviation's menu, named "Abbreviation", and its
      * items, ChemDraw's and Ketcher's names (title case, as theirs); the prompt before an edit inside an expanded abbreviation
@@ -909,6 +929,13 @@ export declare const STRINGS: {
     readonly settingKeymap: 'Keys';
     readonly keymapChemDraw: 'ChemDraw';
     readonly keymapKetcher: 'Ketcher';
+    /**
+     * The Settings dialog's sections (spike stereo-wording; the product owner, 2026-10-20: "it looks overly tall"), each a
+     * group under its heading: the drawing, its stereochemistry (the `stereochemistry` message), the keys and the readout.
+     */
+    readonly settingsDrawing: 'Drawing';
+    readonly settingsKeyboard: 'Keyboard';
+    readonly settingsReadout: 'Readout';
     readonly reset: 'Reset';
     /**
      * The shortcuts sheet (K7, P13; KEY-006): its button and title, its sections by where the keys act, its columns, and the

@@ -90,7 +90,7 @@ Feature: The R-Groups Analysis tutorial
     And user clicks on settings icon of trellis plot viewer
     And user clicks on "Histogram" tab in context panel
     And user selects "In-vivo Activity" in "Value" property
-    Then the tutorial step "Set Value to In-Vivo Activity" should be done
+    Then the tutorial step "Set Value to In-vivo Activity" should be done
     And "valueColumnName" inner property of trellis plot viewer should be "In-vivo Activity"
 
     When user picks "R4" in the column selector at the "x selector 1" area of trellis plot viewer

@@ -1,6 +1,6 @@
 // Node environment for the crux verification scripts: Chem's RDKit build, a crux wasm build, and Chem's own
-// query code (utils/mol-creation_rdkit.ts, crux/crux-smarts.ts) transpiled on the fly, so the scripts check
-// the code the package runs, not a copy of it.
+// query code (utils/mol-creation_rdkit.ts) transpiled on the fly, so the scripts check the code the package runs, not a
+// copy of it.
 import {createRequire} from 'module';
 import {existsSync, mkdtempSync, readFileSync, writeFileSync} from 'fs';
 import {tmpdir} from 'os';
@@ -35,10 +35,9 @@ export async function loadCrux() {
   return {crux, wasm, dir};
 }
 
-/** getMolSafe / getQueryMolSafe from utils/mol-creation_rdkit.ts and getCruxSmarts from crux/crux-smarts.ts. */
+/** getMolSafe / getQueryMolSafe from utils/mol-creation_rdkit.ts (Chem's search builds the query with getQueryMolSafe,
+ * on RDKit and on the Crux module). */
 export async function loadChemQueryCode() {
-  const constants = readFileSync(join(SRC, 'constants.ts'), 'utf8');
-  const elementsTable = constants.match(/export const elementsTable[^=]*=\s*(\[[\s\S]*?\]);/)[1];
   const chemConstants = readFileSync(join(SRC, 'utils', 'chem-constants.ts'), 'utf8');
   const maxSmilesLength = chemConstants.match(/MAX_SMILES_LENGTH = (\d+)/)[1];
   const molCreation = await importChemModule('utils/mol-creation_rdkit.ts', [
@@ -49,12 +48,7 @@ export async function loadChemQueryCode() {
     // only reached for molblocks by isFragment / _isSmarts, which the search does not call on molblocks
     [/import \{MolfileHandler\} from .*;/, 'const MolfileHandler = undefined;'],
   ]);
-  const cruxSmarts = await importChemModule('crux/crux-smarts.ts', [
-    [/import \{elementsTable\} from '\.\.\/constants';/, `const elementsTable = ${elementsTable};`],
-    [/import \{hasRadicals\} from '\.\.\/utils\/mol-creation_rdkit';/,
-      `import {hasRadicals} from './utils_mol-creation_rdkit.mjs';`],
-  ]);
-  return {...molCreation, ...cruxSmarts};
+  return molCreation;
 }
 
 async function importChemModule(path, replacements) {
