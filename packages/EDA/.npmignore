@@ -34,3 +34,5 @@ test-console-output.log
 wasm/xgboost/build/
 # Package-owned Playwright E2E suite — not shipped in the npm artifact
 playwright/
+# Crux modules ship from dist/crux/
+/crux/

@@ -145,6 +145,62 @@ export function accuracy(target: DG.Column, prediction: DG.Column): number {
   return correctPredictions / rows;
 }
 
+/** Coefficient of determination R² of `pred` against `target`. */
+export function r2(target: DG.Column, pred: DG.Column): number {
+  const n = target.length;
+  const t = target.getRawData();
+  const p = pred.getRawData();
+  let mean = 0;
+  for (let i = 0; i < n; ++i)
+    mean += t[i];
+  mean /= n;
+  let ssRes = 0;
+  let ssTot = 0;
+  for (let i = 0; i < n; ++i) {
+    ssRes += (t[i] - p[i]) ** 2;
+    ssTot += (t[i] - mean) ** 2;
+  }
+  return ssTot === 0 ? 0 : 1 - ssRes / ssTot;
+}
+
+/** Numeric feature columns of `df`, excluding the target and any `exclude` names. */
+export function numericFeatures(df: DG.DataFrame, target: string, exclude: string[] = []): DG.ColumnList {
+  const cols = df.columns.toList().filter((c) =>
+    (c.type === DG.COLUMN_TYPE.INT || c.type === DG.COLUMN_TYPE.FLOAT) &&
+    c.name !== target && !exclude.includes(c.name));
+  return asTable(cols);
+}
+
+/** Independent column copy — won't reparent the original. */
+export function copyCol(col: DG.Column): DG.Column {
+  const n = col.length;
+  switch (col.type) {
+  case DG.COLUMN_TYPE.INT:
+    return DG.Column.fromInt32Array(col.name, Int32Array.from(col.getRawData().subarray(0, n)), n);
+  case DG.COLUMN_TYPE.FLOAT:
+    return DG.Column.fromFloat32Array(col.name, Float32Array.from(col.getRawData().subarray(0, n)));
+  default:
+    return DG.Column.fromStrings(col.name, col.toList() as string[]);
+  }
+}
+
+/** Deterministic decoy columns (unrelated columns the apply-time table may carry). */
+export function decoyColumns(rows: number, count: number): DG.Column[] {
+  const out = new Array<DG.Column>(count);
+  for (let k = 0; k < count; ++k) {
+    const arr = new Float32Array(rows);
+    for (let i = 0; i < rows; ++i)
+      arr[i] = ((i * 7 + k * 13) % 100) * 0.1 - 5;
+    out[k] = DG.Column.fromFloat32Array(`_decoy_${k}`, arr);
+  }
+  return out;
+}
+
+/** Wrap columns into a fresh table's column list (an apply-time table). */
+export function asTable(cols: DG.Column[]): DG.ColumnList {
+  return DG.DataFrame.fromColumns(cols).columns;
+}
+
 /** Return dataframe with missing values */
 export function dataWithMissingVals(rows: number, intCols: number, floatCols: number,
   strCols: number, misValCount: number): {df: DG.DataFrame, misValsIds: Map<string, number[]>} {

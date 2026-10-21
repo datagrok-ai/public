@@ -109,6 +109,13 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
   - Export to MPO desirability profiles (integration with `@datagrok-libraries/statistics`)
 - Sample data in `files/` directory for testing and demos
 
+#### Crux bridge (`src/crux/`)
+- Runs Crux functions (`module-ml`: `ml.fit`, `ml.predict`) from EDA. No package function uses it yet: only the tests (`category 'Crux bridge'`) import it, so `package.js` does not carry it or apache-arrow
+- **Module files**: `crux/` (`crux-module-worker.js`, a verbatim copy of the crux-core worker, `.js` because the server's MIME map has no `mjs`; `ml/crux_wasm.js` + `ml/crux_wasm_bg.wasm`, gitignored, built locally by the recipe in `crux/README.md`). `rspack.config.js` copies `crux/` verbatim (`info.minimized`, so the minimizer leaves them alone) into `dist/crux/`, which `grok publish` uploads
+- **Loader** (`crux-loader.ts`): `CruxModule` runs one module in a module worker (the `id/op/args` protocol of crux-core `crux-modules.mjs`; ops `init`, `callFn`, `fnResource`, `fnDescribe`; `callFn(name, ipc, params, resource?)` transfers `ipc`, so the caller's buffer is detached afterwards). Created lazily on the first call; URLs resolve from the running bundle (`document.currentScript`, as `wasm-loader.ts`), so it works in `package-test.js` too. A load failure throws `Crux module "ml" failed to load from <url> (see crux/README.md)` and kills the worker; `terminate()` kills it on demand (the next call starts a new one). `callFn` registers a resource (the model) only when its id differs from the one live in the worker, and posts the registration and the call in one synchronous segment. `cruxMl` is the `ml` instance
+- **Bridge** (`crux-bridge.ts`): features go as one Arrow column `x: List<Float64>` built from `getRawData()` (row-major `Float64Array` + offsets, no per-row arrays); only INT / FLOAT features, DG nulls -> `NaN` (Crux's missing value). Target `y`: numeric -> Float64 (nulls -> `NaN`), STRING -> Utf8 (`''` -> null), BOOL -> Bool. Crux encodes string / boolean classes itself and returns `class` as text
+- **Model** (`crux-model.ts`): `cruxFit(task, model, df, predictColumn, {estimator, preprocess, seed})` trains on all columns of `df` (`featurizer: vector`, `cv: 0`; `seed` goes to both `random_state` and `estimator.random_state`) and returns a crux-model-v1 (safetensors) blob with the DG feature names added as `__metadata__['eda.features']`. A failed fit rejects with Crux's message (`ml.fit: ...`). `cruxPredict(df, bytes)` picks the features by those names (any order, extra columns ignored, a missing one throws `... is missing`; a blob without `eda.features` takes the frame's current column order) and returns a DataFrame with one `Prediction` column: FLOAT for regression; for classification BOOL / STRING by the JSON type of the manifest's `classes`, numeric classes as INT when all are integers and FLOAT otherwise. Rows Crux cannot predict (e.g. NaN features for a model without NaN support) stay null (`false` in a BOOL column). `readCruxManifest(bytes)` throws `LEGACY_MODEL_ERROR` ("... retrain the model") for any blob that is not crux-model-v1. `cruxTerminate()` stops the worker (`cruxMl.terminate()`). Model ids for the resource cache are the SHA-256 of the blob
+
 ### WASM Integration
 
 - **sci-comp-ml** (PCA, PLS, softmax, linear regression): a Rust + WASM crate built with `wasm-pack`, copied into `wasm/` (`sci_comp_ml.js` + `sci_comp_ml_bg.wasm`). Initialised lazily on first use via `src/wasm-loader.ts`; the binary is emitted to `dist/` (via the `.wasm` file-loader rule + `experiments.asyncWebAssembly` in `webpack.config.js`) and located relative to the running bundle (`document.currentScript`), **not** `_package.webRoot` — so it resolves in the separate `package-test.js` bundle too. Wrapped by `wasm/eda-api.ts`; PCA/PLS fits run in `src/workers/eda-ml-worker.ts`.
@@ -161,6 +168,8 @@ Tests are organized by feature in `src/tests/`:
 - `control-comparisons-tests.ts`: Control comparisons (Dunnett, Holm-Welch)
 - `pmpo-tests.ts`: Probabilistic scoring
 - `pareto-tests.ts`: Pareto optimization
+- `legacy-models-tests.ts`: the pre-Crux model fixtures in `files/legacy-models/` load and predict with the old classes, and `cruxPredict` rejects them with the "retrain" error (category `Legacy models`)
+- `crux-bridge-tests.ts`: the Crux bridge (module load, column types, nulls / NaN, boolean and string targets, save and read back, seed, legacy blob) (category `Crux bridge`; needs `crux/ml/`, see `crux/README.md`)
 
 Test framework from `@datagrok-libraries/test`:
 ```typescript
@@ -176,6 +185,7 @@ category('Feature Name', () => {
 ## Files
 
 - **`files/`**: Demo/test data for pMPO (drugs-props-train.csv, drugs-props-test.csv, scores)
+- **`files/legacy-models/`**: one pre-Crux model per ML method (`.bin`), produced once with the old wasm and not regenerable after it is removed; see its `README.md`. Published to `System:AppData/Eda/legacy-models/`
 - **`css/`**: Custom stylesheets (pmpo.css for pMPO UI)
 
 ## Key Workflows

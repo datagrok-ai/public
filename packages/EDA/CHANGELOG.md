@@ -6,6 +6,8 @@
 * GROK-21017: Skip adding MVA viewers when the source table view was closed during the analysis
 * GROK-20932: Added the knnImpute function: headless k-NN imputation of chosen columns, used by Forge
 * GROK-20932: Marked trainSVM with meta.mlhasrows: the model embeds training rows
+* GROK-20932: Added files/legacy-models: one pre-Crux model per ML method with the Legacy models test category
+* GROK-20932: Added the Crux bridge (src/crux): lazy module-ml worker, DataFrame <-> Arrow IPC, cruxFit / cruxPredict; not yet used by the ML methods
 
 ## 1.9.1 (WIP)
 
