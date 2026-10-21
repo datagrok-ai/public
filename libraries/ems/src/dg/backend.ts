@@ -27,11 +27,17 @@ export const SYSTEM_COLUMNS: readonly (readonly [name: string, type: string, cap
 export class DgDomainBackend implements DomainBackend {
   private readonly _tables = new Map<string, Promise<DgDomainTable>>();
 
+  constructor() {
+    for (const event of ['d4-domain-schema-created', 'd4-domain-schema-altered', 'd4-domain-schema-deleted'])
+      grok.events.onEvent(event).subscribe(() => this.invalidate());
+  }
+
   table(address: string): Promise<DomainTableLike> {
     let loading = this._tables.get(address);
     if (loading === undefined) {
       loading = DgDomainTable.load(address).catch((e) => {
-        this._tables.delete(address);
+        if (this._tables.get(address) === loading)
+          this._tables.delete(address);
         throw e;
       });
       this._tables.set(address, loading);
@@ -43,7 +49,8 @@ export class DgDomainBackend implements DomainBackend {
     return grok.dapi.domains.registry.resolveNames(table, [...ids]);
   }
 
-  /** Drops every handle, so the next source re-reads the registry — after a grant change. */
+  /** Drops every handle, so the next source re-reads the registry — after a grant change, and on
+   * every schema create, apply or delete the platform announces. */
   invalidate(): void {
     this._tables.clear();
   }

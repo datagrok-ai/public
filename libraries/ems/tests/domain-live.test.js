@@ -328,6 +328,31 @@ scoped('the platform poll asks the change token over the whole table and aggrega
     }
   });
 
+scoped('a schema apply from any surface drops the cached tables: the next open reads the new columns', async () => {
+  await platformTable();
+  let columns = ['title'];
+  grok.dapi.domains.registry.rowProperties = async () => columns.map((name) => ({name, type: 'string'}));
+  try {
+    const backend = new DgDomainBackend();
+    const names = async () => (await backend.table('grit.issue')).properties.map((p) => p.name);
+    assert.deepEqual(await names(), ['id', 'version', 'created_on', 'updated_on', 'author_id', 'title']);
+    columns = ['title', 'size'];
+    assert.equal((await names()).at(-1), 'title', 'one handle per address while the schema stands');
+    // what `domains_client.dart` `schemaAltered` fires after every committed apply
+    grok.events.onEvent('d4-domain-schema-altered').fire({name: 'grit'});
+    assert.deepEqual((await names()).slice(-2), ['title', 'size'], 'the next open reads the applied schema');
+    // a delete and a create under the same name (or a binding, whose create fires CREATED alone)
+    for (const [event, now] of [['d4-domain-schema-deleted', 'weight'], ['d4-domain-schema-created', 'due']]) {
+      columns = ['title', now];
+      grok.events.onEvent(event).fire({name: 'grit'});
+      assert.equal((await names()).at(-1), now, `${event} drops the handles too`);
+    }
+  } finally {
+    delete grok.dapi.domains.table;
+    delete grok.dapi.domains.registry;
+  }
+});
+
 scoped('the token is skipped where it cannot answer: no table-level View, or a token the engine does not move',
   async () => {
     for (const [support, can, why] of [
