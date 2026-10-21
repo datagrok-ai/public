@@ -26,7 +26,7 @@ const CHUNK_SIZE = 1000;
 const JOB_BASE_MS = 30000;
 /** How a job's timeout starts its message. */
 const JOB_TIMEOUT = 'a Crux job took longer than';
-const JOB_MS_PER_MOLECULE = {descriptors: 500, fingerprints: 20, alerts: 50, scaffoldTree: 200};
+const JOB_MS_PER_MOLECULE = {descriptors: 500, fingerprints: 20, alerts: 50, scaffoldTree: 200, properties: 20};
 // Rascal's options for an activity cliff's MCS (CruxService.pairUncommonAtomsAndBonds): RDKit's defaults but these
 // three, measured on the cliffs of Chem's tests and demo at their cutoffs (2026-10-21)
 /** get_mces' 0.5 gave one cliff of the cutoff-20 test no MCES, 0.4 none. */
@@ -114,6 +114,9 @@ class CruxWorkerClient extends WorkerMessageBusClient {
   getStructuralAlerts = (alerts: {[rule in RuleId]?: string[]}, molecules: string[]):
     Promise<{alerts: {[rule in RuleId]?: boolean[]}, unread: number[]}> =>
     this.call('getStructuralAlerts', [alerts, molecules]);
+
+  chemProperties = (molecules: (string | null)[], names: string[]):
+    Promise<{[name: string]: (number | string | null)[]}> => this.call('chemProperties', [molecules, names]);
 
   pairUncommonAtomsAndBonds = (molecule1: string, molecule2: string, details: string): Promise<ISubstruct[] | null> =>
     this.call('pairUncommonAtomsAndBonds', [molecule1, molecule2, details]);
@@ -385,6 +388,17 @@ export class CruxService {
     }
     return {alerts: Object.entries(result) as [RuleId, boolean[]][],
       unread: parts.flatMap((part, k) => part.unread.map((row) => starts[k] + row))};
+  }
+
+  /**
+   * Chem's property table (widgets/properties.ts: MW, HBA, ..., `Molecular formula`) by crux's `chemProperties`
+   * (RDKit's definitions), the molecules in chunks across the workers: a value or null per molecule for each name.
+   */
+  async chemProperties(molecules: (string | null)[], names: string[]):
+    Promise<{[name: string]: (number | string | null)[]}> {
+    const parts = await this.inChunks(molecules, JOB_MS_PER_MOLECULE.properties,
+      (worker, chunk) => worker.chemProperties(chunk, names));
+    return Object.fromEntries(names.map((name) => [name, parts.flatMap((part) => part[name])]));
   }
 
   /**

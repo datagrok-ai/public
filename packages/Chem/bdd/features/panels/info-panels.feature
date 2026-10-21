@@ -6,9 +6,10 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
   Toxicity grades the four risks, Drug Likeness gives a score, and 2D Structure draws the molecule.
   Structural Alerts names the alerts the current molecule raises, with a button to run them over the
   dataset, and says "No alerts" on a molecule that raises none; Pharmacophores counts the feature
-  families the current molecule has. Properties lists the molecule's OpenChemLib properties, its
-  formula among them, and the plus icon on a property's row adds that property as a column of the
-  whole table. Each of the three follows the current row.
+  families the current molecule has. Properties lists the molecule's properties (OpenChemLib's in RDKit
+  mode, Crux's by RDKit's definitions in Crux mode), its formula among them, and the plus icon on a
+  property's row adds that property as a column of the whole table. Each of the three follows the
+  current row.
   The same panes over V2000, V3000 and SMARTS cells, and the values they compute, are tested in Chem
   src/tests/cell-panel-tests.ts ('cell panel': properties, structural-alerts, structure2d-widget.<notation>,
   drug-likeness, toxicity).
@@ -112,7 +113,7 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
     When user clicks on the "cell 5 of canonical_smiles" area of grid
     Then row 5 should be current
     And the context panel should show the current cell
-    And "Properties" pane in "Chemistry" pane in context panel should contain the text "C12H14NOF3"
+    And "Properties" pane in "Chemistry" pane in context panel should contain the text "C12H14"
     And the table should not have a column "MW"
     When user hovers over "Properties" pane in "Chemistry" pane in context panel
     And user clicks on "Calculate MW for the whole table" icon in "Properties" pane in "Chemistry" pane in context panel

@@ -9,6 +9,8 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';
 import {getMapIdentifiers} from '../widgets/identifiers';
 import {PackageFunctions} from '../package';
+import {ChemicalEngine, cruxReady, setChemicalEngine} from '../engine/chem-engine';
+import {getPropertiesAsColumns} from '../widgets/properties';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 
 category('calculate', () => {
@@ -79,12 +81,47 @@ category('calculate', () => {
   test('properties', async () => {
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);
-    await PackageFunctions.addChemPropertiesColumns(smiles, smiles.col('smiles')!, true, true, true);
+    setChemicalEngine(ChemicalEngine.RDKit); // OpenChemLib's values (Crux mode's: the next test)
+    try {
+      await PackageFunctions.addChemPropertiesColumns(smiles, smiles.col('smiles')!, true, true, true);
+    } finally {
+      setChemicalEngine(null);
+    }
     expect(['MW', 'HBA', 'HBD'].every((it) => smiles.columns.names().includes(it)),
       true, 'Not all properties columns have been added');
     expect(smiles.col('MW')?.get(3), 342.107177734375, `incorrect MW value`);
     expect(smiles.col('HBA')?.get(3), 5, `incorrect HBA value`);
     expect(smiles.col('HBD')?.get(3), 1, `incorrect HBD value`);
+  });
+
+  test('properties: Crux mode, RDKit\'s definitions', async () => {
+    // the pinned RDKit's values (crux-core's tools/chem-wasm/chem_props_oracle.py): MolWt, not OpenChemLib's
+    // monoisotopic mass; ESOL, Crippen, RDKit's strict rotatable bonds; empty cells where no molecule is read
+    const col = DG.Column.fromStrings('smiles', ['CN1CCC(CC1)Oc2ccc(cc2)C(F)(F)F',
+      'CC1CCN(CC(O)CN2C(=O)C3=C(SCCS3)C2=O)CC1', 'NCc1cnn(O)c1Br', '', 'C1CC(']);
+    col.semType = DG.SEMTYPE.MOLECULE;
+    const names = ['MW', 'HBA', 'HBD', 'LogP', 'LogS', 'PSA', 'Rotatable bonds', 'Stereo centers', 'Molecule charge',
+      'Molecular formula'];
+    const expected: {[name: string]: any[]} = {
+      'MW': [259.271, 342.486, 192.016], 'HBA': [2, 5, 4], 'HBD': [0, 1, 2], 'LogP': [3.1784, 1.1396, 0.3416],
+      'LogS': [-3.9460940582866364, -2.8353577331083555, -1.4954699830328941], 'PSA': [12.47, 111.45, 64.07],
+      'Rotatable bonds': [2, 4, 1], 'Stereo centers': [0, 1, 0], 'Molecule charge': [0, 0, 0],
+      'Molecular formula': ['C13H16F3NO', 'C15H22N2O3S2', 'C4H6BrN3O']};
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      const cols = await getPropertiesAsColumns(col, names);
+      expect(cols.map((c) => `${c.name}:${c.type}`).join(', '), 'MW:double, HBA:int, HBD:int, LogP:double, ' +
+        'LogS:double, PSA:double, Rotatable bonds:int, Stereo centers:int, Molecule charge:int, ' +
+        'Molecular formula:string');
+      for (const c of cols) {
+        expected[c.name].forEach((value, i) => typeof value === 'number' && c.type === DG.TYPE.FLOAT ?
+          expectFloat(c.get(i), value, 1e-4, `${c.name}, row ${i}`) : expect(c.get(i), value, `${c.name}, row ${i}`));
+        expect(c.isNone(3) && c.isNone(4), true, `${c.name}: empty for an empty cell and a molecule not read`);
+      }
+    } finally {
+      setChemicalEngine(null);
+    }
   });
 
 

@@ -197,6 +197,8 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
       result = {...fps, unread: unread(args[1], (i) => fps.fps[i] !== null)};
     } else if (op === 'getStructuralAlerts')
       result = structuralAlerts(args[0], args[1]);
+    else if (op === 'chemProperties') // Chem's property table (widgets/properties.ts)
+      result = JSON.parse(chemWasm.chemProperties(args[0], args[1]));
     else if (op === 'pairUncommonAtomsAndBonds')
       result = pairUncommonAtomsAndBonds(args[0], args[1], args[2]);
     else if (op === 'fail::test') // tests: a job that fails with this message

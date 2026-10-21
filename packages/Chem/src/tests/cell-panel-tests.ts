@@ -6,7 +6,8 @@ import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-containe
 import {assessDruglikeness, drugLikenessWidget} from '../widgets/drug-likeness';
 import {getIdentifiersSingle} from '../widgets/identifiers';
 // import {getPanelElements, molfileWidget} from '../widgets/molfile';
-import {getPropertiesMap, propertiesWidget} from '../widgets/properties';
+import {CRUX_PROPERTY_METHODS, getPropertiesMap, propertiesWidget} from '../widgets/properties';
+import {ChemicalEngine, cruxReady, setChemicalEngine} from '../engine/chem-engine';
 import {getStructuralAlerts, structuralAlertsWidget} from '../widgets/structural-alerts';
 import {getRisks, toxicityWidget} from '../widgets/toxicity';
 // import {SubstructureFilter} from '../widgets/chem-substructure-filter';
@@ -104,17 +105,48 @@ category('cell panel', async () => {
       'Stereo centers': 0,
       //'Molecule charge': 0,
     };
-    for (const format of Object.keys(molFormats_)) {
-      if (format !== 'smarts' && format !== 'empty') {
-        const propertiesMap = getPropertiesMap(DG.SemanticValue.fromValueType(molFormats_[format], DG.SEMTYPE.MOLECULE));
-        Object.keys(expectedRes).forEach((prop) => expect(propertiesMap[prop].value, expectedRes[prop], `Error for ${format}, ${prop} property,
-          expected ${expectedRes[prop]}, got ${propertiesMap[prop].value}`));
+    setChemicalEngine(ChemicalEngine.RDKit); // OpenChemLib's values (Crux mode's: the next test)
+    try {
+      for (const format of Object.keys(molFormats_)) {
+        if (format !== 'smarts' && format !== 'empty') {
+          const propertiesMap = getPropertiesMap(DG.SemanticValue.fromValueType(molFormats_[format], DG.SEMTYPE.MOLECULE));
+          Object.keys(expectedRes).forEach((prop) => expect(propertiesMap[prop].value, expectedRes[prop], `Error for ${format}, ${prop} property,
+            expected ${expectedRes[prop]}, got ${propertiesMap[prop].value}`));
+        }
       }
-    }
 
-    //check that widget doesn't throw errors
-    for (const mol of molFormats)
-      propertiesWidget(DG.SemanticValue.fromValueType(mol, DG.SEMTYPE.MOLECULE));
+      //check that widget doesn't throw errors
+      for (const mol of molFormats)
+        propertiesWidget(DG.SemanticValue.fromValueType(mol, DG.SEMTYPE.MOLECULE));
+    } finally {
+      setChemicalEngine(null);
+    }
+  });
+
+  test('properties: Crux mode, RDKit\'s definitions', async () => {
+    // crux's chemProperties: RDKit's values (MolWt, Lipinski HBA, NumHDonors, Crippen, ESOL, TPSA with S and P, ...;
+    // the expected values from the pinned RDKit, crux-core's tools/chem-wasm/chem_props_oracle.py), not OpenChemLib's
+    const expected: {[key: string]: any} = {'MW': 133.194, 'HBA': 1, 'HBD': 1, 'LogP': 1.3323,
+      'LogS': -1.8636003565440682, 'PSA': 12.03, 'Rotatable bonds': 0, 'Stereo centers': 0, 'Molecule charge': 0,
+      'Molecular formula': 'C9H11N'};
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      for (const format of ['smiles', 'molV2000', 'molV3000']) {
+        const map = getPropertiesMap(DG.SemanticValue.fromValueType(molFormats_[format], DG.SEMTYPE.MOLECULE));
+        for (const [name, value] of Object.entries(expected)) {
+          expect(map[name].value, value, `${format}: ${name}`);
+          expect(map[name].method, CRUX_PROPERTY_METHODS[name], `${format}: ${name}'s method`);
+        }
+      }
+      // the widget names each property's method and reference
+      const widget = propertiesWidget(DG.SemanticValue.fromValueType(CONST.SMILES, DG.SEMTYPE.MOLECULE));
+      const names = Array.from(widget.root.querySelectorAll('tr')).map((tr) => tr.cells[0]?.textContent);
+      expect(names.join(', '), Object.keys(expected).join(', '));
+      expect(CRUX_PROPERTY_METHODS['LogS'].includes('Delaney'), true);
+    } finally {
+      setChemicalEngine(null);
+    }
   });
 
   test('structural-alerts', async () => {

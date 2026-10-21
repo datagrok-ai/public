@@ -6,6 +6,7 @@ import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-containe
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {CONTAINER_TIMEOUT} from './utils';
+import {isCruxRequested} from '../engine/chem-engine';
 
 category('vector functions', () => {
   before(async () => {
@@ -47,8 +48,9 @@ category('vector functions', () => {
   });
 
   test('getProperties', async () => {
-    await testVectorFunc('Chem:getProperties(${smiles}, [\'LogP\'])', 'LogP', [0, 9],
-      [2.939000129699707, -0.6422999501228333]);
+    // the stand's engine: OpenChemLib's LogP in RDKit mode, Wildman-Crippen's (RDKit's MolLogP) in Crux mode
+    await testVectorFunc('Chem:getProperties(${smiles}, [\'LogP\'])', 'LogP', [0, 9], isCruxRequested() ?
+      [Math.fround(3.1784000000000017), Math.fround(0.34159999999999996)] : [2.939000129699707, -0.6422999501228333]);
   });
 });
 
