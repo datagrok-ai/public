@@ -158,42 +158,33 @@ scoped('find-or-activate: an app already open takes the address and is answered 
   a.dispose();
 });
 
-scoped('null where the platform keeps the address: a schema route, a table read that failed',
+scoped('null where the platform keeps the address: anything that is not a table route',
   async () => {
     emsBackends.domain = widgets();
     assert.equal(await domains.route('/domains'), null);
     assert.equal(await domains.route('/domains/demo'), null, 'the schema gallery stays Dart');
     assert.equal(await domains.route('/domains/demo/widget/A-1/extra'), null);
     assert.equal(await domains.route('/apps/Grit'), null);
-    emsBackends.domain = {table: () => Promise.reject(new Error('Failed to fetch'))};
-    assert.equal(await domains.route('/domains/demo/widget'), null, 'a failed read says nothing about the table');
   });
 
-scoped('a table or schema the registry does not know opens a not-found view with nothing to act on', async () => {
-  emsBackends.domain = widgets();
-  for (const [address, name] of [['/domains/demo/nope', 'demo.nope'], ['/domains/nope/widget', 'nope.widget'],
-    ['/domains/demo/nope/A-1?x=1', 'demo.nope']]) {
-    const view = await domains.route(address);
-    assert.notEqual(view, null, `${address}: answered here, not by the platform's view of an empty table`);
-    assert.equal(view.root.textContent,
-      `No table matches "${name}". It may have been deleted, renamed, or you may not have access to it.`);
-    assert.equal(view.path, address, 'the address stays as typed');
-    assert.deepEqual(view.ribbonPanels, [], 'no New, no import');
-    assert.equal(DomainApp.live.size, 0, 'and no app behind it');
-    globalThis.grok_Widget_Kill(view.root);
-  }
-});
-
-scoped('over the platform an unknown table is the registry\'s "validation" refusal; any other refusal is not', async () => {
-  emsBackends.domain = {table: () => Promise.reject({code: 'validation', message: 'Unknown domain table "demo.nope"'})};
-  const view = await domains.route('/domains/demo/nope');
-  assert.notEqual(view, null, 'the code the platform sends opens the not-found view');
-  assert.match(view.root.textContent, /^No table matches "demo\.nope"\./);
-  globalThis.grok_Widget_Kill(view.root);
-
-  emsBackends.domain = {table: () => Promise.reject({code: 'forbidden', message: 'Forbidden'})};
-  assert.equal(await domains.route('/domains/demo/widget'), null, 'a refusal that is not "unknown" stays the platform\'s');
-});
+scoped('a table the registry does not know opens a not-found view; any other failed read stays the platform\'s',
+  async () => {
+    const refusing = (e) => ({table: () => Promise.reject(e)});
+    for (const [be, address, name] of [[widgets(), '/domains/demo/nope/A-1?x=1', 'demo.nope'],
+      [refusing({code: 'validation', message: 'Unknown domain table "nope.widget"'}), '/domains/nope/widget', 'nope.widget'],
+      [refusing({code: 'forbidden'}), '/domains/demo/widget', null],
+      [refusing(new Error('Failed to fetch')), '/domains/demo/widget', null]]) {
+      emsBackends.domain = be;
+      const view = await domains.route(address);
+      assert.equal(view?.root.textContent ?? null, name && `No table matches "${name}". It may have been deleted, ` +
+        'renamed, or you may not have access to it.', address);
+      if (view === null)
+        continue;
+      assert.equal(view.path, address, 'the address stays as typed');
+      assert.deepEqual(view.ribbonPanels, [], 'no New, no import');
+      globalThis.grok_Widget_Kill(view.root);
+    }
+  });
 
 test('DomainAddress: the platform\'s row route, and what an address carries under an app\'s bases', () => {
   assert.deepEqual(DomainAddress.ROUTE.exec('/domains/demo/widget').slice(1),

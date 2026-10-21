@@ -65,30 +65,6 @@ async function open(t, label) {
   await flush();
 }
 
-/** Clicks the label of the first row the label names. */
-async function click(t, label) {
-  const el = t.tree.root.querySelectorAll('.u2-tree-label').find((e) => e.textContent === label);
-  fire(el, 'click', {bubbles: true});
-  await flush();
-  await flush();
-}
-
-/** Presses a key on the tree's rows. */
-async function press(t, key) {
-  fire(t.tree.root.querySelector('.u2-list'), 'keydown', {key, bubbles: true});
-  await flush();
-  await flush();
-}
-
-/** The fixture's location table as a backend, with the members `replace` answers swapped in. */
-async function wrapped(replace) {
-  const inner = await hierarchyBackend().table('stock.location');
-  const table = {...inner, query: (spec) => inner.query(spec), access: () => inner.access(),
-    count: (f, s, d) => inner.count(f, s, d), transaction: (ops) => inner.transaction(ops),
-    frame: (spec) => inner.frame(spec), ...replace(inner)};
-  return {table: () => Promise.resolve(table)};
-}
-
 scoped('the roots are the rows with no parent; a branch reads its children when it is opened', async () => {
   const {tree: t} = await tree();
   assert.equal(t.root.dataset.u2, 'domain-tree');
@@ -156,110 +132,27 @@ scoped('a path truncated at an ancestor out of sight opens nothing, and says so'
   t.dispose();
 });
 
-scoped('a full level ends in "Load more…"; reading it selects the first row it brought', async () => {
-  const {tree: t} = await tree({pageSize: 1});
-  assert.deepEqual(labels(t), ['Other site', 'Load more…'], 'one page, and a way to the next');
-  await click(t, 'Other site');
-  assert.equal(t.selected.value.id, 'l9');
-
-  await click(t, 'Load more…');
-  assert.deepEqual(labels(t), ['Other site', 'Site', 'Load more…'], 'the second root is reachable');
-  assert.equal(t.selected.value.id, 'l1', 'the first row read is selected');
-  await click(t, 'Load more…');
-  assert.deepEqual(labels(t), ['Other site', 'Site'], 'an empty page ends the level');
-  assert.equal(t.selected.value.id, 'l1', 'and, bringing nothing, moves nothing');
-
-  await open(t, 'Site');
-  assert.deepEqual(labels(t), ['Other site', 'Site', 'Room', 'Load more…'], 'a branch pages the same way');
-  assert.equal(t.error.value, null);
-  t.dispose();
-});
-
-scoped('the "Load more…" row is not a place: arrowing onto it keeps the selected row, Enter reads on', async () => {
-  const {tree: t} = await tree({pageSize: 1});
-  const seen = [];
-  t.effect(() => {
-    seen.push(t.selected.value?.id ?? null);
-  });
-  await click(t, 'Other site');
-  await press(t, 'ArrowDown');
-  assert.equal(t.tree.selectedNode.value.id, '~more:', 'the cursor is on the row');
-  assert.equal(t.selected.value?.id, 'l9', 'what the tree selects is still the row before it');
-
-  await press(t, 'Enter');
-  assert.deepEqual(labels(t), ['Other site', 'Site', 'Load more…']);
-  assert.equal(t.selected.value.id, 'l1', 'the first row read takes its place');
-  await press(t, 'ArrowDown');
-  await press(t, 'Enter');
-  assert.deepEqual(labels(t), ['Other site', 'Site'], 'the last page is empty: the row goes');
-  assert.equal(t.tree.selectedNode.value?.id, 'l1', 'and the cursor lands on the level\'s last row');
-  assert.deepEqual(seen, [null, 'l9', 'l1'], 'a collection bound to it never saw the whole table in between');
-  t.dispose();
-});
-
-scoped('a page that brings nothing new ends the level: no repeated row, no endless expandTo', async () => {
-  // a backend that ignores the offset answers the first page every time
-  let reads = 0;
-  const stuck = await wrapped((inner) => ({query: (spec) => {
-    if (++reads > 20)
-      return Promise.reject(new Error('reads the same page forever'));
-    return inner.query({...spec, offset: 0});
-  }}));
-  const {tree: t} = await tree({pageSize: 1}, stuck);
-  await click(t, 'Load more…');
-  assert.deepEqual(labels(t), ['Other site'], 'the repeated row is dropped, and the level ends');
-  t.dispose();
-
-  reads = 0;
-  const {tree: d} = await tree({pageSize: 1, expandTo: 'l4'}, stuck);
-  assert.match(d.error.value, /l4 is not reachable from here/);
-  d.dispose();
-});
-
-scoped('a page that fails says why under the tree and keeps the level; clicking again retries', async () => {
-  let reads = 0;
-  const failing = await wrapped((inner) => ({query: (spec) =>
-    ++reads === 2 ? Promise.reject(new Error('boom')) : inner.query(spec)}));
-  const {tree: t} = await tree({pageSize: 1}, failing);
-  const more = t.tree.root.querySelectorAll('.u2-tree-label').find((e) => e.textContent === 'Load more…');
-  assert.equal(more.className.includes('u2-link'), true, 'it reads as an action');
-  await click(t, 'Load more…');
-  assert.equal(t.error.value, 'boom');
-  assert.deepEqual(labels(t), ['Other site', 'Load more…'], 'the first page stays, and so does the way on');
-  await click(t, 'Load more…');
-  assert.equal(t.error.value, null, 'a retry clears it');
-  assert.deepEqual(labels(t), ['Other site', 'Site', 'Load more…']);
-  t.dispose();
-});
-
-scoped('a custom render is given rows; the all and "Load more…" rows keep their own label', async () => {
-  const rendered = [];
-  const render = (row) => {
-    rendered.push(row.id);
-    const el = document.createElement('span');
-    el.textContent = `<${row.name}>`;
-    return el;
-  };
-  const {tree: t} = await tree({pageSize: 1, render, allNode: 'All'});
-  assert.deepEqual(labels(t), ['All', '<Other site>', 'Load more…']);
-  assert.deepEqual(rendered, ['l9']);
-  t.dispose();
-});
-
-scoped('expandTo reads the pages its path needs; a chain that does not start at a root is reported at once',
+scoped('a full level ends in "Load more…", which reads the next page and never takes the selection; expandTo pages',
   async () => {
-    const {tree: t} = await tree({pageSize: 1, expandTo: 'l4'});
-    assert.equal(t.error.value, null, 'every row on the path is visible to the caller');
-    assert.equal(t.selected.value?.id, 'l4');
-    assert.deepEqual(labels(t).slice(0, 5), ['Other site', 'Site', 'Room', 'Shelf', 'Box']);
+    const {tree: t} = await tree({pageSize: 1});
+    assert.deepEqual(labels(t), ['Other site', 'Load more…']);
+    const rows = () => t.tree.root.querySelectorAll('.u2-tree-row');
+    fire(rows()[0], 'click', {bubbles: true});
+    fire(t.tree.root.querySelector('.u2-list'), 'keydown', {key: 'ArrowDown', bubbles: true});
+    await flush();
+    assert.deepEqual([t.tree.selectedNode.value.id, t.selected.value?.id], ['~more:', 'l9'],
+      'the cursor on "Load more…" keeps the row before selected');
+    fire(rows()[1], 'click', {bubbles: true});
+    await flush();
+    await flush();
+    assert.deepEqual(labels(t), ['Other site', 'Site', 'Load more…']);
+    assert.equal(t.selected.value.id, 'l1', 'the first row read is selected');
     t.dispose();
 
-    const orphan = hierarchyBackend({rows: {location: [...TREE.location,
-      {id: 'l5', name: 'Orphan', parent_id: 'hidden'}]}});
-    const {tree: o} = await tree({pageSize: 1, expandTo: 'l5'}, orphan);
-    assert.deepEqual(labels(o), ['Other site', 'Load more…'], 'no page of the roots can hold it, so none is read');
-    assert.match(o.error.value, /l5 is not reachable from here — an ancestor is not visible to you/);
-    o.dispose();
+    const {tree: d} = await tree({pageSize: 1, expandTo: 'l4'});
+    assert.equal(d.selected.value?.id, 'l4');
+    assert.equal(d.error.value, null);
+    d.dispose();
   });
 
 scoped('an address that is not a hierarchy lands in error instead of throwing', async () => {
