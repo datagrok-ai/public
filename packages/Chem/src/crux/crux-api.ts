@@ -70,4 +70,10 @@ export interface CruxWorkerApi {
   calcDescriptors(molecules: (string | null)[], names: string[]): string;
   /** scripts/scaffold_tree.py's JSON text (ScaffoldGraph's Scaffold Tree); throws where the script fails. */
   scaffoldTree(smiles: string[], ringCutoff: number, dischargeAndDeradicalize: boolean): string;
+  /**
+   * RDKit's Rascal MCES of two molecules of the module (`rascalMCES`, Python's `FindMCES`): a JSON array, `[]` below
+   * `details.similarityThreshold` (0.5 by default), else one result `{smartsString, atomMatches, bondMatches,
+   * similarity, timedOut, numFragments, ...}`. `details`: RDKit's `RascalOptions` fields by name.
+   */
+  get_mces(mol1: RDMol, mol2: RDMol, details?: string): string;
 }

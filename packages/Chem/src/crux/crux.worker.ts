@@ -1,13 +1,15 @@
 // The Crux worker: Chem's one Crux file (vendor/chem-wasm), instantiated from the Module the main thread compiled
 // (engine/crux-module.ts). Substructure search over column segments; in Crux mode ("Chemical engine") descriptors, the
-// scaffold tree, and RDKit's own worker code run on Crux (fingerprints, structural alerts).
+// scaffold tree, an activity cliff's MCS, and RDKit's own worker code run on Crux (fingerprints, structural alerts).
 import initChemWasm, * as chemWasm from '../../vendor/chem-wasm/chem_wasm.js';
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import type {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import type {CruxCollection, CruxWorkerApi, DescriptorValues, PackedDescriptorValues} from './crux-api';
 import {INT_NONE} from './crux-api';
 import {RdKitServiceWorker} from '../rdkit-service/rdkit-service-worker';
 import {MAX_MOL_CACHE_SIZE} from '../rdkit-service/rdkit-service-worker-base';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
+import {getUncommonAtomsAndBondsOfMatches} from '../utils/chem-common';
 
 const crux = chemWasm as unknown as CruxWorkerApi;
 const ctx: Worker = self as any;
@@ -139,6 +141,25 @@ function search(key: string, molString: string, molBlockFailover: string): Uint3
   }
 }
 
+/**
+ * Each molecule's atoms and bonds outside the RDKit Rascal MCES of the two (`get_mces`; `details`: its options), each
+ * molecule read as Chem's getMolSafe reads it; null when the pair is below the similarity threshold. Throws for a
+ * molecule Crux cannot read.
+ */
+function pairUncommonAtomsAndBonds(molecule1: string, molecule2: string, details: string): ISubstruct[] | null {
+  const read = [molecule1, molecule2].map((m) => getMolSafe(m, {}, chemWasm as unknown as RDModule));
+  try {
+    const unreadable = read.findIndex((m) => !m.mol || m.isQMol);
+    if (unreadable >= 0)
+      throw new Error(`Crux reads no molecule from ${[molecule1, molecule2][unreadable]}`);
+    const [mces] = JSON.parse(crux.get_mces(read[0].mol!, read[1].mol!, details));
+    return !mces ? null : read.map(({mol}, k) => getUncommonAtomsAndBondsOfMatches(mol!,
+      mces.atomMatches.map((match: number[]) => match[k]), mces.bondMatches.map((match: number[]) => match[k])));
+  } finally {
+    read.forEach((m) => m.mol?.delete());
+  }
+}
+
 function drop(keys: string[]): void {
   for (const key of keys) {
     collections.get(key)?.free();
@@ -176,6 +197,8 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
       result = {...fps, unread: unread(args[1], (i) => fps.fps[i] !== null)};
     } else if (op === 'getStructuralAlerts')
       result = structuralAlerts(args[0], args[1]);
+    else if (op === 'pairUncommonAtomsAndBonds')
+      result = pairUncommonAtomsAndBonds(args[0], args[1], args[2]);
     else if (op === 'fail::test') // tests: a job that fails with this message
       throw new Error(args[0]);
     else if (op === 'busy::test') { // tests: a job that keeps the worker busy, as a long Crux call does

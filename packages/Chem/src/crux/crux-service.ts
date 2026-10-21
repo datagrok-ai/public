@@ -6,6 +6,7 @@ import {compileCrux, loadCrux, noteCruxError} from '../engine/crux-module';
 import {DescriptorTiming, INT_NONE, PackedDescriptorValues, isNoneValue} from './crux-api';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import type {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import type {IFpResult} from '../rdkit-service/rdkit-service-worker-similarity';
 import type {RuleId} from '../panels/structural-alerts';
 
@@ -26,6 +27,16 @@ const JOB_BASE_MS = 30000;
 /** How a job's timeout starts its message. */
 const JOB_TIMEOUT = 'a Crux job took longer than';
 const JOB_MS_PER_MOLECULE = {descriptors: 500, fingerprints: 20, alerts: 50, scaffoldTree: 200};
+// Rascal's options for an activity cliff's MCS (CruxService.pairUncommonAtomsAndBonds): RDKit's defaults but these
+// three, measured on the cliffs of Chem's tests and demo at their cutoffs (2026-10-21)
+/** get_mces' 0.5 gave one cliff of the cutoff-20 test no MCES, 0.4 none. */
+const PAIR_MCS_SIMILARITY_THRESHOLD = 0.3;
+/** RDKit's 1000 gave 22 of 24 triterpenoid and 185 of 185 peptide cliffs no MCES ("too many matching bond pairs"),
+ * 5000 still 156 peptide ones, 10000 none (with 16 MB of wasm memory). */
+const PAIR_MCS_MAX_BOND_MATCH_PAIRS = 10000;
+/** Seconds; RDKit's 60 is over a Crux job's limit, which restarts the pool. Past it Rascal gives its best MCES so far
+ * (36 of the 185 peptide cliffs, 6.9 s at most with the setup; every other cliff took under 0.1 s). */
+const PAIR_MCS_TIMEOUT_S = 5;
 /**
  * crux keeps ~380 bytes per indexed molecule (~1.1 GB at the limit, spread over the workers); least recently used
  * column indexes are dropped past this many rows.
@@ -103,6 +114,9 @@ class CruxWorkerClient extends WorkerMessageBusClient {
   getStructuralAlerts = (alerts: {[rule in RuleId]?: string[]}, molecules: string[]):
     Promise<{alerts: {[rule in RuleId]?: boolean[]}, unread: number[]}> =>
     this.call('getStructuralAlerts', [alerts, molecules]);
+
+  pairUncommonAtomsAndBonds = (molecule1: string, molecule2: string, details: string): Promise<ISubstruct[] | null> =>
+    this.call('pairUncommonAtomsAndBonds', [molecule1, molecule2, details]);
 
   failForTests = (message: string): Promise<unknown> => this.call('fail::test', [message]);
 
@@ -413,6 +427,19 @@ export class CruxService {
   scaffoldTree(smiles: string[], ringCutoff: number, discharge: boolean): Promise<string> {
     return this.job(this.workers[0].scaffoldTree(smiles, ringCutoff, discharge),
       JOB_BASE_MS + smiles.length * JOB_MS_PER_MOLECULE.scaffoldTree);
+  }
+
+  /**
+   * Each molecule's atoms and bonds outside the MCS of the two (what an activity cliff's tooltip highlights) as RDKit's
+   * Rascal MCES finds it (crux's `get_mces`, on one worker): the largest set of bonds the two share, possibly in
+   * several fragments, where FMCS finds one connected substructure. Null for a pair whose similarity estimate is under
+   * the threshold.
+   */
+  pairUncommonAtomsAndBonds(molecule1: string, molecule2: string): Promise<ISubstruct[] | null> {
+    const options = {similarityThreshold: PAIR_MCS_SIMILARITY_THRESHOLD,
+      maxBondMatchPairs: PAIR_MCS_MAX_BOND_MATCH_PAIRS, timeout: PAIR_MCS_TIMEOUT_S};
+    return this.job(this.workers[0].pairUncommonAtomsAndBonds(molecule1, molecule2, JSON.stringify(options)),
+      JOB_BASE_MS);
   }
 
   /**
