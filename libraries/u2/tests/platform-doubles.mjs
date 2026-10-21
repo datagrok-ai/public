@@ -406,6 +406,10 @@ export class Column {
 
   get name() { return this.dart.name; }
 
+  /** js-api `FloatColumn.doublePrecision`: a float column is float32 unless set. */
+  get doublePrecision() { return this.dart.doublePrecision === true; }
+  set doublePrecision(x) { this.dart.doublePrecision = x; }
+
   get tags() { return this.dart.tags; }
   getTag(tag) { return this.dart.tags[tag] ?? null; }
   setTag(tag, value) { this.dart.tags[tag] = value; }

@@ -282,6 +282,77 @@ scoped('only the mapped columns are posted, under their target names', async () 
   assert.deepEqual(result.rows.map((r) => r.status), ['inserted']);
 });
 
+scoped('a float column read from a file lands as the number typed, not its float32 widening', async () => {
+  const memory = backend();
+  // a CSV opened in Datagrok holds floats as float32: the cell reads back widened
+  const typed = [3.1, 0.1, 19.99];
+  const source = new DG.DataFrame([{name: 'project_id', type: 'string'}, {name: 'number', type: 'int'},
+    {name: 'title', type: 'string'}, {name: 'weight', type: 'double'}],
+  typed.map((w, i) => ({project_id: 'p1', number: 10 + i, title: `F${i}`, weight: Math.fround(w)})));
+  const {running} = await opened(memory, source);
+  await toMapping();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  assert.deepEqual(typed.map((_, i) => issues(memory).find((r) => r.title === `F${i}`)?.weight), typed);
+  fire(buttonNamed('CLOSE'), 'click');
+  await running;
+});
+
+scoped('a double-precision float column is posted as it holds', async () => {
+  const memory = backend();
+  const exact = Math.fround(3.1);
+  const source = new DG.DataFrame([{name: 'project_id', type: 'string'}, {name: 'number', type: 'int'},
+    {name: 'title', type: 'string'}, {name: 'weight', type: 'double'}],
+  [{project_id: 'p1', number: 20, title: 'D', weight: exact}]);
+  source.columns.byName('weight').doublePrecision = true;
+  const {running} = await opened(memory, source);
+  await toMapping();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  assert.equal(issues(memory).find((r) => r.title === 'D')?.weight, exact, 'a float64 value is not shortened');
+  fire(buttonNamed('CLOSE'), 'click');
+  await running;
+});
+
+scoped('an empty cell of a new row is left out, so the column takes its default; an upsert still sends it', async () => {
+  const memory = backend();
+  const posts = [];
+  const table = memory.tableSync('grit.issue');
+  const real = table.validate.bind(table);
+  table.validate = (rows, options) => {
+    posts.push({rows, options});
+    return real(rows, options);
+  };
+  const {running} = await opened(memory, new DG.DataFrame([{name: 'project_id', type: 'string'},
+    {name: 'number', type: 'int'}, {name: 'title', type: 'string'}, {name: 'priority', type: 'string'}],
+  [{project_id: 'p1', number: 30, title: 'A', priority: 'high'},
+    {project_id: 'p1', number: 31, title: 'B', priority: null},
+    {project_id: 'p1', number: 0, title: 'C', priority: 'low'}]));
+  await toMapping();
+  await toPreview();
+  assert.deepEqual(posts[0].rows, [{project_id: 'p1', number: 30, title: 'A', priority: 'high'},
+    {project_id: 'p1', number: 31, title: 'B'}, {project_id: 'p1', number: 0, title: 'C', priority: 'low'}],
+  'insert: the empty cell is absent, as a new row in a form leaves it; a 0 is a value and is sent');
+
+  // an empty cell on an upsert (clear the field, or leave it) is not ruled: it keeps being sent
+  fire(buttonNamed('BACK'), 'click');
+  await flush();
+  fire(buttonNamed('BACK'), 'click');
+  await flush();
+  named('mode').value.value = 'upsert';
+  await flush();
+  await toMapping();
+  await toPreview();
+  assert.equal(posts.at(-1).options.mode, 'upsert');
+  assert.deepEqual(posts.at(-1).rows[1], {project_id: 'p1', number: 31, title: 'B', priority: null});
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
 scoped('upsert merges by the business key instead of inserting again', async () => {
   const memory = backend();
   const {running} = await opened(memory,

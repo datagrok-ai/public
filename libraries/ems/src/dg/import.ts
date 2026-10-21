@@ -223,9 +223,8 @@ class ImportFlow {
           return verdict === undefined ? '' : badge(verdict.label, {variant: verdict.variant});
         }}]),
       ...mapping.map(([target, name]) => {
-        const column = frame.columns.byName(name);
-        return {name: target, header: ImportFlow._caption(this, target),
-          render: (i: number) => text(ImportFlow._valueOrNull(column, i))};
+        const cell = ImportFlow._cell(frame.columns.byName(name));
+        return {name: target, header: ImportFlow._caption(this, target), render: (i: number) => text(cell(i))};
       })],
       cellState: {
         isChanged: () => false,
@@ -297,16 +296,34 @@ class ImportFlow {
   private _payload(frame: DG.DataFrame, mapping: [string, string][], count: number):
     Record<string, unknown>[] {
     const rows: Record<string, unknown>[] = Array.from({length: count}, () => ({}));
+    // an empty cell of a new row is left out so the column takes its default; upsert is not ruled
+    const insert = this._mode?.value.peek() !== 'upsert';
     for (const [target, name] of mapping) {
-      const column = frame.columns.byName(name);
-      for (let i = 0; i < count; i++)
-        rows[i][target] = ImportFlow._valueOrNull(column, i);
+      const cell = ImportFlow._cell(frame.columns.byName(name));
+      for (let i = 0; i < count; i++) {
+        const value = cell(i);
+        if (value !== null || !insert)
+          rows[i][target] = value;
+      }
     }
     return rows;
   }
 
-  private static _valueOrNull(column: DG.Column, i: number): unknown {
-    return column.isNone(i) ? null : column.get(i);
+  /** A cell as posted; a float column not made double precision reads back widened (3.10 →
+   * 3.0999999046325684), so it posts the shortest decimal of the same float32. */
+  private static _cell(column: DG.Column): (i: number) => unknown {
+    const float32 = column.type === 'double' && !(column as DG.FloatColumn).doublePrecision;
+    return (i) => column.isNone(i) ? null : float32 ? ImportFlow._shortest(column.get(i) as number) : column.get(i);
+  }
+
+  /** The shortest decimal that is the same float32. */
+  private static _shortest(value: number): number {
+    for (let digits = 1; digits <= 9; digits++) {
+      const shortest = Number(value.toPrecision(digits));
+      if (Math.fround(shortest) === value)
+        return shortest;
+    }
+    return value;
   }
 
   /** Only the options the form offers; an absent one is left to the server's default. */
