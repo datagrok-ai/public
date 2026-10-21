@@ -123,6 +123,28 @@ export class Collection {
         return ret >>> 0;
     }
     /**
+     * Substructure search with a query molecule (RDKit-js's `get_substruct_match(query)`, as
+     * Datagrok's Chem searches with the query its `getQueryMolSafe` builds: a `get_qmol`, or a
+     * `get_mol` with `mergeQueryHs`): every molecule `get_substruct_match` would match, as
+     * [`Collection::substructure_search`] reports them. The query's atoms and bonds match as
+     * RDKit matches them (query features, plain atoms by element, charge, isotope and
+     * radicals, H atoms merged into counts as the query holds them); stereo is ignored, as
+     * `get_substruct_match` ignores it (spike fast-search-rdkit).
+     * @param {JSMol} query
+     * @param {number} limit
+     * @returns {Uint32Array}
+     */
+    substructureSearchMol(query, limit) {
+        _assertClass(query, JSMol);
+        const ret = wasm.collection_substructureSearchMol(this.__wbg_ptr, query.__wbg_ptr, limit);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v1 = getArrayU32FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v1;
+    }
+    /**
      * Resumable substructure search over scan positions `[start, end)`
      * (screen-sidecar sorted positions when indexed, input order in direct
      * mode), capped at `limit` hits (0 = unlimited). Walking consecutive
@@ -209,7 +231,9 @@ export class CollectionBuilder {
     /**
      * Parse + fingerprint a chunk of SMILES, appending each to the index.
      * Returns the number successfully added; unparseable / unsupported SMILES
-     * are skipped and counted in [`CollectionBuilder::failed`].
+     * are skipped and counted in [`CollectionBuilder::failed`]. In a build with
+     * RDKit-js's `JSMol` API (chem-wasm, crux-wasm's chem module) an item may be a
+     * MOL block: read as Datagrok Chem's `getMolSafe` reads it, its H atoms kept.
      * @param {string[]} smiles
      * @returns {number}
      */
@@ -2562,6 +2586,55 @@ export function get_inchikey_for_inchi(_inchi) {
         const ptr0 = passStringToWasm0(_inchi, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.get_inchikey_for_inchi(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * `get_mces(mol1, mol2, details)`: RDKit's `rascalMCES(mol1, mol2, opts)`: the Maximum
+ * Common Edge Substructure of two molecules (the largest set of bonds they share, possibly
+ * in several fragments), when their similarity estimate reaches `similarityThreshold`.
+ *
+ * `details`: a JSON object of `RascalOptions` fields by RDKit's names
+ * (`similarityThreshold`, `completeAromaticRings`, `ringMatchesRingOnly`,
+ * `completeSmallestRings`, `exactConnectionsMatch`, `singleLargestFrag`, `minFragSize`,
+ * `maxFragSeparation`, `allBestMCESs`, `maxBestMCESs`, `timeout`, `doEquivBondPruning`,
+ * `returnEmptyMCES`, `maxBondMatchPairs`, `equivalentAtoms`, `ignoreBondOrders`,
+ * `ignoreAtomAromaticity`, `minCliqueSize`); each defaults to RDKit's except
+ * `similarityThreshold`, 0.5 here (RDKit: 0.7). Other keys are ignored. `timeout` (seconds,
+ * 60 by default, -1 for none) runs on the page's clock.
+ *
+ * Returns a JSON array of results, as RDKit's `FindMCES` returns a list: empty when the
+ * pair is below the threshold (unless `returnEmptyMCES`), one result by default, every best
+ * MCES with `allBestMCESs`. Each result, with the Python wrapper's names:
+ * `{"smartsString", "atomMatches": [[atom of mol1, atom of mol2], ...], "bondMatches": [[bond
+ * of mol1, bond of mol2], ...], "similarity", "tier1Sim", "tier2Sim", "timedOut",
+ * "numFragments", "largestFragmentSize"}` (the indices each molecule's own: what a
+ * highlight takes). Throws on details that are not JSON or a bad `equivalentAtoms`.
+ * @param {JSMol} mol1
+ * @param {JSMol} mol2
+ * @param {string | null} [details]
+ * @returns {string}
+ */
+export function get_mces(mol1, mol2, details) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        _assertClass(mol1, JSMol);
+        _assertClass(mol2, JSMol);
+        var ptr0 = isLikeNone(details) ? 0 : passStringToWasm0(details, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ret = wasm.get_mces(mol1.__wbg_ptr, mol2.__wbg_ptr, ptr0, len0);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {

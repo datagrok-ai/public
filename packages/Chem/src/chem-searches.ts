@@ -22,7 +22,7 @@ import {SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndTyp
 import {SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {filter} from 'rxjs/operators';
-import {cruxSubstructureSearch, getCruxQuery, isCruxSearch} from './crux/crux-searches';
+import {cruxReadsQuery, cruxSubstructureSearch, isCruxSearch} from './crux/crux-searches';
 import {ChemicalEngine, isCruxRequested} from './engine/chem-engine';
 import {fingerprintsByEngine, fingerprintsKey} from './engine/worker-jobs';
 import {cruxModuleSync} from './engine/crux-module';
@@ -346,15 +346,12 @@ export async function chemSubstructureSearchLibrary(
   const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOff}_${fp}`;
   currentSearchSmiles[filterType][searchKey] = currentSearch;
   _package.logger.debug(`in chemSubstructureSearchLibrary, filterType: ${filterType}, searchkey: ${searchKey}, currentSearch: ${currentSearch}`);
-  if (isCruxSearch(searchType)) {
-    const cruxQuery = await getCruxQuery(molString, molBlockFailover);
-    if (cruxQuery !== null) {
-      subscribeToColumnChanges(molStringsColumn);
-      return cruxSubstructureSearch(molStringsColumn, cruxQuery, molString, molBlockFailover, awaitAll, searchType,
-        includeMask, () => currentSearchSmiles[filterType][searchKey] !== currentSearch,
-        (result) => rdkitSubstructureSearch(molStringsColumn, molString, molBlockFailover, filterType,
-          columnIsCanonicalSmiles, awaitAll, searchType, similarityCutOff, fp, includeMask, result));
-    }
+  if (isCruxSearch(searchType) && await cruxReadsQuery(molString, molBlockFailover)) {
+    subscribeToColumnChanges(molStringsColumn);
+    return cruxSubstructureSearch(molStringsColumn, molString, molBlockFailover, awaitAll, searchType, includeMask,
+      () => currentSearchSmiles[filterType][searchKey] !== currentSearch,
+      (result) => rdkitSubstructureSearch(molStringsColumn, molString, molBlockFailover, filterType,
+        columnIsCanonicalSmiles, awaitAll, searchType, similarityCutOff, fp, includeMask, result));
   }
   return rdkitSubstructureSearch(molStringsColumn, molString, molBlockFailover, filterType, columnIsCanonicalSmiles,
     awaitAll, searchType, similarityCutOff, fp, includeMask, new BitArray(molStringsColumn.length));

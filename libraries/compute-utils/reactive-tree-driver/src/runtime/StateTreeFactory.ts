@@ -1,5 +1,6 @@
 import {Observable, defer, of, merge, from} from 'rxjs';
-import {map, mapTo, toArray} from 'rxjs/operators';
+import {catchError, map, mapTo, toArray} from 'rxjs/operators';
+import {historyUtils} from '../../../history-utils';
 import {NodePath} from '../data/BaseTree';
 import {getPipelineRef, PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState} from '../config/PipelineInstance';
@@ -171,15 +172,16 @@ export function fromPipelineInstanceConfig({
 
   const tree = traverse(instanceConfig, (acc, state, path) => {
     const nodeConf = getConfigByInstancePath(path.map((p) => p.id), config, refMap);
+    const nodeReadonly = isReadonly || !!state.isReadonly;
     if (!state.steps && !isPipelineStepConfig(nodeConf)) {
       const tree = fromPipelineConfig({
         config, startNode: nodeConf, startPath: path, startState: acc,
-        isReadonly, annotationChecks, batchLinks, mockMode, logger,
+        isReadonly: nodeReadonly, annotationChecks, batchLinks, mockMode, logger,
       });
       (tree.nodeTree.getItem(path) as PipelineNodeBase).initState(state);
       return tree;
     }
-    const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly, logger);
+    const [node, ppath, idx] = makeTreeNode(config, refMap, path, nodeReadonly, logger);
     node.initState(state);
     return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, annotationChecks, batchLinks, mockMode, logger});
   }, startState);
@@ -191,6 +193,19 @@ export function loadOrCreateCalls(stateTree: StateTree, mockMode: boolean) {
     const pendingFuncCallLoads = stateTree.nodeTree.traverse(stateTree.nodeTree.root, (acc, node) => {
       const item = node.getItem();
       if (isFuncCallNode(item)) {
+        const sourceRunId = item.sourceRunId;
+        if (!mockMode && sourceRunId && item.sourceRunTitle === undefined) {
+          // a deleted source run must not fail the load, it only has no title then
+          acc = [...acc, defer(() => from(historyUtils.shallowLoadRun(sourceRunId))).pipe(
+            map((run) => {
+              item.sourceRunTitle = run.options['title'] ?? null;
+            }),
+            catchError(() => {
+              item.sourceRunTitle = null;
+              return of(undefined);
+            }),
+          )];
+        }
         if (item.instancesWrapper.getInstance())
           return acc;
         else if (mockMode) {
@@ -206,7 +221,7 @@ export function loadOrCreateCalls(stateTree: StateTree, mockMode: boolean) {
           return [...acc, obs$];
         } else if (item.instancesWrapper.id == null && item.pendingId == null) {
           const obs$ = defer(() => {
-            return from(makeFuncCall(item.config.nqName, false, item.instancesWrapper.initialValues)).pipe(
+            return from(makeFuncCall(item.config.nqName, item.isReadonly, item.instancesWrapper.initialValues)).pipe(
               map((data) => item.initAdapter(data, true)),
             );
           });

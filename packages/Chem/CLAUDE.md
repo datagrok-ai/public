@@ -68,7 +68,6 @@ User documentation: [Cheminformatics](../../help/datagrok/solutions/domains/chem
 | `src/rdkit-service/rdkit-service-worker-similarity.ts`   | Fingerprint computation worker                         |
 | `src/crux/crux-searches.ts`                              | Crux engine switch + Crux counterpart of `chemSubstructureSearchLibrary` |
 | `src/crux/crux-service.ts`, `src/crux/crux.worker.ts`    | Crux column indexes, segmented over a worker pool      |
-| `src/crux/crux-smarts.ts`                                | RDKit query mol → SMARTS crux matches the same way (null → RDKit) |
 | `src/crux/crux-sketcher.ts`                              | The Crux sketcher: `SketcherBase` over the vendored Crux Sketch |
 | `src/open-chem/ocl-sketcher.ts`                          | OpenChemLib sketcher wrapper                           |
 | `src/open-chem/sdf-importer.ts`                          | SDF file import                                        |
@@ -110,7 +109,7 @@ instead of the chem-chem container (`descriptors/descriptors-engine.ts`: the tre
 values from the Crux workers), and the scaffold tree from a Crux worker instead of `scripts/scaffold_tree.py`;
 fingerprints and structural alerts / pharmacophore features run on the Crux pool (the RDKit worker's own code on the
 Crux module, `engine/worker-jobs.ts`; a cached fingerprint column belongs to one engine, saving one drops the other's);
-everything else stays RDKit. Other
+an activity cliff's MCS is Rascal's MCES from a Crux worker instead of FMCS; everything else stays RDKit. Other
 packages get RDKit objects in both modes (`getRdKitModule`, `getRdKitService`); in Crux mode the pictures and values of
 the moved functions come from Crux. How a feature moves behind the
 setting: `src/engine/README.md`. Tests: category `chemical engine`. Whole suites in Crux mode on a stand:
@@ -130,11 +129,16 @@ tree, `searchSubstructure`, filter operators) goes through it; tests switch it w
 Crux ([crux-core](https://github.com/datagrok-ai/crux-core), Rust → wasm) indexes a column once, in
 segments that double in size per round over `hardwareConcurrency - 2` workers (at most 16, `MAX_WORKERS`: each holds
 a WebAssembly memory, and a page has room for about 120 of them) and are built by the first
-search that reaches them; a changed column rebuilds only the segments whose molecules changed. The query goes
-through `getQueryMolSafe` as for RDKit (a typed query whose SMILES reading has radicals, like `[OH]` or `[CH3]`, is
-read as SMARTS by both engines) and is written as SMARTS without H counts of molecule atoms and without stereo (RDKit
-matches neither); molblock radicals, isotopes and `v`/`x`/`h`/`r`/`Rn`/`z`/`^` primitives, other search types and
-anything crux fails to parse run on RDKit. Molblock columns are converted to SMILES by RDKit first. crux reads
+search that reaches them; a changed column rebuilds only the segments whose molecules changed. The query is the
+molecule `getQueryMolSafe` builds, as for RDKit (a typed query whose SMILES reading has radicals, like `[OH]` or
+`[CH3]`, is read as SMARTS by both engines): each crux worker builds it on Chem's Crux module and searches with
+`Collection.substructureSearchMol`, which matches what RDKit's `get_substruct_match` matches (explicit H, `R`/`r`/`v`/
+`h`/`x`, isotopes, radicals; rings are the SSSR of the sanitized molecule; stereo ignored, as there). Crux searches every
+query its module reads (`CruxService.readsQuery`, on the main thread); one it does not read, a CXSMILES whose
+extension holds query features its reader skips (query atom labels, `m:`, `rb:`, `u:`, `s:`, ...) and other search
+types run on RDKit. A molblock column's molecules are read by the crux worker that indexes them, as Chem's `getMolSafe` reads
+them (H atoms kept), so a crux search starts no RDKit worker; the RDKit pool starts only for a query that falls back to
+RDKit or a failed search. crux reads
 molecules like Chem's RDKit, including its `kekulize: false` retry (`setLenient(true)` in `crux.worker.ts`); rows it
 still cannot parse are matched by RDKit on the main thread. Crux searches do not queue on the chem critical section,
 so a filter search replaced by a newer one on the column stops itself (the RDKit path drops it when it gets the

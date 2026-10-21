@@ -2,6 +2,9 @@
 
 ## v.next
 
+* RTD: A loaded nested pipeline records the run it came from in `sourceRunId`, which is saved and kept on duplicate
+* RTD: `loadDynamicItem` also loads a saved run into a step, editable or read-only, and records it in `sourceRunId`; the step's view state gets the source run title (`sourceRunTitle`, shallow-loaded on every load, not saved, empty if the run was deleted)
+* RTD: Fixed duplicate turning read-only subtrees into editable ones; loading into a read-only pipeline now fails
 * RTD: Added the `count` link query selector: `count()` or `count(a|b)` at the end of a `from` query reads the number of matching child steps, and the link runs again when that number changes
 * RTD: Added `setActionVisible` to node meta links: an `actions` query addresses the actions, a later link overrides an earlier one like meta, and `Driver.hiddenActions$` publishes the hidden ones; `showWhen`/`hideWhen` hide an action the same way and withdraw when they stop matching; removed `ViewAction.visible` and the validator controller's `isActionVisible` (which actions a validation result offers is up to the validator)
 * RTD: Fixed validator actions going stale after adding or moving steps: `getValidationAction` returned a removed action and `isActionVisible` an outdated visibility until the validator was recreated; links now resolve actions when matched, and a changed action recreates and reruns them

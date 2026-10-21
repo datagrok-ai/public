@@ -808,7 +808,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
           } else {
             const columnsToInclude = [pepCol];
             if (this.webLogoAggregationType !== DG.AGG.TOTAL_COUNT && this.webLogoAggregationColumnName) {
-              const aggCol = this.dataFrame.columns.byName(this.webLogoAggregationColumnName);
+              const aggCol = filteredDf.columns.byName(this.webLogoAggregationColumnName);
               if (aggCol)
                 columnsToInclude.push(aggCol);
             }

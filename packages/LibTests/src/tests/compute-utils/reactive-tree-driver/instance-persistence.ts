@@ -4,7 +4,8 @@ import {PipelineConfiguration, historyUtils} from '@datagrok-libraries/compute-u
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
-import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {FuncCallNode, PipelineNodeBase} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {deserializeRestrictions} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
@@ -84,7 +85,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
       await outerTree.loadSubTree(root.uuid, metaCall!.id, 'pipelinePar', 1, false).toPromise();
       const loadedTree = outerTree.nodeTree.getNode([{idx: 1}]);
       const lc = StateTree.toSerializedStateRec(loadedTree, {disableNodesUUID: true, disableCallsUUID: true});
-      expectDeepEqual(lc, sc);
+      expectDeepEqual(lc, {...sc, sourceRunId: metaCall!.id});
     } finally {
       await deleteRuns([metaCall?.id, ...savedCallIds(tree.toSerializedState())]);
     }
@@ -182,6 +183,185 @@ category('ComputeUtils: Driver state tree persistence', async () => {
       const stepIds = steps.map((step) => (step as StepFunCallState).funcCall?.id);
       await deleteRuns([driver.currentMetaCallData$.value?.id, ...stepIds]);
       driver.close();
+    }
+  });
+
+  test('Read-only nested load records its source and stays read-only after save', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper2', {version: '1.0'}).toPromise();
+    const tree = StateTree.fromPipelineConfig({config: await getProcessedConfig(config)});
+    await tree.init().toPromise();
+    const metaCall = await tree.save().toPromise();
+    const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockWrapper3', {version: '1.0'}).toPromise();
+    const outerPconf = await getProcessedConfig(outerConfig);
+    const outerTree = StateTree.fromPipelineConfig({config: outerPconf});
+    let outerMetaCall: DG.FuncCall | undefined;
+    try {
+      await outerTree.init().toPromise();
+      const root = outerTree.nodeTree.getItem([]);
+      await outerTree.loadSubTree(root.uuid, metaCall!.id, 'pipelinePar', 1, true).toPromise();
+      const step = outerTree.nodeTree.getItem([{idx: 1}, {idx: 0}]);
+      let error: string | undefined;
+      try {
+        await outerTree.runStep(step.uuid).toPromise();
+      } catch (e: any) {
+        error = e.message;
+      }
+      expectDeepEqual(error?.includes('read-only'), true, {prefix: 'Run'});
+      outerMetaCall = await outerTree.save().toPromise();
+      const loadedTree = await StateTree.load({dbId: outerMetaCall!.id, config: outerPconf}).toPromise();
+      await loadedTree.init().toPromise();
+      const loaded = loadedTree.nodeTree.getItem([{idx: 1}]) as PipelineNodeBase;
+      const loadedStep = loadedTree.nodeTree.getItem([{idx: 1}, {idx: 0}]) as FuncCallNode;
+      expectDeepEqual(loaded.sourceRunId, metaCall!.id, {prefix: 'Source'});
+      expectDeepEqual(loaded.isReadonly, true, {prefix: 'Locked item'});
+      expectDeepEqual(loadedStep.instancesWrapper.getInstance()?.isReadonly, true, {prefix: 'Locked call'});
+      expectDeepEqual(loadedTree.nodeTree.getItem([{idx: 0}]).isReadonly, false, {prefix: 'Editable item'});
+    } finally {
+      await deleteRuns([metaCall?.id, outerMetaCall?.id, ...savedCallIds(tree.toSerializedState()),
+        ...savedCallIds(outerTree.toSerializedState())]);
+    }
+  });
+
+  test('Duplicate keeps a nested read-only load read-only', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {version: '1.0'}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
+    const metaCall = await tree.save().toPromise();
+    try {
+      const outerConfig =
+        await callHandler<PipelineConfiguration>('LibTests:MockWrapper3', {version: '1.0'}).toPromise();
+      const outerTree = StateTree.fromPipelineConfig({config: await getProcessedConfig(outerConfig)});
+      await outerTree.init().toPromise();
+      const item = outerTree.nodeTree.getItem([{idx: 0}]);
+      await outerTree.loadSubTree(item.uuid, metaCall!.id, 'pipeline1', 1, true, true).toPromise();
+      await outerTree.duplicateSubtree(item.uuid).toPromise();
+      const copy = outerTree.nodeTree.getItem([{idx: 1}, {idx: 1}]);
+      const copyStep = outerTree.nodeTree.getItem([{idx: 1}, {idx: 1}, {idx: 0}]) as FuncCallNode;
+      expectDeepEqual(copy.isReadonly, true, {prefix: 'Locked item'});
+      expectDeepEqual((copy as PipelineNodeBase).sourceRunId, metaCall!.id, {prefix: 'Source'});
+      expectDeepEqual(copyStep.isReadonly, true, {prefix: 'Locked step'});
+      expectDeepEqual(copyStep.instancesWrapper.getInstance()?.isReadonly, true, {prefix: 'Locked call'});
+      expectDeepEqual(outerTree.nodeTree.getItem([{idx: 1}, {idx: 0}]).isReadonly, false, {prefix: 'Editable step'});
+    } finally {
+      await deleteRuns([metaCall?.id, ...savedCallIds(tree.toSerializedState())]);
+    }
+  });
+
+  test('Loading into a read-only workflow fails', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {version: '1.0'}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
+    const metaCall = await tree.save().toPromise();
+    try {
+      const outerConfig =
+        await callHandler<PipelineConfiguration>('LibTests:MockWrapper2', {version: '1.0'}).toPromise();
+      const outerPconf = await getProcessedConfig(outerConfig);
+      const outerTree = StateTree.fromPipelineConfig({config: outerPconf, isReadonly: true});
+      await outerTree.init().toPromise();
+      const root = outerTree.nodeTree.getItem([]);
+      let error: string | undefined;
+      try {
+        await outerTree.loadSubTree(root.uuid, metaCall!.id, 'pipeline1', 1, false, true).toPromise();
+      } catch (e: any) {
+        error = e.message;
+      }
+      expectDeepEqual(error?.includes('read-only'), true, {prefix: 'Error'});
+    } finally {
+      await deleteRuns([metaCall?.id, ...savedCallIds(tree.toSerializedState())]);
+    }
+  });
+
+  test('Read-only step load records its source and feeds later steps', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {version: '1.0'}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const source = DG.Func.byName('LibTests:TestAdd2').prepare({a: 2, b: 3});
+    await source.call();
+    source.options['title'] = 'Read-only source';
+    await historyUtils.saveRun(source, {newId: true});
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    let metaCall: DG.FuncCall | undefined;
+    try {
+      await tree.init().toPromise();
+      await tree.loadSubTree(tree.nodeTree.getItem([]).uuid, source.id, 'step1', 0, true, true).toPromise();
+      const loaded = tree.nodeTree.getItem([{idx: 0}]) as FuncCallNode;
+      expectDeepEqual(loaded.isReadonly, true, {prefix: 'Locked step'});
+      expectDeepEqual(loaded.sourceRunId, source.id, {prefix: 'Source'});
+      expectDeepEqual(loaded.sourceRunTitle, 'Read-only source', {prefix: 'Source title'});
+      expectDeepEqual(loaded.getStateStore().getState('res'), 5, {prefix: 'Loaded output'});
+      expectDeepEqual(tree.nodeTree.getItem([{idx: 1}]).getStateStore().getState('a'), 5, {prefix: 'Later step'});
+      let error: string | undefined;
+      try {
+        await tree.runStep(loaded.uuid).toPromise();
+      } catch (e: any) {
+        error = e.message;
+      }
+      expectDeepEqual(error?.includes('read-only'), true, {prefix: 'Run'});
+      metaCall = await tree.save().toPromise();
+      const loadedTree = await StateTree.load({dbId: metaCall!.id, config: pconf}).toPromise();
+      await loadedTree.init().toPromise();
+      const reloaded = loadedTree.nodeTree.getItem([{idx: 0}]) as FuncCallNode;
+      expectDeepEqual(reloaded.isReadonly, true, {prefix: 'Reloaded locked step'});
+      expectDeepEqual(reloaded.sourceRunId, source.id, {prefix: 'Reloaded source'});
+      expectDeepEqual(reloaded.sourceRunTitle, 'Read-only source', {prefix: 'Reloaded source title'});
+      expectDeepEqual(JSON.stringify(tree.toSerializedState()).includes('sourceRunTitle'), false,
+        {prefix: 'Not saved'});
+      expectDeepEqual(reloaded.instancesWrapper.getInstance()?.isReadonly, true, {prefix: 'Reloaded locked call'});
+    } finally {
+      await deleteRuns([source.id, metaCall?.id, ...savedCallIds(tree.toSerializedState())]);
+    }
+  });
+
+  test('Editable step load records its source and stays runnable', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {version: '1.0'}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const source = DG.Func.byName('LibTests:TestMul2').prepare({a: 7, b: 2});
+    await source.call();
+    source.options['title'] = 'Editable source';
+    await historyUtils.saveRun(source, {newId: true});
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    try {
+      await tree.init().toPromise();
+      await tree.loadSubTree(tree.nodeTree.getItem([]).uuid, source.id, 'step2', 1, false, true).toPromise();
+      const loaded = tree.nodeTree.getItem([{idx: 1}]) as FuncCallNode;
+      expectDeepEqual(loaded.isReadonly, false, {prefix: 'Editable step'});
+      expectDeepEqual(loaded.sourceRunId, source.id, {prefix: 'Source'});
+      expectDeepEqual(loaded.sourceRunTitle, 'Editable source', {prefix: 'Source title'});
+      expectDeepEqual(loaded.getStateStore().getState('res'), 14, {prefix: 'Loaded output'});
+      loaded.getStateStore().editState('b', 3);
+      await tree.runStep(loaded.uuid).toPromise();
+      expectDeepEqual(loaded.getStateStore().getState('res'), 21, {prefix: 'Rerun output'});
+    } finally {
+      await deleteRuns([source.id, ...savedCallIds(tree.toSerializedState())]);
+    }
+  });
+
+  test('A deleted source run leaves the loaded step without a title', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {version: '1.0'}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const source = DG.Func.byName('LibTests:TestAdd2').prepare({a: 2, b: 3});
+    await source.call();
+    source.options['title'] = 'Deleted source';
+    await historyUtils.saveRun(source, {newId: true});
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    let metaCall: DG.FuncCall | undefined;
+    let sourceDeleted = false;
+    try {
+      await tree.init().toPromise();
+      await tree.loadSubTree(tree.nodeTree.getItem([]).uuid, source.id, 'step1', 0, true, true).toPromise();
+      metaCall = await tree.save().toPromise();
+      await deleteRuns([source.id]);
+      sourceDeleted = true;
+      const loadedTree = await StateTree.load({dbId: metaCall!.id, config: pconf}).toPromise();
+      await loadedTree.init().toPromise();
+      const reloaded = loadedTree.nodeTree.getItem([{idx: 0}]) as FuncCallNode;
+      expectDeepEqual(reloaded.sourceRunId, source.id, {prefix: 'Source'});
+      expectDeepEqual(reloaded.sourceRunTitle, null, {prefix: 'No title'});
+      expectDeepEqual(reloaded.getStateStore().getState('res'), 5, {prefix: 'Own copy loaded'});
+    } finally {
+      await deleteRuns(
+        [sourceDeleted ? undefined : source.id, metaCall?.id, ...savedCallIds(tree.toSerializedState())]);
     }
   });
 

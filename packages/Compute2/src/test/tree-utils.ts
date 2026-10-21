@@ -125,6 +125,11 @@ category('TreeWizard: step permissions', () => {
     expectDeepEqual(permissions(inDynamic({configId: 's'})), [true, true, true], {prefix: 'Editable'});
   });
 
+  test('A read-only item of an editable workflow can be moved and removed but not duplicated', async () => {
+    const parent = mockDynamicPipeline('dyn', [], {stepTypes: [{configId: 's'}]});
+    expectDeepEqual(permissions(stat(mockFuncCall('s', {isReadonly: true}), parent)), [true, true, false]);
+  });
+
   test('Each disableUI flag turns off its own action for that step type', async () => {
     expectDeepEqual(permissions(inDynamic({configId: 's', disableUIDragging: true})), [false, true, true]);
     expectDeepEqual(permissions(inDynamic({configId: 's', disableUIRemoving: true})), [true, false, true]);

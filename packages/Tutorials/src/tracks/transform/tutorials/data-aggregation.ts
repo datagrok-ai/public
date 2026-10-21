@@ -75,7 +75,7 @@ export class AggregationTutorial extends Tutorial {
     const groupByCol2 = 'SEX';
     await this.action(`Group rows by column "${groupByCol2}"`, findColTag(groupByRoot, groupByCol2),
     groupByRoot.querySelector('.grok-pivot-column-tags-plus') as HTMLElement,
-    'Another way to add a column to group by is to drag it from the column list on the right. ' +
+    'Another way to add a column to group by is to drag it from the column list on the left. ' +
       'Add the second column to the grouping list.',
     () => pivotViewer.setOptions({groupByColumnNames: [groupByCol1, groupByCol2]}));
 
@@ -128,7 +128,7 @@ export class AggregationTutorial extends Tutorial {
 
     await this.action('Change the aggregation function to "med"',
       findColTag(aggRoot, 'med(WEIGHT)', () => $(aggRoot).find(colTagSelector).length === 1), aggrTag(),
-      'To change the aggregation function, right-click the "avg(WEIGHT), ' +
+      'To change the aggregation function, right-click "avg(WEIGHT)", ' +
       'select <b>Aggregation</b> from the context menu, and choose <b>med</b>.',
       () => pivotViewer.setOptions({aggregateAggTypes: ['med'], aggregateColumnNames: ['WEIGHT']}),
     );
@@ -169,7 +169,11 @@ export class AggregationTutorial extends Tutorial {
     await this.action('Remove selection by pressing "Esc"', this.t!.onSelectionChanged.pipe(filter(() =>
       !this.t!.selection.anyTrue)), null, 'There are multiple ways to deselect all or certain rows, hitting ' +
       '<b>Esc</b> being the simplest. It removes selection entirely, both from rows and columns.',
-    () => this.t!.selection.setAll(false));
+    () => {
+      pivotViewer?.root.querySelector('.d4-grid [name="overlay"]')
+        ?.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', keyCode: 27, bubbles: true}));
+      this.t!.selection.setAll(false);
+    });
 
     if (pivotViewer)
       pivotViewer.props.rowSource = DG.RowSet.All;
@@ -199,7 +203,7 @@ export class AggregationTutorial extends Tutorial {
           JSON.stringify(history[history.length - 1]).toLowerCase() === serializedParams;
     })), $('i.grok-icon.fa-history.d4-command-bar-icon')[0],
     'Click on the history icon and select <b>Save parameters</b> from the menu. Note that parameters are ' +
-      'also saved automatically when you click "OK" to add the aggregated dataframe to the workspace. This ' +
+      'also saved automatically when you click "ADD" to add the aggregated dataframe to the workspace. This ' +
       'can be useful if you choose to reset the entered parameters. To return previously used parameters, ' +
       'simply select them when clicking the history icon.', async () => {
         $('i.grok-icon.fa-history.d4-command-bar-icon')[0]!.click();

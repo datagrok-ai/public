@@ -122,7 +122,7 @@ export class FiltersTutorial extends Tutorial {
     const resetIcon = () => $(filters.root).find('i.grok-icon.fa-arrow-rotate-left')[0] ?? null;
     await this.action('Reset the filter',
       this.t!.onFilterChanged.pipe(filter((_) => this.t!.filter.trueCount === this.t!.rowCount)), resetIcon,
-      'Press <b>Esc</b> or click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.',
+      'Click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.',
       () => resetIcon()!.click());
 
     this.title('Numerical filters');
@@ -159,7 +159,7 @@ export class FiltersTutorial extends Tutorial {
 
     await this.action('Save the current filter as a column', grok.functions.onAfterRunAction.pipe(
       filter((call: DG.FuncCall) => call.func.name === 'FilterToColumn')), null,
-    'To save the current filter state into a boolean column, use the <b>Filter to column...</b>' +
+    'To save the current filter state into a boolean column, use the <b>Filter to Column...</b>' +
       ' command in the context menu. A new column will be added to the dataframe. By default, ' +
       'its name corresponds to the applied filters, for example, <b>AGE: [40,60]</b>, but you ' +
       'can change it from the dialog when saving.', Tutorial.apiSkip(async () => {
@@ -169,7 +169,7 @@ export class FiltersTutorial extends Tutorial {
     }));
 
     await this.contextMenuAction('Save the filter configuration as "AGE: [40,60]"', 'Save...', null,
-      'Choose <b>Save or apply | Save...</b> in the context menu ' +
+      'Choose <b>Save or Apply | Save...</b> in the context menu ' +
       'and keep the default name <b>AGE: [40,60]</b>.', async () => {
         await Tutorial.runContextMenu(filters.root, 'Save...');
         (await Tutorial.waitFor(() => DG.Dialog.getOpenDialogs().find((d) => d.title?.startsWith('Save filter'))))!
@@ -182,7 +182,7 @@ export class FiltersTutorial extends Tutorial {
       () => resetIcon()!.click());
 
     await this.contextMenuAction('Restore the filter state', 'AGE: [40,60]', null,
-      'Find the saved filter state in <b>Save or apply</b> and click on its name. You should ' +
+      'Find the saved filter state in <b>Save or Apply</b> and click on its name. You should ' +
       'see that the dataset is filtered to patients between the ages of 40 and 60 again.', filters.root);
   }
 }
