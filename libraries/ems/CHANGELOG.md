@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Authoring: Fixed the "Create domain schema" connection picker offering connections that cannot be introspected or are not on a JDBC engine, and showing a connection without a friendly name as blank
 * History: Fixed json and list columns showing as changed on every update (`[object Object] → [object Object]`); json values read as JSON, and restores show "restored"
 * Forms: Showed the column defaults on a new row's form
 * Memory backend: Filled the column defaults into a draft, and applied the default on an insert that leaves the column out, as the server does

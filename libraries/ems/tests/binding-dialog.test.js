@@ -18,6 +18,7 @@ import {Scope, notify} from '@datagrok-libraries/u2';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
+const DG = await import('datagrok-api/dg');
 const {domains} = await import('../src/dg/facade.js');
 
 const DRAFT = JSON.parse(readFileSync(new URL('./fixtures/authoring/northwind-draft.json', import.meta.url), 'utf8'));
@@ -507,6 +508,34 @@ scoped('every connection past the first page is offered; the identifier is probe
     REGISTERED.delete('conn_000_public');
     REGISTERED.delete('conn_000_public_2');
   }
+});
+
+scoped('only JDBC connections whose source browses schemas are offered; a nameless one is shown and proposed by its name', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const NAMELESS = {id: 'c-nn', nqName: 'P:Scratch', name: 'Scratch', friendlyName: '', dataSource: 'MS SQL', isDatabase: true,
+    parameters: {connectionType: 'JDBC'}};
+  const graph = {id: 'c-neo', friendlyName: 'Graph', dataSource: 'Neo4j', isDatabase: true};
+  const adbc = {id: 'c-adbc', friendlyName: 'Arrow', dataSource: 'Postgres', isDatabase: true,
+    parameters: {connectionType: 'ADBC'}};
+  grok.dapi.connections.list = async () => [CONN, NAMELESS, adbc, graph, ...NOT_BINDABLE];
+  const byType = DG.ConnectionDataSource.byType;
+  DG.ConnectionDataSource.byType = (type) => ({type, canBrowseSchema: type !== 'Neo4j'});
+  const dialog = new domains.authoring.BindingDialog();
+  const done = dialog.open();
+  await flush();
+  assert.deepEqual(dialog.connection.items.map((i) => i.label), ['PostgresNorthwind (Postgres)', 'Scratch (MS SQL)']);
+  dialog.connection.value.value = NAMELESS.id;
+  await flush();
+  dialog.schema.value.value = 'public';
+  await flush();
+  dialog.wizard.next();
+  await flush();
+  assert.equal(dialog.editor.model.friendlyName.value, 'Scratch public');
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null);
+  DG.ConnectionDataSource.byType = byType;
 });
 
 scoped('a warehouse read that never answers fails by name after the timeout; the dialog stays usable', async () => {

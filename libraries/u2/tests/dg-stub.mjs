@@ -45,6 +45,11 @@ export class Permission {
   static CREATE_DOMAIN_SCHEMA = 'CreateDomainSchema';
 }
 
+/** js-api's \`ConnectionDataSource\`: \`byType\` is a field a test replaces; by default every source browses schemas. */
+export class ConnectionDataSource {
+  static byType = (type) => ({type, canBrowseSchema: true});
+}
+
 /** A 2-role sample of js-api's \`functionRoles\` (const.ts:456) — what the functions browser's
  * roles pane is fed. */
 export const functionRoles = [
