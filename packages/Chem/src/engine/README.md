@@ -50,8 +50,9 @@ identically. A fingerprint cache belongs to the engine that filled it: the RDKit
 pattern fingerprints (the plain-named columns) on RDKit in both modes.
 
 In Crux mode the RDKit pool is not started for what has moved; everything else (InChI, conversions, validation,
-reaction drawing, the substructure search's RDKit path, the context panel's one-molecule widgets) is RDKit in both
-modes, and toxicity and drug-likeness stay on OpenChemLib.
+reaction drawing, the MMP viewer's pair MCS and generated molecules (`mmpGetMcs`, `mmpLinkFragments`), the
+substructure search's RDKit path, the context panel's one-molecule widgets) is RDKit in both modes, and toxicity and
+drug-likeness stay on OpenChemLib.
 
 Descriptors in Crux mode are `dockerfiles/chem/chem.py` as this package has it, on the RDKit release Crux reproduces:
 the same tree (groups, versions, names, order; the descriptions RDKit's docstrings give) and the same values (2D within
