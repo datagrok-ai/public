@@ -446,7 +446,7 @@ test('updateWhere: the filter selects, the cap limits, hasMore says the filter m
   assert.deepEqual(await issue.updateWhere('done = false', {priority: 'high'}, {limit: 1}),
     {updated: 1, hasMore: true}, 'the cap stops at limit and reports the rest');
   assert.deepEqual(await issue.updateWhere('done = false', {priority: 'low'}, {limit: 9999}),
-    {updated: 2, hasMore: false}, 'and a limit past the cap is clamped down to it');
+    {updated: 1, hasMore: false}, 'and a limit past the cap is clamped down to it; the row already low is left alone');
   assert.deepEqual(await issue.updateWhere('title starts "zzz"', {priority: 'high'}),
     {updated: 0, hasMore: false});
 });
