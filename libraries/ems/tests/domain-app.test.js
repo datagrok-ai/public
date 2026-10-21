@@ -15,7 +15,7 @@ import {backend} from './domain-fixtures.mjs';
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
 const {DomainApp} = await import('../src/dg/app.js');
-const {DgDomainTable} = await import('../src/dg/backend.js');
+const {DgDomainTable, DgDomainBackend} = await import('../src/dg/backend.js');
 const grok = await import('datagrok-api/grok');
 
 function scoped(name, body) {
@@ -445,49 +445,35 @@ scoped('DomainTable.app(): the shell rewrites the view path only AFTER onViewAdd
   }
 });
 
-scoped('a refused save re-reads the access, so New follows a grant revoked meanwhile (EMS-032)', async () => {
-  const {app: a} = await app();
-  const add = a.ribbon().main[0];
-  assert.equal(add.root.hidden, false);
-  const memory = emsBackends.domain;
-  memory.tableSync('grit.issue').access = async () => ({can: {view: true, insert: false, edit: false,
-    delete: false, share: false}, fields: {title: 'readonly'}});
-  memory.transaction = async () => {
-    throw Object.assign(new Error('Edit is required on "grit.issue"'), {code: 'forbidden'});
-  };
-  a.listSource.rows.byKey('i1').title = 'Revoked meanwhile';
-  assert.equal(await a.session.save(), false);
-  await flush();
-  assert.equal(a.listSource.access.value.can('insert'), false);
-  assert.equal(add.root.hidden, true, 'New is gated by the access the server answers now');
-  a.dispose();
-});
-
-scoped('platform path: a forbidden saveAll drops the caches first, then the sources re-read (EMS-032)', async () => {
+scoped('after a save refused with 403 every source re-reads the access, so New hides; no other refusal re-reads (EMS-032)', async () => {
   const DG = await import('datagrok-api/dg');
-  const {DgDomainBackend} = await import('../src/dg/backend.js');
-  const {app: a} = await app();
-  const add = a.ribbon().main[0];
-  const memory = emsBackends.domain;
-  const order = [];
-  const dg = new DgDomainBackend();
-  const invalidate = dg.invalidate.bind(dg);
-  dg.invalidate = () => (order.push('invalidate'), invalidate());
-  memory.saveAll = (edits) => dg.saveAll(edits);
-  memory.tableSync('grit.issue').access = async () => (order.push('access'), {can: {view: true, insert: false,
-    edit: false, delete: false, share: false}, fields: {title: 'readonly'}});
-  DG.DomainSession.next = {message: 'Edit is required on "grit.issue"', editor: null, code: 'forbidden'};
   try {
-    a.listSource.rows.byKey('i1').title = 'Revoked meanwhile';
-    assert.equal(await a.session.save(), false);
-    await flush();
-    assert.equal(order[0], 'invalidate', 'the platform caches go before anything re-reads');
-    assert.equal(order.includes('access'), true);
-    assert.equal(add.root.hidden, true);
+    for (const [code, platform] of [['validation', true], ['forbidden', true], ['forbidden', false]]) {
+      const {app: a} = await app();
+      const add = a.ribbon().main[0];
+      const memory = emsBackends.domain;
+      memory.tableSync('grit.issue').access = async () => ({can: {view: true, insert: false, edit: false,
+        delete: false, share: false}, fields: {title: 'readonly'}});
+      if (platform) {
+        const dg = new DgDomainBackend();
+        memory.saveAll = (edits) => dg.saveAll(edits);
+        DG.DomainSession.next = {message: 'Refused', editor: null, code};
+      }
+      else
+        memory.transaction = async () => { throw Object.assign(new Error('Refused'), {code}); };
+      const access = a.listSource.access.value;
+      const caches = grok.dapi.domains.invalidated;
+      a.listSource.rows.byKey('i1').title = 'Revoked meanwhile';
+      assert.equal(await a.session.save(), false);
+      await flush();
+      const forbidden = code === 'forbidden';
+      assert.deepEqual([grok.dapi.domains.invalidated - caches, a.listSource.access.value !== access, add.root.hidden],
+        [forbidden && platform ? 1 : 0, forbidden, forbidden], `${code}, ${platform ? 'platform' : 'memory'} backend`);
+      a.dispose();
+    }
   } finally {
     DG.DomainSession.next = true;
   }
-  a.dispose();
 });
 
 scoped('the ambient session is the app\'s; New is hidden without insert', async () => {
