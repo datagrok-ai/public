@@ -14,6 +14,7 @@ import {SubstructureSearchType} from '../constants';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {getRDKitFpAsUint8Array} from '../chem-searches';
 import {IMmpFragmentsResult, IRGroupAnalysisResult} from './rdkit-service-worker-substructure';
+import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 export interface IParallelBatchesRes {
   getProgress: () => number,
   setTerminateFlag: () => void,
@@ -38,6 +39,25 @@ export type SubstructureSearchBatchResult = {
  * machine with many threads, as crux's search pool did (`crux-service.ts`, the same cap).
  */
 const MAX_WORKERS = 16;
+
+/**
+ * Each cluster's MCS as SMILES ('' for none) from FMCS's SMARTS (`mcs`, RdKitService.clusterMCS' raw result), written
+ * by `module` (RDKit's; Crux's in Crux mode, engine/analysis-jobs.ts).
+ */
+export function clusterMcsSmiles(mcs: string[], clusteredMolecules: string[][], module: RDModule): string[] {
+  return mcs.map((it, i) => {
+    if (!it)
+      return '';
+    try {
+      // a one-molecule cluster is its own MCS: read as a query, its implicit hydrogens would be lost
+      const mol = clusteredMolecules[i].length === 1 ? getMolSafe(it, {}, module).mol : getQueryMolSafe(it, '', module);
+      const smiles = mol?.get_smiles();
+      mol?.delete();
+      return smiles ?? '';
+    } catch (_) {}
+    return '';
+  });
+}
 
 export class RdKitService {
   workerCount: number;
@@ -700,21 +720,7 @@ export class RdKitService {
           return Promise.resolve(mols.length === 1 ? mols[0] : '');
         return this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
       }, 45000, 'MCS calculation'); // stuck for more than 45s => restart the worker, '' for the cluster
-    if (rawSmarts)
-      return res;
-    const rdkit = PackageFunctions.getRdKitModule();
-    return res.map((it, i) => {
-      if (!it)
-        return '';
-      try {
-        // a one-molecule cluster is its own MCS: read as a query, its implicit hydrogens would be lost
-        const mol = clusteredMolecules[i].length === 1 ? getMolSafe(it, {}, rdkit).mol : getQueryMolSafe(it, '', rdkit);
-        const smiles = mol?.get_smiles();
-        mol?.delete();
-        return smiles ?? '';
-      } catch (_) {}
-      return '';
-    });
+    return rawSmarts ? res : clusterMcsSmiles(res, clusteredMolecules, PackageFunctions.getRdKitModule());
   }
 
   /**

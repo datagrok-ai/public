@@ -98,6 +98,11 @@ function formatRingDigit(n: number): string {
   return n <= 9 ? `${n}` : `%${n.toString().padStart(2, '0')}`;
 }
 
+/** RDKit.js's `get_mcs_as_json` (`{smarts, canceled, numAtoms, numBonds}`), which chem-meta's RDModule leaves out. */
+interface McsAsJson {
+  get_mcs_as_json(mols: MolList, details?: string): string;
+}
+
 const MALFORMED_MOL_V2000 = `
 Malformed
 
@@ -905,7 +910,10 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     this._requestTerminated = flag;
   }
 
-  mostCommonStructure(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean): string {
+  /** The FMCS of the molecules as SMARTS ('' for none). `timeoutS`: FMCS's own Timeout in seconds, '' when it
+   * runs out (the Crux pool's cluster MCS; RdKitService.clusterMCS restarts a worker stuck that long instead). */
+  mostCommonStructure(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean,
+    timeoutS?: number): string {
     let mols;
     try {
       mols = new this._rdKitModule.MolList();
@@ -924,11 +932,17 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       }
       let mcsSmarts: string|null = null;
       if (mols.size() > 1) {
-        mcsSmarts = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify({
+        const details = {
           AtomCompare: exactAtomSearch ? 'Elements' : 'Any',
           BondCompare: exactBondSearch ? 'OrderExact' : 'Order',
           //RingMatchesRingOnly: true
-        }));
+        };
+        if (timeoutS !== undefined) {
+          const mcs = JSON.parse((this._rdKitModule as RDModule & McsAsJson)
+            .get_mcs_as_json(mols, JSON.stringify({...details, Timeout: timeoutS})));
+          mcsSmarts = mcs.canceled ? '' : mcs.smarts;
+        } else
+          mcsSmarts = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify(details));
       }
       return mcsSmarts ?? '';
     } finally {

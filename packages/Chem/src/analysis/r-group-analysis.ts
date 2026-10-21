@@ -7,7 +7,9 @@ import {Chem} from '../scripts-api';
 import {PackageFunctions} from '../package';
 import {getMCS} from '../utils/most-common-subs';
 import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
-import {cancelChemOp, getRdKitService} from '../utils/chem-common-rdkit';
+import {_rdKitService, cancelChemOp} from '../utils/chem-common-rdkit';
+import {rGroupsByEngine} from '../engine/analysis-jobs';
+import {isCruxRequested} from '../engine/chem-engine';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {SCAFFOLD_COL, SCAFFOLD_COL_SYNC, setSyncTag} from '../constants';
 import {hasNewLines, hexToPercentRgb, newChemOpId, runCancellableChemOp, withChemCriticalSection} from '../utils/chem-common';
@@ -263,12 +265,20 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       core = coreSmarts;
     const opId = newChemOpId('rgroup');
     progressBar = DG.TaskBarProgressIndicator.create('R-Group analysis running...', {cancelable: true});
+    // In Crux mode ("Chemical engine") the decomposition runs on a Crux worker: a cancel ends the operation at once
+    // (the worker finishes the call and its result is dropped); the RDKit worker restarts as below where the RDKit
+    // pool is up (the decomposition may have fallen back to it).
+    const crux = isCruxRequested();
+    let cancelCrux = () => {};
+    const cruxCanceled = new Promise<undefined>((resolve) => cancelCrux = () => resolve(undefined));
     // Close the bar at once on cancel so it disappears immediately — even if this operation is queued behind
     // another one that's still holding the worker. cancelChemOp restarts the worker only if THIS operation is
     // the one actually running there; the operation then unwinds on its own in the background.
     cancelSub = progressBar.onCanceled.subscribe(() => {
       canceled = true;
-      cancelChemOp(opId, [0]).catch(() => {});
+      if (!crux || _rdKitService)
+        cancelChemOp(opId, [0]).catch(() => {});
+      cancelCrux();
       progressBar?.close();
     });
 
@@ -279,8 +289,10 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     };
 
     // Run the R-Group call as a cancellable operation (undefined => cancelled).
-    const rgRes = await runCancellableChemOp(opId, () => canceled,
-      () => rGroupsMinilibRaw(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions));
+    const rgRes = await runCancellableChemOp(opId, () => canceled, () => {
+      const decomposition = rGroupsMinilibRaw(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions);
+      return crux ? Promise.race([decomposition, cruxCanceled]) : decomposition;
+    });
     if (rgRes === undefined) return;
     const {rGroups, highlightCol} = rgRes;
 
@@ -385,8 +397,7 @@ async function rGroupsMinilibRaw(molecules: DG.Column<string>, coreMolecule: str
   if (!coreMolecule)
     throw new Error('No core was provided');
   const res: IRGroupAnalysisResult =
-    await (await getRdKitService())
-      .getRGroups(molecules.toList(), coreMolecule, coreIsQMol, options ? JSON.stringify(options) : '');
+    await rGroupsByEngine(molecules.toList(), coreMolecule, coreIsQMol, options ? JSON.stringify(options) : '');
   const resCols: DG.Column<string>[] = [];
   for (let i = 0; i < res.colNames.length; i++) {
     const col = DG.Column.string(res.colNames[i], molecules.length).init((j) => res.smiles[i][j]);

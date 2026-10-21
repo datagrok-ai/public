@@ -41,6 +41,10 @@ export interface PackedDescriptorValues {
 /** A missing int descriptor value in {@link PackedDescriptorValues} (Datagrok's int null). */
 export const INT_NONE = -2147483648;
 
+/** The seconds a cluster's FMCS may take on Crux (CruxService.clusterMCS, crux-analysis-jobs.ts): '' past it, as
+ * RdKitService.clusterMCS gives a cluster whose worker it restarts after 45 s. */
+export const CLUSTER_MCS_TIMEOUT_S = 45;
+
 /** Whether `value[i]` of a packed descriptor is missing. */
 export function isNoneValue(values: PackedDescriptorValues, i: number): boolean {
   const v = values.value[i];

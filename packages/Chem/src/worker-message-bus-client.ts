@@ -8,6 +8,11 @@ export class WorkerMessageBusClient {
   constructor(worker: Worker) {
     this._worker = worker;
   }
+
+  /** The calls sent and not answered yet (the Crux service gives a long job to the worker with the fewest). */
+  get pendingCalls(): number {
+    return this._pending.size;
+  }
   async call(op: string, args: any[] = [], gated = true): Promise<any> {
     if (gated)
       await this._ready; // module init itself runs ungated, else it would wait on its own result

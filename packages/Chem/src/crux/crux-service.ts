@@ -4,12 +4,15 @@ import {WorkerMessageBusClient} from '../worker-message-bus-client';
 import {Fingerprint, hasNewLines} from '../utils/chem-common';
 import {compileCrux, loadCrux, noteCruxError} from '../engine/crux-module';
 import {DescriptorTiming, INT_NONE, PackedDescriptorValues, isNoneValue} from './crux-api';
+import {CLUSTER_MCS_TIMEOUT_S} from './crux-api';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import type {IFpResult} from '../rdkit-service/rdkit-service-worker-similarity';
 import type {RuleId} from '../panels/structural-alerts';
 import type {FingerprintOptions} from '../utils/fingerprint-options';
+import type {IMmpFragmentsResult, IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
+import type {RGroupCluster} from './crux-analysis-jobs';
 
 const CRUX_INDEX_TAG = '.crux-index';
 /** Rows per segment in the first round over the workers: small, so the first hits come early; doubles each round. */
@@ -38,6 +41,14 @@ const PAIR_MCS_MAX_BOND_MATCH_PAIRS = 10000;
 /** Seconds; RDKit's 60 is over a Crux job's limit, which restarts the pool. Past it Rascal gives its best MCES so far
  * (36 of the 185 peptide cliffs, 6.9 s at most with the setup; every other cliff took under 0.1 s). */
 const PAIR_MCS_TIMEOUT_S = 5;
+/**
+ * The analyses' time limits (CruxService.mmpGetFragments and the rest): per molecule (`mmpa`, `rGroups`) or per
+ * cluster, a cluster being one job (`clusterMCS`: FMCS's Timeout on Crux, crux-analysis-jobs.ts; `clusterRGroups`:
+ * RdKitService.clusterRGroups' minute; both plus JOB_BASE_MS); `mcs` for one FMCS: RDKit's default FMCS Timeout, an
+ * hour.
+ */
+const ANALYSIS_MS = {mmpa: 50, rGroups: 100, clusterMCS: CLUSTER_MCS_TIMEOUT_S * 1000, clusterRGroups: 60000,
+  mcs: 3600000};
 /**
  * crux keeps ~380 bytes per indexed molecule (~1.1 GB at the limit, spread over the workers); least recently used
  * column indexes are dropped past this many rows.
@@ -121,6 +132,9 @@ class CruxWorkerClient extends WorkerMessageBusClient {
 
   pairUncommonAtomsAndBonds = (molecule1: string, molecule2: string, details: string): Promise<ISubstruct[] | null> =>
     this.call('pairUncommonAtomsAndBonds', [molecule1, molecule2, details]);
+
+  /** An analysis job of crux-analysis-jobs.ts by name. */
+  analysis = <R>(op: string, args: unknown[]): Promise<R> => this.call(op, args);
 
   failForTests = (message: string): Promise<unknown> => this.call('fail::test', [message]);
 
@@ -457,6 +471,113 @@ export class CruxService {
     return this.job(this.workers[0].pairUncommonAtomsAndBonds(molecule1, molecule2, JSON.stringify(options)),
       JOB_BASE_MS);
   }
+
+  // Analyses (engine/analysis-jobs.ts sends them, crux-analysis-jobs.ts runs them): the RDKit worker's own code on
+  // Crux, so the results have the RDKit pool's shapes.
+
+  /**
+   * MMPA fragments as the RDKit pool's `mmpGetFragments` gives them, the molecules in chunks across the workers, and
+   * the rows whose molecule Crux did not read (`unread`).
+   */
+  async mmpGetFragments(molecules: string[]): Promise<IMmpFragmentsResult & {unread: number[]}> {
+    const starts: number[] = [];
+    const parts = await this.inChunks(molecules, ANALYSIS_MS.mmpa, (worker, chunk) =>
+      worker.analysis<IMmpFragmentsResult & {unread: number[]}>('mmpGetFragments', [chunk]), CHUNK_SIZE, JOB_BASE_MS,
+    starts);
+    // concat, not flatMap: a molecule RDKit's code does not read leaves its row empty, and the rows stay in place
+    return {frags: ([] as [string, string][][]).concat(...parts.map((part) => part.frags)),
+      smiles: ([] as string[]).concat(...parts.map((part) => part.smiles)),
+      unread: parts.flatMap((part, k) => part.unread.map((row) => starts[k] + row))};
+  }
+
+  /** The RDKit pool's `getRGroups` (one decomposition, on the least busy worker); null where Crux cannot read a
+   * molecule. */
+  rGroupAnalysis(molecules: string[], core: string, coreIsQMol: boolean, options?: string):
+    Promise<IRGroupAnalysisResult | null> {
+    return this.job(this.leastBusy().analysis('rGroupAnalysis', [molecules, core, coreIsQMol, options]),
+      JOB_BASE_MS + molecules.length * ANALYSIS_MS.rGroups);
+  }
+
+  /** The RDKit pool's `getMCS` (FMCS's SMARTS, on the least busy worker); null where Crux cannot read a molecule. */
+  mostCommonStructure(molecules: string[], exactAtoms: boolean, exactBonds: boolean): Promise<string | null> {
+    return this.job(this.leastBusy().analysis('mostCommonStructure', [molecules, exactAtoms, exactBonds]),
+      JOB_BASE_MS + ANALYSIS_MS.mcs);
+  }
+
+  /**
+   * Each cluster's FMCS SMARTS, as the RDKit pool's `clusterMCS(clusters, ..., rawSmarts)` gives it ('' for one whose
+   * FMCS ran past the RDKit pool's 45 s), each cluster a job ({@link eachCluster}): null for a cluster Crux cannot do
+   * (the RDKit pool does it); `timedOut`, the clusters past their time limit (no MCS).
+   */
+  clusterMCS(clusters: string[][], exactAtoms: boolean, exactBonds: boolean):
+    Promise<{results: (string | null)[], timedOut: number[]}> {
+    return this.eachCluster<string>(clusters, JOB_BASE_MS + ANALYSIS_MS.clusterMCS, 'clusterMCS',
+      [exactAtoms, exactBonds]);
+  }
+
+  /** Each cluster's R-group decomposition, as the RDKit pool's `clusterRGroups` gives it, each cluster a job
+   * ({@link eachCluster}): null for a cluster Crux cannot do; `timedOut`, the clusters past their time limit (none). */
+  clusterRGroups(clusters: RGroupCluster[]): Promise<{results: (IRGroupAnalysisResult | null)[], timedOut: number[]}> {
+    return this.eachCluster<IRGroupAnalysisResult>(clusters, JOB_BASE_MS + ANALYSIS_MS.clusterRGroups,
+      'clusterRGroups', []);
+  }
+
+  /**
+   * The analysis job `op` per cluster, as the RDKit pool's processClusterQueue runs it: each worker takes the next
+   * cluster when its last is done; a cluster past `limitMs` is listed in `timedOut` and its worker replaced
+   * ({@link restartWorker}), and the other clusters go on. A cluster whose call fails (a trap, a lost worker) is null.
+   */
+  private async eachCluster<R>(clusters: unknown[], limitMs: number, op: string, args: unknown[]):
+    Promise<{results: (R | null)[], timedOut: number[]}> {
+    const results = new Array<R | null>(clusters.length).fill(null);
+    const timedOut: number[] = [];
+    let next = 0;
+    await Promise.all(this.workers.map(async (_, w) => {
+      while (next < clusters.length) {
+        const i = next++;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const late = new Promise<'late'>((resolve) => timer = setTimeout(() => resolve('late'), limitMs));
+        try {
+          const done = await Promise.race([this.workers[w].analysis<(R | null)[]>(op, [[clusters[i]], ...args]),
+            late]);
+          if (done === 'late') {
+            timedOut.push(i);
+            this.restartWorker(w);
+          } else
+            results[i] = done[0];
+        } catch (e: any) {
+          if (/RuntimeError|unreachable|out of bounds|memory/i.test(String(e?.message ?? e)))
+            this.restartWorker(w); // its instance may be broken
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+    }));
+    return {results, timedOut};
+  }
+
+  /** The worker with the fewest calls in flight (on a tie a later one: worker 0 takes the one-worker jobs). */
+  private leastBusy(): CruxWorkerClient {
+    return this.workers.reduceRight((best, worker) => worker.pendingCalls < best.pendingCalls ? worker : best);
+  }
+
+  /**
+   * Replaces worker `w`, stuck in a call past its limit, as the RDKit pool replaces one (RdKitService.restartWorker):
+   * the column indexes with a segment on it are dropped (a search running on one fails and falls back to RDKit; the
+   * next search indexes the column again); the other workers and the other indexes stay.
+   */
+  private restartWorker(w: number): void {
+    this.workers[w].terminate();
+    this.workers[w] = new CruxWorkerClient();
+    this.workers[w].moduleInit(this.module!).catch(() => {}); // a failed init is logged by the worker client
+    for (const index of [...this.indexes.values()]) {
+      if (index.segments.some((segment) => segment.worker === w)) {
+        index.lost = true;
+        this.dropIndex(index);
+      }
+    }
+  }
+
 
   /**
    * A job's result within `timeoutMs`. A wasm trap (the worker reports `RuntimeError: ...`; out of memory), a timeout

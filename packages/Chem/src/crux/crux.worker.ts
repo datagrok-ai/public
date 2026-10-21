@@ -1,6 +1,7 @@
 // The Crux worker: Chem's one Crux file (vendor/chem-wasm), instantiated from the Module the main thread compiled
 // (engine/crux-module.ts). Substructure search over column segments; in Crux mode ("Chemical engine") descriptors, the
-// scaffold tree, an activity cliff's MCS, and RDKit's own worker code run on Crux (fingerprints, structural alerts).
+// scaffold tree, an activity cliff's MCS, and RDKit's own worker code run on Crux (fingerprints, structural alerts;
+// MMPA, R-groups and FMCS: crux-analysis-jobs.ts).
 import initChemWasm, * as chemWasm from '../../vendor/chem-wasm/chem_wasm.js';
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
@@ -11,6 +12,7 @@ import {MAX_MOL_CACHE_SIZE} from '../rdkit-service/rdkit-service-worker-base';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {getUncommonAtomsAndBondsOfMatches} from '../utils/chem-common';
 import {assertFingerprintOptions} from '../utils/fingerprint-options';
+import {ANALYSIS_JOBS} from './crux-analysis-jobs';
 
 const crux = chemWasm as unknown as CruxWorkerApi;
 const ctx: Worker = self as any;
@@ -203,6 +205,8 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
       result = JSON.parse(chemWasm.chemProperties(args[0], args[1]));
     else if (op === 'pairUncommonAtomsAndBonds')
       result = pairUncommonAtomsAndBonds(args[0], args[1], args[2]);
+    else if (Object.hasOwn(ANALYSIS_JOBS, op)) // MMPA, R-groups, FMCS (crux-analysis-jobs.ts)
+      result = await ANALYSIS_JOBS[op](rdkitShapedWorker(), chemWasm as unknown as RDModule, ...args);
     else if (op === 'fail::test') // tests: a job that fails with this message
       throw new Error(args[0]);
     else if (op === 'busy::test') { // tests: a job that keeps the worker busy, as a long Crux call does

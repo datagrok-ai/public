@@ -118,6 +118,11 @@ the moved functions come from Crux. How a feature moves behind the
 setting: `src/engine/README.md`. Tests: category `chemical engine`. Whole suites in Crux mode on a stand:
 `misc/crux/engine-setting.sh set Crux` (the package settings on the server), `restore` after.
 
+In Crux mode MMPA fragmentation, R-group decomposition and FMCS (`engine/analysis-jobs.ts`: `getMmpFrags`,
+`rGroupsMinilib`, `getMCS`, Cluster MCS, the SAR matrix's anchors and clusters) run on the Crux pool, the RDKit worker's
+own code on the Crux module (`crux/crux-analysis-jobs.ts`), with the RDKit pool behind them. Tests: category
+`crux analyses`.
+
 The one Crux file is `vendor/chem-wasm/` (crux-core's `crates/chem-wasm`, built with search, descriptors, the scaffold
 tree, rendering and the heavy calls in one wasm; its `VERSION.chem-wasm` names the crux-core revision and the build,
 `NOTICE.chem-wasm` the

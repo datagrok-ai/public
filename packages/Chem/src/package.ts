@@ -129,6 +129,7 @@ import {scripts} from './package-api';
 import {cruxReady, isCruxRequested, onEngineSwitch} from './engine/chem-engine';
 import {cruxOrRdKitAsync} from './engine/fallback';
 import {getCruxService} from './crux/crux-searches';
+import {clusterMcsByEngine} from './engine/analysis-jobs';
 
 export {getMCS};
 export * from './package.g';
@@ -912,7 +913,7 @@ export class PackageFunctions {
       for (let i = 0; i < indexes.length; i++)
         clusteredMols[indexes[i]].push(mols[i]);
 
-      const mcsResult = await (await chemCommonRdKit.getRdKitService()).clusterMCS(clusteredMols, true, true);
+      const mcsResult = await clusterMcsByEngine(clusteredMols, true, true);
       mcsCol.semType = DG.SEMTYPE.MOLECULE;
       mcsCol.init((i) => mcsResult[indexes[i]]);
       mcsCol.setTag('.structure-filter-type', 'Categorical');

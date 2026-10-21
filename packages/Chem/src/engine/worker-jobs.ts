@@ -21,8 +21,8 @@ export function setCruxUnreadableForTests(molecules: string[] | null): void {
   unreadableForTests = molecules ? new Set(molecules) : null;
 }
 
-/** The molecules as the Crux workers get them. */
-function forCrux(molecules: string[]): string[] {
+/** The molecules as the Crux workers get them (also analysis-jobs.ts). */
+export function forCrux(molecules: string[]): string[] {
   const unreadable = unreadableForTests;
   return unreadable ? molecules.map((m) => unreadable.has(m) ? 'C1CC(' : m) : molecules;
 }
