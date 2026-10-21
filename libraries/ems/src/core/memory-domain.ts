@@ -869,8 +869,7 @@ export class MemoryTable implements DomainTableLike {
 
   /** The sort keys as the server resolves them: every key a readable, non-json column of the
    * table. `prop.<name>` names the table's own column; without one (a system or json column too)
-   * the server orders by the platform's property values, which a domain row has none of, so the
-   * key orders nothing. */
+   * it is refused like a hidden column, so a refusal never tells a missing column from a hidden one. */
   private _sortKeys(sort: string): SortKey[] {
     const declared = (name: string): IProperty | undefined =>
       SYSTEM.some(([system]) => system === name) ? undefined : this.properties.find((p) => p.name === name);
@@ -882,7 +881,7 @@ export class MemoryTable implements DomainTableLike {
         column = column.slice('prop.'.length);
         const own = declared(column);
         if (own === undefined || own.propertyType === 'map')
-          continue;
+          throw new DomainBackendError('filter', `Unknown or inaccessible sort column "${column}"`);
       }
       const prop = this.properties.find((p) => p.name === column);
       if (prop === undefined || prop.propertyType === 'map' || !this._readable(column))
