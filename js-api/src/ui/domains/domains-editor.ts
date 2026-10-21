@@ -724,15 +724,21 @@ export class DomainFrameEditor implements IFrameEditor {
     if (this._busy('adding a row'))
       return -1;
     const row = this._df.rowCount;
+    const prefill: {[column: string]: any} = {};
+    for (const name of DomainFrameEditor.writableColumns(this.access, {draft: true})) {
+      const value = this._propByName.get(name)?.defaultValue;
+      if (value != null)
+        prefill[name] = value;
+    }
+    Object.assign(prefill, values);
     // Silent throughout: a frame event fired between the append and the stamp would
     // surface a row that is neither keyed nor `'new'` to every other consumer of the
     // frame (a grid, a session, a list rebuilding on each event).
     this._write(() => {
       this._df.rows.addNew(null, false);
-      if (values != null)
-        for (const name of Object.keys(values))
-          if (this._df.columns.contains(name))
-            this._col(name).set(row, values[name], false);
+      for (const name of Object.keys(prefill))
+        if (this._df.columns.contains(name))
+          this._col(name).set(row, prefill[name], false);
       if (this._df.columns.contains('id'))
         this._col('id').set(row, DomainFrameEditor.draftId(), false);
       this._col(DomainFrameEditor.STATE_COLUMN).set(row, 'new', false);

@@ -938,6 +938,7 @@ scoped('a draft leaves a required column with a default to the server: neither r
   assert.equal(create.input('status').required, false, 'the insert omits it and the server fills the default');
   assert.equal(create.input('status').root.classList.contains('u2-input-required'), false);
   assert.equal(create.input('code').required, true, 'a column with no default still has to be filled');
+  assert.equal(create.input('status').value.value, 'open', 'the draft shows the default');
   create.input('code').value.value = 'T2';
   await flush();
   assert.equal(create.validate(), true, 'the draft with only its key typed is ready to save');

@@ -158,6 +158,10 @@ export class MemoryEditState implements EditState {
       throw new Error(`${this._table.address}: cannot add a row while the batch is being saved`);
     const id = Rows.draftId();
     const row: Row = {...values, id, [Rows.STATE]: 'new'};
+    const writable = this._writable(row);
+    for (const prop of this._table.properties)
+      if (prop.defaultValue != null && row[prop.name!] === undefined && writable.includes(prop.name!))
+        row[prop.name!] = prop.defaultValue;
     if (options.pristine)
       this._pristine.add(row);
     this.df.rows.push(row);
