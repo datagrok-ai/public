@@ -240,7 +240,6 @@ export class MemoryDomainBackend implements DomainBackend {
     const entry = (table: MemoryTable, name: string, rowId: string, prior: Row | null, next: Row | null): void => {
       audit.push([table, {id: rowId, tx_id: tx, op: name, actor_id: null, ts, before: prior, after: next}]);
     };
-    // the server's referential actions run before the row goes; a child already in the trash holds nothing back
     const remove = (table: MemoryTable, id: string, index: number, seen: Set<string>): void => {
       if (seen.has(`${table.address}:${id}`))
         return;
@@ -810,7 +809,6 @@ export class MemoryTable implements DomainTableLike {
     return rows;
   }
 
-  /** The rows of [rows] the tree selects, its terms resolved first. */
   private async _matching(rows: Row[], root: FilterGroup): Promise<Row[]> {
     return MemoryTable._masked(rows, this.properties, await this._resolved(root));
   }
@@ -820,8 +818,7 @@ export class MemoryTable implements DomainTableLike {
     return rows.filter((_, i) => mask.get(i));
   }
 
-  /** The terms the records frame cannot answer as the server does, resolved over the store into
-   * id sets: a dotted FK path, `under`, and a bool condition (the frame's bool has no null slot). */
+  /** Terms the records frame cannot answer as the server does (its bool has no null slot), as id sets. */
   private async _resolved(root: FilterGroup): Promise<FilterGroup> {
     const nodes: FilterNode[] = [];
     for (const node of root.nodes) {
@@ -837,11 +834,9 @@ export class MemoryTable implements DomainTableLike {
     return {...root, nodes};
   }
 
-  /** `<ref>.<rest> <op> <value>` as the server joins it: the rows whose ref names a live target
-   * row that `<rest> <op> <value>` selects — the target resolving any further hop itself. */
+  /** A dotted path as the server joins it: the ref in the ids of the live target rows the rest selects. */
   private async _path(condition: FilterCondition): Promise<FilterCondition> {
-    // the whole path checked here, so a refusal names it as the server's does: every hop a readable
-    // ref, the leaf a readable non-json column, and no `under` (resolved against the root table only)
+    // checked whole, so a refusal names the full path as the server's does; `under` resolves on the root only
     const segments = condition.property.split('.');
     let table: MemoryTable | undefined = this;
     for (const hop of segments.slice(0, -1)) {
@@ -876,15 +871,12 @@ export class MemoryTable implements DomainTableLike {
     return {...condition, property: 'id', operator: 'in', value: hits.map((row) => String(row.id))};
   }
 
-  /** A system column, or one the caller's field access neither omits nor hides. */
   private _readable(column: string): boolean {
     const access = this._access.fields[column];
     return SYSTEM.some(([system]) => system === column) || access !== undefined && access !== 'hidden';
   }
 
-  /** The sort keys as the server resolves them: every key a readable, non-json column of the
-   * table. `prop.<name>` names the table's own column; without one (a system or json column too)
-   * it is refused like a hidden column, so a refusal never tells a missing column from a hidden one. */
+  /** As the server resolves them; a `prop.<name>` with no such column is refused like a hidden one (no oracle). */
   private _sortKeys(sort: string): SortKey[] {
     const keys: SortKey[] = [];
     for (const term of sort.split(',').map((k) => k.trim()).filter((k) => k !== '')) {

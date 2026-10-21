@@ -45,8 +45,7 @@ export class ColumnEvaluator {
     return kindOf({name: col.name, type: col.type});
   }
 
-  /** The rows holding null — never a bool (the platform has no null slot there); a string list
-   * with no element is empty too, as the server reads it. */
+  /** The rows holding null — never a bool (the platform has no null slot there); an empty string list too. */
   static nulls(col: MaskColumnLike): BitArray {
     const kind = ColumnEvaluator.kindOf(col);
     if (kind === KIND.BOOL)
@@ -68,11 +67,10 @@ export class ColumnEvaluator {
     return BitArray.create(col.length, (i) => (categories[raw[i]] ?? '') === '');
   }
 
-  /** The rows whose non-null cell passes `test` — or fails it, with `negate` — against the
-   * condition's value converted to the column's kind (a list element-wise); nulls never pass — the
-   * SQL reading every other target has. Strings are tested once per category, bools once per side.
-   * A string list asks about its elements, as the server does: some element passes `test`, or with
-   * `negate` none does — a null or empty list included. */
+  /** The rows whose non-null cell passes `test` (fails it, with `negate`) against the condition's value
+   * converted to the column's kind (a list element-wise); nulls never pass — the SQL reading every other
+   * target has. A string list asks about its elements: some passes, or with `negate` none does, a null or
+   * empty list included. */
   static where(col: MaskColumnLike, c: FilterCondition, ctx: {now: Date},
     test: (cell: MaskCell, value: any) => boolean, negate: boolean = false): BitArray {
     const pass = (cell: MaskCell, value: any) => test(cell, value) !== negate;
@@ -108,8 +106,7 @@ export class ColumnEvaluator {
   }
 
   /** Column against column, row-wise, with one of the six comparators: a null on either side
-   * never passes; dates compare by their time value, strings by their text. A string list compares
-   * with no column, as the server refuses it. */
+   * never passes; dates compare by their time value, strings by their text. */
   static compare(left: MaskColumnLike, right: MaskColumnLike, operator: string): BitArray {
     for (const col of [left, right])
       if (ColumnEvaluator.kindOf(col) === KIND.STRING_LIST)

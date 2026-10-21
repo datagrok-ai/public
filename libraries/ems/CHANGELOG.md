@@ -7,10 +7,10 @@
 * Memory backend: Filled the column defaults into a draft, and applied the default on an insert that leaves the column out, as the server does
 * Memory backend: Fixed derived singular and plural names reading the friendly name and replacing `_`: like the platform, they come from the table name (`order_details` → `order_detail`), and a declared friendly name is answered as `info.friendlyName`
 * Memory backend: Fixed derived table names: a table named in the plural (`categories`) read `categoriess`; singular and plural now follow the platform's rules (`category`/`categories`, `box`/`boxes`, `study`/`studies`)
-* Memory backend: Fixed `prop.<name>` sort keys being refused: they sort by the table's column of that name, and a name with no such column is refused like a hidden one, as on the platform
-* Memory backend: Fixed reads diverging from the platform: a null bool no longer matches `= false` / `!= true` and is found by `is null`, a dotted FK-path filter (`parent_id.name = "Site"`) joins through the target, and an unknown or json sort column is refused with `filter`
-* Memory backend: Fixed a delete ignoring the child column's `onDelete`: `cascade` and `setnull` act as on the platform instead of refusing, and `restrict` refuses with `restrict`, not `validation`
-* Memory backend: A filter the backend cannot evaluate is refused with code `filter`, as the server answers it
+* Memory backend: Fixed `prop.<name>` sort keys: they sort by the table's column of that name, and refuse a name with none like a hidden one
+* Memory backend: Fixed null bools, dotted FK-path filters and unknown or json sort columns reading differently from the platform
+* Memory backend: Fixed a delete ignoring the child column's `onDelete`; `restrict` refuses with `restrict`, as on the platform
+* Memory backend: Fixed a filter it cannot evaluate failing without the platform's `filter` code
 * [public#4320](https://github.com/datagrok-ai/public/issues/4320): Import: Fixed an empty numeric CSV cell being posted as the missing-value marker (-2147483648, 2.68e-34) instead of null
 * Styles: `src/dg/styles.ts` imports EMS's own sheets only; u2's stylesheet installs itself once per page
 * Tests: Fixed the spec-install test on Windows (path separators, CRLF recipe fences)
