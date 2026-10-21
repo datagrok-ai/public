@@ -2146,19 +2146,19 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
         values[k] = (row as any)[k];
     if (row.id == null) {
       const [res] = await this.insert(values);
-      if (res.status === 'duplicate' && res.id == null)
-        throw new DomainValidationError('Duplicate business key', 409, {error: 'validation', rows: [
-          {index: 0, id: null, errors: [{column: '', code: 'unique', message: 'Duplicate business key'}]}]});
-      if (res.status === 'idempotent-replay' && res.id == null)
-        throw new DomainNotFoundError(`The row this idempotency key created is not available in ${this.schema}.` +
-          `${this.table}`, 404, {error: 'not-found', id: null});
       if (res.status === 'duplicate') {
+        if (res.id == null)
+          throw new DomainValidationError('Duplicate business key', 409, {error: 'validation', rows: [
+            {index: 0, id: null, errors: [{column: '', code: 'unique', message: 'Duplicate business key'}]}]});
         // The duplicate insert wrote NOTHING — land the caller's values on the
         // existing row under the optimistic check (fresh read + retry).
         const upd = await this.updateWithRetry(res.id, () => values);
         return {...(row as any), id: res.id, version: upd!.version};
       }
       if (res.status === 'idempotent-replay') {
+        if (res.id == null)
+          throw new DomainNotFoundError(`The row this idempotency key created is not available in ${this.schema}.` +
+            `${this.table}`, 404, {error: 'not-found', id: null});
         // The ORIGINAL insert already applied these values; report its state.
         const fresh = await this.get(res.id);
         if (fresh == null)
