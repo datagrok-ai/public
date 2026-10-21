@@ -1273,7 +1273,7 @@ export interface IDartApi {
   grok_Dapi_Domains_DeleteWhere(c: any, schema: String, table: String, filter: any, limit: any): Promise<any>;
   grok_Dapi_Domains_UpdateWhere(c: any, schema: String, table: String, filter: any, values: any, limit: any): Promise<any>;
   grok_Dapi_Domains_Promote(c: any, schema: String, table: String, id: String): Promise<any>;
-  grok_Dapi_Domains_RowAudit(c: any, schema: String, table: String, id: String): Promise<any>;
+  grok_Dapi_Domains_RowAudit(c: any, schema: String, table: String, id: String, limit: any, before: any): Promise<any>;
   grok_Dapi_Domains_PathTo(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_QueryDf(c: any, schema: String, table: String, spec: any): Promise<any>;
   grok_Dapi_Domains_Aggregate(c: any, schema: String, table: String, spec: any): Promise<any>;

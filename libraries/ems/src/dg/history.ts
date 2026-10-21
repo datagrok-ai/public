@@ -1,17 +1,19 @@
 /* `domains.history` — a row's audit trail, newest first: who did what when, and for an update
    the columns it changed as `<caption>: <before> → <after>`. Reads `table.audit(id)` through the
-   seam, so the memory backend's history shows the same way; refreshed when the row's session
-   saves. A draft has no history yet, and says so. */
+   seam a page at a time, so the memory backend's history shows the same way; scrolling near the
+   end loads the older entries, and the pane is refreshed when the row's session saves. A draft
+   has no history yet, and says so. */
 import {emsBackends} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
 import {Control, signal, AsyncSource, div, divH, span, timestamp, text, badge, AsyncView, Section, VirtualList,
-  Rows} from '@datagrok-libraries/u2';
+  Rows, Scope} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, BadgeVariant, IProperty, RowView} from '@datagrok-libraries/u2';
-import type {AuditEntryLike} from '../core/domain-backend.js';
+import type {AuditEntryLike, DomainTableLike} from '../core/domain-backend.js';
 import type {DomainSource} from '../core/domain-source.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {DomainTable} from './facade.js';
 import {DomainForm} from './form.js';
+import {DomainErrors} from './errors.js';
 
 /** The current row of the source (default), a row signal, or one row. */
 export type DomainHistoryTarget = RowView | ReadonlySignal<RowView | null>;
@@ -21,6 +23,15 @@ const OPS: Record<string, [label: string, variant: BadgeVariant]> = {
   promote: ['shared', 'accent'],
 };
 const ITEM_HEIGHT = 40;
+const PAGE_SIZE = 50;
+const NEAR_BOTTOM_ROWS = 5;
+
+/** Where the next, older page of a row's trail starts. */
+interface OlderPage {
+  table: DomainTableLike;
+  id: string;
+  before: number;
+}
 
 export class DomainHistory extends Control {
   readonly row: ReadonlySignal<RowView | null>;
@@ -32,6 +43,8 @@ export class DomainHistory extends Control {
   private readonly _noHistory = signal(false);
   /** id → the name behind it, resolved once per pane: the actors and the ref cells alike. */
   private readonly _names = new Map<string, Promise<string>>();
+  /** The page after the one shown; null once the trail is shown to its first entry. */
+  private _older: OlderPage | null = null;
 
   constructor(readonly source: DomainSource, row?: DomainHistoryTarget) {
     super();
@@ -40,7 +53,7 @@ export class DomainHistory extends Control {
     this.row = DomainForm.resolve(row ?? source, source).row;
     this._hint = div([], 'u2-domain-history-hint');
     this._hint.dataset.u2Part = 'hint';
-    const entries = new AsyncSource<AuditEntryLike>((id) => this._load(id), {debounceMs: 0});
+    const entries = new AsyncSource<AuditEntryLike>((id, abort) => this._load(id, abort), {debounceMs: 0});
     this.own(() => entries.dispose());
     this.view = this.runInScope(() => new AsyncView<AuditEntryLike>(entries, (items) => this._lines(items),
       {empty: 'No history yet'}));
@@ -89,14 +102,26 @@ export class DomainHistory extends Control {
       .map((prop) => ({prop, before: before[prop.name!], after: after[prop.name!]}));
   }
 
-  private async _load(id: string): Promise<AuditEntryLike[]> {
+  private async _load(id: string, abort: AbortSignal): Promise<AuditEntryLike[]> {
     const table = await emsBackends.domain!.table(this.source.table);
     if (table.audit === undefined) {
       this._noHistory.value = true;
       return [];
     }
-    const entries = await table.audit(id);
-    return entries.slice().reverse();
+    const page = await DomainHistory._page(table, id);
+    if (!abort.aborted)
+      this._older = page.older;
+    return page.entries;
+  }
+
+  /** A page of the trail, newest first. One entry past the page is asked for, so a trail that
+   * ends on a page boundary offers no older page. */
+  private static async _page(table: DomainTableLike, id: string, before?: number):
+    Promise<{entries: AuditEntryLike[], older: OlderPage | null}> {
+    const entries = await table.audit!(id, {limit: PAGE_SIZE + 1, before});
+    const more = entries.length > PAGE_SIZE;
+    const page = (more ? entries.slice(1) : entries.slice()).reverse();
+    return {entries: page, older: more ? {table, id, before: page[page.length - 1].seq} : null};
   }
 
   private _lines(items: AuditEntryLike[]): HTMLElement {
@@ -105,7 +130,29 @@ export class DomainHistory extends Control {
       render: (entry) => this._line(entry),
     });
     list.root.classList.add('u2-domain-history-lines');
-    list.setItems(items);
+    const shown = signal(items);
+    list.setItems(shown);
+    const scope = Scope.ambient!;
+    let older = this._older;
+    let loading = false;
+    scope.listen(list.root, 'scroll', async () => {
+      const el = list.root;
+      if (older === null || loading || el.scrollTop + el.clientHeight <= el.scrollHeight - NEAR_BOTTOM_ROWS * ITEM_HEIGHT)
+        return;
+      loading = true;
+      try {
+        const page = await DomainHistory._page(older.table, older.id, older.before);
+        if (scope.isDisposed)
+          return;
+        shown.value = shown.peek().concat(page.entries);
+        older = page.older;
+      } catch (e) {
+        if (!scope.isDisposed)
+          DomainErrors.report(e, this.source);
+      } finally {
+        loading = false;
+      }
+    });
     return list.root;
   }
 
