@@ -65,6 +65,14 @@ async function open(t, label) {
   await flush();
 }
 
+/** Clicks the label of the first row the label names. */
+async function click(t, label) {
+  const el = t.tree.root.querySelectorAll('.u2-tree-label').find((e) => e.textContent === label);
+  fire(el, 'click', {bubbles: true});
+  await flush();
+  await flush();
+}
+
 scoped('the roots are the rows with no parent; a branch reads its children when it is opened', async () => {
   const {tree: t} = await tree();
   assert.equal(t.root.dataset.u2, 'domain-tree');
@@ -130,6 +138,39 @@ scoped('a path truncated at an ancestor out of sight opens nothing, and says so'
   assert.deepEqual(labels(t), ['Other site', 'Site'], 'and the roots are all that opened');
   assert.match(t.error.value, /l5 is not reachable from here — an ancestor is not visible to you/);
   t.dispose();
+});
+
+scoped('a full level ends in "Load more…", which reads the next page into it and keeps the selection', async () => {
+  const {tree: t} = await tree({pageSize: 1});
+  assert.deepEqual(labels(t), ['Other site', 'Load more…'], 'one page, and a way to the next');
+  await click(t, 'Other site');
+  assert.equal(t.selected.value.id, 'l9');
+
+  await click(t, 'Load more…');
+  assert.deepEqual(labels(t), ['Other site', 'Site', 'Load more…'], 'the second root is reachable');
+  assert.equal(t.selected.value.id, 'l9', 'reading more is not a selection');
+  await click(t, 'Load more…');
+  assert.deepEqual(labels(t), ['Other site', 'Site'], 'an empty page ends the level');
+
+  await open(t, 'Site');
+  assert.deepEqual(labels(t), ['Other site', 'Site', 'Room', 'Load more…'], 'a branch pages the same way');
+  assert.equal(t.error.value, null);
+  t.dispose();
+});
+
+scoped('expandTo reads the pages its path needs, and blames visibility only once every page is read', async () => {
+  const {tree: t} = await tree({pageSize: 1, expandTo: 'l4'});
+  assert.equal(t.error.value, null, 'every row on the path is visible to the caller');
+  assert.equal(t.selected.value?.id, 'l4');
+  assert.deepEqual(labels(t).slice(0, 5), ['Other site', 'Site', 'Room', 'Shelf', 'Box']);
+  t.dispose();
+
+  const orphan = hierarchyBackend({rows: {location: [...TREE.location,
+    {id: 'l5', name: 'Orphan', parent_id: 'hidden'}]}});
+  const {tree: o} = await tree({pageSize: 1, expandTo: 'l5'}, orphan);
+  assert.deepEqual(labels(o), ['Other site', 'Site'], 'every page of the roots was read first');
+  assert.match(o.error.value, /l5 is not reachable from here — an ancestor is not visible to you/);
+  o.dispose();
 });
 
 scoped('an address that is not a hierarchy lands in error instead of throwing', async () => {
