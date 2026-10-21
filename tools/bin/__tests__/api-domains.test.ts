@@ -369,6 +369,23 @@ describe('generateDomainClients', () => {
     expect(code).toMatch(/interface SampleInsert \{[^}]*  seq\?: number;/);
   });
 
+  it('default: a required column the server defaults on insert — present on Row, optional on Insert',
+    {timeout: 180_000}, () => {
+      const dir = makePackage();
+      mutateManifest(dir, (m) => {
+        m.tables.sample.columns.prio = {type: 'int', required: true, default: 3};
+        m.propertySchemas.extra.score.default = 0;
+      });
+      expect(generateDomainClients(dir)).toBe(true);
+      const code = fs.readFileSync(dbPath(dir), 'utf8');
+      expect(code).toMatch(/interface SampleRow \{[^}]*  prio: number;/);
+      expect(code).toMatch(/interface SampleInsert \{[^}]*  prio\?: number;/);
+      expect(code).toMatch(/interface SampleInsert \{[^}]*  name: string;/);
+      const res = runTsc(dir, 'usage-defaults.ts');
+      expect(res.output.trim(), res.output).toBe('');
+      expect(res.status).toBe(0);
+    });
+
   it('accessors: the plural of the singular, as the platform derives a table\'s plural name', () => {
     const dir = makePackage();
     mutateManifest(dir, (m) => {
