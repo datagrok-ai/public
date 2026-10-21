@@ -1345,8 +1345,7 @@ export class DomainFrameEditor implements IFrameEditor {
 
   /** "Ethanol still has 3 containers; remove or reassign them first": the server names the child
    * table and the column pointing back here, the child table itself the count and the noun. A
-   * restore vetoed by a parent that is still deleted carries the column in the body, worded by its
-   * caption: "Shelf A1's parent was deleted too; restore the parent first". */
+   * restore under a deleted parent names its column: "Shelf A1's parent was deleted too; restore the parent first". */
   async restrictRefusal(e: DomainError): Promise<string> {
     const named = DomainFrameEditor.LIVE_ROWS.exec(`${e.message}`);
     const column = e.body['column'];
@@ -1791,8 +1790,7 @@ export class DomainFrameEditor implements IFrameEditor {
     return caption == null || caption === '' ? column : caption;
   }
 
-  /** The columns a unique refusal is about: the ones the server names, else the business key —
-   * also where it names something that is not a column here (a relation, `rel.name`). */
+  /** The columns the server names for a unique clash, else the business key (also for a relation's name). */
   private _clashOf(e?: DomainValidationError): string[] {
     const columns = `${e?.rows?.[0]?.errors?.find((x) => x.code === 'unique')?.column ?? ''}`.split(',');
     return columns.every((c) => this._propByName.has(c)) ? columns : this._info.businessKey ?? [];

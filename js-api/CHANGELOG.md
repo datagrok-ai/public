@@ -2,14 +2,14 @@
 
 ## v.next
 
-* Domains: Fixed `DomainTableClient.save()` writing or reading by a null id when the existing row of a duplicate or an idempotency replay is not readable by the caller
+* Domains: Fixed `DomainFrameEditor` sending `false` for an untouched bool of a new row instead of leaving it to the column default
 * Domains: Fixed `DomainFrameEditor` naming the business key instead of the clashing unique column in a duplicate refusal
-* Domains: Fixed `DomainFrameEditor` sending `false` for an untouched bool of a new row: the column now takes its server-side default (null for a nullable one); a required bool with no default is still sent as `false`
+* Domains: Fixed `DomainFrameEditor` showing the server's text for a restore under a deleted parent instead of saying to restore the parent first
+* Domains: Fixed `DomainTableClient.save()` reading or updating a null id after a duplicate or an idempotency replay the caller cannot read
 * Domains: Fixed `DomainTableClient.save()` sending the `'~'` service columns and master-expand fields of a spread read row as column values, which the server refused
 * Domains: `DomainFrameEditor` filled the column defaults the caller may write into a new row, so a required column with a default no longer blocks it
 * [core#857](https://github.com/datagrok-ai/core/issues/857): Fixed `View.PACKAGES` and `VIEW_TYPE.PACKAGES` to be `'Plugins'`, the platform's plugins view type, and removed `View.BROWSE`, which has no view factory, from `View.ALL_VIEW_TYPES`, so `View.createByType` no longer crashes on them
 * Domains: Added `DomainColumn`; `orderBy` takes it, so an FK path no longer type-checks as a sort key
-* Domains: Fixed a restore vetoed by a parent that is still deleted showing the server's text (`Column "parent_id" references a deleted row in "location"`) in the balloon and `DomainSession.lastRefusal`; it now names the row and the way forward ("Shelf A1's parent was deleted too; restore the parent first")
 * Fixed `ConnectionDataSource.byType` returning a raw Dart object
 * Sketcher: A sketcher in the context panel (a molecule column's Filter pane) no longer makes its drawing the current object: the panel showed the molecule instead of the column, and the pane, the sketcher with it, went at every stroke. Nor does a sketcher out of the page (`Sketcher.isInContextPanel`)
 * U2: With debug tracking on (`DG.U2.debug`), `effect()` and `own()` on a control warn once per call site when the same site registers from a second `each()` row or effect run that the control does not live in: what it registers outlives each of them and piles up

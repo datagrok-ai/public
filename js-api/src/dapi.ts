@@ -2146,7 +2146,6 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
         values[k] = (row as any)[k];
     if (row.id == null) {
       const [res] = await this.insert(values);
-      // the server names no id when the caller cannot read the existing row
       if (res.status === 'duplicate' && res.id == null)
         throw new DomainValidationError('Duplicate business key', 409, {error: 'validation', rows: [
           {index: 0, id: null, errors: [{column: '', code: 'unique', message: 'Duplicate business key'}]}]});
