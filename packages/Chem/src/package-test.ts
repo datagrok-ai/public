@@ -33,6 +33,7 @@ import './tests/query-roundtrip-tests';
 import './tests/query-roundtrip-more-tests';
 
 import './tests/mol2-importer-tests';
+import './tests/mpo-tests';
 import './tests/chemical-table-parsing';
 import './tests/is-smarts-tests';
 import './tests/fingerprints';
