@@ -26,8 +26,7 @@ export interface DomainTreeOptions<TRow extends DomainRowLike = DomainRowLike> {
    * the only way back to everything is clicking the selected node again. */
   allNode?: string;
   /** How many children one level reads at a time (default 500); a full page ends in a
-   * "Load more…" row. The server clamps a page to 10 000 rows, so a larger size reads as the
-   * level's last page, and an external table cannot page past its first 10 000 rows. */
+   * "Load more…" row. The server caps a page at 10 000 rows, so a larger size reads as the last page. */
   pageSize?: number;
 }
 
@@ -37,8 +36,7 @@ const ALL = '~all';
 /** The id prefix of a level's "Load more…" row; the parent's id follows, none for the roots. */
 const MORE = '~more:';
 
-/** What one level has read: its parent and the ids down to it, its nodes, and whether its last
- * page was full and brought something new. */
+/** A level read so far; `full`: its last page was full and brought a new row. */
 interface Level<T> {
   parent: TreeNode<T> | null;
   path: string[];
@@ -88,8 +86,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
         span(node.label, node.id.startsWith(MORE) ? 'u2-link' : undefined) : render(node.data),
     }));
     // a node with no row behind it (the "all" row) reads as no selection, which is what makes
-    // selecting it clear a collection's subtree filter; the "Load more…" row is not a place, so the
-    // row selected before it stands, also while a read replaces it
+    // selecting it clear a collection's subtree filter; "Load more…" and a read keep the row before
     this.selected = computed(() => this._selected.value);
     this.effect(() => {
       const node = this.tree.selectedNode.value;
@@ -224,8 +221,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
   }
 
   /** One level: the rows whose parent column is `parent` — null for the roots, which is what the
-   * `is empty` operator compiles to — read one page past `loaded`; a full page ends in a
-   * "Load more…" row. `path` is the ids from a root down to `parent`. */
+   * `is empty` operator compiles to — one page past `loaded`. `path` is the ids from a root to `parent`. */
   private async _children(parent: TreeNode<RowView<TRow>> | null, path: string[],
     loaded: TreeNode<RowView<TRow>>[] = []): Promise<TreeNode<RowView<TRow>>[]> {
     const table = this._table!;

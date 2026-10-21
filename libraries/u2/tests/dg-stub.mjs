@@ -223,8 +223,8 @@ export const dapi = {
 
 export const shell = new Shell();
 
-/** What pickers.tableInput's follow and import action read (the platform-stub shapes), and
- * \`onEvent(name)\`: one stream per platform event name, which a test fires. */
+/** What pickers.tableInput's follow and import action read (the platform-stub shapes), and one
+ * \`onEvent\` stream per event name for a test to fire. */
 const named = {};
 export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shell.dart.tableRemoved,
   onViewAdded: new Stream(), onViewRemoving: new Stream(), onCurrentViewChanged: new Stream(),

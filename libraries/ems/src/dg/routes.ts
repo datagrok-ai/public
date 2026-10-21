@@ -11,8 +11,7 @@ import {DomainAddress} from './address.js';
 import {DomainApp} from './app.js';
 import {DomainErrors} from './errors.js';
 
-/** How a table the registry does not know is refused: the platform's registry answers
- * `'validation'` ("Unknown domain table"), the memory backend `'not-found'`. */
+/** How an unknown table is refused: `'validation'` by the platform's registry, `'not-found'` in memory. */
 const UNKNOWN_TABLE = ['validation', 'not-found'];
 
 /** The view for a `/domains` address, null where the platform keeps the address: anything that is

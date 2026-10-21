@@ -49,8 +49,7 @@ export class DgDomainBackend implements DomainBackend {
     return grok.dapi.domains.registry.resolveNames(table, [...ids]);
   }
 
-  /** Drops every handle, so the next source re-reads the registry — after a grant change, and on
-   * every schema create, apply or delete the platform announces. */
+  /** Drops every handle, so the next source re-reads the registry — after a grant or schema change. */
   invalidate(): void {
     this._tables.clear();
   }

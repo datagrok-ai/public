@@ -2,15 +2,15 @@
 
 ## v.next
 
-* Authoring: Fixed the "Create domain schema" connection picker offering connections that cannot be introspected or are not on a JDBC engine, and showing a connection without a friendly name as blank
+* Authoring: Fixed the binding dialog offering connections it cannot bind, and a nameless connection as blank
 * History: Fixed json and list columns showing as changed on every update (`[object Object] → [object Object]`); json values read as JSON, and restores show "restored"
 * Forms: Showed the column defaults on a new row's form
 * Memory backend: Filled the column defaults into a draft, and applied the default on an insert that leaves the column out, as the server does
 * Memory backend: Fixed derived singular and plural names reading the friendly name and replacing `_`: like the platform, they come from the table name (`order_details` → `order_detail`), and a declared friendly name is answered as `info.friendlyName`
 * Memory backend: Fixed derived table names: a table named in the plural (`categories`) read `categoriess`; singular and plural now follow the platform's rules (`category`/`categories`, `box`/`boxes`, `study`/`studies`)
-* Routes: Fixed an unknown table or schema opening an empty table view whose New fails; it now says the table was not found
+* Routes: Fixed an unknown table or schema opening an empty table view; it now says the table was not found
 * Domain app: Fixed a table opened after a schema change showing its first-open columns until reload
-* Tree: Fixed children past `pageSize` (500) being unreachable: a full level ends in "Load more…", which `expandTo` also follows; `render` is no longer called for the "All" row
+* Tree: Fixed children past `pageSize` (500) being unreachable: a full level ends in "Load more…", which `expandTo` follows
 * [public#4320](https://github.com/datagrok-ai/public/issues/4320): Import: Fixed an empty numeric CSV cell being posted as the missing-value marker (-2147483648, 2.68e-34) instead of null
 * Styles: `src/dg/styles.ts` imports EMS's own sheets only; u2's stylesheet installs itself once per page
 * Tests: Fixed the spec-install test on Windows (path separators, CRLF recipe fences)
