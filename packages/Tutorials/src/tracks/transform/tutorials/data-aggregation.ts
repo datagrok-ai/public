@@ -169,7 +169,11 @@ export class AggregationTutorial extends Tutorial {
     await this.action('Remove selection by pressing "Esc"', this.t!.onSelectionChanged.pipe(filter(() =>
       !this.t!.selection.anyTrue)), null, 'There are multiple ways to deselect all or certain rows, hitting ' +
       '<b>Esc</b> being the simplest. It removes selection entirely, both from rows and columns.',
-    () => this.t!.selection.setAll(false));
+    () => {
+      pivotViewer?.root.querySelector('.d4-grid [name="overlay"]')
+        ?.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', keyCode: 27, bubbles: true}));
+      this.t!.selection.setAll(false);
+    });
 
     if (pivotViewer)
       pivotViewer.props.rowSource = DG.RowSet.All;
