@@ -22,8 +22,6 @@ export interface IControllerBase {
   getMatchedPositions(name: string): MatchedNodeInfo[];
   /** Position of the base node for base-instantiated links. */
   getBasePosition(): MatchedNodeInfo | undefined;
-  /** Number of child steps of the node the link is defined on. */
-  getStepsCount(): number;
   getAdditionalParam(name: string): any | undefined;
   /** Static per-link parameter from the link `params` config. */
   getParam(name: string): any | undefined;

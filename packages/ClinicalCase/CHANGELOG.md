@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#993](https://github.com/datagrok-ai/core/issues/993): Timelines: Fixed an error when no event domain is selected or available
 * GROK-20800: Adverse events: Fixed the treatment-arm legend sizing — it fills its container and wraps horizontally
 
 ## 1.4.1 (2026-07-13)

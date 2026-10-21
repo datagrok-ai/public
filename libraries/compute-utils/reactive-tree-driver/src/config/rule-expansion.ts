@@ -23,7 +23,7 @@ const validatorEffects = new Set(['error', 'warning', 'notification', 'verdicts'
 const dataEffects = new Set(['set', 'clear', 'assign']);
 const messageEffects = new Set(['error', 'warning', 'notification']);
 const actionEffects = new Set(['hideAction', 'showAction']);
-const driverValues = new Set(['$position', '$steps']);
+const driverValues = new Set(['$position']);
 
 type Family = 'meta' | 'validator' | 'data' | 'nodemeta' | 'pipelineValidator';
 
@@ -511,11 +511,6 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
     }
   }
 
-  // a link re-runs on every rewire when its own expressions read $steps; `when` and sources are shared
-  const readsStepsIn = (expr: RuleExpr | undefined) => usedAliases(expr).includes('$steps');
-  const sharedSteps = readsStepsIn(when) || Object.values(expandedSources).some((source) =>
-    sourceReads(source).includes('$steps'));
-
   // a separate effect's link reads what the effect, the rule's `when` and the sources these use read
   const separateInputs = (effect: RuleEffect) => {
     const read = new Set([...effectExpressions(effect), effect.when, when].flatMap((expr) => usedAliases(expr)));
@@ -533,7 +528,6 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       inputs: [...fromAliases.keys()].filter((alias) => read.has(alias)),
       calls: [...new Set(used.flatMap((alias) => callQueries.get(alias) ?? []))],
       sources: used,
-      readsSteps: read.has('$steps'),
     };
   };
 
@@ -544,8 +538,6 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
     family: Family, linkEffects: RuleEffect[], suffix: string, separate?: ReturnType<typeof separateInputs>,
   ): PipelineLinkConfiguration<LinkSpecString> => {
     const targets = new Set(linkEffects.flatMap(effectTargets));
-    const readsSteps = separate ? separate.readsSteps :
-      sharedSteps || linkEffects.some((effect) => [...effectExpressions(effect), effect.when].some(readsStepsIn));
     const linkSources = separate ?
       (separate.sources.length ? Object.fromEntries(separate.sources.map((alias) => [alias, expandedSources[alias]])) :
         undefined) :
@@ -561,7 +553,7 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       dataFrameMutations: Array.isArray(rule.dataFrameMutations) && inputs ?
         rule.dataFrameMutations.filter((alias) => inputs.has(alias)) : rule.dataFrameMutations,
       params: {
-        when, effects: linkEffects, ...(linkSources ? {sources: linkSources} : {}), ...(readsSteps ? {readsSteps} : {}),
+        when, effects: linkEffects, ...(linkSources ? {sources: linkSources} : {}),
       },
     };
     const actionNames = new Set([...targets, ...linkEffects.flatMap(offeredActions).map((item) => item.actions)]);
@@ -582,7 +574,7 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       return;
     const family = families.get(effect)!;
     const separate = separateInputs(effect);
-    if (!separate.inputs.length && !separate.calls.length && !separate.readsSteps &&
+    if (!separate.inputs.length && !separate.calls.length &&
       !(family === 'data' && rule.runOnInit)) {
       throw new Error(`Rule ${id}: separate effect ${effect.effect} reads no input, ` +
         `add additionalTriggers${family === 'data' ? ' or runOnInit' : ''}`);

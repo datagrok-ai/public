@@ -175,7 +175,8 @@ const isItemActionAllowed = (
 
 export const isEachDraggable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIDragging');
 export const isDeletable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIRemoving');
-export const isDuplicable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIAdding');
+export const isDuplicable = (stat: AugmentedStat) =>
+  !stat.data.isReadonly && isItemActionAllowed(stat, 'disableUIAdding');
 
 export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName && !data.disableHistory;
 

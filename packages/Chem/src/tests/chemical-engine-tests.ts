@@ -21,11 +21,11 @@ import {ChemicalEngine, chemSetting, cruxReady, engineInEffect, isCruxRequested,
 import {CRUX_WASM_FILE, cruxHeapBytes, cruxLoadFailed, cruxLoadRequests, cruxWasmUrl, holdCruxForTests, noteCruxError,
   resetCruxLoaderForTests, setCruxFetchForTests, setCruxLoadFailureForTests, setCruxParseTrapForTests}
   from '../engine/crux-module';
-import {calculateDescriptors, forgetCruxTreeForTests, getDescriptorsTree, setCruxDescriptorGapForTests}
-  from '../descriptors/descriptors-engine';
+import {calculateDescriptors, forgetCruxTreeForTests, getDescriptorsTree, lastDescriptorTiming,
+  setCruxDescriptorGapForTests, setDescriptorTimingForTests} from '../descriptors/descriptors-engine';
 import {cruxFallbackCount, cruxOrRdKitAsync} from '../engine/fallback';
 import * as container from '../docker/api';
-import {SubstructureSearchEngine, getCruxQuery, getCruxService, getSubstructureSearchEngine,
+import {SubstructureSearchEngine, cruxReadsQuery, getCruxService, getSubstructureSearchEngine,
   resetCruxServiceForTests, setSubstructureSearchEngine} from '../crux/crux-searches';
 import {Fingerprint} from '../utils/chem-common';
 import {FILTER_TYPES, chemGetDiversities, chemGetFingerprints, chemGetSimilarities, chemSubstructureSearchLibrary}
@@ -35,6 +35,7 @@ import {alertsByEngine, fingerprintsByEngine, setCruxUnreadableForTests, structu
 import {RuleSet, runStructuralAlertsDetection} from '../panels/structural-alerts';
 import {PHARM_FAMILY_NAMES, PharmFamilySet, runPharmacophoreDetection} from '../panels/pharmacophore-features';
 import {CONTAINER_TIMEOUT, readDataframe} from './utils';
+import {isNoneValue} from '../crux/crux-api';
 import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG} from '../constants';
 
 /** The renderer's internals the tests read (the molecule's engine, a raster). */
@@ -695,6 +696,176 @@ category('chemical engine', () => {
     }
   }, {timeout: 60000 + CONTAINER_TIMEOUT});
 
+  test('descriptors: the typed columns are the list-built ones', async () => {
+    // batch 22: the columns made from typed arrays, each distinct molecule calculated once, hold what
+    // DG.Column.fromList(type, name, values with nulls) held: types, storage, values and missing values
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const molecules = DG.Column.fromStrings('molecules', [ASPIRIN, '', 'C1CC(', 'CCO', ASPIRIN, 'c1ccccc1O', 'CCO']);
+    const names = ['MolWt', 'NumHDonors', 'TPSA', 'RingCount', 'MolLogP', 'FractionCSP3'];
+    const actual = await calculateDescriptors(molecules, names);
+    const packed = await (await getCruxService()).calcDescriptors(molecules.toList(), names);
+    const differences: string[] = [];
+    for (const [name, values] of Object.entries(packed)) {
+      const expected = DG.Column.fromList(values.type, name,
+        Array.from(values.value, (v, i) => isNoneValue(values, i) ? null : v));
+      const column = actual.find((c) => c.name === name);
+      if (!column || column.type !== expected.type ||
+        column.getRawData().constructor !== expected.getRawData().constructor) {
+        differences.push(`${name}: ${column?.type} ${column?.getRawData().constructor.name}, list-built ` +
+          `${expected.type} ${expected.getRawData().constructor.name}`);
+        continue;
+      }
+      for (let i = 0; i < expected.length; i++) {
+        if (column.isNone(i) !== expected.isNone(i) || (!expected.isNone(i) && column.get(i) !== expected.get(i)))
+          differences.push(`${name} row ${i}: ${column.get(i)}, list-built ${expected.get(i)}`);
+      }
+    }
+    expect(differences.join('; '), '');
+  });
+
+  test('descriptors: 1,000 molecules use all the workers, with the same values', async () => {
+    // batch 22: fewer molecules than 1,000 per worker are split evenly over the workers; chunking changes no value
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList() as string[];
+    const molecules = DG.Column.fromStrings('molecules', smiles);
+    const names = ['MolWt', 'NumHDonors', 'TPSA', 'MolLogP', 'qed', 'FractionCSP3'];
+    setDescriptorTimingForTests(true);
+    let together: DG.Column[];
+    let timing: NonNullable<ReturnType<typeof lastDescriptorTiming>>;
+    try {
+      together = await calculateDescriptors(molecules, names);
+      timing = lastDescriptorTiming()!; // (read before the switch goes off, which forgets it)
+    } finally {
+      setDescriptorTimingForTests(false);
+    }
+    const workers = new Set(timing.chunks.map((c) => c.worker)).size;
+    const distinct = molecules.categories.length;
+    const what = `${timing.chunks.length} chunks of ${timing.chunks[0].size} on ${workers} of ${timing.workers} workers`;
+    expect(timing.chunks[0].size, Math.ceil(distinct / timing.workers), what);
+    expect(workers, timing.chunks.length, `one chunk per worker: ${what}`);
+    expect(workers > timing.workers / 2, true, what);
+    // the same molecules in tens: each call its own chunking
+    const differences: string[] = [];
+    for (let start = 0; start < smiles.length; start += 10) {
+      const part = await calculateDescriptors(DG.Column.fromStrings('molecules', smiles.slice(start, start + 10)),
+        names);
+      for (const column of part) {
+        const whole = together.find((c) => c.name === column.name)!;
+        for (let i = 0; i < column.length; i++) {
+          if (column.isNone(i) !== whole.isNone(start + i) || (!column.isNone(i) && column.get(i) !== whole.get(start + i)))
+            differences.push(`${column.name} row ${start + i}`);
+        }
+      }
+    }
+    expect(differences.slice(0, 10).join(', '), '', 'values that depend on the chunking');
+  }, {timeout: 300000});
+
+  test('descriptors: 50,000 rows of 1,000 molecules within 2 s', async () => {
+    // batch 22's budget: each distinct molecule once and typed arrays (before it: 4.8 s for these 20 descriptors)
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList() as string[];
+    const molecules = DG.Column.fromStrings('molecules', Array.from({length: 50000}, (_, i) => smiles[i % smiles.length]));
+    // the tree's first 20 2D descriptors, as the timing test's middle set
+    const names = (Object.values(await getDescriptorsTree()) as any[]).flatMap((g) => g.descriptors)
+      .filter((d: any) => !d.tags?.includes('3D')).map((d: any) => d.name as string).slice(0, 20);
+    await calculateDescriptors(DG.Column.fromStrings('warm', [ASPIRIN]), ['MolWt']); // the pool up
+    const started = performance.now();
+    const columns = await calculateDescriptors(molecules, names);
+    const ms = performance.now() - started;
+    console.log(`descriptor timing | budget: 50,000 rows of 1,000 molecules, ${names.length} names: ${ms.toFixed(0)} ms`);
+    expect(columns.length, names.length);
+    expect(ms < 2000, true, `${ms.toFixed(0)} ms`);
+  }, {timeout: 120000});
+
+  test('descriptors: Crux timing on 1,000 and 5,000 molecules', async () => {
+    // the small inputs batch 22 splits over all the workers: smiles.csv, and 5,000 unique molecules (each with one of
+    // five small extra fragments), with 3 and 20 descriptors; timings logged
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList() as string[];
+    const names20 = (Object.values(await getDescriptorsTree()) as any[]).flatMap((g) => g.descriptors)
+      .filter((d: any) => !d.tags?.includes('3D')).map((d: any) => d.name as string).slice(0, 20);
+    const extras = ['C', 'CC', 'CO', 'CN', 'CCl'];
+    const tables: [string, DG.Column][] = [['1,000', DG.Column.fromStrings('molecules', smiles)],
+      ['5,000', DG.Column.fromStrings('molecules', Array.from({length: 5000},
+        (_, i) => `${smiles[i % smiles.length]}.${extras[Math.floor(i / smiles.length)]}`))]];
+    await calculateDescriptors(DG.Column.fromStrings('warm', [ASPIRIN]), ['MolWt']); // the pool up
+    setDescriptorTimingForTests(true);
+    try {
+      for (const [label, molecules] of tables) {
+        for (const names of [['MolWt', 'TPSA', 'MolLogP'], names20]) {
+          const started = performance.now();
+          await calculateDescriptors(molecules, names);
+          const ms = performance.now() - started;
+          const timing = lastDescriptorTiming()!;
+          console.log(`descriptor timing | ${label} molecules (${molecules.categories.length} distinct), ` +
+            `${names.length} names: ${ms.toFixed(0)} ms; ${timing.chunks.length} chunks of ${timing.chunks[0].size} on ` +
+            `${new Set(timing.chunks.map((c) => c.worker)).size} of ${timing.workers} workers`);
+        }
+      }
+    } finally {
+      setDescriptorTimingForTests(false);
+    }
+  }, {timeout: 300000});
+
+  test('descriptors: Crux timing on a large table', async () => {
+    // smiles.csv's molecules over and over: 50,000 rows; in benchmark mode (--benchmark) 500,000 with 3, 20 and all
+    // the 2D descriptors, repeated and then unique (each with one of 500 small extra fragments: no two rows alike);
+    // each call's phases, pool and chunks logged
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    const rows = DG.Test.isInBenchmark ? 500000 : 50000;
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList() as string[];
+    const suffixes = ['', 'O', 'N', 'Cl', 'F', 'Br', 'S', 'C=O', 'C#N', 'OC', 'NC', 'CO', 'CN', 'C(=O)O', 'C(=O)N',
+      'OCC', 'NCC', 'SC', 'C(C)C', 'C(C)(C)C', 'CF', 'CCl', 'C(F)(F)F', 'OO', 'NN'];
+    const fragment = (k: number) => 'C'.repeat(1 + k % 20) + suffixes[Math.floor(k / 20) % suffixes.length];
+    const tables: [string, DG.Column][] = [['repeated', DG.Column.fromStrings('molecules',
+      Array.from({length: rows}, (_, i) => smiles[i % smiles.length]))]];
+    if (DG.Test.isInBenchmark) {
+      tables.push(['unique', DG.Column.fromStrings('molecules', Array.from({length: rows},
+        (_, i) => `${smiles[i % smiles.length]}.${fragment(Math.floor(i / smiles.length))}`))]);
+    }
+    const tree = await getDescriptorsTree();
+    const names2D = (Object.values(tree) as any[]).flatMap((g) => g.descriptors)
+      .filter((d: any) => !d.tags?.includes('3D')).map((d: any) => d.name as string);
+    // all the 2D descriptors on the first 100,000 rows only (some 200 columns of 500,000 would not fit a tab)
+    const sets: [string[], number][] = DG.Test.isInBenchmark ?
+      [[['MolWt', 'TPSA', 'MolLogP'], rows], [names2D.slice(0, 20), rows], [names2D, 100000]] :
+      [[['MolWt', 'TPSA', 'MolLogP'], rows]];
+    setDescriptorTimingForTests(true);
+    const runs = tables.flatMap(([kind, column]) => sets.map(([names, n]) => ({kind, names, molecules: n === rows ?
+      column : DG.Column.fromStrings('molecules', (column.toList() as string[]).slice(0, n))})));
+    try {
+      for (const {kind, molecules, names} of runs) {
+        const started = performance.now();
+        const columns = await calculateDescriptors(molecules, names);
+        const calculated = performance.now();
+        const table = DG.DataFrame.create(molecules.length);
+        for (const col of columns)
+          table.columns.add(col);
+        const added = performance.now();
+        const timing = lastDescriptorTiming()!;
+        const chunkMs = timing.chunks.map((c) => c.ms).sort((a, b) => a - b);
+        const sum = (f: (c: typeof timing.chunks[0]) => number) => timing.chunks.reduce((s, c) => s + f(c), 0);
+        console.log(`descriptor timing | ${molecules.length} ${kind} rows (${molecules.categories.length} distinct), ` +
+          `${names.length} names: ${(calculated - started).toFixed(0)} ms ` +
+          `(adding the columns ${(added - calculated).toFixed(0)} ms); ${timing.workers} workers, ` +
+          `${timing.chunks.length} chunks of ${timing.chunks[0]?.size}; phases ` +
+          Object.entries(timing.phases).map(([k, v]) => `${k} ${v.toFixed(0)}`).join(', ') + '; per chunk median ' +
+          `${chunkMs[Math.floor(chunkMs.length / 2)]?.toFixed(0)} ms, Crux ${(sum((c) => c.wasmMs) /
+            timing.chunks.length).toFixed(0)} ms, parse ${(sum((c) => c.parseMs) / timing.chunks.length).toFixed(0)} ms; ` +
+          `throughput ${(timing.rows / ((timing.phases['chunks'] ?? 1) / 1000)).toFixed(0)} molecules/s; storage ` +
+          [...new Set(columns.map((c) => `${c.type} ${c.getRawData().constructor.name}`))].join(', '));
+        expect(columns.length, names.length);
+      }
+    } finally {
+      setDescriptorTimingForTests(false);
+    }
+  }, {timeout: 600000, benchmark: true, benchmarkTimeout: 3600000});
+
   test('scaffold tree: Crux against the Python script', async () => {
     const datasets: [string, string, number][] = [
       ['tests/sar-small_test.csv', 'smiles', 1000], ['smiles.csv', 'canonical_smiles', 750],
@@ -734,7 +905,7 @@ category('chemical engine', () => {
       setSubstructureSearchEngine(SubstructureSearchEngine.Crux);
       expect(getSubstructureSearchEngine(), SubstructureSearchEngine.Crux);
       const label = query.includes('M  END') ? 'a molblock' : query;
-      expect(await getCruxQuery(query, '') !== null, true, `Crux searches ${label}`);
+      expect(await cruxReadsQuery(query, ''), true, `Crux searches ${label}`);
       const crux: DG.BitSet = (await PackageFunctions.searchSubstructure(col, query, '')).get(0);
       setSubstructureSearchEngine(SubstructureSearchEngine.RDKit);
       expect(getSubstructureSearchEngine(), SubstructureSearchEngine.RDKit);

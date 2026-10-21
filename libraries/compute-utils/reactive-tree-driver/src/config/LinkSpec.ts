@@ -23,7 +23,7 @@ IOSelectorType ::= "inputs" | "outputs"
 IOSelectorNqName ::= Id ':' Id
 Selector ::= SelectorType '(' SelectorArgs? ')'
 SelectorArgs ::= (RefArg (',' TargetIds (',' StopIds)?)?) | (TargetIds (',' StopIds)?) {fragment=true}
-SelectorType ::= "after+" | "after*" | "after" | "before+" | "before*" | "before" | "same" | "first" | "last" | "all" | "expand"
+SelectorType ::= "after+" | "after*" | "after" | "before+" | "before*" | "before" | "same" | "first" | "last" | "all" | "expand" | "count"
 TargetIds ::= ArgsOr
 StopIds ::= ArgsOr
 TagIds ::= ArgsAnd
@@ -42,7 +42,7 @@ const linkParser = new Parser(Grammars.Custom.getRules(linkSpecGrammar));
 
 export type LinkRefSelectors = 'after+' | 'after*' | 'after' | 'before+' | 'before*' | 'before' | 'same';
 export type TagRefSelectors = 'after*' | 'after' | 'before*' | 'before' | 'same';
-export type LinkNonRefSelectors = 'first' | 'last' | 'all' | 'expand';
+export type LinkNonRefSelectors = 'first' | 'last' | 'all' | 'expand' | 'count';
 export type IOExpandSelectors = 'inputs' | 'outputs';
 const ioExcludeKinds = ['nonscalar', 'linked'] as const;
 export type IOExcludeKind = typeof ioExcludeKinds[number];
@@ -89,7 +89,7 @@ export type LinkIOParsed = {
   unlinked?: boolean;
 }
 
-const nonRefSelectors = ['first', 'last', 'all', 'expand'];
+const nonRefSelectors = ['first', 'last', 'all', 'expand', 'count'];
 
 export function isNonRefSelector(sel: LinkSelectors): sel is LinkNonRefSelectors {
   return nonRefSelectors.includes(sel);
@@ -152,7 +152,7 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed[] {
       checkSelector(io, selector, isBase, ref);
       const ids = targetIdsNode ? targetIdsNode.children.map((cnode) => cnode.text) : [];
       const stopIds = stopIdsNode ? stopIdsNode.children.map((cnode) => cnode.text) : [];
-      if (ids.length === 0 && selector !== 'same')
+      if (ids.length === 0 && selector !== 'same' && selector !== 'count')
         throw new Error(`Link io ${io} is using ${selector} without an id list`);
       return {type: 'selector' as const, selector, ids, stopIds, ref};
     } else if (node.type === 'IOSelector') {
@@ -188,6 +188,19 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed[] {
       return;
     throw new Error(`Link ${io}, unknown AST node type ${node.type}`);
   }).filter((x): x is Segment => !!x);
+
+  // a count is a number, not an io, so it ends an input query
+  const countIdx = segments.findIndex((seg) => seg.type === 'selector' && seg.selector === 'count');
+  if (countIdx >= 0) {
+    if (ioType !== 'input')
+      throw new Error(`Link io ${io}: count selector is allowed only in input queries`);
+    if (countIdx !== segments.length - 1)
+      throw new Error(`Link io ${io}: count selector must be the last segment`);
+    const flag = flags.find((item) => item !== 'optional');
+    if (flag)
+      throw new Error(`Link io ${io}: (${flag}) flag is not allowed with count`);
+    return [{name, segments, flags}];
+  }
 
   const lastSeg = indexFromEnd(segments);
   const isDeferred = !!(lastSeg && lastSeg.type === 'selector' && lastSeg.ioExpand);

@@ -141,18 +141,22 @@ export type WellReadingExpand = {
 };
 
 export type PlatesTransactionOp =
-  {op: 'insert'; table: 'plate_type'; ref?: string; values: DG.DomainTxValues<PlateTypeInsert>} |
+  {op: 'insert'; table: 'plate_type'; ref?: string; values: DG.DomainTxValues<PlateTypeInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'plate_type'; id: string; values: DG.DomainTxValues<Partial<PlateTypeRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'plate_type'; id: string} |
-  {op: 'insert'; table: 'plate'; ref?: string; values: DG.DomainTxValues<PlateInsert>} |
+  {op: 'restore'; table: 'plate_type'; id: string} |
+  {op: 'insert'; table: 'plate'; ref?: string; values: DG.DomainTxValues<PlateInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'plate'; id: string; values: DG.DomainTxValues<Partial<PlateRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'plate'; id: string} |
-  {op: 'insert'; table: 'plate_well'; ref?: string; values: DG.DomainTxValues<PlateWellInsert>} |
+  {op: 'restore'; table: 'plate'; id: string} |
+  {op: 'insert'; table: 'plate_well'; ref?: string; values: DG.DomainTxValues<PlateWellInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'plate_well'; id: string; values: DG.DomainTxValues<Partial<PlateWellRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'plate_well'; id: string} |
-  {op: 'insert'; table: 'well_reading'; ref?: string; values: DG.DomainTxValues<WellReadingInsert>} |
+  {op: 'restore'; table: 'plate_well'; id: string} |
+  {op: 'insert'; table: 'well_reading'; ref?: string; values: DG.DomainTxValues<WellReadingInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'well_reading'; id: string; values: DG.DomainTxValues<Partial<WellReadingRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'well_reading'; id: string};
+  {op: 'delete'; table: 'well_reading'; id: string} |
+  {op: 'restore'; table: 'well_reading'; id: string};
 
 /** Typed clients for the `plates` domain schema tables (lazy — no import-time side effects). */
 export const platesDb = {

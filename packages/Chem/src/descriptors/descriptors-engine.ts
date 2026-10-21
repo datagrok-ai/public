@@ -10,7 +10,7 @@ import {isCruxRequested} from '../engine/chem-engine';
 import {cruxOrRdKitAsync, warnCruxFallback} from '../engine/fallback';
 import {getCruxService} from '../crux/crux-searches';
 import {loadCrux} from '../engine/crux-module';
-import {CruxWorkerApi, DescriptorValues} from '../crux/crux-api';
+import {CruxWorkerApi, DescriptorTiming, INT_NONE, PackedDescriptorValues, isNoneValue} from '../crux/crux-api';
 
 let cruxTree: object | null = null;
 
@@ -41,16 +41,83 @@ export async function calculateDescriptors(molecules: DG.Column, descriptors: st
 async function cruxDescriptors(molecules: DG.Column, descriptors: string[]): Promise<DG.Column[]> {
   // the column's values as the container gets them: Crux reads them as chem.py does (a MOL block if it holds
   // "M  END", else SMILES; '' an empty molecule; null or unreadable: nulls)
-  const input = molecules.toList() as (string | null)[];
-  const result = await (await getCruxService()).calcDescriptors(input, descriptors);
+  const timing: DescriptorTiming | null = timingOn ?
+    {rows: molecules.length, names: descriptors.length, workers: 0, phases: {}, chunks: []} : null;
+  let phase = performance.now();
+  const lap = (name: string) => {
+    if (timing) {
+      const now = performance.now();
+      timing.phases[name] = now - phase;
+      phase = now;
+    }
+  };
+  // each distinct molecule once (a string column's categories), its values then spread over its rows
+  const byCategory = molecules.type === DG.COLUMN_TYPE.STRING;
+  // (an empty cell is null, as toList() gives it, not the empty category '': Crux reads '' as an empty molecule)
+  const input = (byCategory ? molecules.categories.map((c) => c === '' ? null : c) : molecules.toList()) as
+    (string | null)[];
+  const rowCategories = byCategory ? molecules.getRawData() as Int32Array : null;
+  lap('read column');
+  const service = await getCruxService();
+  lap('pool');
+  const result = await service.calcDescriptors(input, descriptors, timing ?? undefined);
+  phase = performance.now();
   if (unreadableForTests) {
     input.forEach((m, i) => {
       if (m && unreadableForTests!.has(m))
-        Object.values(result).forEach((values) => values.value[i] = null);
+        Object.values(result).forEach((values) => values.value[i] = values.type === 'int' ? INT_NONE : NaN);
     });
   }
   await fromContainerWhereUnread(input, descriptors, result);
-  return Object.entries(result).map(([name, {type, value}]) => DG.Column.fromList(type, name, value));
+  lap('unread rows');
+  const columns = Object.entries(result).map(([name, values]) => descriptorColumn(name, values, rowCategories));
+  lap('columns');
+  if (timing) {
+    lastTiming = timing;
+    console.info(`Chem | Crux descriptors: ${timing.rows} rows, ${timing.names} names, ${timing.workers} workers; ` +
+      Object.entries(timing.phases).map(([k, v]) => `${k} ${v.toFixed(0)} ms`).join(', '));
+  }
+  return columns;
+}
+
+/**
+ * A descriptor's column, as DG.Column.fromList(type, name, values with nulls) makes it (its storage too), from the
+ * typed values, spread over the rows by `rowCategories` (a row's category) when given.
+ */
+function descriptorColumn(name: string, values: PackedDescriptorValues, rowCategories: Int32Array | null): DG.Column {
+  const length = rowCategories ? rowCategories.length : values.value.length;
+  const at = rowCategories ? (row: number) => rowCategories[row] : (row: number) => row;
+  if (values.type === 'int') {
+    const array = new Int32Array(length);
+    for (let row = 0; row < length; row++)
+      array[row] = values.value[at(row)]; // INT_NONE is Datagrok's int null
+    return DG.Column.fromInt32Array(name, array);
+  }
+  doubleStorage ??= DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, '', [0]).getRawData() instanceof Float64Array ?
+    'float64' : 'float32';
+  const array = doubleStorage === 'float64' ? new Float64Array(length) : new Float32Array(length);
+  for (let row = 0; row < length; row++) {
+    const v = values.value[at(row)];
+    array[row] = Number.isNaN(v) ? DG.FLOAT_NULL : v;
+  }
+  return array instanceof Float64Array ? DG.Column.fromFloat64Array(name, array) :
+    DG.Column.fromFloat32Array(name, array);
+}
+/** How DG.Column.fromList stores doubles (the columns made here match it). */
+let doubleStorage: 'float32' | 'float64' | null = null;
+
+let timingOn = false;
+let lastTiming: DescriptorTiming | null = null;
+
+/** Diagnosis: Crux descriptors calls are timed per phase and per chunk (and logged) while on. */
+export function setDescriptorTimingForTests(on: boolean): void {
+  timingOn = on;
+  lastTiming = null;
+}
+
+/** The last timed call's phases and chunks (null when none was timed). */
+export function lastDescriptorTiming(): DescriptorTiming | null {
+  return lastTiming;
 }
 
 /**
@@ -59,9 +126,9 @@ async function cruxDescriptors(molecules: DG.Column, descriptors: string[]): Pro
  * never shows as empty cells without a word. A molecule neither reads stays empty, and is no fallback.
  */
 async function fromContainerWhereUnread(input: (string | null)[], descriptors: string[],
-  result: {[name: string]: DescriptorValues}): Promise<void> {
+  result: {[name: string]: PackedDescriptorValues}): Promise<void> {
   const values = Object.values(result);
-  const rows = input.flatMap((m, i) => m && values.length && values.every((v) => v.value[i] === null) ? [i] : []);
+  const rows = input.flatMap((m, i) => m && values.length && values.every((v) => isNoneValue(v, i)) ? [i] : []);
   if (!rows.length)
     return;
   let columns: DG.Column[];

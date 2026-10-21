@@ -264,33 +264,42 @@ export class StateTree {
 
   public loadSubTree(puuid: string, dbId: string, id: string, pos: number, isReadonly: boolean, isReplace = false) {
     return this.mutateTree(() => {
-      const [_root, _nqName, ppath] = StateTree.findPipelineNode(this, puuid);
+      const [root, _nqName, ppath] = StateTree.findPipelineNode(this, puuid);
+      if (root.getItem().isReadonly)
+        throw new Error(`Pipeline uuid ${puuid} is read-only`);
       const subConfig = StateTree.getSubConfig(this.config, ppath, id);
-      if (isPipelineStepConfig(subConfig))
-        throw new Error(`FuncCall node ${JSON.stringify(ppath)}, but pipeline is expected`);
-      const tree = StateTree.load(
-        {
-          dbId,
-          config: subConfig,
-          mockMode: this.mockMode,
-          annotationChecks: this.annotationChecks,
-          batchLinks: this.batchLinks,
-          isReadonly,
-        },
-      ).pipe(
-        concatMap((tree) => StateTree.loadOrCreateCalls(tree, this.mockMode)),
-      ).pipe(
-        map((tree) => isReplace ?
-          this.nodeTree.replaceBrunch(ppath, tree.nodeTree.root, id, pos) :
-          this.nodeTree.attachBrunch(ppath, tree.nodeTree.root, id, pos),
-        ),
-      );
+      const subRoot$: Observable<TreeNode<StateTreeNode>> = isPipelineStepConfig(subConfig) ?
+        defer(() => {
+          const node = new FuncCallNode(subConfig, isReadonly, this.logger);
+          node.pendingId = dbId;
+          return of(new TreeNode<StateTreeNode>(node));
+        }) :
+        StateTree.load(
+          {
+            dbId,
+            config: subConfig,
+            mockMode: this.mockMode,
+            annotationChecks: this.annotationChecks,
+            batchLinks: this.batchLinks,
+            isReadonly,
+          },
+        ).pipe(map((tree) => tree.nodeTree.root));
       const details: TreeUpdateMutationPayload[] =[{
         mutationRootPath: ppath,
         addIdx: pos,
         id,
       }];
-      return tree.pipe(mapTo([{isMutation: true, details}]));
+      return subRoot$.pipe(
+        concatMap((subRoot) => {
+          subRoot.getItem().sourceRunId = dbId;
+          if (isReplace)
+            this.nodeTree.replaceBrunch(ppath, subRoot, id, pos);
+          else
+            this.nodeTree.attachBrunch(ppath, subRoot, id, pos);
+          return StateTree.loadOrCreateCalls(this, this.mockMode);
+        }),
+        mapTo([{isMutation: true, details}]),
+      );
     });
   }
 

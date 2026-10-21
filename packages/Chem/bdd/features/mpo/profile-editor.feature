@@ -1,4 +1,4 @@
-@journey @realizes:chem.cp.mpo-profile-crud @realizes:chem.int.mpo-profile-sync
+@serial @journey @realizes:chem.cp.mpo-profile-crud @realizes:chem.int.mpo-profile-sync
 Feature: The MPO profile editor, from the Browse tree to a deleted profile
   Browse > Apps > Chem > MPO profiles opens the Manage Profiles list. A profile created there keeps
   the property name typed into it key by key (GROK-20918), is saved under the name typed on its tab,

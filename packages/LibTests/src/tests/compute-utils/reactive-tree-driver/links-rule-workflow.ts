@@ -234,10 +234,10 @@ category('ComputeUtils: Driver links rule: workflow level', async () => {
     ...(rootRule ? {links: [rule]} : {}),
   });
 
-  test('Reading $steps only in describe leaves the rule data effects alone after tree changes', async () => {
+  test('A separate data effect not reading the count leaves user values alone after tree changes', async () => {
     const pconf = await getProcessedConfig(sourceAndDays({
-      id: 'r', type: 'rule', from: 'm:src/a', to: ['t:src/b', 'title:title'],
-      effects: ['set(t, m)', 'describe(title, cat("n=", $steps))'],
+      id: 'r', type: 'rule', from: ['m:src/a', 'n:days/count()'], to: ['t:src/b', 'title:title'],
+      effects: ['set(t, m, separate: true)', 'describe(title, cat("n=", n))'],
     }));
     testScheduler.run(({flush}) => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
@@ -254,9 +254,9 @@ category('ComputeUtils: Driver links rule: workflow level', async () => {
     });
   });
 
-  test('A data effect reading $steps runs after tree changes, not at init', async () => {
+  test('A data effect reading a count runs after tree changes, not at init', async () => {
     const pconf = await getProcessedConfig(sourceAndDays({
-      id: 'r', type: 'rule', from: [], to: 't:first(day)/b', effects: ['set(t, $steps)'],
+      id: 'r', type: 'rule', from: 'n:count()', to: 't:first(day)/b', effects: ['set(t, n)'],
     }, false));
     testScheduler.run(({flush}) => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
@@ -296,7 +296,7 @@ category('ComputeUtils: Driver links rule: workflow level', async () => {
 
   const validatesSteps = (mode: TreeMode) => async () => {
     const pconf = await getProcessedConfig(daysPipeline({
-      id: 'r', type: 'rule', from: [], to: 'self(node)', when: 'eq($steps, 0)',
+      id: 'r', type: 'rule', from: 'n:count()', to: 'self(node)', when: 'eq(n, 0)',
       effects: ['error(self, "Add at least one day")'],
     }));
     testScheduler.run(({flush}) => {
@@ -314,25 +314,26 @@ category('ComputeUtils: Driver links rule: workflow level', async () => {
     });
   };
 
-  const describesSteps = (mode: TreeMode) => async () => {
+  // tree mode runs meta links on input changes only, the Driver also at init
+  const describesSteps = (mode: TreeMode, initTitle?: string) => async () => {
     const pconf = await getProcessedConfig(daysPipeline({
-      id: 'r', type: 'rule', from: [], to: 'title:title', effects: ['describe(title, cat("Days: ", $steps))'],
+      id: 'r', type: 'rule', from: 'n:count()', to: 'title:title', effects: ['describe(title, cat("Days: ", n))'],
     }, 1));
     testScheduler.run(({flush}) => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, ...mode});
       tree.init().subscribe();
       flush();
       const days = tree.nodeTree.getNode([{idx: 0}]).getItem();
-      expectDeepEqual(days.nodeDescription.getState('title'), 'Days: 1', {prefix: 'init'});
+      expectDeepEqual(days.nodeDescription.getState('title'), initTitle, {prefix: 'init'});
       tree.addSubTree(days.uuid, 'day', 1).subscribe();
       flush();
       expectDeepEqual(days.nodeDescription.getState('title'), 'Days: 2', {prefix: 'after adding a day'});
     });
   };
 
-  test('A describe reading $steps follows every tree change', describesSteps({}));
+  test('A describe reading a count follows every tree change', describesSteps({}));
 
-  test('A describe reading $steps follows every tree change in Driver mode', describesSteps(driverMode));
+  test('A describe reading a count follows every tree change in Driver mode', describesSteps(driverMode, 'Days: 1'));
 
   test('Describe on tags writes this rule\'s tags', async () => {
     const pconf = await getProcessedConfig(twoSteps([{
@@ -373,7 +374,7 @@ category('ComputeUtils: Driver links rule: workflow level', async () => {
     });
   });
 
-  test('$steps validates the workflow after every tree change', validatesSteps({}));
+  test('A count validates the workflow after every tree change', validatesSteps({}));
 
-  test('$steps validates the workflow after every tree change in Driver mode', validatesSteps(driverMode));
+  test('A count validates the workflow after every tree change in Driver mode', validatesSteps(driverMode));
 });

@@ -157,6 +157,30 @@ category('ComputeUtils: Driver state tree duplicate', async () => {
     expectDeepEqual(stepAt(tree, [0, 1, 1, 1]).getStateStore().getState('b'), 2, {prefix: 'mul b'});
   });
 
+  test('Duplicate keeps a read-only item read-only with its source run', async () => {
+    const pconf = await getProcessedConfig({
+      id: 'root',
+      type: 'static',
+      steps: [{
+        id: 'items',
+        type: 'parallel',
+        stepTypes: [{id: 'block', type: 'static', steps: [{id: 'inner1', nqName: 'LibTests:TestAdd2'}]}],
+        initialSteps: ['block'],
+      }],
+    });
+    const tree = StateTree.fromPipelineConfig({config: pconf, isReadonly: true});
+    await tree.init().toPromise();
+    pipelineAt(tree, [0, 0]).sourceRunId = 'run1';
+    stepAt(tree, [0, 0, 0]).sourceRunId = 'run2';
+    await tree.duplicateSubtree(pipelineAt(tree, [0, 0]).uuid).toPromise();
+    const copy = stepAt(tree, [0, 1, 0]);
+    expectDeepEqual(pipelineAt(tree, [0, 1]).isReadonly, true, {prefix: 'Item'});
+    expectDeepEqual(pipelineAt(tree, [0, 1]).sourceRunId, 'run1', {prefix: 'Source'});
+    expectDeepEqual(copy.isReadonly, true, {prefix: 'Step'});
+    expectDeepEqual(copy.instancesWrapper.getInstance()?.isReadonly, true, {prefix: 'Call'});
+    expectDeepEqual(copy.sourceRunId, 'run2', {prefix: 'Step source'});
+  });
+
   test('Duplicate does not run onInit', async () => {
     let initRuns = 0;
     const tree = await makeTree({

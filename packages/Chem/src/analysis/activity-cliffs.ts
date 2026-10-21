@@ -5,9 +5,13 @@ import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {PackageFunctions} from '../package';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {getMCS} from '../utils/most-common-subs';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getUncommonAtomsAndBonds} from '../utils/chem-common';
+import {isCruxRequested} from '../engine/chem-engine';
+import {cruxOrRdKitAsync} from '../engine/fallback';
+import {getCruxService} from '../crux/crux-searches';
 
 const canvasWidth = 200;
 const canvasHeight = 100;
@@ -32,27 +36,46 @@ export function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams, hosts: 
 }
 
 async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams, hosts: HTMLElement[], molecules: [string, string]) {
-  const mcsDf = DG.DataFrame.create(2);
-  mcsDf.columns.addNewString('smiles').init((i) => molecules[i]);
-  const mcs = await getMCS(mcsDf.col('smiles')!, true, true);
+  const mcs = await cliffMcs(molecules);
   cachedData.set(`${molecules[0]}_${molecules[1]}`, mcs);
   drawMolecules(params, hosts, molecules);
+}
+
+/**
+ * The pair's MCS, which the tooltip and the panel highlight the rest of: the SMARTS of RDKit's FMCS from the RDKit
+ * workers; in Crux mode ("Chemical engine"), each molecule's atoms and bonds outside RDKit's Rascal MCES from the Crux
+ * workers (the most bonds the two share, possibly in several fragments; null when they share too little), with FMCS
+ * behind it. Rascal's own atom matches, not its SMARTS matched back: the fragments of a disconnected MCES can match
+ * elsewhere.
+ */
+export async function cliffMcs(molecules: [string, string]): Promise<string | ISubstruct[] | null> {
+  const fmcs = () => {
+    const mcsDf = DG.DataFrame.create(2);
+    mcsDf.columns.addNewString('smiles').init((i) => molecules[i]);
+    return getMCS(mcsDf.col('smiles')!, true, true);
+  };
+  if (!isCruxRequested())
+    return fmcs();
+  return cruxOrRdKitAsync<string | ISubstruct[] | null>('activity cliffs MCS',
+    async () => (await getCruxService()).pairUncommonAtomsAndBonds(molecules[0], molecules[1]), fmcs);
 }
 
 function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[], molecules: [string, string]) {
   const rdkit = PackageFunctions.getRdKitModule();
   let mcsMol: RDMol | null = null;
   const mcsGenerated = cachedData.has(`${molecules[0]}_${molecules[1]}`);
+  const mcs: string | ISubstruct[] | null = cachedData.get(`${molecules[0]}_${molecules[1]}`);
   try {
-    if (mcsGenerated)
-      mcsMol = rdkit.get_qmol(cachedData.get(`${molecules[0]}_${molecules[1]}`));
+    if (mcsGenerated && typeof mcs === 'string')
+      mcsMol = rdkit.get_qmol(mcs);
     molecules.forEach((molecule: string, index: number) => {
       const imageHost = ui.canvas(canvasWidth, canvasHeight);
       if (params.seqCol.meta.units === DG.chem.Notation.Smiles) {
         //convert to molFile to draw in coordinates similar to dataframe cell
         molecule = PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
       }
-      const substruct = mcsGenerated ? getUncommonAtomsAndBonds(molecule!, mcsMol, rdkit) : null;
+      const substruct = !mcsGenerated ? null :
+        typeof mcs === 'string' ? getUncommonAtomsAndBonds(molecule!, mcsMol, rdkit) : mcs?.[index] ?? null;
       drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecule, '',
         {normalizeDepiction: true, straightenDepiction: true}, substruct);
       ui.empty(hosts[index]);

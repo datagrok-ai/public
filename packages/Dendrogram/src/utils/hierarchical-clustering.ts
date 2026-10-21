@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as rxjs from 'rxjs';
 
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
 import {DistanceMetric, isLeaf, LinkageMethod, NodeType} from '@datagrok-libraries/bio/src/trees';
@@ -19,7 +20,7 @@ export async function hierarchicalClusteringDialog(getDefaultCoulumn: (t: DG.Dat
     return;
   }
 
-  let currentTableView = grok.shell.tv.table;
+  let currentTableView: DG.DataFrame | null = grok.shell.tv.table;
   let currentSelectedColNames: string[] = [];
 
   const availableColNames = (table: DG.DataFrame): string[] => {
@@ -34,7 +35,13 @@ export async function hierarchicalClusteringDialog(getDefaultCoulumn: (t: DG.Dat
     currentSelectedColNames = columns.map((c) => c.name);
   };
 
-  const onTableInputChanged = (table: DG.DataFrame) => {
+  const onTableInputChanged = (table: DG.DataFrame | null) => {
+    if (!table) {
+      ui.empty(columnsInputDiv);
+      currentTableView = null;
+      currentSelectedColNames = [];
+      return;
+    }
     const defaultCol = getDefaultCoulumn(table);
     const defaultVal = defaultCol ? [defaultCol] : [];
     const newColInput = ui.input.columns('Features', {table: table,
@@ -63,7 +70,14 @@ export async function hierarchicalClusteringDialog(getDefaultCoulumn: (t: DG.Dat
 
   onTableInputChanged(currentTableView!);
 
-  ui.dialog('Hierarchical Clustering')
+  const tablesSub = rxjs.merge(grok.events.onTableAdded, grok.events.onTableRemoved).subscribe(() => {
+    if (tableInput.value !== currentTableView)
+      onTableInputChanged(tableInput.value);
+  });
+
+  const dialog = ui.dialog('Hierarchical Clustering');
+  dialog.onClose.subscribe(() => tablesSub.unsubscribe());
+  dialog
     .add(verticalDiv)
     .show()
     .onOK(async () => {
