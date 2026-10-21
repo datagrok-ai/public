@@ -67,7 +67,7 @@ async function create(folderArg: string, opts: CreateOptions): Promise<boolean> 
     host: dk.canonicalHost(), hostLabel: os.hostname(), folder: dk.canonicalFolder(folder), folderLabel: folder,
     readOnly: opts.readOnly,
   })).catch((e: any) => {
-    throw e?.apiError?.errorCode === 403
+    throw e?.apiError?.errorCode === 403 && `${e.apiError.error}`.includes('ConnectLocalFolders')
       ? new Error(`You don't have permission to connect folders on ${new URL(cred.url).host}. Ask an administrator.`) : e;
   });
   const conn = created.connection;

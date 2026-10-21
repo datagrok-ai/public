@@ -169,4 +169,5 @@ For more information on configuring connections, refer to the [Connections](http
   `<connection>` is the connection name, a connection id prefix (8+ characters), or the folder. `stop` also keeps
   the folder disconnected after a reboot; `rm` removes the container and deletes the connection. Your connected
   folders are also listed (and can be revoked) in the Datagrok user profile. Others see one as an ordinary
-  connection, under its permissions.
+  connection, under its permissions. Containers made by the earlier dev build of this command (labels
+  `ai.datagrok.share.*`) are not listed: remove them with `docker rm -f <name>`.

@@ -133,8 +133,8 @@ dk.proc.spawn = ((_cmd: string, args: string[]) => {
 interface Stand {
   shares: Map<string, any>, keys: any[], down: boolean, agentImage: string,
   fail?: (method: string, path: string) => boolean,
-  /** The user lacks the permission to connect folders. */
-  forbidden?: boolean,
+  /** `POST /local_shares` answers 403 with this message. */
+  forbidden?: string,
 }
 const stands: Record<string, Stand> = {};
 
@@ -153,7 +153,7 @@ async function serve(url: string, init: RequestInit = {}): Promise<Response> {
     return json({error: 'Internal error'}, 500);
   const body = init.body ? JSON.parse(init.body as string) : null;
   if (s.forbidden && p === '/local_shares' && method === 'POST') {
-    return new Response(JSON.stringify({'#type': 'ApiError', message: 'Permission denied'}),
+    return new Response(JSON.stringify({'#type': 'ApiError', message: s.forbidden}),
       {status: 200, headers: {'content-type': 'application/json', 'api-error-code': '403'}});
   }
   if (p === '/users/login/key/challenge')
@@ -294,11 +294,22 @@ describe('grok connect-folder <folder>', () => {
   });
 
   it('says so when the user may not connect folders, and leaves no key and no container', async () => {
-    stands[A].forbidden = true;
+    stands[A].forbidden = 'Permission ConnectLocalFolders is required';
     const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     expect(await share(args(folder, {host: A}))).toBe(false);
     expect(stderr.mock.calls.map((c) => `${c[0]}`).join(''))
       .toContain('You don\'t have permission to connect folders on stand-a. Ask an administrator.');
+    expect(stands[A].keys).toHaveLength(0);
+    expect(ran()).toHaveLength(0);
+  });
+
+  it('passes any other 403 through as the server says it', async () => {
+    stands[A].forbidden = 'The share belongs to another user';
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    expect(await share(args(folder, {host: A}))).toBe(false);
+    const printed = stderr.mock.calls.map((c) => `${c[0]}`).join('');
+    expect(printed).toContain('The share belongs to another user');
+    expect(printed).not.toContain('permission to connect folders');
     expect(stands[A].keys).toHaveLength(0);
     expect(ran()).toHaveLength(0);
   });
