@@ -5,6 +5,7 @@ import {RDModule, RDMol, RDReaction, MolList} from '@datagrok-libraries/chem-met
 import {BRANCH_DELIMITER} from '../../rendering/rdkit-reaction-renderer';
 import {EnumeratorConfig} from './config';
 import {applyProductFilters, buildExclusionQmols, computeMolStats, MolStats, stripIsotopesFromSmiles} from './filters';
+import {onReactionEngine} from '../reactions/reaction-engine';
 
 export interface TemplateInput {
   smarts: string;
@@ -486,7 +487,66 @@ async function runCascade(
   return {products: terminal, outOfCycles, outOfRoom: capped};
 }
 
+/** Whether `module` reads the molecule. */
+function readsMol(module: RDModule, smiles: string): boolean {
+  const mol = tryGetMol(module, smiles);
+  mol?.delete();
+  return !!mol;
+}
+
+/** Whether `module` reads the query. */
+function readsQmol(module: RDModule, smarts: string): boolean {
+  const query = tryGetQmol(module, smarts.trim());
+  query?.delete();
+  return !!query;
+}
+
+/** How a template reads on `module`: -1 when it is skipped, else the number of its blocking SMARTS read. */
+function templateReading(module: RDModule, t: TemplateInput, i: number): number {
+  const parsed = parseTemplate(module, t, i, []);
+  if (!parsed)
+    return -1;
+  const blocking = parsed.blockingQmols.length;
+  disposeTemplate(parsed);
+  return blocking;
+}
+
+/**
+ * The first input of the run Crux reads otherwise than RDKit (a template, its reactant or blocking SMARTS, an
+ * exclusion SMARTS, a building block or reagent RDKit reads and Crux does not), or null: Crux would skip what RDKit
+ * mode runs.
+ */
+function readOtherwise(crux: RDModule, rdkit: RDModule, opts: EnumerateOptions): string | null {
+  const overrides = opts.perRoundOverrides ?? [];
+  const templates = [...opts.templates, ...overrides.flatMap((o) => o.templates ?? [])];
+  for (let i = 0; i < templates.length; i++) {
+    if (templateReading(crux, templates[i], i) !== templateReading(rdkit, templates[i], i))
+      return `template ${templates[i].smarts}`;
+  }
+  const molecules = [...opts.buildingBlocks, ...(opts.reagents ?? []),
+    ...overrides.flatMap((o) => [...(o.buildingBlocks ?? []), ...(o.reagents ?? [])])];
+  const molecule = molecules.find((s) => !readsMol(crux, s) && readsMol(rdkit, s));
+  if (molecule !== undefined)
+    return `molecule ${molecule}`;
+  const exclusion = opts.exclusionSmarts.find((s) => s.trim() && !readsQmol(crux, s) && readsQmol(rdkit, s));
+  return exclusion !== undefined ? `exclusion SMARTS ${exclusion}` : null;
+}
+
+/**
+ * The enumeration's rows and warnings. `opts.rdkit` is RDKit's module: in Crux mode the run is on the Crux module
+ * (utils/reactions/reaction-engine.ts: the same rows on Chem's enumeration demo), on RDKit's when Crux fails or reads
+ * one of the inputs otherwise than RDKit (it would skip what RDKit mode runs).
+ */
 export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRow[]; warnings: string[]}> {
+  return onReactionEngine('reaction enumeration', opts.rdkit, async (module) => {
+    const otherwise = module === opts.rdkit ? null : readOtherwise(module, opts.rdkit, opts);
+    if (otherwise)
+      throw new Error(`Crux reads an input otherwise than RDKit: ${otherwise}`);
+    return enumerateOn({...opts, rdkit: module});
+  });
+}
+
+async function enumerateOn(opts: EnumerateOptions): Promise<{rows: OutputRow[]; warnings: string[]}> {
   const {rdkit, config, templates, buildingBlocks, exclusionSmarts, reagents,
     perRoundOverrides, onProgress, isCancelled} = opts;
   const warnings: string[] = [];
