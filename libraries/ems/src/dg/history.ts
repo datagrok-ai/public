@@ -136,11 +136,9 @@ export class DomainHistory extends Control {
     // a button, not a scroll trigger: on the entity page the pane grows and the page scrolls, so
     // the list's own end is never near
     const more: HTMLButtonElement = button('Show older', async () => {
-      if (older === null)
-        return;
       more.disabled = true;
       try {
-        const page = await DomainHistory._page(older.table, older.id, older.before);
+        const page = await DomainHistory._page(older!.table, older!.id, older!.before);
         if (scope.isDisposed)
           return;
         shown.value = shown.peek().concat(page.entries);

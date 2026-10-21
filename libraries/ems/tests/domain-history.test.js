@@ -177,9 +177,44 @@ scoped('the trail loads a page at a time; "Show older" loads the older entries u
     'each entry once: the page boundary is not repeated');
   assert.equal(seen.size, 60, 'every entry of the trail is shown');
   assert.equal(seen.has('title: T0 → T1') && seen.has('title: T59 → T60'), true);
+  history.dispose();
+  src.dispose();
+});
+
+scoped('a page that fails to load is reported once and "Show older" tries it again', async () => {
+  emsBackends.domain = backend();
+  const issue = emsBackends.domain.tableSync('grit.issue');
+  for (let i = 0; i < 60; i++) {
+    issue.history.push({id: 'i1', tx_id: `t${i}`, op: 'update', actor_id: null, ts: '2026-09-13T10:00:00Z',
+      before: {title: `T${i}`}, after: {title: `T${i + 1}`}});
+  }
+  const pages = [];
+  const audit = issue.audit.bind(issue);
+  Object.defineProperty(issue, 'audit', {configurable: true, value: (id, page) => {
+    pages.push(page);
+    return pages.length === 2 ? Promise.reject(new Error('Audit read failed')) : audit(id, page);
+  }});
+  const table = await domains.table('grit.issue');
+  const src = table.source({pageSize: 10});
+  await flush();
+  src.currentRow.value = src.rows.byKey('i1');
+  const history = domains.history(src);
+  await settle();
+  const more = history.view.root.querySelector('[data-u2-part="more"]');
+
   fire(more, 'click');
   await settle();
-  assert.equal(pages.length, 2, 'nothing more is asked');
+  assert.equal(document.body.querySelectorAll('.u2-notify-error').length, 1, 'the failure is reported once');
+  assert.match(document.body.querySelector('.u2-notify-error').textContent, /Audit read failed/);
+  assert.equal(more.hidden, false, 'the older entries are still there to load');
+  assert.equal(more.disabled, false);
+
+  fire(more, 'click');
+  await settle();
+  assert.deepEqual(pages.slice(1), [{limit: 51, before: 10}, {limit: 51, before: 10}], 'the same page again');
+  assert.equal(more.hidden, true, 'and this time it loads');
+  assert.equal(lines(history)[0].parentElement.getAttribute('aria-setsize'), '60');
+  assert.equal(document.body.querySelectorAll('.u2-notify-error').length, 1, 'no second report');
   history.dispose();
   src.dispose();
 });
