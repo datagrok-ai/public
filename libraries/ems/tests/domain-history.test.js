@@ -134,7 +134,7 @@ scoped('the actor is the user\'s name, looked up once per id; a draft is not sav
   draft.dispose();
 });
 
-scoped('the trail loads a page at a time; scrolling near the end loads the older entries', async () => {
+scoped('the trail loads a page at a time; "Show older" loads the older entries until the first one', async () => {
   emsBackends.domain = backend();
   const issue = emsBackends.domain.tableSync('grit.issue');
   for (let i = 0; i < 60; i++) {
@@ -154,33 +154,32 @@ scoped('the trail loads a page at a time; scrolling near the end loads the older
   const history = domains.history(src);
   await settle();
   assert.deepEqual(pages, [{limit: 51, before: undefined}], 'one page and the entry that says there is more');
+  const more = history.view.root.querySelector('[data-u2-part="more"]');
+  assert.equal(more.hidden, false, 'older entries exist');
   const list = history.view.root.querySelector('.u2-domain-history-lines');
-  list.clientHeight = 300;
-  list.scrollHeight = 50 * 40;
-  list.scrollTop = 0;
-  fire(list, 'scroll');
-  await settle();
-  assert.equal(pages.length, 1, 'away from the end nothing more is fetched');
+  const all = () => {
+    const seen = new Set();
+    for (let top = 0; top <= 60 * 40; top += 200) {
+      list.scrollTop = top;
+      for (const row of lines(history))
+        seen.add(row.querySelector('.u2-domain-history-changes').textContent);
+    }
+    return seen;
+  };
+  assert.equal(all().size, 50);
 
-  list.scrollTop = 50 * 40 - 300;
-  fire(list, 'scroll');
+  fire(more, 'click');
   await settle();
   assert.deepEqual(pages[1], {limit: 51, before: 10}, 'the next page starts below the oldest entry shown');
-  list.scrollHeight = 60 * 40;
-  list.scrollTop = 60 * 40 - 300;
-  fire(list, 'scroll');
-  await settle();
-  assert.equal(pages.length, 2, 'once the trail is shown to its first entry nothing more is asked');
-  const seen = new Set();
-  for (let top = 0; top <= 60 * 40; top += 200) {
-    list.scrollTop = top;
-    for (const row of lines(history)) {
-      assert.equal(row.parentElement.getAttribute('aria-setsize'), '60', 'each entry once: the page boundary is not repeated');
-      seen.add(row.querySelector('.u2-domain-history-changes').textContent);
-    }
-  }
+  assert.equal(more.hidden, true, 'the trail is shown to its first entry');
+  const seen = all();
+  assert.equal(lines(history)[0].parentElement.getAttribute('aria-setsize'), '60',
+    'each entry once: the page boundary is not repeated');
   assert.equal(seen.size, 60, 'every entry of the trail is shown');
   assert.equal(seen.has('title: T0 → T1') && seen.has('title: T59 → T60'), true);
+  fire(more, 'click');
+  await settle();
+  assert.equal(pages.length, 2, 'nothing more is asked');
   history.dispose();
   src.dispose();
 });

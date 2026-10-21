@@ -2,7 +2,7 @@
 
 ## v.next
 
-* History: Limited the pane to a row's newest 50 entries per load, loading older ones as the list scrolls near its end, instead of the whole trail on every open; added `{limit, before}` to `DomainTableLike.audit` and `seq` to `AuditEntryLike`
+* History: Limited the pane to a row's newest 50 entries per load, with "Show older" under the list for the rest, instead of the whole trail on every open; added `{limit, before}` to `DomainTableLike.audit` and `seq` to `AuditEntryLike`
 * [public#4320](https://github.com/datagrok-ai/public/issues/4320): Import: Fixed an empty numeric CSV cell being posted as the missing-value marker (-2147483648, 2.68e-34) instead of null
 * Styles: `src/dg/styles.ts` imports EMS's own sheets only; u2's stylesheet installs itself once per page
 * Tests: Fixed the spec-install test on Windows (path separators, CRLF recipe fences)

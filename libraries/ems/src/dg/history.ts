@@ -1,12 +1,12 @@
 /* `domains.history` — a row's audit trail, newest first: who did what when, and for an update
    the columns it changed as `<caption>: <before> → <after>`. Reads `table.audit(id)` through the
-   seam a page at a time, so the memory backend's history shows the same way; scrolling near the
-   end loads the older entries, and the pane is refreshed when the row's session saves. A draft
+   seam a page at a time, so the memory backend's history shows the same way; "Show older" under
+   the list loads the next page, and the pane is refreshed when the row's session saves. A draft
    has no history yet, and says so. */
 import {emsBackends} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
-import {Control, signal, AsyncSource, div, divH, span, timestamp, text, badge, AsyncView, Section, VirtualList,
-  Rows, Scope} from '@datagrok-libraries/u2';
+import {Control, signal, AsyncSource, div, divH, divV, span, timestamp, text, badge, button, AsyncView, Section,
+  VirtualList, Rows, Scope} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, BadgeVariant, IProperty, RowView} from '@datagrok-libraries/u2';
 import type {AuditEntryLike, DomainTableLike} from '../core/domain-backend.js';
 import type {DomainSource} from '../core/domain-source.js';
@@ -24,7 +24,6 @@ const OPS: Record<string, [label: string, variant: BadgeVariant]> = {
 };
 const ITEM_HEIGHT = 40;
 const PAGE_SIZE = 50;
-const NEAR_BOTTOM_ROWS = 5;
 
 /** Where the next, older page of a row's trail starts. */
 interface OlderPage {
@@ -134,34 +133,30 @@ export class DomainHistory extends Control {
     list.setItems(shown);
     const scope = Scope.ambient!;
     let older = this._older;
-    let loading = false;
-    let reported = false;
-    // also when the pane is taller than the page: a list that does not fill it never scrolls
-    const more = async (): Promise<void> => {
-      const el = list.root;
-      if (older === null || loading || el.clientHeight === 0 ||
-        el.scrollTop + el.clientHeight <= el.scrollHeight - NEAR_BOTTOM_ROWS * ITEM_HEIGHT)
+    // a button, not a scroll trigger: on the entity page the pane grows and the page scrolls, so
+    // the list's own end is never near
+    const more: HTMLButtonElement = button('Show older', async () => {
+      if (older === null)
         return;
-      loading = true;
+      more.disabled = true;
       try {
         const page = await DomainHistory._page(older.table, older.id, older.before);
         if (scope.isDisposed)
           return;
         shown.value = shown.peek().concat(page.entries);
         older = page.older;
-        reported = false;
-        scope.setTimeout(() => void more());
+        more.hidden = older === null;
       } catch (e) {
-        if (!scope.isDisposed && !reported)
+        if (!scope.isDisposed)
           DomainErrors.report(e, this.source);
-        reported = true;
       } finally {
-        loading = false;
+        more.disabled = false;
       }
-    };
-    scope.listen(list.root, 'scroll', () => more());
-    scope.setTimeout(() => void more());
-    return list.root;
+    });
+    more.classList.add('u2-domain-history-more');
+    more.dataset.u2Part = 'more';
+    more.hidden = older === null;
+    return divV([list.root, more], 'u2-domain-history-trail');
   }
 
   private _line(entry: AuditEntryLike): HTMLElement {
