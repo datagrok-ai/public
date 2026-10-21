@@ -175,6 +175,21 @@ scoped('the preview is the backend\'s dry run: its verdicts, its counts, its iss
   assert.equal(await running, null);
 });
 
+scoped('an issue names the column by the caption the mapping showed, not the db name', async () => {
+  const memory = backend();
+  const {running} = await opened(memory,
+    frame(['project_id', 'title', 'state'], [{project_id: 'p1', title: 'A', state: 'urgent'}]));
+  await toMapping();
+  named('state').value.value = 'priority';
+  await flush();
+  await toPreview();
+  const issues = document.body.querySelector('.u2-domain-import-issues').textContent;
+  assert.match(issues, /Priority/);
+  assert.doesNotMatch(issues, /priority/, 'the target as the user mapped it');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
 scoped('the dry run is posted once per entry into the step, not per keystroke', async () => {
   const memory = backend();
   const posts = [];
@@ -386,7 +401,7 @@ scoped('a refused row leaves nothing behind and the report says so', async () =>
   assert.match(shown, /Import aborted — 1 row has errors/);
   assert.match(shown, /Uncheck "All or nothing" to import the 1 valid row and skip the rest\./,
     'an aborted all-or-nothing run says what to change');
-  assert.match(shown, /title/, 'the per-row report names the column the row was refused on');
+  assert.match(shown, /Title/, 'the per-row report names the column the row was refused on, by its caption');
   assert.match(shown, /Value can't be empty/);
   assert.match(shown, /Source row/, 'the issue lines are headed by the source row they are about');
   fire(buttonNamed('CLOSE'), 'click');
