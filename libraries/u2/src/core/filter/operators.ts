@@ -172,7 +172,8 @@ const node = (property: string, operator: string, value?: unknown): DomainCondit
   value === undefined ? {property, operator} : {property, operator, value};
 
 const where = (test: (cell: MaskCell, value: any) => boolean, negate: boolean = false) =>
-  (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}): BitArray => ColumnEvaluator.where(col, c, ctx, test, negate);
+  (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}): BitArray =>
+    ColumnEvaluator.where(col, c, ctx, test, negate);
 
 /** Case-insensitive text test, the server's ILIKE; a `{raw: true}` LIKE pattern goes through a RegExp. */
 const textMask = (test: (s: string, v: string) => boolean, negate: boolean = false) =>

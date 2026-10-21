@@ -108,9 +108,10 @@ export class ColumnEvaluator {
   /** Column against column, row-wise, with one of the six comparators: a null on either side
    * never passes; dates compare by their time value, strings by their text. */
   static compare(left: MaskColumnLike, right: MaskColumnLike, operator: string): BitArray {
-    for (const col of [left, right])
+    for (const col of [left, right]) {
       if (ColumnEvaluator.kindOf(col) === KIND.STRING_LIST)
         throw new FilterError(`Operator "${operator}" is not supported on list column "${col.name}"`);
+    }
     const test = COMPARE[operator];
     if (test === undefined)
       throw new FilterError(`Operator "${operator}" does not accept a column`);
