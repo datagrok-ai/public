@@ -101,8 +101,8 @@ export const scenarios = [
       const capped = await table.updateWhere(filter, {name: 'Capped'}, {limit: 0});
       t.equal(capped.updated, 1, 'a limit of 0 is clamped to one row, never an infinite drain');
       t.equal(capped.hasMore, true, 'and the rest is reported, not silently dropped');
-      const rest = await table.updateWhere(filter, {name: 'Capped'});
-      t.equal(rest.updated, 1, 'the default cap takes the rest the filter matches');
+      const rest = await table.updateWhere(filter, {name: 'Uncapped'});
+      t.equal(rest.updated, 2, 'the default cap takes everything the filter matches');
       t.equal(rest.hasMore, false);
     },
   },
