@@ -64,6 +64,10 @@ export const scenarios = [
       await t.rejects(() => table.query({sort: 'nope'}), 'filter');
       await t.rejects(() => table.query({sort: 'code,!nope'}), 'filter');
       await t.rejects(() => table.query({sort: 'meta'}), 'filter');
+      // a `prop.` key with no column of that name too, as a hidden one is: no existence oracle
+      await t.rejects(() => table.query({sort: 'prop.nope'}), 'filter');
+      await t.rejects(() => table.query({sort: 'prop.id,code'}), 'filter');
+      await t.rejects(() => table.query({sort: 'prop.meta'}), 'filter');
       t.deepEqual((await table.query({sort: '!code', limit: 100})).map((row) => row.code), ['srt-a'],
         'a declared column still sorts');
     },
