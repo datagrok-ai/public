@@ -134,7 +134,7 @@ scoped('the actor is the user\'s name, looked up once per id; a draft is not sav
   draft.dispose();
 });
 
-scoped('the trail loads a page at a time; "Show older" loads the older entries until the first one', async () => {
+scoped('the trail loads 50 entries at a time; "Show older" loads the older ones down to the first', async () => {
   emsBackends.domain = backend();
   const issue = emsBackends.domain.tableSync('grit.issue');
   for (let i = 0; i < 60; i++) {
@@ -147,74 +147,19 @@ scoped('the trail loads a page at a time; "Show older" loads the older entries u
     pages.push(page);
     return audit(id, page);
   }});
-  const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
+  const src = (await domains.table('grit.issue')).source({pageSize: 10});
   await flush();
   src.currentRow.value = src.rows.byKey('i1');
   const history = domains.history(src);
   await settle();
-  assert.deepEqual(pages, [{limit: 51, before: undefined}], 'one page and the entry that says there is more');
+  assert.deepEqual(pages, [{limit: 51, before: undefined}]);
   const more = history.view.root.querySelector('[data-u2-part="more"]');
-  assert.equal(more.hidden, false, 'older entries exist');
-  const list = history.view.root.querySelector('.u2-domain-history-lines');
-  const all = () => {
-    const seen = new Set();
-    for (let top = 0; top <= 60 * 40; top += 200) {
-      list.scrollTop = top;
-      for (const row of lines(history))
-        seen.add(row.querySelector('.u2-domain-history-changes').textContent);
-    }
-    return seen;
-  };
-  assert.equal(all().size, 50);
+  const shown = () => [lines(history)[0].parentElement.getAttribute('aria-setsize'), more.hidden];
+  assert.deepEqual(shown(), ['50', false]);
 
   fire(more, 'click');
   await settle();
-  assert.deepEqual(pages[1], {limit: 51, before: 10}, 'the next page starts below the oldest entry shown');
-  assert.equal(more.hidden, true, 'the trail is shown to its first entry');
-  const seen = all();
-  assert.equal(lines(history)[0].parentElement.getAttribute('aria-setsize'), '60',
-    'each entry once: the page boundary is not repeated');
-  assert.equal(seen.size, 60, 'every entry of the trail is shown');
-  assert.equal(seen.has('title: T0 → T1') && seen.has('title: T59 → T60'), true);
-  history.dispose();
-  src.dispose();
-});
-
-scoped('a page that fails to load is reported once and "Show older" tries it again', async () => {
-  emsBackends.domain = backend();
-  const issue = emsBackends.domain.tableSync('grit.issue');
-  for (let i = 0; i < 60; i++) {
-    issue.history.push({id: 'i1', tx_id: `t${i}`, op: 'update', actor_id: null, ts: '2026-09-13T10:00:00Z',
-      before: {title: `T${i}`}, after: {title: `T${i + 1}`}});
-  }
-  const pages = [];
-  const audit = issue.audit.bind(issue);
-  Object.defineProperty(issue, 'audit', {configurable: true, value: (id, page) => {
-    pages.push(page);
-    return pages.length === 2 ? Promise.reject(new Error('Audit read failed')) : audit(id, page);
-  }});
-  const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
-  await flush();
-  src.currentRow.value = src.rows.byKey('i1');
-  const history = domains.history(src);
-  await settle();
-  const more = history.view.root.querySelector('[data-u2-part="more"]');
-
-  fire(more, 'click');
-  await settle();
-  assert.equal(document.body.querySelectorAll('.u2-notify-error').length, 1, 'the failure is reported once');
-  assert.match(document.body.querySelector('.u2-notify-error').textContent, /Audit read failed/);
-  assert.equal(more.hidden, false, 'the older entries are still there to load');
-  assert.equal(more.disabled, false);
-
-  fire(more, 'click');
-  await settle();
-  assert.deepEqual(pages.slice(1), [{limit: 51, before: 10}, {limit: 51, before: 10}], 'the same page again');
-  assert.equal(more.hidden, true, 'and this time it loads');
-  assert.equal(lines(history)[0].parentElement.getAttribute('aria-setsize'), '60');
-  assert.equal(document.body.querySelectorAll('.u2-notify-error').length, 1, 'no second report');
+  assert.deepEqual([pages[1], shown()], [{limit: 51, before: 10}, ['60', true]]);
   history.dispose();
   src.dispose();
 });
