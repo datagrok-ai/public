@@ -10,7 +10,7 @@ import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {getClusterMatrixWorker, LinkageMethodCode} from '@datagrok-libraries/math';
 
-import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
+import {hierarchicalClusteringDialog, hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
 import {TreeHelper} from '../utils/tree-helper';
 
 import {_package} from '../package-test';
@@ -216,6 +216,30 @@ category('hierarchicalClustering', () => {
 
   test('hierarchicalClusteringWasmMedianInversion', async () => {
     await _testHierarchicalClusteringWasm(inversionDist, LinkageMethodCode.Median, inversionMedianClusterMat);
+  });
+
+  // Features follows the Table input when tables are closed and opened while the dialog is open
+  test('dialog-follows-closed-table', async () => {
+    grok.shell.closeAll();
+    const dfA = DG.DataFrame.fromCsv('x,y\n1,2\n2,3\n3,4');
+    const dfB = DG.DataFrame.fromCsv('p,q\n1,2\n2,3\n3,4');
+    grok.shell.addTableView(dfA);
+    grok.shell.addTableView(dfB);
+    await hierarchicalClusteringDialog((t) => t.columns.byIndex(0));
+    const dialog = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Hierarchical Clustering')!;
+    const features = () => dialog.root.querySelector('[name="input-host-Features"] .ui-input-column-names')?.textContent;
+    try {
+      expect(features()?.includes('p'), true);
+      grok.shell.closeTable(dfB);
+      await awaitCheck(() => features()?.includes('x') ?? false, 'Features still lists the closed table columns', 2000);
+      grok.shell.closeTable(dfA);
+      await awaitCheck(() => features() == null, 'Features of the closed last table is still shown', 2000);
+      grok.shell.addTableView(DG.DataFrame.fromCsv('m,n\n1,2\n2,3\n3,4'));
+      await awaitCheck(() => features()?.includes('m') ?? false, 'Features does not list the newly opened table columns', 2000);
+    } finally {
+      dialog.close();
+      grok.shell.closeAll();
+    }
   });
 
   // test('hierarchicalClusteringWasmNoWorker1', async () => {
