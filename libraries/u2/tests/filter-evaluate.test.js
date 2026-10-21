@@ -180,6 +180,8 @@ test('string list: rows go through get(i); a condition asks about the elements; 
   assert.deepEqual(await one('tags', 'matches', '^x$'), [4]);
   assert.deepEqual(await one('tags', 'is null'), [1, 2]);
   assert.deepEqual(await one('tags', 'is not null'), [0, 3, 4]);
+  await assert.rejects(() => one('tags', '=', {column: 's'}), /not supported on list column "tags"/,
+    'a list compares with no column, as the server refuses it');
 });
 
 test('groups: and, or, not, nesting; an empty group is all-true; the tail beyond length stays clear', async () => {

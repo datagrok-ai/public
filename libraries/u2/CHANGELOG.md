@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Filters: Fixed a `string_list` condition testing the list as one text; it asks about the elements as the server does: `=`, `!=`, `in`, `not in`, `starts`, `ends` and `matches` apply, a negated one passes a null or empty list, and `is null` matches an empty list
+* Filters: Fixed a `string_list` condition testing the list as one text; it asks about the elements as the server does: `=`, `!=`, `in`, `not in`, `starts`, `ends`, `matches` and `!matches` apply, a negated one passes a null or empty list, `is null` matches an empty list, and a column reference is refused
 * Styles: Added a console warning, once per page, when a package built before stylesheet revisions injects its own copy of the u2 CSS over the installed revision: the packages that bundle u2 need republishing
 * Tooltip: Keyboard focus shows a bound tooltip too (a click's focus does not), the tooltip is `role="tooltip"`, and its anchor lists it in `aria-describedby` while it shows, beside its own ids
 * ColumnsInput: The control says its popup is a dialog (`aria-haspopup="dialog"`, the popup `role="dialog"`, "Choose columns") — a checklist with OK / CANCEL, not a listbox

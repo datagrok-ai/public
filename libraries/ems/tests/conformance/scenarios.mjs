@@ -308,9 +308,11 @@ export const scenarios = [
         (await table.query({filter, limit: 100})).map((row) => row.code.slice(3)).sort().join('');
       for (const [filter, expected] of [['tags = "x"', 'a'], ['tags in ("x", "z")', 'ab'], ['tags != "x"', 'bcd'],
         ['tags not in ("x", "z")', 'cd'], ['tags = null', 'cd'], ['tags != null', 'ab'],
-        ['tags like "y"', 'a'], ['tags starts "z"', 'b'], ['tags !like "y"', 'bcd'], ['tags matches "^[xz]$"', 'ab']])
+        ['tags like "y"', 'a'], ['tags starts "z"', 'b'], ['tags ends "y"', 'a'], ['tags !like "y"', 'bcd'],
+        ['tags matches "^[xz]$"', 'ab'], ['tags !matches "^x"', 'bcd']])
         t.equal(await codes(filter), expected, filter);
-      await t.rejects(() => table.query({filter: 'tags > "x"', limit: 10}));
+      for (const filter of ['tags > "x"', 'tags between "a" and "z"'])
+        await t.rejects(() => table.query({filter, limit: 10}), 'filter');
     },
   },
 ];
