@@ -564,6 +564,53 @@ category('Dapi: domain frame editor', () => {
     }
   });
 
+  test('duplicate refusal on a unique column that is not the business key names that column', async () => {
+    const name = `zzu${`${Date.now()}`.slice(-8)}`;
+    const created = await grok.dapi.domains.createSchema(name, {friendlyName: 'Unique probe'});
+    try {
+      await grok.dapi.domains.schema(name).apply({ifVersion: created.version, tables: {
+        person: {
+          businessKey: ['code'],
+          columns: {
+            code: {type: 'string', required: true, unique: true, friendlyName: 'Badge'},
+            name: {type: 'string', isName: true},
+            email: {type: 'string', unique: true, friendlyName: 'E-mail'},
+          },
+        },
+        work_item: {
+          singularName: 'Work item',
+          columns: {
+            code: {type: 'string', required: true, unique: true, friendlyName: 'Code'},
+            title: {type: 'string'},
+          },
+        },
+      }});
+      const people = grok.dapi.domains.table(`${name}.person`);
+      const workItems = grok.dapi.domains.table(`${name}.work_item`);
+      await people.insert({code: 'P1', name: 'Ann', email: 'ann@x.org'});
+      await workItems.insert({code: 'T1', title: 'First'});
+
+      const personEditor = await DomainFrameEditor.create(people as any);
+      const bob = personEditor.addRow({code: 'P2', name: 'Bob', email: 'ann@x.org'});
+      const session = new DG.DomainSession([personEditor], {quiet: true});
+      expect(await session.save(), false, 'a duplicate e-mail was accepted');
+      expect(session.lastRefusal?.message, 'E-mail ann@x.org already belongs to Ann', 'the refusal names the wrong column');
+      expect(personEditor.errorOf(bob, 'email')?.message, session.lastRefusal?.message,
+        'the cell and the refusal say different things');
+      session.dispose();
+      personEditor.detach();
+
+      const itemEditor = await DomainFrameEditor.create(workItems as any);
+      const again = itemEditor.addRow({code: 'T1', title: 'Again'});
+      expect(await itemEditor.save(), false, 'a duplicate code was accepted');
+      expect(itemEditor.errorOf(again, 'code')?.message, 'A work item with this Code already exists',
+        'the refusal on a table with no business key names the wrong column');
+      itemEditor.detach();
+    } finally {
+      await grok.dapi.domains.schema(name).delete();
+    }
+  });
+
   test('refuse: a refusal the host detected reaches onRefused', async () => {
     const prefix = `fe-refused-${stamp()}`;
     await seed(prefix, 1);

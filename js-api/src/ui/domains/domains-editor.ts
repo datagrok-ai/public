@@ -1295,12 +1295,12 @@ export class DomainFrameEditor implements IFrameEditor {
 
   /** `rows[0].errors[{column, message}]` of a rejected op onto that row's cells;
    * an error naming no known column marks every changed cell of the row. [duplicateText] is what
-   * a business-key clash says — {@link refusalFor}'s sentence, so the cell, the status line
+   * a unique clash says — {@link refusalFor}'s sentence, so the cell, the status line
    * reading it and the balloon all say the same thing. */
   mapValidationError(e: DomainValidationError, failing: DomainPendingOp, duplicateText?: string): void {
     const row = failing.row;
     const errors = e.rows?.[0]?.errors ?? [];
-    const duplicate = duplicateText ?? this._duplicateText();
+    const duplicate = duplicateText ?? this._duplicateText(this._clashOf(e));
     let mapped = false;
     for (const columnError of errors)
       if (columnError.column != null && this._df.columns.contains(columnError.column)) {
@@ -1316,7 +1316,7 @@ export class DomainFrameEditor implements IFrameEditor {
     this._fire();
   }
 
-  /** What a refused save means to the user, in the table's own vocabulary — the business key and
+  /** What a refused save means to the user, in the table's own vocabulary — the clashing value and
    * the row that already holds it, the children that keep a row alive. The server's own message
    * stands where the refusal is not one this editor can put in the table's words. */
   async refusalFor(e: any, failing: DomainPendingOp): Promise<string> {
@@ -1332,15 +1332,15 @@ export class DomainFrameEditor implements IFrameEditor {
    * the key itself where it carries none: on the UPDATE path the id is the row being SAVED
    * (`repository.dart` `_mapPgError(rt, x, id: id)`), which names the wrong row. */
   async duplicateRefusal(row: number, e?: DomainValidationError): Promise<string> {
-    const key = this._info.businessKey ?? [];
-    const values = key.map((c) => this._wire(row, c)).filter((v) => v != null && `${v}` !== '');
-    if (values.length !== key.length)
-      return this._duplicateText();
+    const columns = this._clashOf(e);
+    const values = columns.map((c) => this._wire(row, c)).filter((v) => v != null && `${v}` !== '');
+    if (columns.length === 0 || values.length !== columns.length)
+      return this._duplicateText(columns);
     const self = `${this._wire(row, 'id') ?? ''}`;
     const id = `${e?.rows?.[0]?.id ?? ''}`;
-    const owner = id !== '' && id !== self ? await this._nameOf(id) : await this._keyHolder(key, values, self);
-    return owner == null ? this._duplicateText()
-      : `${key.map((c) => this._captionOf(c)).join(', ')} ${values.join(', ')} already belongs to ${owner}`;
+    const owner = id !== '' && id !== self ? await this._nameOf(id) : await this._keyHolder(columns, values, self);
+    return owner == null ? this._duplicateText(columns)
+      : `${columns.map((c) => this._captionOf(c)).join(', ')} ${values.join(', ')} already belongs to ${owner}`;
   }
 
   /** "Ethanol still has 3 containers; remove or reassign them first": the server names the child
@@ -1784,10 +1784,17 @@ export class DomainFrameEditor implements IFrameEditor {
     return caption == null || caption === '' ? column : caption;
   }
 
-  /** The refusal a business-key clash gets where the row already holding the key is unknown. */
-  private _duplicateText(): string {
-    const key = (this._info.businessKey ?? []).map((c) => this._captionOf(c)).join(', ');
-    return `A ${this._info.singularName.toLowerCase()} with this ${key} already exists`;
+  /** The columns a unique refusal is about: the ones the server names, else the business key —
+   * also where it names something that is not a column here (a relation, `rel.name`). */
+  private _clashOf(e?: DomainValidationError): string[] {
+    const columns = `${e?.rows?.[0]?.errors?.find((x) => x.code === 'unique')?.column ?? ''}`.split(',');
+    return columns.every((c) => this._propByName.has(c)) ? columns : this._info.businessKey ?? [];
+  }
+
+  /** The refusal a unique clash on [columns] gets where the row already holding the value is unknown. */
+  private _duplicateText(columns: string[]): string {
+    const captions = columns.map((c) => this._captionOf(c)).join(', ');
+    return `A ${this._info.singularName.toLowerCase()} with this ${captions} already exists`;
   }
 
   /** The display name of a row of this table, read back by id; null when the table has no name
@@ -1806,8 +1813,8 @@ export class DomainFrameEditor implements IFrameEditor {
     }
   }
 
-  /** The display name of the row already holding [values] on the business key, read back by the
-   * key itself and skipping [selfId] (the row being saved); null when the table has no name
+  /** The display name of the row already holding [values] on the unique [key] columns, read back
+   * by those values and skipping [selfId] (the row being saved); null when the table has no name
    * column, or nobody else holds the key where the caller can see it. */
   private async _keyHolder(key: string[], values: any[], selfId: string): Promise<string | null> {
     const column = this._info.nameColumn;
