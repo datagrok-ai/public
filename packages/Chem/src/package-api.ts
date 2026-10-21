@@ -567,9 +567,13 @@ export namespace funcs {
    *   semType: Molecule
    * @param {string} fingerprintType
    *   choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"]
+   * @param {number} radius - Morgan only. The radius (2 for ECFP4, 3 for ECFP6)
+   * @param {number} size - The number of bits (every type but MACCS, which has 167 keys)
+   * @param {boolean} useChirality - Stereocentres count (Morgan, AtomPair, TopologicalTorsion). Computed by Crux in both chemical engines as RDKit 2026.03 does (Chem's RDKit.js gives L- and D-alanine the same Morgan bits)
+   * @param {boolean} useFeatures - Morgan only. Feature invariants (FCFP) instead of atom invariants (ECFP). Computed by Crux in both chemical engines bit for bit as RDKit (Chem's RDKit.js has no FCFP)
    */
-  export async function getFingerprints(col: DG.Column , _metric?: string , fingerprintType?: string ): Promise<any> {
-    return await grok.functions.call('Chem:GetFingerprints', { col, _metric, fingerprintType });
+  export async function getFingerprints(col: DG.Column , _metric?: string , fingerprintType?: string , radius?: number , size?: number , useChirality?: boolean , useFeatures?: boolean ): Promise<any> {
+    return await grok.functions.call('Chem:GetFingerprints', { col, _metric, fingerprintType, radius, size, useChirality, useFeatures });
   }
 
   /**

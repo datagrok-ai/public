@@ -11,6 +11,7 @@ import {getCruxService} from '../crux/crux-searches';
 import {ChemicalEngine, isCruxRequested} from './chem-engine';
 import {cruxOrRdKitAsync, warnCruxFallback} from './fallback';
 import type {RuleId} from '../panels/structural-alerts';
+import {FingerprintOptions, fingerprintOptions, needsCrux} from '../utils/fingerprint-options';
 
 /** Tests: molecules the Crux workers get as unreadable (see {@link setCruxUnreadableForTests}). */
 let unreadableForTests: Set<string> | null = null;
@@ -32,21 +33,33 @@ export function fingerprintsKey(engine: ChemicalEngine): string {
 }
 
 /**
- * `RdKitService.getFingerprints(type, molecules, smiles)` by the engine in effect (by RDKit when `engine` says so: the
- * RDKit substructure search's own fingerprints), and the engine that answered.
+ * `RdKitService.getFingerprints(type, molecules, smiles, options)` by the engine in effect (by RDKit when `engine` says
+ * so: the RDKit substructure search's own fingerprints), and the engine that answered. FCFP and chirality
+ * (`options.useFeatures`, `options.useChirality`) are Crux's in both modes, with no RDKit behind them: Chem's RDKit.js
+ * has neither (utils/fingerprint-options.ts `needsCrux`).
  */
 export async function fingerprintsByEngine(type: Fingerprint, molecules: string[], smiles: boolean,
   engine: ChemicalEngine = isCruxRequested() ? ChemicalEngine.Crux : ChemicalEngine.RDKit,
+  options?: FingerprintOptions | null,
 ): Promise<IFpResult & {engine: ChemicalEngine}> {
-  const rdkit = async () => ({...await (await getRdKitService()).getFingerprints(type, molecules, smiles),
-    engine: ChemicalEngine.RDKit});
-  if (engine === ChemicalEngine.RDKit)
+  const opts = fingerprintOptions(type, options);
+  const cruxOnly = needsCrux(opts);
+  const rdkit = async () => {
+    if (cruxOnly) { // Crux refused the options or failed (logged by the fallback); RDKit.js has neither
+      throw new Error(`Chem | Crux could not compute these ${type} fingerprints (${JSON.stringify(opts)}), and ` +
+        'only Crux computes FCFP and chirality: see the warning before');
+    }
+    return {...await (await getRdKitService()).getFingerprints(type, molecules, smiles, opts),
+      engine: ChemicalEngine.RDKit};
+  };
+  if (engine === ChemicalEngine.RDKit && !cruxOnly)
     return rdkit();
   return cruxOrRdKitAsync('fingerprints', async () => {
-    const result = await (await getCruxService()).getFingerprints(type, forCrux(molecules), smiles);
+    const result = await (await getCruxService()).getFingerprints(type, forCrux(molecules), smiles, opts);
     const {fps, smiles: canonical, unread} = result;
-    if (unread.length) { // the molecules Crux cannot read: the RDKit pool's fingerprints for them
-      const patch = await (await getRdKitService()).getFingerprints(type, unread.map((i) => molecules[i]), smiles);
+    if (unread.length && !cruxOnly) { // the molecules Crux cannot read: the RDKit pool's fingerprints for them
+      const patch = await (await getRdKitService()).getFingerprints(type, unread.map((i) => molecules[i]), smiles,
+        opts);
       unread.forEach((row, k) => {
         fps[row] = patch.fps[k];
         if (canonical && patch.smiles)

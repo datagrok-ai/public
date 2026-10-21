@@ -9,6 +9,7 @@ import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import type {IFpResult} from '../rdkit-service/rdkit-service-worker-similarity';
 import type {RuleId} from '../panels/structural-alerts';
+import type {FingerprintOptions} from '../utils/fingerprint-options';
 
 const CRUX_INDEX_TAG = '.crux-index';
 /** Rows per segment in the first round over the workers: small, so the first hits come early; doubles each round. */
@@ -108,8 +109,8 @@ class CruxWorkerClient extends WorkerMessageBusClient {
   scaffoldTree = (smiles: string[], ringCutoff: number, discharge: boolean): Promise<string> =>
     this.call('scaffoldTree', [smiles, ringCutoff, discharge]);
 
-  getFingerprints = (type: Fingerprint, molecules: string[], smiles: boolean):
-    Promise<IFpResult & {unread: number[]}> => this.call('getFingerprints', [type, molecules, smiles]);
+  getFingerprints = (type: Fingerprint, molecules: string[], smiles: boolean, options?: FingerprintOptions | null):
+    Promise<IFpResult & {unread: number[]}> => this.call('getFingerprints', [type, molecules, smiles, options]);
 
   getStructuralAlerts = (alerts: {[rule in RuleId]?: string[]}, molecules: string[]):
     Promise<{alerts: {[rule in RuleId]?: boolean[]}, unread: number[]}> =>
@@ -362,12 +363,13 @@ export class CruxService {
   /**
    * Fingerprints as the RDKit pool's `getFingerprints` gives them (the same worker code, run on Crux): one per molecule
    * (null where none), the canonical SMILES when asked, and the rows whose molecule Crux cannot read (`unread`).
+   * `options`: radius, size, chirality, features (utils/fingerprint-options.ts).
    */
-  async getFingerprints(type: Fingerprint, molecules: string[], smiles: boolean):
+  async getFingerprints(type: Fingerprint, molecules: string[], smiles: boolean, options?: FingerprintOptions | null):
     Promise<IFpResult & {unread: number[]}> {
     const starts: number[] = [];
     const parts = await this.inChunks(molecules, JOB_MS_PER_MOLECULE.fingerprints,
-      (worker, chunk) => worker.getFingerprints(type, chunk, smiles), CHUNK_SIZE, JOB_BASE_MS, starts);
+      (worker, chunk) => worker.getFingerprints(type, chunk, smiles, options), CHUNK_SIZE, JOB_BASE_MS, starts);
     return {fps: parts.flatMap((part) => part.fps), smiles: smiles ? parts.flatMap((part) => part.smiles!) : null,
       unread: parts.flatMap((part, k) => part.unread.map((row) => starts[k] + row))};
   }

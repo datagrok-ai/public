@@ -6,6 +6,7 @@ import {Fingerprint, rdKitFingerprintToBitArray, withChemCriticalSection} from '
 import {RuleId} from '../panels/structural-alerts';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {IFpResult} from './rdkit-service-worker-similarity';
+import type {FingerprintOptions} from '../utils/fingerprint-options';
 import {LockedEntity} from '../utils/locked-entity';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {PackageFunctions} from '../package';
@@ -465,9 +466,10 @@ export class RdKitService {
    * predefined RDMols is not used)
    * @param {boolean} getCanonicalSmiles - optional parameter, if passed, in addition to fps function returns
    * canonical smiles
+   * @param {FingerprintOptions} options - optional: radius, size, chirality, features (utils/fingerprint-options.ts)
    * */
   async getFingerprints(fingerprintType: Fingerprint, molecules?: string[],
-    getCanonicalSmiles?: boolean): Promise<IFpResult> {
+    getCanonicalSmiles?: boolean, options?: FingerprintOptions | null): Promise<IFpResult> {
     const t = this;
     const getResult = (data: IFpResult[]): IFpResult => {
       return {
@@ -477,13 +479,13 @@ export class RdKitService {
     };
     const res = molecules ?
       await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-        t.parallelWorkers[i].getFingerprints(fingerprintType, segment, getCanonicalSmiles),
+        t.parallelWorkers[i].getFingerprints(fingerprintType, segment, getCanonicalSmiles, options),
       (data: IFpResult[]) => {
         return getResult(data);
       }) :
       await this._doParallel(
         (i: number, _: number) => {
-          return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules, getCanonicalSmiles);
+          return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules, getCanonicalSmiles, options);
         },
         (data: IFpResult[]) => {
           return getResult(data);

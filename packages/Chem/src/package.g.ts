@@ -395,12 +395,16 @@ export function ChemSpaceEditor(call: DG.FuncCall) : any {
 //input: column col { semType: Molecule }
 //input: string _metric { optional: true }
 //input: string fingerprintType = 'Morgan' { caption: Fingerprint type; optional: true; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
+//input: int radius = 2 { caption: Radius; optional: true; min: 0; max: 10; description: Morgan only. The radius (2 for ECFP4, 3 for ECFP6) }
+//input: int size = 2048 { caption: Size; optional: true; min: 1; description: The number of bits (every type but MACCS, which has 167 keys) }
+//input: bool useChirality = false { caption: Chirality; optional: true; description: Stereocentres count (Morgan, AtomPair, TopologicalTorsion). Computed by Crux in both chemical engines as RDKit 2026.03 does (Chem's RDKit.js gives L- and D-alanine the same Morgan bits) }
+//input: bool useFeatures = false { caption: Features (FCFP); optional: true; description: Morgan only. Feature invariants (FCFP) instead of atom invariants (ECFP). Computed by Crux in both chemical engines bit for bit as RDKit (Chem's RDKit.js has no FCFP) }
 //output: object result
 //meta.supportedSemTypes: Molecule
 //meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
 //meta.role: dim-red-preprocessing-function
-export async function getFingerprints(col: DG.Column, _metric: string | undefined, fingerprintType: any) {
-  return await PackageFunctions.getFingerprints(col, _metric, fingerprintType);
+export async function getFingerprints(col: DG.Column, _metric: string | undefined, fingerprintType: any, radius?: number, size?: number, useChirality?: boolean, useFeatures?: boolean) {
+  return await PackageFunctions.getFingerprints(col, _metric, fingerprintType, radius, size, useChirality, useFeatures);
 }
 
 //name: Chem Space

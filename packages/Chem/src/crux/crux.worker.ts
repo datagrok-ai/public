@@ -10,6 +10,7 @@ import {RdKitServiceWorker} from '../rdkit-service/rdkit-service-worker';
 import {MAX_MOL_CACHE_SIZE} from '../rdkit-service/rdkit-service-worker-base';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {getUncommonAtomsAndBondsOfMatches} from '../utils/chem-common';
+import {assertFingerprintOptions} from '../utils/fingerprint-options';
 
 const crux = chemWasm as unknown as CruxWorkerApi;
 const ctx: Worker = self as any;
@@ -193,7 +194,8 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
     } else if (op === 'scaffoldTree')
       result = crux.scaffoldTree(args[0], args[1], args[2]);
     else if (op === 'getFingerprints') {
-      const fps = await rdkitShapedWorker().getFingerprints(args[0], args[1], args[2]);
+      assertFingerprintOptions(chemWasm as unknown as RDModule, args[0], args[3]); // a refusal: the RDKit pool's call
+      const fps = await rdkitShapedWorker().getFingerprints(args[0], args[1], args[2], args[3]);
       result = {...fps, unread: unread(args[1], (i) => fps.fps[i] !== null)};
     } else if (op === 'getStructuralAlerts')
       result = structuralAlerts(args[0], args[1]);

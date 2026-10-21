@@ -967,6 +967,15 @@ export class PackageFunctions {
         choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], initialValue: 'Morgan',
       },
     }) fingerprintType: Fingerprint = Fingerprint.Morgan,
+    // the fingerprint options (utils/fingerprint-options.ts): optional, today's fingerprints by default
+    @grok.decorators.param({type: 'int', options: {caption: 'Radius', optional: true, initialValue: '2', min: '0',
+      max: '10', description: 'Morgan only. The radius (2 for ECFP4, 3 for ECFP6)'}}) radius?: number,
+    @grok.decorators.param({type: 'int', options: {caption: 'Size', optional: true, initialValue: '2048', min: '1',
+      description: 'The number of bits (every type but MACCS, which has 167 keys)'}}) size?: number,
+    @grok.decorators.param({options: {caption: 'Chirality', optional: true, initialValue: 'false',
+      description: 'Stereocentres count (Morgan, AtomPair, TopologicalTorsion). Computed by Crux in both chemical engines as RDKit 2026.03 does (Chem\'s RDKit.js gives L- and D-alanine the same Morgan bits)'}}) useChirality?: boolean,
+    @grok.decorators.param({options: {caption: 'Features (FCFP)', optional: true, initialValue: 'false',
+      description: 'Morgan only. Feature invariants (FCFP) instead of atom invariants (ECFP). Computed by Crux in both chemical engines bit for bit as RDKit (Chem\'s RDKit.js has no FCFP)'}}) useFeatures?: boolean,
   ) {
     //TODO: get rid of fallback
     let fingerprintTypeStr = fingerprintType as string;
@@ -974,7 +983,8 @@ export class PackageFunctions {
       fingerprintTypeStr.endsWith('\'') || fingerprintTypeStr.endsWith('"'))
       fingerprintTypeStr = fingerprintTypeStr.slice(1, -1);
 
-    const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintTypeStr as Fingerprint, false);
+    const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintTypeStr as Fingerprint, false,
+      {radius, size, useChirality, useFeatures});
     malformedDataWarning(fpColumn, col);
     return {entries: fpColumn, options: {}};
   }

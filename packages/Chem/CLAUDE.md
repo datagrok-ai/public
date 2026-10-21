@@ -109,7 +109,10 @@ instead of the chem-chem container (`descriptors/descriptors-engine.ts`: the tre
 values from the Crux workers), and the scaffold tree from a Crux worker instead of `scripts/scaffold_tree.py`;
 fingerprints and structural alerts / pharmacophore features run on the Crux pool (the RDKit worker's own code on the
 Crux module, `engine/worker-jobs.ts`; a cached fingerprint column belongs to one engine, saving one drops the other's);
-an activity cliff's MCS is Rascal's MCES from a Crux worker instead of FMCS; everything else stays RDKit. Other
+an activity cliff's MCS is Rascal's MCES from a Crux worker instead of FMCS; the property table is crux's
+`chemProperties` (RDKit's definitions) instead of OpenChemLib's (`widgets/properties.ts`); reactions run on the Crux
+module (`utils/reactions/reaction-engine.ts`; drawing them stays RDKit); FCFP and chiral fingerprints
+(`utils/fingerprint-options.ts`) are Crux's in both modes; everything else stays RDKit. Other
 packages get RDKit objects in both modes (`getRdKitModule`, `getRdKitService`); in Crux mode the pictures and values of
 the moved functions come from Crux. How a feature moves behind the
 setting: `src/engine/README.md`. Tests: category `chemical engine`. Whole suites in Crux mode on a stand:

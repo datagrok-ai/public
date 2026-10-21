@@ -1,6 +1,7 @@
 import {WORKER_CALL} from './rdkit-service-worker-api';
 import {WorkerMessageBusClient} from '../worker-message-bus-client';
 import {Fingerprint} from '../utils/chem-common';
+import type {FingerprintOptions} from '../utils/fingerprint-options';
 import {RuleId} from '../panels/structural-alerts.js';
 import {SubstructureSearchType} from '../constants.js';
 
@@ -31,8 +32,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   freeMoleculesStructures = async () =>
     this.call(WORKER_CALL.FREE_MOLECULES_STRUCTURES);
 
-  getFingerprints = async (fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean) =>
-    this.call(WORKER_CALL.GET_FINGERPRINTS, [fingerprintType, molecules, getCanonicalSmiles]);
+  getFingerprints = async (fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean,
+    options?: FingerprintOptions | null) =>
+    this.call(WORKER_CALL.GET_FINGERPRINTS, [fingerprintType, molecules, getCanonicalSmiles, options]);
 
   getCoordGenCoords = async (molecules: string[]): Promise<string[]> =>
     this.call(WORKER_CALL.GET_COORDGEN_COORDS, [molecules]);
