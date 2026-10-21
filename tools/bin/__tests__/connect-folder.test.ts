@@ -1,7 +1,7 @@
 import {describe, it, expect, beforeEach} from 'vitest';
 import {EventEmitter} from 'events';
-import * as dk from '../utils/share/docker';
-import {checkFolderSafety, matches} from '../commands/share';
+import * as dk from '../utils/connect-folder/docker';
+import {checkFolderSafety, matches} from '../commands/connect-folder';
 
 const spawned = {calls: [] as string[][], next: [] as ((child: any) => void)[]};
 
@@ -31,15 +31,15 @@ describe('runArgs', () => {
   it('runs a detached read-write share with one bind mount, the key file and the hardening flags', () => {
     expect(dk.runArgs(spec())).toEqual([
       'run', '--name', dk.containerName('https://dev.datagrok.ai/api', ID), '-d', '--restart', 'unless-stopped',
-      '--label', 'ai.datagrok.share=1',
-      '--label', `ai.datagrok.share.connection=${ID}`,
-      '--label', 'ai.datagrok.share.alias=dev',
-      '--label', 'ai.datagrok.share.url=https://dev.datagrok.ai/api',
-      '--label', 'ai.datagrok.share.name=laptop data',
-      '--label', 'ai.datagrok.share.folder=/home/a/data',
-      '--label', 'ai.datagrok.share.readonly=false',
-      '--label', 'ai.datagrok.share.user=1000:1000',
-      '--label', 'ai.datagrok.share.key=key-1',
+      '--label', 'ai.datagrok.folder=1',
+      '--label', `ai.datagrok.folder.connection=${ID}`,
+      '--label', 'ai.datagrok.folder.alias=dev',
+      '--label', 'ai.datagrok.folder.url=https://dev.datagrok.ai/api',
+      '--label', 'ai.datagrok.folder.name=laptop data',
+      '--label', 'ai.datagrok.folder.folder=/home/a/data',
+      '--label', 'ai.datagrok.folder.readonly=false',
+      '--label', 'ai.datagrok.folder.user=1000:1000',
+      '--label', 'ai.datagrok.folder.key=key-1',
       '--mount', 'type=bind,source=/home/a/data,target=/share',
       '--env-file', '/tmp/k/key.env',
       '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges', '--memory', '256m', '-e', 'DEBUG_MODE=false',
@@ -53,7 +53,7 @@ describe('runArgs', () => {
     const args = dk.runArgs(spec({readOnly: true}));
     expect(after(args, '--mount')).toBe('type=bind,source=/home/a/data,target=/share,readonly');
     expect(args[args.length - 1]).toBe('--read-only');
-    expect(args).toContain('ai.datagrok.share.readonly=true');
+    expect(args).toContain('ai.datagrok.folder.readonly=true');
   });
 
   it('passes a Windows path as is, without --user', () => {
@@ -80,7 +80,7 @@ describe('runArgs', () => {
     const args = dk.runArgs(spec({apiRoot: 'http://localhost:55287'}));
     expect(after(args, '--server')).toBe('http://host.docker.internal:55287');
     expect(after(args, '--add-host')).toBe('host.docker.internal:host-gateway');
-    expect(args).toContain('ai.datagrok.share.url=http://localhost:55287');
+    expect(args).toContain('ai.datagrok.folder.url=http://localhost:55287');
     expect(dk.runArgs(spec({apiRoot: 'http://127.0.0.1:8080/api', platform: 'win32'}))).not.toContain('--add-host');
   });
 
@@ -100,7 +100,7 @@ describe('containerUrl / containerName', () => {
   });
 
   it('derives a valid name from the server and the id, so one id on two servers gets two', () => {
-    expect(dk.containerName('https://a/api', ID)).toMatch(/^grok-share-[0-9a-f]{12}$/);
+    expect(dk.containerName('https://a/api', ID)).toMatch(/^grok-folder-[0-9a-f]{12}$/);
     expect(dk.containerName('https://a/api', ID)).toBe(dk.containerName('https://a/api', ID));
     expect(dk.containerName('https://a/api', ID)).not.toBe(dk.containerName('https://b/api', ID));
   });
@@ -115,8 +115,8 @@ describe('hostFolder', () => {
   });
 
   it('sends WSL paths to WSL', () => {
-    expect(() => dk.hostFolder('\\\\wsl$\\Ubuntu\\home\\a', 'win32', same)).toThrow('run grok share inside WSL');
-    expect(() => dk.hostFolder('\\\\wsl.localhost\\Ubuntu\\home', 'win32', same)).toThrow('run grok share inside WSL');
+    expect(() => dk.hostFolder('\\\\wsl$\\Ubuntu\\home\\a', 'win32', same)).toThrow('run grok connect-folder inside WSL');
+    expect(() => dk.hostFolder('\\\\wsl.localhost\\Ubuntu\\home', 'win32', same)).toThrow('run grok connect-folder inside WSL');
   });
 
   it('refuses a folder that resolves to a network path', () => {
@@ -166,16 +166,16 @@ describe('docker', () => {
   it('lists share containers by label, with exact labels from inspect', async () => {
     spawned.next.push((c) => { c.stdout.emit('data', 'abc\n'); c.emit('close', 0); });
     spawned.next.push((c) => {
-      c.stdout.emit('data', JSON.stringify([{Id: 'abc', Name: '/grok-share-7ff0714e1d2c', State: {Status: 'running'},
-        Config: {Image: 'img', Labels: {'ai.datagrok.share.folder': '/home/a/x,y'}}, Mounts: []}]));
+      c.stdout.emit('data', JSON.stringify([{Id: 'abc', Name: '/grok-folder-7ff0714e1d2c', State: {Status: 'running'},
+        Config: {Image: 'img', Labels: {'ai.datagrok.folder.folder': '/home/a/x,y'}}, Mounts: []}]));
       c.emit('close', 0);
     });
-    const found = await dk.ps({'ai.datagrok.share.connection': ID});
-    expect(spawned.calls[0]).toEqual(['ps', '-a', '-q', '--filter', 'label=ai.datagrok.share=1',
-      '--filter', `label=ai.datagrok.share.connection=${ID}`]);
+    const found = await dk.ps({'ai.datagrok.folder.connection': ID});
+    expect(spawned.calls[0]).toEqual(['ps', '-a', '-q', '--filter', 'label=ai.datagrok.folder=1',
+      '--filter', `label=ai.datagrok.folder.connection=${ID}`]);
     expect(spawned.calls[1]).toEqual(['inspect', 'abc']);
-    expect(found).toEqual([{id: 'abc', name: 'grok-share-7ff0714e1d2c', state: 'running', image: 'img',
-      labels: {'ai.datagrok.share.folder': '/home/a/x,y'}, mounts: []}]);
+    expect(found).toEqual([{id: 'abc', name: 'grok-folder-7ff0714e1d2c', state: 'running', image: 'img',
+      labels: {'ai.datagrok.folder.folder': '/home/a/x,y'}, mounts: []}]);
   });
 
   it('removes with -f and surfaces the CLI error', async () => {

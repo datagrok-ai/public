@@ -2,7 +2,7 @@
 
 ## v.next
 
-* `grok share`: share a local folder as a Datagrok connection (runs a Docker container)
+* `grok connect-folder`: connect a local folder to Datagrok as a connection (runs a Docker container)
 * `grok setup` installs corepack when it is missing instead of asking for it by hand: Node 25 no longer bundles corepack, so every fresh checkout on current Node stopped at that step
 * `grok setup` also removes the `.js`/`.d.ts` files the npm-era tsc emitted beside js-api and library sources: the workspace emits into `dist/`, and a leftover `js-api/grok.js` shadowed the `grok` command in cmd.exe
 * GROK-20753: `domain-schema.schema.json` accepts the `hierarchy` table key (the table is a tree: exactly one ref column targeting itself) — without it `grok api` / `grok check` refused a manifest the server accepts

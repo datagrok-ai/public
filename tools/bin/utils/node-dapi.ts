@@ -176,7 +176,8 @@ export class NodeApiClient {
     }
 
     const ct = res.headers.get('content-type') ?? '';
-    return throwIfApiError(ct.includes('application/json') ? await res.json() : await res.text());
+    return throwIfApiError(ct.includes('application/json') ? await res.json() : await res.text(),
+      Number(res.headers.get('api-error-code')) || undefined);
   }
 
   get(path: string): Promise<any> { return this.request('GET', path); }
@@ -256,12 +257,13 @@ async function throwHttpError(res: Response): Promise<never> {
  * The server answers many failures with HTTP 200 and an `ApiError` body — as an object, or as
  * a JSON string when the handler returned text. Every response passes through here so a
  * missing entity, a rejected save or an unknown function throws instead of printing as data.
+ * [errorCode] is the status the server sends in the `api-error-code` header (403 for a missing permission).
  */
-export function throwIfApiError<T>(payload: T): T {
+export function throwIfApiError<T>(payload: T, errorCode?: number): T {
   const parsed: any = typeof payload === 'string' ? tryParseJson(payload) : payload;
   if (parsed?.['#type'] === 'ApiError') {
     const err: NodeApiError = {error: parsed.message ?? 'Request failed', source: 'Server',
-      errorCode: parsed.errorCode, stackTrace: parsed.stackTrace, body: parsed};
+      errorCode: parsed.errorCode ?? errorCode, stackTrace: parsed.stackTrace, body: parsed};
     throw Object.assign(new Error(err.error), {apiError: err});
   }
   return payload;

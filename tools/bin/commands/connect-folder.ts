@@ -7,14 +7,14 @@ import {createClient} from '../utils/server-client';
 import {NodeApiClient, NodeDapi} from '../utils/node-dapi';
 import {Indexable} from '../utils/utils';
 import {printError, printOutput, setOutputFormat, OutputFormat} from '../utils/server-output';
-import * as dk from '../utils/share/docker';
+import * as dk from '../utils/connect-folder/docker';
 
 /**
- * `grok share <folder>` - makes a local folder a Datagrok connection. The share is created over REST
+ * `grok connect-folder <folder>` - makes a local folder a Datagrok connection. The connection is created over REST
  * with the keypair session, and served by the proxy-storage agent in a Docker container that dials out
  * to the server; `list`, `start`, `stop`, `rm` and `logs` manage the containers of this machine.
  */
-export async function share(args: ShareArgs): Promise<boolean> {
+export async function connectFolder(args: ShareArgs): Promise<boolean> {
   const follow = flag(args, 'f') || args.follow === true;
   const output: OutputFormat = (args.output ?? args.o ?? 'table') as OutputFormat;
   setOutputFormat(output);
@@ -63,10 +63,13 @@ async function create(folderArg: string, opts: CreateOptions): Promise<boolean> 
   const alias = cred.alias ?? cred.url;
   const client = await createClient(alias);
   const before: any[] = await client.get('/local_shares');
-  const created = await color.step(`Sharing ${folder} on ${cred.url}`, () => client.post('/local_shares', {
+  const created = await color.step(`Connecting ${folder} to ${cred.url}`, () => client.post('/local_shares', {
     host: dk.canonicalHost(), hostLabel: os.hostname(), folder: dk.canonicalFolder(folder), folderLabel: folder,
     readOnly: opts.readOnly,
-  }));
+  })).catch((e: any) => {
+    throw e?.apiError?.errorCode === 403
+      ? new Error(`You don't have permission to connect folders on ${new URL(cred.url).host}. Ask an administrator.`) : e;
+  });
   const conn = created.connection;
   const name = conn.friendlyName ?? conn.name;
   const spec: dk.RunSpec = {
@@ -82,7 +85,7 @@ async function create(folderArg: string, opts: CreateOptions): Promise<boolean> 
     // A share deleted on the server leaves its agent idle (4410), so the recreated one needs a fresh start.
     const wasDeleted = !before.some((s) => s.id === conn.id);
     if (existing.state === 'running' && !wasDeleted)
-      color.info(`"${name}" is already shared from this machine (container ${existing.name})`);
+      color.info(`"${name}" is already connected from this machine (container ${existing.name})`);
     else
       await color.step(`Starting container ${existing.name}`, () => dk.dockerOk([wasDeleted ? 'restart' : 'start', existing.name]));
     return await reportOnline(client, conn.id, name, existing.name);
@@ -91,7 +94,7 @@ async function create(folderArg: string, opts: CreateOptions): Promise<boolean> 
     await color.step(`Replacing container ${c.name}`, () => dk.rm(c.name));
 
   // A key is registered only once the image is here: a Ctrl+C during a long pull then leaves nothing behind.
-  await color.step(`Getting the share agent image ${spec.image}`, () => dk.ensureImage(spec.image));
+  await color.step(`Getting the folder agent image ${spec.image}`, () => dk.ensureImage(spec.image));
   const key = await issueShareKey(client, conn.id, folder);
   const revokeMine = () => client.del(`/users/keys/${key.id}`).catch(() => {});
   spec.keyId = key.id;
@@ -99,7 +102,7 @@ async function create(folderArg: string, opts: CreateOptions): Promise<boolean> 
   if (opts.foreground)
     return await runForeground(client, spec, key.privateKey, container, name, revokeMine);
   try {
-    await withKeyFile(key.privateKey, (envFile) => color.step('Starting the share agent',
+    await withKeyFile(key.privateKey, (envFile) => color.step('Starting the folder agent',
       () => dk.dockerOk(dk.runArgs({...spec, envFile}))), revokeMine);
   } catch (e) {
     await revokeMine();
@@ -108,7 +111,7 @@ async function create(folderArg: string, opts: CreateOptions): Promise<boolean> 
   if (await dk.isRunning(container))
     await revokeShareKeys(client, conn.id, key.id);
   if (process.platform === 'win32' || process.platform === 'darwin')
-    color.warn('The share comes back after a reboot only when Docker does: let Docker Desktop start when you sign in.');
+    color.warn('The folder comes back after a reboot only when Docker does: let Docker Desktop start when you sign in.');
   return await reportOnline(client, conn.id, name, container);
 }
 
@@ -135,7 +138,7 @@ async function runForeground(client: NodeApiClient, spec: dk.RunSpec, key: Jwk, 
  */
 export async function withKeyFile<T>(key: Jwk, action: (envFile: string) => Promise<T>,
   onAbort: () => Promise<void> = async () => {}): Promise<T> {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-share-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-folder-'));
   const file = path.join(dir, 'key.env');
   const abort = (signal: NodeJS.Signals) => {
     fs.rmSync(dir, {recursive: true, force: true});
@@ -167,7 +170,7 @@ async function issueShareKey(client: NodeApiClient, connectionId: string, folder
 /** The server finds a share's keys by the `[<connection id>]` suffix (deleting a share revokes them): keep it. */
 export function shareKeyName(host: string, folder: string, connectionId: string): string {
   const shown = folder.length > 80 ? `…${folder.slice(-79)}` : folder;
-  return `grok share ${host} ${shown} ${keyTag(connectionId)}`;
+  return `grok connect-folder ${host} ${shown} ${keyTag(connectionId)}`;
 }
 
 const keyTag = (connectionId: string) => `[${connectionId}]`;
@@ -194,7 +197,7 @@ async function reportOnline(client: NodeApiClient, id: string, name: string, con
     return false;
   });
   if (!online) {
-    color.warn(`"${name}" is shared, but its agent has not connected yet. See: grok share logs ${id.slice(0, 8)}`);
+    color.warn(`"${name}" is connected, but its agent has not dialed in yet. See: grok connect-folder logs ${id.slice(0, 8)}`);
     return true;
   }
   color.success(`"${name}" is online (connection ${id}, container ${container})`);
@@ -304,14 +307,14 @@ async function remove(ref: string, host: string | undefined): Promise<boolean> {
     serverError = new Error(`${alias || 'the default server'}: ${e?.message ?? e}`);
   }
   if (id == null)
-    throw serverError ?? new Error(`No share matches "${ref}". See: grok share list`);
+    throw serverError ?? new Error(`No connected folder matches "${ref}". See: grok connect-folder list`);
 
   for (const c of inScope(containers, alias).filter((c) => c.labels[`${dk.LABEL}.connection`] === id))
     await color.step(`Removing container ${c.name}`, () => dk.rm(c.name));
   if (client && !serverError) {
-    let doing = 'revoke the share key';
+    let doing = 'revoke the folder key';
     try {
-      await color.step('Revoking the share key', () => revokeShareKeys(client!, id!));
+      await color.step('Revoking the folder key', () => revokeShareKeys(client!, id!));
       doing = 'delete the connection';
       await color.step(`Deleting connection ${id}`, () => new NodeDapi(client!).connections.delete({id: id!}));
     } catch (e: any) {
@@ -319,8 +322,8 @@ async function remove(ref: string, host: string | undefined): Promise<boolean> {
     }
   }
   if (serverError) {
-    color.error(`Removed on this machine, but the share is still on the server: ${serverError.message ?? serverError}. ` +
-      `Run grok share rm ${id.slice(0, 8)} again, or delete it in your profile (Shares...)`);
+    color.error(`Removed on this machine, but the connection is still on the server: ${serverError.message ?? serverError}. ` +
+      `Run grok connect-folder rm ${id.slice(0, 8)} again, or delete the connection in Datagrok`);
     return false;
   }
   return true;
@@ -329,7 +332,7 @@ async function remove(ref: string, host: string | undefined): Promise<boolean> {
 function findContainer(containers: dk.ShareContainer[], ref: string): dk.ShareContainer {
   const found = matchContainers(containers, ref);
   if (found.length === 0)
-    throw new Error(`No share container on this machine matches "${ref}". See: grok share list`);
+    throw new Error(`No folder container on this machine matches "${ref}". See: grok connect-folder list`);
   if (found.length > 1)
     throw ambiguous(ref, found.map((c) => `${c.labels[`${dk.LABEL}.name`]} (${c.labels[`${dk.LABEL}.alias`]})`));
   return found[0];
@@ -356,14 +359,14 @@ export function matches(ref: string, id: string, name: string | undefined, folde
 }
 
 function ambiguous(ref: string, names: string[]): Error {
-  return new Error(`"${ref}" matches several shares: ${names.join(', ')}. Use the connection id, or --host`);
+  return new Error(`"${ref}" matches several connected folders: ${names.join(', ')}. Use the connection id, or --host`);
 }
 
-/** The server alias with the keypair `grok share` signs in with (the agent gets a key of its own). */
+/** The server alias with the keypair `grok connect-folder` signs in with (the agent gets a key of its own). */
 function shareCredentials(host: string | undefined): ServerCredentials {
   const cred = getServerCredentials(host ?? '');
   if (cred.privateKey == null)
-    throw new Error(`grok share signs in with a keypair, and ${cred.alias ?? cred.url} has none: run grok login ${cred.url}`);
+    throw new Error(`grok connect-folder signs in with a keypair, and ${cred.alias ?? cred.url} has none: run grok login ${cred.url}`);
   return cred;
 }
 
@@ -378,13 +381,13 @@ export function checkFolderSafety(folder: string, force: boolean, home: string =
   for (const secret of [path.join(home, '.grok'), ...keyFiles]) {
     const s = dk.canonicalFolder(secret, platform);
     if (within(f, s) || within(s, f))
-      throw new Error(`${folder} is or holds ${secret}, where your private keys are; it cannot be shared`);
+      throw new Error(`${folder} is or holds ${secret}, where your private keys are; it cannot be connected`);
   }
   if (!force && (f === '/' || /^[a-z]:\/?$/i.test(f) || f === dk.canonicalFolder(home, platform)))
-    throw new Error(`${folder} is a root or your home folder; pass --force to share it anyway`);
+    throw new Error(`${folder} is a root or your home folder; pass --force to connect it anyway`);
 }
 
-/** minimist reads `-f <share>` as a value of the flag, so the value goes back to the positionals. */
+/** minimist reads `-f <connection>` as a value of the flag, so the value goes back to the positionals. */
 function flag(args: ShareArgs, name: string): boolean {
   const v = args[name];
   if (typeof v === 'string' && v !== '') {

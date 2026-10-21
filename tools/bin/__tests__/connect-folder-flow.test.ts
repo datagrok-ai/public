@@ -4,8 +4,8 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import * as kp from '../utils/keypair';
-import * as dk from '../utils/share/docker';
-import {share, shareKeyName, withKeyFile} from '../commands/share';
+import * as dk from '../utils/connect-folder/docker';
+import {connectFolder as share, shareKeyName, withKeyFile} from '../commands/connect-folder';
 
 const A = 'http://stand-a/api';
 const B = 'http://stand-b/api';
@@ -133,6 +133,8 @@ dk.proc.spawn = ((_cmd: string, args: string[]) => {
 interface Stand {
   shares: Map<string, any>, keys: any[], down: boolean, agentImage: string,
   fail?: (method: string, path: string) => boolean,
+  /** The user lacks the permission to connect folders. */
+  forbidden?: boolean,
 }
 const stands: Record<string, Stand> = {};
 
@@ -150,6 +152,10 @@ async function serve(url: string, init: RequestInit = {}): Promise<Response> {
   if (s.fail?.(method, p))
     return json({error: 'Internal error'}, 500);
   const body = init.body ? JSON.parse(init.body as string) : null;
+  if (s.forbidden && p === '/local_shares' && method === 'POST') {
+    return new Response(JSON.stringify({'#type': 'ApiError', message: 'Permission denied'}),
+      {status: 200, headers: {'content-type': 'application/json', 'api-error-code': '403'}});
+  }
   if (p === '/users/login/key/challenge')
     return json({nonce: 'n'});
   if (p === '/users/login/key')
@@ -185,13 +191,13 @@ async function serve(url: string, init: RequestInit = {}): Promise<Response> {
 let folder: string;
 const args = (...rest: any[]) => {
   const flags = typeof rest[rest.length - 1] === 'object' ? rest.pop() : {};
-  return {_: ['share', ...rest], ...flags};
+  return {_: ['connect-folder', ...rest], ...flags};
 };
-const containersOf = (root: string) => docker.containers.filter((c) => c.labels['ai.datagrok.share.url'] === root);
+const containersOf = (root: string) => docker.containers.filter((c) => c.labels['ai.datagrok.folder.url'] === root);
 const ran = () => docker.calls.filter((c) => c[0] === 'run' || c[0] === 'create');
 
 beforeEach(() => {
-  folder = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-share-test-'));
+  folder = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-folder-test-'));
   docker.containers = [];
   docker.calls = [];
   docker.failRun = false;
@@ -214,7 +220,7 @@ afterEach(() => {
   fs.rmSync(folder, {recursive: true, force: true});
 });
 
-describe('grok share <folder>', () => {
+describe('grok connect-folder <folder>', () => {
   it('runs the agent with a key of its own, in a 0600 file deleted right after docker run', async () => {
     expect(await share(args(folder, {host: A}))).toBe(true);
     expect(ran()).toHaveLength(1);
@@ -236,9 +242,9 @@ describe('grok share <folder>', () => {
 
     const keys = stands[A].keys;
     expect(keys).toHaveLength(1);
-    expect(keys[0].name).toMatch(new RegExp(`^grok share .* \\[${ID}\\]$`));
+    expect(keys[0].name).toMatch(new RegExp(`^grok connect-folder .* \\[${ID}\\]$`));
     expect(kp.fingerprint(JSON.parse(keys[0].publicKey))).toBe(kp.fingerprint(kp.publicPart(shareKey)));
-    expect(c.labels['ai.datagrok.share.key']).toBe(keys[0].id);
+    expect(c.labels['ai.datagrok.folder.key']).toBe(keys[0].id);
   });
 
   it('resumes a running container, starts a stopped one, and restarts one whose share was deleted', async () => {
@@ -267,7 +273,7 @@ describe('grok share <folder>', () => {
       ['mode', () => args(folder, {host: A, 'read-only': true})],
       ['server image', () => { stands[A].agentImage = 'datagrok/proxy_storage:2.0'; return args(folder, {host: A, 'read-only': true}); }],
       ['folder', () => {
-        containersOf(A)[0].labels['ai.datagrok.share.folder'] = '/mnt/c/other';
+        containersOf(A)[0].labels['ai.datagrok.folder.folder'] = '/mnt/c/other';
         return args(folder, {host: A, 'read-only': true});
       }],
       ['revoked key', () => { stands[A].keys = []; return args(folder, {host: A, 'read-only': true}); }],
@@ -281,10 +287,20 @@ describe('grok share <folder>', () => {
       expect(ran(), what).toHaveLength(1);
       const now = containersOf(A);
       expect(now, what).toHaveLength(1);
-      expect(stands[A].keys.map((k) => k.id), what).toEqual([now[0].labels['ai.datagrok.share.key']]);
+      expect(stands[A].keys.map((k) => k.id), what).toEqual([now[0].labels['ai.datagrok.folder.key']]);
     }
     expect(containersOf(A)[0].image).toBe('datagrok/proxy_storage:2.0');
-    expect(containersOf(A)[0].labels['ai.datagrok.share.readonly']).toBe('true');
+    expect(containersOf(A)[0].labels['ai.datagrok.folder.readonly']).toBe('true');
+  });
+
+  it('says so when the user may not connect folders, and leaves no key and no container', async () => {
+    stands[A].forbidden = true;
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    expect(await share(args(folder, {host: A}))).toBe(false);
+    expect(stderr.mock.calls.map((c) => `${c[0]}`).join(''))
+      .toContain('You don\'t have permission to connect folders on stand-a. Ask an administrator.');
+    expect(stands[A].keys).toHaveLength(0);
+    expect(ran()).toHaveLength(0);
   });
 
   it('deletes the key file and revokes the new key when docker run fails', async () => {
@@ -301,7 +317,7 @@ describe('grok share <folder>', () => {
     expect(containersOf(A)).toHaveLength(1);
     expect(containersOf(B)).toHaveLength(1);
     expect(containersOf(A)[0].name).not.toBe(containersOf(B)[0].name);
-    expect(docker.calls.filter((c) => c[0] === 'ps').pop()).toContain(`label=ai.datagrok.share.url=${B}`);
+    expect(docker.calls.filter((c) => c[0] === 'ps').pop()).toContain(`label=ai.datagrok.folder.url=${B}`);
 
     docker.calls = [];
     await share(args(folder, {host: A}));
@@ -328,7 +344,7 @@ describe('withKeyFile', () => {
   });
 });
 
-describe('grok share rm', () => {
+describe('grok connect-folder rm', () => {
   it('removes the container, the connection and the share key', async () => {
     await share(args(folder, {host: A}));
     expect(await share(args('rm', ID.slice(0, 8)))).toBe(true);
@@ -358,14 +374,14 @@ describe('grok share rm', () => {
 
   it('matches containers by connection id and alias, whatever URL they were created with', async () => {
     await share(args(folder, {host: A}));
-    containersOf(A)[0].labels['ai.datagrok.share.alias'] = B;
-    containersOf(A)[0].labels['ai.datagrok.share.url'] = 'http://172.31.192.1/api';
+    containersOf(A)[0].labels['ai.datagrok.folder.alias'] = B;
+    containersOf(A)[0].labels['ai.datagrok.folder.url'] = 'http://172.31.192.1/api';
     expect(await share(args('rm', ID, {host: B}))).toBe(false);
     expect(docker.containers).toHaveLength(0);
   });
 });
 
-describe('keys of an interrupted or failed share', () => {
+describe('keys of an interrupted or failed connection', () => {
   it('gets the image before it registers a key', async () => {
     docker.images.clear();
     await share(args(folder, {host: A}));
@@ -420,7 +436,7 @@ describe('keys of an interrupted or failed share', () => {
   });
 });
 
-describe('grok share rm, step by step', () => {
+describe('grok connect-folder rm, step by step', () => {
   const printed = () => (console.log as any).mock.calls.map((c: any[]) => c.join(' ')).join('\n');
 
   it('revokes the share keys before it deletes the connection', async () => {
@@ -436,7 +452,7 @@ describe('grok share rm, step by step', () => {
     await share(args(folder, {host: A}));
     stands[A].fail = (m, p) => m === 'DELETE' && p.startsWith('/users/keys/');
     expect(await share(args('rm', ID.slice(0, 8)))).toBe(false);
-    expect(printed()).toContain('could not revoke the share key');
+    expect(printed()).toContain('could not revoke the folder key');
     expect(stands[A].shares.size).toBe(1);
 
     stands[A].fail = (m, p) => m === 'DELETE' && p.startsWith('/public/v1/connections/');
@@ -450,7 +466,7 @@ describe('shareKeyName', () => {
   it('shortens a long folder and keeps the id suffix the server matches', () => {
     const name = shareKeyName('laptop', `/data/${'x'.repeat(200)}/end`, ID);
     expect(name.endsWith(`[${ID}]`)).toBe(true);
-    expect(name.length).toBeLessThan(140);
+    expect(name.length).toBeLessThanOrEqual(150);
     expect(name).toContain('/end');
   });
 });

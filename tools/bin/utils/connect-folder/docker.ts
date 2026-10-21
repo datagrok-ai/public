@@ -4,9 +4,9 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-/** The `docker` CLI for `grok share`: always an argument vector, never a shell, so no quoting or MSYS path mangling. */
+/** The `docker` CLI for `grok connect-folder`: always an argument vector, never a shell, so no quoting or MSYS path mangling. */
 
-export const LABEL = 'ai.datagrok.share';
+export const LABEL = 'ai.datagrok.folder';
 export const SHARE_ROOT = '/share';
 const DOCKER_HOST = 'host.docker.internal';
 
@@ -41,7 +41,7 @@ export function docker(args: string[], inherit: boolean = false): Promise<Docker
     child.stdout?.on('data', (d) => stdout += d);
     child.stderr?.on('data', (d) => stderr += d);
     child.on('error', (e: any) => reject(e?.code === 'ENOENT'
-      ? new DockerError('grok share runs the share agent in Docker, which is not installed. ' +
+      ? new DockerError('grok connect-folder runs the folder agent in Docker, which is not installed. ' +
         'Install Docker Desktop (Windows/macOS) or Docker Engine (Linux).')
       : e));
     child.on('close', (code) => resolve({code: code ?? 1, stdout, stderr}));
@@ -62,7 +62,7 @@ export async function dockerAvailable(): Promise<void> {
     throw new DockerError('Docker is installed but not running: start Docker Desktop / the docker service.', version.stderr);
   const osType = (await dockerOk(['info', '--format', '{{.OSType}}'])).trim();
   if (osType !== 'linux') {
-    throw new DockerError(`Docker runs ${osType} containers; the share agent needs Linux containers. ` +
+    throw new DockerError(`Docker runs ${osType} containers; the folder agent needs Linux containers. ` +
       'Switch Docker Desktop to Linux containers.');
   }
 }
@@ -75,9 +75,9 @@ export function hostFolder(folder: string, platform: string = process.platform,
   resolve: (p: string) => string = (p) => fs.realpathSync.native(p)): {path: string, note?: string} {
   const raw = folder.trim();
   if (/^[\\/]{2}(wsl\$|wsl\.localhost)([\\/]|$)/i.test(raw))
-    throw new Error(`${raw} is inside WSL: run grok share inside WSL for WSL paths`);
+    throw new Error(`${raw} is inside WSL: run grok connect-folder inside WSL for WSL paths`);
   if (/^[\\/]{2}[^\\/]/.test(raw))
-    throw new Error(`${raw} is a network path; Docker cannot mount it. Share a local folder instead`);
+    throw new Error(`${raw} is a network path; Docker cannot mount it. Connect a local folder instead`);
   const p = platform === 'win32' ? path.win32 : path.posix;
   const resolved = resolve(p.resolve(raw));
   if (/^[\\/]{2}/.test(resolved))
@@ -119,7 +119,7 @@ export function containerUrl(url: string): {url: string, rewritten: boolean} {
 /** The same login shares a folder under the same id on every server, so the name hashes the server in. */
 export function containerName(apiRoot: string, connectionId: string, foreground: boolean = false): string {
   const hash = crypto.createHash('sha256').update(`${apiRoot}|${connectionId}`).digest('hex').slice(0, 12);
-  return `grok-share-${hash}${foreground ? '-fg' : ''}`;
+  return `grok-folder-${hash}${foreground ? '-fg' : ''}`;
 }
 
 /** A `--mount` field: the value is CSV, so a path with a comma or a quote must be quoted. */

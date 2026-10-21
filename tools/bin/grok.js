@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // Other commands count their options, so the defaults of these flags would break them.
-const shareFlags = require('minimist')(process.argv.slice(2))._[0] === 'share'
+const folderFlags = require('minimist')(process.argv.slice(2))._[0] === 'connect-folder'
   ? ['read-only', 'foreground', 'force', 'follow'] : [];
 const argv = require('minimist')(process.argv.slice(2), {
   alias: {k: 'key', h: 'help', r: 'recursive'},
-  boolean: ['dartium', ...shareFlags],
+  boolean: ['dartium', ...folderFlags],
   // keep versions verbatim — minimist would coerce '1.10' to the number 1.1
   string: ['version'],
 });
@@ -43,7 +43,7 @@ const commands = {
   server: lazy('server', 'server'),
   s: lazy('server', 'server'),
   setup: lazy('setup', 'setup'),
-  share: lazy('share', 'share'),
+  'connect-folder': lazy('connect-folder', 'connectFolder'),
 };
 
 // `--version` is a string option (grok publish --version 1.10), so a bare `grok --version` parses as ''.

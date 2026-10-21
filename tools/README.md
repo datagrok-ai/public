@@ -150,21 +150,23 @@ For more information on configuring connections, refer to the [Connections](http
   | debug          | Sets a debug breakpoint before each test execution, allowing you to debug the test. Only works in `gui` mode                          |
 
 - `link` command is used for public plugins development to link `datagrok-api` and libraries.
-- `share` makes a local folder a Datagrok connection. The share agent runs in a Docker container (restart policy
-  `unless-stopped`) that dials out to the server, so no inbound port is opened; the folder is the container's only
-  mount. The CLI signs in with your keypair (`grok login <server>` first), which never leaves the machine: the
-  container gets a key of its own, registered for this share only and revoked by `grok share rm` (or in Profile >
-  Public keys). Sharing the same folder again resumes the same connection. Requires Docker (Linux containers); a
-  `localhost` server is reached from the container as `host.docker.internal`, which Docker Engine on Linux and WSL
-  maps to the host gateway (`--add-host host.docker.internal:host-gateway`). On Linux the agent runs as your uid.
+- `connect-folder` makes a local folder a Datagrok connection. The folder agent runs in a Docker container (restart
+  policy `unless-stopped`) that dials out to the server, so no inbound port is opened; the folder is the container's
+  only mount. The CLI signs in with your keypair (`grok login <server>` first), which never leaves the machine: the
+  container gets a key of its own, registered for this folder only and revoked by `grok connect-folder rm` (or in
+  Profile > Public keys). Connecting the same folder again resumes the same connection. Requires Docker (Linux
+  containers) and the "Connect local folders" permission on the server; a `localhost` server is reached from the
+  container as `host.docker.internal`, which Docker Engine on Linux and WSL maps to the host gateway
+  (`--add-host host.docker.internal:host-gateway`). On Linux the agent runs as your uid.
 
   ```shell
-  grok share <folder> [--host <alias>] [--read-only] [--foreground] [--image <ref>] [--force]
-  grok share list [--host <alias>] [--output json]
-  grok share start|stop|logs <share> [-f]
-  grok share rm <share>
+  grok connect-folder <folder> [--host <alias>] [--read-only] [--foreground] [--image <ref>] [--force]
+  grok connect-folder list [--host <alias>] [--output json]
+  grok connect-folder start|stop|logs <connection> [-f]
+  grok connect-folder rm <connection>
   ```
 
-  `<share>` is the share name, a connection id prefix (8+ characters), or the folder. `stop` also keeps the share
-  stopped after a reboot; `rm` removes the container and deletes the connection. Your shares are also listed (and can
-  be revoked) in the Datagrok user profile. Others see a share as an ordinary connection, under its permissions.
+  `<connection>` is the connection name, a connection id prefix (8+ characters), or the folder. `stop` also keeps
+  the folder disconnected after a reboot; `rm` removes the container and deletes the connection. Your connected
+  folders are also listed (and can be revoked) in the Datagrok user profile. Others see one as an ordinary
+  connection, under its permissions.
