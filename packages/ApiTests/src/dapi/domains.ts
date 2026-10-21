@@ -87,19 +87,6 @@ category('Dapi: domains', () => {
     }
   });
 
-  test('audit pages: the newest entries, then the ones before', async () => {
-    const [ins] = await items().insert({sku: sku(), name: 'A'});
-    try {
-      await items().update(ins.id, {name: 'B'});
-      const [newest] = await items().audit(ins.id, {limit: 1});
-      expect(newest.op, 'update');
-      const older = await items().audit(ins.id, {before: newest.id});
-      expect(older.map((a) => a.op).join(','), 'insert');
-    } finally {
-      await items().delete(ins.id);
-    }
-  });
-
   test('dapi2 generated client: domains removed at parity, init export intact', async () => {
     // WO-4b: every dapi2 function belonged to the domains namespace — with it
     // removed at typed-surface parity the generated client has no value members

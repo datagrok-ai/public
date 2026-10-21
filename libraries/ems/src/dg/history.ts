@@ -25,7 +25,6 @@ const OPS: Record<string, [label: string, variant: BadgeVariant]> = {
 const ITEM_HEIGHT = 40;
 const PAGE_SIZE = 50;
 
-/** Where the next, older page of a row's trail starts. */
 interface OlderPage {
   table: DomainTableLike;
   id: string;
@@ -42,7 +41,6 @@ export class DomainHistory extends Control {
   private readonly _noHistory = signal(false);
   /** id → the name behind it, resolved once per pane: the actors and the ref cells alike. */
   private readonly _names = new Map<string, Promise<string>>();
-  /** The page after the one shown; null once the trail is shown to its first entry. */
   private _older: OlderPage | null = null;
 
   constructor(readonly source: DomainSource, row?: DomainHistoryTarget) {
@@ -118,8 +116,6 @@ export class DomainHistory extends Control {
     return page.entries;
   }
 
-  /** A page of the trail, newest first. One entry past the page is asked for, so a trail that
-   * ends on a page boundary offers no older page. */
   private static async _page(table: DomainTableLike, id: string, before?: number):
     Promise<{entries: AuditEntryLike[], older: OlderPage | null}> {
     const entries = await table.audit!(id, {limit: PAGE_SIZE + 1, before});
@@ -138,8 +134,7 @@ export class DomainHistory extends Control {
     list.setItems(shown);
     const scope = Scope.ambient!;
     let older = this._older;
-    // a button, not a scroll trigger: on the entity page the pane grows and the page scrolls, so
-    // the list's own end is never near
+    // a button, not a scroll trigger: on the entity page the page scrolls, not the list
     const more: HTMLButtonElement = button('Show older', async () => {
       more.disabled = true;
       try {

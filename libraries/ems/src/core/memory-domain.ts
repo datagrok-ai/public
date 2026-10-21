@@ -358,8 +358,7 @@ export class MemoryTable implements DomainTableLike {
   readonly rows: Row[];
   /** Every ref column → its target address. */
   readonly refs: Record<string, string>;
-  /** What every transaction that touched this table recorded, oldest first; a line's place here
-   * is its `seq`. */
+  /** What every transaction that touched this table recorded, oldest first. */
   readonly history: AuditLine[] = [];
   /** One bump per transaction that wrote this table's rows — the memory twin of
    * `domain_tables.change_seq` (consolidation 1-5), so `probe` answers an unscoped read with a

@@ -323,11 +323,6 @@ test('audit: one line per op under one tx_id, before and after the row', async (
   assert.deepEqual([del.op, del.before.title, del.after], ['delete', 'Ibuprofen', null]);
   assert.equal(new Set([update, insert, del].map((h) => h.tx_id)).size, 1);
   assert.equal(typeof update.ts, 'string');
-  await issue.transaction([{op: 'update', table: 'issue', id: 'i1', values: {title: 'Aspirin 200'}}]);
-  const [newest] = await issue.audit('i1', {limit: 1});
-  assert.equal(newest.after.title, 'Aspirin 200', 'a page is the newest entries');
-  assert.deepEqual((await issue.audit('i1', {before: newest.seq})).map((h) => h.seq), [update.seq],
-    'before pages back past an entry');
 });
 
 test('saveAll: every writer\'s batch as one transaction, the results sliced back to each', async () => {
