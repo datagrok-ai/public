@@ -305,7 +305,7 @@ export interface PurchaseOrderRow {
 export interface PurchaseOrderInsert {
   number?: number;
   vendor_id: string;
-  status: PurchaseOrderStatus;
+  status?: PurchaseOrderStatus;
   ordered_on?: Dayjs | string;
   notes?: string;
 }
@@ -373,7 +373,7 @@ export interface SdsDocumentInsert {
   substance_id: string;
   file?: string;
   revision: string;
-  language: SdsDocumentLanguage;
+  language?: SdsDocumentLanguage;
 }
 
 export type SdsDocumentColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'substance_id' |
