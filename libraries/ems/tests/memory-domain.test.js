@@ -603,8 +603,7 @@ test('a hidden or unlisted column is out of reach for sort, captions and FK path
 
 test('sort: `prop.<name>` without such a column is refused exactly like a hidden one', async () => {
   const issue = await backend({access: {can: {view: true}, fields: {title: 'editable', number: 'hidden'}}}).table('grit.issue');
-  for (const name of ['number', 'nope', 'id']) {
+  for (const name of ['number', 'nope', 'id'])
     await assert.rejects(() => issue.query({sort: `prop.${name},title`}),
       (e) => e.code === 'filter' && e.message === `Unknown or inaccessible sort column "${name}"`, name);
-  }
 });
