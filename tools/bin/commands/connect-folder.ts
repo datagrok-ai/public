@@ -264,9 +264,19 @@ async function manage(command: 'start' | 'stop' | 'logs', ref: string, host: str
   const c = findContainer(inScope(await dk.ps(), host), ref);
   if (command === 'logs')
     return (await dk.logs(c.name, follow)).code === 0;
-  await color.step(`${command === 'start' ? 'Starting' : 'Stopping'} "${c.labels[`${dk.LABEL}.name`]}"`,
+  const name = c.labels[`${dk.LABEL}.name`];
+  await color.step(`${command === 'start' ? 'Starting' : 'Stopping'} "${name}"`,
     () => command === 'start' ? dk.start(c.name) : dk.stop(c.name));
-  return true;
+  if (command === 'stop')
+    return true;
+  let client: NodeApiClient;
+  try {
+    client = await createClient(c.labels[`${dk.LABEL}.alias`]);
+  } catch (e: any) {
+    color.warn(`"${name}" is started, but ${c.labels[`${dk.LABEL}.url`]} cannot be reached to check it: ${e.message ?? e}`);
+    return true;
+  }
+  return await reportOnline(client, c.labels[`${dk.LABEL}.connection`], name, c.name);
 }
 
 /** The containers of the server [host] names (all of them without one), by alias or by URL. */

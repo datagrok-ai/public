@@ -135,6 +135,8 @@ interface Stand {
   fail?: (method: string, path: string) => boolean,
   /** `POST /local_shares` answers 403 with this message. */
   forbidden?: string,
+  /** The agent shows up online only after this many more share listings. */
+  offlinePolls?: number,
 }
 const stands: Record<string, Stand> = {};
 
@@ -160,8 +162,10 @@ async function serve(url: string, init: RequestInit = {}): Promise<Response> {
     return json({nonce: 'n'});
   if (p === '/users/login/key')
     return json({isSuccess: true, token: 'token'});
-  if (p === '/local_shares' && method === 'GET')
-    return json([...s.shares.values()]);
+  if (p === '/local_shares' && method === 'GET') {
+    const online = !(s.offlinePolls && s.offlinePolls-- > 0);
+    return json([...s.shares.values()].map((c) => ({...c, isAvailable: online})));
+  }
   if (p === '/local_shares' && method === 'POST') {
     const conn = {id: ID, friendlyName: 'laptop data', isAvailable: true,
       parameters: {localShareHost: 'laptop', localShareFolder: body.folderLabel, localShareReadOnly: `${body.readOnly}`}};
@@ -343,6 +347,21 @@ describe('grok connect-folder <folder>', () => {
     expect(fs.existsSync(docker.keyFiles[0].path)).toBe(false);
     expect(docker.containers).toHaveLength(0);
     expect(stands[A].keys).toHaveLength(0);
+  });
+});
+
+describe('grok connect-folder start', () => {
+  it('waits for the agent to come online, as a new connection does', async () => {
+    await share(args(folder, {host: A}));
+    await share(args('stop', ID.slice(0, 8)));
+    stands[A].offlinePolls = 1;
+    events.length = 0;
+    expect(await share(args('start', ID.slice(0, 8)))).toBe(true);
+    const started = events.indexOf('docker start');
+    const polls = events.slice(started).filter((e) => e === 'GET /local_shares');
+    expect(started).toBeGreaterThan(-1);
+    expect(polls).toHaveLength(2);
+    expect((console.log as any).mock.calls.map((c: any[]) => c.join(' ')).join(' ')).toContain('is online');
   });
 });
 
