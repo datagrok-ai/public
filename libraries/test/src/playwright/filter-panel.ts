@@ -14,7 +14,7 @@ export async function trueCount(page: Page): Promise<number> {
 
 export async function cardCount(page: Page): Promise<number> {
   return page.evaluate(() =>
-    document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length);
+    document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').length);
 }
 
 // The panel header's reset icon clears the cards' criteria and KEEPS the cards. It is not

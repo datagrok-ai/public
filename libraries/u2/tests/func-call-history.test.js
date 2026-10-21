@@ -278,7 +278,9 @@ ui('the Run button is gated on required fields, runs the call and saves it throu
   const requests = fakeCalls({});
   const ran = [];
   const show = signal(true);
-  const form = new FuncCallForm(new FuncCall(sin()), {showRun: show, onRun: (c) => ran.push(c)});
+  // a double the platform declares non-nullable (`func_param.dart` nullable over the type's info)
+  const required = new Func('Sin', {inputs: [new Property('x', 'double', {nullable: false})]});
+  const form = new FuncCallForm(new FuncCall(required), {showRun: show, onRun: (c) => ran.push(c)});
   document.body.append(form.root);
   const run = form.root.querySelector('[data-u2="ff-run"]');
   assert.notEqual(run, null);

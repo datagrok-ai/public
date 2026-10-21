@@ -10,6 +10,7 @@ import {hasAddControls, PipelineWithAdd, STICKY_BAR_BACKGROUND} from '../../util
 import {isFuncCallState, isStaticPipelineState, PipelineState, ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useHelp} from '../../composables/use-help';
 import {hasContextHelp} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {openSourceRun, sourceRunLabel} from '../TreeWizard/source-run';
 
 
 export const PipelineView = Vue.defineComponent({
@@ -27,6 +28,10 @@ export const PipelineView = Vue.defineComponent({
       type: Boolean,
       required: true,
     },
+    isParentReadonly: {
+      type: Boolean,
+      default: false,
+    },
     uuid: {
       type: String,
     },
@@ -38,7 +43,7 @@ export const PipelineView = Vue.defineComponent({
     },
   },
   emits: {
-    'update:funcCall': (_call: DG.FuncCall) => true,
+    'update:funcCall': (_call: DG.FuncCall, _readonly: boolean) => true,
     'actionRequested': (_actionUuid: string) => true,
     'addNode': (_data: {itemId: string, position: number}) => true,
   },
@@ -55,6 +60,7 @@ export const PipelineView = Vue.defineComponent({
     } = useHelp();
 
     const historyHidden = Vue.ref(true);
+    const historyReadonly = Vue.ref(false);
     const disableHistory = Vue.ref(false);
     const functionsHidden = Vue.ref(true);
 
@@ -78,6 +84,7 @@ export const PipelineView = Vue.defineComponent({
     const version = Vue.ref<string | undefined>(undefined);
     const isActionStep = Vue.ref(false);
     const configDescription = Vue.ref<string | undefined>(undefined);
+    const sourceRunId = Vue.ref<string | undefined>(undefined);
 
     Vue.watch(state, (state) => {
       name.value = !isFuncCallState(state) ? (state.friendlyName ?? state.nqName ?? '') : '';
@@ -85,7 +92,15 @@ export const PipelineView = Vue.defineComponent({
       disableHistory.value = !isFuncCallState(state) ? state.disableHistory : false;
       isActionStep.value = isStaticPipelineState(state) && !!state.isActionStep;
       configDescription.value = !isFuncCallState(state) ? state.description : undefined;
+      sourceRunId.value = !isFuncCallState(state) ? state.sourceRunId : undefined;
     }, {immediate: true});
+
+    const canLoadRun = Vue.computed(() => !isActionStep.value && !!currentCall.value && !disableHistory.value &&
+      !props.isParentReadonly);
+    const openHistory = (readonly: boolean) => {
+      historyReadonly.value = readonly;
+      historyHidden.value = false;
+    };
 
     Vue.watch(currentCall, (call) => {
       changeHelpFunc(call?.func);
@@ -129,6 +144,13 @@ export const PipelineView = Vue.defineComponent({
               <div
                 style={{minWidth: '200px', flex: '1'}}
               >
+                { sourceRunId.value &&
+                  <div class='mtl-mb'>
+                    {sourceRunLabel(state.value.isReadonly)} · <a
+                      onClick={() => openSourceRun(sourceRunId.value!)}
+                    >Open original run</a>
+                  </div>
+                }
                 { props.body ?
                   <MarkDown markdown={props.body} class='mtl-mb' /> :
                   <span>
@@ -149,13 +171,21 @@ export const PipelineView = Vue.defineComponent({
                       <div> Show help </div>
                     </div>
                   }
-                  { !isActionStep.value && currentCall.value && !disableHistory.value &&
+                  { canLoadRun.value &&
                     <div
                       class={cardsClasses}
-                      onClick={() => historyHidden.value = false}
+                      onClick={() => openHistory(false)}
                     >
                       <IconFA name='history' class={'d4-picture'} />
                       <div> Load completed run </div>
+                    </div> }
+                  { canLoadRun.value && !isRoot.value &&
+                    <div
+                      class={cardsClasses}
+                      onClick={() => openHistory(true)}
+                    >
+                      <IconFA name='lock' class={'d4-picture'} />
+                      <div> Load completed run (read-only) </div>
                     </div> }
                   { buttonActions.value?.map((action) => Vue.withDirectives(
                     <div
@@ -199,7 +229,7 @@ export const PipelineView = Vue.defineComponent({
                   const iconBackground = `background-image: url("/images/entities/${language}.png"); padding-right: 3px;`;
                   return (
                     <div
-                      class='p-2 border-solid border border-[#dbdcdf] m-4 hover:bg-[#F2F2F5]'
+                      class='p-2 border-solid border border-[color:var(--grey-2)] m-4 hover:bg-[color:var(--grey-1)]'
                       style={{width: '208px'}}
                     >
                       <div class='flex flex-col'>
@@ -210,7 +240,7 @@ export const PipelineView = Vue.defineComponent({
                               <IconFA style={{'padding-right': '3px'}} name='folder-tree' />
                             }
                             <div>
-                              <span class='text-[#2083d5]'> {stepType.friendlyName ?? stepType.configId} </span>
+                              <span class='text-[color:var(--blue-1)]'> {stepType.friendlyName ?? stepType.configId} </span>
                             </div>
                           </div>
                           <div class='flex flex-row'>
@@ -252,10 +282,10 @@ export const PipelineView = Vue.defineComponent({
               func={currentCall.value.func}
               version={!isFuncCallState(state.value) ? state.value.version : undefined}
               allowOtherVersions={isRoot.value}
-              onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
+              onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall, historyReadonly.value)}
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.5}
-              dock-spawn-title='History'
+              dock-spawn-title={historyReadonly.value ? 'History (read-only load)' : 'History'}
               dock-spawn-panel-icon='history'
               ref={historyRef}
               class='overflow-scroll h-full'
@@ -272,7 +302,7 @@ export const PipelineView = Vue.defineComponent({
             > {
                 Vue.withDirectives(
                   <MarkDown
-                    markdown={helpContent.value ?? 'Help file is not avaliable'}
+                    markdown={helpContent.value ?? 'Help file is not available'}
                   />, [[ifOverlapping, helpLoading.value]])
               }
             </div> : null

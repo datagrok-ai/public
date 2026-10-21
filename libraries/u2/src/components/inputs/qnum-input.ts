@@ -15,9 +15,9 @@ export interface QNumInputOptions extends InputOptions<number | null> {
  * Text that carries no recognisable number stays on screen and marks the input invalid, as the
  * rest of u2 does (the plan's ruling 1); Dart's editor reports null for it and shows nothing. */
 export class QNumInput extends Input<number | null, QNumInputOptions> {
-  private _input!: HTMLInputElement;
   // assigned in createEditor, which the base constructor runs before field initializers
-  private _bad!: Signal<boolean>;
+  private declare _input: HTMLInputElement;
+  private declare _bad: Signal<boolean>;
 
   constructor(options: QNumInputOptions = {}) {
     super(options, null);
@@ -32,27 +32,29 @@ export class QNumInput extends Input<number | null, QNumInputOptions> {
     input.type = 'text';
     input.autocomplete = 'off';
 
+    // set by an edit that changed the value, consumed by the effect run it causes — after the
+    // handler, when its batch ends — so the text being typed is never rewritten
     let echo = false;
     this.effect(() => {
       const value = this.value.value;
       if (echo)
-        return;
-      input.value = QNum.format(value, this.options.format);
-    });
-    this._listen(input, 'input', () => {
-      const text = input.value.trim();
-      const parsed = text === '' ? null : QNum.parse(text);
-      this._bad.value = text !== '' && parsed === null;
-      if (this._bad.peek())
-        return;
-      echo = true;
-      try {
-        this.value.value = parsed;
-      } finally {
         echo = false;
-      }
+      else
+        input.value = QNum.format(value ?? null, this.options.format);
     });
-    this._listen(input, 'blur', () => this._commit());
+    this.scope.listen(input, 'input', () => {
+      const parsed = this._parse();
+      if (parsed === undefined || this.options.commitOn === 'change')
+        return;
+      const before = this.value.peek();
+      this.value.value = parsed;
+      echo = !Object.is(this.value.peek(), before);
+    });
+    this.scope.listen(input, 'blur', () => this._commit());
+    this.scope.listen(input, 'keydown', (e) => {
+      if ((e as KeyboardEvent).key === 'Enter')
+        this._commit();
+    });
 
     // registered here, before the base builds its validation effect, so the effect tracks `_bad`
     this.addValidator(() => this._bad.value ? 'Not a qualified number' : null);
@@ -62,12 +64,19 @@ export class QNumInput extends Input<number | null, QNumInputOptions> {
   /** Redraws the committed value on blur, so `> 10.` settles as `>10` — Dart reformats on every
    * `value` write (`qnum_input.dart:33-36`). */
   private _commit(): void {
-    if (!this._bad.peek())
-      this._input.value = QNum.format(this.value.peek(), this.options.format);
+    const parsed = this._parse();
+    if (parsed === undefined)
+      return;
+    this.value.value = parsed;
+    this._input.value = QNum.format(this.value.peek() ?? null, this.options.format);
   }
 
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
+  /** The packed number in the field, null when it is blank, undefined (and invalid) when it carries
+   * no recognisable number. */
+  private _parse(): number | null | undefined {
+    const text = this._input.value.trim();
+    const parsed = text === '' ? null : QNum.parse(text);
+    this._bad.value = text !== '' && parsed === null;
+    return this._bad.peek() ? undefined : parsed;
   }
 }

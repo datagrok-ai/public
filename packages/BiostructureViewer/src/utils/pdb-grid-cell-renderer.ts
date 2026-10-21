@@ -192,7 +192,7 @@ export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
   ): void {
-    const renderedOnGrid = gridCell.gridColumn && gridCell.grid?.canvas === g.canvas;
+    const renderedOnGrid = gridCell.grid?.dart && gridCell.grid.canvas === g.canvas;
     const cellValue = (renderedOnGrid ? gridCell.cell.valueString : (gridCell.cell?.value ?? '').toString()).toLowerCase();
 
     if (h < 40 || cellValue.length < 4 || w < 40) {

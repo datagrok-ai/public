@@ -111,6 +111,8 @@ Deep link (dev only): `https://dev.datagrok.ai/apps/usage/release` (per-tab
 
 ## Known limitations / follow-ups
 
+- **Tickets tab still reads Jira**; new tickets are GitHub issues, so porting it to GitHub
+  milestones (`datagrok-ai/core`, `datagrok-ai/public`) is pending.
 - **Tickets tab** — the JiraConnect 410 is **fixed**: `loadIssues`
   (`public/packages/JiraConnect/src/api/data.ts:66`) now calls the token-paginated
   `/rest/api/3/search/jql`, so `GetJiraTicketsByFilter` returns data again.

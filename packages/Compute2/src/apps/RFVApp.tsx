@@ -15,7 +15,8 @@ import {compositorOverlay} from '../directives/compositor-overlay';
 import {canUseResults, pinView} from '../utils';
 import {parseUrlInputs, applyUrlInputs, missingMandatoryInputs, buildInputsUrl, copyText} from '../url-inputs';
 import {getShareAction} from '../sharing/sharing';
-import {useDgView} from '@datagrok-libraries/webcomponents-vue';
+import {RibbonMenu, useDgView} from '@datagrok-libraries/webcomponents-vue';
+import {useFeedbackItems} from '../composables/use-feedback';
 
 const RUN_DEBOUNCE_TIME = 250;
 const FUNCTION_HISTORY = {mode: 'function'} as const;
@@ -214,9 +215,8 @@ export const RFVApp = Vue.defineComponent({
       currentFuncCall.value.options['title'] = editOptions.title;
       currentFuncCall.value.options['description'] = editOptions.description;
       currentFuncCall.value.options['tags'] = editOptions.tags;
-      currentFuncCall.value.newId();
       try {
-        await historyUtils.saveRun(currentFuncCall.value);
+        await historyUtils.saveRun(currentFuncCall.value, {newId: true});
         await saveIsFavorite(currentFuncCall.value, !!editOptions.isFavorite);
       } catch (e: any) {
         grok.shell.error(e);
@@ -238,6 +238,7 @@ export const RFVApp = Vue.defineComponent({
     };
 
     const shareAction = getShareAction();
+    const feedbackItems = useFeedbackItems(Vue.computed(() => currentFuncCall.value.func));
 
     const shareRun = async () => {
       if (!canUseResults(currentCallState.value, 'sharing'))
@@ -295,6 +296,8 @@ export const RFVApp = Vue.defineComponent({
           showRunButton={!isRunningOnInput.value}
           keepExportsVisible={isRunningOnInput.value}
         />
+        {feedbackItems.value.length > 0 &&
+          <RibbonMenu groupName='Feedback' items={feedbackItems.value}/>}
       </div>, [[compositorOverlay, overlayActive.value]])
     );
   },

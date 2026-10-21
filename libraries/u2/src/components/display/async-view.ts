@@ -1,6 +1,7 @@
 /* Async-state visuals: the standardized idle/loading/ready/empty/error-with-retry rendering
    over an AsyncSource, so no control hand-rolls a spinner. Combobox renders these states into
-   its popup; AsyncView renders them into a content area. */
+   its popup; AsyncView renders them into a content area, and keeps what it shows through a reload
+   (stale-while-revalidate): the content stays, `aria-busy` says a newer answer is coming. */
 import {AsyncSource, AsyncFetch, AsyncState} from '../../core/async-source.js';
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
@@ -48,6 +49,8 @@ export class AsyncView<T> extends Control {
   private readonly _retry: HTMLElement;
   private _query = '';
   private _content: Scope | undefined;
+  /** What shows is a ready answer: a reload keeps it. */
+  private _ready = false;
 
   constructor(source: AsyncSource<T>, render: (items: T[]) => HTMLElement, options?: AsyncViewOptions) {
     super();
@@ -72,12 +75,25 @@ export class AsyncView<T> extends Control {
     return view;
   }
 
+  /** The base state (busy while a fetch runs) plus the error the view shows; null when none. */
+  getState(): ReturnType<Control['getState']> {
+    const state = this._source.state.peek();
+    return {...super.getState(), error: state.kind === 'error' ? state.message : null};
+  }
+
   refresh(query?: string): void {
     this._query = query ?? this._query;
     this._source.query(this._query);
   }
 
   private _apply(state: AsyncState<T>): void {
+    const loading = state.kind === 'loading';
+    this.root.classList.toggle('u2-async-stale', loading && this._ready);
+    if (loading && this._ready) {
+      this.root.setAttribute('aria-busy', 'true');
+      return;
+    }
+    this._ready = state.kind === 'ready';
     this._releaseContent();
     const scope = new Scope();
     this._content = scope;

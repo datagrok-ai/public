@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {category, before, test, after, expect, delay} from '@datagrok-libraries/test/src/test';
-import {TestManager} from '../package-testing';
+import {NODE_TYPE, TestManager} from '../package-testing';
 
 
 category('Test manager', () => {
@@ -36,6 +36,43 @@ category('Test manager', () => {
     expect(testManager.testsResultsDf.get('package', 0), 'DevTools');
     expect(testManager.testsResultsDf.get('category', 0), 'FSE');
     expect(testManager.testsResultsDf.get('name', 0), 'exist');
+  });
+
+  test('Unhandled exception row', async () => {
+    const condition = {package: 'DevTools', category: 'FSE', name: 'exist'};
+    const testInfo = testManager.getTestsInfoGrid(condition, NODE_TYPE.TEST, false, 'unhandled error').testInfo;
+    const last = testInfo.rowCount - 1;
+    expect(testInfo.get('category', last), 'unhandled');
+    expect(testInfo.get('success', last), false);
+    expect(testInfo.get('result', last), 'unhandled error');
+    expect(testInfo.get('package', last), 'DevTools');
+  });
+
+  // Older test libraries return no 'package' column (and, before 2024, no 'logs')
+  test('Tests details after running old test library tests', async () => {
+    const call = grok.functions.call;
+    const savedResults = testManager.testsResultsDf;
+    testManager.testsResultsDf = undefined;
+    grok.functions.call = async (name: string, params?: {}) => {
+      const res = await call.call(grok.functions, name, params);
+      if (name === 'DevTools:test') {
+        for (const col of ['logs', 'package'])
+          if (res.col(col))
+            res.columns.remove(col);
+      }
+      return res;
+    };
+    try {
+      testManager.selectedNode = testManager.tree.items.filter((it) => it.text === 'exist')[0];
+      await testManager.runTestsForSelectedNode();
+      const condition = {package: 'DevTools', category: 'FSE', name: 'exist'};
+      const testInfo = testManager.getTestsInfoGrid(condition, NODE_TYPE.TEST).testInfo;
+      expect(testInfo.rowCount, 1);
+    }
+    finally {
+      grok.functions.call = call;
+      testManager.testsResultsDf = savedResults;
+    }
   });
 
 

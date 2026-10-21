@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import {before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
-import type {DomainSource} from '@datagrok-libraries/u2';
-import {DomainApp} from '@datagrok-libraries/u2/src/dg/index.js';
-import type {DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
+import type {DomainSource} from '@datagrok-libraries/ems';
+import {DomainApp} from '@datagrok-libraries/ems/src/dg';
+import type {DomainTable} from '@datagrok-libraries/ems/src/dg';
 import {gritDb, IssueRow} from '../generated/db';
 import type {GritDb} from '../generated/db-ui';
 import {IssuesApp, openGrit} from '../package';

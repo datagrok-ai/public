@@ -82,12 +82,12 @@ export class Tray extends Control {
     this._plus.classList.add('u2-designer-tray-add');
     const chip = (e: Event): SpecNode | undefined =>
       this._chips.get((e.target as Element).closest('.u2-designer-chip') as HTMLElement);
-    this._listen('click', (e) => {
+    this.scope.listen(this.root, 'click', (e) => {
       const node = chip(e);
       if (node)
         _options.onSelect(node);
     });
-    this._listen('contextmenu', (e) => {
+    this.scope.listen(this.root, 'contextmenu', (e) => {
       const me = e as MouseEvent;
       me.preventDefault();
       me.stopPropagation();
@@ -203,11 +203,6 @@ export class Tray extends Control {
   private _insert(instance: SpecInstance, tag: string, base: string,
     props: Record<string, unknown>): void {
     this._options.onAdd(base, (name) => sourceNode(instance.registry.get(tag), tag, name, props));
-  }
-
-  private _listen(type: string, handler: (e: Event) => void): void {
-    this.root.addEventListener(type, handler);
-    this.own(() => this.root.removeEventListener(type, handler));
   }
 }
 

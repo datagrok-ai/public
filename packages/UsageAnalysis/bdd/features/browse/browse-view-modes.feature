@@ -14,7 +14,9 @@ Feature: Browsing mode and persistent views
 
   Browse-View-03 (the pin on a preview tab keeps the view) is claimed with simple mode off, since
   the pin lives on the view's tab handle, which simple mode hides. Browse-View-02 (an edit pins the
-  preview) needs an edit gesture on a previewed view and is not written; Browse-View-05 (the badge
+  preview) is claimed the same way on a previewed table: a viewer added from the Toolbox is an edit
+  (the table view promotes itself on its first data change, viewer added or viewer closed), the pin
+  goes, and the view stays through the next single click. Browse-View-05 (the badge
   counting the open views) has no text and no name: the count is a CSS `content: attr(data-count)`
   on a sidebar header simple mode keeps hidden.
 
@@ -24,7 +26,7 @@ Feature: Browsing mode and persistent views
     And Apps tree node inside browse tree is expanded
 
   Scenario: A single click replaces the view the previous single click opened
-    When user clicks on Tutorials tree node inside browse tree
+    When user clicks on Apps---Tutorials tree node inside browse tree
     Then the "Tutorials" view should be current
     And Tutorials view should be visible
     When user clicks on Dashboards tree node inside browse tree
@@ -34,7 +36,7 @@ Feature: Browsing mode and persistent views
     And no error or warning balloon should have been shown
 
   Scenario: A double click keeps the view through the next single click
-    When user double-clicks on Tutorials tree node inside browse tree
+    When user double-clicks on Apps---Tutorials tree node inside browse tree
     Then the "Tutorials" view should be current
     When user clicks on Dashboards tree node inside browse tree
     Then Projects view should be visible
@@ -45,7 +47,7 @@ Feature: Browsing mode and persistent views
   Scenario: A new browsing session does not unpin what is already persistent
     # the third node is a folder rather than another top-level group, so a nested node is covered too
     Given Files tree node inside browse tree is expanded
-    When user double-clicks on Tutorials tree node inside browse tree
+    When user double-clicks on Apps---Tutorials tree node inside browse tree
     Then Tutorials view should be visible
     When user clicks on Dashboards tree node inside browse tree
     Then Projects view should be visible
@@ -71,5 +73,24 @@ Feature: Browsing mode and persistent views
     When user clicks on Dashboards tree node inside browse tree
     Then Projects view should be visible
     And demog view should be present
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: An edit keeps the previewed view through the next single click
+    Given simple mode is off
+    And Files tree node inside browse tree is expanded
+    And Files---Demo tree node inside browse tree is expanded
+    When user clicks on Files---Demo---cars.csv tree node inside browse tree
+    Then the "cars" view should be current
+    And "This is Browse preview. Click to keep it open" icon should be visible
+    Given the toolbox pane is shown
+    When user clicks on scatter plot icon in toolbox
+    Then the open tableview should have 1 scatter plot viewer
+    And "This is Browse preview. Click to keep it open" icon should be absent
+    Given the toolbox pane is hidden
+    And the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    Then Projects view should be visible
+    And cars view should be present
     And no errors should have been logged
     And no error or warning balloon should have been shown

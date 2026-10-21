@@ -28,11 +28,24 @@ Feature: MSA workbench
     And status line should have text "No alignment yet"
     And aligned sequences list should have 0 items
 
+  Scenario: A choice straight in a dialog body is as wide as its longest option, as in ui.dialog
+    When user clicks on Open button in toolbar
+    Then dialog should be visible
+    And editor of Dataset input in dialog should be at most 120 px wide
+    And editor of Dataset input in dialog should be at least 60 px wide
+    When user closes dialog
+    Then dialog should be hidden
+
+  Scenario: The toolbar's Save is one of its items
+    Then save button inside toolbar should be as tall as Open button in toolbar
+    And save button inside toolbar should be top-aligned with Open button in toolbar
+
   Scenario: Switching result tabs
     When user selects "muscle" in method input in alignment panel
     And user clicks on run msa button in alignment panel
     And user clicks on OK button in MSA dialog
     And user clicks on Log tab in results
     Then Log tab in results should be selected
+    And Alignment tab in results should be 34 px tall
     And log should contain text "muscle"
     And Alignment tab in results should not be selected

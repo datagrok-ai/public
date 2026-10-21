@@ -90,8 +90,11 @@ export function chip(x: any, options: ChipOptions = {}): EntityChip {
 
 /** A card-sized preview of a platform object — the handler's `renderCard` (markup, then
  * caption, as fallbacks), with the same current-object click and automation ids as
- * {@link EntityChip}. The platform styles the card content itself. */
+ * {@link EntityChip}. The platform styles the card content itself; its gallery title is the
+ * card's `title` part and its label, else the object's caption is. */
 export class EntityCard extends Control {
+  private readonly _caption: string;
+
   constructor(x: any, options: ChipOptions = {}) {
     super();
     const renderer = options.renderer ?? handlerRenderer();
@@ -101,13 +104,23 @@ export class EntityCard extends Control {
       renderer.handlerFor(x)?.type ?? typeof x : typeof x;
     if (x instanceof DG.Entity && x.id)
       this.root.dataset.entityId = x.id;
+    this._caption = renderer.caption(x);
     this.root.append(renderer.card ? renderer.card(x) :
-      renderer.markup ? renderer.markup(x) : renderer.caption(x));
+      renderer.markup ? renderer.markup(x) : this._caption);
+    const title = this.root.querySelector<HTMLElement>('.grok-gallery-grid-item-title');
+    if (title !== null)
+      title.dataset.u2Part = 'title';
     if (options.currentOnClick ?? true) {
       const onClick = () => grok.shell.o = x;
       this.root.addEventListener('click', onClick);
       this.own(() => this.root.removeEventListener('click', onClick));
     }
+  }
+
+  /** The title, read off the element: the platform renames it in place when the entity is edited. */
+  protected accessibleLabel(): string | undefined {
+    const title = this.root.querySelector('[data-u2-part="title"]');
+    return Control.labelOf(this.root) ?? ((title === null ? this._caption : Control.text(title)) || undefined);
   }
 }
 
@@ -129,6 +142,7 @@ export function entityInput<T>(placeholder: string, factory: () => DapiSourceLik
     source: dapiSource(factory, options),
     renderer: handlerRenderer<T>(),
     placeholder,
+    openOnFocus: true,
     minChars: options.minChars,
     debounceMs: options.debounceMs,
   });

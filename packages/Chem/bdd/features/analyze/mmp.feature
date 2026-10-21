@@ -1,9 +1,12 @@
 @journey @realizes:chem.cp.mmp-analysis
-Feature: Matched Molecular Pairs over molecules and one activity
+Feature: Matched Molecular Pairs over molecules and their activities
   Chem | Analyze | Matched Molecular Pairs... on sar-small (200 molecules of one series) opens on the
   smiles column; LD(50) is picked as its activity. OK builds the Matched Molecular Pairs Analysis
   viewer: it names the activity it ran on, holds substitutions and molecule pairs, offers the four
-  tabs, and fills the Generation tab.
+  tabs, and fills the Generation tab. A second run with two activities picked names both, and its
+  substitutions carry a mean difference for each (GROK-18517: two activities broke the run). The
+  ticket's mmp_demo has 20 000 molecules, past what the analysis runs on a stand without a GPU; the
+  defect was in the two activities, which sar-small has.
 
   Background:
     Given user is logged in
@@ -48,4 +51,28 @@ Feature: Matched Molecular Pairs over molecules and one activity
     When user clicks on Generation tab in Matched Molecular Pairs Analysis viewer
     Then the "tab" reading of Matched Molecular Pairs Analysis viewer should be "Generation"
     And the "generated" reading of Matched Molecular Pairs Analysis viewer should be at least 1
+    And no errors should have been logged
+
+  @GROK-18517
+  Scenario: A run with two activities names both and gives each its mean difference
+    When user clicks on close icon of Matched Molecular Pairs Analysis viewer
+    Then Matched Molecular Pairs Analysis viewer should be absent
+    When user picks "Chem > Analyze > Matched Molecular Pairs..." from the top menu
+    Then "Matched Molecular Pairs" dialog should be visible
+    When user clicks on editor of Activities input in "Matched Molecular Pairs" dialog
+    Then "Select columns..." dialog should be visible
+    When user clicks on None label in "Select columns..." dialog
+    And user clicks on the "cell 6 of x" area of grid viewer in "Select columns..." dialog
+    And user clicks on the "cell 7 of x" area of grid viewer in "Select columns..." dialog
+    Then the "text of cell 6 of __name" reading of grid viewer in "Select columns..." dialog should be "LD(50)"
+    And the "text of cell 7 of __name" reading of grid viewer in "Select columns..." dialog should be "In-vivo Activity"
+    When user clicks on OK button in "Select columns..." dialog
+    Then Activities input in "Matched Molecular Pairs" dialog should contain text "Activities(2)"
+    When user clicks on OK button in "Matched Molecular Pairs" dialog
+    Then Matched Molecular Pairs Analysis viewer should be visible
+    And Matched Molecular Pairs Analysis viewer should have finished its analysis
+    And the "activities" reading of Matched Molecular Pairs Analysis viewer should be "LD(50), In-vivo Activity"
+    And the "fragment columns" reading of Matched Molecular Pairs Analysis viewer should contain "Δ LD(50)"
+    And the "fragment columns" reading of Matched Molecular Pairs Analysis viewer should contain "Δ In-vivo Activity"
+    And the "pairs" reading of Matched Molecular Pairs Analysis viewer should be at least 1
     And no errors should have been logged

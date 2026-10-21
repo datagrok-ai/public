@@ -22,6 +22,12 @@ type BasePropertyDesirability = {
   computeFunction?: TemplateFunction;
 }
 
+export enum QualifierPolicy {
+  Worst = 'worst',
+  Limit = 'limit',
+  Best = 'best',
+}
+
 export enum MpoScale {
   Linear = 'linear',
   Log = 'log',
@@ -36,6 +42,7 @@ export type NumericalDesirability = BasePropertyDesirability & {
   rangeUserSet?: boolean;
 
   scale?: MpoScale;
+  qualifiers?: QualifierPolicy;
 
   mode?: DesirabilityMode;
 
@@ -101,6 +108,7 @@ export interface HoistedColumn {
   raw: MpoTypedArray;
   valNull: number;
   isCat: boolean;
+  isQnum: boolean;
   cats: string[] | null;
   catScore: Map<string, number> | null;
   staticW: number;

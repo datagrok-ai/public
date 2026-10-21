@@ -57,14 +57,16 @@ export type PropertyInputBuilder<T> = (prop: DG.Property | null) => Input<T>;
 export class DartInput<T> extends DG.JsInputBase<T> {
   private readonly _options: DartInputOptions;
   private readonly _build: PropertyInputBuilder<T> | null;
-  private readonly _scope = new Scope();
+  private readonly _scope = new Scope(undefined, {label: 'dart-input', lazy: true});
   private _input: Input<T> | null = null;
   private _editor: HTMLElement | null = null;
+  private _mounted = false;
   private _pending: T[] | null = null;
   private _programmatic = false;
   private _validated: unknown = null;
   private _queued = false;
   private _userEdit = false;
+  private _unparsed = false;
 
   constructor(input: Input<T> | PropertyInputBuilder<T>, options: DartInputOptions = {}) {
     super();
@@ -97,6 +99,13 @@ export class DartInput<T> extends DG.JsInputBase<T> {
       this._attach(Scope.runWith(this._scope, () => this._build!(prop)));
       DartInput._dropPostfix(this._editor!, prop);
     }
+    // the platform never detaches a JS input (`JsInputProxy` has no hook): the kill-walk of
+    // whatever hosts the editor — a closing view or dialog, a re-rendered panel — severs the bridge
+    if (!this._mounted) {
+      this._mounted = true;
+      DG.Widget.registerCleanup(this._editor!, () => this.detach());
+    }
+    this._syncNullable();
     return this._editor!;
   }
 
@@ -129,13 +138,25 @@ export class DartInput<T> extends DG.JsInputBase<T> {
     return typeof value === 'object' ? JSON.stringify(value) : String(value);
   }
 
+  /** Text that does not parse as the input's type leaves the value as it is; the first such text
+   * per editor is reported on the console. */
   setStringValue(value: string): void {
-    this.setValue(this._parse(value));
+    let parsed: T;
+    try {
+      parsed = this._parse(value);
+    } catch (e) {
+      if (!this._unparsed)
+        console.warn(`u2 ${this._id}: ignored a string value that does not parse — ${(e as Error).message}`);
+      this._unparsed = true;
+      return;
+    }
+    this.setValue(parsed);
   }
 
-  /** Severs the bridge. An input passed in ({@link asDartInput}) stays alive — it was never owned;
-   * one built here ({@link dartInputFor}) is disposed with the bridge, since nothing else holds it.
-   * Disposing the u2 input severs the bridge too, so this is only needed the other way round. */
+  /** Severs the bridge; idempotent. An input passed in ({@link asDartInput}) stays alive — it was
+   * never owned; one built here ({@link dartInputFor}) is disposed with the bridge, since nothing
+   * else holds it. The platform runs it when it kills the element hosting the editor; disposing
+   * the u2 input severs the bridge too. */
   detach(): void {
     this._scope.dispose();
   }
@@ -163,7 +184,30 @@ export class DartInput<T> extends DG.JsInputBase<T> {
       }
       this._notify(!this._programmatic && !Input.isSystemWrite);
     });
+    // a verdict that changes on its own (another field, a late check) re-validates the host too
+    let judged = false;
+    this._scope.effect(() => {
+      input.validity.value;
+      if (judged)
+        this._notify(false);
+      judged = true;
+    });
+    // the platform dialog closes on Enter without taking the key, so its keypress lands on whatever
+    // gets the focus back — the button that opened the dialog, which opens it again
+    this._scope.listen(input.box, 'keydown', (e) => {
+      const key = e as KeyboardEvent;
+      if (key.key === 'Enter' && !key.isComposing && !(key.target instanceof HTMLTextAreaElement) &&
+          (key.target as Element).closest('.d4-dialog') !== null)
+        key.preventDefault();
+    });
     input.own(() => this._scope.dispose());
+  }
+
+  /** The platform runs no validator on an empty string (`input_base.dart` `validate`: there only
+   * `nullable: false` speaks), so an empty value the u2 input refuses is told as not nullable. */
+  private _syncNullable(): void {
+    if (this._input !== null)
+      this.nullable = !(this.getStringValue() === '' && this._input.validity.peek() !== null);
   }
 
   /** The platform hears about the edit from a microtask, never from inside the value effect. A
@@ -183,6 +227,7 @@ export class DartInput<T> extends DG.JsInputBase<T> {
       this._userEdit = false;
       if (this._scope.isDisposed)
         return;
+      this._syncNullable();
       if (user)
         this.fireInput();
       this.fireChanged();

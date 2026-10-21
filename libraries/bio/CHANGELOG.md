@@ -1,5 +1,17 @@
 # bio changelog
 
+## v.next
+
+* `monomer-selection-dialog.ts`: `MonomerSelectionWidget.onChanged` is called with the selection after every change
+* `monomer-ui.ts`: `INewMonomerForm` reads and sets the editor's fields by name (`getFields`, `setFields`, `MonomerFormFields`) instead of exposing its inputs
+* `monomer-library.ts`: `RGroup` declares the cap SMILES under both keys, `capGroupSMILES` (HELM's schema, the libraries) and `capGroupSmiles`, each optional, so code writes the schema's key without a cast
+
+## 6.0.8
+
+* `viewers/web-logo.ts`: `WebLogoProfile`, `WEB_LOGO_PROFILE_ROLE` and the `profile` property: WebLogo draws a profile supplied by a package instead of the column's composition
+* `annotation-manager.ts`: `setRowAnnotations(..., notify)` to write many rows with one change event
+* Added `utils/macromolecule/annotation-manager.ts` (moved from Bio): read and write sequence annotations (`.annotations` tag and the hidden per-row companion column)
+
 ## 6.0.4 (2026-09-08)
 
 * Added `monomer-works/lib-events.ts`: `onMonomerLibLoaded` / `fireMonomerLibLoaded`, the `bio-monomer-lib-loaded` custom platform event Bio fires after every monomer library load, for packages that render or validate monomers without a library object of their own

@@ -525,7 +525,7 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
 
     await softStep('Scenario 3 Step 5 Selection to filter → count matches inverted selection, criterion kept, card repaints', async () => {
       const panel = await page.evaluate((cs: string) => {
-        const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'));
+        const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'));
         return {
           captions: cards.map((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() ?? ''),
           hasCanvas: !!document.querySelector('[name="viewer-Filters"]')?.querySelector(cs),

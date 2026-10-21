@@ -1,5 +1,9 @@
 # Scripting changelog
 
+## 1.1.2 (2026-10-14)
+
+* [core#811](https://github.com/datagrok-ai/core/issues/811): Rebuilt the jkg_* kernel images from master: a script that a kernel does not start within 15 s is resent to a fresh kernel (Octave), instead of the worker reusing a wedged kernel until restarted
+
 ## 1.1.1 (2026-09-08)
 
 * GROK-20743: Rebuilt jkg_nodejs — 1.1.0 shipped a js-api bundle without the Node runtime ports, so every Node.js script failed at bootstrap with "NoSuchMethodError: method not found: 'call'"; the other kernel images are the 1.1.0 builds under the new tag

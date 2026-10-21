@@ -4,8 +4,9 @@
    owning control keeps everything that differs — what it offers, what a pick means, and the ARIA
    on its own box. Every element carries a shared `u2-suggest-*` class (the one skin, css/inputs.css)
    beside the owner's prefixed one (automation hooks and the owner's per-control extras). */
-import {signal, ReadonlySignal} from './signals.js';
+import {signal, computed, ReadonlySignal} from './signals.js';
 import {Scope} from './scope.js';
+import {each} from './region.js';
 import {AsyncState} from './async-source.js';
 import {Overlay, OVERLAY_CLOSE_EVENT} from './overlay.js';
 
@@ -23,6 +24,9 @@ export interface SuggestionListOptions<T> {
   text: ReadonlySignal<string>;
   minChars: number;
   render: (item: T) => HTMLElement;
+  /** The row's key (`data-u2-item`): a row is built once per key while it stays listed, so a
+   * keystroke rebuilds only the rows it brings in. {@link SuggestionList.keyOf} by default. */
+  keyOf?: (item: T) => string;
   /** Highlights the first row as soon as a non-empty query has matches, so plain Enter accepts it
    * (VS Code convention); `'always'` does so for the empty query too — a look-up opened on focus.
    * Off for owners whose box holds text of its own worth. */
@@ -50,8 +54,11 @@ export class SuggestionList<T> {
   private readonly _id: string;
   private readonly _open = signal(false);
   private readonly _active = signal(-1);
-  private readonly _rows = signal<HTMLElement[]>([]);
-  private _rowScope: Scope | undefined;
+  private readonly _list = document.createElement('div');
+  private readonly _status = document.createElement('div');
+  /** The rows on show: the items while open, past the hint and ready; nothing otherwise. */
+  private readonly _shown: ReadonlySignal<T[]>;
+  private _rowSeq = 0;
   private _closeOverlay: (() => void) | undefined;
 
   constructor(options: SuggestionListOptions<T>) {
@@ -64,16 +71,26 @@ export class SuggestionList<T> {
     this.popup.id = `${this._id}-listbox`;
     this.popup.setAttribute('role', 'listbox');
     options.anchor.setAttribute('aria-controls', this.popup.id);
+    this._list.className = 'u2-suggest-options';
+    this.popup.append(this._list, this._status);
+    this._shown = computed(() => {
+      const state = options.view.value;
+      return this._open.value && options.text.value.length >= options.minChars && state.kind === 'ready' ?
+        options.items.value : [];
+    });
 
-    this._listen(this.popup, 'pointerdown', (e) => this._onPointerDown(e));
-    this._listen(this.popup, OVERLAY_CLOSE_EVENT, () => options.onDismiss());
-    options.scope.own(() => this._releaseRows());
-    options.scope.effect(() => this._renderRows());
+    options.scope.listen(this.popup, 'pointerdown', (e) => this._onPointerDown(e));
+    options.scope.listen(this.popup, OVERLAY_CLOSE_EVENT, () => options.onDismiss());
+    const keyOf = options.keyOf;
+    Scope.runWith(options.scope, () => each(this._list, this._shown,
+      (item, index) => keyOf ? keyOf(item) : SuggestionList.keyOf(item, index), (item) => this._option(item)));
+    options.scope.effect(() => this._renderStatus());
+    options.scope.effect(() => this._highlight());
     options.scope.effect(() => this._applyActive());
   }
 
   get rowCount(): number {
-    return this._rows.peek().length;
+    return this._shown.peek().length;
   }
 
   open(): void {
@@ -105,9 +122,22 @@ export class SuggestionList<T> {
   }
 
   jump(index: number): void {
-    const count = this._rows.peek().length;
+    const count = this._shown.peek().length;
     if (count > 0)
       this._active.value = Math.min(Math.max(index, 0), count - 1);
+  }
+
+  /** A string or number is its own key; an object answers its `text`, `name` or `id` string;
+   * anything else its position (`#<index>`). */
+  static keyOf(item: unknown, index: number): string {
+    if (typeof item === 'string' || typeof item === 'number')
+      return String(item);
+    const fields = item as {text?: unknown, name?: unknown, id?: unknown} | null;
+    for (const key of [fields?.text, fields?.name, fields?.id]) {
+      if (typeof key === 'string')
+        return key;
+    }
+    return `#${index}`;
   }
 
   static row(cls: string, text: string): HTMLElement {
@@ -127,7 +157,7 @@ export class SuggestionList<T> {
     const option = target.closest(`.${this._options.prefix}-option`) as HTMLElement | null;
     if (option) {
       e.preventDefault();
-      this._options.onPick(Number(option.dataset.index));
+      this._options.onPick([...this._list.children].indexOf(option));
       return;
     }
     if (target.closest(`.${this._options.prefix}-retry`)) {
@@ -136,84 +166,75 @@ export class SuggestionList<T> {
     }
   }
 
-  private _renderRows(): void {
-    const popup = this.popup;
-    if (!this._open.value) {
-      this._rows.value = [];
+  /** The row in place of the options: the hint, loading, the error with its retry, or empty. */
+  private _renderStatus(): void {
+    const status = this._status;
+    const options = this._options;
+    const state = options.view.value;
+    const short = options.text.value.length < options.minChars;
+    status.textContent = '';
+    // the row classes set a display, which outranks a bare `hidden`
+    status.className = 'u2-suggest-status';
+    status.hidden = !this._open.value || !short && state.kind === 'ready' && options.items.value.length > 0;
+    if (status.hidden)
       return;
-    }
-    const short = this._options.text.value.length < this._options.minChars;
-    const state = this._options.view.value;
-    const items = this._options.items.value;
-    this._releaseRows();
-    popup.textContent = '';
-    if (!short && state.kind === 'ready' && items.length > 0) {
-      const scope = new Scope();
-      this._rowScope = scope;
-      const els = Scope.runWith(scope, () => items.map((item, i) => this._option(item, i)));
-      popup.append(...els);
-      this._rows.value = els;
-      if (this._options.autoHighlight)
-        this._active.value = this._options.autoHighlight === 'always' || this._options.text.value.length > 0 ? 0 : -1;
-      return;
-    }
-    this._rows.value = [];
-    if (short)
-      popup.append(this._row('hint', `Type ${this._options.minChars} or more characters`));
-    else if (state.kind === 'error') {
-      const row = this._row('error', state.message);
+    const kind = short ? 'hint' : state.kind === 'error' ? 'error' :
+      state.kind === 'loading' || state.kind === 'idle' ? 'loading' : 'empty';
+    status.className = `u2-suggest-${kind} ${options.prefix}-${kind}`;
+    if (kind === 'error' && state.kind === 'error') {
+      status.textContent = state.message;
       const retry = document.createElement('button');
-      retry.className = `u2-suggest-retry ${this._options.prefix}-retry`;
+      retry.className = `u2-suggest-retry ${options.prefix}-retry`;
       retry.type = 'button';
       retry.textContent = 'Retry';
-      row.append(retry);
-      popup.append(row);
-    } else if (state.kind === 'loading' || state.kind === 'idle')
-      popup.append(this._row('loading', 'Loading…'));
-    else {
-      const empty = this._options.emptyText;
-      popup.append(this._row('empty',
-        typeof empty === 'function' ? empty(this._options.text.peek()) : empty ?? 'No matches'));
+      status.append(retry);
+      return;
     }
+    const empty = options.emptyText;
+    status.textContent = kind === 'hint' ? `Type ${options.minChars} or more characters` :
+      kind === 'loading' ? 'Loading…' :
+        typeof empty === 'function' ? empty(options.text.peek()) : empty ?? 'No matches';
   }
 
-  private _option(item: T, i: number): HTMLElement {
+  /** New rows on show: the first is highlighted when {@link SuggestionListOptions.autoHighlight} asks. */
+  private _highlight(): void {
+    const rows = this._shown.value;
+    const typed = this._options.text.value.length > 0;
+    const auto = this._options.autoHighlight;
+    if (auto && rows.length > 0)
+      this._active.value = auto === 'always' || typed ? 0 : -1;
+  }
+
+  /** Built once per key while listed: the id `aria-activedescendant` names stays put. */
+  private _option(item: T): HTMLElement {
     const el = document.createElement('div');
     el.className = `u2-suggest-option ${this._options.prefix}-option`;
-    el.id = `${this._id}-opt-${i}`;
-    el.dataset.index = String(i);
+    el.id = `${this._id}-opt-${++this._rowSeq}`;
     el.setAttribute('role', 'option');
     el.setAttribute('aria-selected', 'false');
-    el.append(this._options.render(item));
+    const content = this._options.render(item);
+    if (content.querySelector('[data-u2-part="item-label"]') === null)
+      content.dataset.u2Part ??= 'item-label';
+    el.append(content);
     return el;
   }
 
   private _applyActive(): void {
     const anchor = this._options.anchor;
-    const els = this._rows.value;
+    const count = this._shown.value.length;
+    const els = this._list.children;
     const active = this._active.value;
-    for (let i = 0; i < els.length; i++) {
+    for (let i = 0; i < count; i++) {
       els[i].classList.toggle('u2-suggest-option-active', i === active);
       els[i].classList.toggle(`${this._options.prefix}-option-active`, i === active);
       els[i].setAttribute('aria-selected', i === active ? 'true' : 'false');
     }
-    const el = active >= 0 ? els[active] : undefined;
+    const el = active >= 0 && active < count ? els[active] : undefined;
     if (!el) {
       anchor.removeAttribute('aria-activedescendant');
       return;
     }
     anchor.setAttribute('aria-activedescendant', el.id);
     el.scrollIntoView({block: 'nearest'});
-  }
-
-  private _releaseRows(): void {
-    if (this._rowScope)
-      this._rowScope.dispose();
-    this._rowScope = undefined;
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this._options.scope.own(() => el.removeEventListener(type, handler));
   }
 }

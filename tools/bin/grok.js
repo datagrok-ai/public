@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-// Other commands count their options, so the defaults of these flags would break them.
-const folderFlags = require('minimist')(process.argv.slice(2))._[0] === 'connect-folder'
-  ? ['read-only', 'foreground', 'force', 'follow'] : [];
+// minimist sets every boolean option to false when it is absent, and commands such as `grok api`
+// reject any key they do not expect — so each boolean reaches only the commands that read it.
+const commandBooleans = {dartium: ['test', 'stresstest'], 'send-email': ['server', 's'],
+  'read-only': ['connect-folder'], foreground: ['connect-folder'], force: ['connect-folder'], follow: ['connect-folder']};
 const argv = require('minimist')(process.argv.slice(2), {
   alias: {k: 'key', h: 'help', r: 'recursive'},
-  boolean: ['dartium', ...folderFlags],
+  boolean: Object.keys(commandBooleans),
   // keep versions verbatim — minimist would coerce '1.10' to the number 1.1
-  string: ['version'],
+  string: ['version', 'prefix'],
 });
 // minimist maps `--no-retry` to `{retry: false}`, so the `args['no-retry']` checks in
 // test.ts / playwright-runner.ts never fired and `--no-retry` was silently ignored
@@ -63,8 +64,9 @@ function printUsage(command) {
 }
 
 const command = argv['_'][0];
-if (command !== 'test' && command !== 'stresstest')
-  delete argv.dartium;
+for (const [flag, owners] of Object.entries(commandBooleans))
+  if (!owners.includes(command))
+    delete argv[flag];
 if (command in commands) {
   try {
     if (argv['help']) {

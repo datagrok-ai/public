@@ -1,0 +1,71 @@
+/* Access grid skin (src/components/forms/access-grid.ts): a compact table of principals ×
+   capabilities, inherited rows muted, the add picker as the last line. Tokens only;
+   css/tokens.css and css/inputs.css must be loaded alongside. */
+.u2-input-editor.u2-access-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color);
+}
+
+.u2-access-grid th {
+  padding: var(--dg-space-xs) var(--dg-space-s);
+  font-size: var(--dg-font-size-small);
+  font-weight: var(--dg-font-weight-regular);
+  color: var(--dg-text-color-light);
+  text-align: left;
+  border-bottom: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-access-grid td {
+  padding: var(--dg-space-xs) var(--dg-space-s);
+  border-bottom: var(--dg-border-width) solid var(--dg-border-subtle);
+}
+
+.u2-access-grid th.u2-access-grid-cap,
+.u2-access-grid td.u2-access-grid-cap {
+  width: 48px;
+  text-align: center;
+}
+
+.u2-access-grid-inherited .u2-access-grid-principal {
+  color: var(--dg-text-color-light);
+}
+
+.u2-access-grid-from {
+  margin-left: var(--dg-space-s);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-access-grid-remove {
+  padding: 0 var(--dg-space-xs);
+  font: inherit;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  background: none;
+  border: none;
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+}
+
+.u2-access-grid-remove:hover {
+  color: var(--dg-text-color);
+  background: var(--dg-hover);
+}
+
+.u2-access-grid tfoot td {
+  border-bottom: none;
+}
+
+.u2-access-grid-add {
+  width: 100%;
+  height: var(--dg-inline-control-height);
+  font: inherit;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+}

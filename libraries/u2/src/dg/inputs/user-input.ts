@@ -16,8 +16,11 @@ export function userInput(placeholder = 'User…'): TypeAhead<DG.User> {
     source: dapiSource(() => grok.dapi.users,
       {filter: (q) => q ? SEARCH_FIELDS.map((f) => `${f} like "${q}"`).join(' or ') : undefined}),
     itemText: (user) => user.friendlyName,
+    keyOf: (user) => user.id,
     render: renderUser,
     placeholder,
+    openOnFocus: true,
+    maxHeight: 320,
   });
 }
 
@@ -26,9 +29,11 @@ function renderUser(user: DG.User): HTMLElement {
   row.className = 'u2-typeahead-user';
   const text = document.createElement('div');
   text.className = 'u2-typeahead-user-text';
-  text.append(line('u2-typeahead-user-name', user.friendlyName));
+  const name = line('u2-typeahead-user-name', user.friendlyName);
+  name.dataset.u2Part = 'item-label';
+  text.append(name);
   const secondary = user.login || user.email;
-  if (secondary)
+  if (secondary && secondary !== user.friendlyName)
     text.append(line('u2-typeahead-user-secondary', secondary));
   row.append(avatar(user), text);
   return row;

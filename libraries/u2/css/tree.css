@@ -20,15 +20,19 @@
   box-sizing: border-box;
   padding-left: var(--u2-tree-indent, 0px);
   background-image: repeating-linear-gradient(to right,
-    var(--dg-border-subtle) 0 var(--dg-border-width), transparent var(--dg-border-width) 12px);
+    var(--dg-border-subtle) 0 var(--dg-border-width), transparent var(--dg-border-width) 20px);
   background-size: var(--u2-tree-indent, 0px) 100%;
   background-repeat: no-repeat;
 }
 
-.u2-tree-twistie {
+/* the platform's twistie (tree_view.css .d4-tree-view-tri) as a caret icon in a box one indent
+   step wide, so a child's caret sits under its parent's label */
+.u2-tree-row > .u2-tree-twistie {
+  display: inline-flex;
   flex: 0 0 auto;
-  width: 14px;
-  text-align: center;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
   color: var(--dg-text-color-light);
   cursor: pointer;
   user-select: none;
@@ -67,4 +71,31 @@
   border-radius: 0;
   outline: none;
   padding: 0;
+}
+
+/* a checkbox tree: the box sits between the twistie and the label; a click on it toggles the
+   node without moving the selection, Space toggles the selected row */
+.u2-tree-check {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  margin: 0 var(--dg-space-s) 0 0;
+  accent-color: var(--dg-accent);
+  cursor: pointer;
+}
+
+.u2-tree-check:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* a locked box that is checked (a key column) reads as included, not as unavailable */
+.u2-tree-check[aria-disabled='true'] {
+  cursor: default;
+}
+
+/* a greyed row: a view, a keyless table, an unsupported column — still selectable, its reason in
+   the tooltip and the detail */
+.u2-tree-row-disabled .u2-tree-label {
+  color: var(--dg-text-color-light);
 }

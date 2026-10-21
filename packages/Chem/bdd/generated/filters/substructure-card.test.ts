@@ -7,13 +7,15 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [filters.cp.chem-and-bio-filters]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/crux.js';
 import '../../bindings/datasets.js';
 import '../../bindings/elements.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {filterPassesMatching} from '../../bindings/molecules.js';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
+import {filterPassesLacking, filterPassesMatching} from '../../bindings/molecules.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, pressKeyIn, shouldBe, shouldHaveText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {filterPasses, filterPassesAll} from '@datagrok-libraries/bdd/bindings/platform/data';
@@ -84,11 +86,13 @@ test.describe("The substructure filter card and its search types", () => {
       await session.step(66, "Then the \"Structure\" filter card should offer search types \"Contains, Included in, Exact, Stereo agnostic, Similar, Not contains, Not included in\"", () => offersSearchTypes(page, "Structure", "Contains, Included in, Exact, Stereo agnostic, Similar, Not contains, Not included in"));
       await session.step(67, "When user picks search type \"Not contains\" in the \"Structure\" filter card", () => pickSearchType(page, "Not contains", "Structure"));
       await session.step(68, "Then 83 rows should pass the filter", () => filterPasses(page, 83));
-      await session.step(69, "And the \"search type of Structure\" reading of filter panel should be \"Not contains\"", () => readingReads(page, "search type of Structure", el("filter panel"), "Not contains"));
-      await session.step(70, "When user picks search type \"Contains\" in the \"Structure\" filter card", () => pickSearchType(page, "Contains", "Structure"));
-      await session.step(71, "Then 17 rows should pass the filter", () => filterPasses(page, 17));
-      await session.step(72, "And the \"search type of Structure\" reading of filter panel should be \"Contains\"", () => readingReads(page, "search type of Structure", el("filter panel"), "Contains"));
-      await session.step(73, "And no errors should have been logged", () => noErrors(page));
+      await session.step(69, "And the filter should pass exactly the molecules of \"Structure\" column not containing \"c1ccncc1\"", () => filterPassesLacking(page, "Structure", "c1ccncc1"));
+      await session.step(70, "And the \"search type of Structure\" reading of filter panel should be \"Not contains\"", () => readingReads(page, "search type of Structure", el("filter panel"), "Not contains"));
+      await session.step(71, "When user picks search type \"Contains\" in the \"Structure\" filter card", () => pickSearchType(page, "Contains", "Structure"));
+      await session.step(72, "Then 17 rows should pass the filter", () => filterPasses(page, 17));
+      await session.step(73, "And the filter should pass exactly the molecules of \"Structure\" column containing \"c1ccncc1\"", () => filterPassesMatching(page, "Structure", "c1ccncc1"));
+      await session.step(74, "And the \"search type of Structure\" reading of filter panel should be \"Contains\"", () => readingReads(page, "search type of Structure", el("filter panel"), "Contains"));
+      await session.step(75, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

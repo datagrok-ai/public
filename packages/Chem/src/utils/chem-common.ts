@@ -239,6 +239,16 @@ export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null,
   return substruct;
 }
 
+/**
+ * {@link getUncommonAtomsAndBonds} from a pairwise MCES's own matches (one molecule's side of RDKit Rascal's
+ * `atomMatches` and `bondMatches`): the atoms and bonds of `mol` outside them.
+ */
+export function getUncommonAtomsAndBondsOfMatches(mol: RDMol, atoms: number[], bonds: number[]): ISubstruct {
+  const [matchedAtoms, matchedBonds] = [new Set(atoms), new Set(bonds)];
+  return {atoms: [...Array(mol.get_num_atoms()).keys()].filter((atom) => !matchedAtoms.has(atom)),
+    bonds: [...Array(mol.get_num_bonds()).keys()].filter((bond) => !matchedBonds.has(bond))};
+}
+
 function getArraysDifference(largerArr: number[], smallerArr: number[]) {
   const diffArr: number[] = [];
   let counter = 0;

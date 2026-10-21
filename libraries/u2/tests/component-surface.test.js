@@ -106,7 +106,7 @@ widget('the registry stamps the metadata of the tag it built', () => {
   const built = instance.node('g');
   assert.equal(built.componentMeta, meta);
   assert.deepEqual(built.getProperties().filter((p) => p.category !== 'Appearance').map((p) => p.name),
-    ['value', 'caption']);
+    ['value', 'caption', 'visible']);
   instance.dispose();
 });
 

@@ -4,7 +4,8 @@ Feature: Expression and text filter cards
   filter button — and keeps each rule as a row of its own: two rules combine with OR until the
   card's switch says AND, a rule's own checkbox suspends it and keeps it in the list, Remove Query
   in the rule's menu takes it out, free-text mode takes a rule typed in the card's own syntax and
-  the form comes back with it, the regex operation turns a pasted comma list into an alternation
+  the form comes back with it, a saved layout brings the card back after the panel was closed with
+  every rule and the suspended one still unchecked, the regex operation turns a pasted comma list into an alternation
   and drops a trailing comma (GROK-20242), and the string and date operations keep the rows they
   name. The text card on beer keeps the rows whose Aroma holds any of its terms and, switched to
   AND, the rows holding all of them; at fuzziness 0 a near miss keeps nothing and a higher
@@ -80,6 +81,21 @@ Feature: Expression and text filter cards
     And user clicks on "Switch to free-text mode" icon in "Expression" filter card
     Then Column input in "Expression" filter card should be visible
     And 16 rows should pass the filter
+    And no errors should have been logged
+
+  Scenario: A saved layout brings the rules back with the suspended one still unchecked
+    When user clicks on the "checkbox ${HEIGHT} < 150 of Expression" area of filter panel
+    Then 167 rows should pass the filter
+    And the "selected categories of Expression" reading of filter panel should be "${HEIGHT} < 160"
+    When user saves the layout of the current table view
+    And user clicks on close icon of filters viewer
+    Then filter panel should be hidden
+    And all rows should pass the filter
+    When user loads the saved layout
+    Then "Expression" filter card should be visible
+    And the "categories of Expression" reading of filter panel should be "${HEIGHT} < 160, ${HEIGHT} < 150"
+    And the "selected categories of Expression" reading of filter panel should be "${HEIGHT} < 160"
+    And 167 rows should pass the filter
     And no errors should have been logged
 
   Scenario: The regex operation turns a pasted list into an alternation and drops a trailing comma

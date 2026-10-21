@@ -54,7 +54,7 @@ export function addView(view: DG.ViewBase): DG.ViewBase {
 }
 
 // eslint-disable-next-line no-unused-vars
-enum NODE_TYPE {
+export enum NODE_TYPE {
   // eslint-disable-next-line no-unused-vars
   PACKAGE = 'Package',
   // eslint-disable-next-line no-unused-vars
@@ -502,7 +502,8 @@ export class TestManager extends DG.ViewBase {
         this.testsResultsDf = res;
         if (this.testsResultsDf.col('memoryUsed'))
           this.testsResultsDf.col('memoryUsed').name = 'memoryDelta';
-        this.testsResultsDf.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
+        if (this.testsResultsDf.col('logs'))
+          this.testsResultsDf.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
         if (this.testsResultsDf.col('memoryDelta'))
           this.testsResultsDf.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
         this.addPackageInfo(this.testsResultsDf, t.packageName);
@@ -513,7 +514,8 @@ export class TestManager extends DG.ViewBase {
         // this.removeTestRow(t.packageName, t.test.category, t.test.name);
         if (this.testsResultsDf.col('memoryUsed'))
           this.testsResultsDf.col('memoryUsed').name = 'memoryDelta';
-        res.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
+        if (res.col('logs'))
+          res.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
         if (this.testsResultsDf.col('memoryDelta'))
           this.testsResultsDf.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
         this.testsResultsDf = this.testsResultsDf.append(res);
@@ -640,7 +642,7 @@ export class TestManager extends DG.ViewBase {
   }
 
   addPackageInfo(df: DG.DataFrame, pack: string): void {
-    if (!df.getCol('package'))
+    if (!df.col('package'))
       df.columns.addNewString('package').init(() => pack);
   }
 
@@ -766,7 +768,11 @@ export class TestManager extends DG.ViewBase {
           second: '2-digit',
           hour12: false,
         }) + '.' + currentDate.getMilliseconds().toString().padStart(3, '0');
-        testInfo.rows.addNew([formattedDate, false, 'unhandled', 0, false, '', '', testInfo.get('package', 0), '']);
+        const values = {date: formattedDate, success: false, category: 'unhandled', result: unhandled, ms: 0,
+          skipped: false, package: testInfo.get('package', 0)};
+        const idx = testInfo.rows.addNew().idx;
+        for (const [name, value] of Object.entries(values))
+          testInfo.col(name)?.set(idx, value);
       }
       if (!isTooltip) {
         const resStr = ui.div();

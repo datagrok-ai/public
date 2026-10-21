@@ -487,6 +487,7 @@ export class PackageFunctions {
     name: 'Get Sequence Region',
     description: 'Get sequences for a region specified from a Macromolecule',
     'top-menu': 'Bio | Calculate | Extract Region...',
+    'requiresTableView': true,
     editor: 'Bio:GetRegionEditor'})
   static async getRegionTopMenu(
     @grok.decorators.param({options: {description: 'Input data table'}})table: DG.DataFrame,
@@ -506,6 +507,7 @@ export class PackageFunctions {
     name: 'Apply Numbering Scheme',
     description: 'Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)',
     'top-menu': 'Bio | Annotate | Apply Numbering Scheme...',
+    'requiresSemType': 'Macromolecule',
   })
   static applyNumberingScheme(): void {
     showNumberingSchemeDialog();
@@ -515,6 +517,7 @@ export class PackageFunctions {
     name: 'Scan Liabilities',
     description: 'Scans macromolecule sequences for deamidation, oxidation, and other liabilities',
     'top-menu': 'Bio | Annotate | Scan Liabilities...',
+    'requiresSemType': 'Macromolecule',
   })
   static scanLiabilities(): void {
     showLiabilityScannerDialog();
@@ -524,6 +527,7 @@ export class PackageFunctions {
     name: 'Manage Annotations',
     description: 'View and manage sequence annotations on macromolecule columns',
     'top-menu': 'Bio | Annotate | Manage Annotations...',
+    'requiresSemType': 'Macromolecule',
   })
   static manageAnnotations(): void {
     showAnnotationManagerDialog();
@@ -541,6 +545,8 @@ export class PackageFunctions {
     name: 'Sequence Activity Cliffs',
     description: 'Detects pairs of molecules with similar structure and significant difference in any given property',
     'top-menu': 'Bio | Analyze | Activity Cliffs...',
+    'requiresTableView': true,
+    'requiresSemType': 'Macromolecule',
     editor: 'Bio:SeqActivityCliffsEditor',
     outputs: []
   })
@@ -745,6 +751,7 @@ export class PackageFunctions {
     name: 'Sequence Space',
     description: 'Creates 2D sequence space with projected sequences by pairwise distance',
     'top-menu': 'Bio | Analyze | Sequence Space...',
+    'requiresTableView': true,
     editor: 'Bio:SequenceSpaceEditor',
     outputs: [{type: 'viewer', name: 'result'}],
   })
@@ -970,7 +977,8 @@ export class PackageFunctions {
     description: 'Performs multiple sequence alignment',
     tags: ['bio', 'panel'],
     meta: {domain: 'bio'},
-    'top-menu': 'Bio | Analyze | MSA...'
+    'top-menu': 'Bio | Analyze | MSA...',
+    'requiresSemType': 'Macromolecule',
   })
   static multipleSequenceAlignmentDialog(): void {
     multipleSequenceAlignmentUI({}, _package.seqHelper)
@@ -1033,6 +1041,7 @@ export class PackageFunctions {
     name: 'Compare Sequences',
     description: 'Builds a MacromoleculeDifference column from two sequence columns (seq1#seq2)',
     'top-menu': 'Bio | Analyze | Compare sequences...',
+    'requiresSemType': 'Macromolecule',
   })
   static compareSequences(): void {
     compareSequencesUI();
@@ -1042,6 +1051,7 @@ export class PackageFunctions {
     name: 'Composition Analysis',
     description: 'Visualizes sequence composition on a WebLogo plot',
     'top-menu': 'Bio | Analyze | Composition',
+    'requiresSemType': 'Macromolecule',
     meta: {
       icon: 'files/icons/composition-analysis.svg'
     },
@@ -1130,7 +1140,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'convertDialog',
-    'top-menu': 'Bio | Transform | Convert Sequence Notation...'
+    'top-menu': 'Bio | Transform | Convert Sequence Notation...',
+    'requiresSemType': 'Macromolecule',
   })
   static convertDialog() {
     const col: DG.Column<string> | undefined = getMacromoleculeColumns()[0];
@@ -1444,6 +1455,7 @@ export class PackageFunctions {
     name: 'similaritySearch',
     description: 'Finds similar sequences',
     'top-menu': 'Bio | Search | Similarity Search',
+    'requiresSemType': 'Macromolecule',
     outputs: [{name: 'result', type: 'viewer'}]
   })
   static similaritySearchTopMenu(): void {
@@ -1466,6 +1478,7 @@ export class PackageFunctions {
     name: 'diversitySearch',
     description: 'Finds the most diverse sequences',
     'top-menu': 'Bio | Search | Diversity Search',
+    'requiresSemType': 'Macromolecule',
     outputs: [{name: 'result', type: 'viewer'}]
   })
   static diversitySearchTopMenu() {
@@ -1491,7 +1504,8 @@ export class PackageFunctions {
     'top-menu': 'Bio | Search | Subsequence Search ...',
     editor: 'Bio:SearchSubsequenceEditor'
   })
-  static SubsequenceSearchTopMenu(macromolecules: DG.Column): void {
+  static SubsequenceSearchTopMenu(
+    @grok.decorators.param({options: {semType: 'Macromolecule'}}) macromolecules: DG.Column): void {
     grok.shell.tv.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
       type: 'Bio:bioSubstructureFilter',
       column: macromolecules.name,
@@ -1586,7 +1600,6 @@ export class PackageFunctions {
         const monomerManager = await MonomerManager.getInstance();
         const res = await monomerManager.getViewRoot(libName, true);
         res.parentCall = grok.functions.getCurrentCall();
-        monomerManager.resetCurrentRowFollowing();
       });
     });
   }

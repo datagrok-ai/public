@@ -9,6 +9,7 @@ import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
 import {typeVerified, withKeys} from './gestures.js';
+import * as guide from './guide.js';
 import {locate, reachable} from './locate.js';
 import {Balloon, Box, evaluate, installViewerRuntime, Reading} from './viewer-runtime.js';
 
@@ -62,7 +63,11 @@ async function awaitArea(page: Page, target: ElementRef, name: string, negate: b
 export async function hitArea(page: Page, target: ElementRef, name: string, beforeChange = false): Promise<Box> {
   if (beforeChange)
     await onViewer(page, target, (el) => (window as any).__bdd.settle(el, 300), undefined).catch(() => undefined);
-  return (await awaitArea(page, target, name, false, beforeChange))!;
+  const box = (await awaitArea(page, target, name, false, beforeChange))!;
+  // a gesture follows: a guide lights the area it aims at, not the viewer round it
+  if (beforeChange)
+    guide.locatedArea(page, box);
+  return box;
 }
 
 export async function expectHasArea(page: Page, target: ElementRef, name: string, negate = false): Promise<void> {
@@ -179,8 +184,13 @@ export async function expectReading(page: Page, target: ElementRef, name: string
       return last.now === value;
     if (last.before === undefined || last.before === null)
       return `no "${name}" reading at the snapshot`;
-    if (compare === 'differ' || compare === 'same')
-      return (last.now !== last.before) === (compare === 'differ');
+    if (compare === 'differ' || compare === 'same') {
+      // numbers that went through a world-to-screen round trip differ in the last digits
+      const same = typeof last.now === 'number' && typeof last.before === 'number' ?
+        Math.abs(last.now - last.before) <= 1e-9 * Math.max(1, Math.abs(last.now), Math.abs(last.before)) :
+        last.now === last.before;
+      return same !== (compare === 'differ');
+    }
     if (typeof last.now !== 'number' || typeof last.before !== 'number')
       return `"${name}" is not a number`;
     return compare === 'lower' ? last.now < last.before : last.now > last.before;

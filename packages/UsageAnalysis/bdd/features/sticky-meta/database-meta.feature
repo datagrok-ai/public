@@ -2,8 +2,9 @@
 Feature: Database meta of a database schema, of a table and of its column
   The Database meta pane of the context panel for the public schema of NorthwindTest, for its
   categories table and for that table's categoryid column: the fields each level offers, empty to begin
-  with, filled and saved — the save claimed on the server — never shown on a table or a column it was
-  not written for, a same-named column of another table included, and cleared and saved again.
+  with, filled and saved — the save claimed on the server — and cleared and saved again. That a table's
+  or a column's meta never shows on another table or column, a same-named one included, is the DBTests
+  package's claim (src/db-annotations, "A table/column annotation is absent on its namesakes").
   Translated from TestTrack StickyMeta/04-database-meta.md (Tests 4.1, 4.2), its primary
   database-meta case (the schema-level part with its "test@#$!" value), and
   playwright-tests/e2e/stickymeta/04-database-meta.test.ts.
@@ -18,8 +19,7 @@ Feature: Database meta of a database schema, of a table and of its column
   branch), and Postgres has.
 
   A column of a database table is named in the panel as the database has it ("categoryid") while
-  its entity is "Categoryid", which `the context panel should show` compares; the column scenarios
-  name it by the panel's text and claim a field only a column's pane has first.
+  its entity is "Categoryid"; `the context panel should show` compares the names case aside.
 
   NorthwindTest is the PostgresTest connection the DBTests package brings; a stand without it (the CI
   stack) skips the feature at its first step, with the reason. Everything Datagrok keeps as Database
@@ -62,7 +62,7 @@ Feature: Database meta of a database schema, of a table and of its column
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: A table's Database meta is saved, and on no other table (4.1)
+  Scenario: A table's Database meta is saved (4.1)
     Given Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree is expanded
     When user clicks on Databases---Postgres---NorthwindTest---Schemas---public---categories tree node inside browse tree
     Then the context panel should show "categories"
@@ -86,17 +86,13 @@ Feature: Database meta of a database schema, of a table and of its column
       | Comment     | bdd-sm-db-{time} table     |
       | LLM Comment | bdd-sm-db-{time} table llm |
       | Row Count   | 8                          |
-    When user clicks on Databases---Postgres---NorthwindTest---Schemas---public---customers tree node inside browse tree
-    Then the context panel should show "customers"
-    And Comment input in "Database meta" pane in context panel should not have value "bdd-sm-db-{time} table"
-    And "LLM Comment" input in "Database meta" pane in context panel should not have value "bdd-sm-db-{time} table llm"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: A column's Database meta is saved, and on no other column (4.2)
+  Scenario: A column's Database meta is saved (4.2)
     Given Databases---Postgres---NorthwindTest---Schemas---public---categories tree node inside browse tree is expanded
     When user clicks on Databases---Postgres---NorthwindTest---Schemas---public---categories---categoryid tree node inside browse tree
-    Then context panel should contain text "categoryid"
+    Then the context panel should show "categoryid"
     Given "Database meta" pane in context panel is expanded
     Then the following elements should be visible:
       | "Is Unique" input in "Database meta" pane in context panel     |
@@ -133,20 +129,11 @@ Feature: Database meta of a database schema, of a table and of its column
       | Quality       | good {time}                 |
       | Comment       | bdd-sm-db-{time} column     |
       | LLM Comment   | bdd-sm-db-{time} column llm |
-    When user clicks on Databases---Postgres---NorthwindTest---Schemas---public---categories---categoryname tree node inside browse tree
-    Then context panel should contain text "categoryname"
-    And Quality input in "Database meta" pane in context panel should not have value "good {time}"
-    And Comment input in "Database meta" pane in context panel should not have value "bdd-sm-db-{time} column"
-    Given Databases---Postgres---NorthwindTest---Schemas---public---products tree node inside browse tree is expanded
-    When user clicks on Databases---Postgres---NorthwindTest---Schemas---public---products---categoryid tree node inside browse tree
-    Then context panel should contain text "categoryid"
-    And Quality input in "Database meta" pane in context panel should not have value "good {time}"
-    And Comment input in "Database meta" pane in context panel should not have value "bdd-sm-db-{time} column"
     And no errors should have been logged
 
   Scenario: The column's and the table's Database meta are shown again, cleared and saved (4.1, 4.2)
     When user clicks on Databases---Postgres---NorthwindTest---Schemas---public---categories---categoryid tree node inside browse tree
-    Then context panel should contain text "categoryid"
+    Then the context panel should show "categoryid"
     And "Is Unique" input in "Database meta" pane in context panel should be checked
     And Comment input in "Database meta" pane in context panel should have value "bdd-sm-db-{time} column"
     When user unchecks "Is Unique" input in "Database meta" pane in context panel

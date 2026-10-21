@@ -166,3 +166,14 @@ smoke('dispose closes the popup and kills the listeners', async () => {
   fire(bold(input), 'click');
   assert.equal(input.value.value, 'normal normal 10px "Roboto"', 'listeners died with the scope');
 });
+
+smoke('required: the default font is a value; an empty one is invalid', async () => {
+  const fresh = mount(new FontInput({label: 'Font', required: true}));
+  assert.equal(fresh.getState().valid, true);
+  const empty = mount(new FontInput({label: 'Font', required: true, value: ''}));
+  assert.equal(empty.getState().valid, false);
+  empty.root.querySelector('.u2-font-bold').click();
+  assert.equal(empty.getState().valid, true, 'any edit composes a font');
+  fresh.dispose();
+  empty.dispose();
+});

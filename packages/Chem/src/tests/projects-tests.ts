@@ -4,6 +4,12 @@ import * as grok from 'datagrok-api/grok';
 import {after, awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {createTableView} from './utils';
 import {RGroupDecompRes} from '../analysis/r-group-analysis';
+import {ChemicalEngine, isCruxRequested} from '../engine/chem-engine';
+import {fingerprintsKey} from '../engine/worker-jobs';
+
+/** The activity cliffs' cached Morgan column: `~smiles.Morgan`, with the engine's suffix in Crux mode. */
+const morganCache = () => '~smiles.Morgan' +
+  fingerprintsKey(isCruxRequested() ? ChemicalEngine.Crux : ChemicalEngine.RDKit);
 
 
 category('projects', () => {
@@ -136,7 +142,7 @@ category('projects', () => {
   test('activity_cliffs', async () => {
     //column '~smiles.Morgan' is not saved to project since it is an object type column
     await runSaveAndOpenProjectTest('activity_cliffs.csv', runActivityCliffs,
-      ['chembl_tid', 'smiles', 'Activity', '~smiles.Morgan', 'Embed_X_1', 'Embed_Y_1', 'sali__1'],
+      ['chembl_tid', 'smiles', 'Activity', morganCache(), 'Embed_X_1', 'Embed_Y_1', 'sali__1'],
       DG.VIEWER.SCATTER_PLOT, false, checkActivityCliffsCustomInit);
     //need delay to avoid unhandled exception when calling closeAll()
     await delay(100);
@@ -145,7 +151,7 @@ category('projects', () => {
   test('activity_cliffs_sync', async () => {
     //column '~smiles.Morgan' is not saved to project since it is an object type column
     await runSaveAndOpenProjectTest('activity_cliffs.csv', runActivityCliffs,
-      ['chembl_tid', 'smiles', 'Activity', '~smiles.Morgan', 'Embed_X_1', 'Embed_Y_1', 'sali__1'],
+      ['chembl_tid', 'smiles', 'Activity', morganCache(), 'Embed_X_1', 'Embed_Y_1', 'sali__1'],
       DG.VIEWER.SCATTER_PLOT, true, checkActivityCliffsCustomInit);
     //need delay to avoid unhandled exception when calling closeAll()
     await delay(100);
@@ -217,13 +223,18 @@ async function runSaveAndOpenProjectTest(tableName: string, analysisFunc: (tv: D
   await delay(100);
   await analysisFunc(tv);
   await delay(10);
-  await saveAndOpenProject(tv, dataSync);
-  await delay(10);
-  await dataFrameContainsColumns(colList);
-  if (viewerType)
-    await checkViewerAdded(viewerType);
-  if (additionalChecks)
-    await additionalChecks(tv);
+  const project = await saveAndOpenProject(tv, dataSync);
+  try {
+    await delay(10);
+    await dataFrameContainsColumns(colList);
+    if (viewerType)
+      await checkViewerAdded(viewerType);
+    if (additionalChecks)
+      await additionalChecks(tv);
+  }
+  finally {
+    await grok.dapi.projects.delete(project);
+  }
 }
 
 async function runActivityCliffs(tv: DG.TableView): Promise<void> {
@@ -374,7 +385,7 @@ async function runRGroupAnalysis(tv: DG.TableView): Promise<void> {
   });
 }
 
-async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise<void> {
+async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise<DG.Project> {
   const project = DG.Project.create();
   project.name = 'Test project';
   const tableInfo = tv.dataFrame.getTableInfo();
@@ -391,10 +402,10 @@ async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise
   await grok.dapi.tables.save(tableInfo);
   await grok.dapi.views.save(layoutInfo);
   await grok.dapi.projects.save(project);
-  const projId = project.id;
   grok.shell.closeAll();
-  const p = await grok.dapi.projects.find(projId);
+  const p = await grok.dapi.projects.find(project.id);
   await p.open();
+  return p;
 }
 
 async function dataFrameContainsColumns(colArr: string[]): Promise<void> {

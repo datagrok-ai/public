@@ -397,12 +397,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   }
 
   private async _initProps() {
-    if (!this.dataFrame || this.dataJson) return;
+    if (!this.dataFrame || (this.dataJson && this.dataJson !== BiostructureDataJson.empty)) return;
 
     // -- Pdb or Pdb Id --
-    if (!this.biostructureIdColumnName) {
+    if (!this.biostructureIdColumnName && !this.pdb && !this.dataFrame.tags.has(this.pdbTag || pdbTAGS.PDB)) {
       const pdbCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE3D) || this.dataFrame.columns.bySemType(DG.SEMTYPE.PDB_ID);
-      if (pdbCol) {
+      if (pdbCol && pdbCol.name !== this.ligandColumnName) {
         this.biostructureIdColumnName = pdbCol.name;
 
         if (pdbCol.semType === DG.SEMTYPE.PDB_ID) {
@@ -415,7 +415,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     // -- Ligand --
     if (!this.ligandColumnName) {
       const molCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE3D) ?? this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-      if (molCol)
+      if (molCol && molCol.name !== this.biostructureIdColumnName)
         this.ligandColumnName = molCol.name;
     }
   }
@@ -859,7 +859,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       delete this.splashDiv;
     }
 
-    if (this.dataFrame && this.ligandColumnName)
+    if (this.viewer && this.dataFrame && this.ligandColumnName)
       await this.destroyViewLigands(logIndent + 1, callLog);
     await this.clearBindingSiteView();
 

@@ -7,6 +7,9 @@ Feature: Running a query with parameters
   Dbtests queries of NorthwindTest — Orders (eight typed parameters) and PostgresByStringChoices
   (a country: France has 77 orders, USA 122).
 
+  That a choice returns only its country's rows is the DBTests package's claim (src/expected-rows-test.ts,
+  Queries: expected rows / PostgresByStringChoices filters by the chosen country).
+
   Read-only: the queries are the stand's own, nothing is saved.
 
   Not translated, and why: the case's CHEMBL queries — "preview and run every CHEMBL query" and the
@@ -49,7 +52,6 @@ Feature: Running a query with parameters
     And user clicks on OK button in "PostgresByStringChoices" dialog
     Then the current view should be a TableView view
     And the table should have 77 rows
-    And every value of "shipcountry" column should match "^France$"
     Given the toolbox pane is shown
     When user selects "USA" in "Ship Country" input in toolbox
     And user clicks on REFRESH button in toolbox

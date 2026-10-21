@@ -97,6 +97,21 @@ async function fetchOrRetry(url: string, opts: RequestInit, retriable: boolean,
 export class NodeApiClient {
   /** Set by `createClient` when the run asked for an admin session, so a re-login restores it. */
   adminMode: boolean = false;
+  /**
+   * `--log`: one id for every request of the command, wherever the server runs it, and the logger settings
+   * its records are kept at until `GET /log/requests/<logId>` collects them.
+   */
+  logId?: string;
+  logSpec?: string;
+
+  private get logHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {};
+    if (this.logId)
+      headers['datlas-log-id'] = this.logId;
+    if (this.logSpec)
+      headers['datlas-log'] = this.logSpec;
+    return headers;
+  }
 
   constructor(public baseUrl: string, public token: string, private devKey?: string,
               private privateKey?: any) {}
@@ -152,6 +167,7 @@ export class NodeApiClient {
       headers: {
         'Authorization': this.token,
         'Content-Type': 'application/json',
+        ...this.logHeaders,
         ...headers,
       },
     };
@@ -176,8 +192,7 @@ export class NodeApiClient {
     }
 
     const ct = res.headers.get('content-type') ?? '';
-    return throwIfApiError(ct.includes('application/json') ? await res.json() : await res.text(),
-      Number(res.headers.get('api-error-code')) || undefined);
+    return throwIfApiError(ct.includes('application/json') ? await res.json() : await res.text(), res.headers);
   }
 
   get(path: string): Promise<any> { return this.request('GET', path); }
@@ -198,20 +213,21 @@ export class NodeApiClient {
       headers: {
         'Authorization': this.token,
         'Content-Type': contentType,
+        ...this.logHeaders,
       },
       body: bytes as any,
     }, false, BYTES_TIMEOUT_MS);
     if (!res.ok)
       await throwHttpError(res);
     const ct = res.headers.get('content-type') ?? '';
-    return throwIfApiError(ct.includes('application/json') ? await res.json() : await res.text());
+    return throwIfApiError(ct.includes('application/json') ? await res.json() : await res.text(), res.headers);
   }
 
   /** POST a JSON body and read the response as raw bytes (d42 query results). */
   async postForBytes(path: string, body: any): Promise<Buffer> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: 'POST',
-      headers: {'Authorization': this.token, 'Content-Type': 'application/json'},
+      headers: {'Authorization': this.token, 'Content-Type': 'application/json', ...this.logHeaders},
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(BYTES_TIMEOUT_MS),
     });
@@ -222,7 +238,7 @@ export class NodeApiClient {
 
   /** GET raw bytes — d42 table data, file content, model blobs. */
   async getBytes(path: string): Promise<Buffer> {
-    const res = await fetchOrRetry(`${this.baseUrl}${path}`, {headers: {'Authorization': this.token}}, true, BYTES_TIMEOUT_MS);
+    const res = await fetchOrRetry(`${this.baseUrl}${path}`, {headers: {'Authorization': this.token, ...this.logHeaders}}, true, BYTES_TIMEOUT_MS);
     if (!res.ok)
       await throwHttpError(res);
     const bytes = Buffer.from(await res.arrayBuffer());
@@ -259,11 +275,13 @@ async function throwHttpError(res: Response): Promise<never> {
  * missing entity, a rejected save or an unknown function throws instead of printing as data.
  * [errorCode] is the status the server sends in the `api-error-code` header (403 for a missing permission).
  */
-export function throwIfApiError<T>(payload: T, errorCode?: number): T {
+/** A user error answers HTTP 200 with the ApiError in the body and its status in the `api-error-code` header. */
+export function throwIfApiError<T>(payload: T, headers?: Headers): T {
   const parsed: any = typeof payload === 'string' ? tryParseJson(payload) : payload;
   if (parsed?.['#type'] === 'ApiError') {
+    const code = headers?.get('api-error-code');
     const err: NodeApiError = {error: parsed.message ?? 'Request failed', source: 'Server',
-      errorCode: parsed.errorCode ?? errorCode, stackTrace: parsed.stackTrace, body: parsed};
+      errorCode: parsed.errorCode ?? (code ? Number(code) : undefined), stackTrace: parsed.stackTrace, body: parsed};
     throw Object.assign(new Error(err.error), {apiError: err});
   }
   return payload;
@@ -404,7 +422,7 @@ export interface MemberRemoveResult {
   error?: string;
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class NodeGroupsDataSource extends NodeHttpDataSource {
   constructor(client: NodeApiClient) { super(client, 'groups', '/groups'); }
@@ -568,6 +586,15 @@ export class NodeUsersDataSource extends NodeHttpDataSource {
   async unblock(user: any): Promise<void> {
     await this.client.post('/public/v1/users/unblock', user);
   }
+
+  /**
+   * Creates the invitee (status `new`) and returns a link that logs them in, sending no email; the
+   * email may be omitted, and [prefix] goes in front of the link's code. With [sendEmail] the
+   * server mails the invitation and returns '' instead.
+   */
+  async invite(email?: string, sendEmail: boolean = false, prefix?: string): Promise<string> {
+    return this.client.post(`/users/invite${buildQuery({email: email ?? '', target: 'Datagrok', link: sendEmail ? undefined : true, prefix})}`);
+  }
 }
 
 export class NodeConnectionsDataSource extends NodeHttpDataSource {
@@ -595,9 +622,11 @@ export class NodeConnectionsDataSource extends NodeHttpDataSource {
 export class NodeFuncsDataSource extends NodeHttpDataSource {
   constructor(client: NodeApiClient) { super(client, 'functions', '/log/funcs'); }
 
-  async run(name: string, params?: Record<string, any>): Promise<any> {
+  /** [debug] runs it as a debug call, as the query debugger does; its log is kept with the command's `--log`. */
+  async run(name: string, params?: Record<string, any>, debug: boolean = false): Promise<any> {
     const normalizedName = name.replace(':', '.');
-    return this.client.post(`/public/v1/functions/${encodeURIComponent(normalizedName)}/call`, params ?? {});
+    return this.client.post(`/public/v1/functions/${encodeURIComponent(normalizedName)}/call${debug ? '?debug=true' : ''}`,
+      params ?? {});
   }
 
   /** The public API has no DELETE for functions; scripts and queries go to their own routers. */
@@ -628,7 +657,7 @@ export function mapPositionalParams(params: Record<string, any>, parameterInfos:
   return mapped;
 }
 
-function tryParseJson(s: string): any {
+export function tryParseJson(s: string): any {
   try { return JSON.parse(s); } catch { return null; }
 }
 
@@ -876,6 +905,11 @@ export interface DomainBatchOptions {
   errorOnDuplicate?: boolean;
 }
 
+/** Every literal a `/domains/{schema}/{table}/{id}` route registers at the id position, the dot
+ * segments a proxy folds away, and the u2 draft sentinel — the Dart `DomainRowKey.reserved` list. */
+const RESERVED_ROW_KEYS = ['access', 'aggregate', 'audit', 'batch', 'delete', 'facets', 'filters', 'query',
+  'update', 'version', 'watch', 'new', '.', '..'];
+
 /**
  * Client for entity-mapped domain tables (`/domains/...`, DomainsRouter). Rows are plain
  * JSON objects; the server validates, permission-checks and audits every write. Errors
@@ -887,6 +921,13 @@ export class NodeDomainsDataSource {
 
   private rows(schema: string, table: string): string {
     return `/domains/${encodeURIComponent(schema)}/${encodeURIComponent(table)}`;
+  }
+
+  /** The row-id segment as the Dart `DomainRowKey` spells it (grok_shared domain_manifest_rules.dart):
+   * escaped, then percent-encoded once more so an external key's own `%2C` survives the proxy. */
+  private row(schema: string, table: string, id: string): string {
+    const escaped = RESERVED_ROW_KEYS.includes(id) || id.startsWith('~') ? `~${id}` : id;
+    return `${this.rows(schema, table)}/${encodeURIComponent(escaped)}`;
   }
 
   /** Registered schemas with their tables (`GET /domains/schemas`); [text] is a smart filter. */
@@ -936,7 +977,7 @@ export class NodeDomainsDataSource {
   }
 
   rowAudit(schema: string, table: string, id: string): Promise<any[]> {
-    return this.client.get(`${this.rows(schema, table)}/${encodeURIComponent(id)}/audit`);
+    return this.client.get(`${this.row(schema, table, id)}/audit`);
   }
 
   grants(entityId: string): Promise<any[]> {
@@ -980,7 +1021,7 @@ export class NodeDomainsDataSource {
   /** One row, or null when it does not exist or is not visible (the server answers 404). */
   async getRow(schema: string, table: string, id: string): Promise<any> {
     try {
-      return await this.client.get(`${this.rows(schema, table)}/${encodeURIComponent(id)}`);
+      return await this.client.get(this.row(schema, table, id));
     } catch (err: any) {
       if (err?.apiError?.errorCode === 404) return null;
       throw err;
@@ -997,11 +1038,11 @@ export class NodeDomainsDataSource {
   update(schema: string, table: string, id: string, values: any, version?: number): Promise<any> {
     const body: Record<string, any> = {values};
     if (version !== undefined) body.version = version;
-    return this.client.request('PATCH', `${this.rows(schema, table)}/${encodeURIComponent(id)}`, body);
+    return this.client.request('PATCH', this.row(schema, table, id), body);
   }
 
   deleteRow(schema: string, table: string, id: string): Promise<any> {
-    return this.client.del(`${this.rows(schema, table)}/${encodeURIComponent(id)}`);
+    return this.client.del(this.row(schema, table, id));
   }
 
   /** Soft-deletes up to [limit] (≤1000) matching rows in one transaction; `{deleted, hasMore}`. */
@@ -1044,6 +1085,7 @@ export class NodeDapi {
   get scripts(): InternalDataSource { return this.internal('/scripts'); }
   get packages(): NodePackagesDataSource { return new NodePackagesDataSource(this.client); }
   get reports(): InternalDataSource { return this.internal('/reports'); }
+  get problems(): InternalDataSource { return this.internal('/problems'); }
   get files(): NodeFilesDataSource { return new NodeFilesDataSource(this.client); }
   get shares(): NodeSharesDataSource { return new NodeSharesDataSource(this.client); }
   get tables(): NodeTablesDataSource { return new NodeTablesDataSource(this.client); }
@@ -1051,9 +1093,14 @@ export class NodeDapi {
 
   internal(route: string): InternalDataSource { return new InternalDataSource(this.client, route); }
 
+  /** `/info/server`; [extended] adds the in-flight requests per endpoint (admins only). */
+  async serverStatus(extended: boolean = false): Promise<any> {
+    const raw = await this.client.get(extended ? '/info/server?extended=true' : '/info/server');
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+  }
+
   async serverInfo(): Promise<{version: string; commit?: string}> {
-    const raw = await this.client.get('/info/server');
-    const info = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const info = await this.serverStatus();
     return {version: info?.Version ?? '', commit: info?.Commit};
   }
 

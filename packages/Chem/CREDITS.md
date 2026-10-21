@@ -6,11 +6,14 @@ incorporates the open-source components listed below; this file reproduces the
 attribution and notices required by their respective licenses.
 
 All runtime dependencies are under permissive licenses (BSD-3-Clause, MIT,
-Apache-2.0, zlib), with one exception: the Crux sketcher's engine
-(`sketch_wasm_bg-*.wasm`) ports one file of Eigen 3.3.9 under the Mozilla
-Public License 2.0 (file-level copyleft; its notice and the source it names
-are under "Crux Sketch" below). No GPL or LGPL component is bundled into the
-published plugin artifact.
+Apache-2.0, zlib, PSF-2.0, the FreeType License, SIL OFL 1.1), with one
+exception: Crux's engines port Eigen under the Mozilla Public License 2.0
+(file-level copyleft): the Crux sketcher's `sketch_wasm_bg-*.wasm` and Chem's
+`chem_wasm_bg.wasm` one file of Eigen 3.3.9, and `chem_wasm_bg.wasm` also
+crux-core's `eigen` crate, ported from Eigen 3.4.0. Their notices and the
+sources they name are under "Crux Sketch" below and in `dist/NOTICE.chem-wasm`
+(`vendor/chem-wasm/NOTICE.chem-wasm`). No GPL or LGPL component is bundled into
+the published plugin artifact.
 
 ---
 
@@ -51,6 +54,41 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
+
+### Crux chemical engine (`chem_wasm_bg.wasm`)
+
+Chem's Crux engine (the Chemical Engine and Substructure Search Engine package
+properties, `src/engine/`, `src/crux/`), compiled to WebAssembly. Files:
+`vendor/chem-wasm/chem_wasm.js` (bundled) and `vendor/chem-wasm/chem_wasm_bg.wasm`
+(copied into `dist/` at build time), with `NOTICE.chem-wasm` and
+`VERSION.chem-wasm` (copied into `dist/` beside it; `VERSION.chem-wasm` names
+the crux-core revision and the build). It is crux-core's `chem-wasm` crate with
+the crates it links, which port parts of RDKit to Rust (reading and writing
+molecules, substructure, fingerprints, descriptors with their 3D embedding,
+depiction and drawing, MCS, R-groups, reactions, standardization), coordgenlibs
+(CoordGen layouts), ScaffoldGraph (the scaffold tree), Eigen (linear algebra)
+and parts of CPython (its MT19937 random numbers) and numpy (its summation),
+which the descriptors and embedding reproduce, with RDKit's fonts and the Rust
+crates it compiles in.
+Its notices, written by crux-core's `tools/wasm_notices.py` with every licence
+text, are in `NOTICE.chem-wasm`.
+
+- Upstream: https://github.com/datagrok-ai/crux-core
+- License: **Apache-2.0 OR MIT** (crux-core's own code); the ported and
+  embedded parts keep their licenses, as `NOTICE.chem-wasm` reproduces them:
+  - RDKit 2026.03.6: **BSD-3-Clause** (reproduced under "RDKit MinimalLib" above)
+  - coordgenlibs 3.0.2: **BSD-3-Clause**
+  - ScaffoldGraph 1.1.2: **MIT**
+  - Eigen 3.3.9, one file (`crates/rk/src/shape_helpers/eigen.rs`): **MPL-2.0**
+  - Eigen 3.4.0, crux-core's `eigen` crate: **MPL-2.0**
+  - CPython 3.12.3, mt19937 (crux-core's `pycompat`): **PSF-2.0**, with the
+    Mersenne Twister reference code it quotes (mt19937ar.c, Makoto Matsumoto
+    and Takuji Nishimura): **BSD-3-Clause**
+  - numpy 1.26.4, np_sum (crux-core's `pycompat`): **BSD-3-Clause**
+  - FreeType 2.9.1, the ported glyph code: **FreeType License**
+  - the drawings' fonts, Telex: **SIL OFL 1.1**; Roboto: **Apache-2.0**
+  - Rust's standard library and the crates.io crates compiled in: **MIT OR
+    Apache-2.0**, **MIT**, and the others `NOTICE.chem-wasm` lists
 
 ### NGL Viewer (2.4.0)
 
@@ -225,7 +263,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-<!-- crux-sketch credits: begin (written by crux-sketch's dg-credits.py from its notices; do not edit by hand) -->
+<!-- crux-sketch credits: begin (written by crux-sketch's tools/datagrok.mjs from its notices; do not edit by hand) -->
 
 ### Crux Sketch (the Crux sketcher)
 
@@ -237,6 +275,9 @@ chemistry engine, crux-core's `sketch-wasm`, `cdxml-wasm` and `inchi-wasm` crate
 library, FreeType 2.9.1 and one file of Eigen 3.3.9 (Mozilla Public License 2.0), and embeds the Roboto font.
 
 - Upstream: https://github.com/datagrok-ai/crux-sketch, https://github.com/datagrok-ai/crux-core
+- Content-Security-Policy: beyond `'self'` it needs `'wasm-unsafe-eval'` in `script-src` (its WebAssembly), and no
+  `'unsafe-eval'` or `'unsafe-inline'`, for scripts or styles (crux-sketch's `packages/sketch/README.md`, "Under a
+  Content-Security-Policy"; HOST-074).
 
 #### Notices of Crux Sketch (`packages/sketch/NOTICE`, `packages/sketch/src/icons/NOTICE`)
 
@@ -309,7 +350,9 @@ transform-flip-h.svg, transform-flip-v.svg, delete.svg, as they are); and the Cl
 tools' (charge-plus.svg, charge-minus.svg), as they are; and Enhanced Stereochemistry's
 (enhanced-stereo.svg), as it is; and the shortcuts sheet's and the Settings gear's (help.svg,
 settings.svg), their paint written currentColor; and the query bond tools' (bond-any.svg,
-bond-singledouble.svg, bond-singlearomatic.svg, bond-doublearomatic.svg), as they are. The fit-to-view icon and the bars' scroll chevrons
+bond-singledouble.svg, bond-singlearomatic.svg, bond-doublearomatic.svg), as they are; and the dative bond tool's
+(bond-dative.svg), as it is, and the Hydrogens menu button's (explicit-hydrogens.svg), its paint written currentColor; and Aromatize's and
+Dearomatize's (arom.svg, dearom.svg), their paint written currentColor. The fit-to-view icon and the bars' scroll chevrons
 are Crux Sketch's own.
 
 Ketcher

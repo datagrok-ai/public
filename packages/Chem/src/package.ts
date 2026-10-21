@@ -31,7 +31,7 @@ import {
 import {MAX_SMILES_LENGTH} from './utils/chem-constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
-import {calculateDescriptors, getDescriptorsTree} from './docker/api';
+import {calculateDescriptors, getDescriptorsTree} from './descriptors/descriptors-engine';
 import {addDescriptorsColsToDf, DescriptorsEditor, getDescriptorsSingle, getSelected} from './descriptors/descriptors-calculation';
 import {identifiersWidget, getMapIdentifiers, MapIdentifiersEditor, textToSmiles} from './widgets/identifiers';
 
@@ -51,12 +51,13 @@ import {getInchiKeysImpl, getInchisImpl} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
 import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
-import {Fingerprint, hasNewLines, waitFor} from './utils/chem-common';
+import {Fingerprint, hasNewLines} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {IMolContext, getMolSafe, isFragment, _isSmarts, getQueryMolSafe} from './utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, isFragment, _isSmarts, getQueryMolSafe, readsAsQueryOnly, isSmilesSyntax,
+  withoutCxExtension} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation, convertNotationForColumn} from './utils/convert-notation-utils';
-import {molToMolblock} from './utils/convert-notation-utils';
+import {molToMolblock, asSmiles} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {getSdfString, saveAsSdfDialog} from './utils/sdf-utils';
 import {getSimilaritiesMarix} from './utils/similarity-utils';
@@ -125,6 +126,9 @@ import {applyDesirabilityTags, collectMpoResultColumns, computeMpo, findSuitable
 import {removeWaterAndSalts, runTransformationReaction} from './utils/reactions/reactions';
 import {transformationReactionsUI, transformationReactionsView, twoComponentReactionsView, twoComponentReactionUI} from './utils/reactions/ui';
 import {scripts} from './package-api';
+import {cruxReady, isCruxRequested, onEngineSwitch} from './engine/chem-engine';
+import {cruxOrRdKitAsync} from './engine/fallback';
+import {getCruxService} from './crux/crux-searches';
 
 export {getMCS};
 export * from './package.g';
@@ -202,6 +206,15 @@ let mpoTreeBrowserSub: Subscription | null = null;
 
 async function initChemInt(): Promise<void> {
   chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+  // when the engine in effect changes (Crux ready, a switch at run time): the renderers empty their caches on their
+  // next call; repaint what shows
+  onEngineSwitch(() => {
+    for (const view of grok.shell.tableViews)
+      view.grid?.invalidate();
+  });
+  // in Crux mode ("Chemical engine" setting) the Crux file starts loading beside RDKit, not awaited: RDKit draws until
+  // it is ready; RDKit mode never fetches it
+  cruxReady();
   await chemCommonRdKit.initRdKitModuleLocal();
   _properties = _package.settings;
   _rdRenderer = new RDKitCellRenderer(PackageFunctions.getRdKitModule());
@@ -585,6 +598,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'Similarity Search',
     'top-menu': 'Chem | Search | Similarity Search...',
+    'requiresSemType': 'Molecule',
   })
   static similaritySearchTopMenu(): void {
     (grok.shell.v as DG.TableView).addViewer('Chem Similarity Search');
@@ -601,6 +615,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Search | Diversity Search...',
+    'requiresSemType': 'Molecule',
     'name': 'Diversity Search',
   })
   static diversitySearchTopMenu(): void {
@@ -966,6 +981,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Analyze | Chemical Space...',
+    'requiresTableView': true,
     'name': 'Chem Space',
     'description': 'Maps the dataset to 2D plot based on similarity',
     'editor': 'Chem:ChemSpaceEditor',
@@ -1233,6 +1249,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'R-Groups Analysis',
     'top-menu': 'Chem | Analyze | R-Groups Analysis...',
+    'requiresSemType': 'Molecule',
   })
   static rGroupsAnalysisMenu(): void {
     const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
@@ -1298,6 +1315,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Analyze | Activity Cliffs...',
+    'requiresTableView': true,
     'name': 'Activity Cliffs',
     'description': 'Detects pairs of molecules with similar structure and significant difference in any given property',
     'editor': 'Chem:ActivityCliffsEditor',
@@ -2032,11 +2050,14 @@ export class PackageFunctions {
     }
     sketcher.setMolecule(molecule);
     if (ogSmiles) {
-      waitFor(() => !!sketcher.sketcher?.isInitialized)
-        .then((inited) => {
-          if (inited)
-            sketcher.sketcher!.explicitMol = {notation: 'smiles', value: ogSmiles};
-        });
+      // The cell's own SMILES, given back the moment the sketcher is ready (before any edit can reach it), so that OK
+      // without an edit keeps the cell as it was: in place of the molblock above, while that is still the caller's
+      // string. A value the host took while the sketcher loaded (typed into its field and entered, picked from Recent)
+      // is the one the sketcher shows and holds by then, and OK writes it.
+      sketcher.sketcherReady().then((ready) => {
+        if (ready.explicitMol?.value === molecule)
+          ready.explicitMol = {notation: 'smiles', value: ogSmiles!};
+      });
     }
 
     const dlg = ui.dialog()
@@ -2244,8 +2265,7 @@ export class PackageFunctions {
   })
   static copyAsSmiles(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
-    const smiles = !DG.chem.isMolBlock(value.value) && !_isSmarts(value.value) ? value.value :
-      _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, PackageFunctions.getRdKitModule());
+    const smiles = asSmiles(value.value, PackageFunctions.getRdKitModule());
     navigator.clipboard.writeText(smiles);
     grok.shell.info('Smiles copied to clipboard');
   }
@@ -2362,9 +2382,17 @@ export class PackageFunctions {
     return false;
   }
 
+  /** Whether a molecule string is SMARTS (the platform's sketcher sets it as SMARTS, `DG.chem.Sketcher.setMolecule`): no
+   * molblock; SMARTS syntax outside a CXSMILES extension (a CXSMILES with atom labels or an AND group is a molecule), or a
+   * text RDKit reads as a query and not as a molecule (Daylight's [NX3][CX3]=[OX1]: set as SMILES, no sketcher could show
+   * it, and the query entered came back empty). RDKit is asked only about a text outside SMILES syntax: every string a
+   * sketcher is set with comes here, and a SMILES, read by RDKit each time, cost a parse for an answer its syntax gives. */
   @grok.decorators.func()
   static isSmarts(s: string): boolean {
-    return !s.match(/M  END|V2000|V3000/g) && !!s.match(/\[.?#\d|\$|&|;|,|!.?]/g);
+    if (/M  END|V2000|V3000/.test(s))
+      return false;
+    return _isSmarts(s) ||
+      (!isSmilesSyntax(withoutCxExtension(s)) && _rdKitModule != null && readsAsQueryOnly(s, _rdKitModule));
   }
 
   @grok.decorators.func()
@@ -2509,6 +2537,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Analyze | Scaffold Tree',
+    'requiresSemType': 'Molecule',
     'name': 'addScaffoldTree',
     'description': 'Generates a hierarchical tree based on the scaffolds presented in dataset',
   })
@@ -2542,6 +2571,7 @@ export class PackageFunctions {
     'description': 'Finds pairs of molecules differing by a single fragment and relates the change to activity.',
     'editor': 'Chem:MMPEditor',
     'top-menu': 'Chem | Analyze | Matched Molecular Pairs...',
+    'requiresTableView': true,
   })
   static async mmpAnalysis(
     table: DG.DataFrame,
@@ -2629,6 +2659,7 @@ export class PackageFunctions {
     'name': 'SAR Matrix',
     'description': 'Groups related compound series into potency-colored matrices and predicts virtual analogs.',
     'top-menu': 'Chem | Analyze | SAR Matrix...',
+    'requiresTableView': true,
     'editor': 'Chem:SarMatrixEditor',
   })
   static async sarMatrixAnalysis(
@@ -2760,11 +2791,19 @@ export class PackageFunctions {
         invalid[invalid.length] = rowI;
       }
     }
-    const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
-    const dataFrame: DG.DataFrame = DG.DataFrame.fromColumns([smilesColumn]);
-    const scriptBlob = await Chem.generateScaffoldTree(dataFrame, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
-    const scriptRes = new TextDecoder().decode(scriptBlob.data);
-    return scriptRes;
+    const pythonTree = async (): Promise<string> => {
+      const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
+      const dataFrame: DG.DataFrame = DG.DataFrame.fromColumns([smilesColumn]);
+      const scriptBlob = await Chem.generateScaffoldTree(dataFrame, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+      const scriptRes = new TextDecoder().decode(scriptBlob.data);
+      return scriptRes;
+    };
+    // "Chemical engine": in Crux mode a Crux worker builds the same JSON as the script, which stays the fallback
+    if (!isCruxRequested())
+      return pythonTree();
+    return cruxOrRdKitAsync('scaffoldTree',
+      async () => (await getCruxService()).scaffoldTree(smilesList.map((s) => s ?? ''), ringCutoff,
+        dischargeAndDeradicalize), pythonTree);
   }
 
 
@@ -3107,6 +3146,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Reactions | Deprotect...',
+    'requiresTableView': true,
     'name': 'Deprotect',
     'description': 'Removes drawn protecting groups / fragments from molecules',
     'editor': 'Chem:DeprotectEditor',
@@ -3149,6 +3189,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'mpo',
     'top-menu': 'Chem | Calculate | MPO Score...',
+    'requiresSemType': 'Molecule',
     'description': 'Calculates the MPO score for the column of molecules',
   })
   static async _mpo(): Promise<void> {
@@ -3331,6 +3372,7 @@ export class PackageFunctions {
     'name': 'Chemical Properties',
     'description': 'Dynamically discovers and executes tagged biochemical calculators',
     'top-menu': 'Chem | Calculate | Chemical Properties...',
+    'requiresSemType': 'Molecule',
   })
   static async biochemPropsWidget(): Promise<void> {
     await biochemicalPropertiesDialog();
@@ -3456,6 +3498,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     topMenu: 'Chem | Transform | Reactions | Transformation...',
+    requiresSemType: 'Molecule',
     name: 'Run Reaction',
     description: 'Runs reaction based on the reaction SMARTS and list of reactants',
   })
@@ -3510,6 +3553,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     topMenu: 'Chem | Transform | Reactions | Two-Component Reaction...',
+    requiresSemType: 'Molecule',
     name: 'Two-Component Reaction',
     description: 'Runs a reaction between molecules from two columns',
   })

@@ -135,9 +135,10 @@ const isEmptyDataFrame = (df: any) =>
 
 const isEmptyGraphics = (v: any) => v == null || v === '';
 
+const isHiddenOutput = (prop: DG.Property) => JSON.parse(prop.options.hidden || 'false');
+
 const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
-  const isHidden = JSON.parse(prop.options.hidden || 'false');
-  if (isHidden)
+  if (isHiddenOutput(prop))
     return;
   const scalarValue = funcCall.outputs[prop.name];
   let formattedScalarValue = scalarValue;
@@ -213,12 +214,8 @@ const tabToProperties = (fc: DG.FuncCall) => {
   });
 
   [...fc.outputParams.values()].forEach(({property}) => {
-    if (property.propertyType === DG.TYPE.DATA_FRAME) {
-      processVisual(property, true);
-      return;
-    }
-    if (property.propertyType === DG.TYPE.GRAPHICS) {
-      if (!JSON.parse(property.options.hidden || 'false'))
+    if (property.propertyType === DG.TYPE.DATA_FRAME || property.propertyType === DG.TYPE.GRAPHICS) {
+      if (!isHiddenOutput(property))
         processVisual(property, true);
       return;
     }
@@ -320,6 +317,7 @@ export const RichFunctionView = Vue.defineComponent({
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
     'historyRunChosen': (_call: DG.FuncCall) => true,
+    'stepRunChosen': (_call: DG.FuncCall, _readonly: boolean) => true,
     'saveToHistory': (_call: DG.FuncCall) => true,
     'publishRun': (_call: DG.FuncCall) => true,
     'runClicked': () => true,
@@ -383,6 +381,15 @@ export const RichFunctionView = Vue.defineComponent({
     const hasInputsHiddenOption = Vue.computed(() =>
       !!currentCall.value?.func && Utils.getInputsHidden(currentCall.value.func));
     const historyHidden = Vue.ref(true);
+    const historyReadonly = Vue.ref(false);
+    const toggleHistory = (readonly: boolean) => {
+      if (!historyHidden.value && historyReadonly.value === readonly)
+        historyHidden.value = true;
+      else {
+        historyReadonly.value = readonly;
+        historyHidden.value = false;
+      }
+    };
 
     const historyRef = Vue.shallowRef<InstanceType<typeof History> | undefined>(undefined);
     const helpRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
@@ -730,7 +737,7 @@ export const RichFunctionView = Vue.defineComponent({
         text: 'Show history',
         icon: 'history',
         check: !historyHidden.value,
-        onClick: () => historyHidden.value = !historyHidden.value,
+        onClick: () => toggleHistory(false),
       }] : []),
     ]);
 
@@ -763,8 +770,14 @@ export const RichFunctionView = Vue.defineComponent({
       ...(props.history ? [{
         icon: 'history',
         tooltip: 'Open history panel',
-        active: !historyHidden.value,
-        onClick: () => historyHidden.value = !historyHidden.value,
+        active: !historyHidden.value && !historyReadonly.value,
+        onClick: () => toggleHistory(false),
+      }] : []),
+      ...(props.history && historyMode.value === 'step' ? [{
+        icon: 'lock',
+        tooltip: 'Load completed run (read-only)',
+        active: !historyHidden.value && historyReadonly.value,
+        onClick: () => toggleHistory(true),
       }] : []),
       {
         icon: 'question',
@@ -797,13 +810,13 @@ export const RichFunctionView = Vue.defineComponent({
               savedOnly={historyMode.value === 'step'}
               onRunChosen={(chosenCall) => isWorkflowHistory.value ?
                 emit('historyRunChosen', chosenCall) :
-                emit('update:funcCall', chosenCall)}
+                emit('stepRunChosen', chosenCall, historyReadonly.value)}
               allowCompare={!isWorkflowHistory.value}
               forceHideInputs={isWorkflowHistory.value}
               showIsComplete={!isWorkflowHistory.value}
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.2}
-              dock-spawn-title='History'
+              dock-spawn-title={historyReadonly.value ? 'History (read-only load)' : 'History'}
               dock-spawn-panel-icon='history'
               ref={historyRef}
               class='overflow-scroll h-full'
@@ -935,7 +948,7 @@ export const RichFunctionView = Vue.defineComponent({
               ref={helpRef}
             > { Vue.withDirectives(
                 <MarkDown
-                  markdown={helpContent.value ?? 'Help file is not avaliable'}
+                  markdown={helpContent.value ?? 'Help file is not available'}
                 />, [[ifOverlapping, helpLoading.value]])
               }
             </div>: null

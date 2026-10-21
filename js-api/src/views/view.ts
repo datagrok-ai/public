@@ -393,7 +393,7 @@ export class View extends ViewBase {
   static readonly QUERIES = 'queries';
   static readonly SCRIPTS = 'scripts';
   static readonly USERS = 'users';
-  static readonly PACKAGES = 'packages';
+  static readonly PACKAGES = 'Plugins';
   static readonly PACKAGE_REPOSITORIES = 'repositories';
   static readonly JS_EDITOR = 'js';
   static readonly BROWSE = 'browse';
@@ -403,7 +403,7 @@ export class View extends ViewBase {
     View.FORUM, View.PROJECTS, View.NOTEBOOKS, View.HELP, View.OPEN_TEXT, View.DATABASES,
     View.WEB_SERVICES, View.VIEW_LAYOUTS, View.FUNCTIONS, View.DATA_CONNECTIONS, View.DATA_JOB_RUNS,
     View.FILES, View.EMAILS, View.GROUPS, View.MODELS, View.QUERIES,
-    View.SCRIPTS, View.USERS, View.PACKAGES, View.PACKAGE_REPOSITORIES, View.JS_EDITOR, View.BROWSE, View.DOCKERS];
+    View.SCRIPTS, View.USERS, View.PACKAGES, View.PACKAGE_REPOSITORIES, View.JS_EDITOR, View.DOCKERS];
 }
 
 
@@ -722,6 +722,8 @@ export class BrowsePanel extends DartWidget {
   get localTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_LocalTree(this.dart); }
   get mainTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_MainTree(this.dart); }
   bindItemTooltip(content: string | Element | (() => string | Element), el: Element): void { api.grok_BrowsePanel_BindItemTooltip(this.dart, content, el); }
+  /** Expands the groups along a slash-separated path of node texts (`Platform/Domains/northwind`) and selects the node at its end; a path the tree does not hold is ignored. */
+  async expandPath(path: string): Promise<void> { await api.grok_BrowsePanel_ExpandPath(this.dart, path); }
 }
 
 /** Represents a virtual view, where visual elements are created only when user

@@ -7,17 +7,6 @@ type AliasTranslation = {
   als?: {negate: boolean; atoms: string[]};             // M  ALS atom list
 };
 
-// Metals matched by Ketcher's `M` / `MH` generic-atom buttons. The strict
-// CTfile spec defines 16f4 for M  ALS (16 atom-symbol slots per line) but
-// buildAlsLine emits the full list regardless; RDKit's V2000 parser in
-// practice handles longer ALS lines for our use here.
-const METAL_ATOMS = [
-  'Li', 'Na', 'K', 'Rb', 'Cs', 'Mg', 'Ca', 'Sr', 'Ba',
-  'Al', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn',
-  'Y', 'Zr', 'Nb', 'Mo', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd',
-  'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg'];
-const HALOGEN_ATOMS = ['F', 'Cl', 'Br', 'I'];
-
 // Query-atom aliases that sketchers emit but RDKit's V2000 parser silently
 // downgrades to dummy atoms. Sources verified empirically:
 //   - Ketcher "Extended Table" short codes — observed in molblocks emitted by
@@ -76,18 +65,10 @@ const QUERY_ALIASES: Record<string, AliasTranslation> = {
   // to CXX since H can't be ring-member. CXH button hidden in editor.css.
   'CXX': {symbol: 'Q', rbc: 2},
   'CXH': {symbol: 'Q', rbc: 2},
-  // Halogen / metal atom lists. Use 'L' (canonical atom-list placeholder) as
-  // the atom-symbol field — with 'A' RDKit's V2000 parser treats the atom as
-  // "any non-H" and ignores the M  ALS line.
-  //
-  // XH/MH technically include H in the list, but RDKit drops the H entry
-  // during substructure matching — the +H semantics never surface in practice.
-  // Both buttons are hidden in editor.css; entries kept so externally-pasted
-  // molblocks still translate.
-  'X':  {symbol: 'L', als: {negate: false, atoms: HALOGEN_ATOMS}},
-  'XH': {symbol: 'L', als: {negate: false, atoms: [...HALOGEN_ATOMS, 'H']}},
-  'M':  {symbol: 'L', als: {negate: false, atoms: METAL_ATOMS}},
-  'MH': {symbol: 'L', als: {negate: false, atoms: [...METAL_ATOMS, 'H']}},
+  // The generics A, AH, Q, QH, X, XH, M, MH and * are not here: RDKit reads each of them as an atom symbol, with its own
+  // meaning (X a halogen, At included; M every metal; XH and MH with H), as Crux and Ketcher write them. Rewritten as
+  // atom lists they lost At and the metals beyond these 38, and XH and MH, their lists holding H, matched no explicit H
+  // (crux-sketch spike query-roundtrip, L5).
   // Marvin JS alias-block text observed in the wild
   'Heterocyclyl': {symbol: 'Q', rbc: 2},
 };
@@ -99,11 +80,8 @@ const QUERY_ALIASES: Record<string, AliasTranslation> = {
 // the sketcher, or convert the molblock to V3000 (some — like ARY, HAR — still
 // require SMARTS even in V3000 since aromaticity isn't a standard query bit).
 export const UNSUPPORTED_ALIASES: Record<string, string> = {
-  'AH':  'any atom including H — V2000 has no clean way; * is parsed as dummy [#0] in RDKit',
   'ACH': 'acyclic atom incl. H — V2000 cannot express "any element including H" at the atom level',
   'AHH': 'acyclic anything except C — RDKit V2000 ignores M ALS T (exclude) lists; verified empirically (test returns wildcard-acyclic matches, not non-C-acyclic)',
-  '*': 'wildcard (any atom incl. H per Ketcher) — RDKit V2000 parses * as dummy [#0], not a true wildcard',
-  'QH':  'heteroatom or H (= not C) — needs L + M ALS exclude [C], rendered same way as AHH but without ring constraint; currently not encoded',
   'ALK': 'alkyl (sp3 acyclic carbon) — V2000 has no atom-level hybridization query',
   'ALH': 'alkyl incl. H — V2000 has no atom-level hybridization query',
   'AEL': 'alkenyl (sp2 acyclic carbon) — V2000 has no atom-level hybridization query',
@@ -158,7 +136,7 @@ function buildAlsLine(atom: number, negate: boolean, atoms: string[]): string {
  * input is not a V2000 molblock or no known aliases are present.
  *
  * Recognized aliases (see QUERY_ALIASES): ACY/Acyclic, CYC/Cyclic, Alkyl, Aryl,
- * Heterocyclyl, Heteroaryl, Heteroatom, X/Halogen, M/Metal. Sources checked:
+ * Heterocyclyl, Heteroaryl, Heteroatom (the generics RDKit reads itself are left as they are). Sources checked:
  *   - the atom-symbol field at columns 32-34 of each atom line, and
  *   - the CTfile alias block `A  <atomIdx>\n<aliasText>` after the bond block.
  *

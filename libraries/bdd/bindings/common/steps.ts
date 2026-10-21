@@ -17,9 +17,18 @@ import {cssString, escapeRegExp, locate} from '../../src/runtime/locate.js';
 import {centerOf, dragFrom} from '../../src/runtime/viewers.js';
 
 export const clickOn = When('user clicks (on ){element}', (page: Page, target: ElementRef) => g.click(page, target), {tier: 'ui'});
+export const clickOnHolding = When('user clicks (on ){element} holding {key}', (page: Page, target: ElementRef, key: string) =>
+  g.withKeys(page, [key], () => g.click(page, target)),
+{tier: 'ui', description: 'a click with a key or a chord held: Control adds a card or a row to the selection, Shift extends it'});
 export const doubleClickOn = When('user double-clicks (on ){element}', (page: Page, target: ElementRef) => g.dblclick(page, target), {tier: 'ui'});
 export const rightClickOn = When('user right-clicks (on ){element}', (page: Page, target: ElementRef) => g.rightclick(page, target), {tier: 'ui'});
 export const hoverOver = When('user hovers (over ){element}', (page: Page, target: ElementRef) => g.hover(page, target), {tier: 'ui'});
+export const pointerOver = When('user moves the pointer over {element}', async (page: Page, target: ElementRef) => {
+  const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
+  if (!box)
+    throw new Error(`${target.phrase} has no box to move the pointer over`);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, {steps: 2});
+}, {tier: 'ui', description: 'the pointer moved to the middle of the element and nothing waited for after it — for a layer the first move takes away, where a hover would wait for the element to see the pointer enter'});
 export const focusOn = When('user focuses (on ){element}', (page: Page, target: ElementRef) => g.focus(page, target), {tier: 'ui'});
 export const typeInto = When('user types {string} in(to) {element}', (page: Page, text: string, target: ElementRef) => g.typeInto(page, target, text), {tier: 'ui'});
 export const enterInto = When('user enters {string} in(to) {element}', (page: Page, text: string, target: ElementRef) => g.typeInto(page, target, text, true),
@@ -126,6 +135,32 @@ export const scrollToMiddle = When('user scrolls {element} to the middle of its 
     return !!box && !!size && box.y > 100 && box.y + box.height < size.height - 100;
   }, {message: `${target.phrase} away from the edges of the window`}).toBe(true);
 }, {tier: 'ui', description: 'the mouse wheel over the list until the element sits mid-window, clear of the status bar a node on the last line hides under'});
+
+/* An element at the start of a list never reaches mid-window; this one only brings it whole into the panel it
+   scrolls in, up or down. */
+export const scrollIntoView = When('user scrolls {element} into view', async (page: Page, target: ElementRef) => {
+  const loc = (await locate(page, target)).first();
+  const aim = await loc.evaluate((e) => {
+    let list = e.parentElement;
+    while (list && !(/auto|scroll/.test(getComputedStyle(list).overflowY) && list.scrollHeight > list.clientHeight))
+      list = list.parentElement;
+    if (!list)
+      return null;
+    const r = e.getBoundingClientRect();
+    const l = list.getBoundingClientRect();
+    const MARGIN = 24;
+    const dy = r.top < l.top + MARGIN ? r.top - l.top - MARGIN : r.bottom > l.bottom - MARGIN ? r.bottom - l.bottom + MARGIN : 0;
+    return {x: l.x + l.width / 2, y: l.y + l.height / 2, dy, top: l.top, bottom: l.bottom};
+  });
+  if (aim && Math.abs(aim.dy) > 1) {
+    await page.mouse.move(aim.x, aim.y, {steps: 6});
+    await page.mouse.wheel(0, aim.dy);
+  }
+  await expect.poll(async () => {
+    const box = await loc.boundingBox();
+    return !!box && (!aim || (box.y >= aim.top && box.y + box.height <= aim.bottom));
+  }, {message: `${target.phrase} within its scrolled panel`}).toBe(true);
+}, {tier: 'ui', description: 'the mouse wheel over the panel the element scrolls in until the whole of it shows, up or down'});
 
 /** `| element | value |` rows: selects choose an option, checkboxes take yes/no, everything else is typed. */
 export const fillIn = When('user fills in:', async (page: Page, table: string[][]) => {

@@ -9,14 +9,66 @@ import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
 import {SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType,
   getTerminateEventName} from '../constants';
 import {Fingerprint} from '../utils/chem-common';
-import {SubstructureSearchEngine, getCruxQuery, getCruxService, setSubstructureSearchEngine}
+import {SubstructureSearchEngine, cruxReadsQuery, getCruxService, setSubstructureSearchEngine}
   from '../crux/crux-searches';
+import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {readDataframe} from './utils';
 
 const QUERIES = ['c1ccccc1', 'c1ccncc1', 'C1CC1', 'C(=O)N', 'c1ccc2[nH]ccc2c1', 'C[C@H](N)C(=O)O', 'C/C=C/C',
   '[CX3](=O)[OX2H1]', '[NX3;H2,H1;!$(NC=O)]', '[F,Cl,Br,I]', '[#7;R]', '[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1-,=[#8]'];
-// isotopes and SMARTS primitives crux does not evaluate like RDKit
-const RDKIT_ONLY_QUERIES = ['[13CH3]O', '[C;v4]', '[#6;x2]', '[#6&R2]', '[C;r6]'];
+// Queries Chem sent to RDKit's worker pool while Crux took the query as SMARTS text (getCruxSmarts' refusals): explicit
+// [#1] and !#1 (PAINS writes them), R<n>, r<n>, v, h, x, isotopes, radicals, exclusions that may be an H (!C, !a, *!O),
+// some of Chem's structural alerts among them; Crux now matches the query molecule Chem's getQueryMolSafe builds.
+// On Chem's datasets here each gives the hits of RDKit 2026.03 (RDKit.js, molecules read as getMolSafe reads them) and
+// of Chem's RDKit.js, row for row (checked with both before these tests were written).
+const FORMERLY_RDKIT_QUERIES = [
+  '[!#6;!#1;!#11;!#19]O(S(=O)(=O)(-[C,c]))', '[#7+](:[!#1]:[!#1]:[!#1])-[!#1]=[#8]',
+  '[!#6;!#7;!#8;!#16;!#1;!#3;!#9;!#11;!#12;!#15;!#17;!#19;!#20;!#30;!#35]', '[H]N([H])c1ccccc1', '[#1]', '[#6]-[#1]',
+  '[#8]-[#1]', '[!#1]:1:[!#1]:[!#1]:[!#1]:[!#1]:[!#1]:1',
+  '[#6&R2]', '[O;R1][C;R1][C;R1][O;R1]', '[c;R2]', '[C;R0](=O)N', '[#6;R3]',
+  '[C;r6]', '[#6;r5]', '[N;!r3]-[N]', '[#7;r5,r6]', '[c;r10]', '[#6;r16,r17,r18]~[#6]1~[#6]~[#6]~[#6](~[#6])~[#7]1',
+  '[C;v4]', '[N;v3]', '[c,C]-[P;v3]', '[#16v3,#16v5]', '[Nv3X3][Nv3X3!H0]', '[S;v6]',
+  '[C;!$(C[N])](=O)!@[C;h1,h2;H1,H2][F,Cl,Br,I]', '[C;h3]', '[N;h2]', '[#6;x2]', '[#6;x3]', '[N;x0]',
+  '[13CH3]O', '[2H]', '[13#6]', '[2#1,3#1,11C,11c,14C,14c,125I,32P,33P,35S]', '[0#6]',
+  'O=C(-[!N])O', '[Si]~[!#6]', '[!a][SX2;H1]', '[Cl,Br,I]C=[!O!R]', 'C[CR0]=[NR0][*!O]', '[!#6][#6](=O)[!#6]',
+  '[CH2]', '[O]', '[#6;D4]', '[#6;D1]', '[N;D1]', '[C;X4;H3]',
+];
+// molecules with what those queries ask about: isotopes, radicals, explicit H, P / S / Si valences, fused, spiro,
+// bridged and large rings
+const SPECIAL_CASES = ['[13CH3]OC', 'C[2H]', '[2H]C([2H])([2H])O', '[14C]c1ccccc1', 'O[13C](=O)C', '[CH2]C(=O)O',
+  '[O]CC', 'C[N+](=O)[O-]', '[N+](=O)[O-]', '[CH3]', 'CS(C)(=O)=O', 'CS(=O)C', 'CP(C)C', 'CP(=O)(C)C', 'C[Si](C)(C)O',
+  'c1ccc2ccccc2c1', 'C1CCC2(CC1)CCCC2', 'C1CC2CCC1C2', 'C1CCCCCCCCCCCCCCC1C1CCCCN1', 'OC(=O)C(Cl)C(=O)C', '[H]OC',
+  '[H]N([H])c1ccccc1', 'CC(=O)Cl', 'C=CBr', 'NN', 'CSC(=S)SC', '[125I]c1ccccc1', 'C[32P](=O)(O)O', 'CC(C)(C)[2H]',
+  'c1cc[nH]c1', '[Na+].[Cl-]', 'CCC(=N)C', 'C#N', ''];
+// drawn queries of those kinds, as MOL blocks: a radical (N, M  RAD), an H count (MDL's hhh), an explicit H atom
+const RADICAL_MOLBLOCK = ['', '     RDKit          2D', '', '  3  2  0  0  0  0  0  0  0  0999 V2000',
+  '    0.0000    0.0000    0.0000 N   0  0  0  0  0  3  0  0  0  0  0  0',
+  '    1.2990    0.7500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0',
+  '   -1.2990    0.7500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0',
+  '  1  2  2  0', '  1  3  1  0', 'M  CHG  2   1   1   3  -1', 'M  RAD  1   1   2', 'M  END', ''].join('\n');
+const H_COUNT_MOLBLOCK = ['', '  chem-census query', '', '  7  7  0  0  0  0  0  0  0  0999 V2000',
+  '    0.0000    1.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    1.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    1.2990   -0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    0.0000   -1.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '   -1.2990   -0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '   -1.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    0.0000    3.0000    0.0000 N   0  0  0  3  0  0  0  0  0  0  0  0',
+  '  1  2  2  0', '  2  3  1  0', '  3  4  2  0', '  4  5  1  0', '  5  6  2  0', '  6  1  1  0', '  1  7  1  0',
+  'M  END'].join('\n');
+const EXPLICIT_H_MOLBLOCK = ['', '  chem-census query', '', '  3  2  0  0  0  0  0  0  0  0999 V2000',
+  '    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    1.3000    0.7500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    2.6000    0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0',
+  '  1  2  1  0', '  2  3  1  0', 'M  END'].join('\n');
+// RDKit's SMARTS writer writes MDL's single or double with ring topology `-,=&@`, which a SMARTS parser, crux's too,
+// reads as `-,(=&@)` (crux-sketch spike query-roundtrip, L6: a custom bond query `-,=;@` passed 969 rows of mol1K for
+// 417); as a molecule, the query is the one RDKit matches
+const AMBIGUOUS_BOND_MOLBLOCK = ['', '  query-roundtrip', '', '  2  1  0  0  0  0  0  0  0  0999 V2000',
+  '    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '  1  2  5  0  0  1', 'M  END', ''].join('\n');
+const FORMERLY_RDKIT_MOLBLOCKS = [RADICAL_MOLBLOCK, H_COUNT_MOLBLOCK, EXPLICIT_H_MOLBLOCK, AMBIGUOUS_BOND_MOLBLOCK];
 // molecules crux read differently from RDKit before crux-core's rdkit-parity-gaps: nitro / N-oxide / azide /
 // halogen oxide in their neutral hypervalent form, a radium salt, leading spaces, a cyclic iodine
 const SANITIZATION_CASES = ['CC(C)(C)c1ccc(cc1)S(=O)(=O)Nc2ccc(Cl)cc2C(=O)c3ccn(=O)cc3',
@@ -38,11 +90,60 @@ async function expectSameAsRdkit(col: DG.Column, queries: string[], searchType =
   includeMask: BitArray | null = null, viaCrux = true): Promise<void> {
   for (const query of queries) {
     if (viaCrux)
-      expect(await getCruxQuery(query, '') !== null, true, `crux does not search for ${query}`);
+      expect(await cruxReadsQuery(query, ''), true, `crux does not search for ${query}`);
     const rdkit = await search(SubstructureSearchEngine.RDKit, col, query, searchType, includeMask);
     const crux = await search(SubstructureSearchEngine.Crux, col, query, searchType, includeMask);
     expect(crux.equals(rdkit), true, `crux differs from RDKit: ${searchType} ${query} (crux ${crux}, RDKit ${rdkit})`);
   }
+}
+
+/** The RDKit worker pool's asks (its init counts every one). */
+const rdkitPoolAsks = () => chemCommonRdKit._rdKitService.timesInitialized;
+
+/**
+ * The rows RDKit matches, Chem's main-thread RDKit.js reading the molecules (getMolSafe) and the query
+ * (getQueryMolSafe) as Chem does: sanitized molecules, their rings the SSSR (RDKit's definition of R<n> and r<n>). The
+ * RDKit worker pool is not asked (its search reads the molecules its cache lacks unsanitized, and sanitized for a query
+ * that needs it: `substructure search: ring queries`).
+ */
+function rdkitHits(molecules: (string | null)[], query: string, searchType = SubstructureSearchType.CONTAINS):
+  BitArray {
+  const rdkit = chemCommonRdKit.getRdKitModule();
+  const queryMol = getQueryMolSafe(query, '', rdkit);
+  const hits = new BitArray(molecules.length);
+  try {
+    for (let i = 0; i < molecules.length; i++) {
+      const mol = molecules[i] ? getMolSafe(molecules[i]!, {}, rdkit).mol : null;
+      if (!mol)
+        continue;
+      try {
+        const matches = !!queryMol && mol.get_substruct_match(queryMol) !== '{}';
+        hits.setFast(i, searchType === SubstructureSearchType.CONTAINS ? matches : !matches);
+      } finally {
+        mol.delete();
+      }
+    }
+  } finally {
+    queryMol?.delete();
+  }
+  return hits;
+}
+
+/** Crux searches each query and gives RDKit's hits ({@link rdkitHits}), asking nothing of the RDKit worker pool. */
+async function expectRdkitHitsThroughCrux(col: DG.Column, queries: string[],
+  searchType = SubstructureSearchType.CONTAINS): Promise<void> {
+  const molecules = col.toList();
+  const asks = rdkitPoolAsks();
+  for (const query of queries) {
+    const label = query.includes('M  END') ? `a MOL block (${query.split('\n')[1].trim()})` : query;
+    expect(await cruxReadsQuery(query, ''), true, `Crux does not search for ${label}`);
+    const crux = await search(SubstructureSearchEngine.Crux, col, query, searchType);
+    const rdkit = rdkitHits(molecules, query, searchType);
+    expect(crux.equals(rdkit), true, `Crux differs from RDKit: ${col.name} ${searchType} ${label} ` +
+      `(Crux ${crux.trueCount()} rows, RDKit ${rdkit.trueCount()}; the first differing row ` +
+      `${crux.clone().xor(rdkit).findNext(-1, true)})`);
+  }
+  expect(rdkitPoolAsks(), asks, `a Crux search on ${col.name} asked for the RDKit workers`);
 }
 
 function moleculeColumn(smiles: string[]): DG.Column {
@@ -114,7 +215,7 @@ category('crux substructure search', () => {
   test('matchesRdkit.radicalLookingQueries', async () => {
     // typed, [OH] [CH3] [F] [N+] are read as SMARTS by both engines: the atom as written, whatever its neighbours;
     // so is c1cc[n+]cc1, which the radical would make a non-aromatic ring
-    expect(await getCruxQuery('[OH]', ''), '[O&H1]');
+    expect(await cruxReadsQuery('[OH]', ''), true);
     const col = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
     expect((await search(SubstructureSearchEngine.RDKit, col, '[OH]')).trueCount() > 0, true);
     await expectSameAsRdkit(col, ['[OH]', '[CH3]', '[NH2]', '[F]', '[N+]', '[O-]', 'c1cc[n+]cc1']);
@@ -159,14 +260,100 @@ category('crux substructure search', () => {
     }
   }, {timeout: 90000});
 
-  test('fallsBackToRdkit', async () => {
+  test('cruxStartsNoRdkitWorker', async () => {
+    // a Crux search on SMILES and on molblocks asks nothing of the RDKit worker pool (its init counts every ask), the
+    // queries Chem sent to RDKit before included; a query Crux does not read does; the hits are RDKit's
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
+    const molblocks = (await readDataframe('mol1K.csv')).col('molecule')!;
+    const before = rdkitPoolAsks();
+    const crux = [await search(SubstructureSearchEngine.Crux, smiles, 'c1ccccc1'),
+      await search(SubstructureSearchEngine.Crux, molblocks, 'c1ccccc1')];
+    for (const query of ['[13CH3]O', '[C;v4]', '[#6;x2]', '[#6&R2]', '[C;r6]', '[#1]', '[!#6;!#1][#6]'])
+      await search(SubstructureSearchEngine.Crux, smiles, query);
+    expect(rdkitPoolAsks(), before, 'the RDKit workers were asked for by a Crux search');
     setSubstructureSearchEngine(SubstructureSearchEngine.Crux);
-    for (const query of RDKIT_ONLY_QUERIES)
-      expect(await getCruxQuery(query, ''), null, `crux should not handle ${query}`);
-    expect(await getCruxQuery('c1ccccc1', ''), '[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1');
-    const df = await readDataframe('smiles.csv');
-    await expectSameAsRdkit(df.col('canonical_smiles')!, RDKIT_ONLY_QUERIES, SubstructureSearchType.CONTAINS, null,
-      false);
+    // no query in either reading (getQueryMolSafe: none, nor its MOL block failover): RDKit's search reports it
+    await chemSubstructureSearchLibrary(smiles, 'C1CC', 'not a molecule').catch(() => null);
+    expect(rdkitPoolAsks() > before, true, 'a query Crux does not read asks for the RDKit workers');
+    expect(crux[0].equals(await search(SubstructureSearchEngine.RDKit, smiles, 'c1ccccc1')), true, 'SMILES hits');
+    expect(crux[1].equals(await search(SubstructureSearchEngine.RDKit, molblocks, 'c1ccccc1')), true, 'molblock hits');
+  });
+
+  test('fallsBackToRdkit', async () => {
+    // Crux searches for every query its module reads as Chem's getQueryMolSafe builds it; for the others RDKit
+    // searches, and its search reports what it reports
+    setSubstructureSearchEngine(SubstructureSearchEngine.Crux);
+    expect(await cruxReadsQuery('c1ccccc1', ''), true);
+    expect(await cruxReadsQuery('', ''), true, 'the pre-search on filter attach');
+    for (const [query, failover] of [['C1CC', 'not a molecule'], ['[C;', 'C1CC'], ['C'.repeat(5001), '']])
+      expect(await cruxReadsQuery(query, failover), false, `Crux searches for ${query.slice(0, 20)}`);
+    const col = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
+    const outcome = (s: Promise<BitArray>) => s.then((hits) => hits.toString(), (e) => `error: ${e?.message ?? e}`);
+    setSubstructureSearchEngine(SubstructureSearchEngine.Crux);
+    const viaCrux = await outcome(chemSubstructureSearchLibrary(col, 'C1CC', 'not a molecule'));
+    setSubstructureSearchEngine(SubstructureSearchEngine.RDKit);
+    const viaRdkit = await outcome(chemSubstructureSearchLibrary(col, 'C1CC', 'not a molecule'));
+    expect(viaCrux, viaRdkit, 'a query Crux does not read');
+  });
+
+  test('matchesRdkit.formerlyRdkitQueries', async () => {
+    // the queries Chem sent to RDKit while Crux took SMARTS text: through Crux, RDKit's hits, no RDKit worker started
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
+    const molblocks = (await readDataframe('mol1K.csv')).col('molecule')!;
+    const special = moleculeColumn(SPECIAL_CASES);
+    for (const col of [smiles, molblocks, special])
+      await expectRdkitHitsThroughCrux(col, [...FORMERLY_RDKIT_QUERIES, ...FORMERLY_RDKIT_MOLBLOCKS]);
+    for (const col of [smiles, special]) {
+      await expectRdkitHitsThroughCrux(col, ['[#1]', '[#6;r5]', '[C;v4]', '[13#6]', '[CH2]', '[!#6][#6](=O)[!#6]'],
+        SubstructureSearchType.NOT_CONTAINS);
+    }
+  }, {timeout: 180000});
+
+  test('matchesRdkit.explicitHydrogenMolblocks', async () => {
+    // a MOL block column whose molecules keep their H atoms (mol1K's 67 that have them, and 200 of smiles.csv with
+    // all of them): Crux reads each MOL block as Chem's getMolSafe does, its H atoms kept, so H atoms, degrees (D),
+    // implicit H (h) and connections (X) are RDKit's
+    const mol1K = (await readDataframe('mol1K.csv')).col('molecule')!.toList() as string[];
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList() as string[];
+    const withH = [...mol1K.filter((m) => / H {2}/.test(m)), ...smiles.slice(0, 200).map((s) => molblock(s, true))];
+    expect(withH.length, 267, 'MOL blocks with H atoms');
+    const col = moleculeColumn(withH);
+    await expectRdkitHitsThroughCrux(col, ['[#6;D1]', '[#6;D4]', '[N;D1]', '[C;X4;H3]', 'c1ccccc1', 'C(=O)N', '[#1]',
+      '[#6]-[#1]', '[#8]-[#1]', '[C;h3]', '[N;h2]', '[CH2]', '[#6;x2]', '[H]N([H])c1ccccc1', EXPLICIT_H_MOLBLOCK,
+      molblock('CC(C)O', true)]);
+    await expectRdkitHitsThroughCrux(col, ['[#1]', '[#6;D1]'], SubstructureSearchType.NOT_CONTAINS);
+  }, {timeout: 120000});
+
+  test('matchesRdkit.cxsmilesQueries', async () => {
+    // CXSMILES extensions the Crux module reads as RDKit: coordinates, stereo groups, wedges, radicals, R-group,
+    // attachment-point and alias labels; Crux searches them, with RDKit's hits
+    const read = ['C[C@H](N)C(=O)O |&1:1|', 'C[C@H](N)C(=O)O |o1:1|', 'C[C@H](N)C(=O)O |&1:1,r|', 'C[C@H](N)O |w:1.0|',
+      'CCO |(0,0,;1.5,0,;3,0,)|', 'CC(=O)N |(0,0,;1,0,;2,0,;3,0,),$;;;_AP1$|', 'CCO |$_R1;;$|', 'CC*.C |$;;OMe;$|',
+      '[CH3]C |^1:0|'];
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
+    for (const col of [smiles, moleculeColumn(SPECIAL_CASES)])
+      await expectRdkitHitsThroughCrux(col, read);
+    // query features in the extension its reader does not read yet (query atom labels, positional variation, ring bond
+    // count, unsaturation, substitution, bond lists): RDKit searches them, Crux mode gives RDKit's search
+    const notRead = ['Cc1ccccc1 |$;;;;Q_e;;$|', 'Cc1ccccc1 |$;;;;AH_p;;$|', 'ClC |$X_p;$|',
+      'c1ccccc1* |$;;;;;;star_e$|', '*c1ccccc1 |m:0:1.2.3|', 'C=CC |$;;$,rb:1:*|', 'CCC |u:1|', 'CCC |s:1:1|',
+      'c1ccccc1 |c:0,2,4|'];
+    for (const query of notRead) {
+      expect(await cruxReadsQuery(query, ''), false, `Crux searches for ${query}`);
+      const crux = await search(SubstructureSearchEngine.Crux, smiles, query);
+      const rdkit = await search(SubstructureSearchEngine.RDKit, smiles, query);
+      expect(crux.equals(rdkit), true, `Crux mode differs from RDKit: ${query} (${crux.trueCount()}, ` +
+        `${rdkit.trueCount()})`);
+    }
+  }, {timeout: 120000});
+
+  test('matchesRdkit.emptyQueryMolecule', async () => {
+    // a query of no atoms (a MOL block of none; a query that does not read, with no failover: an empty molecule)
+    // matches no molecule in RDKit; the pre-search (an empty query string) is not one
+    const empty = ['', '  empty', '', '  0  0  0  0  0  0  0  0  0  0999 V2000', 'M  END', ''].join('\n');
+    const col = moleculeColumn(SPECIAL_CASES);
+    for (const searchType of [SubstructureSearchType.CONTAINS, SubstructureSearchType.NOT_CONTAINS])
+      await expectRdkitHitsThroughCrux(col, [empty, 'C1CC'], searchType);
   });
 
   test('supersededSearchStops', async () => {
@@ -220,7 +407,7 @@ category('crux substructure search', () => {
     const df = await readDataframe('sar-small.csv');
     await grok.data.detectSemanticTypes(df);
     const query = molblock('Clc1ccccc1');
-    expect(await getCruxQuery(query, '') !== null, true);
+    expect(await cruxReadsQuery(query, ''), true);
     const expected = (await search(SubstructureSearchEngine.RDKit, df.col('smiles')!, query)).trueCount();
     setSubstructureSearchEngine(SubstructureSearchEngine.Crux);
     const tv = grok.shell.addTableView(df);
@@ -236,4 +423,39 @@ category('crux substructure search', () => {
       tv.close();
     }
   }, {timeout: 45000});
+
+  // RDKit's SMARTS writer writes MDL's single or double with ring topology `-,=&@`, which a SMARTS parser, crux's too,
+  // reads as `-,(=&@)` (crux-sketch spike query-roundtrip, L6: a custom bond query `-,=;@` passed 969 rows of mol1K for
+  // 417); Crux takes the query as the molecule RDKit matches, no SMARTS text between them
+  test('anAndOverAnOrBondQueryAsRdkitMatchesIt', async () => {
+    setSubstructureSearchEngine(SubstructureSearchEngine.Crux);
+    const molblock = AMBIGUOUS_BOND_MOLBLOCK;
+    const df = await readDataframe('smiles.csv');
+    await expectRdkitHitsThroughCrux(df.col('canonical_smiles')!, [molblock]);
+    await expectSameAsRdkit(df.col('canonical_smiles')!, [molblock]);
+    const rdkit = chemCommonRdKit.getRdKitModule();
+    const intended = rdkit.get_qmol('[#6]-,=;@[#6]');
+    const found = (q: any) => df.col('canonical_smiles')!.toList().filter((s: string) => {
+      const m = rdkit.get_mol(s);
+      try {
+        return m.get_substruct_match(q) !== '{}';
+      } finally {
+        m.delete();
+      }
+    }).length;
+    const query = rdkit.get_qmol(molblock);
+    try {
+      expect(found(query), found(intended), 'the molblock\'s query against [#6]-,=;@[#6]');
+    } finally {
+      query.delete();
+      intended.delete();
+    }
+  });
+
+  test('workerPoolIsBounded', async () => {
+    // each worker holds a crux WebAssembly instance, and a page has room for only so many WebAssembly memories:
+    // sized by the threads alone, crux's pool and RDKit's filled it on a 32-thread machine
+    const service = await getCruxService();
+    expect(service.workerCount, Math.max(1, Math.min(navigator.hardwareConcurrency - 2, 16)), 'crux workers');
+  });
 });

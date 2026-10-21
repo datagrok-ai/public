@@ -4,6 +4,7 @@
    page holds or adds later renders immediately (no debounce, no animation-frame wait). */
 import type {BrowserContext, Page} from '@playwright/test';
 import {Given, When} from '../../src/registry.js';
+import {markLeakBaseline} from '../../src/runtime/audit.js';
 import {takeErrors} from '../../src/runtime/harness.js';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {installViewerRuntime, takeBalloons} from '../../src/runtime/viewers.js';
@@ -34,9 +35,10 @@ async function homeWidgetsSettled(page: Page): Promise<void> {
  * runtime installed. What the page logged while it booted stays on the error floor: a widget that fails
  * to load is the claim of a scenario that reloads or signs in. */
 export async function resetShellAfterLoad(page: Page, simpleMode = guide.shellSimpleMode()): Promise<void> {
-  await page.evaluate((simple) => {
+  await page.evaluate(([simple, filmed, help]) => {
     grok.shell.closeAll();
-    document.body.classList.add('selenium');
+    // the test styles (title-bar icons shown without a hover) are not what a person sees in a guide
+    document.body.classList.toggle('selenium', !filmed);
     grok.shell.windows.simpleMode = simple;
     // the console and help panels a feature leaves open share the right column with the context panel and can
     // squeeze it to its title bar; a feature that needs one opens it
@@ -44,11 +46,20 @@ export async function resetShellAfterLoad(page: Page, simpleMode = guide.shellSi
     grok.shell.windows.showHelp = false;
     if (grok.shell.windows.presentationMode)
       grok.shell.windows.presentationMode = false;
-  }, simpleMode);
+    // a help GIF starts from the bare shell, whatever panels the account keeps open; a step opens the one it needs
+    if (help) {
+      grok.shell.windows.showSidebar = false;
+      grok.shell.windows.showBrowse = false;
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showContextPanel = false;
+    }
+  }, [simpleMode, !!guide.guideDir(), guide.helpMode()] as [boolean, boolean, boolean]);
   // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it
   await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});
   await homeWidgetsSettled(page);
   await installViewerRuntime(page);
+  // a cold load or a reload starts the scenario's leak baseline here, before any app view opens
+  await markLeakBaseline(page);
 }
 
 /** The shell mode the page runs in now: a reload or a sign-in mid-feature keeps what the feature set. */

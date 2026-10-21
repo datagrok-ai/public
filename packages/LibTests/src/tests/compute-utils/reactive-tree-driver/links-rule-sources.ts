@@ -7,23 +7,16 @@ import {resolveSources} from '@datagrok-libraries/compute-utils/reactive-tree-dr
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {FuncCallInstancesBridge} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
-import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import {PipelineLinkConfigurationInput} from
-  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {DriverLogger} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 import {TestScheduler} from 'rxjs/testing';
+import {of} from 'rxjs';
+import {delay} from 'rxjs/operators';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {createTestScheduler, expectThrowsAsync} from '../../../test-utils';
+import {
+  createTestScheduler, expectThrowsAsync, noCallController, notYet, resolvedSources, syncResult, twoSteps,
+} from '../../../test-utils';
 
-const twoSteps = (links: PipelineLinkConfigurationInput<string | string[]>[]): PipelineConfiguration => ({
-  id: 'pipeline1',
-  type: 'static',
-  steps: [
-    {id: 'step1', nqName: 'LibTests:TestAdd2'},
-    {id: 'step2', nqName: 'LibTests:TestMul2'},
-  ],
-  links,
-});
+const valuesController = (values: Record<string, any>) => ({getFirst: (name: string) => values[name]}) as any;
 
 category('ComputeUtils: Driver rule js sources', async () => {
   let testScheduler: TestScheduler;
@@ -112,44 +105,42 @@ category('ComputeUtils: Driver rule js sources', async () => {
   });
 
   test('A func source calls a platform function', async () => {
-    const controller = (values: Record<string, any>) => ({getFirst: (name: string) => values[name]}) as any;
     const sum = {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'x'}, b: 5}}};
-    const pending = resolveSources(controller({}), {sum}, {$all: {}, x: 1});
-    expect(pending instanceof Promise, true);
-    expectDeepEqual(await pending, {sum: 6});
+    const sum$ = resolveSources(valuesController({}), {sum}, {$all: {}, x: 1});
+    expect(syncResult(sum$) === notYet, true);
+    expectDeepEqual(await sum$.toPromise(), {sum: 6});
     const presets = {func: {name: 'LibTests:TestPresets'}};
-    const {presets: df} = await resolveSources(controller({}), {presets}) as any;
+    const {presets: df} = await resolvedSources(valuesController({}), {presets}) as any;
     expectDeepEqual(df.col('preset').toList(), ['fast', 'exact']);
   });
 
   test('A query source runs sql on a connection', async () => {
-    const controller = () => ({getFirst: () => undefined}) as any;
     const me = await grok.dapi.users.current();
     const users = {query: {
       connection: 'System:Datagrok',
       sql: 'select login from users where login = @login',
       args: {login: {var: 'login'}},
     }};
-    const {users: df} = await resolveSources(controller(), {users}, {$all: {}, login: me.login}) as any;
+    const {users: df} = await resolvedSources(noCallController(), {users}, {$all: {}, login: me.login}) as any;
     expectDeepEqual(df.col('login').toList(), [me.login]);
     const declared = {query: {
       connection: 'System:Datagrok',
       sql: '--input: string login\nselect login from users where login = @login',
       args: {login: {var: 'login'}},
     }};
-    const {declared: df2} = await resolveSources(controller(), {declared}, {$all: {}, login: me.login}) as any;
+    const {declared: df2} = await resolvedSources(noCallController(), {declared}, {$all: {}, login: me.login}) as any;
     expectDeepEqual(df2.rowCount, 1);
   });
 
   test('A file source loads a table', async () => {
-    const controller = () => ({getFirst: () => undefined}) as any;
     await expectThrowsAsync(() => getProcessedConfig(twoSteps([{
       id: 'bad', type: 'rule', from: 'x:step1/a', to: 't:step1/a',
       sources: {v: {file: ''}}, effects: [{effect: 'error', targets: 't', message: 'm'}],
     }])));
-    const births = {file: 'System:DemoFiles/births.csv'};
-    const {births: df} = await resolveSources(controller(), {births}) as any;
-    expect(df.rowCount > 0, true);
+    const compounds = {file: 'System:AppData/LibTests/compounds.csv'};
+    const {compounds: df} = await resolvedSources(noCallController(), {compounds}) as any;
+    expectDeepEqual(df.columns.names(), ['compound', 'clearance', 'volume']);
+    expectDeepEqual(df.col('compound').toList(), ['CMP-0001', 'CMP-0002']);
   });
 
   test('A table source takes a dataframe or CSV text', async () => {
@@ -163,18 +154,16 @@ category('ComputeUtils: Driver rule js sources', async () => {
     await badRule({options: {delimiter: ';'}});
     const df = DG.DataFrame.fromCsv('preset\nfast\nexact');
     const cache = new Map<string, any>();
-    const controller = () => ({getFirst: () => undefined, sourceCache: cache}) as any;
     const sources = {
       given: {table: df},
       text: {table: 'preset,v\nfast,1\nexact,2'},
       parsed: {table: {csv: 'preset;v\nfast;1', options: {delimiter: ';'}}},
     };
-    const first: any = resolveSources(controller(), sources);
-    expect(first instanceof Promise, false);
+    const first: any = syncResult(resolveSources(noCallController(cache), sources));
     expect(first.given === df, true);
     expectDeepEqual(first.text.col('v').toList(), [1, 2]);
     expectDeepEqual(first.parsed.columns.names(), ['preset', 'v']);
-    const second: any = resolveSources(controller(), sources);
+    const second: any = syncResult(resolveSources(noCallController(cache), sources));
     expect(second.text === first.text, true);
     expect(second.parsed === first.parsed, true);
   });
@@ -208,11 +197,11 @@ category('ComputeUtils: Driver rule js sources', async () => {
     };
     try {
       const cache = new Map<string, any>();
-      const controller = () => ({getFirst: () => undefined, sourceCache: cache}) as any;
       const fixed = {func: {name: 'LibTests:TestAdd2', args: {a: 1, b: 2}}};
       const varying = {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'x'}, b: 2}}};
-      expectDeepEqual(await resolveSources(controller(), {fixed, varying}, {$all: {}, x: 1}), {fixed: 3, varying: 3});
-      expectDeepEqual(await resolveSources(controller(), {fixed, varying}, {$all: {}, x: 5}), {fixed: 3, varying: 7});
+      const controller = noCallController(cache);
+      expectDeepEqual(await resolvedSources(controller, {fixed, varying}, {$all: {}, x: 1}), {fixed: 3, varying: 3});
+      expectDeepEqual(await resolvedSources(controller, {fixed, varying}, {$all: {}, x: 5}), {fixed: 3, varying: 7});
       expect(calls, 3);
       expect(cache.has('fixed'), true);
       expect(cache.has('varying'), false);
@@ -230,10 +219,9 @@ category('ComputeUtils: Driver rule js sources', async () => {
     };
     try {
       const cache = new Map<string, any>();
-      const controller = () => ({getFirst: () => undefined, sourceCache: cache}) as any;
       const presets = {func: {name: 'LibTests:TestPresets'}};
-      await resolveSources(controller(), {presets});
-      await resolveSources(controller(), {presets});
+      await resolvedSources(noCallController(cache), {presets});
+      await resolvedSources(noCallController(cache), {presets});
       expect(calls, 1);
       expect(cache.has('presets'), true);
     } finally {
@@ -253,13 +241,12 @@ category('ComputeUtils: Driver rule js sources', async () => {
     };
     try {
       const cache = new Map<string, any>();
-      const controller = () => ({getFirst: () => undefined, sourceCache: cache}) as any;
       const fixed = {func: {name: 'LibTests:TestAdd2', args: {a: 1, b: 2}}};
       await expectThrowsAsync(async () => {
-        await resolveSources(controller(), {fixed});
+        await resolvedSources(noCallController(cache), {fixed});
       }, /Source down/);
       expect(cache.has('fixed'), false);
-      expectDeepEqual(await resolveSources(controller(), {fixed}), {fixed: 3});
+      expectDeepEqual(await resolvedSources(noCallController(cache), {fixed}), {fixed: 3});
       expect(cache.has('fixed'), true);
     } finally {
       (grok.functions as any).call = original;
@@ -327,26 +314,236 @@ category('ComputeUtils: Driver rule js sources', async () => {
       calls++;
       return x + y;
     }}};
-    const controller = (values: Record<string, any>) => ({getFirst: (name: string) => values[name]}) as any;
-    expectDeepEqual(await resolveSources(controller({x: 1, y: 2}), {sum}), {sum: 3});
-    expect(resolveSources(controller({x: 1, y: 2}), {sum}) instanceof Promise, true);
-    expectDeepEqual(await resolveSources(controller({x: 2, y: 2}), {sum}), {sum: 4});
+    expectDeepEqual(await resolvedSources(valuesController({x: 1, y: 2}), {sum}), {sum: 3});
+    expect(syncResult(resolveSources(valuesController({x: 1, y: 2}), {sum})) === notYet, true);
+    expectDeepEqual(await resolvedSources(valuesController({x: 2, y: 2}), {sum}), {sum: 4});
     expect(calls, 3);
     const list = {js: {args: ['x'], fn: (x: number) => [x]}};
-    expectDeepEqual(resolveSources(controller({x: 7}), {list}), {list: [7]});
-    expectDeepEqual(resolveSources(controller({x: undefined}), {list}), {list: [undefined]});
+    expectDeepEqual(syncResult(resolveSources(valuesController({x: 7}), {list})), {list: [7]});
+    expectDeepEqual(syncResult(resolveSources(valuesController({x: undefined}), {list})), {list: [undefined]});
   });
 });
 
+const countCalls = async (fn: (calls: () => number) => Promise<void>, fail = false) => {
+  const original = grok.functions.call;
+  let calls = 0;
+  let failing = fail;
+  (grok.functions as any).call = (name: string, params: any) => {
+    calls++;
+    if (failing) {
+      failing = false;
+      return Promise.reject(new Error('Source down'));
+    }
+    return original.call(grok.functions, name, params);
+  };
+  try {
+    await fn(() => calls);
+  } finally {
+    (grok.functions as any).call = original;
+  }
+};
+
+category('ComputeUtils: Driver rule source chains', async () => {
+  let testScheduler: TestScheduler;
+
+  before(async () => {
+    testScheduler = createTestScheduler();
+  });
+
+  test('Sources read only inputs and the sources declared before them', async () => {
+    const process = (sources: any) => getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'x:step1/a', to: 't:step1/a',
+      sources, effects: [{effect: 'error', targets: 't', message: 'm'}],
+    }]));
+    const later = /reads w, which is declared after it/;
+    const fn = (w: number) => w;
+    await expectThrowsAsync(() => process({v: {js: {args: ['w'], fn}}, w: {js: {args: ['x'], fn}}}), later);
+    await expectThrowsAsync(() => process({v: {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'w'}}}},
+      w: {js: {args: ['x'], fn}}}), later);
+    await expectThrowsAsync(() => process({v: {query: {connection: 'System:Datagrok', sql: 'select 1',
+      args: {a: {var: 'w'}}}}, w: {js: {args: ['x'], fn}}}), later);
+    await expectThrowsAsync(() => process({v: 'func("LibTests:TestAdd2", a: w)', w: {js: {args: ['x'], fn}}}), later);
+    await expectThrowsAsync(() => process({v: {js: {args: ['v'], fn}}}), /reads itself/);
+    await expectThrowsAsync(() => process({v: {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'v'}}}}}),
+      /reads itself/);
+    await expectThrowsAsync(() => process({w: {js: {args: ['x'], fn}},
+      v: {validators: {input: 'w', names: ['LibTests:CheckTolerance']}}}), /unknown input alias w/);
+    await expectThrowsAsync(() => process({1: {js: {args: ['x'], fn}}}), /must not be a number/);
+    const pconf: any = await process({
+      w: {js: {args: ['x'], fn}},
+      v: {js: {args: ['w', 'x'], fn}},
+      s: 'func("LibTests:TestAdd2", a: v, b: x)',
+      q: {query: {connection: 'System:Datagrok', sql: 'select 1', args: {a: {var: 's'}}}},
+    });
+    expectDeepEqual(Object.keys(pconf.links[0].params.sources), ['w', 'v', 's', 'q']);
+  });
+
+  test('A source reads the sources declared before it', async () => {
+    const last = {js: {args: ['x'], fn: (x: number) => x * 10}};
+    const half = {js: {args: ['last'], fn: (t: number) => t / 2}};
+    const sum = {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'half'}, b: {var: 'x'}}}};
+    expectDeepEqual(syncResult(resolveSources(valuesController({x: 2}), {last, half}, {$all: {}, x: 2})),
+      {last: 20, half: 10});
+    expectDeepEqual(await resolvedSources(valuesController({x: 2}), {last, half, sum}, {$all: {}, x: 2}),
+      {last: 20, half: 10, sum: 12});
+  });
+
+  test('Independent async sources run together', async () => {
+    testScheduler.run(({cold, expectObservable}) => {
+      const one = {js: {args: ['x'], fn: () => cold('--a|', {a: 1})}};
+      const two = {js: {args: ['x'], fn: () => cold('---b|', {b: 2})}};
+      expectObservable(resolveSources(valuesController({x: 1}), {one, two}))
+        .toBe('---(r|)', {r: {one: 1, two: 2}});
+    });
+  });
+
+  test('A source waits only for the async sources it reads', async () => {
+    testScheduler.run(({cold, expectObservable}) => {
+      const slow = {js: {args: ['x'], fn: (x: number) => cold('---a|', {a: x})}};
+      const after = {js: {args: ['slow'], fn: (s: number) => cold('-b|', {b: s * 2})}};
+      const fast = {js: {args: ['x'], fn: (x: number) => cold('-c|', {c: x + 1})}};
+      expectObservable(resolveSources(valuesController({x: 1}), {slow, after, fast}))
+        .toBe('----(r|)', {r: {slow: 1, after: 2, fast: 2}});
+    });
+  });
+
+  test('A js source takes the first value of an observable', async () => {
+    testScheduler.run(({cold, expectObservable}) => {
+      const first = {js: {args: [], fn: () => cold('-a-b|', {a: 1, b: 2})}};
+      const empty = {js: {args: [], fn: () => cold('--|')}};
+      expectObservable(resolveSources(valuesController({}), {first, empty}))
+        .toBe('--(r|)', {r: {first: 1, empty: undefined}});
+    });
+  });
+
+  test('A source read by several others runs once', async () => {
+    let calls = 0;
+    const base = {js: {args: ['x'], fn: (x: number) => {
+      calls++;
+      return x;
+    }}};
+    const one = {js: {args: ['base'], fn: (b: number) => b + 1}};
+    const two = {js: {args: ['base'], fn: (b: number) => b + 2}};
+    expectDeepEqual(syncResult(resolveSources(valuesController({x: 1}), {base, one, two})), {base: 1, one: 2, two: 3});
+    expect(calls, 1);
+  });
+
+  test('A loaded cached source resolves synchronously', async () => {
+    await countCalls(async (calls) => {
+      const cache = new Map<string, any>();
+      const fixed = {func: {name: 'LibTests:TestAdd2', args: {a: 1, b: 2}}};
+      const next = {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'fixed'}, b: 1}}};
+      expectDeepEqual(await resolvedSources(noCallController(cache), {fixed, next}), {fixed: 3, next: 4});
+      expectDeepEqual(syncResult(resolveSources(noCallController(cache), {fixed, next})), {fixed: 3, next: 4});
+      expect(calls(), 2);
+    });
+  });
+
+  test('A chain of sources that read no input is loaded once per link', async () => {
+    await countCalls(async (calls) => {
+      const cache = new Map<string, any>();
+      const base = {func: {name: 'LibTests:TestAdd2', args: {a: 1, b: 2}}};
+      const next = {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'base'}, b: 1}}};
+      const varying = {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'next'}, b: {var: 'x'}}}};
+      const controller = noCallController(cache);
+      expectDeepEqual(await resolvedSources(controller, {base, next, varying}, {$all: {}, x: 1}),
+        {base: 3, next: 4, varying: 5});
+      expectDeepEqual(await resolvedSources(controller, {base, next, varying}, {$all: {}, x: 5}),
+        {base: 3, next: 4, varying: 9});
+      expect(calls(), 4);
+      expectDeepEqual([...cache.keys()], ['base', 'next']);
+    });
+  });
+
+  test('A failed source fails the sources reading it and both are retried', async () => {
+    await countCalls(async () => {
+      const cache = new Map<string, any>();
+      const base = {func: {name: 'LibTests:TestAdd2', args: {a: 1, b: 2}}};
+      const next = {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'base'}, b: 1}}};
+      await expectThrowsAsync(async () => {
+        await resolvedSources(noCallController(cache), {base, next});
+      }, /Source down/);
+      expectDeepEqual([...cache.keys()], []);
+      expectDeepEqual(await resolvedSources(noCallController(cache), {base, next}), {base: 3, next: 4});
+      expectDeepEqual([...cache.keys()], ['base', 'next']);
+    }, true);
+  });
+
+  test('A separate effect brings the sources its sources read', async () => {
+    const pconf: any = await getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: ['m:step1/a', 'o:step1/b'], to: 't:step2/a',
+      sources: {
+        last: {js: {args: ['m'], fn: (m: number) => m}},
+        unused: {js: {args: ['o'], fn: (o: number) => o}},
+        half: 'func("LibTests:TestAdd2", a: last, b: 1)',
+      },
+      effects: [
+        {effect: 'items', targets: 't', items: {var: 'half'}, separate: true},
+        {effect: 'meta', targets: 't', meta: {o: {var: 'o'}}},
+      ],
+    }]));
+    const byId = Object.fromEntries(pconf.links.map((link: any) => [link.id, link]));
+    expectDeepEqual(Object.keys(byId['r::meta:1'].params.sources), ['last', 'half']);
+    expectDeepEqual(byId['r::meta:1'].from.map((io: any) => io.name), ['m']);
+  });
+
+  test('A source chain feeds a rule in the tree', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'm:step1/a', to: 't:step2/a',
+      sources: {
+        last: {js: {args: ['m'], fn: (m: number) => m * 10}},
+        half: {js: {args: ['last'], fn: (t: number) => t / 2}},
+        list: {js: {args: ['half', 'm'], fn: (h: number, m: number) => [String(h), String(m)]}},
+      },
+      effects: [{effect: 'items', targets: 't', items: {var: 'list'}}],
+    }]));
+    const metas: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const store = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+      const outBridge = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore() as FuncCallInstancesBridge;
+      cold('-a').subscribe(() => store.setState('a', 1));
+      cold('--a').subscribe(() => metas.push(outBridge.meta.a.value));
+      cold('---a').subscribe(() => store.setState('a', 4));
+      cold('----a').subscribe(() => metas.push(outBridge.meta.a.value));
+    });
+    expectDeepEqual(metas, [{items: ['5', '1']}, {items: ['20', '4']}]);
+  });
+
+  test('An async source applies its effects in virtual time', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'm:step1/a', to: 't:step2/a',
+      sources: {list: {js: {args: ['m'], fn: (m: number) => of([String(m)]).pipe(delay(3))}}},
+      effects: [{effect: 'items', targets: 't', items: {var: 'list'}}],
+    }]));
+    const metas: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const store = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+      const outBridge = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore() as FuncCallInstancesBridge;
+      cold('-a').subscribe(() => store.setState('a', 1));
+      cold('--a').subscribe(() => metas.push(outBridge.meta.a.value?.items));
+      cold('------a').subscribe(() => metas.push(outBridge.meta.a.value?.items));
+    });
+    expectDeepEqual(metas, [undefined, ['1']]);
+  });
+});
+
+const cities = {c: {choices: {input: 'city', call: '$call'}}};
+const callController = (call: DG.FuncCall) => ({
+  hasCall: () => true,
+  getFirst: (name: string) => name === '$call' ? call : call.inputs[name],
+  getMatchedPositions: () => [{path: [], position: 0, ioName: 'city'}],
+}) as any;
+const items = async (call: DG.FuncCall): Promise<string[]> =>
+  (await resolvedSources(callController(call), cities)).c.items;
+
 // evaluated choices need platform 1.28.0 or later
 category('ComputeUtils: Driver rule choices sources', async () => {
-  const cities = {c: {choices: {input: 'city', call: '$call'}}};
-  const controller = (call: DG.FuncCall) => ({
-    hasCall: () => true,
-    getFirst: (name: string) => name === '$call' ? call : call.inputs[name],
-    getMatchedPositions: () => [{path: [], position: 0, ioName: 'city'}],
-  }) as any;
-  const items = async (call: DG.FuncCall): Promise<string[]> => (await resolveSources(controller(call), cities)).c.items;
   const prepare = (region: string) => DG.Func.byName('LibTests:TestCountingChoices').prepare({region, n: 1});
 
   test('Choices are evaluated again only when a dependency changes', async () => {
@@ -410,14 +607,6 @@ function stubChoicesCall(inputs: Record<string, any>) {
 }
 
 category('ComputeUtils: Driver rule choices in flight', async () => {
-  const cities = {c: {choices: {input: 'city', call: '$call'}}};
-  const controller = (call: DG.FuncCall) => ({
-    hasCall: () => true,
-    getFirst: (name: string) => name === '$call' ? call : call.inputs[name],
-    getMatchedPositions: () => [{path: [], position: 0, ioName: 'city'}],
-  }) as any;
-  const items = async (call: DG.FuncCall): Promise<string[]> => (await resolveSources(controller(call), cities)).c.items;
-
   test('A dependency change during an evaluation evaluates again', async () => {
     const {call, evaluations, nextEvaluation, answer} = stubChoicesCall({region: 'EU', n: 1});
     const inFlight = items(call);

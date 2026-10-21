@@ -6,6 +6,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
+import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {Input} from '../src/core/input-base.js';
@@ -172,12 +173,14 @@ columns('columnsInput: clicking the control toggles the popup, and cancels what 
   fire(control(input), 'click');
   assert.ok(popup(), 'and the third opens it again');
   assert.equal(control(input).getAttribute('aria-expanded'), 'true');
+  assert.equal(control(input).getAttribute('aria-haspopup'), 'dialog', 'a checklist with OK / CANCEL, not a listbox');
+  assert.equal(popup().getAttribute('role'), 'dialog');
   input.dispose();
 });
 
 columns('columnsInput: reopening the popup leaves nothing behind', () => {
   const input = picker();
-  const disposers = input.scope._disposers.length;
+  const disposers = input.scope._disposers?.size ?? 0;
   const live = Scope.liveCount;
   for (let i = 0; i < 10; i++) {
     open(input);
@@ -185,7 +188,7 @@ columns('columnsInput: reopening the popup leaves nothing behind', () => {
   }
   assert.equal(popup(), null);
   assert.equal(Scope.liveCount, live, 'each open owns its own scope, and closing releases it');
-  assert.equal(input.scope._disposers.length, disposers, 'no per-open cleanup piles up on the input');
+  assert.equal(input.scope._disposers?.size ?? 0, disposers, 'no per-open cleanup piles up on the input');
   input.dispose();
 });
 
@@ -436,5 +439,20 @@ columns('aggregatedColumnsInput: the aggregation list follows the column type', 
   fire(column(), 'change');
   assert.deepEqual(input.value.value, [{column: 'height', aggregation: 'unique'}],
     'an aggregation both types offer survives the column change');
+  input.dispose();
+});
+
+columns('columnsMapInput: the caption sits on the first key\'s row, not the middle of the stack', () => {
+  const input = columnsMapInput('Mapping', ['x', 'y'], DEMO());
+  const first = input.root.querySelector('.u2-columns-map').children[0];
+  assert.equal(first.dataset.u2, 'choice-input', 'the first row is an input root');
+  const sheet = readFileSync(new URL('../css/inputs.css', import.meta.url), 'utf8');
+  const rule = (selector) => {
+    const at = sheet.indexOf(selector);
+    assert.notEqual(at, -1, `${selector} is a rule`);
+    return sheet.slice(sheet.indexOf('{', at) + 1, sheet.indexOf('}', at));
+  };
+  assert.match(rule('.u2-input-root {'), /align-items: flex-start;/);
+  assert.match(rule('.u2-columns-map > .u2-input-root:first-child'), /padding-top: 0;/);
   input.dispose();
 });

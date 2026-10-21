@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {IFitChartData, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {ColorType, getSeriesColor} from './render-utils';
-import {isLegendShown} from './fit-layout';
+import {isLegendShown, isTitleShown, layoutChart, shownAxesNames} from './fit-layout';
 
 /** Whether the curves get named at all: the plot has to have room for it, and it can be turned off. */
 export function isLegendVisible(data: IFitChartData, screenBounds: DG.Rect): boolean {
@@ -20,12 +20,26 @@ export interface LegendEntry {
   marker?: DG.MARKER_TYPE;
 }
 
-interface LegendRow {
+export interface LegendRow {
   entry: LegendEntry;
   /** What is drawn, shortened to the width the legend allows itself. */
   shown: string;
   box: DG.Rect;
 }
+
+/** Where a render put the legend: the plot it was laid out for, its rows, the `+N more` row and the
+ * corner, an index into {@link LEGEND_CORNERS}. */
+export interface LegendLayout {
+  box: DG.Rect;
+  rows: LegendRow[];
+  moreBox?: DG.Rect;
+  entries: LegendEntry[];
+  corner: number;
+  whole: boolean;
+}
+
+/** The corners in the order {@link chooseLegendCorner} tries them. */
+export const LEGEND_CORNERS = ['top right', 'top left', 'bottom right', 'bottom left'];
 
 const LEGEND_FONT = '11px Roboto, "Roboto Local"';
 /** The legend annotates the plot, so it may not take more than a corner of it. */
@@ -53,8 +67,7 @@ export function maxTooltipRows(): number {
 }
 
 let measureCanvas: CanvasRenderingContext2D | undefined;
-const lastLayout = new WeakMap<IFitChartData, {box: DG.Rect, rows: LegendRow[], moreBox?: DG.Rect,
-  entries: LegendEntry[], corner: number, whole: boolean}>();
+const lastLayout = new WeakMap<IFitChartData, LegendLayout>();
 
 /** A context of its own, so a row can be measured while hit testing, which has no canvas to draw on. */
 function measure(text: string): number {
@@ -279,14 +292,27 @@ export function renderLegend(g: CanvasRenderingContext2D, data: IFitChartData, d
  * when the pointer is on the row counting what did not fit. */
 export function legendTooltip(data: IFitChartData, dataBox: DG.Rect, x: number,
   y: number): LegendEntry[] | null {
-  const last = lastLayout.get(data);
-  // the same data is drawn in the grid and in the enlarged chart, so the rows only apply to the plot
-  // they were laid out for
-  if (!last || Math.round(last.box.x) !== Math.round(dataBox.x) ||
-    Math.round(last.box.width) !== Math.round(dataBox.width))
+  const last = layoutFor(data, dataBox);
+  if (!last)
     return null;
   if (last.moreBox?.contains(x, y))
     return last.entries;
   const row = last.rows.find((r) => r.box.contains(x, y));
   return row && row.shown !== row.entry.text ? [row.entry] : null;
+}
+
+/** The layout the last render made for the plot in `dataBox`: the same data is drawn in the grid and in
+ * the enlarged chart, so the rows only apply to the plot they were laid out for. */
+function layoutFor(data: IFitChartData, dataBox: DG.Rect): LegendLayout | null {
+  const last = lastLayout.get(data);
+  return last && Math.round(last.box.x) === Math.round(dataBox.x) &&
+    Math.round(last.box.width) === Math.round(dataBox.width) ? last : null;
+}
+
+/** The legend the last render drew on the chart of `screenBounds`, or null when it drew none there. */
+export function drawnLegend(data: IFitChartData, screenBounds: DG.Rect): LegendLayout | null {
+  if (!isLegendVisible(data, screenBounds))
+    return null;
+  const axesNames = shownAxesNames(screenBounds, data);
+  return layoutFor(data, layoutChart(screenBounds, axesNames.x, axesNames.y, isTitleShown(screenBounds, data))[0]);
 }

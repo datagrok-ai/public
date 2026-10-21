@@ -31,9 +31,8 @@ Feature: The widgets of the Home page
   The search is typed as "demog": the md's "aspirin" opens a PubChem page in the results, a service
   outside the stand.
 
-  Not translated: the tooltip "Remove" of the close icon (the icon carries it as its aria label, which
-  is how the scenario finds it); "the widget scrolls through recent reports" (what the list holds is the
-  stand's own reports; its link to the Reports view is claimed).
+  Not translated: "the widget scrolls through recent reports" (what the list holds is the stand's own
+  reports; its link to the Reports view is claimed).
 
   A page keeps the widget settings it read when it loaded, and writes them all back to the server once
   its widgets are built: a page of the same account that loads while this feature has a widget hidden
@@ -61,9 +60,12 @@ Feature: The widgets of the Home page
     And no error or warning balloon should have been shown
 
   Scenario: The close icon shows on hover and removes the widget
-    Then close icon of Community home widget should be hidden
+    Then close icon of Community home widget should be present
+    And close icon of Community home widget should be hidden
     When user hovers over Community home widget
     Then close icon of Community home widget should be visible
+    When user hovers over close icon of Community home widget
+    Then tooltip should contain text "Remove"
     When user clicks on close icon of Community home widget
     Then Community home widget should be absent
     And the Home page should show the widgets "Spotlight, Reports, Usage"
@@ -95,8 +97,8 @@ Feature: The widgets of the Home page
     And user unchecks "Community" input in context panel
     Then the Community widget should be stored as hidden
     When user reloads the page
-    Then Community home widget should be absent
-    And the Home page should show the widgets "Spotlight, Reports, Usage"
+    Then the Home page should show the widgets "Spotlight, Reports, Usage"
+    And Community home widget should be absent
     When user clicks on "Customize widgets..." link
     Then "Community" input in context panel should not be checked
     When user checks "Community" input in context panel
@@ -105,6 +107,7 @@ Feature: The widgets of the Home page
     And no errors should have been logged
 
   Scenario: A search replaces the widgets, and clearing it brings them back
+    Then home widgets panel should be visible
     When user types "demog" into home search
     Then home widgets panel should be hidden
     And home search results should be visible
@@ -149,9 +152,21 @@ Feature: The widgets of the Home page
       | WIKI tab in Spotlight home widget      |
       | DEMO tab in Spotlight home widget      |
       | TUTORIALS tab in Spotlight home widget |
-    And Spotlight home widget should contain text "Cheminformatics"
+    And the following elements should be visible:
+      | "Meetings" text in Spotlight home widget        |
+      | "Develop" text in Spotlight home widget         |
+      | "Cheminformatics" text in Spotlight home widget |
+      | "Visualize" text in Spotlight home widget       |
+      | "Explore" text in Spotlight home widget         |
     When user clicks on WIKI tab in Spotlight home widget
     Then the "WIKI" tab of Spotlight home widget should be showing
+    And the following elements should be visible:
+      | "Bioinformatics" text in Spotlight home widget |
+      | "Overview" text in Spotlight home widget       |
+      | "Access" text in Spotlight home widget         |
+      | "Transform" text in Spotlight home widget      |
+      | "Compute" text in Spotlight home widget        |
+      | "Govern" text in Spotlight home widget         |
     When user clicks on DEMO tab in Spotlight home widget
     Then the "DEMO" tab of Spotlight home widget should be showing
     When user clicks on TUTORIALS tab in Spotlight home widget

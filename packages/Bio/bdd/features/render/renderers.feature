@@ -9,9 +9,17 @@ Feature: Sequence cell renderers
   What the renderers draw, monomers in their own colors, is tested in Bio src/tests/renderers-test.ts
   ('renderers').
 
-  Not translated: a column with custom units (the md's fallback case) — the old spec asserted the
-  HELM renderer for it, the opposite of the md, and neither describes what the product does; the
-  registration of the five cellRenderer functions as such — each notation's cell type reading is
+  A column gets custom units from a notation a package provides: SequenceTranslator refines a
+  separator column with cyclized monomers ("C(1)") into its Harmonized Sequence notation. Such a
+  column takes the custom renderer, which the grid reports as a sequence cell (the md's fallback
+  case, claimed on the product's own path; the old spec set the tag by hand on a HELM column and
+  claimed the HELM renderer, the opposite of the md).
+
+  A HELM column saved in a project and opened again is detected and painted as before: its
+  semantic type, its units and the HELM renderer come back with the table (the lifecycle md's
+  save and reopen; the analyses' columns through a project are Bio src/tests/projects-tests.ts).
+
+  Not translated: the registration of the five cellRenderer functions as such — each notation's cell type reading is
   what a registration is for, and it is claimed on real columns.
 
   Background:
@@ -59,4 +67,23 @@ Feature: Sequence cell renderers
     And the "cell type of 1" reading of grid should be "Monomer"
     And the "cell type of 9" reading of grid should be "Monomer"
     And the "cell 1 of 1" area of grid should be painted
+    And no error or warning balloon should have been shown
+
+  Scenario: A HELM column keeps its type, units and renderer through a project
+    Given user opens filter_HELM dataset
+    When user saves the current view as project "bdd-bio-renderers-{run}"
+    And user closes all views
+    And user opens the "bdd-bio-renderers-{run}" project and waits for its table
+    Then "HELM string" column should have semantic type "Macromolecule"
+    And "HELM string" column should have units "helm"
+    And the "cell type of HELM string" reading of grid should be "helm"
+    And no error or warning balloon should have been shown
+
+  # last: the gate skips the rest of the journey on a stand without SequenceTranslator
+  Scenario: A column a package's notation refines to custom units takes the sequence renderer
+    Given the "SequenceTranslator" package is installed
+    And user opens cyclized dataset
+    Then "seqs" column should have semantic type "Macromolecule"
+    And "seqs" column should have units "custom"
+    And the "cell type of seqs" reading of grid should be "sequence"
     And no error or warning balloon should have been shown

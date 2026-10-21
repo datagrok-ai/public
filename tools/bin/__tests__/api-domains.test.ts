@@ -13,6 +13,7 @@ const fixtureDir = path.join(testsDir, 'fixtures', 'domain-package');
 const toolsDir = path.dirname(path.dirname(testsDir));
 const jsApiDir = path.resolve(toolsDir, '..', 'js-api');
 const u2Dir = path.resolve(toolsDir, '..', 'libraries', 'u2');
+const emsDir = path.resolve(toolsDir, '..', 'libraries', 'ems');
 const dbPath = (dir: string) => path.join(dir, 'src', 'generated', 'db.ts');
 const dbUiPath = (dir: string) => path.join(dir, 'src', 'generated', 'db-ui.ts');
 
@@ -87,15 +88,17 @@ function stageDatagrokApiTypes(dir: string): void {
     path.join(dayjsDst, 'locale', 'types.d.ts'));
 }
 
-/** Stages the local u2 types (what the generated db-ui.ts imports) into
- * `<dir>/node_modules/@datagrok-libraries/u2`. Its own `rxjs` / `@floating-ui` imports stay
- * unresolved on purpose — `skipLibCheck` covers them, and staging their declarations per
- * test would not check anything this file cares about. */
+/** Stages the local EMS types — what the generated db-ui.ts imports — and u2's, which they
+ * reference, into `<dir>/node_modules/@datagrok-libraries/`. Their own `rxjs` / `@floating-ui`
+ * imports stay unresolved on purpose — `skipLibCheck` covers them, and staging their declarations
+ * per test would not check anything this file cares about. */
 function stageU2Types(dir: string): void {
-  const dstRoot = path.join(dir, 'node_modules', '@datagrok-libraries', 'u2');
-  copyDts(path.join(u2Dir, 'dist', 'src'), path.join(dstRoot, 'src'));
-  fs.writeFileSync(path.join(dstRoot, 'package.json'),
-    '{"name": "@datagrok-libraries/u2", "version": "0.0.0", "types": "./src/index.d.ts"}');
+  for (const [name, src] of [['u2', u2Dir], ['ems', emsDir]] as const) {
+    const dstRoot = path.join(dir, 'node_modules', '@datagrok-libraries', name);
+    copyDts(path.join(src, 'dist', 'src'), path.join(dstRoot, 'src'));
+    fs.writeFileSync(path.join(dstRoot, 'package.json'),
+      `{"name": "@datagrok-libraries/${name}", "version": "0.0.0", "types": "./src/index.d.ts"}`);
+  }
 }
 
 /** Typechecks the generated files plus one usage fixture against the local js-api (and,
@@ -183,7 +186,8 @@ describe('generateDomainClients', () => {
     expect(code).toContain('export type TestdbTransactionOp =');
     expect(code).toContain(
       `  {op: 'insert'; table: 'sample'; ref?: string; values: DG.DomainTxValues<SampleInsert>; onDuplicate?: 'error'} |`);
-    expect(code).toContain(`  {op: 'delete'; table: 'sample_event'; id: string};`);
+    expect(code).toContain(`  {op: 'delete'; table: 'sample'; id: string} |`);
+    expect(code).toContain(`  {op: 'restore'; table: 'sample_event'; id: string};`);
 
     // per-schema typed clients: LAZY getters (no import-time side effects), four
     // generics, PLURAL property names, no datetime config (the client resolves
@@ -224,6 +228,26 @@ describe('generateDomainClients', () => {
     expect(code).toContain(`export type IssueStateYIssueState = 'c' | 'd';`);
     expect(code).toMatch(/interface IssueStateRow \{[^}]*x\?: IssueStateX;/);
     expect(code).toMatch(/interface IssueStateRow \{[^}]*y\?: IssueStateYIssueState;/);
+  });
+
+  it('transaction: a hard-delete table gets no restore arm', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.sample_event.softDelete = false);
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    expect(code).toContain(`  {op: 'restore'; table: 'sample'; id: string} |`);
+    expect(code).not.toContain(`{op: 'restore'; table: 'sample_event'`);
+    expect(code).toContain(`  {op: 'delete'; table: 'sample_event'; id: string};`);
+  });
+
+  it('choices values with a quote or a backslash compile to the same literals', {timeout: 180_000}, () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.sample.columns.resolution =
+      {type: 'string', choices: ['Fixed', `Won't fix`, 'a\\b']});
+    expect(generateDomainClients(dir)).toBe(true);
+    const res = runTsc(dir, 'usage-choices.ts');
+    expect(res.output.trim(), res.output).toBe('');
+    expect(res.status).toBe(0);
   });
 
   it('expand maps: a multi-FK child emits one qualified details key per FK', () => {
@@ -343,6 +367,117 @@ describe('generateDomainClients', () => {
     expect(code).toMatch(/interface SampleEventInsert \{[^}]*  number\?: number;/);
     expect(code).toMatch(/interface SampleRow \{[^}]*  seq: number;/);
     expect(code).toMatch(/interface SampleInsert \{[^}]*  seq\?: number;/);
+  });
+
+  it('default: a required column the server defaults on insert — present on Row, optional on Insert',
+    {timeout: 180_000}, () => {
+      const dir = makePackage();
+      mutateManifest(dir, (m) => {
+        m.tables.sample.columns.prio = {type: 'int', required: true, default: 3};
+        m.propertySchemas.extra.score.default = 0;
+      });
+      expect(generateDomainClients(dir)).toBe(true);
+      const code = fs.readFileSync(dbPath(dir), 'utf8');
+      expect(code).toMatch(/interface SampleRow \{[^}]*  prio: number;/);
+      expect(code).toMatch(/interface SampleInsert \{[^}]*  prio\?: number;/);
+      expect(code).toMatch(/interface SampleInsert \{[^}]*  name: string;/);
+      const res = runTsc(dir, 'usage-defaults.ts');
+      expect(res.output.trim(), res.output).toBe('');
+      expect(res.status).toBe(0);
+    });
+
+  it('accessors: the plural of the singular, as the platform derives a table\'s plural name', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      for (const name of ['categories', 'order_details', 'status', 'analysis', 'box'])
+        m.tables[name] = {columns: {name: {type: 'string'}}};
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    for (const accessor of ['samples', 'categories', 'orderDetails', 'statuses', 'analyses', 'boxes'])
+      expect(code).toContain(`  get ${accessor}() {`);
+  });
+
+  it('external storage: rows carry id only, remote names are metadata, no expand map, no transaction', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      m.storage = {kind: 'external', connection: 'ApiSamples:PostgresNorthwind', schema: 'public'};
+      m.tables = {
+        order: {table: 'orders', businessKey: ['order_id'], columns: {
+          order_id: {type: 'int', column: 'orderid', required: true},
+          ship_country: {type: 'string', column: 'shipcountry', isName: true, searchable: true}}},
+        order_detail: {table: 'Order Details', businessKey: ['order_id', 'product_id'], columns: {
+          order_id: {type: 'ref', ref: 'order', column: 'OrderID'}, product_id: {type: 'int'}}},
+      };
+      delete m.propertySchemas;
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    expect(code).toMatch(/interface OrderRow \{\r?\n  id: string;\r?\n  order_id: number;\r?\n  ship_country\?: string;\r?\n\}/);
+    expect(code).not.toMatch(/interface OrderDetailRow \{[^}]*(version|created_on|author_id)/);
+    expect(code).toContain(`export type OrderColumn = 'id' | 'order_id' | 'ship_country';`);
+    expect(code).toContain('export type OrderExpand = {};');
+    expect(code).toContain('export type OrderDetailExpand = {};');
+    expect(code).not.toContain('details:order_detail');
+    expect(code).not.toContain('TransactionOp');
+    expect(code).not.toContain('transaction<');
+    expect(code).toContain(`grok.dapi.domains.table<OrderRow, OrderInsert, OrderColumn, OrderExpand>('testdb.order')`);
+    expect(code).not.toContain(`'orders'`);
+    expect(code).not.toContain('OrderID');
+  });
+
+  it('external storage: the JSON Schema requires a connection under external and refuses one under domain', () => {
+    for (const [mutate, message] of [
+      [(m: any) => m.storage = {kind: 'external', schema: 'public'}, /\/storage must have required property 'connection'/],
+      [(m: any) => m.storage = {kind: 'domain', connection: 'A:B'}, /\/storage\/connection boolean schema is false/],
+      [(m: any) => m.storage = {kind: 'domain', schema: 'public'}, /\/storage\/schema boolean schema is false/],
+      [(m: any) => m.storage = {kind: 'domain', writable: true}, /\/storage\/writable boolean schema is false/],
+      [(m: any) => m.storage = {kind: 'external', connection: 'A:B', schema: 'public', writable: 'yes'},
+        /\/storage\/writable must be boolean/],
+    ] as [(m: any) => void, RegExp][]) {
+      const dir = makePackage();
+      mutateManifest(dir, mutate);
+      const {result, output} = runCapturingLog(dir);
+      expect(result).toBe(false);
+      expect(output).toMatch(message);
+    }
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.storage = {kind: 'domain'});
+    expect(generateDomainClients(dir)).toBe(true);
+  });
+
+  it('external storage: writable at the storage level, a per-table opt-out', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      m.storage = {kind: 'external', connection: 'ApiSamples:PostgresNorthwind', schema: 'public', writable: true};
+      m.tables = {
+        order: {table: 'orders', businessKey: ['order_id'], writable: false, columns: {
+          order_id: {type: 'int', column: 'orderid', required: true}}},
+        order_detail: {table: 'order_details', businessKey: ['order_id', 'product_id'], columns: {
+          order_id: {type: 'ref', ref: 'order'}, product_id: {type: 'int'}}},
+      };
+      delete m.propertySchemas;
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    mutateManifest(dir, (m) => m.tables.order.writable = 'no');
+    const {result, output} = runCapturingLog(dir);
+    expect(result).toBe(false);
+    expect(output).toMatch(/\/tables\/order\/writable must be boolean/);
+  });
+
+  it('external storage: the JSON Schema refuses an unknown kind and a dotted or bracketed remote name', () => {
+    for (const mutate of [
+      (m: any) => m.storage = {kind: 'warehouse'},
+      (m: any) => m.storage = {kind: 'external', connection: 'A:B', schema: 'dbo.sales'},
+      (m: any) => m.tables.sample.table = '[Samples]',
+      (m: any) => m.tables.sample.columns.name.column = 'na"me',
+    ]) {
+      const dir = makePackage();
+      mutateManifest(dir, mutate);
+      const {result, output} = runCapturingLog(dir);
+      expect(result).toBe(false);
+      expect(output).toMatch(/must match pattern|must be equal to one of the allowed values/);
+    }
   });
 
   it('autoNumber: the JSON Schema rejects false, unknown keys and start below 1', () => {
@@ -533,6 +668,15 @@ describe('generateDomainClients', () => {
     expect(fs.existsSync(dbPath(dir))).toBe(false);
   });
 
+  it('rejects two tables of one schema that get the same accessor', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.samples = {columns: {name: {type: 'string'}}});
+    const {result, output} = runCapturingLog(dir);
+    expect(result).toBe(false);
+    expect(output).toContain(`tables 'sample' and 'samples' both get the accessor 'samples'`);
+    expect(fs.existsSync(dbPath(dir))).toBe(false);
+  });
+
   it('generated code and well-typed usage compile under strict tsc', {timeout: 180_000}, () => {
     const dir = makePackage();
     expect(generateDomainClients(dir)).toBe(true);
@@ -547,7 +691,7 @@ describe('generateDomainClients', () => {
     const res = runTsc(dir, 'usage-bad.ts');
     expect(res.status).not.toBe(0);
     // exactly one error per intended negative — no accidental extra breakage
-    expect(res.output.match(/error TS/g)).toHaveLength(15);
+    expect(res.output.match(/error TS/g)).toHaveLength(16);
     // wrong-typed payload values: `count: string` and `active: string`
     expect(res.output).toContain('usage-bad.ts(5,');
     expect(res.output).toContain('usage-bad.ts(7,');
@@ -569,6 +713,8 @@ describe('generateDomainClients', () => {
     expect(res.output).toContain('usage-bad.ts(21,');
     expect(res.output).toContain('usage-bad.ts(22,');
     expect(res.output).toContain('usage-bad.ts(23,');
+    // ...an FK path as a sort key (the server sorts by plain columns only)...
+    expect(res.output).toContain('usage-bad.ts(24,');
     // ...non-selected field access after select()...
     expect(res.output).toMatch(/Property 'count' does not exist on type 'Pick<SampleRow/);
     // ...and a field absent from the mapped-tuple insert result
@@ -587,7 +733,7 @@ describe('generateDomainClients --ui', () => {
     expect(fs.existsSync(dbUiPath(dir))).toBe(true);
     // data-only consumers are unaffected: same db.ts, and it imports nothing UI
     expect(fs.readFileSync(dbPath(dir)).equals(dbOnly)).toBe(true);
-    expect(fs.readFileSync(dbPath(dir), 'utf8')).not.toContain('@datagrok-libraries/u2');
+    expect(fs.readFileSync(dbPath(dir), 'utf8')).not.toContain('@datagrok-libraries/ems');
   });
 
   it('emits the typed schema handle: <Schema>Db with a DomainTable<Row> per table, opened by get<Schema>Db', () => {
@@ -596,7 +742,7 @@ describe('generateDomainClients --ui', () => {
     const code = fs.readFileSync(dbUiPath(dir), 'utf8');
 
     expect(code).toContain('auto-generated by the grok api command (--ui)');
-    expect(code).toContain(`import {domains, DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';`);
+    expect(code).toContain(`import {domains, DomainTable} from '@datagrok-libraries/ems/src/dg';`);
     // the typed names it reuses come from db.ts — nothing is re-derived here
     expect(code).toContain(`import {testdbDb, SampleRow, SampleEventRow} from './db';`);
 

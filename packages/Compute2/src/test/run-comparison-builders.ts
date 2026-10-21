@@ -4,10 +4,11 @@ import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/
 import {
   ScalarTarget, ColumnTarget, ComparisonEntry, RUN_COLUMN, TimeUnit,
 } from '../components/RunComparison/types';
-import {matchScalarTargets, matchColumnTargets} from '../components/RunComparison/matching';
+import {matchScalarTargets, matchColumnTargets, buildUnitConverter} from '../components/RunComparison/matching';
 import {entryFromDataFrame} from '../components/RunComparison/entry-extraction';
+import {makeEntry} from './run-comparison-fixtures';
 import {
-  buildScalarComparison, buildMultiScalarComparison, buildColumnComparison, buildMultiColumnComparison,
+  buildScalarComparison, buildMultiScalarComparison, buildColumnComparison, buildComparison, columnPrimitives,
 } from '../components/RunComparison/comparison-builders';
 
 // Regression: run/index columns must be created with an enforced string type.
@@ -68,10 +69,60 @@ category('RunComparison: comparison dataframes', () => {
     const entries = [entryFromDataFrame(makeDf('1')), entryFromDataFrame(makeDf('2'))];
     const indexes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'key']])]));
     const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexes);
-    const result = buildColumnComparison(target, entries)!;
+    const result = buildColumnComparison([target], entries)!;
     expect(result.isKeyIndex, true);
+    expect(result.mixedTimeIndex === undefined, true);
     expect(result.chartDf.getCol('key').type, DG.COLUMN_TYPE.STRING);
     expect(result.chartDf.getCol(RUN_COLUMN).type, DG.COLUMN_TYPE.STRING);
+  });
+
+  test('a missing scalar value charts as an empty cell', async () => {
+    const entries = [scalarEntry('a', 'r1', 1), scalarEntry('b', 'r2', 2)];
+    entries[1].nodes.scalars[0].value = null;
+    const [target] = matchScalarTargets(entries.map((e) => e.nodes));
+    const {chartDf, valueColumnName} = buildScalarComparison(target, entries);
+    const values = chartDf.getCol(valueColumnName);
+    expect(values.get(0), 1);
+    expect(values.isNone(1), true);
+  });
+
+  test('bigint value columns chart as floats', async () => {
+    const makeDf = (name: string, values: bigint[]) => {
+      const df = DG.DataFrame.fromColumns([
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'time', [0, 1]),
+        DG.Column.fromBigInt64Array('count', new BigInt64Array(values)),
+      ]);
+      df.name = name;
+      return df;
+    };
+    const entries = [entryFromDataFrame(makeDf('r1', [BigInt(1), BigInt(2)])),
+      entryFromDataFrame(makeDf('r2', [BigInt(3), BigInt(4)]))];
+    const indexes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'time']])]));
+    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexes);
+    const result = buildColumnComparison([target], entries)!;
+    const values = result.chartDf.getCol(result.valueColumnName);
+    expect(values.type, DG.COLUMN_TYPE.FLOAT);
+    expectArray(values.toList(), [1, 2, 3, 4]);
+  });
+
+  test('missing key index cells stay missing', async () => {
+    const makeDf = (name: string, keys: (string | number | null)[], type: DG.ColumnType) => {
+      const df = DG.DataFrame.fromColumns([
+        DG.Column.fromList(type, 'key', keys),
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'value', [10, 20]),
+      ]);
+      df.name = name;
+      return df;
+    };
+    const entries = [
+      entryFromDataFrame(makeDf('r1', ['a', null], DG.COLUMN_TYPE.STRING)),
+      entryFromDataFrame(makeDf('r2', [1, null], DG.COLUMN_TYPE.INT)),
+    ];
+    const indexes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'key']])]));
+    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexes);
+    const key = buildColumnComparison([target], entries)!.chartDf.getCol('key');
+    expectArray(key.categories.filter((c) => c !== ''), ['1', 'a']);
+    expect(key.isNone(1) && key.isNone(3), true);
   });
 
   test('returns null when fewer than two runs participate', async () => {
@@ -87,8 +138,7 @@ category('RunComparison: comparison dataframes', () => {
     const indexes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'time']])]));
     const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexes);
     const single: ColumnTarget = {...(target as ColumnTarget), bindings: [target.bindings[0]]};
-    expect(buildColumnComparison(single, entries), null);
-    expect(buildMultiColumnComparison([single], entries), null);
+    expect(buildColumnComparison([single], entries), null);
   });
 
   test('scalar target named Run does not collide with the run column', async () => {
@@ -116,7 +166,7 @@ category('RunComparison: comparison dataframes', () => {
     const entries = [entryFromDataFrame(makeDf('r1')), entryFromDataFrame(makeDf('r2'))];
     const indexes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'time']])]));
     const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexes);
-    const result = buildColumnComparison(target, entries)!;
+    const result = buildColumnComparison([target], entries)!;
     expect(result.chartDf.getCol(RUN_COLUMN).type, DG.COLUMN_TYPE.STRING);
     expectArray(result.chartDf.getCol(RUN_COLUMN).toList(), ['r1', 'r1', 'r2', 'r2']);
     // the column the chart reads its values from must be the numeric one
@@ -174,6 +224,16 @@ category('RunComparison: multi-scalar dataframes', () => {
     expect(result.chartDf.getCol('x (2)').toList().join(','), '10,20');
   });
 
+  test('repeated step values are labeled with their step', async () => {
+    const day = (n: number, value: number) =>
+      ({name: 'Final biomass', friendlyPath: `Daily cultivation · Day ${n} · Final biomass`, value});
+    const entries = ['r1', 'r2'].map((id, i) =>
+      ({...scalarsEntry(id, id, []), nodes: makeEntry(id, [day(1, i), day(2, 10 + i)])}));
+    const result = buildMultiScalarComparison(scalarTargetsFor(entries), entries)!;
+    expectArray(result.valueColumnNames,
+      ['Daily cultivation · Day 1 · Final biomass', 'Daily cultivation · Day 2 · Final biomass']);
+  });
+
   test('returns null when fewer than two runs participate', async () => {
     const entries = [
       scalarsEntry('a', 'r1', [{name: 'x', value: 10}, {name: 'y', value: 1}]),
@@ -216,7 +276,7 @@ category('RunComparison: multi and split dataframes', () => {
       displayName: 'b',
       bindings: [{...targetA.bindings.find((x) => x.entryId === e1.id)!, columnName: 'b'}],
     };
-    const result = buildMultiColumnComparison([targetA, targetB], entries)!;
+    const result = buildColumnComparison([targetA, targetB], entries)!;
     expect(result.chartDf.rowCount, 5);
     const aValues = result.chartDf.getCol('a').toList();
     const bValues = result.chartDf.getCol('b').toList();
@@ -232,7 +292,7 @@ category('RunComparison: multi and split dataframes', () => {
     const entries = [entryFromDataFrame(makeDf('r1', cols())), entryFromDataFrame(makeDf('r2', cols()))];
     const splits = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'Run']])]));
     const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries, 'time'), splits);
-    const result = buildColumnComparison(target as ColumnTarget, entries)!;
+    const result = buildColumnComparison([target as ColumnTarget], entries)!;
     expect(result.splitColumnName, 'Run (split)');
     const splitValues = result.chartDf.getCol('Run (split)').toList();
     expect(splitValues.join('|'), 'x||x|');
@@ -250,7 +310,7 @@ category('RunComparison: multi and split dataframes', () => {
     const splits = new Map([[e1.id, new Map([[e1.nodes.tables[0].path, 'batch']])]]);
     const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries, 'time'), splits);
     expect((target as ColumnTarget).coverage, 2);
-    const result = buildColumnComparison(target as ColumnTarget, entries)!;
+    const result = buildColumnComparison([target as ColumnTarget], entries)!;
     expect(result.splitColumnName, 'batch');
     expect(result.chartDf.getCol('batch').toList().join('|'), 'A|B||');
     expect(result.chartDf.getCol('v').toList().join(','), '10,20,30,40');
@@ -263,7 +323,7 @@ category('RunComparison: multi and split dataframes', () => {
       entryFromDataFrame(makeDf('r2', [dtCol(), floatCol('v', [3, 4])])),
     ];
     const [dtTarget] = matchColumnTargets(dtEntries.map((e) => e.nodes), indexesFor(dtEntries, 'ts'));
-    const dtResult = buildColumnComparison(dtTarget as ColumnTarget, dtEntries)!;
+    const dtResult = buildColumnComparison([dtTarget as ColumnTarget], dtEntries)!;
     expect(dtResult.isKeyIndex, false);
     expect(dtResult.chartDf.getCol('ts').type, DG.COLUMN_TYPE.DATE_TIME);
 
@@ -272,7 +332,7 @@ category('RunComparison: multi and split dataframes', () => {
       entryFromDataFrame(makeDf('r2', [floatCol('x', [1, 2]), floatCol('v', [3, 4])])),
     ];
     const [floatTarget] = matchColumnTargets(floatEntries.map((e) => e.nodes), indexesFor(floatEntries, 'x'));
-    const floatResult = buildColumnComparison(floatTarget as ColumnTarget, floatEntries)!;
+    const floatResult = buildColumnComparison([floatTarget as ColumnTarget], floatEntries)!;
     expect(floatResult.isKeyIndex, false);
     expect(floatResult.chartDf.getCol('x').type, DG.COLUMN_TYPE.FLOAT);
 
@@ -281,12 +341,12 @@ category('RunComparison: multi and split dataframes', () => {
       entryFromDataFrame(makeDf('r2', [floatCol('ts', [1, 2]), floatCol('v', [3, 4])])),
     ];
     const [mixedTarget] = matchColumnTargets(mixedEntries.map((e) => e.nodes), indexesFor(mixedEntries, 'ts'));
-    const mixedResult = buildColumnComparison(mixedTarget as ColumnTarget, mixedEntries)!;
+    const mixedResult = buildColumnComparison([mixedTarget as ColumnTarget], mixedEntries)!;
     expect(mixedResult.isKeyIndex, true);
     expect(mixedResult.chartDf.getCol('ts').type, DG.COLUMN_TYPE.STRING);
   });
 
-  test('cross-table pick pads that run with nulls', async () => {
+  test('cross-table picks chart as separate steps', async () => {
     const r1 = entryFromDataFrame(makeDf('r1', [
       intCol('time', [1, 2]), floatCol('a', [10, 20]), floatCol('b', [1, 2]),
     ]));
@@ -321,12 +381,32 @@ category('RunComparison: multi and split dataframes', () => {
     });
     const anchor = targetFor('a', [bindingFor(r1.id, r1Table, 'a'), bindingFor('r2', 'p1', 'a')]);
     const co = targetFor('b', [bindingFor(r1.id, r1Table, 'b'), bindingFor('r2', 'p2', 'b')]);
-    const result = buildMultiColumnComparison([anchor, co], entries)!;
-    expect(result.chartDf.rowCount, 5);
-    expect(result.chartDf.getCol('a').toList().join(','), '10,20,30,40,50');
-    const bValues = result.chartDf.getCol('b').toList();
+    const result = buildColumnComparison([anchor, co], entries)!;
+    const df = result.chartDf;
+    const isNull = (v: any) => v == null || isNaN(v);
+    expect(result.stepColumnName, 'Step');
+    expect(df.rowCount, 7);
+    expect(df.getCol(RUN_COLUMN).toList().join(','), 'r1,r1,r2,r2,r2,r2,r2');
+    expect(df.getCol('Step').toList().join(','), `${r1Table},${r1Table},p1,p1,p1,p2,p2`);
+    const aValues = df.getCol('a').toList();
+    expect(aValues.slice(0, 5).join(','), '10,20,30,40,50');
+    expect(aValues.slice(5).every(isNull), true);
+    const bValues = df.getCol('b').toList();
     expect(bValues.slice(0, 2).join(','), '1,2');
-    expect(bValues.slice(2).every((v: any) => v == null || isNaN(v)), true);
+    expect(bValues.slice(2, 5).every(isNull), true);
+    expect(bValues.slice(5).join(','), '7,8');
+  });
+
+  test('same-table picks add no step column', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [intCol('time', [1, 2]), floatCol('a', [10, 20]), floatCol('b', [1, 2])])),
+      entryFromDataFrame(makeDf('r2', [intCol('time', [1, 2]), floatCol('a', [30, 40]), floatCol('b', [3, 4])])),
+    ];
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries, 'time')) as ColumnTarget[];
+    const result = buildColumnComparison(targets, entries)!;
+    expect(result.stepColumnName === undefined, true);
+    expect(result.chartDf.rowCount, 4);
+    expect(result.chartDf.col('Step') == null, true);
   });
 
   test('disabled candidates are excluded from the chart', async () => {
@@ -338,7 +418,7 @@ category('RunComparison: multi and split dataframes', () => {
     const [base] = matchColumnTargets(entries.map((e) => e.nodes), indexes);
     const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexes, undefined,
       {[base.key]: {[`${entries[1].id}|r2|value`]: false}});
-    expect(buildColumnComparison(target as ColumnTarget, entries), null);
+    expect(buildColumnComparison([target as ColumnTarget], entries), null);
   });
 
   test('duplicate display names get deduplicated value columns', async () => {
@@ -348,9 +428,123 @@ category('RunComparison: multi and split dataframes', () => {
     ];
     const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries, 'time'));
     const twin: ColumnTarget = {...(target as ColumnTarget), key: 'column:x:twin'};
-    const result = buildMultiColumnComparison([target as ColumnTarget, twin], entries)!;
-    expect(result.valueColumnNames.join('|'), 'x|x (2)');
-    expect(result.chartDf.getCol('x (2)').toList().join(','), '10,20,30,40');
+    const result = buildColumnComparison([target as ColumnTarget, twin], entries)!;
+    expect(result.valueColumnNames.join('|'), 'r1 · x|r1 · x (2)');
+    expect(result.chartDf.getCol('r1 · x (2)').toList().join(','), '10,20,30,40');
+  });
+});
+
+category('RunComparison: cross-step dataframes', () => {
+  const floatCol = (name: string, values: number[]) => DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values);
+  const intCol = (name: string, values: number[]) => DG.Column.fromList(DG.COLUMN_TYPE.INT, name, values);
+  const strCol = (name: string, values: string[]) => DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, values);
+  type StepSpec = {path: string, friendlyPath?: string, cols: DG.Column[]};
+  const stepsEntry = (id: string, steps: StepSpec[]): ComparisonEntry => ({
+    id, name: id, sourceKind: 'workflow', modelName: '',
+    nodes: {entryId: id, entryName: id, scalars: [], tables: steps.map(({path, friendlyPath, cols}) => ({
+      path, name: path, friendlyPath, rowCount: cols[0].length,
+      columns: cols.map((col) => ({name: col.name, type: col.type})),
+    }))},
+    dataFrames: new Map(steps.map(({path, cols}) => [path, DG.DataFrame.fromColumns(cols)])),
+  });
+  // per run: a feed step with `a` at t = 10, 20 and a sim step with `b` at t = 100, 160, 220
+  const twoStepRuns = (friendly = false, feedExtra: DG.Column[] = []) => ['r1', 'r2'].map((id, i) => stepsEntry(id, [
+    {path: 'feed', friendlyPath: friendly ? 'Feed · df' : undefined,
+      cols: [intCol('time', [10, 20]), floatCol('a', [i, i + 1]), ...feedExtra.map((col) => col.clone())]},
+    {path: 'sim', friendlyPath: friendly ? 'Sim · df' : undefined,
+      cols: [intCol('time', [100, 160, 220]), floatCol('b', [i, i + 1, i + 2])]},
+  ]));
+  const withCandidates = (bindings: ColumnTarget['bindings']) => ({bindings, candidates: bindings.map((binding) =>
+    ({binding, confidence: 'exact' as const, unitsWarn: false, auto: true, enabled: true}))});
+  const target = (
+    key: string, entries: ComparisonEntry[], tablePath: string, columnName: string, splitColumnName?: string,
+  ): ColumnTarget => ({
+    kind: 'column', key, displayName: key, confidence: 'exact', unitsWarning: false,
+    coverage: entries.length, total: entries.length,
+    ...withCandidates(entries.map((entry) => ({
+      entryId: entry.id, tablePath, tableName: tablePath, columnName, indexColumnName: 'time', splitColumnName,
+      tableFriendlyPath: entry.nodes.tables.find((table) => table.path === tablePath)!.friendlyPath,
+    }))),
+  });
+  const allTables = (entries: ComparisonEntry[], config: {mode: 'timeseries' | 'points', units?: TimeUnit}) =>
+    new Map(entries.map((e) => [e.id, new Map(e.nodes.tables.map((t) => [t.path, config]))]));
+
+  test('cross-step columns build a column comparison labeled by friendly path', async () => {
+    const entries = twoStepRuns(true);
+    const result = buildComparison([target('a', entries, 'feed', 'a'), target('b', entries, 'sim', 'b')], entries)!;
+    expect(result.kind, 'column');
+    if (result.kind !== 'column')
+      return;
+    expect(result.stepColumnName, 'Step');
+    expect(result.chartDf.getCol('Step').toList().slice(0, 5).join('|'),
+      'Feed · df|Feed · df|Sim · df|Sim · df|Sim · df');
+  });
+
+  test('same-named columns from two steps are labeled with their step', async () => {
+    const entries = twoStepRuns(true);
+    const result = buildColumnComparison([
+      target('x', entries, 'feed', 'a'), {...target('x', entries, 'sim', 'b'), key: 'x:sim'},
+    ], entries)!;
+    expectArray(result.valueColumnNames, ['Feed · df · x', 'Sim · df · x']);
+  });
+
+  test('a value or split named Step pushes the step column aside', async () => {
+    const entries = twoStepRuns();
+    const byValue = buildColumnComparison([target('Step', entries, 'feed', 'a'), target('b', entries, 'sim', 'b')],
+      entries)!;
+    expect(byValue.stepColumnName, 'Step');
+    expectArray(byValue.valueColumnNames, ['Step (2)', 'b']);
+
+    const splitEntries = twoStepRuns(false, [strCol('Step', ['x', 'y'])]);
+    const bySplit = buildColumnComparison([
+      target('a', splitEntries, 'feed', 'a', 'Step'), target('b', splitEntries, 'sim', 'b'),
+    ], splitEntries)!;
+    expect(bySplit.splitColumnName, 'Step');
+    expect(bySplit.stepColumnName, 'Step (2)');
+    expect(bySplit.chartDf.getCol('Step (2)').toList().slice(0, 3).join(','), 'feed,feed,sim');
+  });
+
+  test('each step starts at zero on the elapsed axis', async () => {
+    const entries = twoStepRuns();
+    const result = buildColumnComparison([target('a', entries, 'feed', 'a'), target('b', entries, 'sim', 'b')],
+      entries, allTables(entries, {mode: 'timeseries', units: 's'}))!;
+    expect(result.indexColumnName, 'time (s)');
+    expect(result.chartDf.getCol('time (s)').toList().slice(0, 5).join(','), '0,10,0,60,120');
+  });
+
+  test('melted scatter carries the step column', async () => {
+    const entries = twoStepRuns();
+    const result = buildColumnComparison([target('a', entries, 'feed', 'a'), target('b', entries, 'sim', 'b')],
+      entries, allTables(entries, {mode: 'points'}))!;
+    expect(result.melted != null, true);
+    expect(result.chartDf.rowCount, 20);
+    expect(result.chartDf.getCol('Step').toList().slice(0, 5).join(','), 'feed,feed,sim,sim,sim');
+  });
+
+  test('datetime and numeric step indexes chart as keys and flag the mix', async () => {
+    const entries = ['r1', 'r2'].map((id) => stepsEntry(id, [
+      {path: 'feed', cols: [DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'time',
+        [dayjs('2026-01-01'), dayjs('2026-01-02')]), floatCol('a', [1, 2])]},
+      {path: 'sim', cols: [intCol('time', [0, 1]), floatCol('b', [3, 4])]},
+    ]));
+    const targets = [target('a', entries, 'feed', 'a'), target('b', entries, 'sim', 'b')];
+    const result = buildColumnComparison(targets, entries)!;
+    expect(result.isKeyIndex, true);
+    expect(result.mixedTimeIndex, true);
+    const elapsed = buildColumnComparison(targets, entries, allTables(entries, {mode: 'timeseries', units: 's'}))!;
+    expect(elapsed.isKeyIndex, false);
+    expect(elapsed.mixedTimeIndex === undefined, true);
+  });
+
+  test('a run without an anchor pick charts its steps in selection order', async () => {
+    const entries = twoStepRuns();
+    const anchor = target('a', entries.slice(0, 1), 'feed', 'a');
+    const result = buildColumnComparison([
+      anchor, target('b', entries, 'sim', 'b'), target('c', entries, 'feed', 'a'),
+    ], entries)!;
+    const steps = result.chartDf.getCol('Step').toList();
+    expect(steps.slice(0, 5).join(','), 'feed,feed,sim,sim,sim');
+    expect(steps.slice(5).join(','), 'sim,sim,sim,feed,feed');
   });
 });
 
@@ -381,7 +575,7 @@ category('RunComparison: time series dataframes', () => {
       entryFromDataFrame(makeDf('r1', [floatCol('time', [10, 20]), floatCol('v', [1, 2])])),
       entryFromDataFrame(makeDf('r2', [floatCol('time', [1, 2]), floatCol('v', [3, 4])])),
     ];
-    const result = buildColumnComparison(targetFor(entries, 'time'), entries,
+    const result = buildColumnComparison([targetFor(entries, 'time')], entries,
       tsFor(entries, ['s', 'min']))!;
     expect(result.isKeyIndex, false);
     expect(result.timeSeriesUnit, 's');
@@ -397,7 +591,7 @@ category('RunComparison: time series dataframes', () => {
       entryFromDataFrame(makeDf('r1', [bigintCol('time', [BigInt(10), BigInt(20)]), floatCol('v', [1, 2])])),
       entryFromDataFrame(makeDf('r2', [bigintCol('time', [BigInt(5), BigInt(15)]), floatCol('v', [3, 4])])),
     ];
-    const result = buildColumnComparison(targetFor(entries, 'time'), entries,
+    const result = buildColumnComparison([targetFor(entries, 'time')], entries,
       tsFor(entries, ['s', 's']))!;
     expect(result.timeSeriesUnit, 's');
     expect(numbers(result.chartDf.getCol('time (s)').toList()).join(','), '0,10,0,10');
@@ -408,7 +602,7 @@ category('RunComparison: time series dataframes', () => {
       entryFromDataFrame(makeDf('r1', [floatCol('time', [30, 10, 20]), floatCol('v', [1, 2, 3])])),
       entryFromDataFrame(makeDf('r2', [floatCol('time', [5, 15]), floatCol('v', [4, 5])])),
     ];
-    const result = buildColumnComparison(targetFor(entries, 'time'), entries,
+    const result = buildColumnComparison([targetFor(entries, 'time')], entries,
       tsFor(entries, ['s', 's']))!;
     expect(numbers(result.chartDf.getCol('time (s)').toList()).join(','), '20,0,10,0,10');
   });
@@ -418,7 +612,7 @@ category('RunComparison: time series dataframes', () => {
       entryFromDataFrame(makeDf('r1', [dtCol('ts', ['2026-01-01', '2026-01-02']), floatCol('v', [1, 2])])),
       entryFromDataFrame(makeDf('r2', [floatCol('ts', [0, 60]), floatCol('v', [3, 4])])),
     ];
-    const aligned = buildColumnComparison(targetFor(entries, 'ts'), entries,
+    const aligned = buildColumnComparison([targetFor(entries, 'ts')], entries,
       tsFor(entries, [undefined, 'min']))!;
     expect(aligned.isKeyIndex, false);
     expect(aligned.timeSeriesUnit, 'min');
@@ -431,7 +625,7 @@ category('RunComparison: time series dataframes', () => {
       entryFromDataFrame(makeDf('r1', cols())),
       entryFromDataFrame(makeDf('r2', cols())),
     ];
-    const result = buildColumnComparison(targetFor(entries, 'ts'), entries,
+    const result = buildColumnComparison([targetFor(entries, 'ts')], entries,
       tsFor(entries, [undefined, undefined]))!;
     expect(result.timeSeriesUnit, 'days');
     expect(numbers(result.chartDf.getCol('ts (days)').toList()).join(','), '0,3,0,3');
@@ -444,7 +638,7 @@ category('RunComparison: time series dataframes', () => {
     ];
     const partial = new Map([[entries[0].id,
       new Map([[entries[0].nodes.tables[0].path, {mode: 'timeseries' as const}]])]]);
-    const result = buildColumnComparison(targetFor(entries, 'ts'), entries, partial)!;
+    const result = buildColumnComparison([targetFor(entries, 'ts')], entries, partial)!;
     expect(result.isKeyIndex, true);
     expect(result.timeSeriesUnit === undefined, true);
     expect(result.chartDf.getCol('ts').type, DG.COLUMN_TYPE.STRING);
@@ -455,7 +649,7 @@ category('RunComparison: time series dataframes', () => {
       entryFromDataFrame(makeDf('r1', [floatCol('time', [null, 5, 10]), floatCol('v', [1, 2, 3])])),
       entryFromDataFrame(makeDf('r2', [floatCol('time', [0, 5]), floatCol('v', [4, 5])])),
     ];
-    const result = buildColumnComparison(targetFor(entries, 'time'), entries,
+    const result = buildColumnComparison([targetFor(entries, 'time')], entries,
       tsFor(entries, ['s', 's']))!;
     const values = numbers(result.chartDf.getCol('time (s)').toList());
     expect(values[0], null);
@@ -467,7 +661,7 @@ category('RunComparison: time series dataframes', () => {
       entryFromDataFrame(makeDf('r1', [floatCol('time', [0, 1]), floatCol('time (s)', [1, 2])])),
       entryFromDataFrame(makeDf('r2', [floatCol('time', [0, 1]), floatCol('time (s)', [3, 4])])),
     ];
-    const result = buildColumnComparison(targetFor(entries, 'time'), entries,
+    const result = buildColumnComparison([targetFor(entries, 'time')], entries,
       tsFor(entries, ['s', 's']))!;
     expect(result.indexColumnName, 'time (s) (2)');
     expect(numbers(result.chartDf.getCol('time (s) (2)').toList()).join(','), '0,1,0,1');
@@ -480,7 +674,7 @@ category('RunComparison: time series dataframes', () => {
     ];
     const targets = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries, 'time'))
       .filter((t): t is ColumnTarget => t.kind === 'column');
-    const result = buildMultiColumnComparison(targets, entries, tsFor(entries, ['s', 's']))!;
+    const result = buildColumnComparison(targets, entries, tsFor(entries, ['s', 's']))!;
     expect(result.timeSeriesUnit, 's');
     expect(numbers(result.chartDf.getCol('time (s)').toList()).join(','), '0,10,0,10');
     expect(result.valueColumnNames.join('|'), 'a|b');
@@ -515,7 +709,7 @@ category('RunComparison: independent points dataframes', () => {
       entryFromDataFrame(makeDf('r2', [floatCol('time', [0, 10]), floatCol('v', [3, 4])])),
     ];
     const result = buildColumnComparison(
-      columnTargetsFor(entries, 'time')[0], entries, pointsFor(entries))!;
+      [columnTargetsFor(entries, 'time')[0]], entries, pointsFor(entries))!;
     expect(result.isScatter, true);
     expect(result.isKeyIndex, false);
     expect(result.melted === undefined, true);
@@ -532,7 +726,7 @@ category('RunComparison: independent points dataframes', () => {
     ];
     const partial = new Map([[entries[0].id,
       new Map([[entries[0].nodes.tables[0].path, {mode: 'points' as const}]])]]);
-    const result = buildColumnComparison(columnTargetsFor(entries, 'time')[0], entries, partial)!;
+    const result = buildColumnComparison([columnTargetsFor(entries, 'time')[0]], entries, partial)!;
     expect(result.isScatter, false);
   });
 
@@ -542,7 +736,7 @@ category('RunComparison: independent points dataframes', () => {
       entryFromDataFrame(makeDf('r2', [stringCol('key', ['x', 'y']), floatCol('v', [3, 4])])),
     ];
     const result = buildColumnComparison(
-      columnTargetsFor(entries, 'key')[0], entries, pointsFor(entries))!;
+      [columnTargetsFor(entries, 'key')[0]], entries, pointsFor(entries))!;
     expect(result.isKeyIndex, true);
     expect(result.isScatter, false);
   });
@@ -552,7 +746,7 @@ category('RunComparison: independent points dataframes', () => {
       entryFromDataFrame(makeDf('r1', [floatCol('time', [10, 20]), floatCol('a', [1, 2]), floatCol('b', [5, 6])])),
       entryFromDataFrame(makeDf('r2', [floatCol('time', [0, 10]), floatCol('a', [3, 4]), floatCol('b', [7, 8])])),
     ];
-    const result = buildMultiColumnComparison(
+    const result = buildColumnComparison(
       columnTargetsFor(entries, 'time'), entries, pointsFor(entries))!;
     expect(result.isScatter, true);
     expect(result.melted!.seriesColumnName, 'Data');
@@ -569,7 +763,7 @@ category('RunComparison: independent points dataframes', () => {
       entryFromDataFrame(makeDf('r1', [floatCol('Value', [0, 1]), floatCol('a', [1, 2]), floatCol('b', [5, 6])])),
       entryFromDataFrame(makeDf('r2', [floatCol('Value', [0, 1]), floatCol('a', [3, 4]), floatCol('b', [7, 8])])),
     ];
-    const result = buildMultiColumnComparison(
+    const result = buildColumnComparison(
       columnTargetsFor(entries, 'Value'), entries, pointsFor(entries))!;
     expect(result.melted!.valueColumnName, 'Value (2)');
     expect(result.chartDf.getCol('Value (2)').toList().join(','), '1,2,3,4,5,6,7,8');
@@ -584,9 +778,278 @@ category('RunComparison: independent points dataframes', () => {
       entryFromDataFrame(makeDf('r1', cols([1, 2, 5, 6]))),
       entryFromDataFrame(makeDf('r2', cols([3, 4, 7, 8]))),
     ];
-    const result = buildMultiColumnComparison(
+    const result = buildColumnComparison(
       columnTargetsFor(entries, 'time', splitsFor(entries, 'species')), entries, pointsFor(entries))!;
     expect(result.splitColumnName, 'species');
     expect(result.chartDf.getCol('species').toList().join(','), 's1,s2,s1,s2,s1,s2,s1,s2');
+  });
+});
+
+category('RunComparison: union of runs', () => {
+  const col = (name: string, values: (number | null)[]) => DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values);
+  const tableEntry = (name: string, columns: DG.Column[]) => {
+    const df = DG.DataFrame.fromColumns(columns);
+    df.name = name;
+    return entryFromDataFrame(df);
+  };
+  const numbers = (values: any[]) => Array.from(values, (v) => v == null || isNaN(v) ? null : v);
+
+  test('runs any selected column has are charted, whichever is selected first', async () => {
+    const entries = [
+      tableEntry('r1', [col('Time', [0, 1]), col('x', [1, 2]), col('y', [3, 4])]),
+      tableEntry('r2', [col('Time', [0, 1]), col('x', [5, 6]), col('y', [7, 8])]),
+      tableEntry('r3', [col('Time', [0, 1]), col('y', [9, 10])]),
+    ];
+    const indexes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'Time']])]));
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexes);
+    const x = targets.find((t) => t.displayName === 'x')!;
+    const y = targets.find((t) => t.displayName === 'y')!;
+    for (const order of [[x, y], [y, x]]) {
+      const result = buildColumnComparison(order, entries)!;
+      expectArray([...new Set(result.chartDf.getCol(RUN_COLUMN).toList())], ['r1', 'r2', 'r3']);
+      expectArray(numbers(result.chartDf.getCol('x').toList()), [1, 2, 5, 6, null, null]);
+    }
+  });
+});
+
+category('RunComparison: unit conversion dataframes', () => {
+  const col = (name: string, values: number[], units?: string) => {
+    const column = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values);
+    if (units)
+      column.meta.units = units;
+    return column;
+  };
+  const tableEntry = (name: string, columns: DG.Column[]) => {
+    const df = DG.DataFrame.fromColumns(columns);
+    df.name = name;
+    return entryFromDataFrame(df);
+  };
+  const indexesFor = (entries: ComparisonEntry[]) =>
+    new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'Time']])]));
+  const scalar = (id: string, value: number, units: string) => {
+    const e = scalarsEntry(id, id, []);
+    e.nodes.scalars.push({path: 'p', name: 'p', valueType: 'double', units, value});
+    e.nodes.scalars.push({path: 'q', name: 'q', valueType: 'double', value: 1});
+    return e;
+  };
+  const convert = buildUnitConverter([
+    {from: 'g/L', factor: 1000, to: 'mg/L'}, {from: 'bar', factor: 100, to: 'kPa'}, {from: 'h', factor: 60, to: 'min'},
+  ]);
+
+  test('a scalar converts into the first run\'s units', async () => {
+    const entries = [scalar('a', 2, 'g/L'), scalar('b', 3000, 'mg/L')];
+    const target = matchScalarTargets(entries.map((e) => e.nodes), undefined, convert)
+      .find((t) => t.displayName === 'p')!;
+    const result = buildScalarComparison(target, entries);
+    expectArray(result.chartDf.getCol(result.valueColumnName).toList(), [2, 3]);
+  });
+
+  test('several scalars convert into their target units', async () => {
+    const entries = [scalar('a', 1, 'bar'), scalar('b', 50, 'kPa')];
+    const targets = matchScalarTargets(entries.map((e) => e.nodes), undefined, convert);
+    const result = buildMultiScalarComparison(targets, entries)!;
+    expectArray(result.chartDf.getCol('p (bar)').toList(), [1, 0.5]);
+    expectArray(result.chartDf.getCol('q').toList(), [1, 1]);
+  });
+
+  test('column values convert into the first run\'s units, the index stays raw', async () => {
+    const entries = [
+      tableEntry('r1', [col('Time', [0, 1], 'h'), col('x', [0.5, 1], 'g/L')]),
+      tableEntry('r2', [col('Time', [0, 30], 'min'), col('x', [250, 750], 'mg/L')]),
+    ];
+    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries),
+      undefined, undefined, undefined, convert);
+    const result = buildColumnComparison([target], entries)!;
+    expect(result.indexColumnName, 'Time');
+    expect(result.valueColumnName, 'x (g/L)');
+    expectArray(result.chartDf.getCol('Time').toList(), [0, 1, 0, 30]);
+    expectArray(result.chartDf.getCol(result.valueColumnName).toList(), [0.5, 1, 0.25, 0.75]);
+  });
+
+  test('the melted scatter converts values', async () => {
+    const entries = [
+      tableEntry('r1', [col('Time', [0, 1]), col('x', [1, 2], 'bar'), col('y', [3, 4])]),
+      tableEntry('r2', [col('Time', [0, 1]), col('x', [100, 200], 'kPa'), col('y', [5, 6])]),
+    ];
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries),
+      undefined, undefined, undefined, convert);
+    const modes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, {mode: 'points' as const}]])]));
+    const result = buildColumnComparison(targets, entries, modes)!;
+    const melted = result.melted!;
+    const values = result.chartDf.getCol(melted.valueColumnName).toList();
+    const series = result.chartDf.getCol(melted.seriesColumnName).toList();
+    expectArray(values.filter((_, i) => series[i] === 'x (bar)'), [1, 2, 1, 2]);
+  });
+});
+
+category('RunComparison: units in column names', () => {
+  const col = (name: string, values: number[], units?: string) => {
+    const column = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values);
+    if (units)
+      column.meta.units = units;
+    return column;
+  };
+  const tableEntry = (name: string, columns: DG.Column[]) => {
+    const df = DG.DataFrame.fromColumns(columns);
+    df.name = name;
+    return entryFromDataFrame(df);
+  };
+  const indexesFor = (entries: ComparisonEntry[]) =>
+    new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'Time']])]));
+
+  test('a scalar column carries its units, a unitless one stays plain', async () => {
+    const entries = [scalarsEntry('a', 'a', []), scalarsEntry('b', 'b', [])];
+    for (const e of entries)
+      e.nodes.scalars.push({path: 'p', name: 'p', valueType: 'double', units: 'bar', value: 1});
+    const [target] = matchScalarTargets(entries.map((e) => e.nodes));
+    expect(buildScalarComparison(target, entries).valueColumnName, 'p (bar)');
+    const plain = [scalarEntry('a', 'a', 1), scalarEntry('b', 'b', 2)];
+    expect(buildScalarComparison(matchScalarTargets(plain.map((e) => e.nodes))[0], plain).valueColumnName, 'x');
+  });
+
+  test('values share units only when every one has the same explicit units', async () => {
+    const entries = [
+      tableEntry('r1', [col('Time', [0, 1]), col('x', [1, 2], 'g/L'), col('y', [3, 4], 'g/l'),
+        col('z', [5, 6], 'mg/L'), col('u', [7, 8]), col('v', [9, 10])]),
+      tableEntry('r2', [col('Time', [0, 1]), col('x', [1, 2], 'g/L'), col('y', [3, 4], 'g/l'),
+        col('z', [5, 6], 'mg/L'), col('u', [7, 8]), col('v', [9, 10])]),
+    ];
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries)) as ColumnTarget[];
+    const pick = (...names: string[]) => names.map((name) => targets.find((t) => t.displayName === name)!);
+    expect(buildColumnComparison(pick('x', 'y'), entries)!.sameUnits, true);
+    expect(buildColumnComparison(pick('x', 'z'), entries)!.sameUnits, false);
+    expect(buildColumnComparison(pick('x', 'u'), entries)!.sameUnits, false);
+    expect(buildColumnComparison(pick('u', 'v'), entries)!.sameUnits, false);
+  });
+
+  test('value columns and a float index carry their units; a key index does not', async () => {
+    const entries = [
+      tableEntry('r1', [col('Time', [0, 1], 'h'), col('x', [1, 2], 'g/L'), col('y', [3, 4])]),
+      tableEntry('r2', [col('Time', [0, 1], 'h'), col('x', [5, 6], 'g/L'), col('y', [7, 8])]),
+    ];
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries));
+    const result = buildColumnComparison(targets, entries)!;
+    expect(result.indexColumnName, 'Time (h)');
+    expectArray(result.valueColumnNames, ['x (g/L)', 'y']);
+    expectArray(result.chartDf.columns.names(), ['Time (h)', RUN_COLUMN, 'x (g/L)', 'y']);
+  });
+
+  test('a float index carries units only when every run agrees on them', async () => {
+    const build = (units: string[]) => {
+      const entries = units.map((u, i) => tableEntry(`r${i}`, [col('Time', [0, 1], u), col('x', [1, 2])]));
+      const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries));
+      return buildColumnComparison([target], entries)!.indexColumnName;
+    };
+    expect(build(['h', 'hours']), 'Time (h)');
+    expect(build(['h', 'min']), 'Time');
+    expect(build(['h', '']), 'Time');
+  });
+
+  test('a units label never collides with another column', async () => {
+    const entries = [
+      tableEntry('r1', [col('Time', [0, 1], 'h'), col('x', [1, 2], 'g/L'), col('x (g/L)', [3, 4])]),
+      tableEntry('r2', [col('Time', [0, 1], 'h'), col('x', [5, 6], 'g/L'), col('x (g/L)', [7, 8])]),
+    ];
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries));
+    const result = buildColumnComparison(targets, entries)!;
+    expect(new Set(result.valueColumnNames).size, 2);
+  });
+});
+
+category('RunComparison: comparison dispatch', () => {
+  const scalarEntries = () => [
+    scalarsEntry('a', 'r1', [{name: 'x', value: 1}, {name: 'y', value: 10}]),
+    scalarsEntry('b', 'r2', [{name: 'x', value: 2}, {name: 'y', value: 20}]),
+  ];
+  const scalarTargets = (entries: ComparisonEntry[]) => {
+    const targets = matchScalarTargets(entries.map((e) => e.nodes));
+    return {x: targets.find((t) => t.displayName === 'x')!, y: targets.find((t) => t.displayName === 'y')!};
+  };
+  const columnEntries = () => [1, 2].map((run) => {
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Time', [0, 1]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [run, run + 1]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [run * 10, run * 10 + 1]),
+    ]);
+    df.name = `r${run}`;
+    return entryFromDataFrame(df);
+  });
+  const columnTargets = (entries: ComparisonEntry[]) => {
+    const indexes = new Map(entries.filter((e) => e.nodes.tables.length > 0)
+      .map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'Time']])]));
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexes);
+    return {x: targets.find((t) => t.displayName === 'x')!, y: targets.find((t) => t.displayName === 'y')!};
+  };
+
+  test('no selection or a single run builds nothing', async () => {
+    const entries = scalarEntries();
+    expect(buildComparison([], entries), null);
+    expect(buildComparison([scalarTargets(entries).x], entries.slice(0, 1)), null);
+  });
+
+  test('one scalar builds a scalar comparison', async () => {
+    const entries = scalarEntries();
+    const result = buildComparison([scalarTargets(entries).x], entries)!;
+    expect(result.kind, 'scalar');
+    expect(result.chartDf.name, 'Comparison: x');
+    expect(result.chartDf.col('Path') != null, true);
+  });
+
+  test('several scalars build a multi-scalar comparison, anchor first', async () => {
+    const entries = scalarEntries();
+    const {x, y} = scalarTargets(entries);
+    const result = buildComparison([y, x], entries)!;
+    if (result.kind !== 'multi-scalar')
+      throw new Error(`expected multi-scalar, got ${result.kind}`);
+    expectArray(result.valueColumnNames, ['y', 'x']);
+  });
+
+  test('one column builds a single-value column comparison', async () => {
+    const entries = columnEntries();
+    const result = buildComparison([columnTargets(entries).x], entries)!;
+    if (result.kind !== 'column')
+      throw new Error(`expected column, got ${result.kind}`);
+    expectArray(result.valueColumnNames, ['x']);
+    expect(result.valueColumnName, 'x');
+    expect(result.chartDf.name, 'Comparison: x');
+  });
+
+  test('several columns build one multi-value column comparison', async () => {
+    const entries = columnEntries();
+    const {x, y} = columnTargets(entries);
+    const result = buildComparison([y, x], entries)!;
+    if (result.kind !== 'column')
+      throw new Error(`expected column, got ${result.kind}`);
+    expectArray(result.valueColumnNames, ['y', 'x']);
+    expect(result.chartDf.name, 'Comparison: multiple values');
+  });
+
+  test('targets of another kind than the anchor are ignored', async () => {
+    const entries = [...scalarEntries(), ...columnEntries()];
+    const scalar = scalarTargets(entries).x;
+    const column = columnTargets(entries).x;
+    expect(buildComparison([scalar, column], entries)!.kind, 'scalar');
+    const result = buildComparison([column, scalar], entries)!;
+    if (result.kind !== 'column')
+      throw new Error(`expected column, got ${result.kind}`);
+    expectArray(result.valueColumnNames, ['x']);
+  });
+});
+
+category('RunComparison: column primitives', () => {
+  test('missing cells are null, datetimes epoch ms, bigints and strings as is', async () => {
+    const day = dayjs('2026-01-02T03:04:05Z');
+    const floats = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'f', [1.5, null]);
+    const dates = DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'd', [day, null]);
+    const bigints = DG.Column.fromBigInt64Array('b', new BigInt64Array([BigInt(7)]));
+    const strings = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 's', ['x', '']);
+    const [f, d, b, s] = [floats, dates, bigints, strings].map(columnPrimitives);
+    expect(f[0], 1.5);
+    expect(f[1] === null, true);
+    expect(d[0], day.valueOf());
+    expect(d[1] === null, true);
+    expect(b[0] === BigInt(7), true);
+    expect(s[0], 'x');
+    expect(s[1] === null, true);
   });
 });

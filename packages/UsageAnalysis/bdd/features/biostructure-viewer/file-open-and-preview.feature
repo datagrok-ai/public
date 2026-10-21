@@ -10,8 +10,8 @@ Feature: Opening and previewing structure files from the Files browser
   ("1bdq.pdb"), not "Mol*" — the open shows the file's previewer as a view rather than calling the
   package's Import PDB handler; a preview becomes current under the file's name, which is how the
   preview title of GROK-18999 is claimed; Open table residues is offered in the folder view's
-  context menu, not in the Browse tree's. The residue table's rows and columns are tested in
-  BiostructureViewer src/tests/pdb-helper-tests.ts 'pdbToDf'.
+  context menu, not in the Browse tree's. The residue table's rows, columns and residue names
+  (compId, GROK-21118) are tested in BiostructureViewer src/tests/pdb-helper-tests.ts 'pdbToDf'.
 
   The Mol* engine is claimed by its Reset Camera overlay button. A preview also gets a view tab
   under the file's name, so a double-clicked view is told from the preview by previewing another
@@ -167,24 +167,16 @@ Feature: Opening and previewing structure files from the Files browser
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: Open table residues from a PDB file's menu opens a residue table with an NGL viewer
+  Scenario: Open table residues from a PDB file's menu opens a residue table with an NGL viewer (GROK-21118)
     When user clicks on Files---App-Data---BiostructureViewer---samples tree node inside browse tree
     Then 1bdq.pdb link in gallery should be visible
     When user picks "Open table residues" from the context menu of 1bdq.pdb link in gallery
     Then the "Table" view should be current
     And NGL viewer should be visible
+    And the value of "compId" column in row 1 should be "PRO"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  @known-failure
-  Scenario: Open table residues gives the residue names in compId (GROK-21118)
-    When user clicks on Files---App-Data---BiostructureViewer---samples tree node inside browse tree
-    Then 1bdq.pdb link in gallery should be visible
-    When user picks "Open table residues" from the context menu of 1bdq.pdb link in gallery
-    Then the "Table" table view should open with 198 rows
-    And the value of "compId" column in row 1 should be "PRO"
-
-  @known-failure
   Scenario: A Biostructure viewer added to a structure table takes the structure column by itself (GROK-21119)
     When user double-clicks on Files---App-Data---BiostructureViewer---pdb_data.csv tree node inside browse tree
     Then the "pdb_data" table view should open with 6 rows

@@ -11,6 +11,7 @@ import type {ChoiceInputOptions} from '../../components/inputs/choice-input.js';
 import {TypeAhead} from '../../components/inputs/typeahead.js';
 import {iconButton} from '../../components/actions/buttons.js';
 import {columnRenderer} from '../entities/column-renderer.js';
+import type {IItemsState} from '../../core/widget-like.js';
 import {ColumnInput} from './column-combo.js';
 
 export interface ColumnInputOptions {
@@ -104,7 +105,7 @@ export class TableInput extends ChoiceInput {
   constructor(options: TableInputOptions) {
     const {actions, ...rest} = options;
     super({...rest, items: grok.shell.tableNames,
-      emptyText: 'No open tables — open or import one'});
+      emptyText: 'No open tables'});
     followOpenTables(this, (names) => this.setItems(names));
     this._actions = actions ?? TableInput._defaults();
     this._renderActions();
@@ -225,11 +226,27 @@ export interface ColumnPickerOptions extends InputOptions<string | null> {
  * through {@link columnRenderer}. The value stays the column name, so it is interchangeable with
  * the plain choice variant everywhere. */
 export class ColumnPicker extends Input<string | null, ColumnPickerOptions> {
-  private _typeAhead!: TypeAhead<string>;
+  private declare _typeAhead: TypeAhead<string>;
 
   constructor(options: ColumnPickerOptions) {
     super(options, null);
     this.root.dataset.u2 = 'column-picker';
+  }
+
+  /** Whether the candidates are open. */
+  getState(): ReturnType<Input<string | null>['getState']> {
+    return {...super.getState(), open: this._typeAhead.isOpen.peek()};
+  }
+
+  /** The columns on offer. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const names = columnNames(this.options.table, this.options.filter);
+    const open = this._typeAhead.isOpen.peek();
+    return Input.itemsState(names.map((name, index) => ({key: name, label: name, index, rendered: open})), opts?.all);
+  }
+
+  revealItem(keyOrLabel: string): Promise<HTMLElement | null> {
+    return this._typeAhead.revealItem(keyOrLabel);
   }
 
   protected createEditor(): HTMLElement {
@@ -240,6 +257,7 @@ export class ColumnPicker extends Input<string | null, ColumnPickerOptions> {
       renderer: columnRenderer(table),
       placeholder: this.options.placeholder ?? 'Column…',
       debounceMs: 0,
+      openOnFocus: true,
     });
     this._typeAhead = typeAhead;
 
@@ -261,11 +279,11 @@ export class ColumnPicker extends Input<string | null, ColumnPickerOptions> {
       table.onColumnsChanged.subscribe(() => {
         const value = this.value.peek();
         if (value !== null && !names().includes(value))
-          Input.system(() => this.value.value = null);
+          this.systemWrite(null);
       }),
       onColumnRenamed(table, (oldName, newName) => {
         if (this.value.peek() === oldName)
-          Input.system(() => this.value.value = newName);
+          this.systemWrite(newName);
       }),
     ];
     this.own(() => {
@@ -315,8 +333,7 @@ function importAction(input: Input<any, any>, pick: (name: string) => void): voi
     if (name !== null && !input.scope.isDisposed)
       pick(name);
   };
-  picker.addEventListener('change', onChange);
-  input.own(() => picker.removeEventListener('change', onChange));
+  input.scope.listen(picker, 'change', onChange);
   const open = input.runInScope(() => iconButton('folder-open', () => picker.click(), {tooltip: 'Open file'}));
   optionsRail(input).append(picker, open);
 }

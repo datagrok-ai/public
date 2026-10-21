@@ -15,11 +15,19 @@ Feature: Line chart legend, category colours and what survives a round-trip
   spgi-100 (a line chart of WEIGHT by STARTED split by DIS_POP, whose six categories replace Series;
   WEIGHT, HEIGHT and AGE replace Average Mass, TPSA and NIBR logP): the default palette gives
   neighbouring categories different colors (a hue apart — two shades of one hue count as alike);
-  two Y columns share one six-item legend until Multi Axis gives every Y column its own block of
-  six items ("WEIGHT / RA", "HEIGHT / RA"), every item named; replacing a Y column replaces its
+  two Y columns share one six-item legend until Multi Axis gives every Y column its own block, an
+  item for each category the column has values in ("WEIGHT / RA", "HEIGHT / RA"; no HEIGHT value
+  is in UC, so there is no "HEIGHT / UC"), every item named; replacing a Y column replaces its
   block and leaves the other one with its colors; and Split, Multi Axis, the blocks and the
   replaced column come back from a layout and from a project. The Y column is replaced through
-  the property, as the manual case allows.
+  the property, as the manual case allows. A marker column picked by hand keeps its F and M items
+  under Show Markers Auto although the chart draws more rows than the Auto threshold (500), and a
+  filter that takes the count under it changes nothing in the list; the split column picked as the
+  marker column too keeps its four items, each with its marker. A split by two columns colors
+  its combinations by their place among the ones the filter leaves, and the legend follows: the
+  first combination is painted the palette's first color before and after a filter to RACE Other,
+  whatever combination that is; a color picked for a combination in the legend outlives the filter
+  being reset, which rebuilds the list, and a resize.
   Multi Axis does not part company with the manual case; what it draws depends on how many Y columns
   there are, as the operator confirmed. With two Y columns the chart folds them into one box with a
   scale for each (line-chart-multi-axis-and-split.feature asserts the boxes and the scales); with
@@ -143,9 +151,8 @@ Feature: Line chart legend, category colours and what survives a round-trip
     When user sets "yColumnNames" property of line chart viewer to "WEIGHT, HEIGHT"
     Then the legend of line chart viewer should list 6 items
     When user sets "multiAxis" property of line chart viewer to "true"
-    Then the legend of line chart viewer should list 12 items
-    # 12 legend items, 11 lines: every UC row lacks HEIGHT, so the HEIGHT / UC series is listed but
-    # draws no point, and `lines` counts only the series that drew one
+    Then the legend of line chart viewer should list 11 items
+    # every UC row lacks HEIGHT, so HEIGHT / UC has no line and no legend item
     And the "lines" reading of line chart viewer should be 11
     And the following elements should be visible:
       | "WEIGHT / AS" legend item in legend of line chart viewer |
@@ -159,7 +166,7 @@ Feature: Line chart legend, category colours and what survives a round-trip
       | "HEIGHT / PsA" legend item in legend of line chart viewer |
       | "HEIGHT / Psoriasis" legend item in legend of line chart viewer |
       | "HEIGHT / RA" legend item in legend of line chart viewer |
-      | "HEIGHT / UC" legend item in legend of line chart viewer |
+    And "HEIGHT / UC" legend item in legend of line chart viewer should be absent
     And the "WEIGHT / RA" and "HEIGHT / RA" items in the legend of line chart viewer should be colored differently
     And the "y axes" reading of line chart viewer should be 2
     And line chart viewer should have a "y2 axis" area
@@ -171,14 +178,14 @@ Feature: Line chart legend, category colours and what survives a round-trip
     And the "charts" reading of line chart viewer should be 1
     And the "y axes" reading of line chart viewer should be 0
     And line chart viewer should not have a "y2 axis" area
-    And the legend of line chart viewer should list 18 items
+    And the legend of line chart viewer should list 17 items
     And "AGE / RA" legend item in legend of line chart viewer should be visible
     And "HEIGHT / RA" legend item in legend of line chart viewer should be visible
     And "WEIGHT / RA" legend item in legend of line chart viewer should be visible
     When user sets "yColumnNames" property of line chart viewer to "WEIGHT, HEIGHT"
     Then the "y axes" reading of line chart viewer should be 2
     And line chart viewer should have a "y2 axis" area
-    And the legend of line chart viewer should list 12 items
+    And the legend of line chart viewer should list 11 items
     And no errors should have been logged
 
   Scenario: Replacing a Y column replaces its block and leaves the other one
@@ -258,4 +265,56 @@ Feature: Line chart legend, category colours and what survives a round-trip
       | "AGE / RA" legend item in legend of line chart viewer |
       | "AGE / UC" legend item in legend of line chart viewer |
     And "HEIGHT / RA" legend item in legend of line chart viewer should be absent
+    And no errors should have been logged
+
+  Scenario: An explicit marker column keeps its legend items above the Auto markers threshold
+    When user sets properties of line chart viewer:
+      | multiAxis         | false |
+      | yColumnNames      | AGE   |
+      | splitColumnNames  | RACE  |
+      | markersColumnName | SEX   |
+    Then the legend of line chart viewer should list 6 items
+    And "F" legend item in legend of line chart viewer should be visible
+    And "M" legend item in legend of line chart viewer should be visible
+    When user filters rows where "RACE" is "Other"
+    Then the legend of line chart viewer should list 3 items
+    And "F" legend item in legend of line chart viewer should be visible
+    And "M" legend item in legend of line chart viewer should be visible
+    When user resets the filter
+    And user sets "markersColumnName" property of line chart viewer to "RACE"
+    Then the legend of line chart viewer should list 4 items
+    And marker of "Black" legend item in legend of line chart viewer should be visible
+    And "M" legend item in legend of line chart viewer should be absent
+    When user sets "markersColumnName" property of line chart viewer to ""
+    Then the legend of line chart viewer should list 4 items
+    And marker of "Black" legend item in legend of line chart viewer should be absent
+    And no errors should have been logged
+
+  Scenario: Under a filter a two-column split recolors its legend as it recolors the lines, and a picked color stays
+    When user sets "splitColumnNames" property of line chart viewer to "RACE, SEVERITY"
+    Then the legend of line chart viewer should list 17 items
+    And the "Asian / High" item in the legend of line chart viewer should be colored "#1F77B4"
+    When user filters rows where "RACE" is "Other"
+    Then the legend of line chart viewer should list 4 items
+    And the "Other / High" item in the legend of line chart viewer should be colored "#1F77B4"
+    And the "Other / Low" item in the legend of line chart viewer should be colored "#FF7F0E"
+    And the "Other / Medium" item in the legend of line chart viewer should be colored "#2CA02C"
+    And the "Other / None" item in the legend of line chart viewer should be colored "#D62728"
+    And the "view" area of line chart viewer should contain the color "#1F77B4"
+    And the "view" area of line chart viewer should contain the color "#D62728"
+    When user hovers over "Other / None" legend item in legend of line chart viewer
+    And user clicks on color picker icon
+    Then "Other / None" dialog should be visible
+    When user picks the color "#BCBD22" in the color picker dialog
+    And user clicks on OK button in "Other / None" dialog
+    Then the "Other / None" item in the legend of line chart viewer should be colored "#BCBD22"
+    And the "view" area of line chart viewer should contain the color "#BCBD22"
+    When user resets the filter
+    Then the legend of line chart viewer should list 17 items
+    And the "Other / None" item in the legend of line chart viewer should be colored "#BCBD22"
+    When user resizes line chart viewer to 700 by 420
+    Then the "Other / None" item in the legend of line chart viewer should be colored "#BCBD22"
+    When user restores the size of line chart viewer
+    And user sets "splitColumnNames" property of line chart viewer to "DIS_POP"
+    Then the legend of line chart viewer should list 6 items
     And no errors should have been logged

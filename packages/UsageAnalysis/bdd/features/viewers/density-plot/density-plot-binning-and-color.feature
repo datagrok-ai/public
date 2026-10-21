@@ -8,7 +8,11 @@ Feature: Density plot binning, bin shape and the colour scale
   frame painted, and `max bin count` is the top of the colour scale; a bin count change moves all
   three in a direction the feature can state.
   The X and Y selectors offer numerical columns only, which is what GROK-17118 is about: typing a
-  categorical column's name into the selector must leave the column where it was.
+  categorical column's name into the selector must leave the column where it was. A column of one
+  value has a bin range of zero width, which the plot draws as one strip in either bin shape. The
+  last scenario saves the plot at its peak setting (HEIGHT, 200 rectangular bins, scheme inverted)
+  and claims what the frame draws after the layout and after the project: the same readings and the
+  same number of painted bins; the scatter plot added after the save is gone with the layout.
 
   Background:
     Given user is logged in
@@ -106,3 +110,58 @@ Feature: Density plot binning, bin shape and the colour scale
     When user sets "xColumnName" property of density plot viewer to "AGE"
     And user removes "AGE_PLUS" column
     Then no errors should have been logged
+
+  Scenario: A column with one value bins into a single strip in either shape
+    Given user adds a calculated column "CONSTANT" with formula "${AGE} * 0 + 42"
+    When user picks "CONSTANT" in the "x" column selector of density plot viewer
+    Then the "x column" reading of density plot viewer should be "CONSTANT"
+    And the "rows shown" reading of density plot viewer should be 1000
+    And the "bins drawn" reading of density plot viewer should be at least 1
+    And density plot viewer should be painted
+    When user sets "binShape" property of density plot viewer to "rectangle"
+    Then the "bin shape" reading of density plot viewer should be "rectangle"
+    And the "bins drawn" reading of density plot viewer should be at least 1
+    And density plot viewer should be painted
+    And density plot viewer should report no error
+    When user sets "binShape" property of density plot viewer to "hexagon"
+    Then the "bins drawn" reading of density plot viewer should be at least 1
+    And density plot viewer should be painted
+    When user picks "AGE" in the "x" column selector of density plot viewer
+    And user removes "CONSTANT" column
+    Then the "x column" reading of density plot viewer should be "AGE"
+    And no errors should have been logged
+
+  Scenario: The plot comes back as it was drawn from a saved layout and from a project
+    When user sets properties of density plot viewer:
+      | yColumnName       | HEIGHT    |
+      | bins              | 200       |
+      | binShape          | rectangle |
+      | invertColorScheme | true      |
+    Then the "rows shown" reading of density plot viewer should be 872
+    And the "bins" reading of density plot viewer should be 200
+    When user remembers the "bins drawn" reading of density plot viewer
+    And user saves the layout of the current table view
+    And user adds a scatter plot viewer
+    And user sets properties of density plot viewer:
+      | yColumnName       | WEIGHT  |
+      | bins              | 50      |
+      | binShape          | hexagon |
+      | invertColorScheme | false   |
+    Then the "bins drawn" reading of density plot viewer should not be as remembered
+    When user loads the saved layout
+    Then the open tableview should have 0 scatter plot viewers
+    And the "y column" reading of density plot viewer should be "HEIGHT"
+    And the "bins" reading of density plot viewer should be 200
+    And the "bin shape" reading of density plot viewer should be "rectangle"
+    And the "color scheme inverted" reading of density plot viewer should be "true"
+    And the "rows shown" reading of density plot viewer should be 872
+    And the "bins drawn" reading of density plot viewer should be as remembered
+    When user saves the current view as project "bdd-density-plot-peak"
+    And user closes all views
+    And user opens the "bdd-density-plot-peak" project
+    Then the open tableview should have 1 density plot viewer
+    And the "y column" reading of density plot viewer should be "HEIGHT"
+    And the "bin shape" reading of density plot viewer should be "rectangle"
+    And the "color scheme inverted" reading of density plot viewer should be "true"
+    And the "bins drawn" reading of density plot viewer should be as remembered
+    And no errors should have been logged

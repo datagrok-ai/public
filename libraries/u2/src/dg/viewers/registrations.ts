@@ -24,7 +24,6 @@ import type {FuncCallLike} from '../funcs/func-form.js';
 import {applyHistoryById} from '../funcs/func-history.js';
 import {rawEffect} from '../../core/signals.js';
 import {viewerControl} from './viewer-control.js';
-import {registerDomainComponents} from '../domain/registrations.js';
 
 const api = globalThis as {grok_Property_Get_PropertySubType?: (dart: unknown) => string | null};
 
@@ -269,14 +268,14 @@ function functionsBrowserMeta(): ComponentMeta {
         description: 'Shows the `(inputs) : outType` signature on every row.'},
       {name: 'showRunButton', type: 'bool', bindable: true,
         description: 'Shows the per-row play icon.'},
-      {name: 'tags', type: 'string_list', description: 'Pre-checked tags.'},
-      {name: 'visibleTags', type: 'string_list',
+      {name: 'tags', type: 'string_list', structural: true, description: 'Pre-checked tags.'},
+      {name: 'visibleTags', type: 'string_list', structural: true,
         description: 'Restricts the tags pane to these tags.'},
-      {name: 'ignoreTags', type: 'string_list',
+      {name: 'ignoreTags', type: 'string_list', structural: true,
         description: 'Tags left out of the tags pane; res, converters, internal by default.'},
-      {name: 'ignorePackages', type: 'string_list',
+      {name: 'ignorePackages', type: 'string_list', structural: true,
         description: 'Packages whose functions are left out.'},
-      {name: 'scalarOnly', type: 'bool',
+      {name: 'scalarOnly', type: 'bool', structural: true,
         description: 'Only functions with one scalar (or dynamic) output.'},
     ],
     events: ['change', 'activate'],
@@ -315,11 +314,11 @@ function functionInputMeta(): ComponentMeta {
       {name: 'name', type: 'string', description: 'Stable key for forms and dumps; defaults to the label.'},
       {name: 'value', type: 'string', bindable: true, twoWay: true,
         description: 'The namespace-qualified function name.'},
-      {name: 'nullable', type: 'bool', description: 'Backspace/Delete clears the value.'},
-      {name: 'placeholder', type: 'string', description: 'Shown while nothing is picked.'},
-      {name: 'scalarOnly', type: 'bool',
+      {name: 'nullable', type: 'bool', structural: true, description: 'Backspace/Delete clears the value.'},
+      {name: 'placeholder', type: 'string', structural: true, description: 'Shown while nothing is picked.'},
+      {name: 'scalarOnly', type: 'bool', structural: true,
         description: 'Only functions with one scalar (or dynamic) output.'},
-      {name: 'ignorePackages', type: 'string_list',
+      {name: 'ignorePackages', type: 'string_list', structural: true,
         description: 'Packages whose functions are left out of the popup.'},
     ],
     events: ['input', 'change'],
@@ -350,9 +349,9 @@ function funcCallHistoryMeta(): ComponentMeta {
     props: [
       {name: 'functionName', type: 'string', bindable: true,
         description: 'Name of the function whose runs are listed.'},
-      {name: 'pageSize', type: 'int', description: 'Server page size; 20 by default.'},
-      {name: 'itemHeight', type: 'int'},
-      {name: 'setCurrentObject', type: 'bool',
+      {name: 'pageSize', type: 'int', structural: true, description: 'Server page size; 20 by default.'},
+      {name: 'itemHeight', type: 'int', structural: true},
+      {name: 'setCurrentObject', type: 'bool', structural: true,
         description: 'Selection makes the call the shell\'s current object; default true.'},
     ],
     events: ['change', 'activate'],
@@ -391,8 +390,8 @@ function funcCallInputMeta(): ComponentMeta {
         description: 'The saved run\'s id.'},
       {name: 'functionName', type: 'string', bindable: true,
         description: 'The function whose runs the popup lists.'},
-      {name: 'nullable', type: 'bool', description: 'Backspace/Delete clears the value.'},
-      {name: 'placeholder', type: 'string', description: 'Shown while nothing is picked.'},
+      {name: 'nullable', type: 'bool', structural: true, description: 'Backspace/Delete clears the value.'},
+      {name: 'placeholder', type: 'string', structural: true, description: 'Shown while nothing is picked.'},
     ],
     events: ['input', 'change'],
     example: {tag: FCI_TAG, props: {label: 'Baseline run', functionName: 'Sin'}},
@@ -410,12 +409,11 @@ function funcFormMeta(): ComponentMeta {
     label: 'Function form',
     category: 'Data',
     description: 'An input form generated from a function\'s parameters, edited through a FuncCall.',
-    usage: 'A bound `functionName` re-renders the node with a fresh prepared call — a different ' +
-      'function is a different form; bind `callId` to a history browser\'s `selected` step to ' +
-      'copy that run\'s input values into the form.',
+    usage: '`functionName` is structural — a different function is a different form, so a bind reads ' +
+      'it once; bind `callId` to a history browser\'s `selected` step to copy that run\'s input ' +
+      'values into the form.',
     create: (props) => {
-      // re-render tier on purpose: `set source` rebinds existing fields, never builds new ones,
-      // so a different function needs a rebuilt form — which the re-render bind delivers
+      // structural: `set source` rebinds existing fields, never builds new ones
       const name = lit<string>(props.functionName);
       const func = name ? DG.Func.find({}).find((f) => f.nqName === name || f.name === name) : undefined;
       const emptyCall: FuncCallLike = {inputParams: {values: () => []}, setParamValue: () => {}};
@@ -435,15 +433,14 @@ function funcFormMeta(): ComponentMeta {
       return form;
     },
     props: [
-      {name: 'functionName', type: 'string',
-        description: 'Name of the function; the form edits a freshly prepared call of it. ' +
-          'A bound change re-renders the node.'},
+      {name: 'functionName', type: 'string', structural: true,
+        description: 'Name of the function; the form edits a freshly prepared call of it.'},
       {name: 'callId', type: 'string', bindable: true,
         description: 'A saved run\'s id; its input values are copied into the current call.'},
       {name: 'showHistory', type: 'bool', bindable: true, description: 'Shows the history icon.'},
       {name: 'showRun', type: 'bool', bindable: true,
         description: 'Shows the Run button; a run is executed and saved into the server history.'},
-      {name: 'condensed', type: 'bool'},
+      {name: 'condensed', type: 'bool', structural: true},
     ],
     events: [],
     example: {tag: FF_TAG, name: 'ff', props: {functionName: 'Sin', showHistory: true}},
@@ -464,5 +461,4 @@ export function registerPlatformComponents(reg: Registry = globalRegistry): void
     reg.register(funcCallInputMeta());
   if (reg.get(FF_TAG) === undefined)
     reg.register(funcFormMeta());
-  registerDomainComponents(reg);
 }

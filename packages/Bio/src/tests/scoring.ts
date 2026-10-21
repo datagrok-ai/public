@@ -13,6 +13,8 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
+import {readDataframe} from './utils';
+
 category('Scoring', () => {
   /* eslint-disable max-len */
   const sequence = 'sequence';
@@ -82,6 +84,36 @@ PEPTIDE1{[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[
       const tgtScore = table.get(expectedSimilarity, i);
       expectFloat(resScore, tgtScore, 0.01,
         `Wrong similarity score for sequence at position ${i}`);
+    }
+  });
+
+  function expectEveryRowScored(scoresCol: DG.Column<number>): void {
+    for (let i = 0; i < scoresCol.length; i++)
+      expect(!scoresCol.isNone(i) && !isNaN(scoresCol.get(i)!), true, `row ${i} has no ${scoresCol.name} score`);
+  }
+
+  test('Similarity-shortReference', async () => {
+    const scoresCol = await grok.functions.call('Bio:sequenceSimilarityScoring',
+      {table: table, macromolecule: seqCol, reference: shortReference}) as DG.Column<number>;
+    expectEveryRowScored(scoresCol);
+  });
+
+  test('Similarity-longReference', async () => {
+    const scoresCol = await grok.functions.call('Bio:sequenceSimilarityScoring',
+      {table: table, macromolecule: seqCol, reference: longReference}) as DG.Column<number>;
+    expectEveryRowScored(scoresCol);
+  });
+
+  test('Similarity-peaksOnReference', async () => {
+    const df = await readDataframe('tests/filter_HELM.csv');
+    await grok.data.detectSemanticTypes(df);
+    const helmCol: DG.Column<string> = df.getCol('HELM string');
+    for (const refIdx of [0, 2]) {
+      const scoresCol = await grok.functions.call('Bio:sequenceSimilarityScoring',
+        {table: df, macromolecule: helmCol, reference: helmCol.get(refIdx)}) as DG.Column<number>;
+      expectEveryRowScored(scoresCol);
+      expect(scoresCol.stats.uniqueCount >= 2, true, `similarity to row ${refIdx} is the same for every row`);
+      expect(scoresCol.get(refIdx), scoresCol.stats.max, `similarity to row ${refIdx} does not peak on it`);
     }
   });
 

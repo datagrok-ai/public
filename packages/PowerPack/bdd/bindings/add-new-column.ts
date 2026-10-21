@@ -16,7 +16,7 @@ element('formula pane editor', {selector: '.add-new-column-widget-cm-div .cm-con
   description: 'the CodeMirror field of the Formula pane of a calculated column in the context panel'});
 element('formula hint', {selector: '.add-new-column-dialog-root .cm-hint-div:not(.cm-errort-div)',
   description: 'the line under the editor: the signature of the function at the caret, else how to start'});
-element('formula error', {selector: '.cm-errort-div',
+element('formula error', {selector: '.add-new-column-dialog-root .cm-errort-div',
   description: 'the line under the editor that names what is wrong with the formula; empty while it is valid'});
 element('column list viewer', {selector: '.add-new-column-columns-grid',
   description: 'the columns of the table, one row each ("text of cell N of __name"), on the left of the functions'});

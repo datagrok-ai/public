@@ -40,7 +40,8 @@ export type ProfileExpand = {};
 export type MpoTransactionOp =
   {op: 'insert'; table: 'profile'; ref?: string; values: DG.DomainTxValues<ProfileInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'profile'; id: string; values: DG.DomainTxValues<Partial<ProfileRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'profile'; id: string};
+  {op: 'delete'; table: 'profile'; id: string} |
+  {op: 'restore'; table: 'profile'; id: string};
 
 /** Typed clients for the `mpo` domain schema tables (lazy — no import-time side effects). */
 export const mpoDb = {

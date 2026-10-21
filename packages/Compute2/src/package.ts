@@ -21,6 +21,7 @@ import {HistoryApp} from './apps/HistoryApp';
 import {Subject} from 'rxjs';
 import type {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {runOptimizerFinalized} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 import type {OptimizerParams} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
@@ -287,7 +288,14 @@ export class PackageFunctions {
     const metaCall = await historyUtils.shallowLoadRun(id);
     const call = metaCall.func.prepare({});
     call.aux.initialRunId = id;
-    call.edit();
+    if (`${metaCall.func.options['editor'] ?? ''}`.startsWith('Compute2:')) {
+      call.edit();
+      return;
+    }
+    // workflow steps and nested pipelines are usually functions without an editor of their own
+    const editor = metaCall.options[CONFIG_PATH] ? 'Compute2:TreeWizardEditor' : 'Compute2:RichFunctionViewEditor';
+    const editorCall = await DG.Func.byName(editor).prepare({call}).call();
+    grok.shell.addView(editorCall.getOutputParamValue());
   }
 
 

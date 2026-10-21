@@ -42,10 +42,10 @@ publish the WebLogo glyphs it draws in the native grid's headers as hit areas.
 | `sar/from-top-menu` | Dialog defaults, dock layout, clustering settings and their effect on the clusters, settings-dialog state, repeated optional-viewer lifecycle, Dendrogram on and off |
 | `sar/weblogo-selection` | Exact source-row masks for click, Shift and Control/Command; Distribution and Selection panes after each |
 | `sar/tooltips` | Cell statistics, cliff glyphs, highlight cleanup, cluster statistics and selection |
-| `sar/mutation-cliffs` | Independent pair counts, p-values, a cliff cell drawn and a cliff-free cell left blank, position chart, full export contents |
-| `sar/sequence-space` | Sequence space added, removed and re-added from the settings dialog: viewer, embedding and cluster columns |
-| `sar/similarity-threshold` | Fresh analyses at thresholds 10, 75 and 96 on 200 peptides (with the cluster count each leaves) and at 90 on all 647; header and map selection after each |
-| `sar/export` | Every invariant-map cell, every mutation pair/activity/delta, both source IDs |
+| `sar/mutation-cliffs` | A cliff cell drawn and a cliff-free cell left blank, the position chart drawn and its no-cliffs message, the cluster summary on the MCL clusters |
+| `sar/sequence-space` | Sequence space added, removed and re-added from the settings dialog: viewer, embedding and cluster columns; its parameters pane: the inputs a distance needs, a new distance embedding again |
+| `sar/similarity-threshold` | A fresh analysis at threshold 90 on all 647 (GROK-19145) and header selection after it |
+| `sar/export` | Both viewers' invariant-map export, the mutation-cliff export dialog with and without the ID column |
 | `sar/manual-alignment` | Apply, adjacent/end positions, recomputed statistics, Reset, selection and panes against edited data |
 | `sar/project-round-trip` | Non-default scaling/data/layout/selection persistence and restored interactions and panes |
 | `sar/default-launch` | The dialog defaults (inflation 1.4, no scaling; the threshold raised from 70 to 90) run once end to end |
@@ -53,8 +53,10 @@ publish the WebLogo glyphs it draws in the native grid's headers as hit areas.
 | `entry/landing` | Exactly three demo buttons, their exact datasets/notations and side-panel state |
 
 The source fixture is `System:DemoFiles/bio/peptides.csv`: 647 rows, 17 separator positions,
-22 non-gap monomers and 6253 unique single-mutation row pairs. Export oracles derive expectations
-from the original sequence strings and activities, independently of the viewer's caches.
+22 non-gap monomers and 6253 unique single-mutation row pairs. What the exports, the mutation cliffs
+and the MCL thresholds compute is checked against the source sequences and activities by the
+package tests (`src/tests/viewers.ts` 'Viewers: Export' and 'Viewers: Mutation Cliffs',
+`src/tests/model.ts` 'Model: MCL clusters').
 
 Journeys share their Background and run scenarios in order. Each scenario checks its own console
 and balloon errors because the harness clears those between scenarios. `peptides-sar-ready`
@@ -79,7 +81,7 @@ The launches set the MCL similarity threshold to 93 (the demo uses 94): MCL domi
 and the default 70 spends a long time on this fixture, while 93 clusters it in seconds. The
 exceptions: `sar/default-launch` keeps the dialog's other defaults at threshold 90, `sar/tooltips`
 launches at 94 on the first 100 peptides, the from-panel journey re-clusters at 90 and back at 93,
-and the threshold outline runs 10, 75 and 96 on 200 peptides, plus 90 on all 647.
+and `sar/similarity-threshold` runs 90 on all 647.
 
 Known failures, each with its ticket above the scenario: the settings reopen with Dendrogram
 unchecked while the tree is shown, and unchecking Dendrogram leaves the tree (both GROK-20640).

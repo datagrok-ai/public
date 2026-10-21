@@ -1,24 +1,23 @@
 #!/bin/sh
 set -e
 
-setpriv --reuid=1002 --regid=2002 --clear-groups env HOME=/home/broker node /app/dist/broker/broker.js &
-BROKER_PID=$!
+# Started as anyone but root, the server could not drop to uid 1001 itself and would stay dumpable.
+[ "$(id -u)" = 0 ] || { echo "Start the Grokky runtime as root: it drops to uid 1001 itself." >&2; exit 1; }
 
-i=0
-while [ "$i" -lt 50 ]; do
-  if node -e "fetch('http://127.0.0.1:8377/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" 2>/dev/null; then
-    break
-  fi
-  i=$((i + 1))
-  sleep 0.2
-done
-
-exec setpriv --reuid=1001 --regid=2001 --clear-groups \
-  env -i \
+# Only this allowlist of the container's environment reaches the server, so no foreign or stale credential does.
+exec env -i \
     PATH="$PATH" \
     HOME=/home/grok \
     CLAUDE_WORKSPACE="${CLAUDE_WORKSPACE:-/workspace}" \
     DATAGROK_API_URL="${DATAGROK_API_URL:-}" \
-    NODE_ENV="${NODE_ENV:-}" \
-    BROKER_PID="$BROKER_PID" \
+    provider="${provider:-}" \
+    apiKey="${apiKey:-}" \
+    ANTHROPIC_UPSTREAM="${ANTHROPIC_UPSTREAM:-}" \
+    HERMES_MAX_PROCESSES="${HERMES_MAX_PROCESSES:-}" \
+    HERMES_IDLE_TTL_MS="${HERMES_IDLE_TTL_MS:-}" \
+    HERMES_WARM_SPARES="${HERMES_WARM_SPARES:-}" \
+    HERMES_READY_TIMEOUT_MS="${HERMES_READY_TIMEOUT_MS:-}" \
+    HERMES_MAX_SESSIONS="${HERMES_MAX_SESSIONS:-}" \
+    HERMES_COMPRESSION_THRESHOLD_TOKENS="${HERMES_COMPRESSION_THRESHOLD_TOKENS:-}" \
+    HERMES_LOG_STDERR="${HERMES_LOG_STDERR:-}" \
     node /app/dist/server.js

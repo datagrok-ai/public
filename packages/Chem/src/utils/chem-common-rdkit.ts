@@ -13,6 +13,9 @@ import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdk
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {IMolContext, getMolSafe} from './mol-creation_rdkit';
 import {initRdKitFrom} from '../rdkit-service/rdkit-service-worker-api';
+import {ChemicalEngine, renderingModule} from '../engine/chem-engine';
+import {warnCruxFallback} from '../engine/fallback';
+import {noteCruxError} from '../engine/crux-module';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -74,7 +77,10 @@ export async function initRdKitModuleLocal(): Promise<void> {
   _rdKitModule.use_legacy_stereo_perception(false);
   console.log('RDKit module package instance was initialized');
   moduleInitialized = true;
-  _rdKitService = new RdKitService();
+  // A second init (a test category's `before`) keeps the worker pool: a new service would leave the old one's workers
+  // running for the rest of the page's life, each holding an RDKit instance, and a page has room for only so many
+  // WebAssembly memories (instantiation fails with "Out of memory" past it)
+  _rdKitService ??= new RdKitService();
 }
 
 export async function initRdKitService(): Promise<void> {
@@ -126,15 +132,19 @@ function createRenderingOpts(addSettings: {[key: string]: any}): {[key: string]:
   return {...RDKIT_COMMON_RENDER_OPTS, ...addSettings};
 }
 
+/**
+ * Draws the molecule (an RDKit one, or Crux's in Crux mode). False when the drawing threw: with `failQuietly` (a Crux
+ * molecule, which RDKit then draws) nothing is drawn or logged, else an error cross is drawn.
+ */
 export function drawRdKitMoleculeToOffscreenCanvas(
   molCtx: IMolContext, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null,
-  renderingOptions: {[key: string]: any} = {}): void {
+  renderingOptions: {[key: string]: any} = {}, failQuietly: boolean = false): boolean {
   const g = offscreenCanvas.getContext('2d', {willReadFrequently: true}) as OffscreenCanvasRenderingContext2D;
   const rdKitMol: RDMol | null = molCtx.mol;
   if (rdKitMol === null) {
     console.error('Molecule to be rendered cannot be null.');
     drawErrorCross(g, w, h);
-    return;
+    return true;
   }
 
 
@@ -143,7 +153,7 @@ export function drawRdKitMoleculeToOffscreenCanvas(
 
   if (!w || !h) {
     console.warn('Molecule not rendered due to width or height less than 1');
-    return;
+    return true;
   }
 
   const opts = createRenderingOpts({width: w, height: h});
@@ -166,11 +176,18 @@ export function drawRdKitMoleculeToOffscreenCanvas(
   try {
     rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));
   } catch (e) {
+    if (failQuietly) { // a Crux drawing that stopped partway: the canvas as RDKit expects it, then RDKit draws
+      noteCruxError(e);
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.clearRect(0, 0, w, h);
+      return false;
+    }
     console.error('Molecule failed to render ' + rdKitMol.get_molblock());
     drawErrorCross(g, w, h);
-    return;
+    return false;
   }
   // we need the offscreen canvas first to not let the molecule scaffold skew on a real canvas
+  return true;
 }
 
 export function drawRdKitReactionToOffscreenCanvas(
@@ -205,38 +222,68 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   if (!isMol)
     molString = convertToRDKit(molString);
 
+  // in Crux mode ("Chemical engine") Crux draws, and RDKit whatever Crux cannot read or refuses
+  const rendering = renderingModule(getRdKitModule());
+  if (rendering.engine === ChemicalEngine.Crux) {
+    let drawn = false;
+    try {
+      drawn = drawMoleculeWith(rendering.module, true, x, y, w, h, nW, nH, onscreenCanvas, molString, isMol,
+        scaffoldMolString, scaffoldStruct, renderingOptions);
+    } catch (e) {
+      noteCruxError(e);
+      warnCruxFallback('canvasMol', e);
+    }
+    if (drawn)
+      return;
+    warnCruxFallback('canvasMol', `RDKit draws what Crux cannot read or refuses, e.g. ${molString}`);
+  }
+  drawMoleculeWith(getRdKitModule(), false, x, y, w, h, nW, nH, onscreenCanvas, molString, isMol,
+    scaffoldMolString, scaffoldStruct, renderingOptions);
+}
+
+/** {@link drawMoleculeToCanvas} by one engine's module. Under Crux (`crux`) false, with nothing drawn, for a molecule
+ * or a scaffold Crux cannot read or a drawing it refuses. */
+function drawMoleculeWith(module: RDModule, crux: boolean, x: number, y: number, w: number, h: number, nW: number,
+  nH: number, onscreenCanvas: HTMLCanvasElement, molString: string, isMol: boolean, scaffoldMolString: string | null,
+  scaffoldStruct: ISubstruct | null, renderingOptions?: {[key: string]: any}): boolean {
   const offscreenCanvas = new OffscreenCanvas(nW, nH);
-  const molCtx = getMolSafe(molString, {}, getRdKitModule());
+  const molCtx = getMolSafe(molString, {}, module, true, crux ? noteCruxError : undefined);
   const mol : RDMol | null = molCtx.mol;
   if (mol === null) {
+    if (crux)
+      return false;
     console.error('Molecule is null for ' + molString);
     drawErrorCross(offscreenCanvas.getContext('2d') as OffscreenCanvasRenderingContext2D, w, h);
-    return;
-  }
-
-  if (!isMol)
-    mol.set_new_coords(true);
-
-  const molHasOwnCoords = (mol.has_coords() > 0);
-  if (molHasOwnCoords) {
-    mol.normalize_depiction(0);
-    mol.straighten_depiction(true);
+    return true;
   }
 
   let scaffoldMol: RDMol | null = null;
   try {
+    if (!isMol)
+      mol.set_new_coords(true);
+
+    const molHasOwnCoords = (mol.has_coords() > 0);
+    if (molHasOwnCoords) {
+      mol.normalize_depiction(0);
+      mol.straighten_depiction(true);
+    }
+
     let substruct: ISubstruct | null = null;
     if (scaffoldStruct)
       substruct = scaffoldStruct;
     else {
       let substructJson = '{}';
       scaffoldMol = scaffoldMolString == null ? null :
-        (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) :
-          getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
+        (isMolBlock(scaffoldMolString) ? module.get_qmol(scaffoldMolString) :
+          module.get_qmol(convertToRDKit(scaffoldMolString)!));
+      if (crux && scaffoldMolString && !scaffoldMol) // ('' is no scaffold, as for RDKit's empty query)
+        return false;
       if (scaffoldMol) {
         try {
           substructJson = mol.get_substruct_match(scaffoldMol);
         } catch (e) {
+          if (crux)
+            throw e;
           console.error(`get_substruct_match failed for ${molString} and ${scaffoldMolString}`);
         }
         if (substructJson === '')
@@ -244,10 +291,12 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
       }
       substruct = JSON.parse(substructJson);
     }
-    drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreenCanvas, substruct, renderingOptions);
+    if (!drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreenCanvas, substruct, renderingOptions, crux) && crux)
+      return false;
     const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, nW, nH);
     const context = onscreenCanvas.getContext('2d')!;
     context.putImageData(image, x, y);
+    return true;
   } finally {
     mol?.delete();
     scaffoldMol?.delete();

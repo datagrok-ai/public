@@ -8,13 +8,17 @@ Feature: Managing monomer libraries
   files), Add asks which one takes the file; a stand with the files alone skips that dialog. An
   uploaded library is still listed when the manager opens again, and Delete removes the file from
   every storage, not only the checkbox. The dialog entry (Bio:manageMonomerLibraries, the panel link)
-  lists the same libraries as the view. Serial: the library selection is the user's, and other
-  features (atomic level, the HELM project round-trip) depend on it.
+  lists the same libraries as the view; while the view is open, the link on a Macromolecule column's
+  Bioinformatics > Manage Monomer Libraries pane brings that view back instead of opening the dialog
+  over it (GROK-20714). Serial: the library selection is the user's, and other
+  features (atomic level) depend on it.
 
   Not translated: writing a library file straight to the file share and editing it there (the
   lifecycle md's S2.1-2.2 — the old spec wrote a file and read it back, which tests the file
-  store, not Bio; the upload through Add is the product path and is claimed); the Manage Monomers
-  view's CRUD (creating and editing a monomer through its editor dialog — no feature yet).
+  store, not Bio; the upload through Add is the product path and is claimed); a project saved with a
+  library (the lifecycle md's S3 — a project stores no reference to a library; a HELM column's
+  detection and renderer through a project are render/renderers'). Making and deleting a monomer in
+  the Manage Monomers view is monomer-editor.feature's.
 
   Background:
     Given user is logged in
@@ -95,4 +99,17 @@ Feature: Managing monomer libraries
     When user picks "Bio > Manage > Monomer Libraries" from the top menu
     Then the "Manage Monomer Libraries" view should be current
     And "HELMCoreLibrary.json" checkbox should be visible
+    And no error or warning balloon should have been shown
+
+  @GROK-20714
+  Scenario: With the manager open, the panel link brings it back instead of a dialog
+    Given user switches to the "filter_HELM" table view
+    And the context panel is open
+    When user clicks on the "header HELM string" area of grid
+    Then the context panel should show "HELM string"
+    When user expands Bioinformatics accordion header in context panel
+    And user expands "Manage Monomer Libraries" accordion header in context panel
+    And user clicks on monomer libraries link in context panel
+    Then the "Manage Monomer Libraries" view should be current
+    And "Manage monomer libraries" dialog should be absent
     And no error or warning balloon should have been shown

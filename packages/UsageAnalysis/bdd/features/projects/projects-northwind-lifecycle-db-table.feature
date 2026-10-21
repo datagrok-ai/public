@@ -1,0 +1,164 @@
+@journey @serial @realizes:views.projects @realizes:sharing.share-dialog
+Feature: A project of the NorthwindTest orders table: saved, reopened and shared
+  NorthwindTest is the Postgres connection PostgresTest of the DbTests package, listed as
+  NorthwindTest under Browse > Databases > Postgres; a stand without it, or where it cannot reach its
+  database, skips the feature (the gate in the Background).
+
+  Test 2 of the md: NorthwindTest > Schemas > public > orders is opened with Get All (830 rows),
+  saved through the ribbon's Save dialog with Data sync on and the creation script
+  DbQuery(Dbtests:PostgresTest, "public.orders", …), reopened from the Dashboards gallery (830 rows,
+  re-read by data sync, the Save dialog still showing Data sync and the DbQuery call), shared with
+  the second account (the project only) and removed through Delete Project. Translated from the
+  TestTrack case Projects/projects-lifecycle-db; Test 1 (the PostgresAll query) is
+  projects-northwind-lifecycle-db-query.
+
+  The second account (the library's sharing user) signs in on the feature's page before the share,
+  when its Browse > Databases > Postgres does not list NorthwindTest (on dev it has no grant on
+  Dbtests:PostgresTest, 2026-10-12), and after it: sharing the table project brings the connection
+  along — NorthwindTest is listed — and the project opens with its 830 rows and no error dialog
+  (intended, operator 2026-10-05; a project of a saved query does not bring its connection, see
+  projects-northwind-lifecycle-query). The md's "recipient without access gets a Data loading error"
+  and the connection share after it were corrected in the md to this. On core master of 2026-10-19 the
+  share does not bring the connection: the second account's tree still has no NorthwindTest, and its
+  open of the project stops on 'Unable to get project asset "PostgresTest"' with no dialog — that
+  scenario is a known failure, pinned at the tree. The System:Datagrok version for other stands is
+  parked (its row counts differ per server and need a remembered row count).
+
+  The project name carries the run's time (letters and digits only); the project (with its table,
+  view and grant) is removed at the start and at the end.
+
+  Serial (`@serial`): it sweeps the second account's grant on the NorthwindTest connection, which the
+  other NorthwindTest feature (lifecycle-query) gives and reads while it runs.
+
+  Background:
+    Given user is logged in
+    And the context panel is open
+    And the stand has a reachable "PostgresTest" connection
+    And the sharing user has no grant on the "PostgresTest" connection, now and when the feature ends
+    And the browse panel is open
+    And no project named "BDDNwLifeDbTable{time}" is on the server
+
+  Scenario: Get All opens the database table into a table view
+    Given the browse panel is open
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
+    And Databases---Postgres---NorthwindTest---Schemas tree node inside browse tree is expanded
+    And Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree is expanded
+    When user picks "Get All" from the context menu of Databases---Postgres---NorthwindTest---Schemas---public---orders tree node inside browse tree
+    Then the current view should be a TableView view
+    And the "orders" view should be current
+    And the table should have 830 rows
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: Saved with Data sync, the creation script reads the table from the database
+    When user clicks on Save button
+    Then "Save project" dialog should be visible
+    And Data sync switch in "orders" project table in "Save project" dialog should be checked
+    When user enters "BDDNwLifeDbTable{time}" into Name text input in "Save project" dialog
+    And user clicks on "Creation script" button in "orders" project table in "Save project" dialog
+    Then "orders" project table in "Save project" dialog should contain text "DbQuery(Dbtests:PostgresTest, \"public.orders\""
+    When user clicks on OK button in "Save project" dialog
+    Then the "Save project" dialog should close
+    And an info balloon containing 'Project "BDDNwLifeDbTable{time}" uploaded' should have been shown
+    And 1 project named "BDDNwLifeDbTable{time}" should be on the server
+    And the "orders" table of the "BDDNwLifeDbTable{time}" project should be saved with data sync
+    And "Share BDDNwLifeDbTable{time}" dialog should be visible
+    When user clicks on CANCEL button in "Share BDDNwLifeDbTable{time}" dialog
+    Then the "Share BDDNwLifeDbTable{time}" dialog should close
+    And no errors should have been logged
+
+  Scenario: The table project reopens from Dashboards by re-reading the table
+    When user closes all views
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDNwLifeDbTable{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDNwLifeDbTable{time} gallery card and the project opens
+    Then the current view should be a TableView view
+    And the "orders" view should be current
+    And the table should have 830 rows
+    And the table should have been reloaded by data sync
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+    When user clicks on Save button
+    Then "Save project" dialog should be visible
+    And "Creation script" button in "orders" project table in "Save project" dialog should be visible
+    And Data sync switch in "orders" project table in "Save project" dialog should be checked
+    When user clicks on "Creation script" button in "orders" project table in "Save project" dialog
+    Then "orders" project table in "Save project" dialog should contain text "DbQuery(Dbtests:PostgresTest, \"public.orders\""
+    When user clicks on CANCEL button in "Save project" dialog
+    Then the "Save project" dialog should close
+
+  Scenario: Before the share, the second account does not see the NorthwindTest connection
+    When user closes all views
+    When user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    Then Databases---Postgres---Datagrok tree node inside browse tree should be visible
+    And Databases---Postgres---NorthwindTest tree node inside browse tree should be absent
+    When user signs in as themselves again
+    Then the running account should be signed in
+
+  Scenario: Only the project is shared with the second account
+    Then the running account should be signed in
+    When user closes all views
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDNwLifeDbTable{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user picks "Share..." from the context menu of BDDNwLifeDbTable{time} gallery card
+    Then "Share BDDNwLifeDbTable{time}" dialog should be visible
+    And share access selector should contain text "View and use"
+    When user picks the sharing user in "User, group, or email" input in "Share BDDNwLifeDbTable{time}" dialog
+    And user unchecks "Send notifications" input in "Share BDDNwLifeDbTable{time}" dialog
+    And user clicks on OK button in "Share BDDNwLifeDbTable{time}" dialog
+    Then the "Share BDDNwLifeDbTable{time}" dialog should close
+    When user clicks on BDDNwLifeDbTable{time} gallery card
+    Then the context panel should show "BDDNwLifeDbTable{time}"
+    And the sharing pane should list the sharing user
+
+  # the share does not bring the connection on core master of 2026-10-19: the tree does not list NorthwindTest,
+  # and the open stops on 'Unable to get project asset "PostgresTest"' (no ticket yet)
+  @known-failure:134
+  Scenario: With the project shared, the second account sees the connection and opens the project with its rows
+    When user closes all views
+    When user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    Then Databases---Postgres---NorthwindTest tree node inside browse tree should be visible
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDNwLifeDbTable{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDNwLifeDbTable{time} gallery card and the project opens
+    Then the "orders" view should be current
+    And the table should have 830 rows
+    And "Data loading error" dialog should be absent
+    When user closes all views
+    When user signs in as themselves again
+    Then the running account should be signed in
+
+  Scenario: Delete Project removes the table project
+    Then the running account should be signed in
+    When user closes all views
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDNwLifeDbTable{time}" into gallery search
+    Then BDDNwLifeDbTable{time} gallery card should be visible
+    When user remembers the gallery counter
+    And user picks "Delete Project" from the context menu of BDDNwLifeDbTable{time} gallery card
+    Then "Are you sure?" dialog should be visible
+    And "Are you sure?" dialog should contain text "Delete project \"BDDNwLifeDbTable{time}\"?"
+    When user clicks on DELETE button in "Are you sure?" dialog
+    Then the "Are you sure?" dialog should close
+    And 0 projects named "BDDNwLifeDbTable{time}" should be on the server
+    When user clicks on "Refresh" icon inside gallery toolbar
+    Then the gallery counter should be lower than remembered
+    And BDDNwLifeDbTable{time} gallery card should be absent
+    And no errors should have been logged
+    And no error or warning balloon should have been shown

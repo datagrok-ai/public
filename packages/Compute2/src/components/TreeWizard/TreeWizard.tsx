@@ -12,7 +12,6 @@ import {
   PipelineState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../RFV/RichFunctionView';
 import {STEP_HISTORY_OPTION} from '../History/History';
 import {TreeNode} from './TreeNode';
@@ -29,13 +28,15 @@ import {
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
   disposeViewers, findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
-  pinView, reportTree, resolveChosenUuid, resolveSingleStep, SELECTED_STEP_BACKGROUND,
+  pinView, reportTree, getExportSummary, reportSummary, resolveChosenUuid, resolveSingleStep, SELECTED_STEP_BACKGROUND,
+  isEachDraggable, isDeletable, isDuplicable,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {setHelpService} from '../../composables/use-help';
+import {useFeedbackItems} from '../../composables/use-feedback';
 import {createCompositorOverlayService} from '../../composables/use-compositor-overlay';
 import {compositorOverlay} from '../../directives/compositor-overlay';
 import {CustomExport, ExportCbInput, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
@@ -91,12 +92,12 @@ export const TreeWizard = Vue.defineComponent({
       hasNotSavedEdits,
       states,
       logs,
-      config,
       links,
+      hiddenActions,
       result,
       //
       loadPipeline,
-      loadAndReplaceNestedPipeline,
+      loadAndReplaceNestedItem,
       savePipeline,
       saveDynamicItem,
       runStep,
@@ -106,8 +107,11 @@ export const TreeWizard = Vue.defineComponent({
       addStep,
       removeStep,
       moveStep,
+      duplicateStep,
       changeFuncCall,
       returnResult,
+      inspectLinks,
+      inspectConfig,
     } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'), Vue.toRef(props, 'instanceConfig'), overlayService);
 
     setHelpService();
@@ -123,12 +127,7 @@ export const TreeWizard = Vue.defineComponent({
       return func ? Vue.markRaw(func) : undefined;
     });
     const showReturn = Vue.computed(() => props.showReturn);
-    const reportBugUrl = Vue.computed<string | undefined>(() => {
-      return (providerFunc.value?.package?.settings)?.REPORT_BUG_URL;
-    });
-    const reqFeatureUrl = Vue.computed<string | undefined>(() => {
-      return (providerFunc.value?.package?.settings)?.REQUEST_FEATURE_URL;
-    });
+    const feedbackItems = useFeedbackItems(providerFunc);
 
     ////
     // results
@@ -157,6 +156,15 @@ export const TreeWizard = Vue.defineComponent({
           .show({center: true, modal: true});
       } else
         runAction(uuid, additionalParams);
+    };
+
+    const removeStepWithConfirm = (state: PipelineState) => {
+      const title = states.descriptions[state.uuid]?.title;
+      const name = typeof title === 'string' ? title : (state.friendlyName ?? state.configId);
+      ui.dialog(`Remove confirmation`)
+        .add(ui.divText(`Do you want to remove "${name}"? Its unsaved inputs and results will be lost.`))
+        .onOK(() => removeStep(state.uuid))
+        .show({center: true, modal: true});
     };
 
     const runSubtreeWithConfirm = (startUuid: string, rerunWithConsistent?: boolean) => {
@@ -225,14 +233,14 @@ export const TreeWizard = Vue.defineComponent({
       }
     };
 
-    const onPipelineFuncCallUpdate = (newCall: DG.FuncCall) => {
+    const onRunChosen = (newCall: DG.FuncCall, readonly: boolean) => {
       if (isRootChoosen.value)
         loadPipeline(newCall.id);
-      else if (chosenStepState.value && chosenStepUuid.value && treeState.value && !isFuncCallState(chosenStepState.value)) {
+      else if (chosenStepState.value && chosenStepUuid.value && treeState.value) {
         const parent = findTreeNodeParrent(chosenStepUuid.value, treeState.value);
         if (parent && !isFuncCallState(parent)) {
           const position = parent.steps.findIndex((step) => step.uuid === chosenStepUuid.value);
-          loadAndReplaceNestedPipeline(parent.uuid, newCall.id, chosenStepState.value.configId, position);
+          loadAndReplaceNestedItem(parent.uuid, newCall.id, chosenStepState.value.configId, position, readonly);
         }
       }
     };
@@ -391,6 +399,14 @@ export const TreeWizard = Vue.defineComponent({
     // export
     ////
 
+    const exportStates = () => ({
+      callInfoStates: states.calls,
+      validationStates: states.validations,
+      consistencyStates: states.consistency,
+      pipelineValidations: states.pipelineValidations,
+      descriptions: states.descriptions,
+    });
+
     const exports = Vue.computed(() => {
       if (!treeState.value || isFuncCallState(treeState.value))
         return [];
@@ -403,11 +419,8 @@ export const TreeWizard = Vue.defineComponent({
             startDownload: true,
             treeState: treeState.value!,
             meta: currentMetaCallData.value,
-            callInfoStates: states.calls,
+            ...exportStates(),
             metaStates: states.meta,
-            validationStates: states.validations,
-            consistencyStates: states.consistency,
-            descriptions: states.descriptions,
             hasNotSavedEdits: hasNotSavedEdits.value
           })
         };
@@ -437,15 +450,14 @@ export const TreeWizard = Vue.defineComponent({
             startDownload: false,
             treeState: state,
             meta: currentMetaCallData.value,
-            callInfoStates: states.calls,
+            ...exportStates(),
             metaStates: states.meta,
-            validationStates: states.validations,
-            consistencyStates: states.consistency,
-            descriptions: states.descriptions,
             hasNotSavedEdits: hasNotSavedEdits.value,
             cb,
           });
         },
+        getExportSummary: (state: PipelineState) => getExportSummary(state, exportStates()),
+        reportSummaryExcel: (state: PipelineState) => reportSummary(getExportSummary(state, exportStates())),
         getFuncCallCustomExports: (fc: DG.FuncCall) => {
           return Utils.getCustomExports(fc.func).map(x => x.name);
         },
@@ -471,6 +483,8 @@ export const TreeWizard = Vue.defineComponent({
     ////
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
+    const isChosenParentReadonly = Vue.computed(() => !!chosenStepUuid.value && !!treeState.value &&
+      !!findTreeNodeParrent(chosenStepUuid.value, treeState.value)?.isReadonly);
 
     // keyed on the nqName string so a new FuncCall is prepared only when the
     // chosen pipeline actually changes, not on every reactive state emission
@@ -514,7 +528,7 @@ export const TreeWizard = Vue.defineComponent({
     const rfvHistory = Vue.computed(() => {
       if (singleStep.value && providerFunc.value)
         return {mode: 'workflow' as const, func: providerFunc.value, version: singleStep.value.chain[0]?.version};
-      if (currentStepHistoryEnabled.value)
+      if (currentStepHistoryEnabled.value && !isChosenParentReadonly.value)
         return {mode: 'step' as const};
       return undefined;
     });
@@ -596,7 +610,8 @@ export const TreeWizard = Vue.defineComponent({
         return {};
       const globalActions = getRelevantGlobalActions(treeState.value, chosenStepUuid.value);
       const currentStepActions = chosenStepState.value?.actions?.filter(action => action.position === 'menu') ?? [];
-      const actions = [...globalActions, ...currentStepActions].filter((action) => action.visible !== false);
+      const actions = [...globalActions, ...currentStepActions]
+        .filter((action) => !hiddenActions.value?.has(action.uuid));
       return actions.reduce((acc, action) => {
         const menuCategory = action.menuCategory ?? 'Actions';
         if (action.position === 'menu' || action.position === 'globalmenu') {
@@ -611,7 +626,7 @@ export const TreeWizard = Vue.defineComponent({
 
     const buttonActions = Vue.computed(() => {
       return chosenStepState.value?.actions?.reduce((acc, action) => {
-        if (action.position === 'buttons' && action.visible !== false)
+        if (action.position === 'buttons' && !hiddenActions.value?.has(action.uuid))
           acc.push(action);
 
         return acc;
@@ -647,12 +662,6 @@ export const TreeWizard = Vue.defineComponent({
         .every((isOutdated) => isOutdated === false);
     });
 
-    const isEachDraggable = (stat: AugmentedStat) => {
-      return stat.parent && !stat.parent.data.isReadonly &&
-        (isDynamicPipelineState(stat.parent.data)) &&
-        !stat.parent.data.stepTypes.find((item: StepDynamicDescription) => item.configId === stat.data.configId && item.disableUIDragging);
-    };
-
     const isEachDroppable = (stat: AugmentedStat) => {
       const draggedStep = dragContext?.startInfo?.dragNode as AugmentedStat | undefined;
       return isDynamicPipelineState(stat.data) &&
@@ -679,12 +688,6 @@ export const TreeWizard = Vue.defineComponent({
         inst.dragNode = null;
         inst.dragOvering = false;
       }
-    };
-
-    const isDeletable = (stat: AugmentedStat) => {
-      return !!stat.parent && !stat.parent.data.isReadonly &&
-        (isDynamicPipelineState(stat.parent.data)) &&
-        !stat.parent.data.stepTypes.find((item: StepDynamicDescription) => item.configId === stat.data.configId && item.disableUIRemoving);
     };
 
     ////
@@ -743,17 +746,6 @@ export const TreeWizard = Vue.defineComponent({
       onClick: () => exportHandler(exportData),
     })));
 
-    const feedbackItems = Vue.computed<RibbonMenuItem[]>(() => [
-      ...(reportBugUrl.value ? [{
-        text: 'Report a bug',
-        onClick: () => window.open(reportBugUrl.value, '_blank'),
-      }] : []),
-      ...(reqFeatureUrl.value ? [{
-        text: 'Request a feature',
-        onClick: () => window.open(reqFeatureUrl.value, '_blank'),
-      }] : []),
-    ]);
-
     const actionMenuItems = (actions: ViewAction[]): RibbonMenuItem[] => actions.map((action) => ({
       text: action.friendlyName ?? action.id,
       icon: action.icon,
@@ -768,7 +760,7 @@ export const TreeWizard = Vue.defineComponent({
         {isTreeLoaded.value && isTreeReportable.value && !singleStep.value &&
           <RibbonMenu groupName='Export' items={exportItems.value}/>
         }
-        {(reportBugUrl.value || reqFeatureUrl.value) &&
+        {feedbackItems.value.length > 0 &&
           <RibbonMenu groupName='Feedback' items={feedbackItems.value}/>
         }
         { isTreeLoaded.value && menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
@@ -783,11 +775,10 @@ export const TreeWizard = Vue.defineComponent({
             <Inspector
               key="inspector"
               treeState={treeState.value}
-              config={config.value}
               logs={logs.value}
               links={links.value}
-              selectedUuid={chosenStepUuid.value}
-              stepStates={states}
+              inspectLinks={inspectLinks}
+              inspectConfig={inspectConfig}
               ref={inspectorInstance}
               dock-spawn-title='Inspector'
               class='h-full overflow-scroll'
@@ -844,12 +835,14 @@ export const TreeWizard = Vue.defineComponent({
                           'background-color': stat.data.uuid === chosenStepUuid.value ? SELECTED_STEP_BACKGROUND : null,
                         }}
                         isDraggable={treeInstance.value?.isDraggable(stat)}
-                        isDroppable={treeInstance.value?.isDroppable(stat)}
                         isDeletable={isDeletable(stat)}
+                        isDuplicable={isDuplicable(stat)}
                         isReadonly={stat.data.isReadonly}
+                        isSelected={stat.data.uuid === chosenStepUuid.value}
                         hasInconsistentSubsteps={!!hasSubtreeAnyInconsistencies(stat.data, states.calls, states.consistency)}
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
-                        onRemoveNode={() => removeStep(stat.data.uuid)}
+                        onRemoveNode={() => removeStepWithConfirm(stat.data)}
+                        onDuplicateNode={() => duplicateStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
                         onRunSubtree={(startUuid, rerunWithConsistent) => runSubtreeWithConfirm(startUuid, rerunWithConsistent)}
                         onRunStep={(uuid) => runStep(uuid)}
@@ -879,6 +872,7 @@ export const TreeWizard = Vue.defineComponent({
                 history={rfvHistory.value}
                 hideDefaultExport={!!singleStep.value?.chain[0]?.disableDefaultExport}
                 onUpdate:funcCall={onFuncCallChange}
+                onStepRunChosen={onRunChosen}
                 onHistoryRunChosen={(call) => loadPipeline(call.id)}
                 onSaveToHistory={singleStep.value ? () => saveEntireModelState() : saveStepToHistory}
                 onPublishRun={singleStep.value ? () => shareCurrentRun() : shareStepRun}
@@ -941,13 +935,14 @@ export const TreeWizard = Vue.defineComponent({
               state={chosenStepState.value}
               uuid={chosenStepUuid.value}
               isRoot={isRootChoosen.value}
+              isParentReadonly={isChosenParentReadonly.value}
               buttonActions={buttonActions.value}
               body={typeof states.descriptions[chosenStepUuid.value]?.body === 'string'
                 ? states.descriptions[chosenStepUuid.value]?.body as string
                 : undefined}
               onActionRequested={runActionWithConfirmation}
               dock-spawn-title='Step sequence review'
-              onUpdate:funcCall={onPipelineFuncCallUpdate}
+              onUpdate:funcCall={onRunChosen}
               onAddNode={({itemId, position}) => {
                 if (chosenStepUuid.value)
                   addStep(chosenStepUuid.value, itemId, position);

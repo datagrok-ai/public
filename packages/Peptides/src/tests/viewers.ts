@@ -1,16 +1,20 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, delay, expect, test, testViewer} from '@datagrok-libraries/test/src/test';
+import {after, awaitCheck, before, category, delay, expect, expectFloat, test, testViewer}
+  from '@datagrok-libraries/test/src/test';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {highlightMonomerPosition, scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
-import {MonomerPosition, MostPotentResidues, SAR_PROPERTIES, SELECTION_MODE} from '../viewers/sar-viewer';
-import {SCALING_METHODS} from '../utils/constants';
+import {MonomerPosition, MostPotentResidues, SAR_PROPERTIES, SARViewer, SELECTION_MODE} from '../viewers/sar-viewer';
+import {COLUMN_NAME, COLUMNS_NAMES, SCALING_METHODS, SEM_TYPES} from '../utils/constants';
 import {CLUSTER_TYPE, LogoSummaryTable, LST_PROPERTIES} from '../viewers/logo-summary';
+import {MutationCliffsViewer} from '../viewers/mutation-cliffs-viewer';
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
-import {TEST_COLUMN_NAMES} from './utils';
+import {analyzeDemoPeptides, DEMO_COLUMN_NAMES, loadDemoPeptides, singleMutationPairs, splitSequences,
+  TEST_COLUMN_NAMES} from './utils';
 import {showTooltip} from '../utils/tooltips';
 import {PeptideUtils} from '../peptideUtils';
 import {GEN_COLUMN_NAMES, PEPTIDE_GENERATION_PROPS, PEPTIDE_GENERATION_VIEWER_NAME,
@@ -284,3 +288,205 @@ category('Viewers: Peptide Generation', () => {
       'High-target peptides should reach at least as high a predicted activity as the Low-target minimum');
   });
 });
+
+category('Viewers: Export', () => {
+  let df: DG.DataFrame;
+  let model: PeptidesModel;
+  let split: string[][];
+
+  before(async () => {
+    await PeptideUtils.loadComponents();
+    df = await loadDemoPeptides();
+    split = splitSequences(df.getCol(DEMO_COLUMN_NAMES.SEQUENCE));
+    model = await analyzeDemoPeptides(df);
+    const mpViewer = model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition;
+    await awaitCheck(() => mpViewer.mutationCliffs !== null, 'Mutation cliffs are not calculated', 30000);
+  });
+
+  after(async () => grok.shell.closeAll());
+
+  test('Invariant map', async () => {
+    const monomers = [...new Set(split.flat().filter((monomer) => monomer !== ''))].sort();
+    const positions = split[0].map((_, i) => `${i + 1}`);
+    expect(monomers.length, 22, 'monomers');
+    expect(positions.length, 17, 'positions');
+    for (const viewerType of [VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP, VIEWER_TYPE.MOST_POTENT_RESIDUES]) {
+      (model.findViewer(viewerType) as SARViewer).exportInvariantMap();
+      const view = grok.shell.tv;
+      const exported = view.dataFrame;
+      try {
+        expect(exported.name, 'Invariant Map', `${viewerType} export`);
+        expect(exported.columns.names().join(', '), [COLUMNS_NAMES.MONOMER, ...positions].join(', '),
+          `${viewerType} export columns`);
+        expect(exported.getCol(COLUMNS_NAMES.MONOMER).toList().join(', '), monomers.join(', '),
+          `${viewerType} export monomers`);
+        for (const position of positions) {
+          const counts = exported.getCol(position);
+          expect(counts.type, DG.COLUMN_TYPE.INT, `${viewerType} export column ${position}`);
+          for (let row = 0; row < monomers.length; row++) {
+            expect(counts.get(row), split.filter((s) => s[Number(position) - 1] === monomers[row]).length,
+              `${viewerType} export count of ${monomers[row]} at ${position}`);
+          }
+        }
+      } finally {
+        view.close();
+      }
+    }
+  });
+
+  test('Mutation cliffs', async () => {
+    const sequences = df.getCol(DEMO_COLUMN_NAMES.SEQUENCE);
+    const activities = df.getCol(DEMO_COLUMN_NAMES.ACTIVITY);
+    const ids = df.getCol(DEMO_COLUMN_NAMES.ID);
+    const rowByActivity = new Map(activities.toList().map((activity, row) => [activity, row]));
+    expect(rowByActivity.size, df.rowCount, 'IC50 identifies the source rows');
+    const expectedPairs = singleMutationPairs(split);
+    expect(expectedPairs.size, 6253, 'single-mutation pairs');
+
+    (model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition)['_doExportMutationCliffs']([ids]);
+    const view = grok.shell.tv;
+    const exported = view.dataFrame;
+    try {
+      expect(exported.name, 'Mutation Cliffs');
+      expect(exported.columns.names().join(', '),
+        'Seq 1, Seq 2, Mutation, Seq 1 IC50, Seq 2 IC50, Delta, Seq 1 ID, Seq 2 ID', 'export columns');
+      for (const name of ['Seq 1', 'Seq 2']) {
+        expect(exported.getCol(name).semType, DG.SEMTYPE.MACROMOLECULE, `${name} semantic type`);
+        expect(exported.getCol(name).meta.units, NOTATION.SEPARATOR, `${name} units`);
+      }
+      expect(exported.getCol('Mutation').semType, SEM_TYPES.MACROMOLECULE_DIFFERENCE, 'Mutation semantic type');
+      const exportedPairs = new Set<string>();
+      for (let row = 0; row < exported.rowCount; row++) {
+        const activity1 = exported.get('Seq 1 IC50', row);
+        const activity2 = exported.get('Seq 2 IC50', row);
+        const a = rowByActivity.get(activity1)!;
+        const b = rowByActivity.get(activity2)!;
+        const pair = `${Math.min(a, b)}:${Math.max(a, b)}`;
+        expect(expectedPairs.has(pair) && !exportedPairs.has(pair), true, `row ${row}: duplicate or non-cliff pair`);
+        exportedPairs.add(pair);
+        const seq1 = exported.get('Seq 1', row);
+        const seq2 = exported.get('Seq 2', row);
+        expect(seq1, sequences.get(a), `row ${row}: Seq 1`);
+        expect(seq2, sequences.get(b), `row ${row}: Seq 2`);
+        expect(exported.get('Mutation', row), `${seq1}#${seq2}`, `row ${row}: Mutation`);
+        expectFloat(exported.get('Delta', row), activity1 - activity2, 1e-12, `row ${row}: Delta`);
+        expect(exported.get('Seq 1 ID', row), ids.get(a), `row ${row}: Seq 1 ID`);
+        expect(exported.get('Seq 2 ID', row), ids.get(b), `row ${row}: Seq 2 ID`);
+      }
+      expect(exportedPairs.size, expectedPairs.size, 'exported single-mutation pairs');
+    } finally {
+      view.close();
+    }
+  });
+}, {clear: false});
+
+category('Viewers: Mutation Cliffs', () => {
+  let df: DG.DataFrame;
+  let model: PeptidesModel;
+  let split: string[][];
+
+  before(async () => {
+    await PeptideUtils.loadComponents();
+    df = await loadDemoPeptides(200);
+    split = splitSequences(df.getCol(DEMO_COLUMN_NAMES.SEQUENCE));
+    model = await analyzeDemoPeptides(df);
+  });
+
+  after(async () => grok.shell.closeAll());
+
+  test('Cliff counts', async () => {
+    const mpViewer = model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition;
+    await awaitCheck(() => mpViewer.mutationCliffs !== null, 'Mutation cliffs are not calculated', 30000);
+    const cliffs = mpViewer.mutationCliffs!;
+    const cliffCount = (monomer: string, position: string): number =>
+      Array.from(cliffs.get(monomer)?.get(position)?.values() ?? []).reduce((sum, targets) => sum + targets.length, 0);
+    let pairs = 0;
+    const uniquePairs = new Set<string>();
+    for (const [monomer, positions] of cliffs) {
+      for (const [position, indexes] of positions) {
+        pairs += cliffCount(monomer, position);
+        for (const [from, targets] of indexes) {
+          for (const to of targets)
+            uniquePairs.add(`${Math.min(from, to)}:${Math.max(from, to)}`);
+        }
+      }
+    }
+    expect(pairs, 4484, 'cliff pairs, one per mutated monomer of a pair');
+    expect(uniquePairs.size, 2242, 'unique cliff pairs');
+    const expectedPairs = singleMutationPairs(split);
+    expect(expectedPairs.size === uniquePairs.size && [...expectedPairs].every((pair) => uniquePairs.has(pair)), true,
+      'cliff pairs are the single-mutation pairs');
+    expect(cliffCount('A', '2'), 100, 'cliffs of A at 2');
+    expect(cliffCount('A', '3'), 0, 'cliffs of A at 3');
+
+    expect(model.positionColumns?.length, 17, 'positions');
+    expect(df.getCol('2').semType, SEM_TYPES.MONOMER, 'position column semantic type');
+    const stats = mpViewer.monomerPositionStats['2']['A'];
+    expect(stats.count, 59, 'count of A at 2');
+    expect(Number.isFinite(stats.meanDifference), true, 'mean difference of A at 2');
+    expect(stats.pValue !== null && stats.pValue >= 0 && stats.pValue <= 1, true, `p-value ${stats.pValue} of A at 2`);
+  });
+
+  test('Position chart', async () => {
+    const participants = (position: number): number[] => {
+      const rows = new Set<number>();
+      for (const pair of singleMutationPairs(split)) {
+        const [a, b] = pair.split(':').map(Number);
+        if (split[a][position - 1] !== split[b][position - 1])
+          rows.add(a).add(b);
+      }
+      return [...rows].sort((a, b) => a - b);
+    };
+    const viewer = await df.plot.fromType(VIEWER_TYPE.SEQUENCE_MUTATION_CLIFFS, {
+      sequenceColumnName: DEMO_COLUMN_NAMES.SEQUENCE, activityColumnName: DEMO_COLUMN_NAMES.ACTIVITY, position: 2,
+    }) as MutationCliffsViewer;
+    model.analysisView.addViewer(viewer);
+    const chartAt = async (position: number): Promise<DG.DataFrame> => {
+      viewer.getProperty('position')!.set(viewer, position);
+      await awaitCheck(() => viewer.getWidgetStatus().values.position === position && !viewer.isRenderPending,
+        `The position ${position} chart is not rendered`, 15000);
+      return viewer.innerDf;
+    };
+
+    const rows = participants(2);
+    expect(rows.length, 115, 'peptides in position 2 cliffs');
+    const chart = await chartAt(2);
+    expect(chart.rowCount, rows.length, 'position 2 chart rows');
+    const monomers = chart.getCol('Position 2');
+    const plotted = chart.getCol(viewer.activityColumnName);
+    const activities = df.getCol(DEMO_COLUMN_NAMES.ACTIVITY);
+    for (let i = 0; i < rows.length; i++) {
+      expect(monomers.get(i) ?? '', split[rows[i]][1], `position 2 chart row ${i}: monomer`);
+      expect(Math.fround(plotted.get(i)), Math.fround(activities.get(rows[i])), `position 2 chart row ${i}: activity`);
+    }
+    expect(participants(1).length, 0, 'peptides in position 1 cliffs');
+    expect((await chartAt(1)).rowCount, 0, 'position 1 chart rows');
+  });
+}, {clear: false});
+
+category('Viewers: Logo Summary Table WebLogo', () => {
+  before(async () => await PeptideUtils.loadComponents());
+
+  after(async () => grok.shell.closeAll());
+
+  // WebLogo aggregation must use the same filtered rows as the cluster bitsets
+  test('WebLogo aggregation on a filtered table', async () => {
+    const df = await loadDemoPeptides();
+    const model = await analyzeDemoPeptides(df, 75);
+    const lst = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
+    const unfilteredGrid = lst.viewerGrid;
+    const mask = DG.BitSet.create(df.rowCount, (i) => i % 10 !== 0);
+    const filterSub = df.onRowsFiltering.subscribe(() => df.filter.and(mask));
+    try {
+      df.rows.requestFilter();
+      await awaitCheck(() => lst.viewerGrid !== unfilteredGrid, 'Logo Summary Table is not rebuilt on filter', 5000);
+      lst.getProperty(`${LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN_NAME}${COLUMN_NAME}`)!
+        .set(lst, DEMO_COLUMN_NAMES.ACTIVITY);
+      lst.getProperty(LST_PROPERTIES.WEB_LOGO_AGGREGATION_TYPE)!.set(lst, DG.AGG.AVG);
+      await awaitCheck(() => lst.viewerGrid.root.querySelector('.bio-wl-host') !== null,
+        'WebLogo is not rendered for the filtered table', 10000);
+    } finally {
+      filterSub.unsubscribe();
+    }
+  }, {timeout: 120000});
+}, {clear: false});

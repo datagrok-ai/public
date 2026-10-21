@@ -15,9 +15,9 @@ export interface DynamicInputOptions<T> extends InputOptions<T | null> {
  * `render` output is foreign DOM: it is removed on the next write and on dispose, never
  * introspected. A renderer that builds a component owns disposing it (`u2/dg`'s `metaInput` does). */
 export class DynamicInput<T = unknown> extends Input<T | null, DynamicInputOptions<T>> {
-  private _box!: HTMLElement;
+  private declare _box: HTMLElement;
   // assigned in createEditor, which the base constructor runs before field initializers
-  private _rendered!: HTMLElement | null;
+  private declare _rendered: HTMLElement | null;
 
   constructor(options: DynamicInputOptions<T>) {
     super(options, null);

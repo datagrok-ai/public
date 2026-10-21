@@ -1,0 +1,45 @@
+# Hermes' config.yaml for every session; config.py adds the skills directory and the compression threshold.
+# Hermes' own additions to the prompt and the loop are off: the runtime owns both.
+model:
+  context_length: 1000000  # every model in models.yaml
+  supports_vision: true
+agent:
+  verify_on_stop: false
+  intent_ack_continuation: false
+  stall_guards: false
+  task_completion_guidance: false
+  parallel_tool_call_guidance: false
+  environment_probe: false
+  bot_mode_protocol: false
+  coding_context: "off"
+  auto_recovery_cycles: 0
+  api_max_retries: 4  # attempts per model call
+tools:
+  tool_search:
+    enabled: "off"
+  connectors:
+    enabled: false
+tool_loop_guardrails:
+  warnings_enabled: false
+  hard_stop_enabled: false
+  non_interactive_hard_stop_enabled: false
+plugins:
+  enabled: [grokky]
+  auto_update_check_hours: 0
+  load_timeout_seconds: 0  # loaded inline: a session whose plugin did not load refuses to start
+skills:
+  project_discovery: false
+auxiliary:
+  title_generation:
+    enabled: false
+compression:
+  enabled: true
+  tail_mode: legacy  # keeps the recent messages verbatim
+approvals:
+  mode: "off"
+auth:
+  adopt_external_logins: false  # never a Claude Code login found on the host (~/.claude, the macOS Keychain)
+logging:
+  level: WARNING  # INFO logs the start of every prompt where the other sessions (same uid) can read it
+model_catalog:
+  enabled: false

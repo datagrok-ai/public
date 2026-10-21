@@ -96,7 +96,7 @@ grok add tests
 Please note that entity names may only include letters and numbers
 
 --domain scaffolds a working browse/CRUD app over an entity-mapped domain table
-(\`grok.dapi.domains\`) from the u2 defaults (\`@datagrok-libraries/u2\`): a three-line
+(\`grok.dapi.domains\`) from the EMS defaults (\`@datagrok-libraries/ems\`): a three-line
 app function, a \`src/app.spec.json\` the designer edits, and — for a schema the package
 does not declare yet — a one-table starter \`databases/<schema>/schema.json\`. Give it
 one table (\`--domain tracker.issue\`), a whole schema the package declares in
@@ -142,7 +142,7 @@ Options:
 --verbose         Print detailed output
 --ui              Also generate \`src/generated/db-ui.ts\` — typed u2 handles
                   (\`get<Schema>Db()\` → a \`DomainTable<Row>\` per table, opened in
-                  parallel behind one await) over \`@datagrok-libraries/u2\`. Once the
+                  parallel behind one await) over \`@datagrok-libraries/ems\`. Once the
                   file exists, plain \`grok api\` keeps it up to date; delete it to
                   opt out again
 `;
@@ -303,6 +303,7 @@ Options:
 --skip-puppeteer    Skip the Puppeteer/DG.Test pass; only run Playwright (for playwright-only test directories)
 --skip-playwright   Skip the Playwright pass; only run Puppeteer/DG.Test
 --skip-node         Skip the Node (browserless) pass; run all tests in the browser
+--skip-gc           Do not collect garbage after each test (faster for suites of small unit tests)
 --node-only         Run only tests annotated {node: true} headless under Node, no browser
 --link  	        Link the package to local utils (no effect in a pnpm workspace checkout)
 --record            Records the test execution process in mp4 format

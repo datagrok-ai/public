@@ -5,12 +5,13 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 import {category, test, expect, expectObject, expectArray, awaitCheck} from '@datagrok-libraries/test/src/test';
-import {DistanceMetric} from '@datagrok-libraries/bio/src/trees';
+import {DistanceMetric, LinkageMethod} from '@datagrok-libraries/bio/src/trees';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
-import {getClusterMatrixWorker} from '@datagrok-libraries/math';
+import {getClusterMatrixWorker, LinkageMethodCode} from '@datagrok-libraries/math';
 
-import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
+import {hierarchicalClusteringDialog, hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
+import {TreeHelper} from '../utils/tree-helper';
 
 import {_package} from '../package-test';
 
@@ -74,6 +75,24 @@ category('hierarchicalClustering', () => {
       heightsResult: new Float32Array([3, 4.5])
     };
 
+  // Squared distances of (0,0), (4,0), (2,3.5), (2,10): the centroid of the first pair, (2,0), is closer to the third
+  // point than the pair's members are to each other, so the second merge is lower than the first (an inversion).
+  const inversionDist: number[] = [16, 16.25, 104, 16.25, 104, 42.25];
+
+  const inversionCentroidClusterMat: ClusterMatrix =
+    {
+      mergeRow1: new Int32Array([-1, -3, -4]),
+      mergeRow2: new Int32Array([-2, 1, 2]),
+      heightsResult: new Float32Array([16, 12.25, 78.0278]),
+    };
+
+  const inversionMedianClusterMat: ClusterMatrix =
+    {
+      mergeRow1: new Int32Array([-1, -3, -4]),
+      mergeRow2: new Int32Array([-2, 1, 2]),
+      heightsResult: new Float32Array([16, 12.25, 68.0625]),
+    };
+
   const AVERAGE_METHOD_CODE = 2;
 
   test('UI', async () => {
@@ -103,6 +122,20 @@ category('hierarchicalClustering', () => {
     await hierarchicalClusteringUI(null as unknown as DG.DataFrame, ['a', 'b'], DistanceMetric.Euclidean, 'average');
     expect(Array.from(grok.shell.tableViews).length, viewCount);
   });
+
+  for (const linkage of [LinkageMethod.Centroid, LinkageMethod.Median]) {
+    test(`UI-${linkage}-inversions`, async () => {
+      const dataDf: DG.DataFrame = DG.DataFrame.fromCsv('x,y\n0,0\n4,0\n2,3.5\n2,10\n10,10');
+      dataDf.name = `testHC${linkage}Inversions`;
+      const tv: DG.TableView = grok.shell.addTableView(dataDf);
+      try {
+        await hierarchicalClusteringUI(dataDf, ['x', 'y'], DistanceMetric.Euclidean, linkage);
+        expect(tv.grid.getWidgetStatus().values?.['tree leaves'], dataDf.rowCount, 'tree leaves');
+      } finally {
+        tv.close();
+      }
+    });
+  }
 
   // test('hierarchicalClustering1', async () => {
   //   await _testHierarchicalClustering(data1, 'euclidean', 'average', tgt1NewickAverage);
@@ -177,6 +210,38 @@ category('hierarchicalClustering', () => {
     await _testHierarchicalClusteringWasm(tgt2Dist, AVERAGE_METHOD_CODE, tgt2ClusterMat);
   });
 
+  test('hierarchicalClusteringWasmCentroidInversion', async () => {
+    await _testHierarchicalClusteringWasm(inversionDist, LinkageMethodCode.Centroid, inversionCentroidClusterMat);
+  });
+
+  test('hierarchicalClusteringWasmMedianInversion', async () => {
+    await _testHierarchicalClusteringWasm(inversionDist, LinkageMethodCode.Median, inversionMedianClusterMat);
+  });
+
+  // Features follows the Table input when tables are closed and opened while the dialog is open
+  test('dialog-follows-closed-table', async () => {
+    grok.shell.closeAll();
+    const dfA = DG.DataFrame.fromCsv('x,y\n1,2\n2,3\n3,4');
+    const dfB = DG.DataFrame.fromCsv('p,q\n1,2\n2,3\n3,4');
+    grok.shell.addTableView(dfA);
+    grok.shell.addTableView(dfB);
+    await hierarchicalClusteringDialog((t) => t.columns.byIndex(0));
+    const dialog = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Hierarchical Clustering')!;
+    const features = () => dialog.root.querySelector('[name="input-host-Features"] .ui-input-column-names')?.textContent;
+    try {
+      expect(features()?.includes('p'), true);
+      grok.shell.closeTable(dfB);
+      await awaitCheck(() => features()?.includes('x') ?? false, 'Features still lists the closed table columns', 2000);
+      grok.shell.closeTable(dfA);
+      await awaitCheck(() => features() == null, 'Features of the closed last table is still shown', 2000);
+      grok.shell.addTableView(DG.DataFrame.fromCsv('m,n\n1,2\n2,3\n3,4'));
+      await awaitCheck(() => features()?.includes('m') ?? false, 'Features does not list the newly opened table columns', 2000);
+    } finally {
+      dialog.close();
+      grok.shell.closeAll();
+    }
+  });
+
   // test('hierarchicalClusteringWasmNoWorker1', async () => {
   //   await _testHierarchicalClusteringWasm(tgt1Dist, AVERAGE_METHOD_CODE, tgt1ClusterMat, false);
   // });
@@ -194,6 +259,14 @@ category('hierarchicalClustering', () => {
     const clusterMatrix: ClusterMatrix = await getClusterMatrixWorker(
       distanceMatrix.data, n, linkage,
     );
+    for (let i = 0; i < n - 1; i++) {
+      for (const ref of [clusterMatrix.mergeRow1[i], clusterMatrix.mergeRow2[i]])
+        expect(ref <= i, true, `Merge ${i + 1} references cluster ${ref}, which is not built yet`);
+    }
     expectObject(clusterMatrix, tgtClusterMatrix);
+
+    const th = new TreeHelper();
+    const leaves = th.getLeafList(th.parseClusterMatrix(clusterMatrix)).map((l) => Number(l.name));
+    expectArray(leaves.sort((a, b) => a - b), Array.from({length: n}, (_, i) => i));
   }
 });

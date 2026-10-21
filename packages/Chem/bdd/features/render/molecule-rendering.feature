@@ -5,10 +5,12 @@ Feature: A molecule drawn in a viewer tooltip, and mixture cells
   GROK-16870 regression lock: the renderer used to throw
   NullError: method not found: 'gS' on null when a non-Chem viewer asked it for a tooltip cell.
 
-  test_mixtures is typed ChemicalMixture and its cells are drawn by its own renderer.
+  test_mixtures is typed ChemicalMixture.
 
   Molecule and reaction cells in the grid are tested in Chem src/tests/rendering-tests.ts
   ('rdkit grid cell renderer') and src/tests/reaction-rendering-tests.ts ('Reaction rendering').
+
+  Mixture cells, each component drawn in its own place, are tested in Chem src/tests/rendering-tests.ts 'mixture cell renderer'.
 
   Background:
     Given user is logged in
@@ -39,15 +41,12 @@ Feature: A molecule drawn in a viewer tooltip, and mixture cells
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: Mixture cells are typed and drawn by the mixture renderer
+  Scenario: Mixture cells are typed ChemicalMixture
     Given user opens test_mixtures dataset
     Then the table should have 4 rows
     And the table should have 1 column
     And "mixture" column should have semantic type "ChemicalMixture"
     And every value of "mixture" column should contain "mixfileVersion"
     And every value of "mixture" column should contain "contents"
-    And the "cell 1 of mixture" area of grid should be painted
-    And the "cell 1 of mixture" area of grid should be painted in at least 1 colors
-    And the "cell 2 of mixture" area of grid should be painted in at least 1 colors
     And no errors should have been logged
     And no error or warning balloon should have been shown

@@ -153,7 +153,7 @@ test('Filters — layout round-trip with panel and viewer filtering combined', a
           await applied;
         }, savedLayout);
 
-        await expect.poll(async () => page.locator('[name="viewer-Filters"] .d4-filter').count(),
+        await expect.poll(async () => page.locator('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').count(),
           {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBeGreaterThanOrEqual(1);
         await expect.poll(async () => raceSelectedCategories(page),
           {timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toEqual([PANEL_CATEGORY]);

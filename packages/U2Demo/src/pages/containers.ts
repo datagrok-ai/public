@@ -1,7 +1,7 @@
 import {
   signal, computed, Signal, Scope,
   divV, divH, panel, span, h3, button,
-  TextInput, Splitter, Accordion, Breadcrumbs, Toolbar,
+  TextInput, SliderInput, MultiChoiceInput, Splitter, Accordion, Breadcrumbs, Toolbar,
   Menu, MenuBar, Dialog, Tooltip, Form,
 } from '@datagrok-libraries/u2';
 import {readout} from './common';
@@ -12,7 +12,7 @@ export function containersPage(): HTMLElement {
   const split = new Splitter([left, right], {direction: 'horizontal', sizes: [30, 70]});
   split.root.classList.add('u2demo-split');
   right.append(readout('sizes', computed(() =>
-    split.sizes.value.map((s) => s.toFixed(1)).join(' / '))));
+    split.sizes.value.map((s) => `${Math.round(s * 100)}%`).join(' / '))));
 
   const acc = new Accordion();
   acc.addPane('General', divV([span('Eagerly built pane.')]), true);
@@ -101,12 +101,21 @@ export function popupsPage(status: Signal<string>): HTMLElement {
 
   const dlgName = new TextInput({label: 'Name', value: 'u2'});
   dlgName.addValidator((v) => v.trim() ? null : 'Required');
-  const dlgForm = new Form().add(dlgName);
-  const dialog = Dialog.create('u2 dialog')
+  const dlgForm = new Form().addAll([dlgName,
+    new SliderInput({label: 'Opacity', name: 'opacity', min: 0, max: 100, value: 30}),
+    new MultiChoiceInput({label: 'Targets', name: 'targets', items: ['GPCR', 'Kinase', 'Ion channel'],
+      value: ['Kinase']})]);
+  // content that grows after show: the dialog re-fits to the window instead of running off it
+  const dlgRows = divV([]);
+  const dialog = Dialog.create('u2 dialog', {keepAlive: true})
     .add(span('Modal, draggable by the title bar, Esc cancels, Enter accepts.'))
     .add(dlgForm)
+    .add(button('Add rows', () => dlgRows.append(...Array.from({length: 10},
+      (_, i) => span(`Row ${dlgRows.childElementCount + i + 1}`)))))
+    .add(dlgRows)
     .onOK(() => log(`Dialog OK, name = ${dlgName.value.value}`))
-    .onCancel(() => log('Dialog cancelled'));
+    .onCancel(() => log('Dialog cancelled'))
+    .onHelp(() => log('Dialog help'));
 
   return divV([
     h3('Menu bar (panel-local)'),

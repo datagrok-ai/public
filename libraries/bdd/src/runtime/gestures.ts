@@ -18,7 +18,8 @@ const EDITOR = '.ui-input-editor';
 const EDITOR_PART = '[data-u2-part="editor"]';
 const OPTION = '[role="option"], .u2-menu-item, .u2-combobox-option, .d4-menu-item, .u2-list-row';
 const OPTION_LABEL = '.u2-fb-label, .u2-typeahead-text, .u2-typeahead-user-name, .u2-multi-select-text, .u2-menu-label';
-const CLOSE = '.u2-dialog-close, [aria-label="Close"], [name="icon-times"], .d4-dialog-close';
+/** The close icon of a dialog of either UI generation. */
+export const DIALOG_CLOSE = '.u2-dialog-close, [aria-label="Close"], [name="icon-times"], .d4-dialog-close';
 const TWISTIE = '.u2-tree-twistie, .d4-tree-view-tri';
 
 function gestureOf(page: Page, target: ElementRef): {click?: 'mouse' | 'dom'; type?: 'keyboard' | 'fill'} {
@@ -181,7 +182,7 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
 
 /** A Dart property grid row shows its value as a label and builds its editor (a select, an input)
  * only when the value cell is clicked: open it first, so the gesture finds the editor. */
-async function openPropertyEditor(loc: Locator): Promise<void> {
+export async function openPropertyEditor(loc: Locator): Promise<void> {
   const row = loc.first();
   if (!await row.evaluate((e) => e.matches('tr.property-grid-item')).catch(() => false))
     return;
@@ -373,17 +374,26 @@ export async function pickInColumnGrid(page: Page, option: string, what: string,
 }
 
 /** A mouse-down on a Dart column selector opens its column grid; the pointer then leaves it, since
- * the row it rests on is previewed onto the selector. */
+ * the row it rests on is previewed onto the selector. A form that rebuilds its rows around the press
+ * (Edit Aggregated Tooltip redraws every row when one is added or changed) can swallow it, so a
+ * press that opened no column grid is made again on the selector as it is now. */
 export async function openColumnSelector(page: Page, selector: Locator, leave = true): Promise<void> {
-  const box = await selector.boundingBox();
-  if (!box)
-    throw new Error('the column selector has no box');
-  await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
-  await page.mouse.down();
-  await page.mouse.up();
-  if (leave) {
-    const away = guide.guideDir() ? await besidePicker(page, box) : {x: 2, y: 2};
-    await page.mouse.move(away.x, away.y);
+  const popup = page.locator('.d4-column-grid:has(.d4-column-selector-backdrop)').filter({visible: true});
+  for (let attempt = 1; ; attempt++) {
+    const box = await selector.boundingBox();
+    if (!box)
+      throw new Error('the column selector has no box');
+    await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.up();
+    const opened = attempt === 3 || await popup.first().waitFor({state: 'visible', timeout: 2000}).then(() => true, () => false);
+    if (!opened)
+      continue;
+    if (leave) {
+      const away = guide.guideDir() ? await besidePicker(page, box) : {x: 2, y: 2};
+      await page.mouse.move(away.x, away.y);
+    }
+    return;
   }
 }
 
@@ -503,8 +513,10 @@ async function selectNative(page: Page, select: Locator, option: string): Promis
   await page.waitForTimeout(300);
   await guide.hop(page, select);
   await page.keyboard.press('Enter');
-  const taken = await select.evaluate((e) => (e as HTMLSelectElement).selectedOptions[0]?.label ?? '');
-  if (taken !== option)
+  // a property grid closes its editor on Enter and shows the value as text again: nothing left to correct
+  const taken = await select.evaluate((e) => (e as HTMLSelectElement).selectedOptions[0]?.label ?? '', undefined, {timeout: 1000})
+    .catch(() => null);
+  if (taken !== null && taken !== option)
     await select.selectOption({label: option});
 }
 
@@ -549,7 +561,7 @@ export async function toggle(page: Page, target: ElementRef): Promise<void> {
 
 export async function close(page: Page, target: ElementRef): Promise<void> {
   const loc = await locate(page, target);
-  const button = loc.locator(CLOSE).first();
+  const button = loc.locator(DIALOG_CLOSE).first();
   if (await button.count() > 0)
     await button.click();
   else

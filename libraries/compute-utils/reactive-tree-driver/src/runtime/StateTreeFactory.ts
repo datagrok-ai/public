@@ -1,14 +1,14 @@
-import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of, merge, from} from 'rxjs';
-import {map, mapTo, toArray, concatMap} from 'rxjs/operators';
-import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
+import {catchError, map, mapTo, toArray} from 'rxjs/operators';
+import {historyUtils} from '../../../history-utils';
+import {NodePath} from '../data/BaseTree';
 import {getPipelineRef, PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState} from '../config/PipelineInstance';
 import {buildTraverseD} from '../data/graph-traverse-utils';
 import {buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineDynamicConfig, isPipelineSelfRef, isPipelineStaticConfig, isPipelineStepConfig, PipelineRefMap, PipelineStepConfigurationProcessed} from '../config/config-utils';
-import {FuncCallAdapter, FuncCallMockAdapter} from './FuncCallAdapters';
+import {FuncCallMockAdapter} from './FuncCallAdapters';
 import {loadFuncCall, loadInstanceState, makeFuncCall} from './funccall-utils';
-import {DynamicPipelineNode, FuncCallNode, isFuncCallNode, StateTreeNode, StaticPipelineNode} from './StateTreeNodes';
+import {DynamicPipelineNode, FuncCallNode, isFuncCallNode, PipelineNodeBase, StateTreeNode, StaticPipelineNode} from './StateTreeNodes';
 import {indexFromEnd} from '../utils';
 import {DriverLogger} from '../data/Logger';
 import {StateTree} from './StateTree';
@@ -19,20 +19,20 @@ export function loadStateTree({
   dbId,
   config,
   isReadonly = false,
-  defaultValidators = false,
+  annotationChecks = false,
   batchLinks = false,
   mockMode = false,
 }: {
   dbId: string,
   config: PipelineConfigurationProcessed,
   isReadonly?: boolean,
-  defaultValidators?: boolean,
+  annotationChecks?: boolean,
   batchLinks?: boolean,
   mockMode?: boolean
 }): Observable<StateTree> {
   return defer(async () => {
     const [state, _] = await loadInstanceState(dbId);
-    const tree = fromPipelineInstanceState({state, config, isReadonly, defaultValidators, batchLinks, mockMode});
+    const tree = fromPipelineInstanceState({state, config, isReadonly, annotationChecks, batchLinks, mockMode});
     return tree;
   });
 }
@@ -43,7 +43,7 @@ export function fromPipelineConfig({
   startPath = [],
   startState,
   isReadonly = false,
-  defaultValidators = false,
+  annotationChecks = false,
   batchLinks = false,
   mockMode = false,
   logger,
@@ -53,15 +53,14 @@ export function fromPipelineConfig({
   startPath?: Readonly<NodePath>;
   startState?: StateTree;
   isReadonly?: boolean;
-  defaultValidators?: boolean;
+  annotationChecks?: boolean;
   batchLinks?: boolean;
   mockMode?: boolean;
   logger?: DriverLogger
 }): StateTree {
   const refMap = buildRefMap(config);
 
-  // TODO: initial infinite cycles detection
-  const traverse = buildTraverseD(startPath, (data: ConfigTraverseItem, path) => {
+  const traverse = buildTraverseD(startPath, (data: ConfigTraverseItem, path, ancestors) => {
     if (isPipelineDynamicConfig(data)) {
       const items = (data?.initialSteps ?? []).map((rawStep, idx) => {
         const step = typeof rawStep === 'string' ? {id: rawStep} : rawStep;
@@ -76,20 +75,21 @@ export function fromPipelineConfig({
           throw new Error(`Node ${step.id} not found on path ${JSON.stringify(path)}`);
         const nextPath = [...path, {id: step.id, idx}];
         const stepItem = {...step, ...item};
-        return [stepItem, nextPath] as const;
+        return [stepItem, nextPath, ancestors] as const;
       });
       return items;
     } else if (isPipelineStaticConfig(data))
-      return data.steps.map((step, idx) => [step, [...path, {id: step.id, idx}]] as const);
+      return data.steps.map((step, idx) => [step, [...path, {id: step.id, idx}], ancestors] as const);
     else if (isPipelineSelfRef(data)) {
       const next = getPipelineRef(refMap, data.nqName, data.version);
       if (!next)
         throw new Error(`Failed to deref nqName ${data.nqName} version ${data.version} on path ${JSON.stringify(path)}`);
-
-      return [[next, [...path, {id: next.id, idx: 0}]]] as const;
+      if (ancestors!.has(next))
+        throw new Error(`Initial config cycle on node ${next.id} path ${JSON.stringify(path)}`);
+      return [[next, [...path, {id: next.id, idx: 0}], new Set([...ancestors!, next])]] as const;
     }
     return [] as const;
-  }, new Set<ConfigTraverseItem>());
+  }, new Set<ConfigTraverseItem>([startNode]));
 
   const tree = traverse(startNode, (acc, state, path) => {
     const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly, logger);
@@ -98,7 +98,7 @@ export function fromPipelineConfig({
         throw new Error(`Wrong FuncCall node state type ${state.type} on path ${JSON.stringify(path)}`);
       node.initState(state);
     }
-    return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, batchLinks, mockMode, logger});
+    return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, annotationChecks, batchLinks, mockMode, logger});
   }, startState);
   return tree!;
 }
@@ -108,14 +108,14 @@ export function fromPipelineInstanceState({
   config,
   isReadonly,
   mockMode = false,
-  defaultValidators = false,
+  annotationChecks = false,
   batchLinks = false,
   logger,
 }: {
   state: PipelineSerializedState;
   config: PipelineConfigurationProcessed;
   isReadonly: boolean,
-  defaultValidators?: boolean,
+  annotationChecks?: boolean,
   batchLinks?: boolean,
   mockMode?: boolean,
   logger?: DriverLogger
@@ -132,7 +132,7 @@ export function fromPipelineInstanceState({
   const tree = traverse(state, (acc, state, path) => {
     const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly || state.isReadonly, logger);
     node.restoreState(state);
-    return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, batchLinks, mockMode, logger});
+    return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, annotationChecks, batchLinks, mockMode, logger});
   }, undefined as StateTree | undefined);
   return tree!;
 }
@@ -140,24 +140,27 @@ export function fromPipelineInstanceState({
 export function fromPipelineInstanceConfig({
   instanceConfig,
   config,
+  startPath = [],
+  startState,
   isReadonly = false,
-  defaultValidators = false,
+  annotationChecks = false,
   batchLinks = false,
   mockMode = false,
   logger,
 }: {
   instanceConfig: PipelineInstanceConfig,
   config: PipelineConfigurationProcessed,
+  startPath?: Readonly<NodePath>,
+  startState?: StateTree,
   isReadonly?: boolean,
-  defaultValidators?: boolean,
+  annotationChecks?: boolean,
   batchLinks?: boolean,
   mockMode?: boolean,
   logger?: DriverLogger
 }): StateTree {
   const refMap = buildRefMap(config);
 
-  // TODO: fix static pipeline missing steps
-  const traverse = buildTraverseD([] as Readonly<NodePath>, (data: PipelineInstanceConfig, path, visited) => {
+  const traverse = buildTraverseD(startPath, (data: PipelineInstanceConfig, path, visited) => {
     if (visited!.has(data))
       throw new Error(`Initial config cycle on node ${data.id} path ${JSON.stringify(path)}`);
     visited!.add(data);
@@ -168,11 +171,20 @@ export function fromPipelineInstanceConfig({
   }, new Set<PipelineInstanceConfig>());
 
   const tree = traverse(instanceConfig, (acc, state, path) => {
-    const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly, logger);
-    if (isFuncCallNode(node))
-      node.initState(state);
-    return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, batchLinks, mockMode, logger});
-  }, undefined as StateTree | undefined);
+    const nodeConf = getConfigByInstancePath(path.map((p) => p.id), config, refMap);
+    const nodeReadonly = isReadonly || !!state.isReadonly;
+    if (!state.steps && !isPipelineStepConfig(nodeConf)) {
+      const tree = fromPipelineConfig({
+        config, startNode: nodeConf, startPath: path, startState: acc,
+        isReadonly: nodeReadonly, annotationChecks, batchLinks, mockMode, logger,
+      });
+      (tree.nodeTree.getItem(path) as PipelineNodeBase).initState(state);
+      return tree;
+    }
+    const [node, ppath, idx] = makeTreeNode(config, refMap, path, nodeReadonly, logger);
+    node.initState(state);
+    return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, annotationChecks, batchLinks, mockMode, logger});
+  }, startState);
   return tree!;
 }
 
@@ -181,18 +193,35 @@ export function loadOrCreateCalls(stateTree: StateTree, mockMode: boolean) {
     const pendingFuncCallLoads = stateTree.nodeTree.traverse(stateTree.nodeTree.root, (acc, node) => {
       const item = node.getItem();
       if (isFuncCallNode(item)) {
+        const sourceRunId = item.sourceRunId;
+        if (!mockMode && sourceRunId && item.sourceRunTitle === undefined) {
+          // a deleted source run must not fail the load, it only has no title then
+          acc = [...acc, defer(() => from(historyUtils.shallowLoadRun(sourceRunId))).pipe(
+            map((run) => {
+              item.sourceRunTitle = run.options['title'] ?? null;
+            }),
+            catchError(() => {
+              item.sourceRunTitle = null;
+              return of(undefined);
+            }),
+          )];
+        }
         if (item.instancesWrapper.getInstance())
           return acc;
         else if (mockMode) {
           const obs$ = defer(() => {
             const adapter = new FuncCallMockAdapter(item.config.io!, item.isReadonly);
-            item.initAdapter({adapter, restrictions: {}, isOutputOutdated: true, runError: undefined}, true);
+            const initialValues = item.instancesWrapper.initialValues;
+            const outputs = item.config.io!.filter((io) => io.direction === 'output' && initialValues[io.id] !== undefined);
+            for (const io of outputs)
+              adapter.setState(io.id, initialValues[io.id]);
+            item.initAdapter({adapter, restrictions: {}, isOutputOutdated: !outputs.length, runError: undefined}, true);
             return of(undefined);
           });
           return [...acc, obs$];
         } else if (item.instancesWrapper.id == null && item.pendingId == null) {
           const obs$ = defer(() => {
-            return from(makeFuncCall(item.config.nqName, false, item.instancesWrapper.initialValues)).pipe(
+            return from(makeFuncCall(item.config.nqName, item.isReadonly, item.instancesWrapper.initialValues)).pipe(
               map((data) => item.initAdapter(data, true)),
             );
           });
@@ -273,7 +302,7 @@ function addTreeNodeOrCreate(
     node,
     ppath,
     pos,
-    defaultValidators,
+    annotationChecks,
     batchLinks,
     mockMode,
     logger,
@@ -283,7 +312,7 @@ function addTreeNodeOrCreate(
     node: StateTreeNode;
     ppath: NodePath;
     pos: number;
-    defaultValidators: boolean;
+    annotationChecks: boolean;
     batchLinks: boolean;
     mockMode: boolean;
     logger?: DriverLogger
@@ -292,6 +321,6 @@ function addTreeNodeOrCreate(
   if (acc)
     acc.nodeTree.addItem(ppath, node, node.config.id, pos);
   else
-    return new StateTree(node, config, mockMode, defaultValidators, logger, batchLinks);
+    return new StateTree(node, config, mockMode, annotationChecks, logger, batchLinks);
   return acc;
 }

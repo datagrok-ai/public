@@ -13,7 +13,8 @@ Feature: Label scatter plot markers with the structure, the ID and a potency val
     And user adds a scatter plot viewer with:
       | X | Chemical Space X |
       | Y | Chemical Space Y |
-    When user clicks on settings icon of scatter plot viewer
+    When user hovers over scatter plot viewer
+    And user clicks on settings icon of scatter plot viewer
     Given "Labels" category in context panel is expanded
     When user clicks on "..." button in "Label Columns" property in context panel
     Then "Select columns..." dialog should be visible
