@@ -5,6 +5,7 @@
 
    The fixture both harnesses build: table `folder` — `code` (string, required, the business key),
    `name` (string, the name column), `parent_id` (ref → `folder`), `done` (bool), `meta` (json),
+   `tags` (string_list),
    `hierarchy: true`, soft delete on. Plain ESM importing NOTHING, so a package with no u2 link can run it too. */
 
 /** @type {import('./scenarios.d.ts').ConformanceScenario[]} */
@@ -392,6 +393,27 @@ export const scenarios = [
         filter: [{property: 'done', operator, value: true}], limit: 100})).map((row) => row.code).sort();
       t.deepEqual(await codes('is'), ['ist-yes'], 'is true: only the true row');
       t.deepEqual(await codes('is not'), ['ist-no', 'ist-none'], 'is not true: the false row and the null one');
+    },
+  },
+  {
+    name: 'string_list: a filter tests the elements, an empty or missing list has none',
+    requires: [],
+    seed: [
+      {key: 'a', code: 'tl-a', name: 'A', tags: ['x', 'y']},
+      {key: 'b', code: 'tl-b', name: 'B', tags: ['z']},
+      {key: 'c', code: 'tl-c', name: 'C', tags: []},
+      {key: 'd', code: 'tl-d', name: 'D'},
+    ],
+    async run(table, ids, t) {
+      const codes = async (filter) =>
+        (await table.query({filter, limit: 100})).map((row) => row.code.slice(3)).sort().join('');
+      for (const [filter, expected] of [['tags = "x"', 'a'], ['tags in ("x", "z")', 'ab'], ['tags != "x"', 'bcd'],
+        ['tags not in ("x", "z")', 'cd'], ['tags = null', 'cd'], ['tags != null', 'ab'],
+        ['tags like "y"', 'a'], ['tags starts "z"', 'b'], ['tags ends "y"', 'a'], ['tags !like "y"', 'bcd'],
+        ['tags matches "^[xz]$"', 'ab'], ['tags !matches "^x"', 'bcd']])
+        t.equal(await codes(filter), expected, filter);
+      for (const filter of ['tags > "x"', 'tags between "a" and "z"'])
+        await t.rejects(() => table.query({filter, limit: 10}), 'filter');
     },
   },
 ];

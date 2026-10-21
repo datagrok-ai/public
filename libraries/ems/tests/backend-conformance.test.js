@@ -19,6 +19,7 @@ const SCHEMA = {name: 'conformance', tables: {folder: {
     parent_id: {type: 'ref', ref: 'folder'},
     done: {type: 'bool'},
     meta: {type: 'json'},
+    tags: {type: 'string_list'},
   },
 }}};
 

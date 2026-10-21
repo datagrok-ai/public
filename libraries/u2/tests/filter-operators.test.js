@@ -21,7 +21,8 @@ test('for(prop): the core operators of each kind', () => {
   assert.deepEqual(ids({name: 'd', type: TYPE.DATE_TIME}),
     ['=', '!=', '>', '>=', '<', '<=', 'between', 'is null', 'is not null']);
   assert.deepEqual(ids({name: 'b', type: TYPE.BOOL}), ['=', '!=', 'is null', 'is not null']);
-  assert.deepEqual(ids({name: 'l', type: TYPE.LIST}), ['like', '!like', 'is null', 'is not null']);
+  assert.deepEqual(ids({name: 'l', type: TYPE.LIST}),
+    ['=', '!=', 'in', 'not in', 'like', '!like', 'starts', 'ends', 'matches', '!matches', 'is null', 'is not null']);
   assert.deepEqual(ids({name: 'r', type: TYPE.STRING, ref: 'Core.users'}),
     ['=', '!=', 'in', 'not in', 'under', 'is null', 'is not null']);
 });

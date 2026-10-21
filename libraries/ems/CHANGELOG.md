@@ -10,6 +10,7 @@
 * Memory backend: Fixed `prop.<name>` sort keys being refused: they sort by the table's column of that name, and a name with no such column is refused like a hidden one, as on the platform
 * Memory backend: Fixed reads diverging from the platform: a null bool no longer matches `= false` / `!= true` and is found by `is null`, a dotted FK-path filter (`parent_id.name = "Site"`) joins through the target, and an unknown or json sort column is refused with `filter`
 * Memory backend: Fixed a delete ignoring the child column's `onDelete`: `cascade` and `setnull` act as on the platform instead of refusing, and `restrict` refuses with `restrict`, not `validation`
+* Memory backend: A filter the backend cannot evaluate is refused with code `filter`, as the server answers it
 * [public#4320](https://github.com/datagrok-ai/public/issues/4320): Import: Fixed an empty numeric CSV cell being posted as the missing-value marker (-2147483648, 2.68e-34) instead of null
 * Styles: `src/dg/styles.ts` imports EMS's own sheets only; u2's stylesheet installs itself once per page
 * Tests: Fixed the spec-install test on Windows (path separators, CRLF recipe fences)

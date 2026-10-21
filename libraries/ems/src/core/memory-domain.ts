@@ -5,7 +5,7 @@
    way the server orders it (forward `$ref`s, child-first deletes) and lands on every table it
    touches or on none. */
 import {uuid4} from 'datagrok-api/u2core';
-import {Filters, notify, Access, MemoryFrame, Rows, isEmpty} from '@datagrok-libraries/u2';
+import {Filters, FilterError, notify, Access, MemoryFrame, Rows, isEmpty} from '@datagrok-libraries/u2';
 import type {FilterCondition, FilterGroup, FilterNode, IProperty, AccessData, FieldAccess,
   MemoryColumn} from '@datagrok-libraries/u2';
 import {DomainBackendError, isUnscoped} from './domain-backend.js';
@@ -790,8 +790,14 @@ export class MemoryTable implements DomainTableLike {
   private async _where(scope: DomainReadScope): Promise<Row[]> {
     const {filter, search, deleted = 'exclude'} = scope;
     let rows = this.rows;
-    if (filter !== undefined && filter !== '')
-      rows = await this._matching(rows, MemoryTable._tree(filter));
+    if (filter !== undefined && filter !== '') {
+      try {
+        rows = await this._matching(rows, MemoryTable._tree(filter));
+      } catch (e) {
+        // the server answers a filter it cannot compile with a 400 `filter`
+        throw e instanceof FilterError ? new DomainBackendError('filter', e.message) : e;
+      }
+    }
     if (deleted !== 'include')
       rows = rows.filter((row) => (row[IS_DELETED] === true) === (deleted === 'only'));
     if (search) {

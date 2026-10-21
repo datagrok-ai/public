@@ -48,7 +48,7 @@ test('operator-not-applicable: unknown ids and ids of another kind', () => {
   assert.deepEqual(codes([Filters.cond('age', 'like', 'x')]), ['operator-not-applicable']);
   assert.deepEqual(codes([Filters.cond('name', '>', 'x')]), ['operator-not-applicable']);
   assert.deepEqual(codes([Filters.cond('name', 'zzz', 'x')]), ['operator-not-applicable']);
-  assert.deepEqual(codes([Filters.cond('tags', '=', 'x')]), ['operator-not-applicable']);
+  assert.deepEqual(codes([Filters.cond('tags', '>', 'x')]), ['operator-not-applicable']);
 });
 
 test('missing-value: arity 1 with undefined/null/"", arity 2 without a pair, n with an empty list', () => {
