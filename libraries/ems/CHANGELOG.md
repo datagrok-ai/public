@@ -2,7 +2,6 @@
 
 ## v.next
 
-* Forms: Fixed a `string_list` edited in a domain form being written into the frame as an array; it goes in as the JSON array text the server parses
 * [public#4320](https://github.com/datagrok-ai/public/issues/4320): Import: Fixed an empty numeric CSV cell being posted as the missing-value marker (-2147483648, 2.68e-34) instead of null
 * Styles: `src/dg/styles.ts` imports EMS's own sheets only; u2's stylesheet installs itself once per page
 * Tests: Fixed the spec-install test on Windows (path separators, CRLF recipe fences)
