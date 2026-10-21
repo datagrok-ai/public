@@ -502,7 +502,8 @@ export class TestManager extends DG.ViewBase {
         this.testsResultsDf = res;
         if (this.testsResultsDf.col('memoryUsed'))
           this.testsResultsDf.col('memoryUsed').name = 'memoryDelta';
-        this.testsResultsDf.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
+        if (this.testsResultsDf.col('logs'))
+          this.testsResultsDf.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
         if (this.testsResultsDf.col('memoryDelta'))
           this.testsResultsDf.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
         this.addPackageInfo(this.testsResultsDf, t.packageName);
@@ -513,7 +514,8 @@ export class TestManager extends DG.ViewBase {
         // this.removeTestRow(t.packageName, t.test.category, t.test.name);
         if (this.testsResultsDf.col('memoryUsed'))
           this.testsResultsDf.col('memoryUsed').name = 'memoryDelta';
-        res.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
+        if (res.col('logs'))
+          res.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
         if (this.testsResultsDf.col('memoryDelta'))
           this.testsResultsDf.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
         this.testsResultsDf = this.testsResultsDf.append(res);
@@ -640,7 +642,7 @@ export class TestManager extends DG.ViewBase {
   }
 
   addPackageInfo(df: DG.DataFrame, pack: string): void {
-    if (!df.getCol('package'))
+    if (!df.col('package'))
       df.columns.addNewString('package').init(() => pack);
   }
 
