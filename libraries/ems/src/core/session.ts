@@ -176,8 +176,7 @@ export class SharedSession implements DomainSession {
       source.edit.peek()?.setSaving(saving);
   }
 
-  /** After a 403, every source of the session re-reads its access, not just the batch: New on the
-   * list follows the list source. */
+  /** Every source, not just the batch: New on the list follows the list source's access. */
   private _reloadAccess(): void {
     for (const source of this._sources.peek())
       void source.reloadAccess();

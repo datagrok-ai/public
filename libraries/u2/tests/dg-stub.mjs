@@ -45,8 +45,7 @@ export class Permission {
   static CREATE_DOMAIN_SCHEMA = 'CreateDomainSchema';
 }
 
-/** js-api's \`DomainSession\` (domains-session.ts) as a saving host drives it: \`save\` answers what
- * a test put in \`DomainSession.next\` — true, or the refusal it leaves on \`lastRefusal\`. */
+/** js-api's \`DomainSession\`: \`save\` answers \`DomainSession.next\`, true or the refusal it leaves on \`lastRefusal\`. */
 export class DomainSession {
   static next = true;
   constructor(editors) { this.editors = editors; this.lastRefusal = null; }

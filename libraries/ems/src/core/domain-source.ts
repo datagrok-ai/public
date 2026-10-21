@@ -477,8 +477,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     }
   }
 
-  /** Re-reads the table-level access — the session calls it after a 403, which says the one the
-   * affordances were built from is stale. A failed read keeps the access the source has. */
+  /** Re-reads the table-level access after a 403; a failed read keeps the current one. */
   async reloadAccess(): Promise<void> {
     if (this.scope.isDisposed || this._ready === undefined)
       return;

@@ -24,8 +24,7 @@ export interface EditState {
   /** Why the last save was refused, where the refusal named no column and so reached no cell — a
    * delete a child's reference vetoes, say. Null until a save is refused that way. */
   problem?: string | null;
-  /** The server's error code of the last refusal, where the backend knows one — `'forbidden'` says
-   * the access the affordances were built from is stale. */
+  /** The server's error code of the last refusal, where the backend knows one. */
   problemCode?: string | null;
   /** The key of the row that changed, null for a change touching several. */
   readonly onChanged: ObservableLike<string | null>;

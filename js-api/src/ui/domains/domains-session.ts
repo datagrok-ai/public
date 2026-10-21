@@ -60,8 +60,7 @@ export interface DomainSessionRefusal {
   editor: DomainFrameEditor | null;
   /** The transaction-wide index of the failing op, where the server named one. */
   opIndex?: number;
-  /** The server's error code (`DomainError.code`) — `'forbidden'` says the access the
-   * participants were built from is stale. */
+  /** The server's error code (`DomainError.code`), e.g. `'forbidden'`. */
   code?: string;
 }
 
