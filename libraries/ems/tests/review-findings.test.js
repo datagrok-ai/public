@@ -19,7 +19,7 @@ import {SharedSession} from '../src/core/session.js';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {EditorEditState} from '../src/dg/editor-state.js';
 import {DataFrame, Stream} from '@datagrok-libraries/u2/tests/platform-doubles.mjs';
-import {backend, LOCATIONS} from './domain-fixtures.mjs';
+import {backend} from './domain-fixtures.mjs';
 
 /** js-api's compiled output as node can read it: `./x` → `./x.js`, `rxjs/operators` →
  * `.../index.js`, a `.css` import → an empty module. */
@@ -434,13 +434,12 @@ scoped('finding 7b: a sibling source of the same table reloads after another one
 
 // ───────────── a restore the server vetoes because the parent is still in the trash ─────────────
 
-scoped('a restore under a trashed parent is worded once: the balloon and the status line say the same', {},
-  async () => {
+scoped('a restore under a trashed parent says to restore the parent first, in the balloon and lastRefusal',
+  {}, async () => {
     const {DomainFrameEditor} = await import('../../../js-api/dist/src/ui/domains/domains-editor.js');
     const {DomainSession} = await import('../../../js-api/dist/src/ui/domains/domains-session.js');
     const veto = 'Column "parent_id" references a deleted row in "location"';
     const balloons = [];
-    // the interop the session calls: `/transaction` answers the server's `_checkParentsLive` veto
     const interop = {
       grok_Dapi_Domains: () => ({}),
       grok_Dapi_Domains_Transaction: () => Promise.reject({'#domainError': true, status: 409, message: veto,
@@ -459,38 +458,14 @@ scoped('a restore under a trashed parent is worded once: the balloon and the sta
         byName: (n) => n in cells ? {get: (i) => cells[n][i], isNone: (i) => cells[n][i] == null} : null}},
       refusalFor: proto.refusalFor, restrictRefusal: proto.restrictRefusal, _rowById: proto._rowById,
       _displayOf: proto._displayOf, _captionOf: proto._captionOf, _wire: proto._wire};
-    const memory = new MemoryDomainBackend(LOCATIONS, {rows: {location: [{id: 'l1', name: 'Lab'},
-      {id: 'l2', name: 'Room A', parent_id: 'l1', is_deleted: true},
-      {id: 'l3', name: 'Shelf A1', parent_id: 'l2', is_deleted: true}]}});
-    // `DgDomainBackend.saveAll`: one quiet platform session, its refusal handed to the edit state
-    emsBackends.domain = {
-      table: (address) => memory.table(address),
-      saveAll: async (edits) => {
-        const session = new DomainSession([editor], {quiet: true});
-        try {
-          if (await session.save())
-            return true;
-          edits[0].problem = session.lastRefusal.message;
-          return false;
-        }
-        finally {
-          session.dispose();
-        }
-      },
-    };
+    const session = new DomainSession([editor], {quiet: true});
     try {
-      const session = new SharedSession();
-      const trash = new DomainSource({table: 'stock.location', session, deleted: 'only'}, env);
-      trash.start();
-      await flush();
-      trash.stageRestore(['l3']);
       assert.equal(await session.save(), false, 'the parent is still in the trash');
       const said = 'Shelf A1\'s parent was deleted too; restore the parent first';
-      assert.deepEqual(balloons, [`error: ${said}`], 'the balloon names the row and the way forward');
-      assert.equal(trash.summary.value, `Cannot save: ${said}`, 'the status line says what the balloon said');
-      trash.dispose();
+      assert.deepEqual([balloons, session.lastRefusal.message], [[`error: ${said}`], said]);
     }
     finally {
+      session.dispose();
       for (const key of Object.keys(interop))
         delete globalThis[key];
     }

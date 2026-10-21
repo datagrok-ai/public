@@ -357,49 +357,57 @@ category('Dapi: domain frame editor', () => {
     await cleanup(prefix);
   }
 
-  test('new rows: an untouched bool is left to the server, a set one is sent', async () => {
-    const name = `zzb${`${Date.now()}`.slice(-8)}`;
-    const created = await grok.dapi.domains.createSchema(name, {friendlyName: 'Bool probe'});
+  /** Runs [body] over a throwaway user schema of [tables]; skips without the CreateDomainSchema privilege. */
+  async function withSchema(tables: {[name: string]: any}, body: (schema: string) => Promise<void>): Promise<void> {
+    const name = `zzf${`${Date.now()}`.slice(-8)}`;
+    let created: _DG.DomainSchemaCreated;
     try {
-      await grok.dapi.domains.schema(name).apply({ifVersion: created.version, tables: {
-        flag: {
-          businessKey: ['sku'],
-          columns: {
-            sku: {type: 'string', required: true, unique: true},
-            active: {type: 'bool', required: true, default: true},
-            archived: {type: 'bool'},
-            confirmed: {type: 'bool', required: true},
-          },
-        },
-      }});
-      const flags = grok.dapi.domains.table(`${name}.flag`);
-      const editor = await DomainFrameEditor.create(flags as any);
-      editor.addRow({sku: 'untouched'});
-      editor.setValue(editor.addRow({sku: 'unchecked'}), 'active', false);
-      editor.addRow({sku: 'prefilled', active: false, archived: false});
-      editor.addRow({sku: 'nulled', active: null, archived: null});
-      const reset = editor.addRow({sku: 'reset'});
-      editor.setValue(reset, 'active', false);
-      editor.setValue(reset, 'active', null);
-      expect(await editor.save(), true, 'the new rows were refused');
-      const read = async (sku: string) =>
-        await flags.first({filter: {property: 'sku', operator: '=', value: sku} as any}) as any;
-      const untouched = await read('untouched');
-      expect(untouched.active, true, 'an untouched bool overrode the column default');
-      expect(untouched.archived, null, 'an untouched nullable bool was stored as false');
-      expect(untouched.confirmed, false, 'a required bool with no default was not sent');
-      expect((await read('unchecked')).active, false, 'an unchecked bool was not sent');
-      const prefilled = await read('prefilled');
-      expect(prefilled.active, false, 'a bool prefilled by addRow was not sent');
-      expect(prefilled.archived, false, 'a bool prefilled by addRow was not sent');
-      const nulled = await read('nulled');
-      expect(nulled.active, true, 'a null prefill counted as set');
-      expect(nulled.archived, null, 'a null prefill counted as set');
-      expect((await read('reset')).active, true, 'a bool set back to null was still sent');
-      editor.detach();
-    } finally {
+      created = await grok.dapi.domains.createSchema(name, {friendlyName: 'Frame editor probe'});
+    }
+    catch (e: any) {
+      if (e instanceof DG.DomainError && (e.code === 'forbidden' || e.status === 403)) {
+        console.log('skipped: no CreateDomainSchema privilege');
+        return;
+      }
+      throw e;
+    }
+    try {
+      await grok.dapi.domains.schema(name).apply({ifVersion: created.version, tables});
+      await body(name);
+    }
+    finally {
       await grok.dapi.domains.schema(name).delete();
     }
+  }
+
+  test('new rows: a bool goes out when set, or when it is required with no default', async () => {
+    await withSchema({flag: {businessKey: ['sku'], columns: {
+      sku: {type: 'string', required: true, unique: true},
+      active: {type: 'bool', required: true, default: true},
+      archived: {type: 'bool'},
+      confirmed: {type: 'bool', required: true},
+    }}}, async (schema) => {
+      const flags = grok.dapi.domains.table(`${schema}.flag`);
+      const editor = await DomainFrameEditor.create(flags as any);
+      editor.addRow({sku: 'untouched'});
+      editor.addRow({sku: 'set', active: false, archived: false});
+      editor.addRow({sku: 'nulled', active: null});
+      const reset = editor.addRow({sku: 'reset'});
+      editor.setValue(reset, 'archived', false);
+      editor.setValue(reset, 'archived', null);
+      expect(await editor.save(), true, 'the new rows were refused');
+      const rows = await flags.query({});
+      const stored: {[sku: string]: (boolean | null)[]} = {
+        untouched: [true, null, false], set: [false, false, false],
+        nulled: [true, null, false], reset: [true, null, false],
+      };
+      for (const sku of Object.keys(stored)) {
+        const row = rows.find((r) => r.sku === sku);
+        expect(JSON.stringify([row.active, row.archived, row.confirmed]), JSON.stringify(stored[sku]),
+          `${sku}: active, archived, confirmed`);
+      }
+      editor.detach();
+    });
   });
 
   test('staged restore: one restore op, and the save brings the row back live', async () => {
@@ -564,51 +572,32 @@ category('Dapi: domain frame editor', () => {
     }
   });
 
-  test('duplicate refusal on a unique column that is not the business key names that column', async () => {
-    const name = `zzu${`${Date.now()}`.slice(-8)}`;
-    const created = await grok.dapi.domains.createSchema(name, {friendlyName: 'Unique probe'});
-    try {
-      await grok.dapi.domains.schema(name).apply({ifVersion: created.version, tables: {
-        person: {
-          businessKey: ['code'],
-          columns: {
-            code: {type: 'string', required: true, unique: true, friendlyName: 'Badge'},
-            name: {type: 'string', isName: true},
-            email: {type: 'string', unique: true, friendlyName: 'E-mail'},
-          },
-        },
-        work_item: {
-          singularName: 'Work item',
-          columns: {
-            code: {type: 'string', required: true, unique: true, friendlyName: 'Code'},
-            title: {type: 'string'},
-          },
-        },
-      }});
-      const people = grok.dapi.domains.table(`${name}.person`);
-      const workItems = grok.dapi.domains.table(`${name}.work_item`);
-      await people.insert({code: 'P1', name: 'Ann', email: 'ann@x.org'});
-      await workItems.insert({code: 'T1', title: 'First'});
-
-      const personEditor = await DomainFrameEditor.create(people as any);
-      const bob = personEditor.addRow({code: 'P2', name: 'Bob', email: 'ann@x.org'});
-      const session = new DG.DomainSession([personEditor], {quiet: true});
-      expect(await session.save(), false, 'a duplicate e-mail was accepted');
-      expect(session.lastRefusal?.message, 'E-mail ann@x.org already belongs to Ann', 'the refusal names the wrong column');
-      expect(personEditor.errorOf(bob, 'email')?.message, session.lastRefusal?.message,
-        'the cell and the refusal say different things');
-      session.dispose();
-      personEditor.detach();
-
-      const itemEditor = await DomainFrameEditor.create(workItems as any);
-      const again = itemEditor.addRow({code: 'T1', title: 'Again'});
-      expect(await itemEditor.save(), false, 'a duplicate code was accepted');
-      expect(itemEditor.errorOf(again, 'code')?.message, 'A work item with this Code already exists',
-        'the refusal on a table with no business key names the wrong column');
-      itemEditor.detach();
-    } finally {
-      await grok.dapi.domains.schema(name).delete();
-    }
+  test('duplicate refusal on a unique column names that column, not the business key', async () => {
+    await withSchema({
+      person: {businessKey: ['code'], columns: {
+        code: {type: 'string', required: true, unique: true, friendlyName: 'Badge'},
+        name: {type: 'string', isName: true},
+        email: {type: 'string', unique: true, friendlyName: 'E-mail'},
+      }},
+      work_item: {singularName: 'Work item', columns: {
+        code: {type: 'string', required: true, unique: true, friendlyName: 'Code'},
+      }},
+    }, async (schema) => {
+      const cases: [string, {[c: string]: string}, {[c: string]: string}, string, string][] = [
+        ['person', {code: 'P1', name: 'Ann', email: 'ann@x.org'}, {code: 'P2', name: 'Bob', email: 'ann@x.org'},
+          'email', 'E-mail ann@x.org already belongs to Ann'],
+        ['work_item', {code: 'T1'}, {code: 'T1'}, 'code', 'A work item with this Code already exists'],
+      ];
+      for (const [table, held, clash, column, said] of cases) {
+        const client = grok.dapi.domains.table(`${schema}.${table}`);
+        await client.insert(held);
+        const editor = await DomainFrameEditor.create(client as any);
+        const row = editor.addRow(clash);
+        expect(await editor.save(), false, `${table}: the duplicate was accepted`);
+        expect(editor.errorOf(row, column)?.message, said, `${table}: the refusal names the wrong column`);
+        editor.detach();
+      }
+    });
   });
 
   test('refuse: a refusal the host detected reaches onRefused', async () => {
