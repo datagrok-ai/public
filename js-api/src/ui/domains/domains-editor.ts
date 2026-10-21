@@ -1441,8 +1441,7 @@ export class DomainFrameEditor implements IFrameEditor {
     return this._df.columns.byName(name) as Column<string>;
   }
 
-  /** A value as its frame cell: a list (a `string_list`) in a string column is its JSON array text,
-   * which the server parses back into the list. */
+  /** A list in a string column (a `string_list` cell) is its JSON array text, which the server parses. */
   private _cellOf(name: string, value: any): any {
     return Array.isArray(value) && this._col(name)?.type === COLUMN_TYPE.STRING ? JSON.stringify(value) : value;
   }
