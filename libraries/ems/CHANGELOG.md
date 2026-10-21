@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Memory backend: Fixed derived singular and plural names reading the friendly name and replacing `_`: like the platform, they come from the table name (`order_details` → `order_detail`), and a declared friendly name is answered as `info.friendlyName`
 * Memory backend: Fixed derived table names: a table named in the plural (`categories`) read `categoriess`; singular and plural now follow the platform's rules (`category`/`categories`, `box`/`boxes`, `study`/`studies`)
 * [public#4320](https://github.com/datagrok-ai/public/issues/4320): Import: Fixed an empty numeric CSV cell being posted as the missing-value marker (-2147483648, 2.68e-34) instead of null
 * Styles: `src/dg/styles.ts` imports EMS's own sheets only; u2's stylesheet installs itself once per page

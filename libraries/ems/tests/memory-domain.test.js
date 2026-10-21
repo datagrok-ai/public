@@ -33,7 +33,7 @@ test('schema: columns become properties, system columns first; info from the dec
   assert.equal(byName.id.set, undefined, 'system columns have no setter');
   assert.equal(typeof byName.title.set, 'function');
   assert.deepEqual(issue.info, {nameColumn: 'title', businessKey: ['project_id', 'number'], rowAddress: 'businessKey',
-    singularName: 'Issue', pluralName: 'Issues', searchableColumns: ['title', 'description'],
+    singularName: 'issue', pluralName: 'issues', friendlyName: 'Issues', searchableColumns: ['title', 'description'],
     constraints: [{name: 'weight_positive', expr: 'weight >= 0', message: 'Weight is positive'}], refFilters: {},
     permissions: ['escalate'], childTables: [], hierarchy: false, parentColumn: null});
   const project = await backend().table('grit.project');
@@ -255,11 +255,11 @@ test('info: undeclared singular and plural are derived from the table name the w
   const be = new MemoryDomainBackend({name: 'nw', tables: Object.fromEntries(names.map((n) => [n, {columns: {}}]))});
   const info = (n) => be.tableSync(`nw.${n}`).info;
   assert.deepEqual(names.map((n) => [info(n).singularName, info(n).pluralName]), [
-    ['category', 'categories'], ['order detail', 'order details'], ['status', 'statuses'], ['box', 'boxes'],
+    ['category', 'categories'], ['order_detail', 'order_details'], ['status', 'statuses'], ['box', 'boxes'],
     ['study', 'studies'], ['issue', 'issues'], ['address', 'addresses'], ['analysis', 'analyses']]);
   const named = new MemoryDomainBackend({name: 'nw', tables: {categories: {friendlyName: 'Categories', columns: {}}}});
   assert.deepEqual([named.tableSync('nw.categories').info.singularName, named.tableSync('nw.categories').info.pluralName],
-    ['Category', 'Categories'], 'a declared friendly name is singularized by the same rules');
+    ['category', 'categories'], 'a declared friendly name is not their input');
 });
 
 test('info: singular and plural come from the table name, never the friendly name, as the platform derives them', async () => {

@@ -379,12 +379,13 @@ export class MemoryTable implements DomainTableLike {
       .map(([column, c]) => [column, MemoryTable._address(schema, c.ref!)]));
     const named = columns.find(([, c]) => c.isName)?.[0] ??
       columns.find(([n, c]) => n === 'name' && c.type === 'string')?.[0];
-    const singular = json.singularName ?? MemoryTable._singular(json.friendlyName ?? name.replace(/_/g, ' '));
+    const singular = json.singularName ?? MemoryTable._singular(name);
     const searchable = columns.filter(([, c]) => c.searchable === true).map(([n]) => n);
     const permissions = Array.isArray(json.permissions) ? json.permissions : Object.keys(json.permissions ?? {});
     this.info = {
       nameColumn: named ?? null, businessKey: json.businessKey ?? [], rowAddress: 'businessKey',
-      singularName: singular, pluralName: json.pluralName ?? json.friendlyName ?? MemoryTable._plural(singular),
+      singularName: singular, pluralName: json.pluralName ?? MemoryTable._plural(singular),
+      ...(json.friendlyName === undefined ? {} : {friendlyName: json.friendlyName}),
       searchableColumns: searchable.length > 0 ? searchable : named === undefined ? [] : [named],
       constraints: Object.entries(json.constraints ?? {}).filter(([, c]) => typeof c.expr === 'string')
         .map(([n, c]) => ({name: n, expr: c.expr!, ...(c.message === undefined ? {} : {message: c.message})})),
