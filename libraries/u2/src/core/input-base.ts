@@ -4,6 +4,7 @@ import {bindTypeOf, ITEMS_CAP} from './widget-like.js';
 import type {BindProp, BindSource, ObservableLike, IItemState, IItemsState} from './widget-like.js';
 import {Control} from './component.js';
 import {div, label, span} from './elements.js';
+import {Tooltip} from './tooltip.js';
 import {EMPTY, isEmpty} from './text.js';
 import type {IWidgetStatus} from './widget-like.js';
 
@@ -100,6 +101,8 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   private readonly _inputBox: HTMLElement;
   private readonly _optionsRail: HTMLElement;
   private _labelEl: HTMLElement | undefined;
+  private _tooltip = '';
+  private readonly _tooltipOn = new Set<HTMLElement>();
   private _postfixEl: HTMLElement | undefined;
   private _liveBinds: Map<string, Signal<unknown>> | undefined;
   private readonly _enabled = signal(true);
@@ -362,6 +365,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
       else
         target.setAttribute('aria-labelledby', this._labelEl.id);
       this.root.prepend(this._labelEl);
+      this._bindTooltip();
     }
   }
 
@@ -567,11 +571,27 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   }
 
   get tooltipText(): string {
-    return this.root.title;
+    return this._tooltip;
   }
 
+  /** u2's tooltip over the caption, as the platform's `setTooltip` (over the whole input when it has no
+   * caption), and the editor's accessible description. */
   set tooltipText(x: string) {
-    this.root.title = x;
+    this._tooltip = x ?? '';
+    if (this._tooltip)
+      this.focusTarget.setAttribute('aria-description', this._tooltip);
+    else
+      this.focusTarget.removeAttribute('aria-description');
+    this._bindTooltip();
+  }
+
+  private _bindTooltip(): void {
+    const el = this._labelEl ?? this.root;
+    if (!this._tooltip || this._tooltipOn.has(el))
+      return;
+    this._tooltipOn.add(el);
+    // a root bound before its caption existed yields to the caption's own binding
+    Tooltip.bind(el, () => el === this.root && this._labelEl ? '' : this._tooltip, this.scope);
   }
 
   get enabled(): boolean {

@@ -7,13 +7,12 @@
 // key exactly the way `grok test` does, evaluates the function in page context, and polls until it
 // returns. A full arm is ~45 min, well past any default timeout, hence the explicit long waits.
 //
-//   node run-benchmark.mjs --label sonnet-baseline --reps 3 --model sonnet
+//   node run-benchmark.mjs --label sonnet-baseline --reps 3 --model claude-sonnet-5-5
 //   node run-benchmark.mjs --label smoke --reps 1 --only trivial,visualization
 //   node run-benchmark.mjs --compare sonnet-baseline,haiku-probe
 //
 // --headed shows the browser; --host picks a ~/.grok/config.yaml server alias (default: localhost).
 
-import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {chromium} from 'playwright';
@@ -88,18 +87,6 @@ async function ensureRuntimeContainer(page) {
   });
   console.log(`runtime: ${status.detail}`);
   if (!status.ok) throw new Error(status.detail);
-
-  // A container that has just been (re)spawned comes up with the Dockerfile's empty `{}`
-  // credentials, and an unauthenticated runtime answers every turn in ~1 s with zero tokens and
-  // no error — a whole arm of plausible-looking failures. Cheap to prevent, expensive to debug.
-  try {
-    const out = execFileSync('node', [path.join(HARNESS, '..', 'seed-platform-creds.mjs')],
-      {encoding: 'utf8'});
-    for (const line of out.split('\n').filter((l) => /seeded/.test(l)))
-      console.log(`creds: ${line.trim()}`);
-  } catch (e) {
-    console.warn(`creds: could not verify (${e.message.split('\n')[0]}) — continuing`);
-  }
 }
 
 /** Starts the call in page context and polls, so a 45-minute arm never rides on one evaluate(). */

@@ -69,7 +69,7 @@ export class GridTutorial extends Tutorial {
       'There are several ways to add a row to a spreadsheet: clicking the <b>+</b> ' +
       'icon (requires "Allow Edit" property set to true), editing the last row (if "Add New Row On Last Row Edit" ' +
       'is enabled), selecting <b>Edit > Add Rows...</b> in the top menu (this way you can add a specific number of ' +
-      'rows at a specific position in the grid).', () => this.t!.rows.addNew());
+      'rows at a specific position in the grid).', () => {this.t!.rows.addNew();});
 
     const lastRowIdx = this.t!.rowCount - 1;
     await this.action(`Enter "X0273T51080200024" as USUBJID in the new row (#${lastRowIdx + 1})`,
@@ -197,7 +197,10 @@ export class GridTutorial extends Tutorial {
       'or to the beginning of its visible ' +
       'part. The same is true for the arrows on the right that help you move columns to the grid end.<br>Make sure ' +
       'that the new order is HEIGHT, WEIGHT, STARTED, followed by all other columns.',
-    () => grid.columns.setOrder(['HEIGHT', 'WEIGHT', 'STARTED', ...this.t!.columns.names()]));
+    () => {
+      const first = ['HEIGHT', 'WEIGHT', 'STARTED'];
+      grid.columns.setOrder([...first, ...this.t!.columns.names().filter((name) => !first.includes(name))]);
+    });
 
     const initialRowHeight = grid.props.rowHeight;
     await this.action('Increase row height', interval(1000).pipe(filter(() => grid.props.rowHeight > initialRowHeight)),

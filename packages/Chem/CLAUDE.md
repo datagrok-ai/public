@@ -98,11 +98,35 @@ User documentation: [Cheminformatics](../../help/datagrok/solutions/domains/chem
 with termination signals. The RDKit wasm is fetched and compiled once on the main thread and handed to every worker
 (`initRdKitFrom` in `rdkit-service-worker-api.ts`), so workers neither download nor compile it.
 
+### Chemical engine (RDKit | Crux)
+
+The `ChemicalEngine` package property ("Chemical Engine": `RDKit` default, `Crux`) picks the engine behind Chem's own
+chemistry; `src/engine/` is the one place that reads it (`chem-engine.ts`; tests override it with
+`setChemicalEngine`), loads Chem's one Crux file lazily (`crux-module.ts`: fetched and compiled once, instantiated on
+the main thread, the compiled Module handed to the Crux workers; RDKit mode never fetches it) and falls back to RDKit
+(`fallback.ts`: per molecule when drawing, per call otherwise, logged once per call name). In Crux mode the molecule
+renderer, `drawMolecule` and `canvasMol` draw through the Crux module (RDKit.js's calls), descriptors come from Crux
+instead of the chem-chem container (`descriptors/descriptors-engine.ts`: the tree from the main thread's module, the
+values from the Crux workers), and the scaffold tree from a Crux worker instead of `scripts/scaffold_tree.py`;
+fingerprints and structural alerts / pharmacophore features run on the Crux pool (the RDKit worker's own code on the
+Crux module, `engine/worker-jobs.ts`; a cached fingerprint column belongs to one engine, saving one drops the other's);
+everything else stays RDKit. Other
+packages get RDKit objects in both modes (`getRdKitModule`, `getRdKitService`); in Crux mode the pictures and values of
+the moved functions come from Crux. How a feature moves behind the
+setting: `src/engine/README.md`. Tests: category `chemical engine`. Whole suites in Crux mode on a stand:
+`misc/crux/engine-setting.sh set Crux` (the package settings on the server), `restore` after.
+
+The one Crux file is `vendor/chem-wasm/` (crux-core's `crates/chem-wasm`, built with search, descriptors, the scaffold
+tree, rendering and the heavy calls in one wasm; its `VERSION.chem-wasm` names the crux-core revision and the build,
+`NOTICE.chem-wasm` the
+licences; both are emitted to `dist/` as `VERSION.chem-wasm` and `NOTICE.chem-wasm`). It replaced the search-only
+`src/crux/crux_wasm*`.
+
 ### Crux substructure engine
 
-The `SubstructureSearchEngine` package property (`RDKit` default, `Crux`) picks the engine of Contains /
-Not contains searches inside `chemSubstructureSearchLibrary` — every caller (filter, scaffold tree,
-`searchSubstructure`, filter operators) goes through it; tests switch it with `setSubstructureSearchEngine`.
+The `SubstructureSearchEngine` package property (`Crux` default since 2026-10, `RDKit`; a saved value stays) picks
+the engine of Contains / Not contains searches inside `chemSubstructureSearchLibrary` — every caller (filter, scaffold
+tree, `searchSubstructure`, filter operators) goes through it; tests switch it with `setSubstructureSearchEngine`.
 Crux ([crux-core](https://github.com/datagrok-ai/crux-core), Rust → wasm) indexes a column once, in
 segments that double in size per round over `hardwareConcurrency - 2` workers (at most 16, `MAX_WORKERS`: each holds
 a WebAssembly memory, and a page has room for about 120 of them) and are built by the first
@@ -123,15 +147,7 @@ Working notes — setup on a new machine, verification scripts, measurements, op
 in [`misc/crux/README.md`](misc/crux/README.md); parity with RDKit, dataset by dataset and query set by query set, in
 [`misc/crux/PARITY.md`](misc/crux/PARITY.md).
 
-`src/crux/crux_wasm*` is the `wasm-pack` build of `crux-core/crates/crux-wasm` (crux-core `078ca7c`, branch
-`spike/rdkit-parity-gaps` rebased on crux-core main a7e2f26), done the way crux-js does it — into crux-js (wasm-pack
-writes a `*` `.gitignore` into its out dir), then copied:
-
-```bash
-cd crux/crux-js   # beside crux-core, Rust toolchain from crux-core/rust-toolchain.toml
-npx wasm-pack@0.13.1 build ../crux-core/crates/crux-wasm --target web --release --out-name crux_wasm --out-dir ../../../crux-js/src/wasm
-cp src/wasm/crux_wasm.js src/wasm/crux_wasm.d.ts src/wasm/crux_wasm_bg.wasm <reddata>/public/packages/Chem/src/crux/
-```
+The worker pool (`crux-service.ts`, `crux.worker.ts`) runs on Chem's one Crux file, `vendor/chem-wasm/` (above).
 
 ### Crux sketcher
 
@@ -141,7 +157,7 @@ mode where the host is the substructure filter (`isSubstructureFilter`). Crux Sk
 `vendor/crux-sketch/`: the files of crux-sketch's `packages/sketch/dist/` as they are (its `VERSION` names the crux-sketch
 and crux-core revisions), bundled like any dependency, the sketcher a chunk of its own loaded at its first use, its
 WebAssembly (the sketch engine, and the CDXML and InChI modules, each lazy) emitted beside Chem's chunks; nothing of it
-loads until a Crux sketcher opens. It is a different module from `src/crux/crux_wasm*` (the substructure engine), built
+loads until a Crux sketcher opens. It is a different module from `vendor/chem-wasm/` (Chem's Crux engine), built
 from another crux-core crate. To update it: copy the new dist into `vendor/crux-sketch/` (keep `VERSION`, update it),
 regenerate the Crux Sketch block of `CREDITS.md` from crux-sketch's notices, build, and run the `Crux sketcher` and
 `sketcher testing` categories. Tests: `src/tests/crux-sketcher-tests.ts`.

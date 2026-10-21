@@ -240,6 +240,16 @@ describe('generateDomainClients', () => {
     expect(code).toContain(`  {op: 'delete'; table: 'sample_event'; id: string};`);
   });
 
+  it('choices values with a quote or a backslash compile to the same literals', {timeout: 180_000}, () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.sample.columns.resolution =
+      {type: 'string', choices: ['Fixed', `Won't fix`, 'a\\b']});
+    expect(generateDomainClients(dir)).toBe(true);
+    const res = runTsc(dir, 'usage-choices.ts');
+    expect(res.output.trim(), res.output).toBe('');
+    expect(res.status).toBe(0);
+  });
+
   it('expand maps: a multi-FK child emits one qualified details key per FK', () => {
     const dir = makePackage();
     mutateManifest(dir, (m) => m.tables.link = {columns: {
@@ -357,6 +367,18 @@ describe('generateDomainClients', () => {
     expect(code).toMatch(/interface SampleEventInsert \{[^}]*  number\?: number;/);
     expect(code).toMatch(/interface SampleRow \{[^}]*  seq: number;/);
     expect(code).toMatch(/interface SampleInsert \{[^}]*  seq\?: number;/);
+  });
+
+  it('accessors: the plural of the singular, as the platform derives a table\'s plural name', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      for (const name of ['categories', 'order_details', 'status', 'analysis', 'box'])
+        m.tables[name] = {columns: {name: {type: 'string'}}};
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    for (const accessor of ['samples', 'categories', 'orderDetails', 'statuses', 'analyses', 'boxes'])
+      expect(code).toContain(`  get ${accessor}() {`);
   });
 
   it('external storage: rows carry id only, remote names are metadata, no expand map, no transaction', () => {
@@ -629,6 +651,15 @@ describe('generateDomainClients', () => {
     expect(fs.existsSync(dbPath(dir))).toBe(false);
   });
 
+  it('rejects two tables of one schema that get the same accessor', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.samples = {columns: {name: {type: 'string'}}});
+    const {result, output} = runCapturingLog(dir);
+    expect(result).toBe(false);
+    expect(output).toContain(`tables 'sample' and 'samples' both get the accessor 'samples'`);
+    expect(fs.existsSync(dbPath(dir))).toBe(false);
+  });
+
   it('generated code and well-typed usage compile under strict tsc', {timeout: 180_000}, () => {
     const dir = makePackage();
     expect(generateDomainClients(dir)).toBe(true);
@@ -643,7 +674,7 @@ describe('generateDomainClients', () => {
     const res = runTsc(dir, 'usage-bad.ts');
     expect(res.status).not.toBe(0);
     // exactly one error per intended negative — no accidental extra breakage
-    expect(res.output.match(/error TS/g)).toHaveLength(15);
+    expect(res.output.match(/error TS/g)).toHaveLength(16);
     // wrong-typed payload values: `count: string` and `active: string`
     expect(res.output).toContain('usage-bad.ts(5,');
     expect(res.output).toContain('usage-bad.ts(7,');
@@ -665,6 +696,8 @@ describe('generateDomainClients', () => {
     expect(res.output).toContain('usage-bad.ts(21,');
     expect(res.output).toContain('usage-bad.ts(22,');
     expect(res.output).toContain('usage-bad.ts(23,');
+    // ...an FK path as a sort key (the server sorts by plain columns only)...
+    expect(res.output).toContain('usage-bad.ts(24,');
     // ...non-selected field access after select()...
     expect(res.output).toMatch(/Property 'count' does not exist on type 'Pick<SampleRow/);
     // ...and a field absent from the mapped-tuple insert result

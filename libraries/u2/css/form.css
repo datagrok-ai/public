@@ -168,6 +168,20 @@
   max-width: 150px;
 }
 
+/* a date is a short value too: its own width, the calendar toggle beside it, never across the row */
+.u2-form:not(.u2-form-wide):not(.u2-form-tall) .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-date,
+.u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-date {
+  flex: none;
+  width: 140px;
+  max-width: 140px;
+}
+
+.u2-form:not(.u2-form-wide):not(.u2-form-tall) .u2-input-root:not(.u2-input-fill)[data-u2='datetime-input'] .u2-input-editor.u2-date,
+.u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='datetime-input'] .u2-input-editor.u2-date {
+  width: 170px;
+  max-width: 170px;
+}
+
 .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='bigint-input'] > .u2-input-box > input.u2-input-editor,
 .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='qnum-input'] > .u2-input-box > input.u2-input-editor {
   max-width: 150px;

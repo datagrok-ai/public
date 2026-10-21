@@ -24,7 +24,6 @@ export interface ControllerBaseArgs {
   basePath?: MatchedIO['path'];
   params?: Record<string, any>;
   sourceCache?: Map<string, any>;
-  stepsCount?: () => number;
 }
 
 type ActionsUUID = ReadonlyMap<string, ReadonlyMap<string, string[]>>;
@@ -66,7 +65,6 @@ export class ControllerBase<T> {
   private matchedOutputs: Record<string, MatchedNodePaths>;
   private basePath?: MatchedIO['path'];
   private params: Record<string, any>;
-  private stepsCount?: () => number;
   public sourceCache?: Map<string, any>;
 
   constructor(args: ControllerBaseArgs) {
@@ -81,7 +79,6 @@ export class ControllerBase<T> {
     this.basePath = args.basePath;
     this.sourceCache = args.sourceCache;
     this.params = args.params ?? {};
-    this.stepsCount = args.stepsCount;
   }
 
   getAll<T = any>(name: string): T[] {
@@ -143,11 +140,6 @@ export class ControllerBase<T> {
   getBasePosition(): MatchedNodeInfo | undefined {
     this.checkIsClosed();
     return this.basePath ? toMatchedNodeInfo(this.basePath) : undefined;
-  }
-
-  getStepsCount(): number {
-    this.checkIsClosed();
-    return this.stepsCount?.() ?? 0;
   }
 
   close() {

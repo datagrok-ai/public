@@ -49,7 +49,7 @@ export class MpoContextPanel {
     showBinSelector: false,
   };
 
-  constructor(df: DG.DataFrame) {
+  constructor(df: DG.DataFrame, private scoreColumnName?: (profile: DesirabilityProfile) => string) {
     grok.shell.windows.showHelp = false;
     this.df = df;
     this.root = this.panel.root;
@@ -138,7 +138,8 @@ export class MpoContextPanel {
       this.show();
 
     const scoreColumnNames =
-      await computeMpo(this.df, profile, columnMapping, aggregation, true, true, false, true, this.calculator);
+      await computeMpo(this.df, profile, columnMapping, aggregation, true, true, false, true, this.calculator,
+        this.scoreColumnName?.(profile));
     if (!scoreColumnNames.length)
       return;
 
@@ -189,6 +190,7 @@ export class MpoContextPanel {
       clearTimeout(this.renderTimer);
       this.renderTimer = null;
     }
+    this.latestArgs = null;
     this.currentObjectChangingSub?.unsubscribe();
     this.currentRowChangedSub?.unsubscribe();
     this.currentObjectChangingSub = null;
@@ -202,8 +204,8 @@ export class MpoContextPanel {
     this.release();
     this.resetViewers();
 
-    if (grok.shell.o === this.root)
-      grok.shell.o = null;
+    if (this.root.isConnected)
+      grok.shell.setCurrentObject(null, false, true);
   }
 
   updateDataFrame(df: DG.DataFrame): void {

@@ -176,7 +176,7 @@ export function isOn(when: RuleExpr | undefined, ctx: RuleContext): boolean {
 }
 
 export function buildRuleContext(controller: IControllerBase): RuleContext {
-  const ctx: RuleContext = {$all: {}, $steps: controller.getStepsCount()};
+  const ctx: RuleContext = {$all: {}};
   const position = controller.getBasePosition()?.position;
   if (position !== undefined)
     ctx.$position = position;

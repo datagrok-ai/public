@@ -98,7 +98,7 @@ export class LinksState {
       const newMeta = addedLinks.filter((link) => !this.isDataLink(link));
       this.linksUpdates.next(true);
       return concat(
-        of(this.wireLinks(state, true)),
+        of(this.wireLinks(state)),
         this.runNewInits(state),
         this.runLinks(state, this.toLinksMap(newData), false),
         this.runLinks(state, this.toLinksMap(newMeta), true),
@@ -367,22 +367,19 @@ export class LinksState {
   }
 
 
-  public wireLinks(state: BaseTree<StateTreeNode>, isMutation = false) {
+  public wireLinks(state: BaseTree<StateTreeNode>) {
     for (const [, link] of this.links) {
       link.wire(state, this);
       link.setActive();
     }
     for (const [, action] of this.actions)
       action.wire(state, this);
-    this.triggerStructureLinks(isMutation);
+    this.triggerPipelineValidators();
   }
 
-  // they read the tree structure, so a rewire is their input change;
-  // data links keep the values of a created or loaded workflow, as they do without $steps
-  private triggerStructureLinks(isMutation: boolean) {
+  private triggerPipelineValidators() {
     for (const [, link] of this.links) {
-      const readsSteps = link.matchInfo.spec.params?.readsSteps && (isMutation || !this.isDataLink(link));
-      if (link.isPipelineValidator || readsSteps)
+      if (link.isPipelineValidator)
         link.trigger();
     }
   }
