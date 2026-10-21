@@ -25,27 +25,45 @@ export interface DomainTreeOptions<TRow extends DomainRowLike = DomainRowLike> {
    * null, which is what a collection bound to the tree reads as "no subtree filter". Without it
    * the only way back to everything is clicking the selected node again. */
   allNode?: string;
-  /** How many children one level loads (default 500). */
+  /** How many children one level reads at a time (default 500); a full page ends in a
+   * "Load more…" row. The server clamps a page to 10 000 rows, so a larger size reads as the
+   * level's last page, and an external table cannot page past its first 10 000 rows. */
   pageSize?: number;
 }
 
 const PAGE_SIZE = 500;
 /** The id of the synthetic {@link DomainTreeOptions.allNode} row — no row of the table carries it. */
 const ALL = '~all';
+/** The id prefix of a level's "Load more…" row; the parent's id follows, none for the roots. */
+const MORE = '~more:';
+
+/** What one level has read: its parent and the ids down to it, its nodes, and whether its last
+ * page was full and brought something new. */
+interface Level<T> {
+  parent: TreeNode<T> | null;
+  path: string[];
+  nodes: TreeNode<T>[];
+  full: boolean;
+}
 
 export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Control {
   readonly tree: VirtualTree<RowView<TRow>>;
   /** The row the tree has selected, null while it has none. */
   readonly selected: ReadonlySignal<RowView<TRow> | null>;
-  /** Why the roots or an `expandTo` did not arrive — a table that is not a hierarchy included,
-   * when the tree was made from an address. A branch reports its own failure on its row. */
+  /** Why the roots, an `expandTo` or a "Load more…" did not arrive — a table that is not a
+   * hierarchy included, when the tree was made from an address. A branch reports its own failure
+   * on its row. */
   readonly error: ReadonlySignal<string | null>;
 
   private readonly _error = signal<string | null>(null);
+  private readonly _selected = signal<RowView<TRow> | null>(null);
   private readonly _loading = signal(true);
   private readonly _status = div([], 'u2-domain-tree-status');
   private readonly _ready: Promise<DomainTable<TRow>>;
   private _table: DomainTable<TRow> | undefined;
+  private _roots: TreeNode<RowView<TRow>>[] = [];
+  /** Every level read since the roots, by its parent's id ('' for the roots). */
+  private _levels = new Map<string, Level<RowView<TRow>>>();
 
   /** `target` is the table handle, or its `'<schema>.<table>'` address for a spec-built tree —
    * a handle is checked here and a bad one refused at once, an address once it has resolved. */
@@ -66,16 +84,30 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     const render = _options.render;
     this.tree = this.runInScope(() => new VirtualTree<RowView<TRow>>({
       contextActions: (node) => node.data === undefined ? [] : this.actionsFor(node.data),
-      render: render === undefined ? undefined : (node) => render(node.data!),
+      render: (node) => node.data === undefined || render === undefined ?
+        span(node.label, node.id.startsWith(MORE) ? 'u2-link' : undefined) : render(node.data),
     }));
     // a node with no row behind it (the "all" row) reads as no selection, which is what makes
-    // selecting it clear a collection's subtree filter
-    this.selected = computed(() => this.tree.selectedNode.value?.data ?? null);
+    // selecting it clear a collection's subtree filter; the "Load more…" row is not a place, so the
+    // row selected before it stands, also while a read replaces it
+    this.selected = computed(() => this._selected.value);
+    this.effect(() => {
+      const node = this.tree.selectedNode.value;
+      if (node?.id.startsWith(MORE) || node === null && this._loading.peek())
+        return;
+      this._selected.value = node?.data ?? null;
+    });
     this.root.append(this.tree.root, this._status);
     // clicking the selected node again, and Escape, clear the selection — a tree is a navigator,
     // and "nothing selected" (the whole table) is one of its states. Capture, so the list's own
     // click handler does not re-select the row on the way down.
     this.scope.listen(this.root, 'click', (e) => {
+      const more = this.tree.nodeForRow(e.target)?.id;
+      if (more?.startsWith(MORE)) {
+        e.stopPropagation();
+        void this._loadMore(more);
+        return;
+      }
       const target = e.target as Element | null;
       if (target === null || target.closest('.u2-tree-twistie') !== null)
         return;
@@ -86,7 +118,14 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       this.tree.clearSelection();
     }, {capture: true});
     this.scope.listen(this.root, 'keydown', (e) => {
-      if ((e as KeyboardEvent).key !== 'Escape' || this.tree.selectedNode.peek() === null)
+      const key = (e as KeyboardEvent).key;
+      const node = this.tree.selectedNode.peek();
+      if (key === 'Enter' && node?.id.startsWith(MORE)) {
+        e.stopPropagation();
+        void this._loadMore(node.id);
+        return;
+      }
+      if (key !== 'Escape' || node === null)
         return;
       e.stopPropagation();
       this.tree.clearSelection();
@@ -117,11 +156,13 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
   async refresh(): Promise<void> {
     this._loading.value = true;
     this._error.value = null;
+    this._levels = new Map();
     try {
       const table = await this._ready;
       DomainTree.requireHierarchy(table);
       this._table = table;
-      this.tree.setRoots(await this._children(null));
+      this._roots = await this._children(null, []);
+      this.tree.setRoots(this._roots);
       const reveal = this._options.expandTo;
       if (reveal !== undefined)
         await this.expandTo(reveal);
@@ -132,8 +173,9 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     }
   }
 
-  /** Opens every ancestor of the row and selects it. The chain is the backend's answer, so one
-   * running through a node the caller cannot see stops there, as the server's path does. */
+  /** Opens every ancestor of the row and selects it, reading the further pages of a level the
+   * next step is not in yet. The chain is the backend's answer, so one running through a node the
+   * caller cannot see stops there, as the server's path does. */
   async expandTo(id: string): Promise<void> {
     const handle = await this._ready;
     const table = handle.table;
@@ -142,11 +184,21 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
         `${handle.address}: the backend cannot answer a row's ancestors`);
     }
     const path = await table.ancestors(id);
-    await this.tree.expandPath([...path.map((a) => a.id), id]);
-    // `expandPath` walks down from the roots and stops where a step is missing — which is exactly
-    // what a chain truncated at an ancestor the caller cannot see looks like from here
-    if (this.tree.selectedNode.peek()?.data?.id !== id)
-      this._error.value = `${id} is not reachable from here — an ancestor is not visible to you`;
+    const ids = [...path.map((a) => a.id), id];
+    const [top] = await table.query({filter: {property: 'id', operator: '=', value: ids[0]}, limit: 1});
+    // a chain that does not start at a root stops at an ancestor the caller cannot see: no page holds it
+    if (top !== undefined && top[handle.info.parentColumn!] == null) {
+      for (;;) {
+        await this.tree.expandPath(ids);
+        if (this.tree.selectedNode.peek()?.data?.id === id)
+          return;
+        const level = this._unread(ids);
+        if (level === undefined)
+          break;
+        await this._next(level);
+      }
+    }
+    this._error.value = `${id} is not reachable from here — an ancestor is not visible to you`;
   }
 
   /** Every action that applies to the node's row and that the caller may run on it: Open, the
@@ -171,23 +223,86 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     }
   }
 
-  /** One level: the rows whose parent column is `id` — null for the roots, which is what the
-   * `is empty` operator compiles to. */
-  private async _children(id: string | null): Promise<TreeNode<RowView<TRow>>[]> {
+  /** One level: the rows whose parent column is `parent` — null for the roots, which is what the
+   * `is empty` operator compiles to — read one page past `loaded`; a full page ends in a
+   * "Load more…" row. `path` is the ids from a root down to `parent`. */
+  private async _children(parent: TreeNode<RowView<TRow>> | null, path: string[],
+    loaded: TreeNode<RowView<TRow>>[] = []): Promise<TreeNode<RowView<TRow>>[]> {
     const table = this._table!;
-    const spec: DomainQueryLike = {filter: {property: table.info.parentColumn!, operator: '=', value: id},
-      limit: this._options.pageSize ?? PAGE_SIZE, withAccess: true};
+    const levels = this._levels;
+    const limit = this._options.pageSize ?? PAGE_SIZE;
+    const spec: DomainQueryLike = {filter: {property: table.info.parentColumn!, operator: '=',
+      value: parent?.id ?? null}, limit, offset: loaded.length, withAccess: true};
     const name = table.info.nameColumn;
+    // the id breaks ties between equal names, so consecutive pages neither repeat nor skip a row
     if (name !== null)
-      spec.sort = name;
-    const rows = await table.table.query(spec);
-    const nodes = rows.map((row) => this._node(row as unknown as RowView<TRow>));
+      spec.sort = `${name},id`;
+    const rows = await table.table.query(spec) as unknown as RowView<TRow>[];
+    // a row inserted above the page boundary comes back; a page with nothing new ends the level
+    const known = new Set(loaded.map((n) => n.id));
+    const fresh = rows.filter((row) => !known.has(row.id)).map((row) => this._node(row, path));
+    const nodes = [...loaded, ...fresh];
+    const full = rows.length === limit && fresh.length > 0;
+    const key = parent?.id ?? '';
+    levels.set(key, {parent, path, nodes, full});
+    const level = full ? [...nodes, {id: MORE + key, label: 'Load more…'}] : nodes;
     const all = this._options.allNode;
-    return id === null && all !== undefined ? [{id: ALL, label: all, tooltip: all}, ...nodes] : nodes;
+    return parent === null && all !== undefined ? [{id: ALL, label: all, tooltip: all}, ...level] : level;
   }
 
-  private _node(row: RowView<TRow>): TreeNode<RowView<TRow>> {
+  private async _next(level: Level<RowView<TRow>>): Promise<TreeNode<RowView<TRow>>[] | undefined> {
+    const levels = this._levels;
+    const next = await this._children(level.parent, level.path, level.nodes);
+    if (levels !== this._levels)
+      return undefined;
+    if (level.parent === null)
+      this._roots = next;
+    else
+      level.parent.children = () => Promise.resolve(next);
+    this.tree.setRoots(this._roots);
+    return levels.get(level.parent?.id ?? '')!.nodes;
+  }
+
+  private async _loadMore(id: string): Promise<void> {
+    const levels = this._levels;
+    const level = levels.get(id.slice(MORE.length));
+    if (level === undefined || !level.full || this._loading.peek())
+      return;
+    const onRow = this.tree.selectedNode.peek()?.id === id;
+    this._loading.value = true;
+    this._error.value = null;
+    try {
+      const nodes = await this._next(level);
+      if (nodes === undefined)
+        return;
+      // the first row read takes the selection; with none, a cursor that was on the row stays on the level
+      const target = nodes[level.nodes.length] ?? (onRow ? nodes[nodes.length - 1] : undefined);
+      if (target !== undefined)
+        await this.tree.expandPath([...level.path, target.id]);
+    } catch (e) {
+      if (levels === this._levels)
+        this._error.value = DomainErrors.message(e);
+    } finally {
+      if (levels === this._levels)
+        this._loading.value = false;
+    }
+  }
+
+  private _unread(ids: string[]): Level<RowView<TRow>> | undefined {
+    let key = '';
+    for (const step of ids) {
+      const level = this._levels.get(key);
+      if (level === undefined || !level.nodes.some((n) => n.id === step))
+        return level?.full ? level : undefined;
+      key = step;
+    }
+    return undefined;
+  }
+
+  private _node(row: RowView<TRow>, path: string[]): TreeNode<RowView<TRow>> {
     const label = this._table!.renderer.caption(row);
-    return {id: row.id, label, tooltip: label, data: row, children: () => this._children(row.id)};
+    const node: TreeNode<RowView<TRow>> = {id: row.id, label, tooltip: label, data: row};
+    node.children = () => this._children(node, [...path, node.id]);
+    return node;
   }
 }
