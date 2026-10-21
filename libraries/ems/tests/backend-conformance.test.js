@@ -17,6 +17,8 @@ const SCHEMA = {name: 'conformance', tables: {folder: {
     code: {type: 'string', required: true, searchable: true},
     name: {type: 'string', isName: true, searchable: true},
     parent_id: {type: 'ref', ref: 'folder'},
+    done: {type: 'bool'},
+    meta: {type: 'json'},
   },
 }}};
 

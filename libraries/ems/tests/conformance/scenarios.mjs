@@ -4,11 +4,74 @@
    drifts from the other is a red test here, not a surprise in the browser.
 
    The fixture both harnesses build: table `folder` — `code` (string, required, the business key),
-   `name` (string, the name column), `parent_id` (ref → `folder`), `hierarchy: true`, soft delete
-   on. Plain ESM importing NOTHING, so a package with no u2 link can run it too. */
+   `name` (string, the name column), `parent_id` (ref → `folder`), `done` (bool), `meta` (json),
+   `hierarchy: true`, soft delete on. Plain ESM importing NOTHING, so a package with no u2 link can run it too. */
 
 /** @type {import('./scenarios.d.ts').ConformanceScenario[]} */
 export const scenarios = [
+  {
+    name: 'filters: a null bool is null to every condition, as in SQL',
+    requires: [],
+    seed: [
+      {key: 'yes', code: 'nb-yes', name: 'Yes', done: true},
+      {key: 'none', code: 'nb-none', name: 'None'},
+      {key: 'no', code: 'nb-no', name: 'No', done: false},
+    ],
+    async run(table, ids, t) {
+      const codes = async (filter) => (await table.query({filter, limit: 100})).map((row) => row.code).sort();
+      t.deepEqual(await codes('done = false'), ['nb-no'], 'a null is not false');
+      t.deepEqual(await codes('done != true'), ['nb-no'], 'nor is it unequal to true');
+      t.deepEqual(await codes('done = null'), ['nb-none'], 'and `is null` finds it');
+      t.deepEqual(await codes('done != null'), ['nb-no', 'nb-yes'], 'while `is not null` leaves it out');
+    },
+  },
+  {
+    name: 'filters: a dotted FK path joins through the target\'s rows',
+    requires: [],
+    seed: [
+      {key: 'root', code: 'path-root', name: 'Site'},
+      {key: 'mid', code: 'path-mid', name: 'Room', parent_id: '$ref:root'},
+      {key: 'leaf', code: 'path-leaf', name: 'Shelf', parent_id: '$ref:mid'},
+      {key: 'other', code: 'path-other', name: 'Other site'},
+    ],
+    async run(table, ids, t) {
+      const codes = async (property, value) =>
+        (await table.query({filter: [{property, operator: '=', value}], limit: 100})).map((row) => row.code).sort();
+      t.deepEqual(await codes('parent_id.name', 'Site'), ['path-mid'], 'one hop');
+      t.deepEqual(await codes('parent_id.parent_id.name', 'Site'), ['path-leaf'], 'two hops');
+      t.deepEqual(await codes('parent_id.name', 'Nowhere'), [], 'no target matches: no row');
+    },
+  },
+  {
+    name: 'sort: a `prop.<name>` key names the table\'s own column of that name',
+    requires: [],
+    seed: [
+      {key: 'b', code: 'prp-b', name: 'Second'},
+      {key: 'a', code: 'prp-a', name: 'First'},
+      {key: 'c', code: 'prp-c', name: 'Third'},
+    ],
+    async run(table, ids, t) {
+      const codes = async (sort) => (await table.query({sort, limit: 100})).map((row) => row.code);
+      t.deepEqual(await codes('prop.code'), ['prp-a', 'prp-b', 'prp-c'], 'ascending, as `code`');
+      t.deepEqual(await codes('!prop.name'), ['prp-c', 'prp-b', 'prp-a'], 'descending, as `!name`');
+    },
+  },
+  {
+    name: 'sort: an unknown or json column is refused, not ignored',
+    requires: [],
+    seed: [{key: 'a', code: 'srt-a', name: 'First'}],
+    async run(table, ids, t) {
+      await t.rejects(() => table.query({sort: 'nope'}), 'filter');
+      await t.rejects(() => table.query({sort: 'code,!nope'}), 'filter');
+      await t.rejects(() => table.query({sort: 'meta'}), 'filter');
+      // a `prop.` key with no column of that name too, as a hidden one is: no existence oracle
+      await t.rejects(() => table.query({sort: 'prop.nope'}), 'filter');
+      await t.rejects(() => table.query({sort: 'prop.id,code'}), 'filter');
+      await t.rejects(() => table.query({sort: 'prop.meta'}), 'filter');
+      t.deepEqual((await table.query({sort: '!code', limit: 100})).map((row) => row.code), ['srt-a'],
+        'a declared column still sorts');
+    },
+  },
   {
     name: 'ancestors: a deleted seed still answers its chain',
     requires: ['hierarchy', 'softDelete'],
@@ -152,6 +215,28 @@ export const scenarios = [
       await table.restore(ids.child);
       t.deepEqual((await table.query({limit: 100})).map((row) => row.code).sort(),
         ['veto-child', 'veto-parent'], 'the parent first, then the child');
+    },
+  },
+  {
+    name: 'delete: a live child vetoes its parent\'s delete (onDelete restrict, the default), and the veto names the column',
+    requires: ['softDelete'],
+    seed: [
+      {key: 'parent', code: 'rst-parent', name: 'Site'},
+      {key: 'child', code: 'rst-child', name: 'Room', parent_id: '$ref:parent'},
+    ],
+    async run(table, ids, t) {
+      let code = null;
+      let message = '';
+      try {
+        await table.transaction([{op: 'delete', table: table.address, id: ids.parent}]);
+      } catch (e) {
+        code = e.code;
+        message = `${e.message}`;
+      }
+      t.equal(code, 'restrict', 'a parent with a live child is refused');
+      t.ok(message.includes('parent_id'), 'and the refusal names the ref column');
+      t.deepEqual((await table.query({limit: 100})).map((row) => row.code).sort(),
+        ['rst-child', 'rst-parent'], 'nothing was deleted');
     },
   },
   {
