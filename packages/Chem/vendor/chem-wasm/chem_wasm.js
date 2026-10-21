@@ -2474,6 +2474,34 @@ export function calcDescriptors(molecules, names) {
 }
 
 /**
+ * `chemProperties(molecules, names)`: the JSON of Chem's property columns (module docs); throws on a name not in
+ * its table.
+ * @param {(string | null)[]} molecules
+ * @param {string[]} names
+ * @returns {string}
+ */
+export function chemProperties(molecules, names) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passArrayJsValueToWasm0(names, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemProperties(molecules, ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
  * is `"core,heavy,search,descriptors,scaffold-tree"`.
  * @returns {string}

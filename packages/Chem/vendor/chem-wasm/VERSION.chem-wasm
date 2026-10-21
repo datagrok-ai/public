@@ -2,9 +2,9 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: d4f394484f7f3609ae919e583c6d276701cc86a8
+crux_core_rev: 772f6efb36539c7cc3b98929ebf5474f39db4aab
 crux_core_dirty: False
-built_utc: 2026-10-21T01:48:07.149Z
+built_utc: 2026-10-21T18:02:41.171Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
@@ -13,18 +13,18 @@ wasm_bindgen.version: 0.2.129
 wasm_bindgen.flags: --target web --remove-name-section
 wasm_opt.version: wasm-opt version 117 (version_117)
 wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 4984008
-files.chem_wasm_bg.wasm.gzip9: 1888161
-files.chem_wasm_bg.wasm.brotli11: 1397694
-files.chem_wasm.js.raw: 134236
-files.chem_wasm.js.gzip9: 20581
-files.chem_wasm.js.brotli11: 17300
-cargo_artifact.raw: 7180293
-cargo_artifact.gzip9: 2346126
-cargo_artifact.brotli11: 1672384
+files.chem_wasm_bg.wasm.raw: 4995387
+files.chem_wasm_bg.wasm.gzip9: 1892471
+files.chem_wasm_bg.wasm.brotli11: 1400547
+files.chem_wasm.js.raw: 135098
+files.chem_wasm.js.gzip9: 20623
+files.chem_wasm.js.brotli11: 17337
+cargo_artifact.raw: 7196035
+cargo_artifact.gzip9: 2350046
+cargo_artifact.brotli11: 1675102
 
-vendored from: chem-wasm-d4f/ (crux-core main d4f394484, built clean by the orchestrator, 2026-10-21)
-chem_wasm_bg.wasm: 4,984,008 B raw, sha256 a3c80c7548ba82d9
+vendored from: a clean build of crux-core main 772f6efb3 (build-ship.sh chem)
+chem_wasm_bg.wasm: 4,995,387 B raw, sha256 e7284f33e6f157c7
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes crux-core bae017db8 (rascal-mces: get_mces, RDKit's Rascal MCES of two molecules, a capability Chem does not call yet), d4f394484 (chem-wasm-size: one shared sort for the engine crates and out-of-line clones, 88 KB gzip smaller than 6a6587ae7's file with every result the same; get_mol of a MOL block with {kekulize:false} leaves the atoms of an already-aromatic bond as RDKit does), on top of 6a6587ae7's (fast-search-rdkit, the empty query, the descriptor speed-ups)
+includes: crux-core 772f6efb3 on d4f394484: chem-props (chemProperties: Chem's property table the RDKit way, logS by ESOL), rascal-gate-profile-path and other teams' crates outside Chem's file
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)

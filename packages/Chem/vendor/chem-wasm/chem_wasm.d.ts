@@ -768,6 +768,12 @@ export class SimilarityResult {
 export function calcDescriptors(molecules: (string | null)[], names: string[]): string;
 
 /**
+ * `chemProperties(molecules, names)`: the JSON of Chem's property columns (module docs); throws on a name not in
+ * its table.
+ */
+export function chemProperties(molecules: (string | null)[], names: string[]): string;
+
+/**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
  * is `"core,heavy,search,descriptors,scaffold-tree"`.
  */
@@ -959,6 +965,7 @@ export interface InitOutput {
     readonly __wbg_rgroupdecomposition_free: (a: number, b: number) => void;
     readonly __wbg_similarityresult_free: (a: number, b: number) => void;
     readonly calcDescriptors: (a: any, b: number, c: number) => [number, number];
+    readonly chemProperties: (a: any, b: number, c: number) => [number, number, number, number];
     readonly chemWasmModules: () => [number, number];
     readonly collection_engineRev: () => [number, number];
     readonly collection_fromBytes: (a: number, b: number) => [number, number, number];
