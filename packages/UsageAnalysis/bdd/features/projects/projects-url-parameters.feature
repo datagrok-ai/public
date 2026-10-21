@@ -94,6 +94,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     When user clicks on CANCEL button in "Share BDDUrlParamProj{time}" dialog
     Then the "Share BDDUrlParamProj{time}" dialog should close
 
+  @realizes:core#566
   Scenario: After the save, the Source link opens the dashboard without run=true
     When user moves the pointer away from Source pane in toolbox
     And user hovers over copy icon in Source pane in toolbox
@@ -101,11 +102,11 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     And tooltip should contain text ".BDDUrlParamProj{time}?"
     And tooltip should not contain text "run=true"
 
-  @known-failure:106 @realizes:core#630
+  @known-failure:107 @realizes:core#630
   Scenario: Right after the save, the Source link already carries the alias
     Then tooltip should contain text ".BDDUrlParamProj{time}?type=Project"
 
-  @known-failure:110 @realizes:core#568
+  @known-failure:111 @realizes:core#568
   Scenario: Right after the save, Source offers the sliders icon
     Then sliders-h icon in Source pane in toolbox should be visible
     When user hovers over sliders-h icon in Source pane in toolbox
@@ -231,7 +232,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     And sliders-h icon in Source pane in toolbox should be visible
     And "Save dashboard to apply changes" text in toolbox should be hidden
 
-  @known-failure:239 @realizes:core#630
+  @known-failure:240 @realizes:core#630
   Scenario: Saved with the parameter taken out, the Source link no longer carries it
     When user moves the pointer away from Source pane in toolbox
     And user hovers over copy icon in Source pane in toolbox
