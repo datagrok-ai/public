@@ -27,11 +27,12 @@ the renderers empty their caches and the grids repaint.
 |---|---|---|
 | Molecule cell renderer (`rendering/rdkit-cell-renderer.ts`), `drawMolecule`, the mixture renderer | parse, layout, alignment, highlights and drawing through the Crux module; caches per engine, emptied on a switch | per molecule: what Crux cannot read (`null`), a scaffold it cannot read, a call it refuses |
 | `canvasMol` (`utils/chem-common-rdkit.ts`, `drawMoleculeToCanvas`) | the same | per molecule |
-| Descriptors (`descriptors/descriptors-engine.ts`: the menu and its editor, the transform, the vector function, the panel, `chemDescriptors`, `chemDescriptorsTree`) | the tree from the main thread's instance, the values from the Crux workers (`crux/crux-service.ts`, molecules in chunks of 1000 across the pool) | the chem-chem container, per call and per molecule Crux cannot read (a row of nulls for a molecule given) |
+| Descriptors (`descriptors/descriptors-engine.ts`: the menu and its editor, the transform, the vector function, the panel, `chemDescriptors`, `chemDescriptorsTree`) | the tree from the main thread's instance, the values from the Crux workers (`crux/crux-service.ts`, each distinct molecule once, in chunks of 1000 across the pool, back as typed arrays) | the chem-chem container, per call and per molecule Crux cannot read (a row of nulls for a molecule given) |
 | Scaffold tree (`getScaffoldTree`) | a Crux worker, the same JSON as `scripts/scaffold_tree.py` | the Python script, per call |
 | Contains / Not contains search | not this setting: `SubstructureSearchEngine` (default Crux) | RDKit search per query / per unreadable molecule (`crux/crux-searches.ts`) |
 | Fingerprints (`chemGetFingerprints` and its cached `~<column>.<type>` columns, the query's fingerprint, similarity and diversity, chemical space and cliffs' preprocessing, BitBIRCH, the SAR matrix's clustering; `engine/worker-jobs.ts`) | the Crux workers run the RDKit worker's own code on the Crux module (the same types and options: Morgan r2/2048 after `remove_hs_in_place`, ...); a cached column belongs to the engine that filled it (`~<column>.Morgan.Crux`, RDKit's `~<column>.Morgan`), and saving one drops the other engine's: the column's edits reach the cache that reads them first, so a kept twin would miss them | the RDKit pool, per call and per molecule Crux cannot read |
 | Structural alerts and pharmacophore features (`panels/structural-alerts.ts`, `panels/pharmacophore-features.ts`) | the Crux workers, matching as the RDKit worker does, each molecule parsed once | the RDKit pool, per call and per molecule Crux cannot read |
+| An activity cliff's MCS, highlighted in its tooltip and panel (`analysis/activity-cliffs.ts`, `cliffMcs`) | RDKit's Rascal MCES (crux's `get_mces`) on a Crux worker (`CruxService.pairUncommonAtomsAndBonds`): each molecule's atoms and bonds outside it, from its own matches; the most bonds the two molecules share, possibly in several fragments, where FMCS finds one connected substructure; no highlight for a pair under its similarity threshold | RDKit's FMCS on the RDKit pool, per call (a Crux failure) |
 
 Fingerprints by Crux are RDKit 2026.03's, Chem's RDKit is 2024.09: on Chem's test molecules (1,402) Morgan, pattern,
 MACCS and RDKit fingerprints are identical, atom-pair and topological-torsion ones differ on 17 and 16 molecules, each
@@ -39,9 +40,9 @@ of them RDKit's own change between the two releases (RDKit.js 2026.03.6 gives Cr
 identically. A fingerprint cache belongs to the engine that filled it: the RDKit substructure search keeps its own
 pattern fingerprints (the plain-named columns) on RDKit in both modes.
 
-In Crux mode the RDKit pool is not started for what has moved; everything else (MCS, R-groups, MMPA, InChI,
-conversions, reactions, the substructure search's RDKit path, the context panel's one-molecule widgets) is RDKit in
-both modes.
+In Crux mode the RDKit pool is not started for what has moved; everything else (the other MCS calls, R-groups, MMPA,
+InChI, conversions, reactions, the substructure search's RDKit path, the context panel's one-molecule widgets) is RDKit
+in both modes.
 
 Descriptors in Crux mode are `dockerfiles/chem/chem.py` as this package has it, on the RDKit release Crux reproduces:
 the same tree (groups, versions, names, order; the descriptions RDKit's docstrings give) and the same values (2D within

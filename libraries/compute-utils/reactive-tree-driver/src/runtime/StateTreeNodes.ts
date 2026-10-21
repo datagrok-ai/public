@@ -1,7 +1,7 @@
 import {BehaviorSubject, combineLatest, merge, Observable, Subject, of} from 'rxjs';
 import dayjs from 'dayjs';
 import {v4 as uuidv4} from 'uuid';
-import {PipelineStateDynamic, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState, ViewAction, PipelineInstanceRuntimeData} from '../config/PipelineInstance';
+import {PipelineStateDynamic, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState, ViewAction, PipelineInstanceRuntimeData, PipelineInstanceBase} from '../config/PipelineInstance';
 import {PipelineConfigurationDynamicProcessed, PipelineConfigurationProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
@@ -71,6 +71,9 @@ export class FuncCallNode implements IStoreProvider {
   public funcCallState$ = new BehaviorSubject<FuncCallStateInfo | undefined>(undefined);
   public pendingDependencies$ = new BehaviorSubject<string[]>([]);
   public nodeDescription = new NodeMetaDescription(descriptionStates, false);
+  public sourceRunId?: string;
+  // not saved, resolved from the source run when the node is loaded; null when it has no title
+  public sourceRunTitle?: string | null;
 
   private closed$ = new Subject<true>();
 
@@ -138,9 +141,11 @@ export class FuncCallNode implements IStoreProvider {
     this.pendingId = state.funcCallId;
     if (state.uuid)
       this.uuid = state.uuid;
+    this.sourceRunId = state.sourceRunId;
   }
 
-  initState(initialConfig: Omit<StepFunCallInitialConfig, 'id'>) {
+  initState(initialConfig: Omit<StepFunCallInitialConfig, 'id'> & {sourceRunId?: string}) {
+    this.sourceRunId = initialConfig.sourceRunId;
     const initialRestrictions: Record<string, RestrictionState> = {};
     for (const [k, restrictionType] of Object.entries(initialConfig.inputRestrictions ?? {})) {
       const initalVal = (initialConfig.initialValues ?? {})[k];
@@ -164,6 +169,8 @@ export class FuncCallNode implements IStoreProvider {
       friendlyName: this.config.friendlyName,
       funcCall: options?.skipFuncCalls ? undefined : instance?.getFuncCall(),
       isReadonly: this.isReadonly,
+      sourceRunId: this.sourceRunId,
+      sourceRunTitle: this.sourceRunTitle ?? undefined,
       viewersHook: this.config.viewersHook,
       enableHistory: this.config.enableHistory,
       actions,
@@ -182,6 +189,7 @@ export class FuncCallNode implements IStoreProvider {
       friendlyName: this.config.friendlyName,
       funcCallId: this.instancesWrapper.id,
       isReadonly: this.isReadonly,
+      sourceRunId: this.sourceRunId,
     };
     if (options.disableNodesUUID)
       res.uuid = '';
@@ -313,6 +321,7 @@ export class PipelineNodeBase implements IStoreProvider {
   public nodeDescription = new NodeMetaDescription(descriptionStates, false);
   public pipelineValidations$ = new BehaviorSubject<Record<string, ValidationResult | undefined>>({});
   public skipOnInit = false;
+  public sourceRunId?: string;
 
   constructor(
     public readonly config: PipelineConfigurationProcessed,
@@ -327,12 +336,14 @@ export class PipelineNodeBase implements IStoreProvider {
       throw new Error(`Wrong pipeline node state ${JSON.stringify(state)}`);
     if (state.uuid)
       this.uuid = state.uuid;
+    this.sourceRunId = state.sourceRunId;
   }
 
-  initState(initialConfig: {initialValues?: Record<string, any>, skipOnInit?: boolean}) {
+  initState(initialConfig: {initialValues?: Record<string, any>, skipOnInit?: boolean, sourceRunId?: string}) {
     for (const [k, val] of Object.entries(initialConfig.initialValues ?? {}))
       this.store.setState(k, val);
     this.skipOnInit = !!initialConfig.skipOnInit;
+    this.sourceRunId = initialConfig.sourceRunId;
   }
 
   getStateStore() {
@@ -355,7 +366,7 @@ export class PipelineNodeBase implements IStoreProvider {
   }
 
   toSerializedState(options: StateTreeSerializationOptions) {
-    const res = {
+    const res: PipelineInstanceBase<{}, {}> = {
       configId: this.config.id,
       uuid: this.uuid,
       version: this.config.version,
@@ -363,6 +374,7 @@ export class PipelineNodeBase implements IStoreProvider {
       friendlyName: this.config.friendlyName,
       description: this.config.description,
       isReadonly: this.isReadonly,
+      sourceRunId: this.sourceRunId,
     };
     if (options.disableNodesUUID)
       res.uuid = '';

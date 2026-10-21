@@ -1,7 +1,8 @@
 @journey @realizes:chem.cp.scaffold-tree-add-filter
-Feature: Scaffold Tree colors, blocked generation and two tables
-  The magic wand is blocked, with its reason, on a table with no molecule column and on a molecule
-  column of 500 categories or more. With two tables open the menu binds a new viewer to the active
+Feature: Scaffold Tree colors, blocked generation, large tables and two tables
+  The magic wand is blocked, with its reason, on a table with no molecule column only: on a column of
+  100 molecules it generates from all of them, and on a larger one than 750 its tooltip says it
+  generates from a sample of 750. With two tables open the menu binds a new viewer to the active
   one. A Scaffold Tree generated on spgi-100: coloring its first node adds the hidden "Structure
   colors" column and names it in the viewer's reading, and a scatter plot colored by that column
   takes the scaffold's colors. Removing another scaffold keeps the colors column and the plot's
@@ -26,14 +27,25 @@ Feature: Scaffold Tree colors, blocked generation and two tables
     And the "nodes" reading of Scaffold Tree viewer should be 0
     And no errors should have been logged
 
-  Scenario: The magic wand is blocked past 500 structure categories
+  Scenario: On 1,000 molecules the magic wand is open, and says it generates from a sample of 750
     Given user opens mol1K dataset
     When user picks "Chem > Analyze > Scaffold Tree" from the top menu
     Then Scaffold Tree viewer should be visible
-    And the "generate blocked reason" reading of Scaffold Tree viewer should be "The number of molecules exceeds the limit of 500"
+    And the "generate blocked reason" reading of Scaffold Tree viewer should be ""
+    And the "generate hint" reading of Scaffold Tree viewer should be "Generate from a sample of 750 of 1,000 molecules"
     When user hovers over Scaffold Tree viewer
-    Then "Generate" icon inside Scaffold Tree viewer should be disabled
+    Then "Generate" icon inside Scaffold Tree viewer should be enabled
     And the "nodes" reading of Scaffold Tree viewer should be 0
+    And no errors should have been logged
+
+  Scenario: On 100 molecules the magic wand generates from them all
+    Given user opens spgi dataset
+    When user picks "Chem > Analyze > Scaffold Tree" from the top menu
+    Then Scaffold Tree viewer should be visible
+    And the "generate blocked reason" reading of Scaffold Tree viewer should be ""
+    And the "generate hint" reading of Scaffold Tree viewer should be "Generate from molecular column"
+    When user hovers over Scaffold Tree viewer
+    Then "Generate" icon inside Scaffold Tree viewer should be enabled
     And no errors should have been logged
 
   Scenario: With two tables open the menu binds the viewer to the active one (github-3004)

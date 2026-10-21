@@ -350,7 +350,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
       return;
     g.save();
     try {
-      const renderedOnGrid = gridCell.gridColumn && gridCell.grid && g.canvas === gridCell.grid.canvas;
+      const renderedOnGrid = gridCell.grid?.dart && g.canvas === gridCell.grid.canvas;
       const cellImageData = this.imageCache.has(cellValue) ? this.imageCache.get(cellValue) : null;
       const bd = new DG.Rect(x, y, w, h);
       let gridCellWidth: number;

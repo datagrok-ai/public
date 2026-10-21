@@ -81,17 +81,17 @@ export async function readRecordedBalloons(page: Page): Promise<RecordedBalloon[
 //  - the parked cursor. A balloon inserted under a stationary pointer receives mouseEnter, and
 //    that CANCELS its auto-hide timer (balloon.dart:70-73) — a probe balloon left standing >12 s
 //    was observed this way. The pointer is moved off the balloon corner after the click.
-// The two caps are deliberately different. A JS-API balloon auto-hides at exactly 5 000 ms
-// (grok_api.dart:44 passes `timeout ?? 5`), so a removal cap of 5 s would race the auto-hide: a
-// click that MISSED would still see the node leave, and the dismissal assertion would pass for the
-// wrong reason. The removal cap stays far under that, which keeps it a real discriminator — the
-// mechanism itself was measured at 142-160 ms (the product's own 100 ms closeOnMouseUp delay plus
-// observer turnaround), so 1.5 s is roughly ten times the observed cost.
+// The probe is raised with autoHide off, so only the click can remove it: a click that MISSED leaves
+// it standing and fails the dismissal assertion. The removal cap therefore starts when the click
+// returns, not when the balloon appears — on a loaded nightly stand the click itself can take over
+// 1.5 s, which used to eat the whole cap. The mechanism was measured at 142-160 ms (the
+// product's own 100 ms closeOnMouseUp delay plus observer turnaround), so 1.5 s is roughly ten
+// times the observed cost.
 const DISMISS_CAP_MS = 1_500;
 
 export async function proveBalloonChannel(page: Page, label: string, cap = 5_000): Promise<void> {
   const token = `${PROBE_MARKER}${label} ${Date.now()}`;
-  const appeared = await page.evaluate(async ({tok, ms, dismissMs}) => {
+  const appeared = await page.evaluate(async ({tok, ms}) => {
     const w = window as any;
     const hit = (): Element | undefined => Array.from(document.querySelectorAll('.d4-balloon.warning'))
       .find((b) => (b.textContent || '').indexOf(tok) >= 0);
@@ -115,28 +115,12 @@ export async function proveBalloonChannel(page: Page, label: string, cap = 5_000
         resolve(null);
       }, ms);
     });
-    w.grok.shell.warning(tok);
+    w.grok.shell.warning(tok, {autoHide: false});
     const node = await seen;
     if (node === null) return false;
-    w.__probeGone = new Promise<boolean>((resolve) => {
-      if (!node.isConnected) {
-        resolve(true);
-        return;
-      }
-      const obs = new MutationObserver(() => {
-        if (!node.isConnected) {
-          obs.disconnect();
-          resolve(true);
-        }
-      });
-      obs.observe(document.body, {childList: true, subtree: true});
-      setTimeout(() => {
-        obs.disconnect();
-        resolve(false);
-      }, dismissMs);
-    });
+    w.__probeNode = node;
     return true;
-  }, {tok: token, ms: cap, dismissMs: DISMISS_CAP_MS});
+  }, {tok: token, ms: cap});
   expect(appeared,
     `the balloon channel must render "${token}"; if it does not, every "no balloon" reading in this spec `
     + 'is a reading of a channel nothing has been shown to arrive on').toBe(true);
@@ -148,10 +132,27 @@ export async function proveBalloonChannel(page: Page, label: string, cap = 5_000
   await page.locator(WARNING_BALLOON, {hasText: token}).first().click({position: {x: 8, y: 8}});
   await page.mouse.move(0, 0);
 
-  const dismissed = await page.evaluate(() => (window as any).__probeGone as Promise<boolean>);
+  const dismissed = await page.evaluate((dismissMs) => new Promise<boolean>((resolve) => {
+    const node = (window as any).__probeNode as Element;
+    if (!node.isConnected) {
+      resolve(true);
+      return;
+    }
+    const obs = new MutationObserver(() => {
+      if (!node.isConnected) {
+        obs.disconnect();
+        resolve(true);
+      }
+    });
+    obs.observe(document.body, {childList: true, subtree: true});
+    setTimeout(() => {
+      obs.disconnect();
+      resolve(false);
+    }, dismissMs);
+  }), DISMISS_CAP_MS);
   expect(dismissed,
     `the probe balloon "${token}" must leave the DOM when clicked; still standing means the click missed `
-    + 'its body, and the cancelled auto-hide timer will leave it there for the rest of the run').toBe(true);
+    + 'its body, and with auto-hide off it would stay there for the rest of the run').toBe(true);
 }
 
 // Instantaneous — never a retrying matcher. `expect(locator).toHaveCount(0)` polls for up to the

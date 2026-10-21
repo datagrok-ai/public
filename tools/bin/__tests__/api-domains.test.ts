@@ -186,7 +186,8 @@ describe('generateDomainClients', () => {
     expect(code).toContain('export type TestdbTransactionOp =');
     expect(code).toContain(
       `  {op: 'insert'; table: 'sample'; ref?: string; values: DG.DomainTxValues<SampleInsert>; onDuplicate?: 'error'} |`);
-    expect(code).toContain(`  {op: 'delete'; table: 'sample_event'; id: string};`);
+    expect(code).toContain(`  {op: 'delete'; table: 'sample'; id: string} |`);
+    expect(code).toContain(`  {op: 'restore'; table: 'sample_event'; id: string};`);
 
     // per-schema typed clients: LAZY getters (no import-time side effects), four
     // generics, PLURAL property names, no datetime config (the client resolves
@@ -227,6 +228,16 @@ describe('generateDomainClients', () => {
     expect(code).toContain(`export type IssueStateYIssueState = 'c' | 'd';`);
     expect(code).toMatch(/interface IssueStateRow \{[^}]*x\?: IssueStateX;/);
     expect(code).toMatch(/interface IssueStateRow \{[^}]*y\?: IssueStateYIssueState;/);
+  });
+
+  it('transaction: a hard-delete table gets no restore arm', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.sample_event.softDelete = false);
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    expect(code).toContain(`  {op: 'restore'; table: 'sample'; id: string} |`);
+    expect(code).not.toContain(`{op: 'restore'; table: 'sample_event'`);
+    expect(code).toContain(`  {op: 'delete'; table: 'sample_event'; id: string};`);
   });
 
   it('choices values with a quote or a backslash compile to the same literals', {timeout: 180_000}, () => {
@@ -357,6 +368,23 @@ describe('generateDomainClients', () => {
     expect(code).toMatch(/interface SampleRow \{[^}]*  seq: number;/);
     expect(code).toMatch(/interface SampleInsert \{[^}]*  seq\?: number;/);
   });
+
+  it('default: a required column the server defaults on insert — present on Row, optional on Insert',
+    {timeout: 180_000}, () => {
+      const dir = makePackage();
+      mutateManifest(dir, (m) => {
+        m.tables.sample.columns.prio = {type: 'int', required: true, default: 3};
+        m.propertySchemas.extra.score.default = 0;
+      });
+      expect(generateDomainClients(dir)).toBe(true);
+      const code = fs.readFileSync(dbPath(dir), 'utf8');
+      expect(code).toMatch(/interface SampleRow \{[^}]*  prio: number;/);
+      expect(code).toMatch(/interface SampleInsert \{[^}]*  prio\?: number;/);
+      expect(code).toMatch(/interface SampleInsert \{[^}]*  name: string;/);
+      const res = runTsc(dir, 'usage-defaults.ts');
+      expect(res.output.trim(), res.output).toBe('');
+      expect(res.status).toBe(0);
+    });
 
   it('accessors: the plural of the singular, as the platform derives a table\'s plural name', () => {
     const dir = makePackage();

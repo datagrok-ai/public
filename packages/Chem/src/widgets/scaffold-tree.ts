@@ -84,7 +84,39 @@ interface ScaffoldLayout {
   scaffoldJson: string;
 }
 
-const MAX_MOL_NUMBER = 500;
+/** The most molecules a tree is generated from: a column with more is sampled to this many (see
+ * {@link scaffoldTreeSampleRows}), and Generate's tooltip says so. */
+export const SCAFFOLD_TREE_MAX_MOLECULES = 750;
+
+/**
+ * The rows a tree is generated from: every row of a column of at most `max` molecules (non-empty values); of a larger
+ * one, `max` rows spread over the whole column: the column cut into `max` equal stretches, from each its first row with a
+ * non-empty molecule `readable` accepts. The same column gives the same rows.
+ */
+export function scaffoldTreeSampleRows(values: (string | null)[], max: number,
+  readable: (molecule: string) => boolean): number[] {
+  const molecules = values.reduce((n, v) => n + (v ? 1 : 0), 0);
+  if (molecules <= max)
+    return values.map((_, i) => i);
+  const rows: number[] = [];
+  for (let k = 0; k < max; k++) {
+    const end = Math.floor((k + 1) * values.length / max);
+    for (let row = Math.floor(k * values.length / max); row < end; row++) {
+      if (values[row] && readable(values[row]!)) {
+        rows.push(row);
+        break;
+      }
+    }
+  }
+  return rows;
+}
+
+/** A molecule RDKit reads (the sample takes no molecule the tree would drop). */
+function readableMolecule(molecule: string): boolean {
+  const mol = getMolSafe(molecule, {}, _rdKitModule).mol;
+  mol?.delete();
+  return !!mol;
+}
 
 export function value(node: TreeViewNode): ITreeNode {
   return node.value as ITreeNode;
@@ -744,6 +776,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   _iconUpload: HTMLElement | null = null;
   _bitOpInput: InputBase | null = null;
   skipAutoGenerate: boolean = false;
+  /** What the last tree was generated from: "N molecules", or "a sample of 750 of N molecules". */
+  generatedFrom: string = '';
   fpWarmPromise: Promise<void> | null = null;
   progressBar: DG.TaskBarProgressIndicator | null = null;
   moleculeColumnName: string;
@@ -889,6 +923,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       'colored nodes': this.colorCodedScaffolds.length,
       'message': this._message?.textContent ?? '',
       'generate blocked reason': this.generateBlockedReason() ?? '',
+      'generate hint': this.generateHint(),
+      'generated from': this.generatedFrom,
       'molecule column': this.molColumn?.name ?? '',
       'colors column': this.fragmentsColumn?.name ?? '',
       'labels column': this.labelsColumn?.name ?? '',
@@ -1036,22 +1072,19 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (currentCancelled)
       return;
 
-    this.progressBar?.update(30, 'Generating tree..: 30% completed');
-    const maxMolCount = 750;
-
-    let length = this.molColumn.length;
-    let step = 1;
-    if (this.molColumn.length > maxMolCount) {
-      step = Math.floor(this.molColumn.length / maxMolCount);
-      if (step === 0) step = 1;
-      length = maxMolCount;
-    }
+    // a column of more than SCAFFOLD_TREE_MAX_MOLECULES molecules: a sample of that many, spread over the column
+    const rows = scaffoldTreeSampleRows(this.molColumn.toList(), SCAFFOLD_TREE_MAX_MOLECULES, readableMolecule);
+    const sample = this.sampleText();
+    this.generatedFrom = sample ?? `${this.moleculeCount().toLocaleString('en-US')} molecules`;
+    this.progressBar?.update(30, `Generating tree${sample ? ` from ${sample}` : ''}..: 30% completed`);
+    if (sample && c.length > 0)
+      c[0].append(ui.divText(`From ${sample}`, 'chem-scaffold-tree-sample-hint'));
 
     let molStr = null;
     let mTmp = null;
-    const ar = new Array(length);
-    for (let n = 0, m = 0; n < length; ++n, m += step) {
-      molStr = this.molColumn.get(m);
+    const ar = new Array(rows.length);
+    for (let n = 0; n < rows.length; ++n) {
+      molStr = this.molColumn.get(rows[n]);
       if (molStr.includes('V3000')) {
         mTmp = null;
         try {
@@ -2795,15 +2828,32 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   generateBlockedReason(): string | null {
     if (!this.molColumn)
       return 'There is no molecule column in the table';
-    if (this.molColumn.categories.length >= MAX_MOL_NUMBER)
-      return `The number of molecules exceeds the limit of ${MAX_MOL_NUMBER}`;
     return null;
+  }
+
+  /** The molecules (non-empty values) of the molecule column. */
+  moleculeCount(): number {
+    return this.molColumn ? this.molColumn.length - this.molColumn.stats.missingValueCount : 0;
+  }
+
+  /** "a sample of 750 of 12,345 molecules" when the column has more molecules than a tree is generated from. */
+  sampleText(): string | null {
+    const count = this.moleculeCount();
+    return count > SCAFFOLD_TREE_MAX_MOLECULES ?
+      `a sample of ${SCAFFOLD_TREE_MAX_MOLECULES.toLocaleString('en-US')} of ${count.toLocaleString('en-US')} molecules` :
+      null;
+  }
+
+  /** Generate's tooltip: why it is blocked, or what it generates from. */
+  generateHint(): string {
+    const sample = this.sampleText();
+    return this.generateBlockedReason() ?? (sample ? `Generate from ${sample}` : 'Generate from molecular column');
   }
 
   attachGenerateIconTooltip() {
     if (!this._iconGenerate) return;
     this._iconGenerate.onmouseenter = (e) => {
-      const tooltipText = this.generateBlockedReason() ?? 'Generate from molecular column';
+      const tooltipText = this.generateHint();
       ui.tooltip.show(tooltipText, e.clientX, e.clientY);
     };
 

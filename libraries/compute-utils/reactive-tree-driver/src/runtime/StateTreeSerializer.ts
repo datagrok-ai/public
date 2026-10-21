@@ -55,13 +55,13 @@ export function toInstanceConfigRec(node: TreeNode<StateTreeNode>): PipelineInst
     const ios = item.config.io!.filter((io) => io.direction === 'input' || withOutputs);
     const initialValues = Object.fromEntries(
       ios.map((io) => [io.id, copyValue(item.instancesWrapper.getState(io.id))]));
-    return {id, initialValues};
+    return {id, initialValues, isReadonly: item.isReadonly, sourceRunId: item.sourceRunId};
   }
   const store = item.getStateStore();
   const initialValues = Object.fromEntries(
     store.getStateNames().map((name) => [name, copyValue(store.getState(name))]));
   const steps = node.getChildren().map((child) => toInstanceConfigRec(child.item));
-  return {id, initialValues, skipOnInit: true, steps};
+  return {id, initialValues, skipOnInit: true, steps, isReadonly: item.isReadonly, sourceRunId: item.sourceRunId};
 }
 
 export function getValidations(nodeTree: BaseTree<StateTreeNode>) {

@@ -94,7 +94,7 @@ source('load: rows by id, total, access, schema and the summary', async () => {
   assert.equal(src.rows.items.value[0]['~can_edit'], true, 'withAccess: the rows carry their own');
   assert.equal('~can_edit' in src.rows.items.value[0], false, 'read by name, never enumerated (H7)');
   assert.equal(src.edit.value.isChanged('i1', 'title'), false, 'the writer is reachable for the controls');
-  assert.equal(src.schema.info.pluralName, 'Issues');
+  assert.equal(src.schema.info.pluralName, 'issues');
   assert.equal(src.schema.properties.find((p) => p.name === 'project_id').ref, 'grit.project');
   assert.ok(src.df.value instanceof MemoryFrame, 'the memory backend is a frame host too');
   assert.ok(src.session instanceof SharedSession, 'built outside a spec or an app: a session of one');
