@@ -1,20 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {chatInput} from '../widgets/chat-input';
+import {ChatInputWidget} from '../widgets/chat-input';
 
-// The event protocol the platform chat (xamgle chat.dart, ChatInput) speaks to the compose box.
+// What the platform chat (xamgle chat.dart, ChatInput) calls on the compose box.
 category('Chat input', () => {
-  function sends(root: HTMLElement, answer: 'u2-msg-sent' | 'u2-msg-failed'): string[] {
-    const sent: string[] = [];
-    root.addEventListener('u2-msg-send', () => {
-      sent.push(root.dataset.markup!);
-      root.dispatchEvent(new Event(answer));
-    });
-    return sent;
-  }
-
-  function text(root: HTMLElement): string {
-    return root.querySelector('.u2-msg-editor')!.textContent!;
+  function text(w: ChatInputWidget): string {
+    return w.root.querySelector('.u2-msg-editor')!.textContent!;
   }
 
   test('is the chatInput func', async () => {
@@ -22,42 +13,39 @@ category('Chat input', () => {
     expect(funcs.map((f) => f.name).join(), 'chatMessageInput');
   });
 
-  test('submit sends the markup and empties the box once sent', async () => {
-    const w = chatInput('hello\nthere');
-    const sent = sends(w.root, 'u2-msg-sent');
-    w.root.dispatchEvent(new Event('u2-msg-submit'));
-    await DG.delay(0);
+  test('submit sends the markup and empties the box once taken', async () => {
+    const w = new ChatInputWidget('hello\nthere');
+    const sent: string[] = [];
+    w.onSend = async (markup) => {sent.push(markup); return true;};
+    expect(await w.submit(), true);
     expect(sent.join('|'), 'hello\nthere');
-    expect(text(w.root), '');
+    expect(text(w), '');
     w.detach();
   });
 
-  test('a failed send keeps the text', async () => {
-    const w = chatInput('keep me');
-    sends(w.root, 'u2-msg-failed');
-    w.root.dispatchEvent(new Event('u2-msg-submit'));
-    await DG.delay(0);
-    expect(text(w.root), 'keep me');
+  test('a refused send keeps the text', async () => {
+    const w = new ChatInputWidget('keep me');
+    w.onSend = async () => false;
+    expect(await w.submit(), false);
+    expect(text(w), 'keep me');
     w.detach();
   });
 
-  test('an empty box answers submit with an empty send', async () => {
-    const w = chatInput();
-    const sent = sends(w.root, 'u2-msg-failed');
-    w.root.dispatchEvent(new Event('u2-msg-submit'));
-    await DG.delay(0);
-    expect(sent.length, 1);
-    expect(sent[0], '');
+  test('an empty box sends nothing', async () => {
+    const w = new ChatInputWidget();
+    let calls = 0;
+    w.onSend = async () => {calls++; return true;};
+    expect(await w.submit(), false);
+    expect(calls, 0);
     w.detach();
   });
 
   test('insert appends markup', async () => {
-    const w = chatInput('see ');
-    const sent = sends(w.root, 'u2-msg-sent');
-    w.root.dataset.markup = 'the table';
-    w.root.dispatchEvent(new Event('u2-msg-insert'));
-    w.root.dispatchEvent(new Event('u2-msg-submit'));
-    await DG.delay(0);
+    const w = new ChatInputWidget('see ');
+    const sent: string[] = [];
+    w.onSend = async (markup) => {sent.push(markup); return true;};
+    w.insert('the table');
+    await w.submit();
     expect(sent[0], 'see the table');
     w.detach();
   });
