@@ -291,9 +291,10 @@ export class JSMol {
      */
     get_maccs_fp(): string;
     /**
-     * PORT(minilib.cpp `get_mmpa_frags`): `{cores, sidechains}`, two `MolList`s of RDKit's
-     * `MMPA::fragmentMol(mol, minCuts, maxCuts, maxCutBonds)` (its default pattern) results;
-     * a single cut's core is empty (`undefined` from `at` / `next`, RDKit-js's `null`).
+     * PORT(minilib.cpp:592-603, jswrapper.cpp:449-458 `get_mmpa_frags`): `{cores, sidechains}`, two `MolList`s
+     * of RDKit's `MMPA::fragmentMol(mol, minCuts, maxCuts, maxCutBonds)` (its default pattern) results, empty when
+     * no cut has `minCuts` bonds; both `null` where `fragmentMol` returns false (no cuttable bond, or more than
+     * `maxCutBonds`). A single cut's core is empty (`null` from `at` / `next`).
      */
     get_mmpa_frags(min_cuts: number, max_cuts: number, max_cut_bonds: number): any;
     /**
@@ -887,6 +888,18 @@ export function get_rgd_text(cores: string[], details?: string | null): RGroupDe
 export function get_rxn(input: string, details?: string | null): Reaction | undefined;
 
 /**
+ * PORT(jswrapper.cpp:156-212, 921-928): RDKit-js `molzip`, its three forms and Crux's one-molecule form (module
+ * docs): `molzip(a, b, details?)`, `molzip(row, details?)`, `molzip(mol, details?)`. A `JSMol`, or `null`.
+ */
+export function molzip(first: JSMol | Record<string, JSMol>, second?: JSMol | string, details?: string): JSMol | null;
+
+/**
+ * Python's `Chem.molzipFragments(mols, params)` (RDKit's `molzip(decomposition, params)`, which RDKit-js does not
+ * bind): the list's molecules, the core first. A `JSMol`, or `null` for an empty list.
+ */
+export function molzipFragments(mols: MolList, details?: string | null): JSMol | null;
+
+/**
  * PORT(minilib.cpp:864-868): RDKit-js `prefer_coordgen(prefer)`: `RDDepict::preferCoordGen`,
  * process-wide (CoordGen, crate `coordgen`, decision `coordgen`); `true` throws in a build without
  * CoordGen.
@@ -1093,6 +1106,8 @@ export interface InitOutput {
     readonly mollist_pop: (a: number, b: number) => any;
     readonly mollist_reset: (a: number) => void;
     readonly mollist_size: (a: number) => number;
+    readonly molzip: (a: any, b: number, c: number, d: number) => [number, number, number];
+    readonly molzipFragments: (a: number, b: number, c: number) => [number, number, number];
     readonly prefer_coordgen: (a: number) => [number, number];
     readonly reaction_delete: (a: number) => void;
     readonly reaction_draw_to_canvas: (a: number, b: any, c: number, d: number) => [number, number, number, number];
