@@ -17,7 +17,9 @@ functions come from Crux (the last table below).
 | `worker-jobs.ts` | The worker jobs by engine: fingerprints (`fingerprintsByEngine`, and the engine a cache belongs to) and structural alerts (`alertsByEngine`): the Crux pool in Crux mode, the RDKit pool otherwise and behind it (the whole call when Crux fails; otherwise the molecules Crux cannot read, on the RDKit pool) |
 | `../crux/crux-service.ts` | The Crux worker pool: molecules in chunks, each worker handed its next chunk when the last is done, each chunk within its own time (30 s plus a per-molecule allowance, from its start); a trap, a timeout or a lost worker restarts the pool (another failure keeps it and its search indexes), and the call falls back to RDKit |
 
-RDKit mode never fetches the file (the Crux substructure search, the `SubstructureSearchEngine` default, does).
+RDKit mode fetches the file only for what runs on Crux in both modes: the Crux substructure search (the
+`SubstructureSearchEngine` default), `molzip`, and fingerprints with the FCFP or chirality option (Chem's RDKit.js
+has neither).
 In Crux mode the package's init loads it beside RDKit; a switch at run time draws with RDKit until it is ready, then
 the renderers empty their caches and the grids repaint.
 
@@ -47,9 +49,9 @@ of them RDKit's own change between the two releases (RDKit.js 2026.03.6 gives Cr
 identically. A fingerprint cache belongs to the engine that filled it: the RDKit substructure search keeps its own
 pattern fingerprints (the plain-named columns) on RDKit in both modes.
 
-In Crux mode the RDKit pool is not started for what has moved; everything else (the other MCS calls, R-groups, MMPA,
-InChI, conversions, reactions, the substructure search's RDKit path, the context panel's one-molecule widgets) is RDKit
-in both modes.
+In Crux mode the RDKit pool is not started for what has moved; everything else (InChI, conversions, validation,
+reaction drawing, the substructure search's RDKit path, the context panel's one-molecule widgets) is RDKit in both
+modes, and toxicity and drug-likeness stay on OpenChemLib.
 
 Descriptors in Crux mode are `dockerfiles/chem/chem.py` as this package has it, on the RDKit release Crux reproduces:
 the same tree (groups, versions, names, order; the descriptions RDKit's docstrings give) and the same values (2D within
