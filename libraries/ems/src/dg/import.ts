@@ -296,7 +296,7 @@ class ImportFlow {
   private _payload(frame: DG.DataFrame, mapping: [string, string][], count: number):
     Record<string, unknown>[] {
     const rows: Record<string, unknown>[] = Array.from({length: count}, () => ({}));
-    // an empty cell of a new row is left out so the column takes its default; upsert is not ruled
+    // left out of a new row, an empty cell takes the column's default
     const insert = this._mode?.value.peek() !== 'upsert';
     for (const [target, name] of mapping) {
       const cell = ImportFlow._cell(frame.columns.byName(name));
@@ -309,14 +309,12 @@ class ImportFlow {
     return rows;
   }
 
-  /** A cell as posted; a float column not made double precision reads back widened (3.10 →
-   * 3.0999999046325684), so it posts the shortest decimal of the same float32. */
+  /** A float32 cell reads back widened (3.10 → 3.0999999046325684): post the shortest decimal of that float32. */
   private static _cell(column: DG.Column): (i: number) => unknown {
     const float32 = column.type === 'double' && !(column as DG.FloatColumn).doublePrecision;
     return (i) => column.isNone(i) ? null : float32 ? ImportFlow._shortest(column.get(i) as number) : column.get(i);
   }
 
-  /** The shortest decimal that is the same float32. */
   private static _shortest(value: number): number {
     for (let digits = 1; digits <= 9; digits++) {
       const shortest = Number(value.toPrecision(digits));

@@ -7,9 +7,9 @@
 * Memory backend: Filled the column defaults into a draft, and applied the default on an insert that leaves the column out, as the server does
 * Memory backend: Fixed derived singular and plural names reading the friendly name and replacing `_`: like the platform, they come from the table name (`order_details` → `order_detail`), and a declared friendly name is answered as `info.friendlyName`
 * Memory backend: Fixed derived table names: a table named in the plural (`categories`) read `categoriess`; singular and plural now follow the platform's rules (`category`/`categories`, `box`/`boxes`, `study`/`studies`)
-* Import: Fixed an empty cell of a new row being posted as null, so a column with a default failed (required) or stored null; an upsert still sends it
-* Import: Fixed float cells of a file opened in Datagrok being posted widened from 32 bits (3.10 → 3.0999999046325684)
-* Import: Fixed preview and report issues naming the column by its db name instead of the caption the mapping shows
+* Import: Fixed empty cells of new rows being posted as null, so the column defaults did not apply
+* Import: Fixed float cells being posted widened from float32 (3.10 → 3.0999999046325684)
+* Import: Fixed issues naming a column by its db name instead of its caption
 * [public#4320](https://github.com/datagrok-ai/public/issues/4320): Import: Fixed an empty numeric CSV cell being posted as the missing-value marker (-2147483648, 2.68e-34) instead of null
 * Styles: `src/dg/styles.ts` imports EMS's own sheets only; u2's stylesheet installs itself once per page
 * Tests: Fixed the spec-install test on Windows (path separators, CRLF recipe fences)
