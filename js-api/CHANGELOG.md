@@ -8,6 +8,7 @@
 * Domains: `DomainFrameEditor` filled the column defaults the caller may write into a new row, so a required column with a default no longer blocks it
 * [core#857](https://github.com/datagrok-ai/core/issues/857): Fixed `View.PACKAGES` and `VIEW_TYPE.PACKAGES` to be `'Plugins'`, the platform's plugins view type, and removed `View.BROWSE`, which has no view factory, from `View.ALL_VIEW_TYPES`, so `View.createByType` no longer crashes on them
 * Domains: Added `DomainColumn`; `orderBy` takes it, so an FK path no longer type-checks as a sort key
+* Domains: Fixed a restore vetoed by a parent that is still deleted showing the server's text (`Column "parent_id" references a deleted row in "location"`) in the balloon and `DomainSession.lastRefusal`; it now names the row and the way forward ("Shelf A1's parent was deleted too; restore the parent first")
 * Fixed `ConnectionDataSource.byType` returning a raw Dart object
 * Sketcher: A sketcher in the context panel (a molecule column's Filter pane) no longer makes its drawing the current object: the panel showed the molecule instead of the column, and the pane, the sketcher with it, went at every stroke. Nor does a sketcher out of the page (`Sketcher.isInContextPanel`)
 * U2: With debug tracking on (`DG.U2.debug`), `effect()` and `own()` on a control warn once per call site when the same site registers from a second `each()` row or effect run that the control does not live in: what it registers outlives each of them and piles up

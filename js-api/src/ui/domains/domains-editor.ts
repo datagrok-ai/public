@@ -1344,14 +1344,21 @@ export class DomainFrameEditor implements IFrameEditor {
   }
 
   /** "Ethanol still has 3 containers; remove or reassign them first": the server names the child
-   * table and the column pointing back here, the child table itself the count and the noun. */
+   * table and the column pointing back here, the child table itself the count and the noun. A
+   * restore vetoed by a parent that is still deleted carries the column in the body, worded by its
+   * caption: "Shelf A1's parent was deleted too; restore the parent first". */
   async restrictRefusal(e: DomainError): Promise<string> {
     const named = DomainFrameEditor.LIVE_ROWS.exec(`${e.message}`);
-    if (named == null)
+    const column = e.body['column'];
+    if (named == null && column == null)
       return `${e.message}`;
     const id = `${e.body['id'] ?? ''}`;
     const at = this._rowById(id);
     const subject = (at < 0 ? null : this._displayOf(at)) ?? `This ${this._info.singularName.toLowerCase()}`;
+    if (named == null) {
+      const parent = this._captionOf(`${column}`).toLowerCase().replace(/_/g, ' ');
+      return `${subject}'s ${parent} was deleted too; restore the ${parent} first`;
+    }
     let count = 0;
     let info: DomainTableInfo | null = null;
     // the count and the plural are the nicety, not the refusal: the sentence stands without them
