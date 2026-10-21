@@ -9,7 +9,8 @@ Feature: OligoNucleotide duplex column: conversion, context panels and cell acti
   oligo enumerator; a double click shows the duplex full screen. Translated from the TestTrack case
   SequenceTranslator/oligo-nucleotide-grid (Blocks A, C, D, E, F, H, I; Block G, on cyclized.csv, is
   oligo-polytool.feature). Oligo > Combine Sense+Antisense to Oligo (Block H) comes last: it adds
-  a second duplex column that the earlier scenarios' column counts do not expect.
+  a second duplex column that the earlier scenarios' column counts do not expect. The duplexes it
+  writes are SequenceTranslator's package test 'OligoRenderer: converters'.
 
   Rows used: 1 siR-0001 (19/19 duplex with a GalNAc-L3 conjugate), 2 siR-0002, 34 aso-0034
   (single strand). The grid rows of a HELM column are tall, so a row past the first screen is
@@ -172,8 +173,6 @@ Feature: OligoNucleotide duplex column: conversion, context panels and cell acti
     And the table should have a column "sense_helm+antisense_helm (oligo)"
     And "sense_helm+antisense_helm (oligo)" column should have semantic type "OligoNucleotide"
     And the table should have 14 columns
-    And the value of "sense_helm+antisense_helm (oligo)" column in row 1 should be "RNA1{m(G)[sp].m(A)[sp].m(C)p.m(U)p.m(G)p.m(A)p.m(A)p.m(U)p.m(A)p.m(U)p.m(A)p.m(A)p.m(A)p.m(C)p.m(U)p.m(U)p.m(G)[sp].m(U)[sp].m(G).[L3]}|RNA2{m(C)[sp].m(A)[sp].m(C)p.m(A)p.m(A)p.m(G)p.m(U)p.m(U)p.m(U)p.m(A)p.m(U)p.m(A)p.m(U)p.m(U)p.m(C)p.m(A)p.m(G)[sp].m(U)[sp].m(C)}$$$$"
-    And the value of "sense_helm+antisense_helm (oligo)" column in row 34 should be "RNA1{[lna](C)[sp].[lna](A)[sp].[lna](G)[sp].d(T)[sp].d(G)[sp].d(T)[sp].d(T)[sp].d(C)[sp].d(T)[sp].d(T)[sp].d(G)[sp].d(C)[sp].d(T)[sp].d(C)[sp].d(T)[sp].d(A)[sp].[lna](T)[sp].[lna](A)[sp].[lna](A)}$$$$"
     Given the context panel is open
     When user scrolls the grid to the "sense_helm+antisense_helm (oligo)" column
     And user clicks on the "cell 1 of sense_helm+antisense_helm (oligo)" area of grid

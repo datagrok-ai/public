@@ -151,7 +151,7 @@ export enum VIEW_TYPE {
   QUERIES = 'queries',
   SCRIPTS = 'scripts',
   USERS = 'users',
-  PACKAGES = 'packages',
+  PACKAGES = 'Plugins',
   PACKAGE_REPOSITORIES = 'repositories',
   JS_EDITOR = 'js',
   BROWSE = 'browse',

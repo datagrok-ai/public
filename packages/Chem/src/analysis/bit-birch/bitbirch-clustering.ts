@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../../package';
 import {Fingerprint, defaultMorganFpLength} from '../../utils/chem-common';
-import {getRdKitService} from '../../utils/chem-common-rdkit';
+import {fingerprintsByEngine} from '../../engine/worker-jobs';
 
 /** Run BitBIRCH clustering on a molecule column. Returns an int column with cluster assignments. */
 export async function bitbirchWorker(
@@ -14,8 +14,7 @@ export async function bitbirchWorker(
 ): Promise<DG.Column> {
   const nBytesPerFp = Math.ceil(nFeatures / 8);
   const rowCount = molCol.length;
-  const rdkitService = await getRdKitService();
-  const fps = (await rdkitService.getFingerprints(fingerprintType, molCol.toList(), false)).fps;
+  const fps = (await fingerprintsByEngine(fingerprintType, molCol.toList(), false)).fps; // RDKit's, or Crux's in Crux mode
   // Compute fingerprints and pack into contiguous buffer
   const packedFps = new Uint8Array(rowCount * nBytesPerFp);
   let validCount = 0;

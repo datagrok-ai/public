@@ -51,6 +51,22 @@ You can set the default Sketcher in the package property so that new users won't
 
 ![default sketcher](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/gifs/default-sketcher.gif)
 
+## Chemical engine
+
+Chem runs on [RDKit](https://www.rdkit.org) compiled to WebAssembly, and gradually moves to Crux, a Rust port of
+RDKit compiled to one WebAssembly file (`vendor/chem-wasm`). Two package settings pick the engine (**Manage >
+Packages > Chem > Settings**, as above):
+
+* **Chemical Engine** (RDKit by default): with **Crux**, molecules are drawn, descriptors, fingerprints and structural
+  alerts calculated and the scaffold tree built by Crux, in the browser (descriptors and the scaffold tree otherwise run
+  on the server); RDKit does the rest, and whatever Crux cannot handle. Other packages get RDKit objects from Chem in
+  both modes (`getRdKitModule`, `getRdKitService`); in Crux mode the pictures and values of the moved functions come
+  from Crux.
+* **Substructure Search Engine** (Crux by default): the engine of Contains / Not contains searches. Crux indexes a
+  column once and searches it many times faster, with the same hits as RDKit; queries Crux cannot express run on
+  RDKit. A server where Chem's settings were saved before keeps the value saved (RDKit, the earlier default): an
+  admin switches it here.
+
 ## Favorite and recent structures
 
 Access the recently sketched structures from the `☰ -> Recent` menu.

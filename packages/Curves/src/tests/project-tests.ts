@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {createDefaultChartData} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {changeCurvesOptions} from '../fit/fit-options';
@@ -18,6 +18,9 @@ async function createTableView(tableName: string): Promise<DG.TableView> {
   await grok.data.detectSemanticTypes(df);
   return grok.shell.addTableView(df);
 }
+
+/** The projects the tests saved, deleted after the category; a project takes its table and layout with it. */
+const savedProjects: DG.Project[] = [];
 
 async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise<void> {
   const project = DG.Project.create();
@@ -37,7 +40,7 @@ async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise
   await grok.dapi.tables.uploadDataFrame(tv.dataFrame);
   await grok.dapi.tables.save(tableInfo);
   await grok.dapi.views.save(layoutInfo);
-  await grok.dapi.projects.save(project);
+  savedProjects.push(await grok.dapi.projects.save(project));
   const projId = project.id;
   // the fit cell renderer keeps painting while the view tears down, and closeAll() surfaces that as
   // an unhandled exception - let the grid settle first
@@ -87,6 +90,11 @@ async function runSaveAndOpenProjectTest(dataSync?: boolean): Promise<void> {
 }
 
 category('projects', () => {
+  after(async () => {
+    for (const p of savedProjects)
+      await grok.dapi.projects.delete(p);
+  });
+
   test('column-level option survives a project', async () => {
     await runSaveAndOpenProjectTest();
     await delay(100);
@@ -113,6 +121,22 @@ category('projects', () => {
       tv.close();
     }
   }, {timeout: 60000});
+
+  test('curve columns are curves again in a reopened project', async () => {
+    // GROK-14876
+    const tv = await createTableView(DEMO_FILE);
+    const curveColumns = tv.dataFrame.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE).map((c) => c.name);
+    expect(curveColumns.length, 5, `the demo has five curve columns, found ${curveColumns}`);
+    await saveAndOpenProject(tv);
+    try {
+      await awaitCheck(() => curveColumns.every((name) =>
+        grok.shell.tv?.dataFrame?.col(name)?.semType === FitConstants.FIT_SEM_TYPE),
+      `the reopened project lost a curve column: ${curveColumns}`, 30000);
+    } finally {
+      await delay(500);
+      grok.shell.closeAll();
+    }
+  }, {timeout: 120000});
 
   test('column-level option survives a datasync project', async () => {
     // the table is rebuilt from its creation script, so the cells come back declaring the interval

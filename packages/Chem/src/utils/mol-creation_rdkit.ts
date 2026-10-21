@@ -89,7 +89,8 @@ export function hasRadicals(mol: RDMol): boolean {
 }
 
 export function getMolSafe(molString: string, details: object = {}, rdKitModule: RDModule,
-  warnOff: boolean = true): IMolContext {
+  warnOff: boolean = true, onError?: (e: unknown) => void): IMolContext {
+  // `onError` sees what the module threw (Chem's Crux module: a trap marks Crux failed); the molecule is null then
   if (molString && !hasNewLines(molString) && molString.length > MAX_SMILES_LENGTH)
     return {mol: null, kekulize: true, isQMol: false, useMolBlockWedging: false}; // do not attempt to parse very long SMILES, will cause MOB.
   let isQMol = false;
@@ -100,12 +101,16 @@ export function getMolSafe(molString: string, details: object = {}, rdKitModule:
 
   try {
     mol = rdKitModule.get_mol(molString, JSON.stringify(details));
-  } catch (e) {}
+  } catch (e) {
+    onError?.(e);
+  }
   if (!mol && kekulize) {
     kekulize = false; //Pyrrole cycles
     try {
       mol = rdKitModule.get_mol(molString, JSON.stringify({...details, kekulize}));
-    } catch (e) {}
+    } catch (e) {
+      onError?.(e);
+    }
   }
   if (!mol) {
     kekulize = true; //previous step failed, so retrun kekulize parameter to true
@@ -113,7 +118,9 @@ export function getMolSafe(molString: string, details: object = {}, rdKitModule:
     try {
       mol = rdKitModule.get_qmol(molString);
       isQMol = true;
-    } catch (e) {}
+    } catch (e) {
+      onError?.(e);
+    }
   }
   if (mol)
     useMolBlockWedging = (mol.has_coords() === 2);

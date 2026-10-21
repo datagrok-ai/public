@@ -3,7 +3,7 @@ import * as path from 'node:path';
 
 // Generates workspace/help/INDEX.md — one line per published doc page, built from frontmatter
 // (title / description / keywords, with first-H1 fallback). Grounding a help answer then costs
-// one Read of the index + one Read of the right page instead of an unbounded grep chain
+// one read of the index + one read of the right page instead of an unbounded grep chain
 // (measured at 8-33 model round-trips per help turn before this existed — see docs/LATENCY.md).
 // Regenerated at startup and after each workspace git sync; INDEX.md is untracked, so
 // `git reset --hard` leaves it alone.
@@ -95,7 +95,7 @@ export function buildHelpIndex(workspaceDir: string): void {
     '# Help documentation index',
     '',
     'One line per page: `path — Title — description [keywords]`. To answer a platform question:',
-    'find the relevant page below (titles + keywords), then Read `workspace/help/<path>`.',
+    'find the relevant page below (titles + keywords), then read `workspace/help/<path>` with read_file.',
     'If no page covers the topic, the docs do not cover it — say so instead of searching further.',
     '',
   ];

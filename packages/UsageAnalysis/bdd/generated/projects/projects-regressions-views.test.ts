@@ -1,0 +1,130 @@
+/* eslint-disable max-len */
+/* eslint-disable comma-spacing */
+/* eslint-disable quotes */
+/* ---
+generated: features/projects/projects-regressions-views.feature
+generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+sub_features_covered: [views.projects, public#2060, GROK-18454, GROK-17765]
+--- */
+import {test} from '@playwright/test';
+import '../../bindings/biostructure.js';
+import '../../bindings/connections.js';
+import '../../bindings/file-formats.js';
+import '../../bindings/flow.js';
+import '../../bindings/grid.js';
+import '../../bindings/queries.js';
+import '../../bindings/tile-viewer.js';
+import '../../bindings/trellis-plot.js';
+import '@datagrok-libraries/bdd/bindings/common/kinds';
+import '@datagrok-libraries/bdd/bindings/common/parameter-types';
+import '@datagrok-libraries/bdd/bindings/platform/datasets';
+import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
+import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
+import {clickOn, close, doubleClickOn, dragTo, enterInto, isExpanded, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {browsePanelOpen, dialogCloses, doubleClickOpensProject, noProjectOnServer, simpleModeOff, viewIsCurrent, viewTabsInOrder} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {noTableLeft} from '@datagrok-libraries/bdd/bindings/platform/workspace';
+import {infoBalloonText, noBalloons, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {el, feature} from '@datagrok-libraries/bdd/runtime';
+
+test.describe("Projects regressions: the views a reopened project brings back", () => {
+  const session = feature(test, "features/projects/projects-regressions-views.feature", import.meta.url);
+  test("A reopened project saved again comes back with its new tab order and active view", {tag: ["@realizes:views.projects", "@realizes:public#2060", "@realizes:GROK-18454"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(22, "Given user is logged in", () => loggedIn(page));
+    await session.step(23, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(27, "Given no project named \"BDDRegResave{time}\" is on the server", () => noProjectOnServer(page, session.text("BDDRegResave{time}")));
+    await session.step(28, "And simple mode is off", () => simpleModeOff(page));
+    await session.step(29, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
+    await session.step(30, "And Files---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Files---Demo tree node inside browse tree")));
+    await session.step(31, "When user double-clicks Files---Demo---demog.csv tree node inside browse tree", () => doubleClickOn(page, el("Files---Demo---demog.csv tree node inside browse tree")));
+    await session.step(32, "Then the \"demog\" view should be current", () => viewIsCurrent(page, "demog"));
+    await session.step(33, "When user clicks on browse tab", () => clickOn(page, el("browse tab")));
+    await session.step(34, "Then the browse tree should be visible", () => shouldBe(page, el("the browse tree"), "visible"));
+    await session.step(35, "When user double-clicks Files---Demo---cars.csv tree node inside browse tree", () => doubleClickOn(page, el("Files---Demo---cars.csv tree node inside browse tree")));
+    await session.step(36, "Then the \"cars\" view should be current", () => viewIsCurrent(page, "cars"));
+    await session.step(37, "When user clicks on browse tab", () => clickOn(page, el("browse tab")));
+    await session.step(38, "Then the browse tree should be visible", () => shouldBe(page, el("the browse tree"), "visible"));
+    await session.step(39, "When user double-clicks Files---Demo---iris.csv tree node inside browse tree", () => doubleClickOn(page, el("Files---Demo---iris.csv tree node inside browse tree")));
+    await session.step(40, "Then the \"iris\" view should be current", () => viewIsCurrent(page, "iris"));
+    await session.step(41, "When user clicks on Save ribbon item", () => clickOn(page, el("Save ribbon item")));
+    await session.step(42, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));
+    await session.step(43, "When user enters \"BDDRegResave{time}\" into Name text input in \"Save project\" dialog", () => enterInto(page, session.text("BDDRegResave{time}"), el("Name text input in \"Save project\" dialog")));
+    await session.step(44, "And user clicks on OK button in \"Save project\" dialog", () => clickOn(page, el("OK button in \"Save project\" dialog")));
+    await session.step(45, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
+    await session.step(46, "And \"Share BDDRegResave{time}\" dialog should be visible", () => shouldBe(page, el(session.text("\"Share BDDRegResave{time}\" dialog")), "visible"));
+    await session.step(47, "When user clicks on CANCEL button in \"Share BDDRegResave{time}\" dialog", () => clickOn(page, el(session.text("CANCEL button in \"Share BDDRegResave{time}\" dialog"))));
+    await session.step(48, "Then the \"Share BDDRegResave{time}\" dialog should close", () => dialogCloses(page, session.text("Share BDDRegResave{time}")));
+    await session.step(49, "When user picks \"Close All\" from the context menu of browse tab", () => pickFromContextMenu(page, "Close All", el("browse tab")));
+    await session.step(50, "Then the \"Home\" view should be current", () => viewIsCurrent(page, "Home"));
+    await session.step(51, "Then no table should be left in the workspace", () => noTableLeft(page));
+    await session.step(52, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
+    await session.step(53, "And user enters \"BDDRegResave{time}\" into gallery search", () => enterInto(page, session.text("BDDRegResave{time}"), el("gallery search")));
+    await session.step(54, "And user clicks on \"Refresh\" icon inside gallery toolbar", () => clickOn(page, el("\"Refresh\" icon inside gallery toolbar")));
+    await session.step(55, "And user double-clicks on BDDRegResave{time} gallery card and the project opens", () => doubleClickOpensProject(page, el(session.text("BDDRegResave{time} gallery card"))));
+    await session.step(56, "Then the view tabs should be in the order \"iris, cars, demog\"", () => viewTabsInOrder(page, "iris, cars, demog"));
+    await session.step(57, "And the \"iris\" view should be current", () => viewIsCurrent(page, "iris"));
+    await session.step(58, "When user drags \"cars\" view tab to \"demog\" view tab", () => dragTo(page, el("\"cars\" view tab"), el("\"demog\" view tab")));
+    await session.step(59, "And user clicks on demog view", () => clickOn(page, el("demog view")));
+    await session.step(60, "Then the view tabs should be in the order \"iris, demog, cars\"", () => viewTabsInOrder(page, "iris, demog, cars"));
+    await session.step(61, "And the \"demog\" view should be current", () => viewIsCurrent(page, "demog"));
+    await session.step(62, "When user clicks on Save ribbon item", () => clickOn(page, el("Save ribbon item")));
+    await session.step(63, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));
+    await session.step(64, "When user clicks on OK button in \"Save project\" dialog", () => clickOn(page, el("OK button in \"Save project\" dialog")));
+    await session.step(65, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
+    await session.step(66, "And an info balloon containing 'Project \"BDDRegResave{time}\" uploaded' should have been shown", () => infoBalloonText(page, session.text("Project \"BDDRegResave{time}\" uploaded")));
+    await session.step(67, "When user picks \"Close All\" from the context menu of browse tab", () => pickFromContextMenu(page, "Close All", el("browse tab")));
+    await session.step(68, "Then the \"Home\" view should be current", () => viewIsCurrent(page, "Home"));
+    await session.step(69, "Then no table should be left in the workspace", () => noTableLeft(page));
+    await session.step(70, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
+    await session.step(71, "And user enters \"BDDRegResave{time}\" into gallery search", () => enterInto(page, session.text("BDDRegResave{time}"), el("gallery search")));
+    await session.step(72, "And user clicks on \"Refresh\" icon inside gallery toolbar", () => clickOn(page, el("\"Refresh\" icon inside gallery toolbar")));
+    await session.step(73, "And user double-clicks on BDDRegResave{time} gallery card and the project opens", () => doubleClickOpensProject(page, el(session.text("BDDRegResave{time} gallery card"))));
+    await session.step(74, "Then the view tabs should be in the order \"iris, demog, cars\"", () => viewTabsInOrder(page, "iris, demog, cars"));
+    await session.step(75, "And the \"demog\" view should be current", () => viewIsCurrent(page, "demog"));
+    await session.step(76, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+  test("A project whose views were closed one by one opens again with all of them", {tag: ["@realizes:views.projects", "@realizes:GROK-17765"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(22, "Given user is logged in", () => loggedIn(page));
+    await session.step(23, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(80, "Given no project named \"BDDRegReopen{time}\" is on the server", () => noProjectOnServer(page, session.text("BDDRegReopen{time}")));
+    await session.step(81, "And simple mode is off", () => simpleModeOff(page));
+    await session.step(82, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
+    await session.step(83, "And Files---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Files---Demo tree node inside browse tree")));
+    await session.step(84, "When user double-clicks Files---Demo---demog.csv tree node inside browse tree", () => doubleClickOn(page, el("Files---Demo---demog.csv tree node inside browse tree")));
+    await session.step(85, "Then the \"demog\" view should be current", () => viewIsCurrent(page, "demog"));
+    await session.step(86, "When user clicks on browse tab", () => clickOn(page, el("browse tab")));
+    await session.step(87, "Then the browse tree should be visible", () => shouldBe(page, el("the browse tree"), "visible"));
+    await session.step(88, "When user double-clicks Files---Demo---cars.csv tree node inside browse tree", () => doubleClickOn(page, el("Files---Demo---cars.csv tree node inside browse tree")));
+    await session.step(89, "Then the \"cars\" view should be current", () => viewIsCurrent(page, "cars"));
+    await session.step(90, "When user clicks on Save ribbon item", () => clickOn(page, el("Save ribbon item")));
+    await session.step(91, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));
+    await session.step(92, "When user enters \"BDDRegReopen{time}\" into Name text input in \"Save project\" dialog", () => enterInto(page, session.text("BDDRegReopen{time}"), el("Name text input in \"Save project\" dialog")));
+    await session.step(93, "And user clicks on OK button in \"Save project\" dialog", () => clickOn(page, el("OK button in \"Save project\" dialog")));
+    await session.step(94, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
+    await session.step(95, "And \"Share BDDRegReopen{time}\" dialog should be visible", () => shouldBe(page, el(session.text("\"Share BDDRegReopen{time}\" dialog")), "visible"));
+    await session.step(96, "When user clicks on CANCEL button in \"Share BDDRegReopen{time}\" dialog", () => clickOn(page, el(session.text("CANCEL button in \"Share BDDRegReopen{time}\" dialog"))));
+    await session.step(97, "Then the \"Share BDDRegReopen{time}\" dialog should close", () => dialogCloses(page, session.text("Share BDDRegReopen{time}")));
+    await session.step(98, "When user picks \"Close All\" from the context menu of browse tab", () => pickFromContextMenu(page, "Close All", el("browse tab")));
+    await session.step(99, "Then the \"Home\" view should be current", () => viewIsCurrent(page, "Home"));
+    await session.step(100, "Then no table should be left in the workspace", () => noTableLeft(page));
+    await session.step(101, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
+    await session.step(102, "And user enters \"BDDRegReopen{time}\" into gallery search", () => enterInto(page, session.text("BDDRegReopen{time}"), el("gallery search")));
+    await session.step(103, "And user clicks on \"Refresh\" icon inside gallery toolbar", () => clickOn(page, el("\"Refresh\" icon inside gallery toolbar")));
+    await session.step(104, "And user double-clicks on BDDRegReopen{time} gallery card and the project opens", () => doubleClickOpensProject(page, el(session.text("BDDRegReopen{time} gallery card"))));
+    await session.step(105, "Then the view tabs should be in the order \"cars, demog\"", () => viewTabsInOrder(page, "cars, demog"));
+    await session.step(106, "When user closes \"demog\" view tab", () => close(page, el("\"demog\" view tab")));
+    await session.step(107, "Then \"demog\" view tab should be absent", () => shouldBe(page, el("\"demog\" view tab"), "absent"));
+    await session.step(108, "When user closes \"cars\" view tab", () => close(page, el("\"cars\" view tab")));
+    await session.step(109, "Then \"demog\" view tab should be absent", () => shouldBe(page, el("\"demog\" view tab"), "absent"));
+    await session.step(110, "And \"cars\" view tab should be absent", () => shouldBe(page, el("\"cars\" view tab"), "absent"));
+    await session.step(111, "Given the browse panel is open", () => browsePanelOpen(page));
+    await session.step(112, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
+    await session.step(113, "And user enters \"BDDRegReopen{time}\" into gallery search", () => enterInto(page, session.text("BDDRegReopen{time}"), el("gallery search")));
+    await session.step(114, "And user clicks on \"Refresh\" icon inside gallery toolbar", () => clickOn(page, el("\"Refresh\" icon inside gallery toolbar")));
+    await session.step(115, "And user double-clicks on BDDRegReopen{time} gallery card and the project opens", () => doubleClickOpensProject(page, el(session.text("BDDRegReopen{time} gallery card"))));
+    await session.step(116, "Then the view tabs should be in the order \"cars, demog\"", () => viewTabsInOrder(page, "cars, demog"));
+    await session.step(117, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+});

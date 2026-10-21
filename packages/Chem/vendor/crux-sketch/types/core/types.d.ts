@@ -335,6 +335,16 @@ export type KeymapProfile = 'chemdraw' | 'ketcher';
  */
 export type StereoDisplay = 'shown' | 'hidden';
 /**
+ * How the stereo labels are written (spike labels-2; STEREO-010, the GCRS review's DR-04, the product owner's choice of
+ * 2026-10-18): `'standard'` (the default), as RDKit and ChemDraw write them, a stereocentre's CIP label in parentheses
+ * ((R)), its group beside it (abs, or1, &1), a centre in an AND or OR group not given its CIP label; or `'registration'`,
+ * as a registration standard writes them, per stereocentre: an ABS centre (or one in no group) its CIP label bare (R, no
+ * abs), an OR centre both its group and its CIP label in parentheses (or1 and (R)), an AND centre its group alone (&1).
+ * The CIP labels show only while `stereoLabels` is `'shown'`; the group labels whenever the flag does not say them for
+ * every centre. Display only: nothing written changes.
+ */
+export type StereoLabelStyle = 'standard' | 'registration';
+/**
  * How a value's double bond with no E/Z of its own (a SMILES' `CC=CC`) is drawn (spike stereo, P2, the product owner's of
  * 2026-10-03): `'crossed'` (the default), as ChemDraw draws the molfile RDKit writes for it, or `'plain'`. The getters write
  * it unspecified either way. A double bond the user draws takes its E/Z from its drawing, and a file's "either" bond and a
@@ -402,6 +412,11 @@ export interface CreateSketcherOptions {
     readoutItems?: readonly ReadoutItem[];
     /** The CIP labels: `'hidden'` (the default) or `'shown'` (spike stereo, S10). The handle's `stereoLabels` changes it later. */
     stereoLabels?: StereoDisplay;
+    /**
+     * How the stereo labels are written: `'standard'` (the default) or `'registration'` (spike labels-2, STEREO-010). The
+     * handle's `stereoLabelStyle` changes it later.
+     */
+    stereoLabelStyle?: StereoLabelStyle;
     /**
      * The stereochemistry panel: `'closed'` (the default), `'open'` or `'hidden'` (spike stereo-panel). The handle's
      * `stereoPanel` changes it later.
@@ -872,6 +887,15 @@ export interface SketcherApi {
      */
     stereoLabels: StereoDisplay;
     /**
+     * How the stereo labels are written (spike labels-2; STEREO-010, the GCRS review's DR-04): `'standard'` (the default),
+     * (R) beside a centre and abs, or1, &1 beside a grouped one, an AND or OR centre without its CIP label; or
+     * `'registration'`, an ABS centre (or one in no group) its CIP label bare (R, no abs), an OR centre or1 and (R), an AND
+     * centre &1 alone. It reads back the value in force: `'registration'` only when set to that keyword. Setting it redraws
+     * at once, and is no edit: no change event, no undo step, and no getter changes. The `stereo-label-style` attribute and
+     * the Settings dialog set it too. Each sketcher has its own.
+     */
+    stereoLabelStyle: StereoLabelStyle;
+    /**
      * The stereo flag (spike stereo, S8; STEREO-018): `'shown'` (the default) or `'hidden'`. The flag is one per drawing, in
      * ChemDraw's words: Racemic when every specified stereocentre is in one AND group, Relative when in one OR group, else
      * Absolute when the chiral flag is set. It reads back the value in force: `'hidden'` only when set to that keyword.
@@ -943,7 +967,7 @@ export interface SketcherApi {
     keys: HostKeys;
     /**
      * The settings (spike settings-touch, K6, P9; UI-021, UI-022): `atomColours`, `warningMarks`, `analysisPanel`,
-     * `stereoLabels`, `stereoFlag`, `unspecifiedDoubleBonds`, `methylLabels`, `atomNumbers`, `keymap`, `readoutItems` and
+     * `stereoLabels`, `stereoLabelStyle` (spike labels-2), `stereoFlag`, `unspecifiedDoubleBonds`, `methylLabels`, `atomNumbers`, `keymap`, `readoutItems` and
      * `stereoPanel` (spike stereo-panel), read and written whole: what a written object leaves out takes its default. Each is
      * its own option as well, but `atomNumbers` (spike stereo-commands), a setting alone. A user's change emits `settings` with
      * them, for a host to store; and, unless `persistSettings` is off, the sketcher keeps the user's changes in the page's

@@ -1,181 +1,97 @@
 import {randomUUID} from 'node:crypto';
-import {query} from '@anthropic-ai/claude-agent-sdk';
-import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
-import type {UserMessage, AbortMessage, InputResponseMessage, ImageAttachment} from './types';
-import {raceIdle, IDLE, killStrayChildren, startOrphanReaper} from './watchdog';
+import type {AbortMessage, AgentEvent, InputResponseMessage, UserMessage} from './types';
+import {raceIdle, IDLE} from './watchdog';
 import {emit, emitFiltered, flushFenceState, clearFenceState,
   isRevising, beginRevision, endRevision} from './stream-filter';
 import type {WsSender} from './stream-filter';
 import {syncUserFiles} from './sync/orchestrator';
 import {userDirs} from './user/user-dir';
-import {awaitWorkspaceSync, markQueryStart, markQueryEnd} from './sync/workspace';
-import {Verifier, bareToolName} from './verify';
+import {markQueryStart, markQueryEnd} from './sync/workspace';
+import {Verifier} from './verify';
 import {GroundingGate, isSmallTalk} from './grounding';
-import {createBrowserExecServer, createViewToolsServer, toolSummary, buildOptions,
-  apiUrlFromMcpUrl} from './query-options';
-import {rewriteForDocker} from './constants';
-import {getProviderInfo, registerMcpSession} from './broker/broker-client';
+import {buildSystemPrompt} from './prompts';
+import {WORKSPACE, apiUrlFromMcpUrl, rewriteForDocker} from './constants';
 import {waitForClaim, endTask} from './tasks';
+import {runTurn as runAgentTurn} from './agent/turn';
+import {hasSession, parkSession} from './agent/pool';
 
-// Re-exported so server.ts keeps importing the transport surface from one place.
-export {emit} from './stream-filter';
-export type {WsSender} from './stream-filter';
-
-// ---------------------------------------------------------------------------
-// Session registry — SDK session ids and resume/fork points, LRU-capped
-// ---------------------------------------------------------------------------
-
-const MAX_SESSIONS = 200;
-
-// Longest a turn may emit *nothing* before it is treated as wedged. Generous on purpose: a real
-// turn streams partial messages continuously, so silence this long is not slow work, it is a dead
-// turn. Bounds silence between events, not total turn length — a legitimately long turn is fine.
+// Longest a turn may emit nothing before it is treated as wedged. Bounds silence between events,
+// not total turn length.
 const TURN_IDLE_TIMEOUT_MS = 90000;
-const KILL_GRACE_MS = 2000;
-
-// An unanswered AskUserQuestion would hold the turn open forever, blocking the workspace sync idle gate.
-const ASK_USER_TIMEOUT_MS = 60000;
-
-// forkNext is set on abort: the next turn forks off lastCleanUuid, dropping the aborted turn.
-interface SessionRecord {sdkId: string; lastCleanUuid?: string; forkNext?: boolean}
-
-const sessions = new Map<string, SessionRecord>();
-
-// Last assistant uuid of the in-flight turn; committed to the record on a clean result.
-const pendingUuid = new Map<string, string>();
-const authFailed = new Set<string>();
 
 // Visible streamed text of the in-flight turn, per session — the grounding gate reads it at Stop
 // to decide whether the answer makes platform how-to claims (grounding.ts makesPlatformClaims).
 const turnText = new Map<string, string>();
 
-function storeSession(clientId: string, sdkId: string, lastCleanUuid?: string): void {
-  sessions.delete(clientId);
-  sessions.set(clientId, {sdkId, lastCleanUuid});
-  if (sessions.size > MAX_SESSIONS)
-    sessions.delete(sessions.keys().next().value!);
-}
-
-function getSession(clientId: string): SessionRecord | undefined {
-  const rec = sessions.get(clientId);
-  if (rec !== undefined) {
-    sessions.delete(clientId);
-    sessions.set(clientId, rec);
-  }
-  return rec;
-}
+const TURN_LIMITS = {
+  full: {maxTurns: 100, maxBudgetUsd: 2.5},
+  bash: {maxTurns: 10, maxBudgetUsd: 0.25},
+};
 
 const NO_REVISION_RE = /^`?NO_REVISION`?\.?$/;
 
-// ---------------------------------------------------------------------------
-// SDK event forwarding — translates SDK stream events into the client protocol
-// ---------------------------------------------------------------------------
-
-function forwardEvent(ws: WsSender, sid: string, event: SDKMessage, verifier?: Verifier): void {
-  const e = event as any;
+function forwardEvent(ws: WsSender, sid: string, event: AgentEvent, verifier?: Verifier): void {
+  if (event.type === 'text') {
+    if (!isRevising(sid))
+      turnText.set(sid, (turnText.get(sid) ?? '') + event.text);
+    return emitFiltered(ws, sid, event.text);
+  }
+  if (event.type === 'tool_activity')
+    return emit(ws, {type: 'tool_activity', sessionId: sid, name: event.name, summary: event.summary});
+  if (event.type === 'activity')
+    return;
+  const revising = endRevision(sid);
+  flushFenceState(ws, sid);
   switch (event.type) {
-    case 'assistant':
-      if (e.error === 'authentication_failed')
-        authFailed.add(sid);
-      if (e.uuid)
-        pendingUuid.set(sid, e.uuid);
-      for (const block of e.message?.content ?? []) {
-        if (block.type === 'tool_use') {
-          emit(ws, {type: 'tool_activity', sessionId: sid, name: bareToolName(block.name),
-            summary: toolSummary(block.name, block.input ?? {})});
-        }
-      }
-      break;
-    case 'stream_event':
-      if (e.event?.delta?.type === 'text_delta' && e.event.delta.text) {
-      // The grounding gate reads this at Stop to decide whether the answer makes platform
-      // how-to claims — only the pre-revision visible answer counts, so stop accumulating
-      // once a revision is underway.
-        if (!isRevising(sid))
-          turnText.set(sid, (turnText.get(sid) ?? '') + e.event.delta.text);
-        emitFiltered(ws, sid, e.event.delta.text);
-      }
-      break;
-    case 'tool_progress':
-      emit(ws, {type: 'tool_activity', sessionId: sid, summary: `Running ${e.tool_name ?? ''}…`});
-      break;
-    case 'tool_use_summary':
-      emit(ws, {type: 'tool_activity', sessionId: sid, summary: e.summary ?? ''});
-      break;
     case 'result': {
-      const revising = endRevision(sid);
-      flushFenceState(ws, sid);
-      if (authFailed.delete(sid)) {
-        emit(ws, {type: 'auth_required', sessionId: sid});
-        break;
-      }
-      if (e.subtype === 'success') {
-      // Commit the resume point only on clean completion — aborted turns never reach here.
-        if (e.session_id)
-          storeSession(sid, e.session_id, pendingUuid.get(sid));
-        pendingUuid.delete(sid);
-        const noRevision = revising && NO_REVISION_RE.test((e.result ?? '').trim());
-        emit(ws, {
-          type: 'final', sessionId: sid, content: noRevision ? '' : (e.result || ''),
-          ...(revising ? {revision: noRevision ? 'kept' as const : 'replaced' as const} : {}),
-          ...(e.structured_output ? {structured_output: e.structured_output} : {}),
-          ...(verifier?.exhausted ? {unverified: true} : {}),
-          // Turn metrics the SDK already computed on the result message — surfaced for the
-          // latency benchmark harness (see docs/BENCHMARK.md). All optional; older runtimes omit them.
-          metrics: {
-            inputTokens: e.usage?.input_tokens ?? null,
-            outputTokens: e.usage?.output_tokens ?? null,
-            cacheReadTokens: e.usage?.cache_read_input_tokens ?? null,
-            cacheCreationTokens: e.usage?.cache_creation_input_tokens ?? null,
-            costUsd: e.total_cost_usd ?? null,
-            numTurns: e.num_turns ?? null,
-            durationMs: e.duration_ms ?? null,
-            durationApiMs: e.duration_api_ms ?? null,
-          },
-        });
-      } else if (e.subtype === 'error_max_turns' || e.subtype === 'error_max_budget_usd')
-        emit(ws, {type: 'error', sessionId: sid,
-          message: `This request hit its ${e.subtype === 'error_max_turns' ? 'turn' : 'cost'} limit and was stopped. Try a narrower request.`});
-      else
-        emit(ws, {type: 'error', sessionId: sid, message: (e.errors ?? []).join(', ') || e.subtype || 'unknown'});
-      break;
+      const noRevision = revising && NO_REVISION_RE.test(event.text.trim());
+      return emit(ws, {
+        type: 'final', sessionId: sid, content: noRevision ? '' : event.text,
+        ...(revising ? {revision: noRevision ? 'kept' as const : 'replaced' as const} : {}),
+        ...(event.structuredOutput !== undefined ? {structured_output: event.structuredOutput} : {}),
+        ...(verifier?.exhausted ? {unverified: true} : {}),
+        metrics: event.metrics,
+      });
     }
+    case 'limit':
+      return emit(ws, {type: 'error', sessionId: sid,
+        message: `This request hit its ${event.kind === 'turns' ? 'turn' : 'cost'} limit and was stopped. ` +
+          'Try a narrower request.'});
+    case 'session_reset':
+      return emit(ws, {type: 'session_reset', sessionId: sid});
+    case 'error':
+      return emit(ws, {type: 'error', sessionId: sid, message: event.message});
   }
 }
 
-// ---------------------------------------------------------------------------
-// Browser round-trips — tool calls sent to the Datagrok tab and correlated replies
-// ---------------------------------------------------------------------------
-
 interface ActiveQuery {
   abortController: AbortController;
-  queryHandle: ReturnType<typeof query> | null;
+  /** The connection that sent the turn; only it can stop the turn (one chat can be open in several tabs). */
+  ws: WsSender;
   // requestId → resolver, so parallel tool calls each await their own browser reply.
-  pendingInputs: Map<string, (value: any) => void>;
+  pendingInputs: Map<string, (value: unknown) => void>;
 }
 
 // Round-trips a tool call to the browser: emits input_request, resolves on the matching
 // input_response. The requestId keeps parallel calls from crossing wires; rejects on abort.
 function awaitBrowserInput(
-  ws: WsSender, sid: string, active: ActiveQuery, toolName: string, input: any, timeoutMs?: number,
-): Promise<any> {
+  sid: string, active: ActiveQuery, toolName: string, input: unknown, timeoutMs: number,
+): Promise<unknown> {
   if (active.abortController.signal.aborted)
     return Promise.reject(new Error('aborted'));
   const requestId = randomUUID();
-  emit(ws, {type: 'input_request', sessionId: sid, requestId, toolName, input});
-  return new Promise<any>((resolve, reject) => {
-    const timer = timeoutMs ? setTimeout(() => {
+  emit(active.ws, {type: 'input_request', sessionId: sid, requestId, toolName, input});
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
       if (active.pendingInputs.delete(requestId))
         reject(new Error(`no browser response for ${toolName} after ${timeoutMs / 1000}s`));
-    }, timeoutMs) : undefined;
+    }, timeoutMs);
     active.pendingInputs.set(requestId, (value) => {
-      if (timer)
-        clearTimeout(timer);
+      clearTimeout(timer);
       resolve(value);
     });
     active.abortController.signal.addEventListener('abort', () => {
-      if (timer)
-        clearTimeout(timer);
+      clearTimeout(timer);
       if (active.pendingInputs.delete(requestId))
         reject(new Error('aborted'));
     }, {once: true});
@@ -183,10 +99,6 @@ function awaitBrowserInput(
 }
 
 const activeQueries = new Map<string, ActiveQuery>();
-
-// Reclaims agent processes orphaned by a finished turn — see startOrphanReaper. Interlocked on
-// "no query in flight", so it can never touch a turn that is legitimately running.
-startOrphanReaper(() => activeQueries.size);
 
 function registerActiveQuery(sid: string, q: ActiveQuery): void {
   activeQueries.set(sid, q);
@@ -213,31 +125,9 @@ export function handleInputResponse(ws: WsSender, data: InputResponseMessage): v
   resolve(data.value);
 }
 
-// ---------------------------------------------------------------------------
-// Turn execution — per-session FIFO queue, the SDK query loop, and abort
-// ---------------------------------------------------------------------------
-
 const QUEUED_HEARTBEAT_MS = 60_000;
 
 const sessionChains = new Map<string, Promise<void>>();
-
-async function* promptStream(message: string, images?: ImageAttachment[]) {
-  const content = images?.length ?
-    [
-      ...images.map((img) => ({
-        type: 'image' as const,
-        source: {type: 'base64' as const, media_type: img.mediaType, data: img.data},
-      })),
-      ...(message ? [{type: 'text' as const, text: message}] : []),
-    ] :
-    message;
-  yield {
-    type: 'user' as const,
-    session_id: '',
-    message: {role: 'user' as const, content},
-    parent_tool_use_id: null,
-  };
-}
 
 export async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const sid = data.sessionId ?? '';
@@ -272,29 +162,18 @@ export async function handleMessage(ws: WsSender, data: UserMessage): Promise<vo
 }
 
 async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: string): Promise<void> {
-  if (data.resumeExpected && !sessions.has(sid)) {
-    if (data.taskId)
-      endTask(data.taskId);
-    return emit(ws, {type: 'session_reset', sessionId: sid});
-  }
-
-  const images = data.images;
-
-  // Don't block this turn on workspace git pull — it runs every 30 min in the background and
-  // a stale read for one turn is fine.
-  void awaitWorkspaceSync();
-
-  const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
+  // Registered before anything is awaited, so an abort that arrives at any point reaches this turn.
   const abortController = new AbortController();
-  const active: ActiveQuery = {abortController, queryHandle: null, pendingInputs: new Map()};
+  const active: ActiveQuery = {abortController, ws, pendingInputs: new Map()};
   registerActiveQuery(sid, active);
 
-  let gotResult = false;
-  // Set by the watchdog so the catch block does not also report the abort it deliberately caused.
-  let timedOut = false;
   let verifier: Verifier | undefined;
   let groundingGate: GroundingGate | undefined;
   try {
+    // Reset at once: the browser resends the turn with its transcript, and that one waits for admission.
+    if (data.resumeExpected && !hasSession(sid))
+      return emit(ws, {type: 'session_reset', sessionId: sid});
+    const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
     // Admission: wait for the celery claim (when the queued route is deployed) — the
     // queue container's concurrency limit is the only cap on concurrent turns.
     if (data.taskId) {
@@ -320,14 +199,10 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
         console.warn('handleMessage: failed to sync user files:', e.message));
     }
 
-    const awaitInput = (toolName: string, input: any, timeoutMs: number) =>
-      awaitBrowserInput(ws, sid, active, toolName, input, timeoutMs);
-    const browserExecServer = createBrowserExecServer(awaitInput);
-    const viewToolsServer = data.clientTools?.length ? createViewToolsServer(awaitInput, data.clientTools) : undefined;
-    const fullPromptTurn = !data.systemPromptMode || data.systemPromptMode === 'datagrok';
-    // On a gate block a revision starts: flush the fence buffer so the visible answer is complete,
-    // then stream the revision hidden — the browser keeps showing the original until `final`
-    // says whether the revision replaces it (see revisingSids / the NO_REVISION protocol).
+    const mode = data.systemPromptMode === 'bash' || data.systemPromptMode === 'none' ?
+      data.systemPromptMode : 'datagrok';
+    const fullPromptTurn = mode === 'datagrok';
+    // The visible answer stays until `final` says whether the hidden revision replaces it.
     const onGateBlock = () => {
       if (!isRevising(sid)) {
         flushFenceState(ws, sid);
@@ -337,81 +212,53 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
     };
     const gates = data.gates ?? {};
     verifier = fullPromptTurn && gates.verify !== false ? new Verifier(onGateBlock) : undefined;
-    // Small talk skips the gate entirely — the block would cost a full hidden revision call just
-    // to hear NO_REVISION, and the panel would show "Revising…" over a greeting (see grounding.ts).
     turnText.delete(sid); // fresh answer buffer — the gate must judge THIS turn's text only
     groundingGate = fullPromptTurn && gates.grounding !== false && !data.outputSchema &&
       !isSmallTalk(data.message ?? '') ?
       new GroundingGate(onGateBlock, () => turnText.get(sid) ?? '') : undefined;
 
-    const rec = getSession(sid);
-    const providerInfo = await getProviderInfo();
-    if (providerInfo.authRequired) {
-      emit(ws, {type: 'auth_required', sessionId: sid});
-      return;
-    }
-    const datagrokMcpUrl = mcpUrl ? await registerMcpSession(mcpUrl, data.apiKey, apiUrl) : undefined;
-    const opts = buildOptions(browserExecServer, providerInfo, rec?.sdkId, datagrokMcpUrl,
-      data.systemPromptMode, userDir, data.model,
-      rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined, verifier, groundingGate, viewToolsServer);
-    const canUseTool = async (toolName: string, input: any) => {
-      if (toolName === 'AskUserQuestion') {
-        try {
-          const updatedInput = await awaitBrowserInput(ws, sid, active, toolName, input, ASK_USER_TIMEOUT_MS);
-          return {behavior: 'allow' as const, updatedInput};
-        } catch (e) {
-          if (active.abortController.signal.aborted)
-            throw e;
-          return {behavior: 'deny' as const,
-            message: 'The user did not answer the question in time. Proceed without the answer or end the turn.'};
-        }
-      }
-      return {behavior: 'allow' as const, updatedInput: input};
-    };
-    const outputFormat = data.outputSchema ?
-      {type: 'json_schema' as const, schema: data.outputSchema as Record<string, unknown>} : undefined;
-    const q = query({prompt: promptStream(message, images),
-      options: {...opts, canUseTool, abortController, ...(outputFormat ? {outputFormat} : {})}});
-    active.queryHandle = q;
-    // Iterate by hand rather than `for await`, so a turn that goes silent is bounded. A wedged
-    // CLI emits no events at all, which `for await` would wait on forever (see watchdog.ts).
-    const it = q[Symbol.asyncIterator]();
-    let pendingStep: Promise<IteratorResult<SDKMessage, any>> | null = null;
+    const it = runAgentTurn({
+      sessionKey: sid, text: message, images: data.images, systemPrompt: buildSystemPrompt(mode),
+      effort: fullPromptTurn ? 'high' : undefined, model: data.model,
+      cwd: userDir || WORKSPACE, userDir, resumeExpected: data.resumeExpected,
+      outputSchema: data.outputSchema, clientTools: data.clientTools,
+      datagrokMcp: mcpUrl ? {url: mcpUrl, headers: {
+        ...(data.apiKey ? {'x-user-api-key': data.apiKey, 'Authorization': data.apiKey} : {}),
+        ...(apiUrl ? {'x-datagrok-api-url': apiUrl} : {}),
+      }} : undefined,
+      limits: TURN_LIMITS[fullPromptTurn ? 'full' : 'bash'],
+      gates: [verifier, groundingGate].filter((g) => g !== undefined),
+      awaitBrowser: (toolName, input, timeoutMs) => awaitBrowserInput(sid, active, toolName, input, timeoutMs),
+      signal: abortController.signal,
+    });
+    // Each event is raced against the idle timeout, so a turn that goes silent is bounded (see
+    // watchdog.ts): a wedged agent emits nothing at all, which a plain await would wait on forever.
+    let pendingStep: Promise<IteratorResult<AgentEvent, undefined>> | null = null;
     for (;;) {
       pendingStep = pendingStep ?? it.next();
       const step = await raceIdle(pendingStep, TURN_IDLE_TIMEOUT_MS);
       if (step === IDLE) {
-        // A browser round-trip in flight (tool call executing in the tab, or a question the user
-        // has not answered yet) blocks the SDK stream legitimately — that silence is not a wedged
-        // CLI. Each round-trip carries its own timeout, so this cannot wait forever.
+        // Work inside the agent sends activity; a browser round-trip (a tool running in the tab, a question the user
+        // has not answered) is silent but carries its own timeout.
         if (active.pendingInputs.size > 0)
           continue;
-        timedOut = true;
-        console.warn(`watchdog[${sid}]: no SDK event for ${TURN_IDLE_TIMEOUT_MS / 1000}s — killing turn`);
+        console.warn(`watchdog[${sid}]: no agent event for ${TURN_IDLE_TIMEOUT_MS / 1000}s — killing turn`);
         emit(ws, {type: 'error', sessionId: sid,
           message: 'The assistant stopped responding and the turn was cancelled. Please try again.'});
-        try {
-          q.close();
-        } catch { /* already closed */ }
         abortController.abort();
-        // The abort is the polite path; a spun-out CLI never reads it, and on a 1-CPU container
-        // leaving it running starves every other session. Give it a moment, then take it out.
-        await new Promise((r) => setTimeout(r, KILL_GRACE_MS));
-        killStrayChildren(`turn ${sid} went silent`);
+        parkSession(sid, `turn ${sid} went silent`);
         break;
       }
       pendingStep = null;
       if (step.done || abortController.signal.aborted)
         break;
-      if (step.value.type === 'result')
-        gotResult = true;
+      // A command's answer is its output, the final message: models remark before the tool call despite the prompt.
+      if (mode === 'bash' && step.value.type === 'text')
+        continue;
       forwardEvent(ws, sid, step.value, verifier);
     }
   } catch (e: any) {
-    // A watchdog kill surfaces as an SDK error too; it already told the browser, so don't
-    // follow its clear message with a confusing "exited with code SIGKILL".
-    if (!timedOut && !abortController.signal.aborted &&
-        (!gotResult || !/exited with code/i.test(String(e.message))))
+    if (!abortController.signal.aborted)
       emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
   } finally {
     // Every terminal path — final, error, abort, disconnect, watchdog kill — ends the
@@ -435,19 +282,10 @@ function abortSessionQuery(sid: string, ws?: WsSender): boolean {
   const active = activeQueries.get(sid);
   if (!active)
     return false;
-  // Close before abort so in-flight SDK control responses don't write to an aborted transport.
-  try {
-    if (active.queryHandle)
-      active.queryHandle.close();
-  } catch { /* query may have already finished */ }
   active.abortController.abort();
   unregisterActiveQuery(sid, active);
-  const rec = sessions.get(sid);
-  if (rec)
-    rec.forkNext = true;
-  pendingUuid.delete(sid);
-  authFailed.delete(sid);
   endRevision(sid);
+  turnText.delete(sid);
   if (ws)
     flushFenceState(ws, sid);
   else
@@ -456,13 +294,15 @@ function abortSessionQuery(sid: string, ws?: WsSender): boolean {
 }
 
 export function handleAbort(ws: WsSender, data: AbortMessage): void {
-  if (abortSessionQuery(data.sessionId, ws))
+  if (activeQueries.get(data.sessionId)?.ws === ws && abortSessionQuery(data.sessionId, ws))
     emit(ws, {type: 'aborted', sessionId: data.sessionId});
 }
 
-// A dropped connection can never receive results — abort its in-flight queries so the SDK
-// stops and the workspace sync isn't blocked by a query nobody is waiting for.
-export function handleDisconnect(sessionIds: Iterable<string>): void {
-  for (const sid of sessionIds)
-    abortSessionQuery(sid);
+/** Stops the turns of these sessions that `ws` sent (all of them without `ws`: a revoked admission task). A dropped
+ * connection can never receive results, and a turn nobody waits for would hold the workspace sync. */
+export function handleDisconnect(sessionIds: Iterable<string>, ws?: WsSender): void {
+  for (const sid of sessionIds) {
+    if (!ws || activeQueries.get(sid)?.ws === ws)
+      abortSessionQuery(sid);
+  }
 }

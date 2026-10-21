@@ -3,7 +3,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 import {Fingerprint, rdKitFingerprintToBitArray} from '../../utils/chem-common';
-import {getRdKitService} from '../../utils/chem-common-rdkit';
+import {fingerprintsByEngine} from '../../engine/worker-jobs';
 import {bitbirchWorker} from '../bit-birch/bitbirch-clustering';
 import {getMmpFrags} from '../molecular-matched-pairs/mmp-analysis/mmpa-fragments';
 import {MmpFragments} from '../molecular-matched-pairs/mmp-analysis/mmpa-misc';
@@ -247,8 +247,7 @@ const MAX_BUTINA_CORES = 3000;
  */
 async function butinaCluster(structures: string[], cutoff: number,
   fingerprintType: Fingerprint): Promise<number[]> {
-  const service = await getRdKitService();
-  const raw = (await service.getFingerprints(fingerprintType, structures, false)).fps;
+  const raw = (await fingerprintsByEngine(fingerprintType, structures, false)).fps; // RDKit's, or Crux's in Crux mode
   const fps: (BitArray | null)[] = raw.map((fp) => fp ? rdKitFingerprintToBitArray(fp) : null);
 
   const n = fps.length;
