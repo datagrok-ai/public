@@ -124,7 +124,7 @@ export class FiltersTutorial extends Tutorial {
     await this.action('Reset the filter',
       this.t!.onFilterChanged.pipe(filter((_) => this.t!.filter.trueCount === this.t!.rowCount)),
       $(filters.root).find('i.grok-icon.fa-arrow-rotate-left')[0],
-      'Press <b>Esc</b> or click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.',
+      'Click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.',
       () => resetIcon()!.click());
 
     this.title('Numerical filters');
