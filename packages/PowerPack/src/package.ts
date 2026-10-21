@@ -29,6 +29,7 @@ import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {setupDBQueryCellHandler, setupGlobalDBExplorer} from './db-explorer';
 import {runEnrichmentFromConfig} from './enrichment';
 import {FilterBuilderFilter} from './filter/filter-builder-filter';
+import {chatInput} from './widgets/chat-input';
 import {domains} from '@datagrok-libraries/ems/src/dg';
 // every sheet the domain stack paints with, in one import
 import '@datagrok-libraries/ems/src/dg/styles.js';
@@ -246,6 +247,20 @@ export class PackageFunctions {
   })
   static async editDomainBinding(schema: string): Promise<boolean> {
     return await domains.authoring.editBinding(schema) !== null;
+  }
+
+  @grok.decorators.func({
+    name: 'chatMessageInput',
+    description: 'The chat compose box with @-mentions of users (u2)',
+    tags: ['chatInput'],
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static chatMessageInput(
+    @grok.decorators.param({options: {optional: true}}) value?: string,
+    @grok.decorators.param({options: {optional: true}}) placeholder?: string,
+    @grok.decorators.param({options: {optional: true}}) sendOnEnter?: boolean,
+    @grok.decorators.param({options: {optional: true}}) draftKey?: string): DG.Widget {
+    return chatInput(value, placeholder, sendOnEnter, draftKey);
   }
 
   @grok.decorators.func({})
