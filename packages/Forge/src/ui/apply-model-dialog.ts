@@ -7,7 +7,7 @@ import {APPLY_COLUMNS, ApplyModelRow, ApplyRequest, applyWithProgress, DEFAULT_B
 import {ColumnMapping, compatibility, isSuggested, kindText, MappingProblem, mappingProblems, suggestMapping}
   from '../apply/column-matching';
 import {applicableTables} from '../catalog/applicable-tables';
-import {MINUTE_FORMAT, SECOND_FORMAT} from '../constants';
+import {MAX_MODELS, MINUTE_FORMAT, SECOND_FORMAT} from '../constants';
 import {Engine} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
@@ -19,8 +19,6 @@ import {CollapsibleGroup} from './collapsible-group';
 import {MissingValuesInputs} from './missing-values-inputs';
 import {reportError} from './report-error';
 
-/** The most model rows a list of models reads. */
-export const MAX_MODELS = 10000;
 const MAX_BATCH_SIZE = 100000;
 const ROWS_HEIGHT_SHARE = 0.4;
 const MIN_ROWS_HEIGHT = 160;

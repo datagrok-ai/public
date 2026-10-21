@@ -48,11 +48,6 @@ export function gridTooltip(grid: DG.Grid, cell: DG.GridCell): string {
   return tooltips.cells?.[column.name]?.(row) || (column.isNone(row) ? '' : column.getString(row));
 }
 
-/** A string column of [values], a missing value empty. */
-export function textColumn(name: string, values: (string | undefined)[]): DG.Column {
-  return DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, values.map((value) => value ?? ''));
-}
-
 /** A float column of [values] shown with three decimals. */
 export function numberColumn(name: string, values: (number | null)[]): DG.Column {
   const col = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values);

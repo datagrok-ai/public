@@ -7,8 +7,7 @@ import {applicableTables} from '../catalog/applicable-tables';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {ModelRow} from '../generated/db';
-import {openDatasetRef, storedDatasetRef} from '../storage/dataset-ref';
-import {evaluateModel} from '../training/evaluation';
+import {evaluateModel, storedTrainingTable} from '../training/evaluation';
 import {ButtonGate} from './button-gate';
 import {storedSummary} from './metrics-table';
 import {reportError} from './report-error';
@@ -21,14 +20,8 @@ const NO_TABLE = 'No open table has the columns the model needs. Open its traini
 export async function runEvaluation(model: ModelRow): Promise<void> {
   try {
     const loaded = loadedModelOf(model, EngineRegistry.discover());
-    const ref = storedDatasetRef(model.dataset_ref);
-    const tableId = model.dataset_table_id;
-    let table: DG.DataFrame;
-    if (ref !== null)
-      table = await openDatasetRef(ref);
-    else if (tableId)
-      table = await grok.dapi.tables.getTable(tableId);
-    else {
+    const table = await storedTrainingTable(model);
+    if (table === null) {
       const tables = applicableTables(model, grok.shell.tables);
       if (tables.length === 0)
         throw new ForgeError(NO_TABLE);
@@ -117,13 +110,13 @@ export class EvaluationView extends DG.ViewBase {
     view.resultsPane.showHint('Evaluating the model...');
     const stored = storedSummary(model) ??
       {metrics: {train: {}, validation: {}}, rowCount: model.row_count ?? 0, skippedRows: 0};
-    const positiveClass = stored.metrics.positiveClass ?? loaded.options.positiveClass;
     const progress = DG.TaskBarProgressIndicator.create(`Evaluating ${model.name}`, {cancelable: true});
     try {
-      const result = await evaluateModel({model: loaded, table, target, mapping, positiveClass}, progress);
+      const result = await evaluateModel({model: loaded, table, target, mapping,
+        positiveClass: stored.metrics.positiveClass}, progress);
       if (view.isClosed)
         return view;
-      const {values, rowCount, skippedRows} = result;
+      const {values, rowCount, skippedRows, positiveClass} = result;
       await view.resultsPane.show({engine: loaded.engine, table, columns: result.columns, target: result.target,
         prediction: result.prediction, score: result.score, keptRows: result.keptRows, positiveClass,
         cutoff: loaded.options.binaryClassificationThreshold, blob: result.blob,

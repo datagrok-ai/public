@@ -3,10 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {readModelFile} from '../catalog/model-file';
 import {MODEL_TYPE} from '../constants';
-import {deleteModel, ownBlob} from '../storage/model-store';
+import {deleteModel, findModelRow, ownBlob} from '../storage/model-store';
 import {openApplyDialog} from './apply-model-dialog';
 import {openEditModelDialog} from './edit-model-dialog';
-import {forgeModelHandler} from './model-handler';
+import {forgeModelHandler, ForgeModelHandler} from './model-handler';
 import {reportError} from './report-error';
 
 export interface ModelAction {
@@ -74,6 +74,14 @@ export function confirmDeleteModel(id: string, name: string): void {
       }
     })
     .show();
+}
+
+/** `Forge:shareModel`: the platform's Share dialog for the model with the id or the unique name [idOrName], as the
+ * Sharing pane's **Share...** opens it; resolves once the model is found, without waiting for the dialog. */
+export async function openShareDialog(idOrName: string): Promise<void> {
+  const row = ForgeModelHandler.rowOf(await findModelRow(idOrName, ['name']));
+  // A caller such as the AI assistant must not hang on a dialog the user fills; a refusal is shown, not thrown.
+  void DG.DomainObjectHandler.shareRow(row).catch((e) => reportError(e));
 }
 
 async function downloadModelFile(row: DG.DomainRow): Promise<void> {

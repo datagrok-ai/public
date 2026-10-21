@@ -1,12 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as rxjs from 'rxjs';
 import {featureSchemasOf} from '../apply/apply-model';
 import {featureFit} from '../catalog/applicable-tables';
 import {MODEL_TYPE} from '../constants';
 import {forgeDb, ModelRow, ModelStorageMode} from '../generated/db';
 import {tagsOf} from '../storage/model-fields';
-import {modelAccordion, modelIcon, userOf} from './model-panes';
+import {modelsChanged} from '../storage/model-store';
+import {isShownVersion, modelAccordion, modelIcon, userOf} from './model-panes';
+import {reportError} from './report-error';
 import {richTooltip, shortList} from './rich-tooltip';
 import {STORAGE_CAPTIONS} from './save-model-dialog';
 import '../../css/forge.css';
@@ -17,6 +20,7 @@ export const CARD_COLUMNS = ['name', 'features', 'options', 'target_name', 'engi
 const HANDLER_NAME = 'Forge model handler';
 const CARD_FEATURES = 5;
 const DATE_FORMAT = 'YYYY-MM-DD';
+const FOLLOW_DELAY_MS = 300;
 type FeatureRow = Pick<ModelRow, 'features' | 'options'>;
 /** The feature lists and options of the models whose rows came without them, by id, read once per session; a failed
  * read is tried again. */
@@ -40,6 +44,33 @@ export class ForgeModelHandler extends DG.DomainObjectHandler {
       return false;
     DG.ObjectHandler.register(forgeModelHandler);
     return true;
+  }
+
+  /** Keeps the context panel on the model it shows as that model is now, whoever changed it (the catalog, **Edit
+   * model**, the API); `_initForge` subscribes once per page. */
+  static followChanges(): rxjs.Subscription {
+    // A burst of writes (tag chips) reads the model once.
+    return DG.debounce(modelsChanged, FOLLOW_DELAY_MS).subscribe(() => void ForgeModelHandler.showChanged());
+  }
+
+  /** The model the context panel shows, read again: shown anew when it changed since its accordion was built, and the
+   * panel emptied, as after the catalog's delete, when it is gone. */
+  private static async showChanged(): Promise<void> {
+    const shown = forgeModelHandler.modelOf(grok.shell.o);
+    if (shown === null)
+      return;
+    try {
+      const model = await forgeDb.models.query().where('id', '=', shown.id).select(...CARD_COLUMNS).first();
+      if (forgeModelHandler.modelOf(grok.shell.o)?.id !== shown.id)
+        return;
+      // Forced: the platform takes a row of the same id for the object it already shows.
+      if (model === null)
+        grok.shell.setCurrentObject(null, true, true);
+      else if (!isShownVersion(model))
+        grok.shell.setCurrentObject(ForgeModelHandler.rowOf(model), true, true);
+    } catch (e) {
+      reportError(e);
+    }
   }
 
   /** [values] of one model, such as a catalog row, as a `DomainRow` without a round trip. */

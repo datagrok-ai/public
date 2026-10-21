@@ -5,13 +5,18 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
 ## Entry points
 
 - `src/package.ts` — annotated functions only, each delegating: `forgeApp`, `forgeModels`, `forgeTrain`, `forgeApply`
-  (`ML | Forge | ...`), the API `applyModel`, `trainModel`, `deleteModel`, `_initForge` (autostart), the column panel
+  (`ML | Forge | ...`), the API `applyModel`, `trainModel`, `deleteModel`, `listMethods` (`training/train-api.ts` over
+  `engines/method-list.ts`, whose `methodColumns` the app's Methods grid, `methodsFrame`, shares), `listModels`, `getModel`, `updateModel` (`catalog/list-models.ts`,
+  `get-model.ts`, `model-edit.ts`), `evaluateModel` (`training/evaluate-api.ts`), `shareModel` (`openShareDialog` in
+  `ui/model-actions.ts`), `_initForge` (autostart), the column panel
   **Predicted by** and the table panel **Forge models** (`ui/table-models-panel.ts`).
 - `src/ui/`: `train-view.ts` (+ `runs-panel.ts`), `evaluation-view.ts` (on `results-*.ts`), `forge-app.ts` (catalog),
   `apply-model-dialog.ts`, `model-*.ts`; their readiness attributes: ARCHITECTURE.md, "Automation surface".
 - `src/training/` (`train-api.ts`: `Forge:trainModel`; `training-queue.ts`: one at a time; `evaluation.ts`: records
-  nothing), `src/apply/`, `src/preparation/` (`pipeline.ts`: steps and their replay; `Eda:knnImpute`), `src/catalog/`.
+  nothing, `storedTrainingTable` is the data Run Evaluation and `evaluateModel` default to), `src/apply/`, `src/preparation/` (`pipeline.ts`: steps and their replay; `Eda:knnImpute`), `src/catalog/`.
 - `databases/forge/schema.json` — the EMS schema; `src/generated/db.ts` is its generated typed client `forgeDb`.
+- `agents/` — Datagrok AI (Grokky) knowledge, published with the package: `package-knowledge.yaml` and the
+  self-contained `skills.md` (ARCHITECTURE.md, "Grokky knowledge (agents/)").
 
 ## Glossary
 
@@ -28,7 +33,8 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
 
 - Comment annotations only; a `// Words: text` comment right above any function is read as an annotation tag.
 - Logic folders (all but `ui/`) never import `ui/`, log or call `grok.shell`; expected failures throw `ForgeError`.
-  Catches: `applyAndRecord`, `runTrainModel`, `saveTrainedModel` (record or clean up, rethrow), `TrainingQueue.run`.
+  Catches: `applyAndRecord`, `runTrainModel`, `saveTrainedModel` (record or clean up, rethrow), `runEvaluateModel` (a
+  cancel becomes `Evaluation was cancelled.`), `TrainingQueue.run`.
 - Pass column lists, never frames: the engine calls, the imputer and the copy upload run on a `sharedFrame` through
   `onFrame`, which gives it back with `releaseFrame` (a frame gets its columns' events). Never write into a user's column.
   `ResultsPane` keeps frames and viewers until `clear()`, a hint or other data; `ui.empty` kills widgets (`close` needs a view).
@@ -40,6 +46,9 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
 - `ignore-missing` / `impute-missing` are recorded in `options`, never replayed. Prediction columns carry `forge.model`
   (`PREDICTION_TAG`; `predictRows` adds none). Inserts of applications and runs need explicit `source`, `status`.
 - Header defaults (`= 20`) are in `Property.initialValue`, strings in quotes (`'RBF'`): use `defaultValuesOf`.
+- API lists are frames, one-model results objects; `object` outputs describe their keys in the output description
+  (the generated API types them `any`). `agents/skills.md` repeats the API annotations and the README's errors:
+  a change of an API function's name, inputs, result keys or error sentences updates it too.
 - `deleteModel` deletes only Forge's own: a blob's `forge/model/<uuid>/` folder, a table named `<x> (training data)`.
 - Validators read the form's problems, not their argument, and run only on non-empty values. A dialog validates every
   input it was given (hidden and folded too), focuses the last one on `show()` and re-checks Enter only on an input
@@ -48,10 +57,14 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
   code: `src/package.g.ts`, `src/package-api.ts`, `src/generated/`.
 - Schema change: bump `version`, `grok publish local` (destructive diffs applied; a `promotion` change is refused:
   publish a placeholder-only manifest first, which drops the data). `json` columns hold objects only; deletes are soft.
-- `model` and `training_run` are eager: every insert (tests too) creates an entity, which a delete leaves (EMS bug).
+- `model` and `training_run` are eager: every insert (tests too) creates an entity, which a delete leaves with its
+  grants (EMS bug); since the 2026-10-20 build the entities API no longer returns a newly deleted model's entity.
 - `model.tags` is comma-separated text (EMS refuses a list in a single-row write): convert through `tagsText`/`tagsOf`.
 - `renderProperties` of the handler replaces the platform's whole panel of a `forge.model` row (History is
   `auditPane`; no Chats); param funcs only add commands. A catalog row's `DomainRow` carries the catalog columns only.
+- The context panel follows `modelsChanged` only through `ForgeModelHandler.followChanges` (subscribed once by
+  `_initForge`; a gone model empties the panel, a new `version` rebuilds it). `modelsChanged` is per bundle: a test
+  that writes from the test bundle and checks the panel starts its own `followChanges` and unsubscribes it.
 - `grok.dapi.permissions.get` reads the wrapper project; a `grant` on a row is refused in tests (`shareRow`, `grok s`).
 - Tables of data are grids (`readOnlyGrid`), never `ui.table`. A plain `grok.shell.o =` freezes the panel for a
   second and ignores the next plain set: the catalog sets with `setCurrentObject(x, true, true)`.

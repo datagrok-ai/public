@@ -1,13 +1,14 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
+import {textColumn} from '../columns';
 import {Engine, Hyperparameters} from '../engines/engine';
 import {TrainingRunStatus} from '../generated/db';
 import {METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricId, MetricValues} from '../metrics/metrics';
 import {MissingValuesSettings} from '../preparation/missing-values';
 import {PreparationSteps} from '../preparation/pipeline';
 import {MetricsRecord} from '../training/train-model';
-import {numberColumn, readOnlyGrid, textColumn} from './data-grid';
+import {numberColumn, readOnlyGrid} from './data-grid';
 import {resultsTitle} from './results-viewers';
 
 const CANCELLED_TOOLTIP = 'Stopped from the task bar.';

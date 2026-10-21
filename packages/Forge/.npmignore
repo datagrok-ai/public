@@ -1,6 +1,9 @@
 # Developer keys
 upload.keys.json
 
+# Claude Code local settings and logs
+.claude/
+
 # Dependency directories
 node_modules/
 

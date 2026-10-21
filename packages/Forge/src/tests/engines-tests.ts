@@ -1,17 +1,21 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectArray, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
 import {applicableEngines} from '../engines/applicable-engines';
 import {selectBestEngine} from '../engines/best-engine';
 import {defaultHyperparameters, defaultValuesOf, Engine, hasTrainingRows, hyperparametersOf, isComplete,
   isServerEngine, rolesOf} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {isApplicable, isInteractive} from '../engines/engine-calls';
-import {columnsOf, engineByName, expectReleased, framesSharing, inDiscoveryOrder, IRIS, MEASUREMENTS, valuesOf}
-  from './test-data';
+import {SettingDetails} from '../engines/method-list';
+import {runListMethods, runTrainModel} from '../training/train-api';
+import {columnsOf, deleteRunsOf, demoDemog, engineByName, expectReleased, failsWith, framesSharing, inDiscoveryOrder,
+  IRIS, MEASUREMENTS, openDemoTable, valuesOf} from './test-data';
 
 const EDA_ENGINES = ['Linear Regression', 'Softmax', 'PLS Regression', 'XGBoost', 'SVM'];
 const BEST_NAMES = ['Chemprop', 'XGBoost', 'PLS Regression', 'Linear Regression'];
+const METHOD_COLUMNS = ['Method', 'Package', 'Method type', 'Runs on', 'Keeps training rows', 'Retrains live', 'Roles',
+  'Hyperparameters', 'Settings'];
 
 /** An engine with a name only, for the rules that read names. */
 function namedEngine(name: string, functions: Engine['functions'] = {}): Engine {
@@ -33,6 +37,13 @@ function floats(name: string, value: (i: number) => number): DG.Column {
 
 function strings(name: string, value: (i: number) => string): DG.Column {
   return DG.Column.fromStrings(name, Array.from({length: 12}, (_, i) => value(i)));
+}
+
+/** The EDA methods that `listMethods` marks true in [column] for [table] and [target], sorted. */
+async function markedMethods(table: DG.DataFrame, target: string | null, column: string): Promise<string[]> {
+  const methods = await runListMethods(table, target);
+  const names: string[] = methods.getCol('Method').toList();
+  return names.filter((name, i) => EDA_ENGINES.includes(name) && methods.get(column, i) === true).sort();
 }
 
 category('Engines', () => {
@@ -164,5 +175,83 @@ category('Engines', () => {
     expect(hasTrainingRows(namedEngine('forge-test-js', {train: scriptTrain('javascript', {mlhasrows: 'true'})})),
       true, 'meta.mlhasrows');
     expect(hasTrainingRows(namedEngine('forge-test-none')), false, 'No train function');
+  });
+
+  test('listMethods lists the complete methods with their settings', async () => {
+    const engines = EngineRegistry.discover();
+    const methods = await runListMethods(null, null);
+    expect(methods.name, 'Methods');
+    expectArray(methods.columns.names(), METHOD_COLUMNS);
+    const names: string[] = methods.getCol('Method').toList();
+    expectArray(names, inDiscoveryOrder(engines, engines.filter(isComplete).map((e) => e.name)));
+    for (const name of EDA_ENGINES) {
+      const i = names.indexOf(name);
+      expect(methods.get('Runs on', i), 'browser', name);
+      expect(methods.get('Keeps training rows', i), name === 'SVM', `${name} training rows`);
+    }
+    const xgboost = engineByName(engines, 'XGBoost');
+    const settings: SettingDetails[] = JSON.parse(methods.get('Settings', names.indexOf('XGBoost')));
+    expectArray(settings.map((s) => s.name), hyperparametersOf(xgboost).map((p) => p.name));
+    const iterations = settings.find((s) => s.name === 'iterations');
+    if (iterations === undefined)
+      throw new Error('XGBoost has no iterations setting');
+    expect(iterations.type, DG.TYPE.INT);
+    expect(iterations.default, 20);
+    expect(iterations.min, 1);
+    expect(iterations.max, 100);
+  });
+
+  test('listMethods marks the applicable and the suggested methods of a table', async () => {
+    const iris = await grok.data.files.openTable(IRIS);
+    expectArray(await markedMethods(iris, 'Species', 'Applicable'), ['SVM', 'Softmax', 'XGBoost']);
+    expectArray(await markedMethods(iris, 'Species', 'Suggested'), ['XGBoost']);
+    expectArray((await markedMethods(iris, 'Petal.Length', 'Applicable')).filter((name) => name.endsWith('Regression')),
+      ['Linear Regression', 'PLS Regression']);
+  });
+
+  test('listMethods takes the table\'s last column as the target by default', async () => {
+    const iris = await grok.data.files.openTable(IRIS);
+    expect(iris.columns.byIndex(iris.columns.length - 1).name, 'Species');
+    expectArray(await markedMethods(iris, null, 'Applicable'), ['SVM', 'Softmax', 'XGBoost']);
+    expectArray(await markedMethods(iris, null, 'Suggested'), ['XGBoost']);
+  });
+
+  test('listMethods refuses a missing target column', async () => {
+    const iris = await grok.data.files.openTable(IRIS);
+    await expectExceptionAsync(() => runListMethods(iris, 'Specie').then(() => {}),
+      failsWith('The table has no column \'Specie\'.'));
+    await expectExceptionAsync(() => runListMethods(DG.DataFrame.create(0), null).then(() => {}),
+      failsWith('The table has no columns.'));
+  });
+
+  test('listMethods refuses a table as trainModel does', async () => {
+    const few = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x', new Float32Array([1, 2, 3])),
+      DG.Column.fromFloat32Array('y', new Float32Array([2, 4, 6]))]);
+    const message = 'Training needs at least 10 rows; the table has 3.';
+    await expectExceptionAsync(() => runListMethods(few, 'y').then(() => {}), failsWith(message));
+    await expectExceptionAsync(() => runTrainModel({table: few, target: 'y', showProgress: false}).then(() => {}),
+      failsWith(message));
+  });
+
+  test('listMethods suggests the method trainModel trains with', async () => {
+    const tables = [await openDemoTable(IRIS, 'methods'), demoDemog(200)];
+    try {
+      for (const [table, target] of [[tables[0], 'Species'], [tables[1], 'height']] as const) {
+        const methods = await runListMethods(table, target);
+        const suggested = methods.getCol('Method').toList().filter((_, i) => methods.get('Suggested', i) === true);
+        const {method} = await runTrainModel({table, target, showProgress: false});
+        expectArray(suggested, [method]);
+      }
+    } finally {
+      await deleteRunsOf(tables);
+    }
+  }, {timeout: 60000});
+
+  test('listMethods is registered and callable without inputs', async () => {
+    const func = DG.Func.find({package: 'Forge', name: 'listMethods'})[0];
+    expectArray(func?.inputs.map((p) => p.name) ?? [], ['table', 'target']);
+    expect(func?.outputs[0]?.propertyType, DG.TYPE.DATA_FRAME);
+    const methods: unknown = await grok.functions.call('Forge:listMethods', {});
+    expect(methods instanceof DG.DataFrame && methods.col('Method') !== null, true, `Result: ${methods}`);
   });
 });

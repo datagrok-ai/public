@@ -4,13 +4,15 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {applicationRecorded} from '../apply/application-store';
 import {featureFit} from '../catalog/applicable-tables';
+import {loginsOf} from '../catalog/list-models';
 import {ModelActivity, modelActivity} from '../catalog/model-activity';
+import {textColumn} from '../columns';
 import {MINUTE_FORMAT, MODEL_TYPE, SECOND_FORMAT} from '../constants';
 import {ApplicationRow, ApplicationSource, ApplicationStatus, forgeDb, ModelRow} from '../generated/db';
 import {datasetRefCaption, storedDatasetRef} from '../storage/dataset-ref';
 import {tagsOf, tagsText} from '../storage/model-fields';
 import {ownBlob} from '../storage/model-store';
-import {readOnlyGrid, textColumn} from './data-grid';
+import {readOnlyGrid} from './data-grid';
 import {runEvaluation} from './evaluation-view';
 import {MetricsTable, storedSummary} from './metrics-table';
 import {reportError} from './report-error';
@@ -40,6 +42,8 @@ const SOURCE_TOOLTIPS: Record<ApplicationSource, string> = {
 
 let sharingSub: rxjs.Subscription | undefined;
 let activitySub: rxjs.Subscription | undefined;
+/** The model the newest accordion shows, at the version it shows (its own Tags writes included). */
+let shownModel: Pick<ModelRow, 'id' | 'version'> | undefined;
 type Refill = () => void;
 /** By Details host: shows again its cells that follow the model's applications (Last run, Applications). */
 const ACTIVITY_CELLS = new WeakMap<HTMLElement, Refill>();
@@ -87,6 +91,11 @@ export function userOf(id: string): Promise<DG.User> {
   return user;
 }
 
+/** Whether the newest accordion shows [model] at its version. */
+export function isShownVersion(model: Pick<ModelRow, 'id' | 'version'>): boolean {
+  return shownModel?.id === model.id && shownModel.version === model.version;
+}
+
 /** The model icon of the built-in tool. */
 export function modelIcon(): HTMLElement {
   return ui.iconSvg('model');
@@ -110,6 +119,7 @@ export function modelAccordion(row: DG.DomainRow, model: ModelRow): DG.Accordion
   accordion.addPane('Activity', () => fillActivity(activityHost, activityOf));
   accordion.addPane('Sharing', () => sharingPane(row));
   accordion.addPane('History', () => DG.DomainObjectHandler.auditPane(row));
+  shownModel = {id: model.id, version: model.version};
   // The context panel shows one model: the newest accordion follows its model's applications.
   activitySub?.unsubscribe();
   activitySub = applicationRecorded.subscribe((id) => {
@@ -131,9 +141,7 @@ function fillActivity(host: HTMLElement, activity: () => Promise<ModelActivity>)
     const {applications, count} = await activity();
     if (count === 0)
       return ui.divText('Not applied yet.');
-    // One read of the authors; a deleted user is not found and shows no login.
-    const users = await grok.dapi.getEntities([...new Set(applications.map((a) => a.author_id))]);
-    const logins = new Map(users.filter((u): u is DG.User => u instanceof DG.User).map((u) => [u.id, u.login]));
+    const logins = await loginsOf(applications.map((a) => a.author_id));
     const at = (row: number) => applications[row];
     const grid = readOnlyGrid(activityFrame(applications, logins), {headers: ACTIVITY_HEADERS, cells: {
       'When': (row) => at(row).created_on.format(SECOND_FORMAT),
@@ -215,6 +223,8 @@ function detailsTags(host: HTMLElement, model: ModelRow, activity: () => Promise
     if (written !== null) {
       version = written;
       stored = tagsText(tags);
+      if (shownModel?.id === model.id)
+        shownModel = {id: model.id, version};
     }
   };
   // One write at a time, each with the version the previous one returned: quick chip changes are not a conflict.

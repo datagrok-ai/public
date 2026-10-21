@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {onFrame} from '../preparation/shared-frame';
-import {Insight, metricInsights, resultInsights} from '../training/insights';
+import {evaluationInsights, Insight} from '../training/insights';
 import {MetricsTable} from './metrics-table';
 import {reportError} from './report-error';
 import {PanelKey, resultKindOf, ResultsRow, resultsLayout} from './results-layout';
@@ -106,11 +106,8 @@ export class ResultsPane {
       ui.empty(this.metricsHost);
       this.metricsHost.append(this.metricsTable.root);
     }
-    this.resultLines = [
-      ...resultInsights({values: summary.evaluation?.values ?? summary.metrics.train, target, prediction,
-        positiveClass}),
-      ...metricInsights(summary.metrics),
-    ];
+    this.resultLines = evaluationInsights({values: summary.evaluation?.values ?? summary.metrics.train, target,
+      prediction, positiveClass}, summary.metrics);
     this.fillInsights();
     const elements = await this.visualizeElements(data);
     if (version !== this.version) {

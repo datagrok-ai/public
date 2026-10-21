@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, expect, expectArray, expectExceptionAsync, expectFloat, test}
+import {after, awaitCheck, before, category, expect, expectArray, expectExceptionAsync, expectFloat, test}
   from '@datagrok-libraries/test/src/test';
 import {applyAndRecord, ApplyRequest, DEFAULT_BATCH_SIZE, LoadedModel, loadModel, predictionName, predictRows,
   scatteredColumn, targetSchemaOf} from '../apply/apply-model';
@@ -15,13 +15,16 @@ import {forgeDb, ModelInsert} from '../generated/db';
 import {metricsOf, regressionMetrics} from '../metrics/metrics';
 import {MissingValuesSettings} from '../preparation/missing-values';
 import {replayPostprocessing} from '../preparation/pipeline';
-import {ONE_HOT, preparationOptionsOf} from '../preparation/preparation-options';
+import {isRecord, ONE_HOT, preparationOptionsOf} from '../preparation/preparation-options';
 import {BLOB_ROOT, deleteModel} from '../storage/model-store';
+import {runEvaluateModel} from '../training/evaluate-api';
 import {evaluateModel} from '../training/evaluation';
-import {ColumnSchema, prepareTraining, TrainingResult, trainModel} from '../training/train-model';
-import {columnNamed, columnsOf, expectMetrics, expectNoFrames, expectReleased, framesSharing, IMPUTE, MEASUREMENTS,
-  ONE_HOT_STEPS, openIris, PREDICT_PROBABILITY, rawValues, requestOf, savedFixture, saveIrisModel,
-  saveSkipUniqueModel, saveTestModel, selectionOf, twoSpeciesIris, valuesOf, XGBOOST_FIELDS} from './test-data';
+import {runTrainModel} from '../training/train-api';
+import {ColumnSchema, metricsRecordOf, prepareTraining, TrainingResult, trainModel} from '../training/train-model';
+import {cancelTaskBarEntry, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, demoDemog, expectMetrics,
+  expectNoFrames, expectReleased, failsWith, framesSharing, IMPUTE, IRIS, MEASUREMENTS, ONE_HOT_STEPS, openIris,
+  openIrisFromFile, PREDICT_PROBABILITY, rawValues, requestOf, savedFixture, saveIrisModel, saveSkipUniqueModel,
+  saveTestModel, selectionOf, twoSpeciesIris, valuesOf, XGBOOST_FIELDS} from './test-data';
 
 const TIMEOUT = 90000;
 const IRIS_FEATURES: ColumnSchema[] = MEASUREMENTS.map((name) => ({name, type: DG.COLUMN_TYPE.FLOAT}));
@@ -55,6 +58,36 @@ async function applicationsOf(table: DG.DataFrame) {
 }
 
 const throwsWith = (text: string) => (e: unknown) => errorMessage(e).includes(text);
+const applicationCount = (id: string) => forgeDb.applications.query().where('model_id', '=', id).count();
+const WAIT_MS = 10000;
+
+interface TaskBarWatch { labels: string[]; entry?: Element }
+
+/** Runs [action] to its end while watching the task-bar entries it adds: their labels as they change (a batch loop
+ * relabels its entry after the first batch) and the first entry; with [isCancelled], that entry's cancel icon is
+ * clicked as soon as it shows. */
+async function watchTaskBar<T>(action: () => Promise<T>, isCancelled: boolean):
+  Promise<[PromiseSettledResult<T>, TaskBarWatch]> {
+  const known = new Set(Array.from(document.querySelectorAll('.d4-task-bar-entry')));
+  const watch: TaskBarWatch = {labels: []};
+  const observer = new MutationObserver(() => {
+    for (const entry of Array.from(document.querySelectorAll('.d4-task-bar-entry')).filter((e) => !known.has(e))) {
+      watch.labels.push(entry.textContent ?? '');
+      if (watch.entry === undefined) {
+        watch.entry = entry;
+        if (isCancelled)
+          cancelTaskBarEntry(entry);
+      }
+    }
+  });
+  observer.observe(document.body, {childList: true, subtree: true, characterData: true});
+  try {
+    const [settled] = await Promise.allSettled([action()]);
+    return [settled, watch];
+  } finally {
+    observer.disconnect();
+  }
+}
 
 category('Apply', () => {
   before(async () => {
@@ -261,7 +294,7 @@ category('Apply', () => {
     const columnCount = cancelled.columns.length;
     await expectExceptionAsync(async () => {
       await applyAndRecord(requestFor(model, cancelled, {batchSize: 40}), 'api', {canceled: true, update: () => {}});
-    }, (e) => e instanceof ForgeError && e.message === 'Application was cancelled.');
+    }, failsWith('Application was cancelled.'));
     expect(cancelled.columns.length, columnCount);
     const records = await applicationsOf(cancelled);
     expect(records.length, 1);
@@ -289,7 +322,7 @@ category('Apply', () => {
     }};
     await expectExceptionAsync(async () => {
       await applyAndRecord(requestFor(model, table, {batchSize: 1}), 'api', progress);
-    }, (e) => e instanceof ForgeError && e.message === 'Application was cancelled.');
+    }, failsWith('Application was cancelled.'));
     expect(table.columns.length, columnCount);
     const records = await applicationsOf(table);
     expect(records.length, 1);
@@ -527,7 +560,7 @@ category('Apply', () => {
     expect(skipped.skippedRows, 1);
   }, {timeout: TIMEOUT});
 
-  test('evaluateModel of a predict-probability model gives its scores and AUC-ROC', async () => {
+  test('evaluateModel and runEvaluateModel of a predict-probability model give its scores and AUC-ROC', async () => {
     const iris = await twoSpeciesIris();
     const species = iris.getCol('Species');
     const {id, result} = await saveTestModel(columnsOf(iris, MEASUREMENTS), species, iris.name, {},
@@ -541,10 +574,103 @@ category('Apply', () => {
       expectMetrics(evaluation.values, result.metrics.train, 1e-6);
       expect(evaluation.prediction.toList().every((v) => v === 'versicolor' || v === 'virginica'), true,
         evaluation.prediction.categories.join());
-      expect(await forgeDb.applications.query().where('model_id', '=', id).count(), 0);
+      const api = await runEvaluateModel({model: id, table: iris, showProgress: false});
+      expect(api.positiveClass, result.metrics.positiveClass);
+      expectFloat(api.metrics.evaluation.auc ?? NaN, evaluation.values.auc ?? NaN, 1e-9, 'auc');
+      expect(await applicationCount(id), 0);
     } finally {
       await deleteModel(id);
     }
+  }, {timeout: TIMEOUT});
+
+  test('runEvaluateModel measures a model on a table next to its stored metrics and adds and records nothing',
+    async () => {
+      const {id, iris, result} = shared();
+      const stored = metricsRecordOf((await forgeDb.models.get(id)).metrics);
+      if (stored === null)
+        throw new Error('The fixture has no stored metrics');
+      const applications = await applicationCount(id);
+      const columnCount = iris.columns.length;
+      const evaluation = await runEvaluateModel({model: id, table: iris, showProgress: false});
+      expectArray([evaluation.id, evaluation.table, evaluation.target, evaluation.rowCount, evaluation.skippedRows],
+        [id, iris.name, 'Species', 150, 0]);
+      expectFloat(evaluation.metrics.evaluation.accuracy ?? NaN, result.metrics.train.accuracy ?? NaN, 1e-6,
+        'accuracy');
+      expectMetrics(evaluation.metrics.train, stored.train, 1e-12);
+      expectMetrics(evaluation.metrics.validation, stored.validation, 1e-12);
+      expect(Array.isArray(evaluation.insights) && evaluation.insights.every((i) => typeof i.text === 'string' &&
+        !('panel' in i)), true, JSON.stringify(evaluation.insights));
+      expect(iris.columns.length, columnCount);
+      expect(await applicationCount(id), applications);
+    }, {timeout: TIMEOUT});
+
+  test('runEvaluateModel without a table uses the data the model references, and refuses a model without data',
+    async () => {
+      const iris = await openIrisFromFile();
+      iris.name = `forge-test-api-evaluate-${Date.now()}`;
+      const tableCount = grok.shell.tables.length;
+      try {
+        const {modelId} = await runTrainModel({table: iris, target: 'Species', name: iris.name, storage: 'reference',
+          showProgress: false});
+        const evaluation = await runEvaluateModel({model: modelId ?? '', showProgress: false});
+        expect(evaluation.table, (await grok.data.files.openTable(IRIS)).name);
+        expect(evaluation.rowCount, 150);
+        expect(grok.shell.tables.length, tableCount, 'The referenced data joined the workspace');
+        await expectExceptionAsync(() => runEvaluateModel({model: shared().id, showProgress: false}).then(() => {}),
+          failsWith('The model keeps no training data. Pass a table with the actual values.'));
+      } finally {
+        grok.shell.closeTable(iris);
+        await deleteModelsNamed(iris.name);
+        await deleteRunsOf([iris]);
+      }
+    }, {timeout: TIMEOUT});
+
+  test('runEvaluateModel refuses a missing target and maps the features as Forge:applyModel', async () => {
+    const {id, result} = shared();
+    const table = irisCopy('evaluate-mapped');
+    const evaluate = (input: {target?: string; columnNamesMap?: {[feature: string]: string}}) =>
+      runEvaluateModel({model: id, table, showProgress: false, ...input});
+    await expectExceptionAsync(() => evaluate({target: 'Specie'}).then(() => {}),
+      failsWith('The table has no column \'Specie\' with the actual values. Pass the column\'s name in target.'));
+    table.getCol('Sepal.Width').name = 'sepal width';
+    await expectExceptionAsync(() => evaluate({}).then(() => {}),
+      failsWith('The table has no column \'Sepal.Width\' the model needs. Map it in columnNamesMap.'));
+    const mapped = await evaluate({columnNamesMap: {'Sepal.Width': 'sepal width'}});
+    expectMetrics(mapped.metrics.evaluation, result.metrics.train, 1e-6);
+  }, {timeout: TIMEOUT});
+
+  test('runEvaluateModel shows Evaluating <model> in the task bar, and a cancel there fails it', async () => {
+    const training = demoDemog(2000);
+    const name = `forge-test-api-evaluate-demog-${Date.now()}`;
+    try {
+      const {modelId} = await runTrainModel({table: training, target: 'sex', features: ['age', 'height', 'weight'],
+        method: 'XGBoost', name, showProgress: false});
+      const evaluate = () => runEvaluateModel({model: modelId ?? '', table: demoDemog(50000)});
+      const [done, shown] = await watchTaskBar(evaluate, false);
+      if (done.status === 'rejected')
+        throw done.reason;
+      expect(done.value.rowCount + done.value.skippedRows, 50000);
+      expect(shown.labels.some((label) => label.includes(`Evaluating ${name}`)), true, shown.labels.join(' | '));
+      await awaitCheck(() => shown.entry?.isConnected === false, 'The progress outlives the evaluation', WAIT_MS);
+
+      const [cancelled, watched] = await watchTaskBar(evaluate, true);
+      const error = cancelled.status === 'rejected' ? cancelled.reason : null;
+      expect(failsWith('Evaluation was cancelled.')(error), true, String(error));
+      await awaitCheck(() => watched.entry?.isConnected === false, 'The progress outlives the cancel', WAIT_MS);
+      expect(await applicationCount(modelId ?? ''), 0);
+    } finally {
+      await deleteModelsNamed(name);
+      await deleteRunsOf([training]);
+    }
+  }, {timeout: 60000});
+
+  test('Forge:evaluateModel through grok.functions.call', async () => {
+    const {id, iris} = shared();
+    const plain: unknown = await grok.functions.call('Forge:evaluateModel', {model: id, table: iris,
+      showProgress: false});
+    const metrics = isRecord(plain) && isRecord(plain.metrics) ? plain.metrics : {};
+    expect(isRecord(metrics.evaluation) && typeof metrics.evaluation.accuracy === 'number', true,
+      JSON.stringify(plain));
   }, {timeout: TIMEOUT});
 
   test('targetSchemaOf reads a stored target', async () => {
@@ -564,8 +690,8 @@ category('Apply', () => {
     const columnCount = table.columns.length;
     await expectExceptionAsync(async () => {
       await applyAndRecord(requestFor(model, table), 'api');
-    }, (e) => e instanceof ForgeError && e.message === 'Every row has a missing value in the columns the model ' +
-      'needs, so nothing can be predicted. Fill the missing values or choose Impute.');
+    }, failsWith('Every row has a missing value in the columns the model ' +
+      'needs, so nothing can be predicted. Fill the missing values or choose Impute.'));
     expect(table.columns.length, columnCount);
   }, {timeout: TIMEOUT});
 
@@ -620,7 +746,7 @@ category('Apply', () => {
         task: 'classification', target_name: 'Species', storage_mode: 'none', ...fields});
       try {
         await expectExceptionAsync(() => loadModel(id).then(() => {}),
-          (e) => e instanceof ForgeError && e.message === text);
+          failsWith(text));
       } finally {
         await forgeDb.models.delete(id);
       }
@@ -641,11 +767,9 @@ category('Apply', () => {
       await expectExceptionAsync(() => loadModel(ids[0]).then(() => {}), isFound);
       await expectExceptionAsync(() => loadModel(name).then(() => {}), isFound);
       await expectExceptionAsync(() => loadModel(`forge-test-none-${stamp}`).then(() => {}),
-        (e) => e instanceof ForgeError &&
-          e.message === `No Forge model 'forge-test-none-${stamp}' is available to you.`);
+        failsWith(`No Forge model 'forge-test-none-${stamp}' is available to you.`));
       await expectExceptionAsync(() => loadModel(`forge-test-dup-${stamp}`).then(() => {}),
-        (e) => e instanceof ForgeError &&
-          e.message === `Several models are named 'forge-test-dup-${stamp}'. Use the model id.`);
+        failsWith(`Several models are named 'forge-test-dup-${stamp}'. Use the model id.`));
     } finally {
       for (const id of ids)
         await forgeDb.models.delete(id);

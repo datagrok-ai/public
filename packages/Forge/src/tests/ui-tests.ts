@@ -11,7 +11,7 @@ import {exactMapping} from '../apply/column-matching';
 import {updateModelInfo} from '../catalog/model-edit';
 import {APP_NAME, MENU_PATH, MODEL_TYPE, PANEL_TABLE_MODELS} from '../constants';
 import {EngineRegistry} from '../engines/engine-registry';
-import {ForgeError} from '../forge-error';
+import {errorMessage, ForgeError} from '../forge-error';
 import {forgeDb, ModelStorageMode} from '../generated/db';
 import {METRIC_DESCRIPTIONS} from '../metrics/metrics';
 import {preparationOptionsOf} from '../preparation/preparation-options';
@@ -24,7 +24,7 @@ import {gridTooltip} from '../ui/data-grid';
 import {editModelDialog} from '../ui/edit-model-dialog';
 import {EvaluationView, runEvaluation} from '../ui/evaluation-view';
 import {ForgeApp} from '../ui/forge-app';
-import {CATALOG_ACTIONS, MODEL_ACTIONS} from '../ui/model-actions';
+import {CATALOG_ACTIONS, MODEL_ACTIONS, openShareDialog} from '../ui/model-actions';
 import {hasFormsViewer, ModelComparison} from '../ui/model-comparison';
 import {ForgeModelHandler} from '../ui/model-handler';
 import {MetricsTable} from '../ui/metrics-table';
@@ -37,7 +37,7 @@ import {CHECK_DELAY_MS, SHOWN_RUN, TrainView} from '../ui/train-view';
 import {balloonWith, cancelOnceShown, catalogState, columnsOf, deleteRunsOf, demoDemog, expectNoFrames, expectReleased,
   expectGridsFillPanes, framesSharing, insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile,
   readUntil, refreshThenChange, runsOf, savedFixture, saveIrisModel, saveSkipUniqueModel, saveTestModel, taskBarEntry,
-  twoSpeciesIris, unbalancedIris, valuesOf, XGBOOST_FIELDS} from './test-data';
+  twoSpeciesIris, unbalancedIris, valuesOf, WINE, XGBOOST_FIELDS} from './test-data';
 
 const WAIT_MS = 5000;
 const TIMEOUT = 60000;
@@ -179,9 +179,15 @@ function expectOptionsInRow(input: DG.InputBase): void {
 async function expectApplied(dialog: DG.Dialog, table: DG.DataFrame, modelId: string): Promise<void> {
   await awaitCheck(() => !dialog.root.isConnected, 'The dialog stays open', WAIT_MS);
   await awaitCheck(() => table.col('Species (predicted)') !== null, 'No prediction column', WAIT_MS);
-  expect(await readUntil(() => forgeDb.applications.query().where('model_id', '=', modelId).count(),
-    (count) => count > 0), 1);
+  expect(await recordedApplications(modelId), 1);
 }
+
+/** The count of [modelId]'s applications once one is recorded, or after 5 s. */
+const recordedApplications = (modelId: string) =>
+  readUntil(() => forgeDb.applications.query().where('model_id', '=', modelId).count(), (count) => count > 0);
+
+/** Waits (errors swallowed) for the application a dialog started, so that deleting [modelId] leaves no row behind. */
+const applicationSettled = (modelId: string) => recordedApplications(modelId).catch(() => {});
 
 /** The texts of the options of the choice input captioned [caption] in [dialog], in list order. */
 const optionsOf = (dialog: DG.Dialog, caption: string) =>
@@ -448,7 +454,7 @@ category('UI', () => {
   }, {timeout: TIMEOUT});
 
   test('a change during a training supersedes it without a run row', async () => {
-    const wine = await grok.data.files.openTable('System:DemoFiles/winequality.csv');
+    const wine = await grok.data.files.openTable(WINE);
     wine.name = `forge-test-wine-${Date.now()}`;
     const view = await TrainView.create(wine);
     grok.shell.addView(view);
@@ -1331,7 +1337,7 @@ category('UI: Results', () => {
   }, {timeout: TIMEOUT});
 
   test('winequality: the regression rows, Statistics and the method\'s own views', async () => {
-    const wine = await openDemoTable('System:DemoFiles/winequality.csv', 'wine');
+    const wine = await openDemoTable(WINE, 'wine');
     const view = await openTrainView(wine);
     try {
       view.targetInput.value = wine.getCol('quality');
@@ -1857,15 +1863,19 @@ category('UI: Apply dialog', () => {
     const iris = await openIris();
     const {id} = await saveIrisModel(iris);
     let opened: DG.Dialog | undefined;
+    let applying = false;
     try {
       const dialog = (await applyModelDialog({table: iris, modelId: id})).show();
       opened = dialog;
       const ok = dialog.getButton('OK');
       await awaitCheck(() => !isDisabled(ok), 'OK stays disabled', WAIT_MS);
+      applying = true;
       ok.click();
       await expectApplied(dialog, iris, id);
     } finally {
       opened?.close();
+      if (applying)
+        await applicationSettled(id);
       await deleteModel(id);
     }
   }, {timeout: TIMEOUT});
@@ -2048,6 +2058,7 @@ category('UI: Apply dialog', () => {
     const iris = await openIris();
     const {id} = await saveIrisModel(iris);
     let opened: DG.Dialog | undefined;
+    let applying = false;
     try {
       const dialog = (await applyModelDialog({table: iris, modelId: id})).show();
       opened = dialog;
@@ -2068,10 +2079,13 @@ category('UI: Apply dialog', () => {
 
       iris.columns.add(sepalWidth);
       await awaitCheck(() => !isDisabled(ok), 'OK stays disabled with the column back', WAIT_MS);
+      applying = true;
       pressEnter(dialog, 'Model');
       await expectApplied(dialog, iris, id);
     } finally {
       opened?.close();
+      if (applying)
+        await applicationSettled(id);
       await deleteModel(id);
     }
   }, {timeout: TIMEOUT});
@@ -2250,6 +2264,8 @@ category('UI: Catalog', () => {
     const view = await ForgeApp.create();
     grok.shell.addView(view);
     const indexOf = (modelId: string) => view.models.getCol('id').toList().indexOf(modelId);
+    // The test bundle's delete fires its own modelsChanged, which the follower _initForge started does not hear.
+    const follow = ForgeModelHandler.followChanges();
     try {
       view.models.currentRowIdx = indexOf(shownId);
       await awaitCheck(() => shows(shownId), 'The model is not the current object', WAIT_MS);
@@ -2269,6 +2285,7 @@ category('UI: Catalog', () => {
       DG.Dialog.getOpenDialogs().find((d) => d.title === 'Delete model')?.getButton('OK').click();
       await awaitCheck(() => shows(id), 'A comparison that lost a model does not show the model left', WAIT_MS);
     } finally {
+      follow.unsubscribe();
       view.close();
       const left: {id: string}[] = await forgeDb.models.query().where('id', '=', [shownId, comparedId]).select('name')
         .top(2);
@@ -2469,6 +2486,8 @@ category('UI: Catalog', () => {
   test('Edit model is prefilled and OK writes the name, description and tags', async () => {
     const name = `forge-test-model-${Date.now()}`;
     const id = await insertModelRow({name, description: 'd', tags: 'a'});
+    // The test bundle's writes fire its own modelsChanged, which the follower _initForge started does not hear.
+    const follow = ForgeModelHandler.followChanges();
     let opened: DG.Dialog | undefined;
     try {
       const model = await forgeDb.models.get(id);
@@ -2499,6 +2518,7 @@ category('UI: Catalog', () => {
       expect(await readUntil(shownName, (shown) => shown === `true ${name}-edited`), `true ${name}-edited`,
         'The context panel does not show the edited model');
     } finally {
+      follow.unsubscribe();
       opened?.close();
       await forgeDb.models.delete(id);
     }
@@ -2575,7 +2595,10 @@ category('UI: Catalog', () => {
       dialog.close();
     }
   });
+});
 
+// One category, split for its length.
+category('UI: Catalog', () => {
   test('the model commands', async () => {
     expectArray(MODEL_ACTIONS.map((a) => a.name), ['Apply...', 'Download']);
     expectArray(CATALOG_ACTIONS.map((a) => a.name), ['Apply...', 'Edit model...', 'Download', 'Delete model']);
@@ -2600,6 +2623,77 @@ category('UI: Catalog', () => {
         popup.remove();
       actions.remove();
     }
+  });
+
+  test('the context panel follows Forge:updateModel of its model only', async () => {
+    const stamp = Date.now();
+    const name = `forge-test-model-${stamp}-followed`;
+    const id = await insertModelRow({name, description: 'd', tags: 'a'});
+    const otherId = await insertModelRow({name: `forge-test-model-${stamp}-other`});
+    const renamed = `${name}-renamed`;
+    const details = () => titleName(document, renamed)?.closest('.d4-accordion')?.textContent ?? '';
+    try {
+      grok.shell.setCurrentObject(ForgeModelHandler.rowOf(await forgeDb.models.get(id)), false, true);
+      await awaitCheck(() => titleName(document, name) !== undefined, 'The context panel does not show the model',
+        WAIT_MS);
+      const title = titleName(document, name);
+      await grok.functions.call('Forge:updateModel', {model: otherId, description: 'other'});
+      await delay(1500);
+      expect(title?.isConnected, true, 'Another model\'s change rebuilt the context panel');
+      await grok.functions.call('Forge:updateModel', {model: id, name: renamed, description: 'forge-test-edited',
+        tags: 'b'});
+      await awaitCheck(() => details().includes('forge-test-edited'), `The Details do not follow: ${details()}`,
+        WAIT_MS);
+      const shown: unknown = grok.shell.o;
+      expect(shown instanceof DG.DomainRow && shown.id === id && shown.values.tags === 'b', true,
+        `The context panel shows ${shown}`);
+    } finally {
+      grok.shell.setCurrentObject(null, false, true);
+      await forgeDb.models.delete(id);
+      await forgeDb.models.delete(otherId);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('the context panel leaves the model Forge:deleteModel deletes', async () => {
+    const name = `forge-test-model-${Date.now()}-gone`;
+    const id = await insertModelRow({name});
+    try {
+      grok.shell.setCurrentObject(ForgeModelHandler.rowOf(await forgeDb.models.get(id)), false, true);
+      await awaitCheck(() => titleName(document, name) !== undefined, 'The context panel does not show the model',
+        WAIT_MS);
+      await grok.functions.call('Forge:deleteModel', {model: id});
+      await awaitCheck(() => !shows(id) && titleName(document, name) === undefined,
+        'The context panel keeps the deleted model', WAIT_MS);
+    } finally {
+      if (await forgeDb.models.query().where('id', '=', id).select('name').first() !== null)
+        await forgeDb.models.delete(id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('openShareDialog opens the platform\'s Share dialog of the model and returns', async () => {
+    const name = `forge-test-model-${Date.now()}-share`;
+    const id = await insertModelRow({name});
+    const shareDialog = () => DG.Dialog.getOpenDialogs().find((d) => d.title.includes(name));
+    try {
+      await openShareDialog(id);
+      await awaitCheck(() => shareDialog() !== undefined, 'No Share dialog of the model', WAIT_MS);
+      expect(shareDialog()?.title.startsWith('Share'), true, shareDialog()?.title);
+    } finally {
+      shareDialog()?.root.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', keyCode: 27, bubbles: true}));
+      const isClosed = await awaitCheck(() => shareDialog() === undefined, '', WAIT_MS).then(() => true, () => false);
+      shareDialog()?.close();
+      await forgeDb.models.delete(id);
+      expect(isClosed, true, 'Escape does not close the Share dialog');
+    }
+  });
+
+  test('Forge:shareModel refuses a missing model without a dialog', async () => {
+    const dialogCount = DG.Dialog.getOpenDialogs().length;
+    const error = await grok.functions.call('Forge:shareModel', {model: 'forge-test-none'})
+      .then(() => null, (e: unknown) => e);
+    expect(errorMessage(error).includes('No Forge model \'forge-test-none\' is available to you.'), true,
+      String(error));
+    expect(DG.Dialog.getOpenDialogs().length, dialogCount, 'A dialog opened');
   });
 });
 
@@ -2747,7 +2841,7 @@ category('UI: Table panel', () => {
 
   test('the panel function\'s pane shows the built-in tooltip on a name, with several tables open', async () => {
     const {name, iris} = paneFixture();
-    const tables = [iris, await openDemog(), await openDemoTable('System:DemoFiles/winequality.csv', 'wine'),
+    const tables = [iris, await openDemog(), await openDemoTable(WINE, 'wine'),
       await openDemoTable('System:DemoFiles/cars.csv', 'cars')];
     const views = tables.map((t) => grok.shell.addTableView(t));
     const widget: unknown = await DG.Func.find({package: 'Forge', name: 'tableModelsPanel'})[0].apply({table: iris});

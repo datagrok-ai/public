@@ -1,12 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from '../columns';
 import {ModelRow} from '../generated/db';
 import {METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricFinding, metricFindings, MetricId, MetricValues, Split}
   from '../metrics/metrics';
 import {preparationOptionsOf} from '../preparation/preparation-options';
 import {MetricsRecord, metricsRecordOf} from '../training/train-model';
-import {numberColumn, readOnlyGrid, textColumn} from './data-grid';
+import {numberColumn, readOnlyGrid} from './data-grid';
 import {reportError} from './report-error';
 import {bulletList} from './rich-tooltip';
 

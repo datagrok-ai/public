@@ -8,30 +8,50 @@ import {applyAndRecord, ApplyRequest, DEFAULT_BATCH_SIZE, loadModel} from '../ap
 import {exactMapping} from '../apply/column-matching';
 import {applicableTables, modelsFor} from '../catalog/applicable-tables';
 import {compareFormFields, compareModels, CompareModelRow} from '../catalog/compare-models';
+import {runGetModel} from '../catalog/get-model';
+import {ListModelsInput, runListModels} from '../catalog/list-models';
 import {modelActivity} from '../catalog/model-activity';
-import {updateModelInfo} from '../catalog/model-edit';
+import {runUpdateModel, updateModelInfo} from '../catalog/model-edit';
 import {readModelFile} from '../catalog/model-file';
 import {PANEL_PREDICTED_BY, PREDICTION_TAG} from '../constants';
-import {ForgeError} from '../forge-error';
 import {forgeDb} from '../generated/db';
-import {tagsOf} from '../storage/model-fields';
+import {metricFindings} from '../metrics/metrics';
+import {NO_NAME, tagsOf, tagsText} from '../storage/model-fields';
 import {deleteModel, modelsChanged} from '../storage/model-store';
 import {ForgeApp} from '../ui/forge-app';
 import {comparisonForms, hasFormsViewer, ModelComparison, NO_FORMS} from '../ui/model-comparison';
 import {ForgeModelHandler, forgeModelHandler} from '../ui/model-handler';
 import {isForgePrediction, predictedByPane} from '../ui/prediction-column-panel';
-import {trainModel} from '../training/train-model';
-import {columnsOf, insertModelRow, MEASUREMENTS, openIris, PREDICT_PROBABILITY, requestOf, savedFixture,
-  saveIrisModel, twoSpeciesIris} from './test-data';
+import {runTrainModel} from '../training/train-api';
+import {metricsRecordOf, trainModel} from '../training/train-model';
+import {columnsOf, deleteModelsNamed, deleteRunsOf, expectMetrics, failsWith, insertModelRow, MEASUREMENTS,
+  openDemoTable, openIris, PREDICT_PROBABILITY, requestOf, savedFixture, saveIrisModel, twoSpeciesIris, WINE}
+  from './test-data';
 
 const TIMEOUT = 90000;
 const WAIT_MS = 10000;
 const IRIS_ROW = {features: {columns: MEASUREMENTS.map((name) => ({name, type: DG.COLUMN_TYPE.FLOAT}))}};
 
+const API_TAGS = ['forge-test', 'api'];
+
 interface Fixture { id: string; blob: Uint8Array; iris: DG.DataFrame }
+interface QualityFixture { id: string; name: string; table: DG.DataFrame }
 
 let fixture: Fixture | undefined;
+let quality: QualityFixture | undefined;
+let qualityName: string | undefined;
+let qualityTable: DG.DataFrame | undefined;
 const shared = () => savedFixture(fixture);
+const sharedQuality = () => savedFixture(quality);
+
+async function listedIds(input: ListModelsInput): Promise<string[]> {
+  return (await runListModels(input)).getCol('Id').toList();
+}
+
+/** Whether the listed [ids] hold the iris fixture and the quality fixture. */
+function holds(ids: string[]): [boolean, boolean] {
+  return [ids.includes(shared().id), ids.includes(sharedQuality().id)];
+}
 
 /** A regressor and a classifier as a comparison reads them. */
 function compareRows(): CompareModelRow[] {
@@ -47,13 +67,24 @@ function compareRows(): CompareModelRow[] {
 category('Catalog', () => {
   before(async () => {
     const iris = await openIris();
-    const {id, result} = await saveIrisModel(iris);
+    const {id, result} = await saveIrisModel(iris, {tags: tagsText(API_TAGS)});
     fixture = {id, blob: result.blob, iris};
+    const table = await openDemoTable(WINE, 'cat-quality');
+    qualityTable = table;
+    const name = `forge-test-cat-quality-${Date.now()}`;
+    qualityName = name;
+    const {modelId} = await runTrainModel({table, target: 'quality', name, showProgress: false});
+    if (modelId !== null)
+      quality = {id: modelId, name, table};
   });
 
   after(async () => {
     if (fixture !== undefined)
       await deleteModel(fixture.id);
+    if (qualityName !== undefined)
+      await deleteModelsNamed(qualityName);
+    if (qualityTable !== undefined)
+      await deleteRunsOf([qualityTable]);
   });
 
   test('compareModels lists the models and their metrics side by side', async () => {
@@ -80,7 +111,7 @@ category('Catalog', () => {
 
     await expectExceptionAsync(async () => {
       compareModels([regressor]);
-    }, (e) => e instanceof ForgeError && e.message === 'Select at least two models to compare.');
+    }, failsWith('Select at least two models to compare.'));
   });
 
   test('compareModels lists AUC-ROC (train) and (validation) for a predict-probability model', async () => {
@@ -163,7 +194,7 @@ category('Catalog', () => {
     await applyAndRecord(request, 'api');
     await expectExceptionAsync(async () => {
       await applyAndRecord(request, 'ui', {canceled: true, update: () => {}});
-    }, (e) => e instanceof ForgeError && e.message === 'Application was cancelled.');
+    }, failsWith('Application was cancelled.'));
 
     const activity = await modelActivity(id);
     expect(activity.count, 2);
@@ -180,8 +211,8 @@ category('Catalog', () => {
     expectArray(Array.from(file.bytes), Array.from(blob));
     expect((await readModelFile({name: 'forge-test: <a/b>', blob: row.blob})).name, 'forge-test_ _a_b_.bin');
 
-    const refusal = (name: string) => (e: unknown) => e instanceof ForgeError &&
-      e.message === `The model '${name}' has no model file in Forge's storage, so there is nothing to download.`;
+    const refusal = (name: string) =>
+      failsWith(`The model '${name}' has no model file in Forge's storage, so there is nothing to download.`);
     await expectExceptionAsync(() => readModelFile({name: 'forge-test-elsewhere',
       blob: 'file://System:DemoFiles/iris.csv'}).then(() => {}), refusal('forge-test-elsewhere'));
     await expectExceptionAsync(() => readModelFile({name: 'forge-test-no-file'}).then(() => {}),
@@ -356,6 +387,195 @@ category('Catalog', () => {
       expect(cleared == null, true, `Cleared tags are stored as '${cleared}'`);
     } finally {
       await forgeDb.models.delete(id);
+    }
+  });
+});
+
+// The API functions, on the fixtures of the category's before.
+category('Catalog', () => {
+  test('listModels lists the models newest first and filters by task, method, name and target', async () => {
+    const all = await listedIds({});
+    expectArray(holds(all), [true, true]);
+    expect(all.indexOf(sharedQuality().id) < all.indexOf(shared().id), true, 'The newer quality model is not first');
+    expectArray(holds(await listedIds({task: 'classification'})), [true, false]);
+    expect(holds(await listedIds({method: 'XGBoost'}))[0], true, 'XGBoost does not list the iris model');
+    expectArray(holds(await listedIds({name: 'CAT-QUALITY'})), [false, true]);
+    expectArray(holds(await listedIds({target: 'species'})), [true, false]);
+  }, {timeout: TIMEOUT});
+
+  test('listModels filters by tags, every one of them, in any case', async () => {
+    expectArray(holds(await listedIds({tags: 'API'})), [true, false]);
+    expectArray(holds(await listedIds({tags: 'api, zzz'})), [false, false]);
+  });
+
+  test('listModels filters by the table the model fits and limits the rows', async () => {
+    expectArray(holds(await listedIds({table: shared().iris})), [true, false]);
+    expectArray(holds(await listedIds({table: sharedQuality().table})), [false, true]);
+    expect((await runListModels({limit: 1})).rowCount, 1);
+  });
+
+  test('listModels refuses an unknown task and a limit below 1', async () => {
+    await expectExceptionAsync(() => runListModels({task: 'x'}).then(() => {}),
+      failsWith('The task must be regression or classification.'));
+    await expectExceptionAsync(() => runListModels({limit: 0}).then(() => {}),
+      failsWith('The limit must be a whole number of at least 1.'));
+  });
+
+  test('listModels gives the columns of a model and its validation metrics', async () => {
+    const {id} = shared();
+    const df = await runListModels({tags: 'api'});
+    expect(df.name, 'Forge models');
+    expectArray(df.columns.names().slice(0, 12), ['Id', 'Name', 'Description', 'Method', 'Task', 'Target',
+      'Features', 'Training rows', 'Data storage', 'Tags', 'Author', 'Created']);
+    expect(df.columns.names().some((name) => name.endsWith(' (train)')), false, df.columns.names().join(', '));
+    const row = df.getCol('Id').toList().indexOf(id);
+    const stored = metricsRecordOf((await forgeDb.models.get(id)).metrics);
+    expectFloat(df.get('Accuracy (validation)', row), stored?.validation.accuracy ?? NaN, 1e-6);
+    expect(df.get('Features', row), MEASUREMENTS.join(', '));
+    expect(df.get('Author', row), DG.User.current().login);
+    expect(df.get('Tags', row), 'forge-test, api');
+    expect(df.get('Method', row), 'XGBoost');
+    expect(df.get('Training rows', row), 150);
+    expect(df.get('Data storage', row), 'none');
+  });
+
+  test('getModel by id and by name gives everything Forge keeps about the model', async () => {
+    const {id, iris} = shared();
+    const row = await forgeDb.models.get(id);
+    const stored = metricsRecordOf(row.metrics);
+    if (stored === null)
+      throw new Error('The fixture has no metrics');
+    for (const idOrName of [id, row.name]) {
+      const details = await runGetModel(idOrName, [iris]);
+      expect(details.id, id);
+      expect(details.version, row.version);
+      expect(details.name, row.name);
+      expectArray(details.tags, API_TAGS);
+      expect(details.method, 'XGBoost');
+      expect(details.package, 'Eda');
+      expect(details.task, 'classification');
+      expect(details.target, 'Species');
+      expect(details.targetType, DG.COLUMN_TYPE.STRING);
+      expectArray([...details.classes ?? []].sort(), ['setosa', 'versicolor', 'virginica']);
+      expectArray(details.features, MEASUREMENTS);
+      expectArray(MEASUREMENTS.map((name) => details.featureTypes[name]), MEASUREMENTS.map(() => DG.COLUMN_TYPE.FLOAT));
+      expectMetrics(details.metrics?.train ?? {}, stored.train, 1e-9);
+      expectMetrics(details.metrics?.validation ?? {}, stored.validation, 1e-9);
+      expectArray(details.findings.map((f) => f.text), metricFindings(stored).map((f) => f.text));
+      expect(details.storage.mode, 'none');
+      expect(details.storage.source === undefined && details.storage.tableId === undefined, true,
+        JSON.stringify(details.storage));
+      expect(details.dataset.rows, 150);
+      expect(details.hasModelFile, true);
+      expect(details.keepsTrainingRows, false);
+      expect(details.author, DG.User.current().login);
+      expect(dayjs(details.created).isSame(row.created_on) && dayjs(details.updated).isSame(row.updated_on), true,
+        `${details.created}, ${details.updated}`);
+      expect(details.applicableTo.includes(iris.name), true, details.applicableTo.join(', '));
+    }
+    expect((await runGetModel(id, [])).applicableTo.length, 0);
+  });
+
+  test('getModel counts the applications and gives the last run', async () => {
+    const {id, table} = sharedQuality();
+    const before = await runGetModel(id, []);
+    expect(before.lastRun === null, true, JSON.stringify(before.lastRun));
+    expect(before.applications, 0);
+    const model = await loadModel(id);
+    const applied = table.clone();
+    await applyAndRecord({model, table: applied, mapping: exactMapping(model.features, applied),
+      batchSize: DEFAULT_BATCH_SIZE, missingValues: {mode: 'skip'}}, 'api');
+    const after = await runGetModel(id, []);
+    expect(after.applications, 1);
+    expect(after.lastRun?.status, 'completed');
+    expect(typeof after.lastRun?.when === 'string' && dayjs(after.lastRun.when).isValid(), true);
+  }, {timeout: TIMEOUT});
+
+  test('getModel of a model without a file, and of a missing model', async () => {
+    const id = await insertModelRow({name: `forge-test-model-${Date.now()}`});
+    try {
+      const details = await runGetModel(id, []);
+      expect(details.hasModelFile, false);
+      expect(details.metrics === null, true, JSON.stringify(details.metrics));
+      expect(details.findings.length, 0);
+    } finally {
+      await forgeDb.models.delete(id);
+    }
+    await expectExceptionAsync(() => runGetModel('forge-test-missing', []).then(() => {}),
+      failsWith('No Forge model \'forge-test-missing\' is available to you.'));
+  });
+
+  test('updateModel renames, describes and tags a model, the rest staying', async () => {
+    const stamp = Date.now();
+    const id = await insertModelRow({name: `forge-test-model-${stamp}`, description: 'Before'});
+    let changes = 0;
+    const sub = modelsChanged.subscribe(() => changes++);
+    try {
+      const {version} = await forgeDb.models.get(id);
+      const renamed = await runUpdateModel({model: id, name: `forge-test-renamed-${stamp}`});
+      expect(renamed.id, id);
+      expect(renamed.name, `forge-test-renamed-${stamp}`);
+      expect(renamed.description, 'Before');
+      expect(renamed.version > version, true, `${renamed.version} after ${version}`);
+      expect((await forgeDb.models.get(id)).name, `forge-test-renamed-${stamp}`);
+      expect(changes, 1);
+
+      const described = await runUpdateModel({model: `forge-test-renamed-${stamp}`, description: 'After'});
+      expect(described.name, `forge-test-renamed-${stamp}`);
+      const row = await forgeDb.models.get(id);
+      expect(row.name, `forge-test-renamed-${stamp}`);
+      expect(row.description, 'After');
+
+      expectArray((await runUpdateModel({model: id, tags: 'x, y,x'})).tags, ['x', 'y']);
+      expect((await forgeDb.models.get(id)).tags, 'x, y');
+      expectArray((await runUpdateModel({model: id, tags: ''})).tags, []);
+      const cleared = (await forgeDb.models.get(id)).tags;
+      expect(cleared == null, true, `Cleared tags are stored as '${cleared}'`);
+    } finally {
+      sub.unsubscribe();
+      await forgeDb.models.delete(id);
+    }
+  });
+
+  test('updateModel refuses a blank name and a call that changes nothing', async () => {
+    const id = await insertModelRow({name: `forge-test-model-${Date.now()}`});
+    try {
+      await expectExceptionAsync(() => runUpdateModel({model: id, name: ' '}).then(() => {}),
+        failsWith(NO_NAME));
+      await expectExceptionAsync(() => runUpdateModel({model: id}).then(() => {}),
+        failsWith('Give a name, a description or tags to change.'));
+    } finally {
+      await forgeDb.models.delete(id);
+    }
+  });
+
+  test('Forge:listModels, getModel and updateModel are registered and callable', async () => {
+    const signature = (name: string) => {
+      const func = DG.Func.find({package: 'Forge', name})[0];
+      return [...(func?.inputs ?? []).map((p) => `${p.name}: ${p.propertyType}`),
+        ...(func?.outputs ?? []).map((p) => `-> ${p.propertyType}`)];
+    };
+    expectArray(signature('listModels'), ['name: string', 'target: string', 'task: string', 'method: string',
+      'tags: string', 'table: dataframe', 'limit: int', '-> dataframe']);
+    expectArray(signature('getModel'), ['model: string', '-> object']);
+    expectArray(signature('updateModel'), ['model: string', 'name: string', 'description: string', 'tags: string',
+      '-> object']);
+
+    const {id} = shared();
+    const models: unknown = await grok.functions.call('Forge:listModels', {});
+    expect(models instanceof DG.DataFrame && models.col('Id') !== null, true, `Result: ${models}`);
+    const details: unknown = await grok.functions.call('Forge:getModel', {model: id});
+    expect(typeof details === 'object' && details !== null && 'id' in details && details.id === id, true,
+      JSON.stringify(details));
+    const stamp = Date.now();
+    const edited = await insertModelRow({name: `forge-test-model-${stamp}`});
+    try {
+      const updated: unknown = await grok.functions.call('Forge:updateModel',
+        {model: edited, name: `forge-test-called-${stamp}`});
+      expect(typeof updated === 'object' && updated !== null && 'name' in updated &&
+        updated.name === `forge-test-called-${stamp}`, true, JSON.stringify(updated));
+    } finally {
+      await forgeDb.models.delete(edited);
     }
   });
 });

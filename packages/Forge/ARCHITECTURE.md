@@ -37,7 +37,7 @@ an EMS schema owned by Forge, and the UI on top.
 ## Components and data flow
 
 ```
-package.ts ──> ui/forge-app.ts ───> engines/                     (DG.Func registry)
+package.ts ──> ui/forge-app.ts ───> engines/                     (DG.Func registry, methodsFrame)
            │                    ├─> storage/, generated/db.ts    (catalog query, modelsChanged)
            │                    ├─> catalog/                     (Applicable to, Compare)
            │                    └─> ui/model-actions.ts, ui/model-handler.ts, ui/model-comparison.ts,
@@ -54,57 +54,75 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
            │                    └─> storage/  ──> generated/db.ts  (grok.dapi.domains -> EMS schema forge)
            │                                  ├─> grok.dapi.files  (System:DomainFiles/forge/model)
            │                                  └─> grok.dapi.tables (training data copies)
-           ├─> ui/apply-model-dialog.ts ──> apply/, engines/, preparation/, generated/db.ts (model query)
+           ├─> ui/apply-model-dialog.ts ──> apply/, engines/, preparation/, generated/db.ts (model query),
+           │                                constants.ts (MAX_MODELS)
            ├─> apply/ (runApplyModel) ──> preparation/, engines/, storage/ (findModelRow, blob path),
            │                              generated/db.ts, grok.dapi.files (blob read)
            ├─> training/train-api.ts (runTrainModel) ──> training/, preparation/, engines/,
            │                                             storage/ (saveTrainedModel, the run record)
            ├─> storage/model-store.ts (runDeleteModel: findModelRow, then deleteModelRow)
+           ├─> training/train-api.ts (runListMethods) ──> engines/method-list.ts (methodList), training/
+           ├─> catalog/list-models.ts (runListModels) ──> generated/db.ts, catalog/ (applicableTables, metricColumns),
+           │                                              apply/ (featureSchemasOf), grok.dapi (entities)
+           ├─> catalog/get-model.ts (runGetModel) ──> storage/ (findModelRow, ownBlob, dataset-ref), catalog/
+           │                                          (applicableTables, loginsOf, model-activity), apply/, metrics/,
+           │                                          training/
+           ├─> catalog/model-edit.ts (runUpdateModel) ──> storage/ (findModelRow, modelsChanged), generated/db.ts
+           ├─> training/evaluate-api.ts (runEvaluateModel) ──> training/ (evaluation.ts, insights.ts, metricsRecordOf),
+           │                                                  apply/ (loadedModelOf, apiMapping), engines/,
+           │                                                  storage/ (findModelRow, dataset-ref)
            ├─> ui/model-handler.ts ──> ui/rich-tooltip.ts (the tooltip), generated/db.ts (features read once),
            │                       apply/ (featureSchemasOf), catalog/ (featureFit),
-           │                       storage/model-fields.ts (tagsOf), ui/save-model-dialog.ts (STORAGE_CAPTIONS)
-           │                       └─> ui/model-panes.ts (modelAccordion, modelIcon, userOf) ──>
+           │                       storage/model-fields.ts (tagsOf), storage/model-store.ts (modelsChanged, followed),
+           │                       ui/save-model-dialog.ts (STORAGE_CAPTIONS)
+           │                       └─> ui/model-panes.ts (modelAccordion, modelIcon, userOf, isShownVersion) ──>
            │                                                  apply/application-store.ts (applicationRecorded),
            │                                                  catalog/, generated/db.ts, grok.dapi (users,
            │                                                  entities, permissions), DG.DomainObjectHandler
            │                                                  (audit, sharing), ui/data-grid.ts,
            │                                                  ui/save-model-dialog.ts (writeModelInfo),
            │                                                  ui/metrics-table.ts (MetricsTable, storedSummary),
-           │                                                  ui/evaluation-view.ts ──> training/evaluation.ts, apply/,
-           │                                                  catalog/ (applicableTables), engines/,
-           │                                                  storage/dataset-ref.ts, ui/metrics-table.ts,
-           │                                                  ui/results-pane.ts, ui/button-gate.ts
+           │                                                  ui/evaluation-view.ts ──> training/evaluation.ts
+           │                                                  (storedTrainingTable), apply/, catalog/ (applicableTables),
+           │                                                  engines/, ui/metrics-table.ts, ui/results-pane.ts,
+           │                                                  ui/button-gate.ts
            ├─> ui/model-actions.ts ──> catalog/, storage/, ui/model-handler.ts, ui/apply-model-dialog.ts,
-           │                           ui/edit-model-dialog.ts
+           │                           ui/edit-model-dialog.ts, DG.DomainObjectHandler (openShareDialog: shareRow)
            ├─> ui/model-comparison.ts ──> catalog/, ui/data-grid.ts, ui/model-panes.ts (modelIcon),
            │                              PowerGrid's Forms viewer
            ├─> ui/prediction-column-panel.ts ──> ui/model-handler.ts (the card)
-           └─> ui/table-models-panel.ts ──> catalog/ (modelsFor, model-activity), generated/db.ts,
+           └─> ui/table-models-panel.ts ──> catalog/ (modelsFor, model-activity), constants.ts (MAX_MODELS), generated/db.ts,
                                             storage/model-fields.ts (tagsOf), ui/model-handler.ts,
-                                            ui/model-panes.ts (modelFacts), ui/apply-model-dialog.ts (MAX_MODELS, openApplyDialog),
+                                            ui/model-panes.ts (modelFacts), ui/apply-model-dialog.ts (openApplyDialog),
                                             ui/train-view.ts
 ```
 
 - `package.ts` holds the annotated functions only: the app `forgeApp` (shown as "Forge", `Browse > Apps`),
   `forgeModels` (`ML | Forge | Models`), `forgeTrain` (`ML | Forge | Train...`), `forgeApply` (`ML | Forge |
-  Apply...`), the API functions `applyModel`, `trainModel` and `deleteModel`, the autostart `_initForge` (registers
-  the model handler with the model commands, and the comparison handler), `isPredictionColumn`, the column panel
+  Apply...`), the API functions `applyModel`, `trainModel`, `deleteModel`, `listMethods`, `listModels`, `getModel`,
+  `updateModel`, `evaluateModel` and `shareModel`, the autostart `_initForge` (registers
+  the model handler with the model commands and the context panel's follower, and the comparison handler),
+  `isPredictionColumn`, the column panel
   **Predicted by** (function `predictedByPanel`) and the table panel **Forge models** (function `tableModelsPanel`).
   They delegate to `ForgeApp`, `TrainView`, `openApplyDialog`, `runApplyModel`, `runTrainModel`, `runDeleteModel`,
-  `ForgeModelHandler.registerOnce`, `registerModelActions`,
+  `runListMethods`, `runListModels`, `runGetModel` (with `grok.shell.tables`), `runUpdateModel`, `runEvaluateModel`,
+  `openShareDialog`, `ForgeModelHandler.registerOnce`, `registerModelActions`, `ForgeModelHandler.followChanges`,
   `ModelComparisonHandler.registerOnce`, `isForgePrediction`, `predictedByPane` and `tableModelsPane`. `_initForge` reads the registered handlers' names once
   (`DG.ObjectHandler.list()`) and both `registerOnce` calls skip a handler already there, so a second `_initForge` (or
-  the test bundle) registers nothing twice; the model commands are registered only with a newly registered handler.
+  the test bundle) registers nothing twice; the model commands and the follower are set up only with a newly
+  registered handler.
 - Every table of data in the UI is `readOnlyGrid` (`ui/data-grid.ts`): `DG.Viewer.grid` without editing, row header,
   current-row indicator and new-row icon, as wide as its host and as tall as its rows (up to 15,
   then it scrolls: an inline height of `(rows + 1) * rowHeight + 2` px), with tooltips from `{headers, cells}` (by column name; the cells
   as functions of the row) through `onCellTooltip` (`gridTooltip`; a cell without its own text shows its value).
-  `textColumn` builds the grids' string columns, `numberColumn` their float columns (format `0.000`).
-- `ForgeApp` lists the methods (section **Methods**, the grid `methodsGrid`: Method, Package, Method type, Roles,
+  `numberColumn` builds the grids' float columns (format `0.000`); `textColumn` and `boolColumn` (`columns.ts`, not UI,
+  also used by `catalog/`, `engines/method-list.ts` and `training/train-api.ts` for the API lists) their string and bool columns.
+- `ForgeApp` lists the methods (section **Methods**, the grid `methodsGrid` over `methodsFrame` of every discovered
+  method, `engines/method-list.ts`, shared with `Forge:listMethods`: Method, Package, Method type, Roles,
   Hyperparameters; the Method type cell's tooltip says what a function or a script method is, the Roles cell's gives
   each role's meaning, the Hyperparameters cell's each input's description) and the catalog. Its `aiDescription` (the
   view's briefing for the platform's AI assistant) describes both sections, **Applicable to**, the context panel and
-  the icons.
+  the icons, and names the API functions and `agents/skills.md` (see "Grokky knowledge (agents/)").
   `ForgeApp.loadModels()` queries the catalog columns and sets the captions; the refresh icon reloads the grid. The
   play icon (**Apply model**) and the trash icon (**Delete model**) are disabled while the catalog has no current row
   (re-evaluated on current-row change and on every reload; the subscriptions to the current frame are replaced on
@@ -130,10 +148,10 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   `property_panel.dart:116-118`); `detach()` outdates a read still running. A reload (the refresh icon or
   `modelsChanged`) replaces the grid's frame, so `refresh()` reads the current row and the selected rows when the new
   frame arrives and finds them again by id (a sequence number drops an older reload that ends later); a deleted row is
-  simply gone. The panel keeps the object it shows, unless that is a model or a comparison with a model the reload no
-  longer has (`isGone`, a delete): then it shows the selection again by the rule above (once: a restored selection
-  does it through its change event), and is emptied rather than left on the deleted model; **Edit model** sets it
-  again itself (see "Model commands"). Right-clicking a row adds `CATALOG_ACTIONS` (`addModelItems`, with
+  simply gone. The panel keeps the object it shows, unless that is a comparison with a model the reload no longer has
+  (`isStaleComparison`, a delete): then it shows the selection again by the rule above (once: a restored selection does it
+  through its change event), and is emptied rather than left on the comparison. A single model the panel shows follows
+  its changes and its delete by itself, catalog or not (`followChanges`, see "Model handler and panels"). Right-clicking a row adds `CATALOG_ACTIONS` (`addModelItems`, with
   **Applicable to** as the preferred table) and, with two or more selected rows, **Compare** to the grid's menu: the
   grid's menu is its own, so the platform's model commands are not in it. The header holds the **Models** title and
   the icons on the title's baseline (`forge-pane-header` in `css/forge.css`), the icons in `--blue-1`, the blue of an
@@ -144,7 +162,8 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   panel title) for a **Name** cell; any other cell gets null and keeps the grid's own tooltip.
 - `modelsChanged` (an rxjs `Subject` in `storage/model-store.ts`) fires after every successful `saveModel`,
   `updateModelInfo` and `deleteModel`, whoever calls them; every open `ForgeApp` subscribes in `this.subs` and reloads
-  itself, 300 ms after the last of a burst (tag chips written one by one reload it once).
+  itself, 300 ms after the last of a burst (tag chips written one by one reload it once); the context panel follows it
+  too (`ForgeModelHandler.followChanges`, subscribed once by `_initForge`).
 - `TrainView` (tab **Predictive model** with the core's model icon, `ui.iconSvg('model')` returned by `getIcon()`)
   holds the form, the live validation, the live training and the results. `TrainView.openFor(table)` opens it on a
   table (the boundary of the table pane's **Train**); `TrainView.open()` (`ML | Forge | Train...`) calls it with the
@@ -222,8 +241,9 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
 - Logic folders (`engines/`, `preparation/`, `training/`, `metrics/`, `storage/`, `apply/`, `catalog/`) work without
   the DOM, throw instead of catching, and never import `ui/`. The same logic serves the UI, API functions and tests. The
   catches in them are `applyAndRecord` and `runTrainModel`, which record a failed or cancelled application or training
-  and rethrow, `saveTrainedModel`, which deletes the copy of a failed save and rethrows, and `TrainingQueue`, whose
-  answer is the outcome with the error in it. `catalog/` (see
+  and rethrow, `saveTrainedModel`, which deletes the copy of a failed save and rethrows, `runEvaluateModel`, which
+  turns an error after a cancel into `Evaluation was cancelled.`, and `TrainingQueue`, whose answer is the outcome
+  with the error in it. `catalog/` (see
   "Catalog logic") builds on `apply/`, `storage/`, `metrics/` and `training/`.
 
 ## Training pipeline
@@ -577,7 +597,8 @@ kept rows), `values` being its metrics:
   is not finite is skipped): `The predictions' statistics deviate significantly from the actual ones.`, `items`
   `variance: predicted 0.214, actual 0.762` per such statistic, panel `statistics`.
 
-The metric findings are not part of `resultInsights`: the caller adds `metricInsights(metrics)`, the findings as
+The metric findings are not part of `resultInsights`: `evaluationInsights(result, stored)` (the Results pane and
+`Forge:evaluateModel`) adds `metricInsights(metrics)` of the stored metrics after them, the findings as
 insights with panel `metrics`: each `threshold` finding as it is (its text and detail), and all `mismatch` findings in
 one `The model may be overfitting.` with `items` `<label>: train 0.912, validation 0.405` per metric (the grid's cell
 tooltips keep the finding's own text per metric).
@@ -606,8 +627,8 @@ host (the two panels while there is no result) and the rows host (`forge-results
   (labels or values; the Train view passes `trainPredictionOf(result)`), `score` (Predict probability), `keptRows`,
   `positiveClass`, `cutoff` (Predict probability: the Train view's `binaryClassificationThreshold` of the result, the
   evaluation's of the model), `blob`, `summary`. The grid is the `MetricsTable` in place at once (see "Components");
-  the result insights are `resultInsights` of `summary.evaluation?.values ?? summary.metrics.train` and then
-  `metricInsights`.
+  the result insights are `evaluationInsights` of `summary.evaluation?.values ?? summary.metrics.train` and
+  `summary.metrics`.
   Then the method's `visualize` is awaited, and the rows are mounted in one step: the previous rows stay until the
   whole result is ready, and a show that a newer show or hint outdated (a `version` counter) detaches the views it got
   and mounts nothing. A result of the same data keeps the viewers (see "Keeping the viewers" below); the method's own
@@ -719,8 +740,9 @@ goes on (the shown result stays).
 ## Run Evaluation
 
 `ui/evaluation-view.ts`. `runEvaluation(model)` (the Performance button; a UI boundary, `reportError`) loads the model
-(`loadedModelOf`) and finds data with known targets: a stored reference (`storedDatasetRef` -> `openDatasetRef`), else
-the uploaded copy (`grok.dapi.tables.getTable(dataset_table_id)`); neither adds the table to the workspace. Such a
+(`loadedModelOf`) and finds data with known targets with `storedTrainingTable` (`training/evaluation.ts`, shared with
+`Forge:evaluateModel`): a stored reference (`storedDatasetRef` -> `openDatasetRef`), else the uploaded copy
+(`grok.dapi.tables.getTable(dataset_table_id)`); neither adds the table to the workspace. Such a
 table is evaluated on its exact column names (`exactMapping`) and its column `target_name` (none: `The data source has
 no column '<target>' the model predicts. Choose another table.`). A model that keeps neither gets
 `evaluateModelDialog(model, loaded, tables)` over the open tables it fits (`applicableTables`; none: `No open table has
@@ -837,8 +859,8 @@ training: the classification metrics of the labels with the positive class (the 
 `auc` of the scores (`probabilityValues`, shared with training), the scores coming back as `score`; any other model
 uses `metricsOf(taskOf(target), ...)` (`taskOf`: regression for a numerical target). A
 row without an actual value is left out by the metrics. The `EvaluationResult` holds the columns, the target and the
-prediction of the kept rows, `keptRows`, `skippedRows`, `rowCount` (the kept rows), the metric `values` and the blob.
-Nothing is added to the table and no application is recorded.
+prediction of the kept rows, `keptRows`, `skippedRows`, `rowCount` (the kept rows), the metric `values`, the blob
+and `positiveClass` (the request's, else the options'). Nothing is added to the table and no application is recorded.
 
 No step writes into the table's columns: the engines read their inputs and return new frames, the replay builds new
 lists with Forge's own one-hot columns, and the imputer only gets copies of the columns it fills. The pipeline builds
@@ -890,7 +912,7 @@ a feature without one accepts any column of the right kind.
 table, else the first open one) and of the table pane's run icon (the pane's table, also as `preferredTable`);
 without a table it says "Open a table first.". It calls `applyModelDialog({table,
 modelId?, switchToTable?, preferredTable?})`, which reads up to 10000 visible model rows once (`MAX_MODELS` of
-`ui/apply-model-dialog.ts`), only the
+`constants.ts`), only the
 columns applying needs (`APPLY_COLUMNS`; no models: "No Forge models yet. Train and save one with ML | Forge |
 Train... first.") and discovers the engines once. With a `modelId` among them, the dialog opens on `presetTable`:
 `preferredTable` (the catalog's **Applicable to**) while it is open, else the current table if the model fits it
@@ -935,8 +957,9 @@ skipped) and, from the catalog, switches to the table's view. Errors go to `repo
 ## `Forge:applyModel`
 
 `applyModel(model, table, columnNamesMap?, showProgress = true) -> table`, for scripts and other packages, never opens
-a dialog: `runApplyModel` resolves the model by id or name, maps the features by exact names, overlays the given
-`columnNamesMap` pairs, and refuses the mapping problems before any work, the unmapped features in one sentence first
+a dialog: `runApplyModel` resolves the model by id or name and, in `apiMapping` (shared with `Forge:evaluateModel`),
+maps the features by exact names, overlays the given `columnNamesMap` pairs, and refuses the mapping problems before
+any work, the unmapped features in one sentence first
 ("The table has no column 'a' the model needs. Map it in columnNamesMap." / "The table has no columns 'a', 'b' the
 model needs. Map them in columnNamesMap."). Rows with missing values are skipped; batches of 10000 rows; with
 `showProgress` a cancellable task-bar indicator "Predicting <target>". The application is recorded with `source: api`.
@@ -947,8 +970,8 @@ model needs. Map them in columnNamesMap."). Rows with missing values are skipped
 'none', showProgress = true) -> object`, for scripts, other packages and fixtures, is the Train view's pipeline
 without the view (`runTrainModel` in `training/train-api.ts`; the view and the function share, from
 `training/train-model.ts`, `trainingEngines`, `FOLDS`, `randomSeed`, `problemMessages`, `checkSelection`,
-`prepareTraining` and `trainModel`, and `defaultFeatures`, `DEFAULT_STEPS`, `defaultOneHot`, `cutoffProblem`, `NO_NAME`
-and `saveTrainedModel`):
+`prepareTraining` and `trainModel`, and `defaultFeatures`, `DEFAULT_STEPS`, `defaultOneHot`, `cutoffProblem`,
+`modelNameOf` (`NO_NAME`; the name is written trimmed) and `saveTrainedModel`):
 
 1. The target and the features by name ("The table has no column 'x'." / "The table has no columns 'a', 'b'."); without
    `features`, `defaultFeatures`.
@@ -984,6 +1007,134 @@ catalog's delete does (`deleteModel(id)` reads the row itself first): the row, i
 application rows go with the row (`onDelete: cascade`), the training runs keep their rows without the model
 (`setnull`). The server's refusal of a row the caller may not delete passes through unchanged.
 
+## `Forge:listMethods`
+
+`listMethods(table?, target?) -> dataframe` (`runListMethods` in `training/train-api.ts`, which adds the table's
+columns to `methodList` of `engines/method-list.ts`) lists the complete methods
+(the ones `trainModel` accepts) in discovery order as the frame **Methods**:
+
+1. `methodColumns` gives the app grid's five columns (Method, Package, Method type, Roles, Hyperparameters); the app
+   builds its grid from them (`methodsFrame`) over every discovered method. The frame is built at once
+   (`DG.DataFrame.fromColumns`) in the order below.
+2. **Runs on** (`server` when `isServerEngine`, else `browser`), **Keeps training rows** (`hasTrainingRows`) and
+   **Retrains live** (`isLiveUpdate`) go after Method type; **Settings** last: per method the json text of
+   `methodSettings(engine)`, one `{name, type, default?, min?, max?, choices?, description?}` per `train` input
+   (`hyperparametersOf`; `default` from `defaultHyperparameters`, a key the input does not declare is left out).
+3. With a `table`: the target column is `target` by name ("The table has no column 'x'.", as `trainModel`), by
+   default the table's last column (the Train view's default; no columns: "The table has no columns."); the features are `defaultFeatures(table, target)`.
+   Then `trainModel`'s steps without a method: `trainingEngines`, `optionsOf({})`, `checkSelection` and `engineOf`,
+   which throws the check's problems as `trainModel` does. **Applicable** is the check's `engines` (the prepared
+   columns, an engine whose check throws is not applicable), **Suggested** the one `engineOf` gives (`best`, else the
+   first applicable). Nothing is copied: the checks run on a shared frame of the prepared columns.
+
+`grok.functions.call('Forge:listMethods', {})` is accepted with the optional `dataframe` input omitted (no `nullable`
+needed); the body treats a missing `table` or an empty `target` as not given.
+
+## `Forge:listModels`
+
+`listModels(name?, target?, task?, method?, tags?, table?, limit = 100) -> dataframe` (`runListModels` in
+`catalog/list-models.ts`) lists the visible models, newest first, as the frame **Forge models**:
+
+1. A `task` other than `regression` or `classification` fails with "The task must be regression or classification.",
+   a `limit` that is not a whole number of at least 1 with "The limit must be a whole number of at least 1.". An empty
+   text counts as not given.
+2. One query of the `model` columns `LIST_COLUMNS`, newest first, at most `MAX_MODELS` (10000, the cap the Apply
+   dialog and the table pane share; at most `limit` when no browser filter below is given): `task` and `method` (the
+   `engine_name`, exact; a method no longer installed lists its saved models) filter on the server.
+3. In the browser, one pass over the rows that stops at `limit` matches: `name` is a part of the name, `target` the
+   whole target name, both ignoring case; `tags` (a comma-separated text, `tagsOf`) keeps a model that has every one
+   of them, ignoring case; `table` keeps the models that fit it (`applicableTables`; nothing is uploaded).
+4. The authors' logins come from `loginsOf`, one `grok.dapi.getEntities` read (a deleted user gives an empty cell). The columns:
+   Id, Name, Description, Method, Task, Target, Features (the feature names, comma-separated), Training rows, Data
+   storage (`none`, `reference`, `copy`), Tags (the normalized text, `tagsText`), Author, Created, then `<Metric> (validation)` for
+   every metric a listed model has (`metricColumns` of `catalog/compare-models.ts`, which the Compare view uses for
+   both splits).
+
+## `Forge:getModel`
+
+`getModel(model) -> object` (`runGetModel(idOrName, tables)` in `catalog/get-model.ts`; `package.ts` passes
+`grok.shell.tables`) reads the model as the Details, Performance and Activity panes show it, in one object
+(`ModelDetails`): `findModelRow` with every column but `legacy_id` (`GET_MODEL_COLUMNS`), then `modelActivity` and the
+author (`loginsOf`; a deleted or unknown user gives an empty `author`) together. The keys: `id`, `version`, `name`,
+`description`, `tags` (a list, `tagsOf`), `method`, `package` (the engine's namespace), `task`, `target`, `targetType`
+and `classes` (`targetSchemaOf`; null without them), `features` (in training order) and `featureTypes` (`{name: type}`)
+from one `featureSchemasOf`, `applicableTo` (the names of the open tables that fit, `applicableTables`), `hyperparameters`,
+`preparation` (`preparationOptionsOf` of `options`), `metrics` (`metricsRecordOf`, null without them), `findings`
+(`{text, detail}` of `metricFindings`, none without metrics), `seed`, `splitting`, `storage` (`mode`, with a reference
+its `source`, `datasetRefCaption`, with a copy its `tableId`), `dataset` (`name`, `rows`, `summary`: the stored
+fingerprint), `hasModelFile` (`ownBlob`), `keepsTrainingRows`, `author` (login), `created` and `updated` (ISO texts),
+`lastRun` (`{when, status}` of the newest application, null when never applied) and `applications` (the count). The
+model is resolved as for `deleteModel`: "No Forge model 'X' is available to you.", "Several models are named 'X'. Use
+the model id."
+
+## `Forge:updateModel`
+
+`updateModel(model, name?, description?, tags?) -> object` (`runUpdateModel` in `catalog/model-edit.ts`) writes what
+**Edit model...** writes, without a dialog: a `name` blank after trimming fails with "Enter a name for the model."
+(`modelNameOf`, as `trainModel`: `NO_NAME`, the name is written trimmed), a call with none of the three with "Give a name, a description or tags to
+change.", both before the model is read; `tags` is a comma-separated text that replaces the current tags (`tagsOf`;
+an empty text removes them); a field not given stays. `findModelRow` resolves the model, `updateModelInfo` writes the
+given fields without a version (the last write wins) and fires `modelsChanged`, so an open catalog reloads itself and
+a context panel showing the model shows it again (`followChanges`). It returns `{id, name, description, tags,
+version}` after the write. `Forge:deleteModel` fires it too: the panel showing the deleted model is emptied.
+
+## `Forge:evaluateModel`
+
+`evaluateModel(model, table?, target?, columnNamesMap?, showProgress = true) -> object` (`runEvaluateModel` in
+`training/evaluate-api.ts`) is Run Evaluation without the view:
+
+1. `findModelRow` reads the `EVALUATE_COLUMNS` (`APPLY_COLUMNS` plus `metrics`, `dataset_ref`, `dataset_table_id`),
+   `loadedModelOf` loads it (its refusals as for `applyModel`).
+2. The table: the given one, else `storedTrainingTable` (the reference, else the copy; not added to the workspace),
+   else "The model keeps no training data. Pass a table with the actual values."
+3. The target: the column named `target`, by default `target_name` (an empty text counts as not given); none: "The
+   table has no column 'x' with the actual values. Pass the column's name in target."
+4. The features: `apiMapping`, the mapping and the refusals of `Forge:applyModel`.
+5. `evaluateModel` with the stored positive class (it falls back to the options' one and returns the class it used
+   as `positiveClass`, which the Evaluation view reads too), under the cancellable task-bar progress
+   `Evaluating <model>` unless `showProgress` is false (the batch loop relabels it `Rows i-j of n`); an error after a
+   cancel becomes "Evaluation was cancelled.".
+
+It returns `EvaluateModelResult`: `id`, `name`, `table` (the evaluated table's name), `target`, `rowCount`,
+`skippedRows`, `positiveClass` (when there is one), `metrics` (`train` and `validation` from the stored record, `{}`
+each without one, and `evaluation`) and `insights`: `evaluationInsights` of the evaluation and the
+stored metrics, as the Evaluation view's Insights & Tips, as `{text, detail?, items?}` (no `panel`). No column is
+added and no application is recorded.
+
+## `Forge:shareModel`
+
+`shareModel(model)` (`openShareDialog` in `ui/model-actions.ts`, a UI function) resolves the model with
+`findModelRow` (a missing model rejects the call, no dialog) and opens the platform's Share dialog
+(`DG.DomainObjectHandler.shareRow` of `ForgeModelHandler.rowOf` the row), as the Sharing pane's **Share...** does. It
+does not wait for the dialog, so a caller such as the AI assistant is not held while the user fills it; a refusal of
+`shareRow` before the dialog opens is shown with `reportError`. No headless share exists: a grant on a row from JS is
+refused (see "Sharing").
+
+## Grokky knowledge (agents/)
+
+The Datagrok AI assistant (the Grokky package) runs in a container and reaches Forge only through its `datagrok_exec`
+tool: JavaScript run in the user's browser, where `grok.functions.call('Forge:<function>', ...)` runs the nine API
+functions above. Its server-side function call (`/public/v1/functions/<name>/call`) cannot run a JS package
+function, the same limit as `grok s functions run`; its function search reads the `description` of a function and of
+its inputs, which is why every API annotation describes its inputs and, for an `object` output, the result's keys (the
+generated `package-api.ts` types `object`, `map` and `list` as `any`).
+
+- `agents/package-knowledge.yaml` (the shape of the other packages' files: `packageName`, `description`, `keywords`,
+  `overview`, `apiRef`, `docsRef`) says what Forge does, where its UI is and which functions it has.
+- `agents/skills.md` is the assistant's skill: a routing table from the user's intent to a function, every signature
+  with its result shape and error sentences, `datagrok_exec` recipes and the rules (no upload unless a copy is asked
+  for, apply only a model that fits, confirm a delete, `ML | Models` is not Forge). It is self-contained: the runtime
+  reads a package's `agents/` in its clone of the public repository's `master` (`workspace/packages/Forge/agents/`)
+  and, for an installed package that is not in the clone, syncs the published flat `agents/` files from
+  `packages/published/files/<name>/<version>/<buildHash>/<buildNumber>/agents/` as `Forge-package-knowledge.yaml` and
+  `Forge-skills.md`, where `apiRef` resolves nowhere.
+- `grok publish` uploads `agents/` with the package (`.npmignore` does not exclude it); nothing in the manifest names
+  it. No package test reads the published files.
+- `ForgeApp.aiDescription`, the catalog's briefing for the assistant, names the API functions and `agents/skills.md`.
+
+`skills.md` repeats the annotations of `package.ts` and the README's "From scripts and Datagrok AI": a change of a
+function's name, inputs, result keys or error sentences updates it in the same change.
+
 ## Catalog logic
 
 `catalog/`, one function per file, for the model catalog and the model's panels:
@@ -999,7 +1150,8 @@ application rows go with the row (`onDelete: cascade`), the training runs keep t
 - `compareModels(rows)` (`compare-models.ts`): the table "Compare models", one row per model in the given order, with
   the columns Name, Description, Method, Task, Target, Training rows, Created, then `<metric> (train)` and `<metric>
   (validation)` (labels of `METRIC_LABELS`) for every metric of `METRIC_IDS` at least one of the models has; a metric
-  a model lacks is empty (stored metrics are read with `metricsRecordOf` of `training/train-model.ts`).
+  a model lacks is empty (stored metrics are read with `metricsRecordOf` of `training/train-model.ts`); `metricColumns(rows,
+  splits)` builds those columns, shared with `Forge:listModels` (validation only).
   `COMPARE_COLUMNS` are the `model` columns it reads. Fewer than two models: "Select at least two models to compare."
 - `readModelFile(row)` (`model-file.ts`): the bytes of a model's blob in Forge's own storage (`ownBlob`), named
   `<model name>.bin` with `\ / : * ? " < > |` replaced by `_`; for any other blob: "The model 'X' has no model file in
@@ -1007,7 +1159,9 @@ application rows go with the row (`onDelete: cascade`), the training runs keep t
 - `updateModelInfo(id, version, {name?, description?, tags?})` (`model-edit.ts`): writes the given fields with
   `forgeDb.models.update`; with a `version`, a row changed since is refused with the platform's
   `DomainVersionConflictError`, without one the write wins. The tags (`string[]`) are written as their column text
-  (`tagsText`; an empty list clears the column). It fires `modelsChanged` and returns the row's new version.
+  (`tagsText`; an empty list clears the column). It fires `modelsChanged` and returns the row's new version. The
+  same file holds `runUpdateModel` (`Forge:updateModel`); `list-models.ts` and `get-model.ts` hold the bodies of
+  `Forge:listModels` and `Forge:getModel`.
 
 **Tags.** `model.tags` is a `string` column with the tags joined by ", " (`tagsText` in `storage/model-fields.ts`);
 `tagsOf` splits the text on commas. Both go through `normalizedTags`: trimmed, without empty ones and repeats, in
@@ -1030,7 +1184,8 @@ on the box, as the platform's text inputs do.
 `ForgeModelHandler` (`ui/model-handler.ts`, a `DG.DomainObjectHandler` of `forge.model`, named "Forge model handler")
 renders model rows wherever the platform shows them: the catalog's context panel, the Domains view, the Browse tree
 and the **Predicted by** pane (which reads only the card's columns). The autostart function `_initForge` registers it
-once (`ForgeModelHandler.registerOnce`), together with the model commands. Its members read only the row's values; a
+once (`ForgeModelHandler.registerOnce`), together with the model commands and the context panel's follower
+(`followChanges`, below). Its members read only the row's values; a
 row made from catalog values (`ForgeModelHandler.rowOf`, through the platform's `rowFrom`, with the system dates as
 text) carries the catalog columns only. The Domains view's rows come without the json columns: the card and the
 tooltip take the count from `feature_count` and read `features` and `options` once per model and session
@@ -1066,11 +1221,12 @@ tooltip take the count from `feature_count` and read `features` and `options` on
   its children to their content, where a grid's own `width: 100%` resolves to the grid's width, so without it the
   grids stay narrower than the panel; with it they span the panel and follow its resizing:
 
+
 | Pane | Content |
 |---|---|
 | **Details** (open) | The description, then **Author**, **Created**, **Updated**, **Table** (`<table> (<rows> rows)`), **Data storage** (`None` / `Reference` / `Copy`), **Data source** (a reference: its `path`, else its query `name`, else `a script`), **Data copy** (a copy: `ui.render` of the uploaded `TableInfo`, `missing` when `grok.dapi.tables.find` gives none), **Last run** (the newest application's time, with ` (failed)` / ` (cancelled)` when it did not complete; `Never` when none), **Applications** (the count), **Features**, **Target**, **Method**, **Task**, **Applicable to** (the open tables it fits; left out when none), then **Tags**: every change is written with `writeModelInfo` (`ui/save-model-dialog.ts`, shared with Edit model; tags only), one write at a time, each against the version the previous one returned, so quick changes are no conflict; a model changed elsewhere meanwhile asks with the platform's conflict dialog to reload (Details is rebuilt from a fresh read) or overwrite |
 | **Performance** | `MetricsTable` of the stored metrics (`storedSummary`; the Train view's grid: Metric / Train / Validation, the findings marked in red, and its bullet list of rows, validation, seed with the copy icon, positive class); "No metrics were recorded for this model." without metrics; then the button **Run Evaluation** (`runEvaluation`, see "Run Evaluation"; tooltip `Apply the model to its training data, or to an open table, and show how well it predicts.`) when the model's blob is Forge's own (`ownBlob`), so a row made by hand has none |
-| **Activity** | `N application(s)` and a grid of the newest applications (up to 100): **When**, **Who** (login, the authors read with one `grok.dapi.getEntities`; empty for a deleted user), **Table**, **Rows**, **Prediction column**, **Status**, **Source**, **Duration (ms)**, with a tooltip per header, the time with seconds on **When**, the meaning on **Status** (`Completed: the column was added.`, `Failed: <error>`, `Cancelled: stopped between batches, no column added.`) and on **Source** (`The Apply dialog or the catalog.`, `A script, through Forge:applyModel.`); "Not applied yet." without one |
+| **Activity** | `N application(s)` and a grid of the newest applications (up to 100): **When**, **Who** (login, the authors read with one `grok.dapi.getEntities`, `loginsOf`; empty for a deleted user), **Table**, **Rows**, **Prediction column**, **Status**, **Source**, **Duration (ms)**, with a tooltip per header, the time with seconds on **When**, the meaning on **Status** (`Completed: the column was added.`, `Failed: <error>`, `Cancelled: stopped between batches, no column added.`) and on **Source** (`The Apply dialog or the catalog.`, `A script, through Forge:applyModel.`); "Not applied yet." without one |
 | **Sharing** | The groups the model was shared with (**Can view**, **Can edit**) or "Not shared yet. Only its author and administrators can see this model.", the button **Share...** (`DG.DomainObjectHandler.shareRow`: the platform's sharing dialog; its one `try/catch` reports a refusal before the dialog opens), and "Sharing a model needs the Share permission on this model; ask an administrator." for a user without Share on the row (`~can_share`; only for such a user is a refused read of the shares expected, and it leaves the groups out) |
 | **History** | The platform's audit pane (`DG.DomainObjectHandler.auditPane`): one line per change of the row (user, time, `insert` / `promote` / `update`), newest first |
 
@@ -1082,6 +1238,17 @@ it after OK; `shareRow` itself resolves when the dialog opens). The pane resolve
 reads the shares and `~can_share` (a one-column query with access) side by side. There is one subscription: each new
 Sharing pane replaces the previous one's (the context panel shows one model). The read is not stale within a
 session: a share made elsewhere shows on the next read.
+
+The context panel follows the model it shows (`ForgeModelHandler.followChanges`, subscribed once per page by
+`_initForge` with the handler's registration): 300 ms after the last `modelsChanged` of a burst, whoever wrote
+(**Edit model**, the catalog's delete, Details' Tags, `Forge:updateModel`, `Forge:deleteModel`), it reads that model
+again (`CARD_COLUMNS`). A model gone (deleted, or no longer visible) empties the panel (`setCurrentObject(null)`, as
+the catalog does); a model whose `version` differs from the one the newest accordion shows (`isShownVersion` in
+`ui/model-panes.ts`; Details' own Tags writes move it, so typing chips rebuilds nothing) is set again, forced, from the
+fresh row, and the title and every pane are built anew; a change of another model costs one read and rebuilds
+nothing. A panel that moved on during the read is left alone. `modelsChanged` lives per bundle: the package's
+follower does not hear the test bundle's writes, so a test of a UI path that writes from the test bundle starts its
+own `followChanges` and unsubscribes it.
 
 ## Model commands
 
@@ -1095,7 +1262,7 @@ model...**, **Download**, **Delete model**) are the catalog grid's menu (`addMod
 | Command | Set | Shown | Does |
 |---|---|---|---|
 | **Apply...** | both | always | The Apply dialog for the model (`modelId`), on the current table or the first open one; from the catalog with **Applicable to** as `preferredTable` |
-| **Edit model...** | catalog | always | **Edit model** (`ui/edit-model-dialog.ts`): Name (not blank), Description and Tags, prefilled from a fresh read of those columns and `blob`; OK writes them with `writeModelInfo` against the read version, a model changed meanwhile asks to reload (the dialog reopens) or overwrite; then the balloon `Model "<name>" updated.`, and when the current object is that model, it is set again (a row of the values in hand; the panel reads the model itself), so the context panel shows the new name, description and tags |
+| **Edit model...** | catalog | always | **Edit model** (`ui/edit-model-dialog.ts`): Name (not blank), Description and Tags, prefilled from a fresh read of those columns; OK writes them with `writeModelInfo` against the read version, a model changed meanwhile asks to reload (the dialog reopens) or overwrite; then the balloon `Model "<name>" updated.`; a context panel showing the model follows the write (`followChanges`, see "Model handler and panels") |
 | **Download** | both | the model's file is Forge's own (`ownBlob`) | `readModelFile`, saved by the browser as `<model name>.bin` |
 | **Delete model** | catalog | always | `confirmDeleteModel`: "Delete the model "<name>"?", then `deleteModel` (row, file, applications) |
 
@@ -1323,8 +1490,9 @@ system columns `id`, `version`, `created_on`, `updated_on` and `author_id`; who 
 
 Deletes are soft: a deleted row stays with `is_deleted` and disappears from queries and counts. Current EMS limitation:
 a soft delete does not clean up a promoted row's entity and permissions, so every deleted model (and every model a
-test run saves and deletes) leaves a live entity until the platform fixes it or the next schema reset drops it; no
-client API removes it. The generic Domains view offers **New model...** to anyone with the
+test run saves and deletes) leaves its entity until the platform fixes it or the next schema reset drops it; no
+client API removes it. Since the stand's 2026-10-20 build (1.28.0) the entities API no longer returns a newly deleted
+model's entity, while `grok s shares list` still lists its grants. The generic Domains view offers **New model...** to anyone with the
 table's Edit grant; such a row has no engine blob, and Forge lists it and can delete it (the row only, unless its
 file sits in Forge's own `forge/model/<uuid>/` layout).
 
@@ -1484,7 +1652,7 @@ Two more `meta` keys on `train`: `mlhasrows: 'true'` (the model file embeds trai
   tool); a feature named like the target is not counted. A suggestion not in the list gives the first engine, an
   empty list undefined. The built-in tool matched `<package>: <name>`; Forge's registry keeps one engine per name, so
   it matches the name.
-- `isServerEngine(engine)` (`engines/engine.ts`): the training data leaves the browser (data only; no UI uses it yet). True for a script `train` in
+- `isServerEngine(engine)` (`engines/engine.ts`): the training data leaves the browser (no UI uses it yet; `Forge:listMethods` reports it as **Runs on**). True for a script `train` in
   a language other than JavaScript, a `train` with `meta.mlserver: 'true'`, or a name in `SERVER_ENGINES`
   (`['Chemprop']`, whose functions do not say so yet).
 - `hasTrainingRows(engine)`: `meta.mlhasrows: 'true'` on `train`.

@@ -1,0 +1,47 @@
+packageName: Forge
+description: Predictive modeling on tables - train, apply, evaluate and manage machine learning models (classification and regression) with cross-validated metrics
+keywords:
+  - machine learning
+  - predictive model
+  - train a model
+  - classifier
+  - classification
+  - regression
+  - prediction
+  - predict a column
+  - apply a model
+  - model catalog
+  - cross-validation
+  - metrics
+  - accuracy
+  - F1
+  - AUC-ROC
+  - R2
+  - RMSE
+  - MAE
+  - XGBoost
+  - linear regression
+  - PLS regression
+  - softmax
+  - SVM
+  - hyperparameters
+  - one-hot encoding
+  - missing values
+  - imputation
+  - evaluate a model
+  - compare models
+overview: |
+  Trains a model on a table (a target column and feature columns), measures it with 5-fold cross-validation, saves it
+  to the Forge catalog without its training data unless asked, applies it to new tables as a prediction column,
+  evaluates it on data with known targets, and manages the catalog (list, describe, rename, tag, share, delete).
+
+  UI: ML | Forge | Train... (the Predictive model view), ML | Forge | Apply..., ML | Forge | Models (the catalog, also
+  Browse > Apps > Forge), the table's context pane "Forge models", the model's panes Details / Performance / Activity /
+  Sharing.
+
+  From code and from the assistant: Forge:listMethods, Forge:listModels, Forge:getModel, Forge:trainModel,
+  Forge:applyModel, Forge:evaluateModel, Forge:updateModel, Forge:shareModel, Forge:deleteModel, through
+  grok.functions.call in the browser (they run in the page, not on the server). Signatures, result shapes and rules:
+  agents/skills.md. The built-in ML | Models tool is a different, older tool with its own models.
+apiRef: src/package-api.ts
+docsRef: README.md

@@ -72,6 +72,13 @@ export function metricInsights(metrics: Record<Split, MetricValues>): Insight[] 
   return insights;
 }
 
+/** The insights of a trained or evaluated model: the {@link resultInsights} of [result], then the
+ * {@link metricInsights} of the [stored] train and validation metrics. */
+export function evaluationInsights(result: Parameters<typeof resultInsights>[0],
+  stored: Record<Split, MetricValues>): Insight[] {
+  return [...resultInsights(result), ...metricInsights(stored)];
+}
+
 /** A class far from the average count makes its column unbalanced; [target]'s classes are shown in **Class
  * balance**. */
 function imbalanceInsights(columns: DG.Column[], target: DG.Column): Insight[] {

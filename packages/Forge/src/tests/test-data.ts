@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {awaitCheck, delay, expect, expectArray, expectFloat} from '@datagrok-libraries/test/src/test';
 import {defaultHyperparameters, Engine} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
+import {ForgeError} from '../forge-error';
 import {forgeDb, ModelInsert, TrainingRunRow} from '../generated/db';
 import {METRIC_IDS, MetricValues} from '../metrics/metrics';
 import {MissingValuesSettings} from '../preparation/missing-values';
@@ -15,6 +16,7 @@ import {prepareTraining, TrainingRequest, TrainingResult, TrainingSelection, tra
   from '../training/train-model';
 
 export const IRIS = 'System:DemoFiles/iris.csv';
+export const WINE = 'System:DemoFiles/winequality.csv';
 export const MEASUREMENTS = ['Sepal.Length', 'Sepal.Width', 'Petal.Length', 'Petal.Width'];
 export const XGBOOST_FIELDS: Pick<ModelInsert, 'engine_name' | 'engine_namespace' | 'engine_kind'> =
   {engine_name: 'XGBoost', engine_namespace: 'Eda', engine_kind: 'function'};
@@ -25,6 +27,9 @@ export const PREDICT_PROBABILITY: PreparationSteps = {...NO_PREPARATION_STEPS, p
 export const ONE_HOT_STEPS: PreparationSteps = {...NO_PREPARATION_STEPS, oneHot: true};
 export const SKIP_UNIQUE_STEPS: PreparationSteps = {...NO_PREPARATION_STEPS, skipUniqueCategories: true};
 export const NO_OPTIONS: PreparationOptions = {preprocessingInfo: [], postprocessingInfo: []};
+
+/** An `expectExceptionAsync` check: a ForgeError with exactly [text]. */
+export const failsWith = (text: string) => (e: unknown) => e instanceof ForgeError && e.message === text;
 
 export function engineByName(engines: Engine[], name: string): Engine {
   const engine = engines.find((e) => e.name === name);
@@ -277,8 +282,9 @@ export async function saveSkipUniqueModel(): Promise<{id: string; name: string; 
 }
 
 /** {@link saveTestModel} of an iris classifier of Species by the measurements. */
-export async function saveIrisModel(iris: DG.DataFrame): Promise<{id: string; name: string; result: TrainingResult}> {
-  return saveTestModel(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'), iris.name);
+export async function saveIrisModel(iris: DG.DataFrame, fields: Partial<ModelFields> = {}):
+  Promise<{id: string; name: string; result: TrainingResult}> {
+  return saveTestModel(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'), iris.name, fields);
 }
 
 /** Every metric of [expected] within [tolerance] in [actual], and no metric [expected] lacks. */

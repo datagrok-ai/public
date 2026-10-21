@@ -1,6 +1,8 @@
 import * as DG from 'datagrok-api/dg';
+import {boolColumn} from '../columns';
 import {defaultHyperparameters, defaultValuesOf, Engine, Hyperparameters, hyperparametersOf, NUMBER_TYPES}
   from '../engines/engine';
+import {methodList} from '../engines/method-list';
 import {errorMessage, ForgeError} from '../forge-error';
 import {ModelStorageMode, ModelTask, TrainingRunStatus} from '../generated/db';
 import {imputeFunction, imputeSettingsOf, MISSING_VALUES_MODES, MissingValuesSettings}
@@ -9,12 +11,12 @@ import {cutoffProblem, DEFAULT_CUTOFF, DEFAULT_STEPS, defaultOneHot, Preparation
   from '../preparation/pipeline';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {datasetRefOf} from '../storage/dataset-ref';
-import {NO_NAME, StorageChoice, tagsOf, trainingRunOf} from '../storage/model-fields';
+import {modelNameOf, StorageChoice, tagsOf, trainingRunOf} from '../storage/model-fields';
 import {saveTrainedModel, TrainedModel} from '../storage/model-store';
 import {recordTrainingRun} from '../storage/training-run-store';
 import {defaultFeatures} from './default-features';
 import {checkSelection, FOLDS, hasDataProblems, MAX_SEED, MetricsRecord, prepareTraining, problemMessages,
-  randomSeed, trainingEngines, TrainingResult, TrainingSelection, trainModel} from './train-model';
+  randomSeed, SelectionCheck, trainingEngines, TrainingResult, TrainingSelection, trainModel} from './train-model';
 
 const OPTION_NAMES = ['missingValues', 'neighbors', 'distance', 'oneHot', 'skipUniqueCategories',
   'predictProbability', 'cutoff', 'seed', 'folds'];
@@ -72,14 +74,7 @@ export async function runTrainModel(input: TrainModelInput): Promise<TrainModelR
   const save = modelSaveOf(input, table);
   const selection: TrainingSelection = {engine: chosen, features, target, hyperparameters: {}, seed: options.seed,
     folds: options.folds, missingValues: options.missingValues, steps: options.steps};
-  const check = await checkSelection(selection, engines);
-  const {problems} = check;
-  // As the view: without a chosen method, the suggested one replaces the one the check started with.
-  const suggests = method === null && !hasDataProblems(problems) && check.engines.length > 0;
-  const engine = suggests ? check.best ?? check.engines[0] : chosen;
-  const messages = problemMessages(suggests ? {...problems, method: []} : problems);
-  if (messages.length > 0)
-    throw new ForgeError(messages.join(' '));
+  const engine = engineOf(await checkSelection(selection, engines), chosen, method !== null);
   const hyperparameters = hyperparametersFor(engine, input.hyperparameters ?? {});
   const progress = input.showProgress === false ? undefined :
     DG.TaskBarProgressIndicator.create(`Training ${engine.name} model`, {cancelable: true});
@@ -88,6 +83,38 @@ export async function runTrainModel(input: TrainModelInput): Promise<TrainModelR
   } finally {
     progress?.close();
   }
+}
+
+/** The body of `Forge:listMethods`: {@link methodList}; with a table, **Applicable** and **Suggested** as `trainModel`
+ * decides them for the [target] column (by default the table's last column), its default features and options. */
+export async function runListMethods(table: DG.DataFrame | null, target: string | null): Promise<DG.DataFrame> {
+  if (!table)
+    return methodList();
+  const targetColumn = target ? table.col(target) : table.columns.toList().pop() ?? null;
+  if (targetColumn === null)
+    throw new ForgeError(target ? `The table has no column '${target}'.` : 'The table has no columns.');
+  const features = defaultFeatures(table, targetColumn);
+  const {engines, engine: preferred} = trainingEngines();
+  const options = optionsOf({}, features, targetColumn);
+  const check = await checkSelection({engine: preferred, features, target: targetColumn, hyperparameters: {},
+    ...options}, engines);
+  const suggested = engineOf(check, preferred, false);
+  const frame = methodList(engines);
+  frame.columns.add(boolColumn('Applicable', engines.map((e) => check.engines.includes(e))));
+  frame.columns.add(boolColumn('Suggested', engines.map((e) => e === suggested)));
+  return frame;
+}
+
+/** The method [check] trains with: the [chosen] one, or without one the suggested method; the check's problems are
+ * thrown as one error. */
+function engineOf(check: SelectionCheck, chosen: Engine, isChosen: boolean): Engine {
+  const {problems} = check;
+  // As the view: without a chosen method, the suggested one replaces the one the check started with.
+  const suggests = !isChosen && !hasDataProblems(problems) && check.engines.length > 0;
+  const messages = problemMessages(suggests ? {...problems, method: []} : problems);
+  if (messages.length > 0)
+    throw new ForgeError(messages.join(' '));
+  return suggests ? check.best ?? check.engines[0] : chosen;
 }
 
 async function trainAndSave(selection: TrainingSelection, datasetName: string, save: ModelSave | null,
@@ -197,9 +224,7 @@ function modelSaveOf(input: TrainModelInput, table: DG.DataFrame): ModelSave | n
     throw new ForgeError(`Unknown storage '${input.storage}'. The storage modes are: ${STORAGE_MODES.join(', ')}.`);
   if (input.name === null || input.name === undefined)
     return null;
-  const name = input.name.trim();
-  if (name === '')
-    throw new ForgeError(NO_NAME);
+  const name = modelNameOf(input.name);
   let storage: StorageChoice = {mode: mode === 'copy' ? 'copy' : 'none'};
   if (mode === 'reference') {
     const ref = datasetRefOf(table);

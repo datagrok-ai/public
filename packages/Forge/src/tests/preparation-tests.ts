@@ -1,11 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
 import {defaultValuesOf} from '../engines/engine';
-import {ForgeError} from '../forge-error';
 import {imputeFunction, imputeSettingsOf, prepareMissingValues} from '../preparation/missing-values';
 import {replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
 import {preparationOptionsOf} from '../preparation/preparation-options';
-import {columnNamed, expectReleased, framesSharing, IMPUTE, names, NO_OPTIONS, valuesOf} from './test-data';
+import {columnNamed, expectReleased, failsWith, framesSharing, IMPUTE, names, NO_OPTIONS, valuesOf}
+  from './test-data';
 
 const gapCount = (columns: DG.Column[]) => columns.reduce((sum, c) => sum + c.stats.missingValueCount, 0);
 
@@ -64,8 +64,7 @@ category('Preparation', () => {
     expect(replayPreprocessing(columns, recorded) === columns, true, 'The recorded ids were replayed');
     await expectExceptionAsync(async () => {
       replayPreprocessing(columns, {...NO_OPTIONS, preprocessingInfo: ['one-hot-x']});
-    }, (e) => e instanceof ForgeError &&
-      e.message === 'The model uses the preparation step \'one-hot-x\', which Forge cannot replay yet.');
+    }, failsWith('The model uses the preparation step \'one-hot-x\', which Forge cannot replay yet.'));
   });
 
   test('preparationOptionsOf tolerates missing and malformed options', async () => {

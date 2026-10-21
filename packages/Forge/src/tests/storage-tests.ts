@@ -17,8 +17,8 @@ import {BLOB_ROOT, deleteModel, modelsChanged, ownBlob, runDeleteModel, saveMode
 import {linkTrainingRun, recordTrainingRun} from '../storage/training-run-store';
 import {runTrainModel} from '../training/train-api';
 import {FeaturesSchema, prepareTraining, TrainingResult, trainModel} from '../training/train-model';
-import {columnsOf, deleteModelsNamed, deleteRunsOf, engineByName, expectReleased, framesSharing, insertModelRow,
-  IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, requestOf, selectionOf, XGBOOST_FIELDS}
+import {columnsOf, deleteModelsNamed, deleteRunsOf, engineByName, expectReleased, failsWith, framesSharing,
+  insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, requestOf, selectionOf, XGBOOST_FIELDS}
   from './test-data';
 
 const IRIS_COLUMNS = [...MEASUREMENTS, 'Species'];
@@ -500,9 +500,9 @@ category('Storage', () => {
     const ids = [await insertModelRow({name}), await insertModelRow({name})];
     try {
       await expectExceptionAsync(() => runDeleteModel(name).then(() => {}),
-        (e) => e instanceof ForgeError && e.message === `Several models are named '${name}'. Use the model id.`);
+        failsWith(`Several models are named '${name}'. Use the model id.`));
       await expectExceptionAsync(() => runDeleteModel(missing).then(() => {}),
-        (e) => e instanceof ForgeError && e.message === `No Forge model '${missing}' is available to you.`);
+        failsWith(`No Forge model '${missing}' is available to you.`));
       expect(await forgeDb.models.query().where('name', '=', name).count(), 2);
     } finally {
       for (const id of ids)

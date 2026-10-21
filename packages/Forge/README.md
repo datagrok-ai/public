@@ -6,7 +6,8 @@ new data, and manage your models in one catalog.
 This version trains models with every installed method, retrains them as you change the inputs, saves them with or
 without their training data, lists them in the catalog with their details, performance and
 activity, compares them, and applies them to new data, from the menu, the model's context menu, the table's context
-panel or from scripts, which can also train and delete models.
+panel or from scripts and Datagrok AI, which can also list methods and models, describe, train, evaluate, edit,
+share and delete models.
 
 ## Train a model
 
@@ -264,10 +265,83 @@ link the model there. Under the list, the button **Train** (`Train a new model o
 model** view on the table. When no model fits, the pane says `No model fits this table.` above **Train**. The pane
 reads the models each time it opens; nothing is uploaded for that.
 
-## From scripts
+## From scripts and Datagrok AI
 
-Three functions train, apply and delete models without the UI, from the console (the `~` key), a script or another
-package. They open no dialog: a mistake fails the call with one sentence that says what to fix.
+Nine functions list the methods and the models, describe, train, apply, evaluate, edit, share and delete models without
+the UI, from the console (the `~` key), a script or another package. Apart from `shareModel`, which opens the
+platform's Share dialog, they open no dialog: a mistake fails the call with one sentence that says what to fix.
+
+### List the methods
+
+```javascript
+// Every installed method with its settings
+grok.shell.addTableView(await grok.functions.call('Forge:listMethods', {}));
+
+// The same, with the methods that can learn to predict Species from the table and the one Forge suggests
+grok.shell.addTableView(await grok.functions.call('Forge:listMethods', {table: grok.shell.t, target: 'Species'}));
+```
+
+`Forge:listMethods` returns the table **Methods**, one row per method `trainModel` accepts, in the order of the
+catalog's **Methods** grid: **Method**, **Package**, **Method type**, **Runs on** (`browser`, or `server` when the
+training data leaves the browser), **Keeps training rows** (the model file holds training rows, as SVM's does),
+**Retrains live**, **Roles**, **Hyperparameters** (the setting names) and **Settings**: a json text with one entry per
+setting, `name`, `type` and, when the method declares them, `default`, `min`, `max`, `choices` and `description`. These
+are the names and values `trainModel`'s `hyperparameters` accepts.
+
+With a `table`, two more columns: **Applicable** (the method can learn from the table's default features, as the
+**Predictive model** view picks them, to predict `target`) and **Suggested** (the method `trainModel` trains with when
+given no `method`). Both are decided as `trainModel` decides them with its default `features` and `options`.
+`target` is a column name, by default the table's last column; a missing one fails the call with `The table has no
+column 'Specie'.`, and a table without columns with `The table has no columns.` A table and target `trainModel`
+refuses fail the call with the same error, such as `Training needs at least 10 rows; the table has 3.`, and so does
+`No machine learning method is installed. Install the EDA package.`
+
+### List the models
+
+```javascript
+// Every model you can see, newest first
+grok.shell.addTableView(await grok.functions.call('Forge:listModels', {}));
+
+// The classifiers that fit the current table and are tagged demo
+grok.shell.addTableView(await grok.functions.call('Forge:listModels',
+  {task: 'classification', table: grok.shell.t, tags: 'demo'}));
+```
+
+`Forge:listModels` returns the table **Forge models**, one row per model you can see, newest first: **Id**, **Name**,
+**Description**, **Method**, **Task**, **Target**, **Features** (the feature names), **Training rows**, **Data
+storage** (`none`, `reference` or `copy`), **Tags**, **Author** (a login), **Created**, then `<Metric> (validation)`
+for every metric a listed model has (a regression model's cells are empty in a classifier's metrics). Every input is
+optional:
+
+* `name`: a part of the model name, ignoring case
+* `target`: the name of the column the model predicts, ignoring case
+* `task`: `regression` or `classification`
+* `method`: the method as Forge names it, for example `XGBoost`
+* `tags`: comma-separated tags; a model is listed when it has every one of them, ignoring case
+* `table`: only the models whose features all have a close column in the table, as **Applicable to** in the catalog;
+  checked in the browser, nothing is uploaded
+* `limit` (`100` by default): at most this many models
+
+A wrong task fails the call with `The task must be regression or classification.`, a limit below 1 with `The limit
+must be a whole number of at least 1.`
+
+### Describe a model
+
+```javascript
+await grok.functions.call('Forge:getModel', {model: 'Iris species'});
+```
+
+`Forge:getModel` returns one object with what the model's **Details**, **Performance** and **Activity** show: `id`,
+`version`, `name`, `description`, `tags` (a list), `method`, `package`, `task`, `target`, `targetType`, `classes` (a
+classifier's classes), `features` (in training order), `featureTypes`, `hyperparameters`, `preparation` (the recorded
+preparation), `metrics` (`train`, `validation` and, for two classes, `positiveClass`; null when none were saved),
+`findings` (`{text, detail}` for a metric below its threshold or a validation value far from the training one, as
+the metrics grid marks them), `seed`, `splitting`, `storage` (`mode`, with a reference its `source`, with a copy its
+`tableId`), `dataset` (`name`, `rows` and `summary`, the data summary kept instead of the data), `hasModelFile`,
+`keepsTrainingRows`, `author` (a login), `created` and `updated` (ISO dates), `lastRun` (`when` and `status` of the
+newest application, null before the first one), `applications` (their number) and `applicableTo` (the open tables the
+model fits). `applicableTo` and the `table` of `listModels` count a column of a close name as fitting, while
+`applyModel` and `evaluateModel` match only the same name (ignoring case): map such a column in `columnNamesMap`. `model` is an id or a name that only one model you can see has, as for `applyModel`.
 
 ### Train
 
@@ -340,6 +414,60 @@ await grok.functions.call('Forge:applyModel',
 (ignoring case); `columnNamesMap` maps the others (`{'Sepal.Length': 'sepal length'}`). A feature without a column, or
 a column of the wrong kind, fails the call with a message and no dialog. Rows with missing values get no prediction.
 
+### Evaluate
+
+```javascript
+// On the data the model keeps a reference to or a copy of
+await grok.functions.call('Forge:evaluateModel', {model: 'Iris species'});
+
+// On a table with the actual values, a feature in a column named differently
+await grok.functions.call('Forge:evaluateModel', {model: 'Iris species', table: grok.shell.t,
+  columnNamesMap: {'Sepal.Width': 'sepal width'}});
+```
+
+`Forge:evaluateModel` measures a saved model as **Run Evaluation** does and returns the metrics next to the saved ones:
+
+* `table`: the table to evaluate on; by default the file or query the model keeps a reference to, or its uploaded
+  copy, which does not join your workspace
+* `target`: the column with the actual values, by default the column named as the model's target
+* `columnNamesMap`: the features in columns named differently, as for `applyModel`; the other features are matched by
+  name
+* `showProgress` (`true` by default): the task-bar progress `Evaluating <model>`; cancel it there to stop the
+  evaluation, which fails the call with `Evaluation was cancelled.`
+
+The result: `id`, `name`, `table` (the evaluated table's name), `target`, `rowCount` (the rows predicted),
+`skippedRows` (the rows with a missing feature value), `positiveClass` (for two classes), `metrics` (`train` and
+`validation` as saved, `evaluation` on this data) and `insights` (the **Insights & Tips** of the evaluation and of the
+saved metrics: each a `text`, with the numbers behind it in `detail` or `items`). Nothing is added to the table and the
+evaluation is not recorded as an application. `model` is an id or a unique name, as for `applyModel`. The errors,
+besides the ones of `applyModel`'s mapping:
+
+* `The model keeps no training data. Pass a table with the actual values.`
+* `The table has no column 'Specie' with the actual values. Pass the column's name in target.`
+
+### Edit
+
+```javascript
+await grok.functions.call('Forge:updateModel', {model: 'Iris species', name: 'Iris classifier', tags: 'iris, demo'});
+```
+
+`Forge:updateModel` changes what **Edit model...** changes: `name`, `description` and `tags` (comma-separated; they
+replace the current tags, and an empty text removes them). A field not given stays as it is; the last change wins.
+It returns `id`, `name`, `description`, `tags` and `version` after the change, and an open catalog and a context panel
+showing the model show the change by themselves. `Enter a name for the model.` refuses a blank name, `Give a name, a
+description or tags to change.` a call with none of them.
+
+### Share
+
+```javascript
+await grok.functions.call('Forge:shareModel', {model: 'Iris species'});
+```
+
+`Forge:shareModel` opens the platform's Share dialog for the model, the one **Share...** in its **Sharing** pane opens,
+and returns at once, without waiting for the dialog; the share itself is made in the dialog (see "Share a model").
+`model` is an id or a unique name, as for `applyModel`; a missing model fails the call with `No Forge model 'X' is
+available to you.` and no dialog.
+
 ### Delete
 
 ```javascript
@@ -347,8 +475,19 @@ await grok.functions.call('Forge:deleteModel', {model: 'Iris species'});
 ```
 
 `Forge:deleteModel` deletes the model as the catalog's trash icon does, with its model file, its uploaded copy and its
-applications, and returns its id; its training runs stay, without the model. `model` is an id or a unique name, as
+applications, and returns its id; its training runs stay, without the model, and a context panel showing it is
+emptied. `model` is an id or a unique name, as
 for `applyModel`: `No Forge model 'X' is available to you.`, `Several models are named 'X'. Use the model id.`
+
+### Datagrok AI (Grokky)
+
+On a server where the Grokky package is installed, the Datagrok AI assistant works with Forge through the same nine
+functions, which it runs in your browser: it can list the methods and your models, describe, train, apply, evaluate,
+rename, tag and delete models, and open the Share dialog for a model. Forge publishes what the assistant needs to know
+in its `agents/` folder: `package-knowledge.yaml` (what Forge does and where to find it) and `skills.md` (which
+function answers which request, the inputs, the results, the error messages and the rules, such as uploading no data
+unless you ask for a copy). The built-in **ML | Models** is another tool with its own models; the assistant's Forge
+knowledge does not cover it.
 
 ## Model catalog
 
@@ -402,8 +541,9 @@ Wherever the platform shows a model (the Domains view, Browse, the title in the 
 **Apply...** (the Apply dialog) and **Download** (the model file, `<model name>.bin`) next to the platform's own
 commands. The platform's **Edit...** changes every field of the record and cannot open a saved model yet (a platform
 issue), and its **Delete** removes the record only, leaving the model file behind. Right-clicking a row of the catalog
-offers **Apply...**, **Edit model...** (Name, Description and Tags), **Download** and **Delete model** (with its file
-and its applications), and **Compare** for a selection of two or more models.
+offers **Apply...**, **Edit model...** (Name, Description and Tags, the fields `Forge:updateModel` writes from a
+script), **Download** and **Delete model** (with its file and its applications), and **Compare** for a selection of two
+or more models.
 
 With two or more models selected in the catalog, the context panel shows them under the title `Compare N models`
 side by side as forms across the panel's width, one per model: the name, method, task, target, training rows,
@@ -432,8 +572,9 @@ tooltip.
 
 Every saved model belongs to its author, who can see, apply, edit, delete and share it; nobody else sees it until it
 is shared. The author shares a model with **Share...** in its **Sharing** pane, and the pane lists the new groups as
-soon as the share is done. A user a model is shared with sees it in the catalog and applies it, and the application
-is recorded with the model. Every user trains, saves and deletes models of their own the same way.
+soon as the share is done. `Forge:shareModel` opens the same dialog from a script (see "From scripts and Datagrok
+AI"). A user a model is shared with sees it in the catalog and applies it, and the application is recorded with the
+model. Every user trains, saves and deletes models of their own the same way.
 
 Training runs are not shared with their model: each user sees only their own. On a Datagrok 1.28.0 server an
 administrator, too, sees only the models shared with them, not every user's (a platform issue).

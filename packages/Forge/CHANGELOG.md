@@ -28,5 +28,8 @@
 * GROK-20932: Added the BDD features of preparation and training with gaps, the Train view on demog and the table pane Forge models (bdd/)
 * GROK-20932: Fixed the Train view's results keeping aria-invalid after a cancelled training was followed by a completed one
 * GROK-20932: Fixed a click on a model's name in the table pane Forge models doing nothing right after the pane was expanded
+* GROK-20932: Added the API functions Forge:listMethods, listModels, getModel, updateModel, evaluateModel and shareModel
+* GROK-20932: Fixed the model's context panel not following an edit or delete made outside the catalog
+* GROK-20932: Added the package knowledge for Datagrok AI (agents/)
 
 ## 0.0.1 (2026-09-30)

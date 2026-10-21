@@ -262,21 +262,26 @@ export function sharingAccount(): Promise<SharingAccount> {
 
 /** The grants of the group [groupId] on the model [id], as the page reads them: `grok.dapi.permissions.get` reads the
  * project the platform keeps the row's shares in (made by the first share), as `revoke` writes it; an empty list
- * comes back undefined. */
-function pageGrantsOf(page: Page, id: string, groupId: string): Promise<number> {
+ * comes back undefined. Null when the page gets no entity of [id] (a deleted model). */
+function pageGrantsOf(page: Page, id: string, groupId: string): Promise<number | null> {
   return page.evaluate(async ([entityId, group]) => {
     const [entity] = await grok.dapi.getEntities([entityId]);
+    if (entity == null)
+      return null;
     const {view, edit} = await grok.dapi.permissions.get(entity);
     return [...view ?? [], ...edit ?? []].filter((g: {id: string}) => g.id === group).length;
   }, [id, groupId]);
 }
 
 /** Takes back every grant of the second account on the model [id] named [name] (a run that failed between the share
- * and its removal): `grok.dapi.permissions.revoke` in the page, read back gone the same way. Also after the model is
- * deleted: its entity and the project stay. Nothing to do without a grant. */
+ * and its removal): `grok.dapi.permissions.revoke` in the page, read back gone the same way. A deleted model's entity
+ * keeps its grants but no longer reaches the page: `grok s shares list` then fails on a grant left. */
 export async function revokeSharingGrant(page: Page, id: string, name: string): Promise<void> {
   const {groupId, name: shown} = await sharingAccount();
-  if (await pageGrantsOf(page, id, groupId) === 0)
+  const grants = await pageGrantsOf(page, id, groupId);
+  if (grants === null && (await sharesOf(id)).some((s) => s.groupId === groupId))
+    throw new Error(`the deleted Forge model "${name}" (${id}) keeps a grant of ${shown}, which the page can no longer revoke`);
+  if (!grants)
     return;
   await page.evaluate(async ([entityId, group]) => {
     const [entity] = await grok.dapi.getEntities([entityId]);

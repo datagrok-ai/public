@@ -1,10 +1,13 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {ApplyRequest, checkApplyRequest, DEFAULT_BATCH_SIZE, LoadedModel, predictRows} from '../apply/apply-model';
 import {ColumnMapping} from '../apply/column-matching';
 import {LoopProgress} from '../engines/engine-calls';
+import {ModelRow} from '../generated/db';
 import {aucOf, MetricValues, metricsOf, probabilityValues, taskOf} from '../metrics/metrics';
 import {BINARY_CLASSIFICATION} from '../preparation/preparation-options';
 import {columnRowCopy} from '../preparation/row-copy';
+import {openDatasetRef, storedDatasetRef} from '../storage/dataset-ref';
 
 /** A saved model to measure on [table], whose [target] holds the actual values. */
 export interface EvaluationRequest {
@@ -30,6 +33,8 @@ export interface EvaluationResult {
   rowCount: number;
   values: MetricValues;
   blob: Uint8Array;
+  /** The request's positive class, else the model's. */
+  positiveClass?: string;
 }
 
 /** Applies the model to the table's rows (those with a missing feature value skipped) and measures the predictions
@@ -42,13 +47,22 @@ export async function evaluateModel(request: EvaluationRequest, progress?: LoopP
   checkApplyRequest(applyRequest);
   const rows = await predictRows(applyRequest, progress);
   const target = rows.keptRows === null ? request.target : columnRowCopy(request.target, rows.keptRows);
-  const result = {columns: rows.columns, target, prediction: rows.labels, keptRows: rows.keptRows,
-    skippedRows: rows.skippedRows, rowCount: target.length, blob: rows.blob};
   const {options} = model;
   const positiveClass = request.positiveClass ?? options.positiveClass;
+  const result = {columns: rows.columns, target, prediction: rows.labels, keptRows: rows.keptRows,
+    skippedRows: rows.skippedRows, rowCount: target.length, blob: rows.blob, positiveClass};
   if (options.postprocessingInfo.includes(BINARY_CLASSIFICATION) && positiveClass !== undefined) {
     const values = probabilityValues(target, rows.labels, positiveClass, aucOf(target, rows.raw, positiveClass));
     return {...result, values, score: rows.raw};
   }
   return {...result, values: metricsOf(taskOf(target), target, rows.labels, positiveClass)};
+}
+
+/** The data the model keeps a reference to, else its uploaded copy, opened without joining the workspace; null when
+ * it keeps neither. */
+export async function storedTrainingTable(model: Pick<ModelRow, 'dataset_ref' | 'dataset_table_id'>):
+  Promise<DG.DataFrame | null> {
+  const ref = storedDatasetRef(model.dataset_ref);
+  return ref !== null ? openDatasetRef(ref) :
+    model.dataset_table_id ? grok.dapi.tables.getTable(model.dataset_table_id) : null;
 }

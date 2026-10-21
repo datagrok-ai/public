@@ -8,11 +8,12 @@ import {COMPARE_COLUMNS, CompareModelRow} from '../catalog/compare-models';
 import {APP_NAME, MODEL_TYPE} from '../constants';
 import {Engine, EngineKind, EngineRole, hyperparametersOf, rolesOf} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
+import {methodsFrame} from '../engines/method-list';
 import {forgeDb, ModelRow} from '../generated/db';
 import {isRecord} from '../preparation/preparation-options';
 import {modelsChanged} from '../storage/model-store';
 import {isOpen} from './apply-model-dialog';
-import {readOnlyGrid, textColumn} from './data-grid';
+import {readOnlyGrid} from './data-grid';
 import {addModelItems, confirmDeleteModel, openModelApply} from './model-actions';
 import {ModelComparison, openComparisonView} from './model-comparison';
 import {ForgeModelHandler, forgeModelHandler} from './model-handler';
@@ -74,7 +75,9 @@ export class ForgeApp extends DG.ViewBase {
       'training rows, tags and creation date; Applicable to keeps only the models whose features the chosen open ' +
       'table has; a chosen model is shown in the context panel (details, performance, activity, sharing, history), ' +
       'the play icon applies it to a table, the trash icon deletes it, Compare opens two or more selected models ' +
-      'side by side.';
+      'side by side. From code or the AI assistant, the Forge functions listMethods, listModels, getModel, ' +
+      'trainModel, applyModel, evaluateModel, updateModel, shareModel and deleteModel do the same without the UI ' +
+      '(see the package\'s agents/skills.md).';
 
     this.methodsGrid = readOnlyGrid(methodsFrame(engines), {headers: METHOD_HEADERS, cells: {
       'Method type': (row) => KIND_MEANINGS[engines[row].kind],
@@ -188,8 +191,8 @@ export class ForgeApp extends DG.ViewBase {
   }
 
   /** Loads the catalog under the due load's number ({@link markStale} first); the current row and the selected rows
-   * that still exist are found again by id. A context panel left on a model the catalog no longer has (a delete) shows
-   * the selection again (see `showSelection`). */
+   * that still exist are found again by id. A context panel left on a comparison with a model the catalog no longer has
+   * (a delete) shows the selection again (see `showSelection`). */
   private async refresh(): Promise<void> {
     const load = this.catalogLoad;
     try {
@@ -210,7 +213,7 @@ export class ForgeApp extends DG.ViewBase {
         this.models.currentRowIdx = restored;
       this.publishLoad(load);
       // A restored selection reports its change, which shows the selection again; without one it is checked here.
-      if (this.models.selection.trueCount === 0 && this.isGone(grok.shell.o))
+      if (this.models.selection.trueCount === 0 && this.isStaleComparison(grok.shell.o))
         await this.showSelection();
     } catch (e) {
       if (load === this.catalogLoad)
@@ -225,13 +228,13 @@ export class ForgeApp extends DG.ViewBase {
     this.catalogPane.setAttribute('aria-busy', 'false');
   }
 
-  /** Whether [x] is a model, or a comparison with a model, that the catalog no longer has. */
-  private isGone(x: unknown): boolean {
+  /** Whether [x] is a comparison with a model that the catalog no longer has; a single model that is gone leaves the
+   * panel through `ForgeModelHandler.followChanges`. */
+  private isStaleComparison(x: unknown): boolean {
+    if (!(x instanceof ModelComparison))
+      return false;
     const ids = new Set<unknown>(this.models.getCol('id').toList());
-    if (x instanceof ModelComparison)
-      return x.rows.some((row) => !ids.has(row.id));
-    const row = forgeModelHandler.modelOf(x);
-    return row !== null && !ids.has(row.id);
+    return x.rows.some((row) => !ids.has(row.id));
   }
 
   private bindCatalog(): void {
@@ -274,18 +277,16 @@ export class ForgeApp extends DG.ViewBase {
   }
 
   /** Two or more selected rows: the context panel compares them. Fewer: it shows the current row's model, without a
-   * current row the selected row's, and with neither it is emptied rather than left on a comparison or on a model
-   * the catalog no longer has. */
+   * current row the selected row's, and with neither it is emptied rather than left on a comparison. */
   private async showSelection(): Promise<void> {
     const read = ++this.comparisonRead;
     const selection = this.models.selection;
     if (selection.trueCount < 2) {
       const current = this.models.currentRowIdx;
       const i = current >= 0 ? current : selection.trueCount === 1 ? selection.getSelectedIndexes()[0] : -1;
-      const shown: unknown = grok.shell.o;
       if (i >= 0)
         this.showModel(i);
-      else if (shown instanceof ModelComparison || this.isGone(shown))
+      else if (grok.shell.o instanceof ModelComparison)
         grok.shell.setCurrentObject(null, true, true);
       return;
     }
@@ -379,17 +380,6 @@ export class ForgeApp extends DG.ViewBase {
     if (row >= 0)
       confirmDeleteModel(this.models.getCol('id').get(row), this.models.getCol('name').get(row));
   }
-}
-
-/** One row per method: **Method**, **Package**, **Method type**, **Roles**, **Hyperparameters**. */
-function methodsFrame(engines: Engine[]): DG.DataFrame {
-  return DG.DataFrame.fromColumns([
-    textColumn('Method', engines.map((e) => e.name)),
-    textColumn('Package', engines.map((e) => e.namespace)),
-    textColumn('Method type', engines.map((e) => e.kind)),
-    textColumn('Roles', engines.map((e) => rolesOf(e).join(', '))),
-    textColumn('Hyperparameters', engines.map((e) => hyperparametersOf(e).map((p) => p.name).join(', '))),
-  ]);
 }
 
 /** A json column's value as an object: the typed frame may carry it as text. */

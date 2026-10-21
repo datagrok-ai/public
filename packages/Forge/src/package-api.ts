@@ -80,6 +80,68 @@ export namespace funcs {
   }
 
   /**
+   * Lists the installed machine learning methods with their package, type, where they run, roles and settings (hyperparameters) with their defaults and ranges. With a table, marks the methods that can learn from it and the one Forge suggests
+   * @param {DG.DataFrame} table - A table to check the methods against, with the view's default features
+   * @param {string} target - Name of the column to predict in the table. By default the table's last column
+   */
+  export async function listMethods(table?: DG.DataFrame , target?: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Forge:ListMethods', { table, target });
+  }
+
+  /**
+   * Lists the saved Forge models you can see, newest first, with their validation metrics. Filters by a part of the name, the target, the task, the method, tags and the table the model can be applied to
+   * @param {string} name - A part of the model name, case-insensitive
+   * @param {string} target - Name of the column the model predicts
+   * @param {string} task - regression or classification
+   * @param {string} method - The method as Forge names it, for example XGBoost
+   * @param {string} tags - Comma-separated tags. A model is listed when it has every one of them
+   * @param {DG.DataFrame} table - Only the models whose features all have a column of the same or a close name in this table. Checked in the browser, nothing is uploaded
+   * @param {number} limit - At most this many models, newest first
+   */
+  export async function listModels(name?: string , target?: string , task?: string , method?: string , tags?: string , table?: DG.DataFrame , limit?: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Forge:ListModels', { name, target, task, method, tags, table, limit });
+  }
+
+  /**
+   * Everything Forge keeps about a saved model, as one object. Use it to explain a model, to check what a table needs before applying it, and to compare models
+   * @param {string} model - Model id, or a name that only one model you can see has
+   */
+  export async function getModel(model: string ): Promise<any> {
+    return await grok.functions.call('Forge:GetModel', { model });
+  }
+
+  /**
+   * Renames a saved Forge model or changes its description or tags. A field not given stays as it is
+   * @param {string} model - Model id, or a name that only one model you can see has
+   * @param {string} name - The new name, not blank
+   * @param {string} description - The new description
+   * @param {string} tags - Comma-separated tags that replace the current ones. An empty text removes them
+   */
+  export async function updateModel(model: string , name?: string , description?: string , tags?: string ): Promise<any> {
+    return await grok.functions.call('Forge:UpdateModel', { model, name, description, tags });
+  }
+
+  /**
+   * Measures a saved model on data with known target values, as Run Evaluation does, and returns its metrics next to the stored train and validation ones. Without a table it uses the training data the model keeps a link to or a copy of. Adds no column and records nothing
+   * @param {string} model - Model id, or a name that only one model you can see has
+   * @param {DG.DataFrame} table - The table to evaluate on. By default the model's referenced or copied training data
+   * @param {string} target - The column with the actual values. By default the column named as the model's target
+   * @param {any} columnNamesMap - Model feature name -> table column name, for columns named differently
+   * @param {boolean} showProgress - Shows a cancellable progress Evaluating <model> in the task bar
+   */
+  export async function evaluateModel(model: string , table?: DG.DataFrame , target?: string , columnNamesMap?: any , showProgress?: boolean ): Promise<any> {
+    return await grok.functions.call('Forge:EvaluateModel', { model, table, target, columnNamesMap, showProgress });
+  }
+
+  /**
+   * Opens the platform's Share dialog for a saved Forge model, the same as Share... in its Sharing pane. Returns as soon as the dialog is shown
+   * @param {string} model - Model id, or a name that only one model you can see has
+   */
+  export async function shareModel(model: string ): Promise<void> {
+    return await grok.functions.call('Forge:ShareModel', { model });
+  }
+
+  /**
    * Whether the column holds the predictions of a Forge model
    */
   export async function isPredictionColumn(col: DG.Column ): Promise<boolean> {

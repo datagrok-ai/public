@@ -123,16 +123,23 @@ export async function applyWithProgress(request: ApplyRequest, source: Applicati
 export async function runApplyModel(model: string, table: DG.DataFrame,
   columnNamesMap: {[feature: string]: string} | null, showProgress: boolean): Promise<DG.DataFrame> {
   const loaded = await loadModel(model);
-  const mapping = exactMapping(loaded.features, table);
-  for (const [feature, column] of Object.entries(columnNamesMap ?? {}))
-    mapping.set(feature, column);
-  const problems = mappingProblems(loaded.features, mapping, table, loaded.engine.name);
-  if (problems.length > 0)
-    throw new ForgeError(apiMappingMessage(problems));
-  const request: ApplyRequest = {model: loaded, table, mapping, batchSize: DEFAULT_BATCH_SIZE,
-    missingValues: {mode: 'skip'}};
+  const request: ApplyRequest = {model: loaded, table, mapping: apiMapping(loaded, table, columnNamesMap),
+    batchSize: DEFAULT_BATCH_SIZE, missingValues: {mode: 'skip'}};
   await (showProgress ? applyWithProgress(request, 'api') : applyAndRecord(request, 'api'));
   return table;
+}
+
+/** The API functions' mapping: exact names overlaid with the [columnNamesMap] pairs; its problems are refused in
+ * {@link apiMappingMessage}'s sentences. */
+export function apiMapping(model: LoadedModel, table: DG.DataFrame,
+  columnNamesMap: {[feature: string]: string} | null | undefined): ColumnMapping {
+  const mapping = exactMapping(model.features, table);
+  for (const [feature, column] of Object.entries(columnNamesMap ?? {}))
+    mapping.set(feature, column);
+  const problems = mappingProblems(model.features, mapping, table, model.engine.name);
+  if (problems.length > 0)
+    throw new ForgeError(apiMappingMessage(problems));
+  return mapping;
 }
 
 /** `<target> (predicted)`, then `<target> (predicted 2)`, ...: the first name no column has, ignoring case. */

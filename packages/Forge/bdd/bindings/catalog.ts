@@ -206,7 +206,8 @@ export const topMenuGroupExactly = Then('the {string} top menu group should list
 /* LIB-PROMOTE: the library's sharing steps find the second account by its login with the punctuation stripped
    ("forgetester"); the platform shows the account by its friendly name ("Forge Tester"). The model shown in the
    context panel is the one shared: its grant is taken back first at feature end, should the scenario fail before it
-   removes the grant itself; a deleted model's entity keeps its grants, and the revoke reaches them after the delete. */
+   removes the grant itself; a deleted model's entity keeps its grants but no longer reaches the page, so after the
+   delete a grant left fails the cleanup instead. */
 export const pickSharingUserByName = When('user picks the sharing user by name in {element}', async (page: Page,
   target: ElementRef) => {
   const model = await page.evaluate(() => {

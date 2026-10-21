@@ -1,4 +1,5 @@
 import {Engine, hasTrainingRows} from '../engines/engine';
+import {ForgeError} from '../forge-error';
 import {ModelInsert, TrainingRunInsert, TrainingRunSource, TrainingRunStatus} from '../generated/db';
 import {PreparationOptions} from '../preparation/preparation-options';
 import {FeaturesSchema, MetricsRecord, Splitting, TargetSchema, TrainingRequest, TrainingResult, trainingSetupOf}
@@ -10,6 +11,14 @@ type JsonColumn = 'target' | 'features' | 'options' | 'metrics' | 'splitting' | 
 
 /** Why a blank model name is refused, in the Save and Edit dialogs and in `Forge:trainModel`. */
 export const NO_NAME = 'Enter a name for the model.';
+
+/** [text] trimmed; a blank name is refused with {@link NO_NAME}. */
+export function modelNameOf(text: string): string {
+  const name = text.trim();
+  if (name === '')
+    throw new ForgeError(NO_NAME);
+  return name;
+}
 
 export type ModelFields = Omit<ModelInsert, JsonColumn> & {
   target: TargetSchema;
