@@ -9,7 +9,7 @@
    server owns every rule — the dialog names its refusals. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {Permission} from 'datagrok-api/dg';
+import {ConnectionDataSource, Permission} from 'datagrok-api/dg';
 import {computed, signal, Control, div, divV, link, span, plural, Wizard, Section, ChoiceInput, Form, badge,
   notify} from '@datagrok-libraries/u2';
 import type {WizardOptions} from '@datagrok-libraries/u2';
@@ -61,11 +61,8 @@ export async function createBinding(options: CreateBindingOptions = {}): Promise
   return new BindingDialog(options).open();
 }
 
-/** Database sources the server's bind policy always refuses (`ExternalBinding.check`): the domain
- * handle, the ones the platform serves itself rather than GrokConnect, and the ones that
- * interpolate values into SQL. */
-const UNBINDABLE_SOURCES = ['Domain', 'PostgresDart', 'Web', 'ODATA', 'Sparql', 'MLFlow',
-  'Athena', 'SQLite', 'Neptune'];
+/** The domain handle is a database to the platform, but not one to bind. */
+const DOMAIN_SOURCE = 'Domain';
 
 const DML = ['AddRows', 'ChangeValues', 'RemoveRows'];
 
@@ -377,10 +374,10 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       this.connection.value.value = preset.id;
   }
 
-  /** The provider's own checks stay the server's. */
   private static _bindable(c: DG.DataConnection): boolean {
     const engine = c.parameters?.connectionType;
-    return c.isDatabase && !UNBINDABLE_SOURCES.includes(c.dataSource) && (engine == null || engine === 'JDBC');
+    return c.isDatabase && c.dataSource !== DOMAIN_SOURCE && (engine == null || engine === 'JDBC') &&
+      ConnectionDataSource.byType(c.dataSource)?.canBrowseSchema === true;
   }
 
   private static _nameOf(c: DG.DataConnection): string {
