@@ -10,6 +10,31 @@ import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-me
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import { readDataframe } from './utils';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+
+const ASPIRIN = 'CC(=O)Oc1ccccc1C(=O)O';
+const CAFFEINE = 'Cn1cnc2c1c(=O)n(C)c(=O)n2C';
+
+/** The indexes of the set bits. */
+function onBits(fp: BitArray | null): string {
+  const bits: number[] = [];
+  for (let i = -1; fp && (i = fp.findNext(i)) !== -1;)
+    bits.push(i);
+  return bits.join(',');
+}
+
+/** A one-column table of molecules. */
+function molTable(smiles: string[]): DG.Column {
+  const col = DG.Column.fromStrings('smiles', smiles);
+  DG.DataFrame.fromColumns([col]).name = 'fingerprint options';
+  col.semType = DG.SEMTYPE.MOLECULE;
+  return col;
+}
+
+/** The fingerprints of molecules in a fresh table (no caches). */
+async function freshBits(smiles: string[], type: Fingerprint): Promise<string[]> {
+  return (await chemGetFingerprints(molTable(smiles), type, false)).map(onBits);
+}
 
 category('fingerprints', async () => {
   let molecules: DG.DataFrame;
@@ -63,6 +88,40 @@ category('fingerprints', async () => {
       expect(res.getCol('score').toList().some((s, i) => Math.abs(s - morgan[i]) > 1e-4), true,
         `${fp} scores the same as Morgan`);
     }
+  });
+
+  test('an edit reaches every cached fingerprint column', async () => {
+    // each cache has its own edited rows: the first cache read used up the column's one change set, so the others kept
+    // the old molecule's fingerprint (here Morgan, read after AtomPair)
+    const col = molTable([ASPIRIN, 'c1ccccc1', CAFFEINE]);
+    await chemGetFingerprints(col, Fingerprint.Morgan, false);
+    await chemGetFingerprints(col, Fingerprint.AtomPair, false);
+    col.set(1, 'c1ccncc1');
+    const atomPairs = (await chemGetFingerprints(col, Fingerprint.AtomPair, false)).map(onBits);
+    const morgan = (await chemGetFingerprints(col, Fingerprint.Morgan, false)).map(onBits);
+    const molecules = col.toList();
+    expect(atomPairs[1], (await freshBits(molecules, Fingerprint.AtomPair))[1], 'AtomPair: the edited row');
+    expect(morgan[1], (await freshBits(molecules, Fingerprint.Morgan))[1], 'Morgan: the edited row AtomPair read first');
+    expect(morgan[0], (await freshBits(molecules, Fingerprint.Morgan))[0], 'Morgan: a row not edited');
+  });
+
+  test('an edit reaches a cached column saved before it was read (a project\'s)', async () => {
+    // a table holding a hidden ~smiles.AtomPair column, as a project brings it, that no read has tracked yet: Morgan
+    // is read first (the column's edits are tracked from then on), a row is edited, then AtomPair is read
+    const molecules = [ASPIRIN, 'c1ccccc1', CAFFEINE];
+    const source = molTable(molecules);
+    await chemGetFingerprints(source, Fingerprint.AtomPair, false);
+    const saved = source.dataFrame.columns.toList().find((c) => c.name.startsWith('~smiles.AtomPair'))!;
+    const col = DG.Column.fromStrings('smiles', molecules);
+    const copy = DG.Column.fromType(DG.COLUMN_TYPE.BYTE_ARRAY, saved.name, saved.length).init((i) => saved.get(i));
+    DG.DataFrame.fromColumns([col, copy]).name = 'a project';
+    col.semType = DG.SEMTYPE.MOLECULE;
+    await chemGetFingerprints(col, Fingerprint.Morgan, false);
+    col.set(1, 'c1ccncc1');
+    const atomPairs = (await chemGetFingerprints(col, Fingerprint.AtomPair, false)).map(onBits);
+    const fresh = await freshBits(col.toList(), Fingerprint.AtomPair);
+    expect(atomPairs[1], fresh[1], 'the saved AtomPair cache: the edited row');
+    expect(atomPairs[0], fresh[0], 'the saved AtomPair cache: a row not edited');
   });
 
   test('fp_withoutDf', async () => {

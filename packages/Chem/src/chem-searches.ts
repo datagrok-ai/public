@@ -32,7 +32,11 @@ const enum FING_COL_TAGS {
   molsCreatedForVersion = '.mols.created.for.version',
 }
 
-const DATA_CHANGED_TAG = 'dataChanged';
+/** `col.temp` key of {@link cacheEdits}. */
+const CACHE_EDITS_TAG = 'dataChangedByCache';
+/** {@link cacheEdits}' entry of every row edited since the column was subscribed: the edits a cached column that no
+ * read has tracked yet missed (one a project brought, one another path saved). */
+const SINCE_SUBSCRIBED = '';
 const DATA_CHANGED_SUBSCRIBED_TAG = 'dataChangedSubscribed';
 
 export const enum FILTER_TYPES {
@@ -116,26 +120,36 @@ function invalidatedColumnKey(col: DG.Column): string {
 }
 
 /**
- * Subscribes (once per column) to value changes so that the set of edited row indexes is tracked
- * in col.temp[DATA_CHANGED_TAG] and a per-column event is fired for interested consumers (e.g. the
- * substructure filter).
+ * The rows of `col` edited since each of its cached columns was last read: the cached column's name → the row
+ * indexes (sparse Sets, cheap for large columns). Each cache has its own, so an edit reaches every cache of the
+ * column (the Morgan one, the substructure search's pattern one, ...), whichever is read first.
+ */
+function cacheEdits(col: DG.Column): Map<string, Set<number>> {
+  let edits: Map<string, Set<number>> | undefined = col.temp[CACHE_EDITS_TAG];
+  if (!edits)
+    col.temp[CACHE_EDITS_TAG] = edits = new Map();
+  return edits;
+}
+
+/**
+ * Subscribes (once per column) to value changes so that the edited row indexes are tracked per cached column
+ * ({@link cacheEdits}) and a per-column event is fired for interested consumers (e.g. the substructure filter).
  */
 export function subscribeToColumnChanges(col: DG.Column): void {
   if (col.temp[DATA_CHANGED_SUBSCRIBED_TAG])
     return;
   col.temp[DATA_CHANGED_SUBSCRIBED_TAG] = true;
-  col.temp[DATA_CHANGED_TAG] = null; // null = nothing changed
+  cacheEdits(col).set(SINCE_SUBSCRIBED, new Set<number>());
   const valuesChangedEventName = getValuesChangedEventName(col.dataFrame?.name ?? '', col.name);
   col.dataFrame?.onValuesChanged.pipe(filter((args: any) =>
     args?.args?.column?.name === col.name && args?.args?.indexes?.length)).subscribe((args: any) => {
-    // accumulate edited row indexes into a sparse Set (cheap for large columns)
-    const changed: Set<number> = col.temp[DATA_CHANGED_TAG] ?? new Set<number>();
     const indexes = args.args.indexes;
-    for (let i = 0; i < indexes.length; i++) {
-      if (indexes[i] < col.length)
-        changed.add(indexes[i]);
+    for (const changed of cacheEdits(col).values()) {
+      for (let i = 0; i < indexes.length; i++) {
+        if (indexes[i] < col.length)
+          changed.add(indexes[i]);
+      }
     }
-    col.temp[DATA_CHANGED_TAG] = changed;
     grok.events.fireCustomEvent(valuesChangedEventName, {indexes: Array.from(indexes as ArrayLike<number>)});
   });
 }
@@ -147,24 +161,27 @@ interface ISavedColumnsResult {
 
 /**
  * Returns the saved (cached) columns that exist for the given tags, together with the indexes of the
- * rows edited since the last call (or null if none). The change set is consumed (reset) on return, so
- * the caller is responsible for recomputing the affected rows. Subscribes to the column on first use.
+ * rows edited since they were last read (or null if none). These tags' edits are consumed (reset) on return, so
+ * the caller is responsible for recomputing the affected rows; the other caches keep theirs. Subscribes to the column
+ * on first use.
  */
 function checkForSavedColumns(col: DG.Column, colTags: (Fingerprint | string) []): ISavedColumnsResult {
   subscribeToColumnChanges(col);
 
-  const changed: Set<number> | null = col.temp[DATA_CHANGED_TAG] ?? null;
-  col.temp[DATA_CHANGED_TAG] = null;
-
+  const edits = cacheEdits(col);
+  const changed = new Set<number>();
   const cols: {[key: string | Fingerprint]: DG.Column<any>} = {};
   for (const colTag of colTags) {
     const savedColName = '~' + col.name + '.' + colTag;
-    if (col.dataFrame?.col(savedColName))
+    if (col.dataFrame?.col(savedColName)) {
       cols[colTag] = col.dataFrame.columns.byName(savedColName);
+      (edits.get(savedColName) ?? edits.get(SINCE_SUBSCRIBED))?.forEach((i) => changed.add(i));
+    }
+    edits.set(savedColName, new Set<number>()); // tracked from this read on: the caller saves what it reads now
   }
 
   // keep only in-range indexes; treat an empty result as "nothing changed" (null)
-  const inRange = changed ? Array.from(changed).filter((i) => i < col.length) : [];
+  const inRange = Array.from(changed).filter((i) => i < col.length);
   return {cols, changedRows: inRange.length > 0 ? inRange : null};
 }
 
