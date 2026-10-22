@@ -2,7 +2,7 @@
 Feature: 3D scatter plot interaction
   What a person does on the plot that scatter-plot-3d.feature leaves out. Hovering a point shows
   its row in a tooltip (the `point` area is the drawn marker nearest to the camera: at the home
-  camera on demog-1000 that is row 983, X0273T51060300003, AGE 50). Ctrl-click toggles that row's selection and
+  camera on demog-1000 that is row 779, X0273T44004500022, AGE 52). Ctrl-click toggles that row's selection and
   Ctrl+Shift-click takes it out, while neither moves the current row; the selection is claimed on
   the table, not on the frame, since the mouse-over box drawn round the hovered marker hides its
   new color. The
@@ -24,22 +24,22 @@ Feature: 3D scatter plot interaction
 
   Scenario: Hovering a point shows its row in a tooltip
     When user hovers over the "point" area of 3d scatter plot viewer
-    Then the mouse-over row of the table should be 983
+    Then the mouse-over row of the table should be 779
     And exactly one tooltip should be shown
-    And the tooltip should show "USUBJID" as "X0273T51060300003"
-    And the tooltip should show "AGE" as "50"
+    And the tooltip should show "USUBJID" as "X0273T44004500022"
+    And the tooltip should show "AGE" as "52"
     And no errors should have been logged
 
   Scenario: Ctrl-click toggles a point's selection and Ctrl+Shift-click removes it
     Given user clears the row selection
     When user clicks on the "point" area of 3d scatter plot viewer holding Control
     Then 1 row should be selected
-    And only rows where "USUBJID" is "X0273T51060300003" should be selected
+    And only rows where "USUBJID" is "X0273T44004500022" should be selected
     And "USUBJID" of the current row should be "X0273T21000300003"
     When user clicks on the "point" area of 3d scatter plot viewer holding Control
     Then no rows should be selected
     When user clicks on the "point" area of 3d scatter plot viewer holding Shift
-    Then only rows where "USUBJID" is "X0273T51060300003" should be selected
+    Then only rows where "USUBJID" is "X0273T44004500022" should be selected
     When user clicks on the "point" area of 3d scatter plot viewer holding Control+Shift
     Then no rows should be selected
     When user clicks on the "point" area of 3d scatter plot viewer holding Control+Shift
