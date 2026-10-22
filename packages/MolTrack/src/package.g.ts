@@ -29,6 +29,45 @@ export async function molTrackAppTreeBrowser(appNode: any, browseView: any) : Pr
   await PackageFunctions.molTrackAppTreeBrowser(appNode, browseView);
 }
 
+//name: MolTrack EMS
+//description: MolTrack over the moltrack_ems domain schema
+//input: string path { meta.url: true; optional: true; description: View to open and its address - Compounds or Batches or Additions or Assays or AssayRuns or AssayResults or Register }
+//output: view result
+//meta.browsePath: Chem
+//meta.icon: images/moltrack.png
+//meta.role: app
+export async function molTrackEmsApp(path: string) : Promise<any> {
+  return await PackageFunctions.molTrackEmsApp(path);
+}
+
+//input: dynamic appNode 
+//meta.role: appTreeBrowser
+//meta.app: MolTrack EMS
+export async function molTrackEmsAppTreeBrowser(appNode: any) : Promise<void> {
+  await PackageFunctions.molTrackEmsAppTreeBrowser(appNode);
+}
+
+//description: Loads the mol-track demo set into the moltrack_ems domain schema
+//output: string result
+export async function loadEmsDemoData() : Promise<string> {
+  return await PackageFunctions.loadEmsDemoData();
+}
+
+//description: Recomputes the per-rule registration hashes of every compound in moltrack_ems
+//output: string result
+export async function reidentifyEmsCompounds() : Promise<string> {
+  return await PackageFunctions.reidentifyEmsCompounds();
+}
+
+//description: Registers the compounds or the batches with their compounds of a table into moltrack_ems with columns mapped by name
+//input: dataframe table { description: Rows to register - the structures are in a column named smiles or structure or molfile }
+//input: string target = 'Batches' { choices: ["Compounds","Batches"] }
+//input: bool rejectAll = false { description: Write nothing if any row fails }
+//output: dataframe result
+export async function registerEmsBulk(table: DG.DataFrame, target: string, rejectAll: boolean) : Promise<any> {
+  return await PackageFunctions.registerEmsBulk(table, target, rejectAll);
+}
+
 //description: Retrieves all properties defined for the 'compound' scope
 //output: string result
 //cache: all
@@ -110,6 +149,14 @@ export async function advancedSearch(outputFields: string[], filter: any) : Prom
 //output: dataframe result
 export async function retrieveEntity(scope: string) : Promise<any> {
   return await PackageFunctions.retrieveEntity(scope);
+}
+
+//name: Databases | MolTrack EMS
+//input: semantic_value id { semType: Grok ID }
+//output: widget res
+//meta.role: panel
+export async function molTrackEmsPanel(id: DG.SemanticValue) : Promise<any> {
+  return await PackageFunctions.molTrackEmsPanel(id);
 }
 
 //name: Databases | MolTrack

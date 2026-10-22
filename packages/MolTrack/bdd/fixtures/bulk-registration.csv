@@ -1,0 +1,7 @@
+smiles,Common Name,EPA Batch ID,Project,Purity
+OC(=O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC,Hentriacontanoic acid,BDD-001,Project 1,98.5
+NCCCCCCCCCCCCCCCCCCCCCCCCCCN,"Hexacosane-1,26-diamine",BDD-002,Project 1,97
+OCCCCCCCCCCCCCCCCCCCCCCCCCCCCCO,"Triacontane-1,30-diol",BDD-003,Project 2,99.1
+[Na+].[O-]C(=O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC,Sodium hentriacontanoate,BDD-004,Project 2,95
+O=C(O)c1cccc(C(=O)O)c1,Isophthalic acid,BDD-005,Project 3,99.9
+C1CC(,Broken ring,BDD-006,Project 3,90

@@ -12,6 +12,9 @@ import {batchView, compoundView, createPath, getQuickActionsWidget, getStatistic
 import {flattened} from './utils/utils';
 import {molTrackPropPanel} from './widgets/moltrack-property-panel';
 import {registerSemanticTypes} from './utils/detectors';
+import {MolTrackEms} from './ems/app';
+import {DemoData} from './ems/demo-data';
+import {MolTrackTables} from './ems/tables';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -150,6 +153,55 @@ export class PackageFunctions {
             .subscribe(() => createSearchView(savedSearch, scope, JSON.parse(savedSearches[savedSearch]), true));
         });
       });
+  }
+
+  @grok.decorators.app({
+    name: 'MolTrack EMS',
+    description: 'MolTrack over the moltrack_ems domain schema',
+    meta: {browsePath: 'Chem', icon: 'images/moltrack.png'},
+  })
+  static async molTrackEmsApp(
+    @grok.decorators.param({options: {metaUrl: true, optional: true, description: 'View to open and its address - Compounds or Batches or Additions or Assays or AssayRuns or AssayResults or Register'}}) path: string,
+  ): Promise<DG.ViewBase> {
+    return await MolTrackEms.open(path);
+  }
+
+  @grok.decorators.appTreeBrowser({app: 'MolTrack EMS'})
+  static async molTrackEmsAppTreeBrowser(
+    @grok.decorators.param({type: 'dynamic'}) appNode: DG.TreeViewGroup,
+  ) {
+    MolTrackEms.treeBrowser(appNode);
+  }
+
+  @grok.decorators.func({
+    name: 'loadEmsDemoData',
+    description: 'Loads the mol-track demo set into the moltrack_ems domain schema',
+    outputs: [{type: 'string', name: 'result'}],
+  })
+  static async loadEmsDemoData(): Promise<string> {
+    return await DemoData.load();
+  }
+
+  @grok.decorators.func({
+    name: 'reidentifyEmsCompounds',
+    description: 'Recomputes the per-rule registration hashes of every compound in moltrack_ems',
+    outputs: [{type: 'string', name: 'result'}],
+  })
+  static async reidentifyEmsCompounds(): Promise<string> {
+    return await MolTrackTables.reidentify();
+  }
+
+  @grok.decorators.func({
+    name: 'registerEmsBulk',
+    description: 'Registers the compounds or the batches with their compounds of a table into moltrack_ems with columns mapped by name',
+    outputs: [{type: 'dataframe', name: 'result'}],
+  })
+  static async registerEmsBulk(
+    @grok.decorators.param({options: {description: 'Rows to register - the structures are in a column named smiles or structure or molfile'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {choices: ['Compounds', 'Batches'], initialValue: 'Batches'}}) target: string,
+    @grok.decorators.param({options: {description: 'Write nothing if any row fails', initialValue: 'false'}}) rejectAll: boolean,
+  ): Promise<DG.DataFrame> {
+    return await MolTrackEms.register(table, target === 'Batches', rejectAll);
   }
 
   @grok.decorators.func({
@@ -296,6 +348,16 @@ export class PackageFunctions {
       resultJson.map((item: any) => flattened(item, dynamicProps)) :
       resultJson;
     return DG.DataFrame.fromObjects(processedRes);
+  }
+
+  @grok.decorators.panel({
+    name: 'Databases | MolTrack EMS',
+    outputs: [{type: 'widget', name: 'res'}],
+  })
+  static async molTrackEmsPanel(
+    @grok.decorators.param({type: 'semantic_value', options: {semType: 'Grok ID'}}) id: DG.SemanticValue,
+  ): Promise<DG.Widget> {
+    return await MolTrackEms.compoundPanel(id.value);
   }
 
   @grok.decorators.panel({

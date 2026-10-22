@@ -1,0 +1,51 @@
+.moltrack-ems-card {
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.moltrack-ems-card-text {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.moltrack-ems-line {
+  align-items: baseline;
+  gap: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.moltrack-ems-register-source,
+.moltrack-ems-register-preview,
+.moltrack-ems-register-report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-s);
+  min-height: 0;
+}
+
+.moltrack-ems-register-mapping,
+.moltrack-ems-register-rows {
+  height: 300px;
+  overflow: auto;
+}
+
+.moltrack-ems-register-summary {
+  color: var(--dg-text-color-light);
+}
+
+.moltrack-ems-register-problem {
+  color: var(--dg-error);
+}
+
+.moltrack-ems-compound-section .moltrack-ems-compound {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--dg-space-xxl);
+}
+
+.moltrack-ems-matched {
+  gap: var(--dg-space-s);
+  margin-top: var(--dg-space-m);
+}

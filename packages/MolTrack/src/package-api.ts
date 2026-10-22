@@ -58,6 +58,43 @@ export namespace funcs {
   }
 
   /**
+   * MolTrack over the moltrack_ems domain schema
+   * @param {string} path - View to open and its address - Compounds or Batches or Additions or Assays or AssayRuns or AssayResults or Register
+   */
+  export async function molTrackEmsApp(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('MolTrack:MolTrackEmsApp', { path });
+  }
+
+  export async function molTrackEmsAppTreeBrowser(appNode: any ): Promise<void> {
+    return await grok.functions.call('MolTrack:MolTrackEmsAppTreeBrowser', { appNode });
+  }
+
+  /**
+   * Loads the mol-track demo set into the moltrack_ems domain schema
+   */
+  export async function loadEmsDemoData(): Promise<string> {
+    return await grok.functions.call('MolTrack:LoadEmsDemoData', {});
+  }
+
+  /**
+   * Recomputes the per-rule registration hashes of every compound in moltrack_ems
+   */
+  export async function reidentifyEmsCompounds(): Promise<string> {
+    return await grok.functions.call('MolTrack:ReidentifyEmsCompounds', {});
+  }
+
+  /**
+   * Registers the compounds or the batches with their compounds of a table into moltrack_ems with columns mapped by name
+   * @param {DG.DataFrame} table - Rows to register - the structures are in a column named smiles or structure or molfile
+   * @param {string} target
+   *   choices: ["Compounds","Batches"]
+   * @param {boolean} rejectAll - Write nothing if any row fails
+   */
+  export async function registerEmsBulk(table: DG.DataFrame , target: string , rejectAll: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('MolTrack:RegisterEmsBulk', { table, target, rejectAll });
+  }
+
+  /**
    * Retrieves all properties defined for the 'compound' scope
    */
   export async function fetchCompoundProperties(): Promise<string> {
@@ -146,6 +183,14 @@ export namespace funcs {
    */
   export async function retrieveEntity(scope: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('MolTrack:RetrieveEntity', { scope });
+  }
+
+  /**
+   * @param {any} id
+   *   semType: Grok ID
+   */
+  export async function molTrackEmsPanel(id: any ): Promise<any> {
+    return await grok.functions.call('MolTrack:MolTrackEmsPanel', { id });
   }
 
   /**
