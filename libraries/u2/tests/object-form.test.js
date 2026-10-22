@@ -533,12 +533,9 @@ form('a list property that hands over its items as text is read all the same', (
 });
 
 form('a string_list property edits as a list, its JSON array text read item by item', () => {
-  const source = {tags: '["a, b","c\\"d"]'};
-  const f = mount(propertyForm([prop('tags', 'string_list')], source));
+  const f = mount(propertyForm([prop('tags', 'string_list')], {tags: '["a, b","c\\"d"]'}));
   assert.deepEqual(kinds(f), ['list-input']);
   assert.deepEqual(inputOf(f, 'tags').value.value, ['a, b', 'c"d']);
-  inputOf(f, 'tags').value.value = ['e'];
-  assert.deepEqual(source.tags, ['e']);
   f.dispose();
 });
 

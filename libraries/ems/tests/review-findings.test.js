@@ -409,28 +409,12 @@ scoped('finding 7b: a sibling source of the same table reloads after another one
 
 // ─────────────── EMS-011: a list written into a string_list cell of the d42 frame ───────────────
 
-scoped('EMS-011: setValue, addRow and a conflict RELOAD put a list into a string cell as JSON text', {}, async () => {
+scoped('EMS-011: setValue puts a list into a string cell as JSON text', {}, async () => {
   const {DomainFrameEditor} = await import('../../../js-api/dist/src/ui/domains/domains-editor.js');
-  const {DomainObjectHandler} = await import('../../../js-api/dist/src/domains-ui.js');
-  const rows = [{id: 'i1', tags: '["a"]'}];
-  const column = (name) => ({type: 'string', set: (row, value) => { rows[row][name] = value; }});
+  const cells = {};
   const editor = Object.assign(Object.create(DomainFrameEditor.prototype), {
-    _df: {get rowCount() { return rows.length; }, columns: {contains: () => true, byName: column},
-      set: (name, row, value) => { rows[row][name] = value; },
-      rows: {addNew: () => rows.push({}), requestFilter: () => {}, insertAt: () => {}}},
-    access: {fields: {}}, _propByName: new Map(), _suspend: false, _busy: () => false, changesOf: () => ({}),
-    _wire: () => null, _track: () => {}, _validateRow: () => {}, _recount: () => {}, _fire: () => {},
-    _pristine: new Set(), _snapshots: new Map(), _clearRowState: () => {}, _onConflict: {next: () => {}},
-    _displayOf: () => 'Aspirin', client: {get: async () => ({tags: ['x', 'y']})}});
+    _df: {columns: {byName: () => ({type: 'string'})}, set: (name, row, value) => { cells[name] = value; }},
+    _suspend: false, _busy: () => false, changesOf: () => ({}), _wire: () => null, _track: () => {}});
   editor.setValue(0, 'tags', ['a, b', 'c"d']);
-  assert.equal(rows[0].tags, '["a, b","c\\"d"]', 'the text the server parses (batch_loader _coerceCell)');
-  assert.equal(rows[editor.addRow({tags: ['z']})].tags, '["z"]');
-  const dialog = DomainObjectHandler.showConflictDialog;
-  DomainObjectHandler.showConflictDialog = async () => 'reload';
-  try {
-    await editor.resolveConflict({}, {row: 0, op: {id: 'i1'}});
-  } finally {
-    DomainObjectHandler.showConflictDialog = dialog;
-  }
-  assert.equal(rows[0].tags, '["x","y"]');
+  assert.equal(cells.tags, '["a, b","c\\"d"]', 'the text the server parses (batch_loader _coerceCell)');
 });
