@@ -181,13 +181,13 @@ const textMask = (test: (s: string, v: string) => boolean, negate: boolean = fal
     const raw = c.options?.raw === true ? ColumnEvaluator.likeRegExp(String(c.value)) : null;
     const v = String(c.value ?? '').toLowerCase();
     return ColumnEvaluator.where(col, c, ctx, (cell) =>
-      raw ? raw.test(String(cell)) : test(String(cell).toLowerCase(), v), negate);
+      (raw ? raw.test(String(cell)) : test(String(cell).toLowerCase(), v)) !== negate, negate);
   };
 
 const regexMask = (negate: boolean) =>
   (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}): BitArray => {
     const re = new RegExp(String(c.value), 'i');
-    return ColumnEvaluator.where(col, c, ctx, (cell) => re.test(String(cell)), negate);
+    return ColumnEvaluator.where(col, c, ctx, (cell) => re.test(String(cell)) !== negate, negate);
   };
 
 const compare = (op: string, label: string): FilterOperator => ({
@@ -213,7 +213,7 @@ export const CORE_OPERATORS: FilterOperator[] = [
   {
     id: '!=', label: 'not equals', arity: 1, kinds: KINDS, editor: 'default',
     domain: (c, _prop, ctx) => node(c.property, '!=', domainValue(c.value, ctx)),
-    mask: where((x, v) => x === v, true),
+    mask: where((x, v) => x !== v, true),
   },
   compare('>', 'greater than'),
   compare('>=', 'at least'),
@@ -235,7 +235,7 @@ export const CORE_OPERATORS: FilterOperator[] = [
   {
     id: 'not in', label: 'is not one of', arity: 'n', kinds: [...LISTABLE, KIND.STRING_LIST], editor: 'list',
     domain: (c, _prop, ctx) => node(c.property, '!=', domainValue(c.value, ctx)),
-    mask: where((x, list: MaskCell[]) => list.includes(x), true),
+    mask: where((x, list: MaskCell[]) => !list.includes(x), true),
   },
   {
     // The hierarchy subtree term: the server walks the target's parent column

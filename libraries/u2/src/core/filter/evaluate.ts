@@ -67,13 +67,12 @@ export class ColumnEvaluator {
     return BitArray.create(col.length, (i) => (categories[raw[i]] ?? '') === '');
   }
 
-  /** The rows whose non-null cell passes `test` (fails it, with `negate`) against the condition's value
-   * converted to the column's kind (a list element-wise); nulls never pass — the SQL reading every other
-   * target has. A string list asks about its elements: some passes, or with `negate` none does, a null or
+  /** The rows whose non-null cell passes `test` against the condition's value converted to the column's
+   * kind (a list element-wise); nulls never pass — the SQL reading every other target has. A string list
+   * asks about its elements: some passes, or with `negate` (a negated `test`) every one does, a null or
    * empty list included. */
   static where(col: MaskColumnLike, c: FilterCondition, ctx: {now: Date},
     test: (cell: MaskCell, value: any) => boolean, negate: boolean = false): BitArray {
-    const pass = negate ? (cell: MaskCell, value: any) => !test(cell, value) : test;
     const kind = ColumnEvaluator.kindOf(col);
     const raw = kind === KIND.BIG_INT || kind === KIND.STRING_LIST ? null : col.getRawData();
     const f32 = raw instanceof Float32Array;
@@ -81,25 +80,28 @@ export class ColumnEvaluator {
     const value = Array.isArray(c.value) ? c.value.map(convert) : convert(c.value as FilterScalar);
     switch (kind) {
       case KIND.BOOL: {
-        const hit = [pass(false, value), pass(true, value)];
+        const hit = [test(false, value), test(true, value)];
         return BitArray.create(col.length, (i) => hit[(raw![i >>> 5] >>> (i & 31)) & 1]);
       }
       case KIND.BIG_INT:
         return BitArray.create(col.length, (i) => {
           const x = col.get!(i);
-          return x != null && pass(BigInt(x as bigint | number | string), value);
+          return x != null && test(BigInt(x as bigint | number | string), value);
         });
       case KIND.STRING_LIST:
         return BitArray.create(col.length, (i) => {
           const x = col.get!(i);
-          return (Array.isArray(x) && x.some((e) => e != null && test(String(e), value))) !== negate;
+          if (!Array.isArray(x))
+            return negate;
+          return negate ? x.every((e) => e == null || test(String(e), value)) :
+            x.some((e) => e != null && test(String(e), value));
         });
       case KIND.INT:
-        return BitArray.create(col.length, (i) => raw![i] !== INT_NULL && pass(raw![i], value));
+        return BitArray.create(col.length, (i) => raw![i] !== INT_NULL && test(raw![i], value));
       case KIND.FLOAT: case KIND.DATE_TIME:
-        return BitArray.create(col.length, (i) => !isFloatNull(raw![i]) && pass(raw![i], value));
+        return BitArray.create(col.length, (i) => !isFloatNull(raw![i]) && test(raw![i], value));
       default: {
-        const hit = (col.categories ?? []).map((s) => s !== '' && pass(s, value));
+        const hit = (col.categories ?? []).map((s) => s !== '' && test(s, value));
         return BitArray.create(col.length, (i) => hit[raw![i]] === true);
       }
     }
