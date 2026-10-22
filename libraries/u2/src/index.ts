@@ -174,7 +174,7 @@ export {Filters, FilterError, KIND, OperatorRegistry, CORE_OPERATORS, ColumnEval
 export type {FilterKind, Lock, FilterRef, FilterSpan, FilterColumnRef, FilterParam, FilterScalar, FilterValue,
   FilterCondition, FilterGroup,
   FilterNode, FilterJsonGroup, FilterJsonCondition, FilterJsonNode, FilterProblem, DomainCondition,
-  DomainConditionNode, DomainConditionTree, FilterOperator, FilterOperatorSet,
+  DomainConditionNode, DomainConditionTree, FilterOperator, FilterOperatorParameter, FilterOperatorSet,
   FilterProperty, FilterValueItem, FilterSchema, FilterTemplate, FilterDiff, FilterValueEditorFactory,
   FilterTarget, FilterToken, FilterCompletion, MaskColumnLike, MaskFrameLike} from './core/filter/index.js';
 export {FilterBuilder} from './components/filter/filter-builder.js';

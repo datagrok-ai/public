@@ -1,6 +1,7 @@
 /* The rows of a `FilterBuilder`: condition, advanced-mode group and the read-only nested summary of simple mode.
    A row never touches the tree: edits go to the host as a patch, the host writes a new root and calls `update()`. */
 import {Scope} from '../../core/scope.js';
+import {untracked} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {div, span, button} from '../../core/elements.js';
 import type {Input} from '../../core/input-base.js';
@@ -18,7 +19,7 @@ import {TagsInput} from '../inputs/tags-input.js';
 import {RefInput} from './ref-input.js';
 import {KIND, format, isRef, isSpan, kindOf, operators, property, valueEquals} from '../../core/filter/index.js';
 import type {FilterCondition, FilterGroup, FilterKind, FilterScalar, FilterValue, Lock, FilterOperator,
-  FilterProperty, FilterSchema, FilterValueEditorFactory} from '../../core/filter/index.js';
+  FilterOperatorParameter, FilterProperty, FilterSchema, FilterValueEditorFactory} from '../../core/filter/index.js';
 
 /** What a row asks of the builder that owns it. */
 export interface FilterRowHost {
@@ -122,6 +123,7 @@ export class FilterRow extends Control {
   private _editorKey = '';
   private _editorScope: Scope | undefined;
   private _editors: ValueEditor[] = [];
+  private _parameter: NumberInput | undefined;
 
   constructor(cond: FilterCondition, host: FilterRowHost) {
     super();
@@ -149,7 +151,7 @@ export class FilterRow extends Control {
     this._propText.textContent = prop?.friendlyName ?? cond.property;
     this._opText.textContent = op?.label ?? cond.operator;
     // editors are rebuilt on a change of shape, not of operator: `>` → `<=` keeps the number box
-    const key = `${cond.property} ${op?.editor}/${op?.arity}`;
+    const key = `${cond.property} ${op?.editor}/${op?.arity}/${op?.parameter?.name ?? ''}`;
     if (key !== this._editorKey) {
       this._editorKey = key;
       this._buildEditors(cond, prop, op);
@@ -237,6 +239,7 @@ export class FilterRow extends Control {
     this._editorScope?.dispose();
     this._editorScope = undefined;
     this._editors = [];
+    this._parameter = undefined;
     this._valueHost.textContent = '';
     this._valueHost.append(this._problem);
   }
@@ -257,7 +260,37 @@ export class FilterRow extends Control {
         this._mount(this._scalarEditor(prop, hi, (v) => this._writeBound(1, v)), 'value2');
       } else
         this._mount(this._singleEditor(cond, prop), 'value');
+      if (op.parameter !== undefined)
+        this._mountParameter(cond, op.parameter);
     });
+  }
+
+  /** The operator's number, taken on Enter or when left; text that is no number in its range leaves the condition
+   * without one, which validation refuses, so it is never applied as some other number. */
+  private _mountParameter(cond: FilterCondition, parameter: FilterOperatorParameter): void {
+    const input = this._parameter = new NumberInput({inline: true, label: parameter.label, min: parameter.min,
+      max: parameter.max, step: parameter.step, value: FilterRow._argument(cond, parameter), commitOn: 'change'});
+    input.root.dataset.u2Part = 'parameter';
+    let initial = true;
+    input.effect(() => {
+      const typed = input.validity.value === null ? input.value.value : null;
+      if (initial) {
+        initial = false;
+        return;
+      }
+      untracked(() => {
+        if (!Object.is(typed, FilterRow._argument(this._cond, parameter)))
+          this._host.change(this.id, {options: {...this._cond.options, [parameter.name]: typed}});
+      });
+    });
+    this._valueHost.insertBefore(div([span(parameter.label, 'u2-fb-and'), input.root], 'u2-fb-parameter'),
+      this._problem);
+  }
+
+  /** The condition's parameter: the default where it has none, null where it holds no number. */
+  private static _argument(c: FilterCondition, parameter: FilterOperatorParameter): number | null {
+    const value = c.options?.[parameter.name];
+    return value === undefined ? parameter.default : typeof value === 'number' ? value : null;
   }
 
   private _mount(editor: ValueEditor, part: 'value' | 'value2'): void {
@@ -271,6 +304,15 @@ export class FilterRow extends Control {
     const values = this._editors.length === 2 ? FilterRow._bounds(cond) : [cond.value];
     for (let i = 0; i < this._editors.length; i++)
       this._editors[i].set(values[i]);
+    const parameter = operators.get(cond.operator)?.parameter;
+    const input = this._parameter;
+    if (input === undefined || parameter === undefined)
+      return;
+    // text the condition holds no number for stays in the box: writing the default over it undoes the typing
+    const typed = input.validity.peek() === null ? input.value.peek() : null;
+    const argument = FilterRow._argument(cond, parameter);
+    if (!Object.is(typed, argument))
+      input.value.value = argument;
   }
 
   private static _bounds(c: FilterCondition): [FilterScalar | undefined, FilterScalar | undefined] {

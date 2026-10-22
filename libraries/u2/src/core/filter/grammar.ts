@@ -229,7 +229,7 @@ class Reader {
     const property = this.property();
     if (property !== undefined) {
       const after = this.pos;
-      for (const alternative of [this.fuzzyCondition, this.operatorCondition, this.inCondition,
+      for (const alternative of [this.hostCondition, this.fuzzyCondition, this.operatorCondition, this.inCondition,
         this.underCondition, this.betweenCondition]) {
         const result = alternative.call(this, property);
         if (result !== undefined)
@@ -320,23 +320,37 @@ class Reader {
   fuzzyCondition(property: string): DomainConditionNode | undefined {
     if (!this.keyword('fuzzy'))
       return undefined;
-    let threshold: number | null = null;
-    if (this.ch() === '(') {
-      const save = this.pos;
-      this.pos++;
-      this.ws();
-      const n = this.number();
-      this.ws();
-      if (n !== undefined && this.literal(')'))
-        threshold = n;
-      else
-        this.pos = save;
-    }
+    const threshold = this.argument();
     const value = this.value();
     if (value === undefined)
       return undefined;
     return [{property, operator: 'fuzzy', threshold, value}, 'or',
       node(property, 'like', isPlaceholder(value) ? value : `%${this.interpolate(value)}%`)];
+  }
+
+  /** A host operator (`Filters.operators` `host`) by its id — `structure is similar to(0.7) "CCO"`. */
+  hostCondition(property: string): DomainConditionNode | undefined {
+    const op = operators.hosted().find((o) => this.keyword(o.id));
+    if (op === undefined)
+      return undefined;
+    const threshold = op.parameter === undefined ? null : this.argument();
+    const value = this.value();
+    return value === undefined ? undefined : {property, operator: op.id, threshold, value};
+  }
+
+  /** `(<number>)` right after an operator, else null with nothing read. */
+  argument(): number | null {
+    if (this.ch() !== '(')
+      return null;
+    const save = this.pos;
+    this.pos++;
+    this.ws();
+    const n = this.number();
+    this.ws();
+    if (n !== undefined && this.literal(')'))
+      return n;
+    this.pos = save;
+    return null;
   }
 
   operatorCondition(property: string): DomainConditionNode | undefined {

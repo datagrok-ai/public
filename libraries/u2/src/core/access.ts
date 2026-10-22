@@ -65,6 +65,17 @@ export class Access {
       this._writes, {...this._bound, ...deny});
   }
 
+  /** The same access with `names` read-only — columns the app computes rather than the user types.
+   * Deny-only, like {@link narrow}: a hidden field stays hidden. */
+  readOnlyFields(names: Iterable<string>): Access {
+    const fields = {...this._fields};
+    for (const name of names) {
+      if ((this._fields[name] ?? this._unlistedField) !== 'hidden')
+        fields[name] = 'readonly';
+    }
+    return new Access(this._can, fields, this._unlistedCan, this._unlistedField, this._writes, this._bound);
+  }
+
   /** The table's column security alone: the fields exactly as declared, every capability granted
    * and unbounded. What a bulk edit and an import offer columns by — on a row-mode table the
    * table-level `edit`/`insert` are false negatives (GOAL "Access"), and the server narrows the

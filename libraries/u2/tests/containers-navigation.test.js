@@ -683,3 +683,27 @@ ui('Section: chevron end — the header placed in a row of its own stays the tog
   assert.match(sheet, /\.u2-section-header\[aria-invalid='true'\] > \.u2-section-title/);
   section.dispose();
 });
+
+ui('TabStrip: a tab made active scrolls the strip alone to show it, never the page the strip sits in', () => {
+  const strip = new TabStrip({tabs: [
+    {id: 'batches', label: 'Batches', content: content('b')},
+    {id: 'results', label: 'Assay Results', content: content('r')},
+  ]});
+  document.body.append(strip.root);
+  const scroller = strip.root.querySelector('.u2-tabs-scroller');
+  const [first, second] = strip.root.querySelectorAll('[role="tab"]');
+  let page = 0;
+  for (const header of [first, second])
+    header.scrollIntoView = () => page++;
+  scroller.rect = new DOMRect(0, 900, 100, 30);
+  first.rect = new DOMRect(0, 900, 70, 30);
+  second.rect = new DOMRect(70, 900, 120, 30);
+  strip.activeTab.value = 'results';
+  assert.equal(page, 0, 'nothing above the strip moves');
+  assert.equal(scroller.scrollLeft, 90, 'the strip shows the whole header');
+  second.rect = new DOMRect(-20, 900, 120, 30);
+  first.rect = new DOMRect(-90, 900, 70, 30);
+  strip.activeTab.value = 'batches';
+  assert.equal(scroller.scrollLeft, 0, 'and back to the first');
+  strip.dispose();
+});

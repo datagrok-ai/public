@@ -3,7 +3,7 @@ import type {FilterCondition, FilterGroup, FilterKind, FilterNode, FilterProblem
 import {checkLocks, property} from './schema.js';
 import type {FilterProperty, FilterSchema, FilterTemplate} from './schema.js';
 import {operators} from './operators.js';
-import type {FilterOperator} from './operators.js';
+import type {FilterOperator, FilterOperatorParameter} from './operators.js';
 import {kindOf} from './kinds.js';
 import {isSpanText} from '../span.js';
 
@@ -81,6 +81,18 @@ function badScalar(v: FilterScalar, kind: FilterKind, prop: FilterProperty, op: 
   return null;
 }
 
+/** A parameter left out takes its default; one given is a number within its bounds — an emptied or
+ * mistyped one never stands in for another number. */
+function badParameter(v: unknown, p: FilterOperatorParameter): string | null {
+  const inRange = typeof v === 'number' && Number.isFinite(v) &&
+    (p.min === undefined || v >= p.min) && (p.max === undefined || v <= p.max);
+  if (v === undefined || inRange)
+    return null;
+  const range = p.min !== undefined && p.max !== undefined ? ` from ${p.min} to ${p.max}` :
+    p.min !== undefined ? ` of at least ${p.min}` : p.max !== undefined ? ` of at most ${p.max}` : '';
+  return `${p.label}: a number${range}`;
+}
+
 function checkCondition(c: FilterCondition, schema: FilterSchema, target: FilterTarget | undefined,
   problems: FilterProblem[]): void {
   const problem = (code: FilterProblem['code'], message: string) => problems.push({nodeId: c.id, code, message});
@@ -118,7 +130,12 @@ function checkCondition(c: FilterCondition, schema: FilterSchema, target: Filter
       }
     }
   }
-  const expressible = target === 'domain' ? op.domain !== undefined :
+  const parameter = op.parameter === undefined ? null : badParameter(c.options?.[op.parameter.name], op.parameter);
+  if (parameter !== null) {
+    problem('invalid-value', parameter);
+    return;
+  }
+  const expressible = target === 'domain' ? op.domain !== undefined || op.host === true :
     target === 'dataframe' ? op.mask !== undefined || op.bitset !== undefined : true;
   if (!expressible)
     problem('not-expressible', `"${c.property} ${c.operator}" cannot be expressed for ${target}`);

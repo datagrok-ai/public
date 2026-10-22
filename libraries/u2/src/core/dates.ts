@@ -37,6 +37,11 @@ export class Dates {
       hours: date.getUTCHours(), minutes: date.getUTCMinutes()};
   }
 
+  /** The UTC calendar day of an instant, `yyyy-MM-dd` — how a date reads wherever it is shown. */
+  static utcDay(date: Date): string {
+    return date.toISOString().slice(0, 10);
+  }
+
   /** An instant from UTC calendar parts — the inverse of {@link utcParts}. */
   static fromUtcParts(parts: {year: number, month: number, day: number, hours?: number, minutes?: number}): Date {
     return new Date(Date.UTC(parts.year, parts.month - 1, parts.day, parts.hours ?? 0, parts.minutes ?? 0));

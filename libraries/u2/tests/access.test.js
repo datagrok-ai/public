@@ -174,6 +174,16 @@ scoped('Access.narrow is deny-only: a true entry grants nothing and lifts no bou
   assert.equal(Access.readOnly.narrow({edit: true}).can('edit'), false);
 });
 
+scoped('Access.readOnlyFields: the named fields are text, a hidden one stays hidden, the rest untouched', () => {
+  const access = Access.from(DATA).readOnlyFields(['title', 'salary']);
+  assert.equal(access.field('title'), 'readonly');
+  assert.equal(access.field('salary'), 'hidden', 'deny-only: nothing is revealed');
+  assert.equal(access.can('edit'), true, 'the capabilities are the same');
+  assert.equal(access.row({'~state': 'new'}).field('title'), 'readonly', 'and so is a draft');
+  assert.equal(Access.full.readOnlyFields(['a']).field('a'), 'readonly');
+  assert.equal(Access.full.readOnlyFields(['a']).field('b'), 'editable');
+});
+
 scoped('Access.columnPolicy: the fields as declared, every capability granted and unbounded', () => {
   const policy = Access.from(DATA).narrow({edit: false, insert: false}).columnPolicy();
   assert.equal(policy.can('edit'), true, 'the bound a trash source set is not read here');

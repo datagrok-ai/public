@@ -284,10 +284,11 @@ export class Form extends Control {
   }
 
   /** Focus to the first input — where a form starts, and where it returns after Save; with
-   * `where`, the first input it accepts, else the first. */
+   * `where`, the first input it accepts, else the first. The page is not scrolled to it: a form
+   * opens at its top, whichever field the typing starts in. */
   focusFirst(where?: (input: Input<any>) => boolean): void {
     const input = (where === undefined ? undefined : this._inputs.find(where)) ?? this._inputs[0];
-    input?.focus();
+    input?.focus({preventScroll: true});
   }
 
   /** Shows every verdict the form counts — inputs that are visible and enabled — and focuses the

@@ -494,11 +494,11 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   }
 
   /** Focuses the editor — the {@link focusTarget}, or the first focusable control inside it. */
-  focus(): void {
+  focus(options?: FocusOptions): void {
     const target = this.focusTarget;
     const focusable = target.matches(Input._FOCUSABLE) ? target :
       target.querySelector<HTMLElement>(Input._FOCUSABLE) ?? target;
-    focusable.focus();
+    focusable.focus(options);
   }
 
   private static readonly _FOCUSABLE = 'input, textarea, select, button, [tabindex]';

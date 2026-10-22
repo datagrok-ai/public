@@ -9,6 +9,7 @@ import {EMPTY, isEmpty, text} from '../../core/text.js';
 import {Access} from '../../core/access.js';
 import type {FieldAccess} from '../../core/access.js';
 import type {IFieldStatus, IWidgetStatus} from '../../core/widget-like.js';
+import type {ObjectRenderer} from '../../core/object-renderer.js';
 import {div, span} from '../../core/elements.js';
 import {Form} from '../../components/forms/form.js';
 import type {FormLayout} from '../../components/forms/form.js';
@@ -18,7 +19,8 @@ import {BigIntInput} from '../../components/inputs/bigint-input.js';
 import {QNumInput} from '../../components/inputs/qnum-input.js';
 import {BoolInput} from '../../components/inputs/bool-input.js';
 import {ChoiceInput, MultiChoiceInput} from '../../components/inputs/choice-input.js';
-import {DateTimeInput} from '../../components/inputs/date-input.js';
+import {DateInput, DateTimeInput} from '../../components/inputs/date-input.js';
+import {Dates} from '../../core/dates.js';
 import {TextArea} from '../../components/inputs/text-input.js';
 import {RadioInput} from '../../components/inputs/radio-input.js';
 import {ColorInput} from '../../components/inputs/color-input.js';
@@ -80,6 +82,8 @@ interface Field {
   input: Input<any> | null;
   access: FieldAccess;
   text?: HTMLElement;
+  /** The molecule a readonly field draws — kept while its value stands. */
+  drawn?: string;
 }
 
 export type InputFactory = (prop: IProperty, options: InputOptions<any>) => Input<any>;
@@ -290,7 +294,7 @@ export function inputForProperty(prop: IProperty | null,
     case 'qnum':
       return new QNumInput({...merged, format: formatter(prop)});
     case 'datetime':
-      return new DateTimeInput(merged);
+      return ObjectForm.isDate(prop) ? new DateInput({...merged, utcDates: true}) : new DateTimeInput(merged);
     case 'list':
       return prop.choices != null && prop.choices.length > 0 ?
         new MultiChoiceInput({...merged, items: prop.choices}) : new ListInput(merged);
@@ -314,6 +318,7 @@ export class ObjectForm extends Form {
   private readonly _auto: boolean;
   private readonly _access: Access;
   private _refreshing = false;
+  private static _molecules: Promise<ObjectRenderer<string>> | undefined;
 
   constructor(props: IProperty[], target: object, options: ObjectFormOptions = {}) {
     super({layout: options.layout ?? (options.condensed ? 'tall' : undefined)});
@@ -350,7 +355,7 @@ export class ObjectForm extends Form {
           if (field.input !== null)
             field.input.value.value = this._read(field.prop, field.kind);
           else
-            field.text!.textContent = text(this._read(field.prop, 'readonly'));
+            ObjectForm._display(field, this._read(field.prop, null));
         }
       });
     } finally {
@@ -385,12 +390,14 @@ export class ObjectForm extends Form {
     const access = this._access.field(prop.name!);
     if (access === 'readonly') {
       const {row, value} = ObjectForm.readonlyField(labelText(override.label) ?? ObjectForm._caption(prop),
-        prop.name!, text(this._read(prop, 'readonly')));
+        prop.name!, '');
       const tooltip = labelText(override.tooltipText) ?? prop.description;
       if (tooltip)
         row.title = tooltip;
       this.addElement(row);
-      this._fields.push({prop, kind: 'readonly', input: null, access, text: value});
+      const field: Field = {prop, kind: 'readonly', input: null, access, text: value};
+      ObjectForm._display(field, this._read(prop, null));
+      this._fields.push(field);
       return;
     }
     const kind = kindOf(prop);
@@ -441,6 +448,43 @@ export class ObjectForm extends Form {
       set(this.target, value);
       this._onChanged?.(prop.name!, value);
     });
+  }
+
+  /** A readonly field's text: a number in the property's display format, as its editor shows it; a
+   * date as its UTC day. */
+  static displayText(prop: IProperty, value: unknown): string {
+    const date = ObjectForm.isDate(prop) ? ObjectForm.coerce('datetime', value) as Date | null : null;
+    if (date !== null)
+      return Dates.utcDay(date);
+    const format = typeof value === 'number' ? formatter(prop) : undefined;
+    return format === undefined ? text(value) : format(value as number);
+  }
+
+  /** A `datetime` whose display format names no time of day holds a date: stamped at midnight UTC,
+   * and shown and edited as that UTC day — the day a grid and a list read it as. */
+  static isDate(prop: IProperty): boolean {
+    const format = prop.format ?? '';
+    return (prop.propertyType ?? prop.type) === 'datetime' && format !== '' && !/[Hhms]/.test(format);
+  }
+
+  /** A readonly field's value: a molecule as the platform draws it — the string until the drawing
+   * lands, and for good off the platform — anything else as {@link displayText}. */
+  private static _display(field: Field, value: unknown): void {
+    if (field.prop.semType !== 'Molecule' || typeof value !== 'string' || value === '') {
+      field.drawn = undefined;
+      field.text!.textContent = ObjectForm.displayText(field.prop, value);
+      return;
+    }
+    if (field.drawn === value)
+      return;
+    field.drawn = value;
+    field.text!.textContent = value;
+    // imported on first use: the renderer reaches the platform at import, and this module loads without it
+    ObjectForm._molecules ??= import('../inputs/molecule.js').then((m) => m.moleculeRenderer());
+    void ObjectForm._molecules.then((renderer) => {
+      if (field.drawn === value)
+        field.text!.replaceChildren(renderer.markup!(value));
+    }).catch(() => undefined);
   }
 
   /** The caption + value line a field renders as where it is text rather than an editor —

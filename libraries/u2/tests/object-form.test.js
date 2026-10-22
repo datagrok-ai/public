@@ -340,6 +340,24 @@ form('a format string goes through DG.format wherever the platform is loaded', (
   plain.dispose();
 });
 
+form('a readonly number is shown in the property\'s format, as its editor would show it', () => {
+  const props = [prop('regno', 'int', {format: 'DG-000000'}), prop('label', 'string', {format: 'ignored'})];
+  const readonly = {access: Access.from({can: {}, fields: {regno: 'readonly', label: 'readonly'}})};
+  const value = (f, name) => f.root.querySelector(`[data-u2-name="${name}"] [data-u2-part="readonly-value"]`).textContent;
+  try {
+    globalThis.DG = {format: (x, format) => `${format.replace(/0+$/, '')}${String(x).padStart(6, '0')}`};
+    const formatted = mount(propertyForm(props, {regno: 60, label: 'x'}, readonly));
+    assert.equal(value(formatted, 'regno'), 'DG-000060');
+    assert.equal(value(formatted, 'label'), 'x', 'a string is its own text');
+    formatted.dispose();
+  } finally {
+    delete globalThis.DG;
+  }
+  const plain = mount(propertyForm(props, {regno: 60, label: 'x'}, readonly));
+  assert.equal(value(plain, 'regno'), '60', 'off-platform the number is plain');
+  plain.dispose();
+});
+
 form('inputForProperty is that same mapping, for editors that learn the property late', () => {
   const unbound = mount(inputForProperty(null));
   assert.equal(unbound.root.dataset.u2, 'text-input', 'nothing bound, nothing to map');
@@ -618,4 +636,25 @@ form('a column named description is a textarea unless an editor hint says otherw
   assert.equal(f.inputs[1].root.dataset.u2, 'text-input');
   assert.equal(f.inputs[2].root.dataset.u2, 'text-input', 'the hint wins');
   f.dispose();
+});
+
+form('a datetime whose format names no time of day is a date: shown, edited and stored as its UTC day', () => {
+  const row = {acquired: '2024-12-06T00:00:00.000Z', run: '2024-02-03T09:30:00.000Z', made: '2024-12-06T00:00:00.000Z'};
+  const f = mount(propertyForm([
+    prop('acquired', 'datetime', {format: 'yyyy-MM-dd'}),
+    prop('run', 'datetime', {format: 'yyyy-MM-dd HH:mm'}),
+  ], row));
+  assert.deepEqual(kinds(f).slice(0, 2), ['date-input', 'datetime-input'], 'a time in the format keeps the time');
+  const box = editorOf(f, 'acquired');
+  assert.equal(box.value, '2024-12-06', 'the stored day, in any zone — no time of day beside it');
+  box.value = '2024-12-07';
+  fire(box, 'input');
+  fire(box, 'blur');
+  assert.equal(new Date(row.acquired).toISOString(), '2024-12-07T00:00:00.000Z', 'a typed day is that day at midnight UTC');
+  f.dispose();
+  const text = mount(propertyForm([prop('made', 'datetime', {format: 'yyyy-MM-dd'})], row,
+    {access: Access.from({can: {}, fields: {made: 'readonly'}})}));
+  assert.equal(text.root.querySelector('[data-u2-name="made"] [data-u2-part="readonly-value"]').textContent,
+    '2024-12-06', 'read-only, the same day as text');
+  text.dispose();
 });

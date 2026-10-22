@@ -60,6 +60,24 @@
   margin-left: 1px;
 }
 
+/* a bridged platform input keeps the platform's caption: the asterisk goes there, hung the same way */
+.u2-input-required[data-u2='dart-input'] .ui-input-label::after {
+  content: '*';
+  margin-left: var(--dg-space-xs);
+  color: var(--dg-error);
+}
+
+.u2-form:not(.u2-form-captions-left):not(.u2-form-tall) .u2-input-required[data-u2='dart-input'] .ui-input-label {
+  position: relative;
+  overflow: visible;
+}
+
+.u2-form:not(.u2-form-captions-left):not(.u2-form-tall) .u2-input-required[data-u2='dart-input'] .ui-input-label::after {
+  position: absolute;
+  left: 100%;
+  margin-left: 1px;
+}
+
 .u2-input-editor {
   box-sizing: border-box;
   height: var(--dg-control-height);
@@ -205,6 +223,12 @@ textarea.u2-input-editor {
   padding: 0;
 }
 
+/* a bridged input brings its caption inside its box, so no u2 label pushes u2's error line onto a row of
+   its own: the box keeps its width, and the line wraps under it */
+.u2-input-root[data-u2='dart-input'] > .u2-input-box {
+  flex-basis: auto;
+}
+
 /* a whole line of its own under the editor, whatever room is left beside it: the editors are as
    wide as the platform pins them, so a message that fit beside a 100px color field but not beside a
    460px one would land off the pane on one row and under the field on the next. Long verdicts
@@ -222,7 +246,8 @@ textarea.u2-input-editor {
   color: var(--dg-error);
 }
 
-.u2-input-error:empty {
+.u2-input-error:empty,
+.u2-input-error[hidden] {
   display: none;
 }
 

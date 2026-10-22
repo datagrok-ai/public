@@ -280,7 +280,7 @@ export class TabStrip extends Control {
             this._watchContent(tab, built);
         }));
       }
-      tab.header.scrollIntoView({block: 'nearest', inline: 'nearest'});
+      this._reveal(tab.header);
     }
   }
 
@@ -288,7 +288,19 @@ export class TabStrip extends Control {
     for (const t of this._tabs.peek())
       t.header.tabIndex = t === tab ? 0 : -1;
     tab.header.focus();
-    tab.header.scrollIntoView({block: 'nearest', inline: 'nearest'});
+    this._reveal(tab.header);
+  }
+
+  /** Scrolls the strip, and the strip alone, to show `header`: `scrollIntoView` scrolls every ancestor,
+   * so a page holding a strip low down jumped to it whenever a tab became active. */
+  private _reveal(header: HTMLElement): void {
+    const strip = this._scroller;
+    const box = strip.getBoundingClientRect();
+    const at = header.getBoundingClientRect();
+    if (this.orientation === 'vertical')
+      strip.scrollTop += at.top < box.top ? at.top - box.top : Math.max(0, at.bottom - box.bottom);
+    else
+      strip.scrollLeft += at.left < box.left ? at.left - box.left : Math.max(0, at.right - box.right);
   }
 
   private _onPointerDown(e: PointerEvent): void {
@@ -370,7 +382,7 @@ export class TabStrip extends Control {
     if (!tab)
       return;
     this.activeTab.value = tab.options.id;
-    tab.header.scrollIntoView({block: 'nearest', inline: 'nearest'});
+    this._reveal(tab.header);
   }
 
   private _onDocumentPointerDown(e: Event): void {

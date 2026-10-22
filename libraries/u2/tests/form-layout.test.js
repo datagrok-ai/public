@@ -628,3 +628,26 @@ test('stylesheet: dates keep their own width in a form; required marks hang past
   assert.match(radio, /\.u2-input-editor\.u2-radio\.u2-radio-buttons \{\s*flex-direction: row;/,
     'the segmented radio outranks the stacked editor rule');
 });
+
+ui('focusFirst focuses without scrolling: a form opens at its top, whichever field the typing starts in', () => {
+  const f = mount(new Form());
+  const first = input('Name', 60);
+  const second = input('Code', 60);
+  f.add(first);
+  f.add(second);
+  const calls = [];
+  for (const it of [first, second]) {
+    const el = it.root.querySelector('input');
+    const focus = el.focus;
+    el.focus = function(options) {
+      calls.push([it.name, options]);
+      return focus.call(this, options);
+    };
+  }
+  f.focusFirst((it) => it.name === 'Code');
+  f.focusFirst();
+  assert.deepEqual(calls, [['Code', {preventScroll: true}], ['Name', {preventScroll: true}]]);
+  f.dispose();
+  first.dispose();
+  second.dispose();
+});

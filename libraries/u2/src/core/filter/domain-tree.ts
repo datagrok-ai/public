@@ -90,6 +90,9 @@ function conditionFrom(c: DomainCondition, schema?: FilterSchema): FilterConditi
   const text = (): FilterValue => placeholder(v) ?? String(v);
   if (op === 'fuzzy')
     return cond(property, 'fuzzy', text(), c.threshold == null ? undefined : {options: {threshold: c.threshold}});
+  const parameter = operators.get(op)?.parameter;
+  if (parameter !== undefined)
+    return cond(property, op, value(v), c.threshold == null ? undefined : {options: {[parameter.name]: c.threshold}});
   if ((op === '=' || op === '!=') && Array.isArray(v))
     return cond(property, op === '=' ? 'in' : 'not in', value(v));
   if ((op === '=' || op === '!=') && v == null)
@@ -261,7 +264,11 @@ function formatCondition(c: FilterCondition): string {
         s.endsWith('%') && wildcardAt(s, s.length - 1);
       return `${prop} ${c.operator} ${quote(outer ? s.slice(1, -1) : s)}`;
     }
-    default: return `${prop} ${c.operator} ${formatValue(c.value)}`.trimEnd();
+    default: {
+      const parameter = operators.get(c.operator)?.parameter;
+      const t = parameter === undefined ? undefined : c.options?.[parameter.name];
+      return `${prop} ${c.operator}${typeof t === 'number' ? `(${t})` : ''} ${formatValue(c.value)}`.trimEnd();
+    }
   }
 }
 

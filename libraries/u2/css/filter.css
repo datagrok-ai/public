@@ -279,6 +279,18 @@
   color: var(--dg-text-color-light);
 }
 
+/* an operator's number wraps with its label, never leaving the label beside the value */
+.u2-fb-parameter {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+}
+
+.u2-fb-parameter > .u2-input-root {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .u2-fb-remove,
 .u2-fb-add {
   color: var(--dg-text-color-light);
