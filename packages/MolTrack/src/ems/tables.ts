@@ -218,7 +218,6 @@ export class MolTrackTables {
         return {...identity};
       },
     });
-    // a new batch's compound never gets this far: the batch is added to the registered one instead (BatchesApp)
     table.validators.add('original_structure', (value, row) => {
       const other = MolTrackTables.duplicateOf(row);
       return other === undefined ? null :

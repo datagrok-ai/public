@@ -2,9 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {after, awaitCheck, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
-import {DomainApp, DomainPick, DomainSearch} from '@datagrok-libraries/ems/src/dg';
-import {Filters, Rows} from '@datagrok-libraries/u2';
+import {after, awaitCheck, category, delay, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {domains, DomainApp, DomainPick, DomainSearch} from '@datagrok-libraries/ems/src/dg';
+import {Control, Filters, Rows} from '@datagrok-libraries/u2';
 import {moltrackEmsDb} from '../generated/db';
 import {Chemistry, MatchRule} from '../ems/chemistry';
 import {MolTrackEms, VIEWS} from '../ems/app';
@@ -72,24 +72,29 @@ category('MolTrack EMS: registration', () => {
   const chain = (n: number, end = 'C(=O)O') => `${'C'.repeat(n)}${end}`;
   const created = {compounds: new Set<string>(), batches: new Set<string>()};
 
+  /** The compounds a run registered — not the ones it found registered already, which may be the demo's. */
   const remember = async (report: DG.DataFrame) => {
-    const track = async (column: string, client: DG.DomainTableClient, field: string, ids: Set<string>) => {
-      for (const id of report.col(column)?.toList() ?? []) {
-        const row = id ? await client.first({filter: `${field} = ${Number(DomainPick.digits(id))}`}) : null;
-        if (row !== null)
-          ids.add(row.id);
-      }
-    };
-    await track(Registration.COMPOUND_ID, moltrackEmsDb.compounds, 'molregno', created.compounds);
-    await track(Registration.BATCH_ID, moltrackEmsDb.compoundBatches, 'batch_regno', created.batches);
+    const ids = report.col(Registration.COMPOUND_ID)!;
+    for (let i = 0; i < report.rowCount; i++) {
+      if (report.get(Registration.STATUS, i) !== 'success')
+        continue;
+      const row = await moltrackEmsDb.compounds.first({filter: `molregno = ${Number(DomainPick.digits(ids.get(i)))}`});
+      if (row !== null)
+        created.compounds.add(row.id);
+    }
   };
-  const register = async (rows: Record<string, string>[], batches: boolean, rejectAll = false) => {
-    const report = await MolTrackEms.register(DG.DataFrame.fromObjects(rows)!, batches, rejectAll);
+  const register = async (rows: Record<string, string>[], rejectAll = false) => {
+    const report = await MolTrackEms.register(DG.DataFrame.fromObjects(rows)!, rejectAll);
     await remember(report);
     return report;
   };
   const statuses = (report: DG.DataFrame) => report.col(Registration.STATUS)!.toList();
   const messages = (report: DG.DataFrame) => report.col(Registration.MESSAGE)!.toList();
+  // an empty cell is a hole in the list
+  const grokIds = (report: DG.DataFrame) =>
+    Array.from(report.col(Registration.COMPOUND_ID)!.toList(), (id) => id ?? '');
+  const compoundOf = async (grokId: string) =>
+    (await moltrackEmsDb.compounds.first({filter: `molregno = ${Number(DomainPick.digits(grokId))}`}))!;
 
   after(async () => {
     const failed: string[] = [];
@@ -101,59 +106,54 @@ category('MolTrack EMS: registration', () => {
       throw new Error(`Cleanup failed: ${failed.join('; ')}`);
   });
 
-  test('a parent and its salt register as one compound with two batches', async () => {
-    const report = await register([
-      {'smiles': chain(25), 'EPA Batch ID': `${tag}-1`, 'Purity': '99.5', 'Common Name': 'Pentacosanoic acid'},
-      {'smiles': chain(25, 'C(=O)[O-].[Na+]'), 'EPA Batch ID': `${tag}-2`, 'Purity': '97.25',
-        'Common Name': 'Sodium pentacosanoate'},
-    ], true);
-    expectArray(statuses(report), ['success', 'success']);
-    const ids = report.col(Registration.COMPOUND_ID)!.toList();
-    expect(ids[0], ids[1]);
-    expect(/^DG-\d{6}$/.test(ids[0]), true, `corporate compound id ${ids[0]}`);
-    expect(/^DGB-\d{6}$/.test(report.col(Registration.BATCH_ID)!.get(1)), true);
-    const batch = await moltrackEmsDb.compoundBatches.first({filter: `epa_batch_id = "${tag}-2"`});
-    expect(batch!.purity, 97.25);
-    const compound = await moltrackEmsDb.compounds.get(batch!.compound_id);
-    expect(compound.common_name, 'Pentacosanoic acid', 'the first row of a structure carries the compound');
-    expect(compound.structure, chain(25));
-  });
-
-  test('a registered structure registered again as a compound is refused, naming the compound', async () => {
-    const first = await register([{smiles: chain(26)}], false);
-    expectArray(statuses(first), ['success']);
-    const again = await register([{smiles: chain(26)}], false);
-    expectArray(statuses(again), ['failed']);
-    const corporateId = first.col(Registration.COMPOUND_ID)!.get(0);
-    expect(messages(again)[0], `This structure is already registered as ${corporateId}`);
-  });
+  test('bulk: a new structure registers once, its salt and a registered one are reported with their Grok IDs',
+    async () => {
+      const acid = await register([{'smiles': chain(25), 'Common Name': `${tag} acid`}]);
+      expectArray(statuses(acid), ['success']);
+      const acidId = grokIds(acid)[0];
+      expect(/^DG-\d{6}$/.test(acidId), true, `corporate compound id ${acidId}`);
+      const report = await register([
+        {'smiles': chain(26), 'Common Name': `${tag} new`},
+        {'smiles': chain(25, 'C(=O)[O-].[Na+]'), 'Common Name': `${tag} registered salt`},
+        {'smiles': 'C1CC', 'Common Name': `${tag} broken`},
+        {'smiles': chain(26, 'C(=O)[O-].[Na+]'), 'Common Name': `${tag} salt of row 1`},
+      ]);
+      expectArray(statuses(report), ['success', 'existing', 'failed', 'existing']);
+      const ids = grokIds(report);
+      expectArray(ids.slice(1), [acidId, '', ids[0]]);
+      expectArray(messages(report).slice(1), [`This structure is already registered as ${acidId}`,
+        'Cannot read the structure', 'Same compound as row 1']);
+      const hash = (await Chemistry.identify(chain(26), MolTrackTables.matchRule())).hash_mol;
+      expect((await moltrackEmsDb.compounds.query({filter: MolTrackTables.within('hash_mol', [hash])})).length, 1);
+      const compound = await compoundOf(ids[0]);
+      expect(compound.common_name, `${tag} new`, 'the first row of a structure carries the compound');
+      expect(compound.structure, chain(26));
+      expect((await compoundOf(acidId)).common_name, `${tag} acid`, 'a registered compound is not written');
+    });
 
   test('a bad row fails alone; with reject all nothing is written', async () => {
-    const strict = await register([{'smiles': 'C1CC', 'EPA Batch ID': `${tag}-3`},
-      {'smiles': chain(27, 'N'), 'EPA Batch ID': `${tag}-4`}], true, true);
+    const rows = [{'smiles': 'C1CC', 'Common Name': `${tag}-3`}, {'smiles': chain(27, 'N'), 'Common Name': `${tag}-4`}];
+    const strict = await register(rows, true);
     expectArray(statuses(strict), ['failed', 'not_processed']);
-    expect(await moltrackEmsDb.compoundBatches.count({filter: `epa_batch_id = "${tag}-4"`}), 0, 'nothing was written');
-    const lenient = await register([{'smiles': 'C1CC', 'EPA Batch ID': `${tag}-3`},
-      {'smiles': chain(27, 'N'), 'EPA Batch ID': `${tag}-4`}], true);
+    expect(await moltrackEmsDb.compounds.count({filter: `common_name = "${tag}-4"`}), 0, 'nothing was written');
+    const lenient = await register(rows);
     expectArray(statuses(lenient), ['failed', 'success']);
     expect(messages(lenient)[0], 'Cannot read the structure');
   });
 
-  test('reject all is one transaction: a batch the server refuses leaves no new compound behind', async () => {
+  test('reject all is one transaction: a compound the server refuses leaves no other compound behind', async () => {
     const name = `${tag} atomic`;
     const report = await register([
-      {'smiles': chain(28), 'Common Name': name, 'EPA Batch ID': `${tag}-5`, 'Purity': '50'},
-      {'smiles': chain(29), 'EPA Batch ID': `${tag}-6`, 'Purity': '150'},
-    ], true, true);
+      {'smiles': chain(28), 'Common Name': name, 'MolLogP': ''},
+      {'smiles': chain(29), 'Common Name': `${tag} refused`, 'MolLogP': 'high'},
+    ], true);
     expectArray(statuses(report), ['not_processed', 'failed']);
-    expect(/Purity/.test(messages(report)[1]), true, `the refusal names the column: ${messages(report)[1]}`);
+    expect(/MolLogP/.test(messages(report)[1]), true, `the refusal names the column: ${messages(report)[1]}`);
     expect(await moltrackEmsDb.compounds.count({filter: `common_name = "${name}"`}), 0);
-    expect(await moltrackEmsDb.compoundBatches.count({filter: `epa_batch_id = "${tag}-5"`}), 0);
   });
 
   test('a row with no structure fails alone', async () => {
-    const report = await register([{'smiles': '', 'EPA Batch ID': `${tag}-7`},
-      {'smiles': chain(30), 'EPA Batch ID': `${tag}-8`}], true);
+    const report = await register([{'smiles': ''}, {'smiles': chain(30)}]);
     expectArray(statuses(report), ['failed', 'success']);
     expect(messages(report)[0], 'Structure is required');
   });
@@ -161,7 +161,7 @@ category('MolTrack EMS: registration', () => {
   test('every rule\'s hash is stored, so a stricter rule today and a looser one later still match', async () => {
     const l = `C[C@H](N)${'C'.repeat(20)}C(=O)O`;
     const d = `C[C@@H](N)${'C'.repeat(20)}C(=O)O`;
-    const report = await register([{smiles: l}], false);
+    const report = await register([{smiles: l}]);
     expectArray(statuses(report), ['success']);
     const looser = await Chemistry.identify(d, 'STEREO_INSENSITIVE_LAYERS');
     const found = await MolTrackTables.registered('hash_stereo_insensitive', [looser.hash_mol]);
@@ -171,7 +171,7 @@ category('MolTrack EMS: registration', () => {
   });
 
   test('a corporate compound ID opens its context panel', async () => {
-    const report = await register([{'smiles': chain(31), 'Common Name': `${tag} panel`}], false);
+    const report = await register([{'smiles': chain(31), 'Common Name': `${tag} panel`}]);
     const panel = await MolTrackEms.compoundPanel(report.col(Registration.COMPOUND_ID)!.get(0));
     expect(panel.root.textContent!.includes(`${tag} panel`), true);
     expect((await MolTrackEms.compoundPanel('DG-999999')).root.textContent,
@@ -179,7 +179,7 @@ category('MolTrack EMS: registration', () => {
   });
 
   test('the structure conditions find a registered compound, and a list filtered by one holds it', async () => {
-    await register([{smiles: chain(32)}], false);
+    await register([{smiles: chain(32)}]);
     const id = (await MolTrackTables.registered('hash_mol',
       [(await Chemistry.identify(chain(32), MolTrackTables.matchRule())).hash_mol])).values().next().value!.id;
     const matching = (operator: string, value: string, options?: Record<string, unknown>) =>
@@ -199,19 +199,19 @@ category('MolTrack EMS: registration', () => {
   });
 
   test('the preview says what each row becomes and writes nothing', async () => {
-    await register([{smiles: chain(33)}], false);
+    await register([{smiles: chain(33)}]);
     const df = DG.DataFrame.fromObjects([{smiles: chain(34)}, {smiles: chain(33, 'C(=O)[O-].[Na+]')},
       {smiles: 'C1CC('}, {smiles: chain(34)}])!;
-    const mapping = Registration.autoMap(df, await MolTrackTables.compounds(), await MolTrackTables.batches());
-    const preview = await Registration.preview(df, mapping);
+    const preview = await Registration.preview(df, Registration.autoMap(df, await MolTrackTables.compounds()));
     expectArray(preview.map((p) => p.verdict), ['new', 'existing', 'error', 'new']);
+    expect(preview[3].message, 'Same compound as row 1');
     expect(preview[1].message.includes('DG-'), true);
     expect((await MolTrackTables.registered('hash_mol',
       [(await Chemistry.identify(chain(34), MolTrackTables.matchRule())).hash_mol])).size, 0);
   });
 
   test('a new compound drawn as a registered structure is refused on its Structure, naming the compound', async () => {
-    const report = await register([{smiles: chain(36)}], false);
+    const report = await register([{smiles: chain(36)}]);
     const corporateId = report.col(Registration.COMPOUND_ID)!.get(0);
     const view = await MolTrackEms.view('compound');
     grok.shell.addView(view);
@@ -235,68 +235,38 @@ category('MolTrack EMS: registration', () => {
     }
   });
 
-  test('a new batch registers its new compound in the same save, and a second batch joins it', async () => {
+  test('a new batch on a picked compound saves on it, the compound card shown, and stays on it', async () => {
+    const report = await register([{'smiles': chain(35, 'O'), 'Common Name': `${tag} picked`}]);
+    const corporateId = grokIds(report)[0];
+    const compound = await compoundOf(corporateId);
     const view = await MolTrackEms.view('compound_batch');
     grok.shell.addView(view);
     const app = DomainApp.of(view)!;
-    const draw = async () => {
-      await app.create();
-      await awaitCheck(() => app.inline.value.get('compound_id')?.currentRow.value != null, 'no new compound', 10000);
-      const compound = app.inline.value.get('compound_id')!.currentRow.value!;
-      compound.original_structure = chain(35, 'O');
-      return compound;
-    };
+    const section = () => view.root.querySelector<HTMLElement>('.moltrack-ems-compound-section')!;
     try {
-      const compound = await draw();
-      await awaitCheck(() => app.entitySource.value?.currentRow.value?.compound_id === compound.id,
-        'the batch never pointed at the new compound', 10000);
-      app.entitySource.value!.currentRow.value!.epa_batch_id = `${tag}-inline-1`;
-      expect(await app.session.save(), true);
-      created.batches.add(app.entitySource.value!.currentRow.value!.id);
-      expect([...document.querySelectorAll('.d4-balloon')].some((b) => b.textContent!.includes('not available while')),
-        false, 'the save discards nothing while it runs');
-      const hash = (await Chemistry.identify(chain(35, 'O'), MolTrackTables.matchRule())).hash_mol;
-      const registered = (await MolTrackTables.registered('hash_mol', [hash])).get(hash)!;
-      created.compounds.add(registered.id);
-      await draw();
-      await awaitCheck(() => app.entitySource.value?.currentRow.value?.compound_id === registered.id,
-        'the second batch was not added to the registered compound', 20000);
-      await awaitCheck(() => app.inline.value.get('compound_id')?.currentRow.value != null,
-        'no new compound after', 5000);
-      expect(app.inline.value.get('compound_id')!.isDirty.value, false, 'the dropped compound is not a change');
-      const corporateId = MolTrackTables.corporateId(await MolTrackTables.compounds(), 'molregno', registered.molregno);
-      const section = () => view.root.querySelector<HTMLElement>('.moltrack-ems-compound-section')!;
-      const matched = () => section().querySelector<HTMLElement>('.moltrack-ems-matched')!;
-      await awaitCheck(() => !section().hidden && section().textContent!.includes(corporateId) && !matched().hidden,
-        'the page never showed the compound the new batch joined', 10000);
-      expect(matched().textContent!.includes(`This structure is registered as ${corporateId}`), true);
-      expect(app.form.value!.root.closest('.u2-section')?.querySelector('.u2-section-title')?.textContent, 'Batch');
-      // "Use a different structure" takes the batch off the compound, and drawing it again attaches it again
-      matched().querySelector<HTMLElement>('a')!.click();
-      await awaitCheck(() => app.entitySource.value!.currentRow.value!.compound_id == null && section().hidden === true,
-        'the batch stayed on the registered compound', 5000);
-      await awaitCheck(() => app.inline.value.get('compound_id')?.currentRow.value != null, 'no new compound', 5000);
-      app.inline.value.get('compound_id')!.currentRow.value!.original_structure = chain(35, 'O');
-      await awaitCheck(() => app.entitySource.value?.currentRow.value?.compound_id === registered.id,
-        'drawn again, the structure was not attached again', 20000);
-      app.entitySource.value!.currentRow.value!.epa_batch_id = `${tag}-inline-2`;
+      await app.create();
+      await awaitCheck(() => app.entitySource.value?.currentRow.value != null && section() !== null, 'no new batch',
+        10000);
+      expect(section().hidden, true, 'no compound is shown before one is picked');
+      expect(app.form.value!.input('compound_id') !== undefined, true, 'a new batch picks its compound');
+      const batch = app.entitySource.value!.currentRow.value!;
+      batch.compound_id = compound.id;
+      batch.epa_batch_id = `${tag}-picked`;
+      await awaitCheck(() => !section().hidden && section().textContent!.includes(corporateId),
+        'the page never showed the picked compound', 10000);
       expect(await app.session.save(), true);
       const saved = app.entitySource.value!.currentRow.value!.id;
       created.batches.add(saved);
-      const batches = await moltrackEmsDb.compoundBatches.query(
-        {filter: MolTrackTables.within('compound_id', [registered.id])});
-      expectArray(batches.map((b) => b.epa_batch_id).sort(), [`${tag}-inline-1`, `${tag}-inline-2`]);
-      // the saved batch keeps showing its compound, and nothing moves it to another one
-      await awaitCheck(() => matched().hidden === true, 'the registration note outlived the save', 5000);
-      expect(!section().hidden && section().textContent!.includes(corporateId), true);
-      await register([{smiles: chain(37)}], false);
-      const otherHash = (await Chemistry.identify(chain(37), MolTrackTables.matchRule())).hash_mol;
-      const other = (await MolTrackTables.registered('hash_mol', [otherHash])).get(otherHash)!;
+      expect((await moltrackEmsDb.compoundBatches.get(saved)).compound_id, compound.id);
+      await awaitCheck(() => app.form.value?.input('compound_id') === undefined && !section().hidden &&
+        section().textContent!.includes(corporateId), 'the saved batch does not read as its compound', 10000);
+      const other = await register([{smiles: chain(37)}]);
       let refusal = '';
-      await moltrackEmsDb.compoundBatches.update(saved, {compound_id: other.id})
+      await moltrackEmsDb.compoundBatches.update(saved, {compound_id: (await compoundOf(grokIds(other)[0])).id})
         .catch((e) => refusal = String((e as Error).message ?? e));
       expect(/write-once/.test(refusal), true, `a batch was moved to another compound: ${refusal}`);
     } finally {
+      app.session.discard();
       view.close();
     }
   });
@@ -304,16 +274,14 @@ category('MolTrack EMS: registration', () => {
   const amide = (n: number) => chain(n, 'C(=O)N');
 
   test('with reject all, a row left unregistered names the row that stopped the run', async () => {
-    const report = await register([{'smiles': amide(30), 'EPA Batch ID': `${tag}-9`},
-      {'smiles': 'C1CC', 'EPA Batch ID': `${tag}-10`}], true, true);
+    const report = await register([{'smiles': amide(30)}, {'smiles': 'C1CC'}], true);
     expectArray(statuses(report), ['not_processed', 'failed']);
     expectArray(messages(report), ['Not registered: row 2 has a problem', 'Cannot read the structure']);
   });
 
   test('the preview tells a structure the file repeats from a new compound', async () => {
     const df = DG.DataFrame.fromObjects([{smiles: amide(31)}, {smiles: amide(32)}, {smiles: amide(31)}])!;
-    const preview = await Registration.preview(df,
-      Registration.autoMap(df, await MolTrackTables.compounds(), await MolTrackTables.batches()));
+    const preview = await Registration.preview(df, Registration.autoMap(df, await MolTrackTables.compounds()));
     expectArray(preview.map((p) => p.sameAs), [undefined, undefined, 0]);
   });
 
@@ -322,7 +290,7 @@ category('MolTrack EMS: registration', () => {
     const df = DG.DataFrame.fromObjects(rows)!;
     df.name = `${tag}-bulk`;
     const table = grok.shell.addTableView(df);
-    const running = RegisterDialog.open(df, 'Batches');
+    const running = RegisterDialog.open(df);
     await awaitCheck(() => document.querySelector('.moltrack-ems-register') !== null, 'the bulk wizard never opened',
       30000);
     return {running, table, wizard: document.querySelector<HTMLElement>('.moltrack-ems-register')!};
@@ -331,14 +299,14 @@ category('MolTrack EMS: registration', () => {
     .find((b) => b.textContent!.trim().toUpperCase() === label)!.click();
 
   test('bulk registration rejects all by default, and refuses two file columns mapped onto one field', async () => {
-    // a frame's column names ignore case: "Project" and "project_" both match the batch's Project
-    const {running, table, wizard} = await bulkWizard([{'smiles': amide(33), 'Project': 'P1', 'project_': 'P2'}]);
+    // a frame's column names ignore case: "CAS" and "cas_" both match the compound's CAS
+    const {running, table, wizard} = await bulkWizard([{'smiles': amide(33), 'CAS': '50-78-2', 'cas_': '50-78-2'}]);
     try {
       const onError = [...wizard.querySelectorAll('select')].find((s) => s.textContent!.includes('Reject all'))!;
       expect(onError.selectedOptions[0].textContent, 'Reject all');
       press(wizard, 'NEXT');
       const reason = () => wizard.querySelector('.u2-wizard-reason')?.textContent ?? '';
-      await awaitCheck(() => reason().includes('Two columns of the file are mapped to Batch · Project'),
+      await awaitCheck(() => reason().includes('Two columns of the file are mapped to CAS'),
         'the mapping of two columns onto one field was not refused', 10000);
       press(wizard, 'NEXT');
       expect(wizard.querySelector('.moltrack-ems-register-preview .u2-data-table') === null, true,
@@ -350,11 +318,11 @@ category('MolTrack EMS: registration', () => {
     expect(await running, null);
   });
 
-  test('bulk preview and report name each row by its own columns, and the report opens the batches registered',
+  test('bulk preview and report name each row by its own columns, and the report opens the compounds registered',
     async () => {
       const {running, table, wizard} = await bulkWizard([
-        {'smiles': amide(34), 'Common Name': `${tag} bulk one`, 'EPA Batch ID': `${tag}-b1`},
-        {'smiles': amide(35), 'Common Name': `${tag} bulk two`, 'EPA Batch ID': `${tag}-b2`}]);
+        {'smiles': amide(34), 'Common Name': `${tag} bulk one`},
+        {'smiles': amide(35), 'Common Name': `${tag} bulk two`}]);
       const heads = (host: Element) => [...host.querySelectorAll('.u2-data-table-head')].map((h) => h.textContent);
       let view: DG.ViewBase | undefined;
       try {
@@ -363,35 +331,77 @@ category('MolTrack EMS: registration', () => {
         const preview = wizard.querySelector('.moltrack-ems-register-preview')!;
         await awaitCheck(() => preview.querySelectorAll('.u2-data-table-row').length === 2,
           'the preview never listed the rows', 30000);
-        expectArray(heads(preview), ['#', 'Structure', 'Common Name', 'EPA Batch ID', 'Becomes', '']);
-        expect(preview.textContent!.includes(`${tag} bulk one`) && preview.textContent!.includes(`${tag}-b2`), true);
-        expect(preview.textContent!.includes('2 rows: 2 new compounds, 2 batches'), true, preview.textContent!);
+        expectArray(heads(preview), ['#', 'Structure', 'Common Name', 'Becomes', '']);
+        expect(preview.textContent!.includes(`${tag} bulk one`), true);
+        expect(preview.textContent!.includes('2 rows: 2 new compounds'), true, preview.textContent!);
         press(wizard, 'REGISTER');
         const report = wizard.querySelector('.moltrack-ems-register-report')!;
         await awaitCheck(() => report.textContent!.includes('Registered 2 of 2 rows'), 'the rows were not registered',
           60000);
-        expectArray(heads(report), ['#', 'Common Name', 'EPA Batch ID', 'Result', 'Grok ID', 'Grok Batch ID', '']);
+        expectArray(heads(report), ['#', 'Common Name', 'Result', 'Grok ID', '']);
         const lines = [...report.querySelectorAll('.u2-data-table-row')].map((r) => r.textContent!);
-        expect(lines.length === 2 && lines.every((l) => /Registered/.test(l) && /DG-\d{6}/.test(l) &&
-          /DGB-\d{6}/.test(l)), true, lines.join(' / '));
+        expect(lines.length === 2 && lines.every((l) => /Registered/.test(l) && /DG-\d{6}/.test(l)), true,
+          lines.join(' / '));
         [...report.querySelectorAll<HTMLElement>('a, .d4-link-action')]
-          .find((a) => a.textContent === 'Show the 2 batches registered')!.click();
+          .find((a) => a.textContent === 'Show the 2 compounds registered')!.click();
         const registered = (await running)!;
         await remember(registered);
-        const regnos = registered.col(Registration.BATCH_ID)!.toList().map((id) => Number(DomainPick.digits(id)));
-        const shown = () => [...DomainApp.live].find((a) => a.base === MolTrackEms.baseOf(VIEWS[1]) &&
-          String(a.listSource.query.value).startsWith('batch_regno in'));
-        await awaitCheck(() => shown() !== undefined, 'the batches never opened', 30000);
+        const molregnos = grokIds(registered).map((id) => Number(DomainPick.digits(id)));
+        const shown = () => [...DomainApp.live].find((a) => a.base === MolTrackEms.baseOf(VIEWS[0]) &&
+          String(a.listSource.query.value).startsWith('molregno in'));
+        await awaitCheck(() => shown() !== undefined, 'the compounds never opened', 30000);
         view = grok.shell.v;
         const app = shown()!;
         await awaitCheck(() => app.listSource.state.value === 'ready' &&
-          app.listSource.rows.items.value.map((r) => r.batch_regno).sort().join() === regnos.sort().join(),
-        'the batches list does not hold exactly the registered batches', 30000);
+          app.listSource.rows.items.value.map((r) => r.molregno).sort().join() === molregnos.sort().join(),
+        'the compounds list does not hold exactly the registered compounds', 30000);
       } finally {
         if (document.contains(wizard))
           press(wizard, 'CANCEL');
         view?.close();
         table.close();
+      }
+    }, {timeout: 120000});
+
+  test('Batches import names each batch\'s compound by its Grok ID; a Grok ID no compound has fails alone',
+    async () => {
+      const report = await register([{'smiles': amide(36), 'Common Name': `${tag} imported`}]);
+      const grokId = grokIds(report)[0];
+      const df = DG.DataFrame.fromObjects([{'Grok ID': grokId, 'EPA Batch ID': `${tag}-imp-1`, 'Purity': '99'},
+        {'Grok ID': 'DG-999999', 'EPA Batch ID': `${tag}-imp-2`, 'Purity': '98'}])!;
+      const view = grok.shell.addView(await MolTrackEms.view('compound_batch'));
+      const app = DomainApp.of(view)!;
+      const named = (name: string) => Control.forElement(document.querySelector(`[data-u2-name="${name}"]`)) as
+        unknown as {value: {value: unknown}} | undefined;
+      const button = (label: string) => [...document.querySelectorAll<HTMLButtonElement>('.u2-dialog button')]
+        .find((b) => b.textContent === label)!;
+      const text = () => document.querySelector('.u2-domain-import-report')?.textContent ?? '';
+      try {
+        expect(app.importRows === DomainApp.prototype.importRows, true, 'Batches import is the standard import');
+        const running = domains.import(app.table, {source: df});
+        await awaitCheck(() => named('allOrNothing') !== undefined, 'the import never opened', 15000);
+        named('allOrNothing')!.value.value = false;
+        button('NEXT').click();
+        await awaitCheck(() => named('Grok ID') !== undefined, 'no mapping step', 10000);
+        named('Grok ID')!.value.value = 'compound_id';
+        await delay(100);
+        button('NEXT').click();
+        await delay(500);
+        button('NEXT').click();
+        await awaitCheck(() => text().includes('inserted'), `the import never reported: ${text()}`, 30000);
+        expect(text().includes('1 inserted'), true, text());
+        expect(text().includes('No match for "DG-999999"'), true, text());
+        button('CLOSE').click();
+        await running;
+        const batches = await moltrackEmsDb.compoundBatches.query({filter: `epa_batch_id starts "${tag}-imp"`});
+        for (const batch of batches)
+          created.batches.add(batch.id);
+        expectArray(batches.map((b) => b.epa_batch_id), [`${tag}-imp-1`]);
+        expect(batches[0].compound_id, (await compoundOf(grokId)).id);
+      } finally {
+        if (document.querySelector('.u2-domain-import') !== null)
+          button('CANCEL')?.click();
+        view.close();
       }
     }, {timeout: 120000});
 
@@ -500,26 +510,27 @@ category('MolTrack EMS: app', () => {
 
   test('compounds and batches list newest first, and a row moved to shows its compound in the context panel',
     async () => {
-    for (const [table, key] of [['compound_batch', 'batch_regno'], ['compound', 'molregno']]) {
-      const view = await MolTrackEms.view(table);
-      grok.shell.addView(view);
-      const app = DomainApp.of(view)!;
-      try {
-        await awaitCheck(() => app.listSource.rows.items.value.length > 1, `the ${table} list never loaded`, 15000);
-        const [first, second] = app.listSource.rows.items.value;
-        expect((first[key] as number) > (second[key] as number), true, `${table}: ${first[key]} before ${second[key]}`);
-        app.list.root.querySelector<HTMLElement>('[tabindex]')!.focus();
-        app.listSource.currentRow.value = second;
-        const corporateId = table === 'compound' ?
-          MolTrackTables.corporateId(await MolTrackTables.compounds(), 'molregno', second.molregno) :
-          String(second[Rows.caption('compound_id')]);
-        await awaitCheck(() => grok.shell.o instanceof HTMLElement && grok.shell.o.textContent!.includes(corporateId),
-          `the context panel never showed the compound of the ${table}`, 15000);
-      } finally {
-        view.close();
+      for (const [table, key] of [['compound_batch', 'batch_regno'], ['compound', 'molregno']]) {
+        const view = await MolTrackEms.view(table);
+        grok.shell.addView(view);
+        const app = DomainApp.of(view)!;
+        try {
+          await awaitCheck(() => app.listSource.rows.items.value.length > 1, `the ${table} list never loaded`, 15000);
+          const [first, second] = app.listSource.rows.items.value;
+          expect((first[key] as number) > (second[key] as number), true,
+            `${table}: ${first[key]} before ${second[key]}`);
+          app.list.root.querySelector<HTMLElement>('[tabindex]')!.focus();
+          app.listSource.currentRow.value = second;
+          const corporateId = table === 'compound' ?
+            MolTrackTables.corporateId(await MolTrackTables.compounds(), 'molregno', second.molregno) :
+            String(second[Rows.caption('compound_id')]);
+          await awaitCheck(() => grok.shell.o instanceof HTMLElement && grok.shell.o.textContent!.includes(corporateId),
+            `the context panel never showed the compound of the ${table}`, 15000);
+        } finally {
+          view.close();
+        }
       }
-    }
-  });
+    });
 
   test('a batch page opens its compound: from the compound card and from the reference', async () => {
     const batches = await MolTrackEms.show('Batches');

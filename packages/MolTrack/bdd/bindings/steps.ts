@@ -131,24 +131,38 @@ export const lostRememberedText = Then('{element} should not have the remembered
     await expect((await locate(page, target)).filter({visible: true}).first()).not.toHaveText(rememberedText(page, target));
   }, {description: 'the visible text has moved off the one remembered for the same phrase'});
 
-export const batchCount = Then('the compound with the structure {string} should have {int} batch(es) on the server',
-  async (page: Page, structure: string, n: number) => {
-    await expect.poll(() => page.evaluate(async ([schema, s]) => {
-      const ids = (await grok.dapi.domains.table(`${schema}.compound`).query(
-        {filter: {property: 'structure', operator: '=', value: s}, columns: ['structure']})).map((r: any) => r.id);
-      return ids.length === 0 ? 0 : grok.dapi.domains.table(`${schema}.compound_batch`)
-        .count({filter: {property: 'compound_id', operator: '=', value: ids}});
-    }, [SCHEMA, structure] as const), {message: `live batches of the compound ${structure}`}).toBe(n);
-  }, {tier: 'api', description: 'reads the batch table on the server: the live batches of the compound of that standardized structure'});
+/** Soft-deletes the live batches of that EPA Batch ID; throws if any is left. */
+async function sweepBatch(page: Page, epaBatchId: string): Promise<void> {
+  const left = await page.evaluate(async ([schema, id]) => {
+    const batches = grok.dapi.domains.table(`${schema}.compound_batch`);
+    const filter = {property: 'epa_batch_id', operator: '=', value: id};
+    if (await batches.count({filter}) > 0)
+      await batches.deleteWhere(filter);
+    return batches.count({filter});
+  }, [SCHEMA, epaBatchId] as const);
+  if (left !== 0)
+    throw new Error(`${left} batch(es) with the EPA Batch ID ${epaBatchId} are still registered after the delete`);
+}
 
-/** Soft-deletes the batches the bulk example registers, and its new compounds by name. */
+export const noBatch = Given('no batch with the EPA Batch ID {string} is registered, now and at feature end',
+  async (page: Page, epaBatchId: string) => {
+    silent(page);
+    await sweepBatch(page, epaBatchId);
+    atFeatureEnd(page, () => sweepBatch(page, epaBatchId));
+  }, {tier: 'api', description: 'deletes the live batches of that EPA Batch ID (EMS deletes are soft) and proves none is ' +
+    'left, now and again when the feature ends'});
+
+export const batchCount = Then('{int} batch(es) with the EPA Batch ID {string} should be on the server',
+  async (page: Page, n: number, epaBatchId: string) => {
+    await expect.poll(() => page.evaluate(([schema, id]) => grok.dapi.domains.table(`${schema}.compound_batch`)
+      .count({filter: {property: 'epa_batch_id', operator: '=', value: id}}), [SCHEMA, epaBatchId] as const),
+    {message: `live batches with the EPA Batch ID ${epaBatchId}`}).toBe(n);
+  }, {tier: 'api', description: 'reads the batch table on the server: the live batches of that EPA Batch ID'});
+
+/** Soft-deletes the compounds the bulk example registers, by name. */
 async function sweepBulk(page: Page): Promise<void> {
   await page.evaluate(async ([schema, names]) => {
-    const batches = grok.dapi.domains.table(`${schema}.compound_batch`);
     const compounds = grok.dapi.domains.table(`${schema}.compound`);
-    const ours = {property: 'epa_batch_id', operator: 'like', value: 'BDD-%'};
-    if (await batches.count({filter: ours}) > 0)
-      await batches.deleteWhere(ours);
     const named = {property: 'common_name', operator: '=', value: names};
     if (await compounds.count({filter: named}) > 0)
       await compounds.deleteWhere(named);
@@ -166,13 +180,11 @@ export const bulkExample = Given('the bulk registration example is open, and its
       grok.shell.addTableView(df);
     }, readFileSync(BULK_EXAMPLE, 'utf8'));
   }, {tier: 'api', description: 'opens bdd/fixtures/bulk-registration.csv (three new structures, a salt of one of them, a ' +
-    'registered one, a broken one) as a table, and deletes what it registers now and when the feature ends'});
+    'registered one, a broken one) as a table, and deletes the compounds it registers now and when the feature ends'});
 
-export const bulkRegistered = Then('the bulk registration example should have {int} new compounds and {int} batches on the server',
-  async (page: Page, compounds: number, batches: number) => {
-    await expect.poll(() => page.evaluate(([schema, names]) => Promise.all([
-      grok.dapi.domains.table(`${schema}.compound`).count({filter: {property: 'common_name', operator: '=', value: names}}),
-      grok.dapi.domains.table(`${schema}.compound_batch`).count(
-        {filter: {property: 'epa_batch_id', operator: 'like', value: 'BDD-%'}}),
-    ]), [SCHEMA, BULK_NAMES] as const), {message: 'compounds and batches of the bulk example'}).toEqual([compounds, batches]);
-  }, {tier: 'api', description: 'reads the server: the example\'s new compounds by name, its batches by their BDD- ids'});
+export const bulkRegistered = Then('the bulk registration example should have {int} new compounds on the server',
+  async (page: Page, compounds: number) => {
+    await expect.poll(() => page.evaluate(([schema, names]) => grok.dapi.domains.table(`${schema}.compound`)
+      .count({filter: {property: 'common_name', operator: '=', value: names}}), [SCHEMA, BULK_NAMES] as const),
+    {message: 'compounds of the bulk example'}).toBe(compounds);
+  }, {tier: 'api', description: 'reads the server: the example\'s new compounds by name'});

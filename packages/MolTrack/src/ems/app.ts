@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {DomainApp, DomainErrors, DomainPick, DomainTable} from '@datagrok-libraries/ems/src/dg';
-import type {ChildEntry} from '@datagrok-libraries/ems/src/dg';
-import {Rows, Section, div, span} from '@datagrok-libraries/u2';
+import type {ChildEntry, DomainForm} from '@datagrok-libraries/ems/src/dg';
+import type {DomainSource} from '@datagrok-libraries/ems';
+import {Rows, Section, div, span, untracked} from '@datagrok-libraries/u2';
 import type {RowView} from '@datagrok-libraries/u2';
 import type {CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
@@ -36,10 +37,6 @@ export const VIEWS: ViewEntry[] = [
   {table: 'assay_result', name: 'Assay Results', sorts: NEWEST},
 ];
 
-/** A compound registered with its batch: what a person fills in, and the formula derived from it. */
-const NEW_COMPOUND = ['original_structure', 'common_name', 'cas', 'epa_compound_id', 'usan', 'iupac_name', 'source',
-  'source_compound_code', 'mol_logp', 'formula'];
-
 export class MolTrackEms {
   static async view(table: string): Promise<DG.ViewBase> {
     MolTrackTables.warmUp();
@@ -55,24 +52,21 @@ export class MolTrackEms {
         {children: {tables: await Promise.all(entry.children.map((child) => MolTrackTables.table(child))),
           ...(entry.childPages ? {onNew: (child: ChildEntry, values: Record<string, unknown>) =>
             void MolTrackEms.createIn(child.table.address, values)} : {})}}),
-      // the server keeps both write-once: a compound's structure, and the compound a batch was registered on
+      // the server keeps both write-once: a compound's structure, and the compound a batch is of
       ...(table === 'compound' ? {app: CompoundsApp, include: CompoundsApp.FIELDS, immutable: ['original_structure'],
         context: (row: RowView) => MolTrackEms.compoundCard(handle, row as RowView<CompoundRow>)} : {}),
       ...(table === 'compound_batch' ? {app: BatchesApp, immutable: ['compound_id'],
-        inline: {compound_id: {table: await MolTrackTables.compounds(), include: NEW_COMPOUND}},
         context: (row: RowView) => ui.wait(async () =>
           (await MolTrackEms.compoundPanel(String(row[Rows.caption('compound_id')] ?? ''))).root)} : {}),
     });
   }
 
-  static async register(df: DG.DataFrame, batches: boolean, rejectAll: boolean): Promise<DG.DataFrame> {
-    const mapping = Registration.autoMap(df, await MolTrackTables.compounds(),
-      batches ? await MolTrackTables.batches() : undefined);
-    return await Registration.register(df, mapping, {rejectAll});
+  static async register(df: DG.DataFrame, rejectAll: boolean): Promise<DG.DataFrame> {
+    return await Registration.register(df, Registration.autoMap(df, await MolTrackTables.compounds()), {rejectAll});
   }
 
   /** A new view at an address (`Compounds?entity=new`, `Batches`, `Register` — the bulk registration over the
-   * batches) — what the app func answers the router, which docks it. The router hands over the path alone: a cold
+   * compounds) — what the app func answers the router, which docks it. The router hands over the path alone: a cold
    * deep link's query is replayed from the address bar by the view itself. */
   static async open(address = ''): Promise<DG.ViewBase> {
     const {entry, rest, bulk} = MolTrackEms._route(address);
@@ -140,6 +134,17 @@ export class MolTrackEms {
     ], 'moltrack-ems-compound');
   }
 
+  /** Builds the sections around each entity page's form of `app`; a run's scope owns what it builds, so they go
+   * with the page they were built for. */
+  static aroundForm(app: DomainApp, build: (form: DomainForm, source: DomainSource) => void): void {
+    app.effect(() => {
+      const form = app.form.value;
+      const source = app.entitySource.value;
+      if (form !== null && source !== null)
+        untracked(() => build(form, source));
+    });
+  }
+
   /** {@link compoundCard} of the compound `id` reads, as a titled section hidden while it reads none. */
   static compoundSection(title: string, id: () => string | null): Section {
     const section = new Section({title, collapsible: false});
@@ -178,7 +183,7 @@ export class MolTrackEms {
   private static _route(address: string): {entry: ViewEntry, rest: string, bulk: boolean} {
     const [, segment, rest] = /^\/?([^/?]*)(.*)$/.exec(address)!;
     const bulk = segment === 'Register';
-    return {entry: bulk ? VIEWS[1] : VIEWS.find((v) => MolTrackEms.segmentOf(v) === segment) ?? VIEWS[0], rest, bulk};
+    return {entry: bulk ? VIEWS[0] : VIEWS.find((v) => MolTrackEms.segmentOf(v) === segment) ?? VIEWS[0], rest, bulk};
   }
 
   private static _import(view: DG.ViewBase): void {

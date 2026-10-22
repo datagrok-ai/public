@@ -193,15 +193,14 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'registerEmsBulk',
-    description: 'Registers the compounds or the batches with their compounds of a table into moltrack_ems with columns mapped by name',
+    description: 'Registers the compounds of a table into moltrack_ems with columns mapped by name',
     outputs: [{type: 'dataframe', name: 'result'}],
   })
   static async registerEmsBulk(
     @grok.decorators.param({options: {description: 'Rows to register - the structures are in a column named smiles or structure or molfile'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {choices: ['Compounds', 'Batches'], initialValue: 'Batches'}}) target: string,
     @grok.decorators.param({options: {description: 'Write nothing if any row fails', initialValue: 'false'}}) rejectAll: boolean,
   ): Promise<DG.DataFrame> {
-    return await MolTrackEms.register(table, target === 'Batches', rejectAll);
+    return await MolTrackEms.register(table, rejectAll);
   }
 
   @grok.decorators.func({

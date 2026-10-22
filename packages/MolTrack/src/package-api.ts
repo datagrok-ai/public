@@ -84,14 +84,12 @@ export namespace funcs {
   }
 
   /**
-   * Registers the compounds or the batches with their compounds of a table into moltrack_ems with columns mapped by name
+   * Registers the compounds of a table into moltrack_ems with columns mapped by name
    * @param {DG.DataFrame} table - Rows to register - the structures are in a column named smiles or structure or molfile
-   * @param {string} target
-   *   choices: ["Compounds","Batches"]
    * @param {boolean} rejectAll - Write nothing if any row fails
    */
-  export async function registerEmsBulk(table: DG.DataFrame , target: string , rejectAll: boolean ): Promise<DG.DataFrame> {
-    return await grok.functions.call('MolTrack:RegisterEmsBulk', { table, target, rejectAll });
+  export async function registerEmsBulk(table: DG.DataFrame , rejectAll: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('MolTrack:RegisterEmsBulk', { table, rejectAll });
   }
 
   /**

@@ -3,15 +3,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {signal, div, divV, span, text, plural, badge, notify, Filters, Wizard, DataTable, ChoiceInput, Form} from
   '@datagrok-libraries/u2';
-import type {BadgeVariant, DataTableColumn, IProperty} from '@datagrok-libraries/u2';
+import type {BadgeVariant, DataTableColumn} from '@datagrok-libraries/u2';
 import {fromDartInput, moleculeRenderer} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainErrors, DomainPick, DomainTable, ImportMapping} from '@datagrok-libraries/ems/src/dg';
 import {MolTrackEms} from './app';
 import {Registration} from './registration';
 import type {RegistrationMapping, RegistrationPreview, RegistrationStatus} from './registration';
 import {MolTrackTables} from './tables';
-
-export type RegisterTarget = 'Compounds' | 'Batches';
 
 const STRUCTURE = 'Structure';
 const SKIP_ROW = 'Skip the row';
@@ -23,23 +21,25 @@ const VERDICTS: Record<RegistrationPreview['verdict'], {label: string, variant: 
 };
 const OUTCOMES: Record<RegistrationStatus, {label: string, variant: BadgeVariant}> = {
   success: {label: 'Registered', variant: 'success'},
+  existing: {label: 'Existing', variant: 'default'},
   failed: {label: 'Failed', variant: 'error'},
   not_processed: {label: 'Not registered', variant: 'default'},
 };
 const THUMBNAIL = moleculeRenderer({width: 80, height: 40});
 
-/** Bulk registration as the legacy app offered it: a table or a file, its columns mapped onto the compound and
- * the batch, a preview of what each row becomes, and the per-row report. */
+/** Bulk registration of compounds as the legacy app offered it: a table or a file, its columns mapped onto the
+ * compound, a preview of what each row becomes, and the per-row report with each row's Grok ID — what a batch file
+ * names its compounds by. */
 export class RegisterDialog {
+  static readonly TITLE = 'Register compounds in bulk';
   private readonly _frame = signal<DG.DataFrame | null>(null);
   private readonly _columns = new ImportMapping();
   /** What each target reads in its choice: the gate names a target claimed twice by it. */
   private _labels = new Map<string, string>();
-  private _tables: {compounds: DomainTable, batches?: DomainTable} | undefined;
+  private _compounds: DomainTable | undefined;
   private readonly _preview = div([], 'moltrack-ems-register-preview');
   private readonly _report = div([], 'moltrack-ems-register-report');
   private readonly _wizard: Wizard;
-  private readonly _target: ChoiceInput;
   private readonly _onError: ChoiceInput;
   private _previewTable: DataTable<number> | undefined;
   private _result: DG.DataFrame | null = null;
@@ -47,12 +47,8 @@ export class RegisterDialog {
   private _previews = 0;
   private _settled = false;
 
-  private constructor(source: DG.DataFrame | null, target: RegisterTarget,
-    private readonly _resolve: (report: DG.DataFrame | null) => void) {
+  private constructor(source: DG.DataFrame | null, private readonly _resolve: (report: DG.DataFrame | null) => void) {
     this._frame.value = source;
-    // the wizard builds its first step at once, and that step holds these
-    this._target = new ChoiceInput({label: 'Register', value: target, nullable: false, items: ['Compounds', 'Batches'],
-      onChanged: () => void this._remap()});
     // a run that registered some rows cannot be run again as it is: the rows it wrote would be registered twice
     this._onError = new ChoiceInput({label: 'On error', value: REJECT_ALL, nullable: false,
       items: [REJECT_ALL, SKIP_ROW],
@@ -73,11 +69,11 @@ export class RegisterDialog {
   }
 
   /** Resolves to the registration report, or null when cancelled. */
-  static open(source: DG.DataFrame | null = grok.shell.t ?? grok.shell.tables[0] ?? null,
-    target: RegisterTarget = 'Batches'): Promise<DG.DataFrame | null> {
+  static open(source: DG.DataFrame | null = grok.shell.t ?? grok.shell.tables[0] ?? null):
+    Promise<DG.DataFrame | null> {
     return new Promise((resolve) => {
-      const dialog = new RegisterDialog(source, target, resolve);
-      dialog._remap().then(() => dialog._wizard.openInDialog('Register in bulk', {width: 860, height: 600}), (e) => {
+      const dialog = new RegisterDialog(source, resolve);
+      dialog._remap().then(() => dialog._wizard.openInDialog(RegisterDialog.TITLE, {width: 860, height: 600}), (e) => {
         notify.error(DomainErrors.message(e));
         dialog._settle(null);
       });
@@ -89,7 +85,6 @@ export class RegisterDialog {
       return;
     this._settled = true;
     this._columns.dispose();
-    this._target.dispose();
     this._onError.dispose();
     this._wizard.dispose();
     this._resolve(report);
@@ -100,7 +95,7 @@ export class RegisterDialog {
       'source');
     picker.root.title = 'Choose an open table or a file';
     const summary = span('', 'moltrack-ems-register-summary');
-    const form = new Form().addAll([picker, this._target, this._onError]);
+    const form = new Form().addAll([picker, this._onError]);
     form.effect(() => {
       const frame = picker.value.value;
       summary.textContent = frame === null ? '' :
@@ -119,7 +114,7 @@ export class RegisterDialog {
     return table.root;
   }
 
-  /** Again on every visit: going back may have changed the file, the target, the mapping or the On error. */
+  /** Again on every visit: going back may have changed the file, the mapping or the On error. */
   private async _showPreview(): Promise<void> {
     const at = ++this._previews;
     const frame = this._frame.peek()!;
@@ -146,7 +141,7 @@ export class RegisterDialog {
       }));
       table.setItems(Array.from({length: rows.length}, (_, i) => i));
       table.root.classList.add('moltrack-ems-register-rows');
-      this._preview.replaceChildren(...this._summary(rows, mapping.batch !== undefined), table.root);
+      this._preview.replaceChildren(...this._summary(rows), table.root);
     } catch (e) {
       if (at === this._previews)
         this._preview.replaceChildren(span(DomainErrors.message(e), 'moltrack-ems-register-problem'));
@@ -154,16 +149,17 @@ export class RegisterDialog {
   }
 
   /** What the rows become, then what On error does with the rows that have a problem. */
-  private _summary(rows: RegistrationPreview[], batches: boolean): HTMLElement[] {
+  private _summary(rows: RegistrationPreview[]): HTMLElement[] {
     const count = (test: (row: RegistrationPreview) => boolean) => rows.filter(test).length;
     const compounds = count((row) => row.verdict === 'new' && row.sameAs === undefined);
-    const problems = count((row) => row.verdict === 'error');
+    const repeated = count((row) => row.sameAs !== undefined);
     const registered = count((row) => row.verdict === 'existing');
+    const problems = count((row) => row.verdict === 'error');
     const parts = [plural(compounds, 'new compound', 'new compounds')];
-    if (batches) {
-      parts.push(plural(rows.length - problems, 'batch', 'batches') + (registered === 0 ? '' :
-        ` (${registered} of ${registered === 1 ? 'a registered compound' : 'registered compounds'})`));
-    }
+    if (repeated > 0)
+      parts.push(`${repeated} repeating an earlier row`);
+    if (registered > 0)
+      parts.push(`${registered} registered already`);
     if (problems > 0)
       parts.push(`${problems} with a problem`);
     const lines = [span(`${plural(rows.length, 'row', 'rows')}: ${parts.join(', ')}`, 'moltrack-ems-register-summary')];
@@ -173,10 +169,9 @@ export class RegisterDialog {
         `"${SKIP_ROW}" on the first step.`, 'moltrack-ems-register-problem') :
         span('The rows with a problem are skipped.', 'moltrack-ems-register-summary'));
     }
-    const writes = compounds + (batches ? rows.length : 0);
-    if (rejectAll && problems === 0 && writes > Registration.MAX_OPS) {
+    if (rejectAll && problems === 0 && compounds > Registration.MAX_OPS) {
       lines.push(span(`${REJECT_ALL} writes at most ${Registration.MAX_OPS} rows at once and this file needs ` +
-        `${writes}: split the file, or choose "${SKIP_ROW}" on the first step.`, 'moltrack-ems-register-problem'));
+        `${compounds}: split the file, or choose "${SKIP_ROW}" on the first step.`, 'moltrack-ems-register-problem'));
     }
     return lines;
   }
@@ -202,8 +197,8 @@ export class RegisterDialog {
           {name: Registration.STATUS, header: 'Result', width: '120px', render: (i) =>
             badge(OUTCOMES[status.get(i) as RegistrationStatus].label,
               {variant: OUTCOMES[status.get(i) as RegistrationStatus].variant})},
-          ...[Registration.COMPOUND_ID, Registration.BATCH_ID].filter((name) => report.col(name) !== null)
-            .map((name) => ({name, header: name, width: '110px', render: (i: number) => text(report.get(name, i))})),
+          {name: Registration.COMPOUND_ID, header: Registration.COMPOUND_ID, width: '110px',
+            render: (i) => text(report.get(Registration.COMPOUND_ID, i))},
           {name: Registration.MESSAGE, header: '', width: '2fr',
             render: (i) => text(report.get(Registration.MESSAGE, i))},
         ],
@@ -213,44 +208,39 @@ export class RegisterDialog {
       const registered = RegisterDialog.registered(report);
       this._report.replaceChildren(span(`Registered ${ok} of ${plural(report.rowCount, 'row', 'rows')}`,
         'moltrack-ems-register-summary'), table.root,
-      ...(registered === null ? [] : [ui.link(`Show the ${plural(registered.count, ...registered.noun)} registered`,
-        () => this._show(registered.segment, registered.query))]),
+      ...(registered === null ? [] : [ui.link(`Show the ${plural(registered.count, 'compound', 'compounds')} ` +
+        'registered', () => this._show(registered.query))]),
       ui.link('Open the report as a table', () => grok.shell.addTableView(report)));
     } catch (e) {
       this._report.replaceChildren(span(DomainErrors.message(e), 'moltrack-ems-register-problem'));
     }
   }
 
-  /** The list that holds what a run registered — its batches, or its compounds — as the view and the filter that
-   * show it; null when nothing was registered. */
-  static registered(report: DG.DataFrame):
-    {segment: string, query: string, count: number, noun: [string, string]} | null {
-    const batches = report.col(Registration.BATCH_ID) !== null;
-    const ids = report.col(batches ? Registration.BATCH_ID : Registration.COMPOUND_ID)!;
+  /** The compounds a run registered, as the filter of the Compounds list that shows them; null when it registered
+   * none. */
+  static registered(report: DG.DataFrame): {query: string, count: number} | null {
+    const ids = report.col(Registration.COMPOUND_ID)!;
     const status = report.col(Registration.STATUS)!;
     const numbers = [...new Set(Array.from({length: report.rowCount}, (_, i) => i)
       .filter((i) => status.get(i) === 'success' && ids.get(i) !== '')
       .map((i) => Number(DomainPick.digits(ids.get(i)))))];
     if (numbers.length === 0)
       return null;
-    return {segment: batches ? 'Batches' : 'Compounds', count: numbers.length,
-      noun: batches ? ['batch', 'batches'] : ['compound', 'compounds'],
-      query: Filters.format(Filters.cond(batches ? 'batch_regno' : 'molregno', 'in', numbers))};
+    return {count: numbers.length, query: Filters.format(Filters.cond('molregno', 'in', numbers))};
   }
 
-  /** Closes the report and filters the list of `segment` by `query`. */
-  private _show(segment: string, query: string): void {
+  /** Closes the report and filters the Compounds list by `query`. */
+  private _show(query: string): void {
     this._wizard.next();
-    void MolTrackEms.show(`${segment}?q=${encodeURIComponent(query)}`);
+    void MolTrackEms.show(`Compounds?q=${encodeURIComponent(query)}`);
   }
 
-  /** The file's columns a person tells its rows apart by: the first one mapped onto a column the compound is
-   * searched by, and the first one onto a column the batch is. */
+  /** The file's column a person tells its rows apart by: the first one mapped onto a column the compound is
+   * searched by. */
   private _identifying(mapping: RegistrationMapping): string[] {
-    const first = (fields: Record<string, string> | undefined, table: DomainTable | undefined) =>
-      Object.entries(fields ?? {}).find(([, target]) => table?.info.searchableColumns.includes(target))?.[0];
-    return [first(mapping.compound, this._tables?.compounds), first(mapping.batch, this._tables?.batches)]
-      .filter((name): name is string => name !== undefined);
+    const name = Object.entries(mapping.columns)
+      .find(([, target]) => this._compounds?.info.searchableColumns.includes(target))?.[0];
+    return name === undefined ? [] : [name];
   }
 
   private static _rowNumber(): DataTableColumn<number> {
@@ -266,36 +256,25 @@ export class RegisterDialog {
   private async _remap(): Promise<void> {
     const at = ++this._remaps;
     const frame = this._frame.peek();
-    const batches = this._target.value.peek() === 'Batches';
     const compounds = await MolTrackTables.compounds();
-    const batchTable = batches ? await MolTrackTables.batches() : undefined;
     if (at !== this._remaps || this._settled)
       return;
-    const option = (prefix: string, p: IProperty) => ({value: `${prefix}.${p.name}`,
-      label: `${prefix === 'compound' ? 'Compound' : 'Batch'} · ${p.friendlyName ?? p.name}`});
     const targets = [{value: STRUCTURE, label: STRUCTURE},
-      ...Registration.targets(compounds).map((p) => option('compound', p)),
-      ...(batchTable === undefined ? [] : Registration.targets(batchTable).map((p) => option('batch', p)))];
-    const auto = frame === null ? null : Registration.autoMap(frame, compounds, batchTable);
-    this._tables = {compounds, batches: batchTable};
+      ...Registration.targets(compounds).map((p) => ({value: p.name!, label: p.friendlyName ?? p.name!}))];
+    const auto = frame === null ? null : Registration.autoMap(frame, compounds);
+    this._compounds = compounds;
     this._labels = new Map(targets.map((t) => [t.value, t.label]));
     this._columns.remap(frame?.columns.names().filter((n) => !Registration.OUTCOME.includes(n)) ?? [], targets,
-      (name: string) => auto!.structure === name ? STRUCTURE : auto!.batch?.[name] !== undefined ?
-        `batch.${auto!.batch[name]}` : auto!.compound[name] !== undefined ?
-          `compound.${auto!.compound[name]}` : undefined);
+      (name: string) => auto!.structure === name ? STRUCTURE : auto!.columns[name]);
   }
 
   private _mapping(): RegistrationMapping {
-    const mapping: RegistrationMapping = {structure: '', compound: {},
-      ...(this._target.value.peek() === 'Batches' ? {batch: {}} : {})};
+    const mapping: RegistrationMapping = {structure: '', columns: {}};
     for (const [target, name] of this._columns.targets()) {
-      const [prefix, field] = target.split('.');
       if (target === STRUCTURE)
         mapping.structure = name;
-      else if (prefix === 'compound')
-        mapping.compound[name] = field;
-      else if (prefix === 'batch' && mapping.batch !== undefined)
-        mapping.batch[name] = field;
+      else
+        mapping.columns[name] = target;
     }
     return mapping;
   }

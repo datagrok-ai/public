@@ -44,8 +44,3 @@
   align-items: center;
   gap: var(--dg-space-xxl);
 }
-
-.moltrack-ems-matched {
-  gap: var(--dg-space-s);
-  margin-top: var(--dg-space-m);
-}

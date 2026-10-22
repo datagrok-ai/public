@@ -1,13 +1,14 @@
 import {Section} from '@datagrok-libraries/u2';
-import {domains, DomainSearch} from '@datagrok-libraries/ems/src/dg';
+import {domains, DomainApp, DomainSearch} from '@datagrok-libraries/ems/src/dg';
 import type {DomainAppOptions, DomainRibbon} from '@datagrok-libraries/ems/src/dg';
 import {MolTrackEms} from './app';
-import {RegisterApp} from './register-app';
+import {RegisterDialog} from './register-dialog';
 import {MolTrackTables} from './tables';
 
 /** The compound page: what a chemist reads a compound by first, the registration internals folded under it; a
- * structure drawn on a new compound that is registered already shows the compound it is. */
-export class CompoundsApp extends RegisterApp {
+ * structure drawn on a new compound that is registered already shows the compound it is. Compounds arrive through
+ * registration: Import runs the bulk registration, not a plain import. */
+export class CompoundsApp extends DomainApp {
   static readonly FIELDS = ['molregno', 'original_structure', 'structure', 'common_name', 'cas', 'epa_compound_id',
     'usan', 'iupac_name', 'source', 'source_compound_code', 'mol_logp', 'formula', 'inchikey'];
   static readonly DETAILS = ['hash_mol', 'match_rule', 'hash_all_layers', 'hash_stereo_insensitive',
@@ -17,7 +18,7 @@ export class CompoundsApp extends RegisterApp {
 
   constructor(options: DomainAppOptions) {
     super(options);
-    this.aroundForm((form, source) => {
+    MolTrackEms.aroundForm(this, (form, source) => {
       const registered = MolTrackEms.compoundSection('Already registered', () => {
         source.rows.items.value;
         const row = source.currentRow.value;
@@ -29,6 +30,10 @@ export class CompoundsApp extends RegisterApp {
       form.root.before(registered.root);
       form.root.after(details.root);
     });
+  }
+
+  async importRows(): Promise<boolean> {
+    return await RegisterDialog.open() !== null;
   }
 
   ribbon(): DomainRibbon {

@@ -59,13 +59,12 @@ export async function reidentifyEmsCompounds() : Promise<string> {
   return await PackageFunctions.reidentifyEmsCompounds();
 }
 
-//description: Registers the compounds or the batches with their compounds of a table into moltrack_ems with columns mapped by name
+//description: Registers the compounds of a table into moltrack_ems with columns mapped by name
 //input: dataframe table { description: Rows to register - the structures are in a column named smiles or structure or molfile }
-//input: string target = 'Batches' { choices: ["Compounds","Batches"] }
 //input: bool rejectAll = false { description: Write nothing if any row fails }
 //output: dataframe result
-export async function registerEmsBulk(table: DG.DataFrame, target: string, rejectAll: boolean) : Promise<any> {
-  return await PackageFunctions.registerEmsBulk(table, target, rejectAll);
+export async function registerEmsBulk(table: DG.DataFrame, rejectAll: boolean) : Promise<any> {
+  return await PackageFunctions.registerEmsBulk(table, rejectAll);
 }
 
 //description: Retrieves all properties defined for the 'compound' scope

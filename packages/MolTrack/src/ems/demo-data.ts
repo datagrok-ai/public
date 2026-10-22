@@ -1,12 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {DomainTable} from '@datagrok-libraries/ems/src/dg';
+import {DomainPick, DomainTable} from '@datagrok-libraries/ems/src/dg';
 import {moltrackEmsDb} from '../generated/db';
 import type {AssayResultInsert, AssayRunInsert} from '../generated/db';
 import {Chemistry} from './chemistry';
 import {Registration} from './registration';
-import {MolTrackTables} from './tables';
+import {MolTrackTables, SCHEMA} from './tables';
 
 const ASSAY = 'Hepatocyte Stability';
 
@@ -29,9 +29,18 @@ export class DemoData {
     const batches = await DemoData.table('batches');
     let failed = 0;
     if (await moltrackEmsDb.compounds.count() === 0) {
-      const mapping = Registration.autoMap(batches, await MolTrackTables.compounds(), await MolTrackTables.batches());
+      // a column the batch has too (Source) is the batch's
+      const ofBatch = Registration.autoMap(batches, await MolTrackTables.batches()).columns;
+      const mapping = Registration.autoMap(batches, await MolTrackTables.compounds());
+      for (const name of Object.keys(ofBatch))
+        delete mapping.columns[name];
       const registered = await Registration.register(batches, mapping);
-      failed = registered.col(Registration.STATUS)!.toList().filter((s) => s !== 'success').length;
+      const grokIds = registered.col(Registration.COMPOUND_ID)!.toList() as (string | null)[];
+      const idOf = await DomainPick.lookUp(`${SCHEMA}.compound`, grokIds.filter((id): id is string => !!id));
+      const rows = grokIds.flatMap((id, i) => !id ? [] :
+        [Registration.values(batches, i, ofBatch, {compound_id: idOf.get(id)})]);
+      await moltrackEmsDb.compoundBatches.batch(rows, {mode: 'insert'});
+      failed = batches.rowCount - rows.length;
     }
 
     await moltrackEmsDb.assays.upsert({name: ASSAY, assay_format: 'in cellulo', biological_system: 'hepatocyte'});
