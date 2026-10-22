@@ -693,7 +693,9 @@ that does not start with `sk-or-`. Watch out for:
   Vertex in the US or Azure in the EU) charge 10% more and may serve a request, so the bill can run up to 10%
   over the runtime's figure. OpenRouter reports each answer's cost, but Hermes does not pass it on.
 - Credit: OpenRouter refuses a request (402) when the credit left on the account or key cannot pay for its
-  longest possible answer, 128,000 output tokens ($1.28 on Sonnet 5.5, $6.40 on Fable 5.1 or GPT-6 Astra).
+  longest possible answer, 128,000 output tokens ($1.28 on Sonnet 5.5, $6.40 on Fable 5.1 or GPT-6 Astra). A
+  key's credit limit only caps its spending: the account itself needs purchased credits, or every request but
+  the first few cents' worth ends in that 402.
 - Attribution: requests name Datagrok as the app (`HTTP-Referer: https://datagrok.ai`, `X-Title: Datagrok`)
   instead of Hermes, so OpenRouter counts the usage toward Datagrok in its public app rankings.
 - Claude's thinking: OpenRouter is not a host Hermes sends Claude's signed thinking back to, so Claude does
@@ -784,15 +786,16 @@ in-region profiles cost 10% more, which the cost limit does not count. Model ids
 
 What to watch out for:
 
-- Use a long-term key: a short-term one expires within 12 hours, and nothing renews it.
+- Use a long-term key: a short-term one stops working within 12 hours, or as soon as the console session that
+  made it ends (one failed after about two hours with `Authentication failed`), and nothing renews it.
 - The key's IAM user needs access to the models; Fable 5.1 also needs the account's data retention mode
   `aws_review`.
 - GPT's global profiles are not offered from every region (GPT-6 Astra's from 18); elsewhere a turn on them
   ends in Bedrock's error.
 - Structured output on GPT: AWS documents JSON Schema output of GPT-6 Astra, Sol and Luna and of GPT-5.6 for
   strict, non-streaming calls only, while Grokky streams and asks for non-strict output, then validates the
-  reply and retries (up to five attempts). It is unverified there: a reply that ignores the schema is retried,
-  and a call Bedrock refuses ends the turn in Bedrock's error.
+  reply and retries (up to five attempts). It passed a live check on GPT-6.1 Sol; a reply that ignores the
+  schema is retried, and a call Bedrock refuses ends the turn in Bedrock's error.
 - Bedrock checks the key itself: one without a Bedrock prefix ends the turn in
   `Invalid API Key format: Must start with pre-defined prefix`, a wrong or revoked one in
   `Authentication failed: Please make sure your API Key is valid.` (403 on Claude's route, 401 on GPT's), and a
@@ -820,7 +823,9 @@ path, a port, a query, Google Cloud's legacy regional URL). Docs:
 [Anthropic Messages](https://docs.databricks.com/aws/en/machine-learning/model-serving/query-anthropic-messages),
 [OpenAI Responses](https://docs.databricks.com/aws/en/machine-learning/model-serving/query-openai-responses),
 [supported models](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/supported-models).
-Checked against a test stub and request probes, not yet against a live workspace. Watch out for:
+Checked against a test stub and request probes; against a live workspace only the token and the AI Gateway
+route, on a Free Edition workspace, which hosts no Claude or GPT-6 model (its GPT OSS is refused on the
+Responses route: `Responses API passthrough is not supported for model databricks-gpt-oss-120b`). Watch out for:
 
 - Prices: Databricks bills its own rates; the cost limit prices each call at the catalog's list prices, an
   approximation.
@@ -881,7 +886,13 @@ What to watch out for:
   drops the output format instead leaves the reply to the validation and its five attempts.
 - Chat Completions carries `reasoning_effort` on every call (`none` when the turn names no effort); when an
   endpoint rejects the field by name, Hermes sends the call again without it. For model ids with `gpt-5` or
-  `codex` in them it leads with a `developer` message instead of a `system` one.
+  `codex` in them it leads with a `developer` message instead of a `system` one. OpenAI's own Chat Completions
+  takes no tools with a reasoning effort on GPT-6 ("Function tools with reasoning_effort are not supported for
+  gpt-6-luna in /v1/chat/completions. To use function tools, use /v1/responses"), and GPT-6.1 Sol and Astra
+  cannot turn reasoning off: run GPT-6 in `openai-responses`.
+- A gateway may refuse an output format beside tools: Databricks' serving endpoints answer a structured turn
+  with "response_format and tools are not supported together", so Execute, search ranking and query matching
+  fail there.
 - The Responses format stores nothing (`store: false`) and asks for the encrypted reasoning
   (`include: ["reasoning.encrypted_content"]`), resending the whole history on every call.
 - To a local host, Hermes also asks Ollama's and llama.cpp's metadata routes (`/api/tags`, `/v1/props`, …),
