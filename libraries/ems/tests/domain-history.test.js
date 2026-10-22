@@ -134,6 +134,36 @@ scoped('the actor is the user\'s name, looked up once per id; a draft is not sav
   draft.dispose();
 });
 
+scoped('the trail loads 50 entries at a time; "Show older" loads the older ones down to the first', async () => {
+  emsBackends.domain = backend();
+  const issue = emsBackends.domain.tableSync('grit.issue');
+  for (let i = 0; i < 60; i++) {
+    issue.history.push({id: 'i1', tx_id: `t${i}`, op: 'update', actor_id: null, ts: '2026-09-13T10:00:00Z',
+      before: {title: `T${i}`}, after: {title: `T${i + 1}`}});
+  }
+  const pages = [];
+  const audit = issue.audit.bind(issue);
+  Object.defineProperty(issue, 'audit', {configurable: true, value: (id, page) => {
+    pages.push(page);
+    return audit(id, page);
+  }});
+  const src = (await domains.table('grit.issue')).source({pageSize: 10});
+  await flush();
+  src.currentRow.value = src.rows.byKey('i1');
+  const history = domains.history(src);
+  await settle();
+  assert.deepEqual(pages, [{limit: 50}]);
+  const more = history.view.root.querySelector('[data-u2-part="more"]');
+  const shown = () => [lines(history)[0].parentElement.getAttribute('aria-setsize'), more.hidden];
+  assert.deepEqual(shown(), ['50', false]);
+
+  fire(more, 'click');
+  await settle();
+  assert.deepEqual([pages[1], shown()], [{limit: 50, before: 10}, ['60', true]]);
+  history.dispose();
+  src.dispose();
+});
+
 scoped('a table that keeps no history says so instead of showing an empty list', async () => {
   const memory = backend();
   const issue = memory.tableSync('grit.issue');

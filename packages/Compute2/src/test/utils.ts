@@ -50,15 +50,22 @@ export function closeViewsAfter() {
 const savedCallIds = (state: PipelineSerializedState): string[] => isFuncCallSerializedState(state) ?
   (state.funcCallId ? [state.funcCallId] : []) : state.steps.flatMap(savedCallIds);
 
-/** Deletes a saved workflow run with its step calls; plain calls.delete() silently keeps them. */
+/** Deletes a saved run and checks it is gone; plain calls.delete() silently keeps it. */
+export async function deleteSavedRun(id: string) {
+  const calls = grok.dapi.functions.calls.allPackageVersions();
+  const call = await calls.find(id);
+  if (!call)
+    return;
+  await calls.delete(call);
+  if (await calls.find(id))
+    throw new Error(`Saved run ${id} was not deleted`);
+}
+
+/** Deletes a saved workflow run with its step calls. */
 export async function deleteSavedWorkflow(id: string) {
   const [state] = await loadInstanceState(id);
-  const calls = grok.dapi.functions.calls.allPackageVersions();
-  for (const callId of [id, ...savedCallIds(state)]) {
-    const call = await calls.find(callId);
-    if (call)
-      await calls.delete(call);
-  }
+  for (const callId of [id, ...savedCallIds(state)])
+    await deleteSavedRun(callId);
 }
 
 /** Wait for WebComponents custom elements to be registered. */

@@ -15,6 +15,8 @@ export interface ScalarNodeInfo {
   valueType: string;
   units?: string;
   value: number | null;
+  // an output of a step whose results are outdated
+  outdated?: boolean;
 }
 
 export interface ColumnInfo {
@@ -36,6 +38,7 @@ export interface TableNodeInfo {
   defaultTimeUnits?: TimeUnit;
   columns: ColumnInfo[];
   rowCount: number;
+  outdated?: boolean;
 }
 
 export type EntrySourceKind = 'workflow' | 'function' | 'raw';
@@ -58,6 +61,10 @@ export interface ComparisonEntry {
   dataFrames: Map<string, DG.DataFrame>;
   // friendly paths of workflow steps that could not be loaded
   failedSteps?: string[];
+  // friendly paths of workflow steps with outdated outputs, the model name for a function run
+  outdatedSteps?: string[];
+  // a snapshot of the current state, not stored in history
+  unsaved?: boolean;
 }
 
 export interface ScalarBinding {

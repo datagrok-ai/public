@@ -1607,6 +1607,10 @@ export interface ICorrelationPlotSettings {
   /** Shows the correlation coefficient (Pearson or Spearman, see Correlation Type) inside the corresponding cell. */
   showPearsonR: boolean;
 
+  /** Spreads the colors over the coefficients present in the matrix, from the lowest to the highest,
+   * instead of the fixed -1..1 range. Shows the structure of a matrix whose coefficients are all alike. */
+  autoColorRange: boolean;
+
   /** Shows the tooltip with the corresponding scatter plot inside. */
   showTooltip: boolean;
 

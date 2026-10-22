@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Runtime, MCP server: Updated the Node.js base images to 22.23.4 (Node.js October 2026 security release)
+
 * AI: The assistant now connects to Anthropic with your organization's Anthropic API key only; Claude subscription sign-in, OpenAI, Amazon Bedrock and Microsoft Foundry are no longer supported
 * AI: Web search and web page reading now go through the free tiers of Exa, Parallel, Firecrawl and Keenable (third-party search services)
 * AI: A missing or invalid API key is now reported within seconds instead of minutes, and model errors appear as errors rather than as the assistant's answer

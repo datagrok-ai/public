@@ -299,9 +299,15 @@
   display: none;
 }
 
+.u2-domain-history-trail,
 .u2-domain-history-lines {
   flex: 1;
   min-height: 0;
+}
+
+.u2-domain-history-more {
+  align-self: flex-start;
+  margin: var(--dg-space-s);
 }
 
 .u2-domain-history-line {

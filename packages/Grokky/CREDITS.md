@@ -130,7 +130,7 @@ streams structured events to the browser. Skills/knowledge-sync system included.
 
 | Component                            | License    | Upstream                                          |
 |--------------------------------------|------------|---------------------------------------------------|
-| Node.js 22 (`node:22-trixie-slim` base) | MIT (Node) | https://nodejs.org/                            |
+| Node.js 22 (`node:22.23.4-trixie-slim` base) | MIT (Node) | https://nodejs.org/                            |
 | Hermes Agent (pinned commit) | MIT, © 2025 Nous Research | https://github.com/NousResearch/hermes-agent |
 | Hermes' locked Python dependencies (81 packages in `/opt/hermes/.venv`) | MIT, BSD, Apache-2.0, ISC, PSF-2.0; MPL-2.0: certifi, pathspec, tqdm (MPL-2.0 and MIT) | listed in Hermes' `uv.lock` |
 | anthropic, mcp, jsonschema, ruamel.yaml (Python, from Hermes' locked dependencies; used by the agent) | MIT | https://github.com/anthropics/anthropic-sdk-python, https://github.com/modelcontextprotocol/python-sdk, https://github.com/python-jsonschema/jsonschema, https://sourceforge.net/projects/ruamel-yaml/ |
@@ -153,7 +153,7 @@ Model Context Protocol tools.
 
 | Component                            | License    | Upstream                                          |
 |--------------------------------------|------------|---------------------------------------------------|
-| Node.js 22 (`node:22-alpine` base)   | MIT (Node) | https://nodejs.org/                               |
+| Node.js 22 (`node:22.23.4-alpine` base) | MIT (Node) | https://nodejs.org/                               |
 | @modelcontextprotocol/sdk            | MIT        | https://github.com/modelcontextprotocol/typescript-sdk |
 | @hono/node-server                    | MIT        | https://hono.dev/                                 |
 | hono                                 | MIT        | https://github.com/honojs/hono                    |

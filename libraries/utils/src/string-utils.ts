@@ -1,9 +1,11 @@
 const api: any = (typeof window !== 'undefined' ? window : global.window) as any;
 
-export function tryParseJson(s: string): any {
+export function tryParseJson(s: string, options?: {warning?: string, reviver?: (key: string, value: any) => any}): any {
   try {
-    return JSON.parse(s);
-  } catch (_) {
+    return JSON.parse(s, options?.reviver);
+  } catch (e) {
+    if (options?.warning)
+      console.warn(`${options.warning}: malformed JSON: ${s}`, e);
     return null;
   }
 }
