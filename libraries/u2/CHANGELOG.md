@@ -5,11 +5,12 @@
 * Filters: Added host operators (`host: true`), answered by the app instead of the target, with an optional numeric `parameter` edited beside the value (`structure is similar to(0.8) "CCO"`)
 * Molecule editor: Works as a filter builder value: it takes the value, `onChanged` and `inline` it is given
 * Forms: A read-only molecule is drawn, not shown as its SMILES
-* Forms: A readonly number is shown in its property's display format, as its editor shows it (`ObjectForm.displayText`)
+* Forms: A readonly number is shown in its property's display format, as its editor shows it (`ObjectForm.displayText`); a read-only field's caption sizes the label column like an input's
 * Access: Added `readOnlyFields(names)`, the deny-only narrowing that makes the named fields text
 * Filters: An operator's parameter can be cleared and retyped; an empty, mistyped ("0.0.4") or out-of-range one leaves the condition refused with "Similarity at least: a number from 0 to 1" under the row, instead of applying the default or the last good number; the label wraps with its box
 * Forms: `focusFirst` (and `Input.focus(options)`) focus without scrolling, so a form opens at its top; an active tab scrolls its strip alone, not the page holding it
-* Molecule editor: A required molecule property is a required editor (the asterisk); a structure the sketcher cannot draw is kept as typed and flagged "Cannot read the structure" instead of vanishing, and a SMILES typed without Enter is kept
+* Molecule editor: A required molecule property is a required editor (the asterisk)
+* Filters: The builder shows the and/or between its rows and reads a group's toggle as "all of / any of"; a problem names the property by its friendly name (`"Grok ID" needs a value`)
 * Platform inputs: u2's own validators (a form's required check, an app's rules) show their message under a bridged platform input; the platform's messages stay its own
 * Styles: Added a console warning, once per page, when a package built before stylesheet revisions injects its own copy of the u2 CSS over the installed revision: the packages that bundle u2 need republishing
 * Tooltip: Keyboard focus shows a bound tooltip too (a click's focus does not), the tooltip is `role="tooltip"`, and its anchor lists it in `aria-describedby` while it shows, beside its own ids

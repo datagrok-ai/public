@@ -419,7 +419,8 @@ export class Form extends Control {
     this.root.style.setProperty('--u2-form-label-width', '0px');
     // a form nested in one gone tall would otherwise read its captions at the tall skin's full row
     this.root.classList.add('u2-form-measuring');
-    const captions: HTMLElement[] = [...this.root.querySelectorAll<HTMLElement>('.u2-form-group-label')];
+    const captions = [...this.root.querySelectorAll<HTMLElement>(
+      '.u2-form-group-label, .u2-form-readonly .u2-input-label')];
     for (const input of this._inputs) {
       // a checklist row's caption follows its box, and a grouped input's sits beside it: no column
       if (!input.root.classList.contains('u2-input-caption-after') && !input.root.classList.contains('u2-input-in-group'))

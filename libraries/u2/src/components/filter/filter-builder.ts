@@ -384,7 +384,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
         row.update(node as FilterGroup);
       row.setProblem(problems.find((p) => p.nodeId === node.id)?.message ?? null);
       seen.add(node.id);
-      if (horizontal && order.length > 0)
+      if (!advanced && order.length > 0)
         order.push(this._join(node.id));
       order.push(row.root);
       if (row instanceof FilterGroupRow)
@@ -435,7 +435,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
       host.children[host.children.length - 1].remove();
   }
 
-  /** The connector chip shown before the row `id` in horizontal mode; it flips the group op. */
+  /** The connector chip shown before the row `id` in simple mode; it flips the group op. */
   private _join(id: string): HTMLElement {
     let join = this._joins.get(id);
     if (!join) {

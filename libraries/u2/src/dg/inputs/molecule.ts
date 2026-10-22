@@ -15,47 +15,7 @@ import {Editors} from '../forms/editors.js';
 export function moleculeInput(label: string,
   options: Pick<InputOptions<string>, 'name' | 'value' | 'onChanged' | 'inline' | 'nullable'> = {}): Input<string> {
   const {name, value, ...rest} = options;
-  const dgInput = ui.input.molecule(label, {value: value ?? ''});
-  const input = fromDartInput<string>(dgInput, name, rest);
-  sketchInDialog(input, dgInput.root);
-  return input;
-}
-
-/** What a structure the sketcher drew nothing for is told. */
-const UNREADABLE_STRUCTURE = 'Cannot read the structure';
-
-/** The platform input's dialog keeps what its sketcher drew and nothing else: a SMILES it could not
- * read vanished without a word. The same sketcher opens here instead, and text it drew nothing for
- * stays the value — invalid unless the platform reads it as SMILES — for the user to see and fix. */
-function sketchInDialog(input: Input<string>, root: HTMLElement): void {
-  const host = root.querySelector<HTMLElement>('.d4-input-molecule-canvas-host');
-  if (host === null)
-    return;
-  let unreadable: string | null = null;
-  input.addValidator((value) => value !== '' && value === unreadable ? UNREADABLE_STRUCTURE : null);
-  // ahead of the platform's own click handler, which never runs
-  const open = (e: Event) => {
-    if (input.readOnly)
-      return;
-    e.stopImmediatePropagation();
-    const current = input.value.peek() ?? '';
-    const sketcher = new grok.chem.Sketcher();
-    if (current === unreadable)
-      sketcher.molInput.value = current;
-    else
-      sketcher.setMolecule(current);
-    ui.dialog().add(sketcher.root).onOK(() => {
-      const typed = sketcher.molInput.value.trim();
-      const drawn = sketcher.isEmpty() ? '' : sketcher.getSmiles();
-      unreadable = drawn === '' && typed !== '' && !grok.chem.isMolBlock(typed) && !grok.chem.checkSmiles(typed) ?
-        typed : null;
-      input.value.value = drawn !== '' ? drawn : typed;
-      input.touch();
-      input.revalidate();
-    }).show();
-  };
-  host.addEventListener('click', open, {capture: true});
-  input.own(() => host.removeEventListener('click', open, {capture: true}));
+  return fromDartInput<string>(ui.input.molecule(label, {value: value ?? ''}), name, rest);
 }
 
 export interface MoleculeRendererOptions {

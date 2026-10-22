@@ -482,7 +482,7 @@ export class FilterGroupRow extends Control {
       this.root.dataset.u2Node = group.id;
     }
     this.connector = new ButtonGroup({toggle: 'single', density: 'toolbar',
-      items: [{id: 'and', label: 'and'}, {id: 'or', label: 'or'}]});
+      items: [{id: 'and', label: 'all of'}, {id: 'or', label: 'any of'}]});
     this.connector.root.classList.add('u2-fb-connector');
     this.connector.root.dataset.u2Part = 'connector';
     this.not = button('not', () => this._host.change(this.id, {not: this._group.not === true ? undefined : true}));

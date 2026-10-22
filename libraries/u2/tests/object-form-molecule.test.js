@@ -5,10 +5,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
-import {fire, flush, resetDom} from './dom-shim.js';
+import {flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {Access} from '../src/core/access.js';
-import {EMPTY} from '../src/core/text.js';
 import {propertyForm} from '../src/dg/forms/object-form.js';
 
 register('./chem-stub.mjs', import.meta.url);
@@ -66,43 +65,5 @@ form('a readonly molecule is drawn, and the drawing stays through a refresh whil
   f.refresh();
   assert.equal(value(f, 'structure').textContent, '', 'an empty molecule is an empty field');
   assert.equal(value(f, 'structure').querySelector('.chem-stub-depiction'), null);
-  f.dispose();
-});
-
-form('a required structure is a required editor; text the sketcher drew nothing for stays, flagged unless it is SMILES', async () => {
-  const grok = await import('datagrok-api/grok');
-  const ui = await import('datagrok-api/ui');
-  await import('../src/dg/inputs/molecule.js');
-  const row = {structure: ''};
-  const f = propertyForm([prop('structure', 'string', {semType: 'Molecule', nullable: false})], row);
-  document.body.append(f.root);
-  const input = f.input('structure');
-  assert.equal(input.nullable, false, 'the property says it must hold a value');
-  assert.equal(input.required, true);
-  const canvas = f.root.querySelector('.d4-input-molecule-canvas-host canvas');
-  const sketch = (enter) => {
-    fire(canvas, 'click');
-    const sketcher = grok.chem.Sketcher.made.at(-1);
-    enter(sketcher);
-    ui.shown.at(-1).ok();
-  };
-  sketch((sketcher) => sketcher.molInput.value = 'C1CC(');
-  assert.equal(row.structure, 'C1CC(', 'what was typed is not dropped');
-  assert.equal(input.validity.value, 'Cannot read the structure');
-  assert.equal(input.root.querySelector('[data-u2-part="error"]').textContent, 'Cannot read the structure',
-    'and the field says so');
-  sketch((sketcher) => {
-    assert.equal(sketcher.molInput.value, 'C1CC(', 'reopened, the text is there to fix');
-    sketcher.molInput.value = 'CCN';
-  });
-  assert.equal(row.structure, 'CCN', 'a SMILES typed without Enter is kept');
-  assert.equal(input.validity.value, null);
-  sketch((sketcher) => sketcher.setMolecule('CCO'));
-  assert.equal(row.structure, 'CCO', 'a drawing is what the sketcher answers');
-  assert.equal(input.validity.value, null);
-  sketch((sketcher) => sketcher.setMolecule(''));
-  assert.equal(input.validity.value, EMPTY, 'cleared, it is required again');
-  assert.equal(f.root.querySelector('.d4-input-molecule').platform.platformOpened, 0,
-    'the platform\'s own dialog never opened');
   f.dispose();
 });

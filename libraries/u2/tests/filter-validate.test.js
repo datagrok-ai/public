@@ -44,6 +44,13 @@ test('unknown-property', () => {
   assert.match(p.message, /nope/);
 });
 
+test('a value\'s problem names the property by its friendly name', () => {
+  const named = Filters.schema([{name: 'molregno', type: TYPE.INT, friendlyName: 'Grok ID'}]);
+  const messages = (c) => Filters.validate(Filters.group('and', [c]), named).map((p) => p.message);
+  assert.deepEqual(messages(Filters.cond('molregno', '=')), ['"Grok ID" needs a value']);
+  assert.deepEqual(messages(Filters.cond('molregno', '=', 'x')), ['Expected an integer for "Grok ID"']);
+});
+
 test('operator-not-applicable: unknown ids and ids of another kind', () => {
   assert.deepEqual(codes([Filters.cond('age', 'like', 'x')]), ['operator-not-applicable']);
   assert.deepEqual(codes([Filters.cond('name', '>', 'x')]), ['operator-not-applicable']);

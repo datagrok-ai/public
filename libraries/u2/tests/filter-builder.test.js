@@ -242,6 +242,15 @@ smoke('horizontal: rows inline with a join chip between them that flips the op; 
     ['f1', 'u2-btn u2-fb-join', 'f3', 'u2-btn u2-icon-btn u2-fb-add']);
 });
 
+smoke('stacked: the join word between the rows, the header\'s toggle reading all of / any of', () => {
+  const fb = mount(new FilterBuilder({schema: SCHEMA, value: tree(Filters.cond('age', '>', 30), Filters.cond('mw', '<', 2))}));
+  const host = fb.root.querySelector('[data-u2-part="rows"]');
+  assert.deepEqual(host.children.map((el) => el.classList.contains('u2-fb-join') ? el.textContent : el.dataset.u2Node),
+    ['f1', 'and', 'f2']);
+  assert.deepEqual(fb.root.querySelectorAll('[data-u2-part="connector"] [data-u2-part="item-label"]')
+    .map((el) => el.textContent), ['all of', 'any of']);
+});
+
 smoke('locks: value keeps the editor and hides remove, all disables everything, allowAdd hides +', () => {
   const template = {
     root: Filters.group('and', [

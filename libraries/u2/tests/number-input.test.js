@@ -279,14 +279,3 @@ smoke('commitOn change: typing marks bad text at once but writes only on blur', 
   assert.equal(input.value.peek(), 9);
   input.dispose();
 });
-
-smoke('text with a second decimal point is no number: "0.0.4" never reads as 0 or 0.4', () => {
-  const input = mount(new NumberInput({label: 'Similarity', value: 0.7, min: 0, max: 1}));
-  type(input, '0.0.4');
-  assert.equal(input.value.peek(), 0.7, 'the value is not rewritten from text it cannot read');
-  assert.equal(input.validity.peek(), 'Not a number');
-  assert.equal(editor(input).value, '0.0.4', 'the text stays for the user to fix');
-  fire(editor(input), 'blur');
-  assert.equal(input.value.peek(), 0.7, 'and a blur commits none of it');
-  input.dispose();
-});

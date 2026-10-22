@@ -391,3 +391,8 @@
 .u2-btn.u2-fb-join:hover:not(:disabled) {
   background: var(--dg-hover);
 }
+
+/* a stacked list's chip sits at its start, between the rows it joins */
+.u2-fb-rows > .u2-fb-join {
+  align-self: flex-start;
+}

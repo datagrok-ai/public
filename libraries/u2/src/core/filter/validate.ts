@@ -15,7 +15,8 @@ const NUMERIC: FilterKind[] = [KIND.INT, KIND.FLOAT, KIND.BIG_INT];
 
 function badScalar(v: FilterScalar, kind: FilterKind, prop: FilterProperty, op: FilterOperator,
   schema: FilterSchema): string | null {
-  const bad = (expected: string) => `Expected ${expected} for "${prop.name}"`;
+  const name = prop.friendlyName ?? prop.name;
+  const bad = (expected: string) => `Expected ${expected} for "${name}"`;
   if (isParam(v))
     return null;
   if (isColumnRef(v)) {
@@ -72,12 +73,12 @@ function badScalar(v: FilterScalar, kind: FilterKind, prop: FilterProperty, op: 
   }
   if (typeof v === 'number') {
     if (prop.min !== undefined && v < prop.min)
-      return `"${prop.name}" is at least ${prop.min}`;
+      return `"${name}" is at least ${prop.min}`;
     if (prop.max !== undefined && v > prop.max)
-      return `"${prop.name}" is at most ${prop.max}`;
+      return `"${name}" is at most ${prop.max}`;
   }
   if (prop.choices && (op.id === '=' || op.id === 'in') && !prop.choices.includes(String(v)))
-    return `"${v}" is not one of the choices of "${prop.name}"`;
+    return `"${v}" is not one of the choices of "${name}"`;
   return null;
 }
 
@@ -116,8 +117,9 @@ function checkCondition(c: FilterCondition, schema: FilterSchema, target: Filter
   const empty = v === undefined || v === null || v === '';
   if (op.arity === 1 && empty || op.arity === 2 && !(Array.isArray(v) && v.length === 2) ||
     op.arity === 'n' && !(Array.isArray(v) && v.length > 0)) {
-    problem('missing-value', op.arity === 2 ? `"${c.property}" needs two bounds` :
-      op.arity === 'n' ? `"${c.property}" needs at least one value` : `"${c.property}" needs a value`);
+    const name = prop.friendlyName ?? c.property;
+    problem('missing-value', op.arity === 2 ? `"${name}" needs two bounds` :
+      op.arity === 'n' ? `"${name}" needs at least one value` : `"${name}" needs a value`);
     return;
   }
   if (op.arity !== 0) {
