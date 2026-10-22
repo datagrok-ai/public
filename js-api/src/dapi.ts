@@ -1174,16 +1174,26 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
      return new HttpDataSource<Project>(api.grok_Dapi_RecentProjects());
   }
 
-  /** Opens the specified project. */
-  open(name: string, options?: ProjectOpenOptions): Promise<Project> {
-    return this
-      .filter(name)
-      .first()
-      .then(p => {
-        if (p)
-          return p.open(options);
-        return Promise.reject(`Project ${name} not found`);
-      });
+  /** Opens the project with the specified friendly name (`Smiles_22`), short name (`Smiles22`)
+   * or namespace-qualified name (`Admin:Smiles22`, or `Admin.Smiles22` as in the project URL).
+   * An unqualified name that matches no project exactly is looked up by smart search. */
+  async open(name: string, options?: ProjectOpenOptions): Promise<Project> {
+    const project = await this.findByName(name);
+    if (!project)
+      return Promise.reject(`Project ${name} not found`);
+    return project.open(options);
+  }
+
+  private async findByName(name: string): Promise<Project | null> {
+    const q = JSON.stringify;
+    const project = await this.filter(`name = ${q(name)} or shortName = ${q(name)}`).first();
+    if (project)
+      return project;
+    const qualified = /^([A-Za-z0-9]+(?:[.:][A-Za-z0-9]+)*)[.:]([^.:]+)$/.exec(name);
+    if (!qualified)
+      return await this.filter(name).first();
+    const [, ns, local] = qualified;
+    return await this.filter(`namespace = ${q(ns.replace(/\./g, ':') + ':')} and (name = ${q(local)} or shortName = ${q(local)})`).first();
   }
 
   /** Saves the Project */

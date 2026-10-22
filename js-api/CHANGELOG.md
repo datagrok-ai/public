@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1038](https://github.com/datagrok-ai/core/issues/1038): Projects: Fixed grok.dapi.projects.open not finding a project by its short or namespace-qualified name
 * Domains: Fixed `DomainTableClient.save()` sending the `'~'` service columns and master-expand fields of a spread read row as column values, which the server refused
 * Domains: `DomainFrameEditor` filled the column defaults the caller may write into a new row, so a required column with a default no longer blocks it
 * [core#857](https://github.com/datagrok-ai/core/issues/857): Fixed `View.PACKAGES` and `VIEW_TYPE.PACKAGES` to be `'Plugins'`, the platform's plugins view type, and removed `View.BROWSE`, which has no view factory, from `View.ALL_VIEW_TYPES`, so `View.createByType` no longer crashes on them
