@@ -57,7 +57,11 @@ def main() -> int:
         return 1
     hermes.send_keys_by_type()
     if '--check' in sys.argv:
-        emit({'type': 'checked', 'error': s.check()})
+        try:
+            error = s.check()
+        except Exception as e:
+            error = f'{type(e).__name__}: {e}'
+        emit({'type': 'checked', 'error': error})
         return 0
     if settings['warm']:
         s.build_agent()

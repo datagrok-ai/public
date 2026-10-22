@@ -30,9 +30,10 @@ PROVIDER_MESSAGE = re.compile(r"""['"]message['"]: (?:'((?:[^'\\]|\\.)*)'|"((?:[
 SAFETY_FILTER = 'content_policy_blocked'
 SAFETY_FILTER_MESSAGE = "The model provider's safety filter stopped this answer. Try rewording the request."
 BASE_TOOLSETS = ['file', 'terminal', 'skills', 'web', browser_tools.TOOLSET]
-# The connection test's one call: no system prompt, no tools, a reply of a word or two.
+# The connection test's call: no system prompt, no tools, a reply of a word or two. Hermes may call again after an
+# empty reply, which a limit of one would refuse and report as the provider's error.
 CHECK: TurnCommand = {'type': 'turn', 'text': 'Reply with OK.', 'systemPrompt': '', 'cwd': '/',
-                      'limits': {'maxTurns': 1, 'maxBudgetUsd': 1.0}}
+                      'limits': {'maxTurns': 3, 'maxBudgetUsd': 1.0}}
 RETRY_STRUCTURED = ('Your reply did not match the required JSON schema: {}. '
                     'Reply again with only the corrected JSON object.')
 
