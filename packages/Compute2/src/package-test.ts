@@ -19,6 +19,7 @@ import './test/viewer-frame-swap-contract';
 import './test/graphics-output';
 import './test/dock-layout';
 import './test/validation-actions';
+import './test/input-toggles';
 import './test/tree-node';
 import './test/export-summary';
 import './test/feedback';

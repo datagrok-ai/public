@@ -86,6 +86,14 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
   (t as any).setStatus = setStatus;
 };
 
+// InputBase.visible also hides an emptied category header; older clients lack it
+export function setInputVisible(input: DG.InputBase, visible: boolean) {
+  if ((input as any).visible != null)
+    input.visible = visible;
+  else
+    input.root.style.display = visible ? 'flex' : 'none';
+}
+
 export interface FuncCallInputStatusable<T = any> extends FuncCallInput<T> {
   setStatus: (status: {
     validation?: ValidationResult,

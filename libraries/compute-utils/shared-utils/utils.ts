@@ -81,6 +81,23 @@ export const getInputsHidden = (func: DG.Func): boolean => {
   return func.options['inputsHidden'] === 'true';
 };
 
+export type InputToggle = {
+  caption: string,
+  categories?: string[],
+  inputs?: string[],
+  linked?: boolean,
+};
+
+export const DEFAULT_INPUT_TOGGLES: InputToggle[] = [{caption: 'linked inputs', linked: true}];
+export const ALL_INPUTS_TOGGLES: InputToggle[] = [{caption: 'linked inputs'}];
+
+export const getInputToggles = (func: DG.Func): InputToggle[] => {
+  const toggles = func.options['inputToggles'];
+  if (toggles)
+    return JSON.parse(toggles);
+  return getInputsHidden(func) ? ALL_INPUTS_TOGGLES : DEFAULT_INPUT_TOGGLES;
+};
+
 export const getCustomExports = (func: DG.Func): {name: string, function: string}[] => {
   return JSON.parse(func.options['customExports'] ?? '[]');
 };

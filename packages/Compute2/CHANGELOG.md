@@ -2,6 +2,8 @@
 
 ## v.next
 
+* RFV: In workflows, inputs with the `disabled` or `restricted` restriction are hidden behind a Show linked inputs row and show a link icon while the value is the one the workflow set; `meta.inputToggles` picks the inputs (by category or name, linked or not) and the row captions, the `keepVisible` meta exempts an input, and inputs with errors, warnings or an inconsistent value are always shown
+* RFV: `meta.inputsHidden` hides every input behind the Show linked inputs row instead of collapsing the form; inputs with errors, warnings or an inconsistent value stay visible
 * Workflows: Nested pipelines have two history loads: Load completed run loads an editable copy, Load completed run (read-only) a locked one; read-only steps and pipelines show a lock on the left of their tree row; one loaded as is opens the original run from it, one based on a run (editable) has a branch icon at the end of its row instead; steps name the source run in the tooltip and menu; a loaded pipeline also has a line in its view to open the original run in a new view
 * Workflows: Steps with history have a lock ribbon icon next to history that loads a completed run read-only
 * Workflows: Fixed OpenWorkflowRun opening the default input dialog for runs of functions without a Compute2 editor, such as workflow steps; they open in the Rich Function View, nested pipeline runs in the Tree Wizard

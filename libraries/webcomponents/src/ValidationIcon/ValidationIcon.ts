@@ -166,7 +166,8 @@ export class ValidationIcon extends HTMLElement {
       (validation?.errors && validation.errors.length) ||
       (validation?.warnings && validation.warnings.length) ||
       (validation?.notifications && validation.notifications.length) ||
-      consistency?.inconsistent;
+      consistency?.inconsistent ||
+      this.isLinked(consistency);
 
     $(this).css('display', isAnythingToShow ? 'flex': 'none');
   }
@@ -192,6 +193,11 @@ export class ValidationIcon extends HTMLElement {
     if (!iconOptions) {
       this.currentIcon = undefined;
       this.currentPopover = undefined;
+      if (this.isLinked(consistency)) {
+        this.currentIcon = ui.iconFA('link', null, consistency!.restriction === 'disabled' ?
+          'Set by the workflow' : 'Set by the workflow. Editing it makes the value inconsistent');
+        this.currentIcon.style.setProperty('color', 'var(--grey-4)', 'important');
+      }
       return null;
     }
 
@@ -283,6 +289,10 @@ export class ValidationIcon extends HTMLElement {
       return {name: 'info-circle', color: 'var(--blue-1)'};
     if (category === 'inconsistent')
       return {name: 'handshake-slash', color: this.isImportantRestriction(restrictionType) ? 'var(--red-3)' : 'var(--blue-1)'};
+  }
+
+  private isLinked(consistency?: ConsistencyInfo) {
+    return !!consistency && !consistency.inconsistent && this.isImportantRestriction(consistency.restriction);
   }
 
   private isImportantRestriction(restrictionType?: string) {

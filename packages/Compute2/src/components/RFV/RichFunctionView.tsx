@@ -33,6 +33,7 @@ import {_package} from '../../package-instance';
 import {applyDefaultGridFloatFormat, canUseResults, disposeViewers, getViewers, pinView as pinViewHelper, STICKY_BAR_BACKGROUND} from '../../utils';
 import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
 import {getShareAction} from '../../sharing/sharing';
+import {getToggledInputs} from './input-toggles';
 
 
 interface ScalarsState {
@@ -377,9 +378,16 @@ export const RichFunctionView = Vue.defineComponent({
     const shareAction = getShareAction();
 
     const formHidden = Vue.ref(false);
-    const inputsHidden = Vue.ref(false);
-    const hasInputsHiddenOption = Vue.computed(() =>
-      !!currentCall.value?.func && Utils.getInputsHidden(currentCall.value.func));
+    const inputToggles = Vue.shallowRef<Utils.InputToggle[]>([]);
+    const shownToggles = Vue.shallowRef(new Set<string>());
+    const shownTogglesKey = () => `shown_input_toggles_${currentCall.value?.func?.nqName}`;
+    const switchToggle = (caption: string) => {
+      const shown = new Set(shownToggles.value);
+      if (!shown.delete(caption))
+        shown.add(caption);
+      shownToggles.value = shown;
+      sessionStorage.setItem(shownTogglesKey(), JSON.stringify([...shown]));
+    };
     const historyHidden = Vue.ref(true);
     const historyReadonly = Vue.ref(false);
     const toggleHistory = (readonly: boolean) => {
@@ -420,6 +428,15 @@ export const RichFunctionView = Vue.defineComponent({
       }
       return hidden;
     });
+
+    const toggledInputs = Vue.computed(() => getToggledInputs(
+      [...currentCall.value.inputParams.values()].map((param) => param.property),
+      inputToggles.value,
+      shownToggles.value,
+      callMetaValues,
+      validationState.value,
+      consistencyState.value,
+    ));
 
     const visibleTabLabels = Vue.computed(() => tabLabels.value.filter((label) => {
       if (userClosed.value.has(label))
@@ -498,7 +515,8 @@ export const RichFunctionView = Vue.defineComponent({
       customExports.value = Utils.getCustomExports(call.func);
       dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
       formAsTab.value = Utils.getFormAsTab(call.func);
-      inputsHidden.value = Utils.getInputsHidden(call.func);
+      inputToggles.value = Utils.getInputToggles(call.func);
+      shownToggles.value = new Set(JSON.parse(sessionStorage.getItem(shownTogglesKey()) ?? '[]'));
     }, {immediate: true});
 
     Vue.watch([currentCall, () => props.callState, visibleTabLabels], ([call, callState, labels], [prevCall, prevCallState, prevLabels]) => {
@@ -833,34 +851,35 @@ export const RichFunctionView = Vue.defineComponent({
                 dock-spawn-panel-icon='sign-in-alt'
                 ref={formRef}
               >
-                { hasInputsHiddenOption.value &&
-                  <div
-                    class='flex items-center justify-start'
-                    style={{cursor: 'pointer', color: 'var(--grey-4)', fontSize: '12px', gap: '6px', padding: '4px 0'}}
-                    onClick={() => inputsHidden.value = !inputsHidden.value}
-                  >
-                    <IconFA name={inputsHidden.value ? 'chevron-down' : 'chevron-up'} />
-                    <span>{inputsHidden.value ? 'Show inputs' : 'Hide inputs'}</span>
-                  </div>
+                { [...new Set(inputToggles.value.map(({caption}) => caption))]
+                  .filter((caption) => toggledInputs.value.counts.has(caption))
+                  .map((caption) => {
+                    const shown = shownToggles.value.has(caption);
+                    const count = toggledInputs.value.counts.get(caption);
+                    return <div key={caption} class='rfv2-input-toggle' onClick={() => switchToggle(caption)}>
+                      <IconFA name={shown ? 'eye-slash' : 'eye'} />
+                      <span>{`${shown ? 'Hide' : 'Show'} ${caption} (${count})`}</span>
+                    </div>;
+                  })
                 }
-                { !inputsHidden.value &&
-                  <InputForm
-                    key={currentCall.value?.id}
-                    ref={inputFormComponentRef}
-                    funcCall={currentCall.value}
-                    callMeta={callMeta.value}
-                    validationStates={validationState.value}
-                    consistencyStates={consistencyState.value}
-                    onActionRequested={(actionUuid, additionalParams) => emit('actionRequested', actionUuid, additionalParams)}
-                    onConsistencyReset={(ioName) => emit('consistencyReset', ioName)}
-                    onFormReplaced={(ev) => emit('formReplaced', ev)}
-                    onInputChanged={(ev) => emit('formInputChanged', ev)}
-                    onValidationChanged={onValidationChanged}
-                    skipInit={props.skipInit}
-                    skipTableAutoFill={true}
-                    skipLogic={props.skipLogic}
-                    isReadonly={isReadonly.value}
-                  /> }
+                <InputForm
+                  key={currentCall.value?.id}
+                  ref={inputFormComponentRef}
+                  funcCall={currentCall.value}
+                  callMeta={callMeta.value}
+                  validationStates={validationState.value}
+                  consistencyStates={consistencyState.value}
+                  onActionRequested={(actionUuid, additionalParams) => emit('actionRequested', actionUuid, additionalParams)}
+                  onConsistencyReset={(ioName) => emit('consistencyReset', ioName)}
+                  onFormReplaced={(ev) => emit('formReplaced', ev)}
+                  onInputChanged={(ev) => emit('formInputChanged', ev)}
+                  onValidationChanged={onValidationChanged}
+                  skipInit={props.skipInit}
+                  skipTableAutoFill={true}
+                  skipLogic={props.skipLogic}
+                  isReadonly={isReadonly.value}
+                  hiddenInputs={toggledInputs.value.hidden}
+                />
                 <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': STICKY_BAR_BACKGROUND}}>
                   { slots.navigation ?
                     slots.navigation({runLabel: runLabel.value, allowRerun: allowRerun.value}) :

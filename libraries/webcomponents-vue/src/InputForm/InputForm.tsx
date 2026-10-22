@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import type {InputFormT} from '@datagrok-libraries/webcomponents';
-import {applyDefaultFloatFormats, ConsistencyInfo, injectInputBaseStatus, isInputInjected, ValidationResult} from './utils';
+import {applyDefaultFloatFormats, ConsistencyInfo, injectInputBaseStatus, isInputInjected, setInputVisible, ValidationResult} from './utils';
 import {BehaviorSubject} from 'rxjs';
 import {useUnwrappedCallMeta} from '../composables/useUnwrappedCallMeta';
 
@@ -50,6 +50,9 @@ export const InputForm = Vue.defineComponent({
     },
     isReadonly: {
       type: Boolean,
+    },
+    hiddenInputs: {
+      type: Object as Vue.PropType<Set<string>>,
     },
   },
   emits: {
@@ -139,13 +142,20 @@ export const InputForm = Vue.defineComponent({
           // TODO: FormApi
           // const rangeMeta = meta[param.property.name]?.['range'];
           // if (rangeMeta && (input.inputType === DG.InputType.Float || input.inputType === DG.InputType.Int)) {}
-          const hideMeta = meta[param.property.name]?.['hidden'];
-          if ((input as any).visible != null)
-            (input as any).visible = !hideMeta;
-          else
-            input.root.style.display = hideMeta ? 'none' : 'flex';
-
         });
+    });
+
+    const hiddenInputs = Vue.computed(() => props.hiddenInputs);
+
+    Vue.watch([currentCall, currentForm, callMetaValues, hiddenInputs], ([call, form, meta, hiddenInputs]) => {
+      if (!form || !call) return;
+
+      for (const param of call.inputParams.values()) {
+        const name = param.property.name;
+        const input = form.getInput(name);
+        if (input)
+          setInputVisible(input, !meta[name]?.['hidden'] && !hiddenInputs?.has(name));
+      }
     });
 
     const formReplacedCb = async (event: {detail?: DG.InputForm}) => {
