@@ -38,11 +38,11 @@ category('Dapi: vector scripts and functions', async () => {
     df.col('val')!.set(0, 'b', true);
 
     await waitUntil(() => df.col('newColScalar')?.get(0) === 'b_scalar',
-        `incorrect value in newColScalar after initial value changed, actual: ${df.col('newColScalar')?.get(0)}, expected: b_scalar`);
+        () => `incorrect value in newColScalar after initial value changed, actual: ${df.col('newColScalar')?.get(0)}, expected: b_scalar`);
     await waitUntil(() => df.col('newColVector')?.get(0) === 'vector_b_scalar',
-        `incorrect value in newColVector after initial value changed, actual: ${df.col('newColVector')?.get(0)}, expected: vector_b_scalar`);
+        () => `incorrect value in newColVector after initial value changed, actual: ${df.col('newColVector')?.get(0)}, expected: vector_b_scalar`);
     await waitUntil(() => df.col('newColScalar2')?.get(0) === 'vector_b_scalar_scalar2',
-        `incorrect value in newColScalar2 after initial value changed, actual: ${df.col('newColScalar2')?.get(0)}, expected: vector_b_scalar_scalar2`);
+        () => `incorrect value in newColScalar2 after initial value changed, actual: ${df.col('newColScalar2')?.get(0)}, expected: vector_b_scalar_scalar2`);
   })
 
   test('Vector script: cascade columns modification', async () => {
@@ -59,11 +59,11 @@ category('Dapi: vector scripts and functions', async () => {
     df.col('x')!.set(0, 2, true);
 
     await waitUntil(() => df.col('newColScalar')?.get(0) === 3,
-        `incorrect value in newColScalar after initial value changed, actual: ${df.col('newColScalar')?.get(0)}, expected: 3`);
+        () => `incorrect value in newColScalar after initial value changed, actual: ${df.col('newColScalar')?.get(0)}, expected: 3`);
     await waitUntil(() => df.col('newColVector')?.get(0) === '3_1',
-        `incorrect value in newColVector after initial value changed, actual: ${df.col('newColVector')?.get(0)}, expected: 3_1`);
+        () => `incorrect value in newColVector after initial value changed, actual: ${df.col('newColVector')?.get(0)}, expected: 3_1`);
     await waitUntil(() => df.col('newColScalar2')?.get(0) === '3_11',
-        `incorrect value in newColScalar2 after initial value changed, actual: ${df.col('newColScalar2')?.get(0)}, expected: 3_11`);
+        () => `incorrect value in newColScalar2 after initial value changed, actual: ${df.col('newColScalar2')?.get(0)}, expected: 3_11`);
   })
 
 }, {owner: 'mdolotova@datagrok.ai'});
@@ -79,12 +79,12 @@ async function testVectorFunc(formula: string, results: string[], colToChange: s
     //check the results in calculated column
     for (let i = 0; i < df.rowCount; i++) {
         await waitUntil(() => df.col(newColName)?.get(i) === results[i],
-            `incorrect value in ${i} row, actual: ${df.col(newColName)?.get(i)}, expected: ${results[i]}`);
+            () => `incorrect value in ${i} row, actual: ${df.col(newColName)?.get(i)}, expected: ${results[i]}`);
     }
     //check updates after value in initial col changed
     for (let i = 0; i < df.rowCount; i++) {
         df.col(colToChange)!.set(i, newVals[i], true);
         await waitUntil(() => df.col(newColName)?.get(i) === resultsAfterValChange[i],
-            `incorrect value in ${i} row after initial value changed, actual: ${df.col(newColName)?.get(i)}, expected: ${resultsAfterValChange[i]}`);
+            () => `incorrect value in ${i} row after initial value changed, actual: ${df.col(newColName)?.get(i)}, expected: ${resultsAfterValChange[i]}`);
     }
   }

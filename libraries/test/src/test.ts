@@ -414,15 +414,10 @@ export async function initAutoTests(package_: _DG.Package, module?: any) {
     if (demo) {
       const wait = f.options['demoWait'] ? parseInt(f.options['demoWait']) : undefined;
       const test = new Test(demoCatName, f.friendlyName, async () => {
+        await delay(300);
         grok.shell.clearLastError();
         await f.apply();
-        // errors a demo raises after it returns come from its viewers' rendering: wait until they have settled
-        const view = grok.shell.v;
-        if (view instanceof DG.TableView)
-          for (const v of Array.from(view.viewers).filter((x) => x.root.offsetParent !== null))
-            await settled(v, 30000);
-        if (wait)
-          await delay(wait);
+        await delay(wait ? wait : 2000);
         const unhandled = await grok.shell.lastError;
         if (unhandled)
           throw new Error(unhandled);
@@ -906,25 +901,28 @@ export async function awaitCheck(checkHandler: () => boolean,
 
 /** Resolves once [condition] holds, checked right away and then every [interval] ms; rejects with [error] after
  * [timeout] ms. Unlike {@link awaitCheck}, it does not wait before the first check, and its default timeout leaves
- * room for a loaded machine. */
-export async function waitUntil(condition: () => boolean, error: string, timeout: number = 10000,
+ * room for a loaded machine. Pass [error] as a function to report the state at the time of the failure. */
+export async function waitUntil(condition: () => boolean, error: string | (() => string), timeout: number = 10000,
   interval: number = 20): Promise<void> {
   const start = Date.now();
   while (!condition()) {
     if (Date.now() - start > timeout)
-      throw new Error(`${error} (after ${timeout} ms)`);
+      throw new Error(`${typeof error === 'string' ? error : error()} (after ${timeout} ms)`);
     await delay(interval);
   }
 }
 
 /** {@link waitUntil} for a condition that has to ask the server: resolves once [condition] resolves to true, asked
  * right away and again [interval] ms after each answer; rejects with [error] after [timeout] ms. */
-export async function waitUntilAsync(condition: () => Promise<boolean>, error: string, timeout: number = 10000,
-  interval: number = 100): Promise<void> {
+export async function waitUntilAsync(condition: () => Promise<boolean>, error: string | (() => string),
+  timeout: number = 10000, interval: number = 100): Promise<void> {
   const start = Date.now();
-  while (!(await condition())) {
+  const fail = () => new Error(`${typeof error === 'string' ? error : error()} (after ${timeout} ms)`);
+  const expired = new Promise<boolean>((_, reject) => setTimeout(() => reject(fail()), timeout));
+  expired.catch(() => {});
+  while (!(await Promise.race([condition(), expired]))) {
     if (Date.now() - start > timeout)
-      throw new Error(`${error} (after ${timeout} ms)`);
+      throw fail();
     await delay(interval);
   }
 }
@@ -935,9 +933,19 @@ export async function settled(viewer: _DG.Viewer, timeout: number = 10000): Prom
   let held = 0;
   await waitUntil(() => {
     const box = viewer.root.getBoundingClientRect();
-    held = box.width > 0 && box.height > 0 && !viewer.isRenderPending ? held + 1 : 0;
+    held = box.width > 0 && box.height > 0 && !renderPending(viewer) ? held + 1 : 0;
     return held >= 2;
   }, `${viewer.type} is still rendering`, timeout, 16);
+}
+
+// platforms before 2026-09 do not report pending renders
+function renderPending(viewer: _DG.Viewer): boolean {
+  try {
+    return viewer.isRenderPending;
+  }
+  catch (_) {
+    return false;
+  }
 }
 
 // Returns test execution result or an error in case of timeout

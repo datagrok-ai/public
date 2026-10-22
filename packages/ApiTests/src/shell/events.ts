@@ -1,4 +1,4 @@
-import { before, category, expect, expectArray, test, waitUntil } from '@datagrok-libraries/test/src/test';
+import { category, test, waitUntil } from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -15,10 +15,13 @@ category('Events', () => {
             clientX: 100,
             clientY: 100,
         });
-        barChart.root.dispatchEvent(rightClickEvent);
-        await waitUntil(() => subscriptionPassed, 'onContextMenu did not fire');
-        subscription.unsubscribe();
-        expect(subscriptionPassed, true);
+        try {
+            barChart.root.dispatchEvent(rightClickEvent);
+            await waitUntil(() => subscriptionPassed, 'onContextMenu did not fire');
+        } finally {
+            subscription.unsubscribe();
+            tv.close();
+        }
     })
 
     test('onContextMenuShown / onContextMenuClosed', async () => {
@@ -30,63 +33,74 @@ category('Events', () => {
             shown = document.querySelectorAll('.d4-menu-popup').length > 0;
         });
         let subClosed = grok.events.onContextMenuClosed.subscribe(() => closed = true);
-        barChart.root.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, clientX: 100, clientY: 100}));
-        await waitUntil(() => shown, 'onContextMenuShown did not fire with a menu on screen');
-        document.body.click();
-        await waitUntil(() => closed, 'onContextMenuClosed did not fire');
-        subShown.unsubscribe();
-        subClosed.unsubscribe();
-        tv.close();
-        expect(shown, true);
-        expect(closed, true);
+        try {
+            barChart.root.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, clientX: 100, clientY: 100}));
+            await waitUntil(() => shown, 'onContextMenuShown did not fire with a menu on screen');
+            document.body.click();
+            await waitUntil(() => closed, 'onContextMenuClosed did not fire');
+        } finally {
+            subShown.unsubscribe();
+            subClosed.unsubscribe();
+            tv.close();
+        }
     });
 
     test('onEvent', async () => {
         let subscriptionPassed = false;
         let subscription = grok.events.onCustomEvent("test").subscribe((e: any) => { subscriptionPassed = true; });
-        grok.events.fireCustomEvent("test", null);
-        await waitUntil(() => subscriptionPassed, 'onCustomEvent did not fire');
-        subscription.unsubscribe();
-        expect(subscriptionPassed, true);
+        try {
+            grok.events.fireCustomEvent("test", null);
+            await waitUntil(() => subscriptionPassed, 'onCustomEvent did not fire');
+        } finally {
+            subscription.unsubscribe();
+        }
     });
 
     test('onCustomEvent/fireCustomEvent', async () => {
         let subscriptionPassed = false;
         let subscription = grok.events.onCustomEvent("test").subscribe((e: any) => { subscriptionPassed = true; });
-        grok.events.fireCustomEvent("test", null);
-        await waitUntil(() => subscriptionPassed, 'onCustomEvent did not fire');
-        subscription.unsubscribe();
-        expect(subscriptionPassed, true);
+        try {
+            grok.events.fireCustomEvent("test", null);
+            await waitUntil(() => subscriptionPassed, 'onCustomEvent did not fire');
+        } finally {
+            subscription.unsubscribe();
+        }
     });
 
     test('onTableAdded', async () => {
         let subscriptionPassed = false;
         let subscription = grok.events.onTableAdded.subscribe(() => { subscriptionPassed = true; });
-        grok.shell.addTable(grok.data.demo.demog(100));
-        await waitUntil(() => subscriptionPassed, 'onTableAdded did not fire');
-        subscription.unsubscribe();
-        expect(subscriptionPassed, true);
+        try {
+            grok.shell.addTable(grok.data.demo.demog(100));
+            await waitUntil(() => subscriptionPassed, 'onTableAdded did not fire');
+        } finally {
+            subscription.unsubscribe();
+        }
     });
 
     test('onTableRemoved', async () => {
         let subscriptionPassed = false;
         let subscription = grok.events.onTableRemoved.subscribe(() => { subscriptionPassed = true; });
-        let table = grok.shell.addTable(grok.data.demo.demog(100));
-        grok.shell.closeTable(table);
-        await waitUntil(() => subscriptionPassed, 'onTableRemoved did not fire');
-        subscription.unsubscribe();
-        expect(subscriptionPassed, true);
+        try {
+            let table = grok.shell.addTable(grok.data.demo.demog(100));
+            grok.shell.closeTable(table);
+            await waitUntil(() => subscriptionPassed, 'onTableRemoved did not fire');
+        } finally {
+            subscription.unsubscribe();
+        }
     });
 
     test('onPanelVisibilityChanged', async () => {
         let fired = false;
         const initial = grok.shell.windows.showStatusBar;
         let subscription = grok.shell.windows.onPanelVisibilityChanged.subscribe(() => { fired = true; });
-        grok.shell.windows.showStatusBar = !initial;
-        await waitUntil(() => fired, 'onPanelVisibilityChanged did not fire');
-        subscription.unsubscribe();
-        grok.shell.windows.showStatusBar = initial;
-        expect(fired, true);
+        try {
+            grok.shell.windows.showStatusBar = !initial;
+            await waitUntil(() => fired, 'onPanelVisibilityChanged did not fire');
+        } finally {
+            subscription.unsubscribe();
+            grok.shell.windows.showStatusBar = initial;
+        }
     });
 
     test('onFileDragEnter', async () => {
@@ -98,11 +112,13 @@ category('Events', () => {
         });
         const dt = new DataTransfer();
         dt.items.add(new File(['a,b\n1,2'], 'drag-enter-test.csv'));
-        tv.root.dispatchEvent(new DragEvent('dragenter', {bubbles: true, cancelable: true, dataTransfer: dt}));
-        await waitUntil(() => fired, 'onFileDragEnter did not fire');
-        subscription.unsubscribe();
-        grok.shell.closeTable(tv.dataFrame);
-        expect(fired, true);
+        try {
+            tv.root.dispatchEvent(new DragEvent('dragenter', {bubbles: true, cancelable: true, dataTransfer: dt}));
+            await waitUntil(() => fired, 'onFileDragEnter did not fire');
+        } finally {
+            subscription.unsubscribe();
+            grok.shell.closeTable(tv.dataFrame);
+        }
     });
 
     test('debounce', async () => {
@@ -112,9 +128,12 @@ category('Events', () => {
             subscriptionPassed = true;
         });
 
-        tv.dataFrame.columns.toList()[0].name = "debounceTest"
-        await waitUntil(() => subscriptionPassed, 'The debounced onColumnNameChanged did not fire');
-        subscription.unsubscribe();
-        expect(subscriptionPassed, true);
+        try {
+            tv.dataFrame.columns.toList()[0].name = "debounceTest"
+            await waitUntil(() => subscriptionPassed, 'The debounced onColumnNameChanged did not fire');
+        } finally {
+            subscription.unsubscribe();
+            tv.close();
+        }
     });
 });

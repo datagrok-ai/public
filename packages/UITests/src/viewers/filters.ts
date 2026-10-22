@@ -81,7 +81,7 @@ category('Viewers: Filters: Collaborative filtering', () => {
       selected: ['R_ONE'],
     });
     await waitUntil(() => df.filter.trueCount === n,
-      `Categorical filter: expected ${n} rows, got ${df.filter.trueCount}`);
+      () => `Categorical filter: expected ${n} rows, got ${df.filter.trueCount}`);
   }
 
   async function addHistogtramFilter(n: number = 80) {
@@ -92,7 +92,7 @@ category('Viewers: Filters: Collaborative filtering', () => {
       max: 460,
     });
     await waitUntil(() => df.filter.trueCount === n,
-      `Histogram filter: expected ${n} rows, got ${df.filter.trueCount}`);
+      () => `Histogram filter: expected ${n} rows, got ${df.filter.trueCount}`);
   }
 
   async function addSubscructureFilter(n: number = 32) {
@@ -103,7 +103,7 @@ category('Viewers: Filters: Collaborative filtering', () => {
       molBlock: BENZENE,
     });
     await waitUntil(() => df.filter.trueCount === n,
-      `Subscructure filter: expected ${n} rows, got ${df.filter.trueCount}`);
+      () => `Subscructure filter: expected ${n} rows, got ${df.filter.trueCount}`);
   }
 
   async function addScaffoldFilter(n: number = 92) {
@@ -114,7 +114,7 @@ category('Viewers: Filters: Collaborative filtering', () => {
       savedTree,
     });
     await waitUntil(() => df.filter.trueCount === n,
-      `Scaffold Tree filter: expected ${n} rows, got ${df.filter.trueCount}`);
+      () => `Scaffold Tree filter: expected ${n} rows, got ${df.filter.trueCount}`);
   }
 
   // VIEWERS
@@ -130,7 +130,7 @@ category('Viewers: Filters: Collaborative filtering', () => {
     await settled(v);
     v.zoom(-5, 4, 3, 11);
     await waitUntil(() => df.filter.trueCount === n,
-      `Scatter plot: expected ${n} rows, got ${df.filter.trueCount}`);
+      () => `Scatter plot: expected ${n} rows, got ${df.filter.trueCount}`);
   }
 }, { clear: false });
 

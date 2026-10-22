@@ -45,12 +45,18 @@ category('Viewers: Core Viewers', () => {
 category('Viewers', () => {
   async function testViewerProperties(df: DG.DataFrame, type: string, properties: {[key: string]: any}): Promise<void> {
     grok.shell.clearLastError();
-    const viewer = grok.shell.addTableView(df).addViewer(type);
-    viewer.setOptions(properties);
-    await settled(viewer);
-    const error = await grok.shell.lastError;
-    if (error)
-      throw new Error(`${type} with ${JSON.stringify(properties)}: ${error}`);
+    const tv = grok.shell.addTableView(df);
+    try {
+      const viewer = tv.addViewer(type);
+      viewer.setOptions(properties);
+      await settled(viewer);
+      const error = await grok.shell.lastError;
+      if (error)
+        throw new Error(`${type} with ${JSON.stringify(properties)}: ${error}`);
+    }
+    finally {
+      tv.close();
+    }
   }
 
   test('Viewers issues', async () => {

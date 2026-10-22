@@ -37,13 +37,16 @@ category('Projects', () => {
     const demog = grok.data.demo.demog(1000);
     const v = grok.shell.addTableView(demog);
 
-    await uploadProject('Test upload project', demog.getTableInfo(), v, demog);
-    grok.shell.closeAll();
-    await waitUntil(() => grok.shell.tables.length === 0, 'tables are not closed');
-    await grok.dapi.projects.open('Test upload project');
-    expect(grok.shell.t != null, true);
-    expect(grok.shell.t.name, 'demog 1000');
-
-    await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test upload project').first());
+    const project = await uploadProject('Test upload project', demog.getTableInfo(), v, demog);
+    try {
+      grok.shell.closeAll();
+      await waitUntil(() => grok.shell.tables.length === 0, 'tables are not closed');
+      await project.open();
+      expect(grok.shell.t != null, true);
+      expect(grok.shell.t.name, 'demog 1000');
+    }
+    finally {
+      await grok.dapi.projects.delete(project);
+    }
   });
 }, {owner: 'aparamonov@datagrok.ai'});
