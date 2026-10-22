@@ -5,7 +5,7 @@ import $ from 'cash-dom';
 import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME, COMPLETE_COLUMN_NAME, DESC_COLUMN_NAME, EXP_COLUMN_NAME, EXPERIMENTAL_TAG, FAVORITE_COLUMN_NAME, HistoryOptions, STARTED_COLUMN_NAME, HISTORY_SUPPORTED_COL_TYPES, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, storageName, VERSION_COLUMN_NAME} from './consts';
 import dayjs from 'dayjs';
 import {ID_COLUMN_NAME} from './consts';
-import {getStartedOrNull, isIncomplete, getStarted} from './utils';
+import {getStartedOrNull, isIncomplete, getStarted, parseJsonOption} from './utils';
 
 export const getFavStorageName = (func: DG.Func) => {
   return `${storageName}_${func.name}_Fav`;
@@ -28,7 +28,7 @@ export const loadIsFavorite = async (funcCall: DG.FuncCall): Promise<boolean> =>
 };
 
 export const getMainParams = (func: DG.Func): string[] | null => {
-  return func.options['mainParams'] ? JSON.parse(func.options['mainParams']): null;
+  return parseJsonOption(func.options, 'mainParams');
 };
 
 export const getVisibleProps = (func: DG.Func, options?: HistoryOptions): string[] => {

@@ -291,10 +291,7 @@ export const RFVApp = Vue.defineComponent({
           onSaveToHistory={() => saveRunWithDialog()}
           onPublishRun={() => shareRun()}
           history={FUNCTION_HISTORY}
-          localValidation={true}
-          skipInit={false}
-          showRunButton={!isRunningOnInput.value}
-          keepExportsVisible={isRunningOnInput.value}
+          standalone={true}
         />
         {feedbackItems.value.length > 0 &&
           <RibbonMenu groupName='Feedback' items={feedbackItems.value}/>}

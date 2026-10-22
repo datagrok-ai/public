@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {Subject, BehaviorSubject, combineLatest} from 'rxjs';
 import $ from 'cash-dom';
 import {debounceTime, distinctUntilChanged, takeUntil} from 'rxjs/operators';
+import {hasValidationIssue, isLinkedRestriction} from '@datagrok-libraries/utils/src/validation-utils';
 
 //
 // TODO: probably a separate type lib (?)
@@ -163,10 +164,8 @@ export class ValidationIcon extends HTMLElement {
       this.appendChild(this.currentPopover);
 
     const isAnythingToShow =
-      (validation?.errors && validation.errors.length) ||
-      (validation?.warnings && validation.warnings.length) ||
-      (validation?.notifications && validation.notifications.length) ||
-      consistency?.inconsistent ||
+      hasValidationIssue(validation, consistency) ||
+      !!validation?.notifications?.length ||
       this.isLinked(consistency);
 
     $(this).css('display', isAnythingToShow ? 'flex': 'none');
@@ -178,14 +177,14 @@ export class ValidationIcon extends HTMLElement {
     const {validation, consistency} = this.status$.value;
 
     const iconOptions = (() => {
-      if (consistency?.inconsistent && this.isImportantRestriction(consistency?.restriction))
+      if (consistency?.inconsistent && isLinkedRestriction(consistency?.restriction))
         return {name: 'handshake-slash', color: 'var(--red-3)'};
       if (validation?.errors && validation.errors.length) return {name: 'exclamation-circle', color: 'var(--red-3)'};
       if (validation?.warnings && validation.warnings.length)
         return {name: 'exclamation-circle', color: 'var(--orange-2)'};
       if (validation?.notifications && validation.notifications.length)
         return {name: 'info-circle', color: 'var(--blue-1)'};
-      if (consistency?.inconsistent && !this.isImportantRestriction(consistency?.restriction))
+      if (consistency?.inconsistent && !isLinkedRestriction(consistency?.restriction))
         return {name: 'handshake-slash', color: 'var(--blue-1)'};
       return null;
     })();
@@ -197,6 +196,7 @@ export class ValidationIcon extends HTMLElement {
         this.currentIcon = ui.iconFA('link', null, consistency!.restriction === 'disabled' ?
           'Set by the workflow' : 'Set by the workflow. Editing it makes the value inconsistent');
         this.currentIcon.style.setProperty('color', 'var(--grey-4)', 'important');
+        $(this.currentIcon).css({'pointer-events': 'all'});
       }
       return null;
     }
@@ -288,15 +288,11 @@ export class ValidationIcon extends HTMLElement {
     if (category === 'notifications')
       return {name: 'info-circle', color: 'var(--blue-1)'};
     if (category === 'inconsistent')
-      return {name: 'handshake-slash', color: this.isImportantRestriction(restrictionType) ? 'var(--red-3)' : 'var(--blue-1)'};
+      return {name: 'handshake-slash', color: isLinkedRestriction(restrictionType) ? 'var(--red-3)' : 'var(--blue-1)'};
   }
 
   private isLinked(consistency?: ConsistencyInfo) {
-    return !!consistency && !consistency.inconsistent && this.isImportantRestriction(consistency.restriction);
-  }
-
-  private isImportantRestriction(restrictionType?: string) {
-    return (restrictionType === 'disabled' || restrictionType === 'restricted');
+    return !!consistency && !consistency.inconsistent && isLinkedRestriction(consistency.restriction);
   }
 
   private addPopover(icon: HTMLElement) {

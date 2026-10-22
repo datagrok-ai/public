@@ -4,7 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import type {InputFormT} from '@datagrok-libraries/webcomponents';
-import {applyDefaultFloatFormats, ConsistencyInfo, injectInputBaseStatus, isInputInjected, setInputVisible, ValidationResult} from './utils';
+import {
+  applyDefaultFloatFormats, applyInputsVisibility, ConsistencyInfo, injectInputBaseStatus, isInputInjected, ValidationResult,
+} from './utils';
 import {BehaviorSubject} from 'rxjs';
 import {useUnwrappedCallMeta} from '../composables/useUnwrappedCallMeta';
 
@@ -149,13 +151,8 @@ export const InputForm = Vue.defineComponent({
 
     Vue.watch([currentCall, currentForm, callMetaValues, hiddenInputs], ([call, form, meta, hiddenInputs]) => {
       if (!form || !call) return;
-
-      for (const param of call.inputParams.values()) {
-        const name = param.property.name;
-        const input = form.getInput(name);
-        if (input)
-          setInputVisible(input, !meta[name]?.['hidden'] && !hiddenInputs?.has(name));
-      }
+      applyInputsVisibility([...call.inputParams.values()].map((param) => param.property.name),
+        (name) => form.getInput(name), meta, hiddenInputs);
     });
 
     const formReplacedCb = async (event: {detail?: DG.InputForm}) => {

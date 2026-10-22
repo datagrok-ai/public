@@ -15,6 +15,7 @@ import {
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {tryParseJson} from '@datagrok-libraries/utils/src/string-utils';
 import {History} from '../History/History';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
@@ -48,12 +49,8 @@ type OutputCategoryGroups = Record<string, OutputCategoryGroupSpec>;
 function parseOutputCategoryGroups(func: DG.Func): OutputCategoryGroups | undefined {
   const raw = func?.options?.['outputCategoryGroups'];
   if (!raw) return undefined;
-  try {
-    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
+  const parsed = typeof raw === 'string' ? tryParseJson(raw, {warning: 'outputCategoryGroups'}) : raw;
+  return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : undefined;
 }
 
 function applyOutputCategoryGroups(outputs: TabContent, spec: OutputCategoryGroups) {
@@ -136,7 +133,7 @@ const isEmptyDataFrame = (df: any) =>
 
 const isEmptyGraphics = (v: any) => v == null || v === '';
 
-const isHiddenOutput = (prop: DG.Property) => JSON.parse(prop.options.hidden || 'false');
+const isHiddenOutput = (prop: DG.Property) => !!Utils.parseJsonOption(prop.options, 'hidden');
 
 const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
   if (isHiddenOutput(prop))
@@ -273,7 +270,8 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
-    localValidation: {
+    // RFVApp: the form owns defaults, choices and validation; otherwise the workflow driver does
+    standalone: {
       type: Boolean,
       default: false,
     },
@@ -282,26 +280,6 @@ export const RichFunctionView = Vue.defineComponent({
     // `historyRunChosen`). The share icon follows the sharingMethod setting whenever history is on.
     history: {
       type: Object as Vue.PropType<{mode: 'function' | 'step' | 'workflow', func?: DG.Func, version?: string}>,
-    },
-    showRunButton: {
-      type: Boolean,
-      default: true,
-    },
-    // Autorun (standalone) hosts set this so export icons stay put while isOutputOutdated cycles,
-    // avoiding a ribbon rebuild/flicker. Clicks are guarded either way. Default keeps the original
-    // hide-when-outdated behaviour for non-autorun RFV.
-    keepExportsVisible: {
-      type: Boolean,
-      default: false,
-    },
-    skipInit: {
-      type: Boolean,
-      default: true,
-    },
-    // the host (the workflow driver) owns values, choices, validation, visibility and enabled state
-    skipLogic: {
-      type: Boolean,
-      default: false,
     },
     viewersHook: {
       type: Function as Vue.PropType<ViewersHook>,
@@ -349,7 +327,7 @@ export const RichFunctionView = Vue.defineComponent({
 
     const isOutputOutdated = Vue.computed(() => props.callState?.isOutputOutdated);
     const isRunning = Vue.computed(() => props.callState?.isRunning);
-    const isRunnable = Vue.computed(() => props.localValidation ? isFormValid.value : props.callState?.isRunnable);
+    const isRunnable = Vue.computed(() => props.standalone ? isFormValid.value : props.callState?.isRunnable);
     const isReadonly = Vue.computed(() => props.isReadonly);
 
     const validationState = Vue.computed(() => props.validationStates);
@@ -369,6 +347,7 @@ export const RichFunctionView = Vue.defineComponent({
     const allowRerun = Vue.ref(false);
     const runLabel = Vue.ref('Run');
     const formAsTab = Vue.ref(false);
+    const autorun = Vue.ref(false);
 
     const isFittingActive = Vue.ref(false);
     const uiBlocked = Vue.computed(() => props.isBlocked || isFittingActive.value);
@@ -433,7 +412,7 @@ export const RichFunctionView = Vue.defineComponent({
       [...currentCall.value.inputParams.values()].map((param) => param.property),
       inputToggles.value,
       shownToggles.value,
-      callMetaValues,
+      hiddenByMeta.value,
       validationState.value,
       consistencyState.value,
     ));
@@ -515,8 +494,9 @@ export const RichFunctionView = Vue.defineComponent({
       customExports.value = Utils.getCustomExports(call.func);
       dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
       formAsTab.value = Utils.getFormAsTab(call.func);
-      inputToggles.value = Utils.getInputToggles(call.func);
-      shownToggles.value = new Set(JSON.parse(sessionStorage.getItem(shownTogglesKey()) ?? '[]'));
+      autorun.value = props.standalone && Utils.isRunningOnInput(call.func);
+      inputToggles.value = props.standalone ? [] : Utils.getInputToggles(call.func);
+      shownToggles.value = new Set(tryParseJson(sessionStorage.getItem(shownTogglesKey()) ?? '[]') ?? []);
     }, {immediate: true});
 
     Vue.watch([currentCall, () => props.callState, visibleTabLabels], ([call, callState, labels], [prevCall, prevCallState, prevLabels]) => {
@@ -548,7 +528,7 @@ export const RichFunctionView = Vue.defineComponent({
       changeHelpFunc(call?.func);
     }, {immediate: true});
 
-    const showRun = Vue.computed(() => props.showRunButton && (isOutputOutdated.value || allowRerun.value));
+    const showRun = Vue.computed(() => !autorun.value && (isOutputOutdated.value || allowRerun.value));
 
     const reportHandler = async (nqName: string) => {
       try {
@@ -623,14 +603,14 @@ export const RichFunctionView = Vue.defineComponent({
       return [...entries.values()];
     };
 
-    // When keepExportsVisible is set the export icons stay put regardless of isOutputOutdated
+    // On autorun the export icons stay put regardless of isOutputOutdated
     // (no ribbon rebuild/flicker); guard the click so a stale/in-flight run surfaces a shell
     // message instead of exporting partial output.
     const guardedExport = (handler: () => void) => {
       if (canUseResults(props.callState, 'exporting'))
         handler();
     };
-    const exportsVisible = Vue.computed(() => props.keepExportsVisible || !isOutputOutdated.value);
+    const exportsVisible = Vue.computed(() => autorun.value || !isOutputOutdated.value);
 
     ////
     // DockManager related
@@ -654,7 +634,7 @@ export const RichFunctionView = Vue.defineComponent({
     ////
 
     const onValidationChanged = (ev: boolean) => {
-      if (!props.localValidation)
+      if (!props.standalone)
         return;
       isFormValid.value = ev;
       emit('formValidationChanged', ev);
@@ -874,9 +854,9 @@ export const RichFunctionView = Vue.defineComponent({
                   onFormReplaced={(ev) => emit('formReplaced', ev)}
                   onInputChanged={(ev) => emit('formInputChanged', ev)}
                   onValidationChanged={onValidationChanged}
-                  skipInit={props.skipInit}
+                  skipInit={!props.standalone}
                   skipTableAutoFill={true}
-                  skipLogic={props.skipLogic}
+                  skipLogic={!props.standalone}
                   isReadonly={isReadonly.value}
                   hiddenInputs={toggledInputs.value.hidden}
                 />

@@ -2,20 +2,15 @@ import * as DG from 'datagrok-api/dg';
 import {InputToggle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import {hasValidationIssue, isLinkedRestriction} from '@datagrok-libraries/utils/src/validation-utils';
 
 export type ToggledInputs = {
   hidden: Set<string>,
   counts: Map<string, number>,
 };
 
-const isLinked = (consistency?: ConsistencyInfo) =>
-  consistency?.restriction === 'disabled' || consistency?.restriction === 'restricted';
-
-const hasIssue = (validation?: ValidationResult, consistency?: ConsistencyInfo) =>
-  !!validation?.errors?.length || !!validation?.warnings?.length || !!consistency?.inconsistent;
-
 const matches = (toggle: InputToggle, prop: DG.Property, consistency?: ConsistencyInfo) => {
-  if (toggle.linked && !isLinked(consistency))
+  if (toggle.linked && !isLinkedRestriction(consistency?.restriction))
     return false;
   if (!toggle.inputs && !toggle.categories)
     return true;
@@ -26,7 +21,7 @@ export function getToggledInputs(
   props: DG.Property[],
   toggles: InputToggle[],
   shown: Set<string>,
-  meta: Record<string, any>,
+  hiddenByMeta: Set<string>,
   validations?: Record<string, ValidationResult>,
   consistencies?: Record<string, ConsistencyInfo>,
 ): ToggledInputs {
@@ -34,7 +29,8 @@ export function getToggledInputs(
   const counts = new Map<string, number>();
   for (const prop of props) {
     const {name} = prop;
-    if (meta[name]?.hidden || meta[name]?.keepVisible || hasIssue(validations?.[name], consistencies?.[name]))
+    if (hiddenByMeta.has(name) || prop.options['keepVisible'] === 'true' ||
+      hasValidationIssue(validations?.[name], consistencies?.[name]))
       continue;
     const toggle = toggles.find((t) => matches(t, prop, consistencies?.[name]));
     if (!toggle)

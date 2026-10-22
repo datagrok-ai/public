@@ -86,12 +86,27 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
   (t as any).setStatus = setStatus;
 };
 
+export type VisibilityTarget = Pick<DG.InputBase, 'visible' | 'root'>;
+
 // InputBase.visible also hides an emptied category header; older clients lack it
-export function setInputVisible(input: DG.InputBase, visible: boolean) {
-  if ((input as any).visible != null)
-    input.visible = visible;
-  else
+export function setInputVisible(input: VisibilityTarget, visible: boolean) {
+  if ((input as any).visible == null)
     input.root.style.display = visible ? 'flex' : 'none';
+  else if (input.visible !== visible)
+    input.visible = visible;
+}
+
+export function applyInputsVisibility(
+  names: Iterable<string>,
+  getInput: (name: string) => VisibilityTarget | undefined,
+  meta: Record<string, any>,
+  hiddenInputs?: Set<string>,
+) {
+  for (const name of names) {
+    const input = getInput(name);
+    if (input)
+      setInputVisible(input, !meta[name]?.['hidden'] && !hiddenInputs?.has(name));
+  }
 }
 
 export interface FuncCallInputStatusable<T = any> extends FuncCallInput<T> {

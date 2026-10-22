@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {deserialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {tryParseJson} from '@datagrok-libraries/utils/src/string-utils';
 import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {
   PipelineSerializedState, isFuncCallSerializedState,
@@ -28,15 +29,8 @@ export interface ComparisonDefaults {
 /** Index defaults of a dataframe IO: the {comparison: {...}} JSON annotation. */
 export function parseComparisonDefaults(options?: Record<string, any>): ComparisonDefaults {
   const raw = options?.['comparison'];
-  let parsed: any = {};
-  if (raw) {
-    try {
-      // 'null' parses to null — property access below must survive it
-      parsed = JSON.parse(raw) ?? {};
-    } catch (e) {
-      console.warn(`Run comparison: malformed comparison annotation: ${raw}`, e);
-    }
-  }
+  // 'null' parses to null, property access below must survive it
+  const parsed: any = (raw ? tryParseJson(raw, {warning: 'Run comparison: comparison annotation'}) : null) ?? {};
   return {
     index: typeof parsed.index === 'string' ? parsed.index : undefined,
     split: typeof parsed.split === 'string' ? parsed.split : undefined,
