@@ -19,6 +19,9 @@ export interface FilterOperator {
    * column offers `has substructure`, not string `contains` beside it. */
   exclusive?: boolean;
   editor: 'default' | 'range' | 'list' | 'none';
+  /** A condition the app answers, not the server: the source rewrites it into an id list before a read,
+   * so the operator has no `domain` form. */
+  host?: boolean;
   domain?: (c: FilterCondition, prop: FilterProperty, ctx: {now: Date}) => DomainConditionNode;
   mask?: (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}) => BitArray;
   bitset?: (col: unknown, c: FilterCondition, signal: AbortSignal) => Promise<BitArray>;
@@ -129,6 +132,11 @@ export class OperatorRegistry {
     const exclusive = sem.some((o) => o.exclusive === true);
     return [...sem, ...this._ops.filter((o) => o.semType === undefined && applicable(o) &&
       (!exclusive || NULL_TESTS.includes(o.id)))];
+  }
+
+  /** The {@link FilterOperator.host} operators, longest id first — the order the grammar tries them in. */
+  hosted(): FilterOperator[] {
+    return this._ops.filter((o) => o.host === true).sort((a, b) => b.id.length - a.id.length);
   }
 
   get(id: string, prop?: FilterProperty): FilterOperator | undefined {
