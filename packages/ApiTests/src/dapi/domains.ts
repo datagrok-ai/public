@@ -41,6 +41,8 @@ category('Dapi: domains', () => {
       expect(audit.map((a) => a.op).join(','), 'insert,update');
       expect(audit[1].before.name, 'Widget');
       expect(audit[1].after.name, 'Widget 2');
+      expect((await items().audit(id, {limit: 1}))[0].op, 'update');
+      expect((await items().audit(id, {before: audit[1].id})).map((a) => a.op).join(','), 'insert');
     } finally {
       await items().delete(id);
     }
