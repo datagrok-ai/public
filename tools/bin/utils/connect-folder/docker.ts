@@ -25,7 +25,6 @@ export interface DockerResult { code: number, stdout: string, stderr: string }
 export interface ShareContainer {
   id: string,
   name: string,
-  /** `running`, `exited`, `restarting`, `created`, ... */
   state: string,
   image: string,
   labels: Record<string, string>,
@@ -48,7 +47,6 @@ export function docker(args: string[], inherit: boolean = false): Promise<Docker
   });
 }
 
-/** [docker], failing with the CLI's own message on a non-zero exit. */
 export async function dockerOk(args: string[]): Promise<string> {
   const r = await docker(args);
   if (r.code !== 0)
@@ -131,14 +129,11 @@ export interface RunSpec {
   image: string,
   connectionId: string,
   alias: string,
-  /** The API root as the user configured it (labels, list). */
   apiRoot: string,
   name: string,
-  /** The absolute host folder, as Docker mounts it. */
   folder: string,
   hostLabel: string,
   readOnly: boolean,
-  /** The 0600 file holding `GROK_SHARE_KEY`. */
   envFile: string,
   foreground?: boolean,
   platform?: string,
@@ -197,7 +192,7 @@ export function linuxUser(platform: string = process.platform): string | undefin
   return platform === 'linux' && process.getuid && process.getgid ? `${process.getuid()}:${process.getgid()}` : undefined;
 }
 
-/** Share containers with all of [labels] (`label key → value`), stopped ones included. */
+/** Share containers with all of [labels], stopped ones included. */
 export async function ps(labels: Record<string, string> = {}): Promise<ShareContainer[]> {
   const filters = [`label=${LABEL}=1`, ...Object.entries(labels).map(([k, v]) => `label=${k}=${v}`)];
   const ids = (await dockerOk(['ps', '-a', '-q', ...filters.flatMap((f) => ['--filter', f])])).split(/\s+/).filter((s) => s);

@@ -80,9 +80,7 @@ async function create(folderArg: string, opts: CreateOptions): Promise<boolean> 
   const containers = await dk.ps({[`${dk.LABEL}.connection`]: conn.id, [`${dk.LABEL}.url`]: cred.url});
   const existing = containers.find((c) => c.name === dk.containerName(cred.url, conn.id));
   const keys = await shareKeys(client, conn.id);
-  // An agent whose key is not limited to the folder (set up by an older grok) is refused by the server: replace it.
-  if (existing && !opts.foreground && dk.sameSettings(existing, spec) &&
-      keys.some((k) => k.id === existing.labels[`${dk.LABEL}.key`] && k.scope === `${FOLDER_SCOPE}:${conn.id}`)) {
+  if (existing && !opts.foreground && dk.sameSettings(existing, spec) && keys.some((k) => k.id === existing.labels[`${dk.LABEL}.key`])) {
     // A share deleted on the server leaves its agent idle (4410), so the recreated one needs a fresh start.
     const wasDeleted = !before.some((s) => s.id === conn.id);
     if (existing.state === 'running' && !wasDeleted)
@@ -96,7 +94,7 @@ async function create(folderArg: string, opts: CreateOptions): Promise<boolean> 
 
   // A key is registered only once the image is here: a Ctrl+C during a long pull then leaves nothing behind.
   await color.step(`Getting the folder agent image ${spec.image}`, () => dk.ensureImage(spec.image));
-  const key = await issueShareKey(client, conn.id, new URL(cred.url).host);
+  const key = await issueShareKey(client, conn.id);
   const revokeMine = () => client.del(`/users/keys/${key.id}`).catch(() => {});
   spec.keyId = key.id;
   const container = dk.containerName(cred.url, conn.id, opts.foreground);
@@ -157,27 +155,17 @@ export async function withKeyFile<T>(key: Jwk, action: (envFile: string) => Prom
   }
 }
 
-/** The scope of a folder agent's key: the server lets its sessions do nothing but serve that folder. */
-const FOLDER_SCOPE = 'connected-folder';
-
-/**
- * The container never gets the user's own key: the server issues each share a key of its own, limited to serving
- * that share and named with the connection id at its end.
- */
-async function issueShareKey(client: NodeApiClient, connectionId: string, host: string): Promise<{id: string, privateKey: Jwk}> {
+/** The container never gets the user's own key: the server issues each share one that can only serve it. */
+async function issueShareKey(client: NodeApiClient, connectionId: string): Promise<{id: string, privateKey: Jwk}> {
   const {publicKey, privateKey} = generateKeyPair();
-  const key = await client.post(`/local_shares/${connectionId}/agent_key`, {publicKey: JSON.stringify(publicKey)})
-    .catch((e: any) => {
-      throw e?.apiError?.errorCode === 404 || e?.message === 'Not Found'
-        ? new Error(`${host} cannot issue a folder-limited key for the agent; update the server`) : e;
-    });
+  const key = await client.post(`/local_shares/${connectionId}/agent_key`, {publicKey: JSON.stringify(publicKey)});
   return {id: key.id, privateKey};
 }
 
-const keyTag = (connectionId: string) => `[${connectionId}]`;
+const folderScope = (connectionId: string) => `connected-folder:${connectionId}`;
 
 async function shareKeys(client: NodeApiClient, connectionId: string): Promise<any[]> {
-  return ((await client.get('/users/current/keys')) as any[] ?? []).filter((k) => `${k.name}`.endsWith(keyTag(connectionId)));
+  return ((await client.get('/users/current/keys')) as any[] ?? []).filter((k) => k.scope === folderScope(connectionId));
 }
 
 async function revokeShareKeys(client: NodeApiClient, connectionId: string, keep?: string): Promise<void> {
@@ -234,7 +222,7 @@ async function list(host: string | undefined, output: OutputFormat): Promise<boo
       const c = ofServer.find((c) => c.labels[`${dk.LABEL}.connection`] === s.id);
       seen.add(`${alias}|${s.id}`);
       // The server refuses an agent whose key is not limited to its folder: its container runs, but serves nothing.
-      const outdated = c != null && !keys.some((k) => k.id === c.labels[`${dk.LABEL}.key`] && k.scope === `${FOLDER_SCOPE}:${s.id}`);
+      const outdated = c != null && !keys.some((k) => k.id === c.labels[`${dk.LABEL}.key`] && k.scope === folderScope(s.id));
       rows.push(row(s.friendlyName ?? s.name, s.parameters?.localShareFolder, s.parameters?.localShareReadOnly === 'true',
         c?.state, outdated ? 'outdated key: re-run connect-folder' : s.isAvailable === false ? 'offline' : 'online',
         s.parameters?.localShareHost, s.id, alias));

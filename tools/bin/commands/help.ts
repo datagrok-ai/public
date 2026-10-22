@@ -178,8 +178,7 @@ Usage: grok connect-folder <folder> [--host <alias>] [--read-only] [--foreground
        grok connect-folder rm <connection> [--host <alias>]
 
 Connect a local folder to Datagrok as a connection. The folder agent runs in
-Docker (restart policy unless-stopped, so it survives closing the terminal and,
-when Docker starts at sign-in, a reboot) and dials out to the server: no inbound
+Docker, survives closing the terminal, and dials out to the server: no inbound
 port is opened. Connecting the same folder again resumes the same connection.
 
 grok connect-folder ~/data                Read-write, on the default server
@@ -195,18 +194,12 @@ Options:
 --host        Server alias from ~/.grok/config.yaml (default: the default server)
 --read-only   Mount the folder read-only; writes are refused
 --foreground  Run attached, removed on Ctrl+C (CI, debugging)
---image       Agent image (default: the one the server names). The container is
-              recreated when the image reference changes; a new digest under
-              the same tag is not noticed (docker pull, then
-              grok connect-folder rm and connect again)
+--image       Agent image (default: the one the server names)
 --force       Allow a drive root or the home folder
 -f            With logs: follow
 
 Requires Docker and a keypair (grok login <server>), which never leaves this
-machine: the container holds a key of its own, used only by this folder and
-revoked by grok connect-folder rm or in Profile > Public keys. A localhost server is
-reached from the container as host.docker.internal (mapped to the host gateway
-on Linux and in WSL).
+machine: the container holds a key of its own that can only serve this folder.
 `;
 
 const HELP_CONFIG = `

@@ -151,15 +151,10 @@ For more information on configuring connections, refer to the [Connections](http
   | debug          | Sets a debug breakpoint before each test execution, allowing you to debug the test. Only works in `gui` mode                          |
 
 - `link` command is used for public plugins development to link `datagrok-api` and libraries.
-- `connect-folder` makes a local folder a Datagrok connection. The folder agent runs in a Docker container (restart
-  policy `unless-stopped`) that dials out to the server, so no inbound port is opened; the folder is the container's
-  only mount. The CLI signs in with your keypair (`grok login <server>` first), which never leaves the machine: the
-  container gets a key of its own, which the server limits to serving this folder (it can call no other API) and
-  which `grok connect-folder rm` revokes (or Profile > Public keys); re-run `grok connect-folder <folder>` to replace an
-  agent set up by an older grok. Connecting the same folder again resumes the same connection. Requires Docker (Linux
-  containers) and the "Connect local folders" permission on the server; a `localhost` server is reached from the
-  container as `host.docker.internal`, which Docker Engine on Linux and WSL maps to the host gateway
-  (`--add-host host.docker.internal:host-gateway`). On Linux the agent runs as your uid.
+- `connect-folder` makes a local folder a Datagrok connection. A folder agent in Docker dials out to the server (no
+  inbound port) with a key of its own that can only serve this folder; your keypair (`grok login <server>` first)
+  never leaves the machine. Connecting the same folder again resumes the same connection. Requires Docker and the
+  "Connect local folders" permission.
 
   ```shell
   grok connect-folder <folder> [--host <alias>] [--read-only] [--foreground] [--image <ref>] [--force]
@@ -168,8 +163,5 @@ For more information on configuring connections, refer to the [Connections](http
   grok connect-folder rm <connection>
   ```
 
-  `<connection>` is the connection name, a connection id prefix (8+ characters), or the folder. `stop` also keeps
-  the folder disconnected after a reboot; `rm` removes the container and deletes the connection. Your connected
-  folders are also listed (and can be revoked) in the Datagrok user profile. Others see one as an ordinary
-  connection, under its permissions. Containers made by the earlier dev build of this command (labels
-  `ai.datagrok.share.*`) are not listed: remove them with `docker rm -f <name>`.
+  `<connection>` is the connection name, a connection id prefix (8+ characters), or the folder. `stop` keeps the
+  folder disconnected after a reboot; `rm` removes the container, the key and the connection.

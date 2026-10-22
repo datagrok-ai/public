@@ -273,7 +273,6 @@ async function throwHttpError(res: Response): Promise<never> {
  * The server answers many failures with HTTP 200 and an `ApiError` body — as an object, or as
  * a JSON string when the handler returned text. Every response passes through here so a
  * missing entity, a rejected save or an unknown function throws instead of printing as data.
- * [errorCode] is the status the server sends in the `api-error-code` header (403 for a missing permission).
  */
 /** A user error answers HTTP 200 with the ApiError in the body and its status in the `api-error-code` header. */
 export function throwIfApiError<T>(payload: T, headers?: Headers): T {

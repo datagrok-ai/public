@@ -137,8 +137,6 @@ interface Stand {
   forbidden?: string,
   /** The agent shows up online only after this many more share listings. */
   offlinePolls?: number,
-  /** A server without folder-limited agent keys: `POST /local_shares/<id>/agent_key` is not a route. */
-  noAgentKeys?: boolean,
 }
 const stands: Record<string, Stand> = {};
 
@@ -183,8 +181,6 @@ async function serve(url: string, init: RequestInit = {}): Promise<Response> {
   }
   const agentKey = p.match(/^\/local_shares\/([^/]+)\/agent_key$/);
   if (agentKey && method === 'POST') {
-    if (s.noAgentKeys)
-      return new Response('Not Found', {status: 404});
     const key = {id: `key-${s.keys.length + 1}-${Math.random()}`, publicKey: body.publicKey,
       name: `grok connect-folder laptop ${s.shares.get(agentKey[1])?.parameters?.localShareFolder} [${agentKey[1]}]`,
       scope: `connected-folder:${agentKey[1]}`};
@@ -330,14 +326,6 @@ describe('grok connect-folder <folder>', () => {
     expect(ran()).toHaveLength(0);
   });
 
-  it('deletes the key file and revokes the new key when docker run fails', async () => {
-    docker.failRun = true;
-    expect(await share(args(folder, {host: A}))).toBe(false);
-    expect(docker.keyFiles[0].existed).toBe(true);
-    expect(fs.existsSync(docker.keyFiles[0].path)).toBe(false);
-    expect(stands[A].keys).toHaveLength(0);
-  });
-
   it('keeps one id on two servers apart', async () => {
     await share(args(folder, {host: A}));
     await share(args(folder, {host: B}));
@@ -432,11 +420,14 @@ describe('keys of an interrupted or failed connection', () => {
     expect(pulled).toBeLessThan(events.indexOf(`POST /local_shares/${ID}/agent_key`));
   });
 
-  it('revokes only its own key when docker run fails', async () => {
+  it('deletes the key file and revokes only its own key when docker run fails', async () => {
     await share(args(folder, {host: A}));
     const old = stands[A].keys[0].id;
     docker.failRun = true;
+    docker.keyFiles = [];
     expect(await share(args(folder, {host: A, 'read-only': true}))).toBe(false);
+    expect(docker.keyFiles[0].existed).toBe(true);
+    expect(fs.existsSync(docker.keyFiles[0].path)).toBe(false);
     expect(stands[A].keys.map((k) => k.id)).toEqual([old]);
   });
 
@@ -512,18 +503,6 @@ describe('the folder-limited agent key', () => {
     expect(stands[A].keys.map((k) => k.scope)).toEqual([`connected-folder:${ID}`]);
   });
 
-  it('replaces a running agent whose key is not limited to the folder, then revokes that key', async () => {
-    await share(args(folder, {host: A}));
-    const old = stands[A].keys[0];
-    delete old.scope;
-    docker.calls = [];
-    expect(await share(args(folder, {host: A}))).toBe(true);
-    expect(docker.calls.filter((c) => c[0] === 'rm')).toHaveLength(1);
-    expect(ran()).toHaveLength(1);
-    expect(stands[A].keys.map((k) => k.id)).not.toContain(old.id);
-    expect(stands[A].keys.map((k) => k.scope)).toEqual([`connected-folder:${ID}`]);
-  });
-
   it('keeps a running agent whose key is limited to the folder, with no new key', async () => {
     await share(args(folder, {host: A}));
     const keys = stands[A].keys.map((k) => k.id);
@@ -545,14 +524,5 @@ describe('the folder-limited agent key', () => {
     expect(await listed()).not.toContain('outdated key');
     delete stands[A].keys[0].scope;
     expect(await listed()).toContain('outdated key: re-run connect-folder');
-  });
-
-  it('stops on a server that cannot issue one, with no container and no key', async () => {
-    stands[A].noAgentKeys = true;
-    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-    expect(await share(args(folder, {host: A}))).toBe(false);
-    expect(stderr.mock.calls.map((c) => `${c[0]}`).join('')).toContain('cannot issue a folder-limited key for the agent; update the server');
-    expect(ran()).toHaveLength(0);
-    expect(stands[A].keys).toHaveLength(0);
   });
 });
