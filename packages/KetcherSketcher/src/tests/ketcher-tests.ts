@@ -135,6 +135,37 @@ category('ketcher', async () => {
       conversions.map(() => '0').join(', '), 'the monomer library sent with each conversion (its length)');
   });
 
+  // the Retrosynthesis demo's Ketcher, in a view left as it started: its macromolecules editor, mounting later out of
+  // the page, looked its canvas up document-wide, found none, and ResizeObserver.observe(null) threw out of a React
+  // effect
+  test('a Ketcher whose view is left as it starts binds its editor to its own canvas', async () => {
+    const func = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}, name: 'ketcherSketcher'})[0];
+    grok.chem.currentSketcherType = func.friendlyName;
+    const view = DG.View.create();
+    const other = DG.View.create();
+    const s = new grok.chem.Sketcher();
+    const leaving = new MutationObserver(() => {
+      if (view.root.querySelector('.ketcher-host')) {
+        leaving.disconnect();
+        grok.shell.addPreview(other);
+      }
+    });
+    leaving.observe(view.root, {childList: true, subtree: true});
+    try {
+      s.setSmiles('CCO');
+      view.append(s.root);
+      grok.shell.addPreview(view);
+      // d3-zoom marks the canvas the editor's zoom tool is bound to: the test bundle's ketcher-core is another copy
+      await awaitCheck(() => (view.root.querySelector('#polymer-editor-canvas') as any)?.__zoom !== undefined,
+        'the macromolecules editor\'s zoom tool is not bound to its canvas', 30000);
+    } finally {
+      leaving.disconnect();
+      s.detach();
+      other.close();
+      view.close();
+    }
+  }, {timeout: 60000});
+
   test('a SMARTS export waiting its turn when the sketcher closes', async () => {
     const func = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}, name: 'ketcherSketcher'})[0];
     const sketcher: KetcherSketcher = await func.apply();

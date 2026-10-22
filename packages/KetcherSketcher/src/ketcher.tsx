@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from './package';
 import {Editor} from 'ketcher-react';
 import {StandaloneStructServiceProvider} from 'ketcher-standalone';
-import {Ketcher, MolSerializer, Pile, SettingsService, SupportedFormat} from 'ketcher-core';
+import {Ketcher, MolSerializer, Pile, SettingsService, SupportedFormat, ZoomTool} from 'ketcher-core';
 import {asKetcherQuery, withQueries} from './query-molfile';
 import 'ketcher-react/dist/index.css';
 import '../css/editor.css';
@@ -123,6 +123,23 @@ SettingsService.prototype.subscribe = function(this: SettingsService, listener: 
   const unsubscribe = settingsSubscribe.call(this, listener);
   KetcherSketcher._mounting?._settingsSubscriptions.push(unsubscribe);
   return unsubscribe;
+};
+
+/** ketcher-core's ZoomTool finds the macromolecules editor's canvas with a document-wide selector (d3 `select`), as the
+ * editor mounts, lazily, and observes its size: a Ketcher whose view was left by then (`grok.shell.addPreview` takes the
+ * view out of the page, the sketcher still mounted) found no canvas, and `ResizeObserver.observe(null)` threw out of a
+ * React effect. The canvas is looked up in the mounting sketcher's own host instead. */
+const zoomToolInit = ZoomTool.initInstance;
+ZoomTool.initInstance = function(this: typeof ZoomTool, ...args: Parameters<typeof ZoomTool.initInstance>): ZoomTool {
+  const host = KetcherSketcher._mounting?.ketcherHost;
+  if (!host)
+    return zoomToolInit.apply(this, args);
+  (document as any).querySelector = (selectors: string) => host.querySelector(selectors);
+  try {
+    return zoomToolInit.apply(this, args);
+  } finally {
+    delete (document as any).querySelector;
+  }
 };
 
 export class KetcherSketcher extends grok.chem.SketcherBase {
