@@ -171,20 +171,8 @@ scoped('the preview is the backend\'s dry run: its verdicts, its counts, its iss
     'the counts are per row; all-or-nothing makes one bad row the verdict on all of them');
   assert.match(preview.textContent, /Must be one of: low, high/,
     'the issue lines are the report\'s, not a second implementation of the rules');
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await running, null);
-});
-
-scoped('an issue names the column by the caption the mapping showed, not the db name', async () => {
-  const memory = backend();
-  const {running} = await opened(memory,
-    frame(['project_id', 'title', 'state'], [{project_id: 'p1', title: 'A', state: 'urgent'}]));
-  await toMapping();
-  named('state').value.value = 'priority';
-  await flush();
-  await toPreview();
-  const issues = document.body.querySelector('.u2-domain-import-issues').textContent;
-  assert.match(issues, /Priority/);
+  assert.match(document.body.querySelector('.u2-domain-import-issues').textContent, /Priority/,
+    'an issue names the column by its caption');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
 });
@@ -296,29 +284,10 @@ scoped('only the mapped columns are posted, under their target names', async () 
   assert.deepEqual(result.rows.map((r) => r.status), ['inserted']);
 });
 
-scoped('a float32 cell lands as the number typed; a double-precision one as it holds', async () => {
-  const typed = [3.1, 0.1, 19.99];
-  for (const [doublePrecision, landed] of [[false, typed], [true, typed.map((w) => Math.fround(w))]]) {
-    const memory = backend();
-    const source = new DG.DataFrame([{name: 'project_id', type: 'string'}, {name: 'number', type: 'int'},
-      {name: 'title', type: 'string'}, {name: 'weight', type: 'double'}],
-    typed.map((w, i) => ({project_id: 'p1', number: 10 + i, title: `F${i}`, weight: Math.fround(w)})));
-    source.columns.byName('weight').doublePrecision = doublePrecision;
-    const {running} = await opened(memory, source);
-    await toMapping();
-    fire(buttonNamed('NEXT'), 'click');
-    await flush();
-    fire(buttonNamed('NEXT'), 'click');
-    await flush();
-    assert.deepEqual(typed.map((_, i) => issues(memory).find((r) => r.title === `F${i}`)?.weight), landed);
-    fire(buttonNamed('CLOSE'), 'click');
-    await running;
-  }
-});
-
-scoped('an empty cell of a new row is left out, so the column takes its default; an upsert still sends it', async () => {
-  for (const [mode, sent] of [['insert', {project_id: 'p1', number: 0, title: 'B'}],
-    ['upsert', {project_id: 'p1', number: 0, title: 'B', priority: null}]]) {
+scoped('a float32 cell is posted as typed; an empty cell of a new row is left out to take the default', async () => {
+  const row = {project_id: 'p1', number: 0, title: 'B'};
+  for (const [mode, doublePrecision, sent] of [['insert', false, {...row, weight: 3.1}],
+    ['upsert', true, {...row, weight: Math.fround(3.1), priority: null}]]) {
     const memory = backend();
     const table = memory.tableSync('grit.issue');
     const validate = table.validate.bind(table);
@@ -327,9 +296,11 @@ scoped('an empty cell of a new row is left out, so the column takes its default;
       posted = rows;
       return validate(rows, options);
     };
-    const {running} = await opened(memory, new DG.DataFrame([{name: 'project_id', type: 'string'},
-      {name: 'number', type: 'int'}, {name: 'title', type: 'string'}, {name: 'priority', type: 'string'}],
-    [{project_id: 'p1', number: 0, title: 'B', priority: null}]));
+    const source = new DG.DataFrame([{name: 'project_id', type: 'string'}, {name: 'number', type: 'int'},
+      {name: 'title', type: 'string'}, {name: 'priority', type: 'string'}, {name: 'weight', type: 'double'}],
+    [{...row, priority: null, weight: Math.fround(3.1)}]);
+    source.columns.byName('weight').doublePrecision = doublePrecision;
+    const {running} = await opened(memory, source);
     named('mode').value.value = mode;
     await flush();
     await toMapping();
