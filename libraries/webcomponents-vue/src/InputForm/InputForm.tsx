@@ -5,7 +5,8 @@ import * as Vue from 'vue';
 
 import type {InputFormT} from '@datagrok-libraries/webcomponents';
 import {
-  applyDefaultFloatFormats, applyInputsVisibility, ConsistencyInfo, injectInputBaseStatus, isInputInjected, ValidationResult,
+  applyDefaultFloatFormats, applyInputsVisibility, ConsistencyInfo, injectInputBaseStatus, isInputEnabled,
+  isInputInjected, ValidationResult,
 } from './utils';
 import {BehaviorSubject} from 'rxjs';
 import {useUnwrappedCallMeta} from '../composables/useUnwrappedCallMeta';
@@ -100,7 +101,7 @@ export const InputForm = Vue.defineComponent({
 
           (input as any).setStatus({validation, consistency});
 
-          input.enabled = !isReadonly.value && consistency?.restriction !== 'disabled';
+          input.enabled = isInputEnabled(param.property, consistency, isReadonly.value);
         });
     });
 

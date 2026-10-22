@@ -5,7 +5,7 @@ import {BehaviorSubject} from 'rxjs';
 import {category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {InputForm} from '@datagrok-libraries/webcomponents-vue';
-import {applyInputsVisibility} from '@datagrok-libraries/webcomponents-vue/src/InputForm/utils';
+import {applyInputsVisibility, isInputEnabled} from '@datagrok-libraries/webcomponents-vue/src/InputForm/utils';
 import {
   ALL_INPUTS_TOGGLES, DEFAULT_INPUT_TOGGLES, getInputToggles, InputToggle,
 } from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -112,6 +112,22 @@ category('RFV: input toggles', () => {
 
   test('An empty list turns toggles off', async () => {
     expectDeepEqual(toggled(PROPS, []), {hidden: [], counts: {}});
+  });
+});
+
+category('RFV: input enabled', () => {
+  test('mutateOnly locks restricted and info dataframe inputs only', async () => {
+    const [df, plain, x] = DG.Script.create(['//name: t', '//language: javascript',
+      '//input: dataframe df {mutateOnly: true}', '//input: dataframe plain', '//input: double x {mutateOnly: true}',
+    ].join('\n')).inputs;
+    const enabled = (prop: DG.Property, isReadonly = false) => Object.fromEntries(
+      (['disabled', 'restricted', 'info', 'none', undefined] as const).map((restriction) =>
+        [restriction ?? 'unlinked', isInputEnabled(prop, restriction && consistency(restriction), isReadonly)]));
+    expectDeepEqual(enabled(df), {disabled: false, restricted: false, info: false, none: true, unlinked: true});
+    expectDeepEqual(enabled(plain), {disabled: false, restricted: true, info: true, none: true, unlinked: true});
+    expectDeepEqual(enabled(x), {disabled: false, restricted: true, info: true, none: true, unlinked: true});
+    expectDeepEqual(enabled(plain, true),
+      {disabled: false, restricted: false, info: false, none: false, unlinked: false});
   });
 });
 

@@ -86,6 +86,12 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
   (t as any).setStatus = setStatus;
 };
 
+// mutateOnly: the dataframe is edited in its viewers, so the input that replaces it is locked
+export const isInputEnabled = (prop: DG.Property, consistency?: ConsistencyInfo, isReadonly = false) =>
+  !isReadonly && consistency?.restriction !== 'disabled' &&
+  !(prop.propertyType === DG.TYPE.DATA_FRAME && prop.options['mutateOnly'] === 'true' &&
+    (consistency?.restriction === 'restricted' || consistency?.restriction === 'info'));
+
 export type VisibilityTarget = Pick<DG.InputBase, 'visible' | 'root'>;
 
 // InputBase.visible also hides an emptied category header; older clients lack it
