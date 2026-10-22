@@ -8,7 +8,7 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divV, span, Filters, allowedActions,
-  actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows} from '@datagrok-libraries/u2';
+  actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Splitter} from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
@@ -18,6 +18,7 @@ import {DomainList} from './list.js';
 import type {DomainListMode} from './list.js';
 import {SAVE_SHORTCUTS, isSaveKey, DomainForm} from './form.js';
 import {DomainFilters} from './filters.js';
+import type {DomainFiltersOptions} from './filters.js';
 import type {DomainChildrenOptions} from './children.js';
 import {DomainAddress} from './address.js';
 import {ViewSync} from '@datagrok-libraries/u2/src/dg/index.js';
@@ -83,6 +84,9 @@ export interface DomainAppOptions {
    * (`support.audit`); a table that keeps none has no pane. */
   children?: boolean | DomainChildrenOptions;
   history?: boolean;
+  /** The query box over the list (default), or the condition builder; `placement: 'left'` puts it in a pane
+   * beside the list. */
+  filters?: DomainFiltersOptions & {placement?: 'top' | 'left'};
   /** Key → the name of an action in `table.actions`, run over the current row while the app has
    * the focus: `{'Ctrl+Shift+C': 'Close'}` (modifiers in the order Ctrl, Alt, Shift; Cmd counts
    * as Ctrl). */
@@ -213,7 +217,7 @@ export class DomainApp extends Control {
     this._formHost = div([], 'u2-domain-app-form');
     this.panes = div([], 'u2-domain-app-panes');
     this.panes.dataset.u2Part = 'panes';
-    this.filters = this.runInScope(() => domains.filters(this.listSource));
+    this.filters = this.runInScope(() => domains.filters(this.listSource, _options.filters));
     // the rows answer the filter that was applied, not the one being written: while the box is
     // invalid they are shown as stale and the count stands down
     this.effect(() => {
@@ -221,7 +225,10 @@ export class DomainApp extends Control {
       this._filterProblem.value = problem;
       this.list.stale.value = problem !== null;
     });
-    const listPage = divV([this.filters.root, this.list.root], 'u2-domain-app-list');
+    const listPage = divV(_options.filters?.placement === 'left' ? [this.runInScope(() => new Splitter([
+      divV([span('Filters', 'u2-domain-app-filters-title'), this.filters.root], 'u2-domain-app-filters-pane'),
+      this.list.root], {direction: 'horizontal', sizes: [0.3, 0.7]})).root] :
+      [this.filters.root, this.list.root], 'u2-domain-app-list');
     listPage.dataset.u2Part = 'list-page';
     const entityPage = divV([this._formHost, this.panes], 'u2-domain-app-entity');
     entityPage.dataset.u2Part = 'entity-page';

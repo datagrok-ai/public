@@ -55,6 +55,8 @@ export class DomainFilters extends Control {
   private _raw: string | null = null;
   private _rawProblems: FilterProblem[] = [];
   private _syncing = false;
+  /** What the builder last sent: its own query coming back must not overwrite the rows still being written. */
+  private _echo: string | FilterGroup | undefined;
 
   constructor(readonly source: DomainSource, private readonly _options: DomainFiltersOptions = {}) {
     super();
@@ -155,6 +157,8 @@ export class DomainFilters extends Control {
     const box = input instanceof FilterQueryInput ? input : null;
     this.effect(() => {
       const q = source.query.value;
+      if (q === this._echo)
+        return;
       const parsed = typeof q === 'string' && q.trim() !== '' ? Filters.parse(q, schema, 'domain') : null;
       this._accepted = parsed === null ? DomainFilters.treeOf(q, schema) : parsed.root;
       // a query the grammar or the schema refuses would leave the box empty and the user with no
@@ -173,7 +177,7 @@ export class DomainFilters extends Control {
         return;
       void confirmDiscard(source.session, {action: 'change the filter'}).then((ok) => {
         if (ok)
-          this._apply(tree);
+          this._apply(input instanceof FilterBuilder ? Filters.pruneInvalid(tree, schema, 'domain') : tree, tree);
         else {
           this._write(input, this._accepted);
           box?.showText(this._raw, this._rawProblems);
@@ -184,13 +188,15 @@ export class DomainFilters extends Control {
     this._input.value = input;
   }
 
-  /** The tree goes to the source in the form its query has: text stays text. */
-  private _apply(tree: FilterGroup): void {
+  /** The tree goes to the source in the form its query has: text stays text. A builder sends only its complete
+   * conditions and keeps `shown`, the rows being written. */
+  private _apply(tree: FilterGroup, shown = tree): void {
     const q = this.source.query.peek();
-    this._accepted = tree;
+    this._accepted = shown;
     this._raw = null;
     this._rawProblems = [];
-    this.source.query.value = typeof q === 'string' ? Filters.format(tree) : tree;
+    this._echo = typeof q === 'string' ? Filters.format(tree) : tree;
+    this.source.query.value = this._echo;
   }
 
   private _write(input: FilterQueryInput | FilterBuilder, tree: FilterGroup): void {

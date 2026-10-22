@@ -6,8 +6,9 @@
    platform through `emsBackends.domain`. */
 import {signal, computed, batch, Signal, ReadonlySignal, Component, Access, plural, Filters, requireBackend, subBind,
   Rows, FrameRows} from '@datagrok-libraries/u2';
-import type {FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema, DomainRowLike, RowsLike, RowValues,
-  RowView, DataFrameLike, BindProp, BindSource, ComponentEnv, ComponentStart} from '@datagrok-libraries/u2';
+import type {FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema, DomainRowLike,
+  RowsLike, RowValues, RowView, DataFrameLike, BindProp, BindSource, ComponentEnv,
+  ComponentStart} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
 import {emsBackends, DomainBackendError} from './domain-backend.js';
 import type {DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike, DomainReadScope,
@@ -125,6 +126,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** How a refusal the writer raised over one cell is worded; the table's registry sets it (the
    * row's caption and the column's), and without it the writer's own message stands. */
   nameCell: ((row: RowView, column: string, problem: string) => string) | undefined;
+  /** The ids of the rows one host condition (`FilterOperator.host`) matches — the app's answer, put in place
+   * of the condition before every read. */
+  hosted: ((condition: FilterCondition, signal?: AbortSignal) => Promise<string[]>) | undefined;
   /** How many rows match the query, once counted. */
   readonly total: ReadonlySignal<number | null>;
   readonly access: ReadonlySignal<Access>;
@@ -185,6 +189,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _probed: {count: number, last: string | null} | undefined;
   private _probing = false;
   private _failures = 0;
+  /** The query as last answered: every host condition replaced by the id list {@link hosted} gave. */
+  private _served: {query: string | FilterGroup, as: string | FilterGroup} | undefined;
+  private _serving: AbortController | undefined;
 
   constructor(options: DomainSourceOptions, env: ComponentEnv = NO_ENV) {
     super();
@@ -372,6 +379,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (gen !== this._gen)
         return;
       this._access.value = Access.from(data);
+      await this._serve(true);
+      if (gen !== this._gen)
+        return;
       const [frame, total] = await Promise.all([
         table.frame(this._spec(0)), this._noRows ? 0 : this._count(table)]);
       if (gen !== this._gen) {
@@ -423,6 +433,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const gen = this._gen;
     this._state.value = 'loading';
     try {
+      await this._serve();
       const added = await frame.append(this._spec(this._loaded));
       if (gen !== this._gen)
         return;
@@ -607,6 +618,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const selected = this._selection.peek().map((row) => row.id);
     // read before the swap: a row the replacement does not hold takes `currentRow` with it
     const current = this.currentRow.peek()?.id ?? null;
+    await this._serve(true);
     const replacement = await table.frame(this._spec(0, window));
     if (gen !== this._gen) {
       replacement.dispose();
@@ -832,6 +844,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._probing = true;
     const gen = this._gen;
     try {
+      await this._serve();
       const now = await table.probe(this._scope());
       if (gen !== this._gen)
         return;
@@ -905,11 +918,37 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** What every read of this source is scoped to — the one object `_spec`, `count` and `probe`
    * all take, so none of them can forward the query and forget the search or the trash mode. */
   private _scope(): DomainReadScope {
-    const q = this.query.peek();
+    const query = this.query.peek();
+    const q = this._served?.query === query ? this._served.as : query;
     const search = this.search.peek();
     const deleted = this.deleted.peek();
     return {filter: typeof q === 'string' ? (q === '' ? undefined : q) : Filters.toDomainTree(q),
       ...(search === '' ? {} : {search}), ...(deleted === 'exclude' ? {} : {deleted})};
+  }
+
+  /** `fresh` asks {@link hosted} again: a load may see rows a page of the same query did not. */
+  private async _serve(fresh = false): Promise<void> {
+    const query = this.query.peek();
+    if (!fresh && this._served?.query === query)
+      return;
+    const parsed = typeof query === 'string' && Filters.operators.hosted().some((o) => query.includes(o.id)) ?
+      Filters.parse(query) : null;
+    const tree = typeof query !== 'string' ? query : parsed?.problems.length === 0 ? parsed.root : null;
+    const serving = new AbortController();
+    if (fresh) {
+      this._serving?.abort();
+      this._serving = serving;
+    }
+    const answer = async (c: FilterCondition): Promise<FilterCondition> => {
+      if (this.hosted === undefined)
+        throw new DomainBackendError('unsupported', `${this.table}: nothing answers "${c.property} ${c.operator}"`);
+      return Filters.cond('id', 'in', await this.hosted(c, serving.signal));
+    };
+    const swap = async (group: FilterGroup): Promise<FilterGroup> => ({...group, nodes: await Promise.all(
+      group.nodes.map((n) => Filters.isGroup(n) ? swap(n) : Filters.operators.get(n.operator)?.host ? answer(n) : n))});
+    const as = tree === null ? query : await swap(tree);
+    if (!serving.signal.aborted && this.query.peek() === query)
+      this._served = {query, as};
   }
 
   /** A two-way `currentRow.<column>` step: reads the current row live, writes through it. */
