@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {DomainQueries} from '@datagrok-libraries/ems';
-import {domains, DomainTable, IMPORT_COLUMNS} from '@datagrok-libraries/ems/src/dg';
+import {domains, IMPORT_COLUMNS} from '@datagrok-libraries/ems/src/dg';
 import {moltrackEmsDb} from '../generated/db';
 import type {AssayResultInsert, AssayRunInsert} from '../generated/db';
 import {Chemistry} from './chemistry';
@@ -17,7 +17,7 @@ export class DemoData {
 
   static records(df: DG.DataFrame): Record<string, any>[] {
     return Array.from({length: df.rowCount}, (_, i) =>
-      Object.fromEntries(df.columns.toList().map((c) => [c.name, DomainTable.cellValue(c, i)])));
+      Object.fromEntries(df.columns.toList().map((c) => [c.name, c.get(i)])));
   }
 
   // additions and the assay are upserted; every other part is skipped where its table has rows already
