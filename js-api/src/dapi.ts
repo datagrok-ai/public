@@ -2497,30 +2497,42 @@ export class NotificationsDataSource extends HttpDataSource<UserNotification> {
 
 /** A notification as {@link NotificationsDataSource.send} returns it. */
 export interface ChatNotification {
+  /** The notification's id. */
   id: string;
+  /** Its text, entity markup included. */
   text: string;
+  /** The opaque string sent with it. */
   data?: string;
+  /** The id of the user who sent it. */
   sender?: string;
+  /** When it was sent, ISO 8601. */
   createdAt?: string;
 }
 
 /** A user as a chat or a comment carries it. */
 export interface ChatUser {
+  /** The user's id. */
   id: string;
+  /** The user's login. */
   login?: string;
+  /** The user's display name. */
   friendlyName?: string;
 }
 
 /** A comment's typed pointer: to an entity ([entityId]), or to something that is not an entity,
  * such as a row of an unpromoted domain table ([ref], see {@link ChatsDataSource.domainRowRef}). */
 export interface ChatCommentRef {
+  /** The id of the entity it points to. */
   entityId?: string;
+  /** The pointer to something that is not an entity. */
   ref?: string;
 }
 
 /** A comment in a chat. */
 export interface ChatComment {
+  /** The comment's id. */
   id: string;
+  /** Its text, entity markup included. */
   text: string;
   /** When it was posted, ISO 8601. */
   posted?: string;
@@ -2528,26 +2540,40 @@ export interface ChatComment {
   edited?: string | null;
   /** The comment this one replies to. */
   parentId?: string | null;
+  /** Its author. */
   user?: ChatUser;
   /** Its explicit references plus every entity marked up in its text that the author can view. */
   refs?: ChatCommentRef[];
+  /** The number of up votes. */
   upVotes?: number;
+  /** The number of down votes. */
   downVotes?: number;
 }
 
 /** A chat: a discussion attached to entities (visible to whoever can view one of them), or a
  * private conversation of a group. */
 export interface ChatInfo {
+  /** The chat's id. */
   id: string;
+  /** Its name. */
   friendlyName?: string;
+  /** Whether it is a private conversation of a group. */
   private?: boolean;
+  /** The entities it is attached to. */
   entities?: {id: string}[];
+  /** The user who started it. */
   author?: ChatUser;
+  /** The users who have posted to it. */
   participants?: ChatUser[];
+  /** The number of its comments. */
   commentsCount?: number;
+  /** The number of its comments the current user has not read. */
   unreadCommentsCount?: number;
+  /** When its first comment was posted, ISO 8601. */
   firstTimestamp?: string;
+  /** When its last comment was posted, ISO 8601. */
   lastTimestamp?: string;
+  /** Whether the current user watches it. */
   isWatched?: boolean;
 }
 
@@ -2569,7 +2595,9 @@ export interface IChatImportOptions {
   userId?: string;
   /** The original posted time; now when omitted. */
   posted?: Date | string;
+  /** The comment it replies to. */
   parentId?: string;
+  /** References besides the entities marked up in the text. */
   refs?: ChatCommentRef[];
 }
 
