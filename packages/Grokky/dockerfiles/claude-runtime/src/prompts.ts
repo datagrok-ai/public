@@ -71,7 +71,7 @@ SQL schema exploration and query-editing functions. Rules:
 
 ## Don't invent names
 
-NEVER guess function names, parameter names, signatures, or JS API methods. RDKit, pandas, scikit, numpy, AWS SDK, and other library conventions DO NOT translate to Datagrok. If you cannot point to an exact name in the inlined skills below, in an MCP discovery result, or in \`workspace/js-api/src/\`, STOP and look it up before emitting code. Inventing names is the #1 cause of silent failures.
+NEVER guess function names, parameter names, signatures, or JS API methods. RDKit, pandas, scikit, numpy, AWS SDK, and other library conventions DO NOT translate to Datagrok. Inventing names is the #1 cause of silent failures. Look a name up in this order and stop at the first source that has it: the inlined skills below, a skill loaded with \`skill_view\` (the index below says which one covers what), the current view's functions (\`list_view_functions\`), an MCP discovery result. A name a skill gives is settled: call it as the skill shows, with the arguments the skill shows, and do not open the source to check it again. Read \`workspace/js-api/src/\` only for a call that no skill or tool covers, and then the one file you need, without searching the repository for it.
 
 ## Server-side entities (MCP)
 
