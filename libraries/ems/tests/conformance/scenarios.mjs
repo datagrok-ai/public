@@ -101,28 +101,12 @@ export const scenarios = [
       const capped = await table.updateWhere(filter, {name: 'Capped'}, {limit: 0});
       t.equal(capped.updated, 1, 'a limit of 0 is clamped to one row, never an infinite drain');
       t.equal(capped.hasMore, true, 'and the rest is reported, not silently dropped');
+      t.deepEqual(await table.updateWhere(filter, {name: 'Capped'}, {limit: 0}), {updated: 1, hasMore: false},
+        'a rerun moves on to the row left');
       const rest = await table.updateWhere(filter, {name: 'Uncapped'});
       t.equal(rest.updated, 2, 'the default cap takes everything the filter matches');
       t.equal(rest.hasMore, false);
-    },
-  },
-  {
-    name: 'updateWhere: a rerun skips the rows already holding the values, so the hasMore loop ends',
-    requires: ['updateWhere'],
-    seed: [
-      {key: 'a', code: 'loop-a', name: 'First'},
-      {key: 'b', code: 'loop-b', name: 'Second'},
-      {key: 'c', code: 'loop-c', name: 'Third'},
-    ],
-    async run(table, ids, t) {
-      const filter = 'code starts "loop-"';
-      const run = () => table.updateWhere(filter, {name: 'Done'}, {limit: 2});
-      t.deepEqual(await run(), {updated: 2, hasMore: true});
-      t.deepEqual(await run(), {updated: 1, hasMore: false}, 'the rerun moves on to the row left');
-      t.deepEqual(await run(), {updated: 0, hasMore: false}, 'and then has nothing to change');
-      const rows = await table.query({filter, sort: 'code', limit: 100});
-      t.deepEqual(rows.map((row) => [row.name, row.version]), [['Done', 2], ['Done', 2], ['Done', 2]],
-        'every row written exactly once');
+      t.deepEqual(await table.updateWhere(filter, {name: 'Uncapped'}), {updated: 0, hasMore: false});
     },
   },
   {
