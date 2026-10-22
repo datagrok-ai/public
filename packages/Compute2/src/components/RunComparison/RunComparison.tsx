@@ -3,11 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {onClickOutside} from '@vueuse/core';
+import {COMPARISON_SERVICE, ComparisonAddition} from './comparison-service';
 
 import {
   IconFA, Viewer, ResizeHandle, ToggleInput, ifOverlapping, wheelGuard,
 } from '@datagrok-libraries/webcomponents-vue';
-import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/src/model-handler';
 
@@ -23,9 +23,9 @@ import {
 import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor, selectionGaps, unmatchedItems,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
-  targetContexts, EntryStatus, withAnnotatedDefaults,
+  targetContexts, EntryStatus, withAnnotatedDefaults, withoutOutdatedOutputs,
 } from './selection';
-import {entryFromFuncCall, entryFromDataFrame} from './entry-extraction';
+import {entryFromDataFrame, loadRunEntries} from './entry-extraction';
 import {
   TargetSelection, EMPTY_TARGET_SELECTION, isCharted, clickTarget, setMultiMode, reconcileTargets, pruneOverrides,
 } from './target-selection';
@@ -60,12 +60,15 @@ export const RunComparison = Vue.defineComponent({
     const isAddingRuns = Vue.ref(false);
     const models = Vue.shallowRef<DG.Func[]>([]);
     const selectedModel = Vue.shallowRef<DG.Func | undefined>(undefined);
+    // models of compared snapshots that the model filter leaves out (no model role)
+    const extraModels = Vue.shallowRef<DG.Func[]>([]);
     const modelSearch = Vue.ref('');
     const modelDropdownOpen = Vue.ref(false);
     const modelDropdownRef = Vue.ref<HTMLElement>();
 
     const mergeSameFuncs = Vue.ref(true);
     const hideEqual = Vue.ref(true);
+    const hideOutdated = Vue.ref(false);
 
     const historySelection = Vue.shallowRef<DG.FuncCall[]>([]);
     const entries = Vue.shallowRef<ComparisonEntry[]>([]);
@@ -100,10 +103,43 @@ export const RunComparison = Vue.defineComponent({
 
     onClickOutside(modelDropdownRef, () => modelDropdownOpen.value = false);
 
+    // ids of runs to load are titled by the history selection when they come from it
+    const addRunsById = async (ids: string[], titles = new Map<string, string>()) => {
+      isAddingRuns.value = true;
+      try {
+        const {entries: loaded, failed} = await loadRunEntries(ids);
+        for (const entry of loaded) {
+          addEntry(entry);
+          if (entry.failedSteps)
+            grok.shell.warning(`${entry.name}: could not load ${entry.failedSteps.join(', ')}`);
+        }
+        if (failed.length > 0)
+          grok.shell.error(`Could not load ${failed.map((id) => titles.get(id) ?? `run ${id}`).join(', ')}`);
+      } finally {
+        isAddingRuns.value = false;
+      }
+    };
+
+    const add = async ({runIds = [], entries: added = [], model, selectModel = false}: ComparisonAddition) => {
+      if (model && !extraModels.value.some((f) => f.nqName === model.nqName))
+        extraModels.value = [...extraModels.value, Vue.markRaw(model)];
+      if (model && selectModel)
+        selectedModel.value = Vue.markRaw(model);
+      if (runIds.length > 0)
+        await addRunsById(runIds);
+      added.forEach(addEntry);
+    };
+
+    Vue.inject(COMPARISON_SERVICE)!.connect({add, entryNames: () => entries.value.map((entry) => entry.name)});
+
     const modelLabel = (f: DG.Func) => f.friendlyName ?? f.name;
+    const modelList = Vue.computed(() => [
+      ...models.value,
+      ...extraModels.value.filter((extra) => !models.value.some((f) => f.nqName === extra.nqName)),
+    ]);
     const filteredModels = Vue.computed(() => {
       const query = modelSearch.value.toLowerCase();
-      return models.value.filter((f) => !query || modelLabel(f).toLowerCase().includes(query));
+      return modelList.value.filter((f) => !query || modelLabel(f).toLowerCase().includes(query));
     });
 
     const tableInput = ui.input.table('Add table');
@@ -152,27 +188,19 @@ export const RunComparison = Vue.defineComponent({
     const addSelectedRuns = async () => {
       if (isAddingRuns.value || historySelection.value.length === 0)
         return;
-      isAddingRuns.value = true;
-      try {
-        const calls = historySelection.value.filter((call) => !entriesById.value.has(call.id));
-        const results = await Promise.allSettled(calls.map(async (call) =>
-          entryFromFuncCall(await historyUtils.loadRun(call.id))));
-        const failedRuns: string[] = [];
-        results.forEach((result, i) => {
-          if (result.status === 'rejected') {
-            console.error(`Run comparison: failed to load run ${calls[i].id}`, result.reason);
-            failedRuns.push(getRunTitle(calls[i]));
-            return;
-          }
-          addEntry(result.value);
-          if (result.value.failedSteps)
-            grok.shell.warning(`${result.value.name}: could not load ${result.value.failedSteps.join(', ')}`);
-        });
-        if (failedRuns.length > 0)
-          grok.shell.error(`Could not load ${failedRuns.join(', ')}`);
-      } finally {
-        isAddingRuns.value = false;
+      const calls = historySelection.value.filter((call) => !entriesById.value.has(call.id));
+      await addRunsById(calls.map((call) => call.id), new Map(calls.map((call) => [call.id, getRunTitle(call)])));
+    };
+
+    const removeWithConfirm = (entry: ComparisonEntry) => {
+      if (!entry.unsaved) {
+        removeEntry(entry.id);
+        return;
       }
+      ui.dialog('Remove confirmation')
+        .add(ui.divText(`'${entry.name}' is not stored in history, so it cannot be added back. Remove it?`))
+        .onOK(() => removeEntry(entry.id))
+        .show({center: true, modal: true});
     };
 
     const updatedSelection = <T, >(
@@ -200,6 +228,10 @@ export const RunComparison = Vue.defineComponent({
 
     const entriesById = Vue.computed(() => new Map(entries.value.map((entry) => [entry.id, entry])));
 
+    const hasOutdated = Vue.computed(() => entries.value.some((entry) => entry.outdatedSteps));
+    const entryNodes = Vue.computed(() => entries.value.map((entry) =>
+      hideOutdated.value ? withoutOutdatedOutputs(entry.nodes) : entry.nodes));
+
     const tableNode = (entryId: string, tablePath: string) =>
       entriesById.value.get(entryId)?.nodes.tables.find((table) => table.path === tablePath);
 
@@ -225,7 +257,7 @@ export const RunComparison = Vue.defineComponent({
     const mappingCount = Vue.computed(() => nameMappings.value.length + unitMappings.value.length);
 
     const targets = Vue.computed<ComparisonTarget[]>(() => {
-      const nodes = entries.value.map((entry) => entry.nodes);
+      const nodes = entryNodes.value;
       return [
         ...matchScalarTargets(nodes, aliasGroups.value, unitConverter.value),
         ...matchColumnTargets(nodes, indexColumnsMap.value, splitColumnsMap.value, candidateOverrides.value,
@@ -389,7 +421,7 @@ export const RunComparison = Vue.defineComponent({
     };
 
     const editMappings = () => showMappingsDialog(nameMappings.value, unitMappings.value, unmatchedItems(
-      entries.value.map((entry) => entry.nodes), targets.value, indexColumnsMap.value,
+      entryNodes.value, targets.value, indexColumnsMap.value,
     ), (names, units) => {
       nameMappings.value = names;
       unitMappings.value = units;
@@ -407,13 +439,13 @@ export const RunComparison = Vue.defineComponent({
 
     // non-default axis modes only; tables whose index moved off a time type drop out
     const resolvedAxisModes = Vue.computed(() => resolveAxisModes(
-      entries.value.map((entry) => entry.nodes),
+      entryNodes.value,
       indexColumnsMap.value,
       axisModeSelection.value,
     ));
 
     const entryStatuses = Vue.computed(() => getEntryStatuses(
-      entries.value.map((entry) => entry.nodes),
+      entryNodes.value,
       selectedTarget.value,
       indexColumnsMap.value,
       {axisModes: resolvedAxisModes.value, aliases: aliasGroups.value, convert: unitConverter.value},
@@ -448,7 +480,7 @@ export const RunComparison = Vue.defineComponent({
     // tables that could participate in column comparison and need an index choice;
     // with merging on, same-function outputs (by nqName) collapse into one row
     const indexRows = Vue.computed(() => computeIndexRows(
-      entries.value.map((entry) => entry.nodes),
+      entryNodes.value,
       indexSelection.value,
       splitSelection.value,
       mergeSameFuncs.value,
@@ -546,11 +578,17 @@ export const RunComparison = Vue.defineComponent({
             <div key={entry.id} class='c2-comparison-row'
               style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 6px'}}>
               { sourceBadge(entry.sourceKind) }
+              { entry.unsaved &&
+                <span class='c2-comparison-badge c2-badge-unsaved' title='Current state, not stored in history'>
+                  unsaved
+                </span> }
               <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1'}}
                 title={entry.modelName ? `${entry.modelName}: ${entry.name}` : entry.name}>
                 {entry.name}
               </span>
-              <IconFA name='times' tooltip='Remove from comparison' onClick={() => removeEntry(entry.id)}/>
+              { entry.outdatedSteps &&
+                <IconFA name='clock' tooltip={`Outdated outputs: ${entry.outdatedSteps.join(', ')}`}/> }
+              <IconFA name='times' tooltip='Remove from comparison' onClick={() => removeWithConfirm(entry)}/>
             </div>,
           )}
         </div>
@@ -703,6 +741,13 @@ export const RunComparison = Vue.defineComponent({
               value={hideEqual.value}
               onUpdate:value={(val) => hideEqual.value = val}
             />
+            { hasOutdated.value &&
+              <ToggleInput
+                caption='Hide outdated outputs'
+                tooltip='Leave out outputs of steps whose inputs changed after the last run, or that never ran'
+                value={hideOutdated.value}
+                onUpdate:value={(val) => hideOutdated.value = val}
+              /> }
             { (multiMode.value || compatibleTargets.value.length > 1) &&
               <ToggleInput
                 caption='Multiple values'
@@ -962,7 +1007,7 @@ export const RunComparison = Vue.defineComponent({
           }
         </div>
       </div>,
-      [[ifOverlapping, isLoadingModels.value, 'Loading models...']],
+      [[ifOverlapping, isLoadingModels.value || isAddingRuns.value, 'Loading...']],
     );
   },
 });

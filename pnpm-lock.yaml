@@ -739,6 +739,9 @@ importers:
 
   libraries/webcomponents:
     dependencies:
+      '@datagrok-libraries/utils':
+        specifier: workspace:^
+        version: link:../utils
       cash-dom:
         specifier: 'catalog:'
         version: 8.1.5

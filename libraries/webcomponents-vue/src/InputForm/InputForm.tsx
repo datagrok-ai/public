@@ -4,7 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import type {InputFormT} from '@datagrok-libraries/webcomponents';
-import {applyDefaultFloatFormats, ConsistencyInfo, injectInputBaseStatus, isInputInjected, ValidationResult} from './utils';
+import {
+  applyDefaultFloatFormats, applyInputsVisibility, ConsistencyInfo, injectInputBaseStatus, isInputEnabled,
+  isInputInjected, ValidationResult,
+} from './utils';
 import {BehaviorSubject} from 'rxjs';
 import {useUnwrappedCallMeta} from '../composables/useUnwrappedCallMeta';
 
@@ -51,6 +54,9 @@ export const InputForm = Vue.defineComponent({
     isReadonly: {
       type: Boolean,
     },
+    hiddenInputs: {
+      type: Object as Vue.PropType<Set<string>>,
+    },
   },
   emits: {
     formReplaced: (_a: DG.InputForm | undefined) => true,
@@ -95,7 +101,7 @@ export const InputForm = Vue.defineComponent({
 
           (input as any).setStatus({validation, consistency});
 
-          input.enabled = !isReadonly.value && consistency?.restriction !== 'disabled';
+          input.enabled = isInputEnabled(param.property, consistency, isReadonly.value);
         });
     });
 
@@ -139,13 +145,15 @@ export const InputForm = Vue.defineComponent({
           // TODO: FormApi
           // const rangeMeta = meta[param.property.name]?.['range'];
           // if (rangeMeta && (input.inputType === DG.InputType.Float || input.inputType === DG.InputType.Int)) {}
-          const hideMeta = meta[param.property.name]?.['hidden'];
-          if ((input as any).visible != null)
-            (input as any).visible = !hideMeta;
-          else
-            input.root.style.display = hideMeta ? 'none' : 'flex';
-
         });
+    });
+
+    const hiddenInputs = Vue.computed(() => props.hiddenInputs);
+
+    Vue.watch([currentCall, currentForm, callMetaValues, hiddenInputs], ([call, form, meta, hiddenInputs]) => {
+      if (!form || !call) return;
+      applyInputsVisibility([...call.inputParams.values()].map((param) => param.property.name),
+        (name) => form.getInput(name), meta, hiddenInputs);
     });
 
     const formReplacedCb = async (event: {detail?: DG.InputForm}) => {

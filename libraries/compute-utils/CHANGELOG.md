@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Shared utils: Added `getInputToggles` for the `inputToggles` and `inputsHidden` function meta
+* Shared utils: Malformed JSON in the `features`, `dockSpawnConfig`, `customExports` and `mainParams` meta or the `viewer` annotation logs a warning and falls back to the default instead of throwing
 * RTD: A loaded nested pipeline records the run it came from in `sourceRunId`, which is saved and kept on duplicate
 * RTD: `loadDynamicItem` also loads a saved run into a step, editable or read-only, and records it in `sourceRunId`; the step's view state gets the source run title (`sourceRunTitle`, shallow-loaded on every load, not saved, empty if the run was deleted)
 * RTD: Fixed duplicate turning read-only subtrees into editable ones; loading into a read-only pipeline now fails
