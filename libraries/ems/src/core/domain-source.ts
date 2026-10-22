@@ -7,7 +7,7 @@
 import {signal, computed, batch, Signal, ReadonlySignal, Component, Access, plural, Filters, requireBackend, subBind,
   Rows, FrameRows} from '@datagrok-libraries/u2';
 import type {FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema, DomainRowLike,
-  RowsLike, RowValues, IProperty,
+  RowsLike, RowValues,
   RowView, DataFrameLike, BindProp, BindSource, ComponentEnv, ComponentStart} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
 import {emsBackends, DomainBackendError} from './domain-backend.js';
@@ -85,9 +85,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   static readonly liveMs = 30000;
   /** How many probes may fail in a row before the poll gives up ({@link DomainSource.live}). */
   static readonly liveFailures = 3;
-  /** How a target table reads a name its projected caption answers bare — the platform layer sets it: the
-   * server answers a numbered name as its digits, and the target's display format makes it DG-000123. */
-  static nameFormat: ((target: string) => Promise<((name: string) => string) | null>) | undefined;
 
   readonly table: string;
   readonly pageSize: number;
@@ -391,7 +388,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         return;
       this._served = {query, as: served};
       const [loaded, counted] = await Promise.allSettled([
-        table.frame(this._spec(0)).then((frame) => this._formatCaptions(frame)),
+        table.frame(this._spec(0)),
         this._noRows ? Promise.resolve(0) : this._count(table)]);
       if (loaded.status === 'fulfilled' && (gen !== this._gen || counted.status === 'rejected'))
         loaded.value.dispose();
@@ -448,7 +445,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._state.value = 'loading';
     try {
       const added = await frame.append(this._spec(this._loaded));
-      await this._formatCaptions(frame, this._loaded);
       if (gen !== this._gen)
         return;
       this._loaded += added;
@@ -664,7 +660,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const selected = this._selection.peek().map((row) => row.id);
     // read before the swap: a row the replacement does not hold takes `currentRow` with it
     const current = this.currentRow.peek()?.id ?? null;
-    const replacement = await table.frame(this._spec(0, window)).then((frame) => this._formatCaptions(frame));
+    const replacement = await table.frame(this._spec(0, window));
     if (gen !== this._gen) {
       replacement.dispose();
       return;
@@ -871,26 +867,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return table.count(this.readScope());
   }
 
-  /** The frame's projected captions (`~caption_<column>`) from row `from` on, rewritten in each target's display
-   * format ({@link nameFormat}) before the rows are shown, so the list, the form and the platform grid's reference
-   * cells all read DG-000123. */
-  private async _formatCaptions(frame: DomainFrameLike, from = 0): Promise<DomainFrameLike> {
-    const nameFormat = DomainSource.nameFormat;
-    const df = frame.df;
-    for (const prop of this._schema.properties) {
-      const column = Rows.caption(prop.name!);
-      const format = nameFormat === undefined || df.columns.byName(column) === null ? null :
-        await nameFormat(prop.semType!);
-      for (let i = from; format !== null && i < df.rowCount; i++) {
-        const caption = df.get(column, i);
-        const formatted = typeof caption === 'string' && caption !== '' ? format(caption) : caption;
-        if (formatted !== caption)
-          df.set(column, i, formatted);
-      }
-    }
-    return frame;
-  }
-
   /** One poll of a `live` source: the collection counted and dated in one request, against what
    * the last poll saw. A moved pair refreshes while there is nothing to lose and marks the source
    * {@link stale} while there is. Nothing is asked while the tab is hidden (throttled, and no one
@@ -988,22 +964,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const deleted = this.deleted.peek();
     return {filter: typeof q === 'string' ? (q === '' ? undefined : q) : Filters.toDomainTree(q),
       ...(search === '' ? {} : {search}), ...(deleted === 'exclude' ? {} : {deleted})};
-  }
-
-  /** The column a row is named by: the declared name column, else the first business-key column, else the id. */
-  static captionColumn(info: DomainTableInfoLike): string {
-    return info.nameColumn ?? info.businessKey[0] ?? 'id';
-  }
-
-  /** The column's property when it is a number in a display format — an autonumbered key read as `DG-000123`. */
-  static formattedNumber(properties: readonly IProperty[], column: string): IProperty | undefined {
-    const prop = properties.find((p) => p.name === column);
-    return prop !== undefined && (prop.format ?? '') !== '' && DomainSource.isNumber(prop) ? prop : undefined;
-  }
-
-  static isNumber(prop: IProperty): boolean {
-    const kind = Filters.kindOf(prop as FilterProperty);
-    return kind === Filters.KIND.INT || kind === Filters.KIND.BIG_INT || kind === Filters.KIND.FLOAT;
   }
 
   /** The query as the server takes it: every host condition answered by {@link hosted} as the ids of the rows

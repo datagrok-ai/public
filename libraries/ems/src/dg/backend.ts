@@ -206,8 +206,7 @@ export class DgDomainTable implements DomainTableLike {
    * of every export, and an appended page reuses the frame's columns. */
   async frame(spec: DomainQueryLike): Promise<DomainFrameLike> {
     const query = DgDomainTable.spec(spec);
-    const [df, access] = await Promise.all([this.client.queryDf(query).then(DgDomainTable.widen),
-      this.client.access()]);
+    const [df, access] = await Promise.all([this.client.queryDf(query), this.client.access()]);
     // quiet: the u2 buttons say what was saved; the editor keeps its error and conflict dialogs.
     // A frame over deleted rows is read-only until they are restored — the writer is handed the
     // same upper bound `DomainSource.access` publishes, so it and the controls agree.
@@ -218,38 +217,12 @@ export class DgDomainTable implements DomainTableLike {
       df: df as unknown as DataFrameLike,
       edit,
       append: async (page) => {
-        const rows = DgDomainTable.widen(await this.client.queryDf(DgDomainTable.spec(page)));
+        const rows = await this.client.queryDf(DgDomainTable.spec(page));
         df.append(rows, true);
         return rows.rowCount;
       },
       dispose: () => edit.dispose(),
     };
-  }
-
-  /** A frame keeps floats as float32, so a stored 0.1 reads 0.10000000149011612 and a typed 1.23 saves as
-   * 1.2300000190734863: every float column becomes a double holding the shortest decimal of its float32. */
-  private static widen(df: DG.DataFrame): DG.DataFrame {
-    for (const col of df.columns.toList()) {
-      if (col.type !== DG.COLUMN_TYPE.FLOAT || !(col.getRawData() instanceof Float32Array))
-        continue;
-      const values = Float64Array.from({length: df.rowCount}, (_, i) =>
-        col.isNone(i) ? DG.FLOAT_NULL : DgDomainTable.float32Decimal(col.get(i)!));
-      const wide = DG.Column.fromFloat64Array(col.name, values, df.rowCount);
-      for (const [tag, value] of col.tags)
-        wide.setTag(tag, value);
-      df.columns.replace(col, wide);
-    }
-    return df;
-  }
-
-  /** The shortest decimal that reads back as the same float32 as `x`. */
-  static float32Decimal(x: number): number {
-    for (let digits = 1; digits <= 9; digits++) {
-      const decimal = Number(x.toPrecision(digits));
-      if (Math.fround(decimal) === Math.fround(x))
-        return decimal;
-    }
-    return x;
   }
 
   /** The seam's query is the js-api spec: same filter tree, same paging keys. */

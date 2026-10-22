@@ -116,7 +116,7 @@ class ImportRun {
     for (const [target, name] of mapping) {
       const column = source.columns.byName(name);
       for (let i = 0; i < count; i++)
-        this.rows[i][target] = DomainTable.cellValue(column, i);
+        this.rows[i][target] = column.get(i);
     }
   }
 
@@ -150,7 +150,7 @@ class ImportRun {
   }
 
   get keyColumn(): string {
-    return DomainSource.captionColumn(this.table.info);
+    return DomainPick.nameColumn(this.table.info);
   }
 
   /** The rows as the table stores them, in place; a row any check failed on is held back. */
@@ -208,14 +208,11 @@ class ImportRun {
     return isEmpty(key) ? '' : DomainTable.captionText(this.table.properties, this.keyColumn, key);
   }
 
-  /** The rows that landed as a query: by the key where it is a number — `regno in (7, 8)` — else by id. */
+  /** The rows that landed, as a query by id. */
   shown(): {query: FilterGroup, count: number} | null {
-    const prop = this.table.properties.find((p) => p.name === this.keyColumn);
-    const byKey = prop !== undefined && DomainSource.isNumber(prop);
-    const values = [...new Set(this.report!.rows.filter((row) => LANDED.includes(row.status))
-      .map((row) => byKey ? this.keys.get(row.index) : row.id).filter((value) => !isEmpty(value)))];
-    return values.length === 0 ? null : {count: values.length, query: Filters.group('and',
-      [Filters.cond(byKey ? this.keyColumn : 'id', 'in', values as (string | number)[])])};
+    const ids = this.report!.rows.filter((row) => LANDED.includes(row.status)).map((row) => row.id)
+      .filter((id): id is string => !isEmpty(id));
+    return ids.length === 0 ? null : {count: ids.length, query: Filters.group('and', [Filters.cond('id', 'in', ids)])};
   }
 
   /** The source rows beside what became of each: the result, why, and the key. */
@@ -440,7 +437,7 @@ class ImportFlow {
       ...mapping.map(([target, name]) => {
         const column = frame.columns.byName(name);
         return {name: target, header: ImportRun.caption(this._table, target), render: (i: number) => {
-          const value = DomainTable.cellValue(column, i);
+          const value = column.get(i);
           return molecules.has(target) && !isEmpty(value) ? THUMBNAIL.listItem!(String(value)) : text(value);
         }};
       })],

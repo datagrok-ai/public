@@ -19,7 +19,7 @@ import {SharedSession, confirmDiscard} from '../core/session.js';
 import {handlerRenderer, appView, mountView, ObjectForm} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainApp} from './app.js';
 import {authoring} from './authoring/index.js';
-import {DgDomainTable, SYSTEM_COLUMNS} from './backend.js';
+import {SYSTEM_COLUMNS} from './backend.js';
 import {saveButton, discardButton, newButton} from './buttons.js';
 import {DomainChildren} from './children.js';
 import {DomainErrors} from './errors.js';
@@ -237,15 +237,6 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   /** The source behind a `currentRow` signal handed to a form. */
   static sourceOf(row: ReadonlySignal<RowView | null>): DomainSource | undefined {
     return DomainTable._byRow.get(row);
-  }
-
-  /** A frame cell as a write takes it: null where empty, a float32 float as the decimal it was read from. */
-  static cellValue(column: DG.Column, row: number): unknown {
-    if (column.isNone(row))
-      return null;
-    const value = column.get(row);
-    return typeof value === 'number' && !Number.isInteger(value) && Math.fround(value) === value ?
-      DgDomainTable.float32Decimal(value) : value;
   }
 
   /** A name as auto-mapping compares it: case, punctuation and a unit in parentheses ignored, so a file's
@@ -641,8 +632,6 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
   }
 }
-
-DomainSource.nameFormat = (target) => DomainPick.nameFormat(target);
 
 export const domains = {
   /** The table's shape and the caller's access in one round of requests; a handle per call, so

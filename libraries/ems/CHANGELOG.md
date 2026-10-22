@@ -7,15 +7,14 @@
 * Forms: A server-assigned key reads "assigned on save"; `immutable` columns are set on a new row only; a reference opens its row; `sections` group fields under a folding heading
 * Filters: The condition builder can sit in a pane left of the list; a row still being filled in is kept and not applied
 * Lists: A ⋯ Sort menu with the orders an app gives (`sorts`), opening in the first; a refresh keeps the scroll position, current row and selection
-* Record pages: A pending delete shows with Restore; the ⋯ menu holds the row's own actions; Save is disabled while a field shows a problem (its tooltip says which), New while on a create page
+* Record pages: Save is disabled while a field shows a problem (its tooltip says which), New while on a create page
 * The context panel shows the row a user moves to and the open record (`context`)
 * Child tabs: New can open the child's own create page with the parent filled in (`onNew`)
 * Added `domains.views`: several tables as one app, a view per table with deep links and tree items; a reference or a list's Open lands in the app's view of the table
-* Keys with a display format (`DG-000123`) read and search in that format everywhere
+* Pickers and read-only fields show a numbered key in its display format (`DG-000123`); a picker finds it by its digits
 * Import: References are matched by name, derived columns are computed (and not offered as targets), and the table's validators are checked; a row with a problem is not sent, and a row a derivation skips (`DomainSkip`) is reported as skipped without stopping an all-or-nothing import
 * Import: A column with no name match maps by its semantic type, and structures show as pictures in the preview
 * Import: The report names each imported row by its key (`DG-000123`), shows the imported rows in the list, and opens as a table with each row's result; `domains.importRows` runs the same import without the wizard
-* Fixed floats read and saved with float32 noise (`0.1` read as `0.10000000149011612`)
 * Fixed Import failing on the platform when a file names referenced rows
 * Memory backend: Fixed derived singular and plural names reading the friendly name and replacing `_`: like the platform, they come from the table name (`order_details` → `order_detail`), and a declared friendly name is answered as `info.friendlyName`
 * Memory backend: Fixed derived table names: a table named in the plural (`categories`) read `categoriess`; singular and plural now follow the platform's rules (`category`/`categories`, `box`/`boxes`, `study`/`studies`)

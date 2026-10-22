@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {Control, signal, text, Dates, span, timestamp, DataTable, Rows} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, IProperty, ObjectRenderer, CellStateLike, DataTableColumn,
   RowView} from '@datagrok-libraries/u2';
-import {DomainSource} from '../core/domain-source.js';
+import type {DomainSource} from '../core/domain-source.js';
 import {viewers, ObjectForm} from '@datagrok-libraries/u2/src/dg/index.js';
 import {collectionSelection} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {Bindable} from '@datagrok-libraries/u2/src/dg/index.js';
@@ -78,7 +78,7 @@ export class DomainGrid extends Control {
       return;
     DG.DomainObjectHandler.decorateGrid(this.grid, this.source.table, df);
     this._caption(df);
-    this._formats(df);
+    this._dateFormat(df);
   }
 
   /** The schema's captions where `decorateGrid` found no per-table meta to take them from —
@@ -101,19 +101,16 @@ export class DomainGrid extends Control {
     }
   }
 
-  /** The schema's display format on a number or datetime column, as a form shows it (an autonumbered key reads
-   * DGB-000024); a datetime column with none is a date where every value it holds falls on midnight, date and time
-   * otherwise. */
-  private _formats(df: DG.DataFrame): void {
+  /** A datetime column with no format of its own: a date where every value it holds falls on
+   * midnight, date and time otherwise. */
+  private _dateFormat(df: DG.DataFrame): void {
     for (const p of this.source.schema.properties) {
-      const column = df.columns.byName(p.name!);
-      const datetime = (p.propertyType ?? p.type) === 'datetime';
-      if (column === null || (column.getTag(DG.TAGS.FORMAT) ?? '') !== '' || !(datetime || DomainSource.isNumber(p)))
+      if ((p.propertyType ?? p.type) !== 'datetime' || (p.format ?? '') !== '')
         continue;
-      if ((p.format ?? '') !== '')
-        column.setTag(DG.TAGS.FORMAT, p.format!);
-      else if (datetime)
-        column.setTag(DG.TAGS.FORMAT, DomainGrid.isDateOnly(column) ? DATE_FORMAT : DATE_TIME_FORMAT);
+      const column = df.columns.byName(p.name!);
+      if (column === null || (column.getTag(DG.TAGS.FORMAT) ?? '') !== '')
+        continue;
+      column.setTag(DG.TAGS.FORMAT, DomainGrid.isDateOnly(column) ? DATE_FORMAT : DATE_TIME_FORMAT);
     }
   }
 

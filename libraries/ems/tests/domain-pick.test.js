@@ -3,7 +3,6 @@
    back to the business key and then the id — and `PickInput`'s face keeps value and box in step. */
 
 import {emsBackends} from '../src/core/domain-backend.js';
-import {DomainSource} from '../src/core/domain-source.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
@@ -138,11 +137,11 @@ scoped('the name column falls back to the business key, then to the id', async (
     blob: {columns: {size: {type: 'int'}}},
   }}, {rows: {thing: [{id: 't1', code: 'AB'}, {id: 't2', code: 'CD'}], blob: [{id: 'b1', size: 1}]}});
   const table = await emsBackends.domain.table('x.thing');
-  assert.equal(DomainSource.captionColumn(table.info), 'code');
+  assert.equal(DomainPick.nameColumn(table.info), 'code');
   assert.deepEqual(await DomainPick.search('x.thing', 'c'), [{id: 't2', name: 'CD'}]);
   assert.deepEqual(await DomainPick.resolve('x.thing', 't1'), {id: 't1', name: 'AB'});
   const blob = await emsBackends.domain.table('x.blob');
-  assert.equal(DomainSource.captionColumn(blob.info), 'id');
+  assert.equal(DomainPick.nameColumn(blob.info), 'id');
   assert.deepEqual(await DomainPick.search('x.blob', ''), [{id: 'b1', name: 'b1'}]);
 });
 

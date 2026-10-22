@@ -7,8 +7,8 @@ import {emsBackends} from '../core/domain-backend.js';
 import {Input, InputOptions, labelText, div, span, text, TypeAhead, Filters, Rows,
   iconButton} from '@datagrok-libraries/u2';
 import type {ObjectRenderer, DomainCondition, DomainConditionNode, DomainConditionTree, FilterSchema,
-  IProperty} from '@datagrok-libraries/u2';
-import type {DomainQueryLike, DomainTableLike} from '../core/domain-backend.js';
+  FilterProperty, IProperty} from '@datagrok-libraries/u2';
+import type {DomainQueryLike, DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
 import {DomainSource} from '../core/domain-source.js';
 import {DomainQueries} from '../core/queries.js';
 import {DomainTable} from './facade.js';
@@ -218,14 +218,14 @@ export class DomainPick extends PickInput<PickItem> {
 
   /** The candidates for `query`: the rows whose name column contains it, in the table's own order
    * (as seeded — statuses, priorities; a declared order is a phase-4 `views` item). A name column
-   * that is a formatted number is matched by the digits a typed id carries; text with none is
-   * searched for over the table's other searchable columns, and with none of those finds nothing. */
+   * that is a number is matched by the digits a typed id carries; text with none is searched for
+   * over the table's other searchable columns, and with none of those finds nothing. */
   static async search(table: string, query: string,
     options: {filter?: DomainPickOptions['filter'], limit?: number} = {}): Promise<PickItem[]> {
     const t = await DomainPick.table(table);
     DomainPick._plural.set(table, DomainSource.noun(t.info));
-    const nameColumn = DomainSource.captionColumn(t.info);
-    const numeric = DomainSource.formattedNumber(t.properties, nameColumn) !== undefined;
+    const nameColumn = DomainPick.nameColumn(t.info);
+    const numeric = DomainPick.isNumber(t.properties.find((p) => p.name === nameColumn));
     const search = numeric && DomainPick.digits(query) === '' ? query.trim() : '';
     if (search !== '' && t.info.searchableColumns.every((c) => c === nameColumn))
       return [];
@@ -245,48 +245,40 @@ export class DomainPick extends PickInput<PickItem> {
     const draft = Rows.isDraft(id) ? DomainSource.draftOf(id) : undefined;
     if (draft !== undefined) {
       const info = draft.source.schema.info;
-      const name = text(draft.row[DomainSource.captionColumn(info)]);
+      const name = text(draft.row[DomainPick.nameColumn(info)]);
       return {id, name: name === '' ? `New ${DomainSource.noun(info, false)}` : name};
     }
     const backend = emsBackends.domain;
     if (backend?.resolveNames !== undefined) {
       const name = (await backend.resolveNames(table, [id]))[id];
-      if (!name)
-        return {id, name: DomainPick.UNKNOWN};
-      const format = await DomainPick.nameFormat(table);
-      return {id, name: format === null ? name : format(name)};
+      return {id, name: name || DomainPick.UNKNOWN};
     }
     const t = await DomainPick.table(table);
-    const nameColumn = DomainSource.captionColumn(t.info);
+    const nameColumn = DomainPick.nameColumn(t.info);
     const [row] = await t.query({filter: {property: 'id', operator: '=', value: id}, limit: 1});
     return row === undefined ? {id, name: DomainPick.UNKNOWN} : DomainPick.item(row, nameColumn, t.properties);
   }
 
-  /** How a name the server answered bare reads in `table`: the registry's resolver and a query's
-   * `~caption_<column>` give a numbered name as its digits, and the display format is the table's
-   * name column's. Null where that column is not a formatted number, or the table cannot be read;
-   * the backend reads a table's schema once per address. */
-  static nameFormat(table: string): Promise<((name: string) => string) | null> {
-    return DomainPick.table(table).then((t) => {
-      const nameColumn = DomainSource.captionColumn(t.info);
-      if (DomainSource.formattedNumber(t.properties, nameColumn) === undefined)
-        return null;
-      return (name: string) =>
-        /^\d+$/.test(name) ? DomainTable.captionText(t.properties, nameColumn, Number(name)) : name;
-    }, () => null);
+  /** The declared name column, else the first business-key column, else the id. */
+  static nameColumn(info: DomainTableInfoLike): string {
+    return info.nameColumn ?? info.businessKey[0] ?? 'id';
   }
 
-  /** The ids of the rows `names` name in `table`, matched exactly on its name column — a number
-   * by its value, a formatted one by the digits it carries; a name no row holds is absent. */
+  /** A name column holding a number is matched by value: `like` reads text only. */
+  static isNumber(prop: IProperty | undefined): boolean {
+    const kind = prop === undefined ? null : Filters.kindOf(prop as FilterProperty);
+    return kind === Filters.KIND.INT || kind === Filters.KIND.BIG_INT || kind === Filters.KIND.FLOAT;
+  }
+
+  /** The ids of the rows `names` name in `table`, matched exactly on its name column — a number by the
+   * digits a name carries (DG-000123 is 123); a name no row holds is absent. */
   static async lookUp(table: string, names: readonly string[]): Promise<Map<string, string>> {
     const t = await DomainPick.table(table);
-    const nameColumn = DomainSource.captionColumn(t.info);
-    const prop = t.properties.find((p) => p.name === nameColumn);
-    const formatted = DomainSource.formattedNumber(t.properties, nameColumn) !== undefined;
-    const number = prop !== undefined && DomainSource.isNumber(prop);
+    const nameColumn = DomainPick.nameColumn(t.info);
+    const number = DomainPick.isNumber(t.properties.find((p) => p.name === nameColumn));
     const byValue = new Map<unknown, string[]>();
     for (const name of names) {
-      const typed = formatted ? DomainPick.digits(name) : name.trim();
+      const typed = number ? DomainPick.digits(name) : name.trim();
       const value = number ? Number(typed) : typed;
       if (typed === '' || Number.isNaN(value))
         continue;

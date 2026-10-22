@@ -10,13 +10,12 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, Control, Filters, Rows, notify} from '@datagrok-libraries/u2';
+import {backends, Scope, Control, Filters, notify} from '@datagrok-libraries/u2';
 import {SCHEMA, backend} from './domain-fixtures.mjs';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains, DomainSkip} = await import('../src/dg/facade.js');
-const {DgDomainTable} = await import('../src/dg/backend.js');
 const {DomainPick} = await import('../src/dg/pick.js');
 const DG = await import('datagrok-api/dg');
 
@@ -566,7 +565,7 @@ scoped('a reference is looked up by its name, a uuid taken as it stands; derivat
 async function registry() {
   emsBackends.domain = new MemoryDomainBackend({name: 'reg', tables: {compound: {businessKey: ['regno'], columns: {
     regno: {type: 'int', format: 'DG-000000', isName: true}, smiles: {type: 'string', semType: 'Molecule'},
-    hash: {type: 'string'}, cas: {type: 'string'}, potency: {type: 'float'}}},
+    hash: {type: 'string'}, cas: {type: 'string'}}},
   batch: {columns: {compound_id: {type: 'ref', ref: 'compound'}}}}},
   {rows: {compound: [{id: 'c1', regno: 7, smiles: 'CCO'}]}});
   const table = await domains.table('reg.compound');
@@ -580,16 +579,15 @@ async function registry() {
 }
 
 scoped('importRows: a skipped row trips no all-or-nothing, an error row does, a repeat of a unique output is ' +
-  'skipped; a Molecule column maps by semType, a float32 as its decimal; a key in its display format names a row ' +
-  'in the report, in a reference and in a search', async () => {
+  'skipped; a Molecule column maps by semType; a key in its display format names a row in the report, in a ' +
+  'reference and in a search', async () => {
   const table = await registry();
   const dg = globalThis.DG;
   globalThis.DG = {...dg, format: (x, format) => `${format.replace(/0+$/, '')}${String(x).padStart(6, '0')}`};
   try {
     const source = new DG.DataFrame([{name: 'regno', type: 'int'}, {name: 'Drawn', type: 'string', semType: 'Molecule'},
-      {name: 'cas', type: 'string'}, {name: 'potency', type: 'double'}], [{regno: 8, Drawn: 'CCN', cas: '',
-      potency: Math.fround(0.73)}, {regno: 9, Drawn: 'CCO', cas: ''}, {regno: 10, Drawn: 'CCC', cas: 'bad'},
-    {regno: 11, Drawn: 'CCN', cas: ''}]);
+      {name: 'cas', type: 'string'}], [{regno: 8, Drawn: 'CCN', cas: ''}, {regno: 9, Drawn: 'CCO', cas: ''},
+      {regno: 10, Drawn: 'CCC', cas: 'bad'}, {regno: 11, Drawn: 'CCN', cas: ''}]);
     const column = (report, name) => Array.from({length: report.rowCount}, (_, i) => report.get(name, i));
     const strict = await domains.importRows(table, source);
     assert.deepEqual(column(strict, 'Import result'), ['Not imported', 'Skipped', 'Error', 'Skipped']);
@@ -600,22 +598,18 @@ scoped('importRows: a skipped row trips no all-or-nothing, an error row does, a 
     assert.deepEqual([column(report, 'Import result'), column(report, 'Regno')],
       [['Added', 'Skipped', 'Added', 'Skipped'], ['DG-000008', '', 'DG-000010', '']], 'the skipped rows stop nothing');
     const added = emsBackends.domain.tableSync('reg.compound').rows.find((r) => r.regno === 8);
-    assert.deepEqual([added.hash, added.potency], ['ccn', 0.73], 'not 0.7300000190734863');
+    assert.equal(added.hash, 'ccn');
     const batches = await domains.table('reg.batch');
-    await domains.importRows(batches, new DG.DataFrame([{name: 'compound_id', type: 'string'}], [{compound_id: '8'}]));
-    const listed = batches.source({});
-    await flush();
-    assert.deepEqual([listed.rows.items.value[0][Rows.caption('compound_id')],
-      (await DomainPick.search('reg.compound', 'DG-000008'))[0].name], ['DG-000008', 'DG-000008']);
-    listed.dispose();
+    await domains.importRows(batches, new DG.DataFrame([{name: 'compound_id', type: 'string'}],
+      [{compound_id: 'DG-000008'}]));
+    assert.equal(emsBackends.domain.tableSync('reg.batch').rows[0].compound_id, added.id);
+    assert.equal((await DomainPick.search('reg.compound', 'DG-000008'))[0].name, 'DG-000008');
   } finally {
     globalThis.DG = dg;
   }
-  for (const typed of [106.63, 1e-7, 0.5, 126.665985])
-    assert.equal(DgDomainTable.float32Decimal(Math.fround(typed)), typed, 'the shortest decimal of the same float32');
 });
 
-scoped('the report\'s "Show the N imported rows" hands the caller the rows by their numeric key', async () => {
+scoped('the report\'s "Show the N imported rows" hands the caller the rows by id', async () => {
   let shown = null;
   const running = domains.import(await registry(), {source: new DG.DataFrame([{name: 'regno', type: 'int'}],
     [{regno: 8}]), show: (query) => shown = query});
@@ -625,6 +619,7 @@ scoped('the report\'s "Show the N imported rows" hands the caller the rows by th
   await toPreview();
   fire([...document.querySelectorAll('.u2-domain-import-report a')]
     .find((a) => a.textContent === 'Show the 1 imported row'), 'click');
-  assert.equal(Filters.format(shown), 'regno in (8)');
+  const added = emsBackends.domain.tableSync('reg.compound').rows.find((r) => r.regno === 8);
+  assert.equal(Filters.format(shown), `id in ("${added.id}")`);
   assert.equal((await running).inserted, 1, 'the wizard closed on the report');
 });
