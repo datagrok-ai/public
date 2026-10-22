@@ -185,7 +185,7 @@ export class PackageFunctions {
     return runBenchmarkImpl(label, reps ?? 3, only);
   }
 
-  @grok.decorators.func({name: 'aiChatTurnTask',
+  @grok.decorators.func({name: 'aiChatTurnTask', meta: {queue: 'true'},
     description: 'Holds the admission slot for one AI chat turn streaming over the browser WebSocket - see queue-task.ts'})
   static async aiChatTurnTask(sessionId: string, taskId: string): Promise<string> {
     return holdChatTurnTask(sessionId, taskId);

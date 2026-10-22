@@ -362,7 +362,7 @@ widget briefings, all open views, all workspace tables) prepended browser-side, 
 declare the static view-function meta-tools as `clientTools`. When the queued route is deployed,
 `sendChatTurn()` ([`src/claude/queue-task.ts`](../src/claude/queue-task.ts)) first launches the
 `aiChatTurnTask` celery task that holds the admission slot; the turn itself streams over the
-WebSocket as usual. The route is off: `aiChatTurnTask` declares no `meta.queue`.
+WebSocket as usual.
 
 Claude executes JS through the `datagrok_exec` tool *during* the turn (an `input_request`
 round-trip via [`exec-blocks.ts`](../src/claude/exec-blocks.ts) `executeSingleBlock()`), so it

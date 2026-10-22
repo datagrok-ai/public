@@ -55,6 +55,7 @@ export async function runBenchmark(label: string, reps?: number, only?: string) 
 //input: string sessionId 
 //input: string taskId 
 //output: string result
+//meta.queue: true
 export async function aiChatTurnTask(sessionId: string, taskId: string) : Promise<string> {
   return await PackageFunctions.aiChatTurnTask(sessionId, taskId);
 }
