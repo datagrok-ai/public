@@ -6,8 +6,7 @@ Feature: The AI panel works with the server, the docs and its own sandbox
   number the user asked for is checked against the value computed from the same file.
 
   These scenarios reach a Docker container and a paid model, which the library's hard rule keeps out of
-  the regular suite: they run only with GROKKY_BDD_LIVE=1 and skip otherwise. On a stand without a queue
-  worker every turn first waits out the runtime's 60 s admission window. @serial: one chat at a time.
+  the regular suite: they run only with GROKKY_BDD_LIVE=1 and skip otherwise. @serial: one chat at a time.
 
   Background:
     Given live AI model calls are allowed

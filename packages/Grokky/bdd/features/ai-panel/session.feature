@@ -7,8 +7,7 @@ Feature: The AI panel's chat survives a stop, a bash command, a reload and a los
   its WebSocket traffic and, through `docker exec` on this machine, from its container.
 
   These scenarios reach a Docker container and a paid model, which the library's hard rule keeps out of
-  the regular suite: they run only with GROKKY_BDD_LIVE=1 and skip otherwise. On a stand without a queue
-  worker every turn first waits out the runtime's 60 s admission window. @serial: one chat at a time.
+  the regular suite: they run only with GROKKY_BDD_LIVE=1 and skip otherwise. @serial: one chat at a time.
 
   Background:
     Given live AI model calls are allowed
