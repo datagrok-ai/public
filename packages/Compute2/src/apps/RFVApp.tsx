@@ -17,10 +17,16 @@ import {parseUrlInputs, applyUrlInputs, missingMandatoryInputs, buildInputsUrl, 
 import {getShareAction} from '../sharing/sharing';
 import {RibbonMenu, useDgView} from '@datagrok-libraries/webcomponents-vue';
 import {useFeedbackItems} from '../composables/use-feedback';
+import {
+  OUTPUT_OUTDATED_PATH, readOutputOutdated,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
+import {entryFromLiveCall} from '../components/RunComparison/entry-extraction';
+import {
+  addToComparison, snapshotName,
+} from '../components/RunComparison/comparison-views';
 
 const RUN_DEBOUNCE_TIME = 250;
 const FUNCTION_HISTORY = {mode: 'function'} as const;
-const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
 
 export const RFVApp = Vue.defineComponent({
   name: 'RFVApp',
@@ -90,7 +96,8 @@ export const RFVApp = Vue.defineComponent({
     });
 
     Vue.watch(currentFuncCall, async (fc) => {
-      const isOutputOutdated = JSON.parse(fc.options[OUTPUT_OUTDATED_PATH] ?? 'true');
+      // a call that never ran has no flag yet
+      const isOutputOutdated = fc.options[OUTPUT_OUTDATED_PATH] == null || readOutputOutdated(fc);
       currentCallState.value = {...currentCallState.value, isOutputOutdated};
       searchParams.id = fc.author ? fc.id : undefined;
 
@@ -188,6 +195,12 @@ export const RFVApp = Vue.defineComponent({
           updateCallState({isRunning: false});
         overlayActive.value = false;
       }
+    };
+
+    const currentSnapshot = () => {
+      const fc = currentFuncCall.value;
+      const name = fc.options['title'] ?? fc.func?.friendlyName ?? fc.func?.name;
+      return entryFromLiveCall(fc, currentCallState.value.isOutputOutdated, snapshotName(name));
     };
 
     const onInputChanged = () => {
@@ -290,11 +303,9 @@ export const RFVApp = Vue.defineComponent({
           onFormInputChanged={onInputChanged}
           onSaveToHistory={() => saveRunWithDialog()}
           onPublishRun={() => shareRun()}
+          onCompareRequested={() => addToComparison(currentSnapshot(), currentFuncCall.value.func)}
           history={FUNCTION_HISTORY}
-          localValidation={true}
-          skipInit={false}
-          showRunButton={!isRunningOnInput.value}
-          keepExportsVisible={isRunningOnInput.value}
+          standalone={true}
         />
         {feedbackItems.value.length > 0 &&
           <RibbonMenu groupName='Feedback' items={feedbackItems.value}/>}

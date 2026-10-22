@@ -14,7 +14,7 @@ import {
   friendlyIoName,
 } from '../../utils';
 import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {showSourceRunMenu, sourceRunTooltip} from './source-run';
+import {showSourceRunMenu, sourceRunLabel, sourceRunTooltip} from './source-run';
 import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 const statusToIcon: Record<Status, string> = {
@@ -111,6 +111,8 @@ export const TreeNode = Vue.defineComponent({
     runSubtree: (_startUuid: string, _rerunWithConsistent?: boolean) => true,
     runStep: (_uuid: string) => true,
     saveStep: (_uuid: string) => true,
+    compareWithOriginal: () => true,
+    addToComparison: () => true,
   },
   setup(props, {emit}) {
     Vue.onRenderTriggered((event) => {
@@ -129,14 +131,17 @@ export const TreeNode = Vue.defineComponent({
     const sourceRunTitle = Vue.computed(() =>
       isFuncCallState(props.stat.data) ? props.stat.data.sourceRunTitle : undefined);
     const onSourceRunClick = (e: MouseEvent) => {
-      showSourceRunMenu(sourceRunId.value!, props.isReadonly, e, sourceRunTitle.value);
+      showSourceRunMenu(sourceRunId.value!, props.isReadonly, e, sourceRunTitle.value, props.isReadonly ? undefined : {
+        compareWithOriginal: () => emit('compareWithOriginal'),
+        addToComparison: () => emit('addToComparison'),
+      });
       e.stopPropagation();
     };
 
     const gutterStyle = {alignSelf: 'center', left: '-20px', position: 'absolute'} as const;
 
     const sourceRunLockIcon = (tooltip: string, color?: string) =>
-      <IconFA name='lock' tooltip={tooltip} onClick={onSourceRunClick} style={{...gutterStyle, color}} />;
+      <IconFA name='lock' tooltip={tooltip} style={{...gutterStyle, color}} />;
 
     const progressIcon = (status: Status, isReadOnly: boolean) => {
       const data: any = props.stat.data;
@@ -144,7 +149,7 @@ export const TreeNode = Vue.defineComponent({
       const statusTooltip = getToolTip(
         status, isReadOnly, funcCall, props.validationStates, props.consistencyStates, props.callState?.runError);
       if (isReadOnly && sourceRunId.value) {
-        const tooltip = [statusTooltip, sourceRunTooltip(true, sourceRunTitle.value)].filter(Boolean).join('. ');
+        const tooltip = [statusTooltip, sourceRunLabel(true, sourceRunTitle.value)].filter(Boolean).join('. ');
         return sourceRunLockIcon(tooltip, statusToColor[status]);
       }
       return <IconFA
@@ -171,7 +176,7 @@ export const TreeNode = Vue.defineComponent({
     };
 
     const pipelineLockIcon = () => sourceRunId.value ?
-      sourceRunLockIcon(sourceRunTooltip(true)) :
+      sourceRunLockIcon(sourceRunLabel(true)) :
       <IconFA name='lock' tooltip='This workflow is locked' style={gutterStyle} />;
 
     const nodeLabel = (state: AugmentedStat) =>
@@ -299,9 +304,9 @@ export const TreeNode = Vue.defineComponent({
                 class='d4-ribbon-item'
               />
             }
-            { sourceRunId.value && !props.isReadonly && <IconFA
+            { sourceRunId.value && <IconFA
               name='code-branch'
-              tooltip={sourceRunTooltip(false, sourceRunTitle.value)}
+              tooltip={sourceRunTooltip(props.isReadonly, sourceRunTitle.value)}
               onClick={onSourceRunClick}
               class='d4-ribbon-item'
             /> }

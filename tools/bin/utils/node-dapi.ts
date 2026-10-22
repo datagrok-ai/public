@@ -97,6 +97,21 @@ async function fetchOrRetry(url: string, opts: RequestInit, retriable: boolean,
 export class NodeApiClient {
   /** Set by `createClient` when the run asked for an admin session, so a re-login restores it. */
   adminMode: boolean = false;
+  /**
+   * `--log`: one id for every request of the command, wherever the server runs it, and the logger settings
+   * its records are kept at until `GET /log/requests/<logId>` collects them.
+   */
+  logId?: string;
+  logSpec?: string;
+
+  private get logHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {};
+    if (this.logId)
+      headers['datlas-log-id'] = this.logId;
+    if (this.logSpec)
+      headers['datlas-log'] = this.logSpec;
+    return headers;
+  }
 
   constructor(public baseUrl: string, public token: string, private devKey?: string,
               private privateKey?: any) {}
@@ -152,6 +167,7 @@ export class NodeApiClient {
       headers: {
         'Authorization': this.token,
         'Content-Type': 'application/json',
+        ...this.logHeaders,
         ...headers,
       },
     };
@@ -197,6 +213,7 @@ export class NodeApiClient {
       headers: {
         'Authorization': this.token,
         'Content-Type': contentType,
+        ...this.logHeaders,
       },
       body: bytes as any,
     }, false, BYTES_TIMEOUT_MS);
@@ -210,7 +227,7 @@ export class NodeApiClient {
   async postForBytes(path: string, body: any): Promise<Buffer> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: 'POST',
-      headers: {'Authorization': this.token, 'Content-Type': 'application/json'},
+      headers: {'Authorization': this.token, 'Content-Type': 'application/json', ...this.logHeaders},
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(BYTES_TIMEOUT_MS),
     });
@@ -221,7 +238,7 @@ export class NodeApiClient {
 
   /** GET raw bytes — d42 table data, file content, model blobs. */
   async getBytes(path: string): Promise<Buffer> {
-    const res = await fetchOrRetry(`${this.baseUrl}${path}`, {headers: {'Authorization': this.token}}, true, BYTES_TIMEOUT_MS);
+    const res = await fetchOrRetry(`${this.baseUrl}${path}`, {headers: {'Authorization': this.token, ...this.logHeaders}}, true, BYTES_TIMEOUT_MS);
     if (!res.ok)
       await throwHttpError(res);
     const bytes = Buffer.from(await res.arrayBuffer());
@@ -604,9 +621,11 @@ export class NodeConnectionsDataSource extends NodeHttpDataSource {
 export class NodeFuncsDataSource extends NodeHttpDataSource {
   constructor(client: NodeApiClient) { super(client, 'functions', '/log/funcs'); }
 
-  async run(name: string, params?: Record<string, any>): Promise<any> {
+  /** [debug] runs it as a debug call, as the query debugger does; its log is kept with the command's `--log`. */
+  async run(name: string, params?: Record<string, any>, debug: boolean = false): Promise<any> {
     const normalizedName = name.replace(':', '.');
-    return this.client.post(`/public/v1/functions/${encodeURIComponent(normalizedName)}/call`, params ?? {});
+    return this.client.post(`/public/v1/functions/${encodeURIComponent(normalizedName)}/call${debug ? '?debug=true' : ''}`,
+      params ?? {});
   }
 
   /** The public API has no DELETE for functions; scripts and queries go to their own routers. */
