@@ -6,6 +6,7 @@
 * Domains: Fixed `DomainFrameEditor` naming the business key instead of the clashing unique column in a duplicate refusal
 * Domains: Fixed `DomainFrameEditor` showing the server's text for a restore under a deleted parent instead of saying to restore the parent first
 * Domains: Fixed `DomainTableClient.save()` reading or updating a null id after a duplicate or an idempotency replay the caller cannot read
+* Chats: Added `grok.dapi.chats` (find by entity or reference, comments, post with replies and references, edit, import, watch), `DG.ChatWidget` and `grok.dapi.users.notifications.send` (#772, #770)
 * Domains: Fixed `DomainTableClient.save()` sending the `'~'` service columns and master-expand fields of a spread read row as column values, which the server refused
 * Domains: `DomainFrameEditor` filled the column defaults the caller may write into a new row, so a required column with a default no longer blocks it
 * [core#857](https://github.com/datagrok-ai/core/issues/857): Fixed `View.PACKAGES` and `VIEW_TYPE.PACKAGES` to be `'Plugins'`, the platform's plugins view type, and removed `View.BROWSE`, which has no view factory, from `View.ALL_VIEW_TYPES`, so `View.createByType` no longer crashes on them
