@@ -316,7 +316,7 @@ class ImportFlow {
   }
 
   private static _shortest(value: number): number {
-    for (let digits = 1; digits <= 9; digits++) {
+    for (let digits = Math.abs(value) < 2 ** -126 ? 1 : 6; digits <= 9; digits++) {
       const shortest = Number(value.toPrecision(digits));
       if (Math.fround(shortest) === value)
         return shortest;
