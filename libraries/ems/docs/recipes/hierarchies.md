@@ -71,12 +71,10 @@ tree.selected;        // ReadonlySignal<RowView | null>
 ```
 
 Roots are the rows whose parent column is null (`{property: parentColumn, operator: '=', value:
-null}`), a branch loads its children when it is opened,
+null}`), a branch loads its children when it is opened, `pageSize` (500) rows a read until a short page,
 and both go through the plain `query` seam — no frame, no writer and no editor per node, which is
-what makes a tree over a large table affordable. A level reads `pageSize` (500) rows at a time,
-by name, and a full page ends in a **Load more…** row. `expandTo` walks `ancestors(id)`, opens
-every one of them (reading the further pages of a level the next step is not in yet) and then
-selects the row. Nodes are labelled by the table's renderer caption, carry the
+what makes a tree over a large table affordable. `expandTo` walks `ancestors(id)`, opens every one
+of them and then selects the row. Nodes are labelled by the table's renderer caption, carry the
 table's own row actions plus Open, and a table that is not a hierarchy is refused by name.
 
 What a tree is FOR is driving a collection — the whole Stockroom `Locations` app:

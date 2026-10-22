@@ -92,8 +92,8 @@ scoped('selection is a signal over the row behind the node', async () => {
   t.dispose();
 });
 
-scoped('expandTo opens every ancestor of the row and selects it', async () => {
-  const {tree: t} = await tree({expandTo: 'l4'});
+scoped('expandTo opens every ancestor of the row and selects it, each level read page by page', async () => {
+  const {tree: t} = await tree({expandTo: 'l4', pageSize: 1});
   assert.deepEqual(labels(t), ['Other site', 'Site', 'Room', 'Shelf', 'Box'],
     'the whole path is open — the ancestors answer excludes the row, so the tree adds it');
   assert.equal(t.selected.value.id, 'l4');
@@ -131,29 +131,6 @@ scoped('a path truncated at an ancestor out of sight opens nothing, and says so'
   assert.match(t.error.value, /l5 is not reachable from here — an ancestor is not visible to you/);
   t.dispose();
 });
-
-scoped('a full level ends in "Load more…", which reads the next page and never takes the selection; expandTo pages',
-  async () => {
-    const {tree: t} = await tree({pageSize: 1});
-    assert.deepEqual(labels(t), ['Other site', 'Load more…']);
-    const rows = () => t.tree.root.querySelectorAll('.u2-tree-row');
-    fire(rows()[0], 'click', {bubbles: true});
-    fire(t.tree.root.querySelector('.u2-list'), 'keydown', {key: 'ArrowDown', bubbles: true});
-    await flush();
-    assert.deepEqual([t.tree.selectedNode.value.id, t.selected.value?.id], ['~more:', 'l9'],
-      'the cursor on "Load more…" keeps the row before selected');
-    fire(rows()[1], 'click', {bubbles: true});
-    await flush();
-    await flush();
-    assert.deepEqual(labels(t), ['Other site', 'Site', 'Load more…']);
-    assert.equal(t.selected.value.id, 'l1', 'the first row read is selected');
-    t.dispose();
-
-    const {tree: d} = await tree({pageSize: 1, expandTo: 'l4'});
-    assert.equal(d.selected.value?.id, 'l4');
-    assert.equal(d.error.value, null);
-    d.dispose();
-  });
 
 scoped('an address that is not a hierarchy lands in error instead of throwing', async () => {
   emsBackends.domain = backend();

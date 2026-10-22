@@ -36,8 +36,7 @@ export class DgDomainBackend implements DomainBackend {
     let loading = this._tables.get(address);
     if (loading === undefined) {
       loading = DgDomainTable.load(address).catch((e) => {
-        if (this._tables.get(address) === loading)
-          this._tables.delete(address);
+        this._tables.delete(address);
         throw e;
       });
       this._tables.set(address, loading);

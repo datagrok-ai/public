@@ -45,9 +45,8 @@ export class Permission {
   static CREATE_DOMAIN_SCHEMA = 'CreateDomainSchema';
 }
 
-/** js-api's \`ConnectionDataSource\`: \`byType\` is a field a test replaces; by default every source browses schemas. */
 export class ConnectionDataSource {
-  static byType = (type) => ({type, canBrowseSchema: true});
+  static byType = (type) => ({type, canBrowseSchema: type !== 'Neo4j'});
 }
 
 /** A 2-role sample of js-api's \`functionRoles\` (const.ts:456) — what the functions browser's
@@ -223,9 +222,8 @@ export const dapi = {
 
 export const shell = new Shell();
 
-/** What pickers.tableInput's follow and import action read (the platform-stub shapes), and one
- * \`onEvent\` stream per event name for a test to fire. */
 const named = {};
+/** What pickers.tableInput's follow and import action read (the platform-stub shapes). */
 export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shell.dart.tableRemoved,
   onViewAdded: new Stream(), onViewRemoving: new Stream(), onCurrentViewChanged: new Stream(),
   onEvent: (name) => named[name] ??= new Stream()};

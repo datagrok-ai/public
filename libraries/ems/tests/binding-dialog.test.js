@@ -18,7 +18,6 @@ import {Scope, notify} from '@datagrok-libraries/u2';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
-const DG = await import('datagrok-api/dg');
 const {domains} = await import('../src/dg/facade.js');
 
 const DRAFT = JSON.parse(readFileSync(new URL('./fixtures/authoring/northwind-draft.json', import.meta.url), 'utf8'));
@@ -513,21 +512,15 @@ scoped('every connection past the first page is offered; the identifier is probe
 scoped('only JDBC connections whose source browses schemas are offered; a nameless one by its name', async () => {
   stub([], () => ({status: 'ok', issues: []}));
   grok.dapi.connections.list = async () => [CONN, ...NOT_BINDABLE,
-    {id: 'c-nn', name: 'Scratch', friendlyName: '', dataSource: 'MS SQL', isDatabase: true, parameters: {connectionType: 'JDBC'}},
+    {id: 'c-nn', name: 'Scratch', friendlyName: '', dataSource: 'MS SQL', isDatabase: true},
     {id: 'c-adbc', friendlyName: 'Arrow', dataSource: 'Postgres', isDatabase: true, parameters: {connectionType: 'ADBC'}},
     {id: 'c-neo', friendlyName: 'Graph', dataSource: 'Neo4j', isDatabase: true}];
-  const byType = DG.ConnectionDataSource.byType;
-  DG.ConnectionDataSource.byType = (type) => ({type, canBrowseSchema: type !== 'Neo4j'});
-  try {
-    const dialog = new domains.authoring.BindingDialog();
-    const done = dialog.open();
-    await flush();
-    assert.deepEqual(dialog.connection.items.map((i) => i.label), ['PostgresNorthwind (Postgres)', 'Scratch (MS SQL)']);
-    buttonNamed('CANCEL').click();
-    await done;
-  } finally {
-    DG.ConnectionDataSource.byType = byType;
-  }
+  const dialog = new domains.authoring.BindingDialog();
+  const done = dialog.open();
+  await flush();
+  assert.deepEqual(dialog.connection.items.map((i) => i.label), ['PostgresNorthwind (Postgres)', 'Scratch (MS SQL)']);
+  buttonNamed('CANCEL').click();
+  await done;
 });
 
 scoped('a warehouse read that never answers fails by name after the timeout; the dialog stays usable', async () => {

@@ -330,22 +330,17 @@ scoped('the platform poll asks the change token over the whole table and aggrega
 
 scoped('a schema create, apply or delete drops the cached tables: the next open reads the new columns', async () => {
   await platformTable();
-  let columns = ['title'];
-  grok.dapi.domains.registry.rowProperties = async () => columns.map((name) => ({name, type: 'string'}));
-  try {
-    const backend = new DgDomainBackend();
-    const last = async () => (await backend.table('grit.issue')).properties.at(-1).name;
-    await last();
-    for (const [event, column] of [['d4-domain-schema-altered', 'size'], ['d4-domain-schema-deleted', 'weight'],
-      ['d4-domain-schema-created', 'due']]) {
-      columns = ['title', column];
-      grok.events.onEvent(event).fire({name: 'grit'});
-      assert.equal(await last(), column, event);
-    }
-  } finally {
-    delete grok.dapi.domains.table;
-    delete grok.dapi.domains.registry;
+  let column = 'title';
+  grok.dapi.domains.registry.rowProperties = async () => [{name: column, type: 'string'}];
+  const backend = new DgDomainBackend();
+  const last = async () => (await backend.table('grit.issue')).properties.at(-1).name;
+  await last();
+  for (column of ['d4-domain-schema-altered', 'd4-domain-schema-deleted', 'd4-domain-schema-created']) {
+    grok.events.onEvent(column).fire({});
+    assert.equal(await last(), column);
   }
+  delete grok.dapi.domains.table;
+  delete grok.dapi.domains.registry;
 });
 
 scoped('the token is skipped where it cannot answer: no table-level View, or a token the engine does not move',

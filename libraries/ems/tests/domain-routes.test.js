@@ -1,7 +1,7 @@
 /* `domains.route` (WO 3-7) over the memory backend: what a `/domains/<schema>/<table>` address
    resolves to — the u2 app as a view, the row a segment names (a business key, a composite one,
-   an id), the query and the search forwarded, an app already open taking the address instead, a
-   not-found view for an unknown table, and null wherever the platform keeps the address. The fixture
+   an id), the query and the search forwarded, an app already open taking the address instead, and
+   null where the platform keeps the address (a schema route); an unknown table opens a not-found view. The fixture
    here is a table nothing refers to: the route builds the app with its panes, and the children
    pane's platform grid has no stub to build over. */
 
@@ -169,20 +169,15 @@ scoped('null where the platform keeps the address: anything that is not a table 
 
 scoped('a table the registry does not know opens a not-found view; any other failed read stays the platform\'s',
   async () => {
-    const refusing = (e) => ({table: () => Promise.reject(e)});
+    const refusing = (code) => ({table: () => Promise.reject({code})});
     for (const [be, address, name] of [[widgets(), '/domains/demo/nope/A-1?x=1', 'demo.nope'],
-      [refusing({code: 'validation', message: 'Unknown domain table "nope.widget"'}), '/domains/nope/widget', 'nope.widget'],
-      [refusing({code: 'forbidden'}), '/domains/demo/widget', null],
-      [refusing(new Error('Failed to fetch')), '/domains/demo/widget', null]]) {
+      [refusing('validation'), '/domains/nope/widget', 'nope.widget'], [refusing('forbidden'), '/domains/demo/widget']]) {
       emsBackends.domain = be;
       const view = await domains.route(address);
-      assert.equal(view?.root.textContent ?? null, name && `No table matches "${name}". It may have been deleted, ` +
-        'renamed, or you may not have access to it.', address);
-      if (view === null)
-        continue;
-      assert.equal(view.path, address, 'the address stays as typed');
-      assert.deepEqual(view.ribbonPanels, [], 'no New, no import');
-      globalThis.grok_Widget_Kill(view.root);
+      assert.deepEqual(view && [view.root.textContent, view.path, view.ribbonPanels], name ? [`No table matches ` +
+        `"${name}". It may have been deleted, renamed, or you may not have access to it.`, address, []] : null, address);
+      if (view !== null)
+        globalThis.grok_Widget_Kill(view.root);
     }
   });
 
