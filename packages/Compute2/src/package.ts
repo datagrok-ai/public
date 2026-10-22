@@ -9,7 +9,6 @@ import {ViewerTestApp as ViewerAppInstance} from './apps/ViewerTestApp';
 import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
 import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
-import {RunComparisonApp as RunComparisonAppInstance} from './apps/RunComparisonApp';
 import {RFVApp} from './apps/RFVApp';
 import {provideDgViewService} from '@datagrok-libraries/webcomponents-vue';
 import {CustomFunctionView as CustomFunctionViewInst, historyUtils} from '@datagrok-libraries/compute-utils';
@@ -18,9 +17,12 @@ import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compu
 import './tailwind.css';
 import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
 import {HistoryApp} from './apps/HistoryApp';
+import {setVueAppOptions} from './utils';
+import {openRunComparison} from './components/RunComparison/comparison-views';
 import {Subject} from 'rxjs';
 import type {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {runOptimizerFinalized} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 import type {OptimizerParams} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
@@ -38,10 +40,9 @@ export const CFV = CustomFunctionViewInst;
 declare global {
   var initialURLHandled: boolean;
 }
-declare let ENABLE_VUE_DEV_TOOLS: any;
 
 export * from './package.g';
-import {_package} from './package-instance';
+import {_package, isRoleOnlyModelFilter} from './package-instance';
 export {_package} from './package-instance';
 
 let initRunned = false;
@@ -62,12 +63,6 @@ function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
     }
     view.basePath = `${prefix}/${call.func.name}`;
   }
-}
-
-function setVueAppOptions(app: Vue.App<any>) {
-  app.config.compilerOptions.isCustomElement = (tag) => tag.startsWith('dg-') || tag === 'dock-spawn-ts';
-  if (ENABLE_VUE_DEV_TOOLS)
-    app.config.performance = true;
 }
 
 // Compute2-only extension of the Model Hub view: adds the run comparison tool
@@ -100,7 +95,7 @@ export class PackageFunctions {
       return;
     initRunned = true;
 
-    modelCatalogOptions.roleOnlyFilter = _package.settings?.['roleOnlyModelFilter'] === true;
+    modelCatalogOptions.roleOnlyFilter = isRoleOnlyModelFilter();
 
     setModelCatalogHandler();
     setModelCatalogEventHandlers(modelCatalogOptions);
@@ -287,7 +282,14 @@ export class PackageFunctions {
     const metaCall = await historyUtils.shallowLoadRun(id);
     const call = metaCall.func.prepare({});
     call.aux.initialRunId = id;
-    call.edit();
+    if (`${metaCall.func.options['editor'] ?? ''}`.startsWith('Compute2:')) {
+      call.edit();
+      return;
+    }
+    // workflow steps and nested pipelines are usually functions without an editor of their own
+    const editor = metaCall.options[CONFIG_PATH] ? 'Compute2:TreeWizardEditor' : 'Compute2:RichFunctionViewEditor';
+    const editorCall = await DG.Func.byName(editor).prepare({call}).call();
+    grok.shell.addView(editorCall.getOutputParamValue());
   }
 
 
@@ -309,27 +311,7 @@ export class PackageFunctions {
     description: 'Compare data across model runs: scalars or a single table column',
   })
   static async CompareRuns() {
-    const view = new DG.ViewBase();
-    view.name = 'Run Comparison';
-    view.helpUrl = '/help/compute/run-comparison.md';
-    view.setRibbonPanels([[
-      ui.iconFA('question',
-        () => window.open('https://datagrok.ai/help/compute/run-comparison', '_blank'),
-        'Open the Run Comparison documentation'),
-    ]]);
-    view.root.classList.remove('ui-panel');
-    const app = Vue.createApp(RunComparisonAppInstance, {roleOnlyFilter: modelCatalogOptions.roleOnlyFilter});
-    setVueAppOptions(app);
-    app.mount(view.root);
-
-    grok.events.onViewRemoved.pipe(
-      filter((closedView) => closedView === view),
-      take(1),
-    ).subscribe(() => {
-      app.unmount();
-    });
-
-    grok.shell.addView(view);
+    openRunComparison();
   }
 
 

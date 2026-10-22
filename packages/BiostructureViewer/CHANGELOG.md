@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#988](https://github.com/datagrok-ai/core/issues/988): Renderers: Fixed a scatter plot tooltip failing with "method not found on null" on a sequence difference column when no grid shows the table
 * NGL preview: Fixed "Cannot read properties of undefined (reading 'length')" from NGL when a preview was closed while its structure was still being built
 * Molstar viewer: Fixed a crash when closing an unrelated view while a structure preview was open
 * Biostructure, NGL: Added automation status (readings, render-pending)

@@ -54,6 +54,16 @@ export class Collection {
      */
     size(): number;
     /**
+     * Substructure search with a query molecule (RDKit-js's `get_substruct_match(query)`, as
+     * Datagrok's Chem searches with the query its `getQueryMolSafe` builds: a `get_qmol`, or a
+     * `get_mol` with `mergeQueryHs`): every molecule `get_substruct_match` would match, as
+     * [`Collection::substructure_search`] reports them. The query's atoms and bonds match as
+     * RDKit matches them (query features, plain atoms by element, charge, isotope and
+     * radicals, H atoms merged into counts as the query holds them); stereo is ignored, as
+     * `get_substruct_match` ignores it (spike fast-search-rdkit).
+     */
+    substructureSearchMol(query: JSMol, limit: number): Uint32Array;
+    /**
      * Resumable substructure search over scan positions `[start, end)`
      * (screen-sidecar sorted positions when indexed, input order in direct
      * mode), capped at `limit` hits (0 = unlimited). Walking consecutive
@@ -94,7 +104,9 @@ export class CollectionBuilder {
     /**
      * Parse + fingerprint a chunk of SMILES, appending each to the index.
      * Returns the number successfully added; unparseable / unsupported SMILES
-     * are skipped and counted in [`CollectionBuilder::failed`].
+     * are skipped and counted in [`CollectionBuilder::failed`]. In a build with
+     * RDKit-js's `JSMol` API (chem-wasm, crux-wasm's chem module) an item may be a
+     * MOL block: read as Datagrok Chem's `getMolSafe` reads it, its H atoms kept.
      */
     addMany(smiles: string[]): number;
     /**
@@ -786,6 +798,30 @@ export function getRGroupDecomposition(cores: string[], mols: string[], details?
 export function get_inchikey_for_inchi(_inchi: string): string;
 
 /**
+ * `get_mces(mol1, mol2, details)`: RDKit's `rascalMCES(mol1, mol2, opts)`: the Maximum
+ * Common Edge Substructure of two molecules (the largest set of bonds they share, possibly
+ * in several fragments), when their similarity estimate reaches `similarityThreshold`.
+ *
+ * `details`: a JSON object of `RascalOptions` fields by RDKit's names
+ * (`similarityThreshold`, `completeAromaticRings`, `ringMatchesRingOnly`,
+ * `completeSmallestRings`, `exactConnectionsMatch`, `singleLargestFrag`, `minFragSize`,
+ * `maxFragSeparation`, `allBestMCESs`, `maxBestMCESs`, `timeout`, `doEquivBondPruning`,
+ * `returnEmptyMCES`, `maxBondMatchPairs`, `equivalentAtoms`, `ignoreBondOrders`,
+ * `ignoreAtomAromaticity`, `minCliqueSize`); each defaults to RDKit's except
+ * `similarityThreshold`, 0.5 here (RDKit: 0.7). Other keys are ignored. `timeout` (seconds,
+ * 60 by default, -1 for none) runs on the page's clock.
+ *
+ * Returns a JSON array of results, as RDKit's `FindMCES` returns a list: empty when the
+ * pair is below the threshold (unless `returnEmptyMCES`), one result by default, every best
+ * MCES with `allBestMCESs`. Each result, with the Python wrapper's names:
+ * `{"smartsString", "atomMatches": [[atom of mol1, atom of mol2], ...], "bondMatches": [[bond
+ * of mol1, bond of mol2], ...], "similarity", "tier1Sim", "tier2Sim", "timedOut",
+ * "numFragments", "largestFragmentSize"}` (the indices each molecule's own: what a
+ * highlight takes). Throws on details that are not JSON or a bad `equivalentAtoms`.
+ */
+export function get_mces(mol1: JSMol, mol2: JSMol, details?: string | null): string;
+
+/**
  * RDKit-js `get_mcs_as_json(mols, details)`: `{"smarts","canceled","numAtoms","numBonds"}`,
  * in RDKit-js's key order.
  */
@@ -933,6 +969,7 @@ export interface InitOutput {
     readonly collection_similaritySearch: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly collection_size: (a: number) => number;
     readonly collection_substructureSearch: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly collection_substructureSearchMol: (a: number, b: number, c: number) => [number, number, number, number];
     readonly collection_substructureSearchRange: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
     readonly collection_toBytes: (a: number) => [number, number, number, number];
     readonly collectionbuilder_addMany: (a: number, b: number, c: number) => number;
@@ -947,6 +984,7 @@ export interface InitOutput {
     readonly enumerate_tautomer_smiles: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly getRGroupDecomposition: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
     readonly get_inchikey_for_inchi: (a: number, b: number) => [number, number, number, number];
+    readonly get_mces: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly get_mcs_as_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly get_mcs_as_mol: (a: number, b: number, c: number) => [number, number, number];
     readonly get_mcs_as_smarts: (a: number, b: number, c: number) => [number, number, number, number];

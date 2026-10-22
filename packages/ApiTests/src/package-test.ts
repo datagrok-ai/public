@@ -27,6 +27,7 @@ import './dapi/files-list';
 import './dapi/functions';
 import './dapi/fetch';
 import './dapi/groups';
+import './dapi/chats';
 import './dapi/dapi';
 import './dapi/cloud-logs';
 import './dapi/log-timeline';
@@ -119,11 +120,12 @@ export { tests };
 //input: string skipToCategory {optional: true}
 //input: string skipToTest {optional: true}
 //input: bool returnOnFail {optional: true}
+//input: list<string> exclude {optional: true}
 //output: dataframe result
 export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean,
-                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean): Promise<DG.DataFrame> {
-    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail);
-  const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail });
+                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean, exclude?: string[]): Promise<DG.DataFrame> {
+    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail, exclude);
+  const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail, exclude });
   return DG.DataFrame.fromObjects(data)!;
 }
 

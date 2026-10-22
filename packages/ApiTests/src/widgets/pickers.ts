@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck, before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 
 // npm datagrok-api@1.27.9 typings predate the 1.28 ui.pickTableFrom* wrappers
 const pickers = ui as any;
@@ -9,7 +9,7 @@ const pickers = ui as any;
 async function cancelPick(pick: () => Promise<DG.DataFrame | null>, title: string): Promise<void> {
   const picked = pick();
   try {
-    await awaitCheck(() => DG.Dialog.getOpenDialogs().some((d) => d.title === title),
+    await waitUntil(() => DG.Dialog.getOpenDialogs().some((d) => d.title === title),
       `the '${title}' dialog did not open`, 15000);
     const dialog = DG.Dialog.getOpenDialogs().find((d) => d.title === title)!;
     (dialog.root.querySelector('[name="button-CANCEL"]') as HTMLElement).click();
@@ -106,8 +106,8 @@ category('Widgets: ColumnGrid', () => {
       search.value = 'age';
       search.dispatchEvent(new Event('input', {bubbles: true}));
       const expected = df.columns.names().filter((n) => n.toLowerCase().includes('age')).length;
-      await awaitCheck(() => cg.dfColumns.filter.trueCount === expected,
-        'search did not filter the column list', 3000);
+      await waitUntil(() => cg.dfColumns.filter.trueCount === expected,
+        'search did not filter the column list');
     } finally {
       cg.close();
       host.remove();

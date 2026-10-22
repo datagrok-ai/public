@@ -4,3 +4,5 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
+
+export const isRoleOnlyModelFilter = () => _package.settings?.['roleOnlyModelFilter'] === true;

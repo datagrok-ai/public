@@ -23,6 +23,15 @@ import type Dayjs from 'dayjs';
 import {ExportCbInput, ExportSummaryItem, ExportSummaryRollup, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import type {AugmentedStat, Status} from './components/TreeWizard/types';
 import {BehaviorSubject} from 'rxjs';
+import type * as Vue from 'vue';
+
+declare let ENABLE_VUE_DEV_TOOLS: any;
+
+export function setVueAppOptions(app: Vue.App<any>) {
+  app.config.compilerOptions.isCustomElement = (tag) => tag.startsWith('dg-') || tag === 'dock-spawn-ts';
+  if (ENABLE_VUE_DEV_TOOLS)
+    app.config.performance = true;
+}
 
 export type NodeWithPath = {
   state: PipelineState,
@@ -175,7 +184,8 @@ const isItemActionAllowed = (
 
 export const isEachDraggable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIDragging');
 export const isDeletable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIRemoving');
-export const isDuplicable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIAdding');
+export const isDuplicable = (stat: AugmentedStat) =>
+  !stat.data.isReadonly && isItemActionAllowed(stat, 'disableUIAdding');
 
 export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName && !data.disableHistory;
 

@@ -33,7 +33,7 @@ test('schema: columns become properties, system columns first; info from the dec
   assert.equal(byName.id.set, undefined, 'system columns have no setter');
   assert.equal(typeof byName.title.set, 'function');
   assert.deepEqual(issue.info, {nameColumn: 'title', businessKey: ['project_id', 'number'], rowAddress: 'businessKey',
-    singularName: 'Issue', pluralName: 'Issues', searchableColumns: ['title', 'description'],
+    singularName: 'issue', pluralName: 'issues', friendlyName: 'Issues', searchableColumns: ['title', 'description'],
     constraints: [{name: 'weight_positive', expr: 'weight >= 0', message: 'Weight is positive'}], refFilters: {},
     permissions: ['escalate'], childTables: [], hierarchy: false, parentColumn: null});
   const project = await backend().table('grit.project');
@@ -115,6 +115,16 @@ test('transaction: insert, update with expectedVersion, delete; results per op',
   assert.deepEqual(rows.map((r) => r.title), ['Aspirin', 'Ibuprofen 400', 'New']);
   assert.equal(rows[1].version, 2);
   assert.equal(rows[2].created_on !== undefined && rows[2].updated_on !== undefined, true);
+});
+
+test('transaction: an insert that leaves a column with a default empty gets the declared default', async () => {
+  const ticket = await new MemoryDomainBackend({name: 'desk', tables: {ticket: {businessKey: ['code'], columns: {
+    code: {type: 'string', required: true},
+    status: {type: 'string', required: true, default: 'open'},
+  }}}}).table('desk.ticket');
+  await ticket.transaction([{op: 'insert', table: 'ticket', values: {code: 'T1'}}]);
+  await ticket.transaction([{op: 'insert', table: 'ticket', values: {code: 'T2', status: 'closed'}}]);
+  assert.deepEqual((await ticket.query()).map((r) => [r.code, r.status]), [['T1', 'open'], ['T2', 'closed']]);
 });
 
 test('transaction: a version conflict, a missing row or a required column refuses the WHOLE batch', async () => {
@@ -248,6 +258,29 @@ test('search: case-insensitive over the searchable columns, the name column by d
   const bare = new MemoryDomainBackend({name: 's', tables: {t: {columns: {x: {type: 'int'}}}}});
   await assert.rejects(bare.tableSync('s.t').query({search: '1'}),
     (e) => e.code === 'validation' && /no searchable column/.test(e.message));
+});
+
+test('info: undeclared singular and plural are derived from the table name the way the platform derives them', async () => {
+  const names = ['categories', 'order_details', 'statuses', 'boxes', 'study', 'issue', 'address', 'analysis'];
+  const be = new MemoryDomainBackend({name: 'nw', tables: Object.fromEntries(names.map((n) => [n, {columns: {}}]))});
+  const info = (n) => be.tableSync(`nw.${n}`).info;
+  assert.deepEqual(names.map((n) => [info(n).singularName, info(n).pluralName]), [
+    ['category', 'categories'], ['order_detail', 'order_details'], ['status', 'statuses'], ['box', 'boxes'],
+    ['study', 'studies'], ['issue', 'issues'], ['address', 'addresses'], ['analysis', 'analyses']]);
+  const named = new MemoryDomainBackend({name: 'nw', tables: {categories: {friendlyName: 'Categories', columns: {}}}});
+  assert.deepEqual([named.tableSync('nw.categories').info.singularName, named.tableSync('nw.categories').info.pluralName],
+    ['category', 'categories'], 'a declared friendly name is not their input');
+});
+
+test('info: singular and plural come from the table name, never the friendly name, as the platform derives them', async () => {
+  const be = new MemoryDomainBackend({name: 'nw', tables: {order_details: {columns: {}},
+    location: {friendlyName: 'Stock locations', columns: {}}}});
+  const names = (n) => {
+    const info = be.tableSync(`nw.${n}`).info;
+    return [info.singularName, info.pluralName, info.friendlyName];
+  };
+  assert.deepEqual(names('order_details'), ['order_detail', 'order_details', undefined]);
+  assert.deepEqual(names('location'), ['location', 'locations', 'Stock locations'], 'the friendly name is its own field');
 });
 
 test('info: constraints, refFilters, permissions and childTables from the schema; access grants a declared permission', async () => {
@@ -445,10 +478,17 @@ test('updateWhere: the filter selects, the cap limits, hasMore says the filter m
 
   assert.deepEqual(await issue.updateWhere('done = false', {priority: 'high'}, {limit: 1}),
     {updated: 1, hasMore: true}, 'the cap stops at limit and reports the rest');
-  assert.deepEqual(await issue.updateWhere('done = false', {priority: 'low'}, {limit: 9999}),
+  assert.deepEqual(await issue.updateWhere('done = false', {title: 'Clamped'}, {limit: 9999}),
     {updated: 2, hasMore: false}, 'and a limit past the cap is clamped down to it');
   assert.deepEqual(await issue.updateWhere('title starts "zzz"', {priority: 'high'}),
     {updated: 0, hasMore: false});
+});
+
+test('updateWhere: a date sent again as a new Date is not rewritten', async () => {
+  const issue = await backend().table('grit.issue');
+  const due = () => ({due: new Date('2026-02-01T00:00:00Z')});
+  assert.equal((await issue.updateWhere('id = "i1"', due())).updated, 1);
+  assert.equal((await issue.updateWhere('id = "i1"', due())).updated, 0);
 });
 
 test('updateWhere: the Edit predicate narrows the selection silently', async () => {

@@ -153,14 +153,11 @@ export class Link {
 
   private makeInputsChanges(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
     const inputs = Object.entries(this.matchInfo.inputs).map(([inputAlias, inputItems]) => {
-      const nodes = inputItems.map(
-        (input) => [
-          input.ioName!,
-          state.getNode([...this.prefix, ...input.path]),
-        ] as const,
-      );
-      const inputStates = nodes.map(([ioName, node]) => {
-        const item = node.getItem();
+      const inputStates = inputItems.map(({path, ioName, count}) => {
+        // a changed count changes the match, so the link is recreated rather than updated
+        if (count !== undefined)
+          return of(count);
+        const item = state.getNode([...this.prefix, ...path]).getItem();
         const {dataFrameMutations} = this.matchInfo.spec;
         const includeDFMutations = Array.isArray(dataFrameMutations) ?
           dataFrameMutations.includes(inputAlias) :
@@ -279,7 +276,6 @@ export class Link {
       basePath: this.matchInfo.basePath,
       params: this.matchInfo.spec.params,
       sourceCache: this.sourceCache,
-      stepsCount: () => state?.getNode(this.prefix).getChildren().length ?? 0,
     };
 
     if (this.isValidator)

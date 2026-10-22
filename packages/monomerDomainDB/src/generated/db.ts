@@ -146,18 +146,22 @@ export type SetPlaceholderExpand = {
 };
 
 export type MonomersTransactionOp =
-  {op: 'insert'; table: 'library'; ref?: string; values: DG.DomainTxValues<LibraryInsert>} |
+  {op: 'insert'; table: 'library'; ref?: string; values: DG.DomainTxValues<LibraryInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'library'; id: string; values: DG.DomainTxValues<Partial<LibraryRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'library'; id: string} |
-  {op: 'insert'; table: 'monomer'; ref?: string; values: DG.DomainTxValues<MonomerInsert>} |
+  {op: 'restore'; table: 'library'; id: string} |
+  {op: 'insert'; table: 'monomer'; ref?: string; values: DG.DomainTxValues<MonomerInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'monomer'; id: string; values: DG.DomainTxValues<Partial<MonomerRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'monomer'; id: string} |
-  {op: 'insert'; table: 'monomer_set'; ref?: string; values: DG.DomainTxValues<MonomerSetInsert>} |
+  {op: 'restore'; table: 'monomer'; id: string} |
+  {op: 'insert'; table: 'monomer_set'; ref?: string; values: DG.DomainTxValues<MonomerSetInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'monomer_set'; id: string; values: DG.DomainTxValues<Partial<MonomerSetRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'monomer_set'; id: string} |
-  {op: 'insert'; table: 'set_placeholder'; ref?: string; values: DG.DomainTxValues<SetPlaceholderInsert>} |
+  {op: 'restore'; table: 'monomer_set'; id: string} |
+  {op: 'insert'; table: 'set_placeholder'; ref?: string; values: DG.DomainTxValues<SetPlaceholderInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'set_placeholder'; id: string; values: DG.DomainTxValues<Partial<SetPlaceholderRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'set_placeholder'; id: string};
+  {op: 'delete'; table: 'set_placeholder'; id: string} |
+  {op: 'restore'; table: 'set_placeholder'; id: string};
 
 /** Typed clients for the `monomers` domain schema tables (lazy — no import-time side effects). */
 export const monomersDb = {

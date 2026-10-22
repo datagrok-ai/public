@@ -14,6 +14,7 @@ import {
   friendlyIoName,
 } from '../../utils';
 import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {showSourceRunMenu, sourceRunLabel, sourceRunTooltip} from './source-run';
 import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 const statusToIcon: Record<Status, string> = {
@@ -110,6 +111,8 @@ export const TreeNode = Vue.defineComponent({
     runSubtree: (_startUuid: string, _rerunWithConsistent?: boolean) => true,
     runStep: (_uuid: string) => true,
     saveStep: (_uuid: string) => true,
+    compareWithOriginal: () => true,
+    addToComparison: () => true,
   },
   setup(props, {emit}) {
     Vue.onRenderTriggered((event) => {
@@ -124,20 +127,36 @@ export const TreeNode = Vue.defineComponent({
     />;
 
     const isRoot = Vue.computed(() => !props.stat.parent);
+    const sourceRunId = Vue.computed(() => props.stat.data.sourceRunId);
+    const sourceRunTitle = Vue.computed(() =>
+      isFuncCallState(props.stat.data) ? props.stat.data.sourceRunTitle : undefined);
+    const onSourceRunClick = (e: MouseEvent) => {
+      showSourceRunMenu(sourceRunId.value!, props.isReadonly, e, sourceRunTitle.value, props.isReadonly ? undefined : {
+        compareWithOriginal: () => emit('compareWithOriginal'),
+        addToComparison: () => emit('addToComparison'),
+      });
+      e.stopPropagation();
+    };
+
+    const gutterStyle = {alignSelf: 'center', left: '-20px', position: 'absolute'} as const;
+
+    const sourceRunLockIcon = (tooltip: string, color?: string) =>
+      <IconFA name='lock' tooltip={tooltip} style={{...gutterStyle, color}} />;
 
     const progressIcon = (status: Status, isReadOnly: boolean) => {
       const data: any = props.stat.data;
       const funcCall: DG.FuncCall | undefined = isFuncCallState(data) ? data.funcCall : undefined;
+      const statusTooltip = getToolTip(
+        status, isReadOnly, funcCall, props.validationStates, props.consistencyStates, props.callState?.runError);
+      if (isReadOnly && sourceRunId.value) {
+        const tooltip = [statusTooltip, sourceRunLabel(true, sourceRunTitle.value)].filter(Boolean).join('. ');
+        return sourceRunLockIcon(tooltip, statusToColor[status]);
+      }
       return <IconFA
         name={isReadOnly ? 'lock' : statusToIcon[status]}
         animation={status === `running` ? 'spin': null}
-        tooltip={getToolTip(status, isReadOnly, funcCall, props.validationStates, props.consistencyStates, props.callState?.runError) ?? null}
-        style={{
-          color: statusToColor[status],
-          alignSelf: 'center',
-          left: '-20px',
-          position: 'absolute',
-        }}
+        tooltip={statusTooltip ?? null}
+        style={{...gutterStyle, color: statusToColor[status]}}
       />;
     };
 
@@ -155,6 +174,10 @@ export const TreeNode = Vue.defineComponent({
           />);
       }
     };
+
+    const pipelineLockIcon = () => sourceRunId.value ?
+      sourceRunLockIcon(sourceRunLabel(true)) :
+      <IconFA name='lock' tooltip='This workflow is locked' style={gutterStyle} />;
 
     const nodeLabel = (state: AugmentedStat) =>
       state.data.friendlyName ?? state.data.configId;
@@ -192,7 +215,7 @@ export const TreeNode = Vue.defineComponent({
         }}
       >
         { status.value && progressIcon(status.value, props.isReadonly) }
-        { checkIcon() }
+        { !isFuncCallState(props.stat.data) && props.isReadonly ? pipelineLockIcon() : checkIcon() }
         { props.stat.children.length ? openIcon() : null }
         <span
           class="mtl-ml text-nowrap text-ellipsis overflow-hidden"
@@ -281,6 +304,12 @@ export const TreeNode = Vue.defineComponent({
                 class='d4-ribbon-item'
               />
             }
+            { sourceRunId.value && <IconFA
+              name='code-branch'
+              tooltip={sourceRunTooltip(props.isReadonly, sourceRunTitle.value)}
+              onClick={onSourceRunClick}
+              class='d4-ribbon-item'
+            /> }
           </div> }
       </div>
       </div>

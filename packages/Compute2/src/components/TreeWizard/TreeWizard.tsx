@@ -44,6 +44,10 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {getShareAction} from '../../sharing/sharing';
 import {richFunctionViewReport} from '@datagrok-libraries/compute-utils';
 import {BehaviorSubject} from 'rxjs';
+import {entryFromState} from '../RunComparison/entry-extraction';
+import {
+  addToComparison, compareRibbonIcon, compareWithOriginal, snapshotName,
+} from '../RunComparison/comparison-views';
 
 
 export const TreeWizard = Vue.defineComponent({
@@ -97,7 +101,7 @@ export const TreeWizard = Vue.defineComponent({
       result,
       //
       loadPipeline,
-      loadAndReplaceNestedPipeline,
+      loadAndReplaceNestedItem,
       savePipeline,
       saveDynamicItem,
       runStep,
@@ -158,14 +162,27 @@ export const TreeWizard = Vue.defineComponent({
         runAction(uuid, additionalParams);
     };
 
-    const removeStepWithConfirm = (state: PipelineState) => {
+    const nodeName = (state: PipelineState) => {
       const title = states.descriptions[state.uuid]?.title;
-      const name = typeof title === 'string' ? title : (state.friendlyName ?? state.configId);
+      return typeof title === 'string' ? title : (state.friendlyName ?? state.configId);
+    };
+
+    const removeStepWithConfirm = (state: PipelineState) => {
+      const name = nodeName(state);
       ui.dialog(`Remove confirmation`)
         .add(ui.divText(`Do you want to remove "${name}"? Its unsaved inputs and results will be lost.`))
         .onOK(() => removeStep(state.uuid))
         .show({center: true, modal: true});
     };
+
+    const snapshotOf = (state: PipelineState) => entryFromState(state, states.calls, snapshotName(nodeName(state)));
+    // the function whose history holds the node's saved runs
+    const modelOf = (state: PipelineState) => isFuncCallState(state) ?
+      state.funcCall?.func : (state.nqName ? DG.Func.byName(state.nqName) : undefined);
+    const compareNodeWithOriginal = (state: PipelineState) =>
+      compareWithOriginal(snapshotOf(state), state.sourceRunId!, modelOf(state));
+    const addNodeToComparison = (state: PipelineState) => addToComparison(snapshotOf(state), modelOf(state));
+    const addModelToComparison = () => addNodeToComparison(treeState.value!);
 
     const runSubtreeWithConfirm = (startUuid: string, rerunWithConsistent?: boolean) => {
       const includeInfoInput = ui.input.bool('Also reset info-typed inputs', {value: false});
@@ -233,14 +250,14 @@ export const TreeWizard = Vue.defineComponent({
       }
     };
 
-    const onPipelineFuncCallUpdate = (newCall: DG.FuncCall) => {
+    const onRunChosen = (newCall: DG.FuncCall, readonly: boolean) => {
       if (isRootChoosen.value)
         loadPipeline(newCall.id);
-      else if (chosenStepState.value && chosenStepUuid.value && treeState.value && !isFuncCallState(chosenStepState.value)) {
+      else if (chosenStepState.value && chosenStepUuid.value && treeState.value) {
         const parent = findTreeNodeParrent(chosenStepUuid.value, treeState.value);
         if (parent && !isFuncCallState(parent)) {
           const position = parent.steps.findIndex((step) => step.uuid === chosenStepUuid.value);
-          loadAndReplaceNestedPipeline(parent.uuid, newCall.id, chosenStepState.value.configId, position);
+          loadAndReplaceNestedItem(parent.uuid, newCall.id, chosenStepState.value.configId, position, readonly);
         }
       }
     };
@@ -483,6 +500,8 @@ export const TreeWizard = Vue.defineComponent({
     ////
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
+    const isChosenParentReadonly = Vue.computed(() => !!chosenStepUuid.value && !!treeState.value &&
+      !!findTreeNodeParrent(chosenStepUuid.value, treeState.value)?.isReadonly);
 
     // keyed on the nqName string so a new FuncCall is prepared only when the
     // chosen pipeline actually changes, not on every reactive state emission
@@ -526,7 +545,7 @@ export const TreeWizard = Vue.defineComponent({
     const rfvHistory = Vue.computed(() => {
       if (singleStep.value && providerFunc.value)
         return {mode: 'workflow' as const, func: providerFunc.value, version: singleStep.value.chain[0]?.version};
-      if (currentStepHistoryEnabled.value)
+      if (currentStepHistoryEnabled.value && !isChosenParentReadonly.value)
         return {mode: 'step' as const};
       return undefined;
     });
@@ -720,7 +739,7 @@ export const TreeWizard = Vue.defineComponent({
         tooltip: 'Save current state of model',
         onClick: () => saveEntireModelState(),
         ...busyGuard('saving'),
-      }] : []),
+      }, compareRibbonIcon(addModelToComparison, busyGuard('comparing'))] : []),
       ...(isTreeLoaded.value && shareAction != null && !singleStep.value ? [{
         icon: 'share-alt',
         tooltip: shareAction.tooltip,
@@ -738,6 +757,7 @@ export const TreeWizard = Vue.defineComponent({
         onClick: () => inspectorHidden.value = !inspectorHidden.value,
       },
     ]);
+
 
     const exportItems = Vue.computed<RibbonMenuItem[]>(() => exports.value.map((exportData) => ({
       text: exportData.friendlyName ?? exportData.id,
@@ -845,6 +865,8 @@ export const TreeWizard = Vue.defineComponent({
                         onRunSubtree={(startUuid, rerunWithConsistent) => runSubtreeWithConfirm(startUuid, rerunWithConsistent)}
                         onRunStep={(uuid) => runStep(uuid)}
                         onSaveStep={(uuid) => saveSubTreeState(uuid)}
+                        onCompareWithOriginal={() => compareNodeWithOriginal(stat.data)}
+                        onAddToComparison={() => addNodeToComparison(stat.data)}
                       />
                     )
                 }
@@ -865,14 +887,14 @@ export const TreeWizard = Vue.defineComponent({
                 consistencyStates={states.consistency[chosenStepUuid.value]}
                 isReadonly={chosenStepState.value.isReadonly}
                 isBlocked={treeMutationsLocked.value || isGlobalLocked.value}
-                skipInit={true}
-                skipLogic={true}
                 history={rfvHistory.value}
                 hideDefaultExport={!!singleStep.value?.chain[0]?.disableDefaultExport}
                 onUpdate:funcCall={onFuncCallChange}
+                onStepRunChosen={onRunChosen}
                 onHistoryRunChosen={(call) => loadPipeline(call.id)}
                 onSaveToHistory={singleStep.value ? () => saveEntireModelState() : saveStepToHistory}
                 onPublishRun={singleStep.value ? () => shareCurrentRun() : shareStepRun}
+                onCompareRequested={addModelToComparison}
                 onActionRequested={runActionWithConfirmation}
                 onConsistencyReset={(ioName) => consistencyReset(chosenStepUuid.value!, ioName)}
                 dock-spawn-title='Step review'
@@ -932,13 +954,15 @@ export const TreeWizard = Vue.defineComponent({
               state={chosenStepState.value}
               uuid={chosenStepUuid.value}
               isRoot={isRootChoosen.value}
+              isParentReadonly={isChosenParentReadonly.value}
               buttonActions={buttonActions.value}
               body={typeof states.descriptions[chosenStepUuid.value]?.body === 'string'
                 ? states.descriptions[chosenStepUuid.value]?.body as string
                 : undefined}
               onActionRequested={runActionWithConfirmation}
+              onCompareWithOriginal={() => compareNodeWithOriginal(chosenStepState.value!)}
               dock-spawn-title='Step sequence review'
-              onUpdate:funcCall={onPipelineFuncCallUpdate}
+              onUpdate:funcCall={onRunChosen}
               onAddNode={({itemId, position}) => {
                 if (chosenStepUuid.value)
                   addStep(chosenStepUuid.value, itemId, position);

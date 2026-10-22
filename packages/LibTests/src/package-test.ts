@@ -26,6 +26,7 @@ import './tests/compute-utils/reactive-tree-driver/links-rule-separate';
 import './tests/compute-utils/reactive-tree-driver/links-rule-message-actions';
 import './tests/compute-utils/reactive-tree-driver/driver-states';
 import './tests/compute-utils/reactive-tree-driver/links-rule-workflow';
+import './tests/compute-utils/reactive-tree-driver/links-count-query';
 import './tests/compute-utils/reactive-tree-driver/links-value-annotations';
 import './tests/compute-utils/reactive-tree-driver/links-reserved-names';
 import './tests/compute-utils/reactive-tree-driver/links-docs-cases';

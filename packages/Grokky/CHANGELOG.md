@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Runtime, MCP server: Updated the Node.js base images to 22.23.4 (Node.js October 2026 security release)
+
 * AI: The assistant runs on Claude and GPT models through Anthropic, OpenRouter, OpenAI, Microsoft Azure, Amazon Bedrock, Databricks or your own Anthropic- or OpenAI-compatible endpoint; Claude subscription sign-in is not supported
 * AI: The `claude-runtime` container now needs a `model` credential naming the model to run, as the provider names it (e.g. `claude-sonnet-5-5`): a container with only an API key no longer starts
 * AI: At startup the AI runtime checks its provider and model with one short call, and logs whether it answered

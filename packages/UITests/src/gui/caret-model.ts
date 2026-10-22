@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 // import * as DG from 'datagrok-api/dg';
 
 import { getHTMLElementbyInnerText } from './gui-utils';
-import { after, before, category, delay, expect, test } from '@datagrok-libraries/test/src/test';
+import { after, before, category, expect, test, waitUntil, waitUntilAsync } from '@datagrok-libraries/test/src/test';
 
 category('Modeling: Caret', () => {
   const demog = grok.data.demo.demog(1000);
@@ -13,7 +13,8 @@ category('Modeling: Caret', () => {
   });
 
   test('modeling.caret', async () => {
-    grok.shell.topMenu.find('Tools').find('Predictive Modeling').find('Train Model...').click(); await delay(1000);
+    grok.shell.topMenu.find('Tools').find('Predictive Modeling').find('Train Model...').click();
+    await waitUntil(() => grok.shell.v.name === 'Predictive model', 'Predictive model view is not open');
     expect(grok.shell.v.name, 'Predictive model');
 
     function returnInputField(classList: string, inputName: string) {
@@ -31,29 +32,33 @@ category('Modeling: Caret', () => {
 
     const modelEngine = returnInputField('ui-input-choice ui-input-root',
       'Model Engine')!.childNodes[1] as HTMLInputElement;
-    modelEngine.value = 'Caret'; await delay(500);
-    modelEngine.dispatchEvent(new Event('input')); await delay(500);
+    modelEngine.value = 'Caret';
+    modelEngine.dispatchEvent(new Event('input'));
 
     const name = returnInputField('ui-input-text ui-input-root', 'Name')!.childNodes[1] as HTMLInputElement;
-    name.value = 'Test Model Caret'; await delay(500);
-    name.dispatchEvent(new Event('input')); await delay(500);
+    name.value = 'Test Model Caret';
+    name.dispatchEvent(new Event('input'));
 
     let predict = returnInputField('ui-input-root ui-input-column', 'Predict')!.childNodes[1] as HTMLElement;
     predict = predict.getElementsByClassName('d4-column-selector-column')[0] as HTMLElement;
-    predict.innerText = 'sex'; await delay(500);
-    predict.dispatchEvent(new Event('input')); await delay(500);
+    predict.innerText = 'sex';
+    predict.dispatchEvent(new Event('input'));
 
     const features = returnInputField('ui-input-root ui-input-columns', 'Features')!.childNodes[1] as HTMLElement;
     features.click();
+    await waitUntil(() => getHTMLElementbyInnerText('ui-btn ui-btn-ok enabled', 'OK') !== undefined,
+      'Select columns dialog is not open');
     const okButtonInSelectColumn = getHTMLElementbyInnerText('ui-btn ui-btn-ok enabled', 'OK') as HTMLElement;
-    okButtonInSelectColumn.click(); await delay(500);
-    features.dispatchEvent(new Event('input')); await delay(500);
+    okButtonInSelectColumn.click();
+    await waitUntil(() => !okButtonInSelectColumn.isConnected, 'Select columns dialog is not closed');
+    features.dispatchEvent(new Event('input'));
 
-    const TrainButton = getHTMLElementbyInnerText('ui-btn ui-btn-ok enabled', 'Train') as HTMLElement;
-    TrainButton.click(); await delay(8000);
+    await waitUntil(() => getHTMLElementbyInnerText('ui-btn ui-btn-ok enabled', 'Train') !== undefined,
+      'Train button is not enabled');
+    getHTMLElementbyInnerText('ui-btn ui-btn-ok enabled', 'Train')!.click();
 
-    if (await grok.dapi.models.filter('Test Model Caret').first() == undefined)
-      throw new Error('Caret Model has not been trained');
+    await waitUntilAsync(async () => await grok.dapi.models.filter('Test Model Caret').first() != undefined,
+      'Caret Model has not been trained', 60000, 500);
   });
 
   after(async () => {

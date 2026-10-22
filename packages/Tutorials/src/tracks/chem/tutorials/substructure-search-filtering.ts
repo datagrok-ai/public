@@ -111,7 +111,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
       observer.observe(filters()!.root.querySelector('.d4-flex-col.d4-filter')!, {subtree: true, attributes: true});
     }), () => filters()?.root.querySelector('.d4-flex-col.d4-filter') as HTMLElement | null,
     `<ol><li>On the <b>Filter Panel</b>, hover over a molecule and click the <b>Gear</b> icon.</li>
-    <li>From the dropdown, select <b>Not contains<b>.</li><ol>`,
+    <li>From the dropdown, select <b>Not contains</b>.</li></ol>`,
     Tutorial.apiSkip(() => setSmilesFilter({searchType: 'Not contains',
       molBlock: (tv.getFiltersGroup().getStates('smiles', DG.FILTER_TYPE.SUBSTRUCTURE)[0] as any)?.molBlock})));
 
@@ -130,7 +130,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
 
     this.title('Add more filters', true);
     this.describe(`In the top left corner of the <b>Filter Panel</b>, click the <b>Hamburger</b> icon and choose ` +
-      `<b>Select columns...</b>.<br>
+      `<b>Select Columns...</b><br>
     Then, in the dialog, in addition to <b>smiles</b>, select <b>NOCount</b> and <b>NumRotatableBonds</b>, ` +
       `and click <b>OK</b>`);
 

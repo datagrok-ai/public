@@ -8,6 +8,7 @@ import {SubstructureSearchType} from '../constants';
 import {hasNewLines, stringArrayToMolList} from '../utils/chem-common';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
+import {queryNeedsSanitizedMolecules} from './query-features';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -110,7 +111,18 @@ M  END`;
 
 const cxWithoutCoordsJSON = JSON.stringify({CX_ALL_BUT_COORDS: true});
 
+/** The search's fast read of a candidate (its canonical SMILES): as written, unsanitized; its rings come from a
+ * depth-first search, which gives ring membership as sanitization does, but not RDKit's rings. */
+const FAST_READ = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
+/** The reads for a query that needs the molecules as RDKit sanitizes them (queryNeedsSanitizedMolecules), in getMolSafe's
+ * order: kekulized, else aromatic as written. */
+const SANITIZED_READS = [JSON.stringify({removeHs: false, assignStereo: false}),
+  JSON.stringify({removeHs: false, assignStereo: false, kekulize: false})];
+
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
+  /** The molecules the search read the fast way and cached: a query that needs sanitized molecules reads them again. */
+  private _fastReadMols = new WeakSet<RDMol>();
+
   constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
@@ -160,7 +172,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         }
       }
       const matches = await this.searchWithPatternFps(queryMol, molecules,
-        searchType ?? SubstructureSearchType.CONTAINS, queryCanonicalSmiles);
+        searchType ?? SubstructureSearchType.CONTAINS, queryCanonicalSmiles, queryNeedsSanitizedMolecules(queryMol));
       queryMol.delete();
       return matches;
     } else
@@ -174,14 +186,32 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return details ? this._rdKitModule.get_mol(molString, details) : this._rdKitModule.get_mol(molString);
   }
 
+  /** A candidate of the search, read sanitized for a query that needs it, else the fast way (so is one RDKit cannot
+   * sanitize, as the search read it before). */
+  private readCandidate(molString: string, sanitized: boolean): RDMol | null {
+    if (sanitized) {
+      for (const details of SANITIZED_READS) {
+        try {
+          const mol = this.getMolWithSmilesCheck(molString, details);
+          if (mol)
+            return mol;
+        } catch {}
+      }
+    }
+    const mol = this.getMolWithSmilesCheck(molString, FAST_READ);
+    if (mol)
+      this._fastReadMols.add(mol);
+    return mol;
+  }
 
+  /** `sanitized`: the query needs the molecules as RDKit sanitizes them (queryNeedsSanitizedMolecules); otherwise each
+   * candidate not in the cache is read the fast way. */
   async searchWithPatternFps(queryMol: RDMol, molecules: string[], searchType: SubstructureSearchType,
-    queryCanonicalSmiles: string): Promise<Uint32Array> {
+    queryCanonicalSmiles: string, sanitized = false): Promise<Uint32Array> {
     const stereoAgnostic = searchType === SubstructureSearchType.STEREO_AGNOSTIC;
     const matches = new BitArray(molecules.length);
     if (this._requestTerminated)
       return matches.buffer;
-    const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
     for (let i = 0; i < molecules.length; ++i) {
       const terminationCheckDelay = queryCanonicalSmiles ?
         this._terminationCheckDelay * 10 :
@@ -199,10 +229,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         let isCached = false;
         try {
           const cachedMol = this._molsCache?.get(molecules[i]);
-          mol = cachedMol ?? this.getMolWithSmilesCheck(molecules[i], details)!;
-          // addToCache is called for hits too, so the per-dataset budget counts every processed molecule
-          if (mol && this.addToCache(mol))
-            isCached = true;
+          if (cachedMol && sanitized && this._fastReadMols.has(cachedMol)) {
+            // read the fast way by an earlier search: read again for this query, and let go after it
+            mol = this.readCandidate(molecules[i], sanitized);
+          } else {
+            mol = cachedMol ?? this.readCandidate(molecules[i], sanitized);
+            // addToCache is called for hits too, so the per-dataset budget counts every processed molecule
+            if (mol && this.addToCache(mol))
+              isCached = true;
+          }
           if (mol) {
             if (stereoAgnostic)
               matches.setFast(i, this.getSmiles(mol, true) === queryCanonicalSmiles);

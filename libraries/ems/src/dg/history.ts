@@ -1,26 +1,29 @@
 /* `domains.history` — a row's audit trail, newest first: who did what when, and for an update
    the columns it changed as `<caption>: <before> → <after>`. Reads `table.audit(id)` through the
-   seam, so the memory backend's history shows the same way; refreshed when the row's session
-   saves. A draft has no history yet, and says so. */
+   seam a page at a time, so the memory backend's history shows the same way; "Show older" under
+   the list loads the next page, and the pane is refreshed when the row's session saves. A draft
+   has no history yet, and says so. */
 import {emsBackends} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
-import {Control, signal, AsyncSource, div, divH, span, timestamp, text, badge, AsyncView, Section, VirtualList,
-  Rows} from '@datagrok-libraries/u2';
+import {Component, Control, signal, AsyncSource, div, divH, divV, span, timestamp, text, badge, button, AsyncView,
+  Section, VirtualList, Rows, Scope} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, BadgeVariant, IProperty, RowView} from '@datagrok-libraries/u2';
 import type {AuditEntryLike} from '../core/domain-backend.js';
 import type {DomainSource} from '../core/domain-source.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {DomainTable} from './facade.js';
 import {DomainForm} from './form.js';
+import {DomainErrors} from './errors.js';
 
 /** The current row of the source (default), a row signal, or one row. */
 export type DomainHistoryTarget = RowView | ReadonlySignal<RowView | null>;
 
 const OPS: Record<string, [label: string, variant: BadgeVariant]> = {
   insert: ['created', 'success'], update: ['updated', 'default'], delete: ['deleted', 'error'],
-  promote: ['shared', 'accent'],
+  promote: ['shared', 'accent'], undelete: ['restored', 'success'],
 };
 const ITEM_HEIGHT = 40;
+const PAGE_SIZE = 50;
 
 export class DomainHistory extends Control {
   readonly row: ReadonlySignal<RowView | null>;
@@ -72,7 +75,8 @@ export class DomainHistory extends Control {
    * always touches (version, updated) are not changes the user made. */
   changesOf(entry: AuditEntryLike): string {
     return this.changedColumns(entry)
-      .map(({prop, before, after}) => `${prop.friendlyName ?? prop.name}: ${text(before)} → ${text(after)}`)
+      .map(({prop, before, after}) =>
+        `${prop.friendlyName ?? prop.name}: ${DomainHistory._display(before)} → ${DomainHistory._display(after)}`)
       .join(', ');
   }
 
@@ -85,8 +89,12 @@ export class DomainHistory extends Control {
     const after = entry.after ?? {};
     return this.source.schema.properties
       .filter((p) => p.name! in after && !SYSTEM_COLUMNS.some(([name]) => name === p.name) &&
-        before[p.name!] !== after[p.name!])
+        !Component.sameValue(before[p.name!], after[p.name!]))
       .map((prop) => ({prop, before: before[prop.name!], after: after[prop.name!]}));
+  }
+
+  private static _display(raw: unknown): string {
+    return raw !== null && typeof raw === 'object' && raw.constructor === Object ? JSON.stringify(raw) : text(raw);
   }
 
   private async _load(id: string): Promise<AuditEntryLike[]> {
@@ -95,7 +103,7 @@ export class DomainHistory extends Control {
       this._noHistory.value = true;
       return [];
     }
-    const entries = await table.audit(id);
+    const entries = await table.audit(id, {limit: PAGE_SIZE});
     return entries.slice().reverse();
   }
 
@@ -105,8 +113,31 @@ export class DomainHistory extends Control {
       render: (entry) => this._line(entry),
     });
     list.root.classList.add('u2-domain-history-lines');
-    list.setItems(items);
-    return list.root;
+    const shown = signal(items);
+    list.setItems(shown);
+    const scope = Scope.ambient!;
+    // a button, not a scroll trigger: on the entity page the page scrolls, not the list
+    const more: HTMLButtonElement = button('Show older', async () => {
+      more.disabled = true;
+      try {
+        const last = shown.peek().at(-1)!;
+        const table = await emsBackends.domain!.table(this.source.table);
+        const page = await table.audit!(last.id, {limit: PAGE_SIZE, before: last.seq});
+        if (scope.isDisposed)
+          return;
+        shown.value = shown.peek().concat(page.slice().reverse());
+        more.hidden = page.length < PAGE_SIZE;
+      } catch (e) {
+        if (!scope.isDisposed)
+          DomainErrors.report(e, this.source);
+      } finally {
+        more.disabled = false;
+      }
+    });
+    more.classList.add('u2-domain-history-more');
+    more.dataset.u2Part = 'more';
+    more.hidden = items.length < PAGE_SIZE;
+    return divV([list.root, more], 'u2-domain-history-trail');
   }
 
   private _line(entry: AuditEntryLike): HTMLElement {
@@ -136,7 +167,7 @@ export class DomainHistory extends Control {
    * `~caption_<column>` off the frame: an audit line's `before`/`after` values are ids out of a
    * jsonb snapshot, not frame cells, and no caption column will ever carry them. */
   private _value(prop: IProperty, raw: unknown, resolved: () => void): HTMLElement {
-    const el = span(text(raw), 'u2-domain-history-value');
+    const el = span(DomainHistory._display(raw), 'u2-domain-history-value');
     const id = text(raw);
     if (id !== '' && DomainTable.isReference(prop)) {
       void this._resolve(id, () => DomainForm.captionOf(prop, id)).then((name) => {

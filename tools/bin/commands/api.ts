@@ -312,6 +312,7 @@ interface DomainGenColumn {
   insertType: string;   // Insert-side type (datetime accepts `Dayjs | string`)
   required: boolean;
   autoNumber?: boolean; // counter-filled on insert: always present on Row, optional on Insert
+  hasDefault?: boolean; // filled from `default` when an insert omits it: optional on Insert
   ref?: string;         // target table for 'ref' columns: in-manifest name, or qualified '<Schema>.<table>'
 }
 
@@ -459,7 +460,8 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
       columns.push({
         name: name, rawType: column.type, tsType: tsType,
         insertType: column.type === 'datetime' ? 'Dayjs | string' : tsType,
-        required: column.required === true, autoNumber: column.autoNumber != null, ref: ref,
+        required: column.required === true, autoNumber: column.autoNumber != null,
+        hasDefault: column.default != null, ref: ref,
       });
       return true;
     };
@@ -551,7 +553,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     const insertLines = [`/** Insert payload for \`${manifest.name}.${tableName}\`. */`,
       `export interface ${typeName}Insert {`];
     for (const c of columns)
-      insertLines.push(`  ${c.name}${c.required ? '' : '?'}: ${c.insertType};`);
+      insertLines.push(`  ${c.name}${c.required && !c.hasDefault ? '' : '?'}: ${c.insertType};`);
     for (const r of relations)
       insertLines.push(`  /** Link set: \`${r.target}\` row ids. */`, `  ${r.name}?: string[];`);
     if (table.idempotency === true)
@@ -618,6 +620,8 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
           `values: DG.DomainTxValues<${relations.length > 0 ? `${typeName}Update` : `Partial<${typeName}Row>`}>; ` +
           `expectedVersion?: number} |`,
         `  {op: 'delete'; table: '${tableName}'; id: string} |`);
+    if (!external && table.softDelete !== false)
+      txArms.push(`  {op: 'restore'; table: '${tableName}'; id: string} |`);
 
     // No datetime config: the client resolves datetime columns from the domain
     // registry itself (the Dayjs typing in <Table>Row stays true for every client).

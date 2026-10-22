@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectLook, legendPresent, until, wait, withAttachedViewer} from '../helpers';
+import {category, expect, settled, test} from '@datagrok-libraries/test/src/test';
+import {demog, expectLook, legendPresent, until, withAttachedViewer} from '../helpers';
 
 // BarChart auto legend is suppressed when stack column equals split column (would duplicate the X axis).
 category('AI: Viewers: BarChart legend visibility', () => {
@@ -8,7 +8,7 @@ category('AI: Viewers: BarChart legend visibility', () => {
     await withAttachedViewer<DG.BarChartViewer>(demog(), DG.VIEWER.BAR_CHART,
       {value: 'age', split: 'race', stack: 'race'}, async (v) => {
         expectLook(v, {splitColumnName: 'race', stackColumnName: 'race'});
-        await wait();
+        await settled(v);
         expect(legendPresent(v), false);
       });
   });
@@ -28,7 +28,8 @@ category('AI: Viewers: BarChart legend visibility', () => {
         await until(() => legendPresent(v));
         expect(legendPresent(v), true);
         v.setOptions({stackColumnName: 'race'});
-        await wait();
+        await until(() => !legendPresent(v));
+        await settled(v);
         expect(legendPresent(v), false);
         v.setOptions({stackColumnName: 'sex'});
         await until(() => legendPresent(v));

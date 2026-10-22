@@ -140,7 +140,7 @@ category('AI: Stats: Advanced', () => {
     DG.SemanticValue.registerRegExpDetector(semType, '^AB-\\d+$', 'AI test code detector');
     await grok.data.detectSemanticTypes(t);
     // semType assignment may lag detection; poll until the registered detector lands.
-    await until(() => t.col('code')!.semType === semType, 4000);
+    await until(() => t.col('code')!.semType === semType);
     expect(t.col('code')!.semType, semType);
   });
 });

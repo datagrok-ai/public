@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {awaitCheck, before, category, expect, expectArray, expectFloat,
-  expectObject, isDialogPresent, test, delay} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, expectArray, expectFloat,
+  expectObject, isDialogPresent, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {FUNC_TESTS} from '../functions/utils';
 
 category('DataFrame', () => {
@@ -11,13 +11,13 @@ category('DataFrame', () => {
   before(async () => {
     df = grok.data.demo.demog(2);
     grok.shell.addTableView(df);
-    await delay(1000);
+    await waitUntil(() => grok.shell.t?.id === df.id, 'The table view did not become current');
     console.log(grok.shell.t);
   });
 
   test('add new column', async () => {
     const dlg = await grok.functions.call('PowerPack:addNewColumnDialog');
-    await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
+    await waitUntil(() => isDialogPresent(dlg.addColumnTitle), 'The Add New Column dialog did not open');
     const funcs = Object.keys(FUNC_TESTS).map((name) => DG.Func.find({name: name})[0]);
 
     for (const f of funcs) {
@@ -27,7 +27,7 @@ category('DataFrame', () => {
         dlg.inputExpression!.value = expression;
         dlg.uiDialog!.getButton('OK').click();
         try {
-          await awaitCheck(() => df.columns.contains(columnName));
+          await waitUntil(() => df.columns.contains(columnName), 'The column was not added');
           const column = df.col(columnName)!;
           expectTyped(column.get(0), result == null && column.type === DG.TYPE.STRING ? '' : result);
         } catch (e) {

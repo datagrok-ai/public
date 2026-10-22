@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 // import * as DG from 'datagrok-api/dg';
 
-import {before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {getHTMLElementbyInnerText} from './gui-utils';
 
 category('Modeling: H20', () => {
@@ -13,7 +13,8 @@ category('Modeling: H20', () => {
   });
 
   test('modeling.h2o', async () => {
-    grok.shell.topMenu.find('Tools').find('Predictive Modeling').find('Train Model...').click(); await delay(1000);
+    grok.shell.topMenu.find('Tools').find('Predictive Modeling').find('Train Model...').click();
+    await waitUntil(() => grok.shell.v.name === 'Predictive model', 'Predictive model view is not open');
     expect(grok.shell.v.name, 'Predictive model');
 
     function returnInputField(classList:string, inputName:string) {
@@ -31,22 +32,25 @@ category('Modeling: H20', () => {
 
     const modelEngine = returnInputField('ui-input-choice ui-input-root',
       'Model Engine')!.childNodes[1] as HTMLInputElement;
-    modelEngine.value = 'H2O'; await delay(500);
-    modelEngine.dispatchEvent(new Event('input')); await delay(500);
+    modelEngine.value = 'H2O';
+    modelEngine.dispatchEvent(new Event('input'));
 
     const name = returnInputField('ui-input-text ui-input-root', 'Name')!.childNodes[1] as HTMLInputElement;
-    name.value = 'Test Model H2O'; await delay(500);
-    name.dispatchEvent(new Event('input')); await delay(500);
+    name.value = 'Test Model H2O';
+    name.dispatchEvent(new Event('input'));
 
     let predict = returnInputField('ui-input-root ui-input-column', 'Predict')!.childNodes[1] as HTMLElement;
     predict = predict.getElementsByClassName('d4-column-selector-column')[0] as HTMLElement;
-    predict.innerText = 'sex'; await delay(500);
-    predict.dispatchEvent(new Event('input')); await delay(500);
+    predict.innerText = 'sex';
+    predict.dispatchEvent(new Event('input'));
 
     const features = returnInputField('ui-input-root ui-input-columns', 'Features')!.childNodes[1] as HTMLElement;
     features.click();
+    await waitUntil(() => getHTMLElementbyInnerText('ui-btn ui-btn-ok enabled', 'OK') !== undefined,
+      'Select columns dialog is not open');
     const okButtonInSelectColumn = getHTMLElementbyInnerText('ui-btn ui-btn-ok enabled', 'OK') as HTMLElement;
-    okButtonInSelectColumn.click(); await delay(500);
-    features.dispatchEvent(new Event('input')); await delay(500);
+    okButtonInSelectColumn.click();
+    await waitUntil(() => !okButtonInSelectColumn.isConnected, 'Select columns dialog is not closed');
+    features.dispatchEvent(new Event('input'));
   });
 }, { owner: 'oserhiienko@datagrok.ai' });
