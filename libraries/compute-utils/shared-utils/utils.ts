@@ -4,9 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import wu from 'wu';
 import {VIEWER_PATH, viewerTypesMapping} from './consts';
-import {deserialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {tryParseJson} from '@datagrok-libraries/utils/src/string-utils';
-import {OUTPUT_OUTDATED_PATH} from '../reactive-tree-driver/src/runtime/funccall-utils';
+import {readOutputOutdated} from '../reactive-tree-driver/src/runtime/funccall-utils';
 
 export const replaceForWindowsPath = (rawName: string, stringToInsert?: string) => {
   const regExpForWindowsPath = /(\/|\\|\:|\*|\?|\"|\<|\>|\|)/g;
@@ -137,8 +136,7 @@ export const getStartedOrNull = (run?: DG.FuncCall) => {
 };
 
 export const isIncomplete = (run: DG.FuncCall) => {
-  const isOutputOutdated = deserialize(run.options[OUTPUT_OUTDATED_PATH] ?? 'false');
-  return isOutputOutdated || !getStartedOrNull(run) || !run.id;
+  return readOutputOutdated(run) || !getStartedOrNull(run) || !run.id;
 };
 
 export const deepCopy = (call: DG.FuncCall) => {
