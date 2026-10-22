@@ -5,6 +5,7 @@
 * AI: The assistant runs on Claude and GPT models through Anthropic, OpenRouter, OpenAI, Microsoft Azure, Amazon Bedrock, Databricks or your own Anthropic- or OpenAI-compatible endpoint; Claude subscription sign-in is not supported
 * AI: Web addresses the assistant writes as plain text, such as a documentation link, are clickable
 * AI: Deleting a project, space or file always waits for you to approve it on a confirmation card, even after you declined an earlier one
+* AI: Box plots and pivot tables the assistant adds are split by the columns you asked for, and the averages and medians it reports skip missing values
 * AI: On GPT models the assistant works through its skills and the view's functions instead of searching the platform's source code, and answers a question about the data without detours, in about a quarter fewer steps
 * AI: Web search and web page reading now go through the free tiers of Exa, Parallel, Firecrawl and Keenable (third-party search services)
 * AI: A missing or invalid API key is now reported within seconds instead of minutes, and model errors appear as errors rather than as the assistant's answer
