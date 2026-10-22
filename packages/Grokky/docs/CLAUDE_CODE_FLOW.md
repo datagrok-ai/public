@@ -120,7 +120,6 @@ Notes on `user_message` fields:
 | `queued` | Turn is waiting — behind the session's active query, or for its celery admission claim (re-sent every 60s while waiting) | `sessionId` |
 | `input_request` | Runtime needs the browser to execute a tool or answer a question | `sessionId`, `requestId`, `toolName`, `input` |
 | `sync_status` | Result of a `sync_user_files` request | `status`, `files?`, `message?` |
-| `models` | The provider's model ids a turn may name, the one a turn without a model runs on, and the one for quick calls; or why no agent could start | `models`, `defaultModel`, `fastModel`, or `error` |
 
 ---
 
@@ -300,9 +299,9 @@ session. A Responses call keeps a one-line neutral instruction in `none` mode: H
 instructions and fills empty ones with its own identity. Full mode runs with thinking at `high` effort;
 `bash` and `none` turns ask for no thinking and run without gates, which Hermes maps per model: off on Haiku
 5.5, between tool calls only on Sonnet 5.5, Opus 5.5 and Fable 5.1 keep their adaptive thinking, which they
-cannot turn off, and GPT gets reasoning effort `none`, except GPT-6.1 Sol and GPT-6 Astra, which always reason
-and reject `none`: their Responses calls carry no effort on any provider, so they reason at their default
-(medium) (`always_reasons` in `models.yaml`, applied in `Provider.patch_request`).
+cannot turn off, and GPT gets reasoning effort `none`, which the Responses format sends as `low`: some models
+(GPT-6.1 Sol, GPT-6 Astra) always reason and reject `none`, and every reasoning model takes `low`
+(`OpenAIResponses.patch` in `formats.py`).
 
 `DATAGROK_PROMPT` instructs the model to:
 
@@ -491,9 +490,9 @@ Runtime paths are relative to [`dockerfiles/claude-runtime/`](../dockerfiles/cla
 | [`agent/grokky_agent/hermes_plugin/`](../dockerfiles/claude-runtime/agent/grokky_agent/hermes_plugin/) | In-process Hermes plugin that registers the session's hooks and middleware |
 | [`agent/grokky_agent/browser_tools.py`](../dockerfiles/claude-runtime/agent/grokky_agent/browser_tools.py) | Browser and view tools as native Hermes tools |
 | [`agent/grokky_agent/guard.py`](../dockerfiles/claude-runtime/agent/grokky_agent/guard.py) | Access guard on tool arguments, relative edit paths |
-| [`agent/grokky_agent/hermes.yaml`](../dockerfiles/claude-runtime/agent/grokky_agent/hermes.yaml), [`config.py`](../dockerfiles/claude-runtime/agent/grokky_agent/config.py) | Hermes' config for every session, written to `HERMES_HOME/config.yaml` with the skills directory, compression threshold and each model's context window and image input |
-| [`agent/grokky_agent/models.yaml`](../dockerfiles/claude-runtime/agent/grokky_agent/models.yaml), [`models.py`](../dockerfiles/claude-runtime/agent/grokky_agent/models.py) | The model catalog: each model's family, context window, image input and prices (the cost limit) |
-| [`agent/grokky_agent/formats.py`](../dockerfiles/claude-runtime/agent/grokky_agent/formats.py) | The request formats (Anthropic Messages, OpenAI Responses, Chat Completions): where the system prompt and output schema go, the refused request, the strict schema |
+| [`agent/grokky_agent/hermes.yaml`](../dockerfiles/claude-runtime/agent/grokky_agent/hermes.yaml), [`config.py`](../dockerfiles/claude-runtime/agent/grokky_agent/config.py) | Hermes' config for every session, written to `HERMES_HOME/config.yaml` with the skills directory and compression threshold |
+| [`agent/grokky_agent/formats.py`](../dockerfiles/claude-runtime/agent/grokky_agent/formats.py) | The wire formats, one class each (`AnthropicMessages`, `OpenAIResponses`, `ChatCompletions`): where the system prompt and output schema go, the refused request, the strict schema |
+| [`agent/grokky_agent/providers/`](../dockerfiles/claude-runtime/agent/grokky_agent/providers/) | The providers, one class each: the credentials it takes, the formats it serves and where (`routes`), its price list, its error hints |
 | [`agent/grokky_agent/hermes.py`](../dockerfiles/claude-runtime/agent/grokky_agent/hermes.py) | Every Hermes API the driver calls, typed |
 | [`agent/grokky_agent/protocol.py`](../dockerfiles/claude-runtime/agent/grokky_agent/protocol.py) | The JSON-lines protocol (`AgentCommand` / `AgentProcessEvent` in `src/types.ts`) |
 | [`agent/grokky_agent/structured.py`](../dockerfiles/claude-runtime/agent/grokky_agent/structured.py) | Output-schema check (`jsonschema`) |
@@ -594,8 +593,7 @@ See the [process model](#process-model).
 (`src/constants.ts`). `HERMES_RUNTIME_DIR` is Hermes' own package-manager store, not a runtime setting.
 
 Hermes' `config.yaml` is written by each agent at startup from `agent/grokky_agent/hermes.yaml` (with the
-skills directory, the compression threshold, and each of the provider's models' context window and image
-input as `model_overrides`); change settings there. Memory: an idle agent holds about 250 MB RSS, so the 12
+skills directory and the compression threshold); change settings there. Memory: an idle agent holds about 250 MB RSS, so the 12
 processes, spares included, fit the 8 GB limit in `container.json`.
 
 ### Credentials
@@ -614,8 +612,7 @@ code, not tested).
 | `baseUrl` | The provider's address, where the admin chooses it (a resource, a workspace, an endpoint) |
 | `region` | The provider's region, where its hosts are regional |
 | `apiFormat` | A custom endpoint's request format: `anthropic-messages`, `openai-responses` or `openai-chat-completions` |
-| `model` | The model a turn runs on when the browser names none: one of the provider's model ids, or `<id>=<catalog model>` for a model the admin names, such as a deployment |
-| `fastModel` | The model for quick calls (search ranking, query matching, the benchmark's judge), in the same forms; by default `model`, so quick calls stay with its vendor and region, and only without `model` the provider's fast model. Quick calls are frequent: a cheaper `fastModel` lowers their cost |
+| `model` | The model every turn runs on, as the provider names it (a model id, an inference profile, a deployment or endpoint name); required |
 
 The server takes these (and `TEST_UPSTREAM`, see [Configure](#configure)) out of its environment at
 startup and sends them to each agent in its `init` line (`PROVIDER_CREDENTIALS` in `src/constants.ts`); the
@@ -630,21 +627,22 @@ an `error` with the provider's message, or the title of the HTML page a proxy an
 hint naming the credential to check. An answer the provider's safety filter stops mid-stream ends in an
 `error` that says so, not with the cut-off text.
 
-**Models and prices.** The runtime ships a model catalog,
-[`models.yaml`](../dockerfiles/claude-runtime/agent/grokky_agent/models.yaml): each catalog model's family
-(`claude` or `gpt`), context window, image input, and prices in USD per million tokens (input, output, cache
-reads and writes, and the long-context rates where a long prompt is billed at other rates), with the
-pricing pages they come from. Each provider maps its model ids to catalog models (`model_ids` of its class)
-and names its default and fast model; `model` and `fastModel` change those two (`model` alone both), and map a
-model the admin names to the catalog model it runs. Claude is called in Anthropic's Messages format and GPT in
-OpenAI's Responses format, unless a provider says otherwise. A turn runs only on one of the provider's models: the
-browser names one or none, and any other model ends the turn with an error, so the cost limit always has a
-price. The agent prices every model call, compression included, at its catalog model's rates; Hermes gets
-each model's context window and image input (the catalog's, unless the provider hosts the model for text
-only: `Provider.images`), and a turn with images on a model without image input ends with an error. The
-agent's `ready` event reports the provider's model ids with its default and fast model, and the browser asks
-for them (`models`, `ClaudeRuntimeClient.models()`): Help and Execute run on the default, search ranking and
-query matching on the fast model, and the benchmark offers the list.
+**Model, format and price.** Every turn runs on the one model `model` names; the runtime keeps no model list,
+and the browser never names a model. A provider serves one or two wire formats (`routes` of its class): with one,
+every call is in it; with two, a model whose name contains `claude` is called in Anthropic's Messages format and
+any other in OpenAI's Responses format. A call is priced from Hermes' price list for the provider
+(`agent/usage_pricing.py`): Anthropic's and OpenAI's published prices, OpenRouter's live ones. Bedrock, Azure,
+Databricks and custom endpoints have none, and neither does a model a list lacks (Hermes' list of Anthropic
+prices stops at Claude Sonnet 5 and Opus 5 for now): such a turn reports `costUsd: null`, and only its call limit
+bounds it, not the dollar budget. Hermes finds each model's context window itself (the provider's model list,
+models.dev, a 256K default), and images always go to the model as they are (`image_input_mode: native`): a model
+without image input answers with its own error.
+
+**Connection test.** When the server starts it runs `python -m grokky_agent --check` once: an agent with the
+same credentials makes one short call to the model, without tools, through the same Hermes path and request
+patch a turn uses. The log then reads `provider check: <provider> <model> answered`, or `… failed: <the
+provider's error and hint>`, and `/health` reports the verdict as `provider`: `checking`, `{error: null}` or
+`{error: "…"}`. The container is healthy either way, and turns do not wait for the check.
 
 **Claude's thinking.** Hermes sends Claude's signed thinking back only to hosts that can check Anthropic's
 signatures (Hermes' `agent/anthropic_thinking_policy.py`): a URL that contains `anthropic.com`, Bedrock's
@@ -661,9 +659,9 @@ Each provider's specifics follow in a subsection of its own. A provider is a `Pr
 
 #### Anthropic
 
-`provider` absent or `Anthropic`; `apiKey` an Anthropic Console API key (`sk-ant-api…`). Hermes calls the
-Messages API at `api.anthropic.com` with the key in `x-api-key`. Models: `claude-haiku-5-5` (fast),
-`claude-sonnet-5-5` (default), `claude-opus-5-5` and `claude-fable-5-1`. An agent refuses a missing key, a
+`provider` absent or `Anthropic`; `apiKey` an Anthropic Console API key (`sk-ant-api…`); `model` a Claude model
+id, such as `claude-sonnet-5-5`. Hermes calls the Messages API at `api.anthropic.com` with the key in
+`x-api-key`. An agent refuses a missing model, a missing key, a
 key with whitespace or control characters, and a Claude subscription token (an `sk-ant-` key other than
 `api`, `usr`, `svc` or `admin`, a JWT or `cc-…`), which Hermes would send to `api.anthropic.com` as a
 Claude Code login. Claude subscription logins are not supported: Anthropic allows them only in its own
@@ -676,13 +674,10 @@ only there: other hosts take JWTs (Entra ID, Databricks OAuth).
 
 `provider` `OpenRouter`; `apiKey` an OpenRouter API key (`sk-or-…`), sent as Bearer. Claude goes to
 OpenRouter's Anthropic Messages API (`https://openrouter.ai/api/v1/messages`), GPT to its Responses API
-(`https://openrouter.ai/api/v1/responses`, which keeps nothing: every call carries the whole history). Models,
-by OpenRouter id: `anthropic/claude-haiku-5.5` (fast), `anthropic/claude-sonnet-5.5` (default),
-`anthropic/claude-opus-5.5`, `anthropic/claude-fable-5.1`, `openai/gpt-6-luna`, `openai/gpt-6-sol`,
-`openai/gpt-6.1-sol`, `openai/gpt-6-astra`, `openai/gpt-5.6-luna`, `openai/gpt-5.6-terra` and
-`openai/gpt-5.6-sol`; to run on GPT by default, set `model` and `fastModel`, e.g. `openai/gpt-6-sol` and
-`openai/gpt-6-luna`. An agent refuses a missing key, a key with whitespace or control characters, and a key
-that does not start with `sk-or-`. Watch out for:
+(`https://openrouter.ai/api/v1/responses`, which keeps nothing: every call carries the whole history); `model`
+the OpenRouter id, such as `anthropic/claude-sonnet-5.5` or `openai/gpt-6-sol`. An agent refuses a missing model,
+a missing key, a key with whitespace or control characters, and a key that does not start with `sk-or-`. Watch
+out for:
 
 - Routing: OpenRouter sends each request to one of the model's hosts (Anthropic, Google Vertex, Azure, Amazon
   Bedrock, …), weighted by price, among those the account's settings allow
@@ -690,9 +685,9 @@ that does not start with `sk-or-`. Watch out for:
   who sees the data. OpenRouter lists no structured output for Claude on Bedrock, so a Claude turn with an
   output schema asks for hosts that support all its parameters (`provider.require_parameters`); GPT hosts
   without structured output lack JSON output too, which OpenRouter already routes around.
-- Cost: the limit uses the catalog prices, which are OpenRouter's list prices. Its regional hosts (such as
-  Vertex in the US or Azure in the EU) charge 10% more and may serve a request, so the bill can run up to 10%
-  over the runtime's figure. OpenRouter reports each answer's cost, but Hermes does not pass it on.
+- Cost: Hermes prices calls from OpenRouter's live model list. Its regional hosts (such as Vertex in the US or
+  Azure in the EU) charge 10% more and may serve a request, so the bill can run up to 10% over the runtime's
+  figure.
 - Credit: OpenRouter refuses a request (402) when the credit left on the account or key cannot pay for its
   longest possible answer, 128,000 output tokens ($1.28 on Sonnet 5.5, $6.40 on Fable 5.1 or GPT-6 Astra). A
   key's credit limit only caps its spending: the account itself needs purchased credits, or every request but
@@ -701,9 +696,8 @@ that does not start with `sk-or-`. Watch out for:
   instead of Hermes, so OpenRouter counts the usage toward Datagrok in its public app rankings.
 - Claude's thinking: OpenRouter is not a host Hermes sends Claude's signed thinking back to, so Claude does
   not see its earlier reasoning here (see **Claude's thinking** above).
-- Not verified with a live key: Hermes names Claude by Anthropic's own id on the Messages API
-  (`claude-sonnet-5-5`); the request patch puts OpenRouter's id back, but the compression call goes out as
-  Hermes builds it, relying on OpenRouter to map Anthropic's ids.
+- Hermes names Claude by Anthropic's own id on the Messages API (`claude-sonnet-5-5`); the request patch puts
+  the configured OpenRouter id back on every call it patches.
 
 #### OpenAI
 
@@ -712,9 +706,9 @@ key works too). Hermes calls the Responses API at `https://api.openai.com/v1` wi
 nothing is stored (`store: false`). A project with data residency is called at its region's host: `baseUrl`
 `https://<region>.api.openai.com`, region `us`, `eu`, `ae`, `au`, `ca`, `jp`, `in`, `sg`, `kr` or `gb`
 ([Your data](https://developers.openai.com/api/docs/guides/your-data)); any other `baseUrl` is refused.
-Models: `gpt-6-luna` (fast: the cheapest), `gpt-6-sol`, `gpt-6.1-sol` (default: OpenAI's balance of
-intelligence and cost, near Astra at a fifth of its price), `gpt-6-astra`, `gpt-5.6-luna`, `gpt-5.6-terra`
-and `gpt-5.6-sol`. An agent refuses a missing key, a key with whitespace or control characters, a JWT (a
+`model` an OpenAI model id, such as `gpt-6.1-sol` (OpenAI's balance of intelligence and cost) or `gpt-6-luna`
+(the cheapest). An agent refuses a missing model, a missing key, a key with whitespace or control characters, a
+JWT (a
 ChatGPT or Codex login, or a workload identity token, which lasts at most an hour) and an Admin API key
 (`sk-admin-…`), which works only on OpenAI's administration endpoints. Watch out for:
 
@@ -722,9 +716,8 @@ ChatGPT or Codex login, or a workload identity token, which lasts at most an hou
 - Requests ask for no reasoning summary (Grokky shows none, and summaries may need a verified
   organization). Streaming the newest models may still need one: OpenAI's error then says so, and the
   organization is verified in the OpenAI platform's organization settings.
-- GPT-6 Astra and GPT-6.1 Sol cannot turn reasoning off: a turn without an effort runs at their default
-  (medium).
-- The catalog has Standard prices. Regional processing costs 10% more for models released on or after
+- A turn without an effort asks for `low` reasoning: GPT-6 Astra and GPT-6.1 Sol cannot turn reasoning off.
+- Hermes' list has Standard prices. Regional processing costs 10% more for models released on or after
   2026-03-05, which the cost limit does not count.
 - A 401 hint names `apiKey` and `baseUrl`: a project with data residency must be called at its region's
   host.
@@ -734,15 +727,13 @@ ChatGPT or Codex login, or a workload identity token, which lasts at most an hou
 `provider` `Azure`; `apiKey` a key of the resource (in the Foundry portal, a deployment's Details tab);
 `baseUrl` the resource without a path: `https://<resource>.services.ai.azure.com` for a Microsoft Foundry
 resource, which serves Claude and GPT, or `https://<resource>.openai.azure.com` for an Azure OpenAI resource,
-GPT only; `model` (required) and `fastModel` the deployments to use, each as `<deployment>=<catalog model>`,
-or as the deployment name alone when that is a catalog model id, as Azure names a deployment by default
-(`claude-sonnet-5-5`, `gpt-6-sol`). The provider offers only these deployments; without `fastModel` the
-default model is also the fast one. A Claude deployment's name must contain its model id and no dot
-(`claude-opus-5-5-eu=claude-opus-5-5`): Hermes picks a Claude request's thinking and sampling settings by the
-model name, so under another name Opus 5.5 and Fable 5.1 would get thinking with a token budget, which they
-refuse, and it turns the dots of a `claude-…` name into hyphens. Of the catalog's models Azure deploys Claude
-Opus, Sonnet and Haiku 5.5 and, in preview on Anthropic's infrastructure, Fable 5.1; GPT 6.1 Sol, 6 Astra,
-Sol and Luna, and 5.6 Sol, Terra and Luna
+GPT only; `model` the deployment to use, by default named after its model (`claude-sonnet-5-5`, `gpt-6-sol`). A
+deployment whose name contains `claude` is called as Claude, any other as GPT. A Claude deployment's name must
+contain its model id and no dot (`claude-opus-5-5-eu`): Hermes picks a Claude request's thinking and sampling
+settings by the model name, so under another name Opus 5.5 and Fable 5.1 would get thinking with a token budget,
+which they refuse, and it turns the dots of a `claude-…` name into hyphens. Azure deploys Claude Opus, Sonnet and
+Haiku 5.5 and, in preview on Anthropic's infrastructure, Fable 5.1; GPT 6.1 Sol, 6 Astra, Sol and Luna, and 5.6
+Sol, Terra and Luna
 ([Claude in Foundry](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-claude),
 [models sold by Azure](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure)).
 
@@ -759,10 +750,10 @@ encrypted reasoning on GPT calls; a stub sees this only when it answers as the r
 (`TEST_UPSTREAM=https://<resource>.services.ai.azure.com:<port>`).
 
 An agent refuses a missing key or one with whitespace or control characters, a `baseUrl` of any other form
-(a path, a port, another host or cloud, http), a Claude deployment on an `openai.azure.com` resource or under
-another name, a missing `model`, and a deployment mapped to a model outside the catalog. A 401 adds a hint
-to check `apiKey`; a 404, Azure's answer to an unknown deployment, one to check `baseUrl`, `model` and
-`fastModel`. Microsoft Entra ID sign-in is not supported yet, so a resource with key access turned off
+(a path, a port, another host or cloud, http), a Claude deployment on an `openai.azure.com` resource or with a
+dot in its name, and a missing `model`. A 401 adds a hint to check `apiKey`; a 404, Azure's answer to an unknown
+deployment, one to check `baseUrl` and `model`. Hermes has no Azure prices, so only the call limit bounds a turn.
+Microsoft Entra ID sign-in is not supported yet, so a resource with key access turned off
 refuses every call.
 
 #### Bedrock
@@ -773,16 +764,13 @@ supported). Hermes calls Bedrock's `bedrock-runtime` endpoint in that region: Cl
 API at `https://bedrock-runtime.<region>.amazonaws.com/anthropic` with the key in `x-api-key`, GPT on its
 OpenAI Responses API at `…/openai/v1` with the key as Bearer. No AWS SDK, SigV4 or Converse API is involved.
 
-Models are global cross-Region inference profiles, which every commercial region reaches at Anthropic's and
-OpenAI's own prices: `global.anthropic.claude-haiku-5-5` (fast), `global.anthropic.claude-sonnet-5-5` (default),
-`global.anthropic.claude-opus-5-5`, `global.anthropic.claude-fable-5-1`, and `global.openai.gpt-6-astra`,
-`…gpt-6.1-sol`, `…gpt-6-sol`, `…gpt-6-luna`, `…gpt-5.6-sol`, `…gpt-5.6-terra` and `…gpt-5.6-luna`. A global
-profile may serve a request from any commercial region. To keep requests in one geography, name its
-geographic profile with `model` (quick calls then run on it too), and a cheaper one with `fastModel`, e.g.
-`eu.anthropic.claude-sonnet-5-5=claude-sonnet-5-5` and `eu.anthropic.claude-haiku-5-5=claude-haiku-5-5`. Claude
-5.5 has `us.`, `eu.` and `au.` profiles (Haiku and Opus also `jp.`), Fable 5.1 and GPT `us.` (GPT-5.6 Terra and
-Luna also `in.`); Opus 5.5 also runs in-region in `eu-west-2` (`anthropic.claude-opus-5-5`). Geographic and
-in-region profiles cost 10% more, which the cost limit does not count. Model ids and prices: each model's card under
+`model` names an inference profile, such as `global.anthropic.claude-sonnet-5-5` or `global.openai.gpt-6-sol`:
+a global profile reaches the model from every commercial region at Anthropic's and OpenAI's own prices, and may
+serve a request from any of them. To keep requests in one geography, name its geographic profile, such as
+`eu.anthropic.claude-sonnet-5-5`. Claude 5.5 has `us.`, `eu.` and `au.` profiles (Haiku and Opus also `jp.`),
+Fable 5.1 and GPT `us.` (GPT-5.6 Terra and Luna also `in.`); Opus 5.5 also runs in-region in `eu-west-2`
+(`anthropic.claude-opus-5-5`). Geographic and in-region profiles cost 10% more. Hermes has no Bedrock prices, so
+only the call limit bounds a turn. Model ids and prices: each model's card under
 [Endpoint availability](https://docs.aws.amazon.com/bedrock/latest/userguide/models-endpoint-availability.html).
 
 What to watch out for:
@@ -810,17 +798,13 @@ that may query the models (an OAuth access token works too, but lasts only about
 workspace URL, without a path: `https://<workspace>.cloud.databricks.com` (AWS),
 `https://adb-<id>.<n>.azuredatabricks.net` (Azure) or `https://<id>.<n>.gcp.databricks.com` (Google Cloud).
 Hermes calls the workspace's AI Gateway with the token as Bearer: Claude in the Messages format at
-`/ai-gateway/anthropic/v1/messages`, GPT in the Responses format at `/ai-gateway/openai/v1/responses`. Models,
-by their Unity Gateway model service names: `system.ai.claude-haiku-5-5` (fast), `system.ai.claude-sonnet-5-5`
-(default), `system.ai.claude-opus-5-5`, `system.ai.claude-fable-5-1`, `system.ai.gpt-6-luna`,
-`system.ai.gpt-6-sol`, `system.ai.gpt-6-1-sol`, `system.ai.gpt-6-astra`, `system.ai.gpt-5-6-luna`,
-`system.ai.gpt-5-6-terra` and `system.ai.gpt-5-6-sol`. A serving endpoint of the workspace (a pay-per-token one
-such as `databricks-claude-opus-5-5`, or an external model's) goes in `model` or `fastModel` as
-`<endpoint>=<catalog model>`. **The default, Claude Sonnet 5.5, takes no images on Databricks**: a turn with
-images on it ends in an error. For images, set `model` to a model that takes them, such as
-`system.ai.claude-opus-5-5` (and `fastModel` to `system.ai.claude-haiku-5-5` to keep quick calls cheap). An
-agent refuses a missing key, a key with whitespace or control characters, and a `baseUrl` of any other form (a
-path, a port, a query, Google Cloud's legacy regional URL). Docs:
+`/ai-gateway/anthropic/v1/messages`, GPT in the Responses format at `/ai-gateway/openai/v1/responses`. `model`
+names a Unity Gateway model service (`system.ai.claude-sonnet-5-5`, `system.ai.gpt-6-sol`; the version's dots
+written as hyphens) or a serving endpoint of the workspace (a pay-per-token one such as
+`databricks-claude-opus-5-5`, or an external model's); a name that contains `claude` is called as Claude, any
+other as GPT. Claude Sonnet 5.5 takes no images on Databricks: a turn with images on it ends in the model's
+error. An agent refuses a missing model, a missing key, a key with whitespace or control characters, and a
+`baseUrl` of any other form (a path, a port, a query, Google Cloud's legacy regional URL). Docs:
 [Anthropic Messages](https://docs.databricks.com/aws/en/machine-learning/model-serving/query-anthropic-messages),
 [OpenAI Responses](https://docs.databricks.com/aws/en/machine-learning/model-serving/query-openai-responses),
 [supported models](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/supported-models).
@@ -828,8 +812,7 @@ Checked against a test stub and request probes; against a live workspace only th
 route, on a Free Edition workspace, which hosts no Claude or GPT-6 model (its GPT OSS is refused on the
 Responses route: `Responses API passthrough is not supported for model databricks-gpt-oss-120b`). Watch out for:
 
-- Prices: Databricks bills its own rates; the cost limit prices each call at the catalog's list prices, an
-  approximation.
+- Prices: Databricks bills its own rates, which Hermes does not have, so only the call limit bounds a turn.
 - Endpoint names: Hermes picks Claude's thinking parameters by the model name. Name a Claude endpoint after its
   model (containing `claude-sonnet-5-5`, say); under any other name, turns that ask for reasoning get the older
   parameters (`budget_tokens`, `temperature`), which Claude 5.x rejects.
@@ -853,11 +836,9 @@ gateway) in Anthropic's or OpenAI's format.
 | `baseUrl` | The endpoint's https URL, with an ASCII host; no user info, query or fragment. Plain http is refused, to a local host too: a tool of any session could listen on that port (say `[::1]:4000` beside a sidecar that listens on IPv4 only) and take the key and every conversation |
 | `apiFormat` | The format of every call: `anthropic-messages` (`POST <baseUrl>/v1/messages`, a trailing `/v1` dropped first), `openai-responses` (`POST <baseUrl>/responses`) or `openai-chat-completions` (`POST <baseUrl>/chat/completions`), so an OpenAI-format URL usually ends in `/v1` |
 | `apiKey` | The endpoint's key, sent as `Authorization: Bearer` in every format |
-| `model` | Required: a catalog model's id, sent as is (`claude-sonnet-5-5`), or `<id>=<catalog model>` for the endpoint's own name (`gw-sonnet=claude-sonnet-5-5`) |
-| `fastModel` | Optional, in the same forms; by default `model` |
+| `model` | Required: the model id the endpoint takes, sent as is |
 
-Only these one or two models are offered. Each one's catalog model gives its context window, image input and
-the prices every call is charged at: Anthropic's and OpenAI's list prices, not the gateway's.
+Hermes has no prices for a custom endpoint, so only the call limit bounds a turn.
 
 The key goes as a Bearer token because the common endpoints take it that way: vLLM takes nothing else (on its
 `/v1/messages` too), LiteLLM reads it first, Anthropic's gateway guide has Claude Code users try it when a
@@ -865,17 +846,16 @@ gateway's header is unknown, and Anthropic's API itself accepts a Console key as
 string as `x-api-key` on the Anthropic format, so the provider hands it the key as a callable; to
 `api.anthropic.com` itself Hermes still sends a Console key as `x-api-key`. A gateway that reads its key from
 another header only is not supported. An agent refuses a missing or unknown `apiFormat`, a missing or other
-`baseUrl`, a `model` neither in the catalog nor mapped to it, and a Claude subscription token bound for
-`api.anthropic.com` in any format.
+`baseUrl`, a missing `model`, and a Claude subscription token bound for `api.anthropic.com` in any format.
 
 What to watch out for:
 
-- Nothing checks the endpoint before the first turn: a wrong URL, format or model shows in that turn's error,
-  with a hint naming the credentials to check after a 401, a 404 or no answer at all (`Connection error.`).
+- A wrong URL, format or model shows in the startup check's log line and in every turn's error, with a hint
+  naming the credentials to check after a 401, a 404 or no answer at all (`Connection error.`).
 - On the Anthropic format Hermes picks the thinking parameters by the model id. An id without `claude` in it
   (`gw-sonnet`) gets the legacy `thinking.type: enabled`, which Claude 5 models refuse with a 400: Hermes
   repeats the call without it, once per session, and the turn's effort is lost. Name Claude models by an id
-  that contains the catalog name (`claude-sonnet-5-5`, `corp-claude-sonnet-5-5`).
+  that contains the model's own (`claude-sonnet-5-5`, `corp-claude-sonnet-5-5`).
 - Claude's thinking: Hermes sends it back only to the hosts that check Anthropic's signatures (see **Claude's
   thinking** above); at any other gateway host Claude does not see its earlier reasoning, not even within a
   turn.
@@ -904,8 +884,8 @@ What to watch out for:
 ```bash
 cd packages/Grokky/dockerfiles/claude-runtime
 docker build -t grokky-claude-runtime:<version> .
-docker run --rm -p 5355:5355 -e apiKey grokky-claude-runtime:<version>   # apiKey exported in this shell
-curl -s localhost:5355/health          # {"status":"ok"}
+docker run --rm -p 5355:5355 -e apiKey -e model=claude-sonnet-5-5 grokky-claude-runtime:<version>   # apiKey exported
+curl -s localhost:5355/health          # {"status":"ok","provider":{"error":null}} once the check has run
 ```
 
 Hermes is pinned by `HERMES_COMMIT` in the Dockerfile's `hermes` stage and built with Hermes' own

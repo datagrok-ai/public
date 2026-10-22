@@ -25,7 +25,6 @@ export interface UserMessage {
   mcpServerUrl?: string;
   outputSchema?: object;
   systemPromptMode?: PromptMode;
-  model?: string;
   clientTools?: ClientToolDef[];
   /** Per-turn gate switches, for A/B experiments (benchmark arms, dev harness). Both default
    * true; the gates are quality mechanisms, not security boundaries, so a client may turn its
@@ -47,14 +46,6 @@ export interface InputResponseMessage {
   sessionId: string;
   requestId?: string;
   value: unknown;
-}
-
-/** The provider's model ids a turn may name, with the one a turn without a model runs on and the one for quick
- * calls (ranking, matching); the browser asks with `{type: 'models'}`. */
-export interface AgentModels {
-  models: string[];
-  defaultModel: string;
-  fastModel: string;
 }
 
 export interface TurnMetrics {
@@ -83,9 +74,7 @@ export type OutgoingMessage =
   | {type: 'queued'; sessionId: string}
   | {type: 'aborted'; sessionId: string}
   | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: unknown}
-  | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]}
-  | ({type: 'models'} & AgentModels)
-  | {type: 'models'; error: string};
+  | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]};
 
 // One agent turn
 
@@ -103,7 +92,6 @@ export interface AgentTurnRequest {
   systemPrompt: string;
   /** Reasoning effort; without one the agent asks for no thinking where the model allows it. */
   effort?: 'high';
-  model?: string;
   cwd: string;
   userDir?: string;
   /** The browser holds a transcript for this session: if the runtime has none, the turn resets instead. */
@@ -144,7 +132,8 @@ export type AgentCommand =
   | {type: 'browser_result'; id: string; value?: unknown; error?: string};
 
 export type AgentProcessEvent =
-  | ({type: 'ready'} & AgentModels)
+  | {type: 'ready'}
+  | {type: 'checked'; error: string | null}
   | {type: 'fatal'; message: string}
   | {type: 'session'; id: string}
   | {type: 'text'; text: string}

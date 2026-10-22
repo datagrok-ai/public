@@ -1,7 +1,7 @@
-# Hermes' config.yaml for every session; config.py adds the skills directory, the compression threshold and each
-# model's context window and image input (model_overrides). Hermes' own additions to the prompt and the loop are off:
-# the runtime owns both.
+# Hermes' config.yaml for every session; config.py adds the skills directory and the compression threshold. Hermes'
+# own additions to the prompt and the loop are off: the runtime owns both.
 agent:
+  image_input_mode: native  # an image goes to the model as is; one without image input answers with an error
   verify_on_stop: false
   intent_ack_continuation: false
   stall_guards: false

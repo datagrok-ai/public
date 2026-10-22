@@ -12,8 +12,8 @@ in their own views, server work (a project saved, a folder listed, a delete that
 answers, asking the user, sandbox Python, a stopped job, a reload, a lost agent process, a `!command` and a
 security probe. OpenRouter passes five core scenarios on both families. Bedrock passed its live checks but
 its browser runs are blocked on a key; Azure and Databricks are checked against stubs and, for Databricks, the
-route and sign-in only. Only Claude and GPT are in Grokky's model catalog; open-weight families (GPT OSS, Llama,
-Qwen) are not supported.
+route and sign-in only. The runtime keeps no model list: other families (GPT OSS, Llama, Qwen) can be named
+through OpenRouter or a custom endpoint, but were not tested.
 
 Making GPT work well took tuning, not code per provider: it read the js-api source where a skill had the answer,
 explored the view before answering a plain question, and computed statistics over missing values. The prompt and
@@ -37,7 +37,7 @@ Claude's from 8 to 0.
 | GPT | Amazon Bedrock | Partially validated | Live checks 5/5, structured output included; BDD blocked as for Claude |
 | GPT | Microsoft Azure | Not tested | Stubs only |
 | GPT | Databricks | Not tested | Route and sign-in only; Free Edition hosts no GPT-6 |
-| Open-weight (GPT OSS, Llama, Qwen) | any | Not supported | Not in the model catalog |
+| Open-weight (GPT OSS, Llama, Qwen) | OpenRouter, custom endpoint | Not tested | Can be named in `model`; called in the Responses or the endpoint's format |
 
 **Validated** means the BDD scenarios that apply passed in a recorded browser run, tools, skills and multi-turn
 tasks included, on top of the live checks. Each family was tested on its cheapest model only (Claude Haiku 5.5,
@@ -45,11 +45,11 @@ GPT-6 Luna); larger models of a family are not covered by these runs.
 
 ## Configuration
 
-| Route | Settings (`provider`, `model`, `fastModel`) |
+| Route | Settings (`provider`, `model`) |
 |---|---|
-| Anthropic | default provider, `claude-haiku-5-5` / `claude-haiku-5-5` |
-| OpenAI | `OpenAI`, `gpt-6-luna` / `gpt-6-luna` |
-| OpenRouter | `OpenRouter`, `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`, the same as fast |
+| Anthropic | default provider, `claude-haiku-5-5` |
+| OpenAI | `OpenAI`, `gpt-6-luna` |
+| OpenRouter | `OpenRouter`, `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna` |
 | Bedrock | `Bedrock`, region `us-east-2`, `global.anthropic.claude-haiku-5-5` or `global.openai.gpt-6-luna` |
 | Custom endpoint | `Custom`, `anthropic-messages` at `https://api.anthropic.com` or `openai-responses` at `https://api.openai.com/v1` |
 

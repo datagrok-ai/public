@@ -11,14 +11,15 @@ import {emit} from './stream-filter';
 import type {WsSender} from './stream-filter';
 import {handleMessage, handleAbort, handleInputResponse, handleDisconnect} from './session';
 import {claimTask, releaseTask} from './tasks';
-import {agentModels, disposeAll, startPool} from './agent/pool';
+import {disposeAll, providerCheck, startPool} from './agent/pool';
 
 const PORT = 5355;
 
 const app = new Hono();
 const {injectWebSocket, upgradeWebSocket} = createNodeWebSocket({app});
 
-app.get('/health', (c) => c.json({status: 'ok'}));
+// The container is healthy whatever the provider check found; `provider` says whether the model answered.
+app.get('/health', (c) => c.json({status: 'ok', provider: providerCheck ?? 'checking'}));
 
 // Admission-task long-poll for the queued route (see tasks.ts). The celery worker
 // re-polls while the answer is {status: 'running'}; any other status ends its task.
@@ -63,12 +64,6 @@ app.get('/ws', upgradeWebSocket(() => {
 
       if (data.type === 'input_response') {
         handleInputResponse(sender, data);
-        return;
-      }
-
-      if (data.type === 'models') {
-        agentModels().then((models) => emit(sender, {type: 'models', ...models}),
-          (e) => emit(sender, {type: 'models', error: `The assistant could not start: ${e.message}`}));
         return;
       }
 

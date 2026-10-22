@@ -219,9 +219,7 @@ User query: ${prompt}`;
 
     let order = functionNames;
     try {
-      const client = ClaudeRuntimeClient.getInstance();
-      const res = await client.query(fullPrompt, {
-        model: (await client.models()).fastModel,
+      const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt, {
         systemPromptMode: 'none',
         outputSchema: orderSchema,
       });

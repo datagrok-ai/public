@@ -16,7 +16,6 @@ exec env -i \
     region="${region:-}" \
     apiFormat="${apiFormat:-}" \
     model="${model:-}" \
-    fastModel="${fastModel:-}" \
     TEST_UPSTREAM="${TEST_UPSTREAM:-}" \
     HERMES_MAX_PROCESSES="${HERMES_MAX_PROCESSES:-}" \
     HERMES_IDLE_TTL_MS="${HERMES_IDLE_TTL_MS:-}" \

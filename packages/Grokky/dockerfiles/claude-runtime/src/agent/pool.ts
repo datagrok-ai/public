@@ -4,7 +4,7 @@ import {randomUUID} from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as readline from 'node:readline';
-import type {AgentCommand, AgentModels, AgentProcessEvent} from '../types';
+import type {AgentCommand, AgentProcessEvent} from '../types';
 import {AGENT_DIR, AGENT_PYTHON, HERMES_HOMES, PLUGIN_DIR, PROVIDER_ENV} from '../constants';
 import {IDLE, killTree, raceIdle, startOrphanReaper} from '../watchdog';
 
@@ -28,16 +28,11 @@ const MAX_CRASHES = 2;
 const redact = (text: string) => (PROVIDER_ENV.apiKey ? text.split(PROVIDER_ENV.apiKey).join('<redacted>') : text)
   .replace(/\bsk-[\w.…-]+/g, 'sk-<redacted>');
 
-let models: AgentModels | undefined;
+const CHECK_TIMEOUT_MS = 120_000;
 
-/** The provider's models, as the first agent to start reported them. Until one has, a request waits for an agent
- * that is starting, or starts one (a spare the next session takes): the answer is that agent's models or its failure,
- * and the next request tries again. */
-export async function agentModels(): Promise<AgentModels> {
-  if (!models)
-    await ([...all].find((p) => !p.started && !p.disposed) ?? await startSpare()).ready;
-  return models!;
-}
+/** The startup connection test's verdict: null when the model answered, else why not; undefined while it runs. */
+export let providerCheck: {error: string | null} | undefined;
+let checking: ChildProcessWithoutNullStreams | undefined;
 
 export interface AgentProcess {
   proc: ChildProcessWithoutNullStreams;
@@ -91,7 +86,7 @@ const holdsSession = (p?: AgentProcess) => !!p && (p.turns > 0 || p.restore !== 
 export const hasExited = (p: AgentProcess) => p.proc.exitCode !== null || p.proc.signalCode !== null;
 
 export function ownedPids(): Set<number> {
-  return new Set([...all].flatMap((p) => p.proc.pid ?? []));
+  return new Set([...all, ...(checking ? [{proc: checking}] : [])].flatMap((p) => p.proc.pid ?? []));
 }
 
 async function spawnProcess(reload?: ParkedSession): Promise<AgentProcess> {
@@ -106,13 +101,7 @@ async function spawnProcess(reload?: ParkedSession): Promise<AgentProcess> {
   for (const f of reload ? fs.readdirSync(home).filter((n) => !SESSION_STATE.test(n)) : [])
     fs.rmSync(path.join(home, f), {recursive: true, force: true});
   fs.mkdirSync(home, {recursive: true, mode: 0o700});
-  // The credentials go over stdin, never the environment, which every tool the agent runs inherits. The cwd is
-  // root-owned, so a stray relative path never lands in runtime state.
-  const proc = spawn(AGENT_PYTHON, ['-m', 'grokky_agent'], {
-    cwd: '/', detached: true,
-    env: {PATH: process.env['PATH'] ?? '/usr/bin:/bin', HOME: home, HERMES_HOME: home, TERM: 'dumb', LANG: 'C.UTF-8',
-      PYTHONUNBUFFERED: '1', PYTHONPATH: AGENT_DIR},
-  });
+  const proc = spawnAgent(home, !reload);
   const tag = path.basename(home).slice(0, 8);
   const p: AgentProcess = {
     proc, home, ready: Promise.resolve(), started: false, disposed: false, turns: 0, turn: null,
@@ -124,7 +113,6 @@ async function spawnProcess(reload?: ParkedSession): Promise<AgentProcess> {
     },
   };
   all.add(p);
-  proc.stdin.on('error', () => {});
   // Whole lines: a key split across two reads would escape the redaction.
   readline.createInterface({input: proc.stderr}).on('line', (raw) => {
     if (!raw)
@@ -156,10 +144,9 @@ async function spawnProcess(reload?: ParkedSession): Promise<AgentProcess> {
     }
     if (ev.type === 'error' || ev.type === 'fatal')
       ev.message = redact(ev.message);
-    if (ev.type === 'ready') {
-      models ??= {models: ev.models, defaultModel: ev.defaultModel, fastModel: ev.fastModel};
+    if (ev.type === 'ready')
       started();
-    } else if (ev.type === 'fatal')
+    else if (ev.type === 'fatal')
       failed(new Error(ev.message));
     else if (ev.type === 'session') {
       if (p.restore !== undefined)
@@ -185,10 +172,54 @@ async function spawnProcess(reload?: ParkedSession): Promise<AgentProcess> {
     }
     forget(p);
   });
-  const settings = {homes: HERMES_HOMES, skillsDir: path.join(PLUGIN_DIR, 'skills'),
-    compressionThresholdTokens: COMPRESSION_THRESHOLD_TOKENS, warm: !reload};
-  p.send({type: 'init', credentials: PROVIDER_ENV, settings});
   return p;
+}
+
+/** An agent process in its own home, sent its init command. The credentials go over stdin, never the environment,
+ * which every tool the agent runs inherits. The cwd is root-owned, so a stray relative path never lands in runtime
+ * state. */
+function spawnAgent(home: string, warm: boolean, args: string[] = []): ChildProcessWithoutNullStreams {
+  const proc = spawn(AGENT_PYTHON, ['-m', 'grokky_agent', ...args], {
+    cwd: '/', detached: true,
+    env: {PATH: process.env['PATH'] ?? '/usr/bin:/bin', HOME: home, HERMES_HOME: home, TERM: 'dumb', LANG: 'C.UTF-8',
+      PYTHONUNBUFFERED: '1', PYTHONPATH: AGENT_DIR},
+  });
+  const settings = {homes: HERMES_HOMES, skillsDir: path.join(PLUGIN_DIR, 'skills'),
+    compressionThresholdTokens: COMPRESSION_THRESHOLD_TOKENS, warm};
+  const init: AgentCommand = {type: 'init', credentials: PROVIDER_ENV, settings};
+  proc.stdin.on('error', () => {});
+  proc.stdin.write(JSON.stringify(init) + '\n');
+  return proc;
+}
+
+/** The connection test: a `--check` agent makes one short call to the configured model and exits. Its verdict is
+ * logged and reported by /health; turns do not wait for it. */
+function checkProvider(): void {
+  const home = path.join(HERMES_HOMES, `check-${randomUUID()}`);
+  fs.mkdirSync(home, {recursive: true, mode: 0o700});
+  const proc = checking = spawnAgent(home, false, ['--check']);
+  let verdict: string | null | undefined;
+  readline.createInterface({input: proc.stdout}).on('line', (line) => {
+    try {
+      const ev: AgentProcessEvent = JSON.parse(line);
+      if (ev.type === 'checked')
+        verdict = ev.error && redact(ev.error);
+      else if (ev.type === 'fatal')
+        verdict = redact(ev.message);
+    }
+    catch {}
+  });
+  const timer = setTimeout(() => proc.pid && killTree(proc.pid), CHECK_TIMEOUT_MS);
+  proc.on('error', (e) => verdict ??= e.message);
+  proc.once('close', () => {
+    clearTimeout(timer);
+    checking = undefined;
+    fs.rmSync(home, {recursive: true, force: true});
+    providerCheck = {error: verdict === undefined ? `the check did not finish in ${CHECK_TIMEOUT_MS / 1000} s` : verdict};
+    const what = `${PROVIDER_ENV['provider'] ?? 'Anthropic'} ${PROVIDER_ENV['model'] ?? ''}`.trim();
+    console.log(providerCheck.error ? `provider check: ${what} failed: ${providerCheck.error}` :
+      `provider check: ${what} answered`);
+  });
 }
 
 /** A process that died holding a session keeps its home, and the next turn reloads the store there, unless the
@@ -394,6 +425,7 @@ export function startPool(): void {
   // Homes of a previous run (container restart, crash) belong to processes that no longer exist.
   for (const entry of fs.readdirSync(HERMES_HOMES))
     fs.rmSync(path.join(HERMES_HOMES, entry), {recursive: true, force: true});
+  checkProvider();
   topUpSpares();
   setInterval(() => reapIdle(), 60_000).unref();
   startOrphanReaper(ownedPids);

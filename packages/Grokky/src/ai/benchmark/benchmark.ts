@@ -4,7 +4,7 @@
 // panel uses (workspace context + view tools + real datagrok-exec/verify round-trips), times each
 // turn client-side (TTFT / total / tool round-trips), reads the server-side token/cost metrics the
 // runtime forwards on `final`, scores each prompt (deterministic assert + a judge on the runtime's
-// fast model), and downloads a JSON + Markdown report tagged with a config label so runs are
+// model), and downloads a JSON + Markdown report tagged with a config label so runs are
 // comparable across latency levers.
 
 import * as grok from 'datagrok-api/grok';
@@ -55,8 +55,6 @@ interface PromptResult {
   category: string;
   prompt: string;
   difficulty: 'trivial' | 'standard' | 'hard';
-  /** The model this arm pinned, or 'default' when the runtime chose. */
-  model: string;
   reps: number;
   okCount: number;
   /** Union of tool names seen across reps — the cheap-vs-strong path discriminator. */
@@ -79,7 +77,7 @@ interface PromptResult {
   errors: string[];
 }
 
-interface BenchReport {label: string; when: string; reps: number; model: string; hasTokens: boolean;
+interface BenchReport {label: string; when: string; reps: number; hasTokens: boolean;
   /** The `only` filter this arm ran with, so a slice is never mistaken for a full run. */
   only?: string;
   results: PromptResult[]}
@@ -135,7 +133,7 @@ async function freshTable(name: string): Promise<DG.DataFrame> {
 // ---- One measured turn — mirrors runClaudeStreaming() but headless -----------------------
 
 async function runTurn(client: ClaudeRuntimeClient, prompt: string, view: DG.ViewBase | null,
-  model?: string, systemPromptMode?: string, difficulty?: string): Promise<RepTurn> {
+  systemPromptMode?: string, difficulty?: string): Promise<RepTurn> {
   // A bare turn declares no tools: the readiness probe must not be gated, graded or tool-driven.
   const viewTools = systemPromptMode === 'none' ? {defs: [], runners: new Map()} : viewFunctionTools();
   const ctx = view ? buildWorkspaceContext() : '';
@@ -230,7 +228,6 @@ async function runTurn(client: ClaudeRuntimeClient, prompt: string, view: DG.Vie
     try {
       client.send(sid, full, {
         ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
-        ...(model ? {model} : {}),
         ...(systemPromptMode ? {systemPromptMode} : {}),
       });
     } catch (err: any) {
@@ -323,8 +320,7 @@ async function judge(client: ClaudeRuntimeClient, prompt: string, answer: string
   // flip a correct answer to failed on transient grounds.
   for (let attempt = 0; ; attempt++) {
     try {
-      const r = await client.query(jp, {model: (await client.models()).fastModel, outputSchema: JUDGE_SCHEMA,
-        systemPromptMode: 'none'});
+      const r = await client.query(jp, {outputSchema: JUDGE_SCHEMA, systemPromptMode: 'none'});
       return {pass: !!r.pass, score: typeof r.score === 'number' ? r.score : (r.pass ? 1 : 0), reason: r.reason ?? ''};
     } catch (e: any) {
       if (attempt >= 1)
@@ -347,8 +343,7 @@ function stats(values: (number | null | undefined)[]): Stats {
 
 // ---- Orchestration ----------------------------------------------------------------------
 
-async function runPrompt(client: ClaudeRuntimeClient, p: SuitePrompt, reps: number,
-  model?: string): Promise<PromptResult> {
+async function runPrompt(client: ClaudeRuntimeClient, p: SuitePrompt, reps: number): Promise<PromptResult> {
   const turns: RepTurn[] = [];
   for (let i = 0; i < reps; i++) {
     const preViews = openTableViews();
@@ -365,7 +360,7 @@ async function runPrompt(client: ClaudeRuntimeClient, p: SuitePrompt, reps: numb
         viewers: view ? Array.from(view.viewers).length : 0,
         tableViews: openTableViews().length,
       };
-      const turn = await runTurn(client, p.prompt, view, model, undefined, p.difficulty);
+      const turn = await runTurn(client, p.prompt, view, undefined, p.difficulty);
       if (turn.ok && p.assert) {
         await delay(ASSERT_SETTLE_MS); // let async filter/viewer updates land before reading state
         const after = openTableViews();
@@ -408,7 +403,7 @@ async function runPrompt(client: ClaudeRuntimeClient, p: SuitePrompt, reps: numb
 
   return {
     category: p.category, prompt: p.prompt,
-    difficulty: p.difficulty ?? 'standard', model: model ?? 'default',
+    difficulty: p.difficulty ?? 'standard',
     reps, okCount: ok.length,
     toolsUsed: Array.from(new Set(turns.flatMap((t) => t.tools))),
     unverifiedRate: ok.length ? ok.filter((t) => t.unverified).length / ok.length : 0,
@@ -458,7 +453,7 @@ function rollupTable(title: string, groups: [string, PromptResult[]][], hasToken
 }
 
 function buildMarkdown(label: string, when: string, reps: number, results: PromptResult[],
-  hasTokens: boolean, model: string, only?: string): string {
+  hasTokens: boolean, only?: string): string {
   const scored = results.filter((r) => r.accuracyPass !== null);
   const passed = scored.filter((r) => r.accuracyPass).length;
   const totalMed = stats(results.map((r) => r.totalMs.median));
@@ -471,7 +466,6 @@ function buildMarkdown(label: string, when: string, reps: number, results: Promp
   lines.push(`| | |`);
   lines.push(`|---|---|`);
   lines.push(`| **When** | ${when} |`);
-  lines.push(`| **Model** | \`${model}\` |`);
   lines.push(`| **Prompts × reps** | ${results.length} × ${reps} = ${results.length * reps} turns |`);
   if (only) lines.push(`| **Suite filter** | \`${only}\` — ⚠️ partial run, not comparable to a full arm |`);
   lines.push(`| **Accuracy** | **${passed}/${scored.length}**` +
@@ -566,11 +560,9 @@ function downloadText(filename: string, text: string): void {
   window.setTimeout(() => {document.body.removeChild(a); URL.revokeObjectURL(url);}, 0);
 }
 
-/** Runs the benchmark suite and downloads a `benchmark-<label>.{json,md}` report.
- * `model` pins every turn to one model (an id the runtime reports) — that is how the control arms
- * for a model comparison are produced without redeploying the runtime. Omit for the runtime default. */
-export async function runBenchmark(label: string, reps: number, model?: string,
-  only?: string): Promise<string> {
+/** Runs the benchmark suite on the runtime's configured model and downloads a `benchmark-<label>.{json,md}`
+ * report; to compare models, run one arm per model, each labelled after it. */
+export async function runBenchmark(label: string, reps: number, only?: string): Promise<string> {
   label = sanitizeLabel(label);
   reps = reps && reps > 0 ? Math.floor(reps) : 3;
   const client = ClaudeRuntimeClient.getInstance();
@@ -588,7 +580,7 @@ export async function runBenchmark(label: string, reps: number, model?: string,
     // systemPromptMode 'none' is essential, not an optimisation: under the full prompt the
     // GroundingGate blocks a content-free probe and sends the model off reading help pages until
     // the turn timeout, so the probe measures the gate rather than whether the runtime is up.
-    const probe = await runTurn(client, 'Reply with exactly: READY', null, (await client.models()).fastModel, 'none');
+    const probe = await runTurn(client, 'Reply with exactly: READY', null, 'none');
     if (probe.ok && probe.content.trim()) break;
     if (i === READY_ATTEMPTS - 1)
       return `Runtime never became ready (${READY_ATTEMPTS} probes) — is the claude-runtime container up?`;
@@ -600,21 +592,20 @@ export async function runBenchmark(label: string, reps: number, model?: string,
     const w = suite[0];
     const preViews = openTableViews();
     const view = w.table ? grok.shell.addTableView(await freshTable(w.table)) : null;
-    await runTurn(client, w.prompt, view, model);
+    await runTurn(client, w.prompt, view);
     for (const v of openTableViews()) if (preViews.indexOf(v) < 0) try {v.close();} catch {}
   } catch (e) {console.warn('benchmark: warm-up failed', e);}
 
   const results: PromptResult[] = [];
   for (let i = 0; i < suite.length; i++) {
     grok.shell.info(`Benchmark "${label}": ${i + 1}/${suite.length} — ${suite[i].category}`);
-    results.push(await runPrompt(client, suite[i], reps, model));
+    results.push(await runPrompt(client, suite[i], reps));
   }
 
   const hasTokens = results.some((r) => r.inputTokens.n > 0);
   const when = new Date().toISOString();
-  const report: BenchReport = {label, when, reps, model: model ?? 'default', hasTokens,
-    ...(only ? {only} : {}), results};
-  const markdown = buildMarkdown(label, when, reps, results, hasTokens, model ?? 'default', only);
+  const report: BenchReport = {label, when, reps, hasTokens, ...(only ? {only} : {}), results};
+  const markdown = buildMarkdown(label, when, reps, results, hasTokens, only);
   downloadText(`benchmark-${label}.json`, JSON.stringify(report, null, 2));
   downloadText(`benchmark-${label}.md`, markdown);
   // Persist server-side too, so compareBenchmarks() can diff runs across configs and a headless
@@ -687,7 +678,6 @@ export async function compareBenchmarks(labels: string): Promise<string> {
   const row = (name: string, get: (o: ReturnType<typeof overall>) => number | null, fmt: (v: number | null) => string) =>
     lines.push(`| ${name} | ` + os.map((o, i) =>
       fmt(get(o)) + (i ? ` (${pct(get(os[0]), get(o))})` : '')).join(' | ') + ' |');
-  lines.push(`| Model | ` + reps.map((r) => '`' + r.model + '`').join(' | ') + ' |');
   lines.push(`| Accuracy | ` + os.map((o) => `**${o.accPassed}/${o.accScored}**` +
     (o.accScored ? ` (${Math.round(100 * o.accPassed / o.accScored)}%)` : '')).join(' | ') + ' |');
   row('Median turn (ms)', (o) => o.totalMs, r0);

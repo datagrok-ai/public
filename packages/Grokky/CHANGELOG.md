@@ -3,6 +3,8 @@
 ## v.next
 
 * AI: The assistant runs on Claude and GPT models through Anthropic, OpenRouter, OpenAI, Microsoft Azure, Amazon Bedrock, Databricks or your own Anthropic- or OpenAI-compatible endpoint; Claude subscription sign-in is not supported
+* AI: The `claude-runtime` container now needs a `model` credential naming the model to run, as the provider names it (e.g. `claude-sonnet-5-5`): a container with only an API key no longer starts
+* AI: At startup the AI runtime checks its provider and model with one short call, and logs whether it answered
 * AI: Web addresses the assistant writes as plain text, such as a documentation link, are clickable
 * AI: Deleting a project, space or file always waits for you to approve it on a confirmation card, even after you declined an earlier one
 * AI: Box plots and pivot tables the assistant adds are split by the columns you asked for, and the averages and medians it reports skip missing values

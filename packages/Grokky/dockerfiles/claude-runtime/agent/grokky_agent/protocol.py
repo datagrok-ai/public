@@ -46,7 +46,6 @@ class TurnCommand(TypedDict):
     images: NotRequired[list[Image]]
     systemPrompt: str
     effort: NotRequired[str]
-    model: NotRequired[str]
     cwd: str
     userDir: NotRequired[str]
     outputSchema: NotRequired[JsonObject]
@@ -80,7 +79,7 @@ class Metrics(TypedDict):
     outputTokens: int
     cacheReadTokens: int
     cacheCreationTokens: int
-    costUsd: float
+    costUsd: float | None
     numTurns: int
     durationMs: int
     durationApiMs: int
@@ -88,9 +87,12 @@ class Metrics(TypedDict):
 
 class ReadyEvent(TypedDict):
     type: Literal['ready']
-    models: list[str]
-    defaultModel: str
-    fastModel: str
+
+
+class CheckedEvent(TypedDict):
+    """The answer of `python -m grokky_agent --check`: why the model could not be reached, if it could not."""
+    type: Literal['checked']
+    error: str | None
 
 
 class FatalEvent(TypedDict):
@@ -158,6 +160,6 @@ class SessionLostEvent(TypedDict):
     type: Literal['session_lost']
 
 
-Event = (ReadyEvent | FatalEvent | SessionEvent | TextEvent | ActivityEvent | ToolStartEvent | ToolEndEvent |
-         BrowserCallEvent | StoppedEvent | LimitEvent | ErrorEvent | CancelledEvent | SessionLostEvent)
+Event = (ReadyEvent | CheckedEvent | FatalEvent | SessionEvent | TextEvent | ActivityEvent | ToolStartEvent |
+         ToolEndEvent | BrowserCallEvent | StoppedEvent | LimitEvent | ErrorEvent | CancelledEvent | SessionLostEvent)
 Emit = Callable[[Event], None]

@@ -12,10 +12,6 @@ export class ClaudeEngine extends DG.AIEngine {
     return this.client.discover();
   }
 
-  async models(): Promise<string[]> {
-    return (await this.client.models()).models;
-  }
-
   async chat(options: DG.AIChatOptions = {}): Promise<DG.AIChat> {
     return new ClaudeChat(this.client, options);
   }
@@ -32,7 +28,7 @@ class ClaudeChat extends DG.AIChat {
   }
 
   protected async* respond(prompt: string, options: DG.AIRunOptions = {}): DG.AIStream {
-    const {client, sessionId, options: {systemPrompt, model}} = this;
+    const {client, sessionId, options: {systemPrompt}} = this;
     const images = await Promise.all((options.attachments ?? []).map(ClaudeChat.encode));
     await client.ensureConnected();
     const chunks: string[] = [];
@@ -55,7 +51,7 @@ class ClaudeChat extends DG.AIChat {
       if (options.signal?.aborted)
         throw options.signal.reason;
       client.send(sessionId, this.started || !systemPrompt ? prompt : `${systemPrompt}\n\n${prompt}`, {
-        systemPromptMode: 'none', model, outputSchema: options.schema, images,
+        systemPromptMode: 'none', outputSchema: options.schema, images,
       });
       while (!final || chunks.length) {
         if (chunks.length)

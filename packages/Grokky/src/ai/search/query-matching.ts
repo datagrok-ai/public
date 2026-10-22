@@ -148,9 +148,8 @@ Analyze the user request and return a JSON object with:
 `;
 
   try {
-    const client = ClaudeRuntimeClient.getInstance();
-    const rawResult = await client.query(`${systemPrompt}\n\n${userPrompt}`,
-      {outputSchema: schema, model: (await client.models()).fastModel});
+    const rawResult = await ClaudeRuntimeClient.getInstance().query(`${systemPrompt}\n\n${userPrompt}`,
+      {outputSchema: schema});
     if (rawResult.searchPattern === NO_MATCH)
       return null;
     const parametersRecord: Record<string, string> = {};

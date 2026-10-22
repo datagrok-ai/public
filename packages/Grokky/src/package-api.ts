@@ -39,19 +39,10 @@ export namespace funcs {
    * Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.
    * @param {string} label - Config label for this run, e.g. baseline / medium-effort
    * @param {number} reps - Repetitions per prompt (default 3)
-   * @param {string} model - Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default.
-   *   choices: Grokky:runtimeModels
    * @param {string} only - Run only part of the suite: comma-separated categories, difficulties, or prompt substrings.
    */
-  export async function runBenchmark(label: string , reps?: number , model?: string , only?: string ): Promise<string> {
-    return await grok.functions.call('Grokky:RunBenchmark', { label, reps, model, only });
-  }
-
-  /**
-   * The model ids the AI runtime offers
-   */
-  export async function runtimeModels(): Promise<any> {
-    return await grok.functions.call('Grokky:RuntimeModels', {});
+  export async function runBenchmark(label: string , reps?: number , only?: string ): Promise<string> {
+    return await grok.functions.call('Grokky:RunBenchmark', { label, reps, only });
   }
 
   /**

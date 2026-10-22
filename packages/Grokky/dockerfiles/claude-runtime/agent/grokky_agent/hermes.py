@@ -37,6 +37,13 @@ class ApiError(TypedDict):
     message: str
 
 
+class Usage(TypedDict, total=False):
+    input_tokens: int | None
+    output_tokens: int | None
+    cache_read_tokens: int | None
+    cache_write_tokens: int | None
+
+
 class Activity(TypedDict, total=False):
     last_activity_at: float | None
     last_activity_description: str
@@ -96,6 +103,17 @@ def send_keys_by_type() -> None:
     Anthropic client of the process."""
     import agent.anthropic_adapter as anthropic_adapter
     anthropic_adapter._requires_bearer_auth = lambda base_url: False
+
+
+def usage_cost(model: str, usage: Usage, billing: str, base_url: str) -> float | None:
+    """USD for one call from Hermes' price list for the provider `billing` names, or None when it has no price."""
+    from agent.usage_pricing import CanonicalUsage, estimate_usage_cost
+    canonical = CanonicalUsage(input_tokens=usage.get('input_tokens') or 0,
+                               output_tokens=usage.get('output_tokens') or 0,
+                               cache_read_tokens=usage.get('cache_read_tokens') or 0,
+                               cache_write_tokens=usage.get('cache_write_tokens') or 0)
+    amount = estimate_usage_cost(model, canonical, provider=billing, base_url=base_url).amount_usd
+    return None if amount is None else float(amount)
 
 
 def new_agent(model: str, connection: Connection, session_id: str, store: SessionStore, toolsets: list[str],

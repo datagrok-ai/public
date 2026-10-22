@@ -179,17 +179,10 @@ export class PackageFunctions {
   static async runBenchmark(
     @grok.decorators.param({type: 'string', options: {description: 'Config label for this run, e.g. baseline / medium-effort'}}) label: string,
     @grok.decorators.param({type: 'int', options: {optional: true, description: 'Repetitions per prompt (default 3)'}}) reps?: number,
-    @grok.decorators.param({type: 'string', options: {optional: true, choices: 'Grokky:runtimeModels',
-      description: 'Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default.'}}) model?: string,
     @grok.decorators.param({type: 'string', options: {optional: true,
       description: 'Run only part of the suite: comma-separated categories, difficulties, or prompt substrings.'}}) only?: string,
   ): Promise<string> {
-    return runBenchmarkImpl(label, reps ?? 3, model, only);
-  }
-
-  @grok.decorators.func({description: 'The model ids the AI runtime offers'})
-  static async runtimeModels(): Promise<string[]> {
-    return (await ClaudeRuntimeClient.getInstance().models()).models;
+    return runBenchmarkImpl(label, reps ?? 3, only);
   }
 
   @grok.decorators.func({name: 'aiChatTurnTask',

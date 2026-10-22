@@ -1,5 +1,6 @@
 """python -m grokky_agent: one chat session. The first stdin line is the init command (credentials and settings, so no
-secret is in this process's environment); every later line is a command, every stdout line an event."""
+secret is in this process's environment); every later line is a command, every stdout line an event. With --check it
+instead makes one short call to the model, prints a `checked` event and exits: the runtime's connection test."""
 import ctypes
 import json
 import os
@@ -47,7 +48,7 @@ def main() -> int:
         emit({'type': 'fatal', 'message': str(e)})
         return 1
     settings = init['settings']
-    config.write_home(Path(os.environ['HERMES_HOME']), settings, provider.hermes_models())
+    config.write_home(Path(os.environ['HERMES_HOME']), settings)
     session.current = s = session.Session(emit, provider, settings['homes'], hermes.open_store(),
                                           hermes.tool_registry(), hermes.spillover_dir())
     hermes.load_plugins()
@@ -55,10 +56,12 @@ def main() -> int:
         emit({'type': 'fatal', 'message': 'the Grokky plugin did not load'})
         return 1
     hermes.send_keys_by_type()
+    if '--check' in sys.argv:
+        emit({'type': 'checked', 'error': s.check()})
+        return 0
     if settings['warm']:
-        s.build_agent(provider.default)
-    emit({'type': 'ready', 'models': list(provider.models), 'defaultModel': provider.default,
-          'fastModel': provider.fast})
+        s.build_agent()
+    emit({'type': 'ready'})
 
     # Turns run on one worker: a cancel and the browser's answers must reach a turn while it runs.
     turns: TurnQueue = queue.Queue()

@@ -7,8 +7,8 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from . import browser_tools, formats, guard, hermes, models, structured
-from .models import Usage
+from . import browser_tools, formats, guard, hermes, structured
+from .hermes import Usage
 from .protocol import BrowserResultCommand, ContinueCommand, Emit, JsonObject, McpServer, Metrics, TurnCommand
 from .providers import Provider
 
@@ -30,6 +30,9 @@ PROVIDER_MESSAGE = re.compile(r"""['"]message['"]: (?:'((?:[^'\\]|\\.)*)'|"((?:[
 SAFETY_FILTER = 'content_policy_blocked'
 SAFETY_FILTER_MESSAGE = "The model provider's safety filter stopped this answer. Try rewording the request."
 BASE_TOOLSETS = ['file', 'terminal', 'skills', 'web', browser_tools.TOOLSET]
+# The connection test's one call: no system prompt, no tools, a reply of a word or two.
+CHECK: TurnCommand = {'type': 'turn', 'text': 'Reply with OK.', 'systemPrompt': '', 'cwd': '/',
+                      'limits': {'maxTurns': 1, 'maxBudgetUsd': 1.0}}
 RETRY_STRUCTURED = ('Your reply did not match the required JSON schema: {}. '
                     'Reply again with only the corrected JSON object.')
 
@@ -63,7 +66,8 @@ class Turn:
         self.started = time.time()
         self.api_calls = 0
         self.api_seconds = 0.0
-        self.cost = 0.0
+        # None once a call had no price: then only the call limit bounds the turn.
+        self.cost: float | None = 0.0
         self.tokens = Tokens()
         self.limit: Literal['turns', 'budget'] | None = None
         self.api_error: str | None = None
@@ -128,7 +132,6 @@ class Session:
         self.spillover = spillover
         self.key = uuid.uuid4().hex
         self.agent: hermes.Agent | None = None
-        self.model = provider.default
         self.history: list[JsonObject] = []
         self.hermes_session: str | None = None
         # The turn whose run is in progress (the hooks act for it), and the latest one received, which gate feedback
@@ -250,19 +253,11 @@ class Session:
 
     def start_turn(self, cmd: TurnCommand, t: Turn) -> None:
         self.restore = cmd.get('restore') or self.restore
-        model = cmd.get('model') or self.provider.default
-        if model not in self.provider.models:
-            self.emit({'type': 'error',
-                       'message': f'Unknown model "{model}": use one of {", ".join(self.provider.models)}'})
-            return
-        if cmd.get('images') and not self.provider.images(model):
-            self.emit({'type': 'error', 'message': f'The model {model} does not accept images'})
-            return
         problem = structured.schema_error(t.schema) if t.schema is not None else None
         if problem:
             self.emit({'type': 'error', 'message': f'The output schema cannot be used: {problem}'})
             return
-        agent = self._prepare(cmd, model)
+        agent = self._prepare(cmd)
         if agent is None:
             self.emit({'type': 'session_lost'})
             return
@@ -301,25 +296,38 @@ class Session:
             raise RuntimeError(call.error)
         return call.value
 
-    def build_agent(self, model: str, hermes_session: str | None = None) -> hermes.Agent:
+    def build_agent(self, hermes_session: str | None = None) -> hermes.Agent:
         self.hermes_session = hermes_session or uuid.uuid4().hex
-        self.agent = hermes.new_agent(model, self.provider.connection(model), self.hermes_session, self.store,
-                                      self._toolsets(), self._on_delta)
-        self.model = model
+        self.agent = hermes.new_agent(self.provider.model, self.provider.connection(), self.hermes_session,
+                                      self.store, self._toolsets(), self._on_delta)
         self.emit({'type': 'session', 'id': self.hermes_session})
         return self.agent
 
-    def _prepare(self, cmd: TurnCommand, model: str) -> hermes.Agent | None:
-        """The agent for this turn's model and stored session, with this turn's tools; None when the stored session
-        to continue is gone."""
+    def check(self) -> str | None:
+        """Why one short call to the model failed, or None when it answered: the runtime's connection test, through
+        the agent and request patch a turn uses, without tools or history."""
+        t = self.turn = self.receive(CHECK)
+        try:
+            agent = hermes.new_agent(self.provider.model, self.provider.connection(), uuid.uuid4().hex, self.store, [],
+                                     self._on_delta)
+            result = agent.run_conversation(CHECK['text'], conversation_history=[], task_id=self.key)
+        finally:
+            self.turn = None
+        if t.api_error:
+            return t.api_error
+        return None if result.get('final_response') else result.get('error') or 'The model returned no answer.'
+
+    def _prepare(self, cmd: TurnCommand) -> hermes.Agent | None:
+        """The agent for this turn's stored session, with this turn's tools; None when the stored session to
+        continue is gone."""
         if self.restore:
-            agent = self.build_agent(model, self.restore)
+            agent = self.build_agent(self.restore)
             self.history = self.store.get_messages_as_conversation(self.restore, repair_alternation=True)
             if not self.history:
                 return None
             self.restore = None
-        elif self.agent is None or model != self.model:
-            agent = self.build_agent(model, self.hermes_session)
+        elif self.agent is None:
+            agent = self.build_agent(self.hermes_session)
         else:
             agent = self.agent
         hermes.set_terminal_cwd(self.key, cmd['cwd'])
@@ -414,8 +422,9 @@ class Session:
     def _account(self, t: Turn, usage: Usage, api_duration: float | None) -> None:
         t.tokens.add(usage)
         t.api_seconds += api_duration or 0.0
-        t.cost += models.cost(self.provider.models[self.model], usage)
-        if t.cost > t.max_cost:
+        cost = self.provider.cost(usage)
+        t.cost = None if cost is None or t.cost is None else t.cost + cost
+        if t.cost is not None and t.cost > t.max_cost:
             self._stop(t, 'budget')
 
     def _stop(self, t: Turn, limit: Literal['turns', 'budget']) -> None:

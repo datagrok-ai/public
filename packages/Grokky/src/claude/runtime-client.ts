@@ -1,10 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
 
-/** The model ids the runtime's provider offers: a turn names one of them, or runs on `defaultModel`; `fastModel` is
- * for quick calls such as ranking and matching. */
-export type RuntimeModels = {models: string[], defaultModel: string, fastModel: string};
-
 export type ChunkEvent = {sessionId: string, content: string};
 export type ImageAttachment = {mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp', data: string};
 /** `name` is the bare tool name (mcp prefix stripped). */
@@ -46,8 +42,6 @@ export class ClaudeRuntimeClient {
   public onClose = new rxjs.Subject<void>();
   private _skillNames: string[] | null = null;
   private _resumable = new Set<string>();
-  private _models: Promise<RuntimeModels> | null = null;
-  private _onModels = new rxjs.Subject<RuntimeModels & {error?: string}>();
 
   private constructor() {}
 
@@ -167,16 +161,11 @@ export class ClaudeRuntimeClient {
           this._skillNames = data.files.map((f: string) => f.replace(/\.[^.]+$/, ''));
         this.onSyncStatus.next({status: data.status, message: data.message, files: data.files});
         break;
-      case 'models':
-        this._onModels.next(data);
-        break;
       }
     };
 
-    // The runtime may come back with other credentials, and so other models.
     this.ws.onclose = () => {
       this.ws = null;
-      this._models = null;
       this.onClose.next();
     };
 
@@ -194,7 +183,7 @@ export class ClaudeRuntimeClient {
     this._resumable.add(sessionId);
   }
 
-  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: string;
+  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string;
     taskId?: string; clientTools?: {name: string; description: string; inputSchema?: object}[];
     images?: ImageAttachment[]}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
@@ -206,7 +195,6 @@ export class ClaudeRuntimeClient {
       ...(this._resumable.has(sessionId) ? {resumeExpected: true} : {}),
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
       ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
-      ...(options?.model ? {model: options.model} : {}),
       ...(options?.taskId ? {taskId: options.taskId} : {}),
       ...(options?.clientTools?.length ? {clientTools: options.clientTools} : {}),
       ...(options?.images?.length ? {images: options.images} : {}),
@@ -231,39 +219,6 @@ export class ClaudeRuntimeClient {
     return this._skillNames ?? [];
   }
 
-  /** The runtime's models, known once one of its agents has started; asked again on the next connection. */
-  models(): Promise<RuntimeModels> {
-    this._models ??= this.ensureConnected().then(() => new Promise<RuntimeModels>((resolve, reject) => {
-      const timer = window.setTimeout(() => {
-        done();
-        reject(new Error('the AI runtime did not report its models'));
-      }, 60_000);
-      const subs = [
-        this._onModels.subscribe((m) => {
-          done();
-          if (m.error)
-            reject(new Error(m.error));
-          else
-            resolve({models: m.models, defaultModel: m.defaultModel, fastModel: m.fastModel});
-        }),
-        this.onClose.subscribe(() => {
-          done();
-          reject(new Error('AI runtime: connection lost'));
-        }),
-      ];
-      const done = () => {
-        window.clearTimeout(timer);
-        for (const s of subs)
-          s.unsubscribe();
-      };
-      this.ws!.send(JSON.stringify({type: 'models'}));
-    })).catch((e) => {
-      this._models = null;
-      throw e;
-    });
-    return this._models;
-  }
-
   abort(sessionId: string): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       return;
@@ -284,7 +239,7 @@ export class ClaudeRuntimeClient {
     this.ws.send(payload);
   }
 
-  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: string,
+  async query(message: string, options?: {sessionId?: string, outputSchema?: object,
     systemPromptMode?: string, timeoutMs?: number}): Promise<any> {
     await this.ensureConnected();
     const sid = options?.sessionId ?? `query-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
@@ -313,7 +268,6 @@ export class ClaudeRuntimeClient {
       }));
       this.send(sid, message, {
         ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
-        ...(options?.model ? {model: options.model} : {}),
         ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
       });
     });
