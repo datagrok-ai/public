@@ -7,11 +7,9 @@ Feature: Antibody numbering with the bundled immunum engine
   the default IMGT run, made next on the same table, numbers by IMGT.
   Engines of other packages (e.g. HMM's ANARCI) come first and are the default when installed, so
   the scenario picks the bundled engine.
-  The last scenario translates TestTrack Bio/bio-lifecycle-immunum-wasm.md scenarios 2 and 3: the
-  table with the IMGT numbering is saved through the ribbon's Save project dialog and reopened, the
-  aligned column comes back with its scheme and position-name tags and the source column with its
-  region annotations, and the engine numbers the reopened table again. That the re-run gives the
-  same values is tested in Bio src/tests/projects-tests.ts ('antibody_numbering').
+  TestTrack Bio/bio-lifecycle-immunum-wasm.md scenarios 2 and 3 (the numbered table through a saved
+  project, the engine run again on the reopened table) are tested in Bio
+  src/tests/projects-tests.ts ('antibody_numbering').
 
   Not translated: the md's timing bound on the worker call — a duration is not a claim the
   platform signals; the other schemes of the md title (Chothia, AHo) — the bundled engine offers
@@ -59,34 +57,5 @@ Feature: Antibody numbering with the bundled immunum engine
     And every value of "AntibodyHC (aligned)" column should have the same length
     And "AntibodyHC (aligned)" column should have no missing values
     And the ".positionNames" tag of "AntibodyHC (aligned)" column should list at least 100 values
-    And no error or warning balloon should have been shown
-    And no errors should have been logged
-
-  Scenario: The numbering comes back from a saved project, and the engine runs again on it
-    Given no project named "bdd-bio-numbering-{run}" is on the server
-    When user opens the Save project dialog from the ribbon
-    And user types "bdd-bio-numbering-{run}" into text input in "Save project" dialog
-    And user clicks on OK in the Save project dialog and the project uploads
-    Then the "Save project" dialog should close
-    When user presses Escape
-    Then 1 project named "bdd-bio-numbering-{run}" should be on the server
-    When user closes all views
-    And user opens the "bdd-bio-numbering-{run}" project and waits for its table
-    Then the table should have 40 rows
-    And "AntibodyHC" column should have semantic type "Macromolecule"
-    And "AntibodyHC" column should have units "fasta"
-    And the table should have a column "AntibodyHC (aligned)"
-    And "AntibodyHC (aligned)" column should have tag ".numberingScheme" equal to "imgt"
-    And every value of "AntibodyHC (aligned)" column should have the same length
-    And "AntibodyHC (aligned)" column should have no missing values
-    And the ".positionNames" tag of "AntibodyHC (aligned)" column should list at least 100 values
-    And "AntibodyHC" column should carry at least 7 annotations
-    When user picks "Bio > Annotate > Apply Numbering Scheme..." from the top menu
-    Then "Apply Antibody Numbering" dialog should be visible
-    When user selects "Immunum" in Engine input in "Apply Antibody Numbering" dialog
-    And user clicks on OK button in "Apply Antibody Numbering" dialog
-    Then a new column "AntibodyHC (aligned) (2)" should have been added
-    And "AntibodyHC (aligned) (2)" column should have tag ".numberingScheme" equal to "imgt"
-    And "AntibodyHC (aligned) (2)" column should have no missing values
     And no error or warning balloon should have been shown
     And no errors should have been logged
