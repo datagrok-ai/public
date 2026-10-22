@@ -555,13 +555,10 @@ export class MemoryTable implements DomainTableLike {
     // as the server clamps it: a limit of 0 would report `hasMore` forever and write nothing
     const cap = Math.max(1, Math.min(options.limit ?? MemoryTable.maxUpdateWhereRows,
       MemoryTable.maxUpdateWhereRows));
-    const instants = new Set(this.properties.filter((p) => (p.propertyType ?? p.type) === 'datetime')
-      .map((p) => p.name!));
-    const same = (column: string, a: unknown, b: unknown): boolean => instants.has(column) && a != null && b != null ?
-      MemoryTable._instant(a) === MemoryTable._instant(b) : Component.sameValue(a ?? null, b ?? null);
+    const plain = (v: unknown) => v instanceof Date ? v.toISOString() : v ?? null;
     // the Edit predicate and the values narrow the selection silently, as the server's do
     const matched = (await this._where({filter})).filter((row) => this._canEdit(row) &&
-      Object.entries(values).some(([column, value]) => !same(column, row[column], value)));
+      Object.entries(values).some(([column, value]) => !Component.sameValue(plain(row[column]), plain(value))));
     const ids = matched.slice(0, cap).map((row) => String(row.id));
     await this.transaction(ids.map((id) => ({op: 'update' as const, table: this.address, id, values})));
     return {updated: ids.length, hasMore: matched.length > cap};
@@ -745,12 +742,6 @@ export class MemoryTable implements DomainTableLike {
     row.updated_on = now;
     row.author_id ??= this._author;
     return row;
-  }
-
-  /** Zone-less ISO text is UTC, as the server reads it. */
-  private static _instant(v: unknown): number {
-    return typeof v === 'string' ? Date.parse(v.includes('T') && !/(Z|[+-]\d\d:?\d\d)$/i.test(v) ? `${v}Z` : v) :
-      Number(v);
   }
 
   /** The row's own `~can_edit`, else the table's — the shape `query` projects. */
