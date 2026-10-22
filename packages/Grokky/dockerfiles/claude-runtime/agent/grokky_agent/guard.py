@@ -1,8 +1,9 @@
-"""Per-user path rules on tool arguments. Every agent runs as the same uid, so this is a pattern check over the
-arguments: defence in depth, not isolation."""
+"""Rules on tool calls: per-user paths, and the user's approval of a destructive MCP op. Every agent runs as the same
+uid, so the path rules are a pattern check over the arguments: defence in depth, not isolation."""
 import json
 import os
 import re
+from typing import Any
 
 from .protocol import JsonObject
 
@@ -15,6 +16,40 @@ STATE_DB = r'(?<![\w.-])state\.db(?![\w.-])'
 # Hermes' file tools expand a leading `~` to the agent's own home, which is runtime state.
 FILE_TOOLS = {'read_file', 'write_file', 'patch', 'search_files'}
 EDIT_TOOLS = {'write_file', 'patch'}
+# The token of a destructive MCP op's dry run, in its result text whether or not Hermes re-encoded it.
+CONFIRM_TOKEN = re.compile(r'confirmToken\\?"\s*:\s*\\?"(\w+)')
+CONFIRM_TOOL = 'datagrok_confirm'
+NOT_APPROVED = ('The user has not approved this in the current turn. Repeat the call without `confirm` for a new dry '
+                'run, ask with datagrok_confirm, and use the new token only if they approve.')
+
+
+class Approvals:
+    """The MCP server's confirm token is a hash of the op's arguments that never expires, so the model could reuse
+    one the user declined. A token is spendable once, and only after the user approved a confirmation card that
+    followed the dry run issuing it, in the same turn."""
+
+    def __init__(self) -> None:
+        self.issued: set[str] = set()
+        self.approved: set[str] = set()
+
+    def check(self, tool: str, args: JsonObject) -> str | None:
+        op_args = args.get('args')
+        token = op_args.get('confirm') if isinstance(op_args, dict) else None
+        if not tool.startswith('mcp__') or not token:
+            return None
+        if token not in self.approved:
+            return NOT_APPROVED
+        self.approved.discard(token)
+        return None
+
+    def record(self, tool: str, result: Any) -> None:
+        text = result if isinstance(result, str) else json.dumps(result, default=str)
+        if tool.startswith('mcp__'):
+            self.issued.update(CONFIRM_TOKEN.findall(text))
+        elif tool == CONFIRM_TOOL:
+            if re.search(r'"confirmed"\s*:\s*true', text):
+                self.approved |= self.issued
+            self.issued.clear()
 
 
 def violation(tool: str, args: JsonObject, user_dir: str | None, homes: str, spillover: str | None = None) \

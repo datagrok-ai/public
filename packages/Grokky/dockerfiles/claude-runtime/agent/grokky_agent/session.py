@@ -70,6 +70,7 @@ class Turn:
         self.cancelled = False
         self.segment_start = True
         self.in_flight: set[str] = set()
+        self.approvals = guard.Approvals()
 
     def metrics(self) -> Metrics:
         return {'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
@@ -162,7 +163,8 @@ class Session:
             return {'action': 'block', 'message': 'No turn is in progress.'}
         args = args or {}
         self.emit({'type': 'tool_start', 'name': tool_name, 'args': args})
-        why = guard.violation(tool_name, args, t.user_dir, self.homes, self.spillover)
+        why = guard.violation(tool_name, args, t.user_dir, self.homes, self.spillover) or \
+            t.approvals.check(tool_name, args)
         if why:
             return {'action': 'block', 'message': why}
         t.in_flight.add(tool_call_id or tool_name)
@@ -178,6 +180,7 @@ class Session:
         t.segment_start = True
         # Hermes reports a call the guard refused too; it never ran.
         if status != 'blocked':
+            t.approvals.record(tool_name, result)
             self.emit({'type': 'tool_end', 'name': tool_name, 'args': args or {},
                        'result': result if isinstance(result, str) else json.dumps(result, default=str)})
 
