@@ -35,18 +35,17 @@ import './gui/balloon';
 
 // import './gui/apps';
 
-// import './gui/viewers/bar-chart';
-// import './gui/viewers/box-plot';
-// import './gui/viewers/density-plot';
+import './gui/viewers/bar-chart';
+import './gui/viewers/box-plot';
+import './gui/viewers/density-plot';
 import './gui/viewers/form';
 import './gui/viewers/histogram';
-// import './gui/viewers/leaflet';
 import './gui/viewers/line-chart';
-// import './gui/viewers/matrix-plot';
-// import './gui/viewers/network-diagram';
-// import './gui/viewers/pc-plot';
-// import './gui/viewers/pie-chart';
-// import './gui/viewers/scatter-plot-3d';
+import './gui/viewers/matrix-plot';
+import './gui/viewers/network-diagram';
+import './gui/viewers/pc-plot';
+import './gui/viewers/pie-chart';
+import './gui/viewers/scatter-plot-3d';
 
 export const _package = new DG.Package();
 export {tests};

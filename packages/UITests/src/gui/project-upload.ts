@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {uploadProject} from './gui-utils';
-import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 category('Projects', () => {
   test('Project: Create', async () => {
@@ -38,7 +38,8 @@ category('Projects', () => {
     const v = grok.shell.addTableView(demog);
 
     await uploadProject('Test upload project', demog.getTableInfo(), v, demog);
-    grok.shell.closeAll(); await delay(500);
+    grok.shell.closeAll();
+    await waitUntil(() => grok.shell.tables.length === 0, 'tables are not closed');
     await grok.dapi.projects.open('Test upload project');
     expect(grok.shell.t != null, true);
     expect(grok.shell.t.name, 'demog 1000');

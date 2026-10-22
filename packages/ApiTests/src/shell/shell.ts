@@ -1,4 +1,5 @@
-import { before, category, expect, expectArray, expectExceptionAsync, test } from '@datagrok-libraries/test/src/test';
+import { before, category, expect, expectArray, expectExceptionAsync, test, waitUntil }
+  from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -101,7 +102,7 @@ category('Shell', () => {
 
   test('clearDirtyFlag', async () => {
     grok.shell.addTableView(grok.data.demo.demog(1000))
-    await DG.delay(1000);
+    await waitUntil(() => grok.shell.project.isDirty, 'The project did not become dirty');
     expect(grok.shell.project.isDirty, true);
     grok.shell.clearDirtyFlag();
     expect(grok.shell.project.isDirty, false);

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, expect, test, delay, testViewer} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, settled, test, testViewer} from '@datagrok-libraries/test/src/test';
 import {TestViewerForProperties} from './test-viewer-for-properties';
 import {_package} from '../package-test';
 
@@ -10,9 +10,6 @@ category('Viewers: Core Viewers', () => {
 
   const skip: { [key: string]: string } = {
     'Form': 'GROK-11708',
-    // 'Heat map': 'GROK-11705',
-    'Network diagram': 'GROK-11707',
-    'Shape Map': 'GROK-16568',
   };
   const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID && v != DG.VIEWER.HEAT_MAP &&
     !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
@@ -40,23 +37,33 @@ category('Viewers: Core Viewers', () => {
         viewerDf = grok.data.demo.demog(20);
       else
         viewerDf = df.clone();
-      await testViewer(v, viewerDf);
+      await testViewer(v, viewerDf, {detectSemanticTypes: true});
     }, { skipReason: skip[v] });
   }
 }, { owner: 'dkovalyov@datagrok.ai' });
 
 category('Viewers', () => {
+  async function testViewerProperties(df: DG.DataFrame, type: string, properties: {[key: string]: any}): Promise<void> {
+    grok.shell.clearLastError();
+    const viewer = grok.shell.addTableView(df).addViewer(type);
+    viewer.setOptions(properties);
+    await settled(viewer);
+    const error = await grok.shell.lastError;
+    if (error)
+      throw new Error(`${type} with ${JSON.stringify(properties)}: ${error}`);
+  }
+
   test('Viewers issues', async () => {
-    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.BOX_PLOT, { valueColumnName: 'started' });
-    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.GRID, { sortByColumnNames: ['age'] });
-    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.GRID, { pinnedRowColumnNames: ['subj'] });
-    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.PC_PLOT, { colorColumnName: 'started' });
-    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.DENSITY_PLOT, { xColumnName: 'started' });
-    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.BAR_CHART,
+    await testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.BOX_PLOT, { valueColumnName: 'started' });
+    await testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.GRID, { sortByColumnNames: ['age'] });
+    await testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.GRID, { pinnedRowColumnNames: ['subj'] });
+    await testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.PC_PLOT, { colorColumnName: 'started' });
+    await testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.DENSITY_PLOT, { xColumnName: 'started' });
+    await testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.BAR_CHART,
       { splitColumnName: 'subj', axisType: DG.AxisType.logarithmic });
-    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.BOX_PLOT, { rowSource: DG.RowSet.MouseOverRow });
-    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.LINE_CHART, { xAxisTickmarksMode: DG.AxisTickmarksMode.Custom });
-    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.PIVOT_TABLE, { aggregateColumnNames: ['study'] });
+    await testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.BOX_PLOT, { rowSource: DG.RowSet.MouseOverRow });
+    await testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.LINE_CHART, { xAxisTickmarksMode: DG.AxisTickmarksMode.Custom });
+    await testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.PIVOT_TABLE, { aggregateColumnNames: ['study'] });
   }, { owner: 'dkovalyov@datagrok.ai' });
 });
 
@@ -75,38 +82,33 @@ category('Viewers', () => {
     viewerList = [];
   });
 
-  /*
   test('addViewer(ViewerType)', async () => {
+    const view = activeTableView();
     try {
       for (const viewerType of coreViewerTypes) {
-        console.log(`Adding ${viewerType}`);
-        const viewer = await addViewerAndWait(tv, viewerType);//tv.addViewer(viewerType);
+        const viewer = view.addViewer(viewerType);
         if (!(viewer instanceof DG.Viewer))
           throw new Error(`TableView.addViewer('${viewerType}') should add a Viewer instance`);
-        await delay(200);
-
+        await settled(viewer);
         viewer.removeFromView();
-        console.log(`Removed ${viewerType}`);
       }
     } finally {
-      closeViewers(tv);
+      view.close();
     }
   });
 
   test('addViewer(Viewer)', async () => {
+    const view = activeTableView();
     try {
       for (const viewerType of coreViewerTypes) {
-        console.log(`Adding ${viewerType}`);
-        const viewer = await addViewerAndWait(tv, DG.Viewer.fromType(viewerType, df));
-        await delay(200);
+        const viewer = view.addViewer(DG.Viewer.fromType(viewerType, view.dataFrame));
+        await settled(viewer);
         viewer.removeFromView();
-        console.log(`Removed ${viewerType}`);
       }
     } finally {
-      closeViewers(tv);
+      view.close();
     }
   });
-  */
 
   test('close', async () => {
     const view = activeTableView();
@@ -129,7 +131,6 @@ category('Viewers', () => {
   test('fromType', async () => {
     for (const viewerType of coreViewerTypes) {
       const viewer = DG.Viewer.fromType(viewerType, df);
-      await delay(200);
       if (!(viewer instanceof DG.Viewer))
         throw new Error(`Viewer.fromType('${viewerType}', df) should add a Viewer instance`);
       expect(viewer.table.id, df.id);
@@ -202,7 +203,7 @@ category('Viewers', () => {
     expect(viewer.onTableAttachedCounter, 2);
 
     // TODO: Check onTableAttached has been called
-  }, { skipReason: 'GROK-11484' });
+  });
 
   test('setPropertyStringWithNumber', async () => {
     // const v: TestViewerForProperties = tv.addViewer('TestViewerForProperties', {}) as TestViewerForProperties;
@@ -277,25 +278,6 @@ function closeViewers(view: DG.TableView) {
 function activeTableView(): DG.TableView {
   return grok.shell.addTableView(grok.data.demo.demog(100));
 }
-
-// function addViewerAndWait(tv: DG.TableView, viewerType: string | DG.Viewer): Promise<DG.Viewer> {
-//   return new Promise((resolve, reject) => {
-//     const sub = grok.events.onViewerAdded.subscribe((data) => {
-//       // @ts-ignore
-//       if ((data.args.viewer as DG.Viewer).type == viewerType || data.args.viewer == viewerType) {
-//         sub.unsubscribe();
-//         // @ts-ignore
-//         resolve(data.args.viewer);
-//       }
-//     });
-//     tv.addViewer(viewerType);
-//     setTimeout(() => {
-//       sub.unsubscribe();
-//       // eslint-disable-next-line prefer-promise-reject-errors
-//       reject('timeout');
-//     }, 100);
-//   });
-// }
 
 function testDefaultSettings(dataFields: boolean, styleFields: boolean, reset: boolean = true) {
   const options = {

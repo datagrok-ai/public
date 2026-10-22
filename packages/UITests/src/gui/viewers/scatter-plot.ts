@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, testViewer, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, testViewer, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {readDataframe} from '../gui-utils';
 
 category('Viewers: Scatter Plot', () => {
@@ -16,8 +16,8 @@ category('Viewers: Scatter Plot', () => {
     const col = df.getCol('Col');
     for (let i = 0; i < 6; i++) col.set(i, null);
     tv.addViewer(DG.VIEWER.SCATTER_PLOT, {xColumnName: 'Col', xAxisType: 'logarithmic', yAxisType: 'logarithmic'});
-    await awaitCheck(() => document.querySelector('[name=viewer-Scatter-plot i] canvas') !== null,
-      'cannot load viewer', 2000);
+    await waitUntil(() => document.querySelector('[name=viewer-Scatter-plot i] canvas') !== null,
+      'cannot load viewer');
     expect(df.filter.trueCount, 7);
   });
 

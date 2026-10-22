@@ -2,6 +2,7 @@
 
 ## 1.5.0 (WIP)
 
+* Added `waitUntil`, `waitUntilAsync` and `settled(viewer)`; `testViewer` and its helpers and the demo auto-tests wait for viewers to settle instead of fixed delays
 * The `BinaryImage` column of the detectors' test data holds a PNG instead of zero bytes, which PowerGrid's detector no longer treats as an image
 * Added the TestTrack shared-page lanes (`shared-page`: worker-shared `test`/`localTest` with `resetShell`), the `known-open-bug`, `filter-panel`, `forms` and `balloons` helpers, and the viewer, property-grid, canvas and event-wait helpers in `viewers`
 * Added `openDatagrok`, local/server lanes, the timing ledger, the `__readCsv` bridge and per-context token minting to `spec-login`, and `saveProjectViaApi`/`saveProjectViaUI`/`drainPendingDeletes` to `projects`, keeping the CI fixes and existing signatures
