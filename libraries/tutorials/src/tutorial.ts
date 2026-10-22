@@ -228,6 +228,7 @@ export abstract class Tutorial extends DG.Widget {
 
     try {
       await this._run();
+      await this.cleanup();
     } catch (error) {
       // If the tutorial was closed during execution, exit without error
       if (!this.closed) {
@@ -671,8 +672,12 @@ export abstract class Tutorial extends DG.Widget {
     }).catch((_) => (console.log('Closing tutorial', this.name), false));
   }
 
+  /** Removes what the tutorial created on the server; runs when the tutorial finishes and when it is closed. */
+  protected async cleanup(): Promise<void> {}
+
   /** Closes all visual components that were added when working on tutorial, e.g., table views. */
   _closeAll(): void {
+    this.cleanup();
     // TODO: Take into account dialogs and other views
     if (this.t?.name) {
       grok.shell.tableView(this.t.name)?.close();

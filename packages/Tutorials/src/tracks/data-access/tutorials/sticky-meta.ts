@@ -17,7 +17,6 @@ enum LINKS {
 /** What the steps tell the learner to type. The later steps look these values back up, so they have
  * to be the same string in both places — they used to disagree in case, and the lookup that missed
  * took the rest of the tutorial down with it. */
-const SCHEMA_NAME = 'schema for tutorial';
 const PROPERTY_NAME = 'project name';
 const PROPERTY_VALUE = 'Tutorial';
 const TABLE_NAME = 'Sticky Meta molecules';
@@ -49,6 +48,18 @@ export class StickyMetaTutorial extends Tutorial {
   demoTable: string = '';
   platform: Platform = getPlatform();
 
+  get typeName() {return `molecule-tutorial-${grok.shell.user.login}`;}
+  get schemaName() {return `schema for tutorial ${grok.shell.user.login}`;}
+
+  protected async cleanup(): Promise<void> {
+    const schema = (await grok.dapi.stickyMeta.getSchemas()).find((s) => s.name === this.schemaName);
+    if (schema)
+      await grok.dapi.stickyMeta.deleteSchema(new DG.Entity(schema.dart).id);
+    const type = (await grok.dapi.entityTypes.list()).find((t) => t.name === this.typeName);
+    if (type)
+      await grok.dapi.entityTypes.delete(type);
+  }
+
   protected async _run() {
     grok.shell.windows.showContextPanel = false;
     grok.shell.windows.showProjects = false;
@@ -56,6 +67,8 @@ export class StickyMetaTutorial extends Tutorial {
     grok.shell.windows.showBrowse = true;
 
     this.header.textContent = this.name;
+
+    const {typeName, schemaName} = this;
 
     // --- Step 1: Introduction ---
     this.title('Introduction', true);
@@ -120,7 +133,7 @@ export class StickyMetaTutorial extends Tutorial {
     );
 
     // --- Step 5: Fill in entity type fields ---
-    await this.dlgInputAction(typeDialog, 'Set "Name" to "molecule-tutorial"', 'Name', 'molecule-tutorial');
+    await this.dlgInputAction(typeDialog, `Set "Name" to "${typeName}"`, 'Name', typeName);
     await this.dlgInputAction(typeDialog, 'Set "Matching expression" to "semtype=Molecule"', 'Matching expression',
       'semtype=Molecule');
 
@@ -168,7 +181,7 @@ export class StickyMetaTutorial extends Tutorial {
     await this.action('Explore schema dialog', fromEvent(doneBtn, 'click'), null, '', () => doneBtn.click());
 
     // --- Step 9: Fill in schema details ---
-    await this.textInpAction(schemaDialogRoot, `Set "Name" to "${SCHEMA_NAME}"`, 'Name', SCHEMA_NAME);
+    await this.textInpAction(schemaDialogRoot, `Set "Name" to "${schemaName}"`, 'Name', schemaName);
 
     const assocWithRoot = $(schemaDialogRoot)
       .find('label.ui-label.ui-input-label span')
@@ -193,11 +206,11 @@ export class StickyMetaTutorial extends Tutorial {
 
     // the rows are rendered after the dialog opens, so the checkbox is looked up on every poll
     const moleculeCheckbox = () => Array.from(selectorDlg.root.querySelectorAll('.property-grid-item-name-text'))
-      .find((x) => x.textContent?.trim() === 'molecule-tutorial')
+      .find((x) => x.textContent?.trim() === typeName)
       ?.closest('.property-grid-item')?.querySelector('input[type="checkbox"]') as HTMLInputElement ?? null;
 
     await this.action(
-      'Select molecule-tutorial',
+      `Select ${typeName}`,
       interval(200).pipe(filter(() => moleculeCheckbox()?.checked === true)),
       moleculeCheckbox,
       '',
@@ -250,7 +263,7 @@ export class StickyMetaTutorial extends Tutorial {
       '.d4-accordion-pane[d4-title="Sticky meta"]'));
     const schemaSection = () => stickyPanes()
       .map((pane) => Array.from(pane.querySelectorAll<HTMLElement>('.grok-sticky-meta-schema-header'))
-        .find(textIs(SCHEMA_NAME)))
+        .find(textIs(schemaName)))
       .find((section) => section != null) ?? null;
     await waitForElement<HTMLElement>(() => {
       for (const pane of stickyPanes()) {
@@ -258,7 +271,7 @@ export class StickyMetaTutorial extends Tutorial {
         if (header && !header.classList.contains('expanded')) header.click();
       }
       return schemaSection();
-    }, `the "${SCHEMA_NAME}" section`);
+    }, `the "${schemaName}" section`);
     schemaSection()?.scrollIntoView({block: 'start'});
 
     // by its label, not by a generated input name: the property is named by the learner
@@ -272,7 +285,7 @@ export class StickyMetaTutorial extends Tutorial {
       interval(200).pipe(filter(() =>
         projectPropertyInput()?.value.trim().toLowerCase() === PROPERTY_VALUE.toLowerCase())),
       [schemaSection, projectPropertyInput],
-      `In the Context Panel, under <b>Sticky meta → ${SCHEMA_NAME}</b>, ` +
+      `In the Context Panel, under <b>Sticky meta → ${schemaName}</b>, ` +
         `type <b>${PROPERTY_VALUE}</b> into the <b>${PROPERTY_NAME}</b> field.`,
       () => Tutorial.setInputValue(projectPropertyInput()!, PROPERTY_VALUE),
     );
@@ -290,10 +303,10 @@ export class StickyMetaTutorial extends Tutorial {
       const btn = schemaSaveButton();
       return btn != null && !btn.classList.contains('disabled') && btn.getAttribute('aria-disabled') !== 'true' ?
         btn : null;
-    }, `the enabled Save button of "${SCHEMA_NAME}"`);
+    }, `the enabled Save button of "${schemaName}"`);
 
     await this.action(
-      `Click SAVE under "${SCHEMA_NAME}"`,
+      `Click SAVE under "${schemaName}"`,
       fromEvent<MouseEvent>(document, 'click', {capture: true})
         .pipe(filter((e) => schemaSaveButton()?.contains(e.target as Node) === true)),
       schemaSaveButton,
@@ -315,7 +328,8 @@ export class StickyMetaTutorial extends Tutorial {
     );
 
     this.title('Sticky Meta tutorial completed', true);
-    this.describe('You have created an entity type and schema, annotated a dataset, and explored Sticky Meta.');
+    this.describe('You have created an entity type and schema, annotated a dataset, and explored Sticky Meta. ' +
+      'The entity type and schema are removed when the tutorial finishes.');
   }
 }
 
