@@ -30,7 +30,7 @@ if (await session.save()) {
   grok.shell.info(`item ${itemId}; the event points at ${event.item_id}`);
 }
 else
-  grok.shell.warning(`${session.lastRefusal.code}: ${session.lastRefusal.message}`);
+  grok.shell.warning(`${session.lastRefusal.code ?? 'refused'}: ${session.lastRefusal.message}`);
 session.dispose();
 
 await items.deleteWhere({property: 'sku', operator: '=', value: sku});

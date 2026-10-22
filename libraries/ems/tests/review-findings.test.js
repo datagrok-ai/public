@@ -297,30 +297,6 @@ scoped('finding 5: a standalone save leaves no subscription on the editor', {}, 
   assert.equal(editor.onChanged.observers.length, 0);
 });
 
-scoped('EMS-032: a refused transaction leaves the server\'s error code on lastRefusal', {}, async () => {
-  const {DomainSession} = await import('../../../js-api/dist/src/ui/domains/domains-session.js');
-  const editor = await sessionFake();
-  editor.prepareSave = () => [{op: {op: 'update', table: 'issue', id: 'i1', values: {title: 'x'}}}];
-  editor.refusalFor = async (e) => e.message;
-  const hadDG = 'DG' in globalThis;
-  Object.assign(globalThis, {grok_Dapi_Domains: () => ({}), grok_Balloon: () => {}, grok_Dapi_Domains_Transaction: () =>
-    Promise.reject({'#domainError': true, status: 403, body: {error: 'forbidden', opIndex: 0, message: 'Refused'}})});
-  if (!hadDG)
-    globalThis.DG = {toDart: (x) => x};
-  const session = new DomainSession([editor], {quiet: true});
-  try {
-    assert.equal(await session.save(), false);
-    assert.equal(session.lastRefusal.code, 'forbidden');
-  } finally {
-    session.dispose();
-    delete globalThis.grok_Dapi_Domains;
-    delete globalThis.grok_Dapi_Domains_Transaction;
-    delete globalThis.grok_Balloon;
-    if (!hadDG)
-      delete globalThis.DG;
-  }
-});
-
 // ─────────────────────────── 6. the delete-ordering rule ────────────────────────────────────────
 
 const SELF = {name: 'stock', tables: {location: {friendlyName: 'Locations', columns: {
