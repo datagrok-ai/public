@@ -154,8 +154,9 @@ For more information on configuring connections, refer to the [Connections](http
 - `connect-folder` makes a local folder a Datagrok connection. The folder agent runs in a Docker container (restart
   policy `unless-stopped`) that dials out to the server, so no inbound port is opened; the folder is the container's
   only mount. The CLI signs in with your keypair (`grok login <server>` first), which never leaves the machine: the
-  container gets a key of its own, registered for this folder only and revoked by `grok connect-folder rm` (or in
-  Profile > Public keys). Connecting the same folder again resumes the same connection. Requires Docker (Linux
+  container gets a key of its own, which the server limits to serving this folder (it can call no other API) and
+  which `grok connect-folder rm` revokes (or Profile > Public keys); re-run `grok connect-folder <folder>` to replace an
+  agent set up by an older grok. Connecting the same folder again resumes the same connection. Requires Docker (Linux
   containers) and the "Connect local folders" permission on the server; a `localhost` server is reached from the
   container as `host.docker.internal`, which Docker Engine on Linux and WSL maps to the host gateway
   (`--add-host host.docker.internal:host-gateway`). On Linux the agent runs as your uid.

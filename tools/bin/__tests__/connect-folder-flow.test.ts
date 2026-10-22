@@ -5,7 +5,7 @@ import os from 'os';
 import path from 'path';
 import * as kp from '../utils/keypair';
 import * as dk from '../utils/connect-folder/docker';
-import {connectFolder as share, shareKeyName, withKeyFile} from '../commands/connect-folder';
+import {connectFolder as share, withKeyFile} from '../commands/connect-folder';
 
 const A = 'http://stand-a/api';
 const B = 'http://stand-b/api';
@@ -137,6 +137,8 @@ interface Stand {
   forbidden?: string,
   /** The agent shows up online only after this many more share listings. */
   offlinePolls?: number,
+  /** A server without folder-limited agent keys: `POST /local_shares/<id>/agent_key` is not a route. */
+  noAgentKeys?: boolean,
 }
 const stands: Record<string, Stand> = {};
 
@@ -176,6 +178,16 @@ async function serve(url: string, init: RequestInit = {}): Promise<Response> {
     return json(s.keys);
   if (p === '/users/current/keys' && method === 'POST') {
     const key = {id: `key-${s.keys.length + 1}-${Math.random()}`, name: body.name, publicKey: body.publicKey};
+    s.keys.push(key);
+    return json(key);
+  }
+  const agentKey = p.match(/^\/local_shares\/([^/]+)\/agent_key$/);
+  if (agentKey && method === 'POST') {
+    if (s.noAgentKeys)
+      return new Response('Not Found', {status: 404});
+    const key = {id: `key-${s.keys.length + 1}-${Math.random()}`, publicKey: body.publicKey,
+      name: `grok connect-folder laptop ${s.shares.get(agentKey[1])?.parameters?.localShareFolder} [${agentKey[1]}]`,
+      scope: `connected-folder:${agentKey[1]}`};
     s.keys.push(key);
     return json(key);
   }
@@ -417,7 +429,7 @@ describe('keys of an interrupted or failed connection', () => {
     await share(args(folder, {host: A}));
     const pulled = events.indexOf('docker pull');
     expect(pulled).toBeGreaterThan(-1);
-    expect(pulled).toBeLessThan(events.indexOf('POST /users/current/keys'));
+    expect(pulled).toBeLessThan(events.indexOf(`POST /local_shares/${ID}/agent_key`));
   });
 
   it('revokes only its own key when docker run fails', async () => {
@@ -492,11 +504,43 @@ describe('grok connect-folder rm, step by step', () => {
   });
 });
 
-describe('shareKeyName', () => {
-  it('shortens a long folder and keeps the id suffix the server matches', () => {
-    const name = shareKeyName('laptop', `/data/${'x'.repeat(200)}/end`, ID);
-    expect(name.endsWith(`[${ID}]`)).toBe(true);
-    expect(name.length).toBeLessThanOrEqual(150);
-    expect(name).toContain('/end');
+describe('the folder-limited agent key', () => {
+  it('is issued by the share, never as a key of the user', async () => {
+    expect(await share(args(folder, {host: A}))).toBe(true);
+    expect(events).toContain(`POST /local_shares/${ID}/agent_key`);
+    expect(events).not.toContain('POST /users/current/keys');
+    expect(stands[A].keys.map((k) => k.scope)).toEqual([`connected-folder:${ID}`]);
+  });
+
+  it('replaces a running agent whose key is not limited to the folder, then revokes that key', async () => {
+    await share(args(folder, {host: A}));
+    const old = stands[A].keys[0];
+    delete old.scope;
+    docker.calls = [];
+    expect(await share(args(folder, {host: A}))).toBe(true);
+    expect(docker.calls.filter((c) => c[0] === 'rm')).toHaveLength(1);
+    expect(ran()).toHaveLength(1);
+    expect(stands[A].keys.map((k) => k.id)).not.toContain(old.id);
+    expect(stands[A].keys.map((k) => k.scope)).toEqual([`connected-folder:${ID}`]);
+  });
+
+  it('keeps a running agent whose key is limited to the folder, with no new key', async () => {
+    await share(args(folder, {host: A}));
+    const keys = stands[A].keys.map((k) => k.id);
+    docker.calls = [];
+    events.length = 0;
+    expect(await share(args(folder, {host: A}))).toBe(true);
+    expect(ran()).toHaveLength(0);
+    expect(events).not.toContain(`POST /local_shares/${ID}/agent_key`);
+    expect(stands[A].keys.map((k) => k.id)).toEqual(keys);
+  });
+
+  it('stops on a server that cannot issue one, with no container and no key', async () => {
+    stands[A].noAgentKeys = true;
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    expect(await share(args(folder, {host: A}))).toBe(false);
+    expect(stderr.mock.calls.map((c) => `${c[0]}`).join('')).toContain('cannot issue a folder-limited key for the agent; update the server');
+    expect(ran()).toHaveLength(0);
+    expect(stands[A].keys).toHaveLength(0);
   });
 });

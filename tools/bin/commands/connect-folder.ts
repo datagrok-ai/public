@@ -80,8 +80,9 @@ async function create(folderArg: string, opts: CreateOptions): Promise<boolean> 
   const containers = await dk.ps({[`${dk.LABEL}.connection`]: conn.id, [`${dk.LABEL}.url`]: cred.url});
   const existing = containers.find((c) => c.name === dk.containerName(cred.url, conn.id));
   const keys = await shareKeys(client, conn.id);
+  // An agent whose key is not limited to the folder (set up by an older grok) is refused by the server: replace it.
   if (existing && !opts.foreground && dk.sameSettings(existing, spec) &&
-      keys.some((k) => k.id === existing.labels[`${dk.LABEL}.key`])) {
+      keys.some((k) => k.id === existing.labels[`${dk.LABEL}.key`] && k.scope === `${FOLDER_SCOPE}:${conn.id}`)) {
     // A share deleted on the server leaves its agent idle (4410), so the recreated one needs a fresh start.
     const wasDeleted = !before.some((s) => s.id === conn.id);
     if (existing.state === 'running' && !wasDeleted)
@@ -95,7 +96,7 @@ async function create(folderArg: string, opts: CreateOptions): Promise<boolean> 
 
   // A key is registered only once the image is here: a Ctrl+C during a long pull then leaves nothing behind.
   await color.step(`Getting the folder agent image ${spec.image}`, () => dk.ensureImage(spec.image));
-  const key = await issueShareKey(client, conn.id, folder);
+  const key = await issueShareKey(client, conn.id, new URL(cred.url).host);
   const revokeMine = () => client.del(`/users/keys/${key.id}`).catch(() => {});
   spec.keyId = key.id;
   const container = dk.containerName(cred.url, conn.id, opts.foreground);
@@ -156,21 +157,21 @@ export async function withKeyFile<T>(key: Jwk, action: (envFile: string) => Prom
   }
 }
 
-/**
- * The container never gets the user's own key: each share has a key of its own, registered for the user and
- * found again by the connection id at the end of its name.
- */
-async function issueShareKey(client: NodeApiClient, connectionId: string, folder: string): Promise<{id: string, privateKey: Jwk}> {
-  const {publicKey, privateKey} = generateKeyPair();
-  const key = await client.post('/users/current/keys',
-    {publicKey: JSON.stringify(publicKey), name: shareKeyName(os.hostname(), folder, connectionId)});
-  return {id: key.id, privateKey};
-}
+/** The scope of a folder agent's key: the server lets its sessions do nothing but serve that folder. */
+const FOLDER_SCOPE = 'connected-folder';
 
-/** The server finds a share's keys by the `[<connection id>]` suffix (deleting a share revokes them): keep it. */
-export function shareKeyName(host: string, folder: string, connectionId: string): string {
-  const shown = folder.length > 80 ? `…${folder.slice(-79)}` : folder;
-  return `grok connect-folder ${host} ${shown} ${keyTag(connectionId)}`;
+/**
+ * The container never gets the user's own key: the server issues each share a key of its own, limited to serving
+ * that share and named with the connection id at its end.
+ */
+async function issueShareKey(client: NodeApiClient, connectionId: string, host: string): Promise<{id: string, privateKey: Jwk}> {
+  const {publicKey, privateKey} = generateKeyPair();
+  const key = await client.post(`/local_shares/${connectionId}/agent_key`, {publicKey: JSON.stringify(publicKey)})
+    .catch((e: any) => {
+      throw e?.apiError?.errorCode === 404 || e?.message === 'Not Found'
+        ? new Error(`${host} cannot issue a folder-limited key for the agent; update the server`) : e;
+    });
+  return {id: key.id, privateKey};
 }
 
 const keyTag = (connectionId: string) => `[${connectionId}]`;
