@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {df, expectNoThrow, wait, withAttachedViewer} from '../helpers';
+import {category, expect, settled, test} from '@datagrok-libraries/test/src/test';
+import {df, expectNoThrow, withAttachedViewer} from '../helpers';
 
 // Regression coverage for GROK-18395: Line chart numeric-to-string X-axis swap error during paint.
 category('AI: GROK-18395: Line chart string X-axis error', () => {
@@ -8,7 +8,7 @@ category('AI: GROK-18395: Line chart string X-axis error', () => {
     await withAttachedViewer<DG.LineChartViewer>(df(rows), DG.VIEWER.LINE_CHART,
       {y: 'numCol', xColumnName: 'numX'}, async (v) => {
         expectNoThrow(() => {v.props['xColumnName'] = 'strCol';});
-        await wait();
+        await settled(v);
         expect(v instanceof DG.LineChartViewer, true);
         expect(v.props['xColumnName'], 'strCol');
       });

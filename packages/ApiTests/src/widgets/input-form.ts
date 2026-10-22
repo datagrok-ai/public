@@ -324,7 +324,9 @@ category('Widgets: InputForm validation and events', () => {
 category('Widgets: InputForm skipLogic', () => {
   let script: DG.Script;
   let choicesCalls = 0;
-  const tick = (ms = 150) => new Promise((r) => setTimeout(r, ms));
+  // the form reacts to a change in zero-delay timers (validation, visible/enabled expressions); browsers clamp nested
+  // ones to 4 ms and run a timer only after every earlier one with an equal or shorter timeout, so this fires after them
+  const tick = () => new Promise((r) => setTimeout(r, 4));
   const numTable = () => DG.DataFrame.fromColumns([DG.Column.fromList('double', 'num', [1, 2, 3])]);
   const invalid = (input: DG.InputBase) => input.input.classList.contains('d4-invalid');
   const shown = (input: DG.InputBase) => input.root.style.display !== 'none';

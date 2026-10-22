@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {checkHTMLElement} from './utils';
-import {before, after, awaitCheck, category, test, delay} from '@datagrok-libraries/test/src/test';
+import {before, after, category, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 category('UI: Tables', () => {
   let v: DG.View;
@@ -47,32 +47,32 @@ category('UI: Tables', () => {
   async function normalize(changeMethod: boolean = false) {
     const ageDF = DG.DataFrame.fromColumns([df.getCol('age')]);
     const tv = grok.shell.addTableView(ageDF);
-    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    await waitUntil(() => document.querySelector('canvas') !== null, 'cannot load table');
     grok.shell.o = ageDF.col('age');
     try {
       const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
-      await awaitCheck(() => {
+      await waitUntil(() => {
         if (pp.querySelector('.ui-label') !== null)
           return (pp.querySelector('.ui-label') as HTMLElement).innerText === 'age';
         return false;
-      }, 'cannot load context panel of age column', 5000);
+      }, 'cannot load context panel of age column');
       const actions = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
         .find((el) => el.textContent === 'Actions') as HTMLElement;
       if (!actions.classList.contains('expanded')) await actions.click();
       const normalize = Array.from(pp.querySelectorAll('.d4-link-action'))
         .find((el) => el.textContent === 'Normalize...') as HTMLElement;
       normalize.click();
-      await delay(100);
-      await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0);
+      await waitUntil(() => DG.Dialog.getOpenDialogs().length > 0, 'Normalize dialog is not open');
       const dialog = DG.Dialog.getOpenDialogs()[0];
       if (changeMethod) {
         const method = dialog.inputs[2];
         method.value = method.property.choices[1];
       }
-      await delay(100);
+      await waitUntil(() => dialog.root.querySelector('.ui-btn.ui-btn-ok.enabled') !== null,
+        'OK button is not enabled');
       (dialog.root.querySelector('.ui-btn.ui-btn-ok.enabled') as HTMLElement).click();
-      await awaitCheck(() => ageDF.getCol('age').get(3) === (changeMethod ? 0.6055613160133362 : 0.7254902124404907),
-        'normalize does not work properly', 1000);
+      await waitUntil(() => ageDF.getCol('age').get(3) === (changeMethod ? 0.6055613160133362 : 0.7254902124404907),
+        'normalize does not work properly');
     } finally {
       tv.close();
       grok.shell.closeTable(ageDF);
@@ -95,7 +95,6 @@ category('UI: Tables: Link', () => {
       df1.currentRowIdx = i;
       await expect(df2.filter.trueCount, 1, 'row ' + (i + 1));
     }
-    await delay(100);
   });
 
   test('row to row', async () => {
@@ -104,7 +103,6 @@ category('UI: Tables: Link', () => {
       df1.currentRowIdx = i;
       await expect(df2.currentRowIdx, i, 'row ' + (i + 1));
     }
-    await delay(100);
   });
 
   test('row to selection', async () => {
@@ -113,7 +111,6 @@ category('UI: Tables: Link', () => {
       df1.currentRowIdx = i;
       await expect(df2.selection.trueCount, 1, 'row ' + (i + 1));
     }
-    await delay(100);
   });
 
   test('filter to filter', async () => {
@@ -126,7 +123,6 @@ category('UI: Tables: Link', () => {
       df1.filter.init((j) => race.get(j) === r);
       await expect(df2.filter.trueCount, arr[i], r);
     }
-    await delay(100);
   });
 
   test('filter to selection', async () => {
@@ -139,7 +135,6 @@ category('UI: Tables: Link', () => {
       df1.filter.init((j) => race.get(j) === r);
       await expect(df2.selection.trueCount, arr[i], r);
     }
-    await delay(100);
   });
 
   test('mouse-over to filter', async () => {
@@ -148,7 +143,6 @@ category('UI: Tables: Link', () => {
       df1.mouseOverRowIdx = i;
       await expect(df2.filter.trueCount, 1, 'row ' + (i + 1));
     }
-    await delay(100);
   });
 
   test('mouse-over to selection', async () => {
@@ -157,7 +151,6 @@ category('UI: Tables: Link', () => {
       df1.mouseOverRowIdx = i;
       await expect(df2.selection.trueCount, 1, 'row ' + (i + 1));
     }
-    await delay(100);
   });
 
   test('selection to filter', async () => {
@@ -170,7 +163,6 @@ category('UI: Tables: Link', () => {
       df1.selection.init((j) => race.get(j) === r);
       await expect(df2.filter.trueCount, arr[i], r);
     }
-    await delay(100);
   });
 
   test('selection to selection', async () => {
@@ -183,7 +175,6 @@ category('UI: Tables: Link', () => {
       df1.selection.init((j) => race.get(j) === r);
       await expect(df2.selection.trueCount, arr[i], r);
     }
-    await delay(100);
   });
 
   async function setLinkType(linkType: string): Promise<DG.DataFrame[]> {
@@ -193,12 +184,11 @@ category('UI: Tables: Link', () => {
     grok.shell.addTableView(df2);
     grok.shell.topMenu.find('Data').find('Link Tables...').click();
     let dialog: DG.Dialog | undefined;
-    await awaitCheck(() => {
+    await waitUntil(() => {
       dialog = returnDialog('Link Tables');
       return !!dialog;
-    }, 'Dialog is not open', 1000);
+    }, 'Dialog is not open');
     setDialogInputValue(dialog!, 'Link Type', linkType);
-    await delay(50);
     const link = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok.ui-btn-raised'))
       .find((el) => (el as HTMLElement).innerText === 'LINK') as HTMLElement;
     link.click();
@@ -222,8 +212,6 @@ async function expect(actual: any, expected: any = true, error?: string): Promis
   if (error)
     error = `${error}, `;
   else error = '';
-  if (actual !== expected) {
-    await delay(100);
+  if (actual !== expected)
     throw new Error(`${error}Expected "${expected}", got "${actual}"`);
-  }
 }

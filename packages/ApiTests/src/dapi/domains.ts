@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, expect, test, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 // Tests for grok.dapi.domains against the 'apitests' domain schema that this
 // package declares in databases/apitests/schema.json (deployed on publish).
@@ -413,7 +413,7 @@ category('Dapi: domain query state', () => {
       view = DG.DomainView.create({schema: 'apitests', table: 'item',
         permanentFilter: `sku = "${mine}"`, embedded: true});
       grok.shell.addView(view);
-      await awaitCheck(() => view.root.textContent!.includes(mine),
+      await waitUntil(() => view.root.textContent!.includes(mine),
         'the filtered row never appeared in the view', 15000);
       const params = view.query;
       const q = DG.DomainQuery.fromParams(params);

@@ -1,13 +1,13 @@
 import * as DG from 'datagrok-api/dg';
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectFiresWithin, expectNoThrow, subscribeAll, until, wait, withTableView} from '../helpers';
+import {category, expect, settled, test} from '@datagrok-libraries/test/src/test';
+import {demog, expectFiresWithin, expectNoThrow, subscribeAll, until, withTableView} from '../helpers';
 
 // The six event observables on the built-in filter panel (DG.FilterGroup).
 category('AI: Viewers: Filters Events', () => {
   test('onFilterAdded fires when a filter is added', async () => {
     await withTableView(demog(), async (tv) => {
       const fg = tv.getFiltersGroup({createDefaultFilters: false});
-      await wait(100);
+      await settled(fg);
       await expectFiresWithin(fg.onFilterAdded,
         () => fg.add({type: DG.FILTER_TYPE.HISTOGRAM, column: 'age'}), 3000);
     });
@@ -16,7 +16,7 @@ category('AI: Viewers: Filters Events', () => {
   test('onFilterRemoved fires when a filter is removed', async () => {
     await withTableView(demog(), async (tv) => {
       const fg = tv.getFiltersGroup({createDefaultFilters: false});
-      await wait(100);
+      await settled(fg);
       fg.add({type: DG.FILTER_TYPE.HISTOGRAM, column: 'age'});
       await until(() => fg.filters.length > 0);
       expect(fg.filters.length > 0, true);
@@ -28,7 +28,7 @@ category('AI: Viewers: Filters Events', () => {
   test('onFilterEnabledChanged fires when a filter is disabled', async () => {
     await withTableView(demog(), async (tv) => {
       const fg = tv.getFiltersGroup({createDefaultFilters: false});
-      await wait(100);
+      await settled(fg);
       fg.add({type: DG.FILTER_TYPE.HISTOGRAM, column: 'age'});
       await until(() => fg.filters.length > 0);
       expect(fg.filters.length > 0, true);
@@ -40,7 +40,7 @@ category('AI: Viewers: Filters Events', () => {
   test('onFilterCriteriaChanged fires when filter criteria change', async () => {
     await withTableView(demog(), async (tv) => {
       const fg = tv.getFiltersGroup({createDefaultFilters: false});
-      await wait(100);
+      await settled(fg);
       fg.add({type: DG.FILTER_TYPE.HISTOGRAM, column: 'age'});
       await until(() => fg.filters.length > 0);
       await expectFiresWithin(fg.onFilterCriteriaChanged,
@@ -51,7 +51,7 @@ category('AI: Viewers: Filters Events', () => {
   test('onFilterSync and onFormulaFilterChanged are well-formed rxjs Observables', async () => {
     await withTableView(demog(), async (tv) => {
       const fg = tv.getFiltersGroup({createDefaultFilters: false});
-      await wait(100);
+      await settled(fg);
       subscribeAll([fg.onFilterSync, fg.onFormulaFilterChanged])();
     });
   });
@@ -59,7 +59,7 @@ category('AI: Viewers: Filters Events', () => {
   test('all six event getters are well-formed (subscribe is a function)', async () => {
     await withTableView(demog(), async (tv) => {
       const fg = tv.getFiltersGroup({createDefaultFilters: false});
-      await wait(100);
+      await settled(fg);
       subscribeAll([fg.onFilterAdded, fg.onFilterRemoved, fg.onFilterCriteriaChanged,
         fg.onFilterEnabledChanged, fg.onFilterSync, fg.onFormulaFilterChanged])();
     });
@@ -68,7 +68,7 @@ category('AI: Viewers: Filters Events', () => {
   test('getFilterSummary returns an Element after a filter is added', async () => {
     await withTableView(demog(), async (tv) => {
       const fg = tv.getFiltersGroup({createDefaultFilters: false});
-      await wait(100);
+      await settled(fg);
       fg.add({type: DG.FILTER_TYPE.HISTOGRAM, column: 'age'});
       await until(() => fg.filters.length > 0);
       expect(fg.getFilterSummary() instanceof Element, true);
@@ -78,7 +78,7 @@ category('AI: Viewers: Filters Events', () => {
   test('setActive toggles the group without throwing', async () => {
     await withTableView(demog(), async (tv) => {
       const fg = tv.getFiltersGroup({createDefaultFilters: false});
-      await wait(100);
+      await settled(fg);
       expectNoThrow(() => {
         fg.setActive(false);
         fg.setActive(true);

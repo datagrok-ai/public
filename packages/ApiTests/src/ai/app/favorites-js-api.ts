@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, expect, test, before} from '@datagrok-libraries/test/src/test';
-import {until, untilAsync} from '../helpers';
+import {category, expect, test, before, waitUntilAsync} from '@datagrok-libraries/test/src/test';
+import {until} from '../helpers';
 
 // Favorites surface: DG.Favorites.add/remove, grok.shell.favorites, grok.dapi.entities.getFavorites.
 // Server round-trips — reuse an existing script entity, verify via polled getFavorites(), un-favorite in finally.
@@ -21,6 +21,12 @@ category('AI: App: Favorites JS API', () => {
   const favoritesContain = (favs: DG.Entity[], id: string): boolean =>
     Array.isArray(favs) && favs.some((f) => f != null && f.id === id);
 
+  const isFavorite = async (id: string): Promise<boolean> =>
+    favoritesContain(await grok.dapi.entities.getFavorites(), id);
+
+  const untilFavorite = (id: string): Promise<void> =>
+    waitUntilAsync(() => isFavorite(id), 'the entity is not among getFavorites()', 3000);
+
   let sharedEntity: DG.Entity | null = null;
   before(async () => {
     sharedEntity = await anyEntity();
@@ -32,8 +38,7 @@ category('AI: App: Favorites JS API', () => {
     const id = e!.id;
     try {
       await DG.Favorites.add(e!);
-      const found = await untilAsync(async () => favoritesContain(await grok.dapi.entities.getFavorites(), id));
-      expect(found, true);
+      await untilFavorite(id);
     } finally {
       await DG.Favorites.remove(e!);
     }
@@ -47,11 +52,10 @@ category('AI: App: Favorites JS API', () => {
     try {
       await DG.Favorites.add(e!);
       added = true;
-      expect(await untilAsync(async () => favoritesContain(await grok.dapi.entities.getFavorites(), id)), true);
+      await untilFavorite(id);
       await DG.Favorites.remove(e!);
       added = false;
-      const gone = await untilAsync(async () => !favoritesContain(await grok.dapi.entities.getFavorites(), id));
-      expect(gone, true);
+      await waitUntilAsync(async () => !(await isFavorite(id)), 'the entity is still among getFavorites()', 3000);
     } finally {
       if (added)
         await DG.Favorites.remove(e!);
@@ -63,7 +67,7 @@ category('AI: App: Favorites JS API', () => {
     expect(e != null, true);
     try {
       await DG.Favorites.add(e!);
-      expect(await untilAsync(async () => favoritesContain(await grok.dapi.entities.getFavorites(), e!.id)), true);
+      await untilFavorite(e!.id);
       const favs = await grok.dapi.entities.getFavorites();
       expect(Array.isArray(favs), true);
       expect(favs.length > 0, true);
@@ -83,7 +87,7 @@ category('AI: App: Favorites JS API', () => {
     try {
       await DG.Favorites.add(e!);
       await DG.Favorites.add(e!);
-      expect(await untilAsync(async () => favoritesContain(await grok.dapi.entities.getFavorites(), id)), true);
+      await untilFavorite(id);
       const favs = await grok.dapi.entities.getFavorites();
       const matches = favs.filter((f) => hasId(f, id)).length;
       expect(matches, 1);
