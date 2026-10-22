@@ -1,5 +1,19 @@
 # Tutorials changelog
 
+## 1.11.8 (2026-10-23)
+
+* Tutorials: Added the ability to skip a step
+* Tutorials: Reopening the app now closes the running tutorial
+* Activity Cliffs, Dashboards, Differential Equations, Filters, Multivariate Analysis, R-Groups Analysis, Similarity Search, Sticky Meta, Substructure Search: Fixed steps that did not complete or highlighted the wrong element
+* Tutorials: Selection steps now wait for a new selection instead of completing on the one left from the previous step, and step counters are correct
+* Peptides SAR: Fixed steps completing on their own
+* Embedded Viewers: Fixed the Trellis step on 1.27 stands
+* [#4341](https://github.com/datagrok-ai/public/issues/4341): Embedded Viewers: Fixed the Color step hint
+* [#4343](https://github.com/datagrok-ai/public/issues/4343): Dashboards: Merged the query steps into one and highlighted the query editor
+* [#4346](https://github.com/datagrok-ai/public/issues/4346): Viewers: The properties step now points to the settings icon and the context menu
+* Filters: The reset step now points to the reset icon only
+* Grid: Resetting the sort from the column menu now completes the sort step
+
 ## 1.11.7 (2026-10-15)
 
 * Sticky Meta: Fixed the Annotate dataset step not completing
