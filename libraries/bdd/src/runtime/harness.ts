@@ -312,6 +312,18 @@ async function afterFeature(page: Page, path: string): Promise<void> {
   await page.close().catch(() => undefined);
 }
 
+/** `grok-bdd run --video on`: Playwright films only the context it makes for a test, and the scenarios run on the
+ * worker's shared page, so that page's context is filmed instead: one video per page, in test-results/videos. */
+const FILMING = !!process.env.BDD_VIDEO && process.env.BDD_VIDEO !== 'off';
+
+function filmed(test: Test): {recordVideo?: {dir: string; size: {width: number; height: number}}} {
+  if (!FILMING)
+    return {};
+  const {project} = test.info();
+  const size = project.use.viewport ?? {width: 1920, height: 1080};
+  return {recordVideo: {dir: join(project.outputDir, 'videos'), size}};
+}
+
 export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   let page: Page | undefined;
   // the cleanups of a page that crashed during the feature: none of them ran
@@ -386,6 +398,11 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
         await afterFeature(page, path);
     }
     page = undefined;
+    // a video is written out when its context closes, so a filmed page ends with its feature
+    if (shared && FILMING) {
+      await shared.context().close().catch(() => undefined);
+      shared = undefined;
+    }
     if (lost) {
       failures.push(new Error(`the page crashed: ${lost} feature-end cleanup(s) could not run, ` +
         'what they remove stays on the server'));
@@ -407,7 +424,7 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
         }
         if (shared?.isClosed())
           shared = await shared.context().newPage();
-        shared ??= await (await browser.newContext()).newPage();
+        shared ??= await (await browser.newContext(filmed(test))).newPage();
         watchErrors(shared);
         watchPictures(shared);
         await trackLeaks(shared);

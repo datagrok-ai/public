@@ -343,6 +343,8 @@ export const trafficRecorded = Given('the AI runtime traffic is recorded', async
     return;
   const frames: Frame[] = [];
   taps.set(page, frames);
+  const turnLog = process.env.GROKKY_BDD_TURNS;
+  const scenario = test.info().title;
   let sockets = 0;
   page.on('websocket', (ws: WebSocket) => {
     if (!RUNTIME_WS.test(ws.url()))
@@ -363,12 +365,22 @@ export const trafficRecorded = Given('the AI runtime traffic is recorded', async
         error: d.type === 'error' ? String(d.message ?? '').replace(SECRET_TEXT, '$1<redacted>') : undefined,
         mode: d.type === 'user_message' ? String(d.systemPromptMode ?? 'full') : undefined,
         restored: d.type === 'user_message' ? String(d.message ?? '').startsWith(RESTORED_TRANSCRIPT) : undefined});
+      if (turnLog && ['models', 'user_message', 'tool_activity', 'final', 'error'].includes(d.type)) {
+        const {tool, summary} = frames[frames.length - 1];
+        fs.appendFileSync(turnLog, JSON.stringify({scenario, dir, type: d.type, sessionId: d.sessionId, tool, summary,
+          model: d.type === 'models' ? {default: d.defaultModel, fast: d.fastModel} : d.model, metrics: d.metrics,
+          error: frames[frames.length - 1].error, revision: d.revision,
+          answer: d.type === 'final' ? String(d.content ?? '').replace(SECRET_TEXT, '$1<redacted>').slice(0, 2000) :
+            undefined}) + '\n');
+      }
     };
     ws.on('framereceived', record('in'));
     ws.on('framesent', record('out'));
     ws.on('close', () => frames.push({dir: 'in', type: 'close', socket}));
   });
-}, {tier: 'api', description: 'records the frames of every claude-runtime WebSocket and its close, across reloads; must precede the first page load that may open one'});
+}, {tier: 'api', description: 'records the frames of every claude-runtime WebSocket and its close, across ' +
+  'reloads; must precede the first page load that may open one; with GROKKY_BDD_TURNS=<file> it also appends ' +
+  'the models, prompts, tool calls, answers and errors there as JSON lines (model, cost, tokens)'});
 
 export const liveModelGate = Given('live AI model calls are allowed', async (_page: Page) => {
   test.skip(process.env.GROKKY_BDD_LIVE !== '1',

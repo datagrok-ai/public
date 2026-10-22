@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Video: Fixed `grok-bdd run --video on`, which Playwright refused as an unknown option and which would not have filmed the shared page anyway: the worker's page is filmed into `test-results/videos/` at the run's screen size, and written out when its feature ends
 * Second account: Fixed a scenario that stopped while signed in as another account running every scenario after it as that account: a journey scenario that stopped, and a test that failed or is a known failure, sign the running account back in before the next one starts (`atScenarioStop`)
 * Locator: Fixed a gesture on a gallery card or link landing before the gallery had redrawn its search or refresh: a phrase naming a gallery or a card waits for the gallery grid's `aria-busy` to clear
 * Vocabulary: Added `user double-clicks on {element} and the project opens` (`grok.events.onProjectOpened` on a 120 s budget, kept in a `@known-failure` scenario; an error balloon or the Data loading error dialog ends it as a failure) and `user double-clicks on {element} and the query it runs completes`
