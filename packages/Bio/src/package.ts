@@ -1493,6 +1493,8 @@ export class PackageFunctions {
   })
   static searchSubsequenceEditor(call: DG.FuncCall) {
     const columns = getMacromoleculeColumns();
+    if (columns.length === 0)
+      return;
     if (columns.length === 1)
       call.func.prepare({macromolecules: columns[0]}).call(true);
     else
