@@ -124,8 +124,6 @@ export class SharedSession implements DomainSession {
       } catch (e) {
         for (const source of batch)
           source.fail(e);
-        if ((e as {code?: unknown} | null)?.code === 'forbidden')
-          this._reloadAccess();
         return false;
       } finally {
         for (const sub of heard)

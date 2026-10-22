@@ -448,19 +448,15 @@ scoped('DomainTable.app(): the shell rewrites the view path only AFTER onViewAdd
 scoped('after a save refused with 403 every source re-reads the access, so New hides; no other refusal re-reads (EMS-032)', async () => {
   const DG = await import('datagrok-api/dg');
   try {
-    for (const [code, platform] of [['validation', true], ['forbidden', true], ['forbidden', false]]) {
+    for (const code of ['validation', 'forbidden']) {
       const {app: a} = await app();
       const add = a.ribbon().main[0];
       const memory = emsBackends.domain;
       memory.tableSync('grit.issue').access = async () => ({can: {view: true, insert: false, edit: false,
         delete: false, share: false}, fields: {title: 'readonly'}});
-      if (platform) {
-        const dg = new DgDomainBackend();
-        memory.saveAll = (edits) => dg.saveAll(edits);
-        DG.DomainSession.next = {message: 'Refused', editor: null, code};
-      }
-      else
-        memory.transaction = async () => { throw Object.assign(new Error('Refused'), {code}); };
+      const dg = new DgDomainBackend();
+      memory.saveAll = (edits) => dg.saveAll(edits);
+      DG.DomainSession.next = {message: 'Refused', editor: null, code};
       const access = a.listSource.access.value;
       const caches = grok.dapi.domains.invalidated;
       a.listSource.rows.byKey('i1').title = 'Revoked meanwhile';
@@ -468,7 +464,7 @@ scoped('after a save refused with 403 every source re-reads the access, so New h
       await flush();
       const forbidden = code === 'forbidden';
       assert.deepEqual([grok.dapi.domains.invalidated - caches, a.listSource.access.value !== access, add.root.hidden],
-        [forbidden && platform ? 1 : 0, forbidden, forbidden], `${code}, ${platform ? 'platform' : 'memory'} backend`);
+        [forbidden ? 1 : 0, forbidden, forbidden], code);
       a.dispose();
     }
   } finally {

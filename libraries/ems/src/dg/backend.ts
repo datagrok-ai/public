@@ -72,7 +72,6 @@ export class DgDomainBackend implements DomainBackend {
           state.problem = refusal.message;
         state.problemCode = refusal?.code ?? null;
       }
-      // as `DomainErrors.report`: the affordances were built from an access the server contradicted
       if (refusal?.code === 'forbidden')
         this.invalidate();
       return false;
