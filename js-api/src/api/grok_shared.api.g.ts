@@ -163,6 +163,8 @@ export class Permission {
 
   static ADMIN_URL_ALIASES = 'AdminUrlAliases';
 
+  static ADMIN_CLUSTER = 'AdminCluster';
+
   static MANAGE_ALERTS = 'ManageAlerts';
 
   static VIEW_TELEMETRY = 'ViewTelemetry';
@@ -193,6 +195,8 @@ export class Permission {
   static CREATE_SPACE = 'CreateSpace';
 
   static CREATE_DOMAIN_SCHEMA = 'CreateDomainSchema';
+
+  static CONNECT_LOCAL_FOLDERS = 'ConnectLocalFolders';
 
   /** ===== General ===== */
   static INVITE_USER = 'InviteUser';
