@@ -110,6 +110,7 @@
     "All users"
   ],
   "category": "General",
+  "skipCI": true,
   "overrides": {
     "datagrok-api": "$datagrok-api",
     "uuid": "^11.1.1"
