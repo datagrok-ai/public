@@ -11,14 +11,13 @@ import '../css/admetica.css';
 
 export class AdmeticaViewApp extends BaseViewApp {
   protected STORAGE_NAME: string = 'admetica-sketcher-values';
-  private _gen = 0;
 
   private get _stale(): boolean {
     return !this.tableView?.root.isConnected;
   }
 
-  private _outdated(gen: number): boolean {
-    return gen !== this._gen || this._stale;
+  private _outdated(run: number): boolean {
+    return run !== this.runId || this._stale;
   }
 
   constructor(parentCall: DG.FuncCall | null) {
@@ -31,10 +30,10 @@ export class AdmeticaViewApp extends BaseViewApp {
   }
 
   protected async processFileData(): Promise<void> {
-    const gen = ++this._gen;
+    const run = this.runId;
     await setProperties();
     await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
-    if (this._outdated(gen))
+    if (this._outdated(run))
       return;
     const models = properties.subgroup.flatMap((subg: Subgroup) => subg.models).map((model: Model) => model);
     const queryParams = models.map((model: Model) => model.name);
@@ -52,7 +51,7 @@ export class AdmeticaViewApp extends BaseViewApp {
     for (const model of models)
       updateColumnProperties(this.tableView?.grid.col(model.name)!, model);
 
-    if (this._outdated(gen))
+    if (this._outdated(run))
       return;
 
     const uniqueSubgroupNames: string[] = Array.from(
@@ -68,19 +67,19 @@ export class AdmeticaViewApp extends BaseViewApp {
       i += 1;
     }
 
-    if (this._outdated(gen))
+    if (this._outdated(run))
       return;
     this.tableView!.grid.scrollToCell(molColName, 0);
   }
 
   private async customFormGenerator(cached: boolean = false): Promise<HTMLElement | null> {
-    const gen = ++this._gen;
+    const run = this.runId;
     const models = await getQueryParams();
-    if (this._outdated(gen))
+    if (this._outdated(run))
       return null;
 
     if (cached)
-      await this.loadCachedData();
+      await this.loadCachedData(run);
     else {
       try {
         await performChemicalPropertyPredictions(
@@ -99,12 +98,12 @@ export class AdmeticaViewApp extends BaseViewApp {
       }
     }
 
-    if (this._outdated(gen))
+    if (this._outdated(run))
       return null;
     const molIdx = this.tableView?.dataFrame.columns.names().indexOf('smiles');
     await addSparklines(this.tableView!.dataFrame, models, molIdx! + 1);
 
-    if (this._outdated(gen))
+    if (this._outdated(run))
       return null;
     const form = createDynamicForm(this.tableView!.dataFrame, models, 'smiles', true);
     const ribbon = form.root.querySelector('.d4-ribbon');
@@ -113,12 +112,14 @@ export class AdmeticaViewApp extends BaseViewApp {
     return form.root;
   }
 
-  private async loadCachedData(): Promise<void> {
+  private async loadCachedData(run: number): Promise<void> {
     const datasetPath = 'System:AppData/Admetica/demo_files/sketcher-demo-app.csv';
     const csvText = await grok.dapi.files.readAsText(datasetPath);
     const sampleData = DG.DataFrame.fromCsv(csvText);
 
     await grok.data.detectSemanticTypes(sampleData);
+    if (this._outdated(run))
+      return;
     this.tableView!.dataFrame = sampleData;
     this.tableView!.dataFrame.name = this.tableName;
   }

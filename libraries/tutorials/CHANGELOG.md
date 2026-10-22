@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1055](https://github.com/datagrok-ai/core/issues/1055): Demo: Fixed errors and a wrong table shown when switching between Sketch and File quickly
 * Tutorial: A running tutorial shows its current step in a bar docked on top; `showAllSteps()` opens the full pane
 
 ## 1.7.10 (2026-10-19)
