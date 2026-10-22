@@ -3,6 +3,7 @@
 ## v.next
 
 * AI: The assistant runs on Claude and GPT models through Anthropic, OpenRouter, OpenAI, Microsoft Azure, Amazon Bedrock, Databricks or your own Anthropic- or OpenAI-compatible endpoint; Claude subscription sign-in is not supported
+* AI: Web addresses the assistant writes as plain text, such as a documentation link, are clickable
 * AI: Web search and web page reading now go through the free tiers of Exa, Parallel, Firecrawl and Keenable (third-party search services)
 * AI: A missing or invalid API key is now reported within seconds instead of minutes, and model errors appear as errors rather than as the assistant's answer
 * AI: A chat goes on after the runtime loses its agent process (killed, out of memory): the next prompt continues from the stored history
