@@ -6,11 +6,12 @@ import {_package} from '../package-test';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {NOTATION, pickUpPalette} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import * as C from '../utils/constants';
 import {getSettingsDialog, PANES_INPUTS, SETTINGS_PANES} from '../widgets/settings';
 import {getDistributionWidget} from '../widgets/distribution';
 import {mutationCliffsWidget} from '../widgets/mutation-cliffs';
+import {getSelectionTable} from '../widgets/selection';
 import {TEST_COLUMN_NAMES} from './utils';
 import wu from 'wu';
 import {CLUSTER_TYPE, LogoSummaryTable} from '../viewers/logo-summary';
@@ -148,6 +149,41 @@ category('Widgets: Mutation cliffs', () => {
       activityCol: scaledActivityCol,
       mutationCliffStats: sarViewer.cliffStats,
     });
+  });
+});
+
+category('Widgets: Selection', () => {
+  let model: PeptidesModel;
+  let bigIdCol: DG.Column;
+
+  before(async () => {
+    await PeptideUtils.loadComponents();
+
+    const df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
+    const sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
+    sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    bigIdCol = df.columns.add(DG.Column.fromBigInt64Array('BigId',
+      BigInt64Array.from({length: df.rowCount}, (_, i) => BigInt('9007199254740993') + BigInt(i))));
+    const activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
+    const tempModel = await startAnalysis(activityCol, sequenceCol, df.getCol(TEST_COLUMN_NAMES.CLUSTER), df,
+      scaleActivity(activityCol, C.SCALING_METHODS.NONE), C.SCALING_METHODS.NONE);
+    if (tempModel === null)
+      throw new Error('Model is null');
+    model = tempModel;
+  });
+
+  test('Bigint column stats in selected compounds', async () => {
+    model.analysisView.grid.col(bigIdCol.name)!.visible = true;
+
+    const {newTable} = getSelectionTable({
+      tableSelection: DG.BitSet.create(model.df.rowCount, (i) => i < 3), gridColumns: model.analysisView.grid.columns,
+      positionColumns: model.positionColumns!, activityColumn: model.getScaledActivityColumn()!,
+      columns: model.settings!.columns ?? {}, isAnalysis: true,
+      colorPalette: pickUpPalette(model.df.getCol(model.settings!.sequenceColumnName), PeptideUtils.getSeqHelper()),
+    });
+    const selectedBigIdCol = newTable.getCol(bigIdCol.name);
+    expect(selectedBigIdCol.stats.max, bigIdCol.stats.max);
   });
 });
 
