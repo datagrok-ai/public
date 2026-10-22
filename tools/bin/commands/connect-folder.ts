@@ -80,6 +80,11 @@ async function create(folderArg: string, opts: CreateOptions): Promise<boolean> 
   const containers = await dk.ps({[`${dk.LABEL}.connection`]: conn.id, [`${dk.LABEL}.url`]: cred.url});
   const existing = containers.find((c) => c.name === dk.containerName(cred.url, conn.id));
   const keys = await shareKeys(client, conn.id);
+  // A key is registered only once the image is here: a Ctrl+C during a long pull then leaves nothing behind.
+  const image = await color.step(`Getting the folder agent image ${spec.image}`, () => dk.ensureImage(spec.image));
+  if (image.pullError)
+    color.warn(`Could not pull ${spec.image}, using the local copy: ${image.pullError}`);
+  spec.imageId = image.id;
   if (existing && !opts.foreground && dk.sameSettings(existing, spec) && keys.some((k) => k.id === existing.labels[`${dk.LABEL}.key`])) {
     // A share deleted on the server leaves its agent idle (4410), so the recreated one needs a fresh start.
     const wasDeleted = !before.some((s) => s.id === conn.id);
@@ -92,8 +97,6 @@ async function create(folderArg: string, opts: CreateOptions): Promise<boolean> 
   for (const c of containers)
     await color.step(`Replacing container ${c.name}`, () => dk.rm(c.name));
 
-  // A key is registered only once the image is here: a Ctrl+C during a long pull then leaves nothing behind.
-  await color.step(`Getting the folder agent image ${spec.image}`, () => dk.ensureImage(spec.image));
   const key = await issueShareKey(client, conn.id);
   const revokeMine = () => client.del(`/users/keys/${key.id}`).catch(() => {});
   spec.keyId = key.id;

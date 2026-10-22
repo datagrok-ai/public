@@ -167,7 +167,7 @@ describe('docker', () => {
     spawned.next.push((c) => { c.stdout.emit('data', 'abc\n'); c.emit('close', 0); });
     spawned.next.push((c) => {
       c.stdout.emit('data', JSON.stringify([{Id: 'abc', Name: '/grok-folder-7ff0714e1d2c', State: {Status: 'running'},
-        Config: {Image: 'img', Labels: {'ai.datagrok.folder.folder': '/home/a/x,y'}}, Mounts: []}]));
+        Image: 'sha256:1', Config: {Image: 'img', Labels: {'ai.datagrok.folder.folder': '/home/a/x,y'}}, Mounts: []}]));
       c.emit('close', 0);
     });
     const found = await dk.ps({'ai.datagrok.folder.connection': ID});
@@ -175,7 +175,36 @@ describe('docker', () => {
       '--filter', `label=ai.datagrok.folder.connection=${ID}`]);
     expect(spawned.calls[1]).toEqual(['inspect', 'abc']);
     expect(found).toEqual([{id: 'abc', name: 'grok-folder-7ff0714e1d2c', state: 'running', image: 'img',
-      labels: {'ai.datagrok.folder.folder': '/home/a/x,y'}, mounts: []}]);
+      imageId: 'sha256:1', labels: {'ai.datagrok.folder.folder': '/home/a/x,y'}, mounts: []}]);
+  });
+
+  it('pulls a tag every time, and falls back to the local copy when the pull fails', async () => {
+    const id = (c: any) => { c.stdout.emit('data', 'sha256:2\n'); c.emit('close', 0); };
+    spawned.next.push((c) => c.emit('close', 0), id);
+    expect(await dk.ensureImage('datagrok/proxy_storage:bleeding-edge')).toEqual({id: 'sha256:2'});
+    expect(spawned.calls.map((c) => c[0])).toEqual(['pull', 'image']);
+
+    spawned.calls = [];
+    spawned.next.push((c) => { c.stderr.emit('data', 'dial tcp: lookup registry-1.docker.io\n'); c.emit('close', 1); }, id);
+    expect(await dk.ensureImage('datagrok/proxy_storage:local'))
+      .toEqual({id: 'sha256:2', pullError: 'dial tcp: lookup registry-1.docker.io'});
+
+    spawned.next.push((c) => { c.stderr.emit('data', 'pull access denied\n'); c.emit('close', 1); },
+      (c) => c.emit('close', 1));
+    await expect(dk.ensureImage('datagrok/proxy_storage:gone')).rejects.toThrow('pull access denied');
+  });
+
+  it('pulls a digest only when Docker does not have it', async () => {
+    const digest = 'datagrok/proxy_storage@sha256:abc';
+    spawned.next.push((c) => { c.stdout.emit('data', 'sha256:3\n'); c.emit('close', 0); });
+    expect(await dk.ensureImage(digest)).toEqual({id: 'sha256:3'});
+    expect(spawned.calls.map((c) => c[0])).toEqual(['image']);
+
+    spawned.calls = [];
+    spawned.next.push((c) => c.emit('close', 1), (c) => c.emit('close', 0),
+      (c) => { c.stdout.emit('data', 'sha256:3\n'); c.emit('close', 0); });
+    expect(await dk.ensureImage(digest)).toEqual({id: 'sha256:3'});
+    expect(spawned.calls.map((c) => c[0])).toEqual(['image', 'pull', 'image']);
   });
 
   it('removes with -f and surfaces the CLI error', async () => {

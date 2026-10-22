@@ -12,7 +12,7 @@ const B = 'http://stand-b/api';
 const ID = '7ff0714e-1d2c-5a3b-9e8f-0123456789ab';
 const USER_KEY = kp.generateKeyPair().privateKey;
 
-interface FakeContainer { id: string, name: string, state: string, image: string, labels: Record<string, string>, rm: boolean }
+interface FakeContainer { id: string, name: string, state: string, image: string, imageId?: string, labels: Record<string, string>, rm: boolean }
 
 /** A `docker` CLI over an in-memory container list; `run`/`create` also record what the key file held at that moment. */
 const docker = {
@@ -21,7 +21,10 @@ const docker = {
   failRun: false,
   /** `run` starts a container that exits at once. */
   runExits: false,
-  images: new Set<string>(),
+  /** Local tag -> image id; [remote] is what the registry has, [offline] fails every pull. */
+  images: new Map<string, string>(),
+  remote: new Map<string, string>(),
+  offline: false,
   keyFiles: [] as {path: string, existed: boolean, content: string, mode: number}[],
 };
 
@@ -41,9 +44,11 @@ function handle(args: string[]): {code: number, out?: string, err?: string, dela
       })).map((c) => c.id).join('\n')};
     }
     case 'image':
-      return docker.images.has(args[4]) ? {code: 0, out: 'sha256:1'} : {code: 1, err: 'No such image'};
+      return docker.images.has(args[4]) ? {code: 0, out: docker.images.get(args[4])} : {code: 1, err: 'No such image'};
     case 'pull':
-      docker.images.add(args[1]);
+      if (docker.offline || !docker.remote.has(args[1]))
+        return {code: 1, err: docker.offline ? 'dial tcp: lookup registry-1.docker.io' : 'pull access denied'};
+      docker.images.set(args[1], docker.remote.get(args[1])!);
       return {code: 0};
     case 'inspect':
       if (args[1] === '--format') {
@@ -51,7 +56,7 @@ function handle(args: string[]): {code: number, out?: string, err?: string, dela
         return c ? {code: 0, out: `${c.state === 'running'}\n`} : {code: 1, err: 'No such object'};
       }
       return {code: 0, out: JSON.stringify(args.slice(1).map(byName).map((c) => ({Id: c!.id, Name: `/${c!.name}`,
-        State: {Status: c!.state}, Config: {Image: c!.image, Labels: c!.labels}, Mounts: []})))};
+        State: {Status: c!.state}, Image: c!.imageId, Config: {Image: c!.image, Labels: c!.labels}, Mounts: []})))};
     case 'run':
     case 'create': {
       const valued = ['--name', '--label', '--mount', '--env-file', '--cap-drop', '--security-opt', '--memory', '-e',
@@ -78,7 +83,7 @@ function handle(args: string[]): {code: number, out?: string, err?: string, dela
         return {code: 125, err: 'docker: Error response from daemon: pull access denied'};
       if (byName(name))
         return {code: 125, err: `Conflict. The container name "/${name}" is already in use`};
-      docker.containers.push({id: `c${docker.containers.length + 1}${Date.now()}`, name, image, labels,
+      docker.containers.push({id: `c${docker.containers.length + 1}${Date.now()}`, name, image, imageId: docker.images.get(image), labels,
         state: args[0] === 'run' && !docker.runExits ? 'running' : args[0] === 'run' ? 'exited' : 'created',
         rm: args.includes('--rm')});
       return {code: 0, out: 'id'};
@@ -214,7 +219,9 @@ beforeEach(() => {
   docker.calls = [];
   docker.failRun = false;
   docker.runExits = false;
-  docker.images = new Set(['datagrok/proxy_storage:1.0', 'datagrok/proxy_storage:2.0']);
+  docker.images = new Map([['datagrok/proxy_storage:1.0', 'sha256:1'], ['datagrok/proxy_storage:2.0', 'sha256:2']]);
+  docker.remote = new Map(docker.images);
+  docker.offline = false;
   events.length = 0;
   docker.keyFiles = [];
   for (const r of [A, B])
@@ -303,6 +310,26 @@ describe('grok connect-folder <folder>', () => {
     }
     expect(containersOf(A)[0].image).toBe('datagrok/proxy_storage:2.0');
     expect(containersOf(A)[0].labels['ai.datagrok.folder.readonly']).toBe('true');
+  });
+
+  it('pulls the server tag, and recreates a container whose image the tag no longer names', async () => {
+    await share(args(folder, {host: A}));
+    docker.remote.set('datagrok/proxy_storage:1.0', 'sha256:new');
+    docker.calls = [];
+    expect(await share(args(folder, {host: A}))).toBe(true);
+    expect(docker.calls.filter((c) => c[0] === 'pull')).toEqual([['pull', 'datagrok/proxy_storage:1.0']]);
+    expect(ran()).toHaveLength(1);
+    expect(containersOf(A).map((c) => c.imageId)).toEqual(['sha256:new']);
+  });
+
+  it('uses the local copy when the pull fails, and says so', async () => {
+    await share(args(folder, {host: A}));
+    docker.offline = true;
+    docker.calls = [];
+    expect(await share(args(folder, {host: A}))).toBe(true);
+    expect(ran()).toHaveLength(0);
+    expect((console.log as any).mock.calls.map((c: any[]) => c.join(' ')).join('\n'))
+      .toContain('Could not pull datagrok/proxy_storage:1.0, using the local copy: dial tcp');
   });
 
   it('says so when the user may not connect folders, and leaves no key and no container', async () => {

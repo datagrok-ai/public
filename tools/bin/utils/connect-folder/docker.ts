@@ -27,6 +27,7 @@ export interface ShareContainer {
   name: string,
   state: string,
   image: string,
+  imageId: string,
   labels: Record<string, string>,
   mounts: {Source: string, Destination: string, RW: boolean}[],
 }
@@ -141,12 +142,14 @@ export interface RunSpec {
   user?: string,
   /** The server id of the share's own key, whose private half is in [envFile]. */
   keyId?: string,
+  /** The local id [image] resolves to, which a tag the server moved changes. */
+  imageId?: string,
 }
 
 /** Whether [c] runs [spec] as is: the mount, the mode, the image and the user are fixed at `docker run`. */
 export function sameSettings(c: ShareContainer, spec: RunSpec): boolean {
   const l = c.labels;
-  return c.image === spec.image && l[`${LABEL}.folder`] === spec.folder && l[`${LABEL}.readonly`] === `${spec.readOnly}` &&
+  return c.image === spec.image && c.imageId === (spec.imageId ?? c.imageId) && l[`${LABEL}.folder`] === spec.folder && l[`${LABEL}.readonly`] === `${spec.readOnly}` &&
     (l[`${LABEL}.user`] ?? '') === (runUser(spec) ?? '');
 }
 
@@ -204,15 +207,29 @@ export async function ps(labels: Record<string, string> = {}): Promise<ShareCont
     name: String(c.Name ?? '').replace(/^\//, ''),
     state: c.State?.Status ?? '',
     image: c.Config?.Image ?? '',
+    imageId: c.Image ?? '',
     labels: c.Config?.Labels ?? {},
     mounts: c.Mounts ?? [],
   }));
 }
 
-/** Pulls [image] unless Docker already has it (a local build has no registry to pull from). */
-export async function ensureImage(image: string): Promise<void> {
-  if ((await docker(['image', 'inspect', '--format', '{{.Id}}', image])).code !== 0)
-    await dockerOk(['pull', image]);
+/**
+ * The local id of [image]. A tag is pulled every time, since the server moves it, and Docker's copy is used when the
+ * pull fails ([pullError]: offline, a local build); a digest is pulled only when missing.
+ */
+export async function ensureImage(image: string): Promise<{id: string, pullError?: string}> {
+  const local = async () => {
+    const r = await docker(['image', 'inspect', '--format', '{{.Id}}', image]);
+    return r.code === 0 ? r.stdout.trim() : '';
+  };
+  const pinned = image.includes('@sha256:') ? await local() : '';
+  if (pinned)
+    return {id: pinned};
+  const pull = await docker(['pull', image]);
+  const id = await local();
+  if (!id)
+    throw new DockerError(pull.stderr.trim() || `docker pull ${image} failed with exit code ${pull.code}`, pull.stderr);
+  return pull.code === 0 ? {id} : {id, pullError: pull.stderr.trim() || `exit code ${pull.code}`};
 }
 
 /** Whether [container] is running, waiting up to [seconds] for it to get there. */
