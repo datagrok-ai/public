@@ -1185,10 +1185,7 @@ export class DomainFrameEditor implements IFrameEditor {
         for (const name of Object.keys(fresh)) {
           if (!this._df.columns.contains(name) || DomainFrameEditor.SERVICE_COLUMNS.includes(name))
             continue;
-          const v = fresh[name];
-          // jsonb cells travel as objects; the frame holds them as text. dayjs passes through.
-          const plain = v != null && typeof v === 'object' && typeof v.toISOString !== 'function';
-          this._df.set(name, row, plain ? JSON.stringify(v) : v);
+          this._df.set(name, row, this._cellOf(name, fresh[name]));
         }
       }
     });
@@ -1441,9 +1438,11 @@ export class DomainFrameEditor implements IFrameEditor {
     return this._df.columns.byName(name) as Column<string>;
   }
 
-  /** A list in a string column (a `string_list` cell) is its JSON array text, which the server parses. */
+  /** A list or object in a string column (`string_list`, `json`) is its JSON text, which the server parses;
+   * a date (or dayjs) passes through. */
   private _cellOf(name: string, value: any): any {
-    return Array.isArray(value) && this._col(name)?.type === COLUMN_TYPE.STRING ? JSON.stringify(value) : value;
+    return value != null && typeof value === 'object' && typeof value.toISOString !== 'function' &&
+      this._col(name)?.type === COLUMN_TYPE.STRING ? JSON.stringify(value) : value;
   }
 
   private _cache(name: string): Map<number, any> {

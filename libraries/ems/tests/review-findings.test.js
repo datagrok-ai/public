@@ -416,5 +416,6 @@ scoped('EMS-011: setValue puts a list into a string cell as JSON text', {}, asyn
     _df: {columns: {byName: () => ({type: 'string'})}, set: (name, row, value) => { cells[name] = value; }},
     _suspend: false, _busy: () => false, changesOf: () => ({}), _wire: () => null, _track: () => {}});
   editor.setValue(0, 'tags', ['a, b', 'c"d']);
-  assert.equal(cells.tags, '["a, b","c\\"d"]', 'the text the server parses (batch_loader _coerceCell)');
+  editor.setValue(0, 'props', {k: 1});
+  assert.deepEqual([cells.tags, cells.props], ['["a, b","c\\"d"]', '{"k":1}'], 'the text the server parses');
 });
