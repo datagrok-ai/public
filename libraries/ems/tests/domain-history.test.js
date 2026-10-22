@@ -152,14 +152,14 @@ scoped('the trail loads 50 entries at a time; "Show older" loads the older ones 
   src.currentRow.value = src.rows.byKey('i1');
   const history = domains.history(src);
   await settle();
-  assert.deepEqual(pages, [{limit: 51, before: undefined}]);
+  assert.deepEqual(pages, [{limit: 50}]);
   const more = history.view.root.querySelector('[data-u2-part="more"]');
   const shown = () => [lines(history)[0].parentElement.getAttribute('aria-setsize'), more.hidden];
   assert.deepEqual(shown(), ['50', false]);
 
   fire(more, 'click');
   await settle();
-  assert.deepEqual([pages[1], shown()], [{limit: 51, before: 10}, ['60', true]]);
+  assert.deepEqual([pages[1], shown()], [{limit: 50, before: 10}, ['60', true]]);
   history.dispose();
   src.dispose();
 });

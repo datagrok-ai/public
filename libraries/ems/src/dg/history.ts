@@ -8,7 +8,7 @@ import * as grok from 'datagrok-api/grok';
 import {Component, Control, signal, AsyncSource, div, divH, divV, span, timestamp, text, badge, button, AsyncView,
   Section, VirtualList, Rows, Scope} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, BadgeVariant, IProperty, RowView} from '@datagrok-libraries/u2';
-import type {AuditEntryLike, DomainTableLike} from '../core/domain-backend.js';
+import type {AuditEntryLike} from '../core/domain-backend.js';
 import type {DomainSource} from '../core/domain-source.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {DomainTable} from './facade.js';
@@ -25,12 +25,6 @@ const OPS: Record<string, [label: string, variant: BadgeVariant]> = {
 const ITEM_HEIGHT = 40;
 const PAGE_SIZE = 50;
 
-interface OlderPage {
-  table: DomainTableLike;
-  id: string;
-  before: number;
-}
-
 export class DomainHistory extends Control {
   readonly row: ReadonlySignal<RowView | null>;
   readonly view: AsyncView<AuditEntryLike>;
@@ -41,7 +35,6 @@ export class DomainHistory extends Control {
   private readonly _noHistory = signal(false);
   /** id → the name behind it, resolved once per pane: the actors and the ref cells alike. */
   private readonly _names = new Map<string, Promise<string>>();
-  private _older: OlderPage | null = null;
 
   constructor(readonly source: DomainSource, row?: DomainHistoryTarget) {
     super();
@@ -50,7 +43,7 @@ export class DomainHistory extends Control {
     this.row = DomainForm.resolve(row ?? source, source).row;
     this._hint = div([], 'u2-domain-history-hint');
     this._hint.dataset.u2Part = 'hint';
-    const entries = new AsyncSource<AuditEntryLike>((id, abort) => this._load(id, abort), {debounceMs: 0});
+    const entries = new AsyncSource<AuditEntryLike>((id) => this._load(id), {debounceMs: 0});
     this.own(() => entries.dispose());
     this.view = this.runInScope(() => new AsyncView<AuditEntryLike>(entries, (items) => this._lines(items),
       {empty: 'No history yet'}));
@@ -104,24 +97,14 @@ export class DomainHistory extends Control {
     return raw !== null && typeof raw === 'object' && raw.constructor === Object ? JSON.stringify(raw) : text(raw);
   }
 
-  private async _load(id: string, abort: AbortSignal): Promise<AuditEntryLike[]> {
+  private async _load(id: string): Promise<AuditEntryLike[]> {
     const table = await emsBackends.domain!.table(this.source.table);
     if (table.audit === undefined) {
       this._noHistory.value = true;
       return [];
     }
-    const page = await DomainHistory._page(table, id);
-    if (!abort.aborted)
-      this._older = page.older;
-    return page.entries;
-  }
-
-  private static async _page(table: DomainTableLike, id: string, before?: number):
-    Promise<{entries: AuditEntryLike[], older: OlderPage | null}> {
-    const entries = await table.audit!(id, {limit: PAGE_SIZE + 1, before});
-    const more = entries.length > PAGE_SIZE;
-    const page = (more ? entries.slice(1) : entries.slice()).reverse();
-    return {entries: page, older: more ? {table, id, before: page[page.length - 1].seq} : null};
+    const entries = await table.audit(id, {limit: PAGE_SIZE});
+    return entries.slice().reverse();
   }
 
   private _lines(items: AuditEntryLike[]): HTMLElement {
@@ -133,17 +116,17 @@ export class DomainHistory extends Control {
     const shown = signal(items);
     list.setItems(shown);
     const scope = Scope.ambient!;
-    let older = this._older;
     // a button, not a scroll trigger: on the entity page the page scrolls, not the list
     const more: HTMLButtonElement = button('Show older', async () => {
       more.disabled = true;
       try {
-        const page = await DomainHistory._page(older!.table, older!.id, older!.before);
+        const last = shown.peek().at(-1)!;
+        const table = await emsBackends.domain!.table(this.source.table);
+        const page = await table.audit!(last.id, {limit: PAGE_SIZE, before: last.seq});
         if (scope.isDisposed)
           return;
-        shown.value = shown.peek().concat(page.entries);
-        older = page.older;
-        more.hidden = older === null;
+        shown.value = shown.peek().concat(page.slice().reverse());
+        more.hidden = page.length < PAGE_SIZE;
       } catch (e) {
         if (!scope.isDisposed)
           DomainErrors.report(e, this.source);
@@ -153,7 +136,7 @@ export class DomainHistory extends Control {
     });
     more.classList.add('u2-domain-history-more');
     more.dataset.u2Part = 'more';
-    more.hidden = older === null;
+    more.hidden = items.length < PAGE_SIZE;
     return divV([list.root, more], 'u2-domain-history-trail');
   }
 
