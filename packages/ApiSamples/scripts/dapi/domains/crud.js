@@ -22,6 +22,8 @@ grok.shell.info(`${rows.length} rows, count ${n}, exists ${has}, byKey ${byKey?.
 // Update with optimistic concurrency; read the row and table audit trails
 await items.update(ins.id, {quantity: 6}, {version: 1});
 grok.shell.info(`ops: ${(await items.audit(ins.id)).map((a) => a.op).join(', ')}`);
+const [newest] = await items.audit(ins.id, {limit: 1});  // a page: the newest entries, oldest first
+grok.shell.info(`before the ${newest.op}: ${(await items.audit(ins.id, {before: newest.id})).length} events`);
 grok.shell.info(`table-wide: ${(await items.auditLog({limit: 5})).length} recent events`);
 
 // Promote the row to a full platform entity (sharing, favorites, comments)
