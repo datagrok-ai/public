@@ -17,9 +17,8 @@ functions come from Crux (the last table below).
 | `worker-jobs.ts` | The worker jobs by engine: fingerprints (`fingerprintsByEngine`, and the engine a cache belongs to) and structural alerts (`alertsByEngine`): the Crux pool in Crux mode, the RDKit pool otherwise and behind it (the whole call when Crux fails; otherwise the molecules Crux cannot read, on the RDKit pool) |
 | `../crux/crux-service.ts` | The Crux worker pool: molecules in chunks, each worker handed its next chunk when the last is done, each chunk within its own time (30 s plus a per-molecule allowance, from its start); a trap, a timeout or a lost worker restarts the pool (another failure keeps it and its search indexes), and the call falls back to RDKit |
 
-RDKit mode fetches the file only for what runs on Crux in both modes: the Crux substructure search (the
-`SubstructureSearchEngine` default), `molzip`, and fingerprints with the FCFP or chirality option (Chem's RDKit.js
-has neither).
+RDKit mode fetches the file only for what runs on Crux in both modes: `molzip`, and fingerprints with the FCFP or
+chirality option (Chem's RDKit.js has neither).
 In Crux mode the package's init loads it beside RDKit; a switch at run time draws with RDKit until it is ready, then
 the renderers empty their caches and the grids repaint.
 
@@ -31,7 +30,7 @@ the renderers empty their caches and the grids repaint.
 | `canvasMol` (`utils/chem-common-rdkit.ts`, `drawMoleculeToCanvas`) | the same | per molecule |
 | Descriptors (`descriptors/descriptors-engine.ts`: the menu and its editor, the transform, the vector function, the panel, `chemDescriptors`, `chemDescriptorsTree`) | the tree from the main thread's instance, the values from the Crux workers (`crux/crux-service.ts`, each distinct molecule once, in chunks of 1000 across the pool, back as typed arrays) | the chem-chem container, per call and per molecule Crux cannot read (a row of nulls for a molecule given) |
 | Scaffold tree (`getScaffoldTree`) | a Crux worker, the same JSON as `scripts/scaffold_tree.py` | the Python script, per call |
-| Contains / Not contains search | not this setting: `SubstructureSearchEngine` (default Crux) | RDKit search per query / per unreadable molecule (`crux/crux-searches.ts`) |
+| Contains / Not contains search (`crux/crux-searches.ts`, `getSubstructureSearchEngine`; until 2026-10-22 it had a setting of its own, `SubstructureSearchEngine`) | the Crux workers index the column in segments and search it with the query molecule Chem builds for RDKit | RDKit search per query Crux cannot read / per unreadable molecule, and per search that fails |
 | Fingerprints (`chemGetFingerprints` and its cached `~<column>.<type>` columns, the query's fingerprint, similarity and diversity, chemical space and cliffs' preprocessing, BitBIRCH, the SAR matrix's clustering; `engine/worker-jobs.ts`) | the Crux workers run the RDKit worker's own code on the Crux module (the same types and options: Morgan r2/2048 after `remove_hs_in_place`, ...); a cached column belongs to the engine that filled it (`~<column>.Morgan.Crux`, RDKit's `~<column>.Morgan`), and saving one drops the other engine's; options other than the defaults are in its name (`~<column>.Morgan(radius=3)`, `utils/fingerprint-options.ts`); each cache keeps the column's edits since it was read. FCFP and chirality (`useFeatures`, `useChirality`) are Crux's in both modes: Chem's RDKit.js has neither | the RDKit pool, per call and per molecule Crux cannot read (none for FCFP and chirality) |
 | Structural alerts and pharmacophore features (`panels/structural-alerts.ts`, `panels/pharmacophore-features.ts`) | the Crux workers, matching as the RDKit worker does, each molecule parsed once | the RDKit pool, per call and per molecule Crux cannot read |
 | An activity cliff's MCS, highlighted in its tooltip and panel (`analysis/activity-cliffs.ts`, `cliffMcs`) | RDKit's Rascal MCES (crux's `get_mces`) on a Crux worker (`CruxService.pairUncommonAtomsAndBonds`): each molecule's atoms and bonds outside it, from its own matches; the most bonds the two molecules share, possibly in several fragments, where FMCS finds one connected substructure; no highlight for a pair under its similarity threshold | RDKit's FMCS on the RDKit pool, per call (a Crux failure) |
@@ -65,10 +64,8 @@ nodes' MOL blocks are Crux's layout.
 
 Settings on existing servers: the server keeps each group's saved settings as one map (the settings editor saves every
 property, defaults included) and shows a property the map lacks with the published version's default
-(`packages_service.dart`, `getPropertyValues` / `getUserPackagesProperties`); publishing stores nothing. So the new
-`SubstructureSearchEngine` default (Crux) reaches only servers where Chem's settings were never saved; elsewhere the
-stored value (RDKit, the earlier default) stays until an admin switches it. `ChemicalEngine` is new: RDKit everywhere
-until switched.
+(`packages_service.dart`, `getPropertyValues` / `getUserPackagesProperties`); publishing stores nothing. A value saved for the retired `SubstructureSearchEngine`
+stays in such a map and is not read. `ChemicalEngine` is new: RDKit everywhere until switched.
 
 ## What other packages see
 
@@ -81,7 +78,7 @@ from Crux:
 | `drawMolecule` / `grok.chem.drawMolecule`, `canvasMol` / `grok.chem.canvasMol`, the Molecule cell renderer, `rdKitCellRenderer` | RDKit's picture | Crux's picture (the same drawing calls; RDKit per molecule Crux cannot do) |
 | `chemDescriptors` / `grok.chem.descriptors`, `chemDescriptorsTree`, the descriptors vector function and menu (HitTriage, statistics, Flow) | the chem-chem container | Crux: the same names, types and nulls; the 3D values from Crux's own embedding |
 | `getScaffoldTree`, the Scaffold Tree viewer | the Python script | Crux: the same JSON |
-| `searchSubstructure`, `filterBySubstructure`, the substructure filter (Bio, DrugBank, PowerPack, Flow, ...) | `SubstructureSearchEngine` (Crux by default): the same hits as RDKit | the same |
+| `searchSubstructure`, `filterBySubstructure`, the substructure filter (Bio, DrugBank, PowerPack, Flow, ...) | RDKit's | Crux's: the same hits |
 | `getMorganFingerprints`, `getFingerprints`, `getSimilarities`, `findSimilar`, `getDiversities` (Bio, Dendrogram, Flow, Chemspace, ...); `getStructuralAlerts`, `runPharmacophoreFeatures` | RDKit's (`getFingerprints`' FCFP and chirality options: Crux's) | Crux's (the same types and options: identical bits on Chem's datasets but where RDKit 2024.09 and 2026.03 differ) |
 | `getProperties`, `getChemPropertyFunction`, Chemical Properties (Admetica's MW, HitTriage) | OpenChemLib's | Crux's: RDKit's definitions (MW the average weight, not OpenChemLib's monoisotopic mass) |
 | `getMCS`, Cluster MCS (`clusterMCS`), `rGroupDecomposition`, MMP analysis | RDKit | Crux's: RDKit 2026.03's (an MCS SMARTS may name its atoms in another order than Chem's RDKit 2024.09, the same query) |

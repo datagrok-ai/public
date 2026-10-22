@@ -132,9 +132,11 @@ licences; both are emitted to `dist/` as `VERSION.chem-wasm` and `NOTICE.chem-wa
 
 ### Crux substructure engine
 
-The `SubstructureSearchEngine` package property (`Crux` default since 2026-10, `RDKit`; a saved value stays) picks
-the engine of Contains / Not contains searches inside `chemSubstructureSearchLibrary` — every caller (filter, scaffold
-tree, `searchSubstructure`, filter operators) goes through it; tests switch it with `setSubstructureSearchEngine`.
+The Chemical Engine (`ChemicalEngine`) picks the engine of Contains / Not contains searches inside
+`chemSubstructureSearchLibrary` (`getSubstructureSearchEngine`: Crux in Crux mode, RDKit in RDKit mode; since
+2026-10-22 there is no `SubstructureSearchEngine` property, and a value a server saved for it is not read) — every
+caller (filter, scaffold tree, `searchSubstructure`, filter operators) goes through it; tests override it with
+`setSubstructureSearchEngine`.
 Crux ([crux-core](https://github.com/datagrok-ai/crux-core), Rust → wasm) indexes a column once, in
 segments that double in size per round over `hardwareConcurrency - 2` workers (at most 16, `MAX_WORKERS`: each holds
 a WebAssembly memory, and a page has room for about 120 of them) and are built by the first

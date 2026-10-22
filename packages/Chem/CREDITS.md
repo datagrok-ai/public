@@ -57,8 +57,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ### Crux chemical engine (`chem_wasm_bg.wasm`)
 
-Chem's Crux engine (the Chemical Engine and Substructure Search Engine package
-properties, `src/engine/`, `src/crux/`), compiled to WebAssembly. Files:
+Chem's Crux engine (the Chemical Engine package property, `src/engine/`,
+`src/crux/`), compiled to WebAssembly. Files:
 `vendor/chem-wasm/chem_wasm.js` (bundled) and `vendor/chem-wasm/chem_wasm_bg.wasm`
 (copied into `dist/` at build time), with `NOTICE.chem-wasm` and
 `VERSION.chem-wasm` (copied into `dist/` beside it; `VERSION.chem-wasm` names

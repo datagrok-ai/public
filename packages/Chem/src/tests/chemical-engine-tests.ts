@@ -25,7 +25,7 @@ import {calculateDescriptors, forgetCruxTreeForTests, getDescriptorsTree, lastDe
   setCruxDescriptorGapForTests, setDescriptorTimingForTests} from '../descriptors/descriptors-engine';
 import {cruxFallbackCount, cruxOrRdKitAsync} from '../engine/fallback';
 import * as container from '../docker/api';
-import {SubstructureSearchEngine, cruxReadsQuery, getCruxService, getSubstructureSearchEngine,
+import {SubstructureSearchEngine, cruxReadsQuery, getCruxService, getSubstructureSearchEngine, isCruxSearch,
   resetCruxServiceForTests, setSubstructureSearchEngine} from '../crux/crux-searches';
 import {Fingerprint} from '../utils/chem-common';
 import {FILTER_TYPES, chemGetDiversities, chemGetFingerprints, chemGetSimilarities, chemSubstructureSearchLibrary}
@@ -36,7 +36,7 @@ import {RuleSet, runStructuralAlertsDetection} from '../panels/structural-alerts
 import {PHARM_FAMILY_NAMES, PharmFamilySet, runPharmacophoreDetection} from '../panels/pharmacophore-features';
 import {CONTAINER_TIMEOUT, readDataframe} from './utils';
 import {isNoneValue} from '../crux/crux-api';
-import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG} from '../constants';
+import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, SubstructureSearchType} from '../constants';
 
 /** The renderer's internals the tests read (the molecule's engine, a raster). */
 interface RendererInternals {
@@ -188,9 +188,8 @@ category('chemical engine', () => {
     }
     // package.ts's _package in this bundle is not the published package: chemSetting asks the published one
     console.log(`chemical engine | in package-test.js, package.ts's _package "${chemPackage.name}" settings: ${own}; ` +
-      `chemSetting: ChemicalEngine ${chemSetting('ChemicalEngine')}, SubstructureSearchEngine ` +
-      `${chemSetting('SubstructureSearchEngine')}`);
-    expect(chemSetting('SubstructureSearchEngine') !== undefined || chemSetting('Sketcher') !== undefined, true,
+      `chemSetting: ChemicalEngine ${chemSetting('ChemicalEngine')}, Sketcher ${chemSetting('Sketcher')}`);
+    expect(chemSetting('ChemicalEngine') !== undefined || chemSetting('Sketcher') !== undefined, true,
       'the settings of the published Chem are read');
   });
 
@@ -915,6 +914,25 @@ category('chemical engine', () => {
       expect(crux.toString(), rdkit.toString(), `hits of ${label}`);
     }
     setSubstructureSearchEngine(null);
+  });
+
+  test('the substructure search follows the Chemical Engine', async () => {
+    // no setting of its own since 2026-10-22 (the product owner): RDKit mode searches with RDKit, Crux mode with Crux,
+    // whatever a server saved for the retired SubstructureSearchEngine (this stand's maps hold Crux)
+    const col = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
+    col.semType = DG.SEMTYPE.MOLECULE;
+    setSubstructureSearchEngine(null);
+    setChemicalEngine(ChemicalEngine.RDKit);
+    expect(getSubstructureSearchEngine(), SubstructureSearchEngine.RDKit, 'RDKit mode: the search engine');
+    expect(isCruxSearch(SubstructureSearchType.CONTAINS), false, 'RDKit mode: Contains on RDKit');
+    const rdkit: DG.BitSet = (await PackageFunctions.searchSubstructure(col, 'c1ccncc1', '')).get(0);
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true, 'the Crux module loads');
+    expect(getSubstructureSearchEngine(), SubstructureSearchEngine.Crux, 'Crux mode: the search engine');
+    expect(isCruxSearch(SubstructureSearchType.NOT_CONTAINS), true, 'Crux mode: Not contains on Crux');
+    const crux: DG.BitSet = (await PackageFunctions.searchSubstructure(col, 'c1ccncc1', '')).get(0);
+    expect(crux.toString(), rdkit.toString(), 'the same hits in both modes');
+    setChemicalEngine(null);
   });
 
   // batch 19b: fingerprints and structural alerts in Crux mode

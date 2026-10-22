@@ -81,14 +81,14 @@ code the package runs. Datasets: `<reddata>/data/demo/chem/chembl/chembl-100k.cs
   (`http://localhost:8082`, `http://localhost:8888`, `admin`; on the Mac dev stack both are `http://localhost:8889`, the
   API under `/api`); `STAND_WEB` must serve the client on the API's origin — package web workers cannot start
   cross-origin, so not the pub serve port. `CHROME=<path>` runs an installed Chrome when Playwright's own browser is
-  not installed. It leaves the engine property on Crux, the default.
-- Package tests: `grok test --host localhost --category "crux substructure search"`. Crux is the default engine of
-  Contains / Not contains since 2026-10; the existing suites (`substructure search`, `substructure filters`,
-  `scaffold tree`) run on it. To run them on RDKit, set **Substructure Search Engine** to RDKit on the stand
-  (`engine-setting.sh`) for the run — and put it back.
-- `bash engine-setting.sh show | set <RDKit|Crux> [<RDKit|Crux>] | restore` — Chem's **Chemical Engine** (and
-  **Substructure Search Engine**) on a stand through the server's API (the `grok` CLI), for whole runs in Crux mode:
-  package tests, the BDD suite, the tests of the packages that call Chem. `restore` puts back what `set` replaced.
+  not installed. It switches the **Chemical Engine** per engine (the search follows it) and puts back the one it found.
+- Package tests: `grok test --host localhost --category "crux substructure search"`. Since 2026-10-22 Contains / Not
+  contains follows the **Chemical Engine** (there is no **Substructure Search Engine** setting any more): the existing
+  suites (`substructure search`, `substructure filters`, `scaffold tree`) run on RDKit in RDKit mode and on Crux in
+  Crux mode (`engine-setting.sh set Crux` for the run — and `restore` after).
+- `bash engine-setting.sh show | set <RDKit|Crux> | restore` — Chem's **Chemical Engine** on a stand through the
+  server's API (the `grok` CLI), for whole runs in Crux mode: package tests, the BDD suite, the tests of the packages
+  that call Chem. `restore` puts back what `set` replaced.
 
 ## Results
 
