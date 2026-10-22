@@ -29,6 +29,8 @@ if (await session.save()) {
   const event = await events.get(child.dataFrame.get('id', 0));
   grok.shell.info(`item ${itemId}; the event points at ${event.item_id}`);
 }
+else
+  grok.shell.warning(`${session.lastRefusal.code}: ${session.lastRefusal.message}`);
 session.dispose();
 
 await items.deleteWhere({property: 'sku', operator: '=', value: sku});

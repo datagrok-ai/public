@@ -196,6 +196,7 @@ category('Dapi: domain session', () => {
       expect(refusal.message, parent.errorOf(row, 'sku')?.message,
         'lastRefusal does not say what the cell says');
       expect(typeof refusal.opIndex, 'number', 'lastRefusal carries no opIndex');
+      expect(refusal.code, 'validation', 'lastRefusal carries no code');
       parent.setValue(row, 'sku', `${prefix}-1`);
       expect(await session.save(), true, 'the corrected batch did not land');
       expect(session.lastRefusal, null, 'a successful save did not clear lastRefusal');
