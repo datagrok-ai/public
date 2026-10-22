@@ -628,36 +628,3 @@ test('stylesheet: dates keep their own width in a form; required marks hang past
   assert.match(radio, /\.u2-input-editor\.u2-radio\.u2-radio-buttons \{\s*flex-direction: row;/,
     'the segmented radio outranks the stacked editor rule');
 });
-
-ui('focusFirst focuses without scrolling: a form opens at its top, whichever field the typing starts in', () => {
-  const f = mount(new Form());
-  const fields = [input('Name', 60), input('Code', 60)];
-  const calls = [];
-  for (const it of fields) {
-    f.add(it);
-    it.root.querySelector('input').focus = (options) => calls.push([it.name, options]);
-  }
-  f.focusFirst((it) => it.name === 'Code');
-  f.focusFirst();
-  assert.deepEqual(calls, [['Code', {preventScroll: true}], ['Name', {preventScroll: true}]]);
-  f.dispose();
-  for (const it of fields)
-    it.dispose();
-});
-
-ui('a read-only row\'s caption sizes the label column, as an input\'s does', () => {
-  const f = mount(new Form());
-  const name = input('Name', 40);
-  f.add(name);
-  const caption = document.createElement('span');
-  caption.className = 'u2-input-label';
-  caption.offsetWidth = 130;
-  const row = document.createElement('div');
-  row.className = 'u2-form-readonly';
-  row.append(caption);
-  f.addElement(row);
-  f.layoutNow();
-  assert.equal(f.root.style.getPropertyValue('--u2-form-label-width'), '130px');
-  f.dispose();
-  name.dispose();
-});

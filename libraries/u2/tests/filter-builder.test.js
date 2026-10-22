@@ -1,5 +1,5 @@
 /* FilterBuilder, simple mode: rows keyed by node id, the immutable-edit contract, the and/or
-   toggle, horizontal joins, locks, the per-kind value editors and the registration-free surface
+   toggle, the joins, locks, the per-kind value and parameter editors and the registration-free surface
    (query, problems, status). Popup-opening tests dispose the builder in `finally` — an overlay
    left open loops the animation-frame updater and OOMs node --test. */
 
@@ -242,13 +242,44 @@ smoke('horizontal: rows inline with a join chip between them that flips the op; 
     ['f1', 'u2-btn u2-fb-join', 'f3', 'u2-btn u2-icon-btn u2-fb-add']);
 });
 
-smoke('stacked: the join word between the rows, the header\'s toggle reading all of / any of', () => {
-  const fb = mount(new FilterBuilder({schema: SCHEMA, value: tree(Filters.cond('age', '>', 30), Filters.cond('mw', '<', 2))}));
+smoke('stacked: the join word between the rows, all of / any of in the header, a problem by the friendly name', () => {
+  const fb = mount(new FilterBuilder({schema: SCHEMA,
+    value: tree(Filters.cond('age', '>', 30), Filters.cond('name', '='))}));
   const host = fb.root.querySelector('[data-u2-part="rows"]');
   assert.deepEqual(host.children.map((el) => el.classList.contains('u2-fb-join') ? el.textContent : el.dataset.u2Node),
     ['f1', 'and', 'f2']);
   assert.deepEqual(fb.root.querySelectorAll('[data-u2-part="connector"] [data-u2-part="item-label"]')
     .map((el) => el.textContent), ['all of', 'any of']);
+  assert.equal(fb.validity.peek(), '"Name" needs a value');
+});
+
+smoke('a host operator is valid for domain and spelled with its parameter; a builder row takes the parameter ' +
+  'only as a number in range', async () => {
+  const schema = Filters.schema([{name: 'structure', type: TYPE.STRING, semType: 'Molecule'}]);
+  const off = Filters.operators.register([{id: 'is similar to', label: 'is similar to', arity: 1,
+    kinds: [Filters.KIND.STRING], semType: 'Molecule', exclusive: true, editor: 'default', host: true,
+    parameter: {name: 'threshold', label: 'Similarity at least', default: 0.7, min: 0, max: 1}}]);
+  try {
+    const {root, problems} = Filters.parse('structure is similar to(0.8) "CCO"', schema, 'domain');
+    assert.deepEqual([problems, root.nodes[0].options, Filters.format(root)],
+      [[], {threshold: 0.8}, 'structure is similar to(0.8) "CCO"']);
+    assert.deepEqual(Filters.parse('structure is similar to(7) "CCO"', schema, 'domain').problems.map((p) => p.message),
+      ['Similarity at least: a number from 0 to 1']);
+    const fb = mount(new FilterBuilder({schema, target: 'domain',
+      value: Filters.group('and', [Filters.cond('structure', 'is similar to', 'CCO')])}));
+    const box = fb.root.querySelector('[data-u2-part="parameter"] input');
+    const seen = [box.value];
+    for (const text of ['0.4', '']) {
+      box.value = text;
+      fire(box, 'input');
+      fire(box, 'keydown', {key: 'Enter'});
+      await flush();
+      seen.push(fb.value.value.nodes[0].options.threshold);
+    }
+    assert.deepEqual([...seen, box.value], ['0.7', 0.4, null, ''], 'the default, a number, an emptied box refused');
+  } finally {
+    off();
+  }
 });
 
 smoke('locks: value keeps the editor and hides remove, all disables everything, allowAdd hides +', () => {

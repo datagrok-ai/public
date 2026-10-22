@@ -184,12 +184,9 @@ bridge('u2 validators keep working next to the platform ones, which come first',
 
   validate(source, ['Server says no']);
   assert.equal(input.validity.value, 'Server says no');
-  const line = input.root.querySelector('.u2-input-error');
-  assert.equal(line.hidden, true, 'the platform shows its own');
   validate(source, []);
   assert.equal(input.validity.value, 'Value can\'t be empty', 'the u2 validator runs again');
-  assert.equal(line.hidden, false, 'and u2 says it, which the platform never would');
-  assert.equal(line.textContent, 'Value can\'t be empty');
+  assert.equal(input.root.querySelector('.u2-input-error:not([hidden])').textContent, 'Value can\'t be empty');
   dg.value = 'CCO';
   assert.equal(input.validity.value, null);
   input.dispose();

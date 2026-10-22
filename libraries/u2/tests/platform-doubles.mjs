@@ -434,6 +434,8 @@ export class Column {
 
   isNone(i) { return this.get(i) == null; }
 
+  init(value) { this.dart.frame.dart.rows.forEach((row, i) => row[this.dart.name] = value(i)); }
+
   get min() { return Math.min(...this._numbers()); }
   get max() { return Math.max(...this._numbers()); }
 
@@ -486,6 +488,8 @@ class ColumnList {
     return column;
   }
 
+  addNewString(name) { return this.add(new Column(name, TYPE.STRING)); }
+
   /** An unknown name removes nothing and still notifies, as the platform does (column_list.dart:254). */
   remove(name) {
     const at = this.dart.columns.findIndex((c) => c.name === name);
@@ -527,6 +531,11 @@ export class DataFrame {
   get name() { return this.dart.name; }
   set name(x) { this.dart.name = x; }
   get rowCount() { return this.dart.rows.length; }
+
+  clone() {
+    return new DataFrame(this.columns.toList().map((c) => ({name: c.name, type: c.type, semType: c.semType})),
+      this.dart.rows, this.dart.name);
+  }
   get currentRowIdx() { return this.dart.currentRowIdx; }
 
   set currentRowIdx(v) {

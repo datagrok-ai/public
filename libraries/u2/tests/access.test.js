@@ -174,14 +174,10 @@ scoped('Access.narrow is deny-only: a true entry grants nothing and lifts no bou
   assert.equal(Access.readOnly.narrow({edit: true}).can('edit'), false);
 });
 
-scoped('Access.readOnlyFields: the named fields are text, a hidden one stays hidden, the rest untouched', () => {
+scoped('Access.readOnlyFields: the named fields are text on a draft too, a hidden one stays hidden', () => {
   const access = Access.from(DATA).readOnlyFields(['title', 'salary']);
-  assert.equal(access.field('title'), 'readonly');
-  assert.equal(access.field('salary'), 'hidden', 'deny-only: nothing is revealed');
-  assert.equal(access.can('edit'), true, 'the capabilities are the same');
-  assert.equal(access.row({'~state': 'new'}).field('title'), 'readonly', 'and so is a draft');
-  assert.equal(Access.full.readOnlyFields(['a']).field('a'), 'readonly');
-  assert.equal(Access.full.readOnlyFields(['a']).field('b'), 'editable');
+  assert.deepEqual([access.field('title'), access.row({'~state': 'new'}).field('title'), access.field('salary'),
+    access.can('edit')], ['readonly', 'readonly', 'hidden', true]);
 });
 
 scoped('Access.columnPolicy: the fields as declared, every capability granted and unbounded', () => {

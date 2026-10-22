@@ -6,7 +6,7 @@
    The stub is the platform's own contract, nothing more: the real `DG.TYPE` / `DG.SEMTYPE` constants
    (through `datagrok-api/u2core`), the `JsInputBase` surface `DartInput` uses (root, caption, addValidator,
    fireInput/fireChanged, and `property`, which throws off a dart handle when nothing is bound),
-   the base classes u2 subclasses, and the `grok.dapi.files` / `grok.shell` calls the inputs make.
+   the base classes u2 subclasses, and the `grok.dapi.files` / `grok.shell` / `grok.chem` calls the inputs make.
    The entities, the widgets, the viewers and the shell are the getter-backed doubles of
    tests/platform-doubles.mjs, served here so an `instanceof` in the module under test and a `new`
    in the test meet the same class; the kill-walk globals u2 feature-detects (`grok_Widget_Kill`,
@@ -223,6 +223,8 @@ export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shel
   onViewAdded: new Stream(), onViewRemoving: new Stream(), onCurrentViewChanged: new Stream()};
 
 export const data = {parseCsv: () => new DataFrame()};
+
+export const chem = {drawMolecule: (molecule) => Object.assign(document.createElement('div'), {title: molecule})};
 
 /** Ad-hoc function registration (js-api functions.ts:137): every registration, newest last, and
  * the Func it hands back — the platform's own is a dart wrapper over the same record. */
