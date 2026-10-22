@@ -1,8 +1,8 @@
 /* `domains.form` (WO-9) and the Save/Discard buttons over the memory backend: fields follow the
    access, an edit writes through the source, the form follows the current row, a create form's
    draft, the table's validators, the server's column errors on the fields, the version-conflict
-   dialog both ways, the reference editors, and the `u2-domain-form` tag. `DG` and `grok` come
-   from tests/dg-stub.mjs. */
+   dialog both ways, the reference editors, the `u2-domain-form` tag and the columns the table
+   derives. `DG` and `grok` come from tests/dg-stub.mjs. */
 
 import {emsBackends} from '../src/core/domain-backend.js';
 import {test} from 'node:test';
@@ -13,7 +13,7 @@ import {backends, Scope, signal, Registry, SpecContext, renderSpec, registerAll,
 import {registerDomainSources} from '../src/core/registrations.js';
 import {DomainSource} from '../src/core/domain-source.js';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
-import {SCHEMA, ROWS, backend} from './domain-fixtures.mjs';
+import {backend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -347,7 +347,6 @@ scoped('Save and Discard follow the state: disabled while clean, while saving, a
   const {src} = await issues();
   const save = domains.saveButton(src);
   const discard = domains.discardButton(src);
-  const add = domains.newButton(src);
   await flush();
   assert.equal(save.root.dataset.u2, 'save-button');
   assert.equal(save.button.textContent, 'Save');
@@ -365,11 +364,9 @@ scoped('Save and Discard follow the state: disabled while clean, while saving, a
   await flush();
   assert.equal(save.button.disabled, true, 'a save in flight');
   assert.equal(discard.button.disabled, true, 'locked together');
-  assert.equal(add.root.disabled, true, 'and New: a draft made mid-save has no batch to join');
   release();
   await flush();
   await flush();
-  assert.equal(add.root.disabled, false);
   assert.equal(src.isDirty.value, false);
   assert.equal(save.button.disabled, true);
   assert.equal(store.rows[0].title, 'X');
@@ -381,7 +378,6 @@ scoped('Save and Discard follow the state: disabled while clean, while saving, a
   assert.equal(src.rows.byKey('i1').title, 'X');
   save.dispose();
   discard.dispose();
-  add.dispose();
   src.dispose();
 });
 
@@ -482,21 +478,6 @@ scoped('a readonly reference shows the target\'s name, not its uuid — off the 
     lookup.dispose();
     bare.dispose();
   });
-});
-
-scoped('a readonly reference no row answers reads as unknown, never as the id it holds', async () => {
-  emsBackends.domain = new MemoryDomainBackend(SCHEMA, {
-    rows: {project: ROWS.project.map((r) => ({...r})), issue: [{id: 'i9', project_id: 'gone', number: 9, title: 'Orphan'}]},
-    access: {can: CAN, fields: {title: 'editable', project_id: 'readonly'}}});
-  const {src} = await issues({captions: []});
-  src.currentRow.value = src.rows.byKey('i9');
-  const form = domains.form(src);
-  await flush();
-  await flush();
-  assert.equal(form.root.querySelector('[data-u2-name="project_id"] [data-u2-part="readonly-value"]').textContent,
-    '(unknown)');
-  form.dispose();
-  src.dispose();
 });
 
 scoped('system columns: out by default, a muted footer on request — captions, local times, never a draft\'s key', async () => {
@@ -943,67 +924,61 @@ scoped('a constraint over two columns is read with SQL null semantics: an empty 
 });
 
 
-scoped('a create form starts in its first empty required field, unscrolled; a key it may not type is "assigned on save"',
-  async () => {
-    emsBackends.domain = backend({access: {can: CAN, fields: {project_id: 'editable', number: 'readonly', title: 'editable'}}});
-    const draft = (await domains.table('grit.issue')).draft({project_id: 'p1'});
-    await flush();
-    const scrolled = [];
-    const focus = HTMLElement.prototype.focus;
-    HTMLElement.prototype.focus = function(options) {
-      scrolled.push(options?.preventScroll !== true);
-      return focus.call(this, options);
-    };
-    const form = domains.form(draft);
-    try {
-      document.body.append(form.root);
-      for (let i = 0; i < 4; i++)
-        await flush();
-    } finally {
-      HTMLElement.prototype.focus = focus;
-    }
-    assert.equal(document.activeElement.closest('[data-u2-name]')?.dataset.u2Name, 'title', 'past what the defaults filled');
-    assert.deepEqual(scrolled.filter((s) => s), [], 'no focus scrolled the page to its field');
-    const number = () => form.root.querySelector('[data-u2-name="number"] [data-u2-part="readonly-value"]');
-    assert.deepEqual([number().textContent, number().classList.contains('u2-domain-draft')], ['assigned on save', true]);
-    form.input('title').value.value = 'Fresh';
-    await flush();
-    assert.equal(number().textContent, 'assigned on save', 'an edit elsewhere re-reads the row without losing it');
-    assert.equal(await draft.save(), true);
-    await flush();
-    await flush();
-    assert.deepEqual([number().textContent === 'assigned on save', number().classList.contains('u2-domain-draft')],
-      [false, false], 'a saved row shows what it holds');
-    form.dispose();
-    draft.dispose();
-  });
-
-scoped('an immutable reference is picked on a draft and a link to its row once saved', async () => {
+/** The issues, with a description the app derives from the title. */
+async function deriving(derive) {
   const {table, src} = await issues();
-  src.currentRow.value = src.rows.byKey('i1');
-  const asked = [];
-  DomainPick.opener = (address, id) => asked.push([address, id]) > 0;
-  const form = domains.form(src, {immutable: ['project_id']});
+  table.derived.add({from: ['title'], to: ['description'], derive});
+  return src;
+}
+
+const stored = (title) => emsBackends.domain.tableSync('grit.issue').rows.find((r) => r.title === title);
+
+scoped('derived: an edit to the input derives the output once and a Save waits for it, a draft\'s before its ' +
+  'insert; a reverted row typed back is derived again', async () => {
+  const calls = [];
+  const src = await deriving(async (row) => {
+    calls.push(row.title);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    return {description: `About ${row.title}`};
+  });
+  const row = src.rows.byKey('i2');
+  row.title = 'Ibuprofen 200';
+  await src.settled();
+  src.revert();
+  await flush();
+  assert.equal(row.description ?? null, null, 'the revert took the derived value back too');
+  row.title = 'Ibuprofen 200';
+  row.weight = 3;
+  src.newRow({project_id: 'p1', title: 'Paracetamol'});
+  assert.equal(await src.save(), true);
+  assert.deepEqual(calls, ['Ibuprofen 200', 'Ibuprofen 200', 'Paracetamol'], 'an edit to another column derives none');
+  assert.deepEqual([stored('Ibuprofen 200').description, stored('Paracetamol').description],
+    ['About Ibuprofen 200', 'About Paracetamol']);
+  src.dispose();
+});
+
+scoped('derived: a failure shows on its input field as it ends and refuses the Save; the output is text', async () => {
+  const src = await deriving((row) => {
+    if (row.title.includes('?'))
+      throw new Error('Cannot read the title');
+    return {description: row.title.toUpperCase()};
+  });
+  src.currentRow.value = src.rows.byKey('i2');
+  const form = domains.form(src);
   document.body.append(form.root);
   await flush();
+  assert.equal(form.input('description'), undefined);
+  const title = form.input('title');
+  title.value.value = 'Ibu?';
+  await src.settled();
   await flush();
-  assert.equal(form.input('project_id'), undefined, 'a saved row cannot be moved to another project');
-  const link = form.root.querySelector('[data-u2-name="project_id"] [data-u2-part="readonly-value"] a.u2-link');
-  assert.equal(link.textContent, 'Grit');
-  try {
-    link.click();
-    await flush();
-  } finally {
-    DomainPick.opener = undefined;
-  }
-  assert.deepEqual(asked, [['grit.project', 'p1']], 'which opens the project');
+  assert.equal(title.root.querySelector('[data-u2-part="error"]').textContent, 'Cannot read the title',
+    'no Save was pressed');
+  assert.equal(await src.save(), false);
+  assert.equal(src.error.value.message, 'Cannot save: Ibu?: Title: Cannot read the title');
+  title.value.value = 'Ibuprofen 400';
+  assert.equal(await src.save(), true, 'the next good input takes the refusal back');
+  assert.equal(stored('Ibuprofen 400').description, 'IBUPROFEN 400');
   form.dispose();
   src.dispose();
-  const draft = table.draft();
-  await flush();
-  const create = domains.form(draft, {immutable: ['project_id']});
-  await flush();
-  assert.notEqual(create.input('project_id'), undefined, 'a draft picks it');
-  create.dispose();
-  draft.dispose();
 });

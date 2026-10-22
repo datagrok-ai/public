@@ -151,12 +151,8 @@ export class DomainList extends Control {
    * A row marked deleted offers Restore alone — and so does one already in the trash, whose
    * Restore is staged into the session and lands with the Save (the Delete grant, per row). */
   actionsFor(row: RowView): Action[] {
-    return DomainList.actionsOf(this.source, row, this._table, this._options.actions ?? []);
-  }
-
-  /** A row's actions over its source — the list's hover and context menu, the entity page's ⋯ menu. */
-  static actionsOf(source: DomainSource, row: RowView, table: DomainTable | undefined,
-    extra: readonly DomainAction[] = []): Action[] {
+    const source = this.source;
+    const table = this._table;
     if (row[Rows.STATE] === 'restored')
       return [{name: 'Undo restore', icon: 'undo', run: () => source.unstageRestore([row.id])}];
     if (row[Rows.STATE] === 'deleted')
@@ -173,7 +169,7 @@ export class DomainList extends Control {
       run: () => source.edit.peek()?.markDeleted(row.id)});
     if (table !== undefined)
       actions.push(...table.actions.for(row));
-    actions.push(...ActionRegistry.bind(extra, row));
+    actions.push(...ActionRegistry.bind(this._options.actions ?? [], row));
     return allowedActions(actions, {access: source.access.peek(), row});
   }
 

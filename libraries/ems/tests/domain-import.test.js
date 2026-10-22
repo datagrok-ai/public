@@ -1,7 +1,8 @@
 /* `domains.import` (WO 3-9) on the memory backend: the wizard's four steps, the mapping
    auto-matched by name against the columns the caller may write, every blocking problem the Dart
    wizard defines, a skipped column absent from what is posted, the preview's own verdicts, upsert
-   merging by the business key, and the report reaching the caller. The memory backend has no bulk
+   merging by the business key, references by name, the table's derivations and validators, and the
+   report reaching the caller, `importRows` without the wizard too. The memory backend has no bulk
    endpoint, so the posting path here is the transaction fallback — the same rows either way. */
 
 import {emsBackends} from '../src/core/domain-backend.js';
@@ -9,12 +10,14 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, Control, notify} from '@datagrok-libraries/u2';
+import {backends, Scope, Control, Filters, Rows, notify} from '@datagrok-libraries/u2';
 import {SCHEMA, backend} from './domain-fixtures.mjs';
+import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
-const {domains} = await import('../src/dg/facade.js');
+const {domains, DomainSkip} = await import('../src/dg/facade.js');
 const {DgDomainTable} = await import('../src/dg/backend.js');
+const {DomainPick} = await import('../src/dg/pick.js');
 const DG = await import('datagrok-api/dg');
 
 function scoped(name, body) {
@@ -283,87 +286,6 @@ scoped('only the mapped columns are posted, under their target names', async () 
   assert.deepEqual(result.rows.map((r) => r.status), ['inserted']);
 });
 
-scoped('a reference column is posted as the ids its names name; a name no row holds is an issue, a uuid stands',
-  async () => {
-    const memory = backend();
-    const posted = [];
-    const issue = memory.tableSync('grit.issue');
-    const real = issue.validate.bind(issue);
-    issue.validate = (rows, options) => {
-      posted.push(rows.map((r) => r.project_id));
-      return real(rows, options);
-    };
-    const uuid = '0f8fad5b-d9cb-469f-a165-70867728950e';
-    const {running} = await opened(memory, frame(['project_id', 'title'],
-      [{project_id: 'Datagrok', title: 'Named'}, {project_id: 'Nope', title: 'Unknown'}, {project_id: uuid, title: 'Raw'}]));
-    await toMapping();
-    named('allOrNothing').value.value = false;
-    await toPreview();
-    assert.deepEqual(posted, [['p2', 'Nope', uuid]], 'by the target\'s name column; the unmatched as typed, for the ' +
-      'backend to refuse');
-    const listed = document.body.querySelector('.u2-domain-import-issues').textContent;
-    assert.match(listed, /2Project idNo match for "Nope"/, 'the source row, the column by its caption, what is wrong');
-    assert.doesNotMatch(listed, /No match for "0f8fad5b/, 'a uuid is taken as it stands');
-    fire(buttonNamed('NEXT'), 'click');
-    await flush();
-    await flush();
-    assert.equal(issues(memory).find((r) => r.title === 'Named').project_id, 'p2', 'the row landed under the id');
-    assert.match(document.body.querySelector('.u2-domain-import-report').textContent, /No match for "Nope"/,
-      'and the report says what was not found');
-    fire(buttonNamed('CLOSE'), 'click');
-    await running;
-  });
-
-scoped('the derivations and validators run over the mapped rows, each failure an issue; a derived column is no target',
-  async () => {
-    const memory = backend();
-    emsBackends.domain = memory;
-    const handle = await domains.table('grit.issue');
-    handle.derived.add({from: ['title'], to: ['description'], derive: (row) => {
-      if (row.title.startsWith('?'))
-        throw new Error('Cannot read the title');
-      return {description: `About ${row.title}`};
-    }});
-    handle.validators.add('description', (value) => String(value).includes('Taken') ? 'This title is taken' : null);
-    const running = domains.import(handle);
-    await flush();
-    named('source').value.value = frame(['project_id', 'title', 'description'], [{project_id: 'Grit', title: 'Derived'},
-      {project_id: 'Grit', title: '?Broken'}, {project_id: 'Grit', title: 'Taken'}]);
-    await flush();
-    await toMapping();
-    assert.equal(named('description').value.value, '(skip)', 'what a derivation writes is not offered');
-    named('allOrNothing').value.value = false;
-    await toPreview();
-    const listed = document.body.querySelector('.u2-domain-import-issues')?.textContent ?? '';
-    assert.match(listed, /2TitleCannot read the title/, 'the derivation failure, on its input');
-    assert.match(listed, /3DescriptionThis title is taken/, 'the validator\'s verdict');
-    fire(buttonNamed('NEXT'), 'click');
-    await flush();
-    await flush();
-    assert.equal(issues(memory).find((r) => r.title === 'Derived').description, 'About Derived',
-      'the derived column was posted with the mapped ones');
-    assert.match(document.body.querySelector('.u2-domain-import-report').textContent, /This title is taken/);
-    fire(buttonNamed('CLOSE'), 'click');
-    await running;
-  });
-
-scoped('a float the frame widened from float32 is posted as the decimal it was read from', async () => {
-  const memory = backend();
-  const {running} = await opened(memory, new DG.DataFrame([{name: 'project_id', type: 'string'},
-    {name: 'title', type: 'string'}, {name: 'weight', type: 'double'}],
-  [{project_id: 'Grit', title: 'Widened', weight: Math.fround(0.73)}], 'floats.csv'));
-  await toMapping();
-  fire(buttonNamed('NEXT'), 'click');
-  await flush();
-  fire(buttonNamed('NEXT'), 'click');
-  await flush();
-  assert.equal(issues(memory).find((r) => r.title === 'Widened').weight, 0.73, 'not 0.7300000190734863');
-  fire(buttonNamed('CLOSE'), 'click');
-  await running;
-  for (const typed of [106.63, 1e-7, 0.5, 126.665985])
-    assert.equal(DgDomainTable.float32Decimal(Math.fround(typed)), typed, 'the shortest decimal of the same float32');
-});
-
 scoped('upsert merges by the business key instead of inserting again', async () => {
   const memory = backend();
   const {running} = await opened(memory,
@@ -605,4 +527,104 @@ scoped('a warehouse refusal — the failing rows and no totals — still renders
     .find((b) => b.textContent === 'BACK'), undefined, 'the way back stands');
   fire(buttonNamed('CLOSE'), 'click');
   assert.equal((await running).error, 'validation');
+});
+
+
+scoped('a reference is looked up by its name, a uuid taken as it stands; derivations run over the rows, a failure ' +
+  'a row\'s issue, and what a derivation writes is no target', async () => {
+  const memory = backend();
+  emsBackends.domain = memory;
+  const handle = await domains.table('grit.issue');
+  handle.derived.add({from: ['title'], to: ['description'], derive: (row) => {
+    if (row.title.startsWith('?'))
+      throw new Error('Cannot read the title');
+    return {description: `About ${row.title}`};
+  }});
+  const running = domains.import(handle);
+  await flush();
+  const uuid = '0f8fad5b-d9cb-469f-a165-70867728950e';
+  named('source').value.value = frame(['project_id', 'title', 'description'], [{project_id: 'Datagrok', title: 'Named'},
+    {project_id: 'Nope', title: 'Unknown'}, {project_id: uuid, title: 'Raw'}, {project_id: 'Grit', title: '?Broken'}]);
+  await flush();
+  await toMapping();
+  assert.equal(named('description').value.value, '(skip)', 'what a derivation writes is not offered');
+  named('allOrNothing').value.value = false;
+  await toPreview();
+  assert.match(document.body.querySelector('.u2-domain-import-issues').textContent,
+    /2Project idNo match for "Nope".*4TitleCannot read the title/, 'the source row, the column by its caption, why');
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  await flush();
+  assert.deepEqual(issues(memory).slice(3).map((r) => [r.title, r.project_id, r.description]),
+    [['Named', 'p2', 'About Named'], ['Raw', uuid, 'About Raw']], 'a row with an issue is held back');
+  fire(buttonNamed('CLOSE'), 'click');
+  await running;
+});
+
+/** Compounds keyed DG-000007 whose hash the app derives, skipping a structure the table holds; a CAS validator;
+ * batches of the compounds. */
+async function registry() {
+  emsBackends.domain = new MemoryDomainBackend({name: 'reg', tables: {compound: {businessKey: ['regno'], columns: {
+    regno: {type: 'int', format: 'DG-000000', isName: true}, smiles: {type: 'string', semType: 'Molecule'},
+    hash: {type: 'string'}, cas: {type: 'string'}, potency: {type: 'float'}}},
+  batch: {columns: {compound_id: {type: 'ref', ref: 'compound'}}}}},
+  {rows: {compound: [{id: 'c1', regno: 7, smiles: 'CCO'}]}});
+  const table = await domains.table('reg.compound');
+  table.derived.add({from: ['smiles'], to: ['hash'], unique: 'hash', derive: (row) => {
+    if (row.smiles === 'CCO')
+      throw new DomainSkip('Registered already as DG-000007');
+    return {hash: row.smiles.toLowerCase()};
+  }});
+  table.validators.add('cas', (value) => value === 'bad' ? 'CAS must look like 50-78-2' : null);
+  return table;
+}
+
+scoped('importRows: a skipped row trips no all-or-nothing, an error row does, a repeat of a unique output is ' +
+  'skipped; a Molecule column maps by semType, a float32 as its decimal; a key in its display format names a row ' +
+  'in the report, in a reference and in a search', async () => {
+  const table = await registry();
+  const dg = globalThis.DG;
+  globalThis.DG = {...dg, format: (x, format) => `${format.replace(/0+$/, '')}${String(x).padStart(6, '0')}`};
+  try {
+    const source = new DG.DataFrame([{name: 'regno', type: 'int'}, {name: 'Drawn', type: 'string', semType: 'Molecule'},
+      {name: 'cas', type: 'string'}, {name: 'potency', type: 'double'}], [{regno: 8, Drawn: 'CCN', cas: '',
+      potency: Math.fround(0.73)}, {regno: 9, Drawn: 'CCO', cas: ''}, {regno: 10, Drawn: 'CCC', cas: 'bad'},
+    {regno: 11, Drawn: 'CCN', cas: ''}]);
+    const column = (report, name) => Array.from({length: report.rowCount}, (_, i) => report.get(name, i));
+    const strict = await domains.importRows(table, source);
+    assert.deepEqual(column(strict, 'Import result'), ['Not imported', 'Skipped', 'Error', 'Skipped']);
+    assert.deepEqual(column(strict, 'Import message'), ['', 'Smiles: Registered already as DG-000007',
+      'Cas: CAS must look like 50-78-2', 'Smiles: Same compound as row 1']);
+    source.set('cas', 2, '');
+    const report = await domains.importRows(table, source);
+    assert.deepEqual([column(report, 'Import result'), column(report, 'Regno')],
+      [['Added', 'Skipped', 'Added', 'Skipped'], ['DG-000008', '', 'DG-000010', '']], 'the skipped rows stop nothing');
+    const added = emsBackends.domain.tableSync('reg.compound').rows.find((r) => r.regno === 8);
+    assert.deepEqual([added.hash, added.potency], ['ccn', 0.73], 'not 0.7300000190734863');
+    const batches = await domains.table('reg.batch');
+    await domains.importRows(batches, new DG.DataFrame([{name: 'compound_id', type: 'string'}], [{compound_id: '8'}]));
+    const listed = batches.source({});
+    await flush();
+    assert.deepEqual([listed.rows.items.value[0][Rows.caption('compound_id')],
+      (await DomainPick.search('reg.compound', 'DG-000008'))[0].name], ['DG-000008', 'DG-000008']);
+    listed.dispose();
+  } finally {
+    globalThis.DG = dg;
+  }
+  for (const typed of [106.63, 1e-7, 0.5, 126.665985])
+    assert.equal(DgDomainTable.float32Decimal(Math.fround(typed)), typed, 'the shortest decimal of the same float32');
+});
+
+scoped('the report\'s "Show the N imported rows" hands the caller the rows by their numeric key', async () => {
+  let shown = null;
+  const running = domains.import(await registry(), {source: new DG.DataFrame([{name: 'regno', type: 'int'}],
+    [{regno: 8}]), show: (query) => shown = query});
+  await flush();
+  await toMapping();
+  await toPreview();
+  await toPreview();
+  fire([...document.querySelectorAll('.u2-domain-import-report a')]
+    .find((a) => a.textContent === 'Show the 1 imported row'), 'click');
+  assert.equal(Filters.format(shown), 'regno in (8)');
+  assert.equal((await running).inserted, 1, 'the wizard closed on the report');
 });

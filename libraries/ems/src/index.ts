@@ -12,5 +12,6 @@ export type {EditState, EditSaved, RowState} from './core/edit-state.js';
 export {SharedSession, confirmDiscard} from './core/session.js';
 export type {DomainSession} from './core/session.js';
 export {emsSourcesPlugin, registerDomainSources} from './core/registrations.js';
+export {DomainQueries} from './core/queries.js';
 
 export const VERSION = '0.1.0';

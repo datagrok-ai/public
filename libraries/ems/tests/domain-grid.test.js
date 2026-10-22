@@ -11,7 +11,7 @@ import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, signal, Registry, SpecContext, renderSpec, registerAll} from '@datagrok-libraries/u2';
 import {DomainSource} from '../src/core/domain-source.js';
 import {DataFrame, Property, Stream, WidgetDescriptor, platform} from '@datagrok-libraries/u2/tests/platform-doubles.mjs';
-import {backend, numberedBackend, zeroPadded} from './domain-fixtures.mjs';
+import {backend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -96,27 +96,6 @@ function editorBackend(memory, columns = COLUMNS) {
     };
   }};
 }
-
-scoped('a numbered key, a date and a reference to a numbered row read in their display formats', async () => {
-  const dg = globalThis.DG;
-  globalThis.DG = {...dg, format: zeroPadded};
-  try {
-    emsBackends.domain = editorBackend(numberedBackend(), [{name: 'id', type: 'string'},
-      {name: 'batch_regno', type: 'int'}, {name: 'made', type: 'datetime'},
-      {name: 'compound_id', type: 'string', semType: 'reg.compound'}, {name: '~caption_compound_id', type: 'string'}]);
-    const source = (await domains.table('reg.batch')).source({pageSize: 10});
-    const grid = domains.grid(source);
-    await flush();
-    const df = source.df.value;
-    assert.equal(df.columns.byName('batch_regno').getTag('format'), 'DGB-000000', 'DGB-000045, as on the form');
-    assert.equal(df.columns.byName('made').getTag('format'), 'yyyy-MM-dd', 'a date in the schema\'s format');
-    assert.equal(df.get('~caption_compound_id', 0), 'DG-000007', 'the caption the reference cell draws');
-    grid.dispose();
-    source.dispose();
-  } finally {
-    globalThis.DG = dg;
-  }
-});
 
 scoped('over a memory source: the frame is the grid\'s; the memory writer is not a platform editor', async () => {
   emsBackends.domain = backend();

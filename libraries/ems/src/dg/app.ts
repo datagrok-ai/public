@@ -260,7 +260,7 @@ export class DomainApp extends Control {
     const listPage = divV(_options.filters?.placement === 'left' ? [this._filtersPane()] :
       [this.filters.root, this.list.root], 'u2-domain-app-list');
     listPage.dataset.u2Part = 'list-page';
-    const entityPage = divV([this._deletionBanner(), this._formHost, this.panes], 'u2-domain-app-entity');
+    const entityPage = divV([this._formHost, this.panes], 'u2-domain-app-entity');
     entityPage.dataset.u2Part = 'entity-page';
     // above both pages: the entity page always says which row, the list page only in the trash —
     // on a plain list the table's name is the view title already
@@ -293,20 +293,21 @@ export class DomainApp extends Control {
       if (row !== null && source!.isDraft && this._entity.peek() === DomainApp.NEW && !Rows.isDraft(row))
         this._entity.value = row.id;
     });
-    // `had` keeps the load's own empty window (the frame arrives before `newRow` fills it) and a row not found
-    // from counting as a page that lost its row
+    // and once the draft is discarded — by the Discard button or by a gate's DISCARD — the page
+    // has no row left, so the app goes back to the list. `had` keeps the load's own empty window
+    // (the frame arrives before `newRow` fills it) from counting as a discard; the move is
+    // deferred past the discard that is running, which reads dirty until it has settled.
     let had = false;
     this.effect(() => {
       const source = this._entitySource.value;
-      const rows = source?.rows.items.value.length ?? 0;
-      if (source === null || rows > 0) {
-        had = source !== null;
+      if (source === null || !source.isDraft) {
+        had = false;
         return;
       }
-      if (had && !this.session.isSaving.value && source.state.value === 'ready') {
-        had = false;
+      const rows = source.rows.items.value.length;
+      if (rows === 0 && had)
         queueMicrotask(() => void this.goTo('list'));
-      }
+      had = rows > 0;
     });
 
     this.path = computed(() => {
@@ -464,15 +465,9 @@ export class DomainApp extends Control {
     return [main, tools, presets].filter((group) => group.length > 0);
   }
 
-  /** The ⋯ menu: on the entity page the row's own actions; on the list the table-wide ones — the import
-   * wizard, the bulk edit over what the list holds, and the trash, where only the way out is offered. */
+  /** The table-wide actions of the ⋯ menu: the import wizard, the bulk edit over what the list
+   * holds, and the trash. Nothing writes in the trash, so only the way out of it is offered there. */
   menuActions(): Action[] {
-    if (this._page.value === 'entity') {
-      const source = this._entitySource.value;
-      const row = source?.currentRow.value ?? null;
-      return source === null || row === null || Rows.isDraft(row) ? [] :
-        DomainList.actionsOf(source, row, this.table).filter((a) => a.name !== 'Open');
-    }
     const trash = this.trash.peek();
     // what the caller may do (`requires`) and what the table can do at all are different
     // questions: a permission hides an action, an undeclared support leaves it out entirely
@@ -493,9 +488,13 @@ export class DomainApp extends Control {
     return out;
   }
 
-  /** What the ⋯ menu's Import runs — the import wizard over the table; resolves to whether rows landed. */
+  /** What the ⋯ menu's Import runs — the import wizard over the table, whose "Show the N imported rows" narrows the
+   * list to them; resolves to whether rows landed. */
   async importRows(): Promise<boolean> {
-    return await domains.import(this.table) !== null;
+    return await domains.import(this.table, {show: async (query) => {
+      if (await this.goTo('list'))
+        this.listSource.query.value = query;
+    }}) !== null;
   }
 
   /** Moves between the live collection and the trash — ONE switch: the list's `deleted` mode, its
@@ -998,27 +997,6 @@ export class DomainApp extends Control {
       badge.textContent = count.value === 0 ? '' : String(count.value);
     });
     return splitter.root;
-  }
-
-  /** The entity page says its row goes with the next Save, and offers Restore — as the list does. */
-  private _deletionBanner(): HTMLElement {
-    const text = span('', 'u2-domain-app-deleting-text');
-    let restore = () => {};
-    const banner = divH([text, button('Restore', () => restore())], 'u2-domain-app-deleting');
-    banner.dataset.u2Part = 'deleting';
-    this.effect(() => {
-      const source = this._entitySource.value;
-      source?.rows.items.value;
-      const row = source?.currentRow.value ?? null;
-      const deleting = row !== null && row[Rows.STATE] === 'deleted';
-      banner.hidden = !deleting;
-      this.root.classList.toggle('u2-domain-app-deleting-row', deleting);
-      if (!deleting)
-        return;
-      text.textContent = `${this.table.renderer.caption(row)} will be deleted when you save.`;
-      restore = () => source!.edit.peek()?.unmarkDeleted(row.id);
-    });
-    return banner;
   }
 
   private _showContext(row: RowView): void {

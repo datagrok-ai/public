@@ -984,29 +984,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readScope(): DomainReadScope {
     const query = this.query.peek();
     const q = this._served?.query === query ? this._served.as : query;
-    const key = this._keyTerm(this.search.peek());
-    const keyText = key === null ? '' : Filters.format(Filters.group('and', [key]));
-    const filter = typeof q !== 'string' ? Filters.toDomainTree(key === null ? q : Filters.group('and', [q, key])) :
-      keyText === '' ? q : q.trim() === '' ? keyText : `(${q}) and ${keyText}`;
-    const search = key === null ? this.search.peek() : '';
+    const search = this.search.peek();
     const deleted = this.deleted.peek();
-    return {filter: filter === '' ? undefined : filter,
+    return {filter: typeof q === 'string' ? (q === '' ? undefined : q) : Filters.toDomainTree(q),
       ...(search === '' ? {} : {search}), ...(deleted === 'exclude' ? {} : {deleted})};
-  }
-
-  /** A search for the caption column's formatted number (`DG-000123`, or `123`, over an int `molregno`
-   * formatted `DG-000000`): the server searches text columns only, so it becomes that column's equality. */
-  private _keyTerm(search: string): FilterCondition | null {
-    const column = DomainSource.captionColumn(this._schema.info);
-    const prop = DomainSource.formattedNumber(this._schema.properties, column);
-    if (prop === undefined)
-      return null;
-    const prefix = /^[^0#]*/.exec(String(prop.format))?.[0] ?? '';
-    const term = search.trim();
-    // a bare number is the key as well: "12" means DG-000012, not every formula with a 12 in it
-    const digits = prefix !== '' && term.toLowerCase().startsWith(prefix.toLowerCase()) ? term.slice(prefix.length) :
-      term;
-    return /^\d+$/.test(digits) ? Filters.cond(column, '=', Number(digits)) : null;
   }
 
   /** The column a row is named by: the declared name column, else the first business-key column, else the id. */

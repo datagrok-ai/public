@@ -88,20 +88,6 @@ function select(source, keep) {
   df.onSelectionChanged.fire(undefined);
 }
 
-scoped('neither side of a derivation is offered: a bulk write runs none', async () => {
-  const memory = backend();
-  const {handle, source} = await table(memory, {query: 'number > 0'});
-  handle.derived.add({from: ['title'], to: ['description'], derive: (row) => ({description: row.title})});
-  select(source, (i) => i === 0);
-  const {running} = await opened(source);
-  assert.equal(includeBox('title'), null);
-  assert.equal(includeBox('description'), null);
-  assert.notEqual(includeBox('done'), null, 'every other writable column is');
-  buttonNamed('CANCEL').click();
-  await running;
-  source.dispose();
-});
-
 scoped('the checked columns are written to the selection; an unchecked one is left alone', async () => {
   const memory = backend();
   const {source} = await table(memory, {query: 'number > 0'});
@@ -117,7 +103,6 @@ scoped('the checked columns are written to the selection; an unchecked one is le
   assert.equal(field('done').enabled, false, 'an unchecked column has no editor');
   assert.equal(okDisabled(), true);
   assert.equal(reason(), '', 'a disabled OK says enough before the user has done anything');
-  assert.equal(document.querySelector('.u2-domain-bulk .u2-form-tall'), null, 'a field is one row: box, caption, editor');
   assert.equal(field('title').root.querySelector('.u2-input-error')?.textContent ?? '', '',
     'nothing in a bulk dialog is required: an empty checked field CLEARS the column');
   check('done');

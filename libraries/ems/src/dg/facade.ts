@@ -27,7 +27,7 @@ import {DomainFilters} from './filters.js';
 import {DomainForm} from './form.js';
 import {DomainGrid, DomainDataTable} from './grid.js';
 import {DomainHistory} from './history.js';
-import {openImport} from './import.js';
+import {openImport, importRows} from './import.js';
 import {bulkEdit} from './bulk.js';
 import {BindingDialog, BindingWizard, createBinding} from './authoring/binding-dialog.js';
 import {BindingEditDialog, editBinding} from './authoring/binding-edit-dialog.js';
@@ -47,6 +47,8 @@ import type {DomainSearchOptions} from './search.js';
 import {DomainTree} from './tree.js';
 import type {DomainTreeOptions} from './tree.js';
 import {route} from './routes.js';
+import {DomainViews} from './views.js';
+import type {DomainViewsOptions} from './views.js';
 export type {CreateBindingOptions, BindingResult, AccessOutcome} from './authoring/binding-dialog.js';
 export type {EditBindingResult} from './authoring/binding-edit-dialog.js';
 const REF_ADDRESS = /^\w+\.\w+$/;
@@ -63,12 +65,18 @@ export interface DomainAction<TRow extends DomainRowLike = DomainRowLike> {
   run(row: RowView<TRow>): void;
 }
 
-/** A row's problem with one of its cells — a derivation that failed on an imported row. */
+/** A row's problem with one of its cells — a derivation that failed on an imported row; `skip` where it passed the
+ * row over ({@link DomainSkip}). */
 export interface RowProblem {
   index: number;
   column: string;
   problem: string;
+  skip?: boolean;
 }
+
+/** What a derivation throws for a row an import passes over rather than refuses — one the table holds already. A
+ * form shows it as any other failure: on the field, Save refused. */
+export class DomainSkip extends Error {}
 
 export type RowValidator<TRow extends DomainRowLike = DomainRowLike> =
   (value: unknown, row: RowView<TRow>) => string | null;
@@ -143,10 +151,14 @@ export class ValidatorRegistry<TRow extends DomainRowLike = DomainRowLike> {
   }
 }
 
-/** Columns the browser computes from other columns of the row: a write hook for a schema without one. */
+/** Columns the browser computes from other columns of the row: a write hook for a schema without one. The
+ * server runs no hooks of its own (the EMS design leaves them out), so a derivation holds only for writes made
+ * through these handles — a client writing over the REST API computes the outputs itself. */
 export interface DomainDerivation<TRow extends DomainRowLike = DomainRowLike> {
   from: ColumnOf<TRow>[];
   to: ColumnOf<TRow>[];
+  /** An output no two rows may share: an import passes over a row repeating an earlier row's. */
+  unique?: ColumnOf<TRow>;
   derive(row: RowView<TRow>): RowValues<TRow> | Promise<RowValues<TRow>>;
 }
 
@@ -285,9 +297,9 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   }
 
   /** Opens a saved row: the entity page of the app open over this table (find-or-activate), else
-   * the platform's entity view. */
+   * of the app's views of it ({@link DomainViews.openRow}), else the platform's entity view. */
   open(row: RowView<TRow>): void {
-    if (Rows.isDraft(row) || DomainApp.activate(DomainApp.baseOf(this.address), row.id))
+    if (Rows.isDraft(row) || DomainViews.openRow(this.address, row.id))
       return;
     this.handler.openRow(this.row(row));
   }
@@ -441,9 +453,25 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
         try {
           Object.assign(row, await DomainTable._timed(derivation.derive(row as RowView<TRow>)));
         } catch (e) {
-          failures.push({index, column: derivation.from[0], problem: DomainErrors.message(e)});
+          failures.push({index, column: derivation.from[0], problem: DomainErrors.message(e),
+            skip: e instanceof DomainSkip});
         }
       }));
+      if (derivation.unique === undefined)
+        continue;
+      const failed = new Set(failures.map((f) => f.index));
+      const first = new Map<unknown, number>();
+      const noun = DomainSource.noun(this.info, false);
+      for (const [index, row] of rows.entries()) {
+        const value = row[derivation.unique] ?? null;
+        const earlier = first.get(value);
+        if (value === null || failed.has(index))
+          continue;
+        if (earlier === undefined)
+          first.set(value, index);
+        else
+          failures.push({index, column: derivation.from[0], problem: `Same ${noun} as row ${earlier + 1}`, skip: true});
+      }
     }
     return failures.sort((a, b) => a.index - b.index);
   }
@@ -642,10 +670,15 @@ export const domains = {
   children: (parent: DomainSource, options?: DomainChildrenOptions): DomainChildren =>
     new DomainChildren(parent, options),
   app: (options: DomainAppOptions): DomainApp => new DomainApp(options),
+  /** Several tables as one app: a view per table under `path`, the router's answer, the tree's items, and where
+   * a row of those tables opens. */
+  views: (options: DomainViewsOptions): DomainViews => new DomainViews(options),
   route,
   bulkEdit,
   /** The import wizard over a table: source → mapping → preview → the server's report. */
   import: openImport,
+  /** The import without the wizard: map, resolve references, derive, validate, batch; resolves to the report frame. */
+  importRows,
   saveButton,
   discardButton,
   newButton,

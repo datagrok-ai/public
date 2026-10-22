@@ -10,8 +10,9 @@ import type {ObjectRenderer, DomainCondition, DomainConditionNode, DomainConditi
   IProperty} from '@datagrok-libraries/u2';
 import type {DomainQueryLike, DomainTableLike} from '../core/domain-backend.js';
 import {DomainSource} from '../core/domain-source.js';
-import {DomainApp} from './app.js';
+import {DomainQueries} from '../core/queries.js';
 import {DomainTable} from './facade.js';
+import {DomainViews} from './views.js';
 
 export interface PickItem {
   id: string;
@@ -156,15 +157,10 @@ export interface DomainPickOptions extends InputOptions<string | null> {
   debounceMs?: number;
 }
 
-/** Names {@link DomainPick.lookUp} asks the target for in one query. */
-const LOOKUP_CHUNK = 100;
 
 export class DomainPick extends PickInput<PickItem> {
   /** What a reference no row answers for reads as — the uuid it holds would read as its value. */
   static readonly UNKNOWN = '(unknown)';
-  /** How an app opens a row of one of its tables that no open view shows — its own view at the row;
-   * false leaves the row to the platform's entity view ({@link open}). */
-  static opener: ((table: string, id: string) => boolean) | undefined;
   /** The target's plural name once a search has seen its table — the empty row's wording. */
   private static readonly _plural = new Map<string, string>();
 
@@ -203,23 +199,21 @@ export class DomainPick extends PickInput<PickItem> {
     this.effect(() => open.hidden = !DomainPick.opens(table, this.value.value));
   }
 
-  /** Opens the row a reference holds: the app open over its table brings it forward, else the
-   * {@link opener} the app set, else the platform's entity view. After the click that asked for it:
-   * the view a click lands in makes itself current as the click bubbles up to it. */
+  /** Opens the row a reference holds: in an app ({@link DomainViews.openRow}), else in the platform's entity view.
+   * After the click that asked for it: the view a click lands in makes itself current as the click bubbles up to it. */
   static open(table: string, id: string): void {
     setTimeout(() => {
-      if (DomainApp.activate(DomainApp.baseOf(table), id) || DomainPick.opener?.(table, id) === true)
+      if (DomainViews.openRow(table, id))
         return;
       const handler = new DG.DomainObjectHandler(table);
       handler.openRow(handler.rowFrom({id}));
     });
   }
 
-  /** Whether a reference holds a row there is to open — a saved one — and something here opens it: an app open
-   * over its table, or the {@link opener} an app set. */
+  /** Whether a reference holds a row there is to open — a saved one — and an app opens it: one open over its
+   * table, or the views made over it. */
   static opens(table: string, id: string | null): boolean {
-    return id !== null && id !== '' && !Rows.isDraft(id) &&
-      (DomainApp.baseOf(table) !== undefined || DomainPick.opener !== undefined);
+    return id !== null && id !== '' && !Rows.isDraft(id) && DomainViews.opens(table);
   }
 
   /** The candidates for `query`: the rows whose name column contains it, in the table's own order
@@ -298,19 +292,12 @@ export class DomainPick extends PickInput<PickItem> {
         continue;
       byValue.set(value, [...(byValue.get(value) ?? []), name]);
     }
-    const values = [...byValue.keys()];
-    const queries: Promise<Record<string, unknown>[]>[] = [];
-    for (let at = 0; at < values.length; at += LOOKUP_CHUNK) {
-      const chunk = values.slice(at, at + LOOKUP_CHUNK);
-      queries.push(t.query({filter: {property: nameColumn, operator: '=', value: chunk},
-        columns: [nameColumn], limit: chunk.length}));
-    }
+    const rows = await DomainQueries.chunked([...byValue.keys()], (chunk) => t.query(
+      {filter: {property: nameColumn, operator: '=', value: chunk}, columns: [nameColumn], limit: chunk.length}));
     const ids = new Map<string, string>();
-    for (const rows of await Promise.all(queries)) {
-      for (const row of rows) {
-        for (const name of byValue.get(row[nameColumn]) ?? [])
-          ids.set(name, String(row.id));
-      }
+    for (const row of rows) {
+      for (const name of byValue.get(row[nameColumn]) ?? [])
+        ids.set(name, String(row.id));
     }
     return ids;
   }

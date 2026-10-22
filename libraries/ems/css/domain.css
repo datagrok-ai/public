@@ -137,25 +137,6 @@
   opacity: 0.55;
 }
 
-/* the entity page of a row marked deleted: the same strike on its name, the form faded, and the
-   way back above it */
-.u2-domain-app-deleting {
-  flex: none;
-  align-items: center;
-  gap: var(--dg-space-m);
-  padding: var(--dg-space-s) var(--dg-space-m);
-  background: var(--dg-warm-grey-1);
-  box-shadow: inset 3px 0 0 0 var(--dg-error);
-}
-
-.u2-domain-app-deleting-row > .u2-breadcrumbs .u2-breadcrumbs-current {
-  text-decoration: line-through;
-}
-
-.u2-domain-app-deleting-row .u2-domain-app-form {
-  opacity: 0.55;
-}
-
 /* a staged restore is the other direction: the strike is gone, and the amber edge of a pending
    change says it has not landed yet */
 .u2-domain-list-restored .u2-domain-list-content {
@@ -621,6 +602,11 @@
   display: flex;
   justify-content: flex-end;
   margin-top: var(--dg-space-m);
+}
+
+.u2-domain-import-links {
+  display: flex;
+  gap: var(--dg-space-m);
 }
 
 .u2-domain-import-issues {

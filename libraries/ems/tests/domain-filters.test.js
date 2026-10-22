@@ -1,7 +1,7 @@
 /* `domains.filters` (WO 2-7) over the memory backend: the query box appears once the table's
    schema is known, a query set in code formats into it, a committed text writes the source's
    query (text stays text, a tree stays a tree) and round-trips to `?q=`, and a change while the
-   session is dirty goes through the gate — cancel puts the previous filter back. */
+   session is dirty goes through the gate — cancel puts the previous filter back; a host operator. */
 
 import {emsBackends} from '../src/core/domain-backend.js';
 import {test} from 'node:test';
@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, Filters, Registry, registerAll} from '@datagrok-libraries/u2';
+import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {backend, hierarchyBackend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
@@ -316,27 +317,38 @@ scoped('a `basic` backend is offered no under, regex, !like, fuzzy or between, n
   tree.dispose();
 });
 
-scoped('the table\'s own columns come first, the system ones last: a new condition starts on a column people fill in', async () => {
-  const src = await issues();
-  assert.equal(src.schema.properties[0].name, 'id', 'the schema itself leads with the system columns');
-  const filters = domains.filters(src, {mode: 'builder'});
-  document.body.append(filters.root);
-  await flush();
-  const builder = filters.input.value;
-  const names = builder.options.schema.properties.map((p) => p.name);
-  assert.equal(names[0], 'project_id');
-  assert.deepEqual(names.slice(-5), ['id', 'version', 'created_on', 'updated_on', 'author_id']);
-  builder.addCondition();
-  assert.equal(builder.value.value.nodes[0].property, 'project_id', 'not "Id equals"');
-  filters.dispose();
-  src.dispose();
-});
-
-scoped('the values offered to pick hold no empty cell: the null tests ask for that', async () => {
-  const {DomainFilters} = await import('../src/dg/filters.js');
-  const offered = DomainFilters.held([
-    {value: 'web', label: 'web'}, {value: null, label: 'null'}, {value: '', label: ''},
-    {value: {type: 'grit.project', id: 'null'}, label: 'null'}, {value: {type: 'grit.project', id: 'p1', name: 'Grit'},
-      label: 'Grit'}, {value: 0, label: '0'}, {value: false, label: 'false'}]);
-  assert.deepEqual(offered.map((i) => i.label), ['web', 'Grit', '0', 'false']);
-});
+scoped('a host operator is answered by the app as the ids it matches, and again only once the table moves',
+  async () => {
+    emsBackends.domain = new MemoryDomainBackend({name: 'chem', tables: {compound: {columns: {code: {type: 'int'},
+      structure: {type: 'string', semType: 'Molecule'}, label: {type: 'string', searchable: true}}}}},
+    {rows: {compound: [{id: 'c1', code: 1, structure: 'CCO', label: 'ethanol'},
+      {id: 'c2', code: 2, structure: 'CC(=O)O', label: 'acetic acid'}]}});
+    const table = await domains.table('chem.compound');
+    const calls = [];
+    const off = table.operators.add({id: 'has', label: 'has', semType: 'Molecule',
+      parameter: {name: 'threshold', label: 'At least', default: 0.5}, rows: async (c) => {
+        calls.push(c.options?.threshold);
+        return emsBackends.domain.tableSync('chem.compound').rows.filter((r) => r.structure.includes(c.value))
+          .map((r) => r.id);
+      }});
+    const source = table.source({query: 'structure has(0.8) "CC" and code > 1'});
+    const other = table.source();
+    try {
+      await flush();
+      assert.deepEqual([source.rows.items.value.map((r) => r.id), source.total.value, calls], [['c2'], 1, [0.8]],
+        'answered once per load: the count and the page share it');
+      assert.doesNotMatch(JSON.stringify(source.readScope().filter), /has/, 'the server never sees the host operator');
+      source.sort.value = '!code';
+      source.search.value = 'acid';
+      await flush();
+      assert.equal(calls.length, 1, 'the order and the search changed, the table did not');
+      other.newRow({code: 3, structure: 'CCC(=O)O', label: 'propionic acid'});
+      assert.equal(await other.save(), true);
+      await flush();
+      assert.deepEqual([calls.length, source.total.value], [2, 2], 'a write moves the table: answered again');
+    } finally {
+      off();
+      other.dispose();
+      source.dispose();
+    }
+  });

@@ -154,9 +154,11 @@ one target, an unmapped upsert key, a missing required column) and **report** (t
 is the authority). Only the MAPPED columns are posted, under their target names — a skipped or
 renamed source column never reaches the server, and the source frame is never touched.
 
-An app whose own import is not a table batch (MolTrack's bulk registration) reuses the mapping
-step: `new ImportMapping()`, then `remap(columns, targets, auto)`, `table(...)`, `targets()` and
-`duplicates()`.
+A script runs the same import without the wizard: `await domains.importRows(table, frame,
+{mapping, allOrNothing})` matches the columns the same way (`mapping`, target → source column,
+overrides) and resolves to the source rows beside an `Import result`, an `Import message` and a key
+column. A derivation that throws `DomainSkip` passes its row over: the row is not sent, reads
+Skipped, and does not stop an all-or-nothing import.
 
 ## Rules the controls follow (so the app does not re-implement them)
 

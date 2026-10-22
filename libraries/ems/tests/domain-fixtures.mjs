@@ -49,24 +49,6 @@ export function backend(options = {}) {
   return new MemoryDomainBackend(SCHEMA, {rows, ...options});
 }
 
-/** Registration-shaped tables: keys autonumbered in a display format, a reference to one. */
-export function numberedBackend() {
-  return new MemoryDomainBackend({name: 'reg', tables: {
-    compound: {businessKey: ['regno'], columns: {regno: {type: 'int', format: 'DG-000000', isName: true},
-      name: {type: 'string', searchable: true}}},
-    batch: {businessKey: ['batch_regno'], columns: {compound_id: {type: 'ref', ref: 'compound'},
-      batch_regno: {type: 'int', format: 'DGB-000000'}, made: {type: 'datetime', format: 'yyyy-MM-dd'},
-      potency: {type: 'float'}}},
-    lot: {columns: {number: {type: 'int', format: 'L-000000', isName: true}}},
-    label: {businessKey: ['number'], columns: {number: {type: 'int'}}},
-  }}, {rows: {compound: [{id: 'c1', regno: 7, name: 'Aspirin'}, {id: 'c2', regno: 123, name: 'Caffeine'}],
-    batch: [{id: 'b1', compound_id: 'c1', batch_regno: 45, potency: 1.2e-9}], lot: [{id: 't1', number: 5}],
-    label: [{id: 'l1', number: 1000}, {id: 'l2', number: 2000}]}});
-}
-
-/** `DG.format` as the platform answers a zero-padded display format: 'DG-000000' reads 7 as DG-000007. */
-export const zeroPadded = (x, format) => `${format.replace(/0+$/, '')}${String(x).padStart(6, '0')}`;
-
 /* A hierarchy table the way the manifest declares one: `hierarchy: true` plus exactly one ref
    column targeting the table itself. */
 export const LOCATIONS = {

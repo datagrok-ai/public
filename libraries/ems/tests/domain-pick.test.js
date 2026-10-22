@@ -1,7 +1,6 @@
 /* `domains.pick` (WO-11) over the memory backend: candidates by the target's name column, a pick
    writes the id, a written id resolves to its name, an extra filter narrows, the name column falls
-   back to the business key and then the id — and `PickInput`'s face keeps value and box in step. A
-   table named by a number in a display format reads in that format wherever a row is named. */
+   back to the business key and then the id — and `PickInput`'s face keeps value and box in step. */
 
 import {emsBackends} from '../src/core/domain-backend.js';
 import {DomainSource} from '../src/core/domain-source.js';
@@ -9,12 +8,11 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, Access, Rows} from '@datagrok-libraries/u2';
+import {backends, Scope} from '@datagrok-libraries/u2';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
-import {backend, numberedBackend, zeroPadded} from './domain-fixtures.mjs';
+import {backend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
-const {domains} = await import('../src/dg/facade.js');
 const {DomainPick} = await import('../src/dg/pick.js');
 
 function scoped(name, body) {
@@ -22,12 +20,9 @@ function scoped(name, body) {
     const live = Scope.liveCount;
     const saved = {...backends};
     const savedEms = {...emsBackends};
-    const dg = globalThis.DG;
     try {
-      globalThis.DG = {...dg, format: zeroPadded};
       await body();
     } finally {
-      globalThis.DG = dg;
       for (const key of Object.keys(backends))
         delete backends[key];
       Object.assign(backends, saved);
@@ -362,106 +357,4 @@ scoped('DomainPick.bind: a bound filter is a tree, an empty sibling leaves the n
   const tree = {property: 'key', operator: '=', value: 'DG'};
   assert.deepEqual(DomainPick.bind(tree), {filter: tree, unbound: []});
   assert.deepEqual(DomainPick.bind(undefined), {unbound: []});
-});
-
-scoped('the row a reference holds is a click away: the app\'s opener, else the platform', async () => {
-  emsBackends.domain = backend();
-  const DG = await import('datagrok-api/dg');
-  const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0});
-  mount(pick);
-  const open = pick.root.querySelector('[data-u2-part="open"]');
-  pick.value.value = 'p1';
-  await flush();
-  assert.equal(open.hidden, true, 'no app over the table and no opener: nothing here opens it');
-  const asked = [];
-  DomainPick.opener = (table, id) => asked.push([table, id]) > 0;
-  try {
-    pick.value.value = null;
-    pick.value.value = 'p1';
-    await flush();
-    open.click();
-    assert.deepEqual(asked, [], 'not while the click still bubbles through the view it came from');
-    await flush();
-    assert.deepEqual(asked, [['grit.project', 'p1']], 'an app that docks its own views opens it there');
-    DomainPick.opener = () => false;
-    open.click();
-    await flush();
-    assert.equal(DG.DomainObjectHandler.opened.at(-1).id, 'p1', 'anything else is the platform\'s entity view');
-  } finally {
-    DomainPick.opener = undefined;
-  }
-  pick.dispose();
-});
-
-function numbered() {
-  return emsBackends.domain = numberedBackend();
-}
-
-scoped('a row named by a formatted number reads in the format, found by its digits or its other searchable columns',
-  async () => {
-    numbered();
-    const table = await domains.table('reg.compound');
-    const source = table.source({});
-    await flush();
-    assert.equal(table.renderer.caption(source.rows.byKey('c2')), 'DG-000123');
-    source.dispose();
-    const found = async (address, text) => (await DomainPick.search(address, text)).map((i) => `${i.id} ${i.name}`);
-    assert.deepEqual(await found('reg.compound', 'DG-000123'), ['c2 DG-000123']);
-    assert.deepEqual(await found('reg.compound', '7'), ['c1 DG-000007']);
-    assert.deepEqual(await found('reg.compound', 'aspirin'), ['c1 DG-000007'], 'text without digits');
-    assert.deepEqual(await found('reg.lot', 'abc'), [], 'and none to search: nothing, never the first rows');
-    assert.equal((await DomainPick.resolve('reg.compound', 'c1')).name, 'DG-000007');
-    assert.deepEqual(await found('reg.label', ''), ['l1 1000', 'l2 2000'], 'a number without a format as before');
-  });
-
-scoped('a projected caption of a numbered target reads in the target\'s format — on a form and in a data table',
-  async () => {
-    numbered();
-    const formats = DomainSource.nameFormat;
-    let release;
-    DomainSource.nameFormat = (target) => new Promise((resolve) => release = () => resolve(formats(target)));
-    const source = (await domains.table('reg.batch')).source({pageSize: 10});
-    await flush();
-    assert.equal(source.rows.items.value.length, 0, 'no row shows before its captions are in the target\'s format');
-    DomainSource.nameFormat = formats;
-    release();
-    await flush();
-    const row = source.rows.byKey('b1');
-    const [answered] = await emsBackends.domain.tableSync('reg.batch').query({captions: ['compound_id']});
-    assert.equal(answered[Rows.caption('compound_id')], '7', 'the query answers the name bare');
-    assert.equal(row[Rows.caption('compound_id')], 'DG-000007', 'the source formats it before the rows are shown');
-    source.currentRow.value = row;
-    const form = domains.form(source, {access: Access.from({can: {view: true}, fields: {compound_id: 'readonly'}})});
-    await flush();
-    assert.equal(form.root.querySelector('[data-u2-name="compound_id"] [data-u2-part="readonly-value"]').textContent,
-      'DG-000007');
-    form.dispose();
-    const dt = domains.dataTable(source, {columns: ['compound_id', 'batch_regno', 'potency']});
-    document.body.append(dt.root);
-    await flush();
-    dt.table.value.root.clientHeight = 400;
-    await flush();
-    const cells = [...dt.root.querySelector('.u2-data-table-row[data-index="0"]').children].map((c) => c.textContent);
-    assert.deepEqual(cells, ['DG-000007', 'DGB-000045', '1.2e-9'],
-      'the target\'s format, an int column\'s own, and an unformatted float never rounded to 0');
-    dt.dispose();
-    source.dispose();
-  });
-
-scoped('lookUp: names to ids by the name column — a formatted number by its digits — a hundred at a time', async () => {
-  const memory = numbered();
-  const ids = await DomainPick.lookUp('reg.compound', ['DG-000007', '123', 'aspirin', 'DG-999999']);
-  assert.deepEqual([...ids], [['DG-000007', 'c1'], ['123', 'c2']], 'a name no row holds is absent');
-  const compound = memory.tableSync('reg.compound');
-  const query = compound.query.bind(compound);
-  const asked = [];
-  compound.query = (spec) => {
-    asked.push(spec.filter.value.length);
-    return query(spec);
-  };
-  const many = await DomainPick.lookUp('reg.compound', Array.from({length: 250}, (_, i) => `DG-${i + 1}`));
-  assert.deepEqual(asked, [100, 100, 50]);
-  assert.deepEqual([...many], [['DG-7', 'c1'], ['DG-123', 'c2']]);
-  assert.deepEqual([...await DomainPick.lookUp('reg.label', ['1000', 'x', '20'])], [['1000', 'l1']],
-    'an unformatted number by its value');
 });

@@ -65,6 +65,33 @@ control over a source of `issues` read them.
 | `table.app({app: X, ...})` | the view: `name`, `path`, `query`, `pageSize`, `mode`, `include`, `children`, `history`, `shortcuts` — see [crud-app](crud-app.md) |
 | `domains.app({table, base, ...})` | the `DomainApp` control alone, for a hand-built `appView` with its own chrome |
 
+## Several tables, one app
+
+`domains.views({path, views, handle?})` makes one app of several tables: a view per table at
+`<path>/<Segment>` (the name without spaces unless `segment` says otherwise), built by `table.app()` with the
+entry's `options` — an object, or a function of the handle for what needs an await. `handle` hands it the app's
+own configured handles, so their registries hold in every view (`domains.table` by default).
+
+```ts
+const views = domains.views({path: '/apps/Grit/Tracker', views: [
+  {table: 'grit.issue', name: 'Issues', options: {app: IssuesApp, mode: 'cards'}},
+  {table: 'grit.project', name: 'Projects', childPages: true},   // New on a project's Issues tab opens Issues › New
+]});
+
+//name: Tracker
+//tags: app
+//input: string path {meta.url: true; optional: true}
+//output: view result
+export function trackerApp(path?: string): Promise<DG.ViewBase> {
+  return views.open(path);                                   // `Issues?entity=<id>`, `Projects?q=…`; '' the first view
+}
+```
+
+`views.tree(node)` puts an item per view under the app's tree browser node, `views.show(address)` brings the open
+view forward at an address (else docks a new one), `views.create(table, values)` opens a table's create page. A
+saved row of any of the tables — a reference's open control, a list's or a tree's Open — opens in the app's view of
+its table rather than in the platform's entity view.
+
 ## Master–detail in one session
 
 The entity page already is one: `domains.children(parent)` makes a child source per referring
