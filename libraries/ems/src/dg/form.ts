@@ -8,8 +8,8 @@
    platform editor maps the server's column errors onto the cells itself). */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Rows, Access, Filters, div, span,
-  link, timestamp, EMPTY, isEmpty, text, loader} from '@datagrok-libraries/u2';
+import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Rows, Access, Filters, Section, div,
+  span, link, timestamp, EMPTY, isEmpty, text, loader} from '@datagrok-libraries/u2';
 import type {Input, InputOptions, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
 import {propertyForm, ObjectForm, Editors, userInput, entityInput} from '@datagrok-libraries/u2/src/dg/index.js';
@@ -47,6 +47,9 @@ export interface DomainFormOptions extends Pick<ObjectFormOptions,
   /** Columns set on a new row only: an input on a draft, read-only once the row is saved — the
    * compound a batch was registered under. */
   immutable?: string[];
+  /** Fields grouped under a heading after the others, in `include`'s order — in the same form, so they keep
+   * its label column; `expanded: false` folds the section, `hint` says what it holds while folded. */
+  sections?: {title: string, include: string[], expanded?: boolean, hint?: string}[];
 }
 
 const UNTOUCHED = 'u2-input-untouched';
@@ -71,6 +74,9 @@ export class DomainForm extends Control {
   readonly validity: ReadonlySignal<string | null>;
   /** The first refused field, named by its caption — what a refused save says. */
   readonly problem: ReadonlySignal<string | null>;
+  /** {@link problem} where a field says more than that it is required — what a Save is blocked by while it
+   * shows; an empty required field is revealed by the click instead. */
+  readonly verdict: ReadonlySignal<string | null>;
 
   private readonly _form = signal<ObjectForm | null>(null);
   private static readonly _parsed = new WeakMap<DomainTable, Constraint[]>();
@@ -100,13 +106,19 @@ export class DomainForm extends Control {
     this.source = source;
     this.row = row;
     this.validity = computed(() => this._form.value?.validity.value ?? null);
+    const named = (input: Input<any>, message: string) => {
+      const caption = `${input.label.charAt(0).toUpperCase()}${input.label.slice(1)}`;
+      return message === EMPTY ? `${caption} is required` : `${caption}: ${message}`;
+    };
+    this.verdict = computed(() => {
+      const input = this._form.value?.inputs.find((i) => i.validity.value !== null && i.validity.value !== EMPTY);
+      return input === undefined ? null : named(input, input.validity.value!);
+    });
     this.problem = computed(() => {
       for (const input of this._form.value?.inputs ?? []) {
         const message = input.validity.value;
-        if (message !== null) {
-          const caption = `${input.label.charAt(0).toUpperCase()}${input.label.slice(1)}`;
-          return message === EMPTY ? `${caption} is required` : `${caption}: ${message}`;
-        }
+        if (message !== null)
+          return named(input, message);
       }
       this._violationsVersion.value;
       for (const c of this._constraints) {
@@ -361,6 +373,13 @@ export class DomainForm extends Control {
         input.own(() => input.root.removeEventListener('focusout', touched));
       }
     }
+    for (const {title, include, expanded, hint} of options.sections ?? []) {
+      const rows = include.map((name) => form.input(name)?.root ??
+        form.root.querySelector<HTMLElement>(`.u2-form-readonly[data-u2-name="${name}"]`))
+        .filter((el): el is HTMLElement => el !== null);
+      if (rows.length > 0)
+        form.addElement(new Section({title, expanded, hint}).add(...rows).root);
+    }
     this._markChanged(form, row);
     return form;
   }
@@ -439,14 +458,7 @@ export class DomainForm extends Control {
         void DomainForm.captionOf(prop, id).then((caption) => show(prop, id, caption));
         continue;
       }
-      // the source formats the frame's captions as the target's format arrives, which may be after this form read it
       show(prop, id, caption);
-      if (DomainPick.isRowRef(prop)) {
-        void DomainPick.nameFormat(prop.semType!).then((format) => {
-          if (format !== null)
-            show(prop, id, format(caption));
-        });
-      }
     }
   }
 

@@ -1,7 +1,9 @@
 /* `domains.app` (WO 2-7) over the memory backend: the list and entity pages, `path` for the list,
    a query and an entity, `open()` from a path, the gate in front of a move, breadcrumbs, the
    summary following the page, the entity source sharing the session (one transaction for an
-   edit on each page), find-or-activate through `DomainTable.open`, and New as a draft page. */
+   edit on each page), find-or-activate through `DomainTable.open`, New as a draft page, the record
+   page's delete, the left filters pane, the platform's current object, a child tab's New, sections and
+   the orders an app offers. */
 
 import {emsBackends} from '../src/core/domain-backend.js';
 import {test} from 'node:test';
@@ -10,6 +12,7 @@ import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, Rows, notify, allowedActions, Control} from '@datagrok-libraries/u2';
 import {SharedSession} from '../src/core/session.js';
+import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {backend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
@@ -762,7 +765,7 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   fire(more.root, 'click');
   await flush();
   const items = [...document.querySelectorAll('[role="menuitem"] .u2-menu-label')].map((el) => el.textContent);
-  assert.deepEqual(items, ['Import…', 'Bulk edit…', 'Trash', 'Sort']);
+  assert.deepEqual(items, ['Import…', 'Bulk edit…', 'Trash']);
   assert.equal(a.breadcrumbs.root.hidden, true, 'a plain list has no breadcrumb: the view title names the table');
 
   a.listSource.edit.value.markDeleted('i2');
@@ -825,11 +828,7 @@ scoped('support ⇒ absent: a table that declares no writes and no soft delete o
   const ribbon = a.ribbon().main;
   await flush();
   assert.deepEqual(a.menuActions().map((x) => x.name), [], 'no Import, no Bulk edit, no Trash');
-  document.body.append(ribbon[3].root);
-  fire(ribbon[3].root, 'click');
-  await flush();
-  assert.deepEqual([...document.querySelectorAll('[role="menuitem"] .u2-menu-label')].map((el) => el.textContent),
-    ['Sort'], 'the ⋯ button holds the order alone');
+  assert.equal(ribbon[3].root.hidden, true, 'and the ⋯ button with them');
   a.dispose();
 });
 
@@ -875,10 +874,7 @@ scoped('?trash=1 round-trips through open(); without the delete grant the menu d
   document.body.append(c.root);
   const bare = c.ribbon().main;
   await flush();
-  assert.equal(bare[3].root.hidden, false, 'the list\'s order is always there');
-  await c.goTo('entity', 'i1');
-  await flush();
-  assert.equal(bare[3].root.hidden, true, 'and the button goes where nothing in it is allowed');
+  assert.equal(bare[3].root.hidden, true, 'and the button goes when nothing in it is allowed');
   c.dispose();
 });
 
@@ -1441,7 +1437,7 @@ scoped('support ⇒ absent: a table `transaction` does not land on offers no New
   assert.equal(a.menuActions().some((x) => x.name === 'Import…'), false, 'no Import');
   assert.deepEqual(allowedActions(a.menuActions(), {access: a.listSource.access.value}), [],
     'Bulk edit and Trash need edit and delete, which the read-only bound denies');
-  assert.equal(ribbon[3].root.hidden, false, 'the ⋯ button stays for the list\'s order alone');
+  assert.equal(ribbon[3].root.hidden, true, 'and the ⋯ button with them');
   assert.equal(a.list.actionsFor(a.listSource.rows.byKey('i1')).some((x) => x.name === 'Delete'), false, 'no Delete');
   a.dispose();
 });
@@ -1466,5 +1462,221 @@ scoped('the read-only bound reaches the frame writer: a row\'s own ~can_edit lif
   assert.deepEqual(bound.fields, {title: 'readonly', number: 'readonly', done: 'readonly'});
   assert.deepEqual([bound.can.edit, bound.can.insert, bound.can.delete, bound.can.view], [false, false, false, true]);
   assert.deepEqual(Object.keys(bound.fields).filter((c) => bound.fields[c] !== 'readonly'), [], 'nothing writable');
+  a.dispose();
+});
+
+const titles = (a) => a.listSource.rows.items.value.map((r) => r.title);
+const readonlyValue = (a, column) => a.root.querySelector(`[data-u2-name="${column}"] [data-u2-part="readonly-value"]`);
+
+/** Batches, each on the compound it was registered under: set on a new batch only, never searched. */
+async function batches() {
+  emsBackends.domain = new MemoryDomainBackend({name: 'lab', tables: {
+    compound: {singularName: 'Compound', columns: {name: {type: 'string', required: true, isName: true}}},
+    batch: {singularName: 'Batch', columns: {compound_id: {type: 'ref', ref: 'compound', required: true},
+      amount: {type: 'float'}}},
+  }}, {rows: {compound: [{id: 'c1', name: 'Aspirin'}], batch: [{id: 'b1', compound_id: 'c1', amount: 1}]}});
+  const a = domains.app({table: await domains.table('lab.batch'), base: '/apps/T/Batches', immutable: ['compound_id']});
+  document.body.append(a.root);
+  await flush();
+  return a;
+}
+
+scoped('a create page opened again takes the new values; New stands down on it until the row is saved', async () => {
+  const a = await batches();
+  const add = a.ribbon().main[0];
+  assert.equal(a.ribbon().tools.length, 0, 'a table nobody searches has no search box');
+  await a.create({amount: 1});
+  await flush();
+  await a.create({amount: 2});
+  await flush();
+  const draft = a.entitySource.value.currentRow.value;
+  assert.equal(draft.amount, 2, 'not the first parent\'s draft');
+  assert.equal(add.root.disabled, true, 'New would open the page it is on');
+  assert.deepEqual(a.menuActions(), [], 'a draft has nothing to delete');
+  draft.compound_id = 'c1';
+  assert.equal(await a.session.save(), true);
+  await flush();
+  await flush();
+  assert.equal(add.root.disabled, false);
+  assert.equal(a.form.value.input('compound_id'), undefined, 'a saved batch is not moved to another compound');
+  assert.equal(readonlyValue(a, 'compound_id').textContent, 'Aspirin', 'what the client set reads as its name');
+  a.dispose();
+});
+
+scoped('a delete from the record page shows until the save, Restore takes it back, and the save lands on the list',
+  async () => {
+    const {app: a} = await app();
+    await a.goTo('entity', 'i2');
+    await flush();
+    const offered = allowedActions(a.menuActions(), {access: a.entitySource.value.access.value}).map((x) => x.name);
+    assert.deepEqual([offered.includes('Delete'), offered.includes('Open'), offered.includes('Import…')],
+      [true, false, false], 'the row\'s own actions, not the table\'s');
+    const banner = a.root.querySelector('[data-u2-part="deleting"]');
+    assert.equal(banner.hidden, true);
+    a.menuActions().find((x) => x.name === 'Delete').run();
+    await flush();
+    assert.match(banner.hidden ? '' : banner.textContent, /Ibuprofen will be deleted when you save/);
+    fire(banner.querySelector('button'), 'click');
+    await flush();
+    assert.equal(banner.hidden, true, 'Restore takes it back');
+    assert.equal(a.session.isDirty.value, false);
+    a.menuActions().find((x) => x.name === 'Delete').run();
+    assert.equal(await a.session.save(), true);
+    await flush();
+    await flush();
+    assert.equal(a.page.value, 'list', 'a saved deletion leaves its page for the list');
+    assert.equal(await a.open(`${BASE}?entity=i2`), true);
+    await flush();
+    assert.equal(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent,
+      'This issue does not exist or was deleted.', 'and its address no longer echoes the id');
+    a.dispose();
+  });
+
+scoped('Save stands down while the form shows a verdict, its tooltip; Ctrl+S still says why; an empty field keeps it',
+  async () => {
+    const {app: a} = await app();
+    const save = a.ribbon().main[1];
+    await a.goTo('entity', 'i2');
+    await flush();
+    const weight = a.form.value.input('weight');
+    weight.value.value = -1;
+    await flush();
+    assert.deepEqual([save.button.disabled, save.button.title], [true, 'Weight: Weight is positive']);
+    fire(weight.root.querySelector('input'), 'keydown', {key: 's', ctrlKey: true});
+    await flush();
+    assert.match(a.status.value.problem ?? '', /Weight is positive/);
+    weight.value.value = 1;
+    a.form.value.input('title').value.value = '';
+    await flush();
+    assert.deepEqual([save.button.disabled, save.button.title], [false, 'Save (Ctrl+S)'],
+      'a required field left empty is what the click reveals');
+    a.session.discard();
+    a.dispose();
+  });
+
+scoped('the orders an app gives are a ⋯ Sort, the list opening in the first of them', async () => {
+  const {table, app: a} = await app();
+  a.dispose();
+  const b = domains.app({table, base: BASE, sorts: [['Z to A', '!title'], ['A to Z', 'title']]});
+  document.body.append(b.root);
+  await flush();
+  assert.deepEqual(titles(b), ['Naproxen', 'Ibuprofen', 'Aspirin']);
+  const more = b.ribbon().main[3];
+  document.body.append(more.root);
+  fire(more.root, 'click');
+  await flush();
+  assert.equal([...document.querySelectorAll('[role="menuitem"] .u2-menu-label')].some((el) => el.textContent === 'Sort'),
+    true);
+  fire(document.body, 'keydown', {key: 'Escape'});
+  assert.equal(await b.setSort('title'), true);
+  await flush();
+  assert.deepEqual(titles(b), ['Aspirin', 'Ibuprofen', 'Naproxen']);
+  b.dispose();
+});
+
+scoped('the left filters pane is folded while it holds no condition; a filter applied from outside opens it',
+  async () => {
+    const {app: a} = await app({filters: {mode: 'builder', placement: 'left'}});
+    const pane = a.root.querySelector('.u2-domain-app-filters-pane');
+    const strip = a.root.querySelector('[data-u2-part="filters-strip"]');
+    const fold = () => fire(pane.querySelector('.u2-domain-app-filters-head button'), 'click');
+    assert.equal(pane.hidden, true, 'an empty pane leaves its width to the list');
+    assert.equal(strip.hidden, false);
+    fire(strip.querySelector('button'), 'click');
+    await flush();
+    assert.equal(pane.hidden, false, 'the strip opens it');
+    fold();
+    await flush();
+    assert.equal(pane.hidden, true, 'and its head folds it');
+    assert.equal(await a.open(`${BASE}?q=${encodeURIComponent('done = true')}`), true);
+    await flush();
+    assert.equal(pane.hidden, false, 'a filter from the address shows where it is');
+    fold();
+    await flush();
+    assert.equal(strip.querySelector('.u2-domain-app-filters-count').textContent, '1',
+      'folded, the strip says how many conditions are in force');
+    a.dispose();
+  });
+
+scoped('the platform\'s current object: the row the user moves to, not the one the list opens on, and the entity page\'s',
+  async () => {
+    const writes = grok.shell.dart.writes.length;
+    const {table, app: a} = await app();
+    assert.equal(grok.shell.dart.writes.length, writes, 'opening the list moves nothing');
+    a.list.list.root.focus();
+    a.list.list.selectedIndex.value = 1;
+    await flush();
+    assert.deepEqual([grok.shell.o.typeName, grok.shell.o.values.title], ['grit.issue', 'Ibuprofen'],
+      'the row as the platform\'s DomainRow');
+    a.dispose();
+    const b = domains.app({table, base: BASE, pageSize: 10,
+      context: (row) => row.number === 1 ? `${row.title} in ${row.project_id ?? 'none'}` : null});
+    document.body.append(b.root);
+    await flush();
+    b.list.list.root.focus();
+    b.list.list.selectedIndex.value = 2;
+    await flush();
+    assert.equal(grok.shell.o, 'Naproxen in p2', 'what the app maps the row to');
+    b.list.list.selectedIndex.value = 1;
+    await flush();
+    assert.equal(grok.shell.o, 'Naproxen in p2', 'null shows nothing new');
+    await b.goTo('entity', 'i1');
+    await flush();
+    assert.equal(grok.shell.o, 'Aspirin in p1', 'the record page\'s row');
+    b.entitySource.value.currentRow.value.project_id = 'p2';
+    await flush();
+    assert.equal(grok.shell.o, 'Aspirin in p2', 'again once a reference of it changes');
+    b.session.discard();
+    await b.create({number: 1, title: 'Draft'});
+    await flush();
+    assert.equal(grok.shell.o, 'Draft in none', 'and a create page\'s draft');
+    b.dispose();
+  });
+
+scoped('a child tab\'s New opens the child\'s create page where the app routes it; a draft\'s children stay in the tab',
+  async () => {
+    emsBackends.domain = backend();
+    const [projects, issues] = await Promise.all([domains.table('grit.project'), domains.table('grit.issue')]);
+    const issueApp = domains.app({table: issues, base: BASE, pageSize: 10});
+    const asked = [];
+    const a = domains.app({table: projects, base: '/apps/T/Projects', pageSize: 10, history: false,
+      children: {tables: [issues], mode: 'list', onNew: (entry, values) => {
+        asked.push([entry.fk, values]);
+        DomainApp.createAt(BASE, values);
+      }}});
+    document.body.append(issueApp.root, a.root);
+    await a.goTo('entity', 'p1');
+    await flush();
+    await flush();
+    fire(a.panes.querySelector('button[data-u2="new-button"]'), 'click');
+    await flush();
+    assert.deepEqual(asked, [['project_id', {project_id: 'p1'}]]);
+    assert.equal(issueApp.entitySource.value.currentRow.value.project_id, 'p1', 'the issue app\'s create page');
+    assert.equal(a.session.isDirty.value, false, 'and no blank row in the tab');
+    await a.create();
+    await flush();
+    await flush();
+    fire(a.panes.querySelector('button[data-u2="new-button"]'), 'click');
+    await flush();
+    assert.equal(asked.length, 1, 'a draft\'s child is added in the tab, to be saved with it');
+    assert.equal(a.session.isDirty.value, true);
+    a.session.discard();
+    await flush();
+    a.dispose();
+    issueApp.dispose();
+  });
+
+scoped('sections: the fields they name under a heading after the others, in the same form', async () => {
+  const {app: a} = await app({immutable: ['project_id'],
+    sections: [{title: 'Details', include: ['project_id', 'weight'], expanded: false, hint: 'Project, weight'}]});
+  await a.goTo('entity', 'i1');
+  await flush();
+  const form = a.form.value.form;
+  const section = form.root.querySelector('.u2-section');
+  assert.equal(section.querySelector('.u2-section-title').textContent, 'Details');
+  assert.deepEqual([...section.querySelector('[data-u2-part="body"]').children].map((el) => el.dataset.u2Name),
+    ['project_id', 'weight'], 'a read-only row and an input alike');
+  assert.equal(section.querySelector('[data-u2-part="body"]').style.display, 'none', 'folded');
+  assert.equal(form.inputs.includes(a.form.value.input('weight')), true, 'still the form\'s field');
   a.dispose();
 });

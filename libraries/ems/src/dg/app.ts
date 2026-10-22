@@ -10,7 +10,7 @@ import type * as DG from 'datagrok-api/dg';
 import {Control, signal, computed, batch, untracked, ReadonlySignal, Signal, Splitter, button, div,
   divH, divV, span, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows}
   from '@datagrok-libraries/u2';
-import type {FilterGroup, IWidgetStatus, Action, ActionGroup, RowView} from '@datagrok-libraries/u2';
+import type {FilterGroup, IWidgetStatus, Action, ActionGroup, RowView, BindSource} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
 import {SharedSession, confirmDiscard} from '../core/session.js';
@@ -18,6 +18,7 @@ import {domains, DomainTable} from './facade.js';
 import {DomainList} from './list.js';
 import type {DomainListMode} from './list.js';
 import {SAVE_SHORTCUTS, isSaveKey, DomainForm} from './form.js';
+import type {DomainFormOptions} from './form.js';
 import {DomainFilters} from './filters.js';
 import type {DomainFiltersOptions} from './filters.js';
 import type {DomainChildrenOptions} from './children.js';
@@ -68,9 +69,10 @@ export interface DomainAppOptions {
   base: string;
   /** The list's initial query. */
   query?: string;
-  /** The list's order (`'col,!col'`, `!` for descending); {@link DomainApp.defaultSort} by default. */
+  /** The list's order (`'col,!col'`, `!` for descending): the first of {@link sorts} by default, else the
+   * table's own. */
   sort?: string;
-  /** The orders the ⋯ menu offers, as `[label, sort]`; {@link DomainApp.sortChoices} by default. */
+  /** The orders the ⋯ menu's Sort offers, as `[label, sort]`; no Sort without them. */
   sorts?: [label: string, sort: string][];
   pageSize?: number;
   /** Whether the list follows the server (`DomainSourceOptions.live`), ON by default: it probes
@@ -79,8 +81,6 @@ export interface DomainAppOptions {
   live?: boolean;
   liveMs?: number;
   mode?: DomainListMode;
-  /** The list's row height, where the renderer's card is not the mode's default height. */
-  itemHeight?: number;
   /** The query box over the list (default), or the condition builder — in a pane on the list's left with
    * `placement: 'left'`. */
   filters?: DomainFiltersOptions & {placement?: 'top' | 'left'};
@@ -91,6 +91,8 @@ export interface DomainAppOptions {
   include?: string[];
   /** Columns set on a new row only ({@link DomainFormOptions.immutable}). */
   immutable?: string[];
+  /** The entity page's fields grouped under headings ({@link DomainFormOptions.sections}). */
+  sections?: DomainFormOptions['sections'];
   /** The entity page's panes under the form, on by default: the child collections (a tab per
    * referring table; options narrow them) and the row's history — where the table keeps one
    * (`support.audit`); a table that keeps none has no pane. */
@@ -100,8 +102,9 @@ export interface DomainAppOptions {
    * the focus: `{'Ctrl+Shift+C': 'Close'}` (modifiers in the order Ctrl, Alt, Shift; Cmd counts
    * as Ctrl). */
   shortcuts?: Record<string, string>;
-  /** What the platform's context panel shows for the row the user moves to in the list (`grok.shell.o`): the
-   * row as the platform's `DomainRow` by default; null shows nothing. */
+  /** What the platform's context panel shows (`grok.shell.o`) for the row the user moves to in the list and the
+   * entity page's row — again as a reference of it changes: the row as the platform's `DomainRow` by default (a
+   * draft has none); null shows nothing. */
   context?: (row: RowView) => unknown;
 }
 
@@ -203,19 +206,26 @@ export class DomainApp extends Control {
         DomainApp._bases.delete(table.address);
     });
 
-    this.listSource = this._source({query: _options.query ?? '', sort: _options.sort ?? DomainApp.defaultSort(table),
+    this.listSource = this._source({query: _options.query ?? '', sort: _options.sort ?? _options.sorts?.[0][1],
       pageSize: _options.pageSize, live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
-    this.list = this.runInScope(() =>
-      new DomainList(this.listSource, {mode: _options.mode, itemHeight: _options.itemHeight}));
+    this.list = this.runInScope(() => new DomainList(this.listSource, {mode: _options.mode}));
     // the row the user moves to is the platform's current object; the row the list starts on is not a move
     this.effect(() => {
       const row = this.listSource.currentRow.value;
-      if (row === null || Rows.isDraft(row) || !this.list.root.contains(document.activeElement))
+      if (row !== null && !Rows.isDraft(row) && this.list.root.contains(document.activeElement))
+        untracked(() => this._showContext(row));
+    });
+    // and the entity page's row, again as a reference of it changes: a create page's picked parent
+    this.effect(() => {
+      const source = this._entitySource.value;
+      const row = source?.currentRow.value ?? null;
+      if (source === null || row === null)
         return;
-      const shown = untracked(() => _options.context === undefined ? table.row(row) : _options.context(row));
-      if (shown !== null && shown !== undefined)
-        grok.shell.o = shown;
+      const cells = source.bindStep('currentRow') as BindSource;
+      for (const prop of table.properties.filter((p) => DomainTable.isReference(p)))
+        (cells.bindStep(prop.name!) as Signal<unknown>).value;
+      untracked(() => this._showContext(row));
     });
     // Enter on a row is the way into the entity page
     let seen = this.listSource.activate.peek();
@@ -425,10 +435,14 @@ export class DomainApp extends Control {
   ribbon(): DomainRibbon {
     if (this._ribbon !== undefined)
       return this._ribbon;
-    const add = new Control(button('New', () => void this.create()));
+    const addButton = button('New', () => void this.create());
+    const add = new Control(addButton);
     add.root.dataset.u2 = 'new-button';
-    add.effect(() => add.root.hidden = !this.listSource.access.value.can('insert'));
-    const save = domains.saveButton(this.session);
+    add.effect(() => {
+      add.root.hidden = !this.listSource.access.value.can('insert');
+      addButton.disabled = this._page.value === 'entity' && this._entity.value === DomainApp.NEW;
+    });
+    const save = domains.saveButton(this.session, {blocked: computed(() => this._form.value?.verdict.value ?? null)});
     const discard = domains.discardButton(this.session);
     const more = this._actionsMenu();
     // the status bar is text: the way to act on "Data changed" is here, and only while it stands
@@ -664,13 +678,14 @@ export class DomainApp extends Control {
     return control;
   }
 
-  /** The list's orders as a ⋯ submenu, the one in force checked; none on the entity page and in the trash, which
-   * reads newest-deleted first. */
+  /** {@link DomainAppOptions.sorts} as a ⋯ submenu, the one in force checked; none on the entity page and in the
+   * trash, which reads newest-deleted first. */
   private _sortMenu(): ActionGroup[] {
-    if (this._page.value !== 'list' || this.trash.value)
+    const sorts = this._options.sorts;
+    if (sorts === undefined || this._page.value !== 'list' || this.trash.value)
       return [];
     const current = this.listSource.sort.value;
-    return [{label: 'Sort', actions: (this._options.sorts ?? DomainApp.sortChoices(this.table)).map(([name, sort]) =>
+    return [{label: 'Sort', actions: sorts.map(([name, sort]) =>
       ({name, icon: sort === current ? 'check' : undefined, run: () => void this.setSort(sort)}))}];
   }
 
@@ -682,27 +697,6 @@ export class DomainApp extends Control {
       return false;
     this.listSource.sort.value = sort;
     return true;
-  }
-
-  /** The orders a table offers: oldest and newest first where it keeps `created_on` — ties broken by the
-   * business key — and by its name column. */
-  static sortChoices(table: DomainTable): [label: string, sort: string][] {
-    const {info, properties} = table;
-    const choices: [string, string][] = [];
-    if (table.table.support.systemColumns.includes('created_on')) {
-      choices.push(['Oldest first', ['created_on', ...info.businessKey].join(',')],
-        ['Newest first', ['!created_on', ...info.businessKey.map((column) => `!${column}`)].join(',')]);
-    }
-    const name = DomainSource.captionColumn(info);
-    if (name !== 'id')
-      choices.push([`By ${properties.find((p) => p.name === name)?.friendlyName ?? name}`, name]);
-    return choices;
-  }
-
-  /** The order a list opens in where the app sets none: the first of {@link sortChoices} — creation order — else
-   * the table's own. */
-  static defaultSort(table: DomainTable): string {
-    return DomainApp.sortChoices(table)[0]?.[1] ?? '';
   }
 
   /** Trash mode is one flip of the list source's `deleted` mode: the search box, the filters and
@@ -930,8 +924,8 @@ export class DomainApp extends Control {
         if (source.state.value === 'ready' && rows.length > 0 && source.currentRow.peek() === null)
           source.currentRow.value = rows[0];
       });
-      const {children, history, include, immutable} = this._options;
-      const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include, immutable,
+      const {children, history, include, immutable, sections} = this._options;
+      const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include, immutable, sections,
         empty: `This ${DomainSource.noun(this.table.info, false)} does not exist or was deleted.`}));
       this._panes = this.runInScope(() => [
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
@@ -1025,6 +1019,13 @@ export class DomainApp extends Control {
       restore = () => source!.edit.peek()?.unmarkDeleted(row.id);
     });
     return banner;
+  }
+
+  private _showContext(row: RowView): void {
+    const context = this._options.context;
+    const shown = context !== undefined ? context(row) : Rows.isDraft(row) ? null : this.table.row(row);
+    if (shown !== null && shown !== undefined)
+      grok.shell.o = shown;
   }
 
   private _source(options: Parameters<DomainTable['source']>[0]): DomainSource {

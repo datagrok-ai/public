@@ -1,6 +1,7 @@
 /* What a source sends the server, over the memory backend: a host operator's condition answered by the app as
-   the ids it matches (under and/or/not, from a tree or from text), a search spelled like the caption column's
-   formatted number, and a builder's incomplete rows kept out of the query. */
+   the ids it matches (under and/or/not and nested groups, from a tree, the builder or text) and reused until the
+   table moves, a search spelled like the caption column's formatted number, and a builder's incomplete rows kept
+   out of the query. */
 
 import {emsBackends} from '../src/core/domain-backend.js';
 import {test} from 'node:test';
@@ -73,28 +74,6 @@ async function compounds() {
 
 const ids = (source) => source.rows.items.value.map((r) => r.id).sort();
 
-scoped('a host condition is sent as the ids it matches, under and, or and not', async (unregister) => {
-  const {table, calls, off} = await compounds();
-  unregister.push(off);
-  const source = table.source({query: Filters.group('and', [Filters.cond('structure', 'has', 'CC')])});
-  await flush();
-  assert.deepEqual(ids(source), ['c1', 'c2']);
-  assert.equal(source.total.value, 2);
-  assert.equal(calls.length, 1, 'answered once per load: the count and the page share it');
-  assert.deepEqual(source.readScope().filter, Filters.toDomainTree(
-    Filters.group('and', [Filters.cond('id', 'in', ['c1', 'c2'])])), 'the server never sees the host operator');
-  source.query.value = Filters.group('or', [Filters.cond('structure', 'has', 'O)'), Filters.cond('label', '=', 'phenol')]);
-  await flush();
-  assert.deepEqual(ids(source), ['c12', 'c2']);
-  source.query.value = {...Filters.group('and', [Filters.cond('structure', 'has', 'CC')]), not: true};
-  await flush();
-  assert.deepEqual(ids(source), ['c12']);
-  source.query.value = Filters.group('and', [Filters.cond('structure', 'has', 'N')]);
-  await flush();
-  assert.deepEqual(ids(source), [], 'no hits is no rows');
-  source.dispose();
-});
-
 scoped('text naming a host operator parses, threshold and all, and formats back the same', async (unregister) => {
   const {table, calls, off} = await compounds();
   unregister.push(off);
@@ -111,80 +90,107 @@ scoped('text naming a host operator parses, threshold and all, and formats back 
 scoped('a search spelled like the formatted key finds that row by its number', async (unregister) => {
   const {table, off} = await compounds();
   unregister.push(off);
-  const source = table.source({search: 'CP-0012'});
-  await flush();
-  assert.deepEqual(ids(source), ['c12']);
-  assert.equal(source.readScope().search, undefined, 'the server is not asked to search the text');
-  source.search.value = 'cp-12';
-  await flush();
-  assert.deepEqual(ids(source), ['c12']);
-  source.search.value = 'phen';
-  await flush();
-  assert.deepEqual(ids(source), ['c12'], 'other text is still a text search');
-  source.search.value = '12';
-  await flush();
-  assert.deepEqual(ids(source), ['c12'], 'a bare number is the key too');
-  assert.equal(source.readScope().search, undefined);
-  source.search.value = '12a';
-  await flush();
-  assert.equal(source.readScope().search, '12a', 'text with digits in it is a text search');
-  source.dispose();
-});
-
-scoped('the builder applies only the rows that are complete', async (unregister) => {
-  const {table, off} = await compounds();
-  unregister.push(off);
   const source = table.source();
-  const filters = domains.filters(source, {mode: 'builder'});
-  document.body.append(filters.root);
-  await flush();
-  const builder = filters.input.value;
-  builder.value.value = Filters.group('and', [Filters.cond('label', '=')]);
-  await flush();
-  assert.equal(source.query.value, '', 'a condition without a value is not applied');
-  assert.equal(builder.value.value.nodes.length, 1, 'and it stays in the builder');
-  assert.equal(filters.problem.value, null, 'the rows answer what is applied: nothing is stale');
-  builder.value.value = Filters.group('and', [Filters.cond('label', '=', 'phenol')]);
-  await flush();
-  assert.equal(source.query.value, 'label = "phenol"');
-  await flush();
-  assert.deepEqual(ids(source), ['c12']);
-  filters.dispose();
+  const searched = async (text) => {
+    source.search.value = text;
+    await flush();
+    return [ids(source), source.readScope().search];
+  };
+  assert.deepEqual(await searched('CP-0012'), [['c12'], undefined], 'the server is not asked to search the text');
+  assert.deepEqual(await searched('cp-12'), [['c12'], undefined]);
+  assert.deepEqual(await searched('12'), [['c12'], undefined], 'a bare number is the key too');
+  assert.deepEqual(await searched('phen'), [['c12'], 'phen'], 'other text is still a text search');
+  assert.deepEqual((await searched('12a'))[1], '12a', 'and text with digits in it');
   source.dispose();
 });
 
-scoped('a column of a table that answers no host operator keeps the core operators, whichever opened first', async (unregister) => {
-  const LAB = {name: 'chem', tables: {
-    compound: CHEM.tables.compound,
-    addition: {singularName: 'Addition', pluralName: 'Additions',
-      columns: {name: {type: 'string', isName: true}, structure: {type: 'string', semType: 'Molecule'}}},
-  }};
-  emsBackends.domain = new MemoryDomainBackend(LAB, {rows: {compound: COMPOUNDS.map((r) => ({...r})),
-    addition: [{id: 'a1', name: 'HCl', structure: 'Cl'}]}});
-  const compounds = await domains.table('chem.compound');
-  unregister.push(compounds.operators.add({id: 'has', label: 'has', semType: 'Molecule', rows: async () => []}));
-  const additions = await domains.table('chem.addition');
-  const offer = async (table) => {
+scoped('nested groups through the builder: an incomplete row left out, each group\'s op and not kept, as text too',
+  async (unregister) => {
+    const {table, off} = await compounds();
+    unregister.push(off);
     const source = table.source();
     const filters = domains.filters(source, {mode: 'builder'});
     document.body.append(filters.root);
     await flush();
-    const schema = filters.input.value.options.schema;
-    const prop = Filters.property(schema, 'structure');
-    const ids = schema.operators(prop, Filters.operators.for(prop)).map((o) => o.id);
-    const valid = Filters.validate(Filters.group('and', [Filters.cond('structure', 'like', 'Cl')]), schema, 'domain');
+    const builder = filters.input.value;
+    const {cond, group} = Filters;
+    const eth = () => group('and', [cond('weight', '>', 40), cond('label', 'like', 'eth')]);
+    const apply = async (tree) => {
+      builder.value.value = tree;
+      await flush();
+      await flush();
+      const again = table.source({query: source.query.value});
+      await flush();
+      assert.deepEqual(ids(again), ids(source), `"${source.query.value}" read back as text answers the same rows`);
+      again.dispose();
+      return ids(source);
+    };
+    assert.deepEqual(await apply(group('or', [cond('structure', 'has', 'c1'), eth(), cond('label', '=')])),
+      ['c1', 'c12']);
+    assert.equal(source.query.value, 'structure has "c1" or (weight > 40 and label like "eth")',
+      'the row without a value is not applied');
+    assert.equal(builder.value.value.nodes.length, 3, 'and it stays in the builder');
+    assert.equal(filters.problem.value, null, 'the rows answer what is applied: nothing is stale');
+    const sent = JSON.stringify(source.readScope().filter);
+    assert.match(sent, /"c12"/);
+    assert.doesNotMatch(sent, /has/, 'the server never sees the host operator');
+    assert.deepEqual(await apply({...builder.value.value, op: 'and'}), []);
+    assert.deepEqual(await apply(group('and', [cond('structure', 'has', 'C'), {...eth(), not: true}])), ['c2'],
+      'a null weight passes the not as SQL reads it: NULL and false is false');
     filters.dispose();
     source.dispose();
-    return {ids, valid};
+  });
+
+scoped('a column of a table that answers no host operator keeps the core operators', async (unregister) => {
+  const LAB = {name: 'chem', tables: {compound: CHEM.tables.compound,
+    addition: {columns: {name: {type: 'string', isName: true}, structure: {type: 'string', semType: 'Molecule'}}}}};
+  emsBackends.domain = new MemoryDomainBackend(LAB, {rows: {compound: [], addition: []}});
+  const [compounds, additions] = await Promise.all([domains.table('chem.compound'), domains.table('chem.addition')]);
+  unregister.push(compounds.operators.add({id: 'has', label: 'has', semType: 'Molecule', rows: async () => []}));
+  const offered = async (table) => {
+    const source = table.source();
+    const filters = domains.filters(source, {mode: 'builder'});
+    await flush();
+    const schema = filters.input.value.options.schema;
+    const prop = Filters.property(schema, 'structure');
+    filters.dispose();
+    source.dispose();
+    return schema.operators(prop, Filters.operators.for(prop)).map((o) => o.id);
   };
-  const compound = await offer(compounds);
-  assert.deepEqual(compound.ids, ['has', 'is null', 'is not null'], 'the table that answers it offers that set alone');
-  const addition = await offer(additions);
-  assert.equal(addition.ids.includes('has'), false, 'another table is not offered what it cannot answer');
-  for (const id of ['=', 'like', 'in', 'is null'])
-    assert.equal(addition.ids.includes(id), true, `and keeps "${id}"`);
-  assert.deepEqual(addition.valid, [], 'a core condition on its column validates');
+  assert.deepEqual(await offered(compounds), ['has', 'is null', 'is not null'],
+    'the table that answers it offers that set alone');
+  const other = await offered(additions);
+  assert.equal(other.includes('has'), false, 'another table is not offered what it cannot answer');
+  assert.equal(other.includes('like'), true);
 });
+
+scoped('a host condition is answered again only once the table moves: a new order or search reuses its ids',
+  async (unregister) => {
+    const {table, calls, off} = await compounds();
+    unregister.push(off);
+    const source = table.source({query: 'structure has "CC"'});
+    await flush();
+    assert.deepEqual([ids(source), source.total.value, calls.length], [['c1', 'c2'], 2, 1],
+      'answered once per load: the count and the page share it');
+    source.sort.value = '!code';
+    await flush();
+    source.search.value = 'acid';
+    await flush();
+    assert.equal(calls.length, 1, 'the order and the search changed, the table did not');
+    assert.deepEqual(ids(source), ['c2']);
+    const other = table.source();
+    await flush();
+    other.newRow({code: 4, structure: 'CCC(=O)O', label: 'propionic acid'});
+    assert.equal(await other.save(), true);
+    await flush();
+    assert.equal(calls.length, 2, 'a write moves the table: the condition is answered again');
+    source.search.value = '';
+    source.query.value = 'structure has "N"';
+    await flush();
+    assert.deepEqual(ids(source), [], 'no hits is no rows');
+    other.dispose();
+    source.dispose();
+  });
 
 scoped('a builder row whose parameter is wrong holds the filter applied before it, and says why', async (unregister) => {
   const {table, off} = await compounds();

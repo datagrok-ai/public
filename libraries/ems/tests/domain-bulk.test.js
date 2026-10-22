@@ -116,7 +116,8 @@ scoped('the checked columns are written to the selection; an unchecked one is le
   assert.equal(includeBox('done').parentElement.classList.contains('u2-domain-bulk-row'), true);
   assert.equal(field('done').enabled, false, 'an unchecked column has no editor');
   assert.equal(okDisabled(), true);
-  assert.match(reason(), /Check the fields to write/);
+  assert.equal(reason(), '', 'a disabled OK says enough before the user has done anything');
+  assert.equal(document.querySelector('.u2-domain-bulk .u2-form-tall'), null, 'a field is one row: box, caption, editor');
   assert.equal(field('title').root.querySelector('.u2-input-error')?.textContent ?? '', '',
     'nothing in a bulk dialog is required: an empty checked field CLEARS the column');
   check('done');
@@ -137,13 +138,12 @@ scoped('the checked columns are written to the selection; an unchecked one is le
   source.dispose();
 });
 
-scoped('nothing checked keeps OK disabled and says so inline; CANCEL resolves null', async () => {
+scoped('nothing checked keeps OK disabled; CANCEL resolves null', async () => {
   const memory = backend();
   const {source} = await table(memory);
   select(source, () => true);
   const {running} = await opened(source);
   assert.equal(okDisabled(), true);
-  assert.match(reason(), /Check the fields to write/);
   assert.equal(balloon('warning'), '', 'a refusal is not a balloon on the far edge of the screen');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);

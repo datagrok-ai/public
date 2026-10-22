@@ -6,7 +6,7 @@
 import {emsBackends} from './domain-backend.js';
 import {signal, computed, ReadonlySignal, Emitter, plural, notify, Dialog, Rows} from '@datagrok-libraries/u2';
 import type {ObservableLike, SpecInstance, RowView} from '@datagrok-libraries/u2';
-import {DomainSource} from './domain-source.js';
+import type {DomainSource} from './domain-source.js';
 
 export interface DomainSession {
   readonly isDirty: ReadonlySignal<boolean>;
@@ -45,8 +45,7 @@ export class SharedSession implements DomainSession {
   readonly changeCount: ReadonlySignal<number>;
   readonly validity: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
-  /** `''` when clean, `'N unsaved changes'`, and what they are in when several tables are dirty: `'2 unsaved
-   * changes: 1 batch and 1 compound'`. */
+  /** `''` when clean, `'N unsaved changes'`, `' in M tables'` appended when several are dirty. */
   readonly summary: ReadonlySignal<string>;
   readonly onSaved = new Emitter<void>();
   readonly onDiscarded = new Emitter<void>();
@@ -65,9 +64,8 @@ export class SharedSession implements DomainSession {
       const changes = this.changeCount.value;
       if (changes === 0)
         return '';
-      const dirty = this._sources.value.filter((s) => s.isDirty.value);
-      const pending = plural(changes, 'unsaved change', 'unsaved changes');
-      return new Set(dirty.map((s) => s.table)).size > 1 ? `${pending}: ${SharedSession.rowsOf(dirty)}` : pending;
+      const tables = new Set(this._sources.value.filter((s) => s.isDirty.value).map((s) => s.table)).size;
+      return `${plural(changes, 'unsaved change', 'unsaved changes')}${tables > 1 ? ` in ${tables} tables` : ''}`;
     });
   }
 
@@ -87,7 +85,7 @@ export class SharedSession implements DomainSession {
   }
 
   /** Every dirty source checked first (a problem is that source's `error`), then one `saveAll`;
-   * the one "saved" balloon: "<Singular> saved", "N changes saved", "1 batch and 1 compound saved". */
+   * the one "saved" balloon: "<Singular> saved", "N changes saved", "N changes saved in M tables". */
   async save(): Promise<boolean> {
     if (this.isSaving.peek())
       return false;
@@ -99,7 +97,6 @@ export class SharedSession implements DomainSession {
       const batch = this._withReferenced(dirty);
       await Promise.all(batch.map((s) => s.settled()));
       const changes = this.changeCount.peek();
-      const rows = SharedSession.rowsOf(batch, (source) => source.pending().length);
       // what the batch DOES, read before it lands and empties the pending rows: a batch of deletes
       // alone is not "saved", it is deleted, and one of restores is restored — the balloon has to
       // say so
@@ -154,7 +151,8 @@ export class SharedSession implements DomainSession {
         SharedSession._hold(batch, false);
       }
       const tables = new Set(batch.map((s) => s.table)).size;
-      notify.info(tables > 1 ? `${rows} ${verb}` : SharedSession._landed(batch[0], changes, verb));
+      notify.info(tables > 1 ? `${plural(changes, 'change', 'changes')} saved in ${tables} tables` :
+        SharedSession._landed(batch[0], changes, verb));
       this.onSaved.fire();
       return true;
     } finally {
@@ -185,22 +183,6 @@ export class SharedSession implements DomainSession {
       .find((v) => v != null) ?? 'the changes were refused';
     for (const source of batch)
       source.refuse(problem);
-  }
-
-  /** The sources' rows by table, in the table's own words — "1 batch and 2 compounds": the changes by default,
-   * or what `count` counts (the rows a batch writes, a pristine draft among them). Read before a save lands,
-   * which empties them. */
-  static rowsOf(sources: readonly DomainSource[],
-    count: (source: DomainSource) => number = (source) => source.changeCount.peek()): string {
-    const byTable = new Map<string, {source: DomainSource, n: number}>();
-    for (const source of sources) {
-      const counted = byTable.get(source.table) ?? {source, n: 0};
-      counted.n += count(source);
-      byTable.set(source.table, counted);
-    }
-    const parts = [...byTable.values()].filter(({n}) => n > 0).map(({source, n}) =>
-      plural(n, DomainSource.noun(source.schema.info, false), DomainSource.noun(source.schema.info)));
-    return parts.length < 2 ? parts.join('') : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
   }
 
   /** What one table's landed batch says: the table's own words, and what was done to it. */

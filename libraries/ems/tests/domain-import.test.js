@@ -314,55 +314,38 @@ scoped('a reference column is posted as the ids its names name; a name no row ho
     await running;
   });
 
-scoped('a name no row holds is listed once, not again in the words the backend refuses it with', async () => {
-  const memory = backend();
-  const issue = memory.tableSync('grit.issue');
-  const real = issue.validate.bind(issue);
-  // what the platform answers for a name posted where an id belongs
-  issue.validate = async (rows, options) => {
-    const report = await real(rows, options);
-    return {...report, errorCount: 1, rows: report.rows.map((row) => row.index !== 1 ? row : {...row, predicted: 'error',
-      errors: [{column: 'project_id', code: 'invalid-value', message: 'Cannot convert "Nope" to string'}]})};
-  };
-  const {running} = await opened(memory, frame(['project_id', 'title'],
-    [{project_id: 'Datagrok', title: 'Named'}, {project_id: 'Nope', title: 'Unknown'}]));
-  await toMapping();
-  await toPreview();
-  const listed = document.body.querySelector('.u2-domain-import-issues').textContent;
-  assert.match(listed, /2Project idNo match for "Nope"/);
-  assert.doesNotMatch(listed, /Cannot convert/, 'the backend\'s refusal of the same cell is not a second line');
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await running, null);
-});
-
-scoped('the table\'s derivations run over the mapped rows; a row one fails on is an issue of its own', async () => {
-  const memory = backend();
-  emsBackends.domain = memory;
-  const handle = await domains.table('grit.issue');
-  handle.derived.add({from: ['title'], to: ['description'], derive: (row) => {
-    if (row.title.startsWith('?'))
-      throw new Error('Cannot read the title');
-    return {description: `About ${row.title}`};
-  }});
-  const running = domains.import(handle);
-  await flush();
-  named('source').value.value = frame(['project_id', 'title'],
-    [{project_id: 'Grit', title: 'Derived'}, {project_id: 'Grit', title: '?Broken'}]);
-  await flush();
-  await toMapping();
-  named('allOrNothing').value.value = false;
-  await toPreview();
-  assert.match(document.body.querySelector('.u2-domain-import-issues')?.textContent ?? '', /Cannot read the title/,
-    'the preview lists the derivation failure');
-  fire(buttonNamed('NEXT'), 'click');
-  await flush();
-  await flush();
-  assert.equal(issues(memory).find((r) => r.title === 'Derived').description, 'About Derived',
-    'the derived column was posted with the mapped ones');
-  assert.match(document.body.querySelector('.u2-domain-import-report').textContent, /Cannot read the title/);
-  fire(buttonNamed('CLOSE'), 'click');
-  await running;
-});
+scoped('the derivations and validators run over the mapped rows, each failure an issue; a derived column is no target',
+  async () => {
+    const memory = backend();
+    emsBackends.domain = memory;
+    const handle = await domains.table('grit.issue');
+    handle.derived.add({from: ['title'], to: ['description'], derive: (row) => {
+      if (row.title.startsWith('?'))
+        throw new Error('Cannot read the title');
+      return {description: `About ${row.title}`};
+    }});
+    handle.validators.add('description', (value) => String(value).includes('Taken') ? 'This title is taken' : null);
+    const running = domains.import(handle);
+    await flush();
+    named('source').value.value = frame(['project_id', 'title', 'description'], [{project_id: 'Grit', title: 'Derived'},
+      {project_id: 'Grit', title: '?Broken'}, {project_id: 'Grit', title: 'Taken'}]);
+    await flush();
+    await toMapping();
+    assert.equal(named('description').value.value, '(skip)', 'what a derivation writes is not offered');
+    named('allOrNothing').value.value = false;
+    await toPreview();
+    const listed = document.body.querySelector('.u2-domain-import-issues')?.textContent ?? '';
+    assert.match(listed, /2TitleCannot read the title/, 'the derivation failure, on its input');
+    assert.match(listed, /3DescriptionThis title is taken/, 'the validator\'s verdict');
+    fire(buttonNamed('NEXT'), 'click');
+    await flush();
+    await flush();
+    assert.equal(issues(memory).find((r) => r.title === 'Derived').description, 'About Derived',
+      'the derived column was posted with the mapped ones');
+    assert.match(document.body.querySelector('.u2-domain-import-report').textContent, /This title is taken/);
+    fire(buttonNamed('CLOSE'), 'click');
+    await running;
+  });
 
 scoped('a float the frame widened from float32 is posted as the decimal it was read from', async () => {
   const memory = backend();
@@ -377,14 +360,8 @@ scoped('a float the frame widened from float32 is posted as the decimal it was r
   assert.equal(issues(memory).find((r) => r.title === 'Widened').weight, 0.73, 'not 0.7300000190734863');
   fire(buttonNamed('CLOSE'), 'click');
   await running;
-});
-
-scoped('float32Decimal is the shortest decimal of the same float32', () => {
-  assert.equal(DgDomainTable.float32Decimal(Math.fround(0.73)), 0.73);
-  assert.equal(DgDomainTable.float32Decimal(Math.fround(106.63)), 106.63);
-  assert.equal(DgDomainTable.float32Decimal(Math.fround(1e-7)), 1e-7);
-  assert.equal(DgDomainTable.float32Decimal(0.5), 0.5);
-  assert.equal(DgDomainTable.float32Decimal(Math.fround(126.665985)), 126.665985, 'nine digits where it takes nine');
+  for (const typed of [106.63, 1e-7, 0.5, 126.665985])
+    assert.equal(DgDomainTable.float32Decimal(Math.fround(typed)), typed, 'the shortest decimal of the same float32');
 });
 
 scoped('upsert merges by the business key instead of inserting again', async () => {

@@ -123,22 +123,6 @@ scoped('a cell the caller may not write reads as read-only', async () => {
   src.dispose();
 });
 
-scoped('a column a derivation writes reads as read-only, whatever the access says', async () => {
-  emsBackends.domain = backend();
-  const table = await domains.table('grit.issue');
-  table.derived.add({from: ['title'], to: ['description'], derive: (row) => ({description: `About ${row.title}`})});
-  const src = table.source({pageSize: 10});
-  const dt = domains.dataTable(src, {columns: ['title', 'description']});
-  document.body.append(dt.root);
-  await flush();
-  dt.table.value.root.clientHeight = 400;
-  await flush();
-  assert.equal(cell(dt, 0, 'description').className.includes('u2-cell-readonly'), true);
-  assert.equal(cell(dt, 0, 'title').className.includes('u2-cell-readonly'), false);
-  dt.dispose();
-  src.dispose();
-});
-
 scoped('the selection and the source\'s current row are one thing', async () => {
   const {src, dt} = await dataTable();
   dt.table.value.selectedIndex.value = 2;
@@ -153,11 +137,14 @@ scoped('the selection and the source\'s current row are one thing', async () => 
 
 scoped('a reference cell shows the row it points at, not its uuid', async () => {
   // the caption the query projected rides with the row: the first paint is the name, with no
-  // lookup at all — the target's table is held open here, as a round trip holds it, and the cell
+  // lookup at all — the target's rows are held here, as a round trip holds them, and the cell
   // is right anyway
   const inner = backend();
-  emsBackends.domain = {saveAll: (edits) => inner.saveAll(edits),
-    table: (address) => address === 'grit.project' ? new Promise(() => {}) : inner.table(address)};
+  emsBackends.domain = {saveAll: (edits) => inner.saveAll(edits), table: async (address) => {
+    const t = await inner.table(address);
+    return address !== 'grit.project' ? t :
+      Object.assign(Object.create(Object.getPrototypeOf(t)), t, {query: () => new Promise(() => {})});
+  }};
   const early = (await domains.table('grit.issue')).source({pageSize: 10});
   const first = domains.dataTable(early, {columns: ['project_id']});
   document.body.append(first.root);

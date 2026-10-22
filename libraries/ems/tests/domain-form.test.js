@@ -943,54 +943,52 @@ scoped('a constraint over two columns is read with SQL null semantics: an empty 
 });
 
 
-scoped('a draft\'s key the caller may not type reads "assigned on save", muted, until the insert lands', async () => {
-  emsBackends.domain = backend({access: {can: CAN,
-    fields: {project_id: 'editable', number: 'readonly', title: 'editable'}}});
-  const table = await domains.table('grit.issue');
-  const draft = table.draft({project_id: 'p1'});
-  await flush();
-  const form = domains.form(draft);
-  document.body.append(form.root);
-  await flush();
-  const number = () => form.root.querySelector('[data-u2-name="number"] [data-u2-part="readonly-value"]');
-  assert.equal(number().textContent, 'assigned on save', 'the server numbers it, not the user');
-  assert.equal(number().classList.contains('u2-domain-draft'), true);
-  form.input('title').value.value = 'Fresh';
-  await flush();
-  assert.equal(number().textContent, 'assigned on save', 'and an edit elsewhere re-reads the row without losing it');
-  assert.equal(await draft.save(), true);
-  await flush();
-  await flush();
-  assert.notEqual(number().textContent, 'assigned on save', 'a saved row shows what it holds');
-  assert.equal(number().classList.contains('u2-domain-draft'), false);
-  form.dispose();
-  draft.dispose();
-  emsBackends.domain = backend();
-  const editable = (await domains.table('grit.issue')).draft();
-  await flush();
-  const typed = domains.form(editable);
-  await flush();
-  assert.equal(typed.input('number') !== undefined, true, 'a key the caller types is an input as before');
-  typed.dispose();
-  editable.dispose();
-});
+scoped('a create form starts in its first empty required field, unscrolled; a key it may not type is "assigned on save"',
+  async () => {
+    emsBackends.domain = backend({access: {can: CAN, fields: {project_id: 'editable', number: 'readonly', title: 'editable'}}});
+    const draft = (await domains.table('grit.issue')).draft({project_id: 'p1'});
+    await flush();
+    const scrolled = [];
+    const focus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function(options) {
+      scrolled.push(options?.preventScroll !== true);
+      return focus.call(this, options);
+    };
+    const form = domains.form(draft);
+    try {
+      document.body.append(form.root);
+      for (let i = 0; i < 4; i++)
+        await flush();
+    } finally {
+      HTMLElement.prototype.focus = focus;
+    }
+    assert.equal(document.activeElement.closest('[data-u2-name]')?.dataset.u2Name, 'title', 'past what the defaults filled');
+    assert.deepEqual(scrolled.filter((s) => s), [], 'no focus scrolled the page to its field');
+    const number = () => form.root.querySelector('[data-u2-name="number"] [data-u2-part="readonly-value"]');
+    assert.deepEqual([number().textContent, number().classList.contains('u2-domain-draft')], ['assigned on save', true]);
+    form.input('title').value.value = 'Fresh';
+    await flush();
+    assert.equal(number().textContent, 'assigned on save', 'an edit elsewhere re-reads the row without losing it');
+    assert.equal(await draft.save(), true);
+    await flush();
+    await flush();
+    assert.deepEqual([number().textContent === 'assigned on save', number().classList.contains('u2-domain-draft')],
+      [false, false], 'a saved row shows what it holds');
+    form.dispose();
+    draft.dispose();
+  });
 
 scoped('an immutable reference is picked on a draft and a link to its row once saved', async () => {
   const {table, src} = await issues();
   src.currentRow.value = src.rows.byKey('i1');
   const asked = [];
-  DomainPick.opener = (address, id) => {
-    asked.push([address, id]);
-    return true;
-  };
+  DomainPick.opener = (address, id) => asked.push([address, id]) > 0;
   const form = domains.form(src, {immutable: ['project_id']});
   document.body.append(form.root);
   await flush();
   await flush();
-  assert.equal(form.input('project_id') === undefined, true, 'a saved row cannot be moved to another project');
-  const value = form.root.querySelector('[data-u2-name="project_id"] [data-u2-part="readonly-value"]');
-  const link = value.querySelector('a.u2-link');
-  assert.notEqual(link, null, 'its caption is a link');
+  assert.equal(form.input('project_id'), undefined, 'a saved row cannot be moved to another project');
+  const link = form.root.querySelector('[data-u2-name="project_id"] [data-u2-part="readonly-value"] a.u2-link');
   assert.equal(link.textContent, 'Grit');
   try {
     link.click();
@@ -1005,36 +1003,7 @@ scoped('an immutable reference is picked on a draft and a link to its row once s
   await flush();
   const create = domains.form(draft, {immutable: ['project_id']});
   await flush();
-  assert.equal(create.input('project_id') !== undefined, true, 'a draft picks it');
+  assert.notEqual(create.input('project_id'), undefined, 'a draft picks it');
   create.dispose();
   draft.dispose();
-});
-
-scoped('a create page starts in its first required field, the page at its top', async () => {
-  const LAB = {name: 'lab', tables: {
-    compound: {singularName: 'Compound', pluralName: 'Compounds',
-      columns: {name: {type: 'string', required: true, isName: true, searchable: true}}},
-    batch: {singularName: 'Batch', pluralName: 'Batches',
-      columns: {amount: {type: 'float'}, compound_id: {type: 'ref', ref: 'compound', required: true}}},
-  }};
-  emsBackends.domain = new MemoryDomainBackend(LAB, {rows: {compound: [{id: 'c1', name: 'Aspirin'}], batch: []}});
-  const app = domains.app({table: await domains.table('lab.batch'), base: '/apps/T/Batches'});
-  document.body.append(app.root);
-  await flush();
-  const scrolled = [];
-  const focus = HTMLElement.prototype.focus;
-  HTMLElement.prototype.focus = function(options) {
-    scrolled.push(options?.preventScroll !== true);
-    return focus.call(this, options);
-  };
-  try {
-    await app.create();
-    for (let i = 0; i < 4; i++)
-      await flush();
-  } finally {
-    HTMLElement.prototype.focus = focus;
-  }
-  assert.equal(document.activeElement.closest('[data-u2-name]')?.dataset.u2Name, 'compound_id');
-  assert.deepEqual(scrolled.filter((s) => s), [], 'no focus scrolled the page to its field');
-  app.dispose();
 });

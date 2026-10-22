@@ -92,7 +92,7 @@ function _open(source: DomainSource, props: IProperty[], items: {value: string, 
   const values: Record<string, unknown> = {};
   const include = new Map<string, Signal<boolean>>();
   const form = dialog.runInScope(() =>
-    propertyForm(props, values, {access: source.access.peek().columnPolicy(), layout: 'tall'}));
+    propertyForm(props, values, {access: source.access.peek().columnPolicy()}));
   for (const prop of props) {
     const on = signal(false);
     include.set(prop.name!, on);
@@ -108,9 +108,8 @@ function _open(source: DomainSource, props: IProperty[], items: {value: string, 
     input.effect(() => input.enabled = on.value);
   }
 
+  const checked = computed(() => props.some((p) => include.get(p.name!)!.value));
   const problem = computed(() => {
-    if (!props.some((p) => include.get(p.name!)!.value))
-      return 'Check the fields to write.';
     const selected = source.selection.value.length;
     if (target.value.value === SELECTED && selected > MAX_ROWS) {
       return `A bulk edit writes at most ${MAX_ROWS} ${DomainSource.noun(source.schema.info)} at a time; ` +
@@ -139,7 +138,7 @@ function _open(source: DomainSource, props: IProperty[], items: {value: string, 
     if (written === null)
       return false;
     finish(written);
-  }).okEnabled(computed(() => problem.value === null))
+  }).okEnabled(computed(() => checked.value && problem.value === null))
     .onCancel(() => finish(null)).show({modal: true, width: 460});
 }
 

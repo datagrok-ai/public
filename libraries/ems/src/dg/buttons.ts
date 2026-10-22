@@ -6,7 +6,7 @@
 import {Control, button} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
 import type {DomainSession} from '../core/session.js';
-import type {RowView} from '@datagrok-libraries/u2';
+import type {ReadonlySignal, RowView} from '@datagrok-libraries/u2';
 
 /** A session, or a source standing for its own. */
 export type SessionTarget = DomainSession | DomainSource;
@@ -19,14 +19,15 @@ export class SessionButton extends Control {
   readonly button: HTMLButtonElement;
   readonly session: DomainSession;
 
-  constructor(target: SessionTarget, text: string,
-    options: {primary?: boolean, run: (session: DomainSession) => unknown}) {
+  constructor(target: SessionTarget, text: string, options: {primary?: boolean,
+    run: (session: DomainSession) => unknown, blocked?: ReadonlySignal<string | null>}) {
     const session = SessionButton.sessionOf(target);
     const el = button(text, () => void options.run(session), {primary: options.primary});
     super(el);
     this.button = el;
     this.session = session;
-    this.effect(() => el.disabled = !session.isDirty.value || session.isSaving.value);
+    this.effect(() => el.disabled = !session.isDirty.value || session.isSaving.value ||
+      (options.blocked?.value ?? null) !== null);
   }
 
   static sessionOf(target: SessionTarget): DomainSession {
@@ -36,11 +37,14 @@ export class SessionButton extends Control {
 
 /** Save: the batch as one transaction through the session, which announces what it saved and
  * hands the focus back to the paired form; the session's primary button, where Tab from a form's
- * last field lands. */
-export function saveButton(target: SessionTarget, options: SessionButtonOptions = {}): SessionButton {
-  const control = new SessionButton(target, options.text ?? 'Save', {primary: true, run: (session) => session.save()});
+ * last field lands. `blocked` is why a Save cannot land while it says so — disabled, with that as its
+ * tooltip. */
+export function saveButton(target: SessionTarget,
+  options: SessionButtonOptions & {blocked?: ReadonlySignal<string | null>} = {}): SessionButton {
+  const control = new SessionButton(target, options.text ?? 'Save',
+    {primary: true, run: (session) => session.save(), blocked: options.blocked});
   control.root.dataset.u2 = 'save-button';
-  control.button.title = 'Save (Ctrl+S)';
+  control.effect(() => control.button.title = options.blocked?.value ?? 'Save (Ctrl+S)');
   const session = control.session;
   session.primaryButton = control.button;
   control.own(() => {

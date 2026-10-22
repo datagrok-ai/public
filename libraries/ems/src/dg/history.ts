@@ -69,8 +69,7 @@ export class DomainHistory extends Control {
   }
 
   /** The changed columns of an update, captions from the schema; the system columns a write
-   * always touches (version, updated) are not changes the user made, nor are the columns a
-   * derivation computed from the inputs the same entry shows — unless they are all it changed. */
+   * always touches (version, updated) are not changes the user made. */
   changesOf(entry: AuditEntryLike): string {
     return this.changedColumns(entry)
       .map(({prop, before, after}) => `${prop.friendlyName ?? prop.name}: ${text(before)} → ${text(after)}`)
@@ -84,11 +83,9 @@ export class DomainHistory extends Control {
       return [];
     const before = entry.before ?? {};
     const after = entry.after ?? {};
-    const derived = DomainTable.of(this.source)?.derived.targets ?? [];
-    const changed = this.source.schema.properties.filter((p) => p.name! in after &&
-      !SYSTEM_COLUMNS.some(([name]) => name === p.name) && before[p.name!] !== after[p.name!]);
-    const own = changed.filter((p) => !derived.includes(p.name!));
-    return (own.length > 0 ? own : changed)
+    return this.source.schema.properties
+      .filter((p) => p.name! in after && !SYSTEM_COLUMNS.some(([name]) => name === p.name) &&
+        before[p.name!] !== after[p.name!])
       .map((prop) => ({prop, before: before[prop.name!], after: after[prop.name!]}));
   }
 

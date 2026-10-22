@@ -390,7 +390,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (gen !== this._gen)
         return;
       this._served = {query, as: served};
-      const [loaded, counted] = await Promise.allSettled([table.frame(this._spec(0)),
+      const [loaded, counted] = await Promise.allSettled([
+        table.frame(this._spec(0)).then((frame) => this._formatCaptions(frame)),
         this._noRows ? Promise.resolve(0) : this._count(table)]);
       if (loaded.status === 'fulfilled' && (gen !== this._gen || counted.status === 'rejected'))
         loaded.value.dispose();
@@ -423,7 +424,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       });
       this._syncCurrent();
       this._syncSelection();
-      void this._formatCaptions(frame.df);
       if (this.isDraft)
         this.newRow({}, {pristine: true});
     } catch (e) {
@@ -448,9 +448,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._state.value = 'loading';
     try {
       const added = await frame.append(this._spec(this._loaded));
+      await this._formatCaptions(frame, this._loaded);
       if (gen !== this._gen)
         return;
-      void this._formatCaptions(frame.df, this._loaded);
       this._loaded += added;
       this._done = added < this.pageSize;
       this._state.value = 'ready';
@@ -664,7 +664,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const selected = this._selection.peek().map((row) => row.id);
     // read before the swap: a row the replacement does not hold takes `currentRow` with it
     const current = this.currentRow.peek()?.id ?? null;
-    const replacement = await table.frame(this._spec(0, window));
+    const replacement = await table.frame(this._spec(0, window)).then((frame) => this._formatCaptions(frame));
     if (gen !== this._gen) {
       replacement.dispose();
       return;
@@ -682,7 +682,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._edit.value = replacement.edit;
     });
     frame.dispose();
-    void this._formatCaptions(replacement.df);
     const at = current === null ? -1 : this._rows.indexOf(current);
     if (at >= 0) {
       replacement.df.currentRowIdx = at;
@@ -873,19 +872,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   /** The frame's projected captions (`~caption_<column>`) from row `from` on, rewritten in each target's display
-   * format ({@link nameFormat}) as soon as that is known — within the tick once the target has been read — so the
-   * list, the form and the platform grid's reference cells all read DG-000123. */
-  private async _formatCaptions(df: DataFrameLike, from = 0): Promise<void> {
+   * format ({@link nameFormat}) before the rows are shown, so the list, the form and the platform grid's reference
+   * cells all read DG-000123. */
+  private async _formatCaptions(frame: DomainFrameLike, from = 0): Promise<DomainFrameLike> {
     const nameFormat = DomainSource.nameFormat;
-    if (nameFormat === undefined)
-      return;
+    const df = frame.df;
     for (const prop of this._schema.properties) {
       const column = Rows.caption(prop.name!);
-      if (df.columns.byName(column) === null)
-        continue;
-      const format = await nameFormat(prop.semType!);
-      if (this._df.peek() !== df)
-        return;
+      const format = nameFormat === undefined || df.columns.byName(column) === null ? null :
+        await nameFormat(prop.semType!);
       for (let i = from; format !== null && i < df.rowCount; i++) {
         const caption = df.get(column, i);
         const formatted = typeof caption === 'string' && caption !== '' ? format(caption) : caption;
@@ -893,6 +888,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
           df.set(column, i, formatted);
       }
     }
+    return frame;
   }
 
   /** One poll of a `live` source: the collection counted and dated in one request, against what

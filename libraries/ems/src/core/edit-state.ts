@@ -2,8 +2,7 @@
    valid, one write path, drafts, deletes, discard and save. The platform implementation is the
    js-api `DomainFrameEditor` (dg); `MemoryEditState` is the same machine over a `MemoryFrame` —
    the memory backend's writer, which the tests and the gallery run. */
-import {signal, computed, ReadonlySignal, Emitter, EMPTY, isEmpty, FrameRows, Rows,
-  notify} from '@datagrok-libraries/u2';
+import {signal, computed, ReadonlySignal, Emitter, EMPTY, isEmpty, FrameRows, Rows} from '@datagrok-libraries/u2';
 import type {ObservableLike, IProperty, Access, MemoryFrame} from '@datagrok-libraries/u2';
 import type {DomainTableLike, DomainTransactionOpLike, DomainTransactionResultLike} from './domain-backend.js';
 
@@ -231,10 +230,8 @@ export class MemoryEditState implements EditState {
   }
 
   discard(): void {
-    if (this._saving.peek()) {
-      notify.warning(`${this._table.address}: discarding is not available while the batch is being saved`);
+    if (this._saving.peek())
       return;
-    }
     for (const [row, originals] of this._originals) {
       for (const [column, original] of originals)
         row[column] = original;

@@ -101,8 +101,8 @@ category('U2: domain bulk', () => {
     expect(includeBox('quantity')!.parentElement!.classList.contains('u2-domain-bulk-row'), true,
       'the box sits OUTSIDE the input it enables — inside a disabled one it would be dead');
     expect(buttonNamed('OK').disabled, true, 'nothing checked yet');
-    expect((document.querySelector('.u2-domain-bulk-reason')?.textContent ?? '')
-      .includes('Check the fields to write'), true, 'and the dialog says so, in the dialog');
+    expect(document.querySelector('.u2-domain-bulk-reason')?.textContent ?? '', '',
+      'a disabled OK says enough before the user has done anything');
     expect(fieldOf('quantity').root.querySelector('.u2-input-error')?.textContent ?? '', '',
       'nothing here is required: a checked field left empty CLEARS the column');
     includeBox('quantity')!.click();

@@ -93,23 +93,6 @@ scoped('entries from the audit, newest first; an update names the changed captio
   src.dispose();
 });
 
-scoped('an update lists the input a derivation ran on, not the columns it computed', async () => {
-  emsBackends.domain = backend();
-  const table = await domains.table('grit.issue');
-  const remove = table.derived.add({from: ['title'], to: ['description'],
-    derive: (row) => ({description: `about ${row.title}`})});
-  const src = table.source({pageSize: 10});
-  await flush();
-  const history = domains.history(src);
-  assert.equal(history.changesOf({op: 'update', before: {title: 'A', description: 'about A'},
-    after: {title: 'B', description: 'about B'}}), 'title: A → B');
-  assert.equal(history.changesOf({op: 'update', before: {description: 'about A'}, after: {description: 'about B'}}),
-    'description: about A → about B', 'an update of computed columns alone lists them');
-  history.dispose();
-  src.dispose();
-  remove();
-});
-
 scoped('the actor is the user\'s name, looked up once per id; a draft is not saved yet; no row asks for one', async () => {
   emsBackends.domain = backend();
   const memory = emsBackends.domain;

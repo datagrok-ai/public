@@ -12,7 +12,7 @@ import * as ui from 'datagrok-api/ui';
 import type * as DG from 'datagrok-api/dg';
 import {signal, Control, button, div, divV, span, plural, text, Wizard, DataTable, BasicTable, ChoiceInput, BoolInput,
   badge, Form, notify} from '@datagrok-libraries/u2';
-import type {IProperty, ChoiceItem, BadgeVariant} from '@datagrok-libraries/u2';
+import type {IProperty, ChoiceItem, BadgeVariant, RowView} from '@datagrok-libraries/u2';
 import type {DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike,
   DomainBatchValidationRowLike} from '../core/domain-backend.js';
 import {fromDartInput} from '@datagrok-libraries/u2/src/dg/index.js';
@@ -143,7 +143,8 @@ export function openImport(table: DomainTable, options: DomainImportOptions = {}
   }
   // an import inserts: the draft policy, so a key typed once on insert is a target too
   const writable = table.access.columnPolicy().forDraft();
-  const targets = table.properties.filter((p) => writable.field(p.name!) === 'editable');
+  const targets = table.properties.filter((p) =>
+    writable.field(p.name!) === 'editable' && !table.derived.targets.includes(p.name!));
   if (targets.length === 0) {
     notify.warning(`There is no column of ${table.address} you may write.`);
     return Promise.resolve(null);
@@ -367,11 +368,16 @@ class ImportFlow {
     host.append(...this._issues(owner, ImportFlow._collect(problems, report?.rows ?? [])));
   }
 
-  /** The mapped rows as the table stores them, in place: the references resolved, then the
-   * derivations run; the rows either failed on, as issues. */
+  /** The mapped rows as the table stores them, in place: the references resolved, the derivations run, then the
+   * table's validators asked about every column a row carries; what any of them failed on, as issues. */
   private async _prepare(rows: Record<string, unknown>[], mapping: [string, string][]): Promise<RowProblem[]> {
     const unresolved = await this._resolveRefs(rows, mapping);
-    return [...unresolved, ...await this._table.deriveRows(rows)].sort((a, b) => a.index - b.index);
+    const underived = await this._table.deriveRows(rows);
+    const validators = this._table.validators;
+    const refused = rows.flatMap((row, index) => validators.columns.filter((column) => column in row)
+      .map((column) => ({index, column, problem: validators.check(column, row[column], row as RowView)})))
+      .filter((p): p is RowProblem => p.problem !== null);
+    return [...unresolved, ...underived, ...refused].sort((a, b) => a.index - b.index);
   }
 
   /** A reference column holds the target row's id where a file holds its name ("DGB-000045"): the

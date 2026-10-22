@@ -59,10 +59,10 @@ under its own `SharedSession`:
   (`DomainTable.open(row)`) activates the running app instead of a second view.
 - **The ribbon** is `[[New, Save, Discard, ⋯, Refresh], [search, filters]]`: New hidden without
   `insert`, Save (Ctrl+S; Tab from the form's last field lands on it) and Discard disabled while
-  there is nothing to save, the ⋯ menu carrying Import… / Bulk edit… / Trash (below) and the list's
-  Sort (creation order by default; `sort` and `sorts` set the app's own), Refresh shown only while the
-  page is stale, search and filters shown on the list page only.
-- **The status bar** is the session's summary while it is dirty ("3 unsaved changes: 1 project and 2 issues"),
+  there is nothing to save, the ⋯ menu carrying Import… / Bulk edit… / Trash (below) and, where the app
+  passes `sorts`, the list's Sort, Refresh shown only while the page is stale, search and filters shown
+  on the list page only.
+- **The status bar** is the session's summary while it is dirty ("3 unsaved changes in 2 tables"),
   else the page's ("50 of 2,077", "New substance", "Substance saved"). A `live` source that has
   seen the server move while the page is dirty says "Data changed — Refresh", and the ribbon's
   Refresh button appears beside it.

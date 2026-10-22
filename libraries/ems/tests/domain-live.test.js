@@ -500,7 +500,7 @@ scoped('the trash reads newest-deleted first, and leaving it gives the order bac
   const app = domains.app({table, base: '/apps/T/Issues', pageSize: 10});
   document.body.append(app.root);
   await flush();
-  assert.equal(app.listSource.sort.value, 'created_on,project_id,number', 'a live list is in creation order');
+  assert.equal(app.listSource.sort.value, '', 'a live list is in the table order');
 
   assert.equal(await app.setTrash(true), true);
   await flush();
@@ -509,7 +509,7 @@ scoped('the trash reads newest-deleted first, and leaving it gives the order bac
 
   assert.equal(await app.setTrash(false), true);
   await flush();
-  assert.equal(app.listSource.sort.value, 'created_on,project_id,number');
+  assert.equal(app.listSource.sort.value, '');
   app.dispose();
   assert.equal(DomainApp.live.size, 0, 'no app left behind');
 });
