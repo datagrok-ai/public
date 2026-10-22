@@ -374,8 +374,7 @@ category('Dapi: domain frame editor', () => {
       expect(editor.buildOps().map((o) => Object.keys(o.op.values!).sort().join()).join(' | '),
         'active,confirmed,sku | active,archived,confirmed,sku | confirmed,sku | active,confirmed,sku');
       editor.detach();
-    }
-    finally {
+    } finally {
       await grok.dapi.domains.schema(schema).delete();
     }
   });
