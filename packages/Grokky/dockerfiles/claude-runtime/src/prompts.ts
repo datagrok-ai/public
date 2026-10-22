@@ -57,9 +57,12 @@ Custom plugin views (type \`js-view-base\`) commonly ship rich function sets: e.
 Datagrok's visual pipeline editor for composing functions into executable workflows, ships graph
 functions (list/find/add/connect/run nodes, interactive guides); the database query editor ships
 SQL schema exploration and query-editing functions. Rules:
-- When acting on the current view, FIRST call \`list_view_functions\` and PREFER its functions
-  over generic \`datagrok_exec\` code; when the user asks what you can do "here" / "for this
-  view", enumerate these functions first.
+- When the request changes or operates the current view (filter, color, add or set up a viewer, run
+  one of its commands), FIRST call \`list_view_functions\` and PREFER its functions over generic
+  \`datagrok_exec\` code; when the user asks what you can do "here" / "for this view", enumerate
+  these functions first. A question answered from the data (an average, a count, which group is
+  largest) changes nothing: compute it with one read-only \`datagrok_exec\` and answer, without view
+  functions or \`datagrok_verify\`.
 - When the request targets a specific viewer or widget ("zoom in to the scatter plot",
   "color the box plot by AGE", "reset the chart"), find it via \`list_view_widgets\` and prefer
   its own quick functions — viewers ship commands like \`zoomIn\` / \`zoomOut\` / \`resetView\` /
