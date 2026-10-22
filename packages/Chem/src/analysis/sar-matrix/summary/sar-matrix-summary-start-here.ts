@@ -30,11 +30,8 @@ export class SummaryStartHere {
           ...this.gainBadge(stat),
         ],
         mark: this.reasonLane(row.reasons),
-        // Cells the decomposition cannot express are left out of the denominator. The compound count only
-        // differs from the measured cells where one compound sits in several cells.
-        desc: (stat.cpd === stat.realCells ? '' : `${count(stat.cpd)} cpd · `) + `${count(stat.realCells)} of ` +
-          `${count(stat.totalCells - stat.impossibleCells)} ` +
-          `${stat.impossibleCells > 0 ? 'makeable cells' : 'cells'} measured · ` +
+        // One line even in a half-width column; the denominator and the compound count are in the tooltip.
+        desc: `${count(stat.realCells)} measured · ` +
           `${host.formatActivity(stat.lo)}–${host.formatActivity(stat.hi)}` +
           (stat.realCells ? ` · typical ${host.formatActivity(stat.typical)}` : ''),
         value: stat.best === null ? '—' : host.formatActivity(stat.best.value),
@@ -42,8 +39,11 @@ export class SummaryStartHere {
         valueTip: stat.best === null ? 'This series holds no measured compound.' :
           `${host.formatActivity(stat.best.value)} measured; ${neighbours} measured cells share its core ` +
           'or substituent.',
-        tip: `Click to expand; the grid icon opens ${matrix.label} in the SAR Matrix. "Typical" is the fitted mean ` +
-          'of what was made; a big gap to "best" suggests one lucky compound.',
+        // Cells the decomposition cannot express are left out of the denominator.
+        tip: (stat.cpd === stat.realCells ? '' : `${count(stat.cpd)} compounds; `) + `${count(stat.realCells)} of ` +
+          `${count(stat.totalCells - stat.impossibleCells)} ${stat.impossibleCells > 0 ? 'makeable cells' : 'cells'} ` +
+          `measured. Click to expand; the grid icon opens ${matrix.label} in the SAR Matrix. "Typical" is the fitted ` +
+          'mean of what was made; a big gap to "best" suggests one lucky compound.',
         onClick: () => stat.best === null ? host.revealMatrix(matrix) :
           host.revealCell(matrix, stat.best.ri, stat.best.ci),
         onChevron: expand.toggle,

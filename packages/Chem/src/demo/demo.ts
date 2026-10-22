@@ -235,11 +235,12 @@ function showEvidence(trigger: Element | null): void {
     trigger.click();
 }
 
-/** Open the first analog worth making, then bring the list into view. */
+/** Open the first analog worth making, then bring the list into view. 'nearest' scrolls only a container the
+ *  list is outside of; 'start' would also scroll the two-column Summary, whose own overflow is hidden. */
 function openMaking(): void {
   const block = document.querySelector('.chem-sar-sum-making-block');
   openIfClosed(block?.querySelector('.chem-sar-card') ?? null);
-  block?.scrollIntoView({block: 'start'});
+  block?.scrollIntoView({block: 'nearest'});
 }
 
 /** The matrix is a canvas grid, so its cells are not elements to anchor to. This lays a marker over
@@ -272,6 +273,9 @@ const at = {
   components: () => document.querySelector('.chem-sar-sum-comp') ?? document.querySelector('.chem-sar-sum-answers'),
   swapRow: () => document.querySelector('.chem-sar-sum-swap') ?? document.querySelector('.chem-sar-sum-answers'),
   making: () => document.querySelector('.chem-sar-sum-making-block') ?? document.querySelector('.chem-sar-sum-making'),
+  firstSeries: () => document.querySelector('.chem-sar-sum-list > .chem-sar-card') ??
+    document.querySelector('.chem-sar-sum-overview'),
+  analog: () => document.querySelector('.chem-sar-sum-making-block .chem-sar-card') ?? at.making(),
   navCard: () => document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-card') ??
     sarTabHeader('SAR Matrix'),
   chips: () => document.querySelector('.chem-sar-chips'),
@@ -309,6 +313,14 @@ const SAR_HINTS: SarHint[] = [
       'its grid icon opens the matrix.',
   },
   {
+    anchor: at.firstSeries,
+    position: ui.hints.POSITION.RIGHT,
+    title: 'Reading a row',
+    text: 'The series and its level, with badges for whether its fit was checked and what its best ' +
+      'prediction would gain. Below: compounds measured, their range and the typical value. On the right, ' +
+      'the best one measured. Hover a row for the full counts.',
+  },
+  {
     anchor: () => document.querySelector('.chem-sar-sum-levels') ?? document.querySelector('.chem-sar-sum-overview'),
     position: ui.hints.POSITION.LEFT,
     title: 'Fold levels',
@@ -316,19 +328,12 @@ const SAR_HINTS: SarHint[] = [
       'counts every series.',
   },
   {
-    before: () => at.components()?.scrollIntoView({block: 'nearest'}),
-    anchor: at.components,
+    before: () => document.querySelector('.chem-sar-sum-answers')?.scrollIntoView({block: 'nearest'}),
+    anchor: () => document.querySelector('.chem-sar-sum-answers'),
     position: ui.hints.POSITION.TOP,
-    title: 'What to change',
-    text: 'One additive (Free-Wilson) fit over the whole table. Each component shows its spread, its ' +
-      'best value and how far it sits above the average. The widest spread is the one to change next.',
-  },
-  {
-    anchor: at.swapRow,
-    position: ui.hints.POSITION.TOP,
-    title: 'Best measured swap, per component',
-    text: 'Measured pairs that differ in one component only, with no model involved. Click one for its ' +
-      'full pool.',
+    title: 'Three answers across all series',
+    text: 'The best substituent at each position, the best core, and the swap that raised potency most ' +
+      'among measured pairs. Each says what it rests on, or why it cannot answer.',
   },
   {
     before: () => showEvidence([...document.querySelectorAll('.chem-sar-sum-answer')].pop() ?? null),
@@ -339,13 +344,21 @@ const SAR_HINTS: SarHint[] = [
       'swaps; click it again to close it.',
   },
   {
-    before: openMaking,
     anchor: at.making,
     position: ui.hints.POSITION.TOP,
     title: 'Worth making',
-    text: 'Analogs not in the table, ranked on their gain over the best compound their series made; the ' +
-      'first is open to show what its prediction adds up from. Compounds you hold but never assayed sit ' +
-      'just above.',
+    text: 'Analogs not in the table, ranked on their gain over the best compound their series made. The ' +
+      'info icon says how to read them. A long list shows 20 and folds the rest; Add all puts every one on ' +
+      'the Make list. Compounds you hold but never assayed, if any, sit just above.',
+  },
+  {
+    before: openMaking,
+    anchor: at.analog,
+    position: ui.hints.POSITION.LEFT,
+    title: 'One analog',
+    text: 'Its series and cell, n = the measured compounds behind the prediction, its gain and the ' +
+      'predicted value. Open, as here, it shows the core and substituent it adds up from. The cart adds ' +
+      'it to the Make list; the grid icon opens its matrix.',
   },
   {
     before: () => sarTab('SAR Matrix'),
@@ -514,6 +527,14 @@ const PROTAC_HINTS: SarHint[] = [
       'the first one here; its grid icon opens the matrix.',
   },
   {
+    anchor: at.firstSeries,
+    position: ui.hints.POSITION.RIGHT,
+    title: 'Reading a row',
+    text: 'One linker per series, with its level and badges for its fit and its best prediction. Below: ' +
+      'degraders measured, their range and the typical value. On the right, the best one measured. Hover ' +
+      'a row for the full counts.',
+  },
+  {
     before: () => at.components()?.scrollIntoView({block: 'nearest'}),
     anchor: at.components,
     position: ui.hints.POSITION.TOP,
@@ -538,12 +559,21 @@ const PROTAC_HINTS: SarHint[] = [
       'every warhead swap behind the best one.',
   },
   {
-    before: openMaking,
     anchor: at.making,
     position: ui.hints.POSITION.TOP,
     title: 'Combinations nobody has built',
-    text: 'Warhead, linker and E3 ligand combinations never made, ranked on gain over their series\' best; ' +
-      'the first is open. Listed even when none clears the trust gate.',
+    text: 'Warhead, linker and E3 ligand combinations never made, ranked on gain over their series\' best. ' +
+      'Listed even when none clears the trust gate, as the line under the title says; the info icon says ' +
+      'how to read them. The list scrolls on its own, and Add all puts every one on the Make list.',
+  },
+  {
+    before: openMaking,
+    anchor: at.analog,
+    position: ui.hints.POSITION.LEFT,
+    title: 'One combination',
+    text: 'Its linker series and cell, n = the degraders behind the prediction, its gain and the predicted ' +
+      'solubility. Open, as here, it shows the core and substituent it adds up from. The cart adds it to ' +
+      'the Make list; the grid icon opens its matrix.',
   },
   {
     before: () => sarTab('SAR Matrix'),

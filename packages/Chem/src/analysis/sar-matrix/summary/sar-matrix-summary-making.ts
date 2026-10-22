@@ -6,6 +6,13 @@ import {count, tipText} from '../sar-matrix-ui-common';
 
 type Best = {value: number} | null;
 
+/** Analog rows shown before the rest fold away, so a long list opens without a long scroll; Add all still takes
+ *  every one. */
+const MAKING_ROWS = 20;
+
+/** At most this many analogs and the card shares its column with the answers instead of leaving it empty. */
+const SHORT_LIST = 3;
+
 export class SummaryMaking {
   constructor(private readonly kit: SummaryPanel) {}
 
@@ -35,27 +42,36 @@ export class SummaryMaking {
       'table with no activity value, ranked by their predicted value. Testing them needs no synthesis.', body);
   }
 
-  /** Ranked on gain, not on the predicted value, which only ranks series by what was already made. */
-  private buildAnalogs(data: SummaryData): HTMLElement {
+  isShort(data: SummaryData): boolean {
+    return data.test.take().length === 0 && this.analogRows(data).rows.length <= SHORT_LIST;
+  }
+
+  private analogRows(data: SummaryData): {rows: SummaryRow[], thin: SummaryRow[], fallback: boolean} {
     const ranked = data.analogs.all;
     // One structure can be predicted in a thin series and in its coarser parent.
     const rankedKeys = new Set(ranked.map((row) => row.key));
     const thin = data.analogsThin.all.filter((row) => !rankedKeys.has(row.key));
     const fallback = ranked.length === 0 && thin.length === 0;
-    const rows = [...ranked, ...thin, ...(fallback ? data.analogsAny.all : [])];
+    return {rows: [...ranked, ...thin, ...(fallback ? data.analogsAny.all : [])], thin, fallback};
+  }
+
+  /** Ranked on gain, not on the predicted value, which only ranks series by what was already made. */
+  private buildAnalogs(data: SummaryData): HTMLElement {
+    const {rows, thin, fallback} = this.analogRows(data);
     const title = rows.length === 0 ? 'Worth making · none' :
       `Worth making · ${count(rows.length)} analog${rows.length === 1 ? '' : 's'}`;
     const tip = 'Predicted analogs nobody has made, ranked by how much they would beat the best compound of ' +
       'their series.';
+    const about = ['Ranked by gain over the best compound each series made. Predicted, not measured: the additive ' +
+      'model cannot see a cliff.', fallback && rows.length > 0 ? this.gateShortfall(data) : ''];
     return this.section(title, tip, this.analogBody(data, rows, new Set(thin.map((row) => row.key)), fallback),
-      'chem-sar-sum-making-block');
+      'chem-sar-sum-making-block', about.filter((s) => s !== ''));
   }
 
   private analogBody(data: SummaryData, rows: SummaryRow[], thinKeys: Set<string>, fallback: boolean):
     HTMLElement[] {
     const host = this.kit.host;
-    const body: HTMLElement[] = [ui.divText('Ranked by gain over the best compound each series made. Predicted, ' +
-      'not measured: the additive model cannot see a cliff.', 'chem-sar-cp-hint')];
+    const body: HTMLElement[] = [];
     if (data.trustedNoStructure > 0) {
       body.push(ui.divText(`${count(data.trustedNoStructure)} more predictions have no structure: add the ` +
         'R-group column that fills their open attachment point.', 'chem-sar-cp-hint'));
@@ -68,8 +84,8 @@ export class SummaryMaking {
       return body;
     }
     if (fallback) {
-      body.push(ui.divText('Nothing clears the trust gate; these are the largest gains without it. ' +
-        this.gateShortfall(data), 'chem-sar-sum-prose chem-sar-chip-partial'));
+      body.push(ui.divText('Nothing clears the trust gate; these are the largest gains without it.',
+        'chem-sar-sum-prose chem-sar-chip-partial'));
     }
 
     const bests = this.seriesBests(data);
@@ -80,7 +96,9 @@ export class SummaryMaking {
         thinKeys.has(row.key) ? [this.kit.badge('thin', `The series has fewer than ${BEST_FIT_MIN_N} checkable ` +
           'cells, so this is listed, not ranked.', true)] : [], '');
     });
-    body.push(...draw(rows));
+    body.push(...draw(rows.slice(0, MAKING_ROWS)));
+    if (rows.length > MAKING_ROWS)
+      body.push(...this.kit.lazyFold(`${count(rows.length - MAKING_ROWS)} more`, () => draw(rows.slice(MAKING_ROWS))));
     body.push(ui.divH([ui.button(rows.length === 1 ? 'Add it to Make list' : `Add all ${rows.length} to Make list`,
       () => host.addCellsToMakeList(rows, 'Nothing to add.'))], 'chem-sar-sum-chips'));
     if (data.analogOverflow > 0) {
@@ -90,8 +108,16 @@ export class SummaryMaking {
     return body;
   }
 
-  private section(title: string, tip: string, body: HTMLElement[], cls = ''): HTMLElement {
-    return ui.divV([tipText(title, 'chem-sar-cp-section-title', tip), ...body], `chem-sar-sum-card ${cls}`.trim());
+  /** `about`, when given, is how to read the card: behind an ⓘ beside the title, so the rows start right under it. */
+  private section(title: string, tip: string, body: HTMLElement[], cls = '', about: string[] = []): HTMLElement {
+    let head = tipText(title, 'chem-sar-cp-section-title', tip);
+    if (about.length > 0) {
+      const info = ui.iconFA('info-circle');
+      ui.tooltip.bind(info, () => ui.divV(about.map((text) => ui.divText(text)), 'chem-sar-sum-about-tip'));
+      info.classList.add('chem-sar-sum-about');
+      head = ui.divH([head, info], 'chem-sar-sum-section-head');
+    }
+    return ui.divV([head, ...body], `chem-sar-sum-card ${cls}`.trim());
   }
 
   private seriesBests(data: SummaryData): Map<string, Best> {
@@ -124,7 +150,7 @@ export class SummaryMaking {
     if (best === null)
       return 'its series has no measured compound';
     const gain = this.kit.dir * (row.matrix.cells[row.ri][row.ci].value! - best.value);
-    return `gain ${this.kit.formatEffect(gain)} over the best compound its series made`;
+    return `${this.kit.formatEffect(gain)} over its series' best`;
   }
 
   private detail(row: SummaryRow, best: Best): HTMLElement[] {

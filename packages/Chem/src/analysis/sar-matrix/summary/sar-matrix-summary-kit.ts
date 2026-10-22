@@ -4,6 +4,10 @@ import {MIN_SUPPORT, SeriesStat, SummaryData, SummaryHost, SUM_ROWS, TRUST_R2} f
 import {chipBadge, CORE_BG_ARGB, isStructure, MatrixCellRef, paintMoleculeOnColor, SUM_MOL_H,
   SUM_MOL_W, tipText} from '../sar-matrix-ui-common';
 
+/** Space, in px, that reveal() leaves under what opened and above the row that opened it. */
+const REVEAL_GAP_BELOW = 12;
+const REVEAL_GAP_ABOVE = 8;
+
 export class SummaryKit {
   pendingPaints: (() => void)[] = [];
   private readonly paints: WeakMap<Element, () => void> = new WeakMap();
@@ -49,12 +53,15 @@ export class SummaryKit {
     const parts: HTMLElement[] = [];
     if (opts.depiction !== null)
       parts.push(opts.depiction);
+    const desc = ui.divText(opts.desc, 'chem-sar-card-desc');
     const body = ui.divV([
       ui.divH([ui.divText(opts.name, 'chem-sar-card-name'), ...opts.badges], 'chem-sar-card-title'),
-      ui.divText(opts.desc, 'chem-sar-card-desc'),
+      desc,
     ], 'chem-sar-card-body');
-    if (opts.mark !== undefined)
+    if (opts.mark !== undefined) {
       body.appendChild(opts.mark);
+      body.classList.add('chem-sar-sum-marked');
+    }
     parts.push(body, valueBox);
     if (opts.cart !== undefined) {
       const ref = opts.cart;
@@ -72,12 +79,16 @@ export class SummaryKit {
     }, toggle === undefined ? opts.tip : 'Open in the SAR Matrix');
     open.classList.add('chem-sar-struct-icon');
     parts.push(open);
+    // The compact narrow-column grid is laid out around the structure, or swap pair, that leads the row.
+    const cls = `chem-sar-card${opts.depiction !== null ? ' chem-sar-sum-molrow' : ''}`;
     if (toggle === undefined)
-      return ui.divH(parts, 'chem-sar-card chem-sar-sum-static');
+      return ui.divH(parts, `${cls} chem-sar-sum-static`);
     const [twisty, point] = this.twisty();
     parts.push(twisty);
-    const row = ui.divH(parts, 'chem-sar-card');
-    ui.tooltip.bind(row, () => opts.tip);
+    const row = ui.divH(parts, cls);
+    // A narrow column hides the description to keep the row one structure tall; the tooltip then carries it.
+    ui.tooltip.bind(row, () => desc.offsetParent === null ? ui.divV([ui.divText(opts.desc), ui.divText(opts.tip)]) :
+      opts.tip);
     row.onclick = () => point(toggle());
     return row;
   }
@@ -191,9 +202,28 @@ export class SummaryKit {
         this.flushPaints();
       }
       body.style.display = '';
+      this.reveal(body.previousElementSibling, body);
       return true;
     };
     return {body, toggle};
+  }
+
+  /** Scrolls just far enough to show what opened under `head`, never so far that `head` leaves the top. */
+  reveal(head: Element | null, opened: HTMLElement): void {
+    // A timeout rather than an animation frame: frames stop in a hidden tab, and layout is done by then either way.
+    window.setTimeout(() => {
+      let scroller = opened.parentElement;
+      while (scroller && !(scroller.scrollHeight > scroller.clientHeight &&
+        /auto|scroll/.test(getComputedStyle(scroller).overflowY)))
+        scroller = scroller.parentElement;
+      if (!scroller || !head)
+        return;
+      const view = scroller.getBoundingClientRect();
+      const below = opened.getBoundingClientRect().bottom - view.bottom;
+      const room = head.getBoundingClientRect().top - view.top;
+      if (below > 0 && room > 0)
+        scroller.scrollBy({top: Math.min(below + REVEAL_GAP_BELOW, room - REVEAL_GAP_ABOVE), behavior: 'smooth'});
+    }, 0);
   }
 
   /** Which way a better value points: 1 when higher is better. */

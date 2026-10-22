@@ -9,7 +9,7 @@ import {SummaryScale} from './sar-matrix-summary-scale';
 import {SummaryKit} from './sar-matrix-summary-kit';
 
 export class SummaryPanel extends SummaryKit {
-  readonly root = ui.divV([], 'chem-sar-main');
+  readonly root = ui.divV([], 'chem-sar-main chem-sar-sum-root');
   private data: SummaryData | null = null;
   private paintTimer = 0;
   /** Collecting holds the main thread, so it runs after the loader paints. */
@@ -89,7 +89,9 @@ export class SummaryPanel extends SummaryKit {
   /** @param keepPlace Keep the reader's scroll position, for a re-read at another tier. */
   private render(keepPlace = false): void {
     const host = this.host;
-    const scrolled = keepPlace ? this.root.querySelector('.chem-sar-sum-pane')?.scrollTop ?? 0 : 0;
+    const scrollers = (): HTMLElement[] => [...this.root.querySelectorAll<HTMLElement>(
+      '.chem-sar-sum-pane, .chem-sar-sum-flowcol, .chem-sar-sum-making-block')];
+    const places = keepPlace ? scrollers().map((el) => el.scrollTop) : [];
     window.clearTimeout(this.paintTimer);
     this.pendingPaints = [];
     this.stopPainting();
@@ -100,12 +102,17 @@ export class SummaryPanel extends SummaryKit {
       return;
     }
     const data = this.data!;
-    // What to start with and what to make sit side by side, so neither waits below the other.
-    const pane = ui.divV([this.overview.head(data),
-      ui.divV([this.overview.keySeries(data), this.making.build(data)], 'chem-sar-sum-cols'),
-      this.overview.answers(data)], 'chem-sar-sum-pane');
-    this.root.appendChild(pane);
-    pane.scrollTop = scrolled;
+    // A short analog list would leave the right column empty while the left one scrolls, so the answers join it.
+    const keySeries = this.overview.keySeries(data);
+    const making = this.making.build(data);
+    const answers = this.overview.answers(data);
+    const short = this.making.isShort(data);
+    const right = short ? ui.divV([making, answers]) : making;
+    right.classList.add('chem-sar-sum-flowcol');
+    const left = ui.divV(short ? [keySeries] : [keySeries, answers], 'chem-sar-sum-flowcol');
+    this.root.appendChild(ui.divV([this.overview.head(data), ui.divH([left, right], 'chem-sar-sum-flow')],
+      'chem-sar-sum-pane'));
+    scrollers().forEach((el, i) => el.scrollTop = places[i] ?? 0);
     this.paintTimer = window.setTimeout(() => this.flushPaints(), 0);
   }
 

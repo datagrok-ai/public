@@ -73,7 +73,7 @@ export class SummaryOverview {
     if (fit === null || this.kit.roleFitRefusal(data) !== null)
       return null;
     const head = ui.divH([ui.div([], 'chem-sar-sum-col'), ui.divText('Best value', 'chem-sar-sum-half-head'),
-      ui.divText('Best measured swap', 'chem-sar-sum-half-head')], 'chem-sar-sum-comp-row');
+      ui.divText('Best measured swap', 'chem-sar-sum-half-head')], 'chem-sar-sum-comp-row chem-sar-sum-comp-head');
     const body: HTMLElement[] = [
       ui.divH([ui.divText(`What to change · ${count(fit.roles.length)} components`, 'chem-sar-cp-section-title'),
         this.setupLine(data)], 'chem-sar-sum-title-row'),
@@ -100,6 +100,7 @@ export class SummaryOverview {
       open.classList.add('chem-sar-sum-open');
       el.appendChild(build());
       this.kit.flushPaints();
+      this.kit.reveal(trigger, el);
     };
     return {el, toggle};
   }
