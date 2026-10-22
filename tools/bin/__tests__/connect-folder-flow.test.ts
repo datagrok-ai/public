@@ -535,6 +535,18 @@ describe('the folder-limited agent key', () => {
     expect(stands[A].keys.map((k) => k.id)).toEqual(keys);
   });
 
+  it('list flags a container whose key is not limited to the folder', async () => {
+    await share(args(folder, {host: A}));
+    const listed = async () => {
+      (console.log as any).mockClear();
+      expect(await share(args('list', {host: A, output: 'json'}))).toBe(true);
+      return (console.log as any).mock.calls.map((c: any[]) => c.join(' ')).join('\n');
+    };
+    expect(await listed()).not.toContain('outdated key');
+    delete stands[A].keys[0].scope;
+    expect(await listed()).toContain('outdated key: re-run connect-folder');
+  });
+
   it('stops on a server that cannot issue one, with no container and no key', async () => {
     stands[A].noAgentKeys = true;
     const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);

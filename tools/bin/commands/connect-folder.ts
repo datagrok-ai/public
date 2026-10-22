@@ -217,11 +217,14 @@ async function list(host: string | undefined, output: OutputFormat): Promise<boo
   const seen = new Set<string>();
   for (const alias of aliases) {
     let shares: any[] | null = null;
+    let keys: any[] = [];
     let url: string;
     try {
       const cred = getServerCredentials(alias);
       url = cred.url;
-      shares = await (await createClient(alias)).get('/local_shares');
+      const client = await createClient(alias);
+      shares = await client.get('/local_shares');
+      keys = (await client.get('/users/current/keys')) ?? [];
     } catch (e: any) {
       color.warn(`${alias}: ${e.message ?? e}`);
       url = '';
@@ -230,8 +233,11 @@ async function list(host: string | undefined, output: OutputFormat): Promise<boo
     for (const s of shares ?? []) {
       const c = ofServer.find((c) => c.labels[`${dk.LABEL}.connection`] === s.id);
       seen.add(`${alias}|${s.id}`);
+      // The server refuses an agent whose key is not limited to its folder: its container runs, but serves nothing.
+      const outdated = c != null && !keys.some((k) => k.id === c.labels[`${dk.LABEL}.key`] && k.scope === `${FOLDER_SCOPE}:${s.id}`);
       rows.push(row(s.friendlyName ?? s.name, s.parameters?.localShareFolder, s.parameters?.localShareReadOnly === 'true',
-        c?.state, s.isAvailable === false ? 'offline' : 'online', s.parameters?.localShareHost, s.id, alias));
+        c?.state, outdated ? 'outdated key: re-run connect-folder' : s.isAvailable === false ? 'offline' : 'online',
+        s.parameters?.localShareHost, s.id, alias));
     }
     for (const c of ofServer) {
       const id = c.labels[`${dk.LABEL}.connection`];
