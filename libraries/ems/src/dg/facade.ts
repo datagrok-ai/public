@@ -8,17 +8,18 @@
    the rows every registry and source hands out; the default reads any column as unknown. */
 import {emsBackends} from '../core/domain-backend.js';
 import * as DG from 'datagrok-api/dg';
-import {Access, Rows, divV, span, timestamp, text} from '@datagrok-libraries/u2';
+import {Access, Filters, KIND, Rows, divV, span, timestamp, text, isEmpty, signal} from '@datagrok-libraries/u2';
 import type {Capability, IProperty, ObjectRenderer, Action, ColumnOf, DomainRowLike, RowValues, RowView,
-  ReadonlySignal} from '@datagrok-libraries/u2';
+  ReadonlySignal, Signal, FilterCondition, FilterOperatorParameter} from '@datagrok-libraries/u2';
 import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
 import {DomainSource} from '../core/domain-source.js';
 import type {DomainSourceOptions} from '../core/domain-source.js';
+import type {EditState} from '../core/edit-state.js';
 import {SharedSession, confirmDiscard} from '../core/session.js';
-import {handlerRenderer, appView, mountView} from '@datagrok-libraries/u2/src/dg/index.js';
+import {handlerRenderer, appView, mountView, ObjectForm} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainApp} from './app.js';
 import {authoring} from './authoring/index.js';
-import {SYSTEM_COLUMNS} from './backend.js';
+import {DgDomainTable, SYSTEM_COLUMNS} from './backend.js';
 import {saveButton, discardButton, newButton} from './buttons.js';
 import {DomainChildren} from './children.js';
 import {DomainErrors} from './errors.js';
@@ -49,6 +50,7 @@ import {route} from './routes.js';
 export type {CreateBindingOptions, BindingResult, AccessOutcome} from './authoring/binding-dialog.js';
 export type {EditBindingResult} from './authoring/binding-edit-dialog.js';
 const REF_ADDRESS = /^\w+\.\w+$/;
+const DERIVE_MS = 60000;
 
 /** An action over one row: `requires` names the capability it needs (permission ⇒ hidden),
  * `when` narrows it per row (state ⇒ absent), `run` takes the row. */
@@ -59,6 +61,13 @@ export interface DomainAction<TRow extends DomainRowLike = DomainRowLike> {
   enabled?: boolean;
   when?(row: RowView<TRow>): boolean;
   run(row: RowView<TRow>): void;
+}
+
+/** A row's problem with one of its cells — a derivation that failed on an imported row. */
+export interface RowProblem {
+  index: number;
+  column: string;
+  problem: string;
 }
 
 export type RowValidator<TRow extends DomainRowLike = DomainRowLike> =
@@ -73,22 +82,28 @@ export interface DomainAppViewOptions extends Omit<DomainAppOptions, 'table' | '
   app?: new (options: DomainAppOptions) => DomainApp;
 }
 
-export class ActionRegistry<TRow extends DomainRowLike = DomainRowLike> {
-  private readonly _actions: DomainAction<TRow>[] = [];
+export class Registry<T> {
+  protected readonly _items: T[] = [];
 
   /** Returns the unregister function. */
-  add(action: DomainAction<TRow>): () => void {
-    this._actions.push(action);
+  add(item: T): () => void {
+    this._items.push(item);
     return () => {
-      const at = this._actions.indexOf(action);
+      const at = this._items.indexOf(item);
       if (at >= 0)
-        this._actions.splice(at, 1);
+        this._items.splice(at, 1);
     };
   }
 
+  get all(): readonly T[] {
+    return this._items;
+  }
+}
+
+export class ActionRegistry<TRow extends DomainRowLike = DomainRowLike> extends Registry<DomainAction<TRow>> {
   /** The actions that apply to `row`, bound to it — what `rowActions` and a menu take. */
   for(row: RowView<TRow>): Action[] {
-    return ActionRegistry.bind(this._actions, row);
+    return ActionRegistry.bind(this._items, row);
   }
 
   static bind<T extends DomainRowLike>(actions: readonly DomainAction<T>[], row: RowView<T>): Action[] {
@@ -128,10 +143,54 @@ export class ValidatorRegistry<TRow extends DomainRowLike = DomainRowLike> {
   }
 }
 
+/** Columns the browser computes from other columns of the row: a write hook for a schema without one. */
+export interface DomainDerivation<TRow extends DomainRowLike = DomainRowLike> {
+  from: ColumnOf<TRow>[];
+  to: ColumnOf<TRow>[];
+  derive(row: RowView<TRow>): RowValues<TRow> | Promise<RowValues<TRow>>;
+}
+
+export class DerivationRegistry<TRow extends DomainRowLike = DomainRowLike> extends Registry<DomainDerivation<TRow>> {
+  get targets(): string[] {
+    return this._items.flatMap((d) => d.to);
+  }
+
+  get columns(): string[] {
+    return this._items.flatMap((d) => [...d.from, ...d.to]);
+  }
+}
+
+/** A filter operator the app answers for a column the server cannot search that way — a structure
+ * search: offered on the columns of its semType, it reaches the server as the ids of the rows it matches. */
+export interface DomainHostOperator {
+  id: string;
+  label: string;
+  semType: string;
+  parameter?: FilterOperatorParameter;
+  rows(condition: FilterCondition, signal: AbortSignal): Promise<readonly string[]>;
+}
+
+export class HostOperatorRegistry extends Registry<DomainHostOperator> {
+  /** Registered with the page's operators, which every table of the bundle shares: not `exclusive`
+   * there, or a column of another table this one's semType names would lose its core operators —
+   * `DomainFilters` narrows the column of a table that answers it to this set. */
+  add(op: DomainHostOperator): () => void {
+    const remove = super.add(op);
+    const unregister = Filters.operators.register({id: op.id, label: op.label, arity: 1, kinds: [KIND.STRING],
+      semType: op.semType, editor: 'default', host: true, parameter: op.parameter});
+    return () => {
+      remove();
+      unregister();
+    };
+  }
+}
+
 export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   /** Everything an app declares about the table's actions, once. */
   readonly actions = new ActionRegistry<TRow>();
   readonly validators = new ValidatorRegistry<TRow>();
+  readonly derived = new DerivationRegistry<TRow>();
+  readonly operators = new HostOperatorRegistry();
   /** The platform handler of the table's rows — deep links, the entity view, `rowFrom`. */
   readonly handler: DG.DomainObjectHandler;
   /** How lists, pickers and chips show a row; the handler's own rendering by default. */
@@ -141,6 +200,9 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 
   private static readonly _bySource = new WeakMap<DomainSource, DomainTable>();
   private static readonly _byRow = new WeakMap<ReadonlySignal<RowView | null>, DomainSource>();
+  /** Per source, why each derivation last failed on a row, and a tick that moves with them. */
+  private readonly _failed = new WeakMap<DomainSource,
+    {failures: Map<DomainDerivation<TRow>, Map<string, string>>, changed: Signal<number>}>();
 
   constructor(readonly address: string, readonly table: DomainTableLike, readonly access: Access) {
     this.handler = new DG.DomainObjectHandler(address);
@@ -163,6 +225,27 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   /** The source behind a `currentRow` signal handed to a form. */
   static sourceOf(row: ReadonlySignal<RowView | null>): DomainSource | undefined {
     return DomainTable._byRow.get(row);
+  }
+
+  /** A frame cell as a write takes it: null where empty, a float32 float as the decimal it was read from. */
+  static cellValue(column: DG.Column, row: number): unknown {
+    if (column.isNone(row))
+      return null;
+    const value = column.get(row);
+    return typeof value === 'number' && !Number.isInteger(value) && Math.fround(value) === value ?
+      DgDomainTable.float32Decimal(value) : value;
+  }
+
+  /** A name as auto-mapping compares it: case, punctuation and a unit in parentheses ignored, so a file's
+   * "Purity" finds "Purity (%)". */
+  static matchKey(name: string): string {
+    return name.toLowerCase().replace(/\(.*\)/, '').replace(/[^a-z0-9]/g, '');
+  }
+
+  /** In the column's display format: an autonumbered key reads DG-000123. */
+  static captionText(properties: IProperty[], column: string, value: unknown): string {
+    const prop = properties.find((p) => p.name === column);
+    return prop === undefined ? text(value) : ObjectForm.displayText(prop, value);
   }
 
   /** Whether the column holds another row's id rather than a value of its own — a ref column
@@ -276,17 +359,20 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     };
   }
 
-  /** What a row looks like from its schema alone: the name column (else the first business-key
-   * column, else the id; "New <singular>" for a draft without one), and on a card the
-   * list-item-rendering recipe — the title, one muted description line, the creation time. */
+  /** What a row looks like from its schema alone: the name column, else the business key (a reference
+   * by its target's caption), else the id; "New <singular>" for a draft without one. A card adds one
+   * muted description line and the creation time. */
   static schemaRenderer(schema: () => {properties: IProperty[], info: DomainTableInfoLike}): ObjectRenderer<RowView> {
     const label = (row: RowView): {text: string, draft: boolean} => {
-      const info = schema().info;
-      const column = info.nameColumn ?? info.businessKey[0];
-      const name = column === undefined ? undefined : row[column];
-      if (name !== null && name !== undefined && name !== '')
-        return {text: String(name), draft: false};
-      return Rows.isDraft(row) ? {text: `New ${info.singularName.toLowerCase() || 'row'}`, draft: true} :
+      const {properties, info} = schema();
+      const name = (info.nameColumn === null ? info.businessKey : [info.nameColumn]).map((column) => {
+        const prop = properties.find((p) => p.name === column);
+        return prop !== undefined && DomainTable.isReference(prop) ? text(row[Rows.caption(column)]) :
+          isEmpty(row[column]) ? '' : DomainTable.captionText(properties, column, row[column]);
+      }).filter((part) => part !== '').join(' · ');
+      if (name !== '')
+        return {text: name, draft: false};
+      return Rows.isDraft(row) ? {text: `New ${DomainSource.noun(info, false)}`, draft: true} :
         {text: row.id, draft: false};
     };
     const titleOf = (row: RowView): HTMLElement => {
@@ -323,6 +409,13 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     DomainTable._bySource.set(source, this);
     DomainTable._byRow.set(source.currentRow, source);
     source.guard(() => this._validate(source));
+    source.hosted = (condition, signal) => {
+      const op = this.operators.all.find((o) => o.id === condition.operator);
+      if (op === undefined)
+        throw new Error(`${this.address}: no operator "${condition.operator}"`);
+      return op.rows(condition, signal);
+    };
+    this._deriving(source);
     // last resort, after every guard: the writer refused over a cell and named neither
     source.nameCell = (row, column, problem) => this._nameCell(row as RowView<TRow>, column, problem);
     // every refused save is one balloon, form or not; a load failure is the list's and the hint's
@@ -335,6 +428,155 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     });
     source.start();
     return source;
+  }
+
+  /** Runs {@link derived} over plain rows in place; a row a derivation failed on keeps its outputs unset,
+   * so the server refuses it by name. */
+  async deriveRows(rows: Record<string, unknown>[]): Promise<RowProblem[]> {
+    const failures: RowProblem[] = [];
+    for (const derivation of this.derived.all) {
+      await Promise.all(rows.map(async (row, index) => {
+        if (DomainTable._noInputs(derivation, row))
+          return;
+        try {
+          Object.assign(row, await DomainTable._timed(derivation.derive(row as RowView<TRow>)));
+        } catch (e) {
+          failures.push({index, column: derivation.from[0], problem: DomainErrors.message(e)});
+        }
+      }));
+    }
+    return failures.sort((a, b) => a.index - b.index);
+  }
+
+  /** Why the derivation reading `column` first failed on the row of `source`, null while none did — the
+   * same words a refused Save names that column with. Read under an effect, it re-runs as a derivation
+   * ends, so a form shows the failure on the field then rather than at Save. */
+  derivationProblem(source: DomainSource, id: string, column: string): string | null {
+    const state = this._failed.get(source);
+    if (state === undefined)
+      return null;
+    state.changed.value;
+    for (const d of this.derived.all) {
+      const problem = d.from[0] === column ? state.failures.get(d)?.get(id) : undefined;
+      if (problem !== undefined)
+        return problem;
+    }
+    return null;
+  }
+
+  /** Derives a row again whenever its inputs, or the outputs last written for them, change; a result lands
+   * only while those inputs and the writer still stand, and a failure refuses Save until the next good run. */
+  private _deriving(source: DomainSource<TRow>): void {
+    const last = new Map<DomainDerivation<TRow>, Map<string, {inputs: string, outputs: string | null}>>();
+    const failures = new Map<DomainDerivation<TRow>, Map<string, string>>();
+    const changed = signal(0);
+    this._failed.set(source, {failures, changed});
+    let writing: {d: DomainDerivation<TRow>, id: string} | null = null;
+    const of = <T>(map: Map<DomainDerivation<TRow>, Map<string, T>>, d: DomainDerivation<TRow>) => {
+      let rows = map.get(d);
+      if (rows === undefined)
+        map.set(d, rows = new Map<string, T>());
+      return rows;
+    };
+    const fail = (d: DomainDerivation<TRow>, id: string, problem: string | null) => {
+      const rows = of(failures, d);
+      if ((rows.get(id) ?? null) === problem)
+        return;
+      if (problem === null)
+        rows.delete(id);
+      else
+        rows.set(id, problem);
+      changed.value = changed.peek() + 1;
+    };
+    const snapshot = (values: Record<string, unknown>, columns: string[]) =>
+      JSON.stringify(columns.map((c) => values[c] ?? null));
+    const write = (edit: EditState, row: RowView<TRow>, d: DomainDerivation<TRow>, inputs: string,
+      values: Record<string, unknown>) => {
+      const current = row as Record<string, unknown>;
+      of(last, d).set(row.id, {inputs, outputs: snapshot({...current, ...values}, d.to)});
+      writing = {d, id: row.id};
+      try {
+        for (const [column, value] of Object.entries(values)) {
+          if ((current[column] ?? null) !== (value ?? null))
+            edit.setValue(row.id, column, value);
+        }
+      } finally {
+        writing = null;
+      }
+    };
+    const run = (edit: EditState, row: RowView<TRow>, d: DomainDerivation<TRow>) => {
+      if (writing?.d === d && writing.id === row.id)
+        return;
+      const current = row as Record<string, unknown>;
+      const inputs = snapshot(current, d.from);
+      const prior = of(last, d).get(row.id);
+      if (prior?.inputs === inputs && (prior.outputs === null || prior.outputs === snapshot(current, d.to)))
+        return;
+      // a verdict is about the inputs it was given: the new ones have none until their run ends
+      fail(d, row.id, null);
+      if (DomainTable._noInputs(d, current)) {
+        write(edit, row, d, inputs, Object.fromEntries(d.to.map((c) => [c, null])));
+        return;
+      }
+      of(last, d).set(row.id, {inputs, outputs: null});
+      const standing = () => of(last, d).get(row.id)?.inputs === inputs && source.edit.peek() === edit;
+      source.hold(DomainTable._timed(Promise.resolve().then(() => d.derive(row))).then((out) => {
+        if (!standing())
+          return;
+        write(edit, row, d, inputs, out as Record<string, unknown>);
+      }, (e) => {
+        if (standing())
+          fail(d, row.id, DomainErrors.message(e));
+      }));
+    };
+    source.effect(() => {
+      const edit = source.edit.value;
+      if (edit === undefined)
+        return;
+      const changes = edit.onChanged.subscribe((key) => {
+        const changed = key === null ? source.pending() : [source.rows.byKey(key)];
+        for (const row of changed) {
+          if (row === undefined || row[Rows.STATE] === 'deleted')
+            continue;
+          for (const d of this.derived.all)
+            run(edit, row, d);
+        }
+      });
+      // a landed batch re-keys its drafts
+      const saves = edit.onSaved.subscribe(() => {
+        last.clear();
+        failures.clear();
+        changed.value = changed.peek() + 1;
+      });
+      return () => {
+        changes.unsubscribe();
+        saves.unsubscribe();
+      };
+    });
+    source.guard(() => {
+      for (const row of source.pending()) {
+        for (const d of this.derived.all) {
+          const problem = failures.get(d)?.get(row.id);
+          if (problem === undefined)
+            continue;
+          source.markProblem(row.id);
+          return this._nameCell(row, d.from[0], problem);
+        }
+      }
+      return null;
+    });
+  }
+
+  private static _noInputs(d: DomainDerivation, row: Record<string, unknown>): boolean {
+    return d.from.every((c) => isEmpty(row[c]));
+  }
+
+  /** A derivation that never answers would hold every Save: it fails after {@link DERIVE_MS}. */
+  private static _timed<T>(work: Promise<T> | T): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const expired = new Promise<never>((_, reject) => timer = setTimeout(() =>
+      reject(new Error(`did not finish in ${DERIVE_MS / 1000} s`)), DERIVE_MS));
+    return Promise.race([Promise.resolve(work), expired]).finally(() => clearTimeout(timer));
   }
 
   /** The validators over every row the batch will send — a form wires them into its inputs, but a
@@ -359,9 +601,11 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   }
 
   /** A refusal about one cell, named: the row's caption and the column's, as a list or a grid
-   * needs them — the writer's own "Value can't be empty" says nothing about which field. */
+   * needs them — the writer's own "Value can't be empty" says nothing about which field. A column the
+   * browser derives is named by the input it is derived from: that is the field the user can change. */
   private _nameCell(row: RowView<TRow>, column: string, problem: string): string {
-    return `${this.renderer.caption(row)}: ${DomainTable._caption(this.properties, column)}: ${problem}`;
+    const input = this.derived.all.find((d) => d.to.includes(column as ColumnOf<TRow>))?.from[0] ?? column;
+    return `${this.renderer.caption(row)}: ${DomainTable._caption(this.properties, input)}: ${problem}`;
   }
 
   private static _caption(properties: IProperty[], column: string): string {
@@ -369,6 +613,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
   }
 }
+
+DomainSource.nameFormat = (target) => DomainPick.nameFormat(target);
 
 export const domains = {
   /** The table's shape and the caller's access in one round of requests; a handle per call, so

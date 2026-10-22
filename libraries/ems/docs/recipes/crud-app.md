@@ -35,9 +35,9 @@ the app.
 | `required`, `choices`, `min`/`max`, `type` | the form's editors and its first-line validation: "Value can't be empty", a choice input, a bounded number, a date picker |
 | `ref: "location"` (+ `filter: "site = $site"`) | a type-ahead picker over the target's name column; with `filter`, narrowed by the sibling column — "Pick a site first" while it is empty |
 | `type: "user"` (`owner`, `approved_by`) | the platform's user picker; shown as the user, stored as the id |
-| `editor: "textarea"`, `semType: "Molecule"` | a multi-line editor; the platform's molecule renderer where the Chem package is installed |
+| `editor: "textarea"`, `semType: "Molecule"` | a multi-line editor; with the Chem package installed, the platform's molecule editor in the form, and the molecule drawn in the grid and in a read-only form field — the HTML data table and the default list card show the string unless the app sets a renderer |
 | `constraints: {dates: {expr: "expires >= received", message: …}}` | pre-validated in the form on every change — the message on the first named field; the same CHECK on the server |
-| `autoNumber` on `label`, `number` | read-only, "assigned on save" on a draft, filled by the engine in the saved row |
+| `autoNumber` on `label`, `number` | read-only (empty on a draft), filled by the engine in the saved row |
 | a table referring to this one (`container.substance_id`, `sds_document.substance_id`) | one tab per referring table under the form, its rows queried by the FK, New pre-filled with the parent's id, saved with the parent as one transaction |
 | `hierarchy: true` (+ the one ref column to itself) | `pathTo(id)` answers a row's ancestors and the `under` term matches a whole subtree — what `domains.tree` walks, see [hierarchies](hierarchies.md) |
 | `audit` (on by default) | the History pane: who did what when, `caption: before → after` per updated column |
@@ -59,9 +59,10 @@ under its own `SharedSession`:
   (`DomainTable.open(row)`) activates the running app instead of a second view.
 - **The ribbon** is `[[New, Save, Discard, ⋯, Refresh], [search, filters]]`: New hidden without
   `insert`, Save (Ctrl+S; Tab from the form's last field lands on it) and Discard disabled while
-  there is nothing to save, the ⋯ menu carrying Import… / Bulk edit… / Trash (below), Refresh
-  shown only while the page is stale, search and filters shown on the list page only.
-- **The status bar** is the session's summary while it is dirty ("3 unsaved changes in 2 tables"),
+  there is nothing to save, the ⋯ menu carrying Import… / Bulk edit… / Trash (below) and the list's
+  Sort (creation order by default; `sort` and `sorts` set the app's own), Refresh shown only while the
+  page is stale, search and filters shown on the list page only.
+- **The status bar** is the session's summary while it is dirty ("3 unsaved changes: 1 project and 2 issues"),
   else the page's ("50 of 2,077", "New substance", "Substance saved"). A `live` source that has
   seen the server move while the page is dirty says "Data changed — Refresh", and the ribbon's
   Refresh button appears beside it.
@@ -152,6 +153,10 @@ the first 10k rows, plus the blocking problems: no source, nothing mapped, two c
 one target, an unmapped upsert key, a missing required column) and **report** (the server's, which
 is the authority). Only the MAPPED columns are posted, under their target names — a skipped or
 renamed source column never reaches the server, and the source frame is never touched.
+
+An app whose own import is not a table batch (MolTrack's bulk registration) reuses the mapping
+step: `new ImportMapping()`, then `remap(columns, targets, auto)`, `table(...)`, `targets()` and
+`duplicates()`.
 
 ## Rules the controls follow (so the app does not re-implement them)
 

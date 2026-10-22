@@ -13,7 +13,7 @@
 import {signal, computed, Filters, div, span, Dialog, ChoiceInput, notify} from '@datagrok-libraries/u2';
 import type {Signal, IProperty} from '@datagrok-libraries/u2';
 import {confirmDiscard} from '../core/session.js';
-import type {DomainSource} from '../core/domain-source.js';
+import {DomainSource} from '../core/domain-source.js';
 import type {DomainQueryLike} from '../core/domain-backend.js';
 import {propertyForm} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainTable} from './facade.js';
@@ -46,12 +46,14 @@ export async function bulkEdit(source: DomainSource, options: DomainBulkEditOpti
   }
   const writable = source.access.peek().columnPolicy();
   const properties = source.schema.properties;
+  // a bulk write runs no derivation: neither its inputs nor its outputs are offered
+  const derived = new Set(DomainTable.of(source)?.derived.columns ?? []);
   const props: IProperty[] = [];
   for (const name of options.columns ?? properties.map((p) => p.name)) {
     const prop = properties.find((p) => p.name === name);
     // a bulk value is not a row: a checked field left empty CLEARS the column, and whether the
     // column tolerates that is the server's per-row answer — nothing here is "required"
-    if (prop !== undefined && writable.field(name) === 'editable')
+    if (prop !== undefined && writable.field(name) === 'editable' && !derived.has(name))
       props.push({...prop, nullable: true});
   }
   if (props.length === 0) {
@@ -61,18 +63,13 @@ export async function bulkEdit(source: DomainSource, options: DomainBulkEditOpti
   const targets = _targets(source);
   if (targets.length === 0) {
     notify.warning(source.search.peek() === '' ?
-      `Select the ${_plural(source)} to write, or filter the list — a bulk edit needs a target.` :
+      `Select the ${DomainSource.noun(source.schema.info)} to write, or filter the list — a bulk edit needs a target.` :
       'A bulk edit matches on the filter alone — clear the search box, or select the rows to write.');
     return null;
   }
   if (!await confirmDiscard(source.session, {action: 'edit rows in bulk'}))
     return null;
   return new Promise((resolve) => _open(source, props, targets, resolve));
-}
-
-/** The table's plural name, as the user reads it — never "rows". */
-function _plural(source: DomainSource): string {
-  return (source.schema.info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
 }
 
 /** The targets a bulk edit can actually write: the frame's selection, and — only when the list is
@@ -88,7 +85,7 @@ function _targets(source: DomainSource): {value: string, label: string}[] {
 
 function _open(source: DomainSource, props: IProperty[], items: {value: string, label: string}[],
   resolve: (n: number | null) => void): void {
-  const dialog = Dialog.create(`Bulk edit ${_plural(source)}`, {name: 'bulk-edit'});
+  const dialog = Dialog.create(`Bulk edit ${DomainSource.noun(source.schema.info)}`, {name: 'bulk-edit'});
   dialog.root.classList.add('u2-domain-bulk');
   const target = dialog.runInScope(() => new ChoiceInput({label: 'Apply to', items,
     value: items[0].value, name: 'target', nullable: false}));
@@ -116,8 +113,8 @@ function _open(source: DomainSource, props: IProperty[], items: {value: string, 
       return 'Check the fields to write.';
     const selected = source.selection.value.length;
     if (target.value.value === SELECTED && selected > MAX_ROWS) {
-      return `A bulk edit writes at most ${MAX_ROWS} ${_plural(source)} at a time; ${selected} are ` +
-        'selected. Narrow the selection, or filter the list and apply to everything it matches.';
+      return `A bulk edit writes at most ${MAX_ROWS} ${DomainSource.noun(source.schema.info)} at a time; ` +
+        `${selected} are selected. Narrow the selection, or filter the list and apply to everything it matches.`;
     }
     return null;
   });
@@ -161,11 +158,10 @@ function _checkbox(prop: IProperty, on: Signal<boolean>): HTMLElement {
   return box;
 }
 
-/** The list's own filter as the seam takes it — `DomainSource` sends exactly this with every
- * query; undefined where nothing is filtered, which the server refuses for an update. */
+/** The list's own filter, as every read of it sends it; undefined where nothing is filtered, which the server
+ * refuses for an update. */
 function _filterOf(source: DomainSource): DomainQueryLike['filter'] {
-  const q = source.query.peek();
-  return typeof q === 'string' ? (q === '' ? undefined : q) : Filters.toDomainTree(q, {schema: source.schema});
+  return source.readScope().filter;
 }
 
 async function _run(source: DomainSource, columns: string[], values: Record<string, unknown>,
@@ -178,7 +174,7 @@ async function _run(source: DomainSource, columns: string[], values: Record<stri
   const written = Object.fromEntries(columns.map((name) => [name, values[name] ?? null]));
   try {
     const report = await table.updateWhere!(filter, written, {limit: MAX_ROWS});
-    const what = report.updated === 1 ? source.schema.info.singularName.toLowerCase() || 'row' : _plural(source);
+    const what = DomainSource.noun(source.schema.info, report.updated !== 1);
     notify.info(`Updated ${report.updated} ${what}${report.hasMore ?
       ` — more match than one edit writes (${MAX_ROWS}); run it again.` : '.'}`);
     await source.refresh();

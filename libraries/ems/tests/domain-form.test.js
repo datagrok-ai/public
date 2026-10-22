@@ -13,7 +13,7 @@ import {backends, Scope, signal, Registry, SpecContext, renderSpec, registerAll,
 import {registerDomainSources} from '../src/core/registrations.js';
 import {DomainSource} from '../src/core/domain-source.js';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
-import {backend} from './domain-fixtures.mjs';
+import {SCHEMA, ROWS, backend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -347,6 +347,7 @@ scoped('Save and Discard follow the state: disabled while clean, while saving, a
   const {src} = await issues();
   const save = domains.saveButton(src);
   const discard = domains.discardButton(src);
+  const add = domains.newButton(src);
   await flush();
   assert.equal(save.root.dataset.u2, 'save-button');
   assert.equal(save.button.textContent, 'Save');
@@ -364,9 +365,11 @@ scoped('Save and Discard follow the state: disabled while clean, while saving, a
   await flush();
   assert.equal(save.button.disabled, true, 'a save in flight');
   assert.equal(discard.button.disabled, true, 'locked together');
+  assert.equal(add.root.disabled, true, 'and New: a draft made mid-save has no batch to join');
   release();
   await flush();
   await flush();
+  assert.equal(add.root.disabled, false);
   assert.equal(src.isDirty.value, false);
   assert.equal(save.button.disabled, true);
   assert.equal(store.rows[0].title, 'X');
@@ -378,6 +381,7 @@ scoped('Save and Discard follow the state: disabled while clean, while saving, a
   assert.equal(src.rows.byKey('i1').title, 'X');
   save.dispose();
   discard.dispose();
+  add.dispose();
   src.dispose();
 });
 
@@ -478,6 +482,21 @@ scoped('a readonly reference shows the target\'s name, not its uuid — off the 
     lookup.dispose();
     bare.dispose();
   });
+});
+
+scoped('a readonly reference no row answers reads as unknown, never as the id it holds', async () => {
+  emsBackends.domain = new MemoryDomainBackend(SCHEMA, {
+    rows: {project: ROWS.project.map((r) => ({...r})), issue: [{id: 'i9', project_id: 'gone', number: 9, title: 'Orphan'}]},
+    access: {can: CAN, fields: {title: 'editable', project_id: 'readonly'}}});
+  const {src} = await issues({captions: []});
+  src.currentRow.value = src.rows.byKey('i9');
+  const form = domains.form(src);
+  await flush();
+  await flush();
+  assert.equal(form.root.querySelector('[data-u2-name="project_id"] [data-u2-part="readonly-value"]').textContent,
+    '(unknown)');
+  form.dispose();
+  src.dispose();
 });
 
 scoped('system columns: out by default, a muted footer on request — captions, local times, never a draft\'s key', async () => {
@@ -923,3 +942,107 @@ scoped('a constraint over two columns is read with SQL null semantics: an empty 
   src.dispose();
 });
 
+
+scoped('a draft\'s key the caller may not type reads "assigned on save", muted, until the insert lands', async () => {
+  emsBackends.domain = backend({access: {can: CAN,
+    fields: {project_id: 'editable', number: 'readonly', title: 'editable'}}});
+  const table = await domains.table('grit.issue');
+  const draft = table.draft({project_id: 'p1'});
+  await flush();
+  const form = domains.form(draft);
+  document.body.append(form.root);
+  await flush();
+  const number = () => form.root.querySelector('[data-u2-name="number"] [data-u2-part="readonly-value"]');
+  assert.equal(number().textContent, 'assigned on save', 'the server numbers it, not the user');
+  assert.equal(number().classList.contains('u2-domain-draft'), true);
+  form.input('title').value.value = 'Fresh';
+  await flush();
+  assert.equal(number().textContent, 'assigned on save', 'and an edit elsewhere re-reads the row without losing it');
+  assert.equal(await draft.save(), true);
+  await flush();
+  await flush();
+  assert.notEqual(number().textContent, 'assigned on save', 'a saved row shows what it holds');
+  assert.equal(number().classList.contains('u2-domain-draft'), false);
+  form.dispose();
+  draft.dispose();
+  emsBackends.domain = backend();
+  const editable = (await domains.table('grit.issue')).draft();
+  await flush();
+  const typed = domains.form(editable);
+  await flush();
+  assert.equal(typed.input('number') !== undefined, true, 'a key the caller types is an input as before');
+  typed.dispose();
+  editable.dispose();
+});
+
+scoped('an immutable reference is picked on a draft and a link to its row once saved', async () => {
+  const {table, src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const asked = [];
+  DomainPick.opener = (address, id) => {
+    asked.push([address, id]);
+    return true;
+  };
+  const form = domains.form(src, {immutable: ['project_id']});
+  document.body.append(form.root);
+  await flush();
+  await flush();
+  assert.equal(form.input('project_id') === undefined, true, 'a saved row cannot be moved to another project');
+  const value = form.root.querySelector('[data-u2-name="project_id"] [data-u2-part="readonly-value"]');
+  const link = value.querySelector('a.u2-link');
+  assert.notEqual(link, null, 'its caption is a link');
+  assert.equal(link.textContent, 'Grit');
+  try {
+    link.click();
+    await flush();
+  } finally {
+    DomainPick.opener = undefined;
+  }
+  assert.deepEqual(asked, [['grit.project', 'p1']], 'which opens the project');
+  form.dispose();
+  src.dispose();
+  const draft = table.draft();
+  await flush();
+  const create = domains.form(draft, {immutable: ['project_id']});
+  await flush();
+  assert.equal(create.input('project_id') !== undefined, true, 'a draft picks it');
+  create.dispose();
+  draft.dispose();
+});
+
+scoped('a create page with a new parent above the draft starts in the parent\'s first field, the page at its top', async () => {
+  const LAB = {name: 'lab', tables: {
+    compound: {singularName: 'Compound', pluralName: 'Compounds',
+      columns: {name: {type: 'string', required: true, isName: true, searchable: true}}},
+    batch: {singularName: 'Batch', pluralName: 'Batches',
+      columns: {compound_id: {type: 'ref', ref: 'compound', required: true}, amount: {type: 'float'}}},
+  }};
+  emsBackends.domain = new MemoryDomainBackend(LAB, {rows: {compound: [{id: 'c1', name: 'Aspirin'}], batch: []}});
+  const compounds = await domains.table('lab.compound');
+  const app = domains.app({table: await domains.table('lab.batch'), base: '/apps/T/Batches',
+    inline: {compound_id: {table: compounds}}});
+  document.body.append(app.root);
+  await flush();
+  const scrolled = [];
+  const focus = HTMLElement.prototype.focus;
+  HTMLElement.prototype.focus = function(options) {
+    scrolled.push(options?.preventScroll !== true);
+    return focus.call(this, options);
+  };
+  try {
+    await app.create();
+    for (let i = 0; i < 4; i++)
+      await flush();
+  } finally {
+    HTMLElement.prototype.focus = focus;
+  }
+  const inline = app.root.querySelector('.u2-domain-app-inline');
+  const field = () => document.activeElement.closest('[data-u2-name]')?.dataset.u2Name;
+  assert.equal(inline.contains(document.activeElement), true, 'the new compound is where the page starts');
+  assert.equal(field(), 'name');
+  app.form.value.focus();
+  await flush();
+  assert.equal(field(), 'name', 'the batch\'s form, focusing later, leaves it there');
+  assert.deepEqual(scrolled.filter((s) => s), [], 'and no focus scrolled the page to its field');
+  app.dispose();
+});

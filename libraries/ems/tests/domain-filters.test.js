@@ -315,3 +315,28 @@ scoped('a `basic` backend is offered no under, regex, !like, fuzzy or between, n
   treeFilters.dispose();
   tree.dispose();
 });
+
+scoped('the table\'s own columns come first, the system ones last: a new condition starts on a column people fill in', async () => {
+  const src = await issues();
+  assert.equal(src.schema.properties[0].name, 'id', 'the schema itself leads with the system columns');
+  const filters = domains.filters(src, {mode: 'builder'});
+  document.body.append(filters.root);
+  await flush();
+  const builder = filters.input.value;
+  const names = builder.options.schema.properties.map((p) => p.name);
+  assert.equal(names[0], 'project_id');
+  assert.deepEqual(names.slice(-5), ['id', 'version', 'created_on', 'updated_on', 'author_id']);
+  builder.addCondition();
+  assert.equal(builder.value.value.nodes[0].property, 'project_id', 'not "Id equals"');
+  filters.dispose();
+  src.dispose();
+});
+
+scoped('the values offered to pick hold no empty cell: the null tests ask for that', async () => {
+  const {DomainFilters} = await import('../src/dg/filters.js');
+  const offered = DomainFilters.held([
+    {value: 'web', label: 'web'}, {value: null, label: 'null'}, {value: '', label: ''},
+    {value: {type: 'grit.project', id: 'null'}, label: 'null'}, {value: {type: 'grit.project', id: 'p1', name: 'Grit'},
+      label: 'Grit'}, {value: 0, label: '0'}, {value: false, label: 'false'}]);
+  assert.deepEqual(offered.map((i) => i.label), ['web', 'Grit', '0', 'false']);
+});

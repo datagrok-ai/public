@@ -112,7 +112,7 @@ scoped('open(path): ?entity= restores the entity page, ?q= the list under the qu
   assert.equal(a.listSource.query.value, '');
   await a.open(`${BASE}?entity=nope`);
   await flush();
-  assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /not found/);
+  assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /does not exist/);
   a.dispose();
 });
 
@@ -192,6 +192,9 @@ scoped('find-or-activate: DomainTable.open lands on the app\'s entity page; a re
   assert.equal(DomainApp.of(view), a);
   assert.equal(DomainApp.activate(BASE, 'i2'), true);
   assert.equal(grok.shell.v, view, 'the view is made current');
+  grok.shell.v = {name: 'Clicked'};
+  await new Promise((resolve) => setTimeout(resolve));
+  assert.equal(grok.shell.v, view, 'and made current again after the click that asked for it bubbled up');
   await flush();
   assert.equal(a.entity.value, 'i2');
   assert.equal(DomainApp.activate('/apps/Other', 'i2'), false);
@@ -759,7 +762,7 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   fire(more.root, 'click');
   await flush();
   const items = [...document.querySelectorAll('[role="menuitem"] .u2-menu-label')].map((el) => el.textContent);
-  assert.deepEqual(items, ['Import…', 'Bulk edit…', 'Trash']);
+  assert.deepEqual(items, ['Import…', 'Bulk edit…', 'Trash', 'Sort']);
   assert.equal(a.breadcrumbs.root.hidden, true, 'a plain list has no breadcrumb: the view title names the table');
 
   a.listSource.edit.value.markDeleted('i2');
@@ -822,7 +825,11 @@ scoped('support ⇒ absent: a table that declares no writes and no soft delete o
   const ribbon = a.ribbon().main;
   await flush();
   assert.deepEqual(a.menuActions().map((x) => x.name), [], 'no Import, no Bulk edit, no Trash');
-  assert.equal(ribbon[3].root.hidden, true, 'and the ⋯ button with them');
+  document.body.append(ribbon[3].root);
+  fire(ribbon[3].root, 'click');
+  await flush();
+  assert.deepEqual([...document.querySelectorAll('[role="menuitem"] .u2-menu-label')].map((el) => el.textContent),
+    ['Sort'], 'the ⋯ button holds the order alone');
   a.dispose();
 });
 
@@ -868,7 +875,10 @@ scoped('?trash=1 round-trips through open(); without the delete grant the menu d
   document.body.append(c.root);
   const bare = c.ribbon().main;
   await flush();
-  assert.equal(bare[3].root.hidden, true, 'and the button goes when nothing in it is allowed');
+  assert.equal(bare[3].root.hidden, false, 'the list\'s order is always there');
+  await c.goTo('entity', 'i1');
+  await flush();
+  assert.equal(bare[3].root.hidden, true, 'and the button goes where nothing in it is allowed');
   c.dispose();
 });
 
@@ -977,7 +987,7 @@ scoped('under /domains a row is a path segment: the business key when unambiguou
   assert.equal(a.path.value, '/domains/grit/project', 'and back, with nothing left in the URL');
   assert.equal(await a.open('/domains/grit/project/nope'), true);
   await flush();
-  assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /not found/,
+  assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /does not exist/,
     'a key that matches nothing shows the not-found, as the Dart view does');
   assert.equal(a.keyOf({id: 'x', key: 'A-B'}), 'A-B', 'a single-column key keeps its dashes');
   assert.equal(a.keyOf({id: 'x', key: null}), 'x', 'a null component is not addressable');
@@ -1000,7 +1010,7 @@ scoped('a composite key is joined by "-" and read back by arity; a dash in a com
     assert.equal(a.path.value, '/domains/grit/issue/p1-1');
     assert.equal(await a.open('/domains/grit/issue/p1-1-2'), true, 'an arity that does not match is read as an id');
     await flush();
-    assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /not found/);
+    assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /does not exist/);
     a.dispose();
   });
 
@@ -1431,7 +1441,7 @@ scoped('support ⇒ absent: a table `transaction` does not land on offers no New
   assert.equal(a.menuActions().some((x) => x.name === 'Import…'), false, 'no Import');
   assert.deepEqual(allowedActions(a.menuActions(), {access: a.listSource.access.value}), [],
     'Bulk edit and Trash need edit and delete, which the read-only bound denies');
-  assert.equal(ribbon[3].root.hidden, true, 'and the ⋯ button with them');
+  assert.equal(ribbon[3].root.hidden, false, 'the ⋯ button stays for the list\'s order alone');
   assert.equal(a.list.actionsFor(a.listSource.rows.byKey('i1')).some((x) => x.name === 'Delete'), false, 'no Delete');
   a.dispose();
 });

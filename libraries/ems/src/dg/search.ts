@@ -5,7 +5,7 @@
    gate (STATE-CONTRACT H6), as the filters do — it answers at once while there is nothing to lose
    and refuses while a batch is being written back; cancel puts the previous text back. */
 import {computed, TextInput} from '@datagrok-libraries/u2';
-import type {DomainSource} from '../core/domain-source.js';
+import {DomainSource} from '../core/domain-source.js';
 import {confirmDiscard} from '../core/session.js';
 
 export interface DomainSearchOptions {
@@ -21,7 +21,7 @@ export class DomainSearch extends TextInput {
     super({search: true, inline: true, name: 'search', value: source.search.peek(),
       placeholder: options.placeholder ?? computed(() => {
         source.state.value;
-        return `Search ${source.schema.info.pluralName.toLowerCase() || 'rows'}…`;
+        return `Search ${DomainSource.noun(source.schema.info)}…`;
       })});
     this.root.classList.add('u2-domain-search');
     this.root.dataset.u2 = 'domain-search';

@@ -93,6 +93,23 @@ scoped('entries from the audit, newest first; an update names the changed captio
   src.dispose();
 });
 
+scoped('an update lists the input a derivation ran on, not the columns it computed', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const remove = table.derived.add({from: ['title'], to: ['description'],
+    derive: (row) => ({description: `about ${row.title}`})});
+  const src = table.source({pageSize: 10});
+  await flush();
+  const history = domains.history(src);
+  assert.equal(history.changesOf({op: 'update', before: {title: 'A', description: 'about A'},
+    after: {title: 'B', description: 'about B'}}), 'title: A → B');
+  assert.equal(history.changesOf({op: 'update', before: {description: 'about A'}, after: {description: 'about B'}}),
+    'description: about A → about B', 'an update of computed columns alone lists them');
+  history.dispose();
+  src.dispose();
+  remove();
+});
+
 scoped('the actor is the user\'s name, looked up once per id; a draft is not saved yet; no row asks for one', async () => {
   emsBackends.domain = backend();
   const memory = emsBackends.domain;
@@ -122,8 +139,8 @@ scoped('the actor is the user\'s name, looked up once per id; a draft is not sav
   assert.equal(hint.hidden, true, 'the saved row has a history');
   const rows = lines(history);
   assert.deepEqual(rows.map((r) => r.querySelector('.u2-badge').textContent), ['shared', 'updated', 'updated', 'created']);
-  assert.deepEqual(rows.map((r) => r.querySelector('.u2-domain-history-actor').textContent), ['Ann', 'u2', 'Ann', 'system'],
-    'a known user by name, an unknown one by id');
+  assert.deepEqual(rows.map((r) => r.querySelector('.u2-domain-history-actor').textContent),
+    ['Ann', '(unknown)', 'Ann', 'system'], 'a known user by name, an unknown one neutrally — never the uuid');
   assert.deepEqual(looked.sort(), ['u1', 'u2'], 'one lookup per actor');
 
   draft.currentRow.value = null;

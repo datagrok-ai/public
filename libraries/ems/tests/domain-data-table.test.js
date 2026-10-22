@@ -123,6 +123,22 @@ scoped('a cell the caller may not write reads as read-only', async () => {
   src.dispose();
 });
 
+scoped('a column a derivation writes reads as read-only, whatever the access says', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  table.derived.add({from: ['title'], to: ['description'], derive: (row) => ({description: `About ${row.title}`})});
+  const src = table.source({pageSize: 10});
+  const dt = domains.dataTable(src, {columns: ['title', 'description']});
+  document.body.append(dt.root);
+  await flush();
+  dt.table.value.root.clientHeight = 400;
+  await flush();
+  assert.equal(cell(dt, 0, 'description').className.includes('u2-cell-readonly'), true);
+  assert.equal(cell(dt, 0, 'title').className.includes('u2-cell-readonly'), false);
+  dt.dispose();
+  src.dispose();
+});
+
 scoped('the selection and the source\'s current row are one thing', async () => {
   const {src, dt} = await dataTable();
   dt.table.value.selectedIndex.value = 2;
@@ -172,8 +188,7 @@ scoped('a reference cell shows the row it points at, not its uuid', async () => 
   assert.equal(cell(dt, 2, 'project_id').textContent, 'Datagrok');
   assert.equal(cell(dt, 0, 'project_id').textContent.includes('p1'), false, 'never the raw id');
 
-  // an id the target does not hold answers as itself, as the picker's resolve does — the lookup
-  // path is the only one that ever sees a raw id
+  // an id the target does not hold answers as unknown, as the picker's resolve does — never the raw id
   const loose = (await domains.table('grit.issue')).source({pageSize: 10, captions: []});
   const lt = domains.dataTable(loose, {columns: ['project_id']});
   document.body.append(lt.root);
@@ -185,14 +200,14 @@ scoped('a reference cell shows the row it points at, not its uuid', async () => 
   loose.rows.items.peek()[1].project_id = 'nope';
   await flush();
   await flush();
-  assert.equal(cell(lt, 1, 'project_id').textContent, 'nope');
+  assert.equal(cell(lt, 1, 'project_id').textContent, '(unknown)');
   lt.dispose();
   loose.dispose();
   dt.dispose();
   src.dispose();
 });
 
-scoped('a datetime cell is formatted, and a float loses its packing noise', async () => {
+scoped('a datetime cell is formatted, and a number reads as a readonly form field shows it', async () => {
   const {src, dt} = await dataTable({columns: ['due', 'weight']});
   const due = cell(dt, 0, 'due');
   assert.notEqual(due.querySelector('.u2-timestamp'), null, 'the shared timestamp, as every other u2 surface');
@@ -204,9 +219,9 @@ scoped('a datetime cell is formatted, and a float loses its packing noise', asyn
   assert.notEqual(due.querySelector('.u2-timestamp').title, '', 'the day is the tooltip too');
   assert.equal(cell(dt, 1, 'due').textContent, '', 'an empty cell stays empty');
 
-  src.rows.items.peek()[0].weight = 1.7999999999999998;
+  src.rows.items.peek()[0].weight = 1.2e-9;
   await flush();
-  assert.equal(cell(dt, 0, 'weight').textContent, '1.8');
+  assert.equal(cell(dt, 0, 'weight').textContent, '1.2e-9', 'a small value keeps its digits, never rounded to 0');
   assert.equal(cell(dt, 1, 'weight').textContent, '0.5');
   dt.dispose();
   src.dispose();

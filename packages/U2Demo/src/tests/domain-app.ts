@@ -112,7 +112,7 @@ category('U2: domain app', () => {
       expect(app.session.changeCount.value, 2);
       // K3: the status keeps what the page holds and appends the notice — the count of the entity
       // page is the row's caption, which the edit above has already moved
-      expect(app.summary.value, 'Alpha A — 2 unsaved changes in 2 tables');
+      expect(app.summary.value, 'Alpha A — 2 unsaved changes: 1 item and 1 item event');
       expect(await app.session.save(), true);
       expect(app.session.isDirty.value, false);
       expect(Rows.isDraft(kids.currentRow.value!), false, 'the exact post-save re-point');

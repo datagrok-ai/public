@@ -62,7 +62,7 @@ scoped('aggregate: dirty, count, validity and the summary across sources; a sour
   issues.rows.byKey('i1').title = 'A';
   issues.rows.byKey('i2').title = 'B';
   assert.equal(session.changeCount.value, 3);
-  assert.equal(session.summary.value, '3 unsaved changes in 2 tables');
+  assert.equal(session.summary.value, '3 unsaved changes: 1 project and 2 issues');
   assert.equal(session.validity.value, null);
   issues.rows.byKey('i2').title = '';
   assert.equal(session.validity.value, 'Value can\'t be empty', 'the first blocking problem');
@@ -99,7 +99,7 @@ scoped('one saveAll: a draft parent and a draft child referencing it land as one
   assert.equal(savedChild.project_id, savedParent.id, 'the child\'s FK is the parent\'s real id');
   assert.equal(projects.total.value, 3, 'totals counted again');
   assert.equal(issues.total.value, 4);
-  assert.match(balloon(), /2 changes saved in 2 tables/);
+  assert.match(balloon(), /1 project and 1 issue saved/);
   const [p, i] = ['grit.project', 'grit.issue'].map((t) => emsBackends.domain.tableSync(t).history.at(-1));
   assert.equal(p.tx_id, i.tx_id, 'one tx_id in the audit');
   notify.closeAll();
@@ -136,7 +136,7 @@ scoped('a pristine parent draft a child refers to is saved with it: one saveAll,
   assert.equal(savedChild.project_id, savedParent.id, 'the child\'s FK is the parent\'s real id');
   assert.equal(emsBackends.domain.tableSync('grit.project').rows.length, 3);
   assert.equal(session.isDirty.value, false);
-  assert.match(balloon(), /1 change saved in 2 tables/);
+  assert.match(balloon(), /1 issue and 1 project saved/, 'the pristine parent is written too');
   projects.dispose();
   issues.dispose();
 });
@@ -549,7 +549,9 @@ scoped('while a batch is in flight every mutation is refused, and a second saveA
   session.discard();
   assert.equal(issues.rows.byKey('i1').title, 'Aspirin 100', 'and so is a discard');
   assert.equal(await emsBackends.domain.saveAll([edit]), false, 'a second saveAll over the same writer is refused');
-  assert.match(document.body.querySelector('.u2-notify-warning')?.textContent ?? '', /already being saved/);
+  const warnings = [...document.body.querySelectorAll('.u2-notify-warning')].map((w) => w.textContent).join('\n');
+  assert.match(warnings, /discarding is not available while the batch is being saved/, 'the discard says why, as the platform does');
+  assert.match(warnings, /already being saved/);
   release();
   assert.equal(await saving, true);
   assert.equal(issues.isDirty.value, false);

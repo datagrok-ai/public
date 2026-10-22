@@ -7,10 +7,11 @@
    the table's actions. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divV, span, Filters, allowedActions,
-  actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows} from '@datagrok-libraries/u2';
-import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
-import type {DomainSource} from '../core/domain-source.js';
+import {Control, signal, computed, batch, untracked, ReadonlySignal, Signal, Scope, Section, Splitter, button, div,
+  divH, divV, span, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows}
+  from '@datagrok-libraries/u2';
+import type {FilterGroup, IWidgetStatus, Action, ActionGroup, RowView} from '@datagrok-libraries/u2';
+import {DomainSource} from '../core/domain-source.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
 import {SharedSession, confirmDiscard} from '../core/session.js';
 import {domains, DomainTable} from './facade.js';
@@ -18,6 +19,7 @@ import {DomainList} from './list.js';
 import type {DomainListMode} from './list.js';
 import {SAVE_SHORTCUTS, isSaveKey, DomainForm} from './form.js';
 import {DomainFilters} from './filters.js';
+import type {DomainFiltersOptions} from './filters.js';
 import type {DomainChildrenOptions} from './children.js';
 import {DomainAddress} from './address.js';
 import {ViewSync} from '@datagrok-libraries/u2/src/dg/index.js';
@@ -66,6 +68,10 @@ export interface DomainAppOptions {
   base: string;
   /** The list's initial query. */
   query?: string;
+  /** The list's order (`'col,!col'`, `!` for descending); {@link DomainApp.defaultSort} by default. */
+  sort?: string;
+  /** The orders the ⋯ menu offers, as `[label, sort]`; {@link DomainApp.sortChoices} by default. */
+  sorts?: [label: string, sort: string][];
   pageSize?: number;
   /** Whether the list follows the server (`DomainSourceOptions.live`), ON by default: it probes
    * the table every {@link liveMs} and reloads while the session is clean, marking the page
@@ -73,11 +79,22 @@ export interface DomainAppOptions {
   live?: boolean;
   liveMs?: number;
   mode?: DomainListMode;
+  /** The list's row height, where the renderer's card is not the mode's default height. */
+  itemHeight?: number;
+  /** The query box over the list (default), or the condition builder — in a pane on the list's left with
+   * `placement: 'left'`. */
+  filters?: DomainFiltersOptions & {placement?: 'top' | 'left'};
+  /** Reference columns the create page may point at a NEW row of their table, saved with the draft in one
+   * transaction — each with the handle (derivations, validators, renderer) that row's form is built over, and
+   * the form's columns (every column by default). */
+  inline?: Record<string, {table: DomainTable, include?: string[]}>;
   /** What every draft the app creates starts with — the preset a view that opened the app carries
    * (a location's id on a containers app). Threaded into the entity page's draft source. */
   defaults?: Record<string, unknown>;
   /** The form's columns, in this order; every column by default. */
   include?: string[];
+  /** Columns set on a new row only ({@link DomainFormOptions.immutable}). */
+  immutable?: string[];
   /** The entity page's panes under the form, on by default: the child collections (a tab per
    * referring table; options narrow them) and the row's history — where the table keeps one
    * (`support.audit`); a table that keeps none has no pane. */
@@ -87,6 +104,9 @@ export interface DomainAppOptions {
    * the focus: `{'Ctrl+Shift+C': 'Close'}` (modifiers in the order Ctrl, Alt, Shift; Cmd counts
    * as Ctrl). */
   shortcuts?: Record<string, string>;
+  /** What the platform's context panel shows for the row the user moves to in the list (`grok.shell.o`): the
+   * row as the platform's `DomainRow` by default; null shows nothing. */
+  context?: (row: RowView) => unknown;
 }
 
 export class DomainApp extends Control {
@@ -137,6 +157,8 @@ export class DomainApp extends Control {
   readonly trash: ReadonlySignal<boolean>;
   /** See {@link DomainAppOptions.shortcuts}; a subclass may declare its own. */
   shortcuts: Record<string, string>;
+  /** The create page's new referenced rows ({@link DomainAppOptions.inline}), by reference column. */
+  readonly inline: ReadonlySignal<ReadonlyMap<string, DomainSource>>;
 
   private readonly _mode = signal<DomainAppMode>('live');
   private readonly _count = signal('');
@@ -146,6 +168,8 @@ export class DomainApp extends Control {
   private readonly _entity = signal<string | null>(null);
   private readonly _entitySource = signal<DomainSource | null>(null);
   private readonly _form = signal<DomainForm | null>(null);
+  private readonly _inline = signal<ReadonlyMap<string, DomainSource>>(new Map());
+  private _inlineScope: Scope | undefined;
   private readonly _formHost: HTMLElement;
   private _panes: Control[] = [];
   private _ribbon: DomainRibbon | undefined;
@@ -166,6 +190,7 @@ export class DomainApp extends Control {
     this.entity = this._entity;
     this.entitySource = this._entitySource;
     this.form = this._form;
+    this.inline = this._inline;
     this.mode = this._mode;
     this.trash = computed(() => this._mode.value === 'trash');
     this.filterProblem = this._filterProblem;
@@ -187,10 +212,20 @@ export class DomainApp extends Control {
         DomainApp._bases.delete(table.address);
     });
 
-    this.listSource = this._source({query: _options.query ?? '', pageSize: _options.pageSize,
-      live: _options.live ?? true, liveMs: _options.liveMs});
+    this.listSource = this._source({query: _options.query ?? '', sort: _options.sort ?? DomainApp.defaultSort(table),
+      pageSize: _options.pageSize, live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
-    this.list = this.runInScope(() => new DomainList(this.listSource, {mode: _options.mode}));
+    this.list = this.runInScope(() =>
+      new DomainList(this.listSource, {mode: _options.mode, itemHeight: _options.itemHeight}));
+    // the row the user moves to is the platform's current object; the row the list starts on is not a move
+    this.effect(() => {
+      const row = this.listSource.currentRow.value;
+      if (row === null || Rows.isDraft(row) || !this.list.root.contains(document.activeElement))
+        return;
+      const shown = untracked(() => _options.context === undefined ? table.row(row) : _options.context(row));
+      if (shown !== null && shown !== undefined)
+        grok.shell.o = shown;
+    });
     // Enter on a row is the way into the entity page
     let seen = this.listSource.activate.peek();
     this.effect(() => {
@@ -213,7 +248,7 @@ export class DomainApp extends Control {
     this._formHost = div([], 'u2-domain-app-form');
     this.panes = div([], 'u2-domain-app-panes');
     this.panes.dataset.u2Part = 'panes';
-    this.filters = this.runInScope(() => domains.filters(this.listSource));
+    this.filters = this.runInScope(() => domains.filters(this.listSource, _options.filters));
     // the rows answer the filter that was applied, not the one being written: while the box is
     // invalid they are shown as stale and the count stands down
     this.effect(() => {
@@ -221,9 +256,10 @@ export class DomainApp extends Control {
       this._filterProblem.value = problem;
       this.list.stale.value = problem !== null;
     });
-    const listPage = divV([this.filters.root, this.list.root], 'u2-domain-app-list');
+    const listPage = divV(_options.filters?.placement === 'left' ? [this._filtersPane()] :
+      [this.filters.root, this.list.root], 'u2-domain-app-list');
     listPage.dataset.u2Part = 'list-page';
-    const entityPage = divV([this._formHost, this.panes], 'u2-domain-app-entity');
+    const entityPage = divV([this._deletionBanner(), this._formHost, this.panes], 'u2-domain-app-entity');
     entityPage.dataset.u2Part = 'entity-page';
     // above both pages: the entity page always says which row, the list page only in the trash —
     // on a plain list the table's name is the view title already
@@ -256,21 +292,20 @@ export class DomainApp extends Control {
       if (row !== null && source!.isDraft && this._entity.peek() === DomainApp.NEW && !Rows.isDraft(row))
         this._entity.value = row.id;
     });
-    // and once the draft is discarded — by the Discard button or by a gate's DISCARD — the page
-    // has no row left, so the app goes back to the list. `had` keeps the load's own empty window
-    // (the frame arrives before `newRow` fills it) from counting as a discard; the move is
-    // deferred past the discard that is running, which reads dirty until it has settled.
+    // `had` keeps the load's own empty window (the frame arrives before `newRow` fills it) and a row not found
+    // from counting as a page that lost its row
     let had = false;
     this.effect(() => {
       const source = this._entitySource.value;
-      if (source === null || !source.isDraft) {
-        had = false;
+      const rows = source?.rows.items.value.length ?? 0;
+      if (source === null || rows > 0) {
+        had = source !== null;
         return;
       }
-      const rows = source.rows.items.value.length;
-      if (rows === 0 && had)
+      if (had && !this.session.isSaving.value && source.state.value === 'ready') {
+        had = false;
         queueMicrotask(() => void this.goTo('list'));
-      had = rows > 0;
+      }
     });
 
     this.path = computed(() => {
@@ -374,9 +409,10 @@ export class DomainApp extends Control {
     return this._goTo(page, entity);
   }
 
-  /** The create page — a pristine draft; `goTo('entity', 'new')` is the row keyed "new". */
-  async create(): Promise<boolean> {
-    return this._goTo('entity', DomainApp.NEW, null, true);
+  /** The create page — a pristine draft over the app's defaults and `values` (the parent a child tab's New
+   * names); `goTo('entity', 'new')` is the row keyed "new". */
+  async create(values: Record<string, unknown> = {}): Promise<boolean> {
+    return this._goTo('entity', DomainApp.NEW, null, true, values);
   }
 
   /** {@link DomainAddress.entityPath} over the app's base. */
@@ -408,11 +444,12 @@ export class DomainApp extends Control {
     const reload = new Control(button('Refresh', () => void this.refresh()));
     reload.root.dataset.u2 = 'refresh-button';
     reload.effect(() => reload.root.hidden = !this.stale.value);
-    const search = domains.search(this.listSource);
-    for (const control of [add, save, discard, more, reload, search])
+    const searchable = this.table.info.searchableColumns.length > 0;
+    const tools = searchable ? [domains.search(this.listSource)] : [];
+    for (const control of [add, save, discard, more, reload, ...tools])
       this.own(() => control.dispose());
-    this._listOnly(search);
-    return this._ribbon = {main: [add, save, discard, more, reload], tools: [search], presets: []};
+    this._listOnly(...tools);
+    return this._ribbon = {main: [add, save, discard, more, reload], tools, presets: []};
   }
 
   /** The ribbon as `appView` takes it — `[main, tools, presets]`, empty slots dropped.
@@ -422,9 +459,15 @@ export class DomainApp extends Control {
     return [main, tools, presets].filter((group) => group.length > 0);
   }
 
-  /** The table-wide actions of the ⋯ menu: the import wizard, the bulk edit over what the list
-   * holds, and the trash. Nothing writes in the trash, so only the way out of it is offered there. */
+  /** The ⋯ menu: on the entity page the row's own actions; on the list the table-wide ones — the import
+   * wizard, the bulk edit over what the list holds, and the trash, where only the way out is offered. */
   menuActions(): Action[] {
+    if (this._page.value === 'entity') {
+      const source = this._entitySource.value;
+      const row = source?.currentRow.value ?? null;
+      return source === null || row === null || Rows.isDraft(row) ? [] :
+        DomainList.actionsOf(source, row, this.table).filter((a) => a.name !== 'Open');
+    }
     const trash = this.trash.peek();
     // what the caller may do (`requires`) and what the table can do at all are different
     // questions: a permission hides an action, an undeclared support leaves it out entirely
@@ -432,7 +475,7 @@ export class DomainApp extends Control {
     const out: Action[] = [];
     if (!trash && support.writes && !this.listSource.readOnly.value) {
       out.push({name: 'Import…', icon: 'upload', requires: 'insert', run: () =>
-        void domains.import(this.table).then((report) => report === null ? null : this.listSource.refresh())});
+        void this.importRows().then((landed) => landed ? this.listSource.refresh() : null)});
     }
     if (!trash && support.updateWhere) {
       out.push({name: 'Bulk edit…', icon: 'edit', requires: 'edit',
@@ -443,6 +486,11 @@ export class DomainApp extends Control {
         requires: 'delete', run: () => void this.setTrash(!trash)});
     }
     return out;
+  }
+
+  /** What the ⋯ menu's Import runs — the import wizard over the table; resolves to whether rows landed. */
+  async importRows(): Promise<boolean> {
+    return await domains.import(this.table) !== null;
   }
 
   /** Moves between the live collection and the trash — ONE switch: the list's `deleted` mode, its
@@ -616,13 +664,54 @@ export class DomainApp extends Control {
       const el = iconButton('ellipsis-v', () => {}, {tooltip: 'More actions'});
       el.dataset.u2 = 'actions-menu';
       el.title = 'More actions';
-      el.addEventListener('click', () =>
-        actionsMenu(this.menuActions(), {access: this.listSource.access.peek()}).show({anchor: el}));
+      el.addEventListener('click', () => actionsMenu(this.menuActions(),
+        {access: this.listSource.access.peek(), groups: this._sortMenu()}).show({anchor: el}));
       return new Control(el);
     });
-    control.effect(() => control.root.hidden =
+    control.effect(() => control.root.hidden = this._sortMenu().length === 0 &&
       allowedActions(this.menuActions(), {access: this.listSource.access.value}).length === 0);
     return control;
+  }
+
+  /** The list's orders as a ⋯ submenu, the one in force checked; none on the entity page and in the trash, which
+   * reads newest-deleted first. */
+  private _sortMenu(): ActionGroup[] {
+    if (this._page.value !== 'list' || this.trash.value)
+      return [];
+    const current = this.listSource.sort.value;
+    return [{label: 'Sort', actions: (this._options.sorts ?? DomainApp.sortChoices(this.table)).map(([name, sort]) =>
+      ({name, icon: sort === current ? 'check' : undefined, run: () => void this.setSort(sort)}))}];
+  }
+
+  /** Orders the list by `sort` — through the gate, since the rows are read again. */
+  async setSort(sort: string): Promise<boolean> {
+    if (sort === this.listSource.sort.peek())
+      return true;
+    if (!await confirmDiscard(this.session, {action: 'change the order'}))
+      return false;
+    this.listSource.sort.value = sort;
+    return true;
+  }
+
+  /** The orders a table offers: oldest and newest first where it keeps `created_on` — ties broken by the
+   * business key — and by its name column. */
+  static sortChoices(table: DomainTable): [label: string, sort: string][] {
+    const {info, properties} = table;
+    const choices: [string, string][] = [];
+    if (table.table.support.systemColumns.includes('created_on')) {
+      choices.push(['Oldest first', ['created_on', ...info.businessKey].join(',')],
+        ['Newest first', ['!created_on', ...info.businessKey.map((column) => `!${column}`)].join(',')]);
+    }
+    const name = DomainSource.captionColumn(info);
+    if (name !== 'id')
+      choices.push([`By ${properties.find((p) => p.name === name)?.friendlyName ?? name}`, name]);
+    return choices;
+  }
+
+  /** The order a list opens in where the app sets none: the first of {@link sortChoices} — creation order — else
+   * the table's own. */
+  static defaultSort(table: DomainTable): string {
+    return DomainApp.sortChoices(table)[0]?.[1] ?? '';
   }
 
   /** Trash mode is one flip of the list source's `deleted` mode: the search box, the filters and
@@ -729,14 +818,31 @@ export class DomainApp extends Control {
     return DomainApp._views.get(app);
   }
 
+  /** Find-or-activate for a create page: the live app under `base` opens one over `values` (a child tab's New,
+   * the parent filled in) and its view comes to the front; false when no app is open there. */
+  static createAt(base: string | undefined, values: Record<string, unknown> = {}): boolean {
+    const app = DomainApp._at(base);
+    if (app === undefined)
+      return false;
+    void app.create(values);
+    DomainApp._front(app);
+    return true;
+  }
+
   private static _at(base: string | undefined): DomainApp | undefined {
     return base === undefined ? undefined : [...DomainApp.live].find((app) => app.base === base);
   }
 
   private static _front(app: DomainApp): void {
     const view = DomainApp._views.get(app);
-    if (view !== undefined)
-      grok.shell.v = view;
+    if (view === undefined)
+      return;
+    grok.shell.v = view;
+    // a click inside another view makes that view current again as it bubbles up
+    setTimeout(() => {
+      if (DomainApp._views.get(app) === view)
+        grok.shell.v = view;
+    });
   }
 
   private async _open(path?: string): Promise<boolean> {
@@ -778,12 +884,13 @@ export class DomainApp extends Control {
   /** `query` is how the row was addressed when it was not by its id — the business key an address
    * segment spelled. `draft` is the create page; an entity of "new" without it is the row so keyed. */
   private async _goTo(page: DomainAppPage, entity: string | null,
-    query: FilterGroup | null = null, draft = false): Promise<boolean> {
-    if (page === this._page.peek() && (page === 'list' || entity === this._entity.peek()))
+    query: FilterGroup | null = null, draft = false, values: Record<string, unknown> = {}): Promise<boolean> {
+    if (page === this._page.peek() && (page === 'list' || entity === this._entity.peek()) &&
+        Object.keys(values).length === 0)
       return true;
     if (!await confirmDiscard(this.session, {action: 'leave this page'}) || this.scope.isDisposed)
       return false;
-    this._show(page, entity, query, draft);
+    this._show(page, entity, query, draft, values);
     return true;
   }
 
@@ -821,10 +928,10 @@ export class DomainApp extends Control {
   }
 
   private _show(page: DomainAppPage, entity: string | null, query: FilterGroup | null = null,
-    draft = false): void {
+    draft = false, values: Record<string, unknown> = {}): void {
     this._close();
     if (page === 'entity' && entity !== null) {
-      const source = draft ? this._source({draft: true, defaults: this._options.defaults}) :
+      const source = draft ? this._source({draft: true, defaults: {...this._options.defaults, ...values}}) :
         this._source({query: query ?? Filters.group('and', [Filters.cond('id', '=', entity)]), pageSize: 1});
       // a source of one has no list to make its row current
       source.effect(() => {
@@ -832,14 +939,14 @@ export class DomainApp extends Control {
         if (source.state.value === 'ready' && rows.length > 0 && source.currentRow.peek() === null)
           source.currentRow.value = rows[0];
       });
-      const {children, history, include} = this._options;
-      const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include,
-        empty: `${this.table.info.singularName || 'Row'} "${entity}" was not found.`}));
+      const {children, history, include, immutable} = this._options;
+      const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include, immutable,
+        empty: `This ${DomainSource.noun(this.table.info, false)} does not exist or was deleted.`}));
       this._panes = this.runInScope(() => [
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
         ...(history === false || !this.table.table.support.audit ? [] : [domains.history(source)]),
       ]);
-      this._formHost.replaceChildren(form.root);
+      this._formHost.replaceChildren(...(draft ? this._inlineForms(source) : []), form.root);
       this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
       batch(() => {
         this._entitySource.value = source;
@@ -862,13 +969,119 @@ export class DomainApp extends Control {
     for (const pane of this._panes)
       pane.dispose();
     this._panes = [];
+    this._inlineScope?.dispose();
+    this._inlineScope = undefined;
+    this._inline.value = new Map();
     form?.dispose();
     source?.dispose();
     this._formHost.replaceChildren();
     this.panes.replaceChildren();
   }
 
-  private _source(options: Parameters<DomainTable['source']>[0]): DomainSource {
-    return SharedSession.runWith(this.session, () => this.table.source(options));
+  /** The condition builder in a pane on the list's left, folded to a strip while it holds no condition, so the
+   * list keeps the width a laptop has to give; a filter the address or a preset applies opens it. */
+  private _filtersPane(): HTMLElement {
+    const open = signal(false);
+    const count = computed(() => {
+      // a query string is read against the schema, which arrives with the load
+      this.listSource.state.value;
+      let n = 0;
+      Filters.walk(DomainFilters.treeOf(this.listSource.query.value, this.listSource.schema), (node) => {
+        if (!Filters.isGroup(node))
+          n++;
+      });
+      return n;
+    });
+    let first = true;
+    this.effect(() => {
+      const n = count.value;
+      if (n > 0 || first)
+        open.value = n > 0;
+      first = false;
+    });
+    const pane = divV([divH([span('Filters', 'u2-domain-app-filters-title'),
+      iconButton('angle-double-left', () => open.value = false, {tooltip: 'Hide the filters'})],
+    'u2-domain-app-filters-head'), this.filters.root], 'u2-domain-app-filters-pane');
+    const badge = span('', 'u2-domain-app-filters-count');
+    const strip = divV([iconButton('filter', () => open.value = true, {tooltip: 'Show the filters'}), badge],
+      'u2-domain-app-filters-strip');
+    strip.dataset.u2Part = 'filters-strip';
+    const splitter = this.runInScope(() => new Splitter([div([pane, strip], 'u2-domain-app-filters-side'),
+      this.list.root], {direction: 'horizontal', sizes: [0.3, 0.7], minSize: 180}));
+    this.effect(() => {
+      const shown = open.value;
+      pane.hidden = !shown;
+      strip.hidden = shown;
+      splitter.root.classList.toggle('u2-domain-app-filters-folded', !shown);
+      badge.textContent = count.value === 0 ? '' : String(count.value);
+    });
+    return splitter.root;
+  }
+
+  /** The entity page says its row goes with the next Save, and offers Restore — as the list does. */
+  private _deletionBanner(): HTMLElement {
+    const text = span('', 'u2-domain-app-deleting-text');
+    let restore = () => {};
+    const banner = divH([text, button('Restore', () => restore())], 'u2-domain-app-deleting');
+    banner.dataset.u2Part = 'deleting';
+    this.effect(() => {
+      const source = this._entitySource.value;
+      source?.rows.items.value;
+      const row = source?.currentRow.value ?? null;
+      const deleting = row !== null && row[Rows.STATE] === 'deleted';
+      banner.hidden = !deleting;
+      this.root.classList.toggle('u2-domain-app-deleting-row', deleting);
+      if (!deleting)
+        return;
+      text.textContent = `${this.table.renderer.caption(row)} will be deleted when you save.`;
+      restore = () => source!.edit.peek()?.unmarkDeleted(row.id);
+    });
+    return banner;
+  }
+
+  /** A form per {@link DomainAppOptions.inline} reference above the draft's: the reference follows the new
+   * row's first edit, and pointing it at an existing row drops the new one. */
+  private _inlineForms(child: DomainSource): HTMLElement[] {
+    const scope = this._inlineScope = new Scope();
+    const sources = new Map<string, DomainSource>();
+    const roots = Scope.runWith(scope, () => untracked(() =>
+      Object.entries(this._options.inline ?? {}).map(([column, {table, include}]) => {
+        const parent = this._source({draft: true}, table);
+        sources.set(column, parent);
+        const form = new DomainForm(parent, {include});
+        // an untouched create page is not wrong yet, as its fields are not
+        const section = new Section({title: `New ${DomainSource.noun(table.info, false)}`, collapsible: false,
+          validity: computed(() => parent.isDirty.value ? form.problem.value : null)});
+        section.add(form.root);
+        section.root.classList.add('u2-domain-app-inline');
+        scope.effect(() => {
+          child.rows.items.value;
+          const row = child.currentRow.value;
+          const draft = parent.currentRow.value;
+          const dirty = parent.isDirty.value;
+          if (row === null || draft === null || parent.isSaving.value || child.isSaving.value)
+            return;
+          const ref = (row as Record<string, unknown>)[column] ?? '';
+          const own = Rows.isDraft(row) && (ref === '' || ref === draft.id);
+          section.root.hidden = !own;
+          // after the write that moved the reference: the platform editor would finish it on a removed row
+          if (!own && dirty) {
+            queueMicrotask(() => {
+              if (parent.isSaving.peek())
+                return;
+              parent.revert();
+              void parent.refresh();
+            });
+          } else if (own && dirty !== (ref === draft.id))
+            child.edit.peek()!.setValue(row.id, column, dirty ? draft.id : null);
+        });
+        return section.root;
+      })));
+    this._inline.value = sources;
+    return roots;
+  }
+
+  private _source(options: Parameters<DomainTable['source']>[0], table: DomainTable = this.table): DomainSource {
+    return SharedSession.runWith(this.session, () => table.source(options));
   }
 }

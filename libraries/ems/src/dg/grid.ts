@@ -7,8 +7,8 @@ import * as DG from 'datagrok-api/dg';
 import {Control, signal, text, Dates, span, timestamp, DataTable, Rows} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, IProperty, ObjectRenderer, CellStateLike, DataTableColumn,
   RowView} from '@datagrok-libraries/u2';
-import type {DomainSource} from '../core/domain-source.js';
-import {viewers} from '@datagrok-libraries/u2/src/dg/index.js';
+import {DomainSource} from '../core/domain-source.js';
+import {viewers, ObjectForm} from '@datagrok-libraries/u2/src/dg/index.js';
 import {collectionSelection} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {Bindable} from '@datagrok-libraries/u2/src/dg/index.js';
 import {SYSTEM_COLUMNS} from './backend.js';
@@ -78,7 +78,7 @@ export class DomainGrid extends Control {
       return;
     DG.DomainObjectHandler.decorateGrid(this.grid, this.source.table, df);
     this._caption(df);
-    this._dateFormat(df);
+    this._formats(df);
   }
 
   /** The schema's captions where `decorateGrid` found no per-table meta to take them from —
@@ -101,16 +101,19 @@ export class DomainGrid extends Control {
     }
   }
 
-  /** A datetime column with no format of its own: a date where every value it holds falls on
-   * midnight, date and time otherwise. */
-  private _dateFormat(df: DG.DataFrame): void {
+  /** The schema's display format on a number or datetime column, as a form shows it (an autonumbered key reads
+   * DGB-000024); a datetime column with none is a date where every value it holds falls on midnight, date and time
+   * otherwise. */
+  private _formats(df: DG.DataFrame): void {
     for (const p of this.source.schema.properties) {
-      if ((p.propertyType ?? p.type) !== 'datetime' || (p.format ?? '') !== '')
-        continue;
       const column = df.columns.byName(p.name!);
-      if (column === null || (column.getTag(DG.TAGS.FORMAT) ?? '') !== '')
+      const datetime = (p.propertyType ?? p.type) === 'datetime';
+      if (column === null || (column.getTag(DG.TAGS.FORMAT) ?? '') !== '' || !(datetime || DomainSource.isNumber(p)))
         continue;
-      column.setTag(DG.TAGS.FORMAT, DomainGrid.isDateOnly(column) ? DATE_FORMAT : DATE_TIME_FORMAT);
+      if ((p.format ?? '') !== '')
+        column.setTag(DG.TAGS.FORMAT, p.format!);
+      else if (datetime)
+        column.setTag(DG.TAGS.FORMAT, DomainGrid.isDateOnly(column) ? DATE_FORMAT : DATE_TIME_FORMAT);
     }
   }
 
@@ -214,11 +217,13 @@ export class DomainDataTable extends Control {
    * state is keyed by too — the frame index never leaves it. */
   private _cellState(): CellStateLike {
     const source = this.source;
+    const derived = new Set(DomainForm.derivedColumns(source));
     return {
       isChanged: (key, column) => source.edit.peek()?.isChanged(key, column) ?? false,
       canEdit: (key, column) => {
         const row = source.rows.byKey(key);
-        return row !== undefined && source.access.peek().row(row).field(column) === 'editable';
+        return row !== undefined && !derived.has(column) &&
+          source.access.peek().row(row).field(column) === 'editable';
       },
       errorOf: (key, column) => {
         const message = source.edit.peek()?.errorOf(key, column) ?? null;
@@ -257,8 +262,8 @@ export class DomainDataTable extends Control {
   /** What a cell shows: the name column as the table's renderer captions the row (a draft as
    * "New <singular>"), a reference as the row it points at, a datetime through the same
    * `timestamp` every other u2 surface uses (a value at midnight is a date, the rest keep the
-   * time), a number through the platform's formatter where the schema declares a format — and a
-   * raw uuid or a `1.7999999999999998` nowhere. */
+   * time), a number as a readonly form field shows it — in the schema's format where it declares
+   * one — and a raw uuid nowhere. */
   private _cell(row: RowView, column: string, prop: IProperty | undefined): HTMLElement | string {
     if (column === this.source.schema.info.nameColumn) {
       const renderer = DomainTable.of(this.source)?.renderer ??
@@ -270,48 +275,33 @@ export class DomainDataTable extends Control {
       return text(value);
     if (DomainTable.isReference(prop))
       return DomainDataTable.caption(prop, row, column, String(value), this._looked);
-    switch (prop.propertyType ?? prop.type) {
-      case 'datetime':
-        // a domain `datetime` carrying a date is stamped at midnight UTC, and reading it locally
-        // would move it a day back west of Greenwich
-        return timestamp(value as string, undefined, {utcDates: true});
-      case 'double': case 'float': case 'num':
-        return DomainDataTable.number(value as number, prop.format);
-      default:
-        return text(value);
-    }
+    // a domain `datetime` carrying a date is stamped at midnight UTC, and reading it locally
+    // would move it a day back west of Greenwich
+    return (prop.propertyType ?? prop.type) === 'datetime' ? timestamp(value as string, undefined, {utcDates: true}) :
+      ObjectForm.displayText(prop, value);
   }
 
   /** The referenced row's caption: the one the query projected for the column
-   * (`~caption_<column>`), which is the target's display name as the server computed it — null
-   * where the caller may not see the target, and that is an empty cell, not a miss. Where the
-   * frame carries none — a draft, a `User`, a `Group` — the one lookup a form's readonly
-   * reference does (`DomainForm.captionOf`), patched into the cell it was drawn into; never the
-   * uuid, which read as the value of the column. `cache` holds what that lookup answered, so a
+   * (`~caption_<column>`), which is the target's display name as the source formatted it where the
+   * frame landed; null where the caller may not see the target, and that is an empty cell, not a
+   * miss. Where the frame carries none — a draft, a `User`, a `Group` — the one lookup a form's
+   * readonly reference does (`DomainForm.captionOf`), patched into the cell it was drawn into; never
+   * the uuid, which read as the value of the column. `cache` holds what that lookup answered, so a
    * pooled cell redrawn on every scroll asks once per id instead of once per paint. */
   static caption(prop: IProperty, row: RowView, column: string, id: string,
     cache?: Map<string, string>): HTMLElement | string {
     const projected = row[Rows.caption(column)];
     if (projected !== undefined)
-      return typeof projected === 'string' ? projected : '';
+      return typeof projected !== 'string' ? '' : projected;
     const key = `${prop.semType}|${id}`;
     const known = cache?.get(key);
     if (known !== undefined)
       return known;
     const el = span('…');
     void DomainForm.captionOf(prop, id).then((caption) => {
-      el.textContent = caption || id;
-      if (caption)
-        cache?.set(key, caption);
-    }, () => el.textContent = id);
+      el.textContent = caption;
+      cache?.set(key, caption);
+    });
     return el;
-  }
-
-  /** A number as the schema wants it read: the platform's formatter under a declared `format`,
-   * else the value with the float noise rounded off (`1.7999999999999998` is `1.8`). */
-  static number(value: number, format?: string | null): string {
-    if (typeof value !== 'number' || !Number.isFinite(value))
-      return text(value);
-    return format ? DG.format(value, format) : String(Number(value.toFixed(4)));
   }
 }

@@ -7,7 +7,7 @@
 import {Control, signal, button, div, divH, divV, span, timestamp, text, VirtualList, allowedActions, rowActions,
   loader, Rows} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, Signal, ObjectRenderer, Action, RowView} from '@datagrok-libraries/u2';
-import type {DomainSource} from '../core/domain-source.js';
+import {DomainSource} from '../core/domain-source.js';
 import {ActionRegistry, DomainTable} from './facade.js';
 import type {DomainAction} from './facade.js';
 import {DomainErrors} from './errors.js';
@@ -66,7 +66,7 @@ export class DomainList extends Control {
         const groups = [{label: this.renderer.caption(row), actions: this.actionsFor(row)}];
         const actions = this.selectionActions(selected);
         if (actions.length > 0) {
-          const what = source.schema.info.pluralName.toLowerCase().replace(/_/g, ' ') || 'rows';
+          const what = DomainSource.noun(source.schema.info);
           groups.push({label: `${selected.length} ${what}`, actions});
         }
         return groups;
@@ -115,7 +115,7 @@ export class DomainList extends Control {
           'u2-domain-list-error'));
       } else if (state === 'ready' && count === 0) {
         const search = source.search.value;
-        const what = source.schema.info.pluralName.toLowerCase() || 'rows';
+        const what = DomainSource.noun(source.schema.info);
         // an empty result the user asked for says so, and offers the way back out of it
         const said = _options.empty ?? (search !== '' ? `No ${what} match "${search}".` :
           filtered ? `No ${what} match the filter.` : `No ${what}.`);
@@ -151,8 +151,12 @@ export class DomainList extends Control {
    * A row marked deleted offers Restore alone — and so does one already in the trash, whose
    * Restore is staged into the session and lands with the Save (the Delete grant, per row). */
   actionsFor(row: RowView): Action[] {
-    const source = this.source;
-    const table = this._table;
+    return DomainList.actionsOf(this.source, row, this._table, this._options.actions ?? []);
+  }
+
+  /** A row's actions over its source — the list's hover and context menu, the entity page's ⋯ menu. */
+  static actionsOf(source: DomainSource, row: RowView, table: DomainTable | undefined,
+    extra: readonly DomainAction[] = []): Action[] {
     if (row[Rows.STATE] === 'restored')
       return [{name: 'Undo restore', icon: 'undo', run: () => source.unstageRestore([row.id])}];
     if (row[Rows.STATE] === 'deleted')
@@ -169,7 +173,7 @@ export class DomainList extends Control {
       run: () => source.edit.peek()?.markDeleted(row.id)});
     if (table !== undefined)
       actions.push(...table.actions.for(row));
-    actions.push(...ActionRegistry.bind(this._options.actions ?? [], row));
+    actions.push(...ActionRegistry.bind(extra, row));
     return allowedActions(actions, {access: source.access.peek(), row});
   }
 

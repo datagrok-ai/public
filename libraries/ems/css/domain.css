@@ -137,6 +137,25 @@
   opacity: 0.55;
 }
 
+/* the entity page of a row marked deleted: the same strike on its name, the form faded, and the
+   way back above it */
+.u2-domain-app-deleting {
+  flex: none;
+  align-items: center;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-s) var(--dg-space-m);
+  background: var(--dg-warm-grey-1);
+  box-shadow: inset 3px 0 0 0 var(--dg-error);
+}
+
+.u2-domain-app-deleting-row > .u2-breadcrumbs .u2-breadcrumbs-current {
+  text-decoration: line-through;
+}
+
+.u2-domain-app-deleting-row .u2-domain-app-form {
+  opacity: 0.55;
+}
+
 /* a staged restore is the other direction: the strike is gone, and the amber edge of a pending
    change says it has not landed yet */
 .u2-domain-list-restored .u2-domain-list-content {
@@ -412,6 +431,81 @@
    editor and its tooltip, never by pushing the buttons beside it off the bar */
 .u2-domain-filters .u2-input-error {
   display: none;
+}
+
+/* the condition builder in a pane on the list's left: rows stack once the pane is narrow */
+.u2-domain-app-list > .u2-splitter {
+  flex: 1;
+  min-height: 0;
+}
+
+.u2-domain-app-list > .u2-splitter > .u2-splitter-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.u2-domain-app-list > .u2-splitter > .u2-splitter-panel > .u2-domain-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.u2-domain-app-filters-pane {
+  height: 100%;
+  overflow: auto;
+  gap: var(--dg-space-s);
+  padding: var(--dg-space-s) var(--dg-space-m);
+  container-type: inline-size;
+}
+
+.u2-domain-app-filters-title {
+  font-weight: 600;
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-app-filters-head {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.u2-domain-app-filters-side {
+  height: 100%;
+}
+
+/* folded: a strip with the way back and the number of conditions in force, the list taking the rest */
+.u2-domain-app-filters-strip {
+  align-items: center;
+  gap: var(--dg-space-xs);
+  padding: var(--dg-space-s) 0;
+}
+
+.u2-domain-app-filters-count {
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-app-filters-folded > .u2-splitter-panel:first-child {
+  flex-basis: 32px !important;
+}
+
+.u2-domain-app-filters-folded > .u2-splitter-panel + .u2-splitter-panel {
+  flex: 1 1 0 !important;
+}
+
+.u2-domain-app-filters-folded > .u2-sash {
+  display: none;
+}
+
+@container (max-width: 440px) {
+  .u2-domain-app-filters-pane .u2-fb-cond > .u2-fb-prop,
+  .u2-domain-app-filters-pane .u2-fb-cond > .u2-fb-op,
+  .u2-domain-app-filters-pane .u2-fb-cond > .u2-fb-values {
+    flex: 1 0 100%;
+  }
+}
+
+.u2-domain-app-inline {
+  flex: none;
 }
 
 /* the app: the list page and the entity page under one root, one shown at a time */

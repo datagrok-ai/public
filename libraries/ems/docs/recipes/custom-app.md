@@ -58,6 +58,8 @@ control over a source of `issues` read them.
 | `getGritDb(): Promise<GritDb>` | generated (`grok api --ui`): `{schema, data, tables}` — `data` the typed dapi clients (`gritDb.issues.query(...)`), `tables` one `DomainTable<XRow>` per table, opened in parallel. Without the generator: `await domains.table<IssueRow>('grit.issue')` |
 | `table.actions.add({name, icon?, requires?, enabled?, when?(row), run(row)})` | the ribbon, the row's hover actions, the context menu, the shortcuts. `requires` names a capability (`'edit'`, a schema `permissions` name such as `'approve'`) — denied, the action is not rendered; `when` narrows it per row; returns the unregister |
 | `table.validators.add(column, (value, row) => message \| null)` | a rule the form checks on every change, beside the schema's and the server's; the message shows on the column's field and refuses Save |
+| `table.derived.add({from, to, derive(row)})` | columns computed in the browser from other columns of the row — a structure's formula and registration hash, a slug: an edit to a `from` column derives `to` again (async is fine), every Save path waits for the derivations in flight, one that throws refuses the Save with its message, the form shows `to` read-only, and the Import… wizard runs them over the mapped rows (`table.deriveRows(rows)` for a script). The client computes them: a value the server must vouch for still needs a constraint or a server-side rule |
+| `table.operators.add({id, label, semType, parameter?, rows(condition, signal)})` | a filter operator the app answers — a structure search the server cannot run: the builder offers it on the columns of `semType` (the operator's `parameter`, a similarity threshold, is edited after the value), and every read sends the condition as `id in (…)` of the rows `rows` returns |
 | `table.renderer: ObjectRenderer<RowView<TRow>>` | `caption`, `icon?`, `listItem?`, `markup?`, `tooltip?`, `card?` — lists, cards, pickers, chips, breadcrumbs; spread the default to override one |
 | `class X extends DomainApp` | `ribbon()` returns `[[New, Save, Discard], [search, filters]]` — extend it; `presets(...[label, query])` is a query switch (`$me` = the current user's id; the one matching the query in force is pressed; hidden off the list page; a press while dirty goes through the gate); `shortcuts` maps `'Ctrl+Shift+C'`-style keys onto action names, run over the current row while the app has the focus |
 | `table.app({app: X, ...})` | the view: `name`, `path`, `query`, `pageSize`, `mode`, `include`, `children`, `history`, `shortcuts` — see [crud-app](crud-app.md) |
@@ -115,7 +117,10 @@ ambient session, so their sources join it without the option.
 - `class IssuesApp extends DomainApp { constructor() { … this.root.append(myToolbar) } }` — the
   ribbon is `ribbon()`; the shell owns the chrome.
 - A validator that fetches (`await dapi…`) — validators are synchronous; a server-side rule is a
-  constraint or a server-mapped column error.
+  constraint or a server-mapped column error. A lookup a check needs belongs in a derivation, which
+  may await, and leaves its verdict where a validator reads it.
+- An app search written into `source.query` as `id in (…)` — register it as an operator
+  (`table.operators`), so the filter box and the address carry the condition, not its hits.
 - `issues.actions.add({name: 'Approve', run})` without `requires: 'approve'` — the permission is
   declared in the schema for exactly this; without it the action shows to everyone and 403s.
 - A second `domains.table('grit.issue')` to reach the registries from another module — a handle

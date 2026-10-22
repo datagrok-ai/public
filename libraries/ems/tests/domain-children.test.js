@@ -16,7 +16,7 @@ import {Property, WidgetDescriptor, platform} from '@datagrok-libraries/u2/tests
 import {backend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
-const {domains} = await import('../src/dg/facade.js');
+const {domains, DomainTable} = await import('../src/dg/facade.js');
 const {DomainChildren} = await import('../src/dg/children.js');
 const {DomainPick} = await import('../src/dg/pick.js');
 const {registerDomainComponents} = await import('../src/dg/registrations.js');
@@ -208,6 +208,25 @@ scoped('spec: u2-domain-children over a bound source', async () => {
   src.dispose();
 });
 
+scoped('a handle in `tables` is the tab\'s table, so what the app declared on it holds there', async () => {
+  emsBackends.domain = crm();
+  const companies = await domains.table('crm.company');
+  const contacts = await domains.table('crm.contact');
+  const parent = companies.source({pageSize: 10});
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = domains.children(parent, {tables: [contacts, 'deal'], mode: 'list'});
+  await settle();
+  assert.deepEqual(children.entries.value.map((e) => e.label), ['Contacts', 'Deals (Seller)', 'Deals (Buyer)'],
+    'handles and names alike, in the order given');
+  assert.equal(children.entries.value[0].table, contacts, 'the app\'s own handle, not a fresh one');
+  assert.equal(DomainTable.of(children.child(CONTACTS)), contacts,
+    'the tab\'s source is made through it — its validators, derivations, actions and renderer');
+  assert.notEqual(children.entries.value[1].table, contacts);
+  children.dispose();
+  parent.dispose();
+});
+
 scoped('DomainPick.resolve: a draft id is the draft\'s name from its live source, no query issued', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.project');
@@ -226,7 +245,8 @@ scoped('DomainPick.resolve: a draft id is the draft\'s name from its live source
   assert.deepEqual(await DomainPick.resolve('grit.project', unnamed.id), {id: unnamed.id, name: 'New project'});
   assert.equal(queries.length, 0, 'resolved from the live source');
   const gone = `${Rows.DRAFT_PREFIX}nobody`;
-  assert.deepEqual(await DomainPick.resolve('grit.project', gone), {id: gone, name: gone}, 'a draft nobody holds: itself');
+  assert.deepEqual(await DomainPick.resolve('grit.project', gone), {id: gone, name: DomainPick.UNKNOWN},
+    'a draft nobody holds: unknown, never the key');
   assert.equal(queries.length, 1);
   src.dispose();
 });

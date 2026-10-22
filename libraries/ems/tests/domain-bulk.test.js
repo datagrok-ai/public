@@ -88,6 +88,20 @@ function select(source, keep) {
   df.onSelectionChanged.fire(undefined);
 }
 
+scoped('neither side of a derivation is offered: a bulk write runs none', async () => {
+  const memory = backend();
+  const {handle, source} = await table(memory, {query: 'number > 0'});
+  handle.derived.add({from: ['title'], to: ['description'], derive: (row) => ({description: row.title})});
+  select(source, (i) => i === 0);
+  const {running} = await opened(source);
+  assert.equal(includeBox('title'), null);
+  assert.equal(includeBox('description'), null);
+  assert.notEqual(includeBox('done'), null, 'every other writable column is');
+  buttonNamed('CANCEL').click();
+  await running;
+  source.dispose();
+});
+
 scoped('the checked columns are written to the selection; an unchecked one is left alone', async () => {
   const memory = backend();
   const {source} = await table(memory, {query: 'number > 0'});

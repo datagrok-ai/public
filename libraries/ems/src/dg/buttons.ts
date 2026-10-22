@@ -59,19 +59,21 @@ export function discardButton(target: SessionTarget, options: SessionButtonOptio
 
 /** "New": a draft over `values` made current — for a source, the row a create form or a list then
  * edits; a function receives the row that was current (the one just saved, say) so an app carries
- * fields over from one entry to the next. The press is a change of its own — the draft counts
+ * fields over from one entry to the next; `onClick` replaces the draft (a create page opened
+ * elsewhere). The press is a change of its own — the draft counts
  * against the session from the start, unlike the create page's initial row. Permission ⇒ hidden:
- * absent without the `insert` capability; state ⇒ disabled until the table is loaded. */
+ * absent without the `insert` capability; state ⇒ disabled until the table is loaded, and while
+ * the session saves. */
 export function newButton(source: DomainSource,
   values: Record<string, unknown> | ((last: RowView | null) => Record<string, unknown>) = {},
-  options: SessionButtonOptions = {}): Control {
-  const el = button(options.text ?? 'New', () => source.newRow(
+  options: SessionButtonOptions & {onClick?: () => void} = {}): Control {
+  const el = button(options.text ?? 'New', () => options.onClick !== undefined ? options.onClick() : source.newRow(
     typeof values === 'function' ? values(source.currentRow.peek()) : values));
   const control = new Control(el);
   control.root.dataset.u2 = 'new-button';
   control.effect(() => {
     el.hidden = !source.access.value.can('insert');
-    el.disabled = source.edit.value === undefined;
+    el.disabled = source.edit.value === undefined || source.session.isSaving.value;
   });
   return control;
 }

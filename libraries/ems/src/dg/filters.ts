@@ -11,7 +11,8 @@ import type {FilterGroup, FilterProblem, FilterProperty, FilterSchema, FilterVal
 import type {DomainSource} from '../core/domain-source.js';
 import {confirmDiscard} from '../core/session.js';
 import {DomainPick} from './pick.js';
-import {DgDomainBackend} from './backend.js';
+import {DgDomainBackend, SYSTEM_COLUMNS} from './backend.js';
+import {DomainTable} from './facade.js';
 
 export type DomainFiltersMode = 'query' | 'builder';
 
@@ -39,8 +40,9 @@ export class DomainFilters extends Control {
   /** The input, once the table's schema is known. */
   readonly input: ReadonlySignal<FilterQueryInput | FilterBuilder | null>;
   /** What is wrong with the filter in the box while it is one the rows do NOT answer — a refused
-   * commit standing over the applied query; null while the two agree, the query in force having
-   * been refused included (the list's error says what happened to that one). */
+   * commit standing over the applied query, or a builder row whose value is wrong; null while the two
+   * agree, the query in force having been refused included (the list's error says what happened to
+   * that one). */
   readonly problem: ReadonlySignal<string | null>;
 
   /** Per source: how a query a control wrote bound is spelled in the box — `DomainApp.presets`
@@ -55,6 +57,7 @@ export class DomainFilters extends Control {
   private _raw: string | null = null;
   private _rawProblems: FilterProblem[] = [];
   private _syncing = false;
+  private _complete: (tree: FilterGroup) => FilterGroup = (tree) => tree;
 
   constructor(readonly source: DomainSource, private readonly _options: DomainFiltersOptions = {}) {
     super();
@@ -62,10 +65,12 @@ export class DomainFilters extends Control {
     this.input = this._input;
     this.problem = computed(() => {
       const input = this._input.value;
-      const message = input?.problems.value[0]?.message ?? null;
-      if (message === null || !(input instanceof FilterQueryInput))
-        return message;
-      return input.query.value === input.raw.value ? null : message;
+      if (input instanceof FilterBuilder)
+        return DomainFilters.wrong(input);
+      if (!(input instanceof FilterQueryInput))
+        return null;
+      const message = input.problems.value[0]?.message ?? null;
+      return message === null || input.query.value === input.raw.value ? null : message;
     });
     this.root.classList.add('u2-domain-filters');
     this.root.dataset.u2 = 'domain-filters';
@@ -87,13 +92,27 @@ export class DomainFilters extends Control {
   /** The table's schema with the platform's values behind it; over another backend (the gallery,
    * the tests) the properties alone. Either way the offer is narrowed the same way. */
   private async _schema(): Promise<FilterSchema> {
-    const own = this.source.schema;
+    const own = {...this.source.schema, properties: DomainFilters.ordered(this.source.schema.properties)};
     const operators = await this._operators();
     if (!(emsBackends.domain instanceof DgDomainBackend))
       return {...own, operators, values: (prop, query, signal, ctx) => this._under(prop, query, ctx) ?? EMPTY};
     const {values, resolveRef, renderer} = await domainFilterSchema(this.source.table);
-    return {...own, operators, resolveRef, renderer,
-      values: (prop, query, signal, ctx) => this._under(prop, query, ctx) ?? values!(prop, query, signal, ctx)};
+    return {...own, operators, resolveRef, renderer, values: (prop, query, signal, ctx) =>
+      this._under(prop, query, ctx) ?? values!(prop, query, signal, ctx).then(DomainFilters.held)};
+  }
+
+  /** The table's own columns in the schema's order, the system ones after them: a new condition
+   * starts on a column people fill in, not on the row id. */
+  static ordered<T extends FilterProperty>(properties: T[]): T[] {
+    const system = (p: T) => SYSTEM_COLUMNS.some(([name]) => name === p.name);
+    return [...properties.filter((p) => !system(p)), ...properties.filter(system)];
+  }
+
+  /** The values to pick from, without the empty cell — the null tests are how to ask for that; a
+   * reference's arrives spelled as the id "null". */
+  static held(items: FilterValueItem[]): FilterValueItem[] {
+    return items.filter(({value}) => value !== null && value !== undefined && value !== '' &&
+      !(Filters.isRef(value) && value.id === 'null'));
   }
 
   /** The candidates for an `under` term: the ROWS of the hierarchy it walks — every location,
@@ -139,8 +158,14 @@ export class DomainFilters extends Control {
       return !NOT_BASIC.has(id) && !(kind === Filters.KIND.DATE_TIME && id === '!=') &&
         !(kind === Filters.KIND.BOOL && NULL_TESTS.has(id));
     };
+    // a host operator is offered where its table answers it — the registry behind it is the page's, and
+    // every table keeps the core operators there; a column its table answers one for offers that set
+    // alone, beside the null tests
+    const answered = (id: string) => DomainTable.of(this.source)?.operators.all.some((o) => o.id === id) === true;
     return (prop, offered) => {
-      const out = applies(prop) ? offered : offered.filter((o) => o.id !== UNDER);
+      const hosted = offered.some((o) => o.host === true && answered(o.id));
+      const out = (applies(prop) ? offered : offered.filter((o) => o.id !== UNDER))
+        .filter((o) => o.host === true ? answered(o.id) : !hosted || NULL_TESTS.has(o.id));
       return basic ? out.filter((o) => runs(prop, o.id)) : out;
     };
   }
@@ -153,6 +178,9 @@ export class DomainFilters extends Control {
         placeholder: this._options.placeholder ?? 'Filter…',
         display: (tree) => DomainFilters._shownAs.get(source)?.get(Filters.format(tree)) ?? null}));
     const box = input instanceof FilterQueryInput ? input : null;
+    // the builder holds rows still being written: what is applied is the rows that are complete
+    if (box === null)
+      this._complete = (tree) => Filters.pruneInvalid(tree, schema, 'domain');
     this.effect(() => {
       const q = source.query.value;
       const parsed = typeof q === 'string' && q.trim() !== '' ? Filters.parse(q, schema, 'domain') : null;
@@ -167,9 +195,12 @@ export class DomainFilters extends Control {
       box?.showText(this._raw, this._rawProblems);
     });
     this.effect(() => {
-      const tree = input.value.value;
+      const tree = this._complete(input.value.value);
       const raw = box?.raw.value ?? null;
-      if (this._syncing || (raw === this._raw && Filters.equals(tree, this._accepted)))
+      // a row whose value is wrong — not one still being written — holds the filter applied before it,
+      // as a refused text holds it in the box: the rows never answer some other question meanwhile
+      if (this._syncing || (raw === this._raw && Filters.equals(tree, this._accepted)) ||
+          (input instanceof FilterBuilder && DomainFilters.wrong(input) !== null))
         return;
       void confirmDiscard(source.session, {action: 'change the filter'}).then((ok) => {
         if (ok)
@@ -184,6 +215,12 @@ export class DomainFilters extends Control {
     this._input.value = input;
   }
 
+  /** The first problem of a builder row that is wrong rather than unfinished — a mistyped or
+   * out-of-range number, not a value still empty. */
+  static wrong(builder: FilterBuilder): string | null {
+    return builder.problems.value.find((p) => p.code !== 'missing-value')?.message ?? null;
+  }
+
   /** The tree goes to the source in the form its query has: text stays text. */
   private _apply(tree: FilterGroup): void {
     const q = this.source.query.peek();
@@ -194,7 +231,7 @@ export class DomainFilters extends Control {
   }
 
   private _write(input: FilterQueryInput | FilterBuilder, tree: FilterGroup): void {
-    if (Filters.equals(tree, input.value.peek()))
+    if (Filters.equals(tree, this._complete(input.value.peek())))
       return;
     this._syncing = true;
     try {

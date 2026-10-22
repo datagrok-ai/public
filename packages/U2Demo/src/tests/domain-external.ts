@@ -104,7 +104,7 @@ category('U2: domain external', () => {
     await delay(50);
     expect(el(0).hidden, true, 'no New');
     expect(app.menuActions().map((a) => a.name).join(), '', 'no Import, no Bulk edit, no Trash');
-    expect(el(3).hidden, true, 'and no ⋯ button');
+    expect(el(3).hidden, DomainApp.sortChoices(app.table).length === 0, 'the ⋯ button only where it holds a Sort');
     const row = app.listSource.rows.items.value[0];
     expect(app.list.actionsFor(row).some((a) => a.name === 'Delete'), false, 'no Delete on a row');
   });

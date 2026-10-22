@@ -1,5 +1,8 @@
 export {domains, DomainTable} from './facade.js';
-export type {DomainAction, RowValidator, DomainAppViewOptions} from './facade.js';
+export type {DomainAction, RowValidator, RowProblem, DomainDerivation, DomainHostOperator,
+  DomainAppViewOptions} from './facade.js';
+export {DomainErrors} from './errors.js';
+export {SYSTEM_COLUMNS} from './backend.js';
 export {DomainForm} from './form.js';
 export type {DomainFormOptions, DomainFormTarget} from './form.js';
 export {DomainList} from './list.js';
@@ -25,4 +28,5 @@ export type {DomainHistoryTarget} from './history.js';
 export {DomainChildren} from './children.js';
 export type {DomainChildrenOptions, DomainChildrenMode, ChildEntry} from './children.js';
 export type {DomainBulkEditOptions} from './bulk.js';
+export {ImportMapping} from './import.js';
 export type {DomainImportOptions} from './import.js';

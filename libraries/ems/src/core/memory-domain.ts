@@ -7,7 +7,7 @@
 import {uuid4} from 'datagrok-api/u2core';
 import {Filters, notify, Access, MemoryFrame, Rows} from '@datagrok-libraries/u2';
 import type {FilterCondition, FilterGroup, IProperty, AccessData, FieldAccess,
-  MemoryColumn} from '@datagrok-libraries/u2';
+  MemoryColumn, DomainConditionNode} from '@datagrok-libraries/u2';
 import {DomainBackendError, isUnscoped} from './domain-backend.js';
 import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike,
   DomainBatchValidationLike, DomainBatchValidationRowLike, DomainFrameLike, DomainProbeLike,
@@ -32,6 +32,7 @@ export interface MemoryColumnJson {
   filter?: string;
   semType?: string;
   default?: unknown;
+  format?: string;
 }
 
 export interface MemoryTableJson {
@@ -418,6 +419,10 @@ export class MemoryTable implements DomainTableLike {
   }
 
   async query(spec: DomainQueryLike = {}): Promise<Row[]> {
+    // the server answers the system columns on every row and refuses a request that names one
+    const system = spec.columns?.find((c) => SYSTEM.some(([s]) => s === c));
+    if (system !== undefined)
+      throw new DomainBackendError('validation', `Unknown or inaccessible column "${system}"`);
     const captions = this._captionTargets(spec.captions);
     let rows = await this._where(spec);
     if (spec.sort)
@@ -425,8 +430,8 @@ export class MemoryTable implements DomainTableLike {
     const offset = spec.offset ?? 0;
     rows = rows.slice(offset, spec.limit === undefined ? undefined : offset + spec.limit);
     return rows.map((row) => {
-      const out: Row = spec.columns ?
-        Object.fromEntries(spec.columns.filter((c) => c in row).map((c) => [c, row[c]])) : {...row};
+      const out: Row = spec.columns ? Object.fromEntries([...SYSTEM.map(([c]) => c), ...spec.columns]
+        .filter((c) => c in row).map((c) => [c, row[c]])) : {...row};
       // as the server off row mode: edit and delete are the table's answer, share is not
       // carried (null); a seed row carrying its own boolean is a row-mode table
       if (spec.withAccess) {
@@ -739,8 +744,11 @@ export class MemoryTable implements DomainTableLike {
     return typeof own === 'boolean' ? own : this._access.can.edit === true;
   }
 
+  /** What the server answers for a row's display name: the name column, else a one-column business key (a
+   * numbered key as its bare digits), else the id. */
   private _nameOf(row: Row): string {
-    const column = this.info.nameColumn;
+    const key = this.info.businessKey;
+    const column = this.info.nameColumn ?? (key.length === 1 ? key[0] : null);
     return String((column === null ? undefined : row[column]) ?? row.id);
   }
 
@@ -796,12 +804,24 @@ export class MemoryTable implements DomainTableLike {
   }
 
   private static _tree(filter: NonNullable<DomainQueryLike['filter']>): FilterGroup {
-    if (typeof filter !== 'string')
+    if (typeof filter !== 'string') {
+      MemoryTable._refuseListIn(filter);
       return Filters.fromDomainTree(filter);
+    }
     const {root, problems} = Filters.parse(filter);
     if (problems.length > 0)
       throw new DomainBackendError('validation', problems[0].message);
     return root;
+  }
+
+  /** A list is `=` to the server: its `in` takes none. */
+  private static _refuseListIn(node: DomainConditionNode): void {
+    if (typeof node === 'object' && !Array.isArray(node) && node.operator === 'in' && Array.isArray(node.value))
+      throw new DomainBackendError('validation', 'Operator "in" does not accept a list');
+    if (Array.isArray(node)) {
+      for (const child of node)
+        MemoryTable._refuseListIn(child);
+    }
   }
 
   private static _sorted(rows: Row[], sort: string): Row[] {
@@ -868,7 +888,7 @@ export class MemoryTable implements DomainTableLike {
       set: (row, value) => row[name] = value,
       nullable: c.required !== true,
       choices: c.choices, min: c.min, max: c.max, friendlyName: c.friendlyName, description: c.description,
-      editor: c.editor, semType, defaultValue: c.default,
+      editor: c.editor, semType, defaultValue: c.default, format: c.format,
     });
   }
 

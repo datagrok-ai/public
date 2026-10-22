@@ -6,7 +6,8 @@
    platform through `emsBackends.domain`. */
 import {signal, computed, batch, Signal, ReadonlySignal, Component, Access, plural, Filters, requireBackend, subBind,
   Rows, FrameRows} from '@datagrok-libraries/u2';
-import type {FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema, DomainRowLike, RowsLike, RowValues,
+import type {FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema, DomainRowLike,
+  RowsLike, RowValues, IProperty,
   RowView, DataFrameLike, BindProp, BindSource, ComponentEnv, ComponentStart} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
 import {emsBackends, DomainBackendError} from './domain-backend.js';
@@ -84,6 +85,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   static readonly liveMs = 30000;
   /** How many probes may fail in a row before the poll gives up ({@link DomainSource.live}). */
   static readonly liveFailures = 3;
+  /** How a target table reads a name its projected caption answers bare — the platform layer sets it: the
+   * server answers a numbered name as its digits, and the target's display format makes it DG-000123. */
+  static nameFormat: ((target: string) => Promise<((name: string) => string) | null>) | undefined;
 
   readonly table: string;
   readonly pageSize: number;
@@ -140,6 +144,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly session: DomainSession;
   /** Bumped by a list on Enter: the form paired through this source takes the focus. */
   readonly activate = signal(0);
+  /** The ids of the rows a host condition matches ({@link FilterOperator.host}) — set by the table handle. */
+  hosted: ((condition: FilterCondition, signal: AbortSignal) => Promise<readonly string[]>) | undefined;
 
   private readonly _env: ComponentEnv;
   private readonly _backend: DomainBackend;
@@ -152,6 +158,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _access = signal(Access.readOnly);
   private readonly _selection = signal<readonly RowView<TRow>[]>([]);
   private readonly _isStale = signal(false);
+  /** {@link query} as the server takes it, with the query it was made from. */
+  private _served: {query: string | FilterGroup, as: string | FilterGroup} | undefined;
+  private _serving: AbortController | undefined;
   /** Whether the table's backend writes at all (`support.transaction`), once the table is known. */
   private readonly _writable = signal(true);
   private readonly _errorStep: ReadonlySignal<string>;
@@ -162,6 +171,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _rows: FrameRows;
   private readonly _columns = new Map<string, Signal<unknown>>();
   private readonly _guards = new Set<() => string | null>();
+  private readonly _holds = new Set<Promise<unknown>>();
   /** What the caller listed as {@link DomainSourceOptions.captions}; undefined is the default. */
   private readonly _captionOption: string[] | undefined;
   private _table: DomainTableLike | undefined;
@@ -185,6 +195,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _probed: {count: number, last: string | null} | undefined;
   private _probing = false;
   private _failures = 0;
+  /** What each host condition of the last served query answered, with the table's version it answered at. */
+  private _answered = new Map<string, {version: string, ids: readonly string[]}>();
 
   constructor(options: DomainSourceOptions, env: ComponentEnv = NO_ENV) {
     super();
@@ -372,12 +384,23 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (gen !== this._gen)
         return;
       this._access.value = Access.from(data);
-      const [frame, total] = await Promise.all([
-        table.frame(this._spec(0)), this._noRows ? 0 : this._count(table)]);
-      if (gen !== this._gen) {
-        frame.dispose();
+      const query = this.query.peek();
+      this._serving?.abort();
+      const served = await this._serve(query, (this._serving = new AbortController()).signal);
+      if (gen !== this._gen)
         return;
-      }
+      this._served = {query, as: served};
+      const [loaded, counted] = await Promise.allSettled([table.frame(this._spec(0)),
+        this._noRows ? Promise.resolve(0) : this._count(table)]);
+      if (loaded.status === 'fulfilled' && (gen !== this._gen || counted.status === 'rejected'))
+        loaded.value.dispose();
+      if (gen !== this._gen)
+        return;
+      if (loaded.status === 'rejected')
+        throw loaded.reason;
+      if (counted.status === 'rejected')
+        throw counted.reason;
+      const [frame, total] = [loaded.value, counted.value];
       // an edit landed on the live frame while this load was in flight: the edited frame stays
       if (this.isDirty.peek()) {
         frame.dispose();
@@ -400,6 +423,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       });
       this._syncCurrent();
       this._syncSelection();
+      void this._formatCaptions(frame.df);
       if (this.isDraft)
         this.newRow({}, {pristine: true});
     } catch (e) {
@@ -426,6 +450,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       const added = await frame.append(this._spec(this._loaded));
       if (gen !== this._gen)
         return;
+      void this._formatCaptions(frame.df, this._loaded);
       this._loaded += added;
       this._done = added < this.pageSize;
       this._state.value = 'ready';
@@ -494,6 +519,18 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return () => this._guards.delete(check);
   }
 
+  /** Work Save waits for before its checks: a derivation still writing into the batch. */
+  hold(work: Promise<unknown>): void {
+    this._holds.add(work);
+    work.catch(() => {}).finally(() => this._holds.delete(work));
+  }
+
+  /** Resolves once every {@link hold} has, the ones started meanwhile included. */
+  async settled(): Promise<void> {
+    while (this._holds.size > 0)
+      await Promise.allSettled([...this._holds]);
+  }
+
   /** What keeps this source's batch from being sent — a guard's refusal, then the writer's
    * validity — set as the `error` ("Cannot save: Title is required"; the summary and a paired
    * form show it); null when saveable. The session runs it on every source of the batch it is
@@ -555,7 +592,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._isStale.value = false;
     for (const source of DomainSource.live) {
       if (source !== this && source.table === this.table && !source.isDirty.peek())
-        source.refresh().catch((e) => source.fail(e));
+        source._reload().catch((e) => source.fail(e));
     }
     if (!this._noRows && this._table !== undefined) {
       const total = await this._count(this._table);
@@ -591,18 +628,38 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return true;
   }
 
+  /** Re-reads what is loaded, keeping the window, the current row and the selection, with the host conditions
+   * answered again — the server moved under a clean source. */
+  private async _reload(): Promise<void> {
+    if (this._frame === undefined || this._restart)
+      return this.refresh();
+    const gen = this._gen;
+    const query = this.query.peek();
+    const served = await this._serve(query, new AbortController().signal);
+    if (gen !== this._gen)
+      return;
+    this._served = {query, as: served};
+    await this._rebase(this.pageSize);
+    this._isStale.value = false;
+    if (gen !== this._gen || this._table === undefined || this._noRows)
+      return;
+    const total = await this._count(this._table);
+    if (gen === this._gen)
+      this._total.value = total;
+  }
+
   /** The rows loaded so far, read again from the first one: a batch that inserted, deleted or
    * moved a row leaves the frame holding other rows than the server would answer at those
    * offsets, and the next page would skip or repeat. The current row and the selection are kept
    * by id — a saved draft under the id it was given. */
-  private async _rebase(): Promise<void> {
+  private async _rebase(least = 0): Promise<void> {
     const table = this._table;
     const frame = this._frame;
     if (table === undefined || frame === undefined || this._noRows)
       return;
     // the window as it was before the batch applied — `_loaded` is what the server answered, and
     // the frame may have just lost every row of it to a delete
-    const window = Math.max(this._loaded, frame.df.rowCount) || this.pageSize;
+    const window = Math.max(this._loaded, frame.df.rowCount, least) || this.pageSize;
     const gen = this._gen;
     const selected = this._selection.peek().map((row) => row.id);
     // read before the swap: a row the replacement does not hold takes `currentRow` with it
@@ -625,6 +682,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._edit.value = replacement.edit;
     });
     frame.dispose();
+    void this._formatCaptions(replacement.df);
     const at = current === null ? -1 : this._rows.indexOf(current);
     if (at >= 0) {
       replacement.df.currentRowIdx = at;
@@ -811,7 +869,30 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   private _count(table: DomainTableLike): Promise<number> {
-    return table.count(this._scope());
+    return table.count(this.readScope());
+  }
+
+  /** The frame's projected captions (`~caption_<column>`) from row `from` on, rewritten in each target's display
+   * format ({@link nameFormat}) as soon as that is known — within the tick once the target has been read — so the
+   * list, the form and the platform grid's reference cells all read DG-000123. */
+  private async _formatCaptions(df: DataFrameLike, from = 0): Promise<void> {
+    const nameFormat = DomainSource.nameFormat;
+    if (nameFormat === undefined)
+      return;
+    for (const prop of this._schema.properties) {
+      const column = Rows.caption(prop.name!);
+      if (df.columns.byName(column) === null)
+        continue;
+      const format = await nameFormat(prop.semType!);
+      if (this._df.peek() !== df)
+        return;
+      for (let i = from; format !== null && i < df.rowCount; i++) {
+        const caption = df.get(column, i);
+        const formatted = typeof caption === 'string' && caption !== '' ? format(caption) : caption;
+        if (formatted !== caption)
+          df.set(column, i, formatted);
+      }
+    }
   }
 
   /** One poll of a `live` source: the collection counted and dated in one request, against what
@@ -832,7 +913,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._probing = true;
     const gen = this._gen;
     try {
-      const now = await table.probe(this._scope());
+      const now = await table.probe(this.readScope());
       if (gen !== this._gen)
         return;
       this._failures = 0;
@@ -843,7 +924,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (this.isDirty.peek() || this.isSaving.peek())
         this._isStale.value = true;
       else
-        await this.refresh();
+        await this._reload();
     } catch {
       // the baseline stands: the next good probe compares against the last pair that WAS answered,
       // so a change made during an outage is still seen
@@ -883,8 +964,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     }
     const sort = this.sort.peek();
     const captions = this._captions();
-    return {...this._scope(), ...(sort === '' ? {} : {sort}),
-      limit: this.isEmpty ? 0 : limit, offset, withAccess: this.withAccess,
+    return {...this.readScope(), ...(sort === '' ? {} : {sort}),
+      limit: this._noRows ? 0 : limit, offset, withAccess: this.withAccess,
       ...(captions.length === 0 ? {} : {captions})};
   }
 
@@ -902,14 +983,103 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return listed === undefined ? refs : listed.filter((name) => refs.includes(name));
   }
 
-  /** What every read of this source is scoped to — the one object `_spec`, `count` and `probe`
-   * all take, so none of them can forward the query and forget the search or the trash mode. */
-  private _scope(): DomainReadScope {
-    const q = this.query.peek();
-    const search = this.search.peek();
+  /** What every read of this source is scoped to: the query as the server takes it, the search, the trash
+   * mode — what a page, a count, a probe and a bulk write over "all matching" share. */
+  readScope(): DomainReadScope {
+    const query = this.query.peek();
+    const q = this._served?.query === query ? this._served.as : query;
+    const key = this._keyTerm(this.search.peek());
+    const keyText = key === null ? '' : Filters.format(Filters.group('and', [key]));
+    const filter = typeof q !== 'string' ? Filters.toDomainTree(key === null ? q : Filters.group('and', [q, key])) :
+      keyText === '' ? q : q.trim() === '' ? keyText : `(${q}) and ${keyText}`;
+    const search = key === null ? this.search.peek() : '';
     const deleted = this.deleted.peek();
-    return {filter: typeof q === 'string' ? (q === '' ? undefined : q) : Filters.toDomainTree(q),
+    return {filter: filter === '' ? undefined : filter,
       ...(search === '' ? {} : {search}), ...(deleted === 'exclude' ? {} : {deleted})};
+  }
+
+  /** A search for the caption column's formatted number (`DG-000123`, or `123`, over an int `molregno`
+   * formatted `DG-000000`): the server searches text columns only, so it becomes that column's equality. */
+  private _keyTerm(search: string): FilterCondition | null {
+    const column = DomainSource.captionColumn(this._schema.info);
+    const prop = DomainSource.formattedNumber(this._schema.properties, column);
+    if (prop === undefined)
+      return null;
+    const prefix = /^[^0#]*/.exec(String(prop.format))?.[0] ?? '';
+    const term = search.trim();
+    // a bare number is the key as well: "12" means DG-000012, not every formula with a 12 in it
+    const digits = prefix !== '' && term.toLowerCase().startsWith(prefix.toLowerCase()) ? term.slice(prefix.length) :
+      term;
+    return /^\d+$/.test(digits) ? Filters.cond(column, '=', Number(digits)) : null;
+  }
+
+  /** The column a row is named by: the declared name column, else the first business-key column, else the id. */
+  static captionColumn(info: DomainTableInfoLike): string {
+    return info.nameColumn ?? info.businessKey[0] ?? 'id';
+  }
+
+  /** The column's property when it is a number in a display format — an autonumbered key read as `DG-000123`. */
+  static formattedNumber(properties: readonly IProperty[], column: string): IProperty | undefined {
+    const prop = properties.find((p) => p.name === column);
+    return prop !== undefined && (prop.format ?? '') !== '' && DomainSource.isNumber(prop) ? prop : undefined;
+  }
+
+  static isNumber(prop: IProperty): boolean {
+    const kind = Filters.kindOf(prop as FilterProperty);
+    return kind === Filters.KIND.INT || kind === Filters.KIND.BIG_INT || kind === Filters.KIND.FLOAT;
+  }
+
+  /** The query as the server takes it: every host condition answered by {@link hosted} as the ids of the rows
+   * it matches; text naming a host operator goes as its tree. */
+  private async _serve(query: string | FilterGroup, signal: AbortSignal): Promise<string | FilterGroup> {
+    const text = typeof query === 'string' ? query : null;
+    const parsed = text !== null && Filters.operators.hosted().some((o) => text.includes(o.id)) ?
+      Filters.parse(text, this._schema) : null;
+    const tree = typeof query !== 'string' ? query :
+      parsed !== null && parsed.problems.length === 0 ? parsed.root : null;
+    if (tree === null)
+      return query;
+    // a host condition is answered again only once the table has moved: a new sort, search or page reuses it
+    let versioned: Promise<string | null> | undefined;
+    const answered = new Map<string, {version: string, ids: readonly string[]}>();
+    const answer = async (c: FilterCondition): Promise<FilterCondition> => {
+      if (this.hosted === undefined)
+        throw new DomainBackendError('unsupported', `${this.table}: nothing answers "${c.operator}" here`);
+      // a condition parsed again carries new node ids: it is the same condition by what it asks
+      const key = JSON.stringify([c.property, c.operator, c.value ?? null, c.options ?? null]);
+      // a version that cannot be read only costs the reuse
+      const version = await (versioned ??= this._tableVersion().catch(() => null));
+      const last = this._answered.get(key);
+      const ids = version !== null && last?.version === version ? last.ids : await this.hosted(c, signal);
+      if (version !== null)
+        answered.set(key, {version, ids});
+      return DomainSource._within(ids);
+    };
+    const swap = async (group: FilterGroup): Promise<FilterGroup> => ({...group, nodes: await Promise.all(
+      group.nodes.map((n) => Filters.isGroup(n) ? swap(n) : Filters.operators.get(n.operator)?.host === true ?
+        answer(n) : n))});
+    const served = await swap(tree);
+    this._answered = answered;
+    return served;
+  }
+
+  /** The whole live table's change mark — its count and newest write; null where the backend cannot probe. Read
+   * before a host condition is answered, so a write meanwhile is never cached. */
+  private async _tableVersion(): Promise<string | null> {
+    const table = this._table;
+    if (table?.probe === undefined)
+      return null;
+    const {count, last} = await table.probe({});
+    return `${count}|${last}`;
+  }
+
+  /** How a sentence names the table's rows: 'order lines', or 'order line' for one. */
+  static noun(info: DomainTableInfoLike, plural = true): string {
+    return (plural ? info.pluralName : info.singularName).replace(/_/g, ' ').toLowerCase() || (plural ? 'rows' : 'row');
+  }
+
+  private static _within(ids: readonly string[]): FilterCondition {
+    return ids.length === 0 ? Filters.cond('id', 'is null') : Filters.cond('id', 'in', [...ids]);
   }
 
   /** A two-way `currentRow.<column>` step: reads the current row live, writes through it. */
@@ -951,7 +1121,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return plural(changes, 'unsaved change', 'unsaved changes');
     }
     const state = this.state.value;
-    const singular = this._schema.info.singularName.toLowerCase() || 'row';
+    const singular = DomainSource.noun(this._schema.info, false);
     // a draft is a row, not a row of the table yet; a draft source is a create form until the
     // draft is saved — then it holds the row it made, and says so, until the next New
     const loaded = items.filter((r) => !Rows.isDraft(r)).length;
@@ -962,7 +1132,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     if (state !== 'ready' && loaded === 0)
       return state === 'loading' ? 'Loading…' : '';
     const total = this.total.value;
-    const many = this._schema.info.pluralName.toLowerCase() || 'rows';
+    const many = DomainSource.noun(this._schema.info);
     if (this.deleted.value === 'only')
       return plural(total ?? loaded, `deleted ${singular}`, `deleted ${many}`);
     return !this.isDraft && total !== null && loaded < total ?

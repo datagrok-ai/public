@@ -9,7 +9,7 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Rows, Access, Filters, div, span,
-  timestamp, EMPTY, isEmpty, text, loader} from '@datagrok-libraries/u2';
+  link, timestamp, EMPTY, isEmpty, text, loader} from '@datagrok-libraries/u2';
 import type {Input, InputOptions, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
 import {propertyForm, ObjectForm, Editors, userInput, entityInput} from '@datagrok-libraries/u2/src/dg/index.js';
@@ -44,6 +44,9 @@ export interface DomainFormOptions extends Pick<ObjectFormOptions,
   /** The system columns (id, version, created, updated, author): left out by default, or a
    * compact muted block after the fields. */
   system?: 'hidden' | 'footer';
+  /** Columns set on a new row only: an input on a draft, read-only once the row is saved — the
+   * compound a batch was registered under. */
+  immutable?: string[];
 }
 
 const UNTOUCHED = 'u2-input-untouched';
@@ -60,6 +63,8 @@ export function isSaveKey(e: KeyboardEvent): boolean {
 }
 
 export class DomainForm extends Control {
+  /** What a draft's key the server assigns reads as until the insert lands. */
+  static readonly ASSIGNED = 'assigned on save';
   readonly source: DomainSource;
   readonly row: ReadonlySignal<RowView | null>;
   /** The current form's first problem, null while every field passes or there is no row. */
@@ -81,7 +86,9 @@ export class DomainForm extends Control {
    * columns (`number`, `version`, `created_on`, `author_id`) after the insert, not with it. */
   private _system: HTMLElement | null = null;
   /** Per readonly reference column of the current row: the id shown and the caption resolved for it. */
-  private readonly _captions = new Map<string, {id: string, caption: string}>();
+  private readonly _captions = new Map<string, {id: string, caption: string, table: string | null}>();
+  /** The draft's key columns the caller cannot type: the server assigns them on insert. */
+  private _assigned: string[] = [];
   private _editSub: {unsubscribe(): void} | undefined;
   private readonly _subs: {unsubscribe(): void}[];
 
@@ -208,10 +215,15 @@ export class DomainForm extends Control {
   }
 
   /** Focus to the first required field still empty, else the first — where a create form starts
-   * (past what the defaults filled), and where Save returns. Deferred past the rebuild a row
-   * change (a saved draft under its new key) may be running. */
+   * (past what the defaults filled), and where Save returns; the page stays where it is. Deferred
+   * past the rebuild a row change (a saved draft under its new key) may be running. Of the forms
+   * one page stacks (a new parent above the draft that refers to it), the topmost keeps it. */
   focus(): void {
     queueMicrotask(() => {
+      const held = document.activeElement?.closest('.u2-domain-form');
+      const forms = [...document.querySelectorAll('.u2-domain-form')];
+      if (held && forms.indexOf(held) < forms.indexOf(this.root))
+        return;
       this._form.peek()?.focusFirst(DomainForm.needsValue);
       // a Ctrl+S from inside a picker leaves its popup over the form, and the re-focus would open
       // one anyway (`openOnFocus`): the form comes back with nothing covering it
@@ -277,6 +289,7 @@ export class DomainForm extends Control {
       this.root.replaceChildren(form.root, this._verdict, ...(system === null ? [] : [system]));
       this._captions.clear();
       this._resolveCaptions(form, row, scope, system === null ? [] : DomainForm.systemProps(this.source));
+      this._applyAssigned(row);
       this._checkConstraints();
       // a draft is where typing starts — through `focus`, which leaves the pickers' popups shut:
       // a dropdown the user did not open is in the way, not an invitation
@@ -291,7 +304,8 @@ export class DomainForm extends Control {
     const table = DomainTable.of(source);
     const draft = Rows.isDraft(row);
     const system = new Set(SYSTEM_COLUMNS.map(([name]) => name));
-    const view = access.row(row);
+    const view = access.row(row).readOnlyFields([...DomainForm.derivedColumns(source),
+      ...(draft ? [] : options.immutable ?? [])]);
     // a ref column with a schema filter picks among the rows its siblings allow
     let overrides = options.overrides;
     for (const [name, filter] of Object.entries(table?.info.refFilters ?? {})) {
@@ -307,6 +321,9 @@ export class DomainForm extends Control {
       },
     });
     form.root.dataset.u2Row = row.id;
+    // a key the caller may not type on a draft is an autonumber: the server fills it in on insert
+    const policy = access.row(row).columnPolicy();
+    this._assigned = draft ? source.schema.info.businessKey.filter((name) => policy.field(name) === 'readonly') : [];
     // the schema constraints, pre-validated here; one naming a column the caller may not see is
     // left to the server
     this._constraints = DomainForm.constraintsOf(table, source.schema)
@@ -325,8 +342,14 @@ export class DomainForm extends Control {
       if (name === undefined)
         continue;
       input.root.classList.toggle(REQUIRED, !input.nullable);
-      input.addValidator((value) =>
-        source.edit.peek()?.errorOf(row.id, name) ?? table?.validators.check(name, value, row) ?? null);
+      input.addValidator((value) => source.edit.peek()?.errorOf(row.id, name) ??
+        table?.validators.check(name, value, row) ?? table?.derivationProblem(source, row.id, name) ?? null);
+      if (table?.derived.all.some((d) => d.from[0] === name)) {
+        input.effect(() => {
+          table.derivationProblem(source, row.id, name);
+          untracked(() => input.revalidate());
+        });
+      }
       // a pristine draft is not wrong yet: a field's verdict shows once it was edited or left
       if (draft) {
         input.root.classList.add(UNTOUCHED);
@@ -371,12 +394,17 @@ export class DomainForm extends Control {
         continue;
       const caption = SYSTEM_COLUMNS.find(([column]) => column === name)?.[2] ?? name;
       const raw = row[name];
-      const content = name === 'id' && draft ? 'assigned on save' :
+      const content = name === 'id' && draft ? DomainForm.ASSIGNED :
         (prop.propertyType ?? prop.type) === 'datetime' && raw !== null && raw !== undefined && raw !== '' ?
           timestamp(raw as Date | number | string, undefined, {utcDates: true}) : text(raw);
       block.append(ObjectForm.readonlyField(caption, name, content).row);
     }
     return block;
+  }
+
+  /** The columns the table's derivations write — read-only to every hand that edits a row. */
+  static derivedColumns(source: DomainSource): string[] {
+    return DomainTable.of(source)?.derived.targets ?? [];
   }
 
   /** The system columns the schema carries, in the platform's order. */
@@ -392,56 +420,77 @@ export class DomainForm extends Control {
   }
 
   /** A readonly reference shows what it points at, not the uuid it holds: the caption the query
-   * projected for it (`~caption_<column>`) where the frame carries one, resolved the way the
-   * picker resolves a preset id where it does not — a draft, a user, a group. */
+   * projected for it (`~caption_<column>`, in the target's display format) where the frame carries
+   * one, resolved the way the picker resolves a preset id where it does not: a draft, a user, a
+   * group. */
   private _resolveCaptions(form: ObjectForm, row: RowView, scope: Scope, extra: IProperty[]): void {
     let live = true;
     scope.own(() => live = false);
-    let projected = false;
+    const show = (prop: IProperty, id: string, caption: string) => {
+      if (!live)
+        return;
+      this._captions.set(prop.name!, {id, caption, table: DomainPick.isRowRef(prop) ? prop.semType! : null});
+      this._applyCaptions(row);
+    };
     for (const prop of [...form.properties, ...extra]) {
       const name = prop.name!;
-      const id = row[name];
-      if (form.input(name) !== undefined || !DomainTable.isReference(prop) ||
-          id === null || id === undefined || id === '' || this._captions.get(name)?.id === String(id))
+      const id = text(row[name]);
+      if (form.input(name) !== undefined || !DomainTable.isReference(prop) || id === '' ||
+          this._captions.get(name)?.id === id)
         continue;
       const caption = row[Rows.caption(name)];
-      if (caption !== undefined) {
-        // null is not a miss: the caller may not see the target, and a lookup answers the same
-        // nothing one request later
-        this._captions.set(name, {id: String(id), caption: typeof caption === 'string' ? caption : ''});
-        projected = true;
+      // a reference the client set (a saved draft's) carries no projected caption: null is a miss too
+      if (typeof caption !== 'string' || caption === '') {
+        void DomainForm.captionOf(prop, id).then((caption) => show(prop, id, caption));
         continue;
       }
-      void DomainForm.captionOf(prop, String(id)).then((caption) => {
-        if (!live || caption === null)
-          return;
-        this._captions.set(name, {id: String(id), caption});
-        this._applyCaptions(row);
-      }, () => undefined);
+      // the source formats the frame's captions as the target's format arrives, which may be after this form read it
+      show(prop, id, caption);
+      if (DomainPick.isRowRef(prop)) {
+        void DomainPick.nameFormat(prop.semType!).then((format) => {
+          if (format !== null)
+            show(prop, id, format(caption));
+        });
+      }
     }
-    if (projected)
-      this._applyCaptions(row);
   }
 
+  /** The resolved captions in their text rows; a saved row of another table reads as a link to it. */
   private _applyCaptions(row: RowView): void {
-    for (const [name, {id, caption}] of this._captions) {
+    for (const [name, {id, caption, table}] of this._captions) {
       if (String(row[name] ?? '') !== id)
         continue;
       const el = this.root.querySelector<HTMLElement>(`[data-u2-name="${name}"] [data-u2-part="readonly-value"]`);
-      if (el !== null)
+      if (el === null)
+        continue;
+      if (table === null || caption === DomainPick.UNKNOWN || !DomainPick.opens(table, id))
         el.textContent = caption;
+      else
+        el.replaceChildren(link(caption, () => DomainPick.open(table, id)));
+    }
+  }
+
+  private _applyAssigned(row: RowView): void {
+    for (const name of this._assigned) {
+      const el = this.root.querySelector<HTMLElement>(`[data-u2-name="${name}"] [data-u2-part="readonly-value"]`);
+      if (el === null)
+        continue;
+      const pending = Rows.isDraft(row) && isEmpty(row[name]);
+      if (pending)
+        el.textContent = DomainForm.ASSIGNED;
+      el.classList.toggle('u2-domain-draft', pending);
     }
   }
 
   /** The display name behind a reference value: the target table's name column, a user's or a
-   * group's friendly name; null when the platform does not answer. */
-  static captionOf(prop: IProperty, id: string): Promise<string | null> {
+   * group's friendly name; {@link DomainPick.UNKNOWN} when the platform does not answer. */
+  static captionOf(prop: IProperty, id: string): Promise<string> {
     const semType = prop.semType ?? '';
-    if (semType === 'User')
-      return grok.dapi.users.find(id).then((user) => user?.friendlyName ?? null);
-    if (semType === 'Group')
-      return grok.dapi.groups.find(id).then((group) => group?.friendlyName ?? null);
-    return DomainPick.resolve(semType, id).then((item) => item.name);
+    const name: Promise<string | undefined> = semType === 'User' ?
+      grok.dapi.users.find(id).then((user) => user?.friendlyName) :
+      semType === 'Group' ? grok.dapi.groups.find(id).then((group) => group?.friendlyName) :
+        DomainPick.resolve(semType, id).then((item) => item.name);
+    return name.then((n) => n || DomainPick.UNKNOWN, () => DomainPick.UNKNOWN);
   }
 
   /** What stands in for the form while there is no row: the load in progress, its failure, or
@@ -482,6 +531,7 @@ export class DomainForm extends Control {
     }
     // a refresh re-reads the uuid into the text row; the caption resolved for it is put back
     this._applyCaptions(row);
+    this._applyAssigned(row);
     this._checkConstraints();
   }
 
@@ -548,7 +598,7 @@ export class DomainForm extends Control {
   }
 
   static emptyHint(source: DomainSource): string {
-    const name = source.schema.info.singularName.toLowerCase() || 'row';
+    const name = DomainSource.noun(source.schema.info, false);
     return `Select ${/^[aeiou]/.test(name) ? 'an' : 'a'} ${name} to edit.`;
   }
 }
@@ -556,7 +606,7 @@ export class DomainForm extends Control {
 // the editors a schema's reference columns get everywhere a form is generated: a picker over the
 // target table for a `<schema>.<table>` ref, the platform pickers for a user or a group
 Editors.register({
-  match: (prop) => DomainTable.isReference(prop) && prop.semType !== 'User' && prop.semType !== 'Group',
+  match: (prop) => DomainPick.isRowRef(prop),
   create: (prop, options) => new DomainPick(prop.semType!, options),
 });
 Editors.register({

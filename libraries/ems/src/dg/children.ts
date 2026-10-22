@@ -5,7 +5,7 @@
    current row re-points to its real id and the tab re-queries by it. */
 import {Control, Scope, signal, untracked, ReadonlySignal, div, divH, span, TabStrip, loader,
   Rows} from '@datagrok-libraries/u2';
-import type {DomainSource} from '../core/domain-source.js';
+import {DomainSource} from '../core/domain-source.js';
 import {domains, DomainTable} from './facade.js';
 import {DomainApp} from './app.js';
 import {DomainErrors} from './errors.js';
@@ -13,10 +13,15 @@ import {DomainErrors} from './errors.js';
 export type DomainChildrenMode = 'grid' | 'list';
 
 export interface DomainChildrenOptions {
-  /** The child tables to show (`<schema>.<table>` or the bare name); every one by default. */
-  tables?: string[];
+  /** The child tables to show (`<schema>.<table>`, the bare name, or the app's own handle — whose
+   * validators, derivations, actions and renderer then hold in the tab); every one by default. */
+  tables?: (string | DomainTable)[];
   /** `grid` (default): the platform grid; `list`: a list beside a form. */
   mode?: DomainChildrenMode;
+  /** What New on a saved row's tab does instead of adding a row in the tab — open the child table's own create
+   * page with `values` (the reference to this row) filled in. A draft's children are always added in the tab:
+   * they are saved with it. */
+  onNew?: (entry: ChildEntry, values: Record<string, unknown>) => void;
 }
 
 /** One tab: the child table, the FK column pointing at the parent, the tab's id and label. */
@@ -37,9 +42,9 @@ export class DomainChildren extends Control {
   private readonly _status: HTMLElement;
   private readonly _sources = new Map<string, DomainSource>();
 
-  constructor(readonly parent: DomainSource, options: DomainChildrenOptions = {}) {
+  constructor(readonly parent: DomainSource, private readonly _options: DomainChildrenOptions = {}) {
     super();
-    this.mode = options.mode ?? 'grid';
+    this.mode = _options.mode ?? 'grid';
     this.entries = this._entries;
     this.root.classList.add('u2-domain-children');
     this.root.dataset.u2 = 'domain-children';
@@ -55,7 +60,7 @@ export class DomainChildren extends Control {
         return;
       built = true;
       // built once and kept: owned by this control, not by the effect run that triggered it
-      void this.runInScope(() => this._build(options.tables));
+      void this.runInScope(() => this._build(_options.tables));
     });
   }
 
@@ -64,18 +69,21 @@ export class DomainChildren extends Control {
     return this._sources.get(id);
   }
 
-  private async _build(only?: string[]): Promise<void> {
+  private async _build(only?: (string | DomainTable)[]): Promise<void> {
+    const names = only?.map((t) => typeof t === 'string' ? t : t.address);
     const at = (c: {schema: string, table: string}) =>
-      Math.max(only!.indexOf(`${c.schema}.${c.table}`), only!.indexOf(c.table));
-    const refs = this.parent.schema.info.childTables.filter((c) =>
-      only === undefined || only.includes(`${c.schema}.${c.table}`) || only.includes(c.table));
+      names!.findIndex((t) => t === `${c.schema}.${c.table}` || t === c.table);
+    const refs = this.parent.schema.info.childTables.filter((c) => only === undefined || at(c) >= 0);
     // the tabs are the caller's order where it named them; the registry's otherwise
     if (only !== undefined)
       refs.sort((a, b) => at(a) - at(b));
     this._status.replaceChildren(loader());
     let handles: DomainTable[];
     try {
-      handles = await Promise.all(refs.map((c) => domains.table(`${c.schema}.${c.table}`)));
+      handles = await Promise.all(refs.map((c) => {
+        const given = only?.[at(c)];
+        return given instanceof DomainTable ? given : domains.table(`${c.schema}.${c.table}`);
+      }));
     } catch (e) {
       this._status.replaceChildren(span(DomainErrors.message(e), 'u2-domain-children-error'));
       return;
@@ -134,7 +142,7 @@ export class DomainChildren extends Control {
       scope = undefined;
       this._sources.delete(entry.id);
       if (row === null) {
-        const singular = this.parent.schema.info.singularName.toLowerCase() || 'row';
+        const singular = DomainSource.noun(this.parent.schema.info, false);
         pane.replaceChildren(span(`Select a ${singular}.`, 'u2-domain-children-hint'));
         return;
       }
@@ -149,7 +157,9 @@ export class DomainChildren extends Control {
         const body = this.mode === 'grid' ? domains.grid(child, {hiddenColumns: [entry.fk]}).root :
           divH([domains.list(child).root, domains.form(child).root], 'u2-domain-children-split');
         const empty = span(`No ${entry.label.toLowerCase()}.`, 'u2-domain-children-empty');
-        pane.replaceChildren(divH([domains.newButton(child).root], 'u2-domain-children-toolbar'), body, empty);
+        const onNew = draft ? undefined : this._options.onNew;
+        const add = domains.newButton(child, {}, {onClick: onNew && (() => onNew(entry, {[entry.fk]: row.id}))});
+        pane.replaceChildren(divH([add.root], 'u2-domain-children-toolbar'), body, empty);
         pending.effect(() => {
           const none = child.state.value === 'ready' && child.rows.items.value.length === 0;
           empty.hidden = !none;

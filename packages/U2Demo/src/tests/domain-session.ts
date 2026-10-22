@@ -63,7 +63,7 @@ category('U2: domain session', () => {
       expect(event.item_id, draft.id, 'the child holds the parent\'s draft id');
       expect(session.isDirty.value, true);
       expect(session.changeCount.value, 2);
-      expect(session.summary.value, '2 unsaved changes in 2 tables');
+      expect(session.summary.value, '2 unsaved changes: 1 item and 1 item event');
       expect(await session.save(), true);
       expect(session.isDirty.value, false);
       const savedItem = parent.currentRow.value!;

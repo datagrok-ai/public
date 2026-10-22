@@ -3,12 +3,11 @@
    seam, so the memory backend's history shows the same way; refreshed when the row's session
    saves. A draft has no history yet, and says so. */
 import {emsBackends} from '../core/domain-backend.js';
-import * as grok from 'datagrok-api/grok';
 import {Control, signal, AsyncSource, div, divH, span, timestamp, text, badge, AsyncView, Section, VirtualList,
   Rows} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, BadgeVariant, IProperty, RowView} from '@datagrok-libraries/u2';
 import type {AuditEntryLike} from '../core/domain-backend.js';
-import type {DomainSource} from '../core/domain-source.js';
+import {DomainSource} from '../core/domain-source.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {DomainTable} from './facade.js';
 import {DomainForm} from './form.js';
@@ -21,6 +20,7 @@ const OPS: Record<string, [label: string, variant: BadgeVariant]> = {
   promote: ['shared', 'accent'],
 };
 const ITEM_HEIGHT = 40;
+const ACTOR: IProperty = {name: 'actor_id', semType: 'User'};
 
 export class DomainHistory extends Control {
   readonly row: ReadonlySignal<RowView | null>;
@@ -49,7 +49,7 @@ export class DomainHistory extends Control {
     this.root.append(section.root);
     this.effect(() => {
       const row = this.row.value;
-      const singular = source.schema.info.singularName.toLowerCase() || 'row';
+      const singular = DomainSource.noun(source.schema.info, false);
       // a draft id, and any other key the frame stood in for a row it has no id for, names
       // nothing the server could be asked about
       const hint = this._noHistory.value ? 'This table keeps no history.' :
@@ -69,7 +69,8 @@ export class DomainHistory extends Control {
   }
 
   /** The changed columns of an update, captions from the schema; the system columns a write
-   * always touches (version, updated) are not changes the user made. */
+   * always touches (version, updated) are not changes the user made, nor are the columns a
+   * derivation computed from the inputs the same entry shows — unless they are all it changed. */
   changesOf(entry: AuditEntryLike): string {
     return this.changedColumns(entry)
       .map(({prop, before, after}) => `${prop.friendlyName ?? prop.name}: ${text(before)} → ${text(after)}`)
@@ -83,9 +84,11 @@ export class DomainHistory extends Control {
       return [];
     const before = entry.before ?? {};
     const after = entry.after ?? {};
-    return this.source.schema.properties
-      .filter((p) => p.name! in after && !SYSTEM_COLUMNS.some(([name]) => name === p.name) &&
-        before[p.name!] !== after[p.name!])
+    const derived = DomainTable.of(this.source)?.derived.targets ?? [];
+    const changed = this.source.schema.properties.filter((p) => p.name! in after &&
+      !SYSTEM_COLUMNS.some(([name]) => name === p.name) && before[p.name!] !== after[p.name!]);
+    const own = changed.filter((p) => !derived.includes(p.name!));
+    return (own.length > 0 ? own : changed)
       .map((prop) => ({prop, before: before[prop.name!], after: after[prop.name!]}));
   }
 
@@ -112,11 +115,9 @@ export class DomainHistory extends Control {
   private _line(entry: AuditEntryLike): HTMLElement {
     const [label, variant] = OPS[entry.op] ?? [entry.op, 'default'];
     const actorId = entry.actor_id;
-    const actor = span(actorId ?? 'system', 'u2-domain-history-actor');
-    if (actorId !== null) {
-      void this._resolve(actorId, () => grok.dapi.users.find(actorId).then((user) => user?.friendlyName ?? null))
-        .then((name) => actor.textContent = name);
-    }
+    const actor = span(actorId === null ? 'system' : '…', 'u2-domain-history-actor');
+    if (actorId !== null)
+      void this._resolve(actorId, ACTOR).then((name) => actor.textContent = name);
     const changes = div([], 'u2-domain-history-changes');
     const retitle = () => changes.title = changes.textContent ?? '';
     let first = true;
@@ -131,15 +132,16 @@ export class DomainHistory extends Control {
     return line;
   }
 
-  /** A cell as the line shows it: a reference is the name it points at, an id standing in until
-   * the platform answers. This one keeps its own lookup where the rest of the domain path reads
+  /** A cell as the line shows it: a reference is the name it points at, once the platform
+   * answers. This one keeps its own lookup where the rest of the domain path reads
    * `~caption_<column>` off the frame: an audit line's `before`/`after` values are ids out of a
    * jsonb snapshot, not frame cells, and no caption column will ever carry them. */
   private _value(prop: IProperty, raw: unknown, resolved: () => void): HTMLElement {
-    const el = span(text(raw), 'u2-domain-history-value');
     const id = text(raw);
-    if (id !== '' && DomainTable.isReference(prop)) {
-      void this._resolve(id, () => DomainForm.captionOf(prop, id)).then((name) => {
+    const reference = id !== '' && DomainTable.isReference(prop);
+    const el = span(reference ? '…' : id, 'u2-domain-history-value');
+    if (reference) {
+      void this._resolve(id, prop).then((name) => {
         el.textContent = name;
         resolved();
       });
@@ -147,10 +149,10 @@ export class DomainHistory extends Control {
     return el;
   }
 
-  private _resolve(id: string, lookUp: () => Promise<string | null>): Promise<string> {
+  private _resolve(id: string, prop: IProperty): Promise<string> {
     let name = this._names.get(id);
     if (name === undefined) {
-      name = lookUp().then((n) => n ?? id, () => id);
+      name = DomainForm.captionOf(prop, id);
       this._names.set(id, name);
     }
     return name;

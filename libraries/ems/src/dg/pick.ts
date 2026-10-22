@@ -2,12 +2,16 @@
    holds, the box shows the name. `PickInput` is the face over any `TypeAhead`; `domains.pick` is
    the one over a domain table, querying it by its name column through the domain seam, so it
    works over the memory backend as it does over the server. */
+import * as DG from 'datagrok-api/dg';
 import {emsBackends} from '../core/domain-backend.js';
-import {Input, InputOptions, labelText, div, span, text, TypeAhead, Filters, Rows} from '@datagrok-libraries/u2';
-import type {ObjectRenderer, DomainCondition, DomainConditionNode, DomainConditionTree,
-  FilterSchema} from '@datagrok-libraries/u2';
-import type {DomainQueryLike, DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
+import {Input, InputOptions, labelText, div, span, text, TypeAhead, Filters, Rows,
+  iconButton} from '@datagrok-libraries/u2';
+import type {ObjectRenderer, DomainCondition, DomainConditionNode, DomainConditionTree, FilterSchema,
+  IProperty} from '@datagrok-libraries/u2';
+import type {DomainQueryLike, DomainTableLike} from '../core/domain-backend.js';
 import {DomainSource} from '../core/domain-source.js';
+import {DomainApp} from './app.js';
+import {DomainTable} from './facade.js';
 
 export interface PickItem {
   id: string;
@@ -152,7 +156,15 @@ export interface DomainPickOptions extends InputOptions<string | null> {
   debounceMs?: number;
 }
 
+/** Names {@link DomainPick.lookUp} asks the target for in one query. */
+const LOOKUP_CHUNK = 100;
+
 export class DomainPick extends PickInput<PickItem> {
+  /** What a reference no row answers for reads as — the uuid it holds would read as its value. */
+  static readonly UNKNOWN = '(unknown)';
+  /** How an app opens a row of one of its tables that no open view shows — its own view at the row;
+   * false leaves the row to the platform's entity view ({@link open}). */
+  static opener: ((table: string, id: string) => boolean) | undefined;
   /** The target's plural name once a search has seen its table — the empty row's wording. */
   private static readonly _plural = new Map<string, string>();
 
@@ -177,53 +189,134 @@ export class DomainPick extends PickInput<PickItem> {
         openOnFocus: true,
         // an empty table is not a dead end: say what there is none of yet
         emptyText: (query) => unbound.length > 0 ? `Pick a ${caption(unbound[0]).toLowerCase()} first` :
-          query.trim() === '' ?
-            `No ${(DomainPick._plural.get(table) ?? table.split('.').pop()!).toLowerCase()} yet` : 'No matches',
+          query.trim() !== '' ? 'No matches' :
+            `No ${DomainPick._plural.get(table) ?? table.split('.').pop()!.replace(/_/g, ' ').toLowerCase()} yet`,
       }),
       idOf: (item) => item.id,
       resolve: (id) => DomainPick.resolve(table, id),
     });
     this.root.dataset.u2 = 'domain-pick';
+    const open = this.runInScope(() =>
+      iconButton('external-link-alt', () => DomainPick.open(table, this.value.peek()!), {tooltip: 'Open'}));
+    open.dataset.u2Part = 'open';
+    this.addOptions(open);
+    this.effect(() => open.hidden = !DomainPick.opens(table, this.value.value));
+  }
+
+  /** Opens the row a reference holds: the app open over its table brings it forward, else the
+   * {@link opener} the app set, else the platform's entity view. After the click that asked for it:
+   * the view a click lands in makes itself current as the click bubbles up to it. */
+  static open(table: string, id: string): void {
+    setTimeout(() => {
+      if (DomainApp.activate(DomainApp.baseOf(table), id) || DomainPick.opener?.(table, id) === true)
+        return;
+      const handler = new DG.DomainObjectHandler(table);
+      handler.openRow(handler.rowFrom({id}));
+    });
+  }
+
+  /** Whether a reference holds a row there is to open — a saved one — and something here opens it: an app open
+   * over its table, or the {@link opener} an app set. */
+  static opens(table: string, id: string | null): boolean {
+    return id !== null && id !== '' && !Rows.isDraft(id) &&
+      (DomainApp.baseOf(table) !== undefined || DomainPick.opener !== undefined);
   }
 
   /** The candidates for `query`: the rows whose name column contains it, in the table's own order
-   * (as seeded — statuses, priorities; a declared order is a phase-4 `views` item). */
+   * (as seeded — statuses, priorities; a declared order is a phase-4 `views` item). A name column
+   * that is a formatted number is matched by the digits a typed id carries; text with none is
+   * searched for over the table's other searchable columns, and with none of those finds nothing. */
   static async search(table: string, query: string,
     options: {filter?: DomainPickOptions['filter'], limit?: number} = {}): Promise<PickItem[]> {
     const t = await DomainPick.table(table);
-    DomainPick._plural.set(table, t.info.pluralName);
-    const nameColumn = DomainPick.nameColumn(t.info);
+    DomainPick._plural.set(table, DomainSource.noun(t.info));
+    const nameColumn = DomainSource.captionColumn(t.info);
+    const numeric = DomainSource.formattedNumber(t.properties, nameColumn) !== undefined;
+    const search = numeric && DomainPick.digits(query) === '' ? query.trim() : '';
+    if (search !== '' && t.info.searchableColumns.every((c) => c === nameColumn))
+      return [];
     const rows = await t.query({
-      filter: DomainPick.filter(nameColumn, query, options.filter),
+      filter: DomainPick.filter(nameColumn, query, options.filter, numeric),
+      ...(search === '' ? {} : {search}),
       limit: options.limit ?? 10,
     });
-    return rows.map((row) => DomainPick.item(row, nameColumn));
+    return rows.map((row) => DomainPick.item(row, nameColumn, t.properties));
   }
 
   /** The item behind an id; a draft id is the draft's caption from the live source holding it,
-   * no query issued; an id the table does not answer is shown as itself. A backend that declares
+   * no query issued; an id the table does not answer is {@link UNKNOWN}. A backend that declares
    * `resolveNames` answers it there — over the platform that is the registry's resolver, batched
    * and cached, so a formful of refs is one call; every other backend reads the row. */
   static async resolve(table: string, id: string): Promise<PickItem> {
     const draft = Rows.isDraft(id) ? DomainSource.draftOf(id) : undefined;
     if (draft !== undefined) {
       const info = draft.source.schema.info;
-      const name = text(draft.row[DomainPick.nameColumn(info)]);
-      return {id, name: name === '' ? `New ${info.singularName.toLowerCase() || 'row'}` : name};
+      const name = text(draft.row[DomainSource.captionColumn(info)]);
+      return {id, name: name === '' ? `New ${DomainSource.noun(info, false)}` : name};
     }
     const backend = emsBackends.domain;
     if (backend?.resolveNames !== undefined) {
       const name = (await backend.resolveNames(table, [id]))[id];
-      return {id, name: name || id};
+      if (!name)
+        return {id, name: DomainPick.UNKNOWN};
+      const format = await DomainPick.nameFormat(table);
+      return {id, name: format === null ? name : format(name)};
     }
     const t = await DomainPick.table(table);
+    const nameColumn = DomainSource.captionColumn(t.info);
     const [row] = await t.query({filter: {property: 'id', operator: '=', value: id}, limit: 1});
-    return row === undefined ? {id, name: id} : DomainPick.item(row, DomainPick.nameColumn(t.info));
+    return row === undefined ? {id, name: DomainPick.UNKNOWN} : DomainPick.item(row, nameColumn, t.properties);
   }
 
-  /** The declared name column, else the first business-key column, else the id. */
-  static nameColumn(info: DomainTableInfoLike): string {
-    return info.nameColumn ?? info.businessKey[0] ?? 'id';
+  /** How a name the server answered bare reads in `table`: the registry's resolver and a query's
+   * `~caption_<column>` give a numbered name as its digits, and the display format is the table's
+   * name column's. Null where that column is not a formatted number, or the table cannot be read;
+   * the backend reads a table's schema once per address. */
+  static nameFormat(table: string): Promise<((name: string) => string) | null> {
+    return DomainPick.table(table).then((t) => {
+      const nameColumn = DomainSource.captionColumn(t.info);
+      if (DomainSource.formattedNumber(t.properties, nameColumn) === undefined)
+        return null;
+      return (name: string) =>
+        /^\d+$/.test(name) ? DomainTable.captionText(t.properties, nameColumn, Number(name)) : name;
+    }, () => null);
+  }
+
+  /** The ids of the rows `names` name in `table`, matched exactly on its name column — a number
+   * by its value, a formatted one by the digits it carries; a name no row holds is absent. */
+  static async lookUp(table: string, names: readonly string[]): Promise<Map<string, string>> {
+    const t = await DomainPick.table(table);
+    const nameColumn = DomainSource.captionColumn(t.info);
+    const prop = t.properties.find((p) => p.name === nameColumn);
+    const formatted = DomainSource.formattedNumber(t.properties, nameColumn) !== undefined;
+    const number = prop !== undefined && DomainSource.isNumber(prop);
+    const byValue = new Map<unknown, string[]>();
+    for (const name of names) {
+      const typed = formatted ? DomainPick.digits(name) : name.trim();
+      const value = number ? Number(typed) : typed;
+      if (typed === '' || Number.isNaN(value))
+        continue;
+      byValue.set(value, [...(byValue.get(value) ?? []), name]);
+    }
+    const values = [...byValue.keys()];
+    const queries: Promise<Record<string, unknown>[]>[] = [];
+    for (let at = 0; at < values.length; at += LOOKUP_CHUNK) {
+      const chunk = values.slice(at, at + LOOKUP_CHUNK);
+      queries.push(t.query({filter: {property: nameColumn, operator: '=', value: chunk},
+        columns: [nameColumn], limit: chunk.length}));
+    }
+    const ids = new Map<string, string>();
+    for (const rows of await Promise.all(queries)) {
+      for (const row of rows) {
+        for (const name of byValue.get(row[nameColumn]) ?? [])
+          ids.set(name, String(row.id));
+      }
+    }
+    return ids;
+  }
+
+  static isRowRef(prop: IProperty): boolean {
+    return DomainTable.isReference(prop) && prop.semType !== 'User' && prop.semType !== 'Group';
   }
 
   /** A string filter with its `$name`s bound to `params` (an empty sibling counts as absent), as a
@@ -249,12 +342,19 @@ export class DomainPick extends PickInput<PickItem> {
     return {filter: unbound.length > 0 ? undefined : Filters.toDomainTree(root), unbound};
   }
 
+  /** The digits a typed id carries — `DG-000123` and `123` both mean 123; '' where it has none. */
+  static digits(query: string): string {
+    return /\d+/.exec(query)?.[0] ?? '';
+  }
+
   static filter(nameColumn: string, query: string,
-    extra?: DomainPickOptions['filter']): DomainQueryLike['filter'] {
+    extra?: DomainPickOptions['filter'], numeric = false): DomainQueryLike['filter'] {
     const nodes: DomainConditionNode[] = [];
-    const q = query.trim();
-    if (q !== '')
-      nodes.push({property: nameColumn, operator: 'like', value: `%${Filters.escapeLike(q)}%`});
+    const q = numeric ? DomainPick.digits(query) : query.trim();
+    if (q !== '') {
+      nodes.push(numeric ? {property: nameColumn, operator: '=', value: Number(q)} :
+        {property: nameColumn, operator: 'like', value: `%${Filters.escapeLike(q)}%`});
+    }
     const more = typeof extra === 'string' ?
       (extra.trim() === '' ? undefined : Filters.toDomainTree(Filters.parse(extra).root)) : extra;
     if (more !== undefined) {
@@ -265,8 +365,8 @@ export class DomainPick extends PickInput<PickItem> {
     return nodes.length === 0 ? undefined : nodes;
   }
 
-  static item(row: Record<string, unknown>, nameColumn: string): PickItem {
-    const name = text(row[nameColumn]);
+  static item(row: Record<string, unknown>, nameColumn: string, properties: IProperty[]): PickItem {
+    const name = DomainTable.captionText(properties, nameColumn, row[nameColumn]);
     return {id: String(row.id), name: name === '' ? String(row.id) : name};
   }
 

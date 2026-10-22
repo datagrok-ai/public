@@ -3,6 +3,7 @@
    back to the business key and then the id — and `PickInput`'s face keeps value and box in step. */
 
 import {emsBackends} from '../src/core/domain-backend.js';
+import {DomainSource} from '../src/core/domain-source.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
@@ -76,7 +77,7 @@ scoped('candidates come from the target\'s name column; a pick writes the id, ty
   pick.dispose();
 });
 
-scoped('a written id resolves to its name; an unknown id shows itself', async () => {
+scoped('a written id resolves to its name; an unknown id reads as unknown, never as itself', async () => {
   emsBackends.domain = backend();
   const pick = new DomainPick('grit.project', {label: 'Project', value: 'p2'});
   const input = mount(pick);
@@ -85,7 +86,8 @@ scoped('a written id resolves to its name; an unknown id shows itself', async ()
   assert.equal(pick.value.value, 'p2', 'resolving did not clear the value');
   pick.value.value = 'nope';
   await flush();
-  assert.equal(input.value, 'nope');
+  assert.equal(input.value, '(unknown)');
+  assert.equal(pick.value.value, 'nope', 'the value stands');
   pick.value.value = null;
   await flush();
   assert.equal(input.value, '');
@@ -95,7 +97,8 @@ scoped('a written id resolves to its name; an unknown id shows itself', async ()
 scoped('a backend that declares resolveNames answers an id there: one call, no query', async () => {
   const calls = [];
   emsBackends.domain = {
-    table: () => assert.fail('the resolver path reads no row'),
+    table: async () => ({info: {nameColumn: 'name', businessKey: []}, properties: [],
+      query: () => assert.fail('the resolver path reads no row')}),
     saveAll: () => Promise.resolve(true),
     resolveNames: (table, ids) => {
       calls.push({table, ids: [...ids]});
@@ -104,8 +107,8 @@ scoped('a backend that declares resolveNames answers an id there: one call, no q
   };
   assert.deepEqual(await DomainPick.resolve('grit.project', 'p1'), {id: 'p1', name: 'Grit'});
   assert.deepEqual(calls, [{table: 'grit.project', ids: ['p1']}]);
-  assert.deepEqual(await DomainPick.resolve('grit.project', 'gone'), {id: 'gone', name: 'gone'},
-    'an id the resolver answers null for is shown as itself');
+  assert.deepEqual(await DomainPick.resolve('grit.project', 'gone'), {id: 'gone', name: '(unknown)'},
+    'an id the resolver answers null for is unknown, not itself');
 });
 
 scoped('an extra filter narrows the candidates; an empty query lists them all', async () => {
@@ -135,11 +138,11 @@ scoped('the name column falls back to the business key, then to the id', async (
     blob: {columns: {size: {type: 'int'}}},
   }}, {rows: {thing: [{id: 't1', code: 'AB'}, {id: 't2', code: 'CD'}], blob: [{id: 'b1', size: 1}]}});
   const table = await emsBackends.domain.table('x.thing');
-  assert.equal(DomainPick.nameColumn(table.info), 'code');
+  assert.equal(DomainSource.captionColumn(table.info), 'code');
   assert.deepEqual(await DomainPick.search('x.thing', 'c'), [{id: 't2', name: 'CD'}]);
   assert.deepEqual(await DomainPick.resolve('x.thing', 't1'), {id: 't1', name: 'AB'});
   const blob = await emsBackends.domain.table('x.blob');
-  assert.equal(DomainPick.nameColumn(blob.info), 'id');
+  assert.equal(DomainSource.captionColumn(blob.info), 'id');
   assert.deepEqual(await DomainPick.search('x.blob', ''), [{id: 'b1', name: 'b1'}]);
 });
 
@@ -354,4 +357,44 @@ scoped('DomainPick.bind: a bound filter is a tree, an empty sibling leaves the n
   const tree = {property: 'key', operator: '=', value: 'DG'};
   assert.deepEqual(DomainPick.bind(tree), {filter: tree, unbound: []});
   assert.deepEqual(DomainPick.bind(undefined), {unbound: []});
+});
+
+scoped('the row a reference holds is a click away: the app open over its table, else the app\'s opener, else the platform', async () => {
+  emsBackends.domain = backend();
+  const DG = await import('datagrok-api/dg');
+  const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0});
+  mount(pick);
+  const open = pick.root.querySelector('[data-u2-part="open"]');
+  assert.notEqual(open, null, 'beside the box');
+  assert.equal(open.hidden, true, 'nothing picked: nothing to open');
+  pick.value.value = 'p1';
+  await flush();
+  assert.equal(open.hidden, true, 'no app over the table and no opener: nothing here opens it');
+  const asked = [];
+  DomainPick.opener = (table, id) => {
+    asked.push([table, id]);
+    return true;
+  };
+  try {
+    pick.value.value = null;
+    pick.value.value = 'p1';
+    await flush();
+    assert.equal(open.hidden, false);
+    open.click();
+    assert.deepEqual(asked, [], 'not while the click still bubbles through the view it came from');
+    await flush();
+    assert.deepEqual(asked, [['grit.project', 'p1']], 'an app that docks its own views opens it there');
+    DomainPick.opener = () => false;
+    const opened = DG.DomainObjectHandler.opened.length;
+    open.click();
+    await flush();
+    assert.equal(DG.DomainObjectHandler.opened.length, opened + 1, 'anything else is the platform\'s entity view');
+    assert.equal(DG.DomainObjectHandler.opened.at(-1).id, 'p1');
+    pick.value.value = '~new:draft';
+    await flush();
+    assert.equal(open.hidden, true, 'a new row is not a row to open yet');
+  } finally {
+    DomainPick.opener = undefined;
+  }
+  pick.dispose();
 });

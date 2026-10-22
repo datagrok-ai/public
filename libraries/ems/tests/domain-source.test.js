@@ -810,7 +810,7 @@ source('spec: two u2-domain-source tags share the instance\'s ambient session â€
   assert.equal(SharedSession.ambient, undefined, 'nothing leaks past the build');
   const parent = projects.newRow({key: 'S', name: 'Spec project'});
   issuesSrc.newRow({project_id: parent.id, title: 'Spec issue'});
-  assert.equal(SharedSession.of(instance).summary.value, '2 unsaved changes in 2 tables');
+  assert.equal(SharedSession.of(instance).summary.value, '2 unsaved changes: 1 project and 1 issue');
   assert.equal(await fn(issuesSrc, 'save').apply(), true, 'cmd:issues.save saves the whole spec');
   assert.equal(SharedSession.of(instance).isDirty.value, false);
   const [p, i] = ['grit.project', 'grit.issue'].map((t) => emsBackends.domain.tableSync(t).rows.at(-1));
