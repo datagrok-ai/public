@@ -4,7 +4,14 @@
 
 * Runtime, MCP server: Updated the Node.js base images to 22.23.4 (Node.js October 2026 security release)
 
-* AI: The assistant now connects to Anthropic with your organization's Anthropic API key only; Claude subscription sign-in, OpenAI, Amazon Bedrock and Microsoft Foundry are no longer supported
+* AI: The assistant runs on Claude and GPT models through Anthropic, OpenRouter, OpenAI, Microsoft Azure, Amazon Bedrock, Databricks or your own Anthropic- or OpenAI-compatible endpoint; Claude subscription sign-in is not supported
+* AI: The `claude-runtime` container now needs a `model` credential naming the model to run, as the provider names it (e.g. `claude-sonnet-5-5`): a container with only an API key no longer starts
+* AI: At startup the AI runtime checks its provider and model with one short call, and logs whether it answered
+* AI: A turn's cost limit applies only where the AI runtime knows the model's price (OpenAI, OpenRouter, older Claude models); on Claude 5.5, Bedrock, Azure, Databricks and custom endpoints only the call limit bounds a turn
+* AI: Web addresses the assistant writes as plain text, such as a documentation link, are clickable
+* AI: Deleting a project, space or file always waits for you to approve it on a confirmation card, even after you declined an earlier one
+* AI: Box plots and pivot tables the assistant adds are split by the columns you asked for, and the averages and medians it reports skip missing values
+* AI: On GPT models the assistant works through its skills and the view's functions instead of searching the platform's source code, and answers a question about the data without detours, in about a quarter fewer steps
 * AI: Web search and web page reading now go through the free tiers of Exa, Parallel, Firecrawl and Keenable (third-party search services)
 * AI: A missing or invalid API key is now reported within seconds instead of minutes, and model errors appear as errors rather than as the assistant's answer
 * AI: A chat goes on after the runtime loses its agent process (killed, out of memory): the next prompt continues from the stored history

@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as rxjs from 'rxjs';
-import {ClaudeRuntimeClient, ClaudeModel} from '../../claude/runtime-client';
+import {ClaudeRuntimeClient} from '../../claude/runtime-client';
 import {UsageLimiter} from '../usage-limiter';
 import {AIPanel} from '../panel';
 import {runPromptWithLifecycle, RENDERED_EVENT} from '../ui';
@@ -220,7 +220,6 @@ User query: ${prompt}`;
     let order = functionNames;
     try {
       const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt, {
-        model: ClaudeModel.Haiku,
         systemPromptMode: 'none',
         outputSchema: orderSchema,
       });

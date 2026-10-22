@@ -25,7 +25,6 @@ export interface UserMessage {
   mcpServerUrl?: string;
   outputSchema?: object;
   systemPromptMode?: PromptMode;
-  model?: string;
   clientTools?: ClientToolDef[];
   /** Per-turn gate switches, for A/B experiments (benchmark arms, dev harness). Both default
    * true; the gates are quality mechanisms, not security boundaries, so a client may turn its
@@ -93,7 +92,6 @@ export interface AgentTurnRequest {
   systemPrompt: string;
   /** Reasoning effort; without one the agent asks for no thinking where the model allows it. */
   effort?: 'high';
-  model?: string;
   cwd: string;
   userDir?: string;
   /** The browser holds a transcript for this session: if the runtime has none, the turn resets instead. */
@@ -135,6 +133,7 @@ export type AgentCommand =
 
 export type AgentProcessEvent =
   | {type: 'ready'}
+  | {type: 'checked'; error: string | null}
   | {type: 'fatal'; message: string}
   | {type: 'session'; id: string}
   | {type: 'text'; text: string}

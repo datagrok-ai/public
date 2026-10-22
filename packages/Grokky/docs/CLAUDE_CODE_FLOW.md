@@ -45,8 +45,8 @@ Docker subsystem. The platform discovers and starts them automatically when the 
   `/opt/hermes`): one `python -m grokky_agent` process per chat session
   ([`agent/grokky_agent/`](../dockerfiles/claude-runtime/agent/grokky_agent/)), which embeds Hermes' `AIAgent`
   and exchanges JSON lines with the server over stdin/stdout. See [Operations](#operations).
-- The Anthropic API key reaches each agent process only in the first line of its stdin; Hermes calls the
-  Anthropic Messages API directly. No key is in an agent's environment or in a file.
+- The provider key reaches each agent process only in the first line of its stdin; Hermes calls the
+  provider's model API directly. No key is in an agent's environment or in a file.
 - Ships the `datagrok-*` skills ([`plugin/`](../dockerfiles/claude-runtime/plugin/)).
 - Health check: `GET /health` → `{status: "ok"}`.
 
@@ -140,7 +140,7 @@ tini (pid 1)
     ├── python -m grokky_agent           one per chat session: own process group, own HERMES_HOME
     │   │   stdin   init (credentials, settings), then turn / continue / cancel / browser_result
     │   │   stdout  events: ready, session, text, tool_start, tool_end, browser_call, stopped, …
-    │   ├── Hermes AIAgent ──▶ Anthropic Messages API (x-api-key: apiKey)
+    │   ├── Hermes AIAgent ──▶ the provider's model API (apiKey)
     │   ├── MCP client     ──▶ mcp-server (the user's Datagrok key in the headers)
     │   └── tool processes (terminal, …)
     └── python -m grokky_agent           warm spare, not yet bound to a session
@@ -168,12 +168,10 @@ tini (pid 1)
    expects to resume (`resumeExpected`) but the runtime holds neither a live process nor a parked session
    for it; the browser then replays its transcript once. Otherwise it takes the session's agent process
    from the pool (live, reloaded from its parked store, a warm spare, or a new one) and sends a `turn`
-   command: text and images, system prompt, effort, the browser's model id, cwd, output schema, the browser's
+   command: text and images, system prompt, effort, cwd, output schema, the browser's
    `clientTools`, the Datagrok MCP URL with the user's key in its headers, and the limits.
 6. The agent ([`session.py`](../dockerfiles/claude-runtime/agent/grokky_agent/session.py)) prepares its
-   `AIAgent` — the turn's model, or the default of [`models.yaml`](../dockerfiles/claude-runtime/agent/grokky_agent/models.yaml)
-   (another model continues the same stored conversation; a model `models.yaml` does not price ends the turn
-   with an error), this turn's
+   `AIAgent` on the configured model ([Credentials](#credentials)), this turn's
    view tools and MCP server (re-registered only when they change), thinking on or off — and runs the
    conversation. The hooks registered by the in-process plugin
    ([`hermes_plugin/`](../dockerfiles/claude-runtime/agent/grokky_agent/hermes_plugin/)) act for the turn:
@@ -184,8 +182,8 @@ tini (pid 1)
      `api_request_error` keeps the provider's error text, and `pre_auxiliary_call` / `post_auxiliary_call`
      track and count history compression;
    - the `llm_request` middleware puts the turn's system prompt and output format on every model
-     request. If it cannot, it sends a request the API refuses instead, so nothing of the conversation
-     leaves the process.
+     request, in the request's format. If it cannot, it sends a request the API refuses instead, so nothing
+     of the conversation leaves the process.
 7. `session.ts` forwards the agent's events (mapping below), racing each against a 90 s idle watchdog
    ([`watchdog.ts`](../dockerfiles/claude-runtime/src/watchdog.ts)). Browser round-trips in flight don't
    count, and the agent sends an `activity` heartbeat at most every 30 s while a tool or compression call
@@ -290,14 +288,15 @@ MCP tools, their `op`; view tools and unknown tools read as their name.
 - `none`: no system prompt at all.
 
 The agent's `llm_request` middleware
-([`providers/anthropic.py`](../dockerfiles/claude-runtime/agent/grokky_agent/providers/anthropic.py)
-`patch_request`) sets the request's `system` to the turn's prompt (with `cache_control: ephemeral`), or
-removes it in `none` mode, so the mode can change from turn to turn within a session. Full mode runs
-with thinking at `high` effort; `bash` and `none` turns ask for no thinking and run without gates, which
-Hermes maps per model: off on Haiku 5.5, between tool calls only on Sonnet 5.5, and Opus 5.5 keeps its
-adaptive thinking, which it cannot turn off.
+([`formats.py`](../dockerfiles/claude-runtime/agent/grokky_agent/formats.py)) puts the turn's prompt where
+the request's format has it (Anthropic's `system` with `cache_control: ephemeral`, Responses' `instructions`,
+Chat Completions' leading message), or removes it in `none` mode, so the mode can change from turn to turn
+within a session. Full mode runs with thinking at `high` effort; `bash` and `none` turns ask for no thinking
+and run without gates, which Hermes maps per model: off on Haiku 5.5, between tool calls only on Sonnet 5.5,
+and Opus 5.5 keeps its adaptive thinking, which it cannot turn off. On the Responses format `none` is sent as
+`low`, since some GPT models always reason.
 
-`DATAGROK_PROMPT` instructs Claude to:
+`DATAGROK_PROMPT` instructs the model to:
 
 - Use `workspace/`-relative paths for the public repo clone (absolute `/workspace` is blocked by the access guard).
 - Route capability-shaped requests through the `datagrok-*` skills (`skill_view`).
@@ -483,11 +482,11 @@ Runtime paths are relative to [`dockerfiles/claude-runtime/`](../dockerfiles/cla
 | [`agent/grokky_agent/browser_tools.py`](../dockerfiles/claude-runtime/agent/grokky_agent/browser_tools.py) | Browser and view tools as native Hermes tools |
 | [`agent/grokky_agent/guard.py`](../dockerfiles/claude-runtime/agent/grokky_agent/guard.py) | Access guard on tool arguments, relative edit paths |
 | [`agent/grokky_agent/hermes.yaml`](../dockerfiles/claude-runtime/agent/grokky_agent/hermes.yaml), [`config.py`](../dockerfiles/claude-runtime/agent/grokky_agent/config.py) | Hermes' config for every session, written to `HERMES_HOME/config.yaml` with the skills directory and compression threshold |
-| [`agent/grokky_agent/models.yaml`](../dockerfiles/claude-runtime/agent/grokky_agent/models.yaml), [`models.py`](../dockerfiles/claude-runtime/agent/grokky_agent/models.py) | The models a turn may name, the default, and their prices (the cost limit) |
+| [`agent/grokky_agent/formats.py`](../dockerfiles/claude-runtime/agent/grokky_agent/formats.py) | The wire formats (Anthropic Messages, OpenAI Responses, Chat Completions): system prompt and output schema placement, the refused request |
 | [`agent/grokky_agent/hermes.py`](../dockerfiles/claude-runtime/agent/grokky_agent/hermes.py) | Every Hermes API the driver calls, typed |
 | [`agent/grokky_agent/protocol.py`](../dockerfiles/claude-runtime/agent/grokky_agent/protocol.py) | The JSON-lines protocol (`AgentCommand` / `AgentProcessEvent` in `src/types.ts`) |
 | [`agent/grokky_agent/structured.py`](../dockerfiles/claude-runtime/agent/grokky_agent/structured.py) | Output-schema check (`jsonschema`) |
-| [`agent/grokky_agent/providers/`](../dockerfiles/claude-runtime/agent/grokky_agent/providers/) | `Provider` base and `AnthropicProvider`: connection, strict schema, request patch, credential checks |
+| [`agent/grokky_agent/providers/`](../dockerfiles/claude-runtime/agent/grokky_agent/providers/) | One class per provider: credential checks, the formats it serves and where (`routes`), price list, error hints |
 | [`dockerfiles/mcp-server/src/index.ts`](../dockerfiles/mcp-server/src/index.ts) | MCP tool registry |
 | [`dockerfiles/mcp-server/src/api-client.ts`](../dockerfiles/mcp-server/src/api-client.ts) | HTTP client to Datagrok API |
 | [`src/claude/runtime-client.ts`](../src/claude/runtime-client.ts) | Browser WebSocket client, RxJS subjects, `ClaudeRuntimeClient` singleton |
@@ -521,7 +520,7 @@ See the [process model](#process-model).
   config, loads the plugin, and answers `ready`, or `fatal` with the reason (a refused credential, the
   plugin not loading). An agent that is not ready within the ready timeout is disposed and its turn errors
   with "The assistant could not start: …".
-- Warm spares are started ahead with Hermes loaded and an `AIAgent` built for the default model; a new chat
+- Warm spares are started ahead with Hermes loaded and an `AIAgent` built for the configured model; a new chat
   takes a ready spare, or takes over one that is still starting rather than starting a second process.
 - An idle session's process is evicted after the idle TTL (checked every minute), or earlier at the process
   cap when a new chat has no spare to take: spares go first, then the least recently used idle session. A busy session is never evicted, so the
@@ -572,7 +571,7 @@ See the [process model](#process-model).
 | `HERMES_READY_TIMEOUT_MS` | 30000 | an agent that has not answered `ready` by then is disposed; its turn errors |
 | `HERMES_COMPRESSION_THRESHOLD_TOKENS` | 160000 | history compression trigger (estimated prompt tokens) |
 | `HERMES_LOG_STDERR` | unset | any value forwards every agent stderr line to the runtime log |
-| `ANTHROPIC_UPSTREAM` | `https://api.anthropic.com` | test stubs and loggers only: `https://api.anthropic.com`, or http(s) to `127.0.0.1`, `localhost`, `[::1]` or `host.docker.internal`; with any other value every agent refuses to start |
+| `TEST_UPSTREAM` | unset | test stubs and loggers only: replaces the scheme, host and port of every model URL (the path stays); http(s) to `127.0.0.1`, `localhost`, `[::1]` or `host.docker.internal`, or https to the provider's own host; with any other value every agent refuses to start |
 | `DATAGROK_API_URL` | injected by Datlas | the URL user identity is verified against; without it, the first client-supplied URL is trusted (dev only) |
 
 `entrypoint.sh` passes each of these variables through `env -i`, so
@@ -588,38 +587,60 @@ limit in `container.json`.
 
 ### Credentials
 
-Set on the Grokky package's credentials; the spawner injects them into the container.
+The provider settings are the `claude-runtime` container's credentials (its Credentials dialog), which the
+platform passes to the container as environment variables.
 
 | Credential | Meaning |
 |---|---|
-| `apiKey` | Anthropic Console API key (`sk-ant-api…`); required |
-| `provider` | absent or `Anthropic`, the only provider |
+| `provider` | `Anthropic` (default), `OpenAI`, `OpenRouter`, `Azure`, `Bedrock`, `Databricks` or `Custom` |
+| `apiKey` | The provider's key; required |
+| `model` | The one model every turn runs on, as the provider names it; required |
+| `baseUrl` | Azure: the resource; Databricks: the workspace; Custom: the endpoint; OpenAI: a data-residency host |
+| `region` | Bedrock: the AWS region the key was created in |
+| `apiFormat` | Custom: `anthropic-messages`, `openai-responses` or `openai-chat-completions` |
+| `service` | Databricks: a model service of the workspace (`<catalog>.<schema>.<name>`) to call `model` through |
 
-The server takes these (and `ANTHROPIC_UPSTREAM`) out of its environment at startup and sends them to each
-agent in its `init` line (`PROVIDER_ENV` in `src/constants.ts`); the agent's provider
-(`agent/grokky_agent/providers/anthropic.py`) checks them and passes the key to Hermes in memory. An agent
-refuses to start, so every turn ends in an `error` "The assistant could not start: …", when `apiKey` is
-missing, is a Claude subscription token (an `sk-ant-` key other than `api`, `usr`, `svc` or `admin`, a JWT
-or `cc-…`, which Hermes would send as a Claude Code login), or contains whitespace or control characters;
-when `provider` names anything else; or when `ANTHROPIC_UPSTREAM` is not an allowed host. The server
-itself stays up; the log shows the reason as `agent: warm spare failed to start: …`. A key Anthropic
-rejects ends the turn in an `error` with the provider's message; a 401 adds a hint to check `apiKey`. An
-answer the provider's safety filter stops mid-stream ends in an `error` that says so, not with the cut-off text.
-The browser names each turn's model (`ClaudeModel` in `src/claude/runtime-client.ts`: `claude-haiku-5-5`,
-`claude-sonnet-5-5`, `claude-opus-5-5`) and the runtime passes it through; `agent/grokky_agent/models.yaml`
-holds the default and the price of each model, which the cost limit needs, so a turn naming a model it does
-not list ends with an error. Claude subscription logins are not supported: Anthropic allows them only in its
-own applications, such as Claude Code, never in a third-party product
-([Claude Code legal and compliance](https://code.claude.com/docs/en/legal-and-compliance#authentication-and-credential-use)). The strict-schema mapping lives in `providers/anthropic.py`; another provider would be a
-`Provider` subclass (`providers/base.py`) registered in `providers/__init__.py`.
+The server takes these (and `TEST_UPSTREAM`) out of its environment at startup and sends them to each agent in
+its `init` line (`PROVIDER_CREDENTIALS` in `src/constants.ts`). Each provider (`agent/grokky_agent/providers/`)
+checks its credentials and declares the formats it serves and where; with two, a model whose name contains
+`claude` is called in Anthropic's Messages format and any other in OpenAI's Responses format. An agent whose
+provider refuses the credentials does not start, so every turn ends in "The assistant could not start: …",
+naming the credential, never its value. A rejected key ends the turn with the provider's message and a hint
+naming the credential to check.
+
+Prices come from Hermes' list for the provider (`agent/usage_pricing.py`: Anthropic's and OpenAI's published
+prices, OpenRouter's live ones). Bedrock, Azure, Databricks and custom endpoints have none, nor does a model the
+list lacks (it stops at Claude Sonnet 5 and Opus 5): such a turn reports `costUsd: null` and only its call limit
+bounds it. Hermes finds the context window itself; images go to the model as they are.
+
+At startup the server runs `python -m grokky_agent --check` once: one short call to the model on the path a turn
+takes. The log reads `provider check: <provider> <model> answered`, or `failed: <error>`, and `/health` reports
+it as `provider`; turns do not wait for it.
+
+- Anthropic: a Claude subscription token is refused, for any key bound for `api.anthropic.com`: Anthropic allows
+  those only in its own applications
+  ([legal and compliance](https://code.claude.com/docs/en/legal-and-compliance#authentication-and-credential-use)).
+- OpenRouter: the account needs purchased credits (a key limit alone ends in 402); Claude turns with an output
+  schema ask for hosts that support it (`provider.require_parameters`).
+- Azure: a Foundry resource serves Claude and GPT, an Azure OpenAI one GPT only. A Claude deployment's name must
+  contain `claude` and no dot (Hermes picks Claude's thinking by the name); its key goes as `x-api-key`
+  (`hermes.send_keys_by_type`). Entra ID is not supported.
+- Bedrock: a long-term key (a short-term one ends with its console session). The agent refuses Hermes' runtime
+  install of the AWS SDK (`hermes.refuse_aws_sdk`): it only served a context probe and cost about 35 s.
+- Databricks: `model` a model service such as `system.ai.claude-sonnet-5-5`; with `service`, the workspace's
+  own service (an external provider's model) goes in the `Databricks-Model-Provider-Service` header and
+  `model` is the provider's model id. A Free Edition workspace reaches Claude only that way.
+- Custom: https only, the key as Bearer. OpenAI's Chat Completions refuses GPT-6 tools with a reasoning effort.
+- Claude's signed thinking is sent back only to hosts that can verify it (Anthropic, Bedrock, Azure); on
+  OpenRouter, Databricks and other hosts Claude does not see its earlier reasoning.
 
 ### Build and run
 
 ```bash
 cd packages/Grokky/dockerfiles/claude-runtime
 docker build -t grokky-claude-runtime:<version> .
-docker run --rm -p 5355:5355 -e apiKey grokky-claude-runtime:<version>   # apiKey exported in this shell
-curl -s localhost:5355/health          # {"status":"ok"}
+docker run --rm -p 5355:5355 -e apiKey -e model=claude-sonnet-5-5 grokky-claude-runtime:<version>
+curl -s localhost:5355/health          # {"status":"ok","provider":{"error":null}} once checked
 ```
 
 Hermes is pinned by `HERMES_COMMIT` in the Dockerfile's `hermes` stage and built with Hermes' own
@@ -701,13 +722,13 @@ package and its runtime image deployed.
   Expect `tini` (pid 1, root), then `node /app/dist/server.js` and one `python -m grokky_agent` per live
   session plus the spares, all as uid 1001. A non-dumpable process's `environ`, `mem` and `fd` need
   `CAP_SYS_PTRACE`, even for root: `docker exec --privileged -u 0`.
-- What the model receives: the middleware sets `system` (the mode's prompt) and, for `outputSchema`
-  turns, `output_config.format`; the model id and thinking come from the agent's `AIAgent`.
+- What the model receives: the middleware sets the mode's prompt and, for `outputSchema` turns, the output
+  format where the request's format has them (`formats.py`); the model id and thinking come from `AIAgent`.
 - A model request with `model: grokky-refused` means the middleware could not vouch for it (no turn in
   progress, or the patch failed); the API rejects it and nothing of the conversation went out.
 - Structured output errors: "The output schema cannot be used: …" (before any model call) means the
-  schema is not a JSON object or not a valid schema of its draft (draft-07 when it declares none). The
-  provider gets the schema reduced to its strict grammar; the reply is validated against the original with
+  schema is not a JSON object or not a valid schema of its draft (draft-07 when it declares none). Anthropic's
+  format gets the schema reduced to its strict grammar, OpenAI's as sent; the reply is validated against the original with
   `jsonschema`, and a mismatch is sent back to the model, up to 5 attempts: "… after 5 attempts" means
   every reply failed. The check runs in the session's own process, so a backtracking `pattern` stalls only
   that session, which the idle watchdog ends.
