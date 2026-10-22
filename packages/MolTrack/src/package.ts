@@ -15,6 +15,7 @@ import {registerSemanticTypes} from './utils/detectors';
 import {MolTrackEms} from './ems/app';
 import {DemoData} from './ems/demo-data';
 import {MolTrackTables} from './ems/tables';
+import {domains} from '@datagrok-libraries/ems/src/dg';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -200,7 +201,10 @@ export class PackageFunctions {
     @grok.decorators.param({options: {description: 'Rows to register - the structures are in a column named smiles or structure or molfile'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {description: 'Write nothing if any row fails', initialValue: 'false'}}) rejectAll: boolean,
   ): Promise<DG.DataFrame> {
-    return await MolTrackEms.register(table, rejectAll);
+    // a frame a script builds carries no semType yet: the structures are in the column the description names
+    const structure = table.columns.names().find((name) => /^(smiles|molfile)$/i.test(name));
+    return await domains.importRows(await MolTrackTables.compounds(), table,
+      {allOrNothing: rejectAll, mapping: structure === undefined ? {} : {original_structure: structure}});
   }
 
   @grok.decorators.func({

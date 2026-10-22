@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {domains, DomainTable} from '@datagrok-libraries/ems/src/dg';
+import {DomainQueries} from '@datagrok-libraries/ems';
+import {domains, DomainSkip, DomainTable} from '@datagrok-libraries/ems/src/dg';
 import {moleculeRenderer} from '@datagrok-libraries/u2/src/dg/index.js';
 import {Rows, divH, divV, isEmpty, span, text} from '@datagrok-libraries/u2';
 import type {RowView} from '@datagrok-libraries/u2';
@@ -20,12 +21,8 @@ export interface Registered {
 }
 
 export class MolTrackTables {
-  static readonly CHUNK = 500;
-  /** The row cap of a JSON query. */
-  static readonly MAX_ROWS = 10000;
   private static readonly _handles = new Map<string, Promise<DomainTable<any>>>();
   private static readonly _batches = new Map<string, {keys: Set<string>, done: Promise<Map<string, unknown>>}>();
-  private static readonly _lookedUp = new Map<string, Registered>();
 
   static matchRule(): MatchRule {
     const rule = Chemistry.package().settings?.['CompoundMatchingRule'];
@@ -36,35 +33,15 @@ export class MolTrackTables {
     return isEmpty(value) ? '' : DomainTable.captionText(table.properties, column, Number(value));
   }
 
-  static alreadyRegistered(corporateId = ''): string {
-    return corporateId === '' ? 'This structure is already registered' :
-      `This structure is already registered as ${corporateId}`;
-  }
-
-  static async inChunks<V, T>(values: V[], run: (chunk: V[]) => Promise<T[]>): Promise<T[]> {
-    const results: T[] = [];
-    for (let at = 0; at < values.length; at += MolTrackTables.CHUNK)
-      results.push(...await run(values.slice(at, at + MolTrackTables.CHUNK)));
-    return results;
-  }
-
-  /** Every row of a paged `query`, which must sort by a unique column for the pages to line up. */
-  static async allPages<T>(query: (page: {limit: number, offset: number}) => Promise<T[]>,
-    size = MolTrackTables.CHUNK): Promise<T[]> {
-    const rows: T[] = [];
-    for (let offset = 0; ; offset += size) {
-      const page = await query({limit: size, offset});
-      rows.push(...page);
-      if (page.length < size)
-        return rows;
-    }
+  static alreadyRegistered(corporateId: string): string {
+    return `This structure is already registered as ${corporateId}`;
   }
 
   /** The earliest compound registered under each of `hashes` in `column`. */
   static async registered(column: HashColumn | 'hash_mol', hashes: string[]): Promise<Map<string, Registered>> {
-    const rows = await MolTrackTables.inChunks(hashes, (chunk) => MolTrackTables.allPages((page) =>
+    const rows = await DomainQueries.chunked(hashes, (chunk) => DomainQueries.all((page) =>
       moltrackEmsDb.compounds.query({filter: DG.cond(column, '=', chunk), columns: [column, 'molregno'],
-        sort: 'molregno', ...page}), MolTrackTables.MAX_ROWS));
+        sort: 'molregno', ...page}), DomainQueries.MAX_ROWS));
     const found = new Map<string, Registered>();
     for (const row of rows) {
       if (!found.has(row[column]!))
@@ -76,24 +53,6 @@ export class MolTrackTables {
   // batched: a bulk run derives every row at once, and its lookups go out as one query per chunk
   static lookup(column: HashColumn, hash: string): Promise<Registered | undefined> {
     return MolTrackTables._batched(column, hash, (hashes) => MolTrackTables.registered(column, hashes));
-  }
-
-  /** The compounds registered under `hashes` as the compound derivation last looked them up. */
-  static lookedUp(hashes: Iterable<string>): Map<string, Registered> {
-    const found = new Map<string, Registered>();
-    for (const hash of hashes) {
-      const existing = MolTrackTables._lookedUp.get(hash);
-      if (existing !== undefined)
-        found.set(hash, existing);
-    }
-    return found;
-  }
-
-  /** The registered compound a compound draft's structure turns out to be, as its derivation last looked it up. */
-  static duplicateOf(row: RowView): Registered | undefined {
-    const other = Rows.isDraft(row) && typeof row.hash_mol === 'string' ?
-      MolTrackTables._lookedUp.get(row.hash_mol) : undefined;
-    return other?.id === row.id ? undefined : other;
   }
 
   /** One configured handle per table for the page: every caller shares its derivation, validators and renderer. */
@@ -140,10 +99,10 @@ export class MolTrackTables {
 
   // `hash_mol` is the identity a compound was registered under: counted where it would differ, never rewritten
   static async reidentify(): Promise<string> {
-    const rows = await MolTrackTables.allPages((page) => moltrackEmsDb.compounds.query({
+    const rows = await DomainQueries.all((page) => moltrackEmsDb.compounds.query({
       columns: ['original_structure', 'structure', 'match_rule', 'hash_mol'], sort: 'molregno', ...page}));
     let moved = 0;
-    await MolTrackTables.inChunks(rows, async (chunk) => {
+    await DomainQueries.chunked(rows, async (chunk) => {
       const ops: MoltrackEmsTransactionOp[] = [];
       for (const row of chunk) {
         const identity =
@@ -181,21 +140,19 @@ export class MolTrackTables {
       from: ['original_structure'],
       to: ['structure', 'hash_mol', 'match_rule', 'hash_all_layers', 'hash_stereo_insensitive',
         'hash_tautomer_insensitive', 'inchi', 'inchikey', 'formula'],
+      unique: 'hash_mol',
       derive: async (row) => {
         const rule = MolTrackTables.matchRule();
         const identity = await Chemistry.identify(row.original_structure!, rule);
-        const existing = await MolTrackTables.lookup(HASH_COLUMNS[rule], identity.hash_mol);
-        if (existing === undefined)
-          MolTrackTables._lookedUp.delete(identity.hash_mol);
-        else
-          MolTrackTables._lookedUp.set(identity.hash_mol, existing);
+        // a saved compound is the one registered under its hash; an imported row has no id yet
+        const existing = row.id !== undefined && !Rows.isDraft(row) ? undefined :
+          await MolTrackTables.lookup(HASH_COLUMNS[rule], identity.hash_mol);
+        if (existing !== undefined) {
+          throw new DomainSkip(
+            MolTrackTables.alreadyRegistered(MolTrackTables.corporateId(table, 'molregno', existing.molregno)));
+        }
         return {...identity};
       },
-    });
-    table.validators.add('original_structure', (value, row) => {
-      const other = MolTrackTables.duplicateOf(row);
-      return other === undefined ? null :
-        MolTrackTables.alreadyRegistered(MolTrackTables.corporateId(table, 'molregno', other.molregno));
     });
     table.validators.add('cas', (value) =>
       typeof value === 'string' && value !== '' && !CAS.test(value) ? 'CAS must look like 50-78-2' : null);

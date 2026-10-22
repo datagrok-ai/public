@@ -1,12 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {DomainPick, DomainTable} from '@datagrok-libraries/ems/src/dg';
+import {DomainQueries} from '@datagrok-libraries/ems';
+import {domains, DomainTable, IMPORT_COLUMNS} from '@datagrok-libraries/ems/src/dg';
 import {moltrackEmsDb} from '../generated/db';
 import type {AssayResultInsert, AssayRunInsert} from '../generated/db';
 import {Chemistry} from './chemistry';
-import {Registration} from './registration';
-import {MolTrackTables, SCHEMA} from './tables';
+import {MolTrackTables} from './tables';
 
 const ASSAY = 'Hepatocyte Stability';
 
@@ -29,18 +29,11 @@ export class DemoData {
     const batches = await DemoData.table('batches');
     let failed = 0;
     if (await moltrackEmsDb.compounds.count() === 0) {
-      // a column the batch has too (Source) is the batch's
-      const ofBatch = Registration.autoMap(batches, await MolTrackTables.batches()).columns;
-      const mapping = Registration.autoMap(batches, await MolTrackTables.compounds());
-      for (const name of Object.keys(ofBatch))
-        delete mapping.columns[name];
-      const registered = await Registration.register(batches, mapping);
-      const grokIds = registered.col(Registration.COMPOUND_ID)!.toList() as (string | null)[];
-      const idOf = await DomainPick.lookUp(`${SCHEMA}.compound`, grokIds.filter((id): id is string => !!id));
-      const rows = grokIds.flatMap((id, i) => !id ? [] :
-        [Registration.values(batches, i, ofBatch, {compound_id: idOf.get(id)})]);
-      await moltrackEmsDb.compoundBatches.batch(rows, {mode: 'insert'});
-      failed = batches.rowCount - rows.length;
+      const registered = await domains.importRows(await MolTrackTables.compounds(), batches,
+        {allOrNothing: false, mapping: {original_structure: 'smiles'}});
+      const imported = await domains.importRows(await MolTrackTables.batches(), registered,
+        {allOrNothing: false, mapping: {compound_id: 'Grok ID'}});
+      failed = imported.col(IMPORT_COLUMNS.result)!.toList().filter((result) => result !== 'Added').length;
     }
 
     await moltrackEmsDb.assays.upsert({name: ASSAY, assay_format: 'in cellulo', biological_system: 'hepatocyte'});
@@ -51,11 +44,11 @@ export class DemoData {
       run_date: `${DemoData.day(r['assay date'])}T00:00:00Z`, assayer: String(r['assayer']).trim()}));
     if (await moltrackEmsDb.assayRuns.count() === 0)
       await moltrackEmsDb.assayRuns.batch(runs);
-    const runOf = new Map((await MolTrackTables.allPages((page) =>
+    const runOf = new Map((await DomainQueries.all((page) =>
       moltrackEmsDb.assayRuns.query({columns: ['cell_lot', 'run_date'], sort: 'id', ...page})))
       .map((r) => [`${r.cell_lot}|${DemoData.day(r.run_date)}`, r.id]));
 
-    const batchOf = new Map((await MolTrackTables.allPages((page) =>
+    const batchOf = new Map((await DomainQueries.all((page) =>
       moltrackEmsDb.compoundBatches.query({columns: ['epa_batch_id'], sort: 'batch_regno', ...page})))
       .map((b) => [b.epa_batch_id, b.id]));
     const results = DemoData.records(await DemoData.table('assay_results')).map((r): AssayResultInsert => {

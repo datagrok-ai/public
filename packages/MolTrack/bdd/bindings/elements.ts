@@ -27,11 +27,11 @@ ems.element('condition threshold', {selector: '[data-u2="filter-row"] [data-u2-p
   description: 'the similarity a structure condition asks for at least'});
 ems.element('condition remove', {selector: '[data-u2="filter-row"] [data-u2-part="remove"]',
   description: 'the − that removes a condition'});
-ems.element('register mapping', {selector: '.moltrack-ems-register-mapping',
-  description: 'the bulk registration\'s table of file columns and what each registers as'});
-ems.element('register preview', {selector: '.moltrack-ems-register-preview',
+ems.element('import mapping', {selector: '.u2-domain-import-mapping',
+  description: 'the import wizard\'s table of file columns and the column each fills'});
+ems.element('import preview', {selector: '.u2-domain-import-preview',
   description: 'what each row of the file becomes, before anything is written'});
-ems.element('register report', {selector: '.moltrack-ems-register-report',
-  description: 'the outcome of the registration, row by row'});
+ems.element('import report', {selector: '.u2-domain-import-report',
+  description: 'the outcome of the import: the counts, the problems, each new row\'s key'});
 ems.element('more actions', {selector: '[data-u2="actions-menu"]',
   description: 'the ⋯ of the ribbon: Import, Bulk edit and Trash on a list, the row\'s Delete and actions on a record'});

@@ -179,8 +179,8 @@ export const bulkExample = Given('the bulk registration example is open, and its
       df.name = 'bulk-registration';
       grok.shell.addTableView(df);
     }, readFileSync(BULK_EXAMPLE, 'utf8'));
-  }, {tier: 'api', description: 'opens bdd/fixtures/bulk-registration.csv (three new structures, a salt of one of them, a ' +
-    'registered one, a broken one) as a table, and deletes the compounds it registers now and when the feature ends'});
+  }, {tier: 'api', description: 'opens bdd/fixtures/bulk-registration.csv (three new structures, a registered one, a ' +
+    'broken one) as a table, and deletes the compounds it registers now and when the feature ends'});
 
 export const bulkRegistered = Then('the bulk registration example should have {int} new compounds on the server',
   async (page: Page, compounds: number) => {

@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import {DomainQueries} from '@datagrok-libraries/ems';
 import type {DomainTable} from '@datagrok-libraries/ems/src/dg';
 import type {FilterCondition} from '@datagrok-libraries/u2';
 import type {CompoundRow} from '../generated/db';
@@ -49,7 +50,7 @@ export class StructureSearch {
 
   private static async _column(column: 'structure' | 'original_structure', signal?: AbortSignal):
     Promise<{ids: string[], structures: string[]}> {
-    const rows = await MolTrackTables.allPages((page) => {
+    const rows = await DomainQueries.all((page) => {
       signal?.throwIfAborted();
       return moltrackEmsDb.compounds.query({columns: [column], sort: 'molregno', ...page});
     }, StructureSearch.PAGE);

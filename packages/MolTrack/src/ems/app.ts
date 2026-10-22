@@ -1,14 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DomainApp, DomainPick, DomainTable} from '@datagrok-libraries/ems/src/dg';
-import type {ChildEntry} from '@datagrok-libraries/ems/src/dg';
+import {domains, DomainApp, DomainPick, DomainTable} from '@datagrok-libraries/ems/src/dg';
+import type {DomainViewOptions} from '@datagrok-libraries/ems/src/dg';
 import {Rows, isEmpty, span} from '@datagrok-libraries/u2';
 import type {RowView} from '@datagrok-libraries/u2';
 import type {CompoundBatchRow, CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
 import {CompoundsApp} from './compounds-app';
-import {Registration} from './registration';
 import {MolTrackTables, SCHEMA} from './tables';
 
 import '@datagrok-libraries/ems/src/dg/styles.js';
@@ -36,81 +35,20 @@ export const VIEWS: ViewEntry[] = [
 ];
 
 export class MolTrackEms {
-  static async view(table: string): Promise<DG.ViewBase> {
-    MolTrackTables.warmUp();
-    DomainPick.opener = MolTrackEms.openRow;
-    const entry = VIEWS.find((v) => v.table === table)!;
-    const handle = await MolTrackTables.table(table);
-    return handle.app({
-      name: entry.name, path: MolTrackEms.baseOf(entry),
-      mode: table === 'compound' ? 'cards' : 'brief',
-      filters: {mode: 'builder', placement: 'left'}, sorts: entry.sorts,
-      ...(entry.children === undefined ? {children: false} :
-        {children: {tables: await Promise.all(entry.children.map((child) => MolTrackTables.table(child))),
-          ...(entry.childPages ? {onNew: (child: ChildEntry, values: Record<string, unknown>) =>
-            void MolTrackEms.createIn(child.table.address, values)} : {})}}),
-      // the server keeps both write-once: a compound's structure, and the compound a batch is of
-      ...(table === 'compound' ? {app: CompoundsApp, include: [...CompoundsApp.FIELDS, ...CompoundsApp.DETAILS],
-        immutable: ['original_structure'],
-        sections: [{title: 'Registration details', include: CompoundsApp.DETAILS, expanded: false,
-          hint: 'Registration hashes, matching rule, InChI'}],
-        context: (row: RowView) => Rows.isDraft(row) ? null :
-          MolTrackEms.compoundCard(handle, row as RowView<CompoundRow>)} : {}),
-      ...(table === 'compound_batch' ? {immutable: ['compound_id'], context: (row: RowView) => {
-        const id = (row as RowView<CompoundBatchRow>).compound_id;
-        return isEmpty(id) ? null : ui.wait(async () =>
-          MolTrackEms.compoundCard(await MolTrackTables.compounds(), await moltrackEmsDb.compounds.get(id)));
-      }} : {}),
-    });
-  }
-
-  static async register(df: DG.DataFrame, rejectAll: boolean): Promise<DG.DataFrame> {
-    return await Registration.register(df, Registration.autoMap(df, await MolTrackTables.compounds()), {rejectAll});
-  }
+  static readonly views = domains.views({path: APP_PATH,
+    handle: (address) => MolTrackTables.table(address.split('.')[1]),
+    views: VIEWS.map((entry) => ({table: `${SCHEMA}.${entry.table}`, name: entry.name, childPages: entry.childPages,
+      options: (handle: DomainTable) => MolTrackEms._options(handle, entry)}))});
 
   /** A new view at an address (`Compounds?entity=new`, `Batches`, `Register` — the bulk registration over the
-   * compounds) — what the app func answers the router, which docks it. The router hands over the path alone: a cold
-   * deep link's query is replayed from the address bar by the view itself. */
-  static async open(address = ''): Promise<DG.ViewBase> {
-    const {entry, rest, bulk} = MolTrackEms._route(address);
-    const view = await MolTrackEms.view(entry.table);
-    void DomainApp.of(view)!.open(rest);
-    if (bulk)
-      MolTrackEms._import(view);
-    return view;
+   * compounds) — what the app func answers the router, which docks it. */
+  static open(address = ''): Promise<DG.ViewBase> {
+    return MolTrackEms._at(address, (at) => MolTrackEms.views.open(at));
   }
 
   /** An address from inside the app — the tree, a link: the open view comes forward at it, else a new one docks. */
-  static async show(address: string): Promise<DG.ViewBase> {
-    const {entry, rest, bulk} = MolTrackEms._route(address);
-    const open = DomainApp.openAt(MolTrackEms.baseOf(entry), rest);
-    if (open !== undefined && bulk)
-      MolTrackEms._import(open);
-    return open ?? grok.shell.addView(await MolTrackEms.open(address));
-  }
-
-  /** A row of a table with a view, opened there: what a reference's open control does when no view shows it. */
-  static openRow(address: string, id: string): boolean {
-    const entry = VIEWS.find((v) => `${SCHEMA}.${v.table}` === address);
-    if (entry === undefined)
-      return false;
-    void MolTrackEms.show(`${MolTrackEms.segmentOf(entry)}?entity=${id}`);
-    return true;
-  }
-
-  /** The create page of a table's view with `values` filled in — the open view's, else a new one's. */
-  static async createIn(address: string, values: Record<string, unknown>): Promise<void> {
-    const entry = VIEWS.find((v) => `${SCHEMA}.${v.table}` === address)!;
-    if (!DomainApp.createAt(MolTrackEms.baseOf(entry), values))
-      await DomainApp.of(await MolTrackEms.show(MolTrackEms.segmentOf(entry)))!.create(values);
-  }
-
-  static segmentOf(entry: ViewEntry): string {
-    return entry.name.replace(/ /g, '');
-  }
-
-  static baseOf(entry: ViewEntry): string {
-    return `${APP_PATH}/${MolTrackEms.segmentOf(entry)}`;
+  static show(address: string): Promise<DG.ViewBase> {
+    return MolTrackEms._at(address, (at) => MolTrackEms.views.show(at));
   }
 
   static async compoundPanel(corporateId: string): Promise<DG.Widget> {
@@ -143,19 +81,39 @@ export class MolTrackEms {
     for (const [name, address] of [['Compound', 'Compounds?entity=new'], ['Batch', 'Batches?entity=new'],
       ['Bulk', 'Register']])
       register.item(name).onSelected.subscribe(() => void MolTrackEms.show(address));
-    const search = appNode.getOrCreateGroup('Search');
-    for (const entry of VIEWS)
-      search.item(entry.name).onSelected.subscribe(() => void MolTrackEms.show(MolTrackEms.segmentOf(entry)));
+    MolTrackEms.views.tree(appNode.getOrCreateGroup('Search'));
   }
 
-  private static _route(address: string): {entry: ViewEntry, rest: string, bulk: boolean} {
-    const [, segment, rest] = /^\/?([^/?]*)(.*)$/.exec(address)!;
-    const bulk = segment === 'Register';
-    return {entry: bulk ? VIEWS[0] : VIEWS.find((v) => MolTrackEms.segmentOf(v) === segment) ?? VIEWS[0], rest, bulk};
+  private static async _options(handle: DomainTable, entry: ViewEntry): Promise<DomainViewOptions> {
+    MolTrackTables.warmUp();
+    const table = entry.table;
+    return {
+      mode: table === 'compound' ? 'cards' : 'brief',
+      filters: {mode: 'builder', placement: 'left'}, sorts: entry.sorts,
+      children: entry.children === undefined ? false :
+        {tables: await Promise.all(entry.children.map((child) => MolTrackTables.table(child)))},
+      // the server keeps both write-once: a compound's structure, and the compound a batch is of
+      ...(table === 'compound' ? {app: CompoundsApp, include: [...CompoundsApp.FIELDS, ...CompoundsApp.DETAILS],
+        immutable: ['original_structure'],
+        sections: [{title: 'Registration details', include: CompoundsApp.DETAILS, expanded: false,
+          hint: 'Registration hashes, matching rule, InChI'}],
+        context: (row: RowView) => Rows.isDraft(row) ? null :
+          MolTrackEms.compoundCard(handle, row as RowView<CompoundRow>)} : {}),
+      ...(table === 'compound_batch' ? {immutable: ['compound_id'], context: (row: RowView) => {
+        const id = (row as RowView<CompoundBatchRow>).compound_id;
+        return isEmpty(id) ? null : ui.wait(async () =>
+          MolTrackEms.compoundCard(await MolTrackTables.compounds(), await moltrackEmsDb.compounds.get(id)));
+      }} : {}),
+    };
   }
 
-  private static _import(view: DG.ViewBase): void {
+  /** `Register` is the compounds' view running the bulk registration; every other address is a view's. */
+  private static async _at(address: string, go: (address: string) => Promise<DG.ViewBase>): Promise<DG.ViewBase> {
+    if (!/^\/?Register(?:[/?]|$)/.test(address))
+      return await go(address);
+    const view = await go('Compounds');
     const app = DomainApp.of(view)!;
     void app.importRows().then((landed) => landed ? app.listSource.refresh() : null);
+    return view;
   }
 }

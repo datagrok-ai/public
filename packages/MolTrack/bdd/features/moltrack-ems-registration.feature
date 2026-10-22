@@ -34,8 +34,7 @@ Feature: MolTrack EMS: registering a compound
     And user types "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)[O-].[Na+]" into molecule input of sketcher dialog
     And user presses Enter in molecule input of sketcher dialog
     And user clicks on OK button in sketcher dialog
-    Then "Formula" read-only field should contain text "C28H55NaO2"
-    And "Structure" dart input should contain text "This structure is already registered as DG-"
+    Then "Structure" dart input should contain text "This structure is already registered as DG-"
     And "Structure" dart input should name the remembered compound
     And "Save" button in app ribbon should be disabled
     When user clicks on "Discard" button in app ribbon

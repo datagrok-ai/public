@@ -15,26 +15,3 @@
   overflow: hidden;
   white-space: nowrap;
 }
-
-.moltrack-ems-register-source,
-.moltrack-ems-register-preview,
-.moltrack-ems-register-report {
-  display: flex;
-  flex-direction: column;
-  gap: var(--dg-space-s);
-  min-height: 0;
-}
-
-.moltrack-ems-register-mapping,
-.moltrack-ems-register-rows {
-  height: 300px;
-  overflow: auto;
-}
-
-.moltrack-ems-register-summary {
-  color: var(--dg-text-color-light);
-}
-
-.moltrack-ems-register-problem {
-  color: var(--dg-error);
-}
