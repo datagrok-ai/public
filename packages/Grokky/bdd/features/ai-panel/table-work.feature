@@ -5,8 +5,9 @@ Feature: The AI panel works on the open table
   for is checked against the value computed from the table in the page.
 
   These scenarios reach a Docker container and a paid model, which the library's hard rule keeps out of
-  the regular suite: they run only with GROKKY_BDD_LIVE=1 and skip otherwise. @serial: one chat at a time.
-  demog-1000 has 128 rows without a HEIGHT.
+  the regular suite: they run only with GROKKY_BDD_LIVE=1 and skip otherwise. On a stand without a queue
+  worker every turn first waits out the runtime's 60 s admission window. @serial: one chat at a time, so
+  turns do not compete for the runtime's admission queue. demog-1000 has 128 rows without a HEIGHT.
 
   Background:
     Given live AI model calls are allowed
@@ -79,14 +80,14 @@ Feature: The AI panel works on the open table
     And a screenshot "table-summary" of the AI panel is saved
 
   # TODO: core xamgle/lib/src/features/ai/table_view_prompts.dart answers "which X has the highest <agg> Y" with a bar chart of all rows
-  @known-failure:86
+  @known-failure:87
   Scenario: A question naming an average and a column is answered, not turned into a chart
     When user submits "Among the female patients in this table, which RACE has the highest average WEIGHT, and what is that average? Reply with just the race and the value rounded to one decimal." in the AI panel
     Then a screenshot "table-question-intercepted" of the AI panel is saved
     And the AI answer should name the "RACE" with the highest mean "WEIGHT" where "SEX" is "F"
 
   # TODO: core xamgle/lib/src/features/ai/table_view_prompts.dart turns "recolor that scatter plot by X" into a new scatter plot of X
-  @known-failure:97
+  @known-failure:98
   Scenario: A request to recolor the scatter plot changes it rather than adding another
     Given user adds a Scatter plot viewer with:
       | xColumnName     | HEIGHT |

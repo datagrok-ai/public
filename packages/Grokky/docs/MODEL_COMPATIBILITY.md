@@ -61,8 +61,9 @@ no longer declares a queue, so turns now go straight to the runtime.
 
 ## Scenarios
 
-The whole suite is `bdd/features/ai-panel/`: the seven core scenarios below, the rest of the existing suite
-(server work, session, security, two known platform issues) and four added in `analysis-work.feature`:
+The whole suite is the 18 scenarios of `bdd/features/ai-panel/`: the seven core scenarios below and the rest
+(server work, session, security, two known platform issues). The 22-scenario runs also had four exploratory
+analysis scenarios, run locally and not kept in the repo:
 
 | Scenario | What it shows |
 |---|---|
@@ -73,22 +74,20 @@ The whole suite is `bdd/features/ai-panel/`: the seven core scenarios below, the
 | A request for data the table does not have changes nothing | handling a request that cannot be met |
 | The AI asks which chart to add and adds the one picked | the ask-the-user round trip |
 | Python in the AI's sandbox computes over a file from the server | skills, the MCP file tools and the sandbox |
-| *Added:* A histogram is refined over three turns, every change landing on the same viewer | one viewer changed turn after turn, never duplicated |
-| *Added:* Rows are filtered, a subgroup selected, and the selection extracted into a table of its own | filter, select and extract, checked at 225 rows |
-| *Added:* A pivot table gives the mean weight of every race, one column per sex | every cell against an independent aggregation |
-| *Added:* A per-race summary is charted in its own view | a new table, its view and a chart in it |
+| *Exploratory:* A histogram is refined over three turns, every change landing on the same viewer | one viewer changed turn after turn, never duplicated |
+| *Exploratory:* Rows are filtered, a subgroup selected, and the selection extracted into a table of its own | filter, select and extract, checked at 225 rows |
+| *Exploratory:* A pivot table gives the mean weight of every race, one column per sex | every cell against an independent aggregation |
+| *Exploratory:* A per-race summary is charted in its own view | a new table, its view and a chart in it |
 
 The table view's own prompt handler takes a request that names a single viewer, and a viewer's quick commands
-take short edits ("split it by SEX", "20 bins"), before any model sees them. The added prompts are worded so the
-platform passes them on, checked against `grok.ai.processPrompt` on the stand. To repeat a run:
+take short edits ("split it by SEX", "20 bins"), before any model sees them; a prompt meant for the model must be
+worded so the platform passes it on. To repeat a run:
 
 ```bash
-GROKKY_BDD_LIVE=1 DATAGROK_SERVER=<alias> DATAGROK_URL=<stand> GROKKY_BDD_TURNS=<file.jsonl> \
-  npx grok-bdd run --video on --workers 1 -g "<scenario title>"
+GROKKY_BDD_LIVE=1 DATAGROK_SERVER=<alias> DATAGROK_URL=<stand> npx grok-bdd run --workers 1 -g "<scenario title>"
 ```
 
-`--video on` films each run into `bdd/test-results/videos/`; `GROKKY_BDD_TURNS` logs each turn's model, tool
-calls, answer, cost and tokens.
+The videos and the per-turn tool logs of these runs came from local changes to the BDD harness, not in the repo.
 
 ## Tuning: skills and tools instead of the source
 
@@ -147,7 +146,6 @@ correctness; that needs the benchmark (`docs/BENCHMARK.md`) with repeated runs b
 | The skills' box plot property did not exist; no pivot table properties; no way to read a setting back | `datagrok-viewers` |
 | No skill covered per-group aggregation or said statistics must skip missing values | `datagrok-df-and-columns`, `datagrok-exec` |
 | Every turn waited a minute for an admission queue with no worker | the chat function no longer declares a queue |
-| `grok-bdd run --video on` was refused by Playwright and could not film the shared page | `libraries/bdd`: the flag passes `BDD_VIDEO`, the worker's page is filmed and written at feature end |
 | A plain-text link in an answer was not clickable (Claude Haiku wrote one) | the panel turns bare URLs into links (`linkBareUrls`) |
 | Nothing told the model how a help page maps to its URL; GPT built `datagrok.ai/help.datagrok.ai/…` | the help index states the mapping |
 | GPT read the js-api source, explored the view for plain questions, missed missing values | the tuning changes above |

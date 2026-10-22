@@ -129,15 +129,7 @@ function playwrightCli(project: Project): string {
 
 async function run(project: Project, args: string[]): Promise<number> {
   const code = await compile(project, true);
-  if (code !== 0)
-    return code;
-  // Playwright has no --video flag: the library's config takes the mode from BDD_VIDEO
-  const i = args.findIndex((a) => a === '--video' || a.startsWith('--video='));
-  if (i < 0)
-    return launch(project, args);
-  const spaced = args[i] === '--video';
-  const mode = spaced ? args[i + 1] ?? 'on' : args[i].slice('--video='.length);
-  return launch(project, [...args.slice(0, i), ...args.slice(i + (spaced ? 2 : 1))], {BDD_VIDEO: mode});
+  return code !== 0 ? code : launch(project, args);
 }
 
 /** Playwright over the generated specs. Bindings load once per process (the registry is global),
