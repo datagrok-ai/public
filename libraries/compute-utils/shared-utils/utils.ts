@@ -4,8 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import wu from 'wu';
 import {VIEWER_PATH, viewerTypesMapping} from './consts';
-import {deserialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {OUTPUT_OUTDATED_PATH} from '../reactive-tree-driver/src/runtime/funccall-utils';
+import {tryParseJson} from '@datagrok-libraries/utils/src/string-utils';
+import {readOutputOutdated} from '../reactive-tree-driver/src/runtime/funccall-utils';
 
 export const replaceForWindowsPath = (rawName: string, stringToInsert?: string) => {
   const regExpForWindowsPath = /(\/|\\|\:|\*|\?|\"|\<|\>|\|)/g;
@@ -61,12 +61,25 @@ export const isRunningOnInput = (func: DG.Func) => {
   return func.options['runOnInput'] === 'true';
 };
 
+export const parseJsonOption = (options: Record<string, any>, name: string) => {
+  const raw = options[name];
+  return raw ? tryParseJson(raw, {warning: name}) : null;
+};
+
+const parseJsonArrayOption = (options: Record<string, any>, name: string): any[] | null => {
+  const parsed = parseJsonOption(options, name);
+  if (parsed == null || Array.isArray(parsed))
+    return parsed;
+  console.warn(`${name}: expected an array: ${options[name]}`);
+  return null;
+};
+
 export const getFeatures = (func: DG.Func) => {
-  return JSON.parse(func.options['features'] ?? '{}');
+  return parseJsonOption(func.options, 'features') ?? {};
 };
 
 export const getDockSpawnConfig = (func: DG.Func) => {
-  return JSON.parse(func.options['dockSpawnConfig'] ?? '{}');
+  return parseJsonOption(func.options, 'dockSpawnConfig') ?? {};
 };
 
 export const getRunLabel = (func: DG.Func) => {
@@ -81,8 +94,23 @@ export const getInputsHidden = (func: DG.Func): boolean => {
   return func.options['inputsHidden'] === 'true';
 };
 
+export type InputToggle = {
+  caption: string,
+  categories?: string[],
+  inputs?: string[],
+  linked?: boolean,
+};
+
+export const DEFAULT_INPUT_TOGGLES: InputToggle[] = [{caption: 'linked inputs', linked: true}];
+export const ALL_INPUTS_TOGGLES: InputToggle[] = [{caption: 'linked inputs'}];
+
+export const getInputToggles = (func: DG.Func): InputToggle[] => {
+  return parseJsonArrayOption(func.options, 'inputToggles') ??
+    (getInputsHidden(func) ? ALL_INPUTS_TOGGLES : DEFAULT_INPUT_TOGGLES);
+};
+
 export const getCustomExports = (func: DG.Func): {name: string, function: string}[] => {
-  return JSON.parse(func.options['customExports'] ?? '[]');
+  return parseJsonArrayOption(func.options, 'customExports') ?? [];
 };
 
 export const getViewersHook = (func: DG.Func): string | undefined => {
@@ -108,8 +136,7 @@ export const getStartedOrNull = (run?: DG.FuncCall) => {
 };
 
 export const isIncomplete = (run: DG.FuncCall) => {
-  const isOutputOutdated = deserialize(run.options[OUTPUT_OUTDATED_PATH] ?? 'false');
-  return isOutputOutdated || !getStartedOrNull(run) || !run.id;
+  return readOutputOutdated(run) || !getStartedOrNull(run) || !run.id;
 };
 
 export const deepCopy = (call: DG.FuncCall) => {
@@ -148,7 +175,7 @@ export const getPropViewers = (prop: DG.Property): {name: string, config: Record
   const viewersRawConfig = prop.options[VIEWER_PATH];
   return viewersRawConfig ?
   // true and false values are retrieved as string, so we parse them separately
-    {name: prop.name, config: JSON.parse(viewersRawConfig, (k, v) => {
+    {name: prop.name, config: tryParseJson(viewersRawConfig, {warning: `${prop.name} viewer`, reviver: (k, v) => {
       if (v === 'true') return true;
       if (v === 'false') return false;
       // Converting internal Dart labels to JS DG.VIEWER labels
@@ -162,7 +189,7 @@ export const getPropViewers = (prop: DG.Property): {name: string, config: Record
       }
 
       return v;
-    })}:
+    }}) ?? []}:
     {name: prop.name, config: []};
 };
 

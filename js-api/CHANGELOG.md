@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Chats: Added `grok.dapi.chats` (find by entity or reference, comments, post with replies and references, edit, import, watch), `DG.ChatWidget` and `grok.dapi.users.notifications.send` (#772, #770)
 * Domains: Fixed `DomainTableClient.save()` sending the `'~'` service columns and master-expand fields of a spread read row as column values, which the server refused
 * Domains: `DomainFrameEditor` filled the column defaults the caller may write into a new row, so a required column with a default no longer blocks it
 * Domains: Capped `DomainTableClient.audit(id)` at the row's newest 100 events (still oldest first); added `{limit, before}` paging

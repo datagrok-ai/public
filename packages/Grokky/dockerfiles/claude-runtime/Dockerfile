@@ -1,5 +1,5 @@
 ARG HERMES_COMMIT=1f6c02c07c697026888f1c66e634534fa2aae358
-ARG NODE_IMAGE=node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa
+ARG NODE_IMAGE=node:22.23.4-trixie-slim@sha256:8eb619e402eaede1748a3c8173bffab391592812e85136452f781741c7242ddf
 
 # Hermes' own package manager builds the venv, as Hermes' Dockerfile does: CPython and uv come from
 # pm/lock.json (sha256-verified) into HERMES_RUNTIME_DIR, which the venv links to, so the path is kept.
