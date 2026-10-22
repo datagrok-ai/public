@@ -763,7 +763,10 @@ refuses every call.
 created in, such as `us-east-1` (a key works only in its own region; GovCloud and the China regions are not
 supported). Hermes calls Bedrock's `bedrock-runtime` endpoint in that region: Claude on its Anthropic Messages
 API at `https://bedrock-runtime.<region>.amazonaws.com/anthropic` with the key in `x-api-key`, GPT on its
-OpenAI Responses API at `…/openai/v1` with the key as Bearer. No AWS SDK, SigV4 or Converse API is involved.
+OpenAI Responses API at `…/openai/v1` with the key as Bearer. No AWS SDK, SigV4 or Converse API is involved:
+for a Bedrock address Hermes would install the AWS SDK while an agent starts, only to probe the model's context
+window with SigV4 credentials, which took about 35 s and fails offline; each agent refuses that install
+(`hermes.refuse_aws_sdk`), and Hermes takes the window from its own table.
 
 `model` names an inference profile, such as `global.anthropic.claude-sonnet-5-5` or `global.openai.gpt-6-sol`:
 a global profile reaches the model from every commercial region at Anthropic's and OpenAI's own prices, and may

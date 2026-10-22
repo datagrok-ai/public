@@ -105,6 +105,24 @@ def send_keys_by_type() -> None:
     anthropic_adapter._requires_bearer_auth = lambda base_url: False
 
 
+def refuse_aws_sdk() -> None:
+    """Bedrock is reached through its Anthropic and OpenAI routes with an API key, never through the AWS SDK. For a
+    Bedrock address Hermes would install boto3 while the agent starts (a download of half a minute, which fails
+    offline) only to probe the model's context window with SigV4 credentials the runtime does not have; refused, it
+    takes the window from its own table."""
+    import pm
+    import pm.extras
+
+    install = pm.extras.ensure_import
+
+    def ensure_import(extra: str) -> None:
+        if extra == 'bedrock':
+            raise ImportError('the AWS SDK is not part of the Grokky runtime')
+        install(extra)
+
+    pm.extras.ensure_import = pm.ensure_import = ensure_import
+
+
 def usage_cost(model: str, usage: Usage, billing: str, base_url: str) -> float | None:
     """USD for one call from Hermes' price list for the provider `billing` names, or None when it has no price."""
     from agent.usage_pricing import CanonicalUsage, estimate_usage_cost
