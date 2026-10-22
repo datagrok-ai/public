@@ -264,6 +264,8 @@ export const taggedProjectOnServer = Given('a project named {string} tagged {str
   await page.evaluate(async ([n, t]) => {
     const project = DG.Project.create();
     project.name = n;
+    // a friendly name derived from a mixed-case name ("BD D- Grokky-…") hides the project from the name filter
+    project.friendlyName = n;
     project.tag(t);
     await grok.dapi.projects.save(project);
   }, [name, tag] as [string, string]);

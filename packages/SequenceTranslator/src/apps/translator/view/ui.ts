@@ -52,6 +52,7 @@ class TranslatorAppLayout {
       value: DEFAULT_FORMATS.HELM, items: this.inputFormats,
       onValueChanged: async (value, input) => {
         this.format = value;
+        this.molfile = this.getMolfile();
         this.updateTable();
         await this.updateMolImg();
       }
@@ -235,20 +236,23 @@ class TranslatorAppLayout {
   }
 
   private saveMolfile(): void {
-    try {
-      const result = (new SequenceToMolfileConverter(this.sequence, false,
-        this.formatChoiceInput.value!)).convert() + '\n$$$$';
-      download(this.sequence + '.sdf', encodeURIComponent(result));
-    } catch (e: any) {
-      grok.shell.warning('Unable to save SDF: ' + e.message);
-    }
+    if (this.hasStructure('Unable to save SDF'))
+      download(this.sequence + '.sdf', encodeURIComponent(this.molfile + '\n$$$$'));
   }
 
   private copySmiles(): void {
+    if (!this.hasStructure('Unable to copy SMILES'))
+      return;
     const smiles = DG.chem.convert(this.molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
     navigator.clipboard.writeText(smiles).then(
       () => grok.shell.info(SEQUENCE_COPIED_MSG)
     );
+  }
+
+  private hasStructure(failureMessage: string): boolean {
+    if (!this.molfile)
+      grok.shell.warning(`${failureMessage}: no structure for the sequence '${this.sequence}'`);
+    return !!this.molfile;
   }
 
   private updateTable(): void {

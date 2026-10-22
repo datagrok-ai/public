@@ -2,7 +2,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 import {Fingerprint, rdKitFingerprintToBitArray} from '../../../utils/chem-common';
-import {getRdKitService} from '../../../utils/chem-common-rdkit';
+import {fingerprintsByEngine} from '../../../engine/worker-jobs';
 import {SarMatrix, SarMatrixCell, logSarTime} from '../sar-matrix-types';
 
 /**
@@ -158,8 +158,7 @@ async function fingerprintTable(matrices: SarMatrix[]):
   }
   if (!smiles.length)
     return {index, fps: []};
-  const service = await getRdKitService();
-  const raw = (await service.getFingerprints(Fingerprint.Morgan, smiles, false)).fps;
+  const raw = (await fingerprintsByEngine(Fingerprint.Morgan, smiles, false)).fps; // RDKit's, or Crux's in Crux mode
   return {index, fps: raw.map((fp) => fp ? rdKitFingerprintToBitArray(fp) : null)};
 }
 

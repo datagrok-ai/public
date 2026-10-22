@@ -218,6 +218,7 @@ grants inherited through the entity's project links (`inherited: true`).
 grok s functions run 'Chem:smilesToMw("CCO")'                  # positional args
 grok s functions run 'Pkg:fn({smiles:"CCO", radius:2})'        # named args
 grok s functions run Pkg:fn --json params.json                 # big input from a file
+grok s functions run 'MyPkg:MyQuery()' --debug                 # a debug call: the query's own log on stderr
 ```
 
 The server binds arguments by parameter name, so positional values are mapped onto the
@@ -549,6 +550,41 @@ that already expires later it keeps that time. `capture stop` removes only an ex
 capture; for any other entry use `logger set --user <login> --remove`. Read what it recorded with
 `timeline --session <id>`. `logs container` reads the container's latest `--limit` lines (20000) and only then cuts `--since`/`--from`/`--to` (UTC, matched across the container's own offset) and `--grep`, so a window older than those lines comes back empty: raise `--limit`. `logs archive list --since` filters only the page the server returned (`--limit`), so narrow
 the listing with `--prefix` first. `logs` read with the server's AWS role, or with `--connection <id>`. In durations `m` means minutes (in `grok s pull --since` it means months).
+
+### Logging one command (`--log`)
+
+`logger set --user` changes what a user logs for a while; `--log` makes the server keep what the
+requests of one command log, and prints it at the end. It works on every `grok s` command, `grok s o`
+included:
+
+```bash
+grok s functions run UsageAnalysis:Groups --log                # verbose: every level
+grok s functions run UsageAnalysis:Groups --log verbose,db     # and every SQL statement (the db debug flag)
+grok s users list --log debug,storage,credentials              # levels and flags; flags alone add debug
+grok s functions run 'MyPkg:MyQuery()' --debug                 # the query's own debug log, plus errors and warnings
+grok s users list --log --output json 2>log.jsonl              # one JSON object per record
+```
+
+Every request of the command carries one `datlas-log-id` (a new UUID per command) and the spec in
+`datlas-log`. A command is often several requests, and each can land on a different isolate and
+server instance: each keeps what its request logged at the spec in memory, in a buffer for that id.
+Those records never reach the database, the console or a sync destination, and what the server logs
+the usual way does not change. When the command ends, `GET /log/requests/<logId>` gathers the
+buffers from every isolate of every instance over the message queue, hands them over and forgets
+them; the CLI prints them to stderr, so stdout keeps the result. The gather also adds what the
+server saved the usual way for the command's session at the levels of the spec (errors, warnings, audit),
+skipping copies of records it already has, so an instance that died before it could answer still
+shows its saved errors. A buffer nobody gathers is dropped after an hour. No permission is needed; another user's id takes `ViewTelemetry`.
+`grok s o logs request <logId>` gathers one id by hand.
+
+The spec is comma-separated: `verbose`, `standard`, the levels (`error`, `warning`, `info`, `debug`,
+`audit`, `usage`) and the debug flags of the logger settings (`db`, `socket`, `storage`, `credentials`,
+`docker`, `auth`, ... or `all`).
+
+`functions run --debug` sends `?debug=true`: the call runs as a debug call (not cached), the way the
+query debugger in the UI runs it, and its own log (connection, the query's stages) is kept with the
+rest; without `--log` the spec is `error,warning`. Only what runs in Datlas is kept: a script that
+runs on a queue worker adds nothing here.
 
 ## Describing an entity type
 

@@ -629,9 +629,9 @@ category('ComputeUtils: Driver rules guide cases', async () => {
     const pconf = await scenarios([], [{
       id: 'stepsRequired',
       type: 'rule',
-      from: [],
+      from: 'n:count()',
       to: 'scenarios(node)',
-      when: 'eq($steps, 0)',
+      when: 'eq(n, 0)',
       effects: ['error(scenarios, "Add a data step and a model step")'],
     }]);
     testScheduler.run(({flush}) => {

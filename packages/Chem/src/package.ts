@@ -31,7 +31,7 @@ import {
 import {MAX_SMILES_LENGTH} from './utils/chem-constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
-import {calculateDescriptors, getDescriptorsTree} from './docker/api';
+import {calculateDescriptors, getDescriptorsTree} from './descriptors/descriptors-engine';
 import {addDescriptorsColsToDf, DescriptorsEditor, getDescriptorsSingle, getSelected} from './descriptors/descriptors-calculation';
 import {identifiersWidget, getMapIdentifiers, MapIdentifiersEditor, textToSmiles} from './widgets/identifiers';
 
@@ -127,6 +127,9 @@ import {applyDesirabilityTags, collectMpoResultColumns, computeMpo, findSuitable
 import {removeWaterAndSalts, runTransformationReaction} from './utils/reactions/reactions';
 import {transformationReactionsUI, transformationReactionsView, twoComponentReactionsView, twoComponentReactionUI} from './utils/reactions/ui';
 import {scripts} from './package-api';
+import {cruxReady, isCruxRequested, onEngineSwitch} from './engine/chem-engine';
+import {cruxOrRdKitAsync} from './engine/fallback';
+import {getCruxService} from './crux/crux-searches';
 
 export {getMCS};
 export * from './package.g';
@@ -204,6 +207,15 @@ let mpoTreeBrowserSub: Subscription | null = null;
 
 async function initChemInt(): Promise<void> {
   chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+  // when the engine in effect changes (Crux ready, a switch at run time): the renderers empty their caches on their
+  // next call; repaint what shows
+  onEngineSwitch(() => {
+    for (const view of grok.shell.tableViews)
+      view.grid?.invalidate();
+  });
+  // in Crux mode ("Chemical engine" setting) the Crux file starts loading beside RDKit, not awaited: RDKit draws until
+  // it is ready; RDKit mode never fetches it
+  cruxReady();
   await chemCommonRdKit.initRdKitModuleLocal();
   _properties = _package.settings;
   _rdRenderer = new RDKitCellRenderer(PackageFunctions.getRdKitModule());
@@ -2786,11 +2798,19 @@ export class PackageFunctions {
         invalid[invalid.length] = rowI;
       }
     }
-    const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
-    const dataFrame: DG.DataFrame = DG.DataFrame.fromColumns([smilesColumn]);
-    const scriptBlob = await Chem.generateScaffoldTree(dataFrame, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
-    const scriptRes = new TextDecoder().decode(scriptBlob.data);
-    return scriptRes;
+    const pythonTree = async (): Promise<string> => {
+      const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
+      const dataFrame: DG.DataFrame = DG.DataFrame.fromColumns([smilesColumn]);
+      const scriptBlob = await Chem.generateScaffoldTree(dataFrame, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+      const scriptRes = new TextDecoder().decode(scriptBlob.data);
+      return scriptRes;
+    };
+    // "Chemical engine": in Crux mode a Crux worker builds the same JSON as the script, which stays the fallback
+    if (!isCruxRequested())
+      return pythonTree();
+    return cruxOrRdKitAsync('scaffoldTree',
+      async () => (await getCruxService()).scaffoldTree(smilesList.map((s) => s ?? ''), ringCutoff,
+        dischargeAndDeradicalize), pythonTree);
   }
 
 

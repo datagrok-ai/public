@@ -269,4 +269,42 @@ CTCGGCATGC,2,0
     //await testEvent(sp.onAfterDrawScene, () => {}, () => { sp.invalidateCanvas(); }, 200);
     await awaitGrid(view.grid, 500);
   }
+
+  test('scatterPlotTooltipSeqDiffWithoutGrid', async () => {
+    const createSeqDiffCol = () => {
+      const col = DG.Column.fromStrings('seq_diff', ['ACGGTGTCGT#CGGTATCCCT', 'CGGTATCCCT#CTCGGCATGC']);
+      col.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
+      col.meta.units = NOTATION.FASTA;
+      col.setTag(bioTAGS.alphabet, ALPHABET.DNA);
+      col.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MACROMOLECULE_DIFFERENCE);
+      return col;
+    };
+    // The renderer is registered the first time a grid uses it
+    const rendererTv = grok.shell.addTableView(DG.DataFrame.fromColumns([createSeqDiffCol()]));
+    await awaitGrid(rendererTv.grid);
+    rendererTv.close();
+
+    const df = DG.DataFrame.fromColumns([createSeqDiffCol(),
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'x', [0, 1]), DG.Column.fromList(DG.COLUMN_TYPE.INT, 'y', [0, 0])]);
+    const sp: DG.ScatterPlotViewer = df.plot.scatter({x: 'x', y: 'y'});
+    const view = grok.shell.newView('seqDiffTooltip', [sp]);
+    try {
+      ui.tooltip.hide();
+      await testEvent(sp.onAfterDrawScene, () => {}, () => { sp.invalidateCanvas(); }, 1000);
+      const spBcr = sp.root.getBoundingClientRect();
+      const wp = sp.worldToScreen(1, 0);
+      const spCanvas = $(sp.root).find('canvas').get()[0] as HTMLCanvasElement;
+      await testEvent(DG.debounce(fromEvent(spCanvas, 'mousemove'), 200), () => {
+        expect($(ui.tooltip.root).find('div table.d4-row-tooltip-table tr td canvas').length, 1);
+      }, () => {
+        spCanvas.dispatchEvent(new MouseEvent('mousemove', {
+          cancelable: true, bubbles: true, view: window, button: 0,
+          clientX: spBcr.left + wp.x, clientY: spBcr.top + wp.y,
+        }));
+      }, 500);
+    } finally {
+      ui.tooltip.hide();
+      view.close();
+    }
+  });
 });

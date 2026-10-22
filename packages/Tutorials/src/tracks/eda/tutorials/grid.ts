@@ -180,11 +180,13 @@ export class GridTutorial extends Tutorial {
       'in any cell to order its rows.',
     () => grid.sort(['AGE'], [false]));
 
-    await this.action('Reset sorting in the grid', interval(1000).pipe(filter(() => grid.sortByColumns.length === 0)),
-      null, 'To clear sorting, right-click the column header and select <b>Sort > Reset</b>. ' +
+    await this.action('Reset sorting in the grid', interval(1000).pipe(filter(() => {
+      const ageIdx = grid.sortByColumns.findIndex((col) => col.name === 'AGE');
+      return ageIdx === -1 || grid.sortTypes[ageIdx] == null;
+    })), null, 'To clear sorting, right-click the column header and select <b>Sort > Reset</b>. ' +
       'The same can be achieved ' +
       'by double-clicking the column header. It switches the state between three modes: descending, ascending, reset.',
-      () => grid.sort([]));
+    () => grid.sort([]));
 
     await this.action('Move columns HEIGHT, WEIGHT and STARTED to the beginning of the grid', interval(1000).pipe(
       filter(() => heightGridCol.idx === 1 && weightGridCol.idx === 2 && startedGridCol.idx === 3)), null,
@@ -197,7 +199,10 @@ export class GridTutorial extends Tutorial {
       'or to the beginning of its visible ' +
       'part. The same is true for the arrows on the right that help you move columns to the grid end.<br>Make sure ' +
       'that the new order is HEIGHT, WEIGHT, STARTED, followed by all other columns.',
-    () => grid.columns.setOrder(['HEIGHT', 'WEIGHT', 'STARTED', ...this.t!.columns.names()]));
+    () => {
+      const first = ['HEIGHT', 'WEIGHT', 'STARTED'];
+      grid.columns.setOrder([...first, ...this.t!.columns.names().filter((name) => !first.includes(name))]);
+    });
 
     const initialRowHeight = grid.props.rowHeight;
     await this.action('Increase row height', interval(1000).pipe(filter(() => grid.props.rowHeight > initialRowHeight)),

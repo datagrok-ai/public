@@ -7,7 +7,7 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {addCopyIcon} from '../utils/ui-utils';
 import {MESSAGE_MALFORMED} from '../constants';
-import {calculateDescriptors, getDescriptorsTree} from '../docker/api';
+import {calculateDescriptors, getDescriptorsTree} from './descriptors-engine';
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';

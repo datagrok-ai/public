@@ -18,12 +18,15 @@
   "devDependencies": {
     "@types/dom-speech-recognition": "^0.0.7",
     "@types/js-yaml": "^4.0.9",
-    "eslint-plugin-rxjs": "^5.0.3"
+    "eslint-plugin-rxjs": "^5.0.3",
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.48.0"
   },
   "scripts": {
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
-    "lint": "eslint --ext .ts,.tsx src"
+    "lint": "eslint --ext .ts,.tsx src",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"

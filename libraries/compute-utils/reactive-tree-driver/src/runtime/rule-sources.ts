@@ -282,7 +282,8 @@ function toSource$(value: unknown): Observable<any> {
  *  A source reads the sources declared before it and waits only for those it reads.
  *  Emits synchronously when nothing has to be awaited. */
 export function resolveSources(
-  controller: IControllerBase, sources: Record<string, RuleSource> | undefined, ctx: RuleContext = {$all: {}},
+  controller: IControllerBase & {sourceCache?: Map<string, any>},
+  sources: Record<string, RuleSource> | undefined, ctx: RuleContext = {$all: {}},
 ): Observable<Record<string, any>> {
   const values: Record<string, Observable<any>> = {};
   const constants = new Set<string>();
