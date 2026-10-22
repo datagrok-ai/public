@@ -192,7 +192,7 @@ export class PackageFunctions {
     return (await ClaudeRuntimeClient.getInstance().models()).models;
   }
 
-  @grok.decorators.func({name: 'aiChatTurnTask', meta: {queue: 'true'},
+  @grok.decorators.func({name: 'aiChatTurnTask',
     description: 'Holds the admission slot for one AI chat turn streaming over the browser WebSocket - see queue-task.ts'})
   static async aiChatTurnTask(sessionId: string, taskId: string): Promise<string> {
     return holdChatTurnTask(sessionId, taskId);
