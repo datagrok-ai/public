@@ -1010,17 +1010,15 @@ scoped('an immutable reference is picked on a draft and a link to its row once s
   draft.dispose();
 });
 
-scoped('a create page with a new parent above the draft starts in the parent\'s first field, the page at its top', async () => {
+scoped('a create page starts in its first required field, the page at its top', async () => {
   const LAB = {name: 'lab', tables: {
     compound: {singularName: 'Compound', pluralName: 'Compounds',
       columns: {name: {type: 'string', required: true, isName: true, searchable: true}}},
     batch: {singularName: 'Batch', pluralName: 'Batches',
-      columns: {compound_id: {type: 'ref', ref: 'compound', required: true}, amount: {type: 'float'}}},
+      columns: {amount: {type: 'float'}, compound_id: {type: 'ref', ref: 'compound', required: true}}},
   }};
   emsBackends.domain = new MemoryDomainBackend(LAB, {rows: {compound: [{id: 'c1', name: 'Aspirin'}], batch: []}});
-  const compounds = await domains.table('lab.compound');
-  const app = domains.app({table: await domains.table('lab.batch'), base: '/apps/T/Batches',
-    inline: {compound_id: {table: compounds}}});
+  const app = domains.app({table: await domains.table('lab.batch'), base: '/apps/T/Batches'});
   document.body.append(app.root);
   await flush();
   const scrolled = [];
@@ -1036,13 +1034,7 @@ scoped('a create page with a new parent above the draft starts in the parent\'s 
   } finally {
     HTMLElement.prototype.focus = focus;
   }
-  const inline = app.root.querySelector('.u2-domain-app-inline');
-  const field = () => document.activeElement.closest('[data-u2-name]')?.dataset.u2Name;
-  assert.equal(inline.contains(document.activeElement), true, 'the new compound is where the page starts');
-  assert.equal(field(), 'name');
-  app.form.value.focus();
-  await flush();
-  assert.equal(field(), 'name', 'the batch\'s form, focusing later, leaves it there');
-  assert.deepEqual(scrolled.filter((s) => s), [], 'and no focus scrolled the page to its field');
+  assert.equal(document.activeElement.closest('[data-u2-name]')?.dataset.u2Name, 'compound_id');
+  assert.deepEqual(scrolled.filter((s) => s), [], 'no focus scrolled the page to its field');
   app.dispose();
 });

@@ -7,7 +7,7 @@
    the table's actions. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {Control, signal, computed, batch, untracked, ReadonlySignal, Signal, Scope, Section, Splitter, button, div,
+import {Control, signal, computed, batch, untracked, ReadonlySignal, Signal, Splitter, button, div,
   divH, divV, span, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows}
   from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, ActionGroup, RowView} from '@datagrok-libraries/u2';
@@ -84,10 +84,6 @@ export interface DomainAppOptions {
   /** The query box over the list (default), or the condition builder — in a pane on the list's left with
    * `placement: 'left'`. */
   filters?: DomainFiltersOptions & {placement?: 'top' | 'left'};
-  /** Reference columns the create page may point at a NEW row of their table, saved with the draft in one
-   * transaction — each with the handle (derivations, validators, renderer) that row's form is built over, and
-   * the form's columns (every column by default). */
-  inline?: Record<string, {table: DomainTable, include?: string[]}>;
   /** What every draft the app creates starts with — the preset a view that opened the app carries
    * (a location's id on a containers app). Threaded into the entity page's draft source. */
   defaults?: Record<string, unknown>;
@@ -157,8 +153,6 @@ export class DomainApp extends Control {
   readonly trash: ReadonlySignal<boolean>;
   /** See {@link DomainAppOptions.shortcuts}; a subclass may declare its own. */
   shortcuts: Record<string, string>;
-  /** The create page's new referenced rows ({@link DomainAppOptions.inline}), by reference column. */
-  readonly inline: ReadonlySignal<ReadonlyMap<string, DomainSource>>;
 
   private readonly _mode = signal<DomainAppMode>('live');
   private readonly _count = signal('');
@@ -168,8 +162,6 @@ export class DomainApp extends Control {
   private readonly _entity = signal<string | null>(null);
   private readonly _entitySource = signal<DomainSource | null>(null);
   private readonly _form = signal<DomainForm | null>(null);
-  private readonly _inline = signal<ReadonlyMap<string, DomainSource>>(new Map());
-  private _inlineScope: Scope | undefined;
   private readonly _formHost: HTMLElement;
   private _panes: Control[] = [];
   private _ribbon: DomainRibbon | undefined;
@@ -190,7 +182,6 @@ export class DomainApp extends Control {
     this.entity = this._entity;
     this.entitySource = this._entitySource;
     this.form = this._form;
-    this.inline = this._inline;
     this.mode = this._mode;
     this.trash = computed(() => this._mode.value === 'trash');
     this.filterProblem = this._filterProblem;
@@ -946,7 +937,7 @@ export class DomainApp extends Control {
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
         ...(history === false || !this.table.table.support.audit ? [] : [domains.history(source)]),
       ]);
-      this._formHost.replaceChildren(...(draft ? this._inlineForms(source) : []), form.root);
+      this._formHost.replaceChildren(form.root);
       this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
       batch(() => {
         this._entitySource.value = source;
@@ -969,9 +960,6 @@ export class DomainApp extends Control {
     for (const pane of this._panes)
       pane.dispose();
     this._panes = [];
-    this._inlineScope?.dispose();
-    this._inlineScope = undefined;
-    this._inline.value = new Map();
     form?.dispose();
     source?.dispose();
     this._formHost.replaceChildren();
@@ -1039,49 +1027,7 @@ export class DomainApp extends Control {
     return banner;
   }
 
-  /** A form per {@link DomainAppOptions.inline} reference above the draft's: the reference follows the new
-   * row's first edit, and pointing it at an existing row drops the new one. */
-  private _inlineForms(child: DomainSource): HTMLElement[] {
-    const scope = this._inlineScope = new Scope();
-    const sources = new Map<string, DomainSource>();
-    const roots = Scope.runWith(scope, () => untracked(() =>
-      Object.entries(this._options.inline ?? {}).map(([column, {table, include}]) => {
-        const parent = this._source({draft: true}, table);
-        sources.set(column, parent);
-        const form = new DomainForm(parent, {include});
-        // an untouched create page is not wrong yet, as its fields are not
-        const section = new Section({title: `New ${DomainSource.noun(table.info, false)}`, collapsible: false,
-          validity: computed(() => parent.isDirty.value ? form.problem.value : null)});
-        section.add(form.root);
-        section.root.classList.add('u2-domain-app-inline');
-        scope.effect(() => {
-          child.rows.items.value;
-          const row = child.currentRow.value;
-          const draft = parent.currentRow.value;
-          const dirty = parent.isDirty.value;
-          if (row === null || draft === null || parent.isSaving.value || child.isSaving.value)
-            return;
-          const ref = (row as Record<string, unknown>)[column] ?? '';
-          const own = Rows.isDraft(row) && (ref === '' || ref === draft.id);
-          section.root.hidden = !own;
-          // after the write that moved the reference: the platform editor would finish it on a removed row
-          if (!own && dirty) {
-            queueMicrotask(() => {
-              if (parent.isSaving.peek())
-                return;
-              parent.revert();
-              void parent.refresh();
-            });
-          } else if (own && dirty !== (ref === draft.id))
-            child.edit.peek()!.setValue(row.id, column, dirty ? draft.id : null);
-        });
-        return section.root;
-      })));
-    this._inline.value = sources;
-    return roots;
-  }
-
-  private _source(options: Parameters<DomainTable['source']>[0], table: DomainTable = this.table): DomainSource {
-    return SharedSession.runWith(this.session, () => table.source(options));
+  private _source(options: Parameters<DomainTable['source']>[0]): DomainSource {
+    return SharedSession.runWith(this.session, () => this.table.source(options));
   }
 }

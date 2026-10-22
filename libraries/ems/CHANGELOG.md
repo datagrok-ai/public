@@ -2,14 +2,13 @@
 
 ## v.next
 
-* Forms: A draft's server-assigned key reads "assigned on save", a failed derivation shows on its input field as it ends, and a create page starts in its topmost form without scrolling
+* Forms: A draft's server-assigned key reads "assigned on save", a failed derivation shows on its input field as it ends, and a create page starts in its first field without scrolling
 * Forms: `immutable` columns (also a `domains.app` option) are set on a new row only; a readonly reference is a link to its row
 * Pickers: An open control beside a picked row (`DomainPick.open`, `DomainPick.opener`)
 * Filters: The table's own columns come first, no empty value is offered, and a wrong builder row keeps the applied filter
 * Filters: Fixed a host operator removing the core operators from other tables' columns of its semType
 * Import: Fixed reference names failing the whole import on the platform: the lookup now sends what the server accepts
 * Import: The mapping step is reusable as `ImportMapping`; an unmatched reference is reported once
-* Fixed a batch saved with an inline new row showing a warning for each discard attempted while it saved
 * Memory backend: Answers the system columns on every row and refuses a request naming one, and refuses `in` with a list, as the server does
 * App: Lists open in creation order (`sort`, `DomainApp.defaultSort`), and the ⋯ menu's Sort switches between the table's orders (`sorts`, `DomainApp.sortChoices`)
 * App: Delete on a record page shows the pending deletion with Restore, and the saved deletion goes back to the list; the page no longer offers Open for itself, and a missing row no longer shows its id
@@ -23,7 +22,7 @@
 * Memory backend: A row without a name column is named by its one-column business key, as on the platform
 * Added `table.derived`: columns the browser computes from other columns of a row; Save waits for them, a failure (or no answer in 60 s) refuses it, forms and data tables show them read-only
 * Added `table.operators`: filter operators the app answers for a column the server cannot search that way (a structure search) — offered in the builder on their semType, sent to the server as the ids they match
-* App: Added `filters: {mode: 'builder', placement: 'left'}` (the condition builder in a pane on the list's left), `itemHeight`, and `inline`: a create page may point a reference at a new row of its table, filled in on the same page and saved in one transaction
+* App: Added `filters: {mode: 'builder', placement: 'left'}` (the condition builder in a pane on the list's left) and `itemHeight`
 * App: An entity page's ⋯ menu holds the row's Delete and actions; Import runs `importRows()`, which a subclass may override; a table with no searchable column has no search box
 * Search: A term spelled like the caption column's formatted number (`DG-000123`) finds that row
 * Fixed floats read and written with float32 noise: a stored `0.1` read `0.10000000149011612`, a typed `1.23` and a CSV's `0.73` were saved as `1.2300000190734863` and `0.7300000190734863`

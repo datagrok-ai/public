@@ -504,10 +504,6 @@
   }
 }
 
-.u2-domain-app-inline {
-  flex: none;
-}
-
 /* the app: the list page and the entity page under one root, one shown at a time */
 .u2-domain-app {
   display: flex;

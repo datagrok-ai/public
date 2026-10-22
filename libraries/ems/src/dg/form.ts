@@ -216,14 +216,9 @@ export class DomainForm extends Control {
 
   /** Focus to the first required field still empty, else the first — where a create form starts
    * (past what the defaults filled), and where Save returns; the page stays where it is. Deferred
-   * past the rebuild a row change (a saved draft under its new key) may be running. Of the forms
-   * one page stacks (a new parent above the draft that refers to it), the topmost keeps it. */
+   * past the rebuild a row change (a saved draft under its new key) may be running. */
   focus(): void {
     queueMicrotask(() => {
-      const held = document.activeElement?.closest('.u2-domain-form');
-      const forms = [...document.querySelectorAll('.u2-domain-form')];
-      if (held && forms.indexOf(held) < forms.indexOf(this.root))
-        return;
       this._form.peek()?.focusFirst(DomainForm.needsValue);
       // a Ctrl+S from inside a picker leaves its popup over the form, and the re-focus would open
       // one anyway (`openOnFocus`): the form comes back with nothing covering it
