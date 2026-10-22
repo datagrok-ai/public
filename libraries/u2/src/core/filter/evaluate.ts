@@ -73,7 +73,7 @@ export class ColumnEvaluator {
    * empty list included. */
   static where(col: MaskColumnLike, c: FilterCondition, ctx: {now: Date},
     test: (cell: MaskCell, value: any) => boolean, negate: boolean = false): BitArray {
-    const pass = (cell: MaskCell, value: any) => test(cell, value) !== negate;
+    const pass = negate ? (cell: MaskCell, value: any) => !test(cell, value) : test;
     const kind = ColumnEvaluator.kindOf(col);
     const raw = kind === KIND.BIG_INT || kind === KIND.STRING_LIST ? null : col.getRawData();
     const f32 = raw instanceof Float32Array;

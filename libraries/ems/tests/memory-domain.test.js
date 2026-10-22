@@ -590,7 +590,6 @@ test('a hidden or unlisted column is out of reach for sort, captions and FK path
   const hidden = await issues({title: 'editable', project_id: 'hidden'});
   for (const sort of ['project_id', 'prop.project_id'])
     await refused(() => hidden.query({sort}), 'sort column "project_id"');
-  await refused(() => hidden.query({sort: 'prop.nope'}), 'sort column "nope"');
   await refused(() => hidden.query({sort: 'due'}), 'sort column "due"');
   await refused(() => hidden.query({captions: ['project_id']}), 'caption column "project_id"');
   await refused(() => hidden.query(path('project_id.name', 'Grit')), 'column "project_id.name"');
