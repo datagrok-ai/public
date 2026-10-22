@@ -613,6 +613,7 @@ code, not tested).
 | `region` | The provider's region, where its hosts are regional |
 | `apiFormat` | A custom endpoint's request format: `anthropic-messages`, `openai-responses` or `openai-chat-completions` |
 | `model` | The model every turn runs on, as the provider names it (a model id, an inference profile, a deployment or endpoint name); required |
+| `service` | Databricks only: a model service of the workspace (`<catalog>.<schema>.<name>`) that `model` is called through |
 
 The server takes these (and `TEST_UPSTREAM`, see [Configure](#configure)) out of its environment at
 startup and sends them to each agent in its `init` line (`PROVIDER_CREDENTIALS` in `src/constants.ts`); the
@@ -803,14 +804,24 @@ names a Unity Gateway model service (`system.ai.claude-sonnet-5-5`, `system.ai.g
 written as hyphens) or a serving endpoint of the workspace (a pay-per-token one such as
 `databricks-claude-opus-5-5`, or an external model's); a name that contains `claude` is called as Claude, any
 other as GPT. Claude Sonnet 5.5 takes no images on Databricks: a turn with images on it ends in the model's
-error. An agent refuses a missing model, a missing key, a key with whitespace or control characters, and a
-`baseUrl` of any other form (a path, a port, a query, Google Cloud's legacy regional URL). Docs:
+error.
+
+A model service the workspace defines itself, such as an external provider's model created in Unity Gateway
+(Serving → Create in Unity Gateway → External provider, with the provider's own key), is named by `service`
+(`workspace.default.claude-haiku-5-5-ext`), and `model` is then the provider's model id the service allows
+(`claude-haiku-5-5`): every call carries the service in a `Databricks-Model-Provider-Service` header, and Databricks
+refuses any other model ("not in the allowed models list", a 403 whose hint names `model`). This is the way to
+Claude on a Free Edition workspace, which lists Databricks' own Claude services but cannot serve them.
+
+An agent refuses a missing model, a missing key, a key with whitespace or control characters, a `baseUrl` of any
+other form (a path, a port, a query, Google Cloud's legacy regional URL), and a `service` that is not a
+three-part name. Docs:
 [Anthropic Messages](https://docs.databricks.com/aws/en/machine-learning/model-serving/query-anthropic-messages),
 [OpenAI Responses](https://docs.databricks.com/aws/en/machine-learning/model-serving/query-openai-responses),
 [supported models](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/supported-models).
-Checked against a test stub and request probes; against a live workspace only the token and the AI Gateway
-route, on a Free Edition workspace, which hosts no Claude or GPT-6 model (its GPT OSS is refused on the
-Responses route: `Responses API passthrough is not supported for model databricks-gpt-oss-120b`). Watch out for:
+Checked live on a Free Edition workspace: Claude Haiku 5.5 answered through an external model service; the
+workspace serves none of Databricks' own Claude or GPT models, and its GPT OSS is refused on the Responses route
+(`Responses API passthrough is not supported for model databricks-gpt-oss-120b`). Watch out for:
 
 - Prices: Databricks bills its own rates, which Hermes does not have, so only the call limit bounds a turn.
 - Endpoint names: Hermes picks Claude's thinking parameters by the model name. Name a Claude endpoint after its

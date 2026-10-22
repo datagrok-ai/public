@@ -278,7 +278,7 @@ by active code. All active AI features now route through `ClaudeRuntimeClient`.
 
 The model provider and its key are the `claude-runtime` container's credentials: `provider` (Anthropic by
 default), `apiKey`, `model` (required: the one model every turn runs on, as the provider names it), and as the
-provider needs them `baseUrl`, `region` and `apiFormat`. Each wire format (Anthropic Messages, OpenAI
+provider needs them `baseUrl`, `region`, `apiFormat` and (Databricks) `service`. Each wire format (Anthropic Messages, OpenAI
 Responses, Chat Completions) is a class in `agent/grokky_agent/formats.py`; each provider (Anthropic,
 OpenRouter, OpenAI, Azure, Bedrock, Databricks, Custom) is a class in `agent/grokky_agent/providers/` that
 checks its credentials and declares the formats it serves and where. Prices, context windows and image

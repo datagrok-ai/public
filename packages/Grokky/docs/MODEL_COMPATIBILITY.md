@@ -10,9 +10,9 @@ AI-panel BDD suite, 22 scenarios, on the final runtime image: computed answers, 
 viewer refined over three turns, filtering and extracting rows, a pivot table checked cell by cell, summary tables
 in their own views, server work (a project saved, a folder listed, a delete that waits for approval), docs
 answers, asking the user, sandbox Python, a stopped job, a reload, a lost agent process, a `!command` and a
-security probe. OpenRouter passes five core scenarios on both families. Bedrock passed its live checks but
-its browser runs are blocked on a key; Azure and Databricks are checked against stubs and, for Databricks, the
-route and sign-in only. The runtime keeps no model list: other families (GPT OSS, Llama, Qwen) can be named
+security probe. OpenRouter passes five core scenarios on both families. On the final design (one model per
+provider), the runtime's startup check got an answer from Claude and GPT through Anthropic, OpenAI, OpenRouter and
+Bedrock, and from Claude through a Databricks external model service; Azure is checked against stubs only. The runtime keeps no model list: other families (GPT OSS, Llama, Qwen) can be named
 through OpenRouter or a custom endpoint, but were not tested.
 
 Making GPT work well took tuning, not code per provider: it read the js-api source where a skill had the answer,
@@ -27,14 +27,14 @@ Claude's from 8 to 0.
 | Claude | Anthropic | **Validated** | Full BDD suite 22/22 on Haiku 5.5 (final image, and the image before it); 7/7 core in four earlier runs; 18/18 on Sonnet 5.5 before the suite grew; live checks 5/5 |
 | Claude | OpenRouter | **Validated** (5 core scenarios) | BDD 5/5 after the shared fixes; live checks 5/5 |
 | Claude | Custom endpoint, `anthropic-messages` | Partially validated | BDD 2/2 (computed answer, dashboard); live checks 5/5 |
-| Claude | Amazon Bedrock | Partially validated | Live checks 5/5; BDD blocked: the short-term key ended with its console session |
+| Claude | Amazon Bedrock | Partially validated | Live checks 5/5; with a long-term key the startup check answered on the final design; BDD not rerun |
 | Claude | Microsoft Azure | Not tested | Stubs under Azure's host names only |
-| Claude | Databricks | Not tested | Route and sign-in only, on a Free Edition workspace without Claude |
+| Claude | Databricks | Partially validated | The startup check answered through an external model service (`service`) on a Free Edition workspace; BDD not run |
 | GPT | OpenAI | **Validated** | Full BDD suite 22/22 on GPT-6 Luna (final image, and the image before it); live checks 5/5 |
 | GPT | OpenRouter | **Validated** (5 core scenarios) | BDD 5/5 after the shared fixes; live checks 5/5 |
 | GPT | Custom endpoint, `openai-responses` | Partially validated | BDD 2/2 after the shared fixes; live checks 5/5 |
 | GPT | Custom endpoint, `openai-chat-completions` | Partially validated | Live only: tools, bash and streaming pass; GPT-6 tool calls with reasoning are refused by OpenAI, and structured output fails on gateways that refuse an output format beside tools |
-| GPT | Amazon Bedrock | Partially validated | Live checks 5/5, structured output included; BDD blocked as for Claude |
+| GPT | Amazon Bedrock | Partially validated | Live checks 5/5, structured output included; the startup check answered with a long-term key; BDD not rerun |
 | GPT | Microsoft Azure | Not tested | Stubs only |
 | GPT | Databricks | Not tested | Route and sign-in only; Free Edition hosts no GPT-6 |
 | Open-weight (GPT OSS, Llama, Qwen) | OpenRouter, custom endpoint | Not tested | Can be named in `model`; called in the Responses or the endpoint's format |
@@ -168,9 +168,9 @@ $0.094 and 15 minutes on GPT-6 Luna, $0.076 and 12 minutes on Claude Haiku 5.5.
 
 ## Gaps and next tests
 
-1. Bedrock in the browser with a long-term API key.
-2. Azure and Databricks with live models (a Foundry resource; a workspace that serves the `system.ai` Claude and
-   GPT models).
+1. Bedrock and Databricks in the browser (the BDD suite); both now answer.
+2. Azure with live models, and Databricks' own hosted models (a Foundry resource; a workspace that serves the
+   `system.ai` Claude and GPT models).
 3. The full suite on OpenRouter and the custom endpoint, not only the core scenarios.
 4. The larger models of each family (Claude Sonnet and Opus 5.5, GPT-6 Sol and 6.1 Sol) in the browser.
 5. Repeated runs per scenario, to tell variance from a defect.
