@@ -2,6 +2,9 @@
 
 ## v.next
 
+* DomainSource: Added `hosted`: the app answers a host filter condition (a structure search) with the ids of its rows, sent as an id list before every read
+* DomainApp: Added `filters: {mode: 'builder', placement: 'left'}`: the condition builder in a pane beside the list
+* Filters: Fixed the builder wiping a condition still being written: it sends only its complete conditions and keeps the rest
 * History: Fixed json and list columns showing as changed on every update (`[object Object] → [object Object]`); json values read as JSON, and restores show "restored"
 * Forms: Showed the column defaults on a new row's form
 * Memory backend: Filled the column defaults into a draft, and applied the default on an insert that leaves the column out, as the server does

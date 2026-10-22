@@ -25,8 +25,8 @@ interface PlatformInputOptions<T> extends InputOptions<T> {
 export class PlatformInput<T> extends Input<T, PlatformInputOptions<T>> {
   private declare _messages: Signal<string | null>;
 
-  constructor(dgInput: DartInputLike<T>, name?: string) {
-    super({dgInput, name: name ?? dgInput.caption}, dgInput.value);
+  constructor(dgInput: DartInputLike<T>, name?: string, options: InputOptions<T> = {}) {
+    super({...options, dgInput, name: name ?? dgInput.caption}, dgInput.value);
     this.root.dataset.u2 = 'dart-input';
     // u2's editor skin (and the form's focus target) belongs on the platform's editor element, not
     // on its root, which is a whole input
@@ -115,8 +115,8 @@ export class PlatformInput<T> extends Input<T, PlatformInputOptions<T>> {
 /** Wraps a platform input as a u2 `Input`, keyed in forms by `name` (the platform caption when
  * omitted). An `asDartInput` product is unwrapped rather than wrapped twice (INTEROP.md): the u2
  * input it was built from comes back as is. */
-export function fromDartInput<T>(dgInput: DartInputLike<T>, name?: string): Input<T> {
+export function fromDartInput<T>(dgInput: DartInputLike<T>, name?: string, options?: InputOptions<T>): Input<T> {
   // structural brand: importing DartInput would close a cycle, since input-bridge imports this file
   const wrapped = (dgInput as {u2?: unknown}).u2;
-  return wrapped instanceof Input ? wrapped as Input<T> : new PlatformInput<T>(dgInput, name);
+  return wrapped instanceof Input ? wrapped as Input<T> : new PlatformInput<T>(dgInput, name, options);
 }

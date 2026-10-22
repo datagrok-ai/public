@@ -420,6 +420,35 @@
   display: none;
 }
 
+/* the condition builder in a pane on the list's left */
+.u2-domain-app-list > .u2-splitter {
+  flex: 1;
+  min-height: 0;
+}
+
+.u2-domain-app-list > .u2-splitter > .u2-splitter-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.u2-domain-app-list > .u2-splitter > .u2-splitter-panel > .u2-domain-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.u2-domain-app-filters-pane {
+  height: 100%;
+  overflow: auto;
+  gap: var(--dg-space-s);
+  padding: var(--dg-space-s) var(--dg-space-m);
+}
+
+.u2-domain-app-filters-title {
+  font-weight: 600;
+  color: var(--dg-text-color-light);
+}
+
 /* the app: the list page and the entity page under one root, one shown at a time */
 .u2-domain-app {
   display: flex;

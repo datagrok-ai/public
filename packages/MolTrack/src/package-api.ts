@@ -58,6 +58,25 @@ export namespace funcs {
   }
 
   /**
+   * MolTrack over the moltrack_ems domain schema
+   * @param {string} path - View to open: Compounds, Batches, Assays, AssayRuns, AssayResults or Additions
+   */
+  export async function molTrackEmsApp(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('MolTrack:MolTrackEmsApp', { path });
+  }
+
+  export async function molTrackEmsAppTreeBrowser(appNode: any ): Promise<void> {
+    return await grok.functions.call('MolTrack:MolTrackEmsAppTreeBrowser', { appNode });
+  }
+
+  /**
+   * Loads the mol-track demo set into the moltrack_ems domain schema where its tables are empty
+   */
+  export async function loadEmsDemoData(): Promise<string> {
+    return await grok.functions.call('MolTrack:LoadEmsDemoData', {});
+  }
+
+  /**
    * Retrieves all properties defined for the 'compound' scope
    */
   export async function fetchCompoundProperties(): Promise<string> {
@@ -146,6 +165,14 @@ export namespace funcs {
    */
   export async function retrieveEntity(scope: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('MolTrack:RetrieveEntity', { scope });
+  }
+
+  /**
+   * @param {any} id
+   *   semType: Grok ID
+   */
+  export async function molTrackEmsPanel(id: any ): Promise<any> {
+    return await grok.functions.call('MolTrack:MolTrackEmsPanel', { id });
   }
 
   /**
