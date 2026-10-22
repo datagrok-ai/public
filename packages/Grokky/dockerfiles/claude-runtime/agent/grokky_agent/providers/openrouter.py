@@ -29,14 +29,10 @@ class OpenRouterProvider(Provider):
                       output_schema: JsonObject | None) -> JsonObject:
         out = super().patch_request(api_mode, request, system_prompt, output_schema)
         out['extra_headers'] = {**(out.get('extra_headers') or {}), **ATTRIBUTION}
-        if api_mode == 'anthropic_messages':
-            # Hermes names Claude by Anthropic's own id on the Messages API (claude-sonnet-5-5 for
-            # anthropic/claude-sonnet-5.5); OpenRouter routes by its own.
-            out['model'] = self.model
-            # Some hosts of every Claude model lack structured output; GPT's lack it only where they lack
-            # response_format, which OpenRouter already routes around.
-            if output_schema is not None:
-                out['extra_body'] = {**(out.get('extra_body') or {}), 'provider': {'require_parameters': True}}
+        # Some hosts of every Claude model lack structured output; GPT's lack it only where they lack
+        # response_format, which OpenRouter already routes around.
+        if api_mode == 'anthropic_messages' and output_schema is not None:
+            out['extra_body'] = {**(out.get('extra_body') or {}), 'provider': {'require_parameters': True}}
         return out
 
     def error_hint(self, status: int | None) -> str:

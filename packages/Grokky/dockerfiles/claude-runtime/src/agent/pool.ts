@@ -199,6 +199,8 @@ function checkProvider(): void {
   fs.mkdirSync(home, {recursive: true, mode: 0o700});
   const proc = checking = spawnAgent(home, false, ['--check']);
   let verdict: string | null | undefined;
+  let lastStderr = '';
+  readline.createInterface({input: proc.stderr}).on('line', (line) => lastStderr = line || lastStderr);
   readline.createInterface({input: proc.stdout}).on('line', (line) => {
     try {
       const ev: AgentProcessEvent = JSON.parse(line);
@@ -211,11 +213,13 @@ function checkProvider(): void {
   });
   const timer = setTimeout(() => proc.pid && killTree(proc.pid), CHECK_TIMEOUT_MS);
   proc.on('error', (e) => verdict ??= e.message);
-  proc.once('close', () => {
+  proc.once('close', (code, signal) => {
     clearTimeout(timer);
     checking = undefined;
     fs.rmSync(home, {recursive: true, force: true});
-    providerCheck = {error: verdict === undefined ? `the check did not finish in ${CHECK_TIMEOUT_MS / 1000} s` : verdict};
+    providerCheck = {error: verdict !== undefined ? verdict : signal === 'SIGKILL' ?
+      `the check did not finish in ${CHECK_TIMEOUT_MS / 1000} s` :
+      redact(`the check exited (${signal ?? code})${lastStderr ? `: ${lastStderr}` : ''}`)};
     const what = `${PROVIDER_ENV['provider'] ?? 'Anthropic'} ${PROVIDER_ENV['model'] ?? ''}`.trim();
     console.log(providerCheck.error ? `provider check: ${what} failed: ${providerCheck.error}` :
       `provider check: ${what} answered`);
@@ -255,27 +259,23 @@ export function dispose(p: AgentProcess, reason: string): void {
   forget(p);
 }
 
-function startSpare(): Promise<AgentProcess> {
-  const entry = {proc: spawnProcess(), claimed: false};
-  starting.push(entry);
-  entry.proc.then(async (s) => {
-    try {
-      await s.ready;
-      if (!entry.claimed)
-        spares.push(s);
-    } catch (e: any) {
-      console.warn('agent: warm spare failed to start:', e.message);
-      dispose(s, 'spare failed');
-    }
-  }).catch((e) => console.warn('agent: warm spare spawn failed:', e.message))
-    .finally(() => starting.splice(starting.indexOf(entry), 1));
-  return entry.proc;
-}
-
 function topUpSpares(): void {
   const unclaimed = () => starting.filter((e) => !e.claimed).length;
-  while (spares.length + unclaimed() < WARM_SPARES && all.size < MAX_PROCESSES)
-    startSpare();
+  while (spares.length + unclaimed() < WARM_SPARES && all.size < MAX_PROCESSES) {
+    const entry = {proc: spawnProcess(), claimed: false};
+    starting.push(entry);
+    entry.proc.then(async (s) => {
+      try {
+        await s.ready;
+        if (!entry.claimed)
+          spares.push(s);
+      } catch (e: any) {
+        console.warn('agent: warm spare failed to start:', e.message);
+        dispose(s, 'spare failed');
+      }
+    }).catch((e) => console.warn('agent: warm spare spawn failed:', e.message))
+      .finally(() => starting.splice(starting.indexOf(entry), 1));
+  }
 }
 
 async function takeSpare(): Promise<AgentProcess | undefined> {

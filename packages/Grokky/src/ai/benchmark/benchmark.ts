@@ -430,6 +430,9 @@ async function runPrompt(client: ClaudeRuntimeClient, p: SuitePrompt, reps: numb
 const r1 = (v: number | null) => v == null ? '—' : (Math.round(v * 10) / 10).toString();
 const r0 = (v: number | null) => v == null ? '—' : Math.round(v).toString();
 const usd = (v: number | null) => v == null ? '—' : '$' + v.toFixed(4);
+/** Null when no prompt has a cost: the runtime prices no call of a model its price list lacks. */
+const costSum = (rs: PromptResult[]) => rs.some((r) => r.costUsd.median != null) ?
+  rs.reduce((s, r) => s + (r.costUsd.median ?? 0), 0) : null;
 
 /** One rollup row over an arbitrary slice of the results — shared by the difficulty and
  * category tables so the two can never drift in how they aggregate. */
@@ -440,7 +443,7 @@ function rollupRow(name: string, rs: PromptResult[], hasTokens: boolean): string
     r0(stats(rs.map((r) => r.totalMs.median)).median),
     r1(stats(rs.map((r) => r.toolRoundTrips.median)).median),
     `${passed}/${sc.length}` + (sc.length ? ` (${Math.round(100 * passed / sc.length)}%)` : '')];
-  if (hasTokens) cells.push(usd(rs.reduce((s, r) => s + (r.costUsd.median ?? 0), 0)));
+  if (hasTokens) cells.push(usd(costSum(rs)));
   return '| ' + cells.join(' | ') + ' |';
 }
 
@@ -458,7 +461,7 @@ function buildMarkdown(label: string, when: string, reps: number, results: Promp
   const passed = scored.filter((r) => r.accuracyPass).length;
   const totalMed = stats(results.map((r) => r.totalMs.median));
   const ttftMed = stats(results.map((r) => r.ttftMs.median));
-  const costSum = results.reduce((s, r) => s + (r.costUsd.median ?? 0), 0);
+  const cost = costSum(results);
 
   const lines: string[] = [];
   lines.push(`# Grokky benchmark — \`${label}\``);
@@ -473,8 +476,8 @@ function buildMarkdown(label: string, when: string, reps: number, results: Promp
   lines.push(`| **Median turn** | ${r0(totalMed.median)} ms |`);
   lines.push(`| **Median TTFT** | ${r0(ttftMed.median)} ms |`);
   if (hasTokens) {
-    lines.push(`| **Cost** | ${usd(costSum)} total` +
-      (passed ? ` · ${usd(costSum / passed)} per passed prompt` : '') + ` |`);
+    lines.push(`| **Cost** | ${usd(cost)} total` +
+      (passed && cost != null ? ` · ${usd(cost / passed)} per passed prompt` : '') + ` |`);
   } else
     lines.push(`| **Cost** | ⚠️ unavailable — no turn reported usage metrics |`);
   lines.push('');
@@ -642,7 +645,7 @@ function overall(rep: BenchReport) {
     totalMs: stats(rep.results.map((r) => r.totalMs.median)).median,
     ttftMs: stats(rep.results.map((r) => r.ttftMs.median)).median,
     inputTokens: stats(rep.results.map((r) => r.inputTokens.median)).median,
-    costSum: rep.results.reduce((s, r) => s + (r.costUsd.median ?? 0), 0),
+    costSum: costSum(rep.results),
     accPassed: scored.filter((r) => r.accuracyPass).length,
     accScored: scored.length,
   };

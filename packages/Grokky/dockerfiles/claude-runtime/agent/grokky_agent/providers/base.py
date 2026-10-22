@@ -79,7 +79,12 @@ class Provider(ABC):
     def patch_request(self, api_mode: str, request: JsonObject, system_prompt: str,
                       output_schema: JsonObject | None) -> JsonObject:
         """The outgoing request with the turn's system prompt, if any, and output format."""
-        return FORMATS[api_mode].patch(request, system_prompt, output_schema)
+        out = FORMATS[api_mode].patch(request, system_prompt, output_schema)
+        # Hermes renames Claude on the Messages format (anthropic/claude-sonnet-5.5 → claude-sonnet-5-5); the
+        # provider routes by its own name.
+        if api_mode == 'anthropic_messages':
+            out['model'] = self.model
+        return out
 
     def cost(self, usage: Usage) -> float | None:
         """USD for one call, or None when Hermes has no price for the model."""

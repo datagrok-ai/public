@@ -309,11 +309,12 @@ class Session:
         the agent and request patch a turn uses, without tools or history."""
         t = self.turn = self.receive(CHECK)
         try:
-            agent = hermes.new_agent(self.provider.model, self.provider.connection(), uuid.uuid4().hex, self.store, [],
-                                     self._on_delta)
+            # As the session's agent while it runs, so the call limit can interrupt it.
+            agent = self.agent = hermes.new_agent(self.provider.model, self.provider.connection(), uuid.uuid4().hex,
+                                                  self.store, [], self._on_delta)
             result = agent.run_conversation(CHECK['text'], conversation_history=[], task_id=self.key)
         finally:
-            self.turn = None
+            self.turn = self.agent = None
         if t.api_error:
             return t.api_error
         return None if result.get('final_response') else result.get('error') or 'The model returned no answer.'

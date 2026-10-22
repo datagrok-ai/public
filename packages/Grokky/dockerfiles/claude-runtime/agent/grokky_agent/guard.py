@@ -20,16 +20,17 @@ EDIT_TOOLS = {'write_file', 'patch'}
 CONFIRM_TOKEN = re.compile(r'confirmToken\\?"\s*:\s*\\?"(\w+)')
 CONFIRM_TOOL = 'datagrok_confirm'
 NOT_APPROVED = ('The user has not approved this in the current turn. Repeat the call without `confirm` for a new dry '
-                'run, ask with datagrok_confirm, and use the new token only if they approve.')
+                'run, ask with datagrok_confirm, and use the new token only if they approve; without that tool, it '
+                'cannot be done here.')
 
 
 class Approvals:
     """The MCP server's confirm token is a hash of the op's arguments that never expires, so the model could reuse
-    one the user declined. A token is spendable once, and only after the user approved a confirmation card that
-    followed the dry run issuing it, in the same turn."""
+    one the user declined. A token is spendable once, and only after the user approved the confirmation card that
+    followed the dry run issuing it, in the same turn; a card approves the latest dry run only."""
 
     def __init__(self) -> None:
-        self.issued: set[str] = set()
+        self.issued: str | None = None
         self.approved: set[str] = set()
 
     def check(self, tool: str, args: JsonObject) -> str | None:
@@ -45,11 +46,11 @@ class Approvals:
     def record(self, tool: str, result: Any) -> None:
         text = result if isinstance(result, str) else json.dumps(result, default=str)
         if tool.startswith('mcp__'):
-            self.issued.update(CONFIRM_TOKEN.findall(text))
+            self.issued = (CONFIRM_TOKEN.findall(text) or [self.issued])[-1]
         elif tool == CONFIRM_TOOL:
-            if re.search(r'"confirmed"\s*:\s*true', text):
-                self.approved |= self.issued
-            self.issued.clear()
+            if self.issued and re.search(r'"confirmed"\s*:\s*true', text):
+                self.approved.add(self.issued)
+            self.issued = None
 
 
 def violation(tool: str, args: JsonObject, user_dir: str | None, homes: str, spillover: str | None = None) \

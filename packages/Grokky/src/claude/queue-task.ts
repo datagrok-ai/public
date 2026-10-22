@@ -63,7 +63,6 @@ async function taskRoute(): Promise<DG.Func | null> {
 
 export interface ChatTurnOptions {
   systemPromptMode?: string;
-  model?: string;
   clientTools?: {name: string; description: string; inputSchema?: object}[];
 }
 
