@@ -1355,7 +1355,7 @@ export class DomainFrameEditor implements IFrameEditor {
     const at = this._rowById(id);
     const subject = (at < 0 ? null : this._displayOf(at)) ?? `This ${this._info.singularName.toLowerCase()}`;
     if (named == null) {
-      const parent = this._captionOf(`${column}`).toLowerCase().replace(/_/g, ' ');
+      const parent = this._captionOf(`${column}`).toLowerCase();
       return `${subject}'s ${parent} was deleted too; restore the ${parent} first`;
     }
     let count = 0;
