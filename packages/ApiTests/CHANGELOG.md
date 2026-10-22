@@ -3,6 +3,9 @@
 ## v.next
 
 * Chats: Added tests for `grok.dapi.chats`, `DG.ChatWidget` and `grok.dapi.users.notifications.send`
+* Permissions: Extended `Dapi: permissions` with View-and-use / Full-access coverage for database connections, queries, tables, layouts and models (the grantee reads but cannot edit, delete or re-share), and a check that a share with notifications reaches the grantee while a silent one does not
+* Grid: Color Coding: Added checks that a layout keeps a coloring applied to the text (GROK-13668) and that a text coloring switched off leaves no `.color-coding-text` tag behind
+* [core#857](https://github.com/datagrok-ai/core/issues/857): Fixed `View.createByType` failing for the packages view type
 * GROK-21087: Read rows without a backing item as empty and create the item on edit
 * GROK-21058: Resolve renderers of grid-less value cells without dereferencing a null grid column
 

@@ -385,6 +385,8 @@ export declare const STRINGS: {
     readonly dropOnCanvas: 'Drop the file on the canvas';
     /** A reaction pasted or dropped (spike formats, F12, IO-031): refused, saying so; a written one is the engine's error, in its words. */
     readonly reactionsRefused: 'Reactions are not supported';
+    /** A ChemDraw reaction scheme pasted or dropped as CDXML (spike backlog-audit; the ui-critic, milestone 4): how to take its structures. */
+    readonly cdxmlReactionRefused: 'Reactions are not supported: copy the structures without the arrow';
     /**
      * ChemDraw's text (spike cdxml, X3, X5): a dropped binary CDX file, which is not read; a paste with no text, which is what
      * a page sees of ChemDraw's own copy, with the way to copy CDXML text there; the CDXML module that did not load.
@@ -681,6 +683,26 @@ export declare const STRINGS: {
     /** An icon button's tooltip (spike reports-oct14, report 5): its name, then what it does or why it cannot. */
     readonly commandTip: '{name}: {tip}';
     /**
+     * Spike stereo-wording (docs/decisions/stereo-wording.md; the product owner, 2026-10-20: "other companies might have
+     * slightly different language preferences"): what each stereo choice means, in a chemist's words, as Signals' Guided
+     * Stereo writes a line beside each. Display only. The group menu shows a group's under its name, the panel's segments and
+     * chips show theirs as their tooltip and description, and a row's state is described by its own. A host gives its own
+     * wording through `strings`; an empty message shows none.
+     */
+    readonly stereoMeaningAbs: 'Absolute: this exact stereoisomer, as drawn';
+    readonly stereoMeaningOr: 'Relative (OR): a single isomer, as drawn or its mirror image (not known which)';
+    readonly stereoMeaningAnd: 'Mixture (AND): both the drawn isomer and its mirror image are present';
+    /** R or S (a centre's, P or M an axis's) in no group or in ABS; in an OR group; in an AND group (the AND wording, a call). */
+    readonly stereoMeaningKnown: 'Known absolute configuration';
+    readonly stereoMeaningRelativeOr: 'Relative configuration within its OR group';
+    readonly stereoMeaningRelativeAnd: 'Relative configuration within its AND group';
+    readonly stereoMeaningUnspecified: 'Configuration not specified';
+    readonly stereoMeaningEzKnown: 'Known double-bond geometry';
+    readonly stereoMeaningEzUnknown: 'Geometry unknown';
+    /** P or M on an atropisomer axis, and an axis without (a call: the pair in the same voice). */
+    readonly stereoMeaningAxisKnown: 'Known axial configuration';
+    readonly stereoMeaningAxisUnspecified: 'Axial configuration not specified';
+    /**
      * Spike abbreviations (docs/decisions/abbreviations.md, A5 to A8; I18N-006: the abbreviations' names are notations, never
      * translated, and are passed into these as they are): a contracted abbreviation's menu, named "Abbreviation", and its
      * items, ChemDraw's and Ketcher's names (title case, as theirs); the prompt before an edit inside an expanded abbreviation
@@ -887,6 +909,14 @@ export declare const STRINGS: {
     readonly readoutHidden: 'Hidden';
     /** P and M too (spike atropisomers; milestone-6-fixes, F6: the ui-critic's note at milestone 6, the setting names them). */
     readonly settingStereoLabels: 'Show R, S, E, Z, P and M labels';
+    /**
+     * How the stereo labels are written (spike labels-2; STEREO-010): as RDKit and ChemDraw write them, (R) beside a centre
+     * and its group beside it; or as a registration standard writes them, R bare for an ABS centre, or1 and (R) for an OR
+     * centre, &1 alone for an AND centre.
+     */
+    readonly settingStereoLabelStyle: 'Stereo label style';
+    readonly stereoLabelStyleStandard: 'Standard: (R), abs, or1, &1';
+    readonly stereoLabelStyleRegistration: 'Registration: R, or1 (R), &1';
     readonly settingStereoFlag: 'Show the stereo flag';
     readonly settingUnspecified: 'Draw unspecified double bonds crossed';
     /** Which carbons are labelled (spike later-quick-2, ATOM-025): none, terminal carbons (CH\u2083), or every carbon. */
@@ -899,6 +929,13 @@ export declare const STRINGS: {
     readonly settingKeymap: 'Keys';
     readonly keymapChemDraw: 'ChemDraw';
     readonly keymapKetcher: 'Ketcher';
+    /**
+     * The Settings dialog's sections (spike stereo-wording; the product owner, 2026-10-20: "it looks overly tall"), each a
+     * group under its heading: the drawing, its stereochemistry (the `stereochemistry` message), the keys and the readout.
+     */
+    readonly settingsDrawing: 'Drawing';
+    readonly settingsKeyboard: 'Keyboard';
+    readonly settingsReadout: 'Readout';
     readonly reset: 'Reset';
     /**
      * The shortcuts sheet (K7, P13; KEY-006): its button and title, its sections by where the keys act, its columns, and the

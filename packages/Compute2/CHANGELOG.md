@@ -2,6 +2,11 @@
 
 ## v.next
 
+* Workflows: Nested pipelines have two history loads: Load completed run loads an editable copy, Load completed run (read-only) a locked one; read-only steps and pipelines show a lock on the left of their tree row; one loaded as is opens the original run from it, one based on a run (editable) has a branch icon at the end of its row instead; steps name the source run in the tooltip and menu; a loaded pipeline also has a line in its view to open the original run in a new view
+* Workflows: Steps with history have a lock ribbon icon next to history that loads a completed run read-only
+* Workflows: Fixed OpenWorkflowRun opening the default input dialog for runs of functions without a Compute2 editor, such as workflow steps; they open in the Rich Function View, nested pipeline runs in the Tree Wizard
+* Workflows: Read-only subtrees can no longer be duplicated, and duplicating a pipeline that contains one keeps it read-only
+* Workflows: Actions hidden by a node meta link (`setActionVisible`) are not shown
 * Run compare: Selected runs and workflow steps load in parallel; a run that fails to load no longer stops the others, and runs with steps that could not be loaded show a warning
 * Run compare: Empty index cells no longer show up as an `undefined` category on a categorical index
 * Run compare: Fixed a blank chart when the first checked value disappears while others stay checked; a charted value stays listed when Hide equal values would hide it
@@ -13,6 +18,10 @@
 * Run compare: The Multiple values toggle sits next to the value filter, and the name mappings icon got a label
 * Run compare: Charts of several values show every run any of them has, and the partial badge no longer depends on which value was checked first
 * Run compare: Fixed repeated workflow steps (e.g. one per day) overwriting each other's tables and showing as identical rows; each occurrence is now its own row labeled with its step, and runs pair by step
+* Run compare: Several dataframe columns from different workflow steps chart together, like scalars; each step of a run is its own line
+* Run compare: Several columns in the same units chart in one panel on a shared y axis; the Shared y axis switch brings back the stacked panels
+* Run compare: The Mappings dialog lists values that are in no compare row, with shortcuts to map their name or units
+* Run compare: Raw tables without units no longer raise the missing-units warning; an info icon says their values are taken in the row's units
 * RFV: Dataframe outputs annotated `hidden: true` are hidden, like scalar and graphics outputs
 * TreeWizard: Step tooltips no longer name inputs that were only changed among those with warnings
 * TreeWizard: Removing a step or workflow from the tree asks for confirmation

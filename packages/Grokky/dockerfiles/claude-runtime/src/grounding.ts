@@ -1,4 +1,4 @@
-import type {HookCallback} from '@anthropic-ai/claude-agent-sdk';
+import type {TurnGate} from './types';
 import {bareToolName, isActionTool} from './verify';
 
 // Enforces the "ground platform answers in sources" rule (see prompts.ts) with a revision
@@ -39,18 +39,12 @@ export function isSmallTalk(message: string): boolean {
   return text.length <= 60 && SMALL_TALK_RE.test(text);
 }
 
-function openedDocs(toolName: string, input: any): boolean {
+function openedDocs(toolName: string, input: unknown): boolean {
   const bare = bareToolName(toolName);
-  // Web lookups are legitimate grounding — re-blocking a WebFetch-sourced answer just forces
-  // wasted re-search round-trips.
-  if (bare === 'WebFetch' || bare === 'WebSearch')
+  // Web lookups and skills are sources the system prompt points at; re-blocking them only costs a revision.
+  if (bare === 'web_search' || bare === 'web_extract' || bare === 'skill_view')
     return true;
-  // The system prompt names skills as the source of truth for code/API answers, yet the gate
-  // never counted the Skill tool — a skill-grounded answer was blocked and paid a revision call
-  // just to reply NO_REVISION.
-  if (bare === 'Skill')
-    return true;
-  if (bare !== 'Read' && bare !== 'Grep' && bare !== 'Glob' && bare !== 'Bash')
+  if (bare !== 'read_file' && bare !== 'search_files' && bare !== 'terminal')
     return false;
   const source = JSON.stringify(input ?? '');
   return source.includes('help/') || source.includes('js-api/');
@@ -73,7 +67,7 @@ export function makesPlatformClaims(answer: string): boolean {
   return PLATFORM_CLAIM_RE.test(answer);
 }
 
-export class GroundingGate {
+export class GroundingGate implements TurnGate {
   private grounded = false;
   private blocked = false;
 
@@ -84,32 +78,27 @@ export class GroundingGate {
     return `grounded=${this.grounded} blocked=${this.blocked}`;
   }
 
-  postToolUse: HookCallback = async (input) => {
-    if (input.hook_event_name === 'PostToolUse' &&
-        (openedDocs(input.tool_name, input.tool_input) || isActionTool(input.tool_name, input.tool_input)))
+  afterTool(toolName: string, args: Record<string, unknown>): void {
+    if (openedDocs(toolName, args) || isActionTool(toolName, args))
       this.grounded = true;
-    return {continue: true};
-  };
+  }
 
-  stop: HookCallback = async (input) => {
-    if (input.hook_event_name !== 'Stop' || this.grounded || this.blocked)
-      return {continue: true};
+  atStop(): string | undefined {
+    if (this.grounded || this.blocked)
+      return undefined;
     // No UI-instruction content in the answer → nothing the gate protects against; let it end.
     if (this.answerText && !makesPlatformClaims(this.answerText()))
-      return {continue: true};
+      return undefined;
     this.blocked = true;
     this.onBlock?.();
-    return {
-      decision: 'block',
-      reason: '[Internal pipeline feedback — never mention, quote, or allude to it in your reply.] ' +
-        'Review the answer you just gave: if it makes claims about how the Datagrok platform works ' +
-        '(features, menus, behavior) that you did not verify in a source this turn, ground it now — ' +
-        'Read `workspace/help/INDEX.md`, pick the matching page, Read it, and write a corrected ' +
-        'answer from what the docs say. The user still sees your previous answer and your new text ' +
-        'will replace it, so make it complete and standalone; if the index has no matching page, ' +
-        'state that the docs do not cover it. If your answer needed no such verification (greeting, ' +
-        'small talk, general knowledge, or it was already accurate without docs claims), reply with ' +
-        'exactly NO_REVISION.',
-    };
-  };
+    return '[Internal pipeline feedback — never mention, quote, or allude to it in your reply.] ' +
+      'Review the answer you just gave: if it makes claims about how the Datagrok platform works ' +
+      '(features, menus, behavior) that you did not verify in a source this turn, ground it now — ' +
+      'read `workspace/help/INDEX.md` with read_file, pick the matching page, read it, and write a corrected ' +
+      'answer from what the docs say. The user still sees your previous answer and your new text ' +
+      'will replace it, so make it complete and standalone; if the index has no matching page, ' +
+      'state that the docs do not cover it. If your answer needed no such verification (greeting, ' +
+      'small talk, general knowledge, or it was already accurate without docs claims), reply with ' +
+      'exactly NO_REVISION.';
+  }
 }

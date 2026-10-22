@@ -923,3 +923,22 @@ scoped('a constraint over two columns is read with SQL null semantics: an empty 
   src.dispose();
 });
 
+scoped('a draft shows the column defaults, so a required column with one is already filled', async () => {
+  emsBackends.domain = new MemoryDomainBackend({name: 'desk', tables: {
+    ticket: {businessKey: ['code'], columns: {
+      code: {type: 'string', required: true},
+      status: {type: 'string', required: true, default: 'open', friendlyName: 'Status'},
+    }},
+  }});
+  const table = await domains.table('desk.ticket');
+  const draft = table.draft({});
+  await flush();
+  const create = domains.form(draft);
+  await flush();
+  assert.equal(create.input('status').value.value, 'open');
+  create.input('code').value.value = 'T2';
+  await flush();
+  assert.equal(create.validate(), true, 'the draft with only its key typed is ready to save');
+  create.dispose();
+  draft.dispose();
+});

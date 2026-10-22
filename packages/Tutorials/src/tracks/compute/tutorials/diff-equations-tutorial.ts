@@ -291,7 +291,8 @@ export class DifferentialEquationsTutorial extends Tutorial {
     this.title('Improving models');
     this.describe('Let\'s extend the model to account for intraspecific competition among predators.');
 
-    const tutorialPanelRoot = document.querySelector('div.tutorials-root-description.ui-div');
+    const tutorialPanelRoot = this.activity;
+    this.showAllSteps(true);
 
     const equation = 'dy/dt = -gamma * y + delta * x * y - eta * y * y';
     const rawEquation = equation.replaceAll(' ', '');

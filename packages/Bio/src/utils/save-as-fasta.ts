@@ -63,10 +63,12 @@ export function saveAsFastaUI(): void {
       const valueSeqCol: DG.Column | null = seqColInput.value ?? null;
       const valueLineWidth = lineWidthInput.value ?? FASTA_LINE_WIDTH;
 
-      if (!valueSeqCol)
+      if (!valueSeqCol) {
         grok.shell.warning(`Seq column is mandatory to save as FASTA.`);
+        return;
+      }
 
-      const seqHandler = _package.seqHelper.getSeqHandler(valueSeqCol!);
+      const seqHandler = _package.seqHelper.getSeqHandler(valueSeqCol);
       const resFastaTxt: string = saveAsFastaDo(valueIdColList, seqHandler, valueLineWidth);
 
       const aEl: HTMLAnchorElement = document.createElement('a');

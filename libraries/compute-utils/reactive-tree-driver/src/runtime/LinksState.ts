@@ -1,8 +1,8 @@
-import {BaseTree, NodePath} from '../data/BaseTree';
+import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink, isActionVisible} from './link-matching';
 import {AnnotationLinkKind} from '../data/common-types';
-import {Action, Link} from './Link';
+import {Action, Link, STRUCTURE_VISIBILITY} from './Link';
 import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest, identity, EMPTY, asapScheduler} from 'rxjs';
 import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap, finalize} from 'rxjs/operators';
 import {DriverLogger} from '../data/Logger';
@@ -34,7 +34,7 @@ export class LinksState {
   public links: Map<string, Link> = new Map();
   public actions: Map<string, Action> = new Map();
   public nodesActions: Map<string, Action[]> = new Map();
-  public actionsVisibility: Map<string, boolean> = new Map();
+  public hiddenActions$ = new BehaviorSubject<ReadonlySet<string>>(new Set());
   public stepsDependencies: Map<string, DependenciesData> = new Map();
   public ioDependencies: Map<string, IoDeps> = new Map();
 
@@ -79,13 +79,16 @@ export class LinksState {
     const oldLinks = [...this.links.values()];
     const oldActions = [...this.actions.values()];
 
-    const [links, addedLinks] = this.updateLinks(state, oldLinks);
-    this.links = new Map(links.map((link) => [link.uuid, link] as const));
-
-    const [actions, nodesActions, actionsVisibility] = this.updateActions(state, oldActions);
+    const [actions, nodesActions] = this.updateActions(state, oldActions);
     this.actions = new Map(actions.map((link) => [link.uuid, link] as const));
     this.nodesActions = nodesActions;
-    this.actionsVisibility = actionsVisibility;
+
+    const [links, addedLinks] = this.updateLinks(state, oldLinks);
+    this.links = new Map(links.map((link) => [link.uuid, link] as const));
+    const linkIds = new Set(this.links.keys());
+    for (const action of this.actions.values())
+      action.pruneVisibility(linkIds);
+    this.updateHiddenActions();
 
     this.stepsDependencies = calculateStepsDependencies(state, links);
     this.ioDependencies = calculateIoDependencies(state, links, this.logger);
@@ -117,9 +120,24 @@ export class LinksState {
     const actions = this.nodesActions.get(uuid);
     if (actions) {
       return actions.map(({uuid, spec: {id, position, description, menuCategory, friendlyName, icon, confirmationMessage, visibleOn}}) =>
-        ({uuid, id, position, description, menuCategory, friendlyName, icon, confirmationMessage, visibleOn, visible: this.actionsVisibility.get(uuid) ?? true}));
+        ({uuid, id, position, description, menuCategory, friendlyName, icon, confirmationMessage, visibleOn}));
     }
     return actions;
+  }
+
+  public isActionVisible(uuid: string) {
+    return this.actions.get(uuid)?.isVisible() ?? true;
+  }
+
+  public updateHiddenActions() {
+    const hidden = new Set<string>();
+    for (const action of this.actions.values()) {
+      if (!action.isVisible())
+        hidden.add(action.uuid);
+    }
+    const prev = this.hiddenActions$.value;
+    if (hidden.size !== prev.size || [...hidden].some((uuid) => !prev.has(uuid)))
+      this.hiddenActions$.next(hidden);
   }
 
   public updateLinks(state: BaseTree<StateTreeNode>, oldLinks: Link[]) {
@@ -134,10 +152,13 @@ export class LinksState {
     const newActions = this.createStateActions(state);
     const [mergedActions] = this.mergeLinks(oldActions, newActions, 'action');
     const nodeActions = new Map<string, Action[]>;
-    const actionsVisibility = new Map<string, boolean>();
     for (const action of mergedActions) {
       const owningNode = state.getNode(action.prefix);
-      actionsVisibility.set(action.uuid, isActionVisible(owningNode, action.spec));
+      // withdrawn rather than set to visible, like orphaned meta
+      if (isActionVisible(owningNode, action.spec))
+        action.removeVisibility(STRUCTURE_VISIBILITY);
+      else
+        action.setVisibility(STRUCTURE_VISIBILITY, false);
       const visibleOn = action.spec.visibleOn;
       let targetUuid: string;
       if (visibleOn) {
@@ -152,7 +173,7 @@ export class LinksState {
       acts.push(action);
       nodeActions.set(targetUuid, acts);
     }
-    return [mergedActions, nodeActions, actionsVisibility] as const;
+    return [mergedActions, nodeActions] as const;
   }
 
   private mergeLinks<L extends Link>(oldLinks: L[], newLinks: L[], prefix: 'link' | 'action'): [L[], L[]] {
@@ -189,6 +210,7 @@ export class LinksState {
         .filter((x) => !!x)
         .flat();
       const links = matchedLinks.map((minfo) => {
+        this.resolveActions(node, minfo);
         const spec = minfo.spec;
         const debounce = (spec.type === 'validator' || spec.type === 'pipelineValidator')
           ? (spec.debounce ?? (this.batchLinks ? 0 : undefined))
@@ -199,6 +221,18 @@ export class LinksState {
       return [...acc, ...links];
     }, [] as Link[]);
     return links;
+  }
+
+  private resolveActions(node: TreeNode<StateTreeNode>, minfo: MatchInfo) {
+    for (const [name, paths] of Object.entries(minfo.actions)) {
+      const actions = paths.length ? this.nodesActions.get(node.getNode(paths[0].path).getItem().uuid) ?? [] : [];
+      const ids = new Map<string, string[]>();
+      for (const action of actions) {
+        const id = action.matchInfo.spec.id;
+        ids.set(id, ids.get(id) ?? []).get(id)!.push(action.uuid);
+      }
+      minfo.actionsUUID.set(name, ids);
+    }
   }
 
   public createStateActions(state: BaseTree<StateTreeNode>) {

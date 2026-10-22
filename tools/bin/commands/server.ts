@@ -1,12 +1,13 @@
 /// Docs: [Grok Dapi](/docs/plans/grok-dapi/)
 import * as fs from 'fs';
 import * as path from 'path';
+import {randomUUID} from 'crypto';
 import {NodeDapi, BatchRequest, BatchOperation, InternalDataSource, PackageOpResult, mapPositionalParams} from '../utils/node-dapi';
-import {createClient} from '../utils/server-client';
+import {createClient, logSpecOf} from '../utils/server-client';
 import {printOutput, printBatchOutput, printError, setOutputFormat, OutputFormat} from '../utils/server-output';
 import {handleMigrate} from './server-migrate';
 import {handleDomains} from './server-domains';
-import {handleObserve, OBSERVE_USAGE} from './server-observe';
+import {handleObserve, OBSERVE_USAGE, printRequestLog} from './server-observe';
 import {isUuid} from '../utils/migrate/registry';
 import {resolveEntity} from '../utils/migrate/walker';
 
@@ -14,7 +15,7 @@ import {resolveEntity} from '../utils/migrate/walker';
 const ENTITY_TYPES: Record<string, string> = {queries: 'DataQuery', scripts: 'Script', reports: 'UserReport'};
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files', 'tables'];
-const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token',
+const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'status', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token',
   'observe', 'o'];
 const VERBS = ['list', 'count', 'get', 'delete'];
 
@@ -42,8 +43,10 @@ export async function server(argv: any): Promise<boolean> {
   }
 
   let client;
+  const logSpec = logSpecOf(argv);
+  const logId = logSpec || (entity === 'functions' && verb === 'run' && isDebug(argv)) ? randomUUID() : undefined;
   try {
-    client = await createClient(host, !!argv.admin);
+    client = await createClient(host, !!argv.admin, logId ? {logId, spec: logSpec} : undefined);
   } catch (err: any) {
     // a bad alias, URL or key is not a usage error: no help dump, just the reason
     printError(err);
@@ -66,6 +69,7 @@ export async function server(argv: any): Promise<boolean> {
     if (entity === 'raw') return await handleRaw(dapi, verb, rest, argv, output);
     if (entity === 'describe') return await handleDescribe(dapi, verb ?? rest[0], output);
     if (entity === 'healthcheck') return await handleHealthcheck(dapi, argv, output);
+    if (entity === 'status') return await handleStatus(dapi, output);
     if (entity === 'sync') return await handleSync(dapi, verb, rest, argv, output);
     if (entity === 'functions' && verb === 'run') return await handleFuncRun(dapi, rest, argv, output);
     if (entity === 'functions' && verb === 'list') return await handleFunctionsList(dapi, argv, limit, offset, filter, output);
@@ -162,6 +166,15 @@ export async function server(argv: any): Promise<boolean> {
     process.exitCode = 1;
     return true;
   }
+  finally {
+    if (logId)
+      await printRequestLog(dapi, logId, output);
+  }
+}
+
+/** `--debug` is not a declared boolean (grok publish reads it too), so it can arrive as a string. */
+function isDebug(argv: any): boolean {
+  return argv.debug !== undefined && argv.debug !== false && argv.debug !== 'false';
 }
 
 async function handleFilesPut(dapi: NodeDapi, rest: string[], output: OutputFormat): Promise<boolean> {
@@ -580,6 +593,34 @@ async function handleHealthcheck(dapi: NodeDapi, argv: any, output: OutputFormat
   return true;
 }
 
+async function handleStatus(dapi: NodeDapi, output: OutputFormat): Promise<boolean> {
+  const [info, extended] = await Promise.all([dapi.serverStatus(), dapi.serverStatus(true)]);
+  if (output === 'json') {
+    printOutput({server: info, extended}, output);
+    return true;
+  }
+  if (output === 'quiet') {
+    console.log(info?.Version ?? '');
+    return true;
+  }
+  const http = info?.['Http Server'];
+  const fields = {...info, 'Http Server': undefined};
+  const width = Math.max(...Object.keys(fields).map((k) => k.length)) + 2;
+  for (const [k, v] of Object.entries(fields))
+    if (v !== undefined) console.log(`${(k + ':').padEnd(width)}${v ?? ''}`);
+  if (http)
+    console.log(`${'Http Server:'.padEnd(width)}total ${http.total}, active ${http.active}, idle ${http.idle}, closing ${http.closing}`);
+  // Non-admins get the plain count back; admins get {"METHOD url": inFlight}.
+  const active = extended?.['Http Server']?.active;
+  if (active && typeof active === 'object') {
+    console.log('');
+    const rows = Object.entries(active).map(([request, count]) => ({request, count}));
+    if (rows.length) printOutput(rows, output);
+    else console.log('(no requests in flight)');
+  }
+  return true;
+}
+
 async function handleDescribe(dapi: NodeDapi, entityType: string | undefined, output: OutputFormat): Promise<boolean> {
   if (!entityType) {
     printError(new Error('Usage: grok s describe <entity|type>   e.g. grok s describe connections, grok s describe Project'));
@@ -601,9 +642,11 @@ async function handleDescribe(dapi: NodeDapi, entityType: string | undefined, ou
 }
 
 async function handleFuncRun(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
-  let funcName = rest[0];
+  // `--debug 'Pkg:f()'` hands the call to --debug.
+  let funcName = rest[0] ?? (typeof argv.debug === 'string' ? argv.debug : undefined);
+  const debug = isDebug(argv);
   if (!funcName) {
-    printError(new Error('Usage: grok s functions run <Name:function(args...)> [--json params.json]'));
+    printError(new Error('Usage: grok s functions run <Name:function(args...)> [--json params.json] [--debug]'));
     return false;
   }
 
@@ -625,7 +668,7 @@ async function handleFuncRun(dapi: NodeDapi, rest: string[], argv: any, output: 
       params = mapPositionalParams(params, (await dapi.functions.find(funcName))?.parameterInfos, funcName);
   }
 
-  const result = await dapi.functions.run(funcName, params);
+  const result = await dapi.functions.run(funcName, params, debug);
   printOutput(result, output);
   return true;
 }
@@ -927,6 +970,8 @@ Special commands:
   grok s raw <METHOD> <path> [--json f | --data j]    Any API endpoint; path is API-relative (/users/current), /api prefix optional
   grok s describe <entity|type>                       Fields of an entity type (registry record + a live sample)
   grok s healthcheck [--module <name>]                Check server + per-module health
+  grok s status                                       Server build, uptime, DB pool and HTTP connections
+                                                      (/info/server); admins also see requests in flight
   grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
                                                       Share an entity with one or more groups
   grok s shares list <entity-id-or-name>              List who an entity is shared with
@@ -1031,6 +1076,13 @@ Options:
   --offset <n>          Start offset (default: 0)
   -r, --recursive       Recursive (for files list)
   --verbose             Print the stack of a runtime failure, not just its message
+  --log [<spec>]        Keep what this command's requests log at <spec>, then collect it from
+                        every server instance and print it to stderr: verbose (default),
+                        standard, levels (error, warning, info, debug, audit, usage) and debug
+                        flags (db, storage, credentials, ..., or all), comma-separated. Only
+                        these requests are affected; no permission is needed
+  --debug               functions run: a debug call, as the query debugger runs it; its log (the
+                        query's stages) prints the same way
   --json <file>         Read a JSON body from a file (save, functions run, batch, raw)
   --data '<json>'       Inline JSON body for raw
   -O, --output-file     Write table download to a file instead of stdout
@@ -1061,6 +1113,8 @@ Examples:
   grok s connections test --json conn.json
   grok s functions run 'Chem:smilesToMw("ccc")'
   grok s functions run Chem:test --json params.json
+  grok s functions run 'MyPkg:MyQuery()' --debug                   # the query's own log
+  grok s functions run UsageAnalysis:Groups --log verbose,db       # and every SQL statement it ran
   grok s functions list --type script --language python --limit 20
   grok s functions list --package Chem --type query
   grok s functions list --package PowerPack --type package --filter 'name contains "grid"'

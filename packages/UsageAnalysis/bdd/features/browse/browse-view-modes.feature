@@ -26,7 +26,7 @@ Feature: Browsing mode and persistent views
     And Apps tree node inside browse tree is expanded
 
   Scenario: A single click replaces the view the previous single click opened
-    When user clicks on Tutorials tree node inside browse tree
+    When user clicks on Apps---Tutorials tree node inside browse tree
     Then the "Tutorials" view should be current
     And Tutorials view should be visible
     When user clicks on Dashboards tree node inside browse tree
@@ -36,7 +36,7 @@ Feature: Browsing mode and persistent views
     And no error or warning balloon should have been shown
 
   Scenario: A double click keeps the view through the next single click
-    When user double-clicks on Tutorials tree node inside browse tree
+    When user double-clicks on Apps---Tutorials tree node inside browse tree
     Then the "Tutorials" view should be current
     When user clicks on Dashboards tree node inside browse tree
     Then Projects view should be visible
@@ -47,7 +47,7 @@ Feature: Browsing mode and persistent views
   Scenario: A new browsing session does not unpin what is already persistent
     # the third node is a folder rather than another top-level group, so a nested node is covered too
     Given Files tree node inside browse tree is expanded
-    When user double-clicks on Tutorials tree node inside browse tree
+    When user double-clicks on Apps---Tutorials tree node inside browse tree
     Then Tutorials view should be visible
     When user clicks on Dashboards tree node inside browse tree
     Then Projects view should be visible

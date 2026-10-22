@@ -7,6 +7,7 @@ skill is the recipe.
 | Question | Feature | Date | Help page |
 |---|---|---|---|
 | How do I split my series into the common core and its substituents, and see which combinations of substituents I have? | r-groups-from-mcs.feature | 2026-09-24 | datagrok/solutions/domains/chem |
+| How does an MPO profile score a qualified value such as <-5, and can I change it? | mpo-qnum-score-as.feature | 2026-10-20 | datagrok/solutions/domains/chem |
 | How do I draw a molecule in Crux with bonds, a chain and hotkeys? | crux/drawing.feature | 2026-10-07 | |
 | How do I draw ring systems in Crux, and place a template from the Structure Library? | crux/rings-and-templates.feature | 2026-10-07 | |
 | How do I set a stereocentre in Crux, and see whether it is R or S? | crux/wedges-and-cip-labels.feature | 2026-10-07 | |

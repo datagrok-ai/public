@@ -129,6 +129,16 @@ scenario('label-column: inputs inside another input\'s editor (a columns map\'s 
   assert.deepEqual(r.findings, []);
 });
 
+scenario('label-column: the cells of a form\'s columns line up with their own column, one cell off is still found', async () => {
+  const grid = (off: string) => `<div data-u2="form" aria-label="Monomer">${INPUT('Library')}` +
+    `<div data-u2-part="columns" style="display: grid; grid-template-columns: 260px 260px; column-gap: 24px">` +
+    `${INPUT('Symbol')}${INPUT('Name')}${INPUT('Polymer')}${INPUT('Type', {editor: off})}</div></div>`;
+  assert.deepEqual((await auditOf(grid(''))).findings, []);
+  const broken = await auditOf(grid('margin-left: 6px'));
+  assert.deepEqual(rules(broken), ['label-column']);
+  assert.match(broken.findings[0].detail, /"Type" text input at 106 px; the other 4 at 100 px$/);
+});
+
 scenario('clipped-text and truncated-text: a label cut, a label ellipsized; an ellipsized item label is a list\'s design', async () => {
   const cut = 'width: 40px; overflow: hidden';
   const clipped = await auditOf(INPUT('Dose, mg per kilogram', {label: cut}));

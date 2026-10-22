@@ -93,10 +93,11 @@ export const TreeWizard = Vue.defineComponent({
       states,
       logs,
       links,
+      hiddenActions,
       result,
       //
       loadPipeline,
-      loadAndReplaceNestedPipeline,
+      loadAndReplaceNestedItem,
       savePipeline,
       saveDynamicItem,
       runStep,
@@ -232,14 +233,14 @@ export const TreeWizard = Vue.defineComponent({
       }
     };
 
-    const onPipelineFuncCallUpdate = (newCall: DG.FuncCall) => {
+    const onRunChosen = (newCall: DG.FuncCall, readonly: boolean) => {
       if (isRootChoosen.value)
         loadPipeline(newCall.id);
-      else if (chosenStepState.value && chosenStepUuid.value && treeState.value && !isFuncCallState(chosenStepState.value)) {
+      else if (chosenStepState.value && chosenStepUuid.value && treeState.value) {
         const parent = findTreeNodeParrent(chosenStepUuid.value, treeState.value);
         if (parent && !isFuncCallState(parent)) {
           const position = parent.steps.findIndex((step) => step.uuid === chosenStepUuid.value);
-          loadAndReplaceNestedPipeline(parent.uuid, newCall.id, chosenStepState.value.configId, position);
+          loadAndReplaceNestedItem(parent.uuid, newCall.id, chosenStepState.value.configId, position, readonly);
         }
       }
     };
@@ -482,6 +483,8 @@ export const TreeWizard = Vue.defineComponent({
     ////
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
+    const isChosenParentReadonly = Vue.computed(() => !!chosenStepUuid.value && !!treeState.value &&
+      !!findTreeNodeParrent(chosenStepUuid.value, treeState.value)?.isReadonly);
 
     // keyed on the nqName string so a new FuncCall is prepared only when the
     // chosen pipeline actually changes, not on every reactive state emission
@@ -525,7 +528,7 @@ export const TreeWizard = Vue.defineComponent({
     const rfvHistory = Vue.computed(() => {
       if (singleStep.value && providerFunc.value)
         return {mode: 'workflow' as const, func: providerFunc.value, version: singleStep.value.chain[0]?.version};
-      if (currentStepHistoryEnabled.value)
+      if (currentStepHistoryEnabled.value && !isChosenParentReadonly.value)
         return {mode: 'step' as const};
       return undefined;
     });
@@ -607,7 +610,8 @@ export const TreeWizard = Vue.defineComponent({
         return {};
       const globalActions = getRelevantGlobalActions(treeState.value, chosenStepUuid.value);
       const currentStepActions = chosenStepState.value?.actions?.filter(action => action.position === 'menu') ?? [];
-      const actions = [...globalActions, ...currentStepActions].filter((action) => action.visible !== false);
+      const actions = [...globalActions, ...currentStepActions]
+        .filter((action) => !hiddenActions.value?.has(action.uuid));
       return actions.reduce((acc, action) => {
         const menuCategory = action.menuCategory ?? 'Actions';
         if (action.position === 'menu' || action.position === 'globalmenu') {
@@ -622,7 +626,7 @@ export const TreeWizard = Vue.defineComponent({
 
     const buttonActions = Vue.computed(() => {
       return chosenStepState.value?.actions?.reduce((acc, action) => {
-        if (action.position === 'buttons' && action.visible !== false)
+        if (action.position === 'buttons' && !hiddenActions.value?.has(action.uuid))
           acc.push(action);
 
         return acc;
@@ -868,6 +872,7 @@ export const TreeWizard = Vue.defineComponent({
                 history={rfvHistory.value}
                 hideDefaultExport={!!singleStep.value?.chain[0]?.disableDefaultExport}
                 onUpdate:funcCall={onFuncCallChange}
+                onStepRunChosen={onRunChosen}
                 onHistoryRunChosen={(call) => loadPipeline(call.id)}
                 onSaveToHistory={singleStep.value ? () => saveEntireModelState() : saveStepToHistory}
                 onPublishRun={singleStep.value ? () => shareCurrentRun() : shareStepRun}
@@ -930,13 +935,14 @@ export const TreeWizard = Vue.defineComponent({
               state={chosenStepState.value}
               uuid={chosenStepUuid.value}
               isRoot={isRootChoosen.value}
+              isParentReadonly={isChosenParentReadonly.value}
               buttonActions={buttonActions.value}
               body={typeof states.descriptions[chosenStepUuid.value]?.body === 'string'
                 ? states.descriptions[chosenStepUuid.value]?.body as string
                 : undefined}
               onActionRequested={runActionWithConfirmation}
               dock-spawn-title='Step sequence review'
-              onUpdate:funcCall={onPipelineFuncCallUpdate}
+              onUpdate:funcCall={onRunChosen}
               onAddNode={({itemId, position}) => {
                 if (chosenStepUuid.value)
                   addStep(chosenStepUuid.value, itemId, position);

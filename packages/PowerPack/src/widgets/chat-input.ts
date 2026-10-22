@@ -3,7 +3,6 @@
 import * as DG from 'datagrok-api/dg';
 import {messageInput} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {MessageInput} from '@datagrok-libraries/u2';
-import '@datagrok-libraries/u2/css/message-input.css';
 
 export class ChatInputWidget extends DG.Widget {
   /** Posts the markup; false keeps it in the box. */

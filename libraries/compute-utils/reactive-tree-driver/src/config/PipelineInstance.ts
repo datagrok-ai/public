@@ -21,6 +21,8 @@ export type StepFunCallInitialConfig = {
 export type InstanceConfRec<C> = {
   steps?: InstanceConfRec<C>[];
   skipOnInit?: boolean;
+  isReadonly?: boolean;
+  sourceRunId?: string;
 } & C;
 
 export type InstanceConfRecInput<C> = {
@@ -96,10 +98,6 @@ export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateDy
 
 export type ViewAction = ActionInfoBase & {
   uuid: string;
-  /** Result of evaluating showWhen / hideWhen against the current tree.
-   *  `true` when no condition is set. Compute2 uses this to decide whether
-   *  to render the action; RTD itself does not filter or gate on it. */
-  visible: boolean;
 };
 
 export type StepFunCallStateBase = {
@@ -108,6 +106,7 @@ export type StepFunCallStateBase = {
   uuid: string;
   friendlyName?: string;
   isReadonly: boolean;
+  sourceRunId?: string;
 }
 
 export type StepFunCallSerializedState = {
@@ -118,6 +117,7 @@ export type StepFunCallSerializedState = {
 
 export type StepFunCallState = {
   funcCall?: DG.FuncCall;
+  sourceRunTitle?: string;
   viewersHook?: ViewersHook;
   actions?: ViewAction[];
   enableHistory?: boolean;
@@ -143,6 +143,7 @@ export type PipelineInstanceBase<I, T> = {
   description: string | undefined;
   version: string | undefined;
   nqName: string | undefined;
+  sourceRunId?: string;
 } & I & T;
 
 // static

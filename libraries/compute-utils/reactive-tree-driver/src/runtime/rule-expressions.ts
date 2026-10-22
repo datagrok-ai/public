@@ -177,6 +177,9 @@ export function isOn(when: RuleExpr | undefined, ctx: RuleContext): boolean {
 
 export function buildRuleContext(controller: IControllerBase): RuleContext {
   const ctx: RuleContext = {$all: {}};
+  const position = controller.getBasePosition()?.position;
+  if (position !== undefined)
+    ctx.$position = position;
   for (const name of controller.getMatchedInputs()) {
     const all = controller.getAll(name) ?? [];
     ctx[name] = all[0];

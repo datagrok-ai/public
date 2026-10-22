@@ -22,7 +22,7 @@ const errors = {a: {errors: ['bad']}};
 const warnings = {b: {warnings: ['careful']}};
 const inconsistent = (restriction: RestrictionType): Record<string, ConsistencyInfo> =>
   ({c: {restriction, inconsistent: true, assignedValue: 1}});
-const action = (id: string, position: ViewAction['position']): ViewAction => ({id, uuid: id, position, visible: true});
+const action = (id: string, position: ViewAction['position']): ViewAction => ({id, uuid: id, position});
 
 category('TreeWizard: step status', () => {
   test('Running, failed and pending come first', async () => {
@@ -123,6 +123,11 @@ category('TreeWizard: step permissions', () => {
     expectDeepEqual(permissions(inDynamic({configId: 's'}, {isReadonly: true})), [false, false, false],
       {prefix: 'Read-only parent'});
     expectDeepEqual(permissions(inDynamic({configId: 's'})), [true, true, true], {prefix: 'Editable'});
+  });
+
+  test('A read-only item of an editable workflow can be moved and removed but not duplicated', async () => {
+    const parent = mockDynamicPipeline('dyn', [], {stepTypes: [{configId: 's'}]});
+    expectDeepEqual(permissions(stat(mockFuncCall('s', {isReadonly: true}), parent)), [true, true, false]);
   });
 
   test('Each disableUI flag turns off its own action for that step type', async () => {

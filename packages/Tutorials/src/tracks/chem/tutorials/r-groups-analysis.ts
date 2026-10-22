@@ -130,7 +130,8 @@ export class RGroupsAnalysisTutorial extends Tutorial {
           });
         });
         observer.observe($('.grok-prop-panel').get(0)!, {childList: true, subtree: true});
-      })]), undefined, 'Note changes on the pie charts');
+      })]), undefined, 'Note changes on the pie charts',
+    Tutorial.apiSkip(() => this.t!.selection.init((i) => i < 20)));
 
     // await this.action('In the grid, press Shift + Drag Mouse Down', this.t.onSelectionChanged.pipe(filter(() => {
     //   return grok.shell.o.constructor.name === 'RowGroup' &&
@@ -178,7 +179,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
       interval(200).pipe(filter(() => v!.props.viewerType === 'Histogram')),
       v!.root.querySelector('.d4-combo-popup') as HTMLElement, '', () => v!.setOptions({viewerType: 'Histogram'}));
 
-    await this.action('Set Value to In-Vivo Activity',
+    await this.action('Set Value to In-vivo Activity',
       interval(200).pipe(filter(() => innerLook().valueColumnName === 'In-vivo Activity')), undefined,
       `Use the <b>Gear</b> icon next to the <b>Viewer</b> control to access
       the histogram’s settings, and under <b>Histogram</b> tab set <b>Value</b> to <b>In-vivo Activity</b>.`,

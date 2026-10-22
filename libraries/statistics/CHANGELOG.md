@@ -1,6 +1,6 @@
 # statistics changelog
 
-## v.next
+## 1.12.16 (2026-10-20)
 
 * [#4291](https://github.com/datagrok-ai/public/issues/4291): Chem: MPO: Add support for qnum values
 

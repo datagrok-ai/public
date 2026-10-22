@@ -5,6 +5,7 @@ import {Scope} from './scope.js';
 import {Control} from './component.js';
 import {bindText} from './bind.js';
 import {Dates} from './dates.js';
+import {Tooltip} from './tooltip.js';
 
 export type Child = HTMLElement | Control | string | ReadonlySignal<unknown>;
 export type Text = string | ReadonlySignal<unknown>;
@@ -161,8 +162,32 @@ export function link(text: Text,
   return el;
 }
 
+/** Adds `handler` to `el`, owned by whoever is building — a row of `each()`, a card — and removed
+ * with it; batched, and a throw reported rather than thrown. What a built element listens with:
+ * `scope.listen` on a longer-lived scope would keep every element ever built alive. */
+export function on<E extends Event = Event>(el: HTMLElement, type: string, handler: (e: E) => void): HTMLElement {
+  listen<E>(el, type, handler);
+  return el;
+}
+
+/** Runs `fn` now and again whenever a signal it read changes, owned by whoever is building — an `each()`
+ * row, a card — and stopped with it: what a plain element built there follows its model with, as
+ * {@link on} is what it listens with. */
+export function effect(fn: () => void): void {
+  owner().effect(fn);
+}
+
+export interface ButtonOptions {
+  primary?: boolean;
+  /** Hover text; a function is asked at hover time. */
+  tooltip?: string | (() => string);
+  /** `true`, or WHY the button is disabled — the reason becomes its tooltip, so the user learns what
+   * to fix; `false`, `null` or `''` enable it. A signal is followed live. */
+  disabled?: boolean | string | null | ReadonlySignal<boolean | string | null>;
+}
+
 export function button(text: Text | HTMLElement, onClick: (e: MouseEvent) => void,
-  options?: {primary?: boolean}): HTMLButtonElement {
+  options?: ButtonOptions): HTMLButtonElement {
   const el = element('button', 'u2-btn', options?.primary ? 'u2-btn-primary' : undefined);
   el.type = 'button';
   el.dataset.u2 = 'button';
@@ -171,6 +196,25 @@ export function button(text: Text | HTMLElement, onClick: (e: MouseEvent) => voi
   else
     setText(el, text);
   listen<MouseEvent>(el, 'click', (e) => onClick(e));
+  const disabled = options?.disabled;
+  const apply = (x: boolean | string | null | undefined) => el.disabled = x === true || (typeof x === 'string' && x !== '');
+  if (isSignal(disabled))
+    owner().effect(() => apply(disabled.value as boolean | string | null));
+  else
+    apply(disabled);
+  if (disabled !== undefined || options?.tooltip !== undefined) {
+    const text = () => {
+      const x = isSignal(disabled) ? disabled.peek() : disabled;
+      const tip = options?.tooltip;
+      return typeof x === 'string' && x !== '' ? x : typeof tip === 'function' ? tip() : tip ?? '';
+    };
+    // no owner to release the hover listeners with: the browser's own title, as iconButton does
+    const scope = Scope.ambient;
+    if (scope === undefined)
+      el.title = text();
+    else
+      Tooltip.bind(el, text, scope);
+  }
   return el;
 }
 

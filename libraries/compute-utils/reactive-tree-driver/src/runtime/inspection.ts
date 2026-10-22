@@ -63,7 +63,7 @@ function inspectLink(state: StateTree, link: LinksData): InspectedLink {
   if (spec.annotation)
     res.annotation = spec.annotation;
   if (isAction)
-    res.visible = state.linksState.actionsVisibility.get(link.uuid) ?? true;
+    res.visible = state.linksState.isActionVisible(link.uuid);
   const original = getOriginalConfig(spec);
   if (original)
     res.original = toInspectorJSON(original);
@@ -118,7 +118,7 @@ function nodeRef(node: TreeNode<StateTreeNode>, path: Readonly<NodePath>): Inspe
 
 function formatMatched(paths: Record<string, MatchedNodePaths>) {
   return Object.fromEntries(Object.entries(paths).map(([name, matched]) =>
-    [name, matched.map((m) => formatNodePath(m.path, m.ioName))]));
+    [name, matched.map((m) => formatNodePath(m.path, m.count === undefined ? m.ioName : `count=${m.count}`))]));
 }
 
 function splitIO(io: {id: string, type?: string, direction?: string, nullable?: boolean}[]) {

@@ -23,6 +23,7 @@ import {DuplicateMonomerManager} from './monomer-manager/duplicate-monomer-manag
 import {deleteMonomerLibraryByName, mergeActiveLibrariesInto, refreshLibraryControlsForm}
   from './library-file-manager/ui';
 import type {MonomerCollectionsView} from './monomer-collections-view';
+import {CollectionDialogs} from './collection-dialogs';
 
 const AI_NAMESPACE = 'BioMonomerAI';
 
@@ -336,7 +337,7 @@ function collectionsViewOf(view: any): MonomerCollectionsView {
 }
 
 function canEditCollection(c: MonomerCollection): boolean {
-  return !c.updatedBy || c.updatedBy === DG.User.current().login;
+  return CollectionDialogs.canEdit(c, DG.User.current().login);
 }
 
 /** Which of [symbols] the merged monomer library does not know (any polymer type). */

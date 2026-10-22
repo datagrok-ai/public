@@ -47,6 +47,7 @@ export function useReactiveTreeDriver(
 
   const logs = useObservable(driver.logger.logs$.pipe(bufferDuringLock(globalLock$)));
   const links = useObservable(driver.currentLinks$.pipe(bufferDuringLock(globalLock$)));
+  const hiddenActions = useObservable(driver.hiddenActions$.pipe(bufferDuringLock(globalLock$)));
   const result = useObservable(driver.result$);
 
   if (overlayService) {
@@ -147,8 +148,10 @@ export function useReactiveTreeDriver(
     driver.sendCommand({event: 'loadPipeline', funcCallId});
   };
 
-  const loadAndReplaceNestedPipeline = (parentUuid: string, dbId: string, itemId: string, position: number) => {
-    driver.sendCommand({event: 'loadDynamicItem', parentUuid, dbId, itemId, position, readonly: true, isReplace: true});
+  const loadAndReplaceNestedItem = (
+    parentUuid: string, dbId: string, itemId: string, position: number, readonly: boolean,
+  ) => {
+    driver.sendCommand({event: 'loadDynamicItem', parentUuid, dbId, itemId, position, readonly, isReplace: true});
   };
 
   // Resolves with the saved meta-call data, or null when the save fails or the command is
@@ -217,10 +220,11 @@ export function useReactiveTreeDriver(
     states,
     logs,
     links,
+    hiddenActions,
     result,
     //
     loadPipeline,
-    loadAndReplaceNestedPipeline,
+    loadAndReplaceNestedItem,
     savePipeline,
     saveDynamicItem,
     runStep,

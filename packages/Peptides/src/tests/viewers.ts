@@ -9,7 +9,7 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {highlightMonomerPosition, scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
 import {MonomerPosition, MostPotentResidues, SAR_PROPERTIES, SARViewer, SELECTION_MODE} from '../viewers/sar-viewer';
-import {COLUMNS_NAMES, SCALING_METHODS, SEM_TYPES} from '../utils/constants';
+import {COLUMN_NAME, COLUMNS_NAMES, SCALING_METHODS, SEM_TYPES} from '../utils/constants';
 import {CLUSTER_TYPE, LogoSummaryTable, LST_PROPERTIES} from '../viewers/logo-summary';
 import {MutationCliffsViewer} from '../viewers/mutation-cliffs-viewer';
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
@@ -462,4 +462,31 @@ category('Viewers: Mutation Cliffs', () => {
     expect(participants(1).length, 0, 'peptides in position 1 cliffs');
     expect((await chartAt(1)).rowCount, 0, 'position 1 chart rows');
   });
+}, {clear: false});
+
+category('Viewers: Logo Summary Table WebLogo', () => {
+  before(async () => await PeptideUtils.loadComponents());
+
+  after(async () => grok.shell.closeAll());
+
+  // WebLogo aggregation must use the same filtered rows as the cluster bitsets
+  test('WebLogo aggregation on a filtered table', async () => {
+    const df = await loadDemoPeptides();
+    const model = await analyzeDemoPeptides(df, 75);
+    const lst = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
+    const unfilteredGrid = lst.viewerGrid;
+    const mask = DG.BitSet.create(df.rowCount, (i) => i % 10 !== 0);
+    const filterSub = df.onRowsFiltering.subscribe(() => df.filter.and(mask));
+    try {
+      df.rows.requestFilter();
+      await awaitCheck(() => lst.viewerGrid !== unfilteredGrid, 'Logo Summary Table is not rebuilt on filter', 5000);
+      lst.getProperty(`${LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN_NAME}${COLUMN_NAME}`)!
+        .set(lst, DEMO_COLUMN_NAMES.ACTIVITY);
+      lst.getProperty(LST_PROPERTIES.WEB_LOGO_AGGREGATION_TYPE)!.set(lst, DG.AGG.AVG);
+      await awaitCheck(() => lst.viewerGrid.root.querySelector('.bio-wl-host') !== null,
+        'WebLogo is not rendered for the filtered table', 10000);
+    } finally {
+      filterSub.unsubscribe();
+    }
+  }, {timeout: 120000});
 }, {clear: false});

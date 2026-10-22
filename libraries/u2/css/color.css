@@ -39,7 +39,8 @@ input.u2-input-editor.u2-color-text {
   height: 12px;
   padding: 0;
   color: inherit;
-  border: var(--dg-border-width) solid transparent;
+  /* a hairline even at rest: a white color is otherwise invisible on a white form */
+  border: var(--dg-border-width) solid var(--dg-grey-2);
   border-radius: 0;
   cursor: pointer;
 }

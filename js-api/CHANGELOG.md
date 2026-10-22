@@ -3,6 +3,14 @@
 ## v.next
 
 * Chats: Added `grok.dapi.chats` (find by entity or reference, comments, post with replies and references, edit, import, watch), `DG.ChatWidget` and `grok.dapi.users.notifications.send` (#772, #770)
+* Domains: Fixed `DomainTableClient.save()` sending the `'~'` service columns and master-expand fields of a spread read row as column values, which the server refused
+* Domains: `DomainFrameEditor` filled the column defaults the caller may write into a new row, so a required column with a default no longer blocks it
+* [core#857](https://github.com/datagrok-ai/core/issues/857): Fixed `View.PACKAGES` and `VIEW_TYPE.PACKAGES` to be `'Plugins'`, the platform's plugins view type, and removed `View.BROWSE`, which has no view factory, from `View.ALL_VIEW_TYPES`, so `View.createByType` no longer crashes on them
+* Domains: Added `DomainColumn`; `orderBy` takes it, so an FK path no longer type-checks as a sort key
+* Fixed `ConnectionDataSource.byType` returning a raw Dart object
+* Sketcher: A sketcher in the context panel (a molecule column's Filter pane) no longer makes its drawing the current object: the panel showed the molecule instead of the column, and the pane, the sketcher with it, went at every stroke. Nor does a sketcher out of the page (`Sketcher.isInContextPanel`)
+* U2: With debug tracking on (`DG.U2.debug`), `effect()` and `own()` on a control warn once per call site when the same site registers from a second `each()` row or effect run that the control does not live in: what it registers outlives each of them and piles up
+* Sketcher: A molecule lookup (a name, an identifier) answered after a newer value was set no longer overwrites it, and one that finds nothing keeps the drawing and says `Could not recognize "…"` instead of clearing it
 * U2: Breaking: An effect's every run gets its own child scope, disposed before the next run and with the owner, so what a run builds dies with it
 * U2: Errors in effects, bound handlers (including a rejected promise a bound handler returns), listeners and cleanups are reported — the scope's `onError`, then its parents, then `Scope.onUnhandledError` — instead of thrown at whoever wrote the signal; one throwing cleanup no longer stops the rest
 * U2: Added parent/child scopes with labels, `bind`, `run`, `listen`, `setTimeout`, `setInterval`, `requestFrame`, `abortSignal` and `reportError`; a child disposed early leaves its parent

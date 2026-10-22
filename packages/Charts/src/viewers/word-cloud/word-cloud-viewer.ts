@@ -14,6 +14,8 @@ import {laidOutWordCount, wordCloudStatus} from './word-cloud-status';
 
 
 const MAX_UNIQUE_CATEGORIES_NUMBER = 500;
+/** Drawn labels are cut here; echarts-wordcloud rasterizes each word on a canvas as wide as its text. */
+const MAX_WORD_LENGTH = 50;
 /** How long a render waits for a host it can measure, in 100 ms steps, before finishing on the
  * picture that is up. */
 const SIZE_WAITS = 10;
@@ -218,7 +220,8 @@ export class WordCloudViewer extends DG.JsViewer {
     }
     this._counts = counts;
     const data = Array.from(counts, ([name, value]) => ({
-      name: name,
+      name: name.length > MAX_WORD_LENGTH ? `${name.substring(0, MAX_WORD_LENGTH)}…` : name,
+      word: name,
       value: value,
       textStyle: {
         color: DG.Color.toHtml(DG.Color.getCategoryColor(strColumn, name)),
@@ -264,12 +267,12 @@ export class WordCloudViewer extends DG.JsViewer {
 
     this.chart
       .on('mouseover', (d: any) => ui.tooltip.showRowGroup(table, (i) => {
-        return d.name === strColumn.get(i);
+        return d.data.word === strColumn.get(i);
       }, d.event.event.x + 10, d.event.event.y + 10))
       .on('mouseout', () => ui.tooltip.hide())
       .on('mousedown', (d: any) => {
         table.selection.handleClick((i) => {
-          return d.name === strColumn.get(i);
+          return d.data.word === strColumn.get(i);
         }, d.event.event);
       });
 

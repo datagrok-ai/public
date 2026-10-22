@@ -1,9 +1,10 @@
-import {signal, batch, Signal, ReadonlySignal, untracked} from './signals.js';
+import {signal, batch, computed, Signal, ReadonlySignal, untracked} from './signals.js';
 import {Scope} from './scope.js';
 import {bindTypeOf, ITEMS_CAP} from './widget-like.js';
 import type {BindProp, BindSource, ObservableLike, IItemState, IItemsState} from './widget-like.js';
 import {Control} from './component.js';
 import {div, label, span} from './elements.js';
+import {Tooltip} from './tooltip.js';
 import {EMPTY, isEmpty} from './text.js';
 import type {IWidgetStatus} from './widget-like.js';
 
@@ -33,6 +34,14 @@ export interface InputOptions<T> {
    * construction; the input where there was none or once it is gone): what it opens survives the
    * next change. */
   onChanged?: (value: T, input: Input<T>) => void;
+  /** Runs after each change the USER made in this input — typing, picking, a click in its popup —
+   * and never for a write from code ({@link Input.value} set elsewhere, {@link Input.reset},
+   * {@link Input.follow}, the input's own pruning): the place for "the user picked a library, load
+   * it". Dart's `InputBase.onInput`; the `userInput` event. Owned as {@link onChanged} is. Told from
+   * the event being dispatched, so a write after an `await` in the user's handler, or from a popup
+   * not opened through `Overlay.show`, is not counted, and code writing the value from a handler of an
+   * event aimed at the input itself is. */
+  onInput?: (value: T, input: Input<T>) => void;
   tooltipText?: LiveOption<string>;
   /** When an edit reaches {@link Input.value}: on every keystroke (`input`, the default) or on the
    * commit — blur or Enter — as Dart's `fireChanged` does (`change`). The free-text editors (text,
@@ -53,6 +62,10 @@ export interface InputOptions<T> {
   onEscape?: (e: KeyboardEvent, input: Input<T>) => void;
   /** The editor fills the row, as the text editors do in a wide form. */
   fill?: boolean;
+  /** The editor's own width — px, or any CSS length — in every layout and in any form, over the widths
+   * a form fits (a choice as wide as its longest item, a number 150px); in a row narrower than that it
+   * shrinks. `fill` stretches it instead. */
+  width?: number | string;
 }
 
 export type Validator<T> = (value: T) => string | null;
@@ -70,7 +83,14 @@ export type Validator<T> = (value: T) => string | null;
  * where only the box is mounted and the label belongs to the platform. */
 export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> extends Control {
   readonly value: Signal<T>;
+  /** The verdict on the value: a validator's message, or "Value can't be empty" for an empty
+   * required one — from the start, touched or not. What Save and the form's validity go by. */
   readonly validity: ReadonlySignal<string | null>;
+  /** The message the input shows: {@link validity}, except that the required verdict waits until
+   * the input is {@link touched}. What a tab marker or a status line goes by — a fresh form shows none. */
+  readonly error: ReadonlySignal<string | null>;
+  /** Edited or left by the user, or validated by its form ({@link touch}); {@link reset} clears it. */
+  readonly touched: ReadonlySignal<boolean>;
 
   protected readonly options: O;
   private static _systemWrites = 0;
@@ -81,6 +101,8 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   private readonly _inputBox: HTMLElement;
   private readonly _optionsRail: HTMLElement;
   private _labelEl: HTMLElement | undefined;
+  private _tooltip = '';
+  private readonly _tooltipOn = new Set<HTMLElement>();
   private _postfixEl: HTMLElement | undefined;
   private _liveBinds: Map<string, Signal<unknown>> | undefined;
   private readonly _enabled = signal(true);
@@ -93,15 +115,20 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   private _guarded = false;
   private _touchWired = false;
   private _onChanged: ((value: T, input: Input<T>) => void) | undefined;
+  private _onUserInput: ((value: T, input: Input<T>) => void) | undefined;
   private _watching = false;
   /** The value {@link follow} last wrote, until the change watch has skipped it. */
   private _followed: {value: T} | undefined;
+  /** The value {@link systemWrite} last wrote, until the change watch has seen it: never the user's. */
+  private _system: {value: T} | undefined;
 
   constructor(options: O, defaultValue: T) {
     super();
     this.options = options;
     this.value = options.bind ?? signal(options.value ?? defaultValue);
     this.validity = this._validity;
+    this.touched = this._touched;
+    this.error = computed(() => this._missing.value && !this._touched.value ? null : this._validity.value);
     // an explicit name is a deliberate identity and stamps data-u2-name; the label fallback is a
     // form key only — captions get reworded, so they never become automation ids
     if (options.name !== undefined)
@@ -122,6 +149,14 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     this._editor = this.runInScope(() => this.createEditor());
     this._editor.classList.add('u2-input-editor');
     this._editor.dataset.u2Part = 'editor';
+    if (options.width !== undefined) {
+      // inline: the form's fitted widths are selectors several classes deep
+      this._editor.style.width = typeof options.width === 'number' ? `${options.width}px` : options.width;
+      // a preferred width: kept where there is room, given up in a row narrower than it
+      this._editor.style.flex = '0 1 auto';
+      this._editor.style.minWidth = '0';
+      this._editor.style.maxWidth = 'none';
+    }
     // prepended: a subclass that filled the rail from createEditor already attached it
     this._inputBox.prepend(this._editor);
     this.root.append(this._inputBox, this._error);
@@ -154,12 +189,13 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
       (x) => this.required = x);
 
     this.effect(() => this._validate(this.value.value));
-    this.effect(() => this._showValidity(this._validity.value !== null && this._missing.value &&
-      !this._touched.value ? null : this._validity.value));
-    if (options.onChanged) {
+    this.effect(() => this._showValidity(this.error.value));
+    if (options.onChanged)
       this._onChanged = Input.bindOwned(this.scope, options.onChanged) as (value: T, input: Input<T>) => void;
+    if (options.onInput)
+      this._onUserInput = Input.bindOwned(this.scope, options.onInput) as (value: T, input: Input<T>) => void;
+    if (options.onChanged || options.onInput)
       this._watchChanges();
-    }
     const {onEnter, onEscape} = options;
     if (onEnter || onEscape) {
       const keys: Record<string, ((e: KeyboardEvent, input: Input<T>) => void) | undefined> = {
@@ -205,8 +241,8 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     return {count: list.length, list: truncated ? list.slice(0, ITEMS_CAP) : list, truncated};
   }
 
-  /** One watch of the value for `onChanged` and the `change` event: the initial value and a
-   * {@link follow} write are not changes. Built on first need. */
+  /** One watch of the value for `onChanged`, `onInput` and the `change` / `input` events: the initial
+   * value and a {@link follow} or {@link reset} write are not changes. Built on first need. */
   private _watchChanges(): void {
     if (this._watching)
       return;
@@ -215,22 +251,49 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     this.effect(() => {
       const value = this.value.value;
       const followed = this._followed;
+      const system = this._system;
       this._followed = undefined;
+      this._system = undefined;
       if (initial)
         initial = false;
       else if (followed === undefined || !Object.is(followed.value, value)) {
+        const user = (system === undefined || !Object.is(system.value, value)) && this._byUser();
         untracked(() => {
           this._onChanged?.(value, this);
+          if (user)
+            this._onUserInput?.(value, this);
           this.fireEvent('change', value);
+          if (user)
+            this.fireEvent('userInput', value);
         });
       }
     });
   }
 
+  /** The write comes from an event the user aimed at this input: at its editor, at its box where a
+   * host mounted that alone, or at a popup it opened (followed through popups opened from popups). */
+  private _byUser(): boolean {
+    const event = (globalThis as {event?: Event}).event;
+    if (Input.isSystemWrite || event === undefined || !(event.target instanceof Element))
+      return false;
+    for (let node: Element | null = event.target; node !== null;) {
+      if (this.root.contains(node) || this._inputBox.contains(node))
+        return true;
+      const owner = node.closest<HTMLElement>('[data-u2-owner-id]')?.dataset.u2OwnerId;
+      if (owner === undefined)
+        return false;
+      if (owner === this.root.id)
+        return true;
+      node = document.getElementById(owner);
+    }
+    return false;
+  }
+
   /** `change` carries the new value (`input.on('change', (value, input) => …)`), alongside the
-   * DOM `change` events the root sees; every other id as {@link Control.onEvent}. */
+   * DOM `change` events the root sees; `userInput` the same for the user's own edits only
+   * ({@link InputOptions.onInput}); every other id as {@link Control.onEvent}. */
   onEvent(eventId: string | null = null): ObservableLike<unknown> {
-    if (eventId === null || eventId === 'change')
+    if (eventId === null || eventId === 'change' || eventId === 'userInput')
       this._watchChanges();
     return super.onEvent(eventId);
   }
@@ -252,7 +315,9 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   /** Applies a value write the input makes on its own behalf — pruning a selection whose item
    * vanished, reconciling a list the platform rebuilt — so consumers that tell user edits from the
    * rest see it as one of the rest (the outbound bridge fires `onChanged` alone for it, as Dart
-   * does in `multi_choice_input.dart:44-56`). */
+   * does in `multi_choice_input.dart:44-56`). NOT silent: `onChanged` still fires. To put a value in
+   * without it use {@link reset} (once) or {@link follow} (live); to act on the user's picks alone,
+   * `onInput`. */
   static system<T>(write: () => T): T {
     Input._systemWrites++;
     try {
@@ -260,6 +325,14 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     } finally {
       Input._systemWrites--;
     }
+  }
+
+  /** The input's own write — pruning a pick whose item vanished — as {@link system} makes it, and marked
+   * on the input, so it never reaches `onInput` even when it lands inside a user's event (a handler's
+   * batch flushes after {@link system}'s counter has dropped). */
+  protected systemWrite(value: T): void {
+    this._system = {value};
+    Input.system(() => this.value.value = value);
   }
 
   /** True while a {@link system} write is running. */
@@ -292,6 +365,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
       else
         target.setAttribute('aria-labelledby', this._labelEl.id);
       this.root.prepend(this._labelEl);
+      this._bindTooltip();
     }
   }
 
@@ -497,11 +571,27 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   }
 
   get tooltipText(): string {
-    return this.root.title;
+    return this._tooltip;
   }
 
+  /** u2's tooltip over the caption, as the platform's `setTooltip` (over the whole input when it has no
+   * caption), and the editor's accessible description. */
   set tooltipText(x: string) {
-    this.root.title = x;
+    this._tooltip = x ?? '';
+    if (this._tooltip)
+      this.focusTarget.setAttribute('aria-description', this._tooltip);
+    else
+      this.focusTarget.removeAttribute('aria-description');
+    this._bindTooltip();
+  }
+
+  private _bindTooltip(): void {
+    const el = this._labelEl ?? this.root;
+    if (!this._tooltip || this._tooltipOn.has(el))
+      return;
+    this._tooltipOn.add(el);
+    // a root bound before its caption existed yields to the caption's own binding
+    Tooltip.bind(el, () => el === this.root && this._labelEl ? '' : this._tooltip, this.scope);
   }
 
   get enabled(): boolean {
@@ -603,7 +693,10 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
       if (message)
         break;
     }
-    const missing = !message && this._required.value && this.isEmptyValue(value);
+    const empty = this.isEmptyValue(value);
+    // a quiet host keeps an empty editor's underline: there has to be something to type into
+    this.root.classList.toggle('u2-input-empty', empty);
+    const missing = !message && this._required.value && empty;
     batch(() => {
       this._missing.value = missing;
       this._validity.value = missing ? EMPTY : message || null;

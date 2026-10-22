@@ -11,6 +11,9 @@ export interface OverlayOptions {
    * anchor is written as an inline `max-height`, so a popup that wants to stay shorter than that
    * says so here rather than outranking the inline value from a stylesheet. */
   maxHeight?: number | string;
+  /** At least as wide as the anchor (default) — a dropdown list; `false` for a popup with a size of its
+   * own (a calendar), which a wide field would otherwise stretch. */
+  matchWidth?: boolean;
 }
 
 /** A dialog as the overlay stack sees it. */
@@ -160,7 +163,8 @@ export class Overlay {
           size({
             padding: 4,
             apply: ({rects, availableHeight, elements}) => {
-              elements.floating.style.minWidth = `${rects.reference.width}px`;
+              if (options.matchWidth !== false)
+                elements.floating.style.minWidth = `${rects.reference.width}px`;
               const available = `${Math.max(availableHeight, 64)}px`;
               const cap = options.maxHeight;
               elements.floating.style.maxHeight = cap === undefined ? available :

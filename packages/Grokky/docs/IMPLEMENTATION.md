@@ -31,18 +31,20 @@ The Claude runtime maintains a per-user directory on the container filesystem:
 │   ├── my-notes.md                  ← personal (from My Files/agents/)
 │   ├── <UserPackageName>-skills.md  ← package (from <UserPackageName> package's agents/)
 │   └── shared-abc123-onboard.md     ← shared (from another user's agents/)
-└── workspace → /workspace           ← symlink to the cloned Datagrok public repo
+└── workspace/                       ← links into the cloned Datagrok public repo (/workspace)
 ```
 
-The user ID is extracted from the JWT payload (`sub` or `usr.id`). The `workspace` symlink gives
-Claude read access to the full JS API source, packages, samples, and documentation.
+The user ID is extracted from the JWT payload (`sub` or `usr.id`). `workspace/` links every top-level
+entry of `/workspace` except `.git`, `CLAUDE.md` and `.claude`, and under `packages/` only the packages
+installed on the instance ([`staged-workspace.ts`](../dockerfiles/claude-runtime/src/user/staged-workspace.ts)),
+which gives Claude read access to the JS API source, samples, documentation and those packages.
 
-The starting point for Claude is determined by whether any user knowledge exists — if the user has
-agent files, Claude's working directory is the user directory; otherwise it defaults to `/workspace`.
+The user directory is Claude's working directory whenever the message carries the user's key; a session
+with no user directory (no key, or no known API URL in local dev) works in `/workspace`.
 
-Agent files are read from disk on demand (Glob / Read). The system prompt does not enumerate them;
-the `datagrok-*` capability skills are surfaced through the Claude Code **Skill tool** (`## Skills`
-in `DATAGROK_PROMPT`, `dockerfiles/claude-runtime/src/prompts.ts`).
+Agent files are read from disk on demand (`read_file` / `search_files`). The system prompt does not
+enumerate them; the `datagrok-*` capability skills are listed in the full-mode system prompt and loaded
+with Hermes' `skill_view` tool (`## Skills` in `DATAGROK_PROMPT`, `dockerfiles/claude-runtime/src/prompts.ts`).
 
 User-created packages sync into `/users/{userId}/agents/` rather than the public workspace,
 since their skills are personal.
@@ -104,7 +106,7 @@ docsRef: ../../help/datagrok/solutions/domains/chem/chem.md
 
 These files are not aggregated or injected anywhere — they simply sit in the synced workspace at
 `workspace/packages/<Name>/agents/package-knowledge.yaml`, where Claude discovers them with
-Glob/Read like any other file. (Earlier iterations injected an `## Available Packages` prompt
+`search_files` / `read_file` like any other file. (Earlier iterations injected an `## Available Packages` prompt
 table and later exposed a `get_package_knowledge` MCP tool; both were retired — the table bloated
 the prompt and the tool went unused.)
 

@@ -1,4 +1,4 @@
-@journey @realizes:filters.cp.chem-and-bio-filters
+@journey @realizes:filters.cp.chem-and-bio-filters @serial
 Feature: The substructure card with the sketcher, other cards and a reopened panel
   On spgi-100 with an empty filter panel and a Series card, the Structure header dropped on the panel
   adds an empty substructure card on top and filters nothing. With Filter as you draw cleared, a
@@ -8,9 +8,12 @@ Feature: The substructure card with the sketcher, other cards and a reopened pan
   5 rows that satisfy both; switching the substructure card off leaves the 21 Pyrrolidines rows and
   switching it on brings the 5 back. A switched-off card survives closing and reopening the panel:
   still off, still holding pyridine, and on again it keeps the 5 rows.
+  Serial (`@serial`): Filter as you draw is the account's setting (`chem-filter` user settings), and this feature clears
+  it; the features that filter while the sketcher is open take turns with it.
 
   Background:
     Given user is logged in
+    And the "chem-filter" user settings are put back at feature end
     And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And user opens spgi-100 dataset

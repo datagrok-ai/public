@@ -169,7 +169,7 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
       interval(200).pipe(filter(() =>
         ((div!.props.moleculeProperties ?? []) as string[]).includes('NumValenceElectrons'))),
       undefined, `On the <b>Context Panel</b>:
-    <ol><li>Under <b>Misc</b>, Next to <b>Molecule Properties</b>, click the column selector icon ('...').</li>
+    <ol><li>Under <b>Misc</b>, next to <b>Molecule Properties</b>, click the column selector icon ('...').</li>
     <li>Select this column: <b>NumValenceElectrons</b>.</li>
     <li>Click <b>OK</b>.</li></ol>`, () => div!.setOptions({moleculeProperties: ['NumValenceElectrons']}));
 

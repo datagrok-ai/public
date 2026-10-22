@@ -3,6 +3,7 @@ import {StateTreeNode} from './StateTreeNodes';
 import {MatchedIO} from './link-matching';
 import {DriverLogger, reportError} from '../data/Logger';
 import {Link} from './Link';
+import {getOriginalConfig} from '../config/config-processing-utils';
 
 export class DependenciesData {
   nodes: Set<string> = new Set();
@@ -18,15 +19,20 @@ export type IoDeps = Record<string, IoDep>;
 export function calculateStepsDependencies(state: BaseTree<StateTreeNode>, links: Link[]) {
   const deps: Map<string, DependenciesData> = new Map();
   for (const link of links) {
-    const inputInfos = Object.values(link.matchInfo.inputs);
-    for (const infosIn of inputInfos) {
-      for (const infoIn of infosIn) {
-        const inPathFull = [...link.prefix, ...infoIn.path];
-        addOutputDeps(state, deps, link, inPathFull);
-      }
-    }
+    // a count reads no step's data, so it adds no step dependency
+    const inputInfos = Object.values(link.matchInfo.inputs).flat().filter((info) => info.count === undefined);
+    for (const infoIn of inputInfos)
+      addOutputDeps(state, deps, link, [...link.prefix, ...infoIn.path]);
     if (inputInfos.length === 0)
       addOutputDeps(state, deps, link);
+    // a node meta link that only sets actions visibility has no outputs to schedule it by
+    const {spec, outputs, actionsUUID} = link.matchInfo;
+    if (spec.type === 'nodemeta' && Object.keys(outputs).length === 0 && actionsUUID.size) {
+      const uuid = state.getNode(link.prefix).getItem().uuid;
+      const depData = deps.get(uuid) ?? new DependenciesData();
+      depData.links.add(link.uuid);
+      deps.set(uuid, depData);
+    }
   }
   return deps;
 }
@@ -61,9 +67,12 @@ export function calculateIoDependencies(state: BaseTree<StateTreeNode>, links: L
         if (depsData[ioName] == null)
           depsData[ioName] = {};
         if (depType === 'data') {
-          if (depsData[ioName][depType]) {
-            const prevUuid = depsData[ioName][depType] as string;
-            const prevSpecId = links.find((l) => l.uuid === prevUuid)?.matchInfo.spec.id ?? prevUuid;
+          const prevUuid = depsData[ioName][depType] as string | undefined;
+          const prev = prevUuid ? links.find((l) => l.uuid === prevUuid) : undefined;
+          // the separate effects of one rule may write the same io, as the rule's own effects do
+          const sameRule = !!prev && getOriginalConfig(prev.matchInfo.spec) === getOriginalConfig(link.matchInfo.spec);
+          if (prevUuid && !sameRule) {
+            const prevSpecId = prev?.matchInfo.spec.id ?? prevUuid;
             const newSpecId = link.matchInfo.spec.id;
             reportError(
               'warning',
