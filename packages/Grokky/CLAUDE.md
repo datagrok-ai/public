@@ -276,15 +276,10 @@ by active code. All active AI features now route through `ClaudeRuntimeClient`.
 
 ## Model credentials
 
-The model provider and its key are the `claude-runtime` container's credentials: `provider` (Anthropic by
-default), `apiKey`, `model` (required: the one model every turn runs on, as the provider names it), and as the
-provider needs them `baseUrl`, `region`, `apiFormat` and (Databricks) `service`. Each wire format (Anthropic Messages, OpenAI
-Responses, Chat Completions) is a class in `agent/grokky_agent/formats.py`; each provider (Anthropic,
-OpenRouter, OpenAI, Azure, Bedrock, Databricks, Custom) is a class in `agent/grokky_agent/providers/` that
-checks its credentials and declares the formats it serves and where. Prices, context windows and image
-support come from Hermes; there is no model list. At startup the runtime checks the provider with one short
-call and reports the verdict in its log and `/health`. Claude subscription logins are not supported:
-Anthropic allows them only in its own applications. Details: [Credentials](docs/CLAUDE_CODE_FLOW.md#credentials).
+The model provider, key and model are the `claude-runtime` container's credentials: `provider`, `apiKey`, `model`
+(the one model every turn runs on) and, where a provider needs them, `baseUrl`, `region`, `apiFormat` and
+`service`. Wire formats are classes in `agent/grokky_agent/formats.py`, providers in `agent/grokky_agent/providers/`.
+Claude subscription logins are not supported. Details: [Credentials](docs/CLAUDE_CODE_FLOW.md#credentials).
 
 ## Rebuilding the container images
 
