@@ -64,6 +64,7 @@ import './dapi/models';
 import './dapi/packages';
 import './dapi/permissions';
 import './dapi/projects';
+import './dapi/projects-open';
 import './dapi/tables';
 import './dapi/sticky_meta';
 import './dapi/users';
