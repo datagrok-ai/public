@@ -6,10 +6,13 @@ Feature: FASTA files: open, export, reopen
   Sequence Space with no column to offer). Download > As FASTA... writes the table back as FASTA
   and that file opens again as the same sequences.
 
-  Not translated: the drag-and-drop and Browse > Files double-click entry paths — both end in the
-  same handler as Open local file, and a synthetic drop does not reach it (the old spec fell back
-  to calling Bio:importFasta). A project saved with the imported table comes back through the same
-  detection on open, tested in Bio src/tests/detectors-tests.ts ('detectors').
+  Translated from TestTrack Bio/bio-lifecycle-fasta-file.md: scenario 1 and scenario 2 (the entry
+  paths) through Open local file, a drop onto the window and a double-click in Browse > Files, each
+  ending in the same detected sequence table; scenario 3 (the FASTA round trip); scenario 4 (the
+  imported table saved to a project and reopened, its semantic type, units and renderer back). The
+  drop is the browser's own drag of the file from disk, made through the DevTools protocol: the
+  platform lays its drop layer over the window and the file is dropped on it. The double-clicked
+  file is the same fixture written into My files for the feature.
 
   Background:
     Given user is logged in
@@ -55,5 +58,47 @@ Feature: FASTA files: open, export, reopen
     And the value of "sequence" column in row 6 should be "MHAILRYFIRRLFYHIFYKIYSLISKKHQSLPSDVRQF"
     And "sequence" column should have units "fasta"
     And the "cell type of sequence" reading of grid should be "sequence"
+    And no error or warning balloon should have been shown
+    And no errors should have been logged
+
+  Scenario: A FASTA file dropped onto the window is a detected sequence table
+    When user closes all views
+    Then no table view is open
+    When user drops the "fixtures/bdd-sample.fasta" file of the project onto browse tree
+    Then the open table views should be exactly "bdd-sample"
+    And the table should have 6 rows
+    And the value of "sequence" column in row 1 should be "MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW"
+    And "sequence" column should have semantic type "Macromolecule"
+    And "sequence" column should have units "fasta"
+    And the "cell type of sequence" reading of grid should be "sequence"
+    And the "cell 1 of sequence" area of grid should be painted in at least 3 colors
+    And no error or warning balloon should have been shown
+    And no errors should have been logged
+
+  Scenario: A FASTA-imported table keeps its type, units and renderer through a project
+    When user saves the current view as project "bdd-bio-fasta-{run}"
+    And user closes all views
+    And user opens the "bdd-bio-fasta-{run}" project and waits for its table
+    Then the table should have 6 rows
+    And the value of "sequence" column in row 6 should be "MHAILRYFIRRLFYHIFYKIYSLISKKHQSLPSDVRQF"
+    And "sequence" column should have semantic type "Macromolecule"
+    And "sequence" column should have units "fasta"
+    And the "cell type of sequence" reading of grid should be "sequence"
+    And the "cell 1 of sequence" area of grid should be painted in at least 3 colors
+    And no error or warning balloon should have been shown
+    And no errors should have been logged
+
+  Scenario: A FASTA file double-clicked in Browse > Files is a detected sequence table
+    Given the "fixtures/bdd-sample.fasta" file of the project is in the user's files as "bdd-fasta-{time}.fasta"
+    When user closes all views
+    And user refreshes the browse tree
+    And Files tree node inside browse tree is expanded
+    And Files---My-files tree node inside browse tree is expanded
+    And user double-clicks on Files---My-files---bdd-fasta-{time}.fasta tree node inside browse tree
+    Then the "bdd-fasta-{time}" table view should open with 6 rows
+    And "sequence" column should have semantic type "Macromolecule"
+    And "sequence" column should have units "fasta"
+    And the "cell type of sequence" reading of grid should be "sequence"
+    And the "cell 1 of sequence" area of grid should be painted in at least 3 colors
     And no error or warning balloon should have been shown
     And no errors should have been logged

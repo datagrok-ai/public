@@ -12,6 +12,12 @@ Feature: Word cloud text size, rotation, shape and font
   a single value first and restore it after.
   The Background pins RACE: Caucasian 896, Other 62, Black 27, Asian 15 on demog-1000 — four words
   whose sizes are far enough apart for a size claim to mean something.
+  From the manual part of `word-cloud.md`: Grid Size and Context menu. Grid Size is claimed by how
+  many words the layout draws on DEMOG (about two hundred values) with Draw Out Of Bound off, since
+  with it on every word is drawn whatever the grid: 74 at the default 8, 123 at 2, 31 at 40. The
+  md's 20 is replaced by 40 because at 20 the cloud still draws 73 words, too close to the default
+  to tell apart. The context menu lists the viewer's commands, General > Save as PNG among them, and
+  its Properties... makes the viewer the object the context panel shows.
 
   Background:
     Given user is logged in
@@ -96,4 +102,34 @@ Feature: Word cloud text size, rotation, shape and font
       | bold       | true       |
       | fontFamily | sans-serif |
     Then the "font" reading of word cloud viewer should be "bold sans-serif"
+    And no errors should have been logged
+
+  Scenario: Grid Size spaces the words, so a coarser grid fits fewer of them
+    When user sets properties of word cloud viewer:
+      | wordColumnName | DEMOG |
+      | drawOutOfBound | false |
+    Then "gridSize" property of word cloud viewer should be "8"
+    And the "words" reading of word cloud viewer should be 74
+    When user sets "gridSize" property of word cloud viewer to "2"
+    Then the "words" reading of word cloud viewer should be 123
+    When user sets "gridSize" property of word cloud viewer to "40"
+    Then the "words" reading of word cloud viewer should be 31
+    When user sets properties of word cloud viewer:
+      | gridSize       | 8    |
+      | drawOutOfBound | true |
+      | wordColumnName | RACE |
+    Then the "words" reading of word cloud viewer should be 4
+    And no errors should have been logged
+
+  Scenario: The context menu offers the viewer's commands and opens its properties
+    Given the context panel is open
+    When user opens the context menu of word cloud viewer
+    Then the open menu should list "Properties..."
+    And the open menu should list "General"
+    And the open menu should list "Pick Up / Apply"
+    And the open menu should list "To Script"
+    And the open menu should list "General > Save as PNG"
+    When user closes the context menu
+    And user picks "Properties..." from the context menu of word cloud viewer
+    Then the context panel should show "Word cloud"
     And no errors should have been logged

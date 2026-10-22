@@ -2,7 +2,8 @@
 Feature: Curve JSON typed into a formula, a series without a name, and a broken curve cell
   Translated from TestTrack Curves/curves-data-robustness.md, scenarios 1 and 2, and
   curves-statistics.md, scenario 3. A formula that returns JSON adds its column and leaves Add New
-  Column usable (public#3792, GROK-20232); a series without a name still gives its statistic column
+  Column usable (public#3792, GROK-20232), and a formula that returns curve JSON with no fit function
+  adds a column of semantic type "fit" (scenario 1, steps 5-6); a series without a name still gives its statistic column
   through the "+" of the Fit pane (GROK-17492); a click on a curve cell holding truncated JSON logs no
   error (GROK-15258, public#2748).
 
@@ -28,8 +29,13 @@ Feature: Curve JSON typed into a formula, a series without a name, and a broken 
     And no errors should have been logged
     When user picks "Edit > Add New Column..." from the top menu
     Then "Add New Column" dialog should be visible
-    When user presses Escape
+    When user pastes "'{\"series\":[{\"points\":[{\"x\":0.1,\"y\":1},{\"x\":1,\"y\":5},{\"x\":10,\"y\":9}]}]}'" into code editor in "Add New Column" dialog
+    And user types "curvecol" into column name input
+    And user clicks on OK button in "Add New Column" dialog
     Then the "Add New Column" dialog should close
+    And the table should have a column "curvecol"
+    And "curvecol" column should have semantic type "fit"
+    And no errors should have been logged
 
   Scenario: The statistic of a series without a name becomes a column
     Given user closes all views
