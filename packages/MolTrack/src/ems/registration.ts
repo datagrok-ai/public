@@ -1,11 +1,11 @@
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
-import {DomainErrors, DomainTable, SYSTEM_COLUMNS} from '@datagrok-libraries/ems/src/dg';
+import type * as DG from 'datagrok-api/dg';
+import {DomainTable, SYSTEM_COLUMNS} from '@datagrok-libraries/ems/src/dg';
 import {isEmpty} from '@datagrok-libraries/u2';
 import type {IProperty} from '@datagrok-libraries/u2';
 import type {CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
-import {MolTrackTables, SCHEMA} from './tables';
+import {MolTrackTables} from './tables';
+import type {Registered} from './tables';
 
 /** `existing`: the row's compound was registered already, before the run or by an earlier row of the file. */
 export type RegistrationStatus = 'success' | 'existing' | 'failed' | 'not_processed';
@@ -30,7 +30,7 @@ export interface RegistrationPreview {
 interface RowOutcome {
   status: RegistrationStatus;
   message: string;
-  compoundId?: string;
+  compound?: Registered;
 }
 
 type Values = Record<string, unknown>;
@@ -47,7 +47,6 @@ export class Registration {
   static readonly MESSAGE = 'Registration Message';
   static readonly COMPOUND_ID = 'Grok ID';
   static readonly OUTCOME = [Registration.STATUS, Registration.MESSAGE, Registration.COMPOUND_ID];
-  static readonly MAX_OPS = 1000;
 
   /** The columns of `table` a file may fill. */
   static targets(table: DomainTable): IProperty[] {
@@ -80,14 +79,13 @@ export class Registration {
     options: RegistrationOptions = {}): Promise<DG.DataFrame> {
     const compounds = await MolTrackTables.compounds();
     const plan = await Registration._plan(df, mapping, compounds);
+    const rejectAll = options.rejectAll === true;
     // the first row of each new structure registers it
     const written = [...plan.firstOf.values()].filter((i) => plan.outcomes[i].status === 'not_processed');
-    if (written.length > 0 && !options.rejectAll)
-      await Registration._rowByRow(plan, written, compounds);
-    else if (written.length > 0 && !plan.outcomes.some((o) => o.status === 'failed'))
-      await Registration._atomic(plan, written, compounds);
+    if (written.length > 0 && !(rejectAll && plan.outcomes.some((o) => o.status === 'failed')))
+      await Registration._write(plan, written, compounds, rejectAll);
     const failed = plan.outcomes.findIndex((o) => o.status === 'failed');
-    if (options.rejectAll && failed >= 0) {
+    if (rejectAll && failed >= 0) {
       for (const outcome of plan.outcomes.filter((o) => o.status === 'not_processed' && o.message === ''))
         outcome.message = `Not registered: row ${failed + 1} has a problem`;
     }
@@ -131,7 +129,7 @@ export class Registration {
     for (const [i, row] of rows.entries()) {
       const existing = registered.get(row.hash_mol as string);
       if (outcomes[i].status !== 'failed' && existing !== undefined) {
-        Object.assign(outcomes[i], {status: 'existing', compoundId: existing.id, message:
+        Object.assign(outcomes[i], {status: 'existing', compound: existing, message:
           MolTrackTables.alreadyRegistered(MolTrackTables.corporateId(compounds, 'molregno', existing.molregno))});
       }
     }
@@ -140,62 +138,36 @@ export class Registration {
 
   /** Every row still pending, by the compound its structure got: the first row registered it, a later one repeats
    * it. */
-  private static _settle({rows, outcomes, firstOf}: Plan, idOf: Map<string, string>,
-    problemOf: Map<string, string> = new Map()): void {
+  private static _settle({rows, outcomes, firstOf}: Plan, landed: Map<string, Registered>,
+    problemOf: Map<string, string>): void {
     for (const [i, row] of rows.entries()) {
       if (outcomes[i].status !== 'not_processed')
         continue;
       const hash = row.hash_mol as string;
-      const id = idOf.get(hash);
+      const compound = landed.get(hash);
       const first = firstOf.get(hash)!;
-      Object.assign(outcomes[i], id === undefined ? {status: 'failed', message: problemOf.get(hash)} :
-        first === i ? {status: 'success', compoundId: id} :
-          {status: 'existing', compoundId: id, message: `Same compound as row ${first + 1}`});
+      Object.assign(outcomes[i], compound === undefined ? {status: 'failed', message: problemOf.get(hash)} :
+        first === i ? {status: 'success', compound} :
+          {status: 'existing', compound, message: `Same compound as row ${first + 1}`});
     }
   }
 
-  private static async _rowByRow(plan: Plan, written: number[], compounds: DomainTable<CompoundRow>):
-    Promise<void> {
-    const report = await moltrackEmsDb.compounds.batch(written.map((i) => plan.rows[i]), {mode: 'insert'});
-    const idOf = new Map<string, string>();
-    const problemOf = new Map<string, string>();
-    for (const r of report.rows) {
-      const hash = plan.rows[written[r.index]].hash_mol as string;
-      if (r.status === 'inserted')
-        idOf.set(hash, r.id!);
-      else
-        problemOf.set(hash, Registration._problem(r, compounds));
-    }
-    Registration._settle(plan, idOf, problemOf);
-  }
-
-  // one transaction: a refusal of any compound writes none
-  private static async _atomic(plan: Plan, written: number[], compounds: DomainTable<CompoundRow>):
-    Promise<void> {
-    const pending = plan.outcomes.filter((o) => o.status === 'not_processed');
-    if (written.length > Registration.MAX_OPS) {
-      for (const outcome of pending) {
-        outcome.message = `Reject all writes at most ${Registration.MAX_OPS} rows at once (this file needs ` +
-          `${written.length}): split the file`;
-      }
+  /** One batch of the rows `written`: with `allOrNothing` a row the server refuses leaves every row unwritten. */
+  private static async _write(plan: Plan, written: number[], compounds: DomainTable<CompoundRow>,
+    allOrNothing: boolean): Promise<void> {
+    const hashOf = (k: number) => plan.rows[written[k]].hash_mol as string;
+    const report = await moltrackEmsDb.compounds.batch(written.map((i) => plan.rows[i]),
+      {mode: 'insert', allOrNothing});
+    const problemOf = new Map(report.rows.filter((r) => r.status !== 'inserted')
+      .map((r): [string, string] => [hashOf(r.index), Registration._problem(r, compounds)]));
+    if (report.error !== undefined) {
+      for (const r of report.rows)
+        Object.assign(plan.outcomes[written[r.index]], {status: 'failed', message: problemOf.get(hashOf(r.index))});
       return;
     }
-    try {
-      const results = await grok.dapi.domains.transaction(SCHEMA,
-        written.map((i): DG.DomainTransactionOp => ({op: 'insert', table: 'compound', values: plan.rows[i]})));
-      Registration._settle(plan, new Map(results.map((result, k) =>
-        [plan.rows[written[k]].hash_mol as string, result.id])));
-    } catch (e) {
-      const at = (e as DG.DomainError).opIndex;
-      const errors = (e as DG.DomainValidationError).rows?.[0]?.errors;
-      const message = errors?.length ? Registration._problem({status: 'error', errors}, compounds) :
-        DomainErrors.message(e);
-      if (at === undefined) {
-        for (const outcome of pending)
-          outcome.message = message;
-      } else
-        Object.assign(plan.outcomes[written[at]], {status: 'failed', message});
-    }
+    // the report names at most 1000 rows: the written ones are read back by their hash
+    Registration._settle(plan, await MolTrackTables.registered('hash_mol',
+      written.map((_, k) => hashOf(k)).filter((hash) => !problemOf.has(hash))), problemOf);
   }
 
   /** Row `i` of the file under the table's column names: text trimmed, an empty cell null. */
@@ -219,21 +191,17 @@ export class Registration {
     return row.status === 'duplicate' ? MolTrackTables.alreadyRegistered() : row.status;
   }
 
-  private static async _report(df: DG.DataFrame, outcomes: RowOutcome[],
-    compounds: DomainTable<CompoundRow>): Promise<DG.DataFrame> {
+  private static _report(df: DG.DataFrame, outcomes: RowOutcome[], compounds: DomainTable<CompoundRow>):
+    DG.DataFrame {
     const report = df.clone();
     for (const name of Registration.OUTCOME) {
       if (report.col(name) !== null)
         report.columns.remove(name);
     }
-    const wanted = [...new Set(outcomes.map((o) => o.compoundId).filter((x): x is string => x !== undefined))];
-    const rows = await MolTrackTables.inChunks(wanted, (chunk) => moltrackEmsDb.compounds.query(
-      {filter: MolTrackTables.within('id', chunk), columns: ['molregno'], limit: chunk.length}));
-    const molregnos = new Map(rows.map((row) => [row.id, row.molregno]));
     report.columns.addNewString(Registration.STATUS).init((i) => outcomes[i].status);
     report.columns.addNewString(Registration.MESSAGE).init((i) => outcomes[i].message);
-    report.columns.addNewString(Registration.COMPOUND_ID).init((i) => outcomes[i].compoundId === undefined ? '' :
-      MolTrackTables.corporateId(compounds, 'molregno', molregnos.get(outcomes[i].compoundId!)));
+    report.columns.addNewString(Registration.COMPOUND_ID).init((i) =>
+      MolTrackTables.corporateId(compounds, 'molregno', outcomes[i].compound?.molregno));
     report.columns.setOrder([...Registration.OUTCOME,
       ...report.columns.names().filter((name) => !Registration.OUTCOME.includes(name))]);
     return report;

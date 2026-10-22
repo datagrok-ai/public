@@ -38,9 +38,3 @@
 .moltrack-ems-register-problem {
   color: var(--dg-error);
 }
-
-.moltrack-ems-compound-section .moltrack-ems-compound {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--dg-space-xxl);
-}

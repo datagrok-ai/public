@@ -30,7 +30,7 @@ export class StructureSearch {
     if (condition.operator === StructureSearch.EXACT) {
       const rule = MolTrackTables.matchRule();
       const {hash_mol: hash} = await Chemistry.identify(query, rule);
-      const rows = await moltrackEmsDb.compounds.query({filter: MolTrackTables.within(HASH_COLUMNS[rule], [hash]),
+      const rows = await moltrackEmsDb.compounds.query({filter: DG.cond(HASH_COLUMNS[rule], '=', hash),
         columns: [HASH_COLUMNS[rule]]});
       return rows.map((r) => r.id);
     }

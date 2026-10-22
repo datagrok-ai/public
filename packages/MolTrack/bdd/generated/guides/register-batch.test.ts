@@ -15,7 +15,7 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {batchCount, demoData, noBatch, openEmsView} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, pressKeyIn, shouldContainText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {contextPanelOpen, simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("MolTrack EMS: register a batch of a registered compound", () => {
@@ -28,15 +28,16 @@ test.describe("MolTrack EMS: register a batch of a registered compound", () => {
     await session.step(12, "And no batch with the EPA Batch ID \"GUIDE-001\" is registered, now and at feature end", () => noBatch(page, "GUIDE-001"));
     await session.step(13, "And user opens the \"Batches\" view of MolTrack EMS", () => openEmsView(page, "Batches"));
     enter(page, "MolTrack EMS");
-    await session.step(15, "When user clicks on \"New\" button in app ribbon", () => clickOn(page, el("\"New\" button in app ribbon")), undefined, "Start a new batch");
-    await session.step(17, "And user types \"Bisphenol A\" into \"Compound\" domain pick", () => typeInto(page, "Bisphenol A", el("\"Compound\" domain pick")), undefined, "Pick its compound by Grok ID or name");
-    await session.step(18, "And user presses Enter in \"Compound\" domain pick", () => pressKeyIn(page, "Enter", el("\"Compound\" domain pick")));
-    await session.step(20, "Then compound card should contain text \"Bisphenol A\"", () => shouldContainText(page, el("compound card"), "Bisphenol A"), undefined, "The compound the batch is of");
-    await session.step(22, "When user types \"GUIDE-001\" into \"EPA Batch ID\" text input", () => typeInto(page, "GUIDE-001", el("\"EPA Batch ID\" text input")), undefined, "The batch's own fields");
-    await session.step(23, "And user types \"98.2\" into \"Purity\" number input", () => typeInto(page, "98.2", el("\"Purity\" number input")));
-    await session.step(24, "And user clicks on \"Save\" button in app ribbon", () => clickOn(page, el("\"Save\" button in app ribbon")));
-    await session.step(26, "Then notification should contain text \"saved\"", () => shouldContainText(page, el("notification"), "saved"), undefined, "The batch is saved on that compound");
-    await session.step(27, "And compound card should contain text \"Bisphenol A\"", () => shouldContainText(page, el("compound card"), "Bisphenol A"));
-    await session.step(28, "And 1 batch with the EPA Batch ID \"GUIDE-001\" should be on the server", () => batchCount(page, 1, "GUIDE-001"));
+    await session.step(14, "And the context panel is open", () => contextPanelOpen(page));
+    await session.step(16, "When user clicks on \"New\" button in app ribbon", () => clickOn(page, el("\"New\" button in app ribbon")), undefined, "Start a new batch");
+    await session.step(18, "And user types \"Bisphenol A\" into \"Compound\" domain pick", () => typeInto(page, "Bisphenol A", el("\"Compound\" domain pick")), undefined, "Pick its compound by Grok ID or name");
+    await session.step(19, "And user presses Enter in \"Compound\" domain pick", () => pressKeyIn(page, "Enter", el("\"Compound\" domain pick")));
+    await session.step(21, "Then context panel should contain text \"Bisphenol A\"", () => shouldContainText(page, el("context panel"), "Bisphenol A"), undefined, "The compound the batch is of");
+    await session.step(23, "When user types \"GUIDE-001\" into \"EPA Batch ID\" text input", () => typeInto(page, "GUIDE-001", el("\"EPA Batch ID\" text input")), undefined, "The batch's own fields");
+    await session.step(24, "And user types \"98.2\" into \"Purity\" number input", () => typeInto(page, "98.2", el("\"Purity\" number input")));
+    await session.step(25, "And user clicks on \"Save\" button in app ribbon", () => clickOn(page, el("\"Save\" button in app ribbon")));
+    await session.step(27, "Then notification should contain text \"saved\"", () => shouldContainText(page, el("notification"), "saved"), undefined, "The batch is saved on that compound");
+    await session.step(28, "And context panel should contain text \"Bisphenol A\"", () => shouldContainText(page, el("context panel"), "Bisphenol A"));
+    await session.step(29, "And 1 batch with the EPA Batch ID \"GUIDE-001\" should be on the server", () => batchCount(page, 1, "GUIDE-001"));
   });
 });

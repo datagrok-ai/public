@@ -1,14 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DomainApp, DomainErrors, DomainPick, DomainTable} from '@datagrok-libraries/ems/src/dg';
-import type {ChildEntry, DomainForm} from '@datagrok-libraries/ems/src/dg';
-import type {DomainSource} from '@datagrok-libraries/ems';
-import {Rows, Section, div, span, untracked} from '@datagrok-libraries/u2';
+import {DomainApp, DomainPick, DomainTable} from '@datagrok-libraries/ems/src/dg';
+import type {ChildEntry} from '@datagrok-libraries/ems/src/dg';
+import {Rows, isEmpty, span} from '@datagrok-libraries/u2';
 import type {RowView} from '@datagrok-libraries/u2';
-import type {CompoundRow} from '../generated/db';
+import type {CompoundBatchRow, CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
-import {BatchesApp} from './batches-app';
 import {CompoundsApp} from './compounds-app';
 import {Registration} from './registration';
 import {MolTrackTables, SCHEMA} from './tables';
@@ -46,18 +44,23 @@ export class MolTrackEms {
     return handle.app({
       name: entry.name, path: MolTrackEms.baseOf(entry),
       mode: table === 'compound' ? 'cards' : 'brief',
-      filters: {mode: 'builder', placement: 'left'},
-      sorts: entry.sorts, sort: entry.sorts[0][1],
+      filters: {mode: 'builder', placement: 'left'}, sorts: entry.sorts,
       ...(entry.children === undefined ? {children: false} :
         {children: {tables: await Promise.all(entry.children.map((child) => MolTrackTables.table(child))),
           ...(entry.childPages ? {onNew: (child: ChildEntry, values: Record<string, unknown>) =>
             void MolTrackEms.createIn(child.table.address, values)} : {})}}),
       // the server keeps both write-once: a compound's structure, and the compound a batch is of
-      ...(table === 'compound' ? {app: CompoundsApp, include: CompoundsApp.FIELDS, immutable: ['original_structure'],
-        context: (row: RowView) => MolTrackEms.compoundCard(handle, row as RowView<CompoundRow>)} : {}),
-      ...(table === 'compound_batch' ? {app: BatchesApp, immutable: ['compound_id'],
-        context: (row: RowView) => ui.wait(async () =>
-          (await MolTrackEms.compoundPanel(String(row[Rows.caption('compound_id')] ?? ''))).root)} : {}),
+      ...(table === 'compound' ? {app: CompoundsApp, include: [...CompoundsApp.FIELDS, ...CompoundsApp.DETAILS],
+        immutable: ['original_structure'],
+        sections: [{title: 'Registration details', include: CompoundsApp.DETAILS, expanded: false,
+          hint: 'Registration hashes, matching rule, InChI'}],
+        context: (row: RowView) => Rows.isDraft(row) ? null :
+          MolTrackEms.compoundCard(handle, row as RowView<CompoundRow>)} : {}),
+      ...(table === 'compound_batch' ? {immutable: ['compound_id'], context: (row: RowView) => {
+        const id = (row as RowView<CompoundBatchRow>).compound_id;
+        return isEmpty(id) ? null : ui.wait(async () =>
+          MolTrackEms.compoundCard(await MolTrackTables.compounds(), await moltrackEmsDb.compounds.get(id)));
+      }} : {}),
     });
   }
 
@@ -111,62 +114,27 @@ export class MolTrackEms {
   }
 
   static async compoundPanel(corporateId: string): Promise<DG.Widget> {
-    const digits = /\d+/.exec(corporateId)?.[0];
-    const compound = digits === undefined ? null :
+    const digits = DomainPick.digits(corporateId);
+    const compound = digits === '' ? null :
       await moltrackEmsDb.compounds.first({filter: `molregno = ${Number(digits)}`});
     return DG.Widget.fromRoot(compound === null ? ui.divText(`${corporateId} is not registered in MolTrack EMS`) :
       MolTrackEms.compoundCard(await MolTrackTables.compounds(), compound));
   }
 
-  /** A compound at a glance, its Grok ID the way to its page — the Grok ID panel, the context panel of a compound
-   * in the list and a batch page's compound; the batch count follows. */
+  /** A compound at a glance, its Grok ID the way to its page — the Grok ID panel, and the context panel of a compound
+   * and of a batch's compound; the batch count follows. */
   static compoundCard(compounds: DomainTable, compound: CompoundRow): HTMLElement {
     const corporateId = MolTrackTables.corporateId(compounds, 'molregno', compound.molregno);
     const open = ui.link(corporateId, () => void MolTrackEms.show(`Compounds?entity=${compound.id}`),
       'Open in MolTrack EMS');
     const batches = span('');
-    void moltrackEmsDb.compoundBatches.count({filter: MolTrackTables.within('compound_id', [compound.id])})
+    void moltrackEmsDb.compoundBatches.count({filter: DG.cond('compound_id', '=', compound.id)})
       .then((count) => batches.textContent = String(count), () => batches.textContent = '?');
     return ui.divV([
       grok.chem.drawMolecule(compound.structure, 200, 150),
       ui.tableFromMap({'Grok ID': open, 'Name': compound.common_name ?? '', 'CAS': compound.cas ?? '',
         'Formula': compound.formula ?? '', 'InChIKey': compound.inchikey ?? '', 'Batches': batches}),
-    ], 'moltrack-ems-compound');
-  }
-
-  /** Builds the sections around each entity page's form of `app`; a run's scope owns what it builds, so they go
-   * with the page they were built for. */
-  static aroundForm(app: DomainApp, build: (form: DomainForm, source: DomainSource) => void): void {
-    app.effect(() => {
-      const form = app.form.value;
-      const source = app.entitySource.value;
-      if (form !== null && source !== null)
-        untracked(() => build(form, source));
-    });
-  }
-
-  /** {@link compoundCard} of the compound `id` reads, as a titled section hidden while it reads none. */
-  static compoundSection(title: string, id: () => string | null): Section {
-    const section = new Section({title, collapsible: false});
-    section.root.classList.add('moltrack-ems-compound-section');
-    const host = div([]);
-    section.add(host);
-    let shown: string | null = null;
-    section.effect(() => {
-      const current = id();
-      section.root.hidden = current === null;
-      if (current === shown)
-        return;
-      shown = current;
-      host.replaceChildren();
-      if (current === null)
-        return;
-      void Promise.all([MolTrackTables.compounds(), moltrackEmsDb.compounds.get(current)])
-        .then(([compounds, compound]) => shown === current && host.replaceChildren(
-          MolTrackEms.compoundCard(compounds, compound)))
-        .catch((e) => shown === current && host.replaceChildren(span(DomainErrors.message(e))));
-    });
-    return section;
+    ]);
   }
 
   static treeBrowser(appNode: DG.TreeViewGroup): void {

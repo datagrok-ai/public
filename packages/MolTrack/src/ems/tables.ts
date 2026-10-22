@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import {domains, DomainTable} from '@datagrok-libraries/ems/src/dg';
 import {moleculeRenderer} from '@datagrok-libraries/u2/src/dg/index.js';
-import type * as DG from 'datagrok-api/dg';
 import {Rows, divH, divV, isEmpty, span, text} from '@datagrok-libraries/u2';
 import type {RowView} from '@datagrok-libraries/u2';
 import type {AdditionRow, AssayResultRow, CompoundRow, CompoundBatchRow, MoltrackEmsTransactionOp}
@@ -26,7 +26,6 @@ export class MolTrackTables {
   private static readonly _handles = new Map<string, Promise<DomainTable<any>>>();
   private static readonly _batches = new Map<string, {keys: Set<string>, done: Promise<Map<string, unknown>>}>();
   private static readonly _lookedUp = new Map<string, Registered>();
-  private static readonly _compoundOf = new Map<string, Promise<string>>();
 
   static matchRule(): MatchRule {
     const rule = Chemistry.package().settings?.['CompoundMatchingRule'];
@@ -40,10 +39,6 @@ export class MolTrackTables {
   static alreadyRegistered(corporateId = ''): string {
     return corporateId === '' ? 'This structure is already registered' :
       `This structure is already registered as ${corporateId}`;
-  }
-
-  static within<TColumn extends string>(column: TColumn, values: string[]): DG.DomainCondition<TColumn> {
-    return {property: column, operator: '=', value: values};
   }
 
   static async inChunks<V, T>(values: V[], run: (chunk: V[]) => Promise<T[]>): Promise<T[]> {
@@ -68,7 +63,7 @@ export class MolTrackTables {
   /** The earliest compound registered under each of `hashes` in `column`. */
   static async registered(column: HashColumn | 'hash_mol', hashes: string[]): Promise<Map<string, Registered>> {
     const rows = await MolTrackTables.inChunks(hashes, (chunk) => MolTrackTables.allPages((page) =>
-      moltrackEmsDb.compounds.query({filter: MolTrackTables.within(column, chunk), columns: [column, 'molregno'],
+      moltrackEmsDb.compounds.query({filter: DG.cond(column, '=', chunk), columns: [column, 'molregno'],
         sort: 'molregno', ...page}), MolTrackTables.MAX_ROWS));
     const found = new Map<string, Registered>();
     for (const row of rows) {
@@ -81,23 +76,6 @@ export class MolTrackTables {
   // batched: a bulk run derives every row at once, and its lookups go out as one query per chunk
   static lookup(column: HashColumn, hash: string): Promise<Registered | undefined> {
     return MolTrackTables._batched(column, hash, (hashes) => MolTrackTables.registered(column, hashes));
-  }
-
-  /** The Grok ID of a batch's compound, asked once per batch for the page: a batch never changes compound. */
-  static compoundOf(batchId: string): Promise<string> {
-    let found = MolTrackTables._compoundOf.get(batchId);
-    if (found === undefined) {
-      found = MolTrackTables._batched('compound_of', batchId, async (ids) => {
-        const compounds = await MolTrackTables.compounds();
-        const rows = await MolTrackTables.inChunks(ids, (chunk) => moltrackEmsDb.compoundBatches.query(
-          {filter: MolTrackTables.within('id', chunk), columns: ['compound_id'], captions: ['compound_id']}));
-        return new Map(rows.map((r) => [r.id,
-          MolTrackTables.corporateId(compounds, 'molregno', Reflect.get(r, Rows.caption('compound_id')))]));
-      }).then((id) => id ?? '');
-      MolTrackTables._compoundOf.set(batchId, found);
-      found.catch(() => MolTrackTables._compoundOf.delete(batchId));
-    }
-    return found;
   }
 
   /** The compounds registered under `hashes` as the compound derivation last looked them up. */
@@ -137,10 +115,6 @@ export class MolTrackTables {
 
   static batches(): Promise<DomainTable<CompoundBatchRow>> {
     return MolTrackTables.table('compound_batch');
-  }
-
-  static assayResults(): Promise<DomainTable<AssayResultRow>> {
-    return MolTrackTables.table('assay_result');
   }
 
   static line(caption: string, ...details: unknown[]): HTMLElement {
@@ -227,8 +201,7 @@ export class MolTrackTables {
       typeof value === 'string' && value !== '' && !CAS.test(value) ? 'CAS must look like 50-78-2' : null);
     StructureSearch.register(table);
     const thumbnail = moleculeRenderer({width: 84, height: 56});
-    const caption = (row: RowView<CompoundRow>) => Rows.isDraft(row) ? 'New compound' :
-      MolTrackTables.corporateId(table, 'molregno', row.molregno);
+    const caption = table.renderer.caption;
     const card = (row: RowView<CompoundRow>) => divH([
       row.structure ? thumbnail.listItem!(row.structure) : span(''),
       divV([
@@ -237,15 +210,14 @@ export class MolTrackTables {
         span(row.formula ?? '', 'u2-domain-card-description'),
       ], 'moltrack-ems-card-text'),
     ], 'moltrack-ems-card');
-    table.renderer = {...table.renderer, caption, card,
+    table.renderer = {...table.renderer, card,
       tooltip: (row) => row.structure ? thumbnail.tooltip!(row.structure) : caption(row)};
   }
 
   // a reference's projected caption is in its target's display format already: DG-000123
   private static _configureBatches(table: DomainTable<CompoundBatchRow>): void {
-    const caption = (row: RowView<CompoundBatchRow>) => Rows.isDraft(row) ? 'New batch' :
-      MolTrackTables.corporateId(table, 'batch_regno', row.batch_regno);
-    table.renderer = {...table.renderer, caption, listItem: (row) => MolTrackTables.line(caption(row),
+    const caption = table.renderer.caption;
+    table.renderer = {...table.renderer, listItem: (row) => MolTrackTables.line(caption(row),
       row[Rows.caption('compound_id')], row.epa_batch_id, row.project)};
   }
 
@@ -268,19 +240,7 @@ export class MolTrackTables {
       const qualifier = row.reported_clint_qualifier === '=' ? '' : row.reported_clint_qualifier ?? '';
       return `CLint ${qualifier}${row.reported_clint}`;
     };
-    // the compound is two references away: its Grok ID lands once the batches of the page are looked up
-    const line = (row: RowView<AssayResultRow>) => {
-      const el = MolTrackTables.line(caption(row),
-        isEmpty(row.dosed_concentration) ? '' : `${row.dosed_concentration} uM`, clint(row));
-      const compound = span('', 'u2-domain-card-description');
-      compound.hidden = true;
-      el.prepend(compound);
-      void MolTrackTables.compoundOf(row.batch_id).then((id) => {
-        compound.textContent = id;
-        compound.hidden = id === '';
-      });
-      return el;
-    };
-    table.renderer = {...table.renderer, caption, listItem: line};
+    table.renderer = {...table.renderer, caption, listItem: (row) => MolTrackTables.line(caption(row),
+      isEmpty(row.dosed_concentration) ? '' : `${row.dosed_concentration} uM`, clint(row))};
   }
 }

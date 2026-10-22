@@ -4,8 +4,8 @@ Feature: MolTrack EMS: register a compound
   registered already?". Compounds > New opens the compound form; the structure drawn there is
   standardized in the browser (Crux: cleanup, largest fragment, neutralized) and identified by its
   registration hash under the matching rule, so the formula and the identity are known before Save.
-  Save gives the compound its Grok ID; the sodium salt of the same acid has the same parent, so it is
-  refused and the message names the compound it already is.
+  Save gives the compound its Grok ID; the sodium salt of the same acid has the same parent, so the
+  Structure field names the compound it already is and Save stays disabled.
 
   Scenario: Register an acid, then see its sodium salt refused as the same compound
     Given user is logged in
@@ -35,9 +35,9 @@ Feature: MolTrack EMS: register a compound
     And user types "CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)[O-].[Na+]" into molecule input of sketcher dialog
     And user presses Enter in molecule input of sketcher dialog
     And user clicks on OK button in sketcher dialog
-    And user clicks on "Save" button in app ribbon
     # caption: Refused: the salt is the compound registered a moment ago
-    Then notification should contain text "This structure is already registered as DG-"
-    And save problem should name the remembered compound
+    Then "Structure" dart input should contain text "This structure is already registered as DG-"
+    And "Structure" dart input should name the remembered compound
+    And "Save" button in app ribbon should be disabled
     When user clicks on "Discard" button in app ribbon
     Then 1 compound with the structure "CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O" should be registered on the server

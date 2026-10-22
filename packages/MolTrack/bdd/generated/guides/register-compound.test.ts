@@ -14,7 +14,7 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {compoundCount, namesRemembered, noCompound, openEmsView, rememberCompound} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, pressKeyIn, shouldContainText, shouldNotContainText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, pressKeyIn, shouldBe, shouldContainText, shouldNotContainText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -44,9 +44,9 @@ test.describe("MolTrack EMS: register a compound", () => {
     await session.step(35, "And user types \"CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)[O-].[Na+]\" into molecule input of sketcher dialog", () => typeInto(page, "CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)[O-].[Na+]", el("molecule input of sketcher dialog")));
     await session.step(36, "And user presses Enter in molecule input of sketcher dialog", () => pressKeyIn(page, "Enter", el("molecule input of sketcher dialog")));
     await session.step(37, "And user clicks on OK button in sketcher dialog", () => clickOn(page, el("OK button in sketcher dialog")));
-    await session.step(38, "And user clicks on \"Save\" button in app ribbon", () => clickOn(page, el("\"Save\" button in app ribbon")));
-    await session.step(40, "Then notification should contain text \"This structure is already registered as DG-\"", () => shouldContainText(page, el("notification"), "This structure is already registered as DG-"), undefined, "Refused: the salt is the compound registered a moment ago");
-    await session.step(41, "And save problem should name the remembered compound", () => namesRemembered(page, el("save problem")));
+    await session.step(39, "Then \"Structure\" dart input should contain text \"This structure is already registered as DG-\"", () => shouldContainText(page, el("\"Structure\" dart input"), "This structure is already registered as DG-"), undefined, "Refused: the salt is the compound registered a moment ago");
+    await session.step(40, "And \"Structure\" dart input should name the remembered compound", () => namesRemembered(page, el("\"Structure\" dart input")));
+    await session.step(41, "And \"Save\" button in app ribbon should be disabled", () => shouldBe(page, el("\"Save\" button in app ribbon"), "disabled"));
     await session.step(42, "When user clicks on \"Discard\" button in app ribbon", () => clickOn(page, el("\"Discard\" button in app ribbon")));
     await session.step(43, "Then 1 compound with the structure \"CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O\" should be registered on the server", () => compoundCount(page, 1, "CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O"));
   });

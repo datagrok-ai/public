@@ -35,13 +35,11 @@ Feature: MolTrack EMS: registering a compound
     And user presses Enter in molecule input of sketcher dialog
     And user clicks on OK button in sketcher dialog
     Then "Formula" read-only field should contain text "C28H55NaO2"
-    When user clicks on "Save" button in app ribbon
-    Then notification should contain text "This structure is already registered as DG-"
-    And save problem should name the remembered compound
-    And breadcrumbs should contain text "New compound"
+    And "Structure" dart input should contain text "This structure is already registered as DG-"
+    And "Structure" dart input should name the remembered compound
+    And "Save" button in app ribbon should be disabled
     When user clicks on "Discard" button in app ribbon
-    Then save problem should be hidden
-    And domain list should be visible
+    Then domain list should be visible
     And 1 compound with the structure "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O" should be registered on the server
 
   Scenario: A substructure condition narrows the list to the compound

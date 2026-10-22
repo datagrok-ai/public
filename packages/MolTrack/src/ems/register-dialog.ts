@@ -169,10 +169,6 @@ export class RegisterDialog {
         `"${SKIP_ROW}" on the first step.`, 'moltrack-ems-register-problem') :
         span('The rows with a problem are skipped.', 'moltrack-ems-register-summary'));
     }
-    if (rejectAll && problems === 0 && compounds > Registration.MAX_OPS) {
-      lines.push(span(`${REJECT_ALL} writes at most ${Registration.MAX_OPS} rows at once and this file needs ` +
-        `${compounds}: split the file, or choose "${SKIP_ROW}" on the first step.`, 'moltrack-ems-register-problem'));
-    }
     return lines;
   }
 

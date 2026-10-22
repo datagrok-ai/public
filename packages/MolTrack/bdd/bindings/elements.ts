@@ -13,8 +13,6 @@ ems.element('save problem', {selector: '.u2-domain-status-problem',
   description: 'the problem slot of the status bar: why the last save was refused'});
 ems.element('molecule canvas', {selector: 'canvas.d4-input-molecule-canvas',
   description: 'the picture of a platform molecule input; a click opens the sketcher dialog'});
-ems.element('compound card', {selector: '.moltrack-ems-compound-section',
-  description: 'the card of the compound a batch is of, above the batch\'s fields once a compound is picked'});
 ems.element('filters pane', {selector: '.u2-domain-app-filters-pane',
   description: 'the condition builder on the list\'s left'});
 ems.element('add condition', {selector: '[data-u2="filter-builder"] [data-u2-part="add"]',
