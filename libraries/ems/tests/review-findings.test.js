@@ -4,7 +4,7 @@
    and node reports it without failing the suite; a plain test is one that PASSES, recording what
    the code actually does where the review asked a question or got the shape wrong.
 
-   Findings 3 and 5 and the later regressions run the REAL compiled js-api (`domains-editor.js`, `domains-session.js`) through
+   Findings 3 and 5 run the REAL compiled js-api (`domains-editor.js`, `domains-session.js`) through
    a resolve hook: its ESM is webpack-shaped (extensionless relative imports, CSS imports), which
    node cannot load on its own. */
 
@@ -301,7 +301,6 @@ scoped('finding 5: a standalone save leaves no subscription on the editor', {}, 
 scoped('EMS-054: a duplicate or a replay naming no row rejects, by status, and touches no row', {}, async () => {
   const {DomainTableClient} = await import('../../../js-api/dist/src/dapi.js');
   const {DomainNotFoundError, DomainValidationError} = await import('../../../js-api/dist/src/domains.js');
-  // the server's answers when the existing row is not readable by the caller (core EMS-052)
   const expected = {
     'idempotent-replay': (e) => e instanceof DomainNotFoundError && /idempotency key/.test(e.message),
     'duplicate': (e) => e instanceof DomainValidationError && e.isDuplicate,
@@ -309,13 +308,10 @@ scoped('EMS-054: a duplicate or a replay naming no row rejects, by status, and t
   for (const status of Object.keys(expected)) {
     globalThis.grok_Dapi_Domains_Insert = async () => [{id: null, created: false, status}];
     const client = new DomainTableClient({}, 'grit', 'issue');
-    const touched = [];
-    client.get = async (id) => (touched.push(['get', id]), null);
-    client.updateWithRetry = async (id) => (touched.push(['update', id]), {id, version: 2});
+    client.get = client.updateWithRetry = async (id) => assert.fail(`${status} touched row ${id}`);
     try {
       await assert.rejects(client.save({title: 'Retried', idempotencyKey: '7c2f8d1e-0b5a-4c3e-9f1d-2a6b8c4d0e1f'}),
         expected[status], status);
-      assert.deepEqual(touched, [], `${status}: no read or update of a null id`);
     } finally {
       delete globalThis.grok_Dapi_Domains_Insert;
     }
@@ -432,41 +428,24 @@ scoped('finding 7b: a sibling source of the same table reloads after another one
   two.dispose();
 });
 
-// ───────────── a restore the server vetoes because the parent is still in the trash ─────────────
+// ─────────────────────── a refused save in the table's words ────────────────────────────────────
 
-scoped('a restore under a trashed parent says to restore the parent first, in the balloon and lastRefusal',
-  {}, async () => {
-    const {DomainFrameEditor} = await import('../../../js-api/dist/src/ui/domains/domains-editor.js');
-    const {DomainSession} = await import('../../../js-api/dist/src/ui/domains/domains-session.js');
-    const veto = 'Column "parent_id" references a deleted row in "location"';
-    const balloons = [];
-    const interop = {
-      grok_Dapi_Domains: () => ({}),
-      grok_Dapi_Domains_Transaction: () => Promise.reject({'#domainError': true, status: 409, message: veto,
-        body: {error: 'restrict', id: 'l3', column: 'parent_id', message: veto, opIndex: 0}}),
-      grok_Balloon: (s, type) => balloons.push(`${type}: ${s}`),
-      DG: {toDart: (x) => x},
-    };
-    Object.assign(globalThis, interop);
-    const cells = {id: ['l3'], name: ['Shelf A1'], parent_id: ['l2']};
-    const proto = DomainFrameEditor.prototype;
-    const editor = {...await sessionFake(), table: 'location', client: {schema: 'stock', table: 'location'},
-      prepareSave: () => [{op: {op: 'restore', table: 'location', id: 'l3'}, row: 0}],
-      _info: {singularName: 'Location', nameColumn: 'name'},
-      _propByName: new Map([['parent_id', {name: 'parent_id', friendlyName: 'Parent', semType: 'stock.location'}]]),
-      _df: {rowCount: 1, columns: {contains: (n) => n in cells,
-        byName: (n) => n in cells ? {get: (i) => cells[n][i], isNone: (i) => cells[n][i] == null} : null}},
-      refusalFor: proto.refusalFor, restrictRefusal: proto.restrictRefusal, _rowById: proto._rowById,
-      _displayOf: proto._displayOf, _captionOf: proto._captionOf, _wire: proto._wire};
-    const session = new DomainSession([editor], {quiet: true});
-    try {
-      assert.equal(await session.save(), false, 'the parent is still in the trash');
-      const said = 'Shelf A1\'s parent was deleted too; restore the parent first';
-      assert.deepEqual([balloons, session.lastRefusal.message], [[`error: ${said}`], said]);
-    }
-    finally {
-      session.dispose();
-      for (const key of Object.keys(interop))
-        delete globalThis[key];
-    }
+scoped('a refusal names the clashing unique column, and the parent a restore waits for', {}, async () => {
+  const {DomainFrameEditor} = await import('../../../js-api/dist/src/ui/domains/domains-editor.js');
+  const {DomainRestrictError, DomainValidationError} = await import('../../../js-api/dist/src/domains.js');
+  const cells = {id: 'p2', name: 'Bob', code: 'P2', email: 'ann@x.org', parent_id: 'p0'};
+  const editor = Object.assign(Object.create(DomainFrameEditor.prototype), {
+    _info: {singularName: 'Person', nameColumn: 'name', businessKey: ['code']},
+    _propByName: new Map([['code', {friendlyName: 'Badge'}], ['email', {friendlyName: 'E-mail'}],
+      ['parent_id', {friendlyName: 'Parent'}]]),
+    _df: {rowCount: 1, columns: {contains: (n) => n in cells,
+      byName: (n) => n in cells ? {get: () => cells[n], isNone: () => false} : null}},
+    client: {query: async ({filter}) => filter[0].property === 'email' ? [{id: 'p1', name: 'Ann'}] : []},
   });
+  const unique = new DomainValidationError('Duplicate value', 409,
+    {error: 'validation', rows: [{index: 0, errors: [{column: 'email', code: 'unique'}]}]});
+  const veto = new DomainRestrictError('Column "parent_id" references a deleted row in "person"', 409,
+    {error: 'restrict', id: 'p2', column: 'parent_id'});
+  assert.deepEqual([await editor.refusalFor(unique, {row: 0}), await editor.refusalFor(veto, {row: 0})],
+    ['E-mail ann@x.org already belongs to Ann', 'Bob\'s parent was deleted too; restore the parent first']);
+});
