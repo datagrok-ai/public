@@ -6,9 +6,8 @@ Feature: A dashboard on a query with a list parameter: the Source link after the
   icon of Toolbox > Source gives a /func/ link with typeName. The result is saved as a project
   through the ribbon's Save dialog under its own name. On a query whose parameters are all scalar the
   first save exposes them as URL parameters and the Source link of the dashboard carries them
-  (projects-url-parameters.feature); here the list parameter turns that off for the scalar one too,
-  and the link is the bare /p/ address. The scenario is a known failure until the link carries
-  typeName.
+  (projects-url-parameters.feature); a list parameter beside them must not turn that off for the
+  scalar one (core#567: the link was the bare /p/ address).
 
   Names are letters and digits only and carry the run's time. The query and the project are removed
   when the feature starts and ends.
@@ -26,8 +25,7 @@ Feature: A dashboard on a query with a list parameter: the Source link after the
       select name from entity_types where name = @typeName or name = any(@otherNames)
       """
 
-  # core#567: one list<string> parameter leaves the first save without URL parameters
-  @known-failure:54 @realizes:core#567
+  @realizes:core#567
   Scenario: After the save, the Source link still carries the scalar parameter
     When user clicks on "Refresh" icon inside browse toolbar
     Given Databases tree node inside browse tree is expanded

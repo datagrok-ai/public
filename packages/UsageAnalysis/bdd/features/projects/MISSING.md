@@ -4,14 +4,16 @@ Open project tickets that break data or leave a project that cannot be opened, a
 
 The UI cases of this group are features in this folder: core#531
 (`projects-regressions-closed-source.feature`), core#602 (`projects-regressions-selection-column.feature`),
-core#546 (`projects-regressions-duplicate-name.feature`), core#567 (`projects-url-parameters-list.feature`),
+core#546 (`projects-regressions-duplicate-name.feature`),
 core#563 (`projects-regressions-move-same-name.feature`), core#296 (`projects-regressions-shared-tag.feature`)
 and core#626 (`projects-regressions-rename-from-status-bar.feature`), all as `@known-failure`s, and the fixed
-core#945 as a regression guard (`projects-regressions-quick-save.feature`); core#628, core#627 and core#463
+core#945 and core#567 as regression guards (`projects-regressions-quick-save.feature`,
+`projects-url-parameters-list.feature`); core#628, core#627 and core#463
 already are (`projects-complex`, `projects-lifecycle-spaces`, `projects-regressions-query`). The rest of the
-GROK-20511 group (core#446) is covered too: core#568, core#569 and core#630 in `projects-url-parameters.feature`,
-core#446 in `projects-function-url-run.feature`, and the fixed core#566 by the Source link check after a save
-under a new name (`projects-url-parameters.feature`).
+GROK-20511 group (core#446) is covered too: core#569 and core#630 (the link after the parameter is unticked)
+in `projects-url-parameters.feature`, core#446 in `projects-function-url-run.feature`, and the fixed core#566,
+core#568 and core#630 (the alias right after the save) by the Source checks after a save under a new name
+(`projects-url-parameters.feature`).
 
 ## API and server tests requested
 
