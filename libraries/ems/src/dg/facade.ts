@@ -10,7 +10,7 @@ import {emsBackends} from '../core/domain-backend.js';
 import * as DG from 'datagrok-api/dg';
 import {Access, Rows, divV, span, timestamp, text} from '@datagrok-libraries/u2';
 import type {Capability, IProperty, ObjectRenderer, Action, ColumnOf, DomainRowLike, RowValues, RowView,
-  ReadonlySignal} from '@datagrok-libraries/u2';
+  ReadonlySignal, NotifyHandle} from '@datagrok-libraries/u2';
 import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
 import {DomainSource} from '../core/domain-source.js';
 import type {DomainSourceOptions} from '../core/domain-source.js';
@@ -325,13 +325,14 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     source.guard(() => this._validate(source));
     // last resort, after every guard: the writer refused over a cell and named neither
     source.nameCell = (row, column, problem) => this._nameCell(row as RowView<TRow>, column, problem);
-    // every refused save is one balloon, form or not; a load failure is the list's and the hint's
-    // to show
+    // every refused save is one balloon, form or not, closed once the refusal is settled; a load
+    // failure is the list's and the hint's to show
+    let balloon: NotifyHandle | null = null;
     source.effect(() => {
       const error = source.error.value;
-      if (error !== undefined && source.state.peek() !== 'error' &&
-          DomainErrors.codeOf(error) !== DomainSource.REFUSED)
-        DomainErrors.report(error, source);
+      balloon?.close();
+      balloon = error !== undefined && source.state.peek() !== 'error' &&
+        DomainErrors.codeOf(error) !== DomainSource.REFUSED ? DomainErrors.report(error, source) : null;
     });
     source.start();
     return source;
