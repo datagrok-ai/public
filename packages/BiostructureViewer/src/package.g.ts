@@ -312,7 +312,6 @@ export async function openTableResiduesMenuItem(fi: DG.FileInfo) : Promise<void>
 //description: Display ligand poses along the structure
 //meta.demoPath: Bioinformatics | Docking Conformations
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Docking%20Conformations
-//meta.demoWait: 3000
 //test: demoBioDockingConformations() //wait: 3000 , timeout: 60000 
 export async function demoBioDockingConformations() : Promise<void> {
   await PackageFunctions.demoBioDockingConformations();
@@ -321,7 +320,6 @@ export async function demoBioDockingConformations() : Promise<void> {
 //description: View structures PDB in grids
 //meta.demoPath: Bioinformatics | Proteins
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Proteins
-//meta.demoWait: 3000
 //test: demoBioProteins() //wait: 3000 , timeout: 60000 
 export async function demoBioProteins() : Promise<void> {
   await PackageFunctions.demoBioProteins();

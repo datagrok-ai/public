@@ -390,7 +390,9 @@ export async function initAutoTests(package_: _DG.Package, module?: any) {
         });
         const test = new Test(map.cat ?? autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
           const res = await grok.functions.eval(addNamespace(tests[i], f));
-          if (map.wait) await delay(map.wait);
+          // `wait` marks a test that opens UI: let it finish loading rather than sleep for the given ms
+          if (map.wait)
+            await uiSettled(f.name);
           // eslint-disable-next-line no-throw-literal
           if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
         }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout ?? BENCHMARK_TIMEOUT : map.timeout ?? STANDART_TIMEOUT,
@@ -765,8 +767,15 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
       resetConsole();
     }
     if (options.testContext!.catchUnhandled && (!DG.Test.isInBenchmark)) {
-      await delay(1000);
-      const error = await grok.shell.lastError;
+      let error: string | undefined;
+      try {
+        if (!options.nodeOnly)
+          await uiSettled('the last test');
+        error = await grok.shell.lastError;
+      }
+      catch (e: any) {
+        error = e.message;
+      }
       if (error != undefined) {
           const params: any = {
               logs: '',

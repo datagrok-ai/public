@@ -42,7 +42,7 @@ export class PackageFunctions {
 
   @grok.decorators.demo({
     description: 'Chord viewer visualizes weighted relationships between several entities',
-    meta: { demoPath: 'Visualization | General | Chord', demoWait: '4000' },
+    meta: { demoPath: 'Visualization | General | Chord' },
   })
   static async chordViewerDemo() {
     await viewerDemo('Chord');
@@ -52,7 +52,7 @@ export class PackageFunctions {
 
   @grok.decorators.demo({
     description: 'Radar viewer is used on multivariate data to plot groups of values over several common variables',
-    meta: { demoPath: 'Visualization | General | Radar', demoWait: '4000' },
+    meta: { demoPath: 'Visualization | General | Radar' },
   })
   static async radarViewerDemo() {
     await viewerDemo('Radar');
@@ -60,7 +60,7 @@ export class PackageFunctions {
 
   @grok.decorators.demo({
     description: 'Sankey viewer depicts a flow from one set of values to another',
-    meta: { demoPath: 'Visualization | General | Sankey', demoWait: '4000' },
+    meta: { demoPath: 'Visualization | General | Sankey' },
   })
   static async sankeyViewerDemo() {
     await viewerDemo('Sankey');
@@ -68,7 +68,7 @@ export class PackageFunctions {
 
   @grok.decorators.demo({
     description: 'Sunburst viewer displays hierarchical data',
-    meta: { demoPath: 'Visualization | General | Sunburst', demoWait: '4000' },
+    meta: { demoPath: 'Visualization | General | Sunburst' },
   })
   static async sunburstViewerDemo() {
     await viewerDemo('Sunburst');
@@ -76,7 +76,7 @@ export class PackageFunctions {
 
   @grok.decorators.demo({
     description: 'Surface plot viewer displays a set of three-dimensional data as a mesh surface',
-    meta: { demoPath: 'Visualization | General | Surface Plot', demoWait: '4000' },
+    meta: { demoPath: 'Visualization | General | Surface Plot' },
   })
   static async surfacePlotDemo() {
     await viewerDemo('SurfacePlot');
@@ -84,7 +84,7 @@ export class PackageFunctions {
 
   @grok.decorators.demo({
     description: 'Timelines viewer displays the flow of events over time',
-    meta: { demoPath: 'Visualization | General | Timelines', demoWait: '4000' },
+    meta: { demoPath: 'Visualization | General | Timelines' },
   })
   static async timelinesViewerDemo() {
     await viewerDemo('Timelines', {lineWidth: 4, markerPosition: 'above main line'});
@@ -92,7 +92,7 @@ export class PackageFunctions {
 
   @grok.decorators.demo({
     description: 'Tree viewer visualizes hierarchical data by categories',
-    meta: { demoPath: 'Visualization | Data Flow and Hierarchy | Tree', demoWait: '4000' },
+    meta: { demoPath: 'Visualization | Data Flow and Hierarchy | Tree' },
   })
   static async treeViewerDemo() {
     await viewerDemo('Tree', {left: '40px', right: '75px', sizeColumnName: 'HEIGHT', showCounts: true});
@@ -100,7 +100,7 @@ export class PackageFunctions {
 
   @grok.decorators.demo({
     description: 'Word Cloud viewer visualizes unstructured text data',
-    meta: { demoPath: 'Visualization | General | Word Cloud', demoWait: '4000' },
+    meta: { demoPath: 'Visualization | General | Word Cloud' },
   })
   static async wordCloudViewerDemo() {
     await viewerDemo(DG.VIEWER.WORD_CLOUD, {drawOutOfBound: false});
