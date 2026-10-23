@@ -9,6 +9,7 @@ import {
   IconFA, Viewer, ResizeHandle, ToggleInput, ifOverlapping, wheelGuard,
 } from '@datagrok-libraries/webcomponents-vue';
 import {getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/src/model-handler';
 
 import {History} from '../History/History';
@@ -23,7 +24,7 @@ import {
 import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor, selectionGaps, unmatchedItems,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
-  targetContexts, EntryStatus, withAnnotatedDefaults, withoutOutdatedOutputs,
+  targetContexts, EntryStatus, withAnnotatedDefaults, uniqueEntryName, withoutOutdatedOutputs,
 } from './selection';
 import {entryFromDataFrame, loadRunEntries} from './entry-extraction';
 import {
@@ -58,6 +59,7 @@ export const RunComparison = Vue.defineComponent({
   setup(props) {
     const isLoadingModels = Vue.ref(true);
     const isAddingRuns = Vue.ref(false);
+    const isSaving = Vue.ref(false);
     const models = Vue.shallowRef<DG.Func[]>([]);
     const selectedModel = Vue.shallowRef<DG.Func | undefined>(undefined);
     // models of compared snapshots that the model filter leaves out (no model role)
@@ -168,11 +170,18 @@ export const RunComparison = Vue.defineComponent({
       axisModeSelection.value = next.axis;
     };
 
+    const withName = (entry: ComparisonEntry, name: string): ComparisonEntry =>
+      name === entry.name ? entry : {...entry, name, nodes: {...entry.nodes, entryName: name}};
+
+    // a saved snapshot keeps its id, so its run is known by runId
+    const hasEntry = (id: string) => entries.value.some((existing) => existing.id === id || existing.runId === id);
+
     const addEntry = (entry: ComparisonEntry) => {
-      if (entries.value.some((existing) => existing.id === entry.id))
+      if (hasEntry(entry.id))
         return;
-      entries.value = [...entries.value, Vue.markRaw(entry)];
-      applyAnnotatedDefaults(entry);
+      const added = withName(entry, uniqueEntryName(entry.name, entries.value.map((existing) => existing.name)));
+      entries.value = [...entries.value, Vue.markRaw(added)];
+      applyAnnotatedDefaults(added);
     };
 
     const removeEntry = (id: string) => {
@@ -188,12 +197,30 @@ export const RunComparison = Vue.defineComponent({
     const addSelectedRuns = async () => {
       if (isAddingRuns.value || historySelection.value.length === 0)
         return;
-      const calls = historySelection.value.filter((call) => !entriesById.value.has(call.id));
+      const calls = historySelection.value.filter((call) => !hasEntry(call.id));
       await addRunsById(calls.map((call) => call.id), new Map(calls.map((call) => [call.id, getRunTitle(call)])));
     };
 
+    const saveSnapshot = async (entry: ComparisonEntry) => {
+      const metadata = await new EditRunMetadataDialog(entry.snapshot!.metadata).awaitMetadata();
+      if (!metadata)
+        return;
+      isSaving.value = true;
+      try {
+        const run = await entry.snapshot!.save!(metadata);
+        const others = entries.value.filter((item) => item.id !== entry.id).map((item) => item.name);
+        const named = withName(entry, uniqueEntryName(getRunTitle(run), others));
+        const saved: ComparisonEntry = {...named, runId: run.id, snapshot: undefined};
+        entries.value = entries.value.map((item) => item.id === entry.id ? Vue.markRaw(saved) : item);
+      } catch (e: any) {
+        grok.shell.error(e);
+      } finally {
+        isSaving.value = false;
+      }
+    };
+
     const removeWithConfirm = (entry: ComparisonEntry) => {
-      if (!entry.unsaved) {
+      if (!entry.snapshot) {
         removeEntry(entry.id);
         return;
       }
@@ -578,7 +605,7 @@ export const RunComparison = Vue.defineComponent({
             <div key={entry.id} class='c2-comparison-row'
               style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 6px'}}>
               { sourceBadge(entry.sourceKind) }
-              { entry.unsaved &&
+              { entry.snapshot &&
                 <span class='c2-comparison-badge c2-badge-unsaved' title='Current state, not stored in history'>
                   unsaved
                 </span> }
@@ -588,6 +615,8 @@ export const RunComparison = Vue.defineComponent({
               </span>
               { entry.outdatedSteps &&
                 <IconFA name='clock' tooltip={`Outdated outputs: ${entry.outdatedSteps.join(', ')}`}/> }
+              { entry.snapshot?.save &&
+                <IconFA name='save' tooltip='Save to history' onClick={() => saveSnapshot(entry)}/> }
               <IconFA name='times' tooltip='Remove from comparison' onClick={() => removeWithConfirm(entry)}/>
             </div>,
           )}
@@ -1007,7 +1036,7 @@ export const RunComparison = Vue.defineComponent({
           }
         </div>
       </div>,
-      [[ifOverlapping, isLoadingModels.value || isAddingRuns.value, 'Loading...']],
+      [[ifOverlapping, isLoadingModels.value || isAddingRuns.value || isSaving.value, 'Loading...']],
     );
   },
 });

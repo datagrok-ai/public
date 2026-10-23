@@ -6,10 +6,19 @@ import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
   parseTimeUnit, resolveAxisModes, targetAxisMode, resolveDisplayUnit, pickAutoUnit, targetContexts,
-  selectionGaps, withAnnotatedDefaults, PickerSelections, unmatchedItems, withoutOutdatedOutputs,
+  selectionGaps, withAnnotatedDefaults, PickerSelections, unmatchedItems, withoutOutdatedOutputs, uniqueEntryName,
 } from '../components/RunComparison/selection';
 import {ColumnBinding, ColumnTarget, AxisConfigMap, TimeUnit, TableNodeInfo} from '../components/RunComparison/types';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
+
+category('RunComparison: entry names', () => {
+  test('a free name is kept, a taken one gets the first free suffix', async () => {
+    expect(uniqueEntryName('Run', ['Other']), 'Run');
+    expect(uniqueEntryName('Run', ['Run']), 'Run (2)');
+    expect(uniqueEntryName('Run', ['Run', 'Run (2)', 'Run (3)']), 'Run (4)');
+    expect(uniqueEntryName('Run', ['Run', 'Run (3)']), 'Run (2)');
+  });
+});
 
 category('RunComparison: entry statuses', () => {
   test('reports matched, index-not-set, and no-similar-data', async () => {

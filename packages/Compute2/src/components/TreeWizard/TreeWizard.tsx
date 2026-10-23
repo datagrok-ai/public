@@ -44,7 +44,9 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {getShareAction} from '../../sharing/sharing';
 import {richFunctionViewReport} from '@datagrok-libraries/compute-utils';
 import {BehaviorSubject} from 'rxjs';
-import {entryFromState} from '../RunComparison/entry-extraction';
+import {entryFromSnapshot} from '../RunComparison/entry-extraction';
+import {snapshotState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/state-snapshot';
+import {setRunMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {
   addToComparison, compareRibbonIcon, compareWithOriginal, snapshotName,
 } from '../RunComparison/comparison-views';
@@ -175,7 +177,13 @@ export const TreeWizard = Vue.defineComponent({
         .show({center: true, modal: true});
     };
 
-    const snapshotOf = (state: PipelineState) => entryFromState(state, states.calls, snapshotName(nodeName(state)));
+    const snapshotOf = (state: PipelineState) => entryFromSnapshot(
+      snapshotState(state, states.calls, states.consistency),
+      snapshotName(nodeName(state)), {
+        metadata: nodeMetadata(state.uuid,
+          state.uuid === treeState.value?.uuid ? currentMetaCallData.value : undefined),
+        stepHistory: isFuncCallState(state) && !!state.enableHistory,
+      });
     // the function whose history holds the node's saved runs
     const modelOf = (state: PipelineState) => isFuncCallState(state) ?
       state.funcCall?.func : (state.nqName ? DG.Func.byName(state.nqName) : undefined);
@@ -195,15 +203,18 @@ export const TreeWizard = Vue.defineComponent({
 
     // Builds the save dialog prefilled from a node's meta states (title/description/tags),
     // with optional overrides (e.g. the pipeline meta-call data for the whole-model save).
-    const makeNodeMetadataDialog = (uuid?: string, extra?: Record<string, any>) => {
+    const nodeMetadata = (uuid?: string, extra?: Record<string, any>) => {
       const desc = uuid ? states.descriptions[uuid] : undefined;
-      return new EditRunMetadataDialog({
+      return {
         title: typeof desc?.title === 'string' ? desc.title : '',
         description: typeof desc?.description === 'string' ? desc.description : '',
         tags: Array.isArray(desc?.tags) ? desc.tags : [],
         ...extra,
-      });
+      };
     };
+
+    const makeNodeMetadataDialog = (uuid?: string, extra?: Record<string, any>) =>
+      new EditRunMetadataDialog(nodeMetadata(uuid, extra));
 
     const saveSubTreeState = async (uuid: string) => {
       const editOptions = await makeNodeMetadataDialog(uuid).awaitMetadata();
@@ -526,9 +537,7 @@ export const TreeWizard = Vue.defineComponent({
       const editOptions = await makeNodeMetadataDialog(chosenStepUuid.value).awaitMetadata();
       if (!editOptions)
         return null;
-      if (editOptions.title) fc.options['title'] = editOptions.title;
-      if (editOptions.description) fc.options['description'] = editOptions.description;
-      if (editOptions.tags) fc.options['tags'] = editOptions.tags;
+      setRunMetadata(fc, editOptions);
       fc.options[STEP_HISTORY_OPTION] = 'true';
       try {
         await historyUtils.saveRun(fc, {newId: true});

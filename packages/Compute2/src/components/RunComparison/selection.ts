@@ -12,6 +12,17 @@ import {
   FUZZY_NAME_THRESHOLD,
 } from './matching';
 
+/** The name, or with the first free ` (n)` suffix when another entry has it: charts split by run name. */
+export function uniqueEntryName(name: string, taken: string[]): string {
+  const names = new Set(taken);
+  if (!names.has(name))
+    return name;
+  let n = 2;
+  while (names.has(`${name} (${n})`))
+    n++;
+  return `${name} (${n})`;
+}
+
 /** Entry nodes without the outputs of steps whose results are outdated. */
 export const withoutOutdatedOutputs = (nodes: ComparisonEntryNodes): ComparisonEntryNodes => ({
   ...nodes,

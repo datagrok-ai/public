@@ -2,6 +2,7 @@
 // User documentation lives in help/compute/run-comparison.md
 
 import type * as DG from 'datagrok-api/dg';
+import type {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
 
 export const RUN_COLUMN = 'Run';
 
@@ -64,7 +65,16 @@ export interface ComparisonEntry {
   // friendly paths of workflow steps with outdated outputs, the model name for a function run
   outdatedSteps?: string[];
   // a snapshot of the current state, not stored in history
-  unsaved?: boolean;
+  snapshot?: EntrySnapshot;
+  // the history run a snapshot was saved to
+  runId?: string;
+}
+
+export interface EntrySnapshot {
+  // save dialog prefill, taken with the snapshot
+  metadata: ItemMetadata;
+  // resolves the saved run; absent when the snapshot can't be saved
+  save?: (metadata: ItemMetadata) => Promise<DG.FuncCall>;
 }
 
 export interface ScalarBinding {

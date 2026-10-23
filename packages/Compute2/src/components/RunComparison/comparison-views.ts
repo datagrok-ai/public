@@ -92,7 +92,8 @@ export function confirmOutdated(entry: ComparisonEntry, action: () => void) {
     .show({center: true, modal: true});
 }
 
-export const snapshotName = (name: string) => `${name} (current, ${dayjs().format('HH:mm')})`;
+// seconds tell apart snapshots taken within one minute
+export const snapshotName = (name: string) => `${name} (current, ${dayjs().format('HH:mm:ss')})`;
 
 /** Always a new view: the original run and the snapshot of its edited copy. */
 export const compareWithOriginal = (snapshot: ComparisonEntry, originalRunId: string, model?: DG.Func) =>
