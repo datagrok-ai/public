@@ -17,8 +17,7 @@ Feature: Map viewer — the mouse wheel zooms, a drag pans
   Scenario: The mouse wheel zooms the map in, and back out to the zoom it had
     Given user remembers the "zoom" reading of map viewer
     When user scrolls the mouse wheel up over the "view" area of map viewer
-    Then the "zoom" reading of map viewer should be higher than before
-    And the "zoom" reading of map viewer should be higher than remembered
+    Then the "zoom" reading of map viewer should be higher than remembered
     When user scrolls the mouse wheel down over the "view" area of map viewer
     Then the "zoom" reading of map viewer should be lower than before
     And the "zoom" reading of map viewer should be as remembered

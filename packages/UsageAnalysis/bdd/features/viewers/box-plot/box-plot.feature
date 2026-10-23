@@ -164,8 +164,16 @@ Feature: Box plot property surface
     And user sets "Category 1 Map" property of box plot viewer to "month"
     Then box plot viewer should have repainted
     And "Category 1 Map" property of box plot viewer should be "month"
+    And box plot viewer should have a "category January" area
+    And box plot viewer should have a "category December" area
+    And box plot viewer should have a "June values" area
+    And box plot viewer should not have a "category Q1" area
     When user sets "Category 1 Map" property of box plot viewer to "quarter"
     Then box plot viewer should have repainted
+    And box plot viewer should have a "category Q1" area
+    And box plot viewer should have a "category Q4" area
+    And box plot viewer should have a "Q3 values" area
+    And box plot viewer should not have a "category January" area
     When user sets "Category 1" property of box plot viewer to "RACE"
     Then "Category 1" property of box plot viewer should be "RACE"
     And no errors should have been logged

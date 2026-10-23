@@ -3,11 +3,30 @@
 Written during the bar chart / box plot / histogram / pie / line chart / density plot gap round of
 23 Oct 2026, against the histogram's "Automation surface" (`core/client/d4/lib/src/viewers/histogram/CLAUDE.md`)
 and the TestTrack checklists (`files/TestTrack/Viewers/Histogram/`). What could be said went into
-`histogram-selectors-and-mouse-over.feature` (Show Split Selector, the bins slider against the Bins
-property — github-2296, X Axis Height, Show Mouse Over Row) and exact counts in
+`histogram-selectors-and-mouse-over.feature` (Show Split Selector, Show Mouse Over Row), the bins
+slider against the Bins property (github-2296) in `histogram.feature`, and exact counts in
 `histogram-range-filter.feature`.
 
 ## Still open
+
+- **X Axis Height (core#1086).** With Auto Layout off the layout takes the value
+  (`histogram_core.dart` cuts `look._calcXAxisHeight` off the bottom) and the status reports an
+  `x axis` box that grows to 60 px and shrinks back, but the drawn axis strip looks the same for
+  every value, with Auto Layout on and off. A claim on the `x axis` box passes while nothing visible
+  changes, so the scenario is out until a reading of the drawn axis exists — e.g. `x axis strip
+  height` (the height of the band the x axis labels and ticks were last painted in, from the axis
+  render in `histogram_core.dart`). Viewer gaps round, 23 Oct 2026. Then:
+
+  ```gherkin
+  Scenario: With Auto Layout off, X Axis Height sets the height of the drawn x axis strip
+    When user sets "Auto Layout" property of histogram viewer to "false"
+    And user sets "X Axis Height" property of histogram viewer to "60"
+    Then the "x axis strip height" reading of histogram viewer should be 60
+    When user sets "X Axis Height" property of histogram viewer to "30"
+    Then the "x axis strip height" reading of histogram viewer should be 30
+    When user sets "Auto Layout" property of histogram viewer to "true"
+    Then no errors should have been logged
+  ```
 
 - **The Show Values counts follow the value column (GROK-19759).** `histogram-setup-tune-select.md`
   step 8: with Show Values on, setting Value to WEIGHT must redraw the per-bin counts for the WEIGHT

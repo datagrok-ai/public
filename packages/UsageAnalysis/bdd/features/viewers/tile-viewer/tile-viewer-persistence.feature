@@ -68,6 +68,8 @@ Feature: Tile viewer persistence
     And the "lane of row 101" reading of tile viewer should be "Black"
     And no errors should have been logged
 
+  # core#1088: Edit Form reaches one lane only
+  @known-failure:79
   Scenario: A designed field set survives a layout round-trip
     When user picks "Edit Form..." from the viewer menu of tile viewer
     Then form designer should be visible

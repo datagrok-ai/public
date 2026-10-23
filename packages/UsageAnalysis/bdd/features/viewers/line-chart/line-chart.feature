@@ -1,8 +1,8 @@
 @journey @viewers @realizes:viewers.line-chart
 Feature: Line chart chrome, chart types and the empty chart
   What the chart puts around the series — the two axes, the four on-viewer selectors, the overview
-  strip, the left histogram — and what it says when it has nothing to draw. The title and the
-  description are walked by the line chart row of `viewer-chrome.feature`.
+  strip, the left histogram, the title and the description — and what it says when it has nothing
+  to draw.
   Every scenario here replaces one whose whole claim was `chartAlive()`: "a <canvas> element still
   exists under the viewer root and the error count did not go up". A canvas exists whether the
   chart drew a thing or gave up, so that check passed for a chart in an error state — the old
@@ -152,6 +152,19 @@ Feature: Line chart chrome, chart types and the empty chart
     When user sets "showAggrTypeSelector" property of line chart viewer to "false"
     Then the "aggr selector shown" reading of line chart viewer should be "false"
     When user sets "showAggrTypeSelector" property of line chart viewer to "true"
+    Then no errors should have been logged
+
+  Scenario: The description sits above the plot and Description Position moves it below
+    When user sets "description" property of line chart viewer to "Chemical space over the idea ids"
+    Then the description of line chart viewer should be above its content
+    When user sets "descriptionPosition" property of line chart viewer to "Bottom"
+    Then the description of line chart viewer should be below its content
+    When user sets "descriptionVisibilityMode" property of line chart viewer to "Never"
+    Then the description of line chart viewer should be hidden
+    When user sets properties of line chart viewer:
+      | descriptionVisibilityMode | Always |
+      | descriptionPosition       | Top    |
+      | description               |        |
     Then no errors should have been logged
 
   Scenario: The chart-area context menu offers the groups the chart is configured through

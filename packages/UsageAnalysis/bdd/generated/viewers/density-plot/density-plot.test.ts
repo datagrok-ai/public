@@ -25,13 +25,14 @@ import {clickOn, hoverOver} from '@datagrok-libraries/bdd/bindings/common/steps'
 import {addCategoricalFilter, filterPasses} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, areaPainted, boundTable, hasArea, hasNoArea, lessInk, noErrors, painted, readingAtLeast, readingDiffers, readingIs, readingLower, readingReads, readingsEqual, repainted, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {descriptionAbove, descriptionBelow} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Density plot chrome, binding and the viewer filter", () => {
   const session = feature(test, "features/viewers/density-plot/density-plot.feature", import.meta.url);
   test("Density plot chrome, binding and the viewer filter", {tag: ["@journey", "@viewers", "@realizes:viewers.density-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 8, page);
+    const run = journey(test, 9, page);
     await session.step(16, "Given user is logged in", () => loggedIn(page));
     await session.step(17, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(18, "And user adds a density plot viewer with:", () => addViewerWith(page, "density plot", [["xColumnName","AGE"],["yColumnName","HEIGHT"]]), [["xColumnName","AGE"],["yColumnName","HEIGHT"]]);
@@ -92,35 +93,43 @@ test.describe("Density plot chrome, binding and the viewer filter", () => {
       await session.step(80, "Then the \"x selector shown\" reading of density plot viewer should be \"true\"", () => readingReads(page, "x selector shown", el("density plot viewer"), "true"));
       await session.step(81, "And no errors should have been logged", () => noErrors(page));
     });
+    await run.scenario("The description sits above the bins and Description Position moves it below them", async () => {
+      await session.step(84, "When user sets \"description\" property of density plot viewer to \"Age against height\"", () => setProperty(page, "description", el("density plot viewer"), "Age against height"));
+      await session.step(85, "Then the description of density plot viewer should be above its content", () => descriptionAbove(page, el("density plot viewer")));
+      await session.step(86, "When user sets \"descriptionPosition\" property of density plot viewer to \"Bottom\"", () => setProperty(page, "descriptionPosition", el("density plot viewer"), "Bottom"));
+      await session.step(87, "Then the description of density plot viewer should be below its content", () => descriptionBelow(page, el("density plot viewer")));
+      await session.step(88, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["descriptionPosition","Top"],["description",""]]), [["descriptionPosition","Top"],["description",""]]);
+      await session.step(91, "Then no errors should have been logged", () => noErrors(page));
+    });
     await run.scenario("The viewer's own filter narrows what it bins and leaves the table alone", async () => {
-      await session.step(84, "When user sets \"filter\" property of density plot viewer to \"${AGE} > 30\"", () => setProperty(page, "filter", el("density plot viewer"), "${AGE} > 30"));
-      await session.step(85, "Then the \"rows shown\" reading of density plot viewer should be lower than before", () => readingLower(page, "rows shown", el("density plot viewer")));
-      await session.step(86, "And 1000 rows should pass the filter", () => filterPasses(page, 1000));
-      await session.step(87, "And density plot viewer should have repainted", () => repainted(page, el("density plot viewer")));
-      await session.step(88, "When user sets \"filter\" property of density plot viewer to \"\"", () => setProperty(page, "filter", el("density plot viewer"), ""));
-      await session.step(89, "Then the \"rows shown\" reading of density plot viewer should be 872", () => readingIs(page, "rows shown", el("density plot viewer"), 872));
-      await session.step(90, "And no errors should have been logged", () => noErrors(page));
+      await session.step(94, "When user sets \"filter\" property of density plot viewer to \"${AGE} > 30\"", () => setProperty(page, "filter", el("density plot viewer"), "${AGE} > 30"));
+      await session.step(95, "Then the \"rows shown\" reading of density plot viewer should be lower than before", () => readingLower(page, "rows shown", el("density plot viewer")));
+      await session.step(96, "And 1000 rows should pass the filter", () => filterPasses(page, 1000));
+      await session.step(97, "And density plot viewer should have repainted", () => repainted(page, el("density plot viewer")));
+      await session.step(98, "When user sets \"filter\" property of density plot viewer to \"\"", () => setProperty(page, "filter", el("density plot viewer"), ""));
+      await session.step(99, "Then the \"rows shown\" reading of density plot viewer should be 872", () => readingIs(page, "rows shown", el("density plot viewer"), 872));
+      await session.step(100, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A filter on the table moves what the plot bins", async () => {
-      await session.step(93, "When user adds a categorical filter on \"SEX\" keeping \"M\"", () => addCategoricalFilter(page, "SEX", "M"));
-      await session.step(94, "Then 447 rows should pass the filter", () => filterPasses(page, 447));
-      await session.step(95, "And the \"rows shown\" reading of density plot viewer should be lower than before", () => readingLower(page, "rows shown", el("density plot viewer")));
-      await session.step(96, "And density plot viewer should have repainted", () => repainted(page, el("density plot viewer")));
-      await session.step(97, "When user hovers over \"SEX\" filter card", () => hoverOver(page, el("\"SEX\" filter card")));
-      await session.step(98, "And user clicks on close of \"SEX\" filter card", () => clickOn(page, el("close of \"SEX\" filter card")));
-      await session.step(99, "Then 1000 rows should pass the filter", () => filterPasses(page, 1000));
-      await session.step(100, "And the \"rows shown\" reading of density plot viewer should be 872", () => readingIs(page, "rows shown", el("density plot viewer"), 872));
-      await session.step(101, "And no errors should have been logged", () => noErrors(page));
+      await session.step(103, "When user adds a categorical filter on \"SEX\" keeping \"M\"", () => addCategoricalFilter(page, "SEX", "M"));
+      await session.step(104, "Then 447 rows should pass the filter", () => filterPasses(page, 447));
+      await session.step(105, "And the \"rows shown\" reading of density plot viewer should be lower than before", () => readingLower(page, "rows shown", el("density plot viewer")));
+      await session.step(106, "And density plot viewer should have repainted", () => repainted(page, el("density plot viewer")));
+      await session.step(107, "When user hovers over \"SEX\" filter card", () => hoverOver(page, el("\"SEX\" filter card")));
+      await session.step(108, "And user clicks on close of \"SEX\" filter card", () => clickOn(page, el("close of \"SEX\" filter card")));
+      await session.step(109, "Then 1000 rows should pass the filter", () => filterPasses(page, 1000));
+      await session.step(110, "And the \"rows shown\" reading of density plot viewer should be 872", () => readingIs(page, "rows shown", el("density plot viewer"), 872));
+      await session.step(111, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Bound to another table, the plot bins that table's rows", async () => {
-      await session.step(104, "Given user opens spgi dataset", () => openDataset(page, ds("spgi")));
-      await session.step(105, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
-      await session.step(106, "When user sets \"table\" property of density plot viewer to \"spgi-100\"", () => setProperty(page, "table", el("density plot viewer"), "spgi-100"));
-      await session.step(107, "Then density plot viewer should be bound to table \"spgi-100\"", () => boundTable(page, el("density plot viewer"), "spgi-100"));
-      await session.step(108, "And the \"rows shown\" reading of density plot viewer should be at least 1", () => readingAtLeast(page, "rows shown", el("density plot viewer"), 1));
-      await session.step(109, "And the \"rows shown\" reading of density plot viewer should differ from before", () => readingDiffers(page, "rows shown", el("density plot viewer")));
-      await session.step(110, "And density plot viewer should be painted", () => painted(page, el("density plot viewer")));
-      await session.step(111, "And no errors should have been logged", () => noErrors(page));
+      await session.step(114, "Given user opens spgi dataset", () => openDataset(page, ds("spgi")));
+      await session.step(115, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
+      await session.step(116, "When user sets \"table\" property of density plot viewer to \"spgi-100\"", () => setProperty(page, "table", el("density plot viewer"), "spgi-100"));
+      await session.step(117, "Then density plot viewer should be bound to table \"spgi-100\"", () => boundTable(page, el("density plot viewer"), "spgi-100"));
+      await session.step(118, "And the \"rows shown\" reading of density plot viewer should be at least 1", () => readingAtLeast(page, "rows shown", el("density plot viewer"), 1));
+      await session.step(119, "And the \"rows shown\" reading of density plot viewer should differ from before", () => readingDiffers(page, "rows shown", el("density plot viewer")));
+      await session.step(120, "And density plot viewer should be painted", () => painted(page, el("density plot viewer")));
+      await session.step(121, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

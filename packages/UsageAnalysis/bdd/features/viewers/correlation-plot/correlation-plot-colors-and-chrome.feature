@@ -1,17 +1,15 @@
 @journey @viewers @realizes:viewers.correlation-plot
-Feature: Correlation plot — cell colours, the cell tooltip switch, and the chrome around the matrix
+Feature: Correlation plot — cell colours, the cell tooltip switch, the column labels and a selection
   What `correlation-plot-ui.md` and the remaining anchors of `correlation-plot.md` ask that the other
   three features do not: a negative coefficient is drawn blue and a positive one red, a near-zero one
-  nearly white; the title and the description; the Tooltip
-  > Visible menu item that mirrors Show Tooltip; a column with no variance hovers as "N/A"
-  (GROK-12586); and Col Header Font repaints the column labels (GROK-16818).
+  nearly white; the Tooltip > Visible menu item that mirrors Show Tooltip; a column with no variance
+  hovers as "N/A" (GROK-12586); Col Header Font repaints the column labels (GROK-16818); and a
+  selection drawn into the diagonal histograms, a known failure (core#1087). The title and the
+  description are every viewer's, in viewer-chrome.feature.
   Each colour is claimed twice: the cell's resolved background (`color of cell …`, measured) and the
   pixels inside the cell's region on the canvas, where the old spec sampled hard-coded offsets.
-  Not translated: the selection drawn into the diagonal histograms ("Selection highlighting") — on
-  this build a selection change does not repaint the matrix; the orange bars appear only after an
-  unrelated repaint (a resize, a filter), so the scenario waits for a product fix. And Grid > Grid
-  Color Coding > Apply to text (GROK-19052) — the coloured text is drawn on
-  the inner grid's canvas and nothing reports it, so the scenario would be a lone "no errors".
+  Not translated: Grid > Grid Color Coding > Apply to text (GROK-19052) — the coloured text is drawn
+  on the inner grid's canvas and nothing reports it, so the scenario would be a lone "no errors".
 
   Background:
     Given user is logged in
@@ -31,29 +29,6 @@ Feature: Correlation plot — cell colours, the cell tooltip switch, and the chr
     And the "cell HEIGHT x AGE" area of correlation plot viewer should not contain the color "#FF9595"
     And the "cell WEIGHT x HEIGHT" area of correlation plot viewer should contain the color "#FF9595"
     And the "cell WEIGHT x HEIGHT" area of correlation plot viewer should not contain the color "#C3C3FF"
-    And no errors should have been logged
-
-  Scenario: The title shows and the description sits above the matrix, then below it, then nowhere
-    When user sets properties of correlation plot viewer:
-      | showTitle   | true                  |
-      | title       | Pairwise r            |
-      | description | Every numerical pair  |
-    Then title of correlation plot viewer should have text "Pairwise r"
-    And description of correlation plot viewer should be visible
-    And description of correlation plot viewer should have text "Every numerical pair"
-    And the description of correlation plot viewer should be above its content
-    When user sets "descriptionPosition" property of correlation plot viewer to "Bottom"
-    Then the description of correlation plot viewer should be below its content
-    When user sets "descriptionVisibilityMode" property of correlation plot viewer to "Never"
-    Then description of correlation plot viewer should be hidden
-    When user sets properties of correlation plot viewer:
-      | descriptionVisibilityMode | Auto  |
-      | descriptionPosition       | Top   |
-      | description               |       |
-      | title                     |       |
-      | showTitle                 | false |
-    Then description of correlation plot viewer should be hidden
-    And the "cells" reading of correlation plot viewer should be 16
     And no errors should have been logged
 
   Scenario: Tooltip > Visible in the cell menu turns Show Tooltip off and back on, and the tooltip returns
@@ -98,4 +73,15 @@ Feature: Correlation plot — cell colours, the cell tooltip switch, and the chr
     And the "cells" reading of correlation plot viewer should be 16
     When user sets "colHeaderFont" property of correlation plot viewer to 'normal normal 13px "Roboto"'
     Then the "header HEIGHT" area of correlation plot viewer should have repainted
+    And no errors should have been logged
+
+  # core#1087: a selection change does not repaint the matrix; the diagonal histograms show the
+  # selected share only after an unrelated repaint (a resize, a filter)
+  @known-failure:85
+  Scenario: A selection is drawn into the diagonal histograms
+    Then the "cell AGE x AGE" area of correlation plot viewer should not contain the color "#FF8C00"
+    When user selects the first 20 rows
+    Then 20 rows should be selected
+    And the "cell AGE x AGE" area of correlation plot viewer should have repainted
+    And the "cell AGE x AGE" area of correlation plot viewer should contain the color "#FF8C00"
     And no errors should have been logged

@@ -2,7 +2,7 @@
 
 Written during the viewer-gaps round of 23 Oct 2026, against `files/TestTrack/Viewers/FormsViewer/`
 and the viewer's "Automation surface" (`public/libraries/utils/src/viewers/CLAUDE.md`). New this round:
-`forms-cards-drawn.feature` (`forms.md` Step 4c — each selected row's card draws its molecule and curve).
+`forms-cards-drawn.feature` (`forms.md` Step 4c — every selected row gets a card).
 
 ## Still open
 
@@ -25,21 +25,7 @@ and the viewer's "Automation surface" (`public/libraries/utils/src/viewers/CLAUD
   the md's "text fields to its right" does not describe the viewer. Nothing to write until the owner
   says which layout is intended.
 
-- **Each card draws a different molecule** (`forms.md` Scenario 4, Step 4c). `forms-cards-drawn.feature`
-  claims that every selected row's card paints its `smiles` and `multiple prefit` fields
-  (`field <COL> of card <n>` area painted) and which row each card shows (`record of card <n>`), but
-  not that the molecule drawn belongs to that row: `<COL> of card <n>` is the literal `canvas` for a
-  renderer-drawn field, and a pixel comparison between two cards would say "different" for any two
-  molecules, right or wrong. Needs a `drawn value of <COL> of card <n>` reading — the cell value the
-  renderer was handed for that canvas (`forms-viewer.ts` `buildForm`, the renderer branch, recorded
-  in `forms-viewer-status.ts`):
-
-  ```gherkin
-  Scenario: Each selected row's card draws that row's molecule
-    When user selects the first 3 rows
-    Then the "drawn value of smiles of card 3" reading of forms viewer should be the "smiles" value of row 1
-    And the "drawn value of smiles of card 4" reading of forms viewer should be the "smiles" value of row 2
-    And the "drawn value of smiles of card 3" and "drawn value of smiles of card 4" readings of forms viewer should differ
-    And no errors should have been logged
-  ```
-  (`should be the {string} value of row {int}` and `… readings … should differ` are new steps too.)
+- **Each card draws that row's molecule** (`forms.md` Scenario 4, Step 4c) is not a gap: what a cell
+  renderer draws, on a card or in the grid, is the renderer's package test, not a feature (the
+  library's "What never becomes a feature"). `forms-cards-drawn.feature` claims which row each card
+  shows (`record of card <n>`).

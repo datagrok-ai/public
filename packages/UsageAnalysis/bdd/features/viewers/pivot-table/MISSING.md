@@ -37,10 +37,7 @@ surface" and `pivot-table.md`. The Table switch is in `pivot-table-table-switch.
   `tag rows` reading (the panel's `grok-pivot-column-panel` count, `features/pivot_viewer_status.dart`)
   to claim `the "tag rows" reading of pivot table viewer should be 4` after the switch back.
 
-## Candidate product defect, not a gap
+## Product defect
 
-- **Dragging a key column header inside the inner grid** (`pivot-table-ui.md`, re-sort the rows):
-  `user drags the "grid header DIS_POP" area of pivot table viewer to the "grid header None avg(AGE)"
-  area` logs `Cannot read properties of null (reading '$lt')` (measured 23 Oct; the inner-grid feature
-  describes the NullError from `col2screen` on every repaint). No ticket found in `datagrok-ai/core`
-  or `public`; not a `@known-failure` until one exists.
+- **Dragging a key column header inside the inner grid** is now a `@known-failure` scenario in
+  `pivot-table-inner-grid-drag.feature` (core#467).

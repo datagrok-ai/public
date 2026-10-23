@@ -5,8 +5,7 @@ Feature: Line chart mouse-over row line and the stacked bar overview
   a hover over a grid row draws the vertical mouse-over row line, and Show Mouse-over Row Line
   switches it off. Same fixture as line-chart.feature: spgi-100, one point per row on CAST Idea ID.
   Not translated: Show Mouse-over Category — nothing reports which split line a category hovered in
-  another viewer highlights, and the overlay the property also gates waits for a flag the chart never
-  sets (`LineChartCore._catDraw`); see MISSING.md.
+  another viewer highlights; see MISSING.md.
 
   Background:
     Given user is logged in

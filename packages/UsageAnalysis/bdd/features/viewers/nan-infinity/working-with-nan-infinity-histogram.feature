@@ -41,8 +41,9 @@ Feature: A histogram over a column that holds a NaN and an Infinity
 
   Scenario: The two values put back leave the axis as it was
     When user sets "HEIGHT" column in row 1 to "174.705"
-    And user sets "WEIGHT" column in row 2 to "64"
+    Then the "axis max" reading of histogram viewer should be as remembered
+    When user sets "WEIGHT" column in row 2 to "64"
     And user sets "valueColumnName" property of histogram viewer to "WEIGHT"
-    Then the "axis max" reading of histogram viewer should be a finite number
+    Then the "axis max" reading of histogram viewer should be 165
     And histogram viewer should report no error
     And no errors should have been logged

@@ -24,7 +24,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {clearSelection, noneSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, dragAreaBy, noErrors, readingAsRemembered, readingHigher, readingHigherThanRemembered, readingIs, readingLower, readingNotAsRemembered, rememberReading, wheelOverArea} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewer, dragAreaBy, noErrors, readingAsRemembered, readingHigherThanRemembered, readingIs, readingLower, readingNotAsRemembered, rememberReading, wheelOverArea} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Map viewer — the mouse wheel zooms, a drag pans", () => {
@@ -40,24 +40,23 @@ test.describe("Map viewer — the mouse wheel zooms, a drag pans", () => {
     await run.scenario("The mouse wheel zooms the map in, and back out to the zoom it had", async () => {
       await session.step(18, "Given user remembers the \"zoom\" reading of map viewer", () => rememberReading(page, "zoom", el("map viewer")));
       await session.step(19, "When user scrolls the mouse wheel up over the \"view\" area of map viewer", () => wheelOverArea(page, "up", "view", el("map viewer")));
-      await session.step(20, "Then the \"zoom\" reading of map viewer should be higher than before", () => readingHigher(page, "zoom", el("map viewer")));
-      await session.step(21, "And the \"zoom\" reading of map viewer should be higher than remembered", () => readingHigherThanRemembered(page, "zoom", el("map viewer")));
-      await session.step(22, "When user scrolls the mouse wheel down over the \"view\" area of map viewer", () => wheelOverArea(page, "down", "view", el("map viewer")));
-      await session.step(23, "Then the \"zoom\" reading of map viewer should be lower than before", () => readingLower(page, "zoom", el("map viewer")));
-      await session.step(24, "And the \"zoom\" reading of map viewer should be as remembered", () => readingAsRemembered(page, "zoom", el("map viewer")));
-      await session.step(25, "And the \"markers\" reading of map viewer should be 2426", () => readingIs(page, "markers", el("map viewer"), 2426));
-      await session.step(26, "And no errors should have been logged", () => noErrors(page));
+      await session.step(20, "Then the \"zoom\" reading of map viewer should be higher than remembered", () => readingHigherThanRemembered(page, "zoom", el("map viewer")));
+      await session.step(21, "When user scrolls the mouse wheel down over the \"view\" area of map viewer", () => wheelOverArea(page, "down", "view", el("map viewer")));
+      await session.step(22, "Then the \"zoom\" reading of map viewer should be lower than before", () => readingLower(page, "zoom", el("map viewer")));
+      await session.step(23, "And the \"zoom\" reading of map viewer should be as remembered", () => readingAsRemembered(page, "zoom", el("map viewer")));
+      await session.step(24, "And the \"markers\" reading of map viewer should be 2426", () => readingIs(page, "markers", el("map viewer"), 2426));
+      await session.step(25, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A drag on the map pans it and keeps the zoom and the selection", async () => {
-      await session.step(29, "Given user clears the row selection", () => clearSelection(page));
-      await session.step(30, "And user remembers the \"zoom\" reading of map viewer", () => rememberReading(page, "zoom", el("map viewer")));
-      await session.step(31, "And user remembers the \"centre\" reading of map viewer", () => rememberReading(page, "centre", el("map viewer")));
-      await session.step(32, "When user drags the \"view\" area of map viewer by 150 pixels to the left", () => dragAreaBy(page, "view", el("map viewer"), 150, "left"));
-      await session.step(33, "Then the \"centre\" reading of map viewer should not be as remembered", () => readingNotAsRemembered(page, "centre", el("map viewer")));
-      await session.step(34, "And the \"zoom\" reading of map viewer should be as remembered", () => readingAsRemembered(page, "zoom", el("map viewer")));
-      await session.step(35, "And no rows should be selected", () => noneSelected(page));
-      await session.step(36, "And the \"markers\" reading of map viewer should be 2426", () => readingIs(page, "markers", el("map viewer"), 2426));
-      await session.step(37, "And no errors should have been logged", () => noErrors(page));
+      await session.step(28, "Given user clears the row selection", () => clearSelection(page));
+      await session.step(29, "And user remembers the \"zoom\" reading of map viewer", () => rememberReading(page, "zoom", el("map viewer")));
+      await session.step(30, "And user remembers the \"centre\" reading of map viewer", () => rememberReading(page, "centre", el("map viewer")));
+      await session.step(31, "When user drags the \"view\" area of map viewer by 150 pixels to the left", () => dragAreaBy(page, "view", el("map viewer"), 150, "left"));
+      await session.step(32, "Then the \"centre\" reading of map viewer should not be as remembered", () => readingNotAsRemembered(page, "centre", el("map viewer")));
+      await session.step(33, "And the \"zoom\" reading of map viewer should be as remembered", () => readingAsRemembered(page, "zoom", el("map viewer")));
+      await session.step(34, "And no rows should be selected", () => noneSelected(page));
+      await session.step(35, "And the \"markers\" reading of map viewer should be 2426", () => readingIs(page, "markers", el("map viewer"), 2426));
+      await session.step(36, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

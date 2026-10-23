@@ -12,7 +12,8 @@ Feature: The layout of a docked view downloads as a .layout file
     And user opens demog-1000 dataset
     And user adds a histogram viewer
     And user adds a bar chart viewer
-    Then the current view should hold at least 2 viewers
+    Then the open tableview should have 1 histogram viewer
+    And the open tableview should have 1 bar chart viewer
 
   Scenario: View > Layout > Download saves the view's layout with its viewers
     When user docks histogram viewer to the right edge of the view

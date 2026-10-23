@@ -3,14 +3,13 @@ Feature: Tile viewer — a scrolled lane keeps its place while viewers dock and 
   A person scrolls down a lane, docks a histogram next to the tile viewer and closes it again: the
   lane should still show the cards it showed. Docking keeps the position (also claimed in
   `tile-viewer-persistence.feature`); closing the docked viewer resets the lane to the top —
-  GROK-20912, whose fix (core PR #20, "Anchor VirtualItemView relayout on its last laid-out top
-  item") was closed without being merged. The `scroll of lane "<name>"` reading is the lane's own
+  GROK-20912. The `scroll of lane "<name>"` reading is the lane's own
   scroll position, and the viewer counts the deferred re-layout that restores it as render-pending,
   so the claims are exact.
 
   Fixture: demog-1000, lanes on RACE (Caucasian 896 rows, the lane with room to scroll).
 
-  @known-failure:33
+  @known-failure:32
   Scenario: The lane keeps its scroll when the docked histogram closes
     Given user is logged in
     And user opens demog-1000 dataset

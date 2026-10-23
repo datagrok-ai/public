@@ -16,7 +16,7 @@ Feature: Pie chart's own filter and the Auto legend
     And pie chart viewer should show 1000 rows
 
   Scenario: The pie's own Filter narrows the wedges and leaves the table filter alone
-    Given the "angle value of Caucasian" reading of pie chart viewer should be 896
+    Then the "angle value of Caucasian" reading of pie chart viewer should be 896
     When user sets "Filter" property of pie chart viewer to "${AGE} > 40"
     Then pie chart viewer should show 635 rows
     And the "slices" reading of pie chart viewer should be 4

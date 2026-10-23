@@ -6,28 +6,8 @@ surface" and the TestTrack `correlation-plot.md` / `correlation-plot-ui.md`. Wha
 
 ## Waiting for the product
 
-- **Selection highlighting in the diagonal histograms** (`correlation-plot-ui.md`, "Selection
-  highlighting"; anchor "Diagonal histograms repaint"). The diagonal cells are built with the
-  selection (`correlation_plot_core.dart:55`, `ColumnHistogram(..., dataFrame.selection)`, drawn in
-  `#FF8C00` at alpha 150), but nothing repaints the matrix when the selection changes: on demog-1000
-  selecting 300 rows leaves the canvas byte-identical (18 orange-ish pixels before and after, a hover
-  changes nothing), and the orange bars appear only after an unrelated repaint — a window resize
-  (548 px) or a filter change. The scenario is ready and passes the repaint claim the day the plot
-  listens to `onSelectionChanged`:
-
-  ```gherkin
-  Scenario: A selection is drawn into the diagonal histograms and leaves the coefficients alone
-    Then the "cell AGE x AGE" area of correlation plot viewer should not contain the color "#FF8C00"
-    When user selects the first 20 rows
-    Then 20 rows should be selected
-    And the "cell AGE x AGE" area of correlation plot viewer should have repainted
-    And the "cell AGE x AGE" area of correlation plot viewer should contain the color "#FF8C00"
-    And the "correlation of HEIGHT and AGE" reading of correlation plot viewer should be between -0.2349 and -0.2348
-    When user clears the row selection
-    Then the "cell AGE x AGE" area of correlation plot viewer should have repainted
-    And the "cell AGE x AGE" area of correlation plot viewer should not contain the color "#FF8C00"
-    And no errors should have been logged
-  ```
+- **Selection highlighting in the diagonal histograms** is now a `@known-failure` scenario in
+  `correlation-plot-colors-and-chrome.feature` (core#1087).
 
 ## Needs a reading
 

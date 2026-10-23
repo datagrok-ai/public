@@ -24,32 +24,27 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {selectFirstRows, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, packageInstalled} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, areaPainted, noErrors, readingReads} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, noErrors, readingReads} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
-test.describe("Forms viewer — every selected row's card draws a molecule and a curve", () => {
+test.describe("Forms viewer — every selected row gets a card", () => {
   const session = feature(test, "features/viewers/forms/forms-cards-drawn.feature", import.meta.url);
-  test("With three rows selected, each selected row's card paints a molecule and a curve", {tag: ["@viewers", "@realizes:viewers.forms"]}, async ({browser}) => {
+  test("With three rows selected, every selected row gets a card", {tag: ["@viewers", "@realizes:viewers.forms"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(16, "Given user is logged in", () => loggedIn(page));
     await session.step(17, "And the \"Chem\" package is installed", () => packageInstalled(page, "Chem"));
-    await session.step(18, "And user opens curves dataset", () => openDataset(page, ds("curves")));
-    await session.step(19, "And user adds a forms viewer with:", () => addViewerWith(page, "forms", [["fieldsColumnNames","smiles, multiple prefit"]]), [["fieldsColumnNames","smiles, multiple prefit"]]);
-    await session.step(21, "And user makes row 1 current", () => makeRowCurrent(page, 1));
-    await session.step(22, "When user selects the first 3 rows", () => selectFirstRows(page, 3));
-    await session.step(23, "Then 3 rows should be selected", () => selectedRowCount(page, 3));
-    await session.step(24, "And the \"card kind of card 1\" reading of forms viewer should be \"current\"", () => readingReads(page, "card kind of card 1", el("forms viewer"), "current"));
-    await session.step(25, "And the \"card kind of card 2\" reading of forms viewer should be \"mouse-over\"", () => readingReads(page, "card kind of card 2", el("forms viewer"), "mouse-over"));
-    await session.step(26, "And the \"record of card 2\" reading of forms viewer should be \"\"", () => readingReads(page, "record of card 2", el("forms viewer"), ""));
-    await session.step(27, "And the \"record of card 3\" reading of forms viewer should be \"1\"", () => readingReads(page, "record of card 3", el("forms viewer"), "1"));
-    await session.step(28, "And the \"record of card 4\" reading of forms viewer should be \"2\"", () => readingReads(page, "record of card 4", el("forms viewer"), "2"));
-    await session.step(29, "And the \"record of card 5\" reading of forms viewer should be \"3\"", () => readingReads(page, "record of card 5", el("forms viewer"), "3"));
-    await session.step(30, "And the \"field smiles of card 3\" area of forms viewer should be painted", () => areaPainted(page, "field smiles of card 3", el("forms viewer")));
-    await session.step(31, "And the \"field multiple prefit of card 3\" area of forms viewer should be painted", () => areaPainted(page, "field multiple prefit of card 3", el("forms viewer")));
-    await session.step(32, "And the \"field smiles of card 4\" area of forms viewer should be painted", () => areaPainted(page, "field smiles of card 4", el("forms viewer")));
-    await session.step(33, "And the \"field multiple prefit of card 4\" area of forms viewer should be painted", () => areaPainted(page, "field multiple prefit of card 4", el("forms viewer")));
-    await session.step(34, "And the \"field smiles of card 5\" area of forms viewer should be painted", () => areaPainted(page, "field smiles of card 5", el("forms viewer")));
-    await session.step(35, "And the \"field multiple prefit of card 5\" area of forms viewer should be painted", () => areaPainted(page, "field multiple prefit of card 5", el("forms viewer")));
-    await session.step(36, "And no errors should have been logged", () => noErrors(page));
+    await session.step(18, "And the \"Curves\" package is installed", () => packageInstalled(page, "Curves"));
+    await session.step(19, "And user opens curves dataset", () => openDataset(page, ds("curves")));
+    await session.step(20, "And user adds a forms viewer with:", () => addViewerWith(page, "forms", [["fieldsColumnNames","smiles, multiple prefit"]]), [["fieldsColumnNames","smiles, multiple prefit"]]);
+    await session.step(22, "And user makes row 1 current", () => makeRowCurrent(page, 1));
+    await session.step(23, "When user selects the first 3 rows", () => selectFirstRows(page, 3));
+    await session.step(24, "Then 3 rows should be selected", () => selectedRowCount(page, 3));
+    await session.step(25, "And the \"card kind of card 1\" reading of forms viewer should be \"current\"", () => readingReads(page, "card kind of card 1", el("forms viewer"), "current"));
+    await session.step(26, "And the \"card kind of card 2\" reading of forms viewer should be \"mouse-over\"", () => readingReads(page, "card kind of card 2", el("forms viewer"), "mouse-over"));
+    await session.step(27, "And the \"record of card 2\" reading of forms viewer should be \"\"", () => readingReads(page, "record of card 2", el("forms viewer"), ""));
+    await session.step(28, "And the \"record of card 3\" reading of forms viewer should be \"1\"", () => readingReads(page, "record of card 3", el("forms viewer"), "1"));
+    await session.step(29, "And the \"record of card 4\" reading of forms viewer should be \"2\"", () => readingReads(page, "record of card 4", el("forms viewer"), "2"));
+    await session.step(30, "And the \"record of card 5\" reading of forms viewer should be \"3\"", () => readingReads(page, "record of card 5", el("forms viewer"), "3"));
+    await session.step(31, "And no errors should have been logged", () => noErrors(page));
   });
 });

@@ -36,9 +36,9 @@ Feature: Grid appearance and geometry across a layout and a project
   Not translated, and why: what the min and max stats rows show (`grid-ui.md` "Column Stats -
   Visual Verification") — the grid reports which stats rows it draws as `stats rows` (added in the
   review of 2026-09-22), not their values or areas, so the stats-row scenario claims the two rows,
-  the columns staying as they were and nothing logged. A project holding a table of extracted rows (`grid.md` "Extracted Rows in a
-  Saved Project", GROK-19717): the library's project step saves the current view and its table,
-  and a project with every open table is deferred by operator decision D2. The column hidden is RACE, not WEIGHT as in
+  the columns staying as they were and nothing logged. A project holding a table of extracted rows
+  (`grid.md` "Extracted Rows in a Saved Project", GROK-19717) is in `grid-extracted-rows-project.feature`.
+  The column hidden is RACE, not WEIGHT as in
   the TestTrack spec: WEIGHT carries the linked colouring, and a hidden column has no cells whose
   colour a round-trip could be checked by. RACE is unticked in the Order or Hide Columns dialog,
   whose list is a grid of its own: it reports its rows as `cell <r> of __name` (the column) and

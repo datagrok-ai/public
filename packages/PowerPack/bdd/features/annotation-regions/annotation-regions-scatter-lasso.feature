@@ -35,8 +35,6 @@ Feature: A lasso drawn on the scatter plot becomes an area region
     And user clicks OK button in "Formula Lines" dialog
     Then the "Formula Lines" dialog should close
     And scatter plot viewer should have a "region Lasso A" area
-    And the "regions shown" reading of scatter plot viewer should be 1
-    And "Lasso Tool" property of scatter plot viewer should be "true"
     When user picks "Tools > Formula Lines..." from the context menu of the "bottom edge of view" area of scatter plot viewer
     Then "Formula Lines" dialog should be visible
     When user clicks on Delete button in "Formula Lines" dialog

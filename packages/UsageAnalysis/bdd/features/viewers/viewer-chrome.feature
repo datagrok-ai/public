@@ -28,6 +28,7 @@ Feature: Viewer chrome — title and description, Pick Up / Apply, the context m
       | Description                 | By race |
       | Description Visibility Mode | Always  |
     Then description of <viewer> viewer should have text "By race"
+    And the description of <viewer> viewer should be above its content
     When user sets "Description Position" property of <viewer> viewer to "Bottom"
     Then description of <viewer> viewer should be visible
     And the description of <viewer> viewer should be below its content
@@ -47,14 +48,15 @@ Feature: Viewer chrome — title and description, Pick Up / Apply, the context m
     And no errors should have been logged
 
     Examples:
-      | viewer       |
-      | bar chart    |
-      | box plot     |
-      | histogram    |
-      | pc plot      |
-      | pie chart    |
-      | line chart   |
-      | density plot |
+      | viewer           |
+      | bar chart        |
+      | box plot         |
+      | histogram        |
+      | pc plot          |
+      | pie chart        |
+      | line chart       |
+      | density plot     |
+      | correlation plot |
 
   Scenario Outline: Pick Up / Apply copies the <viewer>'s <property> onto a second <viewer>, and the two stay apart
     Given user adds a <viewer> viewer

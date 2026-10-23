@@ -62,11 +62,12 @@ test.describe("A histogram over a column that holds a NaN and an Infinity", () =
     });
     await run.scenario("The two values put back leave the axis as it was", async () => {
       await session.step(43, "When user sets \"HEIGHT\" column in row 1 to \"174.705\"", () => setCell(page, "HEIGHT", 1, "174.705"));
-      await session.step(44, "And user sets \"WEIGHT\" column in row 2 to \"64\"", () => setCell(page, "WEIGHT", 2, "64"));
-      await session.step(45, "And user sets \"valueColumnName\" property of histogram viewer to \"WEIGHT\"", () => setProperty(page, "valueColumnName", el("histogram viewer"), "WEIGHT"));
-      await session.step(46, "Then the \"axis max\" reading of histogram viewer should be a finite number", () => readingFinite(page, "axis max", el("histogram viewer")));
-      await session.step(47, "And histogram viewer should report no error", () => reportsNoError(page, el("histogram viewer")));
-      await session.step(48, "And no errors should have been logged", () => noErrors(page));
+      await session.step(44, "Then the \"axis max\" reading of histogram viewer should be as remembered", () => readingAsRemembered(page, "axis max", el("histogram viewer")));
+      await session.step(45, "When user sets \"WEIGHT\" column in row 2 to \"64\"", () => setCell(page, "WEIGHT", 2, "64"));
+      await session.step(46, "And user sets \"valueColumnName\" property of histogram viewer to \"WEIGHT\"", () => setProperty(page, "valueColumnName", el("histogram viewer"), "WEIGHT"));
+      await session.step(47, "Then the \"axis max\" reading of histogram viewer should be 165", () => readingIs(page, "axis max", el("histogram viewer"), 165));
+      await session.step(48, "And histogram viewer should report no error", () => reportsNoError(page, el("histogram viewer")));
+      await session.step(49, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

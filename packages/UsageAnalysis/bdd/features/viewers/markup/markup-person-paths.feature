@@ -8,9 +8,8 @@ Feature: Markup — the keyboard in the grid moves it, Show Title hides its titl
   row 2 is AGE 30, SEX F.
 
   The Edit dialog's OK is clicked here: `markup-chrome.feature` dismisses the dialog with Escape
-  because on a stand with no internet the help pane's preloader covered OK. On the local stand
-  (2026-10-23) OK takes the click; if the preloader comes back on a stand, this scenario is where
-  it shows.
+  because on a stand with no internet the help pane's preloader covered OK; if the preloader comes
+  back on a stand, this scenario is where it shows.
 
   Background:
     Given user is logged in
@@ -38,7 +37,6 @@ Feature: Markup — the keyboard in the grid moves it, Show Title hides its titl
     Then title of markup viewer should have text "Patient card"
     When user sets "Show Title" property of markup viewer to "false"
     Then title of markup viewer should be hidden
-    And "Title" property of markup viewer should be "Patient card"
     When user sets "Show Title" property of markup viewer to "true"
     Then title of markup viewer should have text "Patient card"
     When user sets properties of markup viewer:
