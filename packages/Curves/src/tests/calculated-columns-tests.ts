@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, expectArray, expectFloat, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, expectFloat, waitUntil} from '@datagrok-libraries/test/src/test';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {getStatistic} from '@datagrok-libraries/statistics/src/fit/fit-engine';
@@ -114,7 +114,7 @@ category('calculated columns', () => {
 
     // an unstable result name, or reading through column.dataFrame, leaves this silently stale
     df.col('curve')!.set(1, curveJson(-5.0), true);
-    await awaitCheck(() => df.col('curve 1 ic50')!.get(1) !== before,
+    await waitUntil(() => df.col('curve 1 ic50')!.get(1) !== before,
       'statistic column did not recalculate after the source curve changed', 5000);
 
     expectFloat(Math.log10(df.col('curve 1 ic50')!.get(1)), -5.0, 0.3);
@@ -194,7 +194,7 @@ category('calculated columns', () => {
     const before = df.col('curve 1 ic50')!.get(1);
 
     df.col('curve')!.set(1, curveJsonNoChartOptions(-5.0), true);
-    await awaitCheck(() => df.col('curve 1 ic50')!.get(1) !== before,
+    await waitUntil(() => df.col('curve 1 ic50')!.get(1) !== before,
       'statistic column did not recalculate', 5000);
 
     // the detached recalculation column has no dataframe, so it must read logX off its own tags

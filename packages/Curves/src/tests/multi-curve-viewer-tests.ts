@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {category, test, expect, delay, testEvent} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, testEvent, settled, waitUntil} from '@datagrok-libraries/test/src/test';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {getOrCreateParsedChartData} from '../fit/fit-chart-data';
 import {MultiCurveViewer} from '../fit/multi-curve-viewer';
@@ -16,28 +16,33 @@ function curveTable(name: string): DG.DataFrame {
   return df;
 }
 
+async function addMultiCurveViewer(tv: DG.TableView, curvesColumnNames: string[]): Promise<MultiCurveViewer> {
+  const viewer = await tv.dataFrame.plot.fromType('MultiCurveViewer', {curvesColumnNames}) as MultiCurveViewer;
+  // most of the view, whatever the window: a legend is drawn only on a chart of MIN_LEGEND_PX_WIDTH x HEIGHT
+  tv.dockManager.dock(viewer, DG.DOCK_TYPE.FILL, null, 'Curves');
+  // the canvas takes the size of its panel a task after the layout (ui.tools.handleResize)
+  await waitUntil(() => viewer.root.clientWidth > 0 && viewer.canvas.width === viewer.root.clientWidth &&
+    viewer.canvas.height === viewer.root.clientHeight, 'the multi curve viewer did not take the size of its panel');
+  await settled(viewer);
+  return viewer;
+}
+
 category('multi curve viewer', () => {
   test('merging cell series leaves the cell alone, and unmerging comes back', async () => {
     const df = curveTable('multiCurveMerge');
     const tv = grok.shell.addTableView(df);
     try {
       df.currentRowIdx = 0;
-      tv.addViewer('MultiCurveViewer', {curvesColumnNames: ['curve']});
-      await delay(1000);
-      // addViewer hands back the host wrapper, and the merge happens on the JS instance behind it
-      const viewer = Array.from(tv.viewers).find((v) => v.type === 'MultiCurveViewer') as MultiCurveViewer;
-      expect(viewer !== undefined, true, 'the viewer was not added');
+      const viewer = await addMultiCurveViewer(tv, ['curve']);
       expect(viewer.data?.series?.length, 2, 'the current row carries two curves');
 
       viewer.props.set('mergeCellSeries', true as unknown as object);
-      await delay(500);
       expect(viewer.data?.series?.length, 1, 'merging should leave one curve in the viewer');
       // the parsed data is cached and shared with the grid - merging into it used to rewrite the cell
       expect(getOrCreateParsedChartData(df.cell(0, 'curve')).series!.length, 2,
         'the cell itself must still hold both curves');
 
       viewer.props.set('mergeCellSeries', false as unknown as object);
-      await delay(500);
       expect(viewer.data?.series?.length, 2, 'unmerging should bring both curves back');
     } finally {
       tv.close();
@@ -49,10 +54,8 @@ category('multi curve viewer', () => {
     const tv = grok.shell.addTableView(df);
     try {
       df.currentRowIdx = 0;
-      tv.addViewer('MultiCurveViewer', {curvesColumnNames: ['curve']});
-      await delay(1500);
-      const viewer = Array.from(tv.viewers).find((v) => v.type === 'MultiCurveViewer') as any;
-      expect(viewer.fitIdentities.length, viewer.data.series.length,
+      const viewer = await addMultiCurveViewer(tv, ['curve']);
+      expect(viewer.fitIdentities.length, viewer.data.series!.length,
         'every series should carry an identity, in the order they are drawn');
       expect(viewer.fitIdentities.every((id: string | undefined) => id !== undefined), true,
         'and none of them should be missing');
@@ -70,13 +73,11 @@ category('multi curve viewer', () => {
     const tv = grok.shell.addTableView(df);
     try {
       df.currentRowIdx = 0;
-      tv.addViewer('MultiCurveViewer', {curvesColumnNames: ['curve']});
-      await delay(2000);
-      const viewer = Array.from(tv.viewers).find((v) => v.type === 'MultiCurveViewer') as any;
-      expect(viewer.data.series.length, 40, 'the current row carries all the curves');
+      const viewer = await addMultiCurveViewer(tv, ['curve']);
+      expect(viewer.data.series!.length, 40, 'the current row carries all the curves');
 
       // the grid routes mouse moves to the cell renderer; the viewer has to do it itself
-      const canvas: HTMLCanvasElement = viewer.canvas;
+      const canvas = viewer.canvas;
       const rect = canvas.getBoundingClientRect();
       // any row will do - whether the tail collapses into `+N more` depends on the viewer's height
       let tooltip: string[] = [];
@@ -114,9 +115,7 @@ category('multi curve viewer', () => {
     const tv = grok.shell.addTableView(df);
     try {
       df.currentRowIdx = 0;
-      tv.addViewer('MultiCurveViewer', {curvesColumnNames: ['narrow', 'tall']});
-      await delay(2000);
-      const viewer = Array.from(tv.viewers).find((v) => v.type === 'MultiCurveViewer') as MultiCurveViewer;
+      const viewer = await addMultiCurveViewer(tv, ['narrow', 'tall']);
       const values = viewer.getWidgetStatus().values!;
       expect(values['curves'], 2);
       expect(values['points outside the axes'], 0, `the axes span ${values['y range']}`);
@@ -133,9 +132,7 @@ category('multi curve viewer', () => {
     const tv = grok.shell.addTableView(df);
     try {
       df.currentRowIdx = 0;
-      tv.addViewer('MultiCurveViewer', {curvesColumnNames: ['curve']});
-      await delay(2000);
-      const viewer = Array.from(tv.viewers).find((v) => v.type === 'MultiCurveViewer') as MultiCurveViewer;
+      const viewer = await addMultiCurveViewer(tv, ['curve']);
       let status = viewer.getWidgetStatus();
       expect(status.parts['canvas'] === viewer.canvas, true, 'the canvas is the part the hit areas are on');
       expect(status.values!['curves'], 40);
@@ -155,7 +152,6 @@ category('multi curve viewer', () => {
       expect(listed > 1, true, `hovering "legend more" should list the curves, it listed ${listed}`);
 
       viewer.props.set('showLegend', false as unknown as object);
-      await delay(500);
       status = viewer.getWidgetStatus();
       expect(status.values!['legend shown'], false, 'Show Legend off should leave the curves unnamed');
       expect(Object.keys(status.hitAreas).some((name) => name.includes('legend')), false,
