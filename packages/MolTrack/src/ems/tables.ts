@@ -66,17 +66,18 @@ export class MolTrackTables {
   }
 
   // a number as the column's own format shows it, the platform's default where it has none
-  static number(table: DomainTable, column: string, value: number): string {
+  private static _number(table: DomainTable, column: string, value: number): string {
     return DG.format(value, table.properties.find((p) => p.name === column)?.format || undefined);
   }
 
   /** Registered at load, so a view's handle, a child tab's and the `/domains` route's are all dressed alike. */
   static configure(): void {
-    domains.configure<CompoundRow>(`${SCHEMA}.compound`, (table) => MolTrackTables._configureCompounds(table));
+    const id = {id: 'moltrack'};
+    domains.configure<CompoundRow>(`${SCHEMA}.compound`, (table) => MolTrackTables._configureCompounds(table), id);
     domains.configure<CompoundBatchRow>(`${SCHEMA}.compound_batch`, async (table) =>
-      MolTrackTables._configureBatches(table, await MolTrackTables.compounds()));
+      MolTrackTables._configureBatches(table, await MolTrackTables.compounds()), id);
     domains.configure<AssayResultRow>(`${SCHEMA}.assay_result`, async (table) =>
-      MolTrackTables._configureAssayResults(table, await MolTrackTables.table('compound_batch')));
+      MolTrackTables._configureAssayResults(table, await MolTrackTables.table('compound_batch')), id);
   }
 
   private static _configureCompounds(table: DomainTable<CompoundRow>): void {
@@ -114,9 +115,9 @@ export class MolTrackTables {
         row[Rows.caption('assay_run_id')]].filter((d) => !isEmpty(d)).join(' · ');
     const clint = (row: RowView<AssayResultRow>) => isEmpty(row.reported_clint) ? '' :
       `CLint ${row.reported_clint_qualifier === '=' ? '' : row.reported_clint_qualifier ?? ''}` +
-      MolTrackTables.number(table, 'reported_clint', row.reported_clint!);
+      MolTrackTables._number(table, 'reported_clint', row.reported_clint!);
     const dosed = (row: RowView<AssayResultRow>) => isEmpty(row.dosed_concentration) ? '' :
-      `${MolTrackTables.number(table, 'dosed_concentration', row.dosed_concentration!)} uM`;
+      `${MolTrackTables._number(table, 'dosed_concentration', row.dosed_concentration!)} uM`;
     table.renderer = {...table.renderer, caption, listItem: (row) => divH([span(caption(row), 'u2-domain-list-name'),
       span([dosed(row), clint(row)].filter((d) => d !== '').join(' · '), 'u2-domain-card-description'),
     ], 'moltrack-ems-line')};

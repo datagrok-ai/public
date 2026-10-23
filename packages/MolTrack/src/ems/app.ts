@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {domains, DomainApp} from '@datagrok-libraries/ems/src/dg';
 import type {DomainAppOptions} from '@datagrok-libraries/ems/src/dg';
-import {isEmpty, span} from '@datagrok-libraries/u2';
+import {isEmpty, signal, span} from '@datagrok-libraries/u2';
 import type {RowView} from '@datagrok-libraries/u2';
 import type {CompoundBatchRow, CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
@@ -22,39 +22,38 @@ const KEYS: Record<string, string> = {[`${SCHEMA}.compound`]: 'molregno', [`${SC
 // a batch page shows the compound it is a lot of, above its children; the picker stays the way to set it
 class BatchesApp extends DomainApp {
   private readonly _compound = ui.divV([], 'moltrack-ems-parent');
-  private _compoundId: string | null = null;
+  /** The batch's compound, re-read on every edit; the card redraws only when it changes. */
+  private readonly _compoundId = signal<string | null>(null);
 
   constructor(options: DomainAppOptions) {
     super(options);
     this.effect(() => {
       const source = this.entitySource.value;
       const edit = source?.edit.value;
-      if (source === null || source === undefined || edit === undefined)
+      this._compoundId.value = BatchesApp._compoundOf(source?.currentRow.value ?? null);
+      if (source === null || edit === undefined)
         return;
-      source.currentRow.value;
-      const show = () => void this._showCompound(source.currentRow.peek() as RowView<CompoundBatchRow> | null);
-      show();
-      const changes = edit.onChanged.subscribe(show);
-      return () => {
-        changes.unsubscribe();
-        this._compoundId = null;
-        this._compound.remove();
-      };
+      const changes = edit.onChanged.subscribe(() =>
+        this._compoundId.value = BatchesApp._compoundOf(source.currentRow.peek()));
+      return () => changes.unsubscribe();
+    });
+    this.effect(() => {
+      const id = this._compoundId.value;
+      this._compound.remove();
+      if (id !== null)
+        void this._showCompound(id);
     });
   }
 
-  private async _showCompound(row: RowView<CompoundBatchRow> | null): Promise<void> {
-    const id = isEmpty(row?.compound_id) ? null : row!.compound_id;
-    if (id === this._compoundId)
-      return;
-    this._compoundId = id;
-    if (id === null) {
-      this._compound.remove();
-      return;
-    }
+  private static _compoundOf(row: RowView | null): string | null {
+    const id = (row as RowView<CompoundBatchRow> | null)?.compound_id;
+    return isEmpty(id) ? null : id!;
+  }
+
+  private async _showCompound(id: string): Promise<void> {
     const compound = await moltrackEmsDb.compounds.first({filter: DG.cond('id', '=', id)});
     const card = compound === null ? null : await MolTrackEms.compoundCard(compound);
-    if (this._compoundId !== id)
+    if (this._compoundId.peek() !== id)
       return;
     this._compound.replaceChildren(ui.h3('Compound'), card ?? ui.divText('The compound was not found'));
     this.panes.prepend(this._compound);
