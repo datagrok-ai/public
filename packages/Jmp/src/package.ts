@@ -3,7 +3,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {readJmp} from './formats/jmp/jmp-parser';
 import {JmpFormatError, JmpTable} from './formats/jmp/jmp-types';
-import {addSavedAnalyses, jmpTableToDataFrame, savedAnalyses, skippedColumns} from './formats/jmp/jmp-to-dataframe';
+import {addSavedAnalyses, hideJmpHiddenColumns, jmpTableToDataFrame, savedAnalyses, skippedColumns}
+  from './formats/jmp/jmp-to-dataframe';
 import {createJmpErrorView, createJmpPreview} from './formats/jmp/jmp-viewer';
 
 export const _package = new DG.Package();
@@ -51,6 +52,7 @@ export class JmpPackageFunctions {
     if (file.connection == null) {
       warnSkipped(table);
       const tv = DG.TableView.create(jmpTableToDataFrame(table, file.name.replace(/\.jmp$/i, '')), false);
+      hideJmpHiddenColumns(tv);
       addSavedAnalyses(tv, savedAnalyses(table));
       return tv;
     }

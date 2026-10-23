@@ -7,9 +7,9 @@ import {gunzip} from './jmp-decompress';
 import {readTableScripts} from './jmp-scripts';
 import {
   CURRENCY_FORMATS, DATE_FORMATS, DATETIME_FORMATS, DURATION_FORMATS, GZIP_SECTION_START,
-  JMP_EPOCH_OFFSET_S, JmpColumn, JmpColumnInfo, JmpColumnKind, JmpFormatError, JmpHeader, JmpInfo,
-  JmpTable, LATITUDE_FORMATS, LONGITUDE_FORMATS, MAGIC_JMP, OLD_VERSION, ROWSTATE_COLORS,
-  ROWSTATE_MARKERS, SUPPORTED_VERSION,
+  JMP_EPOCH_OFFSET_S, JMP_INT_MISSING, JmpColumn, JmpColumnInfo, JmpColumnKind, JmpData, JmpFormatError, JmpHeader,
+  JmpInfo, JmpTable, LATITUDE_FORMATS, LONGITUDE_FORMATS, MAGIC_JMP, OLD_VERSION, ROWSTATE_COLORS,
+  SUPPORTED_VERSION,
 } from './jmp-types';
 
 const METADATA_ANCHOR = [0x07, 0x00, 0x08, 0x00, 0x00, 0x00];
@@ -17,6 +17,11 @@ const OPTIONAL_BLOCK_TAGS = [0xfc, 0xfd, 0xfe, 0xff];
 const PLAIN_NUMERIC_FORMATS = new Set([0x00, 0x03, 0x42, 0x43, 0x44, 0x59, 0x60, 0x63]);
 const FIXED_DECIMAL_INPUT_FORMATS = new Set([0x5e, 0x63]);
 const MAX_GZIP_RATIO = 1100;
+const MAX_FIXED_DECIMALS = 30;
+const YIELD_ROWS = 100000;
+/** In a currency column's header: a 0x0013 tag, a u32 length of 5, then the ISO code (JMP_PLUGIN.md §4.3). */
+const CURRENCY_TAG = [0x13, 0x00, 0x05, 0x00, 0x00, 0x00];
+const CURRENCY_SEARCH_BYTES = 256;
 
 const utf8 = new TextDecoder('utf-8');
 
@@ -62,8 +67,10 @@ export function readMetadata(r: ByteReader, header: JmpHeader): JmpInfo {
     throw new JmpFormatError(`Could not determine JMP version from "${buildString}"`);
 
   const {nVisible, nHidden} = seekToColumnIndex(r, ncols);
+  const visibleIdx: number[] = [];
+  for (let i = 0; i < nVisible; i++)
+    visibleIdx.push(r.u32());
   const hiddenIdx: number[] = [];
-  r.skip(nVisible * 4);
   for (let i = 0; i < nHidden; i++)
     hiddenIdx.push(r.u32());
   const widths: number[] = [];
@@ -78,7 +85,8 @@ export function readMetadata(r: ByteReader, header: JmpHeader): JmpInfo {
   });
 
   const propertiesEnd = offsets.reduce((lo, o) => Math.min(lo, o), r.length);
-  return {header, jmpVersion: m[1], buildString, charset, savetime, nrows, ncols, columns, hiddenIndex: hiddenIdx,
+  return {header, jmpVersion: m[1], buildString, charset, savetime, nrows, ncols, columns,
+    visibleIndex: visibleIdx, hiddenIndex: hiddenIdx,
     propertiesRange: [propertiesStart, Math.max(propertiesStart, propertiesEnd)]};
 }
 
@@ -152,41 +160,45 @@ export async function readColumn(r: ByteReader, info: JmpInfo, i: number): Promi
   }
   r.seek(mark);
 
-  const done = (kind: JmpColumnKind, values: (number | string | null)[]): JmpColumn =>
-    ({info: col, kind, descriptor: dt, values});
+  const done = (kind: JmpColumnKind, data: JmpData): JmpColumn => ({info: col, kind, descriptor: dt, data});
   const [dt1, dt2, dt3, dt4, dt5, dt6] = dt;
 
   if (dt1 === 0x01 || dt1 === 0x0a) {
-    const values = readNumbers(a, nrows, dt6, col.name);
-    if ((dt4 === dt5 && PLAIN_NUMERIC_FORMATS.has(dt4)) || FIXED_DECIMAL_INPUT_FORMATS.has(dt5))
-      return done(dt6 === 8 ? 'float' : 'int', values);
+    const data = readNumbers(a, nrows, dt6, col.name);
+    if ((dt4 === dt5 && PLAIN_NUMERIC_FORMATS.has(dt4)) || FIXED_DECIMAL_INPUT_FORMATS.has(dt5)) {
+      const c = done(dt6 === 8 ? 'float' : 'int', data);
+      // fixed decimal: dt3 = width, dt4 = decimals (JMPReader.jl column.jl, not confirmed by a fixture)
+      if (dt4 !== dt5 && FIXED_DECIMAL_INPUT_FORMATS.has(dt5) && dt4 <= MAX_FIXED_DECIMALS)
+        c.fixedDecimals = dt4;
+      return c;
+    }
     if (dt4 === dt5 && CURRENCY_FORMATS.has(dt4))
-      return done('currency', values);
+      return {...done('currency', data), currency: readCurrencyCode(r.bytes, mark, colEnd)};
     if (dt4 === dt5 && LONGITUDE_FORMATS.has(dt4))
-      return done('longitude', values);
+      return done('longitude', data);
     if (dt4 === dt5 && LATITUDE_FORMATS.has(dt4))
-      return done('latitude', values);
+      return done('latitude', data);
     if (DATE_FORMATS.has(dt4))
-      return done('date', values);
+      return done('date', data);
     if (DATETIME_FORMATS.has(dt4))
-      return done('datetime', values);
+      return done('datetime', data);
     if (DURATION_FORMATS.has(dt4))
-      return done('duration', values);
+      return done('duration', data);
   }
 
   if (dt1 === 0xff || dt1 === 0xfe || dt1 === 0xfc)
     return done(dt5 === 8 ? 'float' : 'int', readNumbers(a, nrows, dt5, col.name));
 
   if (dt1 === 0x09 && dt2 === 0x03)
-    return {...done('rowstate', []), ...readRowStates(a, nrows, dt5, col.name)};
+    return done('rowstate', readRowStates(a, nrows, dt5, col.name));
 
   if (dt1 === 0x03 && dt2 === 0x03) {
     const v = new DataView(a.buffer, a.byteOffset, a.byteLength);
     const start = tailStart(a, nrows * dt5, col.name);
-    const values: number[] = [];
+    const values = new BigInt64Array(nrows);
     for (let k = 0; k < nrows; k++)
-      values.push(Number(v.getBigInt64(start + k * dt5, true)));
-    return done('bigint', values);
+      values[k] = v.getBigInt64(start + k * dt5, true);
+    return done('bigint', {type: 'bigint', values});
   }
 
   if ((dt1 === 0x02 || dt1 === 0x09) && (dt2 === 0x01 || dt2 === 0x02)) {
@@ -201,7 +213,7 @@ export async function readColumn(r: ByteReader, info: JmpInfo, i: number): Promi
 
   const desc = dt.map((b) => '0x' + b.toString(16).padStart(2, '0')).join(',');
   return {
-    info: col, kind: 'unsupported', descriptor: dt, values: new Array(nrows).fill(null),
+    info: col, kind: 'unsupported', descriptor: dt, data: {type: 'none'},
     decodeError: `Unsupported column layout (${desc})`,
   };
 }
@@ -213,11 +225,14 @@ export async function readJmp(bytes: Uint8Array): Promise<JmpTable> {
   const info = readMetadata(r, header);
   const columns: JmpColumn[] = [];
   for (let i = 0; i < info.ncols; i++) {
+    // let the UI run between columns of a large table, so no stretch blocks it longer than one column
+    if (i > 0 && info.nrows >= YIELD_ROWS)
+      await new Promise((resolve) => setTimeout(resolve, 0));
     try {
       columns.push(await readColumn(r, info, i));
     } catch (e) {
       columns.push({
-        info: info.columns[i], kind: 'unsupported', descriptor: [], values: new Array(info.nrows).fill(null),
+        info: info.columns[i], kind: 'unsupported', descriptor: [], data: {type: 'none'},
         decodeError: e instanceof Error ? e.message : String(e),
       });
     }
@@ -231,6 +246,21 @@ export async function readJmp(bytes: Uint8Array): Promise<JmpTable> {
   return {info, columns, scripts};
 }
 
+/** The ISO currency code in a currency column's header, or undefined if it isn't where it was in the fixtures. */
+function readCurrencyCode(bytes: Uint8Array, from: number, colEnd: number): string | undefined {
+  const end = Math.min(colEnd, from + CURRENCY_SEARCH_BYTES, bytes.length);
+  outer: for (let p = from; p + CURRENCY_TAG.length + 3 <= end; p++) {
+    for (let j = 0; j < CURRENCY_TAG.length; j++) {
+      if (bytes[p + j] !== CURRENCY_TAG[j])
+        continue outer;
+    }
+    const code = String.fromCharCode(...bytes.subarray(p + 6, p + 9));
+    if (/^[A-Z]{3}$/.test(code))
+      return code;
+  }
+  return undefined;
+}
+
 /** Converts seconds since the JMP epoch (1904-01-01) to a Date. */
 export function jmpSecondsToDate(s: number): Date {
   return new Date((s - JMP_EPOCH_OFFSET_S) * 1000);
@@ -242,104 +272,167 @@ function tailStart(a: Uint8Array, n: number, name: string): number {
   return a.length - n;
 }
 
-/** Reads the trailing `nrows` numbers of `width` bytes; JMP's missing-value sentinels become null. */
-function readNumbers(a: Uint8Array, nrows: number, width: number, name: string): (number | null)[] {
+/** Reads the trailing `nrows` numbers of `width` bytes. Eight-byte numbers come back as doubles (NaN is
+ * JMP's missing value); 1-, 2- and 4-byte integers as Int32, with JMP's sentinels made JMP_INT_MISSING. */
+function readNumbers(a: Uint8Array, nrows: number, width: number, name: string): JmpData {
   const start = tailStart(a, nrows * width, name);
   const v = new DataView(a.buffer, a.byteOffset, a.byteLength);
-  const out: (number | null)[] = new Array(nrows);
+  if (width === 8) {
+    const out = new Float64Array(nrows);
+    if ((a.byteOffset + start) % 8 === 0)
+      out.set(new Float64Array(a.buffer, a.byteOffset + start, nrows));
+    else {
+      for (let k = 0; k < nrows; k++)
+        out[k] = v.getFloat64(start + k * 8, true);
+    }
+    return {type: 'float', values: out};
+  }
+  const out = new Int32Array(nrows);
   for (let k = 0; k < nrows; k++) {
     const p = start + k * width;
     let x: number;
     switch (width) {
-    case 1: x = v.getInt8(p); out[k] = x === -127 ? null : x; break;
-    case 2: x = v.getInt16(p, true); out[k] = x === -32767 ? null : x; break;
-    case 4: x = v.getInt32(p, true); out[k] = x === -2147483647 ? null : x; break;
-    case 8: x = v.getFloat64(p, true); out[k] = Number.isNaN(x) ? null : x; break;
+    case 1: x = v.getInt8(p); out[k] = x === -127 ? JMP_INT_MISSING : x; break;
+    case 2: x = v.getInt16(p, true); out[k] = x === -32767 ? JMP_INT_MISSING : x; break;
+    case 4: x = v.getInt32(p, true); out[k] = x === -2147483647 ? JMP_INT_MISSING : x; break;
     default: throw new JmpFormatError(`Column "${name}": unknown numeric storage width ${width}`);
     }
   }
-  return out;
+  return {type: 'int', values: out};
 }
 
-/** Row states, as `"<marker> <#RRGGBB>"` values (the form JMPReader.jl reports) and decoded. Only marker
- * and colour are known; the other bytes are kept as flags. */
-function readRowStates(a: Uint8Array, nrows: number, width: number, name: string):
-  Pick<JmpColumn, 'values' | 'rowStates' | 'rowStateFlags'> {
+/** Row states: marker and colour decoded; the other bytes (0-based 4 and 7) kept as flags. */
+function readRowStates(a: Uint8Array, nrows: number, width: number, name: string): JmpData {
   if (width < 7 || width * nrows > a.length)
     throw new JmpFormatError(`Column "${name}": row states don't fit the column`);
-  const values: string[] = [];
-  const rowStates: {marker: number, color: string}[] = [];
-  const rowStateFlags: number[] = [];
+  const markers = new Uint32Array(nrows);
+  const colors = new Uint32Array(nrows);
+  const flags = new Uint16Array(nrows);
   for (let k = 0; k < nrows; k++) {
     const o = width * k;
-    const markerIdx = (a[o + 6] << 8) | a[o + 5];
-    const marker = markerIdx <= 0x1f ? ROWSTATE_MARKERS[markerIdx] : String.fromCodePoint(markerIdx);
-    const color = a[o + 3] === 0xff ?
-      '#' + [a[o + 2], a[o + 1], a[o]].map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase() :
-      ROWSTATE_COLORS[a[o]] ?? '#000000';
-    values.push(`${marker} ${color}`);
-    rowStates.push({marker: markerIdx, color});
-    rowStateFlags.push(a[o + 4] | (width > 7 ? a[o + 7] << 8 : 0));
+    markers[k] = (a[o + 6] << 8) | a[o + 5];
+    colors[k] = a[o + 3] === 0xff ? (a[o] << 16) | (a[o + 1] << 8) | a[o + 2] :
+      parseInt((ROWSTATE_COLORS[a[o]] ?? '#000000').slice(1), 16);
+    flags[k] = a[o + 4] | (width > 7 ? a[o + 7] << 8 : 0);
   }
-  return {values, rowStates, rowStateFlags};
+  return {type: 'rowstate', markers, colors, flags};
 }
 
-function readFixedWidthStrings(a: Uint8Array, nrows: number, width: number, name: string): string[] {
+/** Collects a text column's distinct values as it is read; each row gets an index into them. In the browser
+ * this and Column.fromIndexes take 0.4 s for 1.9 M unique strings, where Column.fromList takes 7–22 s
+ * (JMP_PLUGIN.md §8). */
+class Categories {
+  readonly values: string[] = [];
+  private readonly index = new Map<string, number>();
+
+  of(s: string): number {
+    let i = this.index.get(s);
+    if (i === undefined) {
+      i = this.values.length;
+      this.values.push(s);
+      this.index.set(s, i);
+    }
+    return i;
+  }
+}
+
+function readFixedWidthStrings(a: Uint8Array, nrows: number, width: number, name: string): JmpData {
   const start = tailStart(a, nrows * width, name);
-  const out: string[] = new Array(nrows);
+  const cats = new Categories();
+  const indexes = new Int32Array(nrows);
   for (let k = 0; k < nrows; k++) {
     const s = start + k * width;
     let e = s;
     while (e < s + width && a[e] !== 0)
       e++;
-    out[k] = utf8.decode(a.subarray(s, e));
+    indexes[k] = cats.of(utf8.decode(a.subarray(s, e)));
   }
-  return out;
+  return {type: 'string', categories: cats.values, indexes};
 }
 
-function sliceStrings(data: Uint8Array, widths: number[], name: string): string[] {
-  const out: string[] = new Array(widths.length);
-  let p = 0;
-  for (let k = 0; k < widths.length; k++) {
-    if (widths[k] < 0 || p + widths[k] > data.length)
+function sliceStrings(data: Uint8Array, widths: Int32Array, name: string): JmpData {
+  let total = 0;
+  for (const w of widths) {
+    if (w < 0)
       throw new JmpFormatError(`Column "${name}": string data runs past the column`);
-    out[k] = utf8.decode(data.subarray(p, p + widths[k]));
-    p += widths[k];
+    total += w;
   }
+  if (total > data.length)
+    throw new JmpFormatError(`Column "${name}": string data runs past the column`);
+  const cats = new Categories();
+  const indexes = new Int32Array(widths.length);
+  let p = 0;
+  // ASCII text: decode once and cut, since byte offsets are character offsets
+  if (isAscii(data, total)) {
+    const all = utf8.decode(data.subarray(0, total));
+    for (let k = 0; k < widths.length; k++) {
+      indexes[k] = cats.of(all.substring(p, p + widths[k]));
+      p += widths[k];
+    }
+  } else {
+    for (let k = 0; k < widths.length; k++) {
+      indexes[k] = cats.of(utf8.decode(data.subarray(p, p + widths[k])));
+      p += widths[k];
+    }
+  }
+  return {type: 'string', categories: cats.values, indexes};
+}
+
+function isAscii(data: Uint8Array, n: number): boolean {
+  for (let i = 0; i < n; i++) {
+    if (data[i] >= 0x80)
+      return false;
+  }
+  return true;
+}
+
+/** Reads `n` widths of `width` bytes each (1, 2 or 4) from `r`. */
+function readWidths(r: ByteReader, n: number, width: number, name: string): Int32Array {
+  const out = new Int32Array(n);
+  for (let k = 0; k < n; k++)
+    out[k] = width === 1 ? r.i8() : width === 2 ? r.i16() : width === 4 ? r.i32() : badWidth(width, name);
   return out;
 }
 
-function readCompressedStrings(a: Uint8Array, nrows: number, name: string): string[] {
+function readCompressedStrings(a: Uint8Array, nrows: number, name: string): JmpData {
   const r = new ByteReader(a);
   if (a.length >= 8 && r.i64() === a.length) {
-    // pooled ("compact") storage: per-row indices into a string pool
+    // pooled ("compact") storage: per-row indices into a string pool, 0 meaning the empty string
     r.skip(9);
     r.i64();
     const idxWidth = r.i8();
-    const idx: number[] = [];
+    const idx = new Int32Array(nrows);
+    let npools = 0;
     for (let k = 0; k < nrows; k++) {
-      idx.push(idxWidth === 1 ? r.u8() : idxWidth === 2 ? r.u16() : idxWidth === 4 ? r.u32() :
-        badWidth(idxWidth, name));
+      idx[k] = idxWidth === 1 ? r.u8() : idxWidth === 2 ? r.u16() : idxWidth === 4 ? r.u32() :
+        badWidth(idxWidth, name);
+      if (idx[k] > npools)
+        npools = idx[k];
     }
-    const npools = idx.reduce((m, x) => Math.max(m, x), 0);
     const lenWidth = r.i8();
-    const pool: string[] = [];
-    for (let k = 0; k < npools; k++) {
+    // the pool becomes the categories; a duplicate or an empty entry is folded into the first
+    const cats = new Categories();
+    const remap = new Int32Array(npools + 1);
+    remap[0] = cats.of('');
+    for (let k = 1; k <= npools; k++) {
       const n = lenWidth === 1 ? r.i8() : lenWidth === 2 ? r.i16() : badWidth(lenWidth, name);
-      pool.push(utf8.decode(r.bytesAt(n)));
+      if (n < 0)
+        throw new JmpFormatError(`Column "${name}": negative string length`);
+      remap[k] = cats.of(utf8.decode(r.bytesAt(n)));
     }
-    return idx.map((j) => j === 0 ? '' : pool[j - 1]);
+    for (let k = 0; k < nrows; k++)
+      idx[k] = remap[idx[k]];
+    return {type: 'string', categories: cats.values, indexes: idx};
   }
-  const widthBytes = a[8];
+  if (a.length < 13 || (a[8] !== 1 && a[8] !== 2))
+    badWidth(a[8], name);
   const r2 = new ByteReader(a);
   r2.seek(13);
-  const widths: number[] = [];
-  for (let k = 0; k < nrows; k++)
-    widths.push(widthBytes === 1 ? r2.i8() : widthBytes === 2 ? r2.i16() : badWidth(widthBytes, name));
+  const widths = readWidths(r2, nrows, a[8], name);
   return sliceStrings(a.subarray(r2.pos), widths, name);
 }
 
-function readUncompressedStrings(r: ByteReader, a: Uint8Array, nrows: number, name: string): string[] {
+function readUncompressedStrings(r: ByteReader, a: Uint8Array, nrows: number, name: string): JmpData {
   // r is positioned just after dt1..dt6
   r.skip(6);
   r.skip(r.i64());
@@ -347,12 +440,12 @@ function readUncompressedStrings(r: ByteReader, a: Uint8Array, nrows: number, na
   r.skip(r.u32() + 8);
   const widthBytes = r.u8();
   r.u32(); // max width
-  const widths: number[] = [];
-  for (let k = 0; k < nrows; k++) {
-    widths.push(widthBytes === 1 ? r.i8() : widthBytes === 2 ? r.i16() : widthBytes === 4 ? r.i32() :
-      badWidth(widthBytes, name));
-  }
-  const total = widths.reduce((s, w) => s + w, 0);
+  const widths = readWidths(r, nrows, widthBytes, name);
+  let total = 0;
+  for (const w of widths)
+    total += w;
+  if (total < 0 || total > a.length)
+    throw new JmpFormatError(`Column "${name}": string data runs past the column`);
   // `a` spans the column block, which ends where the string data ends
   return sliceStrings(a.subarray(a.length - total), widths, name);
 }

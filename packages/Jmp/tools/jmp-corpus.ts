@@ -75,9 +75,11 @@ async function main(): Promise<void> {
         console.log(`SCRIPTS ${file}: ` + analyses.map((a) => `${a.name} [${a.platform ?? '-'}] ` +
           (a.viewers.length > 0 ? a.viewers.map((v) => v.type).join('+') : 'not converted')).join('; '));
       }
-      for (const c of table.columns.filter((col) => col.rowStateFlags?.some((f) => f !== 0))) {
+      for (const c of table.columns) {
+        if (c.data.type !== 'rowstate' || c.data.flags.every((f) => f === 0))
+          continue;
         flaggedRowStates++;
-        for (const f of c.rowStateFlags!)
+        for (const f of c.data.flags)
           flagValues.set(f, (flagValues.get(f) ?? 0) + 1);
         console.log(`ROWSTATE FLAGS ${file}: column "${c.info.name}"`);
       }

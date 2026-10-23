@@ -2,7 +2,7 @@
 // No platform imports, so it also runs outside the browser (the Node pass, tools/jmp-corpus.ts).
 
 import {jmpSecondsToDate} from '../formats/jmp/jmp-parser';
-import {JmpColumnKind, JmpTable} from '../formats/jmp/jmp-types';
+import {JmpColumnKind, JmpTable, jmpValue} from '../formats/jmp/jmp-types';
 
 export interface GoldenColumn {
   name: string;
@@ -50,7 +50,7 @@ export function compareToGolden(table: JmpTable, golden: Golden, maxPerColumn = 
     }
     let bad = 0;
     for (let i = 0; i < g.values.length && bad < maxPerColumn; i++) {
-      const actual = render(col.kind, col.values[i]);
+      const actual = render(col.kind, jmpValue(col, i));
       if (actual !== g.values[i]) {
         out.push(`${g.name}[${i}]: ${JSON.stringify(actual)}, expected ${JSON.stringify(g.values[i])}`);
         bad++;

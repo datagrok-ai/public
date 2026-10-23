@@ -1,11 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {badge, button, Control, divH, divV, icon, Section, span} from '@datagrok-libraries/u2';
+import {badge, button, Control, div, divH, divV, icon, link, Section, show, signal, span} from '@datagrok-libraries/u2';
 import {appView, viewers} from '@datagrok-libraries/u2/src/dg/index.js';
 
 import {JmpTable} from './jmp-types';
-import {addSavedAnalyses, dataColumns, jmpTableToDataFrame, savedAnalyses, skippedColumns} from './jmp-to-dataframe';
+import {addSavedAnalyses, dataColumns, hideJmpHiddenColumns, jmpTableToDataFrame, savedAnalyses, skippedColumns}
+  from './jmp-to-dataframe';
 import {JmpScriptConversion} from './jsl-to-viewers';
 
 /** File-browser preview of a JMP table (JMP_PLUGIN.md §6.1): what the file is, the columns that
@@ -58,7 +59,12 @@ export function createJmpPreview(table: JmpTable, fileName: string): DG.ViewBase
   });
 
   const converted = analyses.filter((a) => a.viewers.length > 0).length;
-  const open = Control.build(() => button('Open', () => addSavedAnalyses(grok.shell.addTableView(df), analyses),
+  const openTable = (): void => {
+    const tv = grok.shell.addTableView(df);
+    hideJmpHiddenColumns(tv);
+    addSavedAnalyses(tv, analyses);
+  };
+  const open = Control.build(() => button('Open', openTable,
     {primary: true, tooltip: converted > 0 ?
       `Open the table in the workspace, with ${converted} saved ${converted === 1 ? 'analysis' : 'analyses'}` :
       'Open the table in the workspace'}));
@@ -67,8 +73,8 @@ export function createJmpPreview(table: JmpTable, fileName: string): DG.ViewBase
   return appView({name: fileName, content, ribbon: [[open]]});
 }
 
-/** Saved analyses: each one's name, and what it opens as or why it doesn't. Expanded, since unlike the
- * skipped columns this is what the user came to see. */
+/** Saved analyses: each one's name, what it opens as or why it doesn't, and its script on demand.
+ * Expanded, since unlike the skipped columns this is what the user came to see. */
 function analysesSection(analyses: JmpScriptConversion[]): Section {
   const converted = analyses.filter((a) => a.viewers.length > 0).length;
   const section = new Section({
@@ -80,11 +86,24 @@ function analysesSection(analyses: JmpScriptConversion[]): Section {
   section.name = 'saved analyses';
   section.add(divV(analyses.map((a) => {
     const status = a.viewers.length > 0 ? a.viewers.map((v) => v.type).join(', ') : `Not converted: ${a.reason}`;
+    const scriptShown = signal(false);
+    const toggle = link('Script', () => scriptShown.value = !scriptShown.value);
+    toggle.dataset.u2Name = 'script toggle';
     const parts = [span(a.name, 'jmp-analysis-name'), span(status, 'jmp-analysis-status')];
     if (a.notes.length > 0)
       parts.push(span(a.notes.join('; '), 'jmp-analysis-notes'));
-    const row = divH(parts);
-    row.style.gap = '12px';
+    parts.push(toggle);
+    const line = divH(parts);
+    line.style.gap = '12px';
+    const scriptHost = div();
+    show(scriptHost, scriptShown, () => {
+      const text = div([a.text], 'jmp-analysis-script');
+      text.dataset.u2Name = 'script';
+      Object.assign(text.style, {whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '11px',
+        maxHeight: '160px', overflow: 'auto', padding: '4px 8px', userSelect: 'text'});
+      return text;
+    });
+    const row = divV([line, scriptHost]);
     row.dataset.u2Item = a.name;
     return row;
   })));

@@ -75,6 +75,7 @@ packages/Jmp/
 ├── tools/
 │   ├── jmp2json.jl         # golden-output generator (Julia + JMPReader.jl), dev-only
 │   ├── jmp-corpus.ts       # `npm run corpus -- <dir>`: read a folder of .jmp files, report (§9.4)
+│   ├── jmp-large.ts        # `npm run large -- --mb 100`: write a large synthetic file and time reading it (§8)
 │   └── make-script-fixtures.ts # writes the synthetic saved-analysis fixtures (§9.2)
 ├── bdd/                    # Gherkin features → Playwright specs (libraries/bdd), §9.5
 │   ├── features/           # open, preview, problem-files, analyses
@@ -95,6 +96,7 @@ packages/Jmp/
     │   └── jmp-viewer.ts       # u2 views: the Browse preview and the can't-open state
     └── tests/
         ├── golden.ts               # compares a parsed table with JMPReader.jl's output (no platform imports)
+        ├── large-jmp.ts            # makes a large .jmp from compressed.jmp for the §8 measurements
         ├── jmp-reader-tests.ts     # header, reference, tables (runtests.jl ported), robustness; Node pass
         ├── jmp-script-tests.ts     # JSL reader, saved scripts, analyses → viewers; Node pass
         └── jmp-dataframe-tests.ts  # DataFrame conversion, row states, analyses on a view, the preview; browser pass
@@ -192,6 +194,10 @@ Dates, date-times and durations are stored as `Float64` seconds from the 1904-01
 
 A row-state **column** is data the user saved, one state per row. The table's own row states (which rows are excluded or hidden now) are something else, and where the file keeps them isn't known: no fixture has any.
 
+**Fixed decimal**: JMPReader.jl's source notes that `dt5` of `0x5E` or `0x63` means fixed decimal, with `dt3` the width and `dt4` the number of decimals. No fixture has one (every `0x63` column has `dt4 == dt5`, JMP's "Best"). The reader takes `dt4` as the decimals when `dt5` is one of those, `dt4 != dt5` and `dt4 ≤ 30`, and sets the column's format to that many decimals.
+
+**Currency code**: a currency column's descriptor doesn't vary with the currency. The code is in the column header, as `13 00`, a `u32` length of 5, the three-letter ISO code, then two bytes that are `02 00` in every fixture (perhaps the decimals). The reader looks for that within 256 bytes after the descriptor. Confirmed on all nine columns of `currencies.jmp`.
+
 **Unknown combinations** of `dt1..dt6`: JMPReader.jl logs an error and returns a NaN column. We do the same (§7).
 
 ### 4.4 What is *not* decoded yet (by anyone, publicly)
@@ -201,7 +207,8 @@ A row-state **column** is data the user saved, one state per row. The table's ow
 - Table variables and table notes
 - Saved table scripts: found for the one layout seen so far (§4.5); a file with several, or a long one, may store them differently
 - Row-state flags (selected / excluded / hidden / labelled), and the table's own row states (§4.3)
-- Column groups, and the visible/hidden column split (the index exists; its meaning isn't confirmed)
+- Column groups
+- The visible/hidden column split is read but only provisionally understood: two lists of column positions, visible then hidden. In `byteintegers.jmp`, the one fixture with a hidden entry, the lists are `[1, 2, 3]` and `[0]`, so the reader takes column 0 ("Column 1") as hidden. The same file has a column (the last) with a display width of 0, which a hidden column might also explain. Needs a file where we know which column is hidden.
 
 These are reverse-engineering targets for Phases 2–3. Each new decoding gets a fixture file and a note in §4.
 
@@ -226,8 +233,8 @@ To confirm with real files: several scripts in one table, names with spaces or p
 | Numeric `Float64` | `double` | `NaN` sentinel → null |
 | Numeric `Int8/16/32` (byte integers) | `int` | `typemin+1` sentinel → null. Datagrok `int` is 32-bit with null at `-2^31`, so there is no collision. |
 | 8-byte integer storage | `bigint` if any value exceeds the 32-bit range, otherwise `int` | |
-| Fixed decimal | `double` | Not yet: the `format` tag from `dt3`/`dt4` (width/decimals) |
-| Currency | `double` | `format` = `#,##0.00`. The currency code isn't decoded yet. |
+| Fixed decimal | `double` | `format` = `0.00` with the column's decimals (§4.3; from JMPReader.jl's note, no fixture yet) |
+| Currency | `double` | `format` = `#,##0.00`; `units` and the tag `jmp.currency` = the ISO code (`EUR`) |
 | Longitude / Latitude | `double` | semType `DG.SEMTYPE.LONGITUDE` / `LATITUDE`, which the GIS package reads |
 | Date | `datetime` | Convert the 1904 epoch to ms since 1970: `(s − 2082844800) × 1000`. Set a date-only `format` tag. |
 | Date-time | `datetime` | Same conversion |
@@ -246,7 +253,7 @@ To confirm with real files: several scripts in one table, names with spaces or p
 | `jmp.charset` | `charset` |
 | `jmp.scripts` | the saved table scripts, as JSON `[{name, text}]`, present only when there are any (§4.5) |
 
-**Column-level tags**: `jmp.format` (raw `dt1..dt6` as hex, for debugging and future decoding) and `jmp.displayWidth`. `jmp.hidden` waits until the hidden-column index is understood (§4.4).
+**Column-level tags**: `jmp.format` (raw `dt1..dt6` as hex, for debugging and future decoding), `jmp.displayWidth`, and `jmp.hidden` = `true` on a column JMP hides (provisional, §4.4). A hidden column stays in the table, as in JMP, and is hidden in the grid of a table view the package opens.
 
 Column order follows the file. Duplicate names can't happen in JMP, but names are passed through `DG.DataFrame`'s normal de-duplication anyway.
 
@@ -262,7 +269,7 @@ Clicking or double-clicking a `.jmp` file in the Browse tree shows the preview:
 
 - a summary line: a `JMP <version>` badge, `<rows> rows × <columns> columns` (the columns that come across), and when the file was saved
 - a folded **Columns not imported** section, present only when there are any, with a hint (`1 of 12`) and one line per column: its name and why
-- an open **Saved analyses** section, present only when the table has saved analyses, with a hint (`1 of 2 open as viewers`) and one line per analysis: its name, the viewers it opens as or why it doesn't, and what doesn't come across (a `By()` split, Graph Builder panels, a smoother)
+- an open **Saved analyses** section, present only when the table has saved analyses, with a hint (`1 of 2 open as viewers`) and one line per analysis: its name, the viewers it opens as or why it doesn't, what doesn't come across (a `By()` split, pages, a smoother), and a **Script** link that shows the script's text
 - the table in a grid
 - **Open** in the ribbon, which opens the table in the workspace with the converted analyses as viewers
 
@@ -303,11 +310,23 @@ Every read goes through `ByteReader`, which checks the real buffer length. A row
 
 ## 8. Performance
 
-- **Zero-copy numerics.** When a numeric block is 8-byte aligned, wrap it with `new Float64Array(buffer, offset, nrows)` and copy it once into the Datagrok column. Otherwise use `DataView` reads.
+- **Typed arrays, end to end.** The reader keeps each column the way a Datagrok column stores it (`JmpData` in `jmp-types.ts`): doubles, dates and durations in a `Float64Array` (NaN missing), integers in an `Int32Array` (missing = −2³¹, which is `DG.INT_NULL`), text as distinct values plus an `Int32Array` of per-row indexes. The conversion hands these over with `fromFloat64Array`, `fromInt32Array`, `Column.fromIndexes` and, for dates, `setRawData` on a date-time column (microseconds since 1970). Nothing is boxed per value. An 8-byte numeric block that is 8-byte aligned is copied as one `Float64Array`. Tests and tools read single values through `jmpValue`.
+- **Text.** De-duplicating text in a JS `Map` while reading and handing it over with `fromIndexes` is far faster than one string per row: in the browser, for 1.9 M unique strings, 0.4–0.6 s against 7–22 s for `Column.fromList`, and 0.05 s against 0.2 s for 6,000 distinct values. `fromIndexes` also doesn't guess types, so JMP text that reads as numbers stays text (the earlier `fromStrings` would have made it numeric).
 - **Lazy, parallel decompression.** Gzip each column independently with `DecompressionStream`, using `Promise.all` across columns. This is the counterpart of JMPReader.jl's threaded column loop.
 - **Large files.** `fileHandler` receives the whole file as bytes, so practical limits are browser memory. Target: a 100 MB `.jmp` file (several million rows) opens in under 10 s on a standard laptop. Above roughly 1 GB, show an error suggesting a server-side path (a Phase 4 concern).
 - **Web worker.** Run in a worker only if the main-thread parse of the 100 MB target blocks the UI for more than 2 s. Measure before adding it.
-- **Measured (Node 22, M-series laptop):** 5–8 M cells/s on the reference files (10,000 × 7 compressed: 9 ms; 65,537 × 1 pooled strings: 11 ms). A 100 MB file of doubles (~12.5 M cells) would parse in about 2 s by that rate. No 100 MB file has been tried yet.
+- **Yielding.** For tables of 100,000 rows or more, the reader yields to the event loop between columns, so the UI waits at most one column at a time. Text that is all ASCII is decoded once per column and cut, not decoded string by string.
+- **Measured on the reference files (Node 22, M-series laptop):** 5–8 M cells/s (10,000 × 7 compressed: 9 ms; 65,537 × 1 pooled strings: 11 ms).
+- **Measured at 100 MB (2026-10-22).** The file is synthetic: `compressed.jmp` refilled with 1,886,792 rows of varied values in its seven columns (number and date-time about 95% distinct, short text with 6,000 values, one-letter text, duration, date, and text of 20–130 characters, all unique), 5% missing (`src/tests/large-jmp.ts`, `npm run large`). It's valid for this reader; JMP never opened it.
+
+| Where | Read | DataFrame | Table view | Total | Longest main-thread block |
+|---|---|---|---|---|---|
+| Node 22 (`npm run large`), 3 runs | 1.7–2.5 s; the table holds 397 MB | | | | |
+| Chrome, local stand (`grok test --benchmark`), 4 runs | 3.6–4.4 s | 0.08–0.12 s | 0.4–0.8 s | **4.1–5.1 s** | 0.8–1.2 s while reading; 1.9–2.6 s overall, in the table view's setup |
+
+The target is met. Reading is mostly gzip, which runs off the main thread. Most of the 397 MB is the two million unique strings, which the Datagrok column holds anyway. The stand ran in Docker on the same machine (load average around 10), so the browser numbers vary from run to run.
+
+Before the typed arrays (values in JS arrays, one boxed number or string per row), the same file in Node read in 2.6–3.3 s and held 459 MB, and the text column alone took 7–22 s to become a Datagrok column. Earlier measurements in this section came from a generator whose random numbers repeated after a short cycle (528 distinct long strings), so they understated the cost and are replaced by these.
 
 ---
 
@@ -335,10 +354,13 @@ The model is the way Crux validates against RDKit: **JMPReader.jl is the referen
 2. The golden files are **committed**, so CI doesn't need Julia. Regenerating them is a manual dev step after bumping the pinned JMPReader.jl version (setup in the script's header).
 3. `src/tests/golden.ts` compares a parsed table with its golden file: names and order, row count, type compatibility per §5, exact equality for integers, strings and floats (the same IEEE bits), dates and date-times as written, null positions. It has no platform imports, so the package tests and the corpus script share it.
 4. `jmp-reader-tests.ts` holds four categories, all marked `{node: true}` so `grok test` runs them in its headless Node pass: **header** (every fixture, plus non-JMP bytes, the old format, a truncated header), **reference** (every fixture against its golden file), **tables** (`runtests.jl` ported as named assertions) and **robustness** (the crafted files, plus a seeded fuzz of 420 mutations).
-5. `jmp-script-tests.ts`, also Node: **JSL** (calls, column references in their three forms, names with spaces, statements and sends, raw strings, syntax errors, a nesting limit, a fuzz of 2,000 truncated or mutated scripts), **saved scripts** (the `Source` script JMP wrote, files without scripts, the synthetic Graph Builder, the `New Script` form) and **analyses** (each platform in §11 Phase 3 in the form JMP saves it, with the Big Class columns; what is noted; what isn't converted and why).
-6. `jmp-dataframe-tests.ts` runs in the browser: column types and nulls, integer sentinels, tags, geographic semTypes, row states as marker and colour columns with their codings, a saved analysis added to a table view as a bar chart, the handler called as `Jmp:importJmp`, and the preview built through `Jmp:previewJmp` (disposed with no live u2 scopes left; listing a saved analysis that isn't converted). It reaches the preview through the platform, so the test bundle carries no u2 (the Node runtime has none).
+5. `jmp-reader-tests.ts` also checks the format details: fixed decimals (on `example1` with one descriptor changed, following JMPReader.jl's note), currency codes, and the hidden-column index.
+6. `jmp-script-tests.ts`, also Node: **JSL** (calls, column references in their three forms, names with spaces, statements and sends, raw strings, syntax errors, a nesting limit, a fuzz of 2,000 truncated or mutated scripts), **saved scripts** (the `Source` script JMP wrote, files without scripts, the synthetic Graph Builder, the `New Script` form) and **analyses** (each platform in §11 Phase 3 in the form JMP saves it, with the Big Class columns; what is noted; what isn't converted and why).
+7. `jmp-dataframe-tests.ts` runs in the browser: column types and nulls, integer sentinels, tags, geographic semTypes, row states as marker and colour columns with their codings, a saved analysis added to a table view as a bar chart, a Graph Builder trellis with its inner scatter plot, currency units and a hidden column hidden in the grid, the handler called as `Jmp:importJmp`, and the preview built through `Jmp:previewJmp` (disposed with no live u2 scopes left; listing a saved analysis that isn't converted). It reaches the preview through the platform, so the test bundle carries no u2 (the Node runtime has none).
 
-Result on the local stand (2026-10-22): Node pass 82 passed; browser pass 10 passed.
+8. **JMP: performance** (browser) times the 100 MB file of §8. It runs only with `grok test --benchmark`.
+
+Result on the local stand (2026-10-22): Node pass 86 passed; browser pass 12 passed, the benchmark skipped (and passed when run with `--benchmark`).
 
 ### 9.4 Corpus run (local, not CI)
 
@@ -354,7 +376,7 @@ What a user does and sees is in `bdd/features/`, compiled by `libraries/bdd` int
 | `open.feature` | a file from disk opens as a 4-row table when dropped, through the Open local file icon, and through File > Open > File... |
 | `preview.feature` | the Browse preview shows version and size, Open opens the table; the "Columns not imported" section lists the unreadable column, sits above the grid folded and open |
 | `problem-files.feature` | a dropped file with an unreadable column opens without it and warns; a file that isn't JMP shows why and opens no table |
-| `analyses.feature` | a dropped file with a saved Graph Builder opens with a bar chart split by its column and titled after the script; one with a Fit Model opens and names it in a warning; the preview lists both, with what each opens as or why not, and Open adds the viewer; a row-state file opens with marker and colour columns |
+| `analyses.feature` | a dropped file with a saved Graph Builder opens with a bar chart split by its column and titled after the script; one with a Fit Model opens and names it in a warning; the preview lists both, with what each opens as or why not, shows the script behind the Script link, and Open adds the viewer; a row-state file opens with marker and colour columns |
 
 The preview uses the package's own published files (`App Data/Jmp/...`), so nothing is written to the server. `bdd.config.json` sets the layout and console-error audits to fail and the leak audit to report. Run from the package folder:
 
@@ -387,9 +409,9 @@ Result on the local stand (2026-10-22): 12 passed, 0 audit findings, run with `-
 - [x] `fileHandler` + `fileViewer`, u2 preview and error views (§6)
 - [x] Vendored fixtures, golden JSON, unit + golden tests, fuzz test, BDD features (§9)
 - [ ] Corpus run against JMP 17/18 Samples/Data (local; needs a JMP install)
-- [ ] A 100 MB file against the §8 target (needs a large real file)
-- [ ] Help page: `help/access/files/supported-formats` entry
-- [ ] Format details not yet carried over: fixed-decimal `format` tags, the currency code, `jmp.hidden`
+- [x] A 100 MB file against the §8 target: 3.0–6.1 s in the browser, on a synthetic file (a real one would still be worth timing)
+- [x] Help page: `.jmp` row in `help/access/files/supported-formats.md` (help submodule; not committed yet)
+- [x] Format details: the currency code (confirmed), fixed-decimal formats and `jmp.hidden` (both provisional, §4.3–4.4)
 - [x] Row-state columns as marker and colour columns (§5); flags still to decode
 
 **Exit criteria:** all golden tests pass (done), the corpus run passes at ≥ 99%, and the 100 MB file meets the target in §8.
@@ -418,13 +440,15 @@ JMP tables carry **table scripts** (JSL) that re-launch analyses. We read a narr
 | Oneway | Box plot by group | means, comparisons, tests |
 | Contingency | Bar chart, X split and Y stacked, counts | mosaic, tests |
 | Fit Y by X | By column types, as JMP does: bivariate, oneway or contingency, per Y/X pair | logistic (categorical Y by continuous X): not converted |
-| Graph Builder: Points, Line of Fit, Smoother, Line, Bar, Box Plot, Histogram, Pie | Scatter (colour by Color/Overlay, size by Size, Line of Fit as regression line), line chart, bar chart (Summary Statistic as the aggregation), box plot, histogram, pie chart | Group X/Y, Wrap and Page panels; a second X or Y; further panels and elements; the smoother |
+| Graph Builder: Points, Line of Fit, Smoother, Line, Bar, Box Plot, Histogram, Pie | Scatter (colour by Color/Overlay, size by Size, Line of Fit as regression line), line chart, bar chart (Summary Statistic as the aggregation), box plot, histogram, pie chart. With Group X, Group Y or Wrap: a trellis plot of that viewer (Group X and Wrap across, Group Y down; Wrap tiled) | Page; a second X or Y; further panels and elements; the smoother |
 | Tabulate | Pivot table: row-table grouping → rows, column-table grouping → pivot, analysis columns × statistics → aggregates | statistics without a Datagrok aggregate (shown as mean) |
 | Control Chart Builder, Fit Model, DOE platforms, other Graph Builder elements | Not converted: listed with the reason | |
 
 Every launch also notes a `By()`, `Where()`, `Weight` or `Freq` it doesn't apply. Viewers are titled after the script. A column a script names that isn't in the imported table makes that launch not convert, with the column named. The `Source` script (the import that made the table) isn't an analysis and isn't listed.
 
-**Next:** confirm §4.5 on JMP's Samples/Data (Big Class and others carry saved analyses); Graph Builder panels as a trellis plot; a control chart once a Datagrok control-chart viewer exists; show a script's text in the preview.
+The preview shows each script's text behind a **Script** link.
+
+**Next:** confirm §4.5 on JMP's Samples/Data (Big Class and others carry saved analyses); a control chart once a Datagrok control-chart viewer exists.
 
 ### Phase 4 — Portal ingestion
 

@@ -38,6 +38,7 @@ const BAR = 'Bar chart';
 const LINE = 'Line chart';
 const PIE = 'Pie chart';
 const PIVOT = 'Pivot table';
+const TRELLIS = 'Trellis plot';
 
 class Unconvertible extends Error {}
 
@@ -256,21 +257,32 @@ function fitYByX(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
 }
 
 /** Graph Builder: variables by role, and the elements drawn with them. The first element decides the
- * viewer; a Line of Fit over points becomes the scatter plot's regression line. */
+ * viewer; a Line of Fit over points becomes the scatter plot's regression line. Panels (Group X, Group Y,
+ * Wrap) make it a trellis plot of that viewer. */
 function graphBuilder(call: Call, cols: Columns, notes: string[]): JmpViewerSpec[] {
   const vars = findArg(call, 'Variables');
   if (!vars)
     throw new Unconvertible('Graph Builder names no variables');
   const role = (r: string): JmpColumnRef[] =>
     vars.args.filter((a) => isCall(a, r)).flatMap((a) => columnNames(a as Call)).map((n) => cols.get(n));
+  const inner = graphBuilderViewer(call, role, notes);
+  const groupX = [...role('Group X'), ...role('Wrap')].map((c) => c.name);
+  const groupY = role('Group Y').map((c) => c.name);
+  if (role('Page').length > 0)
+    notes.push(`Pages by ${role('Page').map((c) => c.name).join(', ')} not reproduced`);
+  if (groupX.length === 0 && groupY.length === 0)
+    return [inner];
+  return [{type: TRELLIS, options: {
+    viewerType: inner.type, xColumnNames: groupX, yColumnNames: groupY, innerViewerLook: inner.options,
+    ...(role('Wrap').length > 0 ? {useTiledView: true} : {}),
+  }}];
+}
+
+function graphBuilderViewer(call: Call, role: (r: string) => JmpColumnRef[], notes: string[]): JmpViewerSpec {
   const xs = role('X');
   const ys = role('Y');
   const color = role('Color')[0] ?? role('Overlay')[0];
   const size = role('Size')[0];
-  for (const r of ['Group X', 'Group Y', 'Wrap', 'Page']) {
-    if (role(r).length > 0)
-      notes.push(`Panels by ${role(r).map((c) => c.name).join(', ')} (${r}) not reproduced`);
-  }
   if (xs.length > 1 || ys.length > 1)
     notes.push('Only the first X and Y variables are shown');
 
@@ -294,19 +306,19 @@ function graphBuilder(call: Call, cols: Columns, notes: string[]): JmpViewerSpec
       throw new Unconvertible('A Graph Builder scatter needs X and Y variables');
     if (kinds.includes('smoother'))
       notes.push('Smoother not shown');
-    return [{type: SCATTER, options: {
+    return {type: SCATTER, options: {
       xColumnName: x.name, yColumnName: y.name,
       ...(color ? {colorColumnName: color.name} : {}), ...(size ? {sizeColumnName: size.name} : {}),
       ...(kinds.includes('lineoffit') ? {showRegressionLine: true} : {}),
-    }}];
+    }};
   }
   case 'line': {
     if (!x || !y)
       throw new Unconvertible('A Graph Builder line needs X and Y variables');
-    return [{type: LINE, options: {
+    return {type: LINE, options: {
       xColumnName: x.name, yColumnNames: [y.name],
       ...(color && !color.numeric ? {splitColumnName: color.name} : {}),
-    }}];
+    }};
   }
   case 'bar': {
     const category = x ?? y;
@@ -314,32 +326,32 @@ function graphBuilder(call: Call, cols: Columns, notes: string[]): JmpViewerSpec
       throw new Unconvertible('A Graph Builder bar chart needs a variable');
     const value = x && y ? y : undefined;
     const stat = statistic(stringArg(findAll(elements[0], 'Summary Statistic')[0]), notes);
-    return [{type: BAR, options: {
+    return {type: BAR, options: {
       splitColumnName: category.name,
       ...(value ? {valueColumnName: value.name, valueAggrType: stat ?? 'avg'} : {valueAggrType: 'count'}),
       ...(color && !color.numeric && color !== category ? {stackColumnName: color.name} : {}),
-    }}];
+    }};
   }
   case 'boxplot': {
     const value = y?.numeric ? y : x?.numeric ? x : undefined;
     if (!value)
       throw new Unconvertible('A Graph Builder box plot needs a continuous variable');
     const category = value === y ? x : y;
-    return [{type: BOX, options: {
+    return {type: BOX, options: {
       valueColumnName: value.name, ...(category ? {categoryColumnNames: [category.name]} : {}),
-    }}];
+    }};
   }
   case 'histogram': {
     const value = x?.numeric ? x : y?.numeric ? y : undefined;
     if (!value)
       throw new Unconvertible('A Graph Builder histogram needs a continuous variable');
-    return [{type: HISTOGRAM, options: {valueColumnName: value.name, ...(color ? {colorColumnName: color.name} : {})}}];
+    return {type: HISTOGRAM, options: {valueColumnName: value.name, ...(color ? {colorColumnName: color.name} : {})}};
   }
   case 'pie': {
     const category = x ?? y;
     if (!category)
       throw new Unconvertible('A Graph Builder pie chart needs a variable');
-    return [{type: PIE, options: {categoryColumnName: category.name}}];
+    return {type: PIE, options: {categoryColumnName: category.name}};
   }
   default:
     throw new Unconvertible(`Graph Builder's ${elements[0].name} element isn't converted yet`);

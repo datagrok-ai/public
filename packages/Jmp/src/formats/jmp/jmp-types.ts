@@ -74,7 +74,8 @@ export interface JmpInfo {
   nrows: number;
   ncols: number;
   columns: JmpColumnInfo[];
-  /** Raw entries of the hidden-column index; their meaning isn't confirmed yet (JMP_PLUGIN.md §4.4). */
+  /** Raw entries of the visible- and hidden-column indexes; their meaning isn't confirmed yet (JMP_PLUGIN.md §4.4). */
+  visibleIndex: number[];
   hiddenIndex: number[];
   /** Byte range between the build string and the first column, where table properties such as saved
    * scripts are kept (JMP_PLUGIN.md §4.5). */
@@ -93,24 +94,73 @@ export type JmpColumnKind =
   'float' | 'int' | 'bigint' | 'string' | 'date' | 'datetime' | 'duration' |
   'currency' | 'latitude' | 'longitude' | 'rowstate' | 'unsupported';
 
+/** Missing value of an `int` column: -2^31, which JMP doesn't use (its sentinel is -2^31 + 1) and which
+ * is also Datagrok's INT_NULL, so the array can become a column's storage as it is. */
+export const JMP_INT_MISSING = -2147483648;
+
+/**
+ * A column's values, in typed arrays a Datagrok column can take as its storage (JMP_PLUGIN.md §8).
+ * - `float`: every numeric kind but `int` and `bigint`; NaN is missing. Dates and date-times are seconds
+ *   since the JMP epoch (1904), durations are seconds.
+ * - `int`: 1-, 2- and 4-byte integers; {@link JMP_INT_MISSING} is missing.
+ * - `bigint`: 8-byte integers.
+ * - `string`: text, as its distinct values and a per-row index into them (Datagrok's own string storage,
+ *   and much faster to hand over than one string per row); the empty string is missing.
+ * - `rowstate`: per row, the marker index, the colour as 0xRRGGBB, and the bytes not decoded yet.
+ * - `none`: a column that couldn't be decoded.
+ */
+export type JmpData =
+  | {type: 'float', values: Float64Array}
+  | {type: 'int', values: Int32Array}
+  | {type: 'bigint', values: BigInt64Array}
+  | {type: 'string', categories: string[], indexes: Int32Array}
+  | {type: 'rowstate', markers: Uint32Array, colors: Uint32Array, flags: Uint16Array}
+  | {type: 'none'};
+
 export interface JmpColumn {
   info: JmpColumnInfo;
   kind: JmpColumnKind;
   /** Raw descriptor bytes dt1..dt6. */
   descriptor: number[];
-  /**
-   * Values, one per row; null = missing. Numbers for numeric kinds (dates/durations in
-   * seconds since the JMP epoch), strings for 'string'.
-   */
-  values: (number | string | null)[];
-  /** Set when the column could not be decoded; values are then all null. */
+  data: JmpData;
+  /** Set when the column could not be decoded; `data` is then `none`. */
   decodeError?: string;
-  /** Row-state columns only: per row, the record's bytes not decoded yet (0-based 4 and 7), as
-   * byte4 | byte7 << 8. They are zero in every file read so far; JMP's excluded, hidden, labelled and
-   * selected flags may be there (JMP_PLUGIN.md §4.3). */
-  rowStateFlags?: number[];
-  /** Row-state columns only: per row, the marker index and the colour as #RRGGBB. */
-  rowStates?: {marker: number, color: string}[];
+  /** Fixed-decimal numeric columns only: the number of decimals JMP shows. */
+  fixedDecimals?: number;
+  /** Currency columns only: the ISO 4217 code, e.g. "EUR". */
+  currency?: string;
+}
+
+/** The glyph JMP draws for a row-state marker index. */
+export function rowStateGlyph(marker: number): string {
+  return marker <= 0x1f ? ROWSTATE_MARKERS[marker] : String.fromCodePoint(marker);
+}
+
+/** 0xRRGGBB as "#RRGGBB". */
+export function hexColor(rgb: number): string {
+  return '#' + rgb.toString(16).padStart(6, '0').toUpperCase();
+}
+
+/**
+ * The value in row `i`, one at a time: null for missing, a number for numeric kinds (in the units of
+ * {@link JmpData}), a string for text, and "<glyph> #RRGGBB" for a row state (the form JMPReader.jl
+ * reports). For tests and tools; the DataFrame conversion reads the arrays directly.
+ */
+export function jmpValue(c: JmpColumn, i: number): number | string | null {
+  const d = c.data;
+  switch (d.type) {
+  case 'float': return Number.isNaN(d.values[i]) ? null : d.values[i];
+  case 'int': return d.values[i] === JMP_INT_MISSING ? null : d.values[i];
+  case 'bigint': return Number(d.values[i]);
+  case 'string': return d.categories[d.indexes[i]];
+  case 'rowstate': return `${rowStateGlyph(d.markers[i])} ${hexColor(d.colors[i])}`;
+  case 'none': return null;
+  }
+}
+
+/** All of a column's values, as {@link jmpValue} gives them. */
+export function jmpValues(c: JmpColumn, nrows: number): (number | string | null)[] {
+  return Array.from({length: nrows}, (_, i) => jmpValue(c, i));
 }
 
 export interface JmpTable {

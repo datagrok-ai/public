@@ -3,8 +3,9 @@ Feature: Saved JMP analyses open as Datagrok viewers, and row states come across
   A JMP table keeps its analyses as saved scripts: Graph Builder, Distribution, Fit Y by X and the
   like. When the table opens, each analysis the package can convert opens as a viewer of the table,
   titled after the script; the rest are named in a warning balloon, and the Browse preview lists
-  every saved analysis with what it opens as, or why it doesn't. A row-state column comes across as
-  two columns, "<name> marker" and "<name> color", drawn with the JMP markers and colours.
+  every saved analysis with what it opens as, or why it doesn't, and its script behind a Script
+  link. A row-state column comes across as two columns, "<name> marker" and "<name> color", drawn
+  with the JMP markers and colours.
 
   No file saved by JMP itself with an analysis is in the project yet, so the analysis fixtures are
   synthetic: fixtures/saved-bar-chart.jmp and fixtures/saved-fit-model.jmp are JMPReader.jl's
@@ -66,6 +67,9 @@ Feature: Saved JMP analyses open as Datagrok viewers, and row states come across
     Then the "saved-fit-model.jmp" view should be current
     And "Saved analyses" section should contain text "0 of 1 open as viewers"
     And "Saved analyses" section should contain text "Not converted: JMP's Fit Model isn't converted"
+    And "Saved analyses" section should not contain text "Fit Model(Y(:A)"
+    When user clicks on Script link
+    Then "Saved analyses" section should contain text "Fit Model(Y(:A), Effects(:A)"
     And no errors should have been logged
 
   Scenario: Row states come across as marker and color columns

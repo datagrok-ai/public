@@ -31,12 +31,12 @@ A file that isn't a readable JMP table says why instead of opening.
 | Date, date-time                       | `datetime`                       |
 | Duration                              | `double` (seconds, units `s`)    |
 | Latitude, longitude                   | `double` with the GIS semantic types |
-| Currency                              | `double`                         |
+| Currency                              | `double`, with the currency code as its units |
 | Row state column                      | two columns, `<name> marker` and `<name> color`, drawn with the JMP markers and colors |
 | Missing values                        | nulls                            |
 
 The JMP version, build and save time are kept as table tags (`jmp.version`, `jmp.buildString`,
-`jmp.saveTime`).
+`jmp.saveTime`). Columns hidden in JMP are tagged `jmp.hidden` and hidden in the grid.
 
 Not imported yet: which rows are excluded, hidden or selected; value labels; column properties;
 formulas (the computed values are imported).
@@ -52,12 +52,12 @@ viewers, titled after the script:
 | Bivariate, Fit Y by X     | Scatter plot, with the regression line for a line fit |
 | Oneway                    | Box plot by group                          |
 | Contingency               | Stacked bar chart of counts                |
-| Graph Builder             | Scatter plot, line chart, bar chart, box plot, histogram or pie chart, by its first element |
+| Graph Builder             | Scatter plot, line chart, bar chart, box plot, histogram or pie chart, by its first element; a trellis plot of it when the graph has panels |
 | Tabulate                  | Pivot table                                |
 
 Anything else (Fit Model, control charts, DOE, ...) is listed in the preview with the reason, and
-named in a warning when the file opens. What a converted viewer leaves out, such as a `By()` split or
-Graph Builder panels, is listed under the analysis in the preview.
+named in a warning when the file opens. What a converted viewer leaves out, such as a `By()` split, is
+listed under the analysis in the preview, and **Script** there shows the script itself.
 
 Where JMP keeps scripts in the file was worked out from a few files, so a table whose scripts aren't
 found opens without them; its data is unaffected.
@@ -77,6 +77,8 @@ The design, the format as far as it is known, and the roadmap are in
 grok test --host <stand>       # package tests: the parser in the Node pass, the platform parts in the browser
 npm run corpus -- <folder>     # read every .jmp file in a folder and report (for files that can't be committed):
                                # columns read, saved analyses and how they convert, row-state flags seen
+npm run large -- --mb 100      # write a synthetic 100 MB file and time reading it
+grok test --host <stand> --benchmark --category "JMP: performance"   # the same in the browser
 ```
 
 Behaviour is specified as Gherkin features in `bdd/features/` (see `libraries/bdd`):

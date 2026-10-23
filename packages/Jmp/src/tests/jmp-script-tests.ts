@@ -211,12 +211,26 @@ category('JMP: analyses', () => {
     expect(v.type, 'Pie chart');
   });
 
+  test('Graph Builder panels make a trellis plot', async () => {
+    let v = only(convert('Graph Builder(Variables(X(:height), Y(:weight), Group X(:sex), Group Y(:age)), ' +
+      'Elements(Points(X, Y)))', 'Panels'));
+    expect(v.type, 'Trellis plot');
+    expect(v.options.viewerType, 'Scatter plot');
+    expectArray(v.options.xColumnNames as string[], ['sex']);
+    expectArray(v.options.yColumnNames as string[], ['age']);
+    expect((v.options.innerViewerLook as Record<string, unknown>).xColumnName, 'height');
+    expect(v.options.title, 'Panels');
+    v = only(convert('Graph Builder(Variables(X(:sex), Y(:height), Wrap(:age)), Elements(Bar(X, Y)))'));
+    expect(v.options.viewerType, 'Bar chart');
+    expectArray(v.options.xColumnNames as string[], ['age']);
+    expect(v.options.useTiledView, true);
+  });
+
   test('Graph Builder: what doesn\'t come across is named', async () => {
-    const c = convert('Graph Builder(Variables(X(:height), Y(:weight), Group X(:sex), Wrap(:age)), ' +
+    const c = convert('Graph Builder(Variables(X(:height), Y(:weight), Page(:sex)), ' +
       'Elements(Points(X, Y), Smoother(X, Y)))');
     only(c);
-    expect(c.notes.some((n) => /Panels by sex/.test(n)), true);
-    expect(c.notes.some((n) => /Panels by age/.test(n)), true);
+    expect(c.notes.some((n) => /Pages by sex/.test(n)), true);
     expect(c.notes.some((n) => /Smoother/.test(n)), true);
     expect(/Contour/.test(convert('Graph Builder(Variables(X(:height), Y(:weight)), Elements(Contour(X, Y)))').reason!),
       true);

@@ -19,7 +19,8 @@
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
     "test:bdd": "grok-bdd run",
-    "corpus": "tsx tools/jmp-corpus.ts"
+    "corpus": "tsx tools/jmp-corpus.ts",
+    "large": "tsx tools/jmp-large.ts"
   },
   "canEdit": [
     "Administrators"

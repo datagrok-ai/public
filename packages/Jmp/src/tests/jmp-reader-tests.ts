@@ -1,9 +1,9 @@
 import {category, expect, expectArray, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package-test';
-import {jmpSecondsToDate, readHeader, readJmp} from '../formats/jmp/jmp-parser';
+import {jmpSecondsToDate, readHeader, readJmp, readMetadata} from '../formats/jmp/jmp-parser';
 import {ByteReader} from '../formats/jmp/jmp-reader';
-import {JmpFormatError, JmpTable, SUPPORTED_VERSION} from '../formats/jmp/jmp-types';
+import {JmpFormatError, JmpTable, SUPPORTED_VERSION, jmpValues} from '../formats/jmp/jmp-types';
 import {compareToGolden, Golden} from './golden';
 
 
@@ -28,7 +28,7 @@ function values(table: JmpTable, column: string): (number | string | null)[] {
   const col = table.columns.find((c) => c.info.name === column);
   if (!col)
     throw new Error(`no column "${column}"`);
-  return col.values;
+  return jmpValues(col, table.info.nrows);
 }
 
 const isoDate = (v: number | string | null): string | null =>
@@ -123,7 +123,7 @@ category('JMP: tables', () => {
     const t = await fixture('time');
     for (const c of t.columns.filter((c) => !c.info.name.startsWith(':day'))) {
       expect(c.kind, 'datetime', c.info.name);
-      expectArray(c.values.map(isoDateTime), ['1914-04-27T19:54:14', '1978-01-07T06:11:24']);
+      expectArray(jmpValues(c, t.info.nrows).map(isoDateTime), ['1914-04-27T19:54:14', '1978-01-07T06:11:24']);
     }
   });
 
@@ -181,6 +181,33 @@ category('JMP: tables', () => {
     expectArray(values(t, 'f').slice(15, 18), ['foo', 'bar', 'hello world']);
   });
 
+  // No fixture has a fixed-decimal column; this follows JMPReader.jl's note that dt5 = 0x5e or 0x63 is fixed
+  // decimal with dt3 = width and dt4 = decimals, applied to example1's "floats" column.
+  test('fixed decimals', async () => {
+    const bytes = (await fixtureBytes('example1')).slice();
+    const r = new ByteReader(bytes);
+    const info = readMetadata(r, readHeader(r));
+    const floats = info.columns.find((c) => c.name === 'floats')!;
+    const dt = floats.offset + 2 + new TextEncoder().encode('floats').length;
+    bytes.set([0x01, 0x00, 0x0a, 0x02, 0x5e, 0x08], dt);
+    const col = (await readJmp(bytes)).columns.find((c) => c.info.name === 'floats')!;
+    expect(col.kind, 'float');
+    expect(col.fixedDecimals, 2);
+    expect((await fixture('example1')).columns.find((c) => c.info.name === 'floats')!.fixedDecimals === undefined,
+      true);
+  });
+
+  test('currency codes', async () => {
+    const t = await fixture('currencies');
+    expectArray(t.columns.map((c) => c.currency!), t.columns.map((c) => c.info.name));
+  });
+
+  test('hidden-column index', async () => {
+    const t = await fixture('byteintegers');
+    expectArray(t.info.visibleIndex, [1, 2, 3]);
+    expectArray(t.info.hiddenIndex, [0]);
+  });
+
   test('metadata', async () => {
     const t = await fixture('example1');
     expect(t.info.jmpVersion, '17.2.0');
@@ -194,7 +221,7 @@ category('JMP: robustness', () => {
     const t = await readJmp(await _package.files.readAsBytes('tests/unsupported-column.jmp'));
     const bad = t.columns.filter((c) => c.decodeError);
     expectArray(bad.map((c) => c.info.name), ['formula']);
-    expect(bad[0].values.every((v) => v === null), true);
+    expect(bad[0].data.type, 'none');
     expectArray(values(t, 'char utf8'), ['ꙮꙮꙮ', '🚴💨', 'jäääär', '辛口']);
   });
 

@@ -4,9 +4,11 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package-test';
-import {addSavedAnalyses, jmpTableToDataFrame, savedAnalyses, skippedColumns} from '../formats/jmp/jmp-to-dataframe';
+import {addSavedAnalyses, hideJmpHiddenColumns, jmpTableToDataFrame, savedAnalyses, skippedColumns}
+  from '../formats/jmp/jmp-to-dataframe';
 import {readJmp} from '../formats/jmp/jmp-parser';
 import {fixture, fixtureBytes, FIXTURES} from './jmp-reader-tests';
+import {makeLargeJmp, rowsForSize} from './large-jmp';
 
 category('JMP: dataframe', () => {
   test('types and nulls', async () => {
@@ -15,6 +17,9 @@ category('JMP: dataframe', () => {
     expect(df.col('ints')!.type, DG.COLUMN_TYPE.INT);
     expect(df.col('floats')!.type, DG.COLUMN_TYPE.FLOAT);
     expect(df.col('charconstwidth')!.type, DG.COLUMN_TYPE.STRING);
+    // JMP text that reads as numbers stays text
+    expect(df.col('formula')!.type, DG.COLUMN_TYPE.STRING);
+    expectArray(df.col('formula')!.toList(), ['2', '4', '6', '8']);
     expect(df.col('time')!.type, DG.COLUMN_TYPE.DATE_TIME);
     expect(df.col('date')!.type, DG.COLUMN_TYPE.DATE_TIME);
     expect(df.col('date')!.meta.format, 'yyyy-MM-dd');
@@ -80,6 +85,41 @@ category('JMP: dataframe', () => {
     }
   });
 
+  test('a trellis of a converted Graph Builder', async () => {
+    const df = grok.data.demo.demog(100);
+    const tv = grok.shell.addTableView(df);
+    try {
+      const added = addSavedAnalyses(tv, [{name: 'Panels', text: '', notes: [], viewers: [{type: DG.VIEWER.TRELLIS_PLOT,
+        options: {viewerType: DG.VIEWER.SCATTER_PLOT, xColumnNames: ['sex'], yColumnNames: [],
+          innerViewerLook: {xColumnName: 'height', yColumnName: 'weight'}, title: 'Panels'}}]}]);
+      expect(added, 1);
+      const trellis = Array.from(tv.viewers).find((v) => v.type === DG.VIEWER.TRELLIS_PLOT)!;
+      expect(trellis.props.viewerType, DG.VIEWER.SCATTER_PLOT);
+      expectArray(trellis.props.xColumnNames, ['sex']);
+      const look = JSON.stringify(trellis.getOptions(true));
+      expect(look.includes('"xColumnName":"height"'), true, look.slice(0, 400));
+    } finally {
+      tv.close();
+    }
+  });
+
+  test('currency codes and hidden columns', async () => {
+    const cur = jmpTableToDataFrame(await fixture('currencies'));
+    expect(cur.col('EUR')!.meta.units, 'EUR');
+    expect(cur.col('USD')!.getTag('jmp.currency'), 'USD');
+    const ints = jmpTableToDataFrame(await fixture('byteintegers'));
+    expect(ints.col('Column 1')!.getTag('jmp.hidden'), 'true');
+    expect(ints.col('2-byte integer')!.getTag('jmp.hidden'), null);
+    const tv = grok.shell.addTableView(ints);
+    try {
+      hideJmpHiddenColumns(tv);
+      expect(tv.grid.columns.byName('Column 1')!.visible, false);
+      expect(tv.grid.columns.byName('2-byte integer')!.visible, true);
+    } finally {
+      tv.close();
+    }
+  });
+
   test('every fixture converts', async () => {
     for (const name of FIXTURES) {
       const t = await fixture(name);
@@ -122,4 +162,41 @@ category('JMP: dataframe', () => {
       view.close();
     }
   });
+});
+
+// The §8 target: a 100 MB file opens in under 10 s, and the main thread isn't blocked for more than 2 s at
+// a time. The file is made in the test (large-jmp.ts), so it runs only with `grok test --benchmark`.
+category('JMP: performance', () => {
+  test('100 MB file', async () => {
+    const bytes = await makeLargeJmp(await fixtureBytes('compressed'), rowsForSize(100e6));
+    let last = performance.now();
+    let longest = 0;
+    const ticker = setInterval(() => {
+      const now = performance.now();
+      longest = Math.max(longest, now - last);
+      last = now;
+    }, 20);
+    try {
+      const t0 = performance.now();
+      const table = await readJmp(bytes);
+      const t1 = performance.now();
+      const longestRead = longest;
+      const df = jmpTableToDataFrame(table, 'large');
+      const t2 = performance.now();
+      const tv = grok.shell.addTableView(df);
+      await DG.delay(100);
+      const t3 = performance.now();
+      tv.close();
+      const s = (ms: number): string => (ms / 1000).toFixed(2);
+      const report = `${(bytes.length / 1e6).toFixed(1)} MB, ${df.rowCount.toLocaleString()} rows: ` +
+        `read ${s(t1 - t0)} s, DataFrame ${s(t2 - t1)} s, view ${s(t3 - t2)} s, total ${s(t3 - t0)} s; ` +
+        `longest main-thread block ${s(longestRead)} s while reading, ${s(longest)} s overall`;
+      console.log(`JMP performance: ${report}`);
+      expect(t3 - t0 < 10000, true, report);
+      return report;
+    } finally {
+      clearInterval(ticker);
+    }
+  }, {benchmark: true, timeout: 300000,
+    skipReason: DG.Test.isInBenchmark ? undefined : 'run with grok test --benchmark'});
 });
