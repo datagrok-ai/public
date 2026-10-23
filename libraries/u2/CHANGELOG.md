@@ -2,6 +2,7 @@
 
 ## v.next
 
+* TypeAhead: Fixed Enter on a look-up opened over a held value replacing it with the first row: nothing is highlighted until you move, and Enter keeps the value
 * Filters: Added host operators (`FilterOperator.host`, `OperatorRegistry.hosted()`): conditions the app answers, which parse, format, validate and complete like any other
 * Platform inputs: Fixed a form's own messages on a bridged platform input (a molecule input) showing only as a tooltip: "required" and an app's validator now show under the field, and a refused save names it ("Structure is required", not " is required")
 * Molecule input: Fixed a filter row not hearing the molecule drawn in it: `moleculeInput` and `fromDartInput` take `value` and `onChanged`

@@ -170,20 +170,24 @@ scoped('without a backend the search reports the failure in the popup', async ()
   pick.dispose();
 });
 
-scoped('ergonomics: the candidates open on focus in the table\'s order with the first highlighted, the placeholder ' +
-  'is the caption, ✕ clears', async () => {
+scoped('ergonomics: the candidates open on focus in the table\'s order, a held value is not swapped by Enter, the ' +
+  'placeholder is the caption, ✕ clears', async () => {
     emsBackends.domain = backend();
-    const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p1'});
+    const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p2'});
     const input = mount(pick);
     await flush();
     assert.equal(input.placeholder, 'Project…');
-    assert.equal(input.value, 'Grit');
+    assert.equal(input.value, 'Datagrok');
     input.focus();
     await flush();
     await flush();
     assert.equal(pick.typeAhead.isOpen.value, true, 'open on focus');
     assert.deepEqual(options(), ['Grit', 'Datagrok'], 'the empty query lists the first candidates as the table orders them');
-    assert.equal(document.body.querySelector('.u2-typeahead-option-active')?.textContent, 'Grit', 'the first is highlighted');
+    assert.equal(document.body.querySelector('.u2-typeahead-option-active'), null, 'nothing highlighted over a held value');
+    fire(input, 'keydown', {key: 'Enter'});
+    await flush();
+    assert.equal(pick.value.value, 'p2', 'Enter keeps the held value, not the first row');
+    assert.equal(pick.typeAhead.isOpen.value, false);
     const clear = pick.root.querySelector('.u2-input-clear');
     assert.equal(clear.hidden, false);
     fire(clear, 'click');

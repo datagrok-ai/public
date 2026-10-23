@@ -129,6 +129,8 @@ export class TypeAhead<T> extends Control {
 
     const minChars = this._minChars;
     const all = this._all;
+    const selected = this.selected;
+    const openOnFocus = this._openOnFocus;
     this._list = new SuggestionList<T>({
       prefix: 'u2-typeahead',
       anchor: input,
@@ -140,7 +142,10 @@ export class TypeAhead<T> extends Control {
       get minChars() { return all.value ? 0 : minChars; },
       render,
       keyOf: options.keyOf ?? itemText,
-      autoHighlight: this._openOnFocus ? 'always' : true,
+      // a held value is not swapped for the first row by a plain Enter
+      get autoHighlight() {
+        return selected.value !== null ? false : openOnFocus ? 'always' as const : true;
+      },
       onPick: (index) => this._send({type: 'select', index}),
       onDismiss: () => this._send({type: 'dismiss'}),
       onRetry: () => this._source?.retry(),
@@ -267,7 +272,9 @@ export class TypeAhead<T> extends Control {
       case 'enter':
         if (state !== 'open')
           break;
-        if (this._view.peek().kind === 'ready')
+        if (this.selected.peek() !== null && this._list.activeIndex.peek() < 0)
+          this._dismiss();
+        else if (this._view.peek().kind === 'ready')
           this._commit(this._list.activeIndex.peek());
         else
           this._pendingPick = true;
