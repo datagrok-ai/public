@@ -4,8 +4,8 @@
 
 import {
   ColumnInfo, ComparisonEntryNodes, ComparisonTarget, ColumnTarget, isNumericType,
-  TimeUnit, TIME_UNIT_MS, TIME_UNITS, AxisMode, AxisModeSelection, AxisConfigMap, toTargetUnits,
-  isTimeIndexType, isIndexCandidateType,
+  TimeUnit, TIME_UNIT_MS, TIME_UNITS, AxisMode, AxisModeConfig, AxisModeSelection, AxisConfigMap, toTargetUnits,
+  isTimeIndexType, isIndexCandidateType, TableNodeInfo,
 } from './types';
 import {
   normalizeName, nameSimilarity, nameMatchConfidence, normalizeUnits, unitsCompatibility, UnitConverter,
@@ -224,30 +224,81 @@ export interface PickerSelections {
   axis: AxisModeSelection;
 }
 
+// tables merged into one picker row: the same output of the same function
+const sameFuncKey = (table: TableNodeInfo) => table.nqName ? `${table.nqName}|${table.path.split('/').pop()}` : null;
+
+export interface TableRef {
+  entryId: string;
+  tablePath: string;
+}
+
+/** Tables of the other runs that share the table's merged picker row; none for a table without nqName. */
+export function sameFuncPeers(table: TableNodeInfo, others: ComparisonEntryNodes[]): TableRef[] {
+  const key = sameFuncKey(table);
+  return key ? others.flatMap((other) => other.tables.filter((peer) => sameFuncKey(peer) === key)
+    .map((peer) => ({entryId: other.entryId, tablePath: peer.path}))) : [];
+}
+
+/** The pick when all picks agree; undefined for no picks or a disagreement. */
+export function agreedPick<T>(picks: T[], same: (a: T, b: T) => boolean = (a, b) => a === b): T | undefined {
+  return picks.length > 0 && picks.every((pick) => same(pick, picks[0])) ? picks[0] : undefined;
+}
+
+const SERIES: AxisModeConfig = {mode: 'series'};
+const sameAxis = (a: AxisModeConfig, b: AxisModeConfig) => a.mode === b.mode && a.units === b.units;
+
+function annotatedPicks(table: TableNodeInfo): {index?: string, split?: string, axis?: AxisModeConfig} {
+  const mode = table.defaultAxisMode;
+  return {
+    index: table.defaultIndexColumn,
+    split: table.defaultSplitColumn,
+    // units matter only on the elapsed axis; storing them elsewhere would let a
+    // unit the user never saw outrank the column-meta prefill later
+    axis: mode && {mode, ...mode === 'timeseries' && table.defaultTimeUnits ? {units: table.defaultTimeUnits} : {}},
+  };
+}
+
 /**
- * Pickers pre-filled from the tables' {comparison: {...}} annotations wherever the user has
- * no pick yet; unchanged selections are returned as the same objects.
+ * Pickers pre-filled wherever the user has no pick yet: with the pick the same function's tables
+ * in the other runs agree on, else with the tables' {comparison: {...}} annotations. The axis mode
+ * comes from the runs only along with their index. Unchanged selections are returned as the same objects.
  */
-export function withAnnotatedDefaults(entry: ComparisonEntryNodes, selections: PickerSelections): PickerSelections {
+export function withDefaultPicks(
+  entry: ComparisonEntryNodes, selections: PickerSelections, others: ComparisonEntryNodes[] = [],
+): PickerSelections {
   let {index, split, axis} = selections;
   const set = <T, >(selection: Record<string, Record<string, T>>, tablePath: string, value: T) =>
     ({...selection, [entry.entryId]: {...selection[entry.entryId], [tablePath]: value}});
   for (const table of entry.tables) {
-    const indexDefault = table.defaultIndexColumn;
-    if (indexDefault && !index[entry.entryId]?.[table.path] && table.columns.some((col) => col.name === indexDefault))
-      index = set(index, table.path, indexDefault);
-    const splitColumn = table.columns.find((col) => col.name === table.defaultSplitColumn);
-    if (splitColumn && !split[entry.entryId]?.[table.path] &&
-      isSplitCandidate(splitColumn, index[entry.entryId]?.[table.path] ?? ''))
-      split = set(split, table.path, splitColumn.name);
-    const modeDefault = table.defaultAxisMode;
-    if (modeDefault && !axis[entry.entryId]?.[table.path]) {
-      // units matter only on the elapsed axis; storing them elsewhere would let a
-      // unit the user never saw outrank the column-meta prefill later
-      axis = set(axis, table.path, {
-        mode: modeDefault,
-        ...modeDefault === 'timeseries' && table.defaultTimeUnits ? {units: table.defaultTimeUnits} : {},
-      });
+    const columnOf = (name?: string) => table.columns.find((col) => col.name === name);
+    const annotated = annotatedPicks(table);
+    const peers = sameFuncPeers(table, others);
+    const picksOf = <T, >(selection: Record<string, Record<string, T>>, refs = peers) =>
+      refs.map(({entryId, tablePath}) => selection[entryId]?.[tablePath]).filter((pick): pick is T => !!pick);
+
+    const peerIndex = columnOf(agreedPick(picksOf(index)))?.name;
+    if (!index[entry.entryId]?.[table.path]) {
+      const name = peerIndex ?? columnOf(annotated.index)?.name;
+      if (name)
+        index = set(index, table.path, name);
+    }
+    const currentIndex = index[entry.entryId]?.[table.path] ?? '';
+
+    if (!split[entry.entryId]?.[table.path]) {
+      const column = [agreedPick(picksOf(split)), annotated.split].map(columnOf)
+        .find((col) => col && isSplitCandidate(col, currentIndex));
+      if (column)
+        split = set(split, table.path, column.name);
+    }
+
+    if (!axis[entry.entryId]?.[table.path]) {
+      const indexPeers = peers.filter(({entryId, tablePath}) => index[entryId]?.[tablePath] === currentIndex);
+      const peerAxis = peerIndex && currentIndex === peerIndex ?
+        agreedPick(indexPeers.map(({entryId, tablePath}) => axis[entryId]?.[tablePath] ?? SERIES), sameAxis) :
+        undefined;
+      const config = peerAxis ?? annotated.axis;
+      if (config)
+        axis = set(axis, table.path, config);
     }
   }
   return {index, split, axis};
@@ -359,8 +410,7 @@ export function computeIndexRows(
   if (!mergeSameFuncs)
     return perTable.map(singleRow);
 
-  const groupKey = ({table}: typeof perTable[number]) =>
-    table.nqName ? `${table.nqName}|${table.path.split('/').pop()}` : null;
+  const groupKey = ({table}: typeof perTable[number]) => sameFuncKey(table);
   const groups = new Map<string, typeof perTable>();
   for (const item of perTable) {
     const key = groupKey(item);

@@ -24,7 +24,7 @@ import {
 import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor, selectionGaps, unmatchedItems,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
-  targetContexts, EntryStatus, withAnnotatedDefaults, uniqueEntryName, withoutOutdatedOutputs,
+  targetContexts, EntryStatus, withDefaultPicks, uniqueEntryName, withoutOutdatedOutputs,
 } from './selection';
 import {entryFromDataFrame, loadRunEntries} from './entry-extraction';
 import {
@@ -160,11 +160,12 @@ export const RunComparison = Vue.defineComponent({
       ui.remove(tableInput.root);
     });
 
-    // pre-fill pickers from {comparisonIndex}/{comparisonSplit} output annotations;
-    // stored (user) selections always win
-    const applyAnnotatedDefaults = (entry: ComparisonEntry) => {
-      const next = withAnnotatedDefaults(entry.nodes,
-        {index: indexSelection.value, split: splitSelection.value, axis: axisModeSelection.value});
+    // pre-fill pickers from the same function's picks in the other runs, then from
+    // {comparisonIndex}/{comparisonSplit} output annotations; stored (user) selections always win
+    const applyDefaultPicks = (entry: ComparisonEntry, others: ComparisonEntry[]) => {
+      const next = withDefaultPicks(entry.nodes,
+        {index: indexSelection.value, split: splitSelection.value, axis: axisModeSelection.value},
+        others.map((other) => other.nodes));
       indexSelection.value = next.index;
       splitSelection.value = next.split;
       axisModeSelection.value = next.axis;
@@ -180,8 +181,8 @@ export const RunComparison = Vue.defineComponent({
       if (hasEntry(entry.id))
         return;
       const added = withName(entry, uniqueEntryName(entry.name, entries.value.map((existing) => existing.name)));
+      applyDefaultPicks(added, entries.value);
       entries.value = [...entries.value, Vue.markRaw(added)];
-      applyAnnotatedDefaults(added);
     };
 
     const removeEntry = (id: string) => {
