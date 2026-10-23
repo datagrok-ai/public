@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [#4231](https://github.com/datagrok-ai/public/issues/4231): Tree: Fixed molecule labels disappearing on zoom when the molecule size is "fit"
 * [core#881](https://github.com/datagrok-ai/core/issues/881): Word cloud: Fixed out-of-memory errors and missing words when a column's values are very long
 * GROK-21150: Surface plot: Fixed an error when the plot opened on a table with a datetime column on an axis
 * Radar, Timelines, Tree: Added the automation surface — `getWidgetStatus` hit areas and readings, `isRenderPending` / `onRendered` / `renderError`
