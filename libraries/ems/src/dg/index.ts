@@ -25,4 +25,5 @@ export type {DomainHistoryTarget} from './history.js';
 export {DomainChildren} from './children.js';
 export type {DomainChildrenOptions, DomainChildrenMode, ChildEntry} from './children.js';
 export type {DomainBulkEditOptions} from './bulk.js';
-export type {DomainImportOptions, DomainImporter, DomainImportVerdict} from './import.js';
+export type {DomainImportOptions, DomainImporter, DomainImportVerdict, DomainImportRow, DomainImportColumn,
+  DomainImportStep, DomainImportError} from './import.js';
