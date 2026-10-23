@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1067](https://github.com/datagrok-ai/core/issues/1067): Subsequence Search: Fixed an error when the current table has no macromolecule column
 * [core#988](https://github.com/datagrok-ai/core/issues/988): Renderers: Fixed a scatter plot tooltip failing with "method not found on null" on a sequence difference column when no grid shows the table
 * [core#880](https://github.com/datagrok-ai/core/issues/880): Save as FASTA: Fixed an error when clicking OK with no sequence column selected
 * Manage Monomers: Replaced the editor's tabs with one layout: the sketcher first, taking the height the fields leave down to a floor; the fields scrolling on their own — the symbol, name and types two to a row (one to a row in a narrow dock), the R groups as small chips that wrap (a click opens a menu of the 15 common caps, each with its friendly name and SMILES and the current one checked, so changing a cap takes two clicks; Edit definition opens the fields a library stores under the chips), and Details (natural analog, ID, colors, properties); and, pinned at the bottom, Save, a line saying where it saves or why it cannot yet, and the Details toggle with the colors as dots and the property count. Details opens above its toggle. Every field keeps its underline, as wide as the others in its column, with its caption right-aligned beside it as in every platform form; nothing clipped in a narrow dock
