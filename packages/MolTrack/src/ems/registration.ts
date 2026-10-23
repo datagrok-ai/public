@@ -1,6 +1,8 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import type {DomainImporter, DomainImportVerdict, DomainTable} from '@datagrok-libraries/ems/src/dg';
-import {isEmpty} from '@datagrok-libraries/u2';
+import type {DomainImportColumn, DomainImporter, DomainImportRow, DomainImportVerdict, DomainTable}
+  from '@datagrok-libraries/ems/src/dg';
+import {isEmpty, span} from '@datagrok-libraries/u2';
 import type {CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
 import {Chemistry, HASH_COLUMNS, IDENTITY_COLUMNS} from './chemistry';
@@ -9,11 +11,31 @@ import {MolTrackTables} from './tables';
 
 const LOOKUP_CHUNK = 500;
 
-// bulk registration is the stock import of Compounds: this is the chemistry it runs on every row first
+const STRUCTURE = 'original_structure';
+
+// a file's structure column by its notation's name: one unreadable SMILES keeps the platform from typing it
+const NOTATIONS = ['smiles', 'canonicalsmiles', 'molfile', 'molblock', 'mol', 'molecule'];
+
+// bulk registration is the stock import of Compounds: the chemistry it runs on every row, and how it shows them
 export class BulkRegistration {
   static importer(compounds: DomainTable<CompoundRow>): DomainImporter {
-    return {derives: IDENTITY_COLUMNS,
-      prepare: (rows, progress) => BulkRegistration.prepare(rows, compounds, progress)};
+    return {
+      derives: IDENTITY_COLUMNS,
+      match: (column) => NOTATIONS.includes(column.name.toLowerCase().replace(/[^a-z]/g, '')) ? STRUCTURE : undefined,
+      prepare: (rows, progress) => BulkRegistration.prepare(rows, compounds, progress),
+      rowHeight: 52,
+      columns: (defaults, step) => step === 'preview' ?
+        defaults.map((c) => c.name === STRUCTURE ? BulkRegistration._structure(c.header) : c) :
+        defaults.flatMap((c) => c.name === '~key' ? [c, BulkRegistration._structure('Structure')] : [c]),
+    };
+  }
+
+  private static _structure(header: string): DomainImportColumn {
+    return {name: STRUCTURE, header, width: '140px', render: (row: DomainImportRow) => {
+      const input = row.values[STRUCTURE];
+      return isEmpty(input) || row.kind === 'error' ? span(String(input ?? '')) :
+        grok.chem.drawMolecule(String(input), 120, 44);
+    }};
   }
 
   static async prepare(rows: Record<string, unknown>[], compounds: DomainTable<CompoundRow>,
@@ -33,12 +55,12 @@ export class BulkRegistration {
         return {error: isEmpty(rows[i].original_structure) ? 'No structure' : 'Cannot read the structure'};
       const existing = registered.get(identity.hash_mol);
       if (existing !== undefined) {
-        return {existing: existing.id,
+        return {existing: existing.id, label: 'Registered',
           note: `Already registered as ${MolTrackTables.corporateId(compounds, 'molregno', existing.molregno)}`};
       }
       const seen = first.get(identity.hash_mol);
       if (seen !== undefined)
-        return {sameAs: seen, note: `Same compound as row ${seen + 1}`};
+        return {sameAs: seen, label: 'Repeated', note: `Same compound as row ${seen + 1}`};
       first.set(identity.hash_mol, i);
       return {values: Object.fromEntries(IDENTITY_COLUMNS.map((column) => [column, identity[column]]))};
     });
