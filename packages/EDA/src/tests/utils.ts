@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {cruxPredict} from '../crux/crux-model';
+
 const TRESHOLD = 0.5;
 const SHIFT = 1;
 const LIMIT = 2;
@@ -62,6 +64,15 @@ export function regressionDataset(samples: number, features: number, dependent: 
 
   return df;
 } // pcaTestDf
+
+/** Seeded regression set: uniform features `x0`, `x1`, ... and the target `y = sum (j + 1) * xj` */
+export function seededRegression(rows: number, features: number, seed: number): DG.DataFrame {
+  const rng = mulberry32(seed);
+  const raw = Array.from({length: features}, () => Float32Array.from({length: rows}, () => rng()));
+  const y = Float32Array.from({length: rows}, (_, i) => raw.reduce((sum, arr, j) => sum + arr[i] * (j + 1), 0));
+  return DG.DataFrame.fromColumns([...raw.map((arr, j) => DG.Column.fromFloat32Array(`x${j}`, arr)),
+    DG.Column.fromFloat32Array('y', y)]);
+}
 
 /** Max absolute deviation of the column */
 export function madNorm(col: DG.Column): number {
@@ -145,6 +156,17 @@ export function accuracy(target: DG.Column, prediction: DG.Column): number {
   return correctPredictions / rows;
 }
 
+/** Same type and values; numbers within `tolerance` when it is positive */
+export function sameValues(a: DG.Column, b: DG.Column, tolerance: number = 0): boolean {
+  if (a.type !== b.type || a.length !== b.length)
+    return false;
+  for (let i = 0; i < a.length; ++i) {
+    if (tolerance > 0 ? !(Math.abs(a.get(i) - b.get(i)) < tolerance) : a.get(i) !== b.get(i))
+      return false;
+  }
+  return true;
+}
+
 /** Coefficient of determination R² of `pred` against `target`. */
 export function r2(target: DG.Column, pred: DG.Column): number {
   const n = target.length;
@@ -199,6 +221,18 @@ export function decoyColumns(rows: number, count: number): DG.Column[] {
 /** Wrap columns into a fresh table's column list (an apply-time table). */
 export function asTable(cols: DG.Column[]): DG.ColumnList {
   return DG.DataFrame.fromColumns(cols).columns;
+}
+
+/** Removes the column `name` from `df` (leaving the features) and returns it */
+export function splitTarget(df: DG.DataFrame, name: string): DG.Column {
+  const target = df.col(name)!;
+  df.columns.remove(name);
+  return target;
+}
+
+/** The `Prediction` column of a Crux model applied to `df` */
+export async function predictColumn(df: DG.DataFrame, bytes: Uint8Array): Promise<DG.Column> {
+  return (await cruxPredict(df, bytes)).columns.byIndex(0);
 }
 
 /** Return dataframe with missing values */

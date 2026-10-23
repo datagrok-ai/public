@@ -1,58 +1,53 @@
 # Crux modules
 
 Crux WebAssembly modules used by `src/crux/` (the Crux bridge). `rspack.config.js` copies this folder (without this
-README) into `dist/crux/`, which `grok publish` uploads; this source folder is not published itself (`.npmignore`).
+README and `engine.toml`) into `dist/crux/`, which `grok publish` uploads; this source folder is not published itself
+(`.npmignore`).
 
 | Path | What | In git |
 |---|---|---|
 | `crux-module-worker.js` | Byte-for-byte copy of crux-core `crates/crux-wasm/js/crux-module-worker.mjs` | yes |
-| `ml/crux_wasm.js`, `ml/crux_wasm_bg.wasm` | `module-ml`, wasm-bindgen `--target web` | no (gitignored) |
+| `eda/crux_wasm.js`, `eda/crux_wasm_bg.wasm` | `module-eda`, wasm-bindgen `--target web` | yes |
+| `eda/ENGINE_REV` | The first 12 hex digits of the crux-core commit the module was built from | yes |
+| `engine.toml` | The pin: what `module-eda` was built from and how | yes |
 
-`ml/` is gitignored: build it locally with the recipe below. A fresh checkout without it builds and publishes,
-but the `Crux bridge` tests fail with the loader's "failed to load" error. `module-eda` replaces `ml/` after
-Crux stage 0.
+The module files are committed (plain git, no LFS), so every checkout publishes a working package. They change only
+when the pin changes.
 
 The worker has the `.js` extension, not `.mjs`: Datlas serves package files by the `mime` package's extension
 map, which has no `mjs`, and a module worker whose script arrives without a JavaScript MIME type does not start.
 
-## Building `module-ml`
+## The pin (`engine.toml`)
 
-Below, `<crux-core>` is the crux-core checkout and `<EDA>` is `public/packages/EDA`.
+| Field | Meaning |
+|---|---|
+| `branch`, `engine_rev` | The crux-core branch and full commit hash the module was built from |
+| `crate`, `features` | The crate and its feature set (`--no-default-features --features ...`) |
+| `profile`, `rustflags`, `target_dir` | The cargo profile, the wasm32 rustflags and the cargo target directory |
+| `wasm_bindgen`, `toolchain` | The wasm-bindgen CLI and the Rust toolchain versions |
 
-Source: `<crux-core>`, commit `44203d6a6`. `tools/parity/wasm-modules/modules.py`
-does not run on Windows (it imports `fcntl`), so its two commands are run by hand from Git Bash. Toolchain:
-`cargo` (rustup installs the pinned `1.95.0` and the `wasm32-unknown-unknown` target on the first call), `node`.
+## Building `module-eda`
 
-1. wasm-bindgen CLI at the version `Cargo.lock` pins (the CLI must match the crate):
+Source: crux-core, branch `eda/module-eda`, commit `d23ccae34`. Toolchain: Rust 1.95.0 (rustup installs it and the
+`wasm32-unknown-unknown` target on the first call), wasm-bindgen CLI 0.2.129
+(`cargo install wasm-bindgen-cli --version 0.2.129 --locked`), `node`. crux-core's
+`tools/parity/wasm-modules/modules.py` does not run on Windows (it imports `fcntl`), so the commands are run by hand
+from Git Bash, from the crux-core root:
 
-   ```bash
-   cargo install wasm-bindgen-cli --version 0.2.129 --locked
-   ```
+```bash
+CARGO_TARGET_DIR=target/wasm-eda CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS="-C target-feature=+simd128" cargo build --profile wasm-ship -p crux-wasm --target wasm32-unknown-unknown --no-default-features --features "crux-fn/ml,crux-fn/ml-model,crux-fn/xgboost,crux-fn/catboost,crux-fn/conformal,crux-fn/hpo,crux-fn/shap,crux-fn/imblearn"
+wasm-bindgen --target nodejs --out-name crux_wasm --out-dir target/wasm-eda/pkg-node target/wasm-eda/wasm32-unknown-unknown/wasm-ship/crux_wasm.wasm
+wasm-bindgen --target web --out-name crux_wasm --out-dir target/wasm-eda/pkg-web target/wasm-eda/wasm32-unknown-unknown/wasm-ship/crux_wasm.wasm
+```
 
-2. Build the module (profile `wasm-ship`: fat LTO, one codegen unit; `+simd128` only for wasm32):
+The feature set has no `crux-fn/lightgbm`, so the module registers 49 functions, without `ml.lightgbm_train` /
+`ml.lightgbm_predict`, and `ml.regress` / `ml.classify` reject `model: "lightgbm"`. The `lightgbm` crate is still
+compiled in as a dependency of the `shap` crate (its tree explainer).
 
-   ```bash
-   cd <crux-core> && CARGO_TARGET_DIR=target/wasm-modules CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS="-C target-feature=+simd128" cargo build --profile wasm-ship -p crux-wasm --target wasm32-unknown-unknown --no-default-features --features module-ml
-   ```
+The nodejs target is only for node probes. Sizes at `d23ccae34`: raw `crux_wasm.wasm` 16,406,303 B,
+`crux_wasm_bg.wasm` 15,038,039 B (5,047,201 B gzipped).
 
-   Measured on 2026-10-21, clean `target/wasm-modules`: 3 min 14 s, peak
-   ~3.7 GB for the rustc/linker processes. Output `target/wasm-modules/wasm32-unknown-unknown/wasm-ship/crux_wasm.wasm`,
-   19.7 MB.
-
-3. wasm-bindgen, web target (the nodejs target is only for node probes):
-
-   ```bash
-   cd <crux-core> && wasm-bindgen --target web --out-name crux_wasm --out-dir target/crux-modules/web/ml target/wasm-modules/wasm32-unknown-unknown/wasm-ship/crux_wasm.wasm
-   cd <crux-core> && wasm-bindgen --target nodejs --out-name crux_wasm --out-dir target/crux-modules/nodejs/ml target/wasm-modules/wasm32-unknown-unknown/wasm-ship/crux_wasm.wasm
-   ```
-
-4. Copy into this folder (not the `.d.ts` files):
-
-   ```bash
-   cp <crux-core>/target/crux-modules/web/ml/crux_wasm.js <crux-core>/target/crux-modules/web/ml/crux_wasm_bg.wasm <EDA>/crux/ml/
-   cp <crux-core>/crates/crux-wasm/js/crux-module-worker.mjs <EDA>/crux/crux-module-worker.js
-   ```
-
-   `ml/crux_wasm_bg.wasm` is 18.2 MB after wasm-bindgen.
-
-Then `grok build` in EDA emits the folder into `dist/crux/`.
+Then copy `target/wasm-eda/pkg-web/{crux_wasm.js,crux_wasm_bg.wasm}` (not the `.d.ts` files) into `eda/`, write
+`eda/ENGINE_REV` = the 12-hex commit, update `engine.toml`, and run `grok build --force` in EDA (Turborepo does not
+see a swapped module and would replay the old `dist/`). If the worker changed, copy
+`crates/crux-wasm/js/crux-module-worker.mjs` to `crux-module-worker.js`.

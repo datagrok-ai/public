@@ -6,7 +6,9 @@ const WORKER_URL = new URL('crux-module-worker.js', CRUX_BASE).href;
 
 type Pending = {resolve: (value: any) => void, reject: (reason: Error) => void};
 
-type CruxResource = {name: string, id: string, bytes: Uint8Array};
+const MAX_LIVE_MODELS = 32;
+
+export type CruxResource = {name: string, id: string, bytes: Uint8Array};
 
 /** One Crux wasm module in its own module worker (the protocol of crux-core `crux-modules.mjs`) */
 export class CruxModule {
@@ -16,6 +18,8 @@ export class CruxModule {
   private pending = new Map<number, Pending>();
   /** Resource name -> id of the bytes registered in the live worker */
   private readonly resources = new Map<string, string>();
+  /** Crux memoises every registered model and never frees it: the worker restarts after this many */
+  private registered = 0;
 
   constructor(readonly name: string) {}
 
@@ -65,14 +69,21 @@ export class CruxModule {
 
   /** Runs a Crux function on an Arrow IPC stream (transferred); `resource` is registered first unless live */
   async callFn(name: string, ipc: Uint8Array, params: object, resource?: CruxResource): Promise<Uint8Array> {
+    if (this.registered >= MAX_LIVE_MODELS && this.pending.size === 0)
+      this.terminate();
     await this.init();
     if (this.worker === null)
       throw new Error('Crux worker terminated');
 
     let reg;
     if (resource !== undefined && this.resources.get(resource.name) !== resource.id) {
-      reg = this.post('fnResource', resource);
+      reg = this.post('fnResource', resource).catch((e: Error) => {
+        if (this.resources.get(resource.name) === resource.id)
+          this.resources.delete(resource.name);
+        throw e;
+      });
       this.resources.set(resource.name, resource.id);
+      this.registered++;
     }
     const call = this.post('callFn', {name, ipc, params: JSON.stringify(params)}, [ipc.buffer]);
 
@@ -91,7 +102,8 @@ export class CruxModule {
     this.worker = null;
     this.ready = null;
     this.resources.clear();
+    this.registered = 0;
   }
 }
 
-export const cruxMl = new CruxModule('ml');
+export const cruxMl = new CruxModule('eda');

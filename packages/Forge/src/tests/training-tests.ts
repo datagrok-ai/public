@@ -876,7 +876,7 @@ category('Training', () => {
       [{method: 'Boost'}, `No method 'Boost' is installed. The methods are: ${engines.map((e) => e.name).join(', ')}.`],
       [{method: 'XGBoost', hyperparameters: {speed: 1}},
         `The method XGBoost has no setting 'speed'. Its settings are: ${xgboostSettings}.`],
-      [{method: 'Softmax', hyperparameters: {rate: 'fast'}}, 'The setting \'rate\' of Softmax needs a number.'],
+      [{method: 'Softmax', hyperparameters: {penalty: 'fast'}}, 'The setting \'penalty\' of Softmax needs a number.'],
       [{hyperparameters: {iterations: 500}}, 'The setting \'iterations\' of XGBoost must be at most 100.'],
       [{options: {cutof: 0.5}}, 'Unknown option \'cutof\'. The options are: missingValues, neighbors, distance, ' +
         'oneHot, skipUniqueCategories, predictProbability, cutoff, seed, folds.'],

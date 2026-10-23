@@ -6,12 +6,6 @@ export function info() : void {
   PackageFunctions.info();
 }
 
-//tags: init
-//meta.role: init
-export async function init() : Promise<void> {
-  await PackageFunctions.init();
-}
-
 //name: DBSCAN
 //description: Density-based spatial clustering of applications with noise (DBSCAN)
 //input: dataframe df 
@@ -218,15 +212,14 @@ export function knnImpute(table: DG.DataFrame, columns: string[], features: stri
 
 //input: dataframe df 
 //input: column predictColumn 
-//input: double rate = 0.1 { caption: Rate; min: 0; max: 10; step: 0.01; description: Gradient descent learning rate. }
-//input: int iterations = 1000 { caption: Iterations; min: 1; step: 50; max: 10000; description: Largest number of training steps before training stops. }
+//input: int iterations = 1000 { caption: Iterations; min: 1; step: 50; max: 10000; description: Largest number of solver iterations (elastic net). }
 //input: double alpha = 0 { caption: L1; min: 0; max: 100; description: L1 (Lasso) regularization term. 0 means plain ordinary least squares. }
 //input: double lambda = 0 { caption: L2; min: 0; max: 100; description: L2 (Ridge) regularization term. 0 means plain ordinary least squares. }
 //output: dynamic model
 //meta.mlname: Linear Regression
 //meta.mlrole: train
-export async function trainLinearRegression(df: DG.DataFrame, predictColumn: DG.Column, rate: number, iterations: number, alpha: number, lambda: number) : Promise<Uint8Array> {
-  return await PackageFunctions.trainLinearRegression(df, predictColumn, rate, iterations, alpha, lambda);
+export async function trainLinearRegression(df: DG.DataFrame, predictColumn: DG.Column, iterations: number, alpha: number, lambda: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainLinearRegression(df, predictColumn, iterations, alpha, lambda);
 }
 
 //name: Apply Linear Regression
@@ -236,8 +229,8 @@ export async function trainLinearRegression(df: DG.DataFrame, predictColumn: DG.
 //output: dataframe result
 //meta.mlname: Linear Regression
 //meta.mlrole: apply
-export function applyLinearRegression(df: DG.DataFrame, model: any) : any {
-  return PackageFunctions.applyLinearRegression(df, model);
+export async function applyLinearRegression(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyLinearRegression(df, model);
 }
 
 //input: dataframe df 
@@ -260,15 +253,14 @@ export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: D
 
 //input: dataframe df 
 //input: column predictColumn 
-//input: double rate = 1.0 { min: 0.001; max: 20; description: Gradient descent learning rate. }
 //input: double iterations = 100 { min: 1; max: 10000; step: 10; description: Largest number of training steps before training stops. }
 //input: double penalty = 0.1 { min: 0.0001; max: 1; description: Regularization rate. }
 //input: double tolerance = 0.001 { min: 0.00001; max: 0.1; description: Smallest improvement worth continuing training for. }
 //output: dynamic model
 //meta.mlname: Softmax
 //meta.mlrole: train
-export async function trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column, rate: number, iterations: number, penalty: number, tolerance: number) : Promise<Uint8Array> {
-  return await PackageFunctions.trainSoftmax(df, predictColumn, rate, iterations, penalty, tolerance);
+export async function trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column, iterations: number, penalty: number, tolerance: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainSoftmax(df, predictColumn, iterations, penalty, tolerance);
 }
 
 //name: Apply Softmax
@@ -278,8 +270,8 @@ export async function trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column, r
 //output: dataframe result
 //meta.mlname: Softmax
 //meta.mlrole: apply
-export function applySoftmax(df: DG.DataFrame, model: any) : any {
-  return PackageFunctions.applySoftmax(df, model);
+export async function applySoftmax(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applySoftmax(df, model);
 }
 
 //input: dataframe df 
@@ -317,8 +309,8 @@ export async function trainPLSRegression(df: DG.DataFrame, predictColumn: DG.Col
 //output: dataframe result
 //meta.mlname: PLS Regression
 //meta.mlrole: apply
-export function applyPLSRegression(df: DG.DataFrame, model: any) : any {
-  return PackageFunctions.applyPLSRegression(df, model);
+export async function applyPLSRegression(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyPLSRegression(df, model);
 }
 
 //input: dataframe df 
@@ -371,8 +363,8 @@ export async function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column,
 //output: dataframe result
 //meta.mlname: XGBoost
 //meta.mlrole: apply
-export function applyXGBooster(df: DG.DataFrame, model: any) : any {
-  return PackageFunctions.applyXGBooster(df, model);
+export async function applyXGBooster(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyXGBooster(df, model);
 }
 
 //input: dataframe df 
@@ -416,8 +408,8 @@ export async function trainSVM(df: DG.DataFrame, predictColumn: DG.Column, kerne
 //output: dataframe result
 //meta.mlname: SVM
 //meta.mlrole: apply
-export function applySVM(df: DG.DataFrame, model: any) : any {
-  return PackageFunctions.applySVM(df, model);
+export async function applySVM(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applySVM(df, model);
 }
 
 //input: dataframe df 

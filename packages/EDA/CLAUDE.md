@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-EDA (Exploratory Data Analysis) is a Datagrok package providing statistical analysis and machine learning tools. It includes dimensionality reduction (PCA, UMAP, t-SNE, SPE), supervised learning (linear regression, softmax, PLS, gradient boosting via XGBoost), group comparison (two-sample t-test, ANOVA, control comparisons), missing data imputation, Pareto optimization, and probabilistic multi-parameter optimization (pMPO).
+EDA (Exploratory Data Analysis) is a Datagrok package providing statistical analysis and machine learning tools. It includes dimensionality reduction (PCA, UMAP, t-SNE, SPE), supervised learning (linear regression, softmax, PLS, XGBoost, SVM - all via Crux), group comparison (two-sample t-test, ANOVA, control comparisons), missing data imputation, Pareto optimization, and probabilistic multi-parameter optimization (pMPO).
 
 ## Build Commands
 
@@ -26,49 +26,37 @@ grok test --gui            # Run with visible browser
 
 ### High-Level Structure
 
-The package combines TypeScript, WASM modules, and web workers for performance-critical computations:
+The package combines TypeScript, the Crux WebAssembly module, and web workers for performance-critical computations:
 
-- **WASM modules** (`wasm/`): PCA, PLS, softmax and linear regression run on the Rust + WebAssembly `sci-comp-ml` backend (`wasm/sci_comp_ml.js` glue + `sci_comp_ml_bg.wasm`), wrapped by `wasm/eda-api.ts` and loaded lazily via `src/wasm-loader.ts`. XGBoost remains a C++/Emscripten module.
-- **Web workers** (`src/workers/`): t-SNE and UMAP (manifold learning), plus PCA and PLS fits (`eda-ml-worker.ts`) — kept off the UI thread. `softmax-worker.ts` is a TypeScript fallback used only when the WASM softmax fit throws (see `softmax-classifier.ts`); the primary softmax path runs on the Rust+WASM backend on the main thread.
-- **TypeScript API** (`src/`): High-level interfaces, UI components, and integration with the Datagrok platform. Input standardisation happens here (the kernels never standardise — "variant B").
+- **Crux** (`src/crux/`, module in `crux/eda/`): PCA, PLS, linear regression, softmax, PLS regression, XGBoost and SVM run on Crux (scikit-learn and XGBoost ports), in its own module worker.
+- **Web workers** (`src/workers/`): t-SNE and UMAP (manifold learning); the Crux module runs in its own worker (`src/crux/`).
+- **TypeScript API** (`src/`): High-level interfaces, UI components, and integration with the Datagrok platform.
 
 ### Core Modules
 
 #### Dimensionality Reduction
-- **PCA** (`eda-tools.ts` → `wasm/eda-api.ts` → `workers/eda-ml-worker.ts`): NIPALS Principal Component Analysis on the Rust+WASM backend, fit in a web worker
+- **PCA** (`eda-tools.ts` `computePCA`): `ml.pca` (`svd_solver: 'auto'`, `random_state: 0`) on inputs standardised in TS (`standardizedRows` in `utils.ts`: population sigma; constant columns excluded and zero components appended). `center` / `scale` never touch the inputs: they apply to the **score columns** (`centerScaleDataFrame`), as in the pre-Crux NIPALS path - so `center = false` is not an uncentred PCA. Crux's PCA flips signs so the largest |loading| is positive (sklearn `svd_flip`)
 - **UMAP/t-SNE** (`workers/umap-worker.ts`, `workers/tsne-worker.ts`): Manifold learning in workers
 - Uses `@datagrok-libraries/ml` for multi-column dimensionality reduction with custom distance metrics
 
 #### Partial Least Squares (`pls/`)
 - **PLS regression and analysis** (`pls-tools.ts`, `pls-ml.ts`): Multivariate analysis for high-dimensional data
-- **Rust+WASM backend** (`wasm/eda-api.ts` → `workers/eda-ml-worker.ts`): PLS1 fit off the UI thread
+- `getPlsAnalysis` is one `ml.pls_analysis` call (component-major scores / loadings, `coef`, `vip`). Crux (scikit-learn) scales x and y by the sample std and does not normalise the scores; EDA keeps its own convention (doi.org/10.1002/cem.2589, Algorithm 2): x scores `t / ||t||`, x and y loadings `p, q * sqrt(n / (n - 1)) * ||t||`, y scores `U = y q^T / ||q||^2` from the population-standardised y, computed in TS. `coef` and VIP need no conversion. The prediction is `x . coef` without the intercept (`addMvaResults` adds the bias). Explained variances come from `q^2 / n` and `p^2 / n`
+- `ml.pls_analysis` errors on data that cannot support `n_components` (`only k of A PLS components can be extracted; reduce n_components`, `y is uncorrelated with x ...`, `x is constant`, `y is constant`)
 - Supports both linear and quadratic PLS models
 - **Project persistence — do not revert:** the multivariate analysis never adds columns directly. `performMVA` reserves the result names (`getMvaNames`), then calls the `multivariateAnalysisTransform` package function (`meta.role: transform`) through a FuncCall with `{processed: false}`, and only then creates the viewers. That call goes into the table creation script, so a data-synced project replays it and restores the columns the saved layout refers to; without it the restored viewers crash on missing columns. The transform takes **column names**, not `column_list`: a replayed creation script passes such values as strings. The model (features, coefficients, bias) is stored in the `mvaModel` table tag, and the model scatter plot carries `initializationFunction: 'mvaModelInitFunction'`, which rebuilds the prediction-formula tooltip on project/layout opening. Regression tests: `category 'Multivariate analysis: projects'`.
 
-#### XGBoost (`xgbooster.ts`)
-- **XGBoost** v3.3.0 via a minimal C++/Emscripten wasm module (`wasm/XGBoostAPI.*`)
-- Regression (numeric targets), `binary:logistic` (bool / 2-category string targets, threshold 0.5) and `multi:softmax` (3+ categories)
-- Glue: `wasm/xgbooster.ts` (DG-free: typed-array views + dims). Training runs in a long-lived worker (`wasm/workers/xgboostWorker.ts`, transferable buffers, job queue, auto-recreated on crash); prediction is synchronous on the main thread over a cached model handle (`dispose()` frees it)
-- The wasm build has C++ exceptions disabled: validate ALL hyperparameters/labels in TypeScript before any wasm call; a bad call aborts the whole instance
-- Packed model container v2 (objective in the header); pre-upgrade v1 models (no Version field in the header) are rejected with a clear error — they must be retrained
-- Requires initialization via `initXgboost()` in package init
-
-#### SVM (`svm.ts`)
-- **SVM** via a C++/Emscripten wasm module wrapping **LIBSVM v3.37** (`wasm/SVMAPI.*`, glue `wasm/svm.ts`, worker `wasm/workers/svmWorker.ts`, C wrapper `wasm/libsvm/svm-api.cpp`)
-- Two tasks by target type: string/bool → classification (`C_SVC`, one-vs-one for 3+ classes; libsvm returns the class label directly, so no 0.5 threshold), numeric → regression (`EPSILON_SVR`). Kernels: linear/poly/RBF/sigmoid (default RBF)
-- Training runs in a long-lived worker; prediction is synchronous on the main thread over a cached handle (`dispose()` frees it). Requires `initSvm()` in package init
-- **Do not revert (libsvm-specific):**
-  - **Serialization goes through Emscripten MEMFS** (`svm_save_model`/`svm_load_model` are file-based; libsvm has no in-memory (de)serialization). `-sFORCE_FILESYSTEM=1` is mandatory.
-  - **`svm_train` does NOT copy the support vectors** (`model->SV` point into the input `svm_node` buffers). The C wrapper does a save+load round-trip through MEMFS right after training to get a self-contained model (`free_sv=1`) before freeing the input buffers.
-  - **Standardization is done in TS** (variant B; `avgs`/`stdevs` stored in the container) — RBF is scale-sensitive and the kernel never normalizes.
-  - **`isInteractive` thresholds are far below XGBoost** (SMO is superlinear: RBF ~ O(n²)–O(n³)).
-  - **Prediction matches features by NAME, not position** (`orderedFeatures`): the platform does not hand `apply` the feature columns in the training order, and both the standardization stats and libsvm's feature indices are positional — a mismatch silently corrupts every prediction (scrambled classes / a saturated near-constant regression). Feature names are stored in the container; the round-trip serialization test alone misses this (it re-feeds the same ColumnList), so `model-serialization-tests.ts` also asserts a reversed-column apply reproduces the prediction.
-- Packed model container v1 (Type/Categories/**feature names**/standardization stats/libsvm bytes; no legacy). See `wasm/libsvm/README.md` for rebuild. Regression tests: `category 'SVM'`
-
-#### Other Supervised Machine Techniques
-- **Softmax Classifier** (`softmax-classifier.ts`): Multinomial logistic regression
-  - Training on the Rust+WASM backend (`_fitSoftmax` in `eda-api.ts`, main thread); prediction in TypeScript
-- **Linear Regression** (`regression.ts`): Elastic Net (L1/L2) on the Rust+WASM backend; defaults to ordinary least squares and exposes gradient-descent hyperparameters
+#### ML methods on Crux (`src/crux/methods.ts`, `regression.ts`, `pls/pls-ml.ts`)
+- Each `train*` in `package.ts` is one call into a method module, which maps the hyperparameters to a `cruxFit` call; each `apply*` is `cruxPredict(df, model)`. The model blob is the crux-model-v1 file with the feature names (`eda.features`); nothing else is stored. `mlname`, roles and the `train*` inputs are the Forge contract (Forge builds the hyperparameter form from them)
+- `preprocess: 'standard'` (Crux's standard scaler, stored in the model's pipeline) for Linear Regression, Softmax and SVM; none for XGBoost (NaN features allowed) and PLS Regression (Crux's PLS always scales)
+- **Linear Regression** (`regression.ts`): L1 = L2 = 0 -> `linear` (exact OLS; Crux drops singular values below 1e-6 of the largest, which keeps one-hot designs finite), L1 = 0 -> `ridge {alpha: L2}`, else `elasticnet {alpha: L1 + L2, l1_ratio: L1 / (L1 + L2), max_iter: iterations}` (scikit-learn's definitions). Target INT or FLOAT
+- **Softmax** (`methods.ts`): `logistic {C, max_iter: iterations, tol: tolerance}` with `C = 1 / penalty` for 3+ classes and `2 / penalty` for two classes (the old gradient-descent penalty on the two-row weights); `penalty` must be > 0 (`validate`)
+- **XGBoost** (`methods.ts`): `xgboost {n_estimators: iterations, learning_rate: eta, max_depth, reg_lambda, reg_alpha}`; classification for STRING / BOOL targets, regression for INT / FLOAT (objective by class count)
+- **SVM** (`methods.ts`): `svc` / `svr` with `kernel` from `{Linear: linear, Polynomial: poly, RBF: rbf, Sigmoid: sigmoid}`, `C`, `degree`, `coef0`, `svr_epsilon` (regression only); `gamma = 0` is sent as `1 / n_features` (libsvm's default). `isInteractive` stays far below XGBoost (SMO is superlinear)
+- **PLS Regression** (`pls/pls-ml.ts`): `trainPlsRegression` first makes the pre-Crux input checks (`checkDimensionReducerInputs` on the features, `checkColumnType` on the target) and runs `ml.pls_analysis` directly with the same `n_components` on the rows with a target (`targetRows`; an all-missing target throws `... has only missing values.`), rethrowing any error as `PLS Regression: ...` (`ml.fit pls` itself returns garbage or a NaN error when the data cannot support the components); then `ml.fit pls {n_components}` on the original rows. `visualizePLSRegression` rebuilds the viewers (loadings, coefficients, VIP, explained variance, scores with Hotelling ellipses) from a fresh `getPlsAnalysis` on the model's feature columns (`modelFeatures`: the manifest's `eda.features`) of the table Forge passes, on the rows with a target (`targetRows`), with `n_components` from the manifest
+- Regression predictions are FLOAT for every target type (INT targets are no longer rounded). Rows with a missing target (numeric or string) are skipped at training (`training.n_rows`): by Crux's `ml.fit`, and for PLS Regression by EDA too (`targetRows` in `pls-ml.ts`), since `ml.pls_analysis` rejects a missing y; missing features are rejected except by XGBoost
+- XGBoost and SVM keep the pre-Crux input checks Crux does not make (`validate` in `methods.ts`, old messages): XGBoost iterations >= 1, eta in (0, 1], max depth >= 1, lambda / alpha >= 0, at least 2 classes; SVM degree a positive integer. Class counts ignore missing values (`classCount`, also Softmax's `C`)
+- **Do not revert:** prediction matches features by NAME (`eda.features`), never by position: the platform does not hand `apply` the columns in the training order. `model-serialization-tests.ts` asserts reversed / rotated / superset tables and a missing column
 
 #### Missing Values Imputation (`missing-values-imputation/`)
 - **K-Nearest Neighbors** imputation (`knn-imputer.ts`)
@@ -110,18 +98,11 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
 - Sample data in `files/` directory for testing and demos
 
 #### Crux bridge (`src/crux/`)
-- Runs Crux functions (`module-ml`: `ml.fit`, `ml.predict`) from EDA. No package function uses it yet: only the tests (`category 'Crux bridge'`) import it, so `package.js` does not carry it or apache-arrow
-- **Module files**: `crux/` (`crux-module-worker.js`, a verbatim copy of the crux-core worker, `.js` because the server's MIME map has no `mjs`; `ml/crux_wasm.js` + `ml/crux_wasm_bg.wasm`, gitignored, built locally by the recipe in `crux/README.md`). `rspack.config.js` copies `crux/` verbatim (`info.minimized`, so the minimizer leaves them alone) into `dist/crux/`, which `grok publish` uploads
-- **Loader** (`crux-loader.ts`): `CruxModule` runs one module in a module worker (the `id/op/args` protocol of crux-core `crux-modules.mjs`; ops `init`, `callFn`, `fnResource`, `fnDescribe`; `callFn(name, ipc, params, resource?)` transfers `ipc`, so the caller's buffer is detached afterwards). Created lazily on the first call; URLs resolve from the running bundle (`document.currentScript`, as `wasm-loader.ts`), so it works in `package-test.js` too. A load failure throws `Crux module "ml" failed to load from <url> (see crux/README.md)` and kills the worker; `terminate()` kills it on demand (the next call starts a new one). `callFn` registers a resource (the model) only when its id differs from the one live in the worker, and posts the registration and the call in one synchronous segment. `cruxMl` is the `ml` instance
-- **Bridge** (`crux-bridge.ts`): features go as one Arrow column `x: List<Float64>` built from `getRawData()` (row-major `Float64Array` + offsets, no per-row arrays); only INT / FLOAT features, DG nulls -> `NaN` (Crux's missing value). Target `y`: numeric -> Float64 (nulls -> `NaN`), STRING -> Utf8 (`''` -> null), BOOL -> Bool. Crux encodes string / boolean classes itself and returns `class` as text
-- **Model** (`crux-model.ts`): `cruxFit(task, model, df, predictColumn, {estimator, preprocess, seed})` trains on all columns of `df` (`featurizer: vector`, `cv: 0`; `seed` goes to both `random_state` and `estimator.random_state`) and returns a crux-model-v1 (safetensors) blob with the DG feature names added as `__metadata__['eda.features']`. A failed fit rejects with Crux's message (`ml.fit: ...`). `cruxPredict(df, bytes)` picks the features by those names (any order, extra columns ignored, a missing one throws `... is missing`; a blob without `eda.features` takes the frame's current column order) and returns a DataFrame with one `Prediction` column: FLOAT for regression; for classification BOOL / STRING by the JSON type of the manifest's `classes`, numeric classes as INT when all are integers and FLOAT otherwise. Rows Crux cannot predict (e.g. NaN features for a model without NaN support) stay null (`false` in a BOOL column). `readCruxManifest(bytes)` throws `LEGACY_MODEL_ERROR` ("... retrain the model") for any blob that is not crux-model-v1. `cruxTerminate()` stops the worker (`cruxMl.terminate()`). Model ids for the resource cache are the SHA-256 of the blob
-
-### WASM Integration
-
-- **sci-comp-ml** (PCA, PLS, softmax, linear regression): a Rust + WASM crate built with `wasm-pack`, copied into `wasm/` (`sci_comp_ml.js` + `sci_comp_ml_bg.wasm`). Initialised lazily on first use via `src/wasm-loader.ts`; the binary is emitted to `dist/` (via the `.wasm` file-loader rule + `experiments.asyncWebAssembly` in `webpack.config.js`) and located relative to the running bundle (`document.currentScript`), **not** `_package.webRoot` — so it resolves in the separate `package-test.js` bundle too. Wrapped by `wasm/eda-api.ts`; PCA/PLS fits run in `src/workers/eda-ml-worker.ts`.
-- **XGBoost**: a C++/Emscripten module (`wasm/XGBoostAPI.js` + `.wasm`, classic MODULARIZE with a UMD tail) imported by webpack in both the main bundle and the worker bundle; the binary is emitted to `dist/` (listed in the webpack `package` entry) and located relative to the running bundle, like `sci_comp_ml_bg.wasm`. Initialised via `initXgboost()` in `PackageFunctions.init()`. Rebuilt by `wasm/xgboost/build.ps1` from an external XGBoost clone (tag v3.3.0 + minimal-build patch; see the self-contained `wasm/xgboost/README.md`); the build fails unless `wasm/xgboost/smoke/api-test.mjs` passes.
-
-Do not modify generated `.js`/`.wasm` files directly. The Rust source lives in the separate `sci-comp-rust` repo; refresh the artefact by rebuilding there and re-copying into `wasm/`.
+- Runs Crux functions (`ml.fit`, `ml.predict`, `ml.pca`, `ml.pls_analysis`) from EDA
+- **Module files**: `crux/` (`crux-module-worker.js`, a verbatim copy of the crux-core worker, `.js` because the server's MIME map has no `mjs`; `eda/crux_wasm.js` + `eda/crux_wasm_bg.wasm` = `module-eda`, committed; `eda/ENGINE_REV` and `engine.toml` = the pin: crux-core commit, feature list, build settings; build recipe in `crux/README.md`). `rspack.config.js` copies `crux/` verbatim (`info.minimized`, so the minimizer leaves them alone; without `README.md` and `engine.toml`) into `dist/crux/`, which `grok publish` uploads
+- **Loader** (`crux-loader.ts`): `CruxModule` runs one module in a module worker (the `id/op/args` protocol of crux-core `crux-modules.mjs`; ops `init`, `callFn`, `fnResource`, `fnDescribe`; `callFn(name, ipc, params, resource?)` transfers `ipc`, so the caller's buffer is detached afterwards). Created lazily on the first call; URLs resolve from the running bundle (`document.currentScript`), so it works in `package-test.js` too. A load failure throws `Crux module "eda" failed to load from <url> (see crux/README.md)` and kills the worker; `terminate()` kills it on demand (the next call starts a new one). `callFn` registers a resource (the model) only when its id differs from the one live in the worker, and posts the registration and the call in one synchronous segment; a failed registration drops the resource entry, so the next call registers it again instead of running the previously live model. Crux memoises every registered model and never frees it, so after `MAX_LIVE_MODELS = 32` registrations the next call with no call pending restarts the worker. `cruxMl` is the `eda` module instance (the `ml.*` registry)
+- **Bridge** (`crux-bridge.ts`): features go as one Arrow column `x: List<Float64>` built from `getRawData()` (row-major `Float64Array` + offsets, no per-row arrays); only INT / FLOAT features, DG nulls -> `NaN` (Crux's missing value). Target `y`: numeric -> Float64 (nulls -> `NaN`), STRING -> Utf8 from the category codes of `getRawData()` (the `''` category, i.e. a missing value, -> an Arrow null, never a valid `""` class), BOOL -> Bool. Crux encodes string / boolean classes itself and returns `class` as text. `toArrowIpc(features, target?)` = `matrixIpc(rowMajor, rows, cols, target?)`, the entry for a prepared matrix (PCA standardises in TS). Outputs: `flatList(table, name)` reads a one-row `List<Float64>` cell (`ml.pls_analysis`), `flatBatch(table, name)` the concatenated child of a `List<Float64>` column with one list per row (`ml.pca`); both copy with `Float64Array.from` only when the values are not a `Float64Array`
+- **Model** (`crux-model.ts`): `cruxFit(task, model, df, predictColumn, {estimator, preprocess, seed})` trains on all columns of `df` (`featurizer: vector`, `cv: 0`; `seed` goes to both `random_state` and `estimator.random_state`) and returns a crux-model-v1 (safetensors) blob with the DG feature names added as `__metadata__['eda.features']` (`withEdaMetadata`). A failed fit rejects with Crux's message (`ml.fit: ...`). `cruxPredict(df, bytes)` picks the features by those names (`modelFeatures(df, manifest)`) (any order, extra columns ignored, a missing one throws `... is missing`; a blob without `eda.features` throws `... has no feature names`, there is no positional fallback) and returns a DataFrame with one `Prediction` column: FLOAT for regression; for classification BOOL / STRING by the JSON type of the manifest's `classes`, numeric classes as INT when all are integers and FLOAT otherwise. Rows Crux cannot predict (e.g. NaN features for a model without NaN support) stay null (`false` in a BOOL column). `readCruxManifest(bytes)` throws `LEGACY_MODEL_ERROR` ("... retrain the model") for any blob that is not crux-model-v1. `cruxTerminate()` stops the worker (`cruxMl.terminate()`). `runCrux(name, ipc, params, resource?)` is the one call helper (`callFn` + `tableFromIPC`). Model ids for the resource cache are the SHA-256 of the blob
 
 ### Function Registration
 
@@ -153,23 +134,24 @@ Provided by the platform host (webpack `externals`, not bundled):
 - `datagrok-api` (`dg`/`grok`/`ui`), `openchemlib/full.js`, `rxjs`, `cash-dom`, `dayjs`, `wu`, `exceljs`
 
 Bundled into the artifact (not external):
-- `mathjs` (matrix ops), `jstat` (statistical distributions), `umap-js`, `@keckelt/tsne`, and the `sci_comp_ml` wasm. See `CREDITS.md` for attribution.
+- `mathjs` (matrix ops), `jstat` (statistical distributions), `umap-js`, `@keckelt/tsne`, `apache-arrow` (Crux IPC), `fast-sha256` (Crux model ids). The `crux/eda` module ships next to the bundle in `dist/crux/`. See `CREDITS.md` for attribution.
 
 ## Testing
 
 Tests are organized by feature in `src/tests/`:
 - `dim-reduction-tests.ts`: PCA, UMAP, t-SNE, SPE
-- `linear-methods-tests.ts`: Linear regression, PLS
-- `classifiers-tests.ts`: softmax, XGBoost, SVM
-- `model-serialization-tests.ts`: model pack/unpack round-trip **and apply-time feature matching** (softmax, linear regression, PLS, SVM, XGBoost) on iris/cars/winequality/demog. `expectFeatureMatching` checks each unpacked model is invariant to reversed / rotated column order and to extra ("decoy") columns in the table, and throws when a feature is missing — the round-trip alone misses this (it re-feeds the same ColumnList)
+- `linear-methods-tests.ts`: PCA (incl. the center / scale flags), PLS (incl. the rank error and PLS Regression on a target with missing values), linear regression (incl. the model choice), Hotelling ellipse
+- `classifiers-tests.ts`: softmax, XGBoost, SVM (incl. the hyperparameters in the manifest)
+- `model-serialization-tests.ts`: repeated apply of the saved model **and apply-time feature matching** (softmax, linear regression, PLS, SVM, XGBoost) on iris/cars/winequality/demog. `expectFeatureMatching` checks each model is invariant to reversed / rotated column order and to extra ("decoy") columns in the table, and throws when a feature is missing
 - `mis-vals-imputation-tests.ts`: KNN imputation
 - `anova-tests.ts`: One-way ANOVA
 - `ttest-tests.ts`: Two-sample t-test
 - `control-comparisons-tests.ts`: Control comparisons (Dunnett, Holm-Welch)
 - `pmpo-tests.ts`: Probabilistic scoring
 - `pareto-tests.ts`: Pareto optimization
-- `legacy-models-tests.ts`: the pre-Crux model fixtures in `files/legacy-models/` load and predict with the old classes, and `cruxPredict` rejects them with the "retrain" error (category `Legacy models`)
-- `crux-bridge-tests.ts`: the Crux bridge (module load, column types, nulls / NaN, boolean and string targets, save and read back, seed, legacy blob) (category `Crux bridge`; needs `crux/ml/`, see `crux/README.md`)
+- `legacy-models-tests.ts`: `cruxPredict` rejects the pre-Crux model fixtures in `files/legacy-models/` with the "retrain" error (category `Legacy models`)
+- `crux-bridge-tests.ts`: the Crux bridge (module load, column types, nulls / NaN, boolean, missing string and string targets, save and read back, seed, legacy blob, no feature names, failed model registration retried, live-model cap; benchmark: Arrow packing time) (category `Crux bridge`)
+- `crux-thresholds-tests.ts` + `baseline.ts`: the Crux methods (`FITS`: the `train*` defaults) against the pre-Crux numbers in `files/baselines/baseline.json` on the same 5 folds (category `Crux thresholds`): XGBoost / SVM metrics within 1% (integer regression targets compared on rounded predictions, as the old methods rounded), Softmax accuracy not lower by more than 0.02, Linear Regression / PLS Regression R² not lower (1e-5; `linreg/cars-price`, 24 rows x 15 features, compares the training-set R²), PLS analysis and PCA outputs within 1e-6 up to a per-component sign; the time tests (`benchmark: true`) assert XGBoost / SVM fit time <= 2x (only cases with a baseline `fitMs` >= 100 ms; smaller ones are logged as informational) only under `DG.Test.isInBenchmark` (`--benchmark`; otherwise they only log the times, wall-clock is machine-dependent). `benchmark: true` tests also run without `--benchmark`; `--benchmark` runs only them
 
 Test framework from `@datagrok-libraries/test`:
 ```typescript
@@ -186,43 +168,20 @@ category('Feature Name', () => {
 
 - **`files/`**: Demo/test data for pMPO (drugs-props-train.csv, drugs-props-test.csv, scores)
 - **`files/legacy-models/`**: one pre-Crux model per ML method (`.bin`), produced once with the old wasm and not regenerable after it is removed; see its `README.md`. Published to `System:AppData/Eda/legacy-models/`
+- **`files/baselines/baseline.json`**: scores, fit times, PCA and PLS outputs of the pre-Crux methods on fixed datasets and folds (`src/tests/baseline.ts`), produced once with the old wasm; the reference for the Crux thresholds. See its `README.md`. Published to `System:AppData/Eda/baselines/`
 - **`css/`**: Custom stylesheets (pmpo.css for pMPO UI)
 
 ## Key Workflows
 
 ### Adding a New ML Method
 
-1. Implement the algorithm in TypeScript (or Rust in the `sci-comp-rust` repo for a WASM backend; the C++/Emscripten kernels are XGBoost and SVM/libsvm)
-2. Add function registration with `@grok.decorators.func()`
-3. Create tests in appropriate test file
+1. Add a `train*` wrapper over `cruxFit` (hyperparameter map, `preprocess`) in `src/crux/methods.ts`; `apply*` is `cruxPredict`
+2. Add function registration with `@grok.decorators.func()` in `package.ts` (`meta.mlname`, `train` / `apply` / `isApplicable` / `isInteractive` roles)
+3. Create a test category; if the method replaces an existing one, compare it against a baseline as `Crux thresholds` does
 4. Run `grok api` to generate wrappers
 5. Add to package menu structure in `package.json` meta.menu
 
-### Working with WASM
-
-- **sci-comp-ml** (PCA/PLS/softmax/linreg): Rust source lives in the separate `sci-comp-rust` repo; the built `sci_comp_ml.js` + `sci_comp_ml_bg.wasm` are committed in `wasm/`. Loaded via `src/wasm-loader.ts`; PCA/PLS fits run in `src/workers/eda-ml-worker.ts` (the worker `init`s the wasm from a URL passed by the main thread).
-- **XGBoost**: C++/Emscripten (`wasm/XGBoostAPI.*`), rebuilt via `wasm/xgboost/build.ps1` (XGBoost sources come from an external clone, any location; api-test gate). See 'Rebuilding the XGBoost wasm module' below. Glue `wasm/xgbooster.ts`, worker `wasm/workers/xgboostWorker.ts`. When copying `col.getRawData()` in bulk, ALWAYS slice to `col.length` first (`raw.subarray(0, col.length)`) - the raw array may be longer (capacity mechanism).
-- **SVM (libsvm)**: C++/Emscripten (`wasm/SVMAPI.*`), rebuilt via `wasm/libsvm/build.ps1` (libsvm source from an external clone; api-test gate). Glue `wasm/svm.ts`, worker `wasm/workers/svmWorker.ts`, C wrapper `wasm/libsvm/svm-api.cpp`. Serialization round-trips through MEMFS (`-sFORCE_FILESYSTEM=1`); see the SVM core-module notes above. Same capacity-slice rule applies.
-- The `.wasm` file-loader rule + `experiments.asyncWebAssembly` in `webpack.config.js` emit `sci_comp_ml_bg.wasm` to `dist/` with its original name.
-
-### Rebuilding the XGBoost wasm module
-
-Canonical, self-contained instructions: `wasm/xgboost/README.md` (prerequisites
-are public clones of dmlc/xgboost and emsdk, any location; node in PATH). Short form:
-1. `powershell -File wasm/xgboost/build.ps1 -XgboostDir <clone> -EmsdkDir <emsdk>` -
-   worktree at the pinned tag + patch, emcmake build in TEMP, then the
-   `wasm/xgboost/smoke/api-test.mjs` gate; artifacts are copied into `wasm/`
-   ONLY if the test passes.
-2. `npx webpack` - re-bundles the loader (compiled into `package.js`) and
-   re-emits the `.wasm` to `dist/`.
-3. `grok test --host local --no-retry --category XGBoost` - full suite must pass.
-
-When changing the patch or the XGBoost version, additionally run the native smoke
-(9/9 including negative checks; procedure and patch-conflict repair rules are in
-`wasm/xgboost/README.md`). Never change build flags casually - in particular:
-`-msimd128` only together with `-flto` (SIMD alone regresses fit up to 45%), and
-`-sGROWABLE_ARRAYBUFFERS=0` is mandatory (Emscripten 6.x defaults break
-TextDecoder in new Chrome otherwise).
+When copying `col.getRawData()` in bulk, ALWAYS slice to `col.length` first (`raw.subarray(0, col.length)`) - the raw array may be longer (capacity mechanism). A new Crux module revision: `crux/README.md`, then `grok build --force`.
 
 ### pMPO Model Development
 

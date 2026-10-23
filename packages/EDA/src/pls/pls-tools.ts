@@ -6,17 +6,17 @@ import * as DG from 'datagrok-api/dg';
 import * as jStat from 'jstat';
 
 import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS,
-  RESULT_NAMES, WASM_OUTPUT_IDX, ELLIPSES, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
+  RESULT_NAMES, ELLIPSES, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
   DEMO_INTRO_MD, DEMO_RESULTS, NUMS_AFTER_COMMA,
   MAX_ROWS_IN_PREDICTION_TOOLTIP, DELAY,
   MVA_MODEL_TAG, MVA_TRANSFORM_FUNC, MVA_INIT_FUNC} from './pls-constants';
-import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals, describeElements} from '../utils';
-// PLS1 migrated to Rust + WASM (sci-comp-ml).
-import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/eda-api';
+import {checkDimensionReducerInputs, checkColumnType, checkMissingVals, describeElements,
+  standardizedRows} from '../utils';
+import {flatList, toArrowIpc} from '../crux/crux-bridge';
+import {runCrux} from '../crux/crux-model';
 import {carsDataframe} from '../data-generators';
 
 const min = Math.min;
-const max = Math.max;
 
 /** PLS analysis results */
 export type PlsOutput = {
@@ -160,27 +160,57 @@ export function getLines(cols: DG.Column[]): DG.FormulaLine[] {
 
 /** Partial least square regression (PLS) */
 export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
-  checkWasmDimensionReducerInputs(input.features, input.components);
+  checkDimensionReducerInputs(input.features, input.components);
 
   // Check the responce column
   checkColumnType(input.predict);
   checkMissingVals(input.predict);
 
-  const result = await _partialLeastSquareRegressionInWebWorker(
-    input.table,
-    input.features,
-    input.predict,
-    input.components,
-  );
+  const cols = input.features.toList();
+  const n = input.table.rowCount;
+  const m = cols.length;
+  const out = await runCrux('ml.pls_analysis', toArrowIpc(cols, input.predict), {n_components: input.components});
+  const a = Number(out.getChild('n_components')!.get(0));
+  const t = flatList(out, 'x_scores');
+  const p = flatList(out, 'x_loadings');
+  const coef = flatList(out, 'coef');
+
+  // EDA's convention (doi.org/10.1002/cem.2589, Algorithm 2): unit-norm x scores on population-std data and y scores
+  // U = y q^T / |q|^2; Crux (scikit-learn) scales by the sample std and does not normalise the scores
+  const s = Math.sqrt(n / (n - 1));
+  const norms = new Float64Array(a);
+  for (let k = 0; k < a; ++k) {
+    for (let i = k * n; i < (k + 1) * n; ++i)
+      norms[k] += t[i] * t[i];
+    norms[k] = Math.sqrt(norms[k]);
+  }
+  const q = flatList(out, 'y_loadings').map((v, k) => v * s * norms[k]);
+  const qq = q.reduce((sum, v) => sum + v * v, 0);
+
+  const y = standardizedRows([input.predict]);
+
+  const raw = cols.map((c) => c.getRawData());
+  const prediction = new Float32Array(n);
+  for (let i = 0; i < n; ++i) {
+    let sum = 0;
+    for (let j = 0; j < m; ++j)
+      sum += coef[j] * raw[j][i];
+    prediction[i] = sum;
+  }
+
+  const float = (name: string, values: ArrayLike<number>, scale: number = 1): DG.Column =>
+    DG.Column.fromFloat32Array(name, Float32Array.from(values, (v) => v * scale));
+  const components = (values: (k: number) => Float64Array, scale: (k: number) => number) =>
+    [...Array(a).keys()].map((k) => float(`${k + 1}`, values(k), scale(k)));
 
   return {
-    prediction: result[WASM_OUTPUT_IDX.PREDICTION],
-    regressionCoefficients: result[WASM_OUTPUT_IDX.REGR_COEFFS],
-    tScores: result[WASM_OUTPUT_IDX.T_SCORES],
-    uScores: result[WASM_OUTPUT_IDX.U_SCORES],
-    xLoadings: result[WASM_OUTPUT_IDX.X_LOADINGS],
-    yLoadings: result[WASM_OUTPUT_IDX.Y_LOADINGS],
-    vip: result[WASM_OUTPUT_IDX.VIP],
+    prediction: float('0', prediction),
+    regressionCoefficients: float('0', coef),
+    tScores: components((k) => t.subarray(k * n, (k + 1) * n), (k) => 1 / norms[k]),
+    uScores: components(() => y, (k) => q[k] / qq),
+    xLoadings: components((k) => p.subarray(k * m, (k + 1) * m), (k) => s * norms[k]),
+    yLoadings: float('0', q),
+    vip: float('0', flatList(out, 'vip')),
   };
 }
 

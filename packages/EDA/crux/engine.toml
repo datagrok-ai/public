@@ -1,0 +1,11 @@
+# module-eda: the crux-core build EDA ships in crux/eda/ (see crux/README.md).
+
+branch = "eda/module-eda"
+engine_rev = "d23ccae34586e7d804ec0b055f9e359588d12214"
+crate = "crux-wasm"
+features = "crux-fn/ml,crux-fn/ml-model,crux-fn/xgboost,crux-fn/catboost,crux-fn/conformal,crux-fn/hpo,crux-fn/shap,crux-fn/imblearn"
+profile = "wasm-ship"
+rustflags = "-C target-feature=+simd128"
+target_dir = "target/wasm-eda"
+wasm_bindgen = "0.2.129"
+toolchain = "1.95.0"

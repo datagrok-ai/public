@@ -12,10 +12,6 @@ export namespace funcs {
     return await grok.functions.call('EDA:Info', {});
   }
 
-  export async function init(): Promise<void> {
-    return await grok.functions.call('EDA:Init', {});
-  }
-
   /**
    * Density-based spatial clustering of applications with noise (DBSCAN)
    * @param {number} epsilon - The maximum distance between two samples for them to be considered as in the same neighborhood.
@@ -177,13 +173,12 @@ export namespace funcs {
   }
 
   /**
-   * @param {number} rate - Gradient descent learning rate.
-   * @param {number} iterations - Largest number of training steps before training stops.
+   * @param {number} iterations - Largest number of solver iterations (elastic net).
    * @param {number} alpha - L1 (Lasso) regularization term. 0 means plain ordinary least squares.
    * @param {number} lambda - L2 (Ridge) regularization term. 0 means plain ordinary least squares.
    */
-  export async function trainLinearRegression(df: DG.DataFrame , predictColumn: DG.Column , rate: number , iterations: number , alpha: number , lambda: number ): Promise<any> {
-    return await grok.functions.call('EDA:TrainLinearRegression', { df, predictColumn, rate, iterations, alpha, lambda });
+  export async function trainLinearRegression(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , alpha: number , lambda: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainLinearRegression', { df, predictColumn, iterations, alpha, lambda });
   }
 
   /**
@@ -203,13 +198,12 @@ export namespace funcs {
   }
 
   /**
-   * @param {number} rate - Gradient descent learning rate.
    * @param {number} iterations - Largest number of training steps before training stops.
    * @param {number} penalty - Regularization rate.
    * @param {number} tolerance - Smallest improvement worth continuing training for.
    */
-  export async function trainSoftmax(df: DG.DataFrame , predictColumn: DG.Column , rate: number , iterations: number , penalty: number , tolerance: number ): Promise<any> {
-    return await grok.functions.call('EDA:TrainSoftmax', { df, predictColumn, rate, iterations, penalty, tolerance });
+  export async function trainSoftmax(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , penalty: number , tolerance: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainSoftmax', { df, predictColumn, iterations, penalty, tolerance });
   }
 
   /**

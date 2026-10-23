@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 
 import * as sha256 from 'fast-sha256';
-import {tableFromIPC} from 'apache-arrow';
+import {Table, tableFromIPC} from 'apache-arrow';
 
-import {cruxMl} from './crux-loader';
+import {cruxMl, CruxResource} from './crux-loader';
 import {floatColumn, stringValues, toArrowIpc} from './crux-bridge';
 
 export const LEGACY_MODEL_ERROR =
@@ -72,6 +72,12 @@ function withEdaMetadata(bytes: Uint8Array, features: string[]): Uint8Array {
   return out;
 }
 
+/** Runs a Crux function on an Arrow IPC stream (transferred) and decodes its output */
+export async function runCrux(name: string, ipc: Uint8Array, params: object, resource?: CruxResource):
+  Promise<Table> {
+  return tableFromIPC(await cruxMl.callFn(name, ipc, params, resource));
+}
+
 /** Trains a Crux model on all columns of `df`; returns a crux-model-v1 blob */
 export async function cruxFit(task: CruxTask, model: string, df: DG.DataFrame, predictColumn: DG.Column,
   params: CruxFitParams = {}): Promise<Uint8Array> {
@@ -80,14 +86,15 @@ export async function cruxFit(task: CruxTask, model: string, df: DG.DataFrame, p
   const callParams = {task, model, featurizer: 'vector', cv: 0, preprocess: params.preprocess,
     estimator: JSON.stringify({...params.estimator, ...seed}), ...seed};
 
-  const out = tableFromIPC(await cruxMl.callFn('ml.fit', toArrowIpc(features, predictColumn), callParams));
+  const out = await runCrux('ml.fit', toArrowIpc(features, predictColumn), callParams);
   return withEdaMetadata(out.getChild('model')!.get(0) as Uint8Array, features.map((c) => c.name));
 }
 
-/** Applies a crux-model-v1 blob; features are matched by the names saved at training */
-export async function cruxPredict(df: DG.DataFrame, bytes: Uint8Array): Promise<DG.DataFrame> {
-  const manifest = readCruxManifest(bytes);
-  const names = manifest.eda?.features ?? df.columns.names();
+/** The columns of `df` the model was trained on, matched by the names saved at training */
+export function modelFeatures(df: DG.DataFrame, manifest: CruxManifest): DG.Column[] {
+  const names = manifest.eda?.features;
+  if (names === undefined)
+    throw new Error('Crux: the model has no feature names (not trained by EDA)');
   const columns: DG.Column[] = [];
   for (const name of names) {
     const col = df.col(name);
@@ -95,9 +102,16 @@ export async function cruxPredict(df: DG.DataFrame, bytes: Uint8Array): Promise<
       throw new Error(`Crux: feature column "${name}" is missing`);
     columns.push(col);
   }
+  return columns;
+}
+
+/** Applies a crux-model-v1 blob; features are matched by the names saved at training */
+export async function cruxPredict(df: DG.DataFrame, bytes: Uint8Array): Promise<DG.DataFrame> {
+  const manifest = readCruxManifest(bytes);
+  const columns = modelFeatures(df, manifest);
 
   const id = Array.from(sha256.hash(bytes), (b) => b.toString(16).padStart(2, '0')).join('');
-  const out = tableFromIPC(await cruxMl.callFn('ml.predict', toArrowIpc(columns), {}, {name: 'model', id, bytes}));
+  const out = await runCrux('ml.predict', toArrowIpc(columns), {}, {name: 'model', id, bytes});
 
   if (manifest.task === 'regression')
     return DG.DataFrame.fromColumns([floatColumn(out, 'value', PREDICTION)]);

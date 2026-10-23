@@ -7,7 +7,13 @@
 * GROK-20932: Added the knnImpute function: headless k-NN imputation of chosen columns, used by Forge
 * GROK-20932: Marked trainSVM with meta.mlhasrows: the model embeds training rows
 * GROK-20932: Added files/legacy-models: one pre-Crux model per ML method with the Legacy models test category
-* GROK-20932: Added the Crux bridge (src/crux): lazy module-ml worker, DataFrame <-> Arrow IPC, cruxFit / cruxPredict; not yet used by the ML methods
+* GROK-20932: Added the Crux bridge (src/crux): lazy Crux module worker, DataFrame <-> Arrow IPC, cruxFit / cruxPredict
+* GROK-20932: Replaced the PCA, PLS, Linear Regression, Softmax, PLS Regression, XGBoost and SVM kernels with Crux (scikit-learn 1.9.1 and XGBoost 3.4.1 ports); models trained by earlier EDA versions are no longer supported - retrain them
+* GROK-20932: Narrowed the ML methods' applicability: features must be INT or FLOAT, regression targets (Linear Regression, PLS Regression, XGBoost and SVM regression) must be INT or FLOAT; BIG_INT and other numerical types are rejected
+* GROK-20932: Removed the gradient-descent Rate hyperparameter of Linear Regression and Softmax; Softmax Penalty (must be > 0) now maps to logistic C, L1 / L2 follow scikit-learn's ridge / elastic net definitions
+* GROK-20932: Changed regression predictions to float columns for integer targets
+* GROK-20932: Changed Linear Regression, Softmax, PLS Regression, XGBoost and SVM training to skip rows with a missing target instead of failing
+* GROK-20932: Removed the sci-comp-ml, XGBoost and LIBSVM wasm modules
 
 ## 1.9.1 (WIP)
 

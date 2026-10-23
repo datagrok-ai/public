@@ -33,8 +33,13 @@ function targetVector(target: DG.Column): Vector {
   case DG.COLUMN_TYPE.INT:
   case DG.COLUMN_TYPE.FLOAT:
     return makeVector(featureMatrix([target]));
-  case DG.COLUMN_TYPE.STRING:
-    return vectorFromArray(target.toList().map((v) => v === '' ? null : v), new Utf8());
+  case DG.COLUMN_TYPE.STRING: {
+    const categories = target.categories;
+    const raw = target.getRawData();
+    const none = categories.indexOf('');
+    return vectorFromArray(Array.from({length: target.length}, (_, i) => raw[i] === none ? null : categories[raw[i]]),
+      new Utf8());
+  }
   case DG.COLUMN_TYPE.BOOL:
     return vectorFromArray(target.toList(), new Bool());
   default:
@@ -42,17 +47,15 @@ function targetVector(target: DG.Column): Vector {
   }
 }
 
-/** Arrow IPC stream with the features as `x: List<Float64>` and the target as `y` */
-export function toArrowIpc(features: DG.Column[], target?: DG.Column): Uint8Array {
-  const n = features[0].length;
-  const m = features.length;
-  const valueOffsets = Int32Array.from({length: n + 1}, (_, i) => i * m);
+/** Arrow IPC stream with a row-major `rows` x `cols` matrix as `x: List<Float64>` and the target as `y` */
+export function matrixIpc(data: Float64Array, rows: number, cols: number, target?: DG.Column): Uint8Array {
+  const valueOffsets = Int32Array.from({length: rows + 1}, (_, i) => i * cols);
   const x = makeVector(makeData({
     type: new List(new Field('item', new Float64(), true)),
-    length: n,
+    length: rows,
     nullCount: 0,
     valueOffsets,
-    child: makeData({type: new Float64(), length: n * m, nullCount: 0, data: featureMatrix(features)}),
+    child: makeData({type: new Float64(), length: rows * cols, nullCount: 0, data}),
   }));
 
   const columns: Record<string, Vector> = {x};
@@ -61,14 +64,34 @@ export function toArrowIpc(features: DG.Column[], target?: DG.Column): Uint8Arra
   return tableToIPC(new Table(columns), 'stream');
 }
 
+/** Arrow IPC stream with the features as `x: List<Float64>` and the target as `y` */
+export function toArrowIpc(features: DG.Column[], target?: DG.Column): Uint8Array {
+  return matrixIpc(featureMatrix(features), features[0].length, features.length, target);
+}
+
+function asFloat64(values: ArrayLike<number>): Float64Array {
+  return values instanceof Float64Array ? values : Float64Array.from(values);
+}
+
+/** Values of a one-row `List<Float64>` column */
+export function flatList(table: Table, arrowName: string): Float64Array {
+  return asFloat64(table.getChild(arrowName)!.get(0).toArray());
+}
+
+/** Values of a `List<Float64>` column with one list per row, concatenated */
+export function flatBatch(table: Table, arrowName: string): Float64Array {
+  return asFloat64(table.getChild(arrowName)!.getChildAt(0)!.toArray());
+}
+
 /** Float column from a numeric Arrow column; nulls and non-finite values become DG nulls */
 export function floatColumn(table: Table, arrowName: string, name: string): DG.Column {
   const vector = table.getChild(arrowName)!;
   const n = table.numRows;
   const out = new Float32Array(n);
+  const values = vector.nullCount === 0 ? vector.toArray() : null;
 
   for (let i = 0; i < n; ++i) {
-    const v = vector.isValid(i) ? Number(vector.get(i)) : NaN;
+    const v = values !== null ? Number(values[i]) : vector.isValid(i) ? Number(vector.get(i)) : NaN;
     out[i] = Number.isFinite(v) ? v : DG.FLOAT_NULL;
   }
 

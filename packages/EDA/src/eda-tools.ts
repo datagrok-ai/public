@@ -4,54 +4,39 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-// PCA migrated to Rust + WASM (sci-comp-ml); always NIPALS now.
-import {_principalComponentAnalysisNipalsInWebWorker} from '../wasm/eda-api';
+import {flatBatch, matrixIpc} from './crux/crux-bridge';
+import {runCrux} from './crux/crux-model';
 
-import {checkWasmDimensionReducerInputs, checkUMAPinputs, checkTSNEinputs,
-  getRowsOfNumericalColumnns, centerScaleDataFrame, extractNonConstantColsDf} from './utils';
+import {checkDimensionReducerInputs, checkUMAPinputs, checkTSNEinputs, getRowsOfNumericalColumnns,
+  centerScaleDataFrame, extractNonConstantColsDf, standardizedRows} from './utils';
 
 // Principal components analysis (PCA)
 export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
   toCenter: boolean, toScale: boolean): Promise<DG.DataFrame> {
-  checkWasmDimensionReducerInputs(features, components);
+  checkDimensionReducerInputs(features, components);
 
   const rowCount = table.rowCount;
+  const cols = extractNonConstantColsDf(features).columns.toList();
+  const m = cols.length;
+  const k = Math.min(components, m, rowCount);
 
-  // Extract non-const cols dataframe
-  const nonConstData = extractNonConstantColsDf(features);
-  const nonConstColsCount = nonConstData.columns.length;
-
-  // Return zero columns if data is constant
-  if (nonConstColsCount === 0) {
-    const cols: DG.Column[] = [];
-
-    for (let i = 0; i < components; ++i)
-      cols.push(DG.Column.fromFloat32Array(`${i + 1}`, new Float32Array(rowCount).fill(0)));
-
-    return DG.DataFrame.fromColumns(cols);
+  const scores: DG.Column[] = [];
+  if (k > 0) {
+    const out = await runCrux('ml.pca', matrixIpc(standardizedRows(cols), rowCount, m), {n_components: k,
+      svd_solver: 'auto', random_state: 0});
+    const flat = flatBatch(out, 'x');
+    for (let a = 0; a < k; ++a) {
+      const values = new Float32Array(rowCount);
+      for (let i = 0; i < rowCount; ++i)
+        values[i] = flat[i * k + a];
+      scores.push(DG.Column.fromFloat32Array(`${a + 1}`, values));
+    }
   }
 
-  const zeroColsToAdd = (nonConstColsCount < components) ? (components - nonConstColsCount) : 0;
-  const componentsToCompute = Math.min(components, nonConstColsCount);
+  for (let a = k; a < components; ++a)
+    scores.push(DG.Column.fromFloat32Array(`${a + 1}`, new Float32Array(rowCount)));
 
-  // PCA — always NIPALS (Rust + WASM). The classic correlation-matrix
-  // branch was dropped as part of the C++ -> Rust migration.
-  let output: DG.DataFrame | undefined =
-    await _principalComponentAnalysisNipalsInWebWorker(table, features, componentsToCompute);
-
-  if (output === undefined)
-    throw new Error('Failed to compute PCA');
-
-  output = centerScaleDataFrame(output, toCenter, toScale);
-
-  const cols = output.columns;
-  const count = cols.length;
-
-  // Add zero columns (with respect to the const cols count)
-  for (let i = 0; i < zeroColsToAdd; ++i)
-    cols.add(DG.Column.fromFloat32Array(`${count + i + 1}`, new Float32Array(rowCount).fill(0)));
-
-  return output;
+  return centerScaleDataFrame(DG.DataFrame.fromColumns(scores), toCenter, toScale);
 } // computePCA
 
 // Uniform Manifold Approximation and Projection (UMAP)

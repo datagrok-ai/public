@@ -7,8 +7,8 @@ import {tableFromIPC} from 'apache-arrow';
 
 import {cruxMl} from '../crux/crux-loader';
 import {toArrowIpc} from '../crux/crux-bridge';
-import {LEGACY_MODEL_ERROR, cruxFit, cruxPredict, cruxTerminate, readCruxManifest} from '../crux/crux-model';
-import {accuracy, classificationDataset, copyCol, decoyColumns, numericFeatures, r2,
+import {LEGACY_MODEL_ERROR, cruxFit, cruxPredict, cruxTerminate, readCruxManifest, runCrux} from '../crux/crux-model';
+import {accuracy, classificationDataset, copyCol, decoyColumns, mulberry32, numericFeatures, predictColumn, r2,
   regressionDataset} from './utils';
 
 const IRIS = 'System:DemoFiles/iris.csv';
@@ -25,10 +25,6 @@ function frame(cols: DG.Column[]): DG.DataFrame {
   return DG.DataFrame.fromColumns(cols.map(copyCol));
 }
 
-async function predictionColumn(df: DG.DataFrame, bytes: Uint8Array): Promise<DG.Column> {
-  return (await cruxPredict(df, bytes)).columns.byIndex(0);
-}
-
 async function irisModel(): Promise<{features: DG.Column[], target: DG.Column, bytes: Uint8Array}> {
   const df = await grok.dapi.files.readCsv(IRIS);
   const features = numericFeatures(df, 'Species', ['col 1']).toList();
@@ -42,6 +38,8 @@ category('Crux bridge', () => {
     const spec = JSON.parse(await cruxMl.fnDescribe('ml.fit'));
     expect(spec['meta.fn'], 'ml.fit');
     expect(spec.inputs.some((p: {name: string}) => p.name === 'x'), true, 'ml.fit has no x input');
+    for (const name of ['ml.pls_analysis', 'ml.pca'])
+      expect(JSON.parse(await cruxMl.fnDescribe(name))['meta.fn'], name);
   }, {timeout: FIRST_TIMEOUT});
 
   test('Column types', async () => {
@@ -51,7 +49,7 @@ category('Crux bridge', () => {
       Int32Array.from({length: ROWS}, (_, i) => Math.round(raw[i] * 100)));
 
     const bytes = await cruxFit('regression', 'linear', frame(features), y);
-    const pred = await predictionColumn(frame(features), bytes);
+    const pred = await predictColumn(frame(features), bytes);
     expect(pred.type, DG.COLUMN_TYPE.FLOAT);
     expect(pred.length, ROWS);
     for (let i = 0; i < ROWS; ++i)
@@ -81,7 +79,7 @@ category('Crux bridge', () => {
     await cruxFit('regression', 'xgboost', frame(dirty), y, {estimator: {n_estimators: 5}});
 
     const bytes = await cruxFit('regression', 'linear', frame(features), y);
-    const pred = await predictionColumn(frame(dirty), bytes);
+    const pred = await predictColumn(frame(dirty), bytes);
     expect(pred.isNone(5) && pred.isNone(7), true, 'rows with missing features must have no prediction');
     for (let i = 0; i < ROWS; ++i) {
       if (i !== 5 && i !== 7)
@@ -101,16 +99,32 @@ category('Crux bridge', () => {
       df.col('Labels')!.toList().map((l: string) => l[0] === 'A'));
 
     const bytes = await cruxFit('classification', 'logistic', frame(features), target);
-    const pred = await predictionColumn(frame(features), bytes);
+    const pred = await predictColumn(frame(features), bytes);
     expect(pred.type, DG.COLUMN_TYPE.BOOL);
     const acc = accuracy(target, pred);
     expect(acc > 0.95, true, `accuracy ${acc}`);
     expectArray(readCruxManifest(bytes).classes!, [false, true]);
   }, {timeout: TIMEOUT});
 
+  test('Missing string target', async () => {
+    const df = classificationDataset(ROWS, 3, true, 42);
+    const features = numericFeatures(df, 'Labels').toList();
+    const target = df.col('Labels')!.clone();
+    target.set(0, null);
+    target.set(1, null);
+
+    const y = tableFromIPC(toArrowIpc(features, target)).getChild('y')!;
+    expect(y.nullCount, 2, 'missing labels must go as Arrow nulls');
+    expect(y.isValid(0) || y.isValid(1), false, 'missing labels must go as Arrow nulls');
+
+    const manifest = readCruxManifest(await cruxFit('classification', 'logistic', frame(features), target));
+    expect(manifest.training.n_rows, ROWS - 2, 'rows with a missing target are skipped');
+    expect((manifest.classes as string[]).includes(''), false, `classes ${JSON.stringify(manifest.classes)}`);
+  }, {timeout: TIMEOUT});
+
   test('String target', async () => {
     const {features, target, bytes} = await irisModel();
-    const pred = await predictionColumn(frame(features), bytes);
+    const pred = await predictColumn(frame(features), bytes);
     expect(pred.type, DG.COLUMN_TYPE.STRING);
     const acc = accuracy(target, pred);
     expect(acc > 0.9, true, `accuracy ${acc}`);
@@ -127,22 +141,22 @@ category('Crux bridge', () => {
     expectArray(manifest.eda!.features, features.map((c) => c.name));
     expect(manifest.n_features, 4);
 
-    const before = await predictionColumn(frame(features), bytes);
+    const before = await predictColumn(frame(features), bytes);
     cruxTerminate();
-    const reloaded = await predictionColumn(frame(features), bytes);
+    const reloaded = await predictColumn(frame(features), bytes);
     expect(accuracy(before, reloaded), 1);
 
     const other = await cruxFit('regression', 'linear', frame(features.slice(1)), features[0]);
-    const otherPred = await predictionColumn(frame(features), other);
+    const otherPred = await predictColumn(frame(features), other);
     expect(otherPred.type, DG.COLUMN_TYPE.FLOAT, 'the other model');
     const score = r2(features[0], otherPred);
     expect(score > 0.8, true, `the other model: R2 ${score}`);
-    const again = await predictionColumn(frame(features), bytes);
+    const again = await predictColumn(frame(features), bytes);
     expect(accuracy(before, again), 1, 'after switching models');
 
-    const reversed = await predictionColumn(frame([...features].reverse()), bytes);
+    const reversed = await predictColumn(frame([...features].reverse()), bytes);
     expect(accuracy(before, reversed), 1, 'reversed column order');
-    const superset = await predictionColumn(frame([...decoyColumns(before.length, 2), ...features]), bytes);
+    const superset = await predictColumn(frame([...decoyColumns(before.length, 2), ...features]), bytes);
     expect(accuracy(before, superset), 1, 'extra columns');
 
     await expectExceptionAsync(async () => {
@@ -163,8 +177,8 @@ category('Crux bridge', () => {
     const state = (manifest as unknown as {state: {params: [string, string][]}}).state;
     expect(state.params.some(([k, v]) => k === 'random_state' && v === '7'), true,
       `XGBoost params ${JSON.stringify(state.params)}`);
-    const a = await predictionColumn(frame(features), first);
-    const b = await predictionColumn(frame(features), second);
+    const a = await predictColumn(frame(features), first);
+    const b = await predictColumn(frame(features), second);
     expect(accuracy(a, b), 1);
   }, {timeout: TIMEOUT});
 
@@ -174,6 +188,91 @@ category('Crux bridge', () => {
       await cruxPredict(frame(features), Uint8Array.of(1, 2, 3));
     }, (e) => e.message === LEGACY_MODEL_ERROR);
   }, {timeout: TIMEOUT});
+
+  test('No feature names', async () => {
+    const {features, y} = regressionData();
+    const out = await runCrux('ml.fit', toArrowIpc(features, y),
+      {task: 'regression', model: 'linear', featurizer: 'vector', cv: 0, estimator: '{}'});
+    const bytes = out.getChild('model')!.get(0) as Uint8Array;
+    expect(readCruxManifest(bytes).eda === undefined, true, 'eda.features is still in the blob');
+    await expectExceptionAsync(async () => {
+      await cruxPredict(frame(features), bytes);
+    }, (e) => e.message.includes('has no feature names'));
+  }, {timeout: TIMEOUT});
+
+  test('Failed model registration is retried', async () => {
+    const {features, bytes} = await irisModel();
+    const module = cruxMl as unknown as {post: (op: string, args: object, transfer?: Transferable[]) => Promise<any>};
+    const post = module.post;
+    let registrations = 0;
+    module.post = function(op: string, args: object, transfer?: Transferable[]) {
+      if (op === 'fnResource' && ++registrations === 1)
+        return Promise.reject(new Error('registration failed'));
+      return post.call(this, op, args, transfer);
+    };
+    try {
+      cruxTerminate();
+      await expectExceptionAsync(async () => {
+        await cruxPredict(frame(features), bytes);
+      }, (e) => e.message === 'registration failed');
+      const pred = await predictColumn(frame(features), bytes);
+      expect(registrations, 2, 'the model must be registered again after a failed registration');
+      expect(pred.length, features[0].length);
+    } finally {
+      delete (module as {post?: unknown}).post;
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Live-model cap', async () => {
+    const module = cruxMl as unknown as {terminate: () => void};
+    const terminate = module.terminate;
+    let terminations = 0;
+    module.terminate = function() {
+      ++terminations;
+      terminate.call(this);
+    };
+    try {
+      const rng = mulberry32(11);
+      for (let k = 0; k < 33; ++k) {
+        const x = DG.Column.fromFloat64Array('x', Float64Array.from({length: 10}, () => rng()));
+        const y = DG.Column.fromFloat64Array('y', Float64Array.from(x.getRawData().subarray(0, 10), (v) => k + 2 * v));
+        const pred = await predictColumn(frame([x]), await cruxFit('regression', 'linear', frame([x]), y));
+        for (let i = 0; i < pred.length; ++i)
+          expect(Number.isFinite(pred.get(i)), true, `model ${k}, row ${i}: ${pred.get(i)}`);
+      }
+      expect(terminations > 0, true, 'the worker was not restarted after 32 models');
+    } finally {
+      delete (module as {terminate?: unknown}).terminate;
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Arrow packing time', async () => {
+    const lines: string[] = [];
+    for (const [rows, cols] of [[100000, 10], [100000, 100], [20000, 500]]) {
+      const df = grok.data.demo.randomWalk(rows, cols + 1);
+      const all = df.columns.toList();
+      const features = DG.DataFrame.fromColumns(all.slice(0, cols));
+      const y = all[cols];
+
+      let t0 = performance.now();
+      toArrowIpc(features.columns.toList(), y);
+      const packMs = performance.now() - t0;
+
+      t0 = performance.now();
+      await cruxFit('regression', 'xgboost', features, y, {estimator: {n_estimators: 20}});
+      const xgbMs = performance.now() - t0;
+
+      t0 = performance.now();
+      await cruxFit('regression', 'linear', features, y);
+      const linearMs = performance.now() - t0;
+
+      lines.push(`BENCH pack ${rows / 1000}kx${cols} pack=${packMs.toFixed(0)}ms xgb-fit=${xgbMs.toFixed(0)}ms ` +
+        `linear-fit=${linearMs.toFixed(0)}ms pack-share=${(100 * packMs / linearMs).toFixed(1)}%/` +
+        `${(100 * packMs / xgbMs).toFixed(1)}%`);
+    }
+    for (const line of lines)
+      console.log(line);
+  }, {timeout: 600000, benchmark: true});
 
   after(async () => cruxTerminate());
 });

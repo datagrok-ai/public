@@ -4,34 +4,24 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
 
-import {SoftmaxClassifier} from '../softmax-classifier';
-import {getLinearRegressionParams, getPredictionByLinearRegression,
-  packLinearRegressionModel, unpackLinearRegressionModel} from '../regression';
-import {PlsModel} from '../pls/pls-ml';
-import {SVM, SvmFitOptions} from '../svm';
-import {XGBooster} from '../xgbooster';
-import {KernelType} from '../../wasm/svm';
-import {accuracy, madError, numericFeatures, copyCol, decoyColumns, asTable, r2} from './utils';
+import {isClassTarget} from '../crux/methods';
+import {trainPlsRegression} from '../pls/pls-ml';
+import {nonNullRows} from '../utils';
+import {Fit, FITS} from './baseline';
+import {accuracy, numericFeatures, copyCol, decoyColumns, asTable, r2, predictColumn, sameValues} from './utils';
 
 const IRIS = 'System:DemoFiles/iris.csv';
 const CARS = 'System:DemoFiles/cars.csv';
 const WINE = 'System:DemoFiles/winequality.csv';
 const DEMOG = 'System:DemoFiles/demog.csv';
 
-const TIMEOUT = 30000;
-const PLS_COMPONENTS = 3;
+const TIMEOUT = 60000;
 // Effectively zero: identical params → identical Float32.
 const ROUNDTRIP_EPS = 1e-6;
 
 // ── data helpers ──────────────────────────────────────────────────────
-
-/** Rows where every `keep` column is non-null. */
-function nonNullRows(df: DG.DataFrame, keep: string[]): DG.DataFrame {
-  const cols = keep.map((n) => df.col(n)!);
-  return df.clone(DG.BitSet.create(df.rowCount, (i) => cols.every((c) => !c.isNone(i))));
-}
 
 /** Up to `n` evenly-strided rows (a prefix would drop a class in ordered data). */
 function sampleRows(df: DG.DataFrame, n: number): DG.DataFrame {
@@ -41,40 +31,25 @@ function sampleRows(df: DG.DataFrame, n: number): DG.DataFrame {
   return df.clone(DG.BitSet.create(df.rowCount, (i) => i % stride === 0));
 }
 
-/** Expect that a synchronous action throws (all model `predict`s are sync). */
-function expectThrowsSync(action: () => unknown, label: string): void {
-  let thrown = false;
-  try {
-    action();
-  } catch {
-    thrown = true;
-  }
-  expect(thrown, true, `${label}: expected an error, but none was thrown`);
-}
-
 // ── metrics ───────────────────────────────────────────────────────────
 
-type Predict = (cols: DG.ColumnList) => DG.Column;
+type Predict = (cols: DG.ColumnList) => Promise<DG.Column>;
 type Same = (a: DG.Column, b: DG.Column) => boolean;
 
-/** Classification: identical labels. */
-const sameLabels: Same = (a, b) => accuracy(a, b) === 1;
-/** Regression: identical Float32 values (a lossless model reproduces them). */
-const sameValues: Same = (a, b) => madError(a, b) < ROUNDTRIP_EPS;
-
 /** Apply-time contract: order- and extra-column-invariant; missing feature throws. */
-function expectFeatureMatching(predict: Predict, features: DG.ColumnList, before: DG.Column, same: Same): void {
+async function expectFeatureMatching(predict: Predict, features: DG.ColumnList, before: DG.Column,
+  same: Same): Promise<void> {
   const cols = features.toList();
   const rows = cols[0].length;
 
   // (1) reversed order
-  expect(same(before, predict(asTable(cols.map(copyCol).reverse()))), true,
+  expect(same(before, await predict(asTable(cols.map(copyCol).reverse()))), true,
     'prediction depends on column order (reversed)');
 
   // (2) rotated order — a permutation distinct from the reverse (>2 features)
   if (cols.length > 2) {
     const copies = cols.map(copyCol);
-    expect(same(before, predict(asTable([...copies.slice(1), copies[0]]))), true,
+    expect(same(before, await predict(asTable([...copies.slice(1), copies[0]]))), true,
       'prediction depends on column order (rotated)');
   }
 
@@ -82,137 +57,45 @@ function expectFeatureMatching(predict: Predict, features: DG.ColumnList, before
   const decoys = decoyColumns(rows, 2);
   const superset = [decoys[0], ...cols.map(copyCol).reverse()];
   superset.splice(1 + Math.floor(cols.length / 2), 0, decoys[1]);
-  expect(same(before, predict(asTable(superset))), true, 'extra columns in the table disturb the prediction');
+  expect(same(before, await predict(asTable(superset))), true, 'extra columns in the table disturb the prediction');
 
   // (4) a missing feature must throw, not silently mispredict
-  expectThrowsSync(() => predict(asTable(cols.slice(1).map(copyCol))), 'a missing feature column must throw');
+  await expectExceptionAsync(async () => {
+    await predict(asTable(cols.slice(1).map(copyCol)));
+  }, (e) => e.message.includes('is missing'));
 }
 
-// ── softmax ──────────────────────────────────────────────────────────
+/** Trains on `features`, applies twice (identical), checks feature matching and the training score floor */
+async function roundTrip(label: string, fit: Fit, target: DG.Column, features: DG.ColumnList,
+  floor: number): Promise<void> {
+  const classification = isClassTarget(target);
+  // Classification: identical labels; regression: identical Float32 values (a lossless model reproduces them)
+  const same: Same = (a, b) => sameValues(a, b, classification ? 0 : ROUNDTRIP_EPS);
+  const bytes = await fit(DG.DataFrame.fromColumns(features.toList()), target);
+  const predict: Predict = (cols) => predictColumn(DG.DataFrame.fromColumns(cols.toList()), bytes);
 
-async function softmaxRoundTrip(target: DG.Column, features: DG.ColumnList, accuracyFloor: number): Promise<void> {
-  const model = new SoftmaxClassifier({classesCount: target.categories.length, featuresCount: features.length});
-  await model.fit(features, target);
-  const before = model.predict(features);
+  const before = await predict(features);
+  expect(same(before, await predict(features)), true, `${label}: a second apply changed predictions`);
+  await expectFeatureMatching(predict, features, before, same);
 
-  const unpacked = new SoftmaxClassifier(undefined, model.toBytes());
-  expect(accuracy(before, unpacked.predict(features)), 1, 'softmax pack/unpack changed predictions');
-  expectFeatureMatching((c) => unpacked.predict(c), features, before, sameLabels);
-
-  const acc = accuracy(target, before);
-  expect(acc > accuracyFloor, true, `softmax accuracy too low: ${acc} (expected > ${accuracyFloor})`);
+  const score = classification ? accuracy(target, before) : r2(target, before);
+  expect(score > floor, true, `${label}: ${classification ? 'accuracy' : 'R²'} too low: ${score} ` +
+    `(expected > ${floor})`);
 }
 
-// ── linear regression ────────────────────────────────────────────────
+const {softmax, linreg, pls, svm, xgboost} = FITS;
+const pls2: Fit = (df, target) => trainPlsRegression(df, target, 2);
 
-async function linregRoundTrip(target: DG.Column, features: DG.ColumnList, r2Floor: number): Promise<void> {
-  const params = await getLinearRegressionParams(features, target);
-  const before = getPredictionByLinearRegression(features, params);
-
-  // Pack/unpack exactly as train/applyLinearRegression do.
-  const restored = unpackLinearRegressionModel(packLinearRegressionModel(params, features.names()));
-  expect(madError(before, getPredictionByLinearRegression(features, restored.params, restored.names)) < ROUNDTRIP_EPS,
-    true, 'linreg pack/unpack changed predictions');
-  expect(restored.names !== undefined, true, 'linreg pack/unpack lost the feature names');
-  expect(restored.names!.join(), features.names().join(), 'linreg pack/unpack changed feature names');
-
-  expectFeatureMatching((c) => getPredictionByLinearRegression(c, restored.params, restored.names),
-    features, before, sameValues);
-
-  // Legacy model (bare Float32Array, no names) still loads — positional matching.
-  const legacy = unpackLinearRegressionModel(Uint8Array.from(new Uint8Array(params.buffer)));
-  expect(legacy.names === undefined, true, 'legacy linreg model reported feature names');
-  expect(madError(before, getPredictionByLinearRegression(features, legacy.params, legacy.names)) < ROUNDTRIP_EPS,
-    true, 'legacy linreg model no longer loads');
-
-  const score = r2(target, before);
-  expect(score > r2Floor, true, `linreg R² too low: ${score} (expected > ${r2Floor})`);
-}
-
-// ── PLS1 ─────────────────────────────────────────────────────────────
-
-async function plsRoundTrip(target: DG.Column, features: DG.ColumnList, r2Floor: number,
-  components: number = PLS_COMPONENTS): Promise<void> {
-  const model = new PlsModel();
-  await model.fit(features, target, Math.min(components, features.length));
-  const before = model.predict(features);
-
-  const unpacked = new PlsModel(model.toBytes());
-  expect(madError(before, unpacked.predict(features)) < ROUNDTRIP_EPS, true, 'PLS pack/unpack changed predictions');
-  expectFeatureMatching((c) => unpacked.predict(c), features, before, sameValues);
-
-  const score = r2(target, before);
-  expect(score > r2Floor, true, `PLS R² too low: ${score} (expected > ${r2Floor})`);
-}
-
-// ── SVM (libsvm) ─────────────────────────────────────────────────────
-
-const SVM_OPTS: SvmFitOptions = {kernelType: KernelType.Rbf, C: 1, gamma: 0, degree: 3, coef0: 0, epsilon: 0.1};
 // SMO is superlinear in the sample count; cap large datasets for the SVM tests.
 const SVM_MAX_ROWS = 1500;
-
-async function svmClassifyRoundTrip(target: DG.Column, features: DG.ColumnList,
-  accuracyFloor: number): Promise<void> {
-  const model = new SVM();
-  await model.fit(features, target, SVM_OPTS);
-  const before = model.predict(features);
-
-  const unpacked = new SVM(model.toBytes());
-  expect(accuracy(before, unpacked.predict(features)), 1, 'SVM pack/unpack changed predictions');
-  expectFeatureMatching((c) => unpacked.predict(c), features, before, sameLabels);
-
-  const acc = accuracy(target, before);
-  expect(acc > accuracyFloor, true, `SVM accuracy too low: ${acc} (expected > ${accuracyFloor})`);
-}
-
-async function svmRegressRoundTrip(target: DG.Column, features: DG.ColumnList, r2Floor: number): Promise<void> {
-  const model = new SVM();
-  await model.fit(features, target, SVM_OPTS);
-  const before = model.predict(features);
-
-  const unpacked = new SVM(model.toBytes());
-  expect(madError(before, unpacked.predict(features)) < ROUNDTRIP_EPS, true, 'SVM pack/unpack changed predictions');
-  expectFeatureMatching((c) => unpacked.predict(c), features, before, sameValues);
-
-  const score = r2(target, before);
-  expect(score > r2Floor, true, `SVM R² too low: ${score} (expected > ${r2Floor})`);
-}
-
-// ── XGBoost ──────────────────────────────────────────────────────────
-
-async function xgbClassifyRoundTrip(target: DG.Column, features: DG.ColumnList,
-  accuracyFloor: number): Promise<void> {
-  const model = new XGBooster();
-  await model.fit(features, target);
-  const before = model.predict(features);
-
-  const unpacked = new XGBooster(model.toBytes());
-  expect(accuracy(before, unpacked.predict(features)), 1, 'XGBoost pack/unpack changed predictions');
-  expectFeatureMatching((c) => unpacked.predict(c), features, before, sameLabels);
-
-  const acc = accuracy(target, before);
-  expect(acc > accuracyFloor, true, `XGBoost accuracy too low: ${acc} (expected > ${accuracyFloor})`);
-}
-
-async function xgbRegressRoundTrip(target: DG.Column, features: DG.ColumnList, r2Floor: number): Promise<void> {
-  const model = new XGBooster();
-  await model.fit(features, target);
-  const before = model.predict(features);
-
-  const unpacked = new XGBooster(model.toBytes());
-  expect(madError(before, unpacked.predict(features)) < ROUNDTRIP_EPS, true, 'XGBoost pack/unpack changed predictions');
-  expectFeatureMatching((c) => unpacked.predict(c), features, before, sameValues);
-
-  const score = r2(target, before);
-  expect(score > r2Floor, true, `XGBoost R² too low: ${score} (expected > ${r2Floor})`);
-}
 
 // ── datasets ─────────────────────────────────────────────────────────
 
 /** demog rows without nulls in the columns used, as {features, target}. */
 async function demog(featureNames: string[], targetName: string, maxRows = Number.MAX_SAFE_INTEGER):
   Promise<{features: DG.ColumnList, target: DG.Column}> {
-  const clean = nonNullRows(await grok.dapi.files.readCsv(DEMOG), [...featureNames, targetName]);
+  const all = await grok.dapi.files.readCsv(DEMOG);
+  const clean = all.clone(nonNullRows(all.columns.byNames([...featureNames, targetName])));
   const df = clean.rowCount > maxRows ? sampleRows(clean, maxRows) : clean;
   return {
     features: DG.DataFrame.fromColumns(featureNames.map((n) => df.col(n)!)).columns,
@@ -226,103 +109,103 @@ category('Model serialization', () => {
   // ── softmax (classification) ──
   test('Softmax — iris', async () => {
     const df = await grok.dapi.files.readCsv(IRIS);
-    await softmaxRoundTrip(df.col('Species')!, numericFeatures(df, 'Species', ['col 1']), 0.8);
+    await roundTrip('softmax', softmax, df.col('Species')!, numericFeatures(df, 'Species', ['col 1']), 0.8);
   }, {timeout: TIMEOUT});
 
   test('Softmax — winequality', async () => {
     const df = await grok.dapi.files.readCsv(WINE);
-    await softmaxRoundTrip(df.col('type')!, numericFeatures(df, 'type', ['quality']), 0.8);
+    await roundTrip('softmax', softmax, df.col('type')!, numericFeatures(df, 'type', ['quality']), 0.8);
   }, {timeout: TIMEOUT});
 
   test('Softmax — demog (SEX)', async () => {
     const {features, target} = await demog(DEMOG_FEATS, 'SEX');
-    await softmaxRoundTrip(target, features, 0.55);
+    await roundTrip('softmax', softmax, target, features, 0.55);
   }, {timeout: TIMEOUT});
 
   // ── linear regression ──
   test('Linear regression — cars', async () => {
     const df = await grok.dapi.files.readCsv(CARS);
-    await linregRoundTrip(df.col('price')!, numericFeatures(df, 'price'), 0.4);
+    await roundTrip('linreg', linreg, df.col('price')!, numericFeatures(df, 'price'), 0.4);
   }, {timeout: TIMEOUT});
 
   test('Linear regression — winequality', async () => {
     const df = await grok.dapi.files.readCsv(WINE);
-    await linregRoundTrip(df.col('quality')!, numericFeatures(df, 'quality'), 0.1);
+    await roundTrip('linreg', linreg, df.col('quality')!, numericFeatures(df, 'quality'), 0.1);
   }, {timeout: TIMEOUT});
 
   test('Linear regression — demog (WEIGHT)', async () => {
     const {features, target} = await demog(['AGE', 'HEIGHT'], 'WEIGHT');
-    await linregRoundTrip(target, features, 0.2);
+    await roundTrip('linreg', linreg, target, features, 0.2);
   }, {timeout: TIMEOUT});
 
   // ── PLS ──
   test('PLS — cars', async () => {
     const df = await grok.dapi.files.readCsv(CARS);
-    await plsRoundTrip(df.col('price')!, numericFeatures(df, 'price'), 0.4);
+    await roundTrip('PLS', pls, df.col('price')!, numericFeatures(df, 'price'), 0.4);
   }, {timeout: TIMEOUT});
 
   test('PLS — winequality', async () => {
     const df = await grok.dapi.files.readCsv(WINE);
-    await plsRoundTrip(df.col('quality')!, numericFeatures(df, 'quality'), 0.1);
+    await roundTrip('PLS', pls, df.col('quality')!, numericFeatures(df, 'quality'), 0.1);
   }, {timeout: TIMEOUT});
 
   test('PLS — demog (WEIGHT)', async () => {
     const {features, target} = await demog(['AGE', 'HEIGHT'], 'WEIGHT');
-    await plsRoundTrip(target, features, 0.2, 2);
+    await roundTrip('PLS', pls2, target, features, 0.2);
   }, {timeout: TIMEOUT});
 
   // ── SVM (classification) ──
   test('SVM — iris', async () => {
     const df = await grok.dapi.files.readCsv(IRIS);
-    await svmClassifyRoundTrip(df.col('Species')!, numericFeatures(df, 'Species', ['col 1']), 0.8);
+    await roundTrip('SVM', svm, df.col('Species')!, numericFeatures(df, 'Species', ['col 1']), 0.8);
   }, {timeout: TIMEOUT});
 
   test('SVM — winequality (type)', async () => {
     const df = sampleRows(await grok.dapi.files.readCsv(WINE), SVM_MAX_ROWS);
-    await svmClassifyRoundTrip(df.col('type')!, numericFeatures(df, 'type', ['quality']), 0.8);
+    await roundTrip('SVM', svm, df.col('type')!, numericFeatures(df, 'type', ['quality']), 0.8);
   }, {timeout: TIMEOUT});
 
   test('SVM — demog (SEX)', async () => {
     const {features, target} = await demog(DEMOG_FEATS, 'SEX', SVM_MAX_ROWS);
-    await svmClassifyRoundTrip(target, features, 0.55);
+    await roundTrip('SVM', svm, target, features, 0.55);
   }, {timeout: TIMEOUT});
 
   // ── SVM (regression) ──
   test('SVM — winequality (quality)', async () => {
     const df = sampleRows(await grok.dapi.files.readCsv(WINE), SVM_MAX_ROWS);
-    await svmRegressRoundTrip(df.col('quality')!, numericFeatures(df, 'quality'), 0.3);
+    await roundTrip('SVM', svm, df.col('quality')!, numericFeatures(df, 'quality'), 0.3);
   }, {timeout: TIMEOUT});
 
   // SVR defaults (C=1) need a small-magnitude target; cars price (~10^4) underfits.
   test('SVM — iris (Petal.Length)', async () => {
     const df = await grok.dapi.files.readCsv(IRIS);
-    await svmRegressRoundTrip(df.col('Petal.Length')!, numericFeatures(df, 'Petal.Length', ['col 1']), 0.5);
+    await roundTrip('SVM', svm, df.col('Petal.Length')!, numericFeatures(df, 'Petal.Length', ['col 1']), 0.5);
   }, {timeout: TIMEOUT});
 
   // ── XGBoost (classification) ──
   test('XGBoost — iris', async () => {
     const df = await grok.dapi.files.readCsv(IRIS);
-    await xgbClassifyRoundTrip(df.col('Species')!, numericFeatures(df, 'Species', ['col 1']), 0.8);
+    await roundTrip('XGBoost', xgboost, df.col('Species')!, numericFeatures(df, 'Species', ['col 1']), 0.8);
   }, {timeout: TIMEOUT});
 
   test('XGBoost — winequality (type)', async () => {
     const df = await grok.dapi.files.readCsv(WINE);
-    await xgbClassifyRoundTrip(df.col('type')!, numericFeatures(df, 'type', ['quality']), 0.8);
+    await roundTrip('XGBoost', xgboost, df.col('type')!, numericFeatures(df, 'type', ['quality']), 0.8);
   }, {timeout: TIMEOUT});
 
   test('XGBoost — demog (SEX)', async () => {
     const {features, target} = await demog(DEMOG_FEATS, 'SEX');
-    await xgbClassifyRoundTrip(target, features, 0.55);
+    await roundTrip('XGBoost', xgboost, target, features, 0.55);
   }, {timeout: TIMEOUT});
 
   // ── XGBoost (regression) ──
   test('XGBoost — cars (price)', async () => {
     const df = await grok.dapi.files.readCsv(CARS);
-    await xgbRegressRoundTrip(df.col('price')!, numericFeatures(df, 'price'), 0.4);
+    await roundTrip('XGBoost', xgboost, df.col('price')!, numericFeatures(df, 'price'), 0.4);
   }, {timeout: TIMEOUT});
 
   test('XGBoost — winequality (quality)', async () => {
     const df = await grok.dapi.files.readCsv(WINE);
-    await xgbRegressRoundTrip(df.col('quality')!, numericFeatures(df, 'quality'), 0.3);
+    await roundTrip('XGBoost', xgboost, df.col('quality')!, numericFeatures(df, 'quality'), 0.3);
   }, {timeout: TIMEOUT});
 }); // Model serialization

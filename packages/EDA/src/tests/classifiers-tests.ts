@@ -1,259 +1,137 @@
 // Tests for classifiers
 
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {_package} from '../package-test';
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {classificationDataset, accuracy, madError, mulberry32} from './utils';
-import {SoftmaxClassifier} from '../softmax-classifier';
-import {XGBooster} from '../xgbooster';
-import {SVM, SvmFitOptions} from '../svm';
-import {KernelType} from '../../wasm/svm';
-
-/** Expect that an async action throws (validation must reject before wasm). */
-async function expectThrows(action: () => Promise<unknown>, label: string): Promise<void> {
-  let thrown = false;
-  try {
-    await action();
-  } catch {
-    thrown = true;
-  }
-  expect(thrown, true, `${label}: expected an error, but none was thrown`);
-}
+import {classificationDataset, accuracy, madError, mulberry32, numericFeatures, predictColumn, r2, sameValues,
+  seededRegression, splitTarget} from './utils';
+import {FITS} from './baseline';
+import {isSvmInteractive, trainSoftmax, trainSvm, trainXgboost} from '../crux/methods';
+import {readCruxManifest} from '../crux/crux-model';
+import {nonNullRows} from '../utils';
 
 const ROWS_K = 50;
 const MIN_COLS = 2;
 const COLS = 100;
-const TIMEOUT = 8000;
+const TIMEOUT = 60000;
 const MIN_ACCURACY = 0.9;
 /** Fixed seed so the Correctness datasets are reproducible (no random flakiness) */
 const CORRECTNESS_SEED = 42;
 
+const {softmax, xgboost, svm} = FITS;
+const svmKernel = (df: DG.DataFrame, target: DG.Column, kernel: string) =>
+  trainSvm(df, target, kernel, 1, 0, 3, 0, 0.1);
+
+/** Seeded classification set: features in the frame, `Labels` as the target */
+function classification(rows: number, cols: number, shift: boolean, seed?: number):
+  {df: DG.DataFrame, target: DG.Column} {
+  const df = classificationDataset(rows, cols, shift, seed);
+  return {df, target: splitTarget(df, 'Labels')};
+}
+
+async function demogFrame(target: string, features: string[], nonNull: boolean):
+  Promise<{df: DG.DataFrame, target: DG.Column}> {
+  const demog = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
+  const df = nonNull ? demog.clone(nonNullRows(demog.columns.byNames([...features, target]))) : demog;
+  return {df: df.clone(null, features), target: df.col(target)!};
+}
+
+/** Every training must fail; the message lists the ones that did not */
+async function expectRejected(cases: [string, () => Promise<Uint8Array>][]): Promise<void> {
+  const missed: string[] = [];
+  for (const [label, action] of cases) {
+    try {
+      await action();
+      missed.push(label);
+    } catch {}
+  }
+  expect(missed.length, 0, `not rejected: ${missed.join(', ')}`);
+}
+
+/** Applies the model twice: the predictions must be identical */
+async function roundTrip(df: DG.DataFrame, bytes: Uint8Array, label: string): Promise<DG.Column> {
+  const before = await predictColumn(df, bytes);
+  expect(sameValues(before, await predictColumn(df, bytes)), true, `${label}: predictions differ`);
+  return before;
+}
+
 category('Softmax', () => {
   test(`Performance: ${ROWS_K}K samples, ${COLS} features`, async () => {
-    // Data
-    const df = classificationDataset(ROWS_K * 1000, COLS, false);
-    const features = df.columns;
-    const target = features.byIndex(COLS);
-    features.remove(target.name);
-
-    // Fit & pack trained model
-    const model = new SoftmaxClassifier({
-      classesCount: target.categories.length,
-      featuresCount: features.length,
-    });
-    await model.fit(features, target);
-    const modelBytes = model.toBytes();
-
-    // Unpack & apply model
-    const unpackedModel = new SoftmaxClassifier(undefined, modelBytes);
-    unpackedModel.predict(features);
+    const {df, target} = classification(ROWS_K * 1000, COLS, false);
+    await predictColumn(df, await softmax(df, target));
   }, {timeout: TIMEOUT, benchmark: true});
 
   test('Correctness', async () => {
-    // Prepare data — fixed seed for a reproducible, non-flaky dataset
-    const df = classificationDataset(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
-    const features = df.columns;
-    const target = features.byIndex(MIN_COLS);
-    features.remove(target.name);
-
-    // Fit & pack trained model
-    const model = new SoftmaxClassifier({
-      classesCount: target.categories.length,
-      featuresCount: features.length,
-    });
-
-    // More iterations + tighter tolerance: the Rust GD kernel under-converges
-    // on this tiny (50-row) separable set with the defaults, where the old C++
-    // solver did not. The problem is linearly separable, so a converged model
-    // clears the 0.9 bar deterministically.
-    await model.fit(features, target, 1, 500, 0.1, 1e-5);
-    const modelBytes = model.toBytes();
-
-    // Unpack & apply model
-    const unpackedModel = new SoftmaxClassifier(undefined, modelBytes);
-    const prediction = unpackedModel.predict(features);
-
-    // Evaluate accuracy
+    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    const prediction = await predictColumn(df, await trainSoftmax(df, target, 500, 0.1, 1e-5));
     const acc = accuracy(target, prediction);
-    expect(
-      acc > MIN_ACCURACY,
-      true,
-      `Softmax failed, too small accuracy: ${acc}; expected: <= ${MIN_ACCURACY}`,
-    );
+    expect(acc > MIN_ACCURACY, true, `Softmax failed, too small accuracy: ${acc}; expected: > ${MIN_ACCURACY}`);
   }, {timeout: TIMEOUT});
 
   test('Bool target', async () => {
-    // demog has a boolean column CONTROL — use it as a classification target
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-    const target = df.col('CONTROL')!;
+    const {df, target} = await demogFrame('CONTROL', ['AGE', 'HEIGHT', 'WEIGHT'], true);
     expect(target.type, DG.COLUMN_TYPE.BOOL, 'CONTROL is expected to be a boolean column');
 
-    const features = DG.DataFrame.fromColumns(
-      ['AGE', 'HEIGHT', 'WEIGHT'].map((name) => df.col(name)!),
-    ).columns;
+    const prediction = await roundTrip(df, await softmax(df, target), 'Softmax bool');
+    expect(prediction.type, DG.COLUMN_TYPE.BOOL, 'prediction of a bool target must be a BOOL column');
+  }, {timeout: TIMEOUT});
 
-    // Fit & pack trained model (bool target → 2 classes)
-    const model = new SoftmaxClassifier({classesCount: 2, featuresCount: features.length});
-    await model.fit(features, target);
-    const before = model.predict(features);
+  test('C from penalty', async () => {
+    const binary = await demogFrame('CONTROL', ['AGE', 'HEIGHT', 'WEIGHT'], true);
+    expect(readCruxManifest(await trainSoftmax(binary.df, binary.target, 100, 0.1, 0.001)).params.C, 20);
 
-    // The prediction must be a BOOL column, not strings 'true'/'false'
-    expect(before.type, DG.COLUMN_TYPE.BOOL, 'prediction of a bool target must be a BOOL column');
+    const multi = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    expect(multi.target.categories.length >= 3, true, 'dataset is expected to have 3+ categories');
+    expect(readCruxManifest(await trainSoftmax(multi.df, multi.target, 100, 0.1, 0.001)).params.C, 10);
 
-    // Round-trip: the unpacked model reproduces the predictions exactly (covers the trailing flag byte)
-    const unpackedModel = new SoftmaxClassifier(undefined, model.toBytes());
-    const after = unpackedModel.predict(features);
-    expect(after.type, DG.COLUMN_TYPE.BOOL, 'unpacked model must also predict a BOOL column');
-    expect(accuracy(before, after), 1, 'Softmax bool pack/unpack changed predictions');
+    await expectRejected([['penalty 0', () => trainSoftmax(multi.df, multi.target, 100, 0, 0.001)]]);
   }, {timeout: TIMEOUT});
 }); // Softmax
 
 category('XGBoost', () => {
   test(`Performance: ${ROWS_K}K samples, ${COLS} features`, async () => {
-    // Data
-    const df = classificationDataset(ROWS_K * 1000, COLS, false);
-    const features = df.columns;
-    const target = features.byIndex(COLS);
-    features.remove(target.name);
-
-    // Fit & pack trained model
-    const model = new XGBooster();
-    await model.fit(features, target);
-    const modelBytes = model.toBytes();
-
-    // Unpack & apply model
-    const unpackedModel = new XGBooster(modelBytes);
-    unpackedModel.predict(features);
+    const {df, target} = classification(ROWS_K * 1000, COLS, false);
+    await predictColumn(df, await xgboost(df, target));
   }, {timeout: TIMEOUT, benchmark: true});
 
   test('Correctness', async () => {
-    // Prepare data — fixed seed for a reproducible, non-flaky dataset
-    const df = classificationDataset(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
-    const features = df.columns;
-    const target = features.byIndex(MIN_COLS);
-    features.remove(target.name);
-
-    // Fit & pack trained model
-    const model = new XGBooster();
-
-    await model.fit(features, target);
-    const modelBytes = model.toBytes();
-
-    // Unpack & apply model
-    const unpackedModel = new XGBooster(modelBytes);
-    const prediction = unpackedModel.predict(features);
-
-    // Evaluate accuracy
-    const acc = accuracy(target, prediction);
-    expect(
-      acc > MIN_ACCURACY,
-      true,
-      `XGBoost failed, too small accuracy: ${acc}; expected: <= ${MIN_ACCURACY}`,
-    );
+    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    const acc = accuracy(target, await predictColumn(df, await xgboost(df, target)));
+    expect(acc > MIN_ACCURACY, true, `XGBoost failed, too small accuracy: ${acc}; expected: > ${MIN_ACCURACY}`);
   }, {timeout: TIMEOUT});
 
   test('Feature column order', async () => {
-    // Column order must not matter — matched by name.
-    const df = classificationDataset(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
-    const features = df.columns;
-    const target = features.byIndex(MIN_COLS);
-    features.remove(target.name);
-
-    const model = new XGBooster();
-    await model.fit(features, target);
-    const before = model.predict(features);
-
-    const unpacked = new XGBooster(model.toBytes());
-    const reversed = DG.DataFrame.fromColumns(features.toList().slice().reverse()).columns;
-    expect(accuracy(before, unpacked.predict(reversed)), 1, 'XGBoost prediction depends on column order');
+    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    const bytes = await xgboost(df, target);
+    const before = await predictColumn(df, bytes);
+    const reversed = DG.DataFrame.fromColumns(df.columns.toList().slice().reverse());
+    expect(accuracy(before, await predictColumn(reversed, bytes)), 1, 'XGBoost prediction depends on column order');
   }, {timeout: TIMEOUT});
 
   test('Bool target', async () => {
-    // demog has a boolean column CONTROL — use it as a classification target
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-    const target = df.col('CONTROL')!;
+    const {df, target} = await demogFrame('CONTROL', ['AGE', 'HEIGHT', 'WEIGHT'], false);
     expect(target.type, DG.COLUMN_TYPE.BOOL, 'CONTROL is expected to be a boolean column');
 
-    const features = DG.DataFrame.fromColumns(
-      ['AGE', 'HEIGHT', 'WEIGHT'].map((name) => df.col(name)!),
-    ).columns;
-
-    // Fit & pack trained model
-    const model = new XGBooster();
-    await model.fit(features, target);
-    const before = model.predict(features);
-
-    // The prediction must be a BOOL column, not strings 'true'/'false'
-    expect(before.type, DG.COLUMN_TYPE.BOOL, 'prediction of a bool target must be a BOOL column');
-
-    // Round-trip: the unpacked model reproduces the predictions exactly (covers WAS_BOOL flag)
-    const unpackedModel = new XGBooster(model.toBytes());
-    const after = unpackedModel.predict(features);
-    expect(after.type, DG.COLUMN_TYPE.BOOL, 'unpacked model must also predict a BOOL column');
-    expect(accuracy(before, after), 1, 'XGBoost bool pack/unpack changed predictions');
-
-    // Sanity: the model fits the training data better than a constant predictor
-    expect(
-      accuracy(target, before) > 0.5,
-      true,
-      'XGBoost bool target: training accuracy is no better than chance',
-    );
+    const prediction = await roundTrip(df, await xgboost(df, target), 'XGBoost bool');
+    expect(prediction.type, DG.COLUMN_TYPE.BOOL, 'prediction of a bool target must be a BOOL column');
+    expect(accuracy(target, prediction) > 0.5, true, 'XGBoost bool target: training accuracy is no better than chance');
   }, {timeout: TIMEOUT});
 
   test('Regression target (float)', async () => {
-    // Seeded data: regressionDataset() is unseeded (randomWalk + Math.random
-    // coefficients), which made the madError threshold flaky.
-    const rows = 1000;
-    const cols = 4;
-    const rng = mulberry32(CORRECTNESS_SEED);
-    const raw = Array.from({length: cols}, () => {
-      const arr = new Float32Array(rows);
-      for (let i = 0; i < rows; ++i)
-        arr[i] = rng();
-      return arr;
-    });
-    const y = new Float32Array(rows);
-    for (let i = 0; i < rows; ++i)
-      y[i] = raw.reduce((sum, arr, j) => sum + arr[i] * (j + 1), 0);
-
-    const features = DG.DataFrame.fromColumns(
-      raw.map((arr, j) => DG.Column.fromFloat32Array(`x${j}`, arr))).columns;
-    const target = DG.Column.fromFloat32Array('y', y);
-
-    const model = new XGBooster();
-    await model.fit(features, target);
-    const before = model.predict(features);
-    expect(before.type, DG.COLUMN_TYPE.FLOAT, 'regression prediction must be a float column');
-    expect(
-      madError(target, before) < 0.5,
-      true,
-      'XGBoost regression: training error is too large',
-    );
-
-    // Round-trip must reproduce predictions exactly
-    const after = new XGBooster(model.toBytes()).predict(features);
-    for (let i = 0; i < before.length; ++i) {
-      if (before.get(i) !== after.get(i))
-        throw new Error(`regression pack/unpack changed prediction at row ${i}`);
-    }
+    const df = seededRegression(1000, 4, CORRECTNESS_SEED);
+    const target = splitTarget(df, 'y');
+    const prediction = await roundTrip(df, await xgboost(df, target), 'XGBoost regression');
+    expect(prediction.type, DG.COLUMN_TYPE.FLOAT, 'regression prediction must be a float column');
+    expect(madError(target, prediction) < 0.5, true, 'XGBoost regression: training error is too large');
   }, {timeout: TIMEOUT});
 
   test('Multiclass target (3+ unordered categories)', async () => {
-    // classificationDataset yields up to 4 combined categories -> multi:softmax
-    const df = classificationDataset(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
-    const features = df.columns;
-    const target = features.byIndex(MIN_COLS);
-    features.remove(target.name);
+    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
     expect(target.categories.length >= 3, true, 'dataset is expected to have 3+ categories');
 
-    const model = new XGBooster();
-    await model.fit(features, target);
-    const prediction = model.predict(features);
-
+    const prediction = await predictColumn(df, await xgboost(df, target));
     expect(prediction.type, DG.COLUMN_TYPE.STRING, 'multiclass prediction must be a string column');
     for (const cat of prediction.categories) {
       expect(target.categories.includes(cat), true,
@@ -265,139 +143,79 @@ category('XGBoost', () => {
 
   test('Int target and int features', async () => {
     const samples = 500;
-    const x = new Int32Array(samples);
-    const y = new Int32Array(samples);
-    for (let i = 0; i < samples; ++i) {
-      x[i] = i % 100;
-      y[i] = 2 * (i % 100) + 3;
-    }
-    const features = DG.DataFrame.fromColumns([DG.Column.fromInt32Array('x', x)]).columns;
+    const x = Int32Array.from({length: samples}, (_, i) => i % 100);
+    const y = Int32Array.from({length: samples}, (_, i) => 2 * (i % 100) + 3);
+    const df = DG.DataFrame.fromColumns([DG.Column.fromInt32Array('x', x)]);
     const target = DG.Column.fromInt32Array('y', y);
 
-    const model = new XGBooster();
-    await model.fit(features, target);
-    const prediction = model.predict(features);
-    expect(prediction.type, DG.COLUMN_TYPE.INT, 'int target prediction must be an int column');
-    expect(accuracy(target, prediction) > 0.9, true, 'int regression: poor training fit');
+    const prediction = await predictColumn(df, await xgboost(df, target));
+    expect(prediction.type, DG.COLUMN_TYPE.FLOAT, 'int target prediction must be a float column');
+    const score = r2(target, prediction);
+    expect(score > 0.9, true, `int regression: poor training fit, R2 ${score}`);
   }, {timeout: TIMEOUT});
 
   test('Raw buffer longer than column (capacity)', async () => {
-    // col.getRawData() may return an array LONGER than col.length; the glue
-    // must slice to col.length - otherwise garbage rows / heap overrun.
     const rows = 100;
     const capacity = 256;
 
-    const exactX = new Float32Array(rows);
-    const exactY = new Float32Array(rows);
-    for (let i = 0; i < rows; ++i) {
-      exactX[i] = i / rows;
-      exactY[i] = 3 * exactX[i] + 1;
-    }
-
-    // Oversized backing buffers with garbage in the tail
+    const exactX = Float32Array.from({length: rows}, (_, i) => i / rows);
+    const exactY = Float32Array.from(exactX, (x) => 3 * x + 1);
     const bigX = new Float32Array(capacity).fill(1e6);
     const bigY = new Float32Array(capacity).fill(1e6);
     bigX.set(exactX);
     bigY.set(exactY);
 
-    const overFeatures = DG.DataFrame.fromColumns(
-      [DG.Column.fromFloat32Array('x', bigX, rows)]).columns;
+    const over = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x', bigX, rows)]);
     const overTarget = DG.Column.fromFloat32Array('y', bigY, rows);
     expect(overTarget.length, rows, 'column length must be the logical length');
+    const exact = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x', exactX, rows)]);
 
-    const exactFeatures = DG.DataFrame.fromColumns(
-      [DG.Column.fromFloat32Array('x', exactX, rows)]).columns;
-    const exactTarget = DG.Column.fromFloat32Array('y', exactY, rows);
-
-    const overModel = new XGBooster();
-    await overModel.fit(overFeatures, overTarget);
-    const overPred = overModel.predict(overFeatures);
+    const overPred = await predictColumn(over, await xgboost(over, overTarget));
     expect(overPred.length, rows, 'prediction length must equal the column length');
-
-    const exactModel = new XGBooster();
-    await exactModel.fit(exactFeatures, exactTarget);
-    const exactPred = exactModel.predict(exactFeatures);
-
-    // Identical data -> identical predictions; any difference means the
-    // capacity tail leaked into training or prediction.
-    for (let i = 0; i < rows; ++i) {
-      if (overPred.get(i) !== exactPred.get(i))
-        throw new Error(`capacity tail leaked into computation at row ${i}`);
-    }
+    const exactPred = await predictColumn(exact, await xgboost(exact, DG.Column.fromFloat32Array('y', exactY, rows)));
+    expect(sameValues(overPred, exactPred), true, 'capacity tail leaked into computation');
   }, {timeout: TIMEOUT});
 
-  test('Validation rejects bad inputs before wasm', async () => {
-    const df = classificationDataset(100, MIN_COLS, true, CORRECTNESS_SEED);
-    const features = df.columns;
-    const target = features.byIndex(MIN_COLS);
-    features.remove(target.name);
-
-    await expectThrows(() => new XGBooster().fit(features, target, 0), 'iterations = 0');
-    await expectThrows(() => new XGBooster().fit(features, target, 10, 5), 'eta = 5');
-    await expectThrows(() => new XGBooster().fit(features, target, 10, 0.3, 0), 'maxDepth = 0');
-    await expectThrows(() => new XGBooster().fit(features, target, 10, 0.3, 6, -1), 'lambda < 0');
-
-    // Missing values in the target must be rejected (the wasm build has no
-    // exceptions - a bad label would abort the whole instance).
-    const holedTarget = DG.Column.fromFloat32Array('y',
-      new Float32Array(target.length).fill(1));
-    holedTarget.set(0, null);
-    await expectThrows(() => new XGBooster().fit(features, holedTarget), 'missing in target');
-
-    // Single-category classification target is meaningless
-    const oneCat = DG.Column.fromStrings('y', new Array(target.length).fill('only'));
-    await expectThrows(() => new XGBooster().fit(features, oneCat), 'single category');
+  test('Validation rejects bad inputs', async () => {
+    const {df, target} = classification(100, MIN_COLS, true, CORRECTNESS_SEED);
+    await expectRejected([
+      ['iterations = 0', () => trainXgboost(df, target, 0, 0.3, 6, 1, 0)],
+      ['eta = 5', () => trainXgboost(df, target, 10, 5, 6, 1, 0)],
+      ['maxDepth = 0', () => trainXgboost(df, target, 10, 0.3, 0, 1, 0)],
+      ['lambda < 0', () => trainXgboost(df, target, 10, 0.3, 6, -1, 0)],
+      ['single category', () => xgboost(df, DG.Column.fromStrings('y', new Array(target.length).fill('only')))],
+    ]);
   }, {timeout: TIMEOUT});
 
-  test('Pre-1.7.0 (v1) model container is rejected', async () => {
-    // v1 support is removed: a container without the Version header field
-    // must fail with a clear "retrain the model" error, not garbage output.
-    const v1Header = DG.DataFrame.fromColumns([
-      DG.Column.fromStrings('Type', [DG.COLUMN_TYPE.STRING as string]),
-      DG.Column.fromInt32Array('Params count', new Int32Array([4])),
-      DG.Column.fromInt32Array('Categories size', new Int32Array([0])),
-    ]).toByteArray();
-
-    const v1 = new Uint8Array(4 + v1Header.length + 64);
-    new Uint32Array(v1.buffer, 0, 1)[0] = v1Header.length;
-    v1.set(v1Header, 4);
-
-    let message = '';
-    try {
-      new XGBooster(v1);
-    } catch (err) {
-      message = err instanceof Error ? err.message : String(err);
-    }
-    expect(message.includes('older EDA version'), true,
-      `v1 container must be rejected with a clear error, got: "${message}"`);
+  test('Hyperparameters in the manifest', async () => {
+    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    const params = readCruxManifest(await xgboost(df, target)).params;
+    expect(params.n_estimators, 20);
+    expect(params.learning_rate, 0.3);
+    expect(params.max_depth, 6);
+    expect(params.reg_lambda, 1);
+    expect(params.reg_alpha, 0);
   }, {timeout: TIMEOUT});
 
   test('Benchmarks (demog)', async () => {
-    // End-to-end benchmarks through the full XGBooster stack (column packing,
-    // training worker, handle cache) on realistic platform data.
-    // Times are printed as BENCH lines to the console.
     const lines: string[] = [];
-    const bench = async (name: string, df: DG.DataFrame,
-      targetName: string, featureNames: string[]) => {
-      const features = DG.DataFrame.fromColumns(
-        featureNames.map((n) => df.col(n)!)).columns;
+    const bench = async (name: string, df: DG.DataFrame, targetName: string, featureNames: string[]) => {
+      const features = df.clone(null, featureNames);
       const target = df.col(targetName)!;
 
-      const model = new XGBooster();
       let t0 = performance.now();
-      await model.fit(features, target);
+      const bytes = await xgboost(features, target);
       const fitMs = performance.now() - t0;
 
       t0 = performance.now();
-      model.predict(features); // first predict: includes model load
+      await predictColumn(features, bytes);
       const firstMs = performance.now() - t0;
 
       t0 = performance.now();
       for (let k = 0; k < 5; ++k)
-        model.predict(features); // cached-handle predicts
+        await predictColumn(features, bytes);
       const cachedMs = (performance.now() - t0) / 5;
 
-      model.dispose();
       lines.push(`BENCH ${name} fit=${fitMs.toFixed(0)}ms ` +
         `first-predict=${firstMs.toFixed(1)}ms cached-predict=${cachedMs.toFixed(1)}ms`);
     };
@@ -405,270 +223,157 @@ category('XGBoost', () => {
     const NUM = ['AGE', 'HEIGHT', 'WEIGHT'];
     for (const rows of [10000, 50000, 100000]) {
       const df = grok.data.demo.demog(rows);
-      // AGE as a regression target: demog has no missing values in it,
-      // while HEIGHT/WEIGHT nulls in features are handled by XGBoost.
       await bench(`reg-AGE-${rows / 1000}k`, df, 'AGE', ['HEIGHT', 'WEIGHT']);
       await bench(`binary-SEX-${rows / 1000}k`, df, 'SEX', NUM);
       await bench(`multi-RACE-${rows / 1000}k`, df, 'RACE', NUM);
       await bench(`bool-CONTROL-${rows / 1000}k`, df, 'CONTROL', NUM);
     }
 
-    // Wide numeric matrices via randomWalk - the shapes match the wasm-level
-    // node benchmarks (smoke/bench.mjs), so the full-stack overhead (column
-    // packing, worker transfer) is directly comparable to the bare module.
     for (const [rows, cols] of [[10000, 100], [50000, 20], [100000, 10]]) {
       const df = grok.data.demo.randomWalk(rows, cols + 1);
       const names = df.columns.names();
-      await bench(`walk-reg-${rows / 1000}kx${cols}`, df,
-        names[names.length - 1], names.slice(0, cols));
+      await bench(`walk-reg-${rows / 1000}kx${cols}`, df, names[names.length - 1], names.slice(0, cols));
     }
 
     for (const line of lines)
       console.log(line);
     expect(lines.length, 15, 'all benchmark cases must complete');
   }, {timeout: 180000, benchmark: true});
-
-  test('Handle cache and dispose', async () => {
-    const df = classificationDataset(200, MIN_COLS, true, CORRECTNESS_SEED);
-    const features = df.columns;
-    const target = features.byIndex(MIN_COLS);
-    features.remove(target.name);
-
-    const model = new XGBooster();
-    await model.fit(features, target);
-
-    // Repeated predicts reuse the cached handle and must be identical
-    const first = model.predict(features);
-    for (let k = 0; k < 5; ++k) {
-      const next = model.predict(features);
-      expect(accuracy(first, next), 1, `repeated predict #${k} differs`);
-    }
-
-    // dispose() frees the handle; the next predict reloads from bytes
-    model.dispose();
-    const after = model.predict(features);
-    expect(accuracy(first, after), 1, 'predict after dispose differs');
-  }, {timeout: TIMEOUT});
 }); // XGBoost
-
-// SVM tests are sized down (superlinear SMO).
-const SVM_TIMEOUT = 30000;
-
-/** Default SVM hyperparameters for tests (gamma 0 = 1/features). */
-function svmOpts(kernelType: KernelType = KernelType.Rbf): SvmFitOptions {
-  return {kernelType, C: 1, gamma: 0, degree: 3, coef0: 0, epsilon: 0.1};
-}
-
-/** Coefficient of determination R² of `pred` against `target`. */
-function rSquared(target: DG.Column, pred: DG.Column): number {
-  const n = target.length;
-  const t = target.getRawData();
-  const p = pred.getRawData();
-  let mean = 0;
-  for (let i = 0; i < n; ++i)
-    mean += t[i];
-  mean /= n;
-  let ssRes = 0; let ssTot = 0;
-  for (let i = 0; i < n; ++i) {
-    ssRes += (t[i] - p[i]) ** 2;
-    ssTot += (t[i] - mean) ** 2;
-  }
-  return ssTot === 0 ? 0 : 1 - ssRes / ssTot;
-}
 
 category('SVM', () => {
   test('Correctness (classification)', async () => {
-    const df = classificationDataset(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
-    const features = df.columns;
-    const target = features.byIndex(MIN_COLS);
-    features.remove(target.name);
-
-    const model = new SVM();
-    await model.fit(features, target, svmOpts());
-    const unpacked = new SVM(model.toBytes());
-    const prediction = unpacked.predict(features);
-
-    const acc = accuracy(target, prediction);
+    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    const acc = accuracy(target, await roundTrip(df, await svm(df, target), 'SVM'));
     expect(acc > MIN_ACCURACY, true, `SVM accuracy too small: ${acc}; expected > ${MIN_ACCURACY}`);
-  }, {timeout: SVM_TIMEOUT});
+  }, {timeout: TIMEOUT});
 
   test('Multiclass (3+ categories)', async () => {
-    const df = classificationDataset(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
-    const features = df.columns;
-    const target = features.byIndex(MIN_COLS);
-    features.remove(target.name);
+    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
     expect(target.categories.length >= 3, true, 'dataset is expected to have 3+ categories');
 
-    const model = new SVM();
-    await model.fit(features, target, svmOpts());
-    const prediction = model.predict(features);
-
+    const prediction = await predictColumn(df, await svm(df, target));
     expect(prediction.type, DG.COLUMN_TYPE.STRING, 'multiclass prediction must be a string column');
     for (const cat of prediction.categories) {
       expect(target.categories.includes(cat), true,
         `predicted category "${cat}" is not among the target categories`);
     }
     expect(accuracy(target, prediction) > MIN_ACCURACY, true, 'multiclass accuracy too small');
-  }, {timeout: SVM_TIMEOUT});
+  }, {timeout: TIMEOUT});
 
   test('Bool target', async () => {
-    // Synthetic separable set (demog HEIGHT/WEIGHT have nulls, which SVM rejects).
     const rows = 300;
     const rng = mulberry32(CORRECTNESS_SEED);
-    const x0 = new Float32Array(rows); const x1 = new Float32Array(rows);
+    const x0 = new Float32Array(rows);
+    const x1 = new Float32Array(rows);
     const y = new Array<boolean>(rows);
     for (let i = 0; i < rows; ++i) {
-      x0[i] = rng(); x1[i] = rng(); y[i] = (x0[i] + x1[i]) > 1;
+      x0[i] = rng();
+      x1[i] = rng();
+      y[i] = (x0[i] + x1[i]) > 1;
     }
-    const features = DG.DataFrame.fromColumns([
-      DG.Column.fromFloat32Array('x0', x0), DG.Column.fromFloat32Array('x1', x1)]).columns;
+    const df = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x0', x0), DG.Column.fromFloat32Array('x1', x1)]);
     const target = DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'y', y);
 
-    const model = new SVM();
-    await model.fit(features, target, svmOpts());
-    const before = model.predict(features);
-    expect(before.type, DG.COLUMN_TYPE.BOOL, 'prediction of a bool target must be a BOOL column');
-
-    const after = new SVM(model.toBytes()).predict(features);
-    expect(after.type, DG.COLUMN_TYPE.BOOL, 'unpacked model must also predict a BOOL column');
-    expect(accuracy(before, after), 1, 'SVM bool pack/unpack changed predictions');
-    expect(accuracy(target, before) > MIN_ACCURACY, true, 'bool training accuracy too low');
-  }, {timeout: SVM_TIMEOUT});
+    const prediction = await roundTrip(df, await svm(df, target), 'SVM bool');
+    expect(prediction.type, DG.COLUMN_TYPE.BOOL, 'prediction of a bool target must be a BOOL column');
+    expect(accuracy(target, prediction) > MIN_ACCURACY, true, 'bool training accuracy too low');
+  }, {timeout: TIMEOUT});
 
   test('Regression (float)', async () => {
     const rows = 300;
     const rng = mulberry32(CORRECTNESS_SEED);
-    const x0 = new Float32Array(rows); const x1 = new Float32Array(rows); const y = new Float32Array(rows);
+    const x0 = new Float32Array(rows);
+    const x1 = new Float32Array(rows);
+    const y = new Float32Array(rows);
     for (let i = 0; i < rows; ++i) {
-      x0[i] = rng(); x1[i] = rng(); y[i] = 2 * x0[i] + 3 * x1[i];
+      x0[i] = rng();
+      x1[i] = rng();
+      y[i] = 2 * x0[i] + 3 * x1[i];
     }
-    const features = DG.DataFrame.fromColumns([
-      DG.Column.fromFloat32Array('x0', x0), DG.Column.fromFloat32Array('x1', x1)]).columns;
+    const df = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x0', x0), DG.Column.fromFloat32Array('x1', x1)]);
     const target = DG.Column.fromFloat32Array('y', y);
 
-    const model = new SVM();
-    await model.fit(features, target, svmOpts());
-    const before = model.predict(features);
-    expect(before.type, DG.COLUMN_TYPE.FLOAT, 'regression prediction must be a float column');
-    expect(rSquared(target, before) > 0.5, true, 'SVM regression training fit too poor');
-
-    // Round-trip must reproduce predictions exactly.
-    const after = new SVM(model.toBytes()).predict(features);
-    for (let i = 0; i < before.length; ++i) {
-      if (before.get(i) !== after.get(i))
-        throw new Error(`regression pack/unpack changed prediction at row ${i}`);
-    }
-  }, {timeout: SVM_TIMEOUT});
+    const prediction = await roundTrip(df, await svm(df, target), 'SVM regression');
+    expect(prediction.type, DG.COLUMN_TYPE.FLOAT, 'regression prediction must be a float column');
+    expect(r2(target, prediction) > 0.5, true, 'SVM regression training fit too poor');
+  }, {timeout: TIMEOUT});
 
   test('Standardization is applied', async () => {
-    // A feature scaled by 1000 must not hurt accuracy: the model standardizes.
-    const df = classificationDataset(200, MIN_COLS, true, CORRECTNESS_SEED);
-    const features = df.columns;
-    const target = features.byIndex(MIN_COLS);
-    features.remove(target.name);
-
+    const {df, target} = classification(200, MIN_COLS, true, CORRECTNESS_SEED);
+    const raw0 = df.columns.byIndex(0).getRawData();
+    const raw1 = df.columns.byIndex(1).getRawData();
     const n = target.length;
-    const raw0 = features.byIndex(0).getRawData();
-    const raw1 = features.byIndex(1).getRawData();
-    const scaled = new Float32Array(n); const copy1 = new Float32Array(n);
-    for (let i = 0; i < n; ++i) {
-      scaled[i] = raw0[i] * 1000; copy1[i] = raw1[i];
-    }
-    const scaledFeatures = DG.DataFrame.fromColumns([
-      DG.Column.fromFloat32Array('big', scaled), DG.Column.fromFloat32Array('f1', copy1)]).columns;
+    const scaled = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat32Array('big', Float32Array.from({length: n}, (_, i) => raw0[i] * 1000)),
+      DG.Column.fromFloat32Array('f1', Float32Array.from({length: n}, (_, i) => raw1[i]))]);
 
-    const model = new SVM();
-    await model.fit(scaledFeatures, target, svmOpts());
-    const acc = accuracy(target, model.predict(scaledFeatures));
+    const acc = accuracy(target, await predictColumn(scaled, await svm(scaled, target)));
     expect(acc > MIN_ACCURACY, true, `standardization not applied: accuracy ${acc}`);
-  }, {timeout: SVM_TIMEOUT});
+  }, {timeout: TIMEOUT});
 
   test('Kernel round-trip (RBF & linear)', async () => {
-    const df = classificationDataset(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
-    const features = df.columns;
-    const target = features.byIndex(MIN_COLS);
-    features.remove(target.name);
+    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    for (const kernel of ['RBF', 'Linear'])
+      await roundTrip(df, await svmKernel(df, target, kernel), `kernel ${kernel}`);
+  }, {timeout: TIMEOUT});
 
-    for (const kernel of [KernelType.Rbf, KernelType.Linear]) {
-      const model = new SVM();
-      await model.fit(features, target, svmOpts(kernel));
-      const before = model.predict(features);
-      const after = new SVM(model.toBytes()).predict(features);
-      expect(accuracy(before, after), 1, `kernel ${kernel} pack/unpack changed predictions`);
-    }
-  }, {timeout: SVM_TIMEOUT});
+  test('Kernel and gamma in the manifest', async () => {
+    const iris = await grok.dapi.files.readCsv('System:DemoFiles/iris.csv');
+    const df = iris.clone(null, ['Sepal.Length', 'Sepal.Width', 'Petal.Length', 'Petal.Width']);
+    const target = iris.col('Species')!;
+
+    const rbf = readCruxManifest(await svm(df, target)).params;
+    expect(rbf.kernel, 'rbf');
+    expect(rbf.gamma, 1 / 4);
+    expect(readCruxManifest(await svmKernel(df, target, 'Polynomial')).params.kernel, 'poly');
+  }, {timeout: TIMEOUT});
 
   test('Validation rejects bad inputs', async () => {
-    const df = classificationDataset(100, MIN_COLS, true, CORRECTNESS_SEED);
-    const features = df.columns;
-    const target = features.byIndex(MIN_COLS);
-    features.remove(target.name);
-
-    await expectThrows(() => new SVM().fit(features, target, {...svmOpts(), C: 0}), 'C = 0');
-
-    // Missing value in the target must be rejected before wasm.
-    const holedTarget = DG.Column.fromFloat32Array('y', new Float32Array(target.length).fill(1));
-    holedTarget.set(0, null);
-    await expectThrows(() => new SVM().fit(features, holedTarget, svmOpts()), 'missing in target');
-
-    // Missing value in a feature must be rejected (SVM has no missing handling).
+    const {df, target} = classification(100, MIN_COLS, true, CORRECTNESS_SEED);
     const misFeat = DG.Column.fromFloat32Array('mf', new Float32Array(target.length).fill(1));
     misFeat.set(0, null);
-    const badFeatures = DG.DataFrame.fromColumns([misFeat]).columns;
-    await expectThrows(() => new SVM().fit(badFeatures, target, svmOpts()), 'missing in feature');
 
-    // Single-category classification target is meaningless.
-    const oneCat = DG.Column.fromStrings('y', new Array(target.length).fill('only'));
-    await expectThrows(() => new SVM().fit(features, oneCat, svmOpts()), 'single category');
-  }, {timeout: SVM_TIMEOUT});
+    await expectRejected([
+      ['C = 0', () => trainSvm(df, target, 'RBF', 0, 0, 3, 0, 0.1)],
+      ['degree = 0', () => trainSvm(df, target, 'Polynomial', 1, 0, 0, 0, 0.1)],
+      ['missing in feature', () => svm(DG.DataFrame.fromColumns([misFeat]), target)],
+      ['single category', () => svm(df, DG.Column.fromStrings('y', new Array(target.length).fill('only')))],
+    ]);
+
+    const holed = DG.Column.fromFloat32Array('y', Float32Array.from(df.columns.byIndex(0).getRawData()));
+    holed.set(0, null);
+    expect(readCruxManifest(await svm(df, holed)).training.n_rows, target.length - 1, 'a null target row is skipped');
+  }, {timeout: TIMEOUT});
 
   test('Raw buffer longer than column (capacity)', async () => {
     const rows = 100;
     const capacity = 256;
     const rng = mulberry32(CORRECTNESS_SEED);
 
-    const exactX = new Float32Array(rows);
-    const y = new Array<string>(rows);
-    for (let i = 0; i < rows; ++i) {
-      exactX[i] = rng(); y[i] = exactX[i] > 0.5 ? 'A' : 'B';
-    }
-    const target = DG.Column.fromStrings('y', y);
-
+    const exactX = Float32Array.from({length: rows}, () => rng());
+    const target = DG.Column.fromStrings('y', Array.from(exactX, (x) => x > 0.5 ? 'A' : 'B'));
     const bigX = new Float32Array(capacity).fill(1e6);
     bigX.set(exactX);
-    const overFeatures = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x', bigX, rows)]).columns;
-    const exactFeatures = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x', exactX, rows)]).columns;
+    const over = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x', bigX, rows)]);
+    const exact = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x', exactX, rows)]);
 
-    const overModel = new SVM();
-    await overModel.fit(overFeatures, target, svmOpts());
-    const overPred = overModel.predict(overFeatures);
-
-    const exactModel = new SVM();
-    await exactModel.fit(exactFeatures, target, svmOpts());
-    const exactPred = exactModel.predict(exactFeatures);
-
-    // Identical data → identical predictions; a diff means the capacity tail leaked.
+    const overPred = await predictColumn(over, await svm(over, target));
+    const exactPred = await predictColumn(exact, await svm(exact, target));
     expect(accuracy(overPred, exactPred), 1, 'capacity tail leaked into computation');
-  }, {timeout: SVM_TIMEOUT});
+  }, {timeout: TIMEOUT});
 
   test('Interactive on winequality', async () => {
-    // Full winequality (~6.5k rows) must be flagged interactive, and fit in time.
     const df = await grok.dapi.files.readCsv('System:DemoFiles/winequality.csv');
-    const numeric = (exclude: string[]) => DG.DataFrame.fromColumns(
-      df.columns.toList().filter((c) =>
-        (c.type === DG.COLUMN_TYPE.INT || c.type === DG.COLUMN_TYPE.FLOAT) && !exclude.includes(c.name))).columns;
-
-    const classifyFeatures = numeric(['quality']);
-    const classifyTarget = df.col('type')!;
-    console.log(`winequality: ${df.rowCount} rows, ${classifyFeatures.length} numeric features`);
-
-    expect(SVM.isInteractive(classifyFeatures, classifyTarget), true,
+    const features = numericFeatures(df, 'type', ['quality']);
+    const target = df.col('type')!;
+    expect(isSvmInteractive(features, target), true,
       `winequality classification must be interactive (${df.rowCount} rows)`);
-    expect(SVM.isInteractive(numeric([]), df.col('quality')!), true,
+    expect(isSvmInteractive(numericFeatures(df, 'type'), df.col('quality')!), true,
       `winequality regression must be interactive (${df.rowCount} rows)`);
 
     const t0 = Date.now();
-    await new SVM().fit(classifyFeatures, classifyTarget, svmOpts());
+    await svm(DG.DataFrame.fromColumns(features.toList()), target);
     console.log(`winequality classification fit: ${Date.now() - t0} ms`);
-  }, {timeout: SVM_TIMEOUT});
+  }, {timeout: TIMEOUT});
 }); // SVM

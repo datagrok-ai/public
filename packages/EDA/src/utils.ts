@@ -7,7 +7,6 @@ import * as DG from 'datagrok-api/dg';
 //Limitation constants
 const COMP_MIN = 1;
 const MAX_ELEMENTS_COUNT = 100000000;
-export const NIPALS_PREFER_COLS_COUNT = 900;
 
 const TINY = 0.000001;
 
@@ -51,6 +50,9 @@ export function checkDimensionReducerInputs(features: DG.ColumnList, components:
     checkColumnType(col);
     checkMissingVals(col);
   }
+
+  if (features.length * features.byIndex(0).length > MAX_ELEMENTS_COUNT)
+    throw new Error(DATAFRAME_IS_TOO_BIG_MES);
 }
 
 // Check UMAP inputs
@@ -58,10 +60,6 @@ export function checkUMAPinputs(features: DG.ColumnList, components: number, epo
   neighbors: number, minDist: number, spread: number): void {
   // General dim reducer checks
   checkDimensionReducerInputs(features, components);
-
-  // Check data total size
-  if (features.length * features.byIndex(0).length > MAX_ELEMENTS_COUNT)
-    throw new Error(DATAFRAME_IS_TOO_BIG_MES);
 
   // UMAP specific checks
 
@@ -84,10 +82,6 @@ export function checkTSNEinputs(features: DG.ColumnList, components: number,
   // General dim reducer checks
   checkDimensionReducerInputs(features, components);
 
-  // Check data total size
-  if (features.length * features.byIndex(0).length > MAX_ELEMENTS_COUNT)
-    throw new Error(DATAFRAME_IS_TOO_BIG_MES);
-
   // t-SNE specific checks
 
   if (learningRate < 0)
@@ -106,10 +100,6 @@ export function checkSPEinputs(features: DG.ColumnList, dimension: number,
   // General dim reducer checks
   checkDimensionReducerInputs(features, dimension);
 
-  // Check data total size
-  if (features.length * features.byIndex(0).length > MAX_ELEMENTS_COUNT)
-    throw new Error(DATAFRAME_IS_TOO_BIG_MES);
-
   // SPE specific checks
 
   if (steps < 0)
@@ -123,16 +113,6 @@ export function checkSPEinputs(features: DG.ColumnList, dimension: number,
 
   if (lambda <= 0)
     throw new Error(INCORRECT_LEARNING_RATE_MES);
-}
-
-// Check wasm dimension reducer inputs
-export function checkWasmDimensionReducerInputs(features: DG.ColumnList, components: number): void {
-  // General dim reducer checks
-  checkDimensionReducerInputs(features, components);
-
-  // Check data total size
-  if (features.length * features.byIndex(0).length > MAX_ELEMENTS_COUNT)
-    throw new Error(DATAFRAME_IS_TOO_BIG_MES);
 }
 
 // Returns rows of column data
@@ -199,6 +179,26 @@ function centerScaleDf(df: DG.DataFrame): DG.DataFrame {
     }
   }
   return df;
+}
+
+/** Row-major matrix of the columns standardised by the mean and the population sigma; sigma 0 only centers */
+export function standardizedRows(cols: DG.Column[]): Float64Array {
+  const n = cols[0].length;
+  const m = cols.length;
+  const data = new Float64Array(n * m);
+  for (let j = 0; j < m; ++j) {
+    const raw = cols[j].getRawData();
+    const avg = cols[j].stats.avg;
+    const sigma = cols[j].stats.stdev * Math.sqrt((n - 1) / n) || 1;
+    for (let i = 0; i < n; ++i)
+      data[i * m + j] = (raw[i] - avg) / sigma;
+  }
+  return data;
+}
+
+/** The rows where every column of `cols` has a value */
+export function nonNullRows(cols: DG.Column[]): DG.BitSet {
+  return DG.BitSet.create(cols[0].length, (i) => cols.every((c) => !c.isNone(i)));
 }
 
 /** Return scaled data */

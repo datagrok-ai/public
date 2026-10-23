@@ -1,9 +1,9 @@
 # Legacy models
 
 One model per EDA ML method in the pre-Crux format (sci-comp-ml, XGBoost and LIBSVM wasm). They back the
-`Legacy models` test category (`src/tests/legacy-models-tests.ts`): today the files load and predict with the old
-classes; once the methods move to Crux, they must be rejected with the "retrain the model" error. They are also kept
-for a possible later legacy support.
+`Legacy models` test category (`src/tests/legacy-models-tests.ts`). Since the methods moved to Crux (GROK-20932 stage
+2) the old classes are gone, and `cruxPredict` rejects every file with the "retrain the model" error. The files are
+also kept for a possible later legacy support.
 
 The files were produced once with the pre-Crux wasm and cannot be regenerated after the old wasm is removed. On a
 stand they are at `System:AppData/Eda/legacy-models/`.

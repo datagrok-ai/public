@@ -31,6 +31,7 @@ test.describe.serial('EDA / MLMethods / XGBoost (classification)', () => {
     // See xgboost2: the hyperparameters the Train dialog would supply are passed explicitly
     // because `functions.call` does not apply the decorator's `initialValue`s.
     const trained = await trainEdaModelViaApi(page, 'eda:trainXGBooster', 'Species', {
+      numericOnly: true,
       extraParams: XGBOOST_DEFAULTS,
     });
     expect(trained.ok, trained.error ?? 'xgboost training returned null').toBe(true);

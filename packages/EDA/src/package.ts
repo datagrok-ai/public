@@ -31,18 +31,11 @@ import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {MCLViewer} from '@datagrok-libraries/ml/src/MCL/mcl-viewer';
 import {MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
-import {getLinearRegressionParams, getPredictionByLinearRegression,
-  isLinearRegressionApplicable, isLinearRegressionInteractive,
-  packLinearRegressionModel, unpackLinearRegressionModel,
-  TOLERANCE} from './regression';
-import {PlsModel} from './pls/pls-ml';
-import {SoftmaxClassifier} from './softmax-classifier';
-
-import {initXgboost} from '../wasm/xgbooster';
-import {XGBooster} from './xgbooster';
-
-import {initSvm, KernelType} from '../wasm/svm';
-import {SVM} from './svm';
+import {isLinearRegressionApplicable, isLinearRegressionInteractive, trainLinearRegression} from './regression';
+import {isPlsApplicable, isPlsInteractive, plsRegressionViewers, trainPlsRegression} from './pls/pls-ml';
+import {isSoftmaxApplicable, isSoftmaxInteractive, isSvmApplicable, isSvmInteractive, isXgboostApplicable,
+  isXgboostInteractive, trainSoftmax, trainSvm, trainXgboost} from './crux/methods';
+import {cruxPredict, modelFeatures, readCruxManifest} from './crux/crux-model';
 
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
@@ -59,13 +52,6 @@ export class PackageFunctions {
   })
   static info() {
     grok.shell.info(_package.webRoot);
-  }
-
-
-  @grok.decorators.init({tags: ['init']})
-  static async init(): Promise<void> {
-    await initXgboost();
-    await initSvm();
   }
 
 
@@ -486,14 +472,10 @@ export class PackageFunctions {
   static async trainLinearRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Rate', 'min': '0', 'initialValue': '0.1', 'max': '10', 'step': '0.01', 'description': 'Gradient descent learning rate.'}}) rate: number,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'step': '50', 'max': '10000', 'initialValue': '1000', 'description': 'Largest number of training steps before training stops.'}}) iterations: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'step': '50', 'max': '10000', 'initialValue': '1000', 'description': 'Largest number of solver iterations (elastic net).'}}) iterations: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'L1', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 (Lasso) regularization term. 0 means plain ordinary least squares.'}}) alpha: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L2 (Ridge) regularization term. 0 means plain ordinary least squares.'}}) lambda: number): Promise<Uint8Array> {
-    const features = df.columns;
-    const params = await getLinearRegressionParams(features, predictColumn, alpha, lambda, rate, iterations, TOLERANCE);
-
-    return packLinearRegressionModel(params, features.names());
+    return trainLinearRegression(df, predictColumn, alpha, lambda, iterations);
   }
 
 
@@ -505,12 +487,10 @@ export class PackageFunctions {
     'name': 'Apply Linear Regression',
     'description': 'Predict the target for a table using a trained linear regression model.',
   })
-  static applyLinearRegression(
+  static async applyLinearRegression(
     df: DG.DataFrame,
-    @grok.decorators.param({'options': {'description': 'Trained linear regression model to apply.'}}) model: any): DG.DataFrame {
-    const features = df.columns;
-    const {params, names} = unpackLinearRegressionModel(model as Uint8Array);
-    return DG.DataFrame.fromColumns([getPredictionByLinearRegression(features, params, names)]);
+    @grok.decorators.param({'options': {'description': 'Trained linear regression model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
   }
 
 
@@ -551,20 +531,10 @@ export class PackageFunctions {
     'outputs': [{'type': 'dynamic', 'name': 'model'}],
   })
   static async trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column,
-    @grok.decorators.param({'options': {'initialValue': '1.0', 'min': '0.001', 'max': '20', 'description': 'Gradient descent learning rate.'}}) rate: number,
     @grok.decorators.param({'options': {'initialValue': '100', 'min': '1', 'max': '10000', 'step': '10', 'description': 'Largest number of training steps before training stops.'}}) iterations: number,
     @grok.decorators.param({'options': {'initialValue': '0.1', 'min': '0.0001', 'max': '1', 'description': 'Regularization rate.'}}) penalty: number,
     @grok.decorators.param({'options': {'initialValue': '0.001', 'min': '0.00001', 'max': '0.1', 'description': 'Smallest improvement worth continuing training for.'}}) tolerance: number): Promise<Uint8Array> {
-    const features = df.columns;
-
-    const model = new SoftmaxClassifier({
-      classesCount: predictColumn.type === DG.COLUMN_TYPE.BOOL ? 2 : predictColumn.categories.length,
-      featuresCount: features.length,
-    });
-
-    await model.fit(features, predictColumn, rate, iterations, penalty, tolerance);
-
-    return model.toBytes();
+    return trainSoftmax(df, predictColumn, iterations, penalty, tolerance);
   }
 
 
@@ -576,13 +546,10 @@ export class PackageFunctions {
     'name': 'Apply Softmax',
     'description': 'Classify the rows of a table using a trained softmax (multinomial logistic regression) model.',
   })
-  static applySoftmax(
+  static async applySoftmax(
     df: DG.DataFrame,
-    @grok.decorators.param({'options': {'description': 'Trained softmax classifier model to apply.'}}) model: any): DG.DataFrame {
-    const features = df.columns;
-    const unpackedModel = new SoftmaxClassifier(undefined, model);
-
-    return DG.DataFrame.fromColumns([unpackedModel.predict(features)]);
+    @grok.decorators.param({'options': {'description': 'Trained softmax classifier model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
   }
 
 
@@ -596,7 +563,7 @@ export class PackageFunctions {
   static isApplicableSoftmax(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return SoftmaxClassifier.isApplicable(df.columns, predictColumn);
+    return isSoftmaxApplicable(df.columns, predictColumn);
   }
 
 
@@ -610,7 +577,7 @@ export class PackageFunctions {
   static isInteractiveSoftmax(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return SoftmaxClassifier.isInteractive(df.columns, predictColumn);
+    return isSoftmaxInteractive(df.columns, predictColumn);
   }
 
 
@@ -626,16 +593,7 @@ export class PackageFunctions {
     df: DG.DataFrame,
     predictColumn: DG.Column,
     @grok.decorators.param({'type': 'int', 'options': {'min': '1', 'max': '10', 'initialValue': '3', 'description': 'Number of latent components.'}}) components: number): Promise<Uint8Array> {
-    const features = df.columns;
-
-    const model = new PlsModel();
-    await model.fit(
-      features,
-      predictColumn,
-      Math.min(components, features.length),
-    );
-
-    return model.toBytes();
+    return trainPlsRegression(df, predictColumn, components);
   }
 
 
@@ -647,11 +605,10 @@ export class PackageFunctions {
     'name': 'Apply PLS Regression',
     'description': 'Predict the target for a table using a trained partial least squares (PLS) regression model.',
   })
-  static applyPLSRegression(
+  static async applyPLSRegression(
     df: DG.DataFrame,
-    @grok.decorators.param({'options': {'description': 'Trained PLS regression model to apply.'}}) model: any): DG.DataFrame {
-    const unpackedModel = new PlsModel(model);
-    return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
+    @grok.decorators.param({'options': {'description': 'Trained PLS regression model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
   }
 
 
@@ -665,7 +622,7 @@ export class PackageFunctions {
   static isApplicablePLSRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return PlsModel.isApplicable(df.columns, predictColumn);
+    return isPlsApplicable(df.columns, predictColumn);
   }
 
 
@@ -681,10 +638,10 @@ export class PackageFunctions {
     targetColumn: DG.Column,
     predictColumn: DG.Column,
     model: any): Promise<any> {
-    const unpackedModel = new PlsModel(model);
-    const viewers = unpackedModel.viewers();
-
-    return viewers.map((v) => v.root);
+    const manifest = readCruxManifest(model as Uint8Array);
+    const features = df.clone(null, modelFeatures(df, manifest).map((col) => col.name));
+    const components = manifest.params.n_components as number;
+    return (await plsRegressionViewers(features, targetColumn, components)).map((v) => v.root);
   }
 
 
@@ -698,7 +655,7 @@ export class PackageFunctions {
   static isInteractivePLSRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return PlsModel.isInteractive(df.columns, predictColumn);
+    return isPlsInteractive(df.columns, predictColumn);
   }
 
   @grok.decorators.func({
@@ -717,12 +674,7 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'int', 'options': {'min': '0', 'max': '20', 'initialValue': '6', 'description': 'Maximum depth of a tree.'}}) maxDepth: number,
     @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '100', 'initialValue': '1', 'description': 'L2 regularization term.'}}) lambda: number,
     @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 regularization term.'}}) alpha: number): Promise<Uint8Array> {
-    const features = df.columns;
-
-    const booster = new XGBooster();
-    await booster.fit(features, predictColumn, iterations, eta, maxDepth, lambda, alpha);
-
-    return booster.toBytes();
+    return trainXgboost(df, predictColumn, iterations, eta, maxDepth, lambda, alpha);
   }
 
 
@@ -734,11 +686,10 @@ export class PackageFunctions {
     'name': 'Apply XGBoost',
     'description': 'Predict the target for a table using a trained XGBoost gradient-boosting model.',
   })
-  static applyXGBooster(
+  static async applyXGBooster(
     df: DG.DataFrame,
-    @grok.decorators.param({'options': {'description': 'Trained XGBoost model to apply.'}}) model: any): DG.DataFrame {
-    const unpackedModel = new XGBooster(model);
-    return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
+    @grok.decorators.param({'options': {'description': 'Trained XGBoost model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
   }
 
 
@@ -752,7 +703,7 @@ export class PackageFunctions {
   static isInteractiveXGBooster(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return XGBooster.isInteractive(df.columns, predictColumn);
+    return isXgboostInteractive(df.columns, predictColumn);
   }
 
 
@@ -766,7 +717,7 @@ export class PackageFunctions {
   static isApplicableXGBooster(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return XGBooster.isApplicable(df.columns, predictColumn);
+    return isXgboostApplicable(df.columns, predictColumn);
   }
 
   @grok.decorators.func({
@@ -787,17 +738,7 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'int', 'options': {'min': '1', 'max': '10', 'initialValue': '3', 'description': 'Degree of the polynomial kernel. Higher values give a more flexible, curved decision boundary. Used by the polynomial kernel only.'}}) degree: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'Offset', 'min': '-100', 'max': '100', 'initialValue': '0', 'description': 'Constant added inside the kernel before the polynomial power or the sigmoid. Used by the polynomial and sigmoid kernels only.'}}) coef0: number,
     @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '10', 'initialValue': '0.1', 'description': 'Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only.'}}) epsilon: number): Promise<Uint8Array> {
-    const kernelType = ({
-      'Linear': KernelType.Linear,
-      'Polynomial': KernelType.Poly,
-      'RBF': KernelType.Rbf,
-      'Sigmoid': KernelType.Sigmoid,
-    } as Record<string, KernelType>)[kernel] ?? KernelType.Rbf;
-
-    const model = new SVM();
-    await model.fit(df.columns, predictColumn, {kernelType, C: cost, gamma, degree, coef0, epsilon});
-
-    return model.toBytes();
+    return trainSvm(df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon);
   }
 
 
@@ -809,11 +750,10 @@ export class PackageFunctions {
     'name': 'Apply SVM',
     'description': 'Predict the target for a table using a trained support vector machine (SVM) model.',
   })
-  static applySVM(
+  static async applySVM(
     df: DG.DataFrame,
-    @grok.decorators.param({'options': {'description': 'Trained SVM model to apply.'}}) model: any): DG.DataFrame {
-    const unpackedModel = new SVM(model);
-    return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
+    @grok.decorators.param({'options': {'description': 'Trained SVM model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
   }
 
 
@@ -827,7 +767,7 @@ export class PackageFunctions {
   static isApplicableSVM(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return SVM.isApplicable(df.columns, predictColumn);
+    return isSvmApplicable(df.columns, predictColumn);
   }
 
 
@@ -841,7 +781,7 @@ export class PackageFunctions {
   static isInteractiveSVM(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return SVM.isInteractive(df.columns, predictColumn);
+    return isSvmInteractive(df.columns, predictColumn);
   }
 
   @grok.decorators.func({
