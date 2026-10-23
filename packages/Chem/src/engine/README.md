@@ -45,6 +45,7 @@ the renderers empty their caches and the grids repaint.
 | `isSmiles`, `validateMolecule` (`package.ts`) | a molecule Crux reads (`validateMolecule`: as it stands, getMolSafe's first read) is a molecule / valid (`''`) | RDKit for the rest: `validateMolecule`'s messages are RDKit's (Crux keeps no RDKit log) |
 | The context panel's Structural Alerts, Pharmacophores and 2D Structure (`widgets/structural-alerts.ts`, `widgets/pharmacophore-features.ts`, `widgets/structure2d.ts`), the MMP viewer's pair alignment and highlights (`mmp-mol-rendering.ts`, `mmp-substruct-provider.ts`) | the main thread's Crux module (`byEngineModule` in `chem-engine.ts`: one query-molecule cache per module) | per molecule Crux cannot read, a SMARTS it does not read, a call that throws |
 | The MMP viewer's generated molecules and a SAR matrix's single-cut cells (`mmpLinkFragmentsByEngine`) | the RDKit worker's `mmpLinkFragments` on the Crux workers | the RDKit pool per call and per row Crux does not join |
+| InChI and InChIKeys (`getInchis`, `getInchiKeys`, To InchI... / To InchI Keys..., the Identifiers panel: `panels/inchi.ts`, `widgets/identifiers.ts`) | by the split (crux-core decision chem-wasm-inchi): InChI's input from Crux (chem-wasm's `get_inchi_input`: RDKit's MolToInchi up to the library call; the Crux workers for a column, `inchisByEngine`), the InChI library in crux-sketch's InChI module, the page's (`crux/crux-inchi.ts`): RDKit.js 2026.03.6's strings | the RDKit pool per molecule Crux cannot read and a CXSMILES whose query features Crux's reader skips; per call (the module fails to load) |
 | The 3D Structure panel's coordinates (`widgets/structure3d.ts`, a molecule drawn in 2D) | crux's `chemEmbed3d` on the main thread's module: `scripts/smiles_to_3d_coordinates.py`'s three lines (ETKDG, seed 42 as the fresh script's, no Hs), RDKit 2026.03's coordinates | the script, per molecule Crux gets no 3D block for (no read, no atoms, the embedding fails) and a failed call |
 | Drug Likeness and Toxicity (`widgets/drug-likeness.ts`, `widgets/toxicity.ts`; the product owner, 2026-10-22) | RDKit's QED with the eight properties it weighs (crux's `chemQed`), and RDKit's FilterCatalog Brenk and NIH alerts with their atoms (`chemAlerts`): the panels, their whole-table columns (`QED`, `Brenk alerts`, `NIH alerts`) and Chem \| Calculate \| Toxicity Alerts... | OpenChemLib's score and four risks per molecule Crux cannot read or a failed call; the alert counts have none (RDKit.js has no FilterCatalog: Toxicity Alerts asks for the Crux engine). Toxicity Risks... stays OpenChemLib's in both modes |
 
@@ -54,8 +55,8 @@ of them RDKit's own change between the two releases (RDKit.js 2026.03.6 gives Cr
 identically. A fingerprint cache belongs to the engine that filled it: the RDKit substructure search keeps its own
 pattern fingerprints (the plain-named columns) on RDKit in both modes.
 
-In Crux mode the RDKit pool is not started for what has moved; everything else (InChI, reaction drawing, the
-substructure search's RDKit path, the Identifiers pane) is RDKit in both modes.
+In Crux mode the RDKit pool is not started for what has moved; everything else (reaction drawing, the substructure
+search's RDKit path, the Identifiers pane's other identifiers) is RDKit in both modes.
 
 Descriptors in Crux mode are `dockerfiles/chem/chem.py` as this package has it, on the RDKit release Crux reproduces:
 the same tree (groups, versions, names, order; the descriptions RDKit's docstrings give) and the same values (2D within
@@ -88,7 +89,8 @@ from Crux:
 | `getMCS`, Cluster MCS (`clusterMCS`), `rGroupDecomposition`, MMP analysis | RDKit | Crux's: RDKit 2026.03's (an MCS SMARTS may name its atoms in another order than Chem's RDKit 2024.09, the same query) |
 | `molzip` | Crux's | Crux's |
 | `convertMolNotation`, `canonicalize`, `grok.chem.convert` (every sketcher's getters), `isSmiles`, `validateMolecule` | RDKit | Crux's: RDKit.js 2026.03.6's strings, RDKit per molecule Crux cannot read; `validateMolecule`'s messages RDKit's |
-| every other function (InChI, ...) | RDKit | RDKit |
+| `getInchis`, `getInchiKeys` | RDKit | Crux's: RDKit.js 2026.03.6's InChIs (the library in crux-sketch's InChI module) |
+| every other function | RDKit | RDKit |
 
 ## Moving a feature behind the setting
 

@@ -31,7 +31,7 @@ const JOB_BASE_MS = 30000;
 /** How a job's timeout starts its message. */
 const JOB_TIMEOUT = 'a Crux job took longer than';
 const JOB_MS_PER_MOLECULE = {descriptors: 500, fingerprints: 20, alerts: 50, scaffoldTree: 200, properties: 20, qed: 20,
-  toxicityAlerts: 50, notation: 50};
+  toxicityAlerts: 50, notation: 50, inchi: 5};
 // Rascal's options for an activity cliff's MCS (CruxService.pairUncommonAtomsAndBonds): RDKit's defaults but these
 // three, measured on the cliffs of Chem's tests and demo at their cutoffs (2026-10-21)
 /** get_mces' 0.5 gave one cliff of the cutoff-20 test no MCES, 0.4 none. */
@@ -141,6 +141,8 @@ class CruxWorkerClient extends WorkerMessageBusClient {
 
   chemQed = (molecules: (string | null)[]): Promise<{[key: string]: (number | null)[]}> =>
     this.call('chemQed', [molecules]);
+
+  inchiInputs = (molecules: string[]): Promise<(Uint8Array | '' | null)[]> => this.call('inchiInputs', [molecules]);
 
   chemAlerts = (molecules: (string | null)[], catalogs: string[], atoms: boolean):
     Promise<{[catalog: string]: (ToxicityAlert[] | string[] | null)[]}> =>
@@ -446,6 +448,13 @@ export class CruxService {
       (worker, chunk) => worker.convertMolNotation(chunk, targetNotation, kekulize), CHUNK_SIZE, JOB_BASE_MS, starts);
     return {results: parts.flatMap((part) => part.results), none: parts[0]?.none ?? '',
       unconverted: parts.flatMap((part, k) => part.unconverted.map((row) => starts[k] + row))};
+  }
+
+  /** InChI's input per molecule for crux-sketch's InChI module (engine/worker-jobs.ts `inchisByEngine`): '' where
+   * RDKit's `get_inchi` gives '', null where Crux cannot read the molecule; the molecules in chunks across the workers. */
+  async inchiInputs(molecules: string[]): Promise<(Uint8Array | '' | null)[]> {
+    return (await this.inChunks(molecules, JOB_MS_PER_MOLECULE.inchi, (worker, chunk) => worker.inchiInputs(chunk)))
+      .flat();
   }
 
   /**

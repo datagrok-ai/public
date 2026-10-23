@@ -23,7 +23,7 @@ const DG_NOTATION: {[n in Notation]: DG.chem.Notation} = {
 
 /** Crux Sketch (`vendor/crux-sketch/`), bundled with Chem like any dependency: a chunk of its own, loaded the first
  * time a Crux sketcher opens, its WebAssembly emitted beside Chem's chunks. */
-function loadCruxSketch(): Promise<typeof CruxSketch> {
+export function loadCruxSketch(): Promise<typeof CruxSketch> {
   return import('../../vendor/crux-sketch/crux-sketch.js');
 }
 

@@ -30,7 +30,7 @@ import {SubstructureSearchEngine, cruxReadsQuery, getCruxService, getSubstructur
 import {Fingerprint} from '../utils/chem-common';
 import {FILTER_TYPES, chemGetDiversities, chemGetFingerprints, chemGetSimilarities, chemSubstructureSearchLibrary}
   from '../chem-searches';
-import {alertsByEngine, fingerprintsByEngine, setCruxUnreadableForTests, structuralAlertsByEngine}
+import {alertsByEngine, fingerprintsByEngine, inchisByEngine, setCruxUnreadableForTests, structuralAlertsByEngine}
   from '../engine/worker-jobs';
 import {RuleSet, runStructuralAlertsDetection} from '../panels/structural-alerts';
 import {PHARM_FAMILY_NAMES, PharmFamilySet, runPharmacophoreDetection} from '../panels/pharmacophore-features';
@@ -39,6 +39,8 @@ import {isNoneValue} from '../crux/crux-api';
 import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, SubstructureSearchType} from '../constants';
 import {calculatorMethodInfo} from '../widgets/biochem-properties-widget';
 import {convertNotationForColumn} from '../utils/convert-notation-utils';
+import {cruxInchi} from '../crux/crux-inchi';
+import {getIdentifiersSingle} from '../widgets/identifiers';
 import {getStructuralAlerts} from '../widgets/structural-alerts';
 import {getPharmacophoreFeatures} from '../widgets/pharmacophore-features';
 import {mmpLinkFragmentsByEngine} from '../engine/analysis-jobs';
@@ -1218,6 +1220,38 @@ category('chemical engine', () => {
       expect(cruxFallbackCount('convertMolNotation') > fallbacks, true, 'the fallback is counted');
     } finally {
       setCruxUnreadableForTests(null);
+      setChemicalEngine(null);
+    }
+  }, {timeout: 300000});
+
+  test('InChI: Crux mode writes RDKit\'s InChIs and keys, the panel\'s and the column\'s', async () => {
+    // the split (crux-core decision chem-wasm-inchi): Crux fills InChI's input, crux-sketch's InChI module runs the
+    // library; RDKit.js 2026.03.6's strings, which Chem's RDKit 2024.09 writes too on these molecules
+    const molecules = [...(await jobMolecules()).filter((m) => m).slice(0, 1199), '', 'C1CC(', '*CC', 'C[Na]',
+      'c1cccc1', '[2H]C([2H])O', 'C/C=C/C', 'C[C@H](N)O |&1:1|'];
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const [rdkit, rdkitKeys] = [await inchisByEngine(molecules, false), await inchisByEngine(molecules, true)];
+    const rdkitPanel = await getIdentifiersSingle(molecules[0]) as {[k: string]: string};
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      const fallbacks = cruxFallbackCount('InChI');
+      const [crux, cruxKeys] = [await inchisByEngine(molecules, false), await inchisByEngine(molecules, true)];
+      const differences = molecules.flatMap((m, i) => crux[i] === rdkit[i] && cruxKeys[i] === rdkitKeys[i] ? [] :
+        [`${m.slice(0, 50)}: ${crux[i]} ${cruxKeys[i]} vs RDKit's ${rdkit[i]} ${rdkitKeys[i]}`]);
+      expect(differences.slice(0, 5).join('; '), '', `the same InChIs and keys (${differences.length} differ)`);
+      expect(cruxFallbackCount('InChI'), fallbacks, 'Crux wrote every InChI (RDKit none)');
+      const panel = await getIdentifiersSingle(molecules[0]) as {[k: string]: string};
+      expect(`${panel['Inchi']} ${panel['Inchi key']}`, `${rdkitPanel['Inchi']} ${rdkitPanel['Inchi key']}`,
+        'the Identifiers panel');
+      expect((await cruxInchi(molecules[0]))?.inchi, rdkit[0], 'the panel\'s InChI is Crux\'s');
+      setCruxUnreadableForTests([molecules[1]]);
+      try {
+        expect((await inchisByEngine(molecules.slice(0, 3), false))[1], rdkit[1], 'RDKit\'s for an unreadable molecule');
+      } finally {
+        setCruxUnreadableForTests(null);
+      }
+    } finally {
       setChemicalEngine(null);
     }
   }, {timeout: 300000});

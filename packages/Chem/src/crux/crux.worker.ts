@@ -47,6 +47,29 @@ function unread(molecules: string[], done: (i: number) => boolean): number[] {
 }
 
 /**
+ * InChI's input of each molecule, as RDKit's MolToInchi fills it (chem-wasm's `get_inchi_input`) for crux-sketch's InChI
+ * module to run the library on (engine/worker-jobs.ts); '' where RDKit's `get_inchi` gives '' (an empty cell, no input,
+ * a throw) and null where Crux cannot read the molecule. The inputs' buffers are transferred.
+ */
+function inchiInputs(molecules: string[], transfer: Transferable[]): (Uint8Array | '' | null)[] {
+  return molecules.map((m) => {
+    const mol = m ? getMolSafe(m, {}, chemWasm as unknown as RDModule).mol : null;
+    if (!mol)
+      return m ? null : '';
+    try {
+      const input = (mol as unknown as chemWasm.JSMol).get_inchi_input('');
+      if (input)
+        transfer.push(input.buffer);
+      return input ?? '';
+    } catch {
+      return '';
+    } finally {
+      mol.delete();
+    }
+  });
+}
+
+/**
  * Which molecules match each rule's SMARTS, as the RDKit worker's `getStructuralAlerts` matches them (a rule's flag is
  * set by its first matching SMARTS), each molecule parsed once; and the rows with a molecule Crux cannot read.
  */
@@ -208,6 +231,8 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
       result = {results, none, unconverted: (args[0] as string[]).flatMap((m, i) => m && results[i] === none ? [i] : [])};
     } else if (op === 'chemProperties') // Chem's property table (widgets/properties.ts)
       result = JSON.parse(chemWasm.chemProperties(args[0], args[1]));
+    else if (op === 'inchiInputs') // Crux mode's InChI: the library's input per molecule (engine/worker-jobs.ts)
+      result = inchiInputs(args[0], transfer);
     else if (op === 'chemQed') // Crux mode's drug-likeness: QED and its properties (widgets/drug-likeness.ts)
       result = JSON.parse(chemWasm.chemQed(args[0]));
     else if (op === 'chemAlerts') // Crux mode's toxicity: FilterCatalog's Brenk and NIH alerts (widgets/toxicity.ts)

@@ -16,6 +16,7 @@ import {FingerprintOptions, fingerprintOptions, needsCrux} from '../utils/finger
 import {cruxReadsCxExtension} from '../crux/crux-service';
 import {hasNewLines} from '../utils/chem-common';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
+import {inchisFromInputs} from '../crux/crux-inchi';
 
 /** Tests: molecules the Crux workers get as unreadable (see {@link setCruxUnreadableForTests}). */
 let unreadableForTests: Set<string> | null = null;
@@ -107,6 +108,35 @@ export async function convertMolNotationByEngine(molecules: string[], targetNota
     }
     return results;
   }, () => rdkit(null));
+}
+
+/**
+ * `RdKitService.getInchis(molecules)` (`getInchiKeys` when `keys`) by the engine in effect: in Crux mode InChI's input
+ * by the Crux workers and the library by crux-sketch's InChI module (crux/crux-inchi.ts), the RDKit pool for a molecule
+ * Crux cannot read and a CXSMILES whose query features Crux's reader skips.
+ */
+export async function inchisByEngine(molecules: string[], keys: boolean): Promise<string[]> {
+  const rdkit = async (rows: string[]) => {
+    const service = await getRdKitService();
+    return keys ? service.getInchiKeys(rows) : service.getInchis(rows);
+  };
+  if (!isCruxRequested())
+    return rdkit(molecules);
+  return cruxOrRdKitAsync('InChI', async () => {
+    const cx = molecules.map((m) => !!m && !cruxReadsCxExtension(m));
+    const inputs = await (await getCruxService()).inchiInputs(forCrux(molecules).map((m, i) => cx[i] ? '' : m));
+    cx.forEach((c, i) => inputs[i] = c ? null : inputs[i]);
+    const results = await inchisFromInputs(inputs, keys);
+    const rest = results.flatMap((r, i) => r === null ? [i] : []);
+    if (rest.length) {
+      const patch = await rdkit(rest.map((i) => molecules[i]));
+      rest.forEach((row, k) => results[row] = patch[k]);
+      const done = rest.filter((_, k) => patch[k]);
+      if (done.length)
+        warnCruxFallback('InChI', `RDKit wrote ${done.length} InChIs Crux did not, e.g. for ${molecules[done[0]]}`);
+    }
+    return results as string[];
+  }, () => rdkit(molecules));
 }
 
 /** `RdKitService.getStructuralAlerts(alerts, molecules)` by the engine in effect. */
