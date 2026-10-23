@@ -140,35 +140,37 @@ async function checkTrashHistory(page) {
     JSON.stringify({before, trash, back, forward}));
 }
 
-/** 3 — a PHYSICAL click on a bulk-edit include checkbox, then OK. The hit target U23 is about:
- * the box is reachable at its own coordinates rather than covered by the label cell, the click
- * enables its editor, and the edit lands on the row the list is narrowed to. */
-async function checkBulkCheckbox(page) {
+/** 3 — PHYSICAL clicks on the bulk-edit field picker, then the Update button. The hit targets are
+ * what U23 was about: the picker opens at its own coordinates, its option takes the click, the
+ * chosen field's editor appears, and the edit lands on the row the list is narrowed to. */
+async function checkBulkPicker(page) {
   const value = `E2E${TAG}`;
   await openDomain(page, SUBSTANCE, `cas = "${PROBE}"`);
   const state = await appState(page);
   await menuPick(page, 'Bulk edit…');
   await page.waitForSelector('.u2-domain-bulk', {timeout: 20000});
-  const box = page.locator('[data-u2-include="molecular_formula"]').first();
-  const editor = page.locator('.u2-domain-bulk-row:has([data-u2-include="molecular_formula"]) input.u2-input-editor')
-    .first();
-  const before = await editor.isEnabled();
-  // a real click at the element's own coordinates — dispatchEvent would prove nothing about U23
-  await box.click();
+  const editor = page.locator('.u2-dialog [data-u2-name="molecular_formula"] input.u2-input-editor').first();
+  const before = await editor.isVisible();
+  // real clicks at the elements' own coordinates — dispatchEvent would prove nothing about U23
+  await page.locator('.u2-dialog [data-u2-name="fields"] .u2-multi-select-field').first().click();
+  await page.locator('.u2-multi-select-option[data-value="molecular_formula"]').first().click();
+  await page.locator('.u2-dialog .u2-dialog-title-text').first().click();
   await page.waitForTimeout(500);
-  const after = await editor.isEnabled();
+  const after = await editor.isVisible();
   await editor.fill(value);
   await page.waitForTimeout(300);
   await shot(page, 'domain-stand-3-bulk');
-  await page.locator('.u2-dialog button', {hasText: /^OK$/}).first().click();
+  const update = page.locator('.u2-dialog button', {hasText: /^Update 1 /}).first();
+  const caption = await update.textContent();
+  await update.click();
   await page.waitForTimeout(4000);
   const landed = await page.evaluate(async (id) => {
     const row = await grok.dapi.domains.table('stockroom.substance').get(id);
     return String(row?.molecular_formula ?? '');
   }, probeId);
-  ok('domain-stand/3 a real click on a bulk include checkbox enables its editor, and OK writes it',
+  ok('domain-stand/3 real clicks on the bulk field picker show the chosen editor, and Update writes it',
     state.rows === 1 && before === false && after === true && landed === value,
-    JSON.stringify({rows: state.rows, before, after, landed, expected: value}));
+    JSON.stringify({rows: state.rows, before, after, caption, landed, expected: value}));
 }
 
 /** 4 — a multi-word entity value typed into the filter query box (U33/U34): the suggestion list
@@ -344,7 +346,7 @@ try {
     return String(row.id);
   }, {cas: PROBE, tag: TAG});
   note('stand/probe', `${PROBE} → ${probeId}`);
-  for (const check of [checkGeometry, checkTrashHistory, checkBulkCheckbox, checkAutocomplete,
+  for (const check of [checkGeometry, checkTrashHistory, checkBulkPicker, checkAutocomplete,
     checkHiddenPane, checkStagedRestore]) {
     try {
       await check(page);
