@@ -158,7 +158,7 @@ export class DomainList extends Control {
     if (row[Rows.STATE] === 'deleted')
       return [{name: 'Restore', icon: 'undo', run: () => source.edit.peek()?.unmarkDeleted(row.id)}];
     if (Rows.isDeleted(row)) {
-      return allowedActions([{name: 'Restore', icon: 'trash-restore', requires: 'delete',
+      return allowedActions([{name: 'Restore', icon: 'undo', requires: 'delete',
         run: () => source.stageRestore([row.id])}], {access: source.access.peek(), row});
     }
     const draft = Rows.isDraft(row);

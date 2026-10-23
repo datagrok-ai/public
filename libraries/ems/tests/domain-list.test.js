@@ -482,6 +482,7 @@ scoped('a trash row says WHEN it was deleted, and Restore stages instead of writ
     return restore(id);
   };
   assert.deepEqual(names(list, src.rows.byKey('i2')), ['Restore']);
+  assert.equal(list.actionsFor(src.rows.byKey('i2'))[0].icon, 'undo', 'a trash can would read as Delete');
   list.actionsFor(src.rows.byKey('i2'))[0].run();
   await flush();
   assert.deepEqual(wrote, [], 'the restore is staged: nothing is written until the Save');
