@@ -1,5 +1,5 @@
 /* eslint-disable */
-import {before, category, delay, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, expectArray, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {check} from './utils';
@@ -109,14 +109,21 @@ category('Functions: Client-side cache', () => {
 id1,${Date.now()}`));
     const res1 = await func.apply();
 
-    let transaction: any;
-    let db: any;
     const cacheName = 'datagrok_function_cache';
-    try {
+    await new Promise<void>((resolve, reject) => {
       const request = window.indexedDB.open(cacheName);
+      request.onerror = () => reject(request.error);
       request.onsuccess = function() {
-        db = request.result;
-        transaction = db.transaction('cache_entry', 'readwrite');
+        const db = request.result;
+        const transaction = db.transaction('cache_entry', 'readwrite');
+        transaction.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        transaction.onerror = () => {
+          db.close();
+          reject(transaction.error);
+        };
         const entryStore = transaction.objectStore('cache_entry');
         entryStore.openCursor().onsuccess = (event: any) => {
           const cursor = event.target.result;
@@ -124,25 +131,14 @@ id1,${Date.now()}`));
             let updateEntry = cursor.value;
             if (updateEntry.__meta_id === func.id) {
               updateEntry.__expires = new Date("1996-08-26T03:24:00").getTime();
-              const request = cursor.update(updateEntry);
-              request.onsuccess = () => {};
+              cursor.update(updateEntry);
             }
             cursor.continue();
           }
         };
       };
-      if (transaction != null)
-        transaction.commit();
-    } catch (e) {
-      if (transaction != null)
-        transaction.abort();
-      throw e;
-    } finally {
-      if (db != null)
-        db.close;
-    }
+    });
 
-    await delay(500);
     const res2 = await func.apply();
     expect(res2.columns.byName('date').get(0) !== res1.columns.byName('date').get(0), true);
   }, {timeout: 80000});
@@ -156,7 +152,9 @@ id1,${Date.now()}`));
 
 async function expectSameResults(f: DG.Func, params?: object): Promise<any> {
   const first = await f.apply(params);
-  await delay(100);
+  // a clock function called twice without the cache must return two different values
+  const calledAt = Date.now();
+  await waitUntil(() => Date.now() > calledAt, 'The clock did not advance');
   const second = await f.apply(params);
   if (first.constructor.name === 'DataFrame')
     expectTable(first, second);

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* ValidationIcon: A `disabled` or `restricted` input whose value is consistent shows a link icon
 * InputForm: Added the `skipLogic` property, passed to `DG.InputForm.forFuncCall`
 
 ## 0.3.7 (2026-09-23)

@@ -16,6 +16,15 @@ export const RUN_ERROR_PATH = 'RUN_ERROR';
 
 export const CONFIG_PATH = 'PIPELINE_CONFIG';
 
+export const readOutputOutdated = (fc: DG.FuncCall): boolean =>
+  deserialize(fc.options[OUTPUT_OUTDATED_PATH] ?? 'false');
+
+/** The serialized workflow state of a saved meta-call, undefined for a plain function run. */
+export function readInstanceState(metaCall: DG.FuncCall): PipelineSerializedState | undefined {
+  const serialized = metaCall.options[CONFIG_PATH];
+  return serialized ? deserialize(serialized) : undefined;
+}
+
 // Marker key for a consistency DataFrame stored outside the restrictions blob as a table id.
 const DF_REF_TOKEN = '_DG_CONSISTENCY_DF_REF_';
 
@@ -128,7 +137,7 @@ export async function loadFuncCall(
 ): Promise<AdapterInitData> {
   const fc = await historyUtils.loadRun(id);
   const restrictions = await deserializeRestrictions(fc.options[RESTRICTIONS_PATH] ?? '{}');
-  const isOutputOutdated = deserialize(fc.options[OUTPUT_OUTDATED_PATH] ?? 'false');
+  const isOutputOutdated = readOutputOutdated(fc);
   const runError = fc.options[RUN_ERROR_PATH];
   const adapter = new FuncCallAdapter(fc, isReadonly);
   return {adapter, restrictions, runError, isOutputOutdated};
@@ -167,6 +176,6 @@ export async function saveInstanceState(
 export async function loadInstanceState(id: string) {
   const metaCall = await historyUtils.loadRun(id);
   const isFavorite = await loadIsFavorite(metaCall);
-  const config: PipelineSerializedState = deserialize(metaCall.options[CONFIG_PATH] ?? '{}');
+  const config = readInstanceState(metaCall) ?? {} as PipelineSerializedState;
   return [config, metaCall, isFavorite] as const;
 }

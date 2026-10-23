@@ -7,6 +7,7 @@
 import {emsBackends} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
 import {Rows, notify} from '@datagrok-libraries/u2';
+import type {NotifyHandle} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {DgDomainBackend} from './backend.js';
 
@@ -46,12 +47,12 @@ export class DomainErrors {
 
   /** One balloon; after a 403 the affordances were built from an access snapshot the server just
    * contradicted, so every cache of it goes. */
-  static report(e: unknown, source?: DomainSource): void {
+  static report(e: unknown, source?: DomainSource): NotifyHandle | null {
     if (DomainErrors.codeOf(e) === 'forbidden') {
       grok.dapi.domains.invalidateUiCaches();
       if (emsBackends.domain instanceof DgDomainBackend)
         emsBackends.domain.invalidate();
     }
-    notify.error(DomainErrors.message(e, source));
+    return notify.error(DomainErrors.message(e, source));
   }
 }

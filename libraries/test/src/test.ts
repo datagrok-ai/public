@@ -899,6 +899,55 @@ export async function awaitCheck(checkHandler: () => boolean,
   });
 }
 
+/** Resolves once [condition] holds, checked right away and then every [interval] ms; rejects with [error] after
+ * [timeout] ms. Unlike {@link awaitCheck}, it does not wait before the first check, and its default timeout leaves
+ * room for a loaded machine. Pass [error] as a function to report the state at the time of the failure. */
+export async function waitUntil(condition: () => boolean, error: string | (() => string), timeout: number = 10000,
+  interval: number = 20): Promise<void> {
+  const start = Date.now();
+  while (!condition()) {
+    if (Date.now() - start > timeout)
+      throw new Error(`${typeof error === 'string' ? error : error()} (after ${timeout} ms)`);
+    await delay(interval);
+  }
+}
+
+/** {@link waitUntil} for a condition that has to ask the server: resolves once [condition] resolves to true, asked
+ * right away and again [interval] ms after each answer; rejects with [error] after [timeout] ms. */
+export async function waitUntilAsync(condition: () => Promise<boolean>, error: string | (() => string),
+  timeout: number = 10000, interval: number = 100): Promise<void> {
+  const start = Date.now();
+  const fail = () => new Error(`${typeof error === 'string' ? error : error()} (after ${timeout} ms)`);
+  const expired = new Promise<boolean>((_, reject) => setTimeout(() => reject(fail()), timeout));
+  expired.catch(() => {});
+  while (!(await Promise.race([condition(), expired]))) {
+    if (Date.now() - start > timeout)
+      throw fail();
+    await delay(interval);
+  }
+}
+
+/** Resolves once [viewer] has a box and nothing on its way to the screen on two checks in a row: a resize is
+ * noticed only after the layout that caused it. */
+export async function settled(viewer: _DG.Viewer, timeout: number = 10000): Promise<void> {
+  let held = 0;
+  await waitUntil(() => {
+    const box = viewer.root.getBoundingClientRect();
+    held = box.width > 0 && box.height > 0 && !renderPending(viewer) ? held + 1 : 0;
+    return held >= 2;
+  }, `${viewer.type} is still rendering`, timeout, 16);
+}
+
+// platforms before 2026-09 do not report pending renders
+function renderPending(viewer: _DG.Viewer): boolean {
+  try {
+    return viewer.isRenderPending;
+  }
+  catch (_) {
+    return false;
+  }
+}
+
 // Returns test execution result or an error in case of timeout
 export async function timeout(func: () => Promise<any>, testTimeout: number, timeoutReason: string = 'EXECUTION TIMEOUT'): Promise<any> {
   let timeout: any = null;
@@ -1001,7 +1050,7 @@ export async function testViewer(v: string, df: _DG.DataFrame, options?: {
     //4. Open viewer on arbitary dataset
     if (options?.arbitraryDfTest !== false) {
       tv.dataFrame = catDF;
-      await delay(50);
+      await settled(tv.grid);
       await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded);
       if (options?.awaitViewer)
         await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, undefined, options!.awaitViewer);

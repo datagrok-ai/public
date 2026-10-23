@@ -56,7 +56,7 @@ export const correlationMatches = Then(
         return `the matrix shows ${values[key]} and ${want} over ${over.rowCount} rows is ${reference}`;
       if (Math.abs(shown - reference) > 1e-6) {
         return `${xName}/${yName}: the matrix shows ${shown}, ${want} over the ${over.rowCount} `
-          + `${rowSource.toLowerCase()} rows is ${reference} (pearson source: ${values['pearson source']})`;
+          + `${rowSource.toLowerCase()} rows is ${reference}`;
       }
       return '';
     }, [x, y, kind] as [string, string, string]);

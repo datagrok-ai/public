@@ -96,6 +96,8 @@ export function buildHelpIndex(workspaceDir: string): void {
     '',
     'One line per page: `path — Title — description [keywords]`. To answer a platform question:',
     'find the relevant page below (titles + keywords), then read `workspace/help/<path>` with read_file.',
+    'Link the page you answer from: `<path>` is published at `https://datagrok.ai/help/<path>` without its',
+    '`.md` or `.mdx` (`transform/add-new-column.md` is `https://datagrok.ai/help/transform/add-new-column`).',
     'If no page covers the topic, the docs do not cover it — say so instead of searching further.',
     '',
   ];

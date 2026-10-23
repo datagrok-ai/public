@@ -25,6 +25,10 @@ is…", "explain…", "can you…" — do not call `datagrok_exec`; find the pag
 
 The code runs in an async IIFE, so `await` works directly.
 
+A number computed from a column must skip its missing values: take it from `col.stats.{avg,med,min,max,sum,stdev}`,
+which do, not from `col.getRawData()`, where a missing value is a placeholder number; in a loop, skip rows where
+`col.isNone(i)`.
+
 ## Tool result
 
 The tool returns `{success, returnValue?, verified?, error?}`.

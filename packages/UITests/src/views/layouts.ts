@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 // import $ from 'cash-dom';
 
 category('Layouts', () => {
@@ -44,54 +44,58 @@ category('Layouts', () => {
     if (!layouts.classList.contains('expanded'))
       layouts.click();
     tv.addViewer(DG.VIEWER.SCATTER_PLOT);
-    await delay(500);
-    let list: HTMLElement | null;
-    await awaitCheck(() => {
-      list = tb.querySelector('#layouts');
-      return list !== null;
-    }, '', 3000);
+    let list: HTMLElement | null = null;
+    // the list starts with its filter box and shows a loader while it fetches the layouts
+    const loaded = () => (list = tb.querySelector('#layouts')) !== null && list.querySelector('.d4-update-shadow') === null;
+    const cardIds = () => Array.from(list!.querySelectorAll('.grok-suggestions-chart-card'))
+      .map((c) => c.getAttribute('data-layout-id'));
+    await waitUntil(loaded, 'the layouts list did not load', 30000);
+    const before = new Set(cardIds());
     const save = Array.from(tb.querySelectorAll('.ui-btn'))
       .find((el) => el.textContent === 'Save') as HTMLElement;
-    await delay(3000);
-    let num = list!.children.length + 1;
     save.click();
-    await delay(6000);
-    await awaitCheck(() => list!.children.length === num, 'Layout was not saved', 3000);
-    num--;
+    let id: string | null | undefined;
+    await waitUntil(() => loaded() && (id = cardIds().find((c) => !before.has(c))) != null, 'Layout was not saved', 30000);
+    const card = () => list!.querySelector(`.grok-suggestions-chart-card[data-layout-id="${id}"]`) as HTMLElement | null;
     try {
       const openContextMenu = async () => {
-        (list!.firstElementChild as HTMLElement).focus();
-        list!.firstElementChild!.dispatchEvent(new MouseEvent('contextmenu'));
-        await awaitCheck(() => document.querySelector('[d4-name="Delete"]') !== null,
-          'Cannot find context menu', 3000);
+        document.querySelectorAll('.d4-menu-popup').forEach((m) => m.remove());
+        card()!.dispatchEvent(new MouseEvent('contextmenu'));
+        await waitUntil(() => document.querySelector('.d4-menu-popup .d4-menu-item') !== null, 'Cannot find context menu');
       };
 
       await openContextMenu();
-      // "Upload" only shows while the layout is dirty or not on the server; Save above saved it.
+      // "Upload" only shows while the layout is dirty or not on the server; Delete is offered once it is uploaded
       const upload = document.querySelector('[d4-name="Upload"]') as HTMLElement | null;
       if (upload !== null) {
-        upload.click();
-        await delay(1000);
+        // Upload fires the entity-saved event once the layout is on the server
+        let uploaded = false;
+        const sub = grok.events.onEvent('d4-entity-saved').subscribe(() => uploaded = true);
+        try {
+          upload.click();
+          await waitUntil(() => uploaded, 'the layout was not uploaded');
+        } finally {
+          sub.unsubscribe();
+        }
         await openContextMenu();
       }
+      await waitUntil(() => document.querySelector('[d4-name="Delete"]') !== null, 'the layout menu has no Delete');
       (document.querySelector('[d4-name="Delete"]') as HTMLElement).click();
       let d: DG.Dialog;
-      await awaitCheck(() => {
+      await waitUntil(() => {
         const a = DG.Dialog.getOpenDialogs();
         if (a.length === 0) return false;
         d = a[0];
         return true;
-      });
+      }, 'the delete confirmation did not open');
       const yes = Array.from(d!.root.querySelectorAll('.ui-btn'))
         .find((el) => el.textContent === 'DELETE') as HTMLElement;
       yes.click();
-      await awaitCheck(() => list!.children.length === num, 'Layout was not deleted', 6000);
+      await waitUntil(() => card() === null, 'Layout was not deleted');
     } catch (e) {
-      const l = await grok.dapi.layouts.getApplicable(df);
-      if (l.length > num) {
-        l.sort((a, b) => a.createdOn > b.createdOn ? -1 : 1);
-        await grok.dapi.layouts.delete(l[0]);
-      }
+      const saved = id ? await grok.dapi.layouts.find(id) : null;
+      if (saved)
+        await grok.dapi.layouts.delete(saved);
       throw e;
     }
   }, {timeout: 100000});
@@ -109,31 +113,27 @@ category('Layouts: Apply', () => {
     if (!layouts.classList.contains('expanded'))
       layouts.click();
     tv.addViewer(DG.VIEWER.SCATTER_PLOT);
-    await delay(500);
-    let list: HTMLElement | null;
-    await awaitCheck(() => {
-      list = tb.querySelector('#layouts');
-      return list !== null;
-    }, '', 3000);
+    let list: HTMLElement | null = null;
+    const loaded = () => (list = tb.querySelector('#layouts')) !== null && list.querySelector('.d4-update-shadow') === null;
+    const cardIds = () => Array.from(list!.querySelectorAll('.grok-suggestions-chart-card'))
+      .map((c) => c.getAttribute('data-layout-id'));
+    await waitUntil(loaded, 'the layouts list did not load', 30000);
+    const before = new Set(cardIds());
     const save = Array.from(tb.querySelectorAll('.ui-btn'))
       .find((el) => el.textContent === 'Save') as HTMLElement;
-    await delay(10000);
-    const num = list!.children.length + 1;
     save.click();
-    await delay(10000);
-    await awaitCheck(() => list!.children.length === num, 'Layout was not saved', 3000);
+    let id: string | null | undefined;
+    await waitUntil(() => loaded() && (id = cardIds().find((c) => !before.has(c))) != null, 'Layout was not saved', 30000);
     try {
       tv.resetLayout();
-      await delay(100);
-      await awaitCheck(() => [...tv.viewers].length === 1, 'Cannot reset layout', 3000);
-      (list!.querySelector('.grok-suggestions-chart-host .grok-suggestions-chart-image') as HTMLElement)?.click();
-      await awaitCheck(() => [...tv.viewers].length === 2,
-        `Layout was not applied, expected 1 viewer, got ${[...tv.viewers].length - 1}`, 3000);
-      await delay(100);
+      await waitUntil(() => [...tv.viewers].length === 1, 'Cannot reset layout');
+      (list!.querySelector(`.grok-suggestions-chart-card[data-layout-id="${id}"] .grok-suggestions-chart-image`) as HTMLElement).click();
+      await waitUntil(() => [...tv.viewers].length === 2,
+        `Layout was not applied, expected 1 viewer, got ${[...tv.viewers].length - 1}`);
     } finally {
-      const l = await grok.dapi.layouts.getApplicable(df);
-      l.sort((a, b) => a.createdOn > b.createdOn ? -1 : 1);
-      await grok.dapi.layouts.delete(l[0]);
+      const saved = id ? await grok.dapi.layouts.find(id) : null;
+      if (saved)
+        await grok.dapi.layouts.delete(saved);
     }
   }, {timeout: 100000});
 
@@ -142,29 +142,30 @@ category('Layouts: Apply', () => {
     grok.shell.windows.showToolbox = false;
     grok.shell.topMenu.find('View').find('Layout').find('Open Gallery').click();
     tv.addViewer(DG.VIEWER.SCATTER_PLOT);
-    await delay(500);
-    let list: HTMLElement | null;
-    await awaitCheck(() => {
-      list = document.querySelector('.panel-content #layouts');
-      return list !== null;
-    }, '', 3000);
-    const num = list!.children. length + 1;
+    let list: HTMLElement | null = null;
+    const loaded = () => (list = document.querySelector('.panel-content #layouts')) !== null &&
+      list.querySelector('.d4-update-shadow') === null;
+    const cardIds = () => Array.from(list!.querySelectorAll('.grok-suggestions-chart-card'))
+      .map((c) => c.getAttribute('data-layout-id'));
+    await waitUntil(loaded, 'the layouts gallery did not load', 30000);
+    const before = new Set(cardIds());
     grok.shell.topMenu.find('View').find('Layout').find('Save to Gallery').click();
-    await awaitCheck(() => list!.children.length === num, 'Layout was not saved', 3000);
+    let id: string | null | undefined;
+    await waitUntil(() => loaded() && (id = cardIds().find((c) => !before.has(c))) != null,
+      'Layout was not saved', 30000);
     try {
       tv.resetLayout();
-      await delay(100);
-      await awaitCheck(() => [...tv.viewers].length === 1, 'Cannot reset layout', 3000);
-      (list!.firstElementChild?.firstElementChild as HTMLElement).click();
-      await awaitCheck(() => [...tv.viewers].length === 2,
-        `Layout was not applied, expected 1 viewer, got ${[...tv.viewers].length - 1}`, 3000);
-      await delay(100);
+      await waitUntil(() => [...tv.viewers].length === 1, 'Cannot reset layout');
+      (list!.querySelector(`.grok-suggestions-chart-card[data-layout-id="${id}"] .grok-suggestions-chart-image`) as
+        HTMLElement).click();
+      await waitUntil(() => [...tv.viewers].length === 2,
+        `Layout was not applied, expected 1 viewer, got ${[...tv.viewers].length - 1}`);
     } finally {
-      const l = await grok.dapi.layouts.getApplicable(df);
-      l.sort((a, b) => a.createdOn > b.createdOn ? -1 : 1);
-      await grok.dapi.layouts.delete(l[0]);
+      const saved = id ? await grok.dapi.layouts.find(id) : null;
+      if (saved)
+        await grok.dapi.layouts.delete(saved);
     }
-  }, {skipReason: 'deadlock'});
+  }, {timeout: 100000});
 
   // test('drag-and-drop', async () => {
   //   const tv = grok.shell.addTableView(df);

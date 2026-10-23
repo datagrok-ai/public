@@ -12,6 +12,13 @@ import {
   FUZZY_NAME_THRESHOLD,
 } from './matching';
 
+/** Entry nodes without the outputs of steps whose results are outdated. */
+export const withoutOutdatedOutputs = (nodes: ComparisonEntryNodes): ComparisonEntryNodes => ({
+  ...nodes,
+  scalars: nodes.scalars.filter((scalar) => !scalar.outdated),
+  tables: nodes.tables.filter((table) => !table.outdated),
+});
+
 /** Substring match on the displayed text, with fuzzy per-token fallback for typos. */
 export function matchesFilter(query: string, text: string): boolean {
   const q = normalizeName(query);

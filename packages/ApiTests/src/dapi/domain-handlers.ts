@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, expect, test, before, after, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, before, after, waitUntil} from '@datagrok-libraries/test/src/test';
 
 // DG.DomainRow JS wrapper + ObjectHandler dispatch for domain-table rows (§8.1),
 // including ObjectHandler.renderGrid (ui-js-api WO-1) — the grid-customization
@@ -407,7 +407,7 @@ category('JS: domain handlers', () => {
   /** The open dialog whose title contains [fragment]. */
   const openDialog = async (fragment: string): Promise<_DG.Dialog> => {
     const find = () => DG.Dialog.getOpenDialogs().find((d) => `${d.title}`.includes(fragment));
-    await awaitCheck(() => find() != null, `dialog "${fragment}" did not open`, 10000);
+    await waitUntil(() => find() != null, `dialog "${fragment}" did not open`, 10000);
     return find()!;
   };
   const click = (dlg: _DG.Dialog, text: string) => dlg.getButton(text).click();
@@ -431,7 +431,7 @@ category('JS: domain handlers', () => {
       grok.shell.addView(view);
       expect(view instanceof DG.DomainView, true, 'create must resolve a DG.DomainView');
       expect(view.permanentFilter, `sku = "${mine}"`, 'permanentFilter did not round-trip');
-      await awaitCheck(() => view!.root.textContent!.includes(mine),
+      await waitUntil(() => view!.root.textContent!.includes(mine),
         'the permanently filtered row never appeared in the view', 15000);
       expect(view.root.textContent!.includes(other), false,
         'a row outside permanentFilter is listed');
@@ -445,7 +445,7 @@ category('JS: domain handlers', () => {
         `permanentFilter missing from the reported query: ${JSON.stringify(q)}`);
       // ...and so is what the user typed into the search box.
       view.searchValue = 'quantity > 0';
-      await awaitCheck(() => (view!.query.filters ?? []).some((f) => f.includes('quantity > 0')),
+      await waitUntil(() => (view!.query.filters ?? []).some((f) => f.includes('quantity > 0')),
         `searchValue never reached the reported query: ${JSON.stringify(view.query)}`, 15000);
       view.searchValue = '';
       // The inherited CardView refresh() re-runs the query behind the view. The
@@ -454,10 +454,10 @@ category('JS: domain handlers', () => {
       const renamed = `Renamed ${stamp()}`;
       await items().update(inserted[0].id, {name: renamed});
       view.refresh();
-      await awaitCheck(() => view!.root.textContent!.includes(renamed),
+      await waitUntil(() => view!.root.textContent!.includes(renamed),
         'refresh() did not re-run the query', 15000);
       view.showFilters();
-      await awaitCheck(() => view!.root.querySelector('.grok-domains-filter-panel') != null,
+      await waitUntil(() => view!.root.querySelector('.grok-domains-filter-panel') != null,
         'showFilters did not dock the filter panel', 15000);
       view.showFilters();      // idempotent
       // The registry is the view's meta source — assigning one is refused by name.
@@ -555,7 +555,7 @@ category('JS: domain handlers', () => {
       // The audit trail of a just-inserted row: one 'insert' event.
       const audit = handler.auditPane(row as any);
       expect(audit instanceof HTMLElement, true, 'auditPane must return an element');
-      await awaitCheck(() => audit.textContent!.includes('insert'),
+      await waitUntil(() => audit.textContent!.includes('insert'),
         `the audit pane did not render the insert event: "${audit.textContent}"`, 10000);
 
       // Grants of the table's REGISTRY entity (rows share through shareRow).
@@ -563,13 +563,13 @@ category('JS: domain handlers', () => {
       const table = schema.tables.find((t) => t.name === 'item')!;
       const grants = DG.DomainObjectHandler.grantsPane(table.id, 'apitests.item', {readOnly: true});
       expect(grants instanceof HTMLElement, true, 'grantsPane must return an element');
-      await awaitCheck(() => grants.textContent!.length > 0, 'the grants pane stayed empty', 10000);
+      await waitUntil(() => grants.textContent!.length > 0, 'the grants pane stayed empty', 10000);
 
       // Navigation goes through the platform's own routing (one spelling).
       expect(DG.DomainObjectHandler.deepLink(row), handler.deepLink(row as any),
         'the static and instance deep links disagree');
       handler.openRow(row as any);
-      await awaitCheck(() => `${grok.shell.v?.path ?? ''}`.startsWith('/domains/apitests/item/'),
+      await waitUntil(() => `${grok.shell.v?.path ?? ''}`.startsWith('/domains/apitests/item/'),
         `openRow did not open the Entity View (at "${grok.shell.v?.path}")`, 15000);
     } finally {
       closeDialogs();

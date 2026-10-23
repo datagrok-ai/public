@@ -16,7 +16,8 @@ export const AGENT_PYTHON = process.env['GROKKY_AGENT_PYTHON'] || '/opt/hermes/.
 export const HERMES_HOMES = process.env['GROKKY_HERMES_HOMES'] || '/var/lib/grokky/hermes';
 
 /** Container credentials handed to the agent's provider (agent/grokky_agent/providers). */
-export const PROVIDER_CREDENTIALS = ['provider', 'apiKey', 'ANTHROPIC_UPSTREAM'];
+export const PROVIDER_CREDENTIALS = ['provider', 'apiKey', 'baseUrl', 'region', 'apiFormat', 'model', 'service',
+  'TEST_UPSTREAM'];
 
 /** Removes the named variables from `env` and returns them; an unset or empty one is left out. */
 export function takeEnv(names: string[], env: NodeJS.ProcessEnv = process.env): Record<string, string> {

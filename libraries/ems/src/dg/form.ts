@@ -147,6 +147,14 @@ export class DomainForm extends Control {
         this.validate();
       return problem;
     });
+    // a refusal raised elsewhere (the table's validators run before this guard) shows every verdict too
+    this.effect(() => {
+      const code = DomainErrors.codeOf(source.error.value);
+      const about = source.problemRow.peek();
+      if ((code === 'validation' || code === DomainSource.REFUSED) && source.state.peek() !== 'error' &&
+          (about === null || about === this.row.peek()?.id))
+        untracked(() => this.validate());
+    });
     this._subs = [source.session.onSaved.subscribe(() => this.focus()),
       source.session.onDiscarded.subscribe(() => this.focus())];
     let seen = source.activate.peek();

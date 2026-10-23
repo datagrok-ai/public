@@ -139,6 +139,23 @@ category('Summary columns', () => {
     }
   });
 
+  test('Tags column is as wide as its widest cell', async () => {
+    const values = ['span < 2,N ≤ 3,%extrap > 20%', 'span < 2', ''];
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('violated', values)]);
+    const col = df.col('violated')!;
+    col.setTag(DG.Tags.MultiValueSeparator, ',');
+    col.setTag(DG.TAGS.CELL_RENDERER, 'Tags');
+    const grid = grok.shell.addTableView(df).grid;
+    const gc = grid.col('violated')!;
+    await awaitCheck(() => gc.renderer?.cellType === 'Tags', 'the Tags renderer did not load', 5000);
+    await awaitCheck(() => !grid.isRenderPending, 'the grid did not settle', 5000);
+    const g = grid.canvas.getContext('2d')!;
+    g.font = gc.contentCellStyle.font ?? grid.props.defaultCellFont;
+    const layout = new TagsCellRenderer().calculateLayout(g, gc.width, grid.props.rowHeight, values[0].split(','));
+    expectArray(layout.map((item) => item.mode), ['full', 'full', 'full']);
+    expect(gc.width < 250, true, `width ${gc.width}`);
+  });
+
   test('Color fills each legend item with its own category (#4233)', async () => {
     const df = DG.DataFrame.fromColumns([
       DG.Column.fromStrings('color', ['red', 'lime', 'blue', 'red']),

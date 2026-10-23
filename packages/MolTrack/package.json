@@ -9,8 +9,10 @@
   },
   "dependencies": {
     "@datagrok-libraries/compute-utils": "workspace:^",
+    "@datagrok-libraries/ems": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/tutorials": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
@@ -19,10 +21,35 @@
     "rxjs": "catalog:"
   },
   "devDependencies": {
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.62.1",
     "@types/wu": "catalog:"
   },
+  "properties": [
+    {
+      "name": "CompoundMatchingRule",
+      "friendlyName": "Compound matching rule",
+      "description": "Which registration-hash layers decide that two structures are the same compound in MolTrack EMS; a change applies to registrations made after it",
+      "propertyType": "string",
+      "choices": [
+        "ALL_LAYERS",
+        "STEREO_INSENSITIVE_LAYERS",
+        "TAUTOMER_INSENSITIVE_LAYERS"
+      ],
+      "defaultValue": "ALL_LAYERS",
+      "nullable": false
+    },
+    {
+      "name": "SimilarityThreshold",
+      "friendlyName": "Similarity threshold",
+      "description": "The lowest Tanimoto similarity an \"is similar to\" structure condition accepts in MolTrack EMS",
+      "propertyType": "double",
+      "defaultValue": 0.5,
+      "nullable": false
+    }
+  ],
   "scripts": {
-    "build": "grok build",
+    "build": "grok api && grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src"
   },
@@ -37,5 +64,10 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/MolTrack"
   },
-  "category": "Cheminformatics"
+  "category": "Cheminformatics",
+  "meta": {
+    "browserFeatures": [
+      "wasm"
+    ]
+  }
 }

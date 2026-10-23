@@ -8,6 +8,7 @@ import './tests/utils';
 import './tests/excel';
 import './tests/filter';
 import './tests/enrichment';
+import './tests/chat-input';
 
 export const _package = new DG.Package();
 export {tests};

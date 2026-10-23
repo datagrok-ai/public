@@ -299,9 +299,15 @@
   display: none;
 }
 
+.u2-domain-history-trail,
 .u2-domain-history-lines {
   flex: 1;
   min-height: 0;
+}
+
+.u2-domain-history-more {
+  align-self: flex-start;
+  margin: var(--dg-space-s);
 }
 
 .u2-domain-history-line {
@@ -414,6 +420,35 @@
   display: none;
 }
 
+/* the condition builder in a pane on the list's left */
+.u2-domain-app-list > .u2-splitter {
+  flex: 1;
+  min-height: 0;
+}
+
+.u2-domain-app-list > .u2-splitter > .u2-splitter-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.u2-domain-app-list > .u2-splitter > .u2-splitter-panel > .u2-domain-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.u2-domain-app-filters-pane {
+  height: 100%;
+  overflow: auto;
+  gap: var(--dg-space-s);
+  padding: var(--dg-space-s) var(--dg-space-m);
+}
+
+.u2-domain-app-filters-title {
+  font-weight: 600;
+  color: var(--dg-text-color-light);
+}
+
 /* the app: the list page and the entity page under one root, one shown at a time */
 .u2-domain-app {
   display: flex;
@@ -505,9 +540,10 @@
   overflow: auto;
 }
 
-/* the preview draws the first rows as they would land: a fixed window, its own scroller */
+/* the preview draws the first rows as they would land, the report every row's outcome: a fixed
+   window, its own scroller, as tall as the dialog leaves room for */
 .u2-domain-import-rows {
-  height: 220px;
+  height: 300px;
   overflow: auto;
 }
 

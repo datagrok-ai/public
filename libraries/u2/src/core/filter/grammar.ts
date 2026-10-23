@@ -229,7 +229,7 @@ class Reader {
     const property = this.property();
     if (property !== undefined) {
       const after = this.pos;
-      for (const alternative of [this.fuzzyCondition, this.operatorCondition, this.inCondition,
+      for (const alternative of [this.hostCondition, this.fuzzyCondition, this.operatorCondition, this.inCondition,
         this.underCondition, this.betweenCondition]) {
         const result = alternative.call(this, property);
         if (result !== undefined)
@@ -337,6 +337,13 @@ class Reader {
       return undefined;
     return [{property, operator: 'fuzzy', threshold, value}, 'or',
       node(property, 'like', isPlaceholder(value) ? value : `%${this.interpolate(value)}%`)];
+  }
+
+  /** A {@link FilterOperator.host} operator by its id, spaces and all: `structure has substructure "c1ccccc1"`. */
+  hostCondition(property: string): DomainConditionNode | undefined {
+    const op = operators.hosted().find((o) => this.keyword(o.id));
+    const value = op === undefined ? undefined : this.value();
+    return value === undefined ? undefined : node(property, op!.id, value);
   }
 
   operatorCondition(property: string): DomainConditionNode | undefined {
@@ -632,15 +639,21 @@ export function completionContext(text: string, caret: number, schema: FilterSch
   let pendingNot = false;
   /** Where the value slot begins — the end of the operator that opened it. */
   let valueFrom = -1;
+  let operatorFrom = 0;
+  /** The end of a host operator: the words of its id are not tokens of their own. */
+  let skip = 0;
   const isValue = (t: FilterToken) => t.type === 'string' || t.type === 'number' ||
     (t.type === 'name' && LITERALS.has(t.text));
   const startCondition = (t: FilterToken) => {
     property = propertyOf(schema, t.text) ?? undefined;
     operatorId = undefined;
+    operatorFrom = t.end;
   };
   for (const t of tokens) {
     if (t === current || t.end > caret)
       break;
+    if (t.start < skip)
+      continue;
     const word = t.type === 'name' ? t.text : '';
     if (expect === 'property') {
       if (t.type === 'tag')
@@ -654,6 +667,14 @@ export function completionContext(text: string, caret: number, schema: FilterSch
       } else
         pendingNot = false;
     } else if (expect === 'operator') {
+      const host = operators.hosted().find((o) => text.startsWith(o.id, t.start) &&
+        t.start + o.id.length < caret && !WORD.test(text[t.start + o.id.length]));
+      if (host !== undefined) {
+        operatorId = host.id;
+        expect = 'value';
+        valueFrom = skip = t.start + host.id.length;
+        continue;
+      }
       if (word === 'not') {
         pendingNot = true;
         continue;
@@ -695,8 +716,12 @@ export function completionContext(text: string, caret: number, schema: FilterSch
     } else if (t.type === 'tag')
       expect = 'connector';
   }
-  const prefix = !current ? '' : text.slice(current.start + (current.type === 'string' ? 1 : 0), caret);
-  const replace = current ? {start: current.start, end: current.end} : {start: caret, end: caret};
+  // a host operator id being typed spans words: `has sub` is the prefix, not `sub`
+  const typed = expect === 'operator' ? text.slice(operatorFrom, caret).trimStart() : '';
+  const spanning = /\s/.test(typed) && operators.hosted().some((o) => o.id.startsWith(typed));
+  const prefix = spanning ? typed : !current ? '' :
+    text.slice(current.start + (current.type === 'string' ? 1 : 0), caret);
+  const replace = {start: spanning ? caret - typed.length : current?.start ?? caret, end: current?.end ?? caret};
   const result: FilterCompletion = {expect, prefix, replace};
   // one value only: inside a list or a `between` the slot holds several, and the span would run
   // across all of them
