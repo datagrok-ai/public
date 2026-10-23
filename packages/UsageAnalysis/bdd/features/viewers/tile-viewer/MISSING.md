@@ -53,5 +53,7 @@ cards of **one lane only**; the other lanes keep the old card. With lanes on SEX
 it and Black / Caucasian / Other keep it. The `fields` reading reads the first card in the DOM, so
 `fields shown` is 9 or 10 depending on which lane that card sits in — the persistence feature (lanes
 "Black, Asian", WEIGHT deleted) reads a Black card and gets 10; `tile-viewer-form-editor.feature`
-(lanes SEX) reads an F card and passes, while lane M is just as stale there. A candidate product
-defect, not yet ticketed; once it has a ticket, line 77 gets `@known-failure:77`.
+(lanes SEX) reads an F card and passes, while lane M is just as stale there. Filed as core#1088.
+It is not tagged `@known-failure`: which lane the first card sits in changes from run to run (a
+`@known-failure:79` passed in one run of the whole folder), so the line is red on master most runs and green
+on some. A claim that reads every lane's card (a `fields of card <n>` reading per lane) would make it stable.
