@@ -29,7 +29,7 @@ Feature: MolTrack EMS: register compounds in bulk
     When user clicks on "Next" button in "Import compounds" dialog
     # caption: The preview: three new compounds
     Then import preview should contain text "3 will be added"
-    When user clicks on "Next" button in "Import compounds" dialog
+    When user clicks on "Import 3 compounds" button in "Import compounds" dialog
     # caption: The report
     Then import report should contain text "3 inserted"
     When user clicks on "Close" button in "Import compounds" dialog
