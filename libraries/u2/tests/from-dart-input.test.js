@@ -158,13 +158,14 @@ bridge('the echo check compares what the platform holds, not the fresh object it
   input.dispose();
 });
 
-bridge('validity mirrors the platform validation messages and clears with them', () => {
+bridge('validity mirrors the platform validation messages and clears with them', async () => {
   installValidation();
   const source = dart(['Not a valid SMILES']);
   const dg = dartInput({dart: source});
   const input = mount(fromDartInput(dg));
   assert.equal(input.validity.value, 'Not a valid SMILES', 'seeded from the current messages');
-  assert.equal(input.root.querySelector('.u2-input-error'), null, 'the platform renders them itself');
+  await flush();
+  assert.equal(input.root.querySelector('.u2-input-error').hidden, true, 'the platform renders them itself');
 
   validate(source, ['Too long', 'Not a valid SMILES']);
   assert.equal(input.validity.value, 'Too long\nNot a valid SMILES');
@@ -174,16 +175,24 @@ bridge('validity mirrors the platform validation messages and clears with them',
   assert.equal(source.listeners.length, 0);
 });
 
-bridge('u2 validators keep working next to the platform ones, which come first', () => {
+bridge('u2 validators keep working next to the platform ones, which come first', async () => {
   installValidation();
   const source = dart();
   const dg = dartInput({dart: source, value: ''});
   const input = mount(fromDartInput(dg));
   input.addValidator((value) => value === '' ? 'Value can\'t be empty' : null);
   assert.equal(input.validity.value, 'Value can\'t be empty');
+  const line = input.root.querySelector('.u2-input-error');
+  input.touch();
+  await flush();
+  assert.deepEqual([line.hidden, line.textContent], [false, 'Value can\'t be empty'],
+    'a u2 verdict shows on u2\'s line: the platform knows nothing of it');
+  assert.equal(input.label, 'Name', 'named by the platform caption, so a refusal names the field');
 
   validate(source, ['Server says no']);
   assert.equal(input.validity.value, 'Server says no');
+  await flush();
+  assert.equal(line.hidden, true, 'the platform shows its own verdict');
   validate(source, []);
   assert.equal(input.validity.value, 'Value can\'t be empty', 'the u2 validator runs again');
   dg.value = 'CCO';

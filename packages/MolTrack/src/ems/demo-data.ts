@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {moltrackEmsDb} from '../generated/db';
 import type {AssayResultInsert, AssayRunInsert, CompoundBatchInsert, CompoundInsert} from '../generated/db';
-import {Chemistry, IDENTITY_COLUMNS} from './chemistry';
+import {Chemistry} from './chemistry';
 import {BulkRegistration} from './registration';
 import {MolTrackTables} from './tables';
 
@@ -40,19 +40,24 @@ export class DemoData {
   }
 
   private static async _compoundsAndBatches(): Promise<void> {
-    const df = await DemoData.table('batches');
-    const compounds = await MolTrackTables.compounds();
-    const {ready, hashes} = await BulkRegistration.prepare(df, compounds);
-    const label = (column: string) => BulkRegistration.label(compounds, column);
-    const identity = (r: Values) =>
-      Object.fromEntries(IDENTITY_COLUMNS.map((c) => [c, r[label(c)]])) as Omit<CompoundInsert, 'original_structure'>;
-    await moltrackEmsDb.compounds.batch(DemoData.records(ready).map((r): CompoundInsert => ({...identity(r),
-      original_structure: r[label('original_structure')], common_name: r['Common Name']?.trim(), cas: r['CAS'],
-      epa_compound_id: r['EPA Compound ID'], source: r['Source']})));
-    const compoundOf = new Map((await moltrackEmsDb.compounds.query({columns: ['hash_mol'], limit: ALL}))
-      .map((c) => [c.hash_mol, c.id]));
-    await moltrackEmsDb.compoundBatches.batch(DemoData.records(df).flatMap((r, i): CompoundBatchInsert[] =>
-      compoundOf.has(hashes[i]) ? [{compound_id: compoundOf.get(hashes[i])!, epa_batch_id: r['EPA Batch ID'],
+    const records = DemoData.records(await DemoData.table('batches'));
+    const verdicts = await BulkRegistration.prepare(records.map((r) => ({original_structure: r['smiles']})),
+      await MolTrackTables.compounds());
+    const fresh = records.flatMap((r, i) => verdicts[i].values === undefined ? [] : [i]);
+    const inserted = await moltrackEmsDb.compounds.batch(fresh.map((i): CompoundInsert => {
+      const r = records[i];
+      return {...verdicts[i].values as Omit<CompoundInsert, 'original_structure'>, original_structure: r['smiles'],
+        common_name: r['Common Name']?.trim(), cas: r['CAS'], epa_compound_id: r['EPA Compound ID'],
+        source: r['Source']};
+    }));
+    const ids: (string | null)[] = verdicts.map((v) => v.existing ?? null);
+    inserted.rows.forEach((row) => ids[fresh[row.index]] = row.id);
+    verdicts.forEach((v, i) => {
+      if (v.sameAs !== undefined)
+        ids[i] = ids[v.sameAs];
+    });
+    await moltrackEmsDb.compoundBatches.batch(records.flatMap((r, i): CompoundBatchInsert[] =>
+      ids[i] !== null ? [{compound_id: ids[i]!, epa_batch_id: r['EPA Batch ID'],
         source: r['Source'], source_batch_code: r['Source Batch Code'], responsible_party: r['Responsible Party'],
         eln_reference: r['ELN Reference'], purity: DemoData.number(r['Purity']), project: r['Project'],
         acquired_date: DemoData.date(r['Acquired Date']),
