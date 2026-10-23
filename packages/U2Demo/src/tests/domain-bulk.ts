@@ -4,7 +4,7 @@
    prefixed per run and deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, delay, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {Control, Tooltip} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {domains, DomainApp, DomainTable} from '@datagrok-libraries/ems/src/dg';
@@ -56,7 +56,8 @@ category('U2: domain bulk', () => {
   /** What holds the button: its tooltip. */
   async function okReason(): Promise<string> {
     ok().dispatchEvent(new Event('pointerenter'));
-    await delay(700);
+    await waitUntil(() => Tooltip.root.style.display === 'block' && Tooltip.root.textContent !== '',
+      'the button\'s tooltip shows');
     const text = Tooltip.root.textContent ?? '';
     ok().dispatchEvent(new Event('pointerleave'));
     return text;
