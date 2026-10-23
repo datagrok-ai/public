@@ -63,10 +63,14 @@ export async function selectProjectAsCurrentObject(page: Page, projectId: string
 }
 
 /**
+ * The chat compose box: PowerPack's contenteditable `.u2-msg-editor` when its chat input is
+ * installed, else `textarea.grok-comments-post-input`. Scoped to `.grok-comments-post`, because
+ * each rendered comment carries its own hidden inline-edit box.
+ */
+export const POST_BOX = '.grok-comments-post .u2-msg-editor, .grok-comments-post textarea.grok-comments-post-input';
+
+/**
  * Expand the Context Panel "Chats" pane and wait for its post box.
- * The post box must be scoped to `.grok-comments-post` — each rendered comment
- * also carries a hidden inline-edit `textarea.grok-comments-post-input`
- * (chat.dart:20,164), so an unscoped locator would resolve to a hidden box.
  * The pane content is a lazy `ui.wait` and may already be expanded, so poll:
  * each header click toggles, re-check until the post box is actually visible.
  */
@@ -74,7 +78,7 @@ export async function openChatsPane(page: Page): Promise<void> {
   await evalJs(page, 'grok.shell.windows.showContextPanel = true');
   const header = page.locator('.d4-accordion-pane-header').filter({hasText: /^Chats$/}).first();
   await header.waitFor({state: 'visible', timeout: 20_000});
-  const postBox = page.locator('.grok-comments-post > .grok-comments-post-input').first();
+  const postBox = page.locator(POST_BOX).first();
   for (let attempt = 0; attempt < 4; attempt++) {
     if (await postBox.isVisible().catch(() => false))
       return;
@@ -87,7 +91,7 @@ export async function openChatsPane(page: Page): Promise<void> {
 /** Type a comment into the chat post box and send it (the pane uses send-on-Enter). */
 export async function postComment(page: Page, text: string): Promise<void> {
   const before = await page.locator('.grok-comments-message-text').count();
-  const postBox = page.locator('.grok-comments-post > .grok-comments-post-input').first();
+  const postBox = page.locator(POST_BOX).first();
   await postBox.click();
   await postBox.fill(text);
   await page.keyboard.press('Enter');
@@ -96,25 +100,30 @@ export async function postComment(page: Page, text: string): Promise<void> {
   await expect(commentByText(page, text)).toHaveCount(1, {timeout: 15_000});
 }
 
+/** The rendered comment body, without the "(edited)" marker that shares its container. */
+const COMMENT_BODY = '.grok-comments-message-text > :not(.grok-comments-message-edited)';
+
 /** Locator for a comment by its exact rendered text. */
 export function commentByText(page: Page, text: string) {
-  return page.locator('.grok-comments-message-text').filter({hasText: new RegExp(`^${escapeRe(text)}$`)});
+  return page.locator(COMMENT_BODY).filter({hasText: new RegExp(`^${escapeRe(text)}$`)});
 }
 
 /** Texts of all comments currently rendered in the chat feed, in order. */
 export async function commentTexts(page: Page): Promise<string[]> {
-  return page.locator('.grok-comments-message-text').allTextContents();
+  return page.locator(COMMENT_BODY).allTextContents();
 }
 
 /**
  * Whether the edit/delete action block is hidden for the comment at `index`.
  * The widget hides it for everyone except the comment's author
- * (`..hidden = c.user.id != Auth.current.id`, chat.dart:212) — the per-author
- * permission signal asserted in the collaboration scenario.
+ * (`..hidden = c.user.id != Auth.current.id`, chat.dart) — the per-author
+ * permission signal asserted in the collaboration scenario. Each comment also has a
+ * reply block before it that everyone sees, so take the last block of each comment.
  */
 export async function isCommentActionsHidden(page: Page, index: number): Promise<boolean> {
   return evalJs(page, `(() => {
-    const blocks = Array.from(document.querySelectorAll('.grok-comments-message-edit'));
+    const blocks = Array.from(document.querySelectorAll('.grok-comments-message-block'))
+      .map((m) => Array.from(m.querySelectorAll(':scope > .grok-comments-message-edit')).pop());
     return blocks[${index}] ? blocks[${index}].hidden : true;
   })()`);
 }
