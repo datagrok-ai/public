@@ -79,6 +79,8 @@ const OUTCOMES: Record<string, {label: string, variant: BadgeVariant}> = {
 const KEY_CHUNK = 500;
 /** The semantic type of a column drawn as a structure, in the preview and the report. */
 const MOLECULE = 'Molecule';
+/** Column names that are a molecule notation, whatever the platform detected. */
+const MOLECULE_NAMES = ['smiles', 'canonicalsmiles', 'molfile', 'molblock', 'mol', 'molecule'];
 /** A row's height where it draws a structure. */
 const MOLECULE_ROW = 52;
 
@@ -545,7 +547,8 @@ class ImportFlow {
   /** What a source column is for, read the way a person reads it: "Chemical name" is the name
    * column and "CAS number" the cas one, so the comparison drops case and everything that is not
    * a letter or a digit, and an exact hit anywhere beats a partial hit somewhere earlier. A column
-   * no name matches goes to the one target of its semantic type ("smiles" to a molecule column). */
+   * no name matches goes to the one target of its semantic type, or of the type its name is a
+   * notation of: one unreadable SMILES keeps the platform from typing a whole column. */
   private _autoMatch(column: string, semType: string | null): string {
     const plain = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
     const want = plain(column);
@@ -553,7 +556,8 @@ class ImportFlow {
       return SKIP;
     const names = (p: IProperty) => [plain(p.name ?? ''), plain(p.friendlyName ?? '')].filter((n) => n !== '');
     const hit = (test: (a: string) => boolean) => this._targets.find((p) => names(p).some(test))?.name;
-    const typed = this._targets.filter((p) => semType !== null && p.semType === semType);
+    const type = semType ?? (MOLECULE_NAMES.includes(want) ? MOLECULE : null);
+    const typed = this._targets.filter((p) => type !== null && p.semType === type);
     return hit((a) => a === want) ?? hit((a) => a.startsWith(want) || want.startsWith(a)) ??
       hit((a) => a.includes(want) || want.includes(a)) ?? (typed.length === 1 ? typed[0].name! : SKIP);
   }
