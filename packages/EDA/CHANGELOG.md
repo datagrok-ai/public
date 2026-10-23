@@ -2,7 +2,6 @@
 
 ## v.next
 
-* Pareto front: Fixed "Cannot fire new event" when the result columns are added while the column picker is open
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Menu: Reduce Dimensionality, PLS, Multivariate Analysis, T-test, ANOVA, Control Comparisons, Impute Missing Values, Pareto Front and MCL are disabled unless the current view is a table view, instead of failing or warning
 * GROK-20795: Tests: Added the package test of Control comparisons on a filtered table (the women of demog only); `analyze/filtered-group-comparison` keeps to the dialog
 * Tests: `models/train-options` moves the Positive class cutoff of Predict probability and reads the re-rendered accuracy (the preview is busy until the re-render ends)

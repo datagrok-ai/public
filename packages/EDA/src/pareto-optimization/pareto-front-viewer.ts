@@ -41,7 +41,6 @@ export class ParetoFrontViewer extends DG.JsViewer {
   private sizeColName: string = '';
   private optimizedColNames: string[] = [];
   private hasCommonMinMaxNames = false;
-  private isComputing = false;
 
   private errDiv: HTMLDivElement | null = null;
 
@@ -409,19 +408,10 @@ export class ParetoFrontViewer extends DG.JsViewer {
     this.removeErrDiv();
 
     if (computeData) {
-      // Adding the result columns re-enters render through the column events
-      if (this.isComputing)
-        return;
-      this.isComputing = true;
-      try {
-        this.computeParetoFront();
-        this.updateOptimizedColNames();
-        this.updateAxesColumnOptions();
-        this.colorColumnName = (this.optimizedColNames.length < 1) ? null : COL_NAME.OPT;
-      }
-      finally {
-        this.isComputing = false;
-      }
+      this.computeParetoFront();
+      this.updateOptimizedColNames();
+      this.updateAxesColumnOptions();
+      this.colorColumnName = (this.optimizedColNames.length < 1) ? null : COL_NAME.OPT;
     }
 
     this.setScatterOptions();
