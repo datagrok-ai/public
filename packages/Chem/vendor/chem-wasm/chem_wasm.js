@@ -2531,21 +2531,44 @@ export function chemAlerts(molecules, catalogs, atoms) {
 }
 
 /**
- * `chemEmbed3d(molecule)`: the MOL block of `molecule` (a SMILES, or a MOL block when it holds `M  END`) with its
- * RDKit ETKDG coordinates, or `undefined` (module docs).
+ * `chemEmbed3d(molecule, options)`: the MOL block of `molecule` (a SMILES, or a MOL block when it holds `M  END`)
+ * with its RDKit ETKDG coordinates, or `undefined`; throws on bad options and on a timeout (module docs).
  * @param {string} molecule
+ * @param {string | null} [options]
  * @returns {string | undefined}
  */
-export function chemEmbed3d(molecule) {
+export function chemEmbed3d(molecule, options) {
     const ptr0 = passStringToWasm0(molecule, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.chemEmbed3d(ptr0, len0);
-    let v2;
+    var ptr1 = isLikeNone(options) ? 0 : passStringToWasm0(options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len1 = WASM_VECTOR_LEN;
+    const ret = wasm.chemEmbed3d(ptr0, len0, ptr1, len1);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    let v3;
     if (ret[0] !== 0) {
-        v2 = getStringFromWasm0(ret[0], ret[1]);
+        v3 = getStringFromWasm0(ret[0], ret[1]);
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     }
-    return v2;
+    return v3;
+}
+
+/**
+ * `chemEmbed3dRecommendedOptions()`: [`RECOMMENDED_OPTIONS`], the options Chem passes.
+ * @returns {string}
+ */
+export function chemEmbed3dRecommendedOptions() {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.chemEmbed3dRecommendedOptions();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
 }
 
 /**

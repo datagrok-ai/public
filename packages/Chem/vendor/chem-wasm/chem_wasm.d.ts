@@ -781,10 +781,15 @@ export function calcDescriptors(molecules: (string | null)[], names: string[]): 
 export function chemAlerts(molecules: (string | null)[], catalogs: string[], atoms: boolean): string;
 
 /**
- * `chemEmbed3d(molecule)`: the MOL block of `molecule` (a SMILES, or a MOL block when it holds `M  END`) with its
- * RDKit ETKDG coordinates, or `undefined` (module docs).
+ * `chemEmbed3d(molecule, options)`: the MOL block of `molecule` (a SMILES, or a MOL block when it holds `M  END`)
+ * with its RDKit ETKDG coordinates, or `undefined`; throws on bad options and on a timeout (module docs).
  */
-export function chemEmbed3d(molecule: string): string | undefined;
+export function chemEmbed3d(molecule: string, options?: string | null): string | undefined;
+
+/**
+ * `chemEmbed3dRecommendedOptions()`: [`RECOMMENDED_OPTIONS`], the options Chem passes.
+ */
+export function chemEmbed3dRecommendedOptions(): string;
 
 /**
  * `chemProperties(molecules, names)`: the JSON of Chem's property columns (module docs); throws on a name not in
@@ -1002,7 +1007,8 @@ export interface InitOutput {
     readonly __wbg_similarityresult_free: (a: number, b: number) => void;
     readonly calcDescriptors: (a: any, b: number, c: number) => [number, number];
     readonly chemAlerts: (a: any, b: number, c: number, d: number) => [number, number, number, number];
-    readonly chemEmbed3d: (a: number, b: number) => [number, number];
+    readonly chemEmbed3d: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly chemEmbed3dRecommendedOptions: () => [number, number];
     readonly chemProperties: (a: any, b: number, c: number) => [number, number, number, number];
     readonly chemQed: (a: any) => [number, number];
     readonly chemWasmModules: () => [number, number];
