@@ -141,6 +141,10 @@ category('crux analyses', () => {
     const sar = (await readDataframe('tests/sar-small_test.csv')).col('smiles')!.toList() as string[];
     const runs: [string, string[], string, boolean, string][] = [
       ['sample', R_GROUP_SAMPLE, 'c1ccccc1', false, 'Greedy'],
+      // ten R groups: RDKit orders the columns as strings (R1, R10, R2, ...); Crux ordered them by number (the 100K
+      // comparison, 2026-10-23)
+      ['ten R groups', ['Fc1c(F)c(F)c(-c2c(F)c(F)c(F)c(F)c2F)c(F)c1F', 'Clc1ccc(-c2ccccc2)cc1'], 'c1ccc(-c2ccccc2)cc1',
+        false, 'Greedy'],
       ...['Greedy', 'GreedyChunks', 'Exhaustive', 'NoSymmetrization'].map((strategy) =>
         ['sar-small', sar, MCS_R26.sar[0], true, strategy] as [string, string[], string, boolean, string])];
     for (const [name, molecules, core, coreIsQMol, matchingStrategy] of runs) {
@@ -257,6 +261,9 @@ category('crux analyses', () => {
       ['C1CC([*:1])CC1[*:2].[*:1]OC[*:2]', {}, 'C1CC2CC1CO2'],
       ['CC([*:1])[*:2].O[*:1]', {}, 'CC(O)[*:2]'],
       ['C/C=C/[*:1].[*:1]Br', {}, 'C/C=C/Br'],
+      // a stereo double bond between two attachment points: Crux panicked here (the 100K comparison, 2026-10-23)
+      ['C(=C\\[*:2])/[*:1].C[*:1].C[*:2]', {}, 'C/C=C/C'],
+      ['C(=N\\[*:2])/[*:1].C[*:1].C[*:2]', {}, 'C/C=N/C'],
       ['C[1*].N[1*]', {Label: 'Isotope'}, 'CN'],
       ['C[Xe].N[Xe]', {Label: 'AtomType', AtomSymbols: ['Xe']}, 'CN'],
       ['CCO', {}, 'CCO'],

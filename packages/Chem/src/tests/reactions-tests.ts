@@ -11,6 +11,7 @@ import {addDeprotectedColumn, defaultFragment} from '../analysis/deprotect';
 import {loadFileAsText, readDataframe} from './utils';
 import {ChemicalEngine, cruxReady, setChemicalEngine} from '../engine/chem-engine';
 import {cruxFallbackCount} from '../engine/fallback';
+import {cruxLoadFailed, resetCruxLoaderForTests} from '../engine/crux-module';
 import {lastReactionEngine, setCruxUnreadableReactantsForTests} from '../utils/reactions/reaction-engine';
 
 category('Reactions', () => {
@@ -139,6 +140,27 @@ category('Reactions', () => {
       expect(cruxFallbackCount('transformation reaction'), before + 1, 'RDKit did the molecule Crux could not read');
     } finally {
       setCruxUnreadableReactantsForTests(null);
+      setChemicalEngine(null);
+    }
+  });
+
+  test('break it: a product RDKit 2026 cannot write leaves Crux running', async () => {
+    // RDKit 2026.03 throws writing the bromination product of a trans-1,4-cyclohexane ("no other ring atoms found");
+    // Crux trapped there, which sent the rest of the session to RDKit (the 100K comparison, 2026-10-23): now it throws,
+    // and RDKit writes that molecule's product
+    const molecules = ['O[C@@H]1CC[C@H](c2ccccc2)CC1', 'c1ccncc1'];
+    const brominate = async () => (await runTransformationReaction(rdkit, '[cH:1]>>[c:1]Br', molecules)).products;
+    try {
+      setChemicalEngine(ChemicalEngine.RDKit);
+      const rdkitProducts = await brominate();
+      setChemicalEngine(ChemicalEngine.Crux);
+      expect(await cruxReady(), true, 'the Crux module loads');
+      const cruxProducts = await brominate();
+      expect(cruxLoadFailed(), false, 'the Crux module did not trap');
+      expectArray(cruxProducts, rdkitProducts);
+    } finally {
+      if (cruxLoadFailed())
+        resetCruxLoaderForTests(null);
       setChemicalEngine(null);
     }
   });
