@@ -380,9 +380,23 @@
   gap: var(--dg-space-m);
 }
 
+/* list mode: a list beside a form, both from the top of the pane — the form scrolls on its own, so
+   its first fields are never above the pane and its last never under the next one */
+.u2-domain-children-pane > .u2-domain-children-split {
+  align-items: stretch;
+}
+
 .u2-domain-children-split > * {
   flex: 1;
   min-width: 0;
+}
+
+.u2-domain-children-split > .u2-domain-list {
+  flex: 0 0 260px;
+}
+
+.u2-domain-children-split > .u2-domain-form {
+  overflow: auto;
 }
 
 .u2-domain-children-error {
@@ -476,10 +490,15 @@
 
 .u2-domain-app-panes {
   display: flex;
-  flex: 1 1 auto;
+  flex: 1 0 auto;
   flex-direction: column;
-  min-height: 0;
   gap: var(--dg-space-s);
+}
+
+/* under the form the children keep a tab strip, a toolbar, a two-line header and about 8 rows,
+   however tall the form: the entity page scrolls, not the children */
+.u2-domain-app-panes > .u2-domain-children {
+  flex: 1 0 360px;
 }
 
 .u2-domain-app-panes > .u2-domain-history {

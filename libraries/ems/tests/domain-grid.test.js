@@ -114,6 +114,21 @@ scoped('over a memory source: the frame is the grid\'s; the memory writer is not
   src.dispose();
 });
 
+scoped('the column header fits two lines of caption, unless the caller sets its own height', async () => {
+  WidgetDescriptor.registry = [new WidgetDescriptor('Grid', [new Property('colHeaderHeight', 'int', {defaultValue: 22})])];
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const src = table.source({pageSize: 10});
+  const grid = domains.grid(src);
+  const own = domains.grid(src, {look: {colHeaderHeight: 60}});
+  await flush();
+  assert.equal(grid.grid.props.colHeaderHeight, 44, 'a unit on the second line is not cut');
+  assert.equal(own.grid.props.colHeaderHeight, 60);
+  grid.dispose();
+  own.dispose();
+  src.dispose();
+});
+
 scoped('the js-api editor is attached with the source\'s edit state, decorated first, re-attached per frame, released with it', async () => {
   const inner = editorBackend(backend());
   emsBackends.domain = inner;

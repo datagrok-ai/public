@@ -29,6 +29,9 @@ export interface DomainGridOptions {
  * date, the rest keep the time. */
 const DATE_FORMAT = 'MMM d, yyyy';
 const DATE_TIME_FORMAT = 'MMM d, yyyy HH:mm';
+/** Two lines of caption: the platform wraps a long one, and its second line carries the unit
+ * ("Dosed Concentration (uM)"). */
+const HEADER_HEIGHT = 44;
 
 export class DomainGrid extends Control {
   readonly grid: DG.Grid;
@@ -39,7 +42,8 @@ export class DomainGrid extends Control {
     this.root.classList.add('u2-domain-grid');
     this.root.dataset.u2 = 'domain-grid';
     this.grid = this.runInScope(() =>
-      viewers.grid(source.df as unknown as ReadonlySignal<DG.DataFrame | undefined>, _options.look));
+      viewers.grid(source.df as unknown as ReadonlySignal<DG.DataFrame | undefined>,
+        {colHeaderHeight: HEADER_HEIGHT, ..._options.look}));
     this.root.append(this.grid.root);
     // the editor follows the source's writer: attached over each frame the source loads, released
     // when the source lets the frame go
