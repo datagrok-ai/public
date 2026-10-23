@@ -30,7 +30,8 @@ export interface ChildEntry {
 export class DomainChildren extends Control {
   readonly tabs: TabStrip;
   readonly mode: DomainChildrenMode;
-  /** The tabs, once the child tables are known — the parent loaded and the handles acquired. */
+  /** The tabs, once the child tables are known — the parent loaded and the handles acquired; a
+   * table that did not open has a tab with its error, and no entry. */
   readonly entries: ReadonlySignal<readonly ChildEntry[]>;
 
   private readonly _entries = signal<readonly ChildEntry[]>([]);
@@ -41,7 +42,7 @@ export class DomainChildren extends Control {
     super();
     this.mode = options.mode ?? 'grid';
     this.entries = this._entries;
-    this.root.classList.add('u2-domain-children');
+    this.root.classList.add('u2-domain-children', `u2-domain-children-${this.mode}`);
     this.root.dataset.u2 = 'domain-children';
     this._status = div([], 'u2-domain-children-status');
     this._status.dataset.u2Part = 'status';
@@ -73,28 +74,31 @@ export class DomainChildren extends Control {
     if (only !== undefined)
       refs.sort((a, b) => at(a) - at(b));
     this._status.replaceChildren(loader());
-    let handles: DomainTable[];
-    try {
-      handles = await Promise.all(refs.map((c) => domains.table(`${c.schema}.${c.table}`)));
-    } catch (e) {
-      this._status.replaceChildren(span(DomainErrors.message(e), 'u2-domain-children-error'));
-      return;
-    }
+    const opened = await Promise.allSettled(refs.map((c) => domains.table(`${c.schema}.${c.table}`)));
     if (this.scope.isDisposed)
       return;
     this._status.replaceChildren();
-    const entries = refs.map((c, i): ChildEntry => {
+    const entries: ChildEntry[] = [];
+    for (const [i, c] of refs.entries()) {
       const address = `${c.schema}.${c.table}`;
+      const id = `${address}.${c.fkColumn}`;
+      const handle = opened[i];
+      const title = handle.status === 'fulfilled' ? DomainApp.titleOf(handle.value.info) :
+        DomainTable.captionOf({name: c.table});
       // two FKs to one parent: two tabs for one table, told apart by the FK's caption
       const ambiguous = refs.filter((o) => `${o.schema}.${o.table}` === address).length > 1;
-      const plural = DomainApp.titleOf(handles[i].info);
-      return {id: `${address}.${c.fkColumn}`, table: handles[i], fk: c.fkColumn,
-        label: ambiguous ? `${plural} (${c.label})` : plural};
-    });
-    for (const entry of entries) {
+      const label = ambiguous ? `${title} (${c.label})` : title;
       const pane = div([], 'u2-domain-children-pane');
       pane.dataset.u2Part = 'pane';
-      this.tabs.addTab({id: entry.id, label: entry.label, content: () => {
+      // a child table that does not open fails its own tab; the others still work
+      if (handle.status === 'rejected') {
+        pane.append(span(DomainErrors.message(handle.reason), 'u2-domain-children-error'));
+        this.tabs.addTab({id, label, content: () => pane});
+        continue;
+      }
+      const entry: ChildEntry = {id, table: handle.value, fk: c.fkColumn, label};
+      entries.push(entry);
+      this.tabs.addTab({id, label, content: () => {
         this._watch(entry, pane);
         return pane;
       }});

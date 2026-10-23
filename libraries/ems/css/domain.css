@@ -380,8 +380,18 @@
   gap: var(--dg-space-m);
 }
 
-/* list mode: a list beside a form, both from the top of the pane — the form scrolls on its own, so
-   its first fields are never above the pane and its last never under the next one */
+/* list mode: a list beside a form, both from the top of the pane, as tall as the form — every field
+   is reached by scrolling the entity page, the one scroller; the list scrolls only past the form */
+.u2-domain-children-list > .u2-domain-children-tabs,
+.u2-domain-children-list > .u2-domain-children-tabs > .u2-tabs-content,
+.u2-domain-children-pane > .u2-domain-children-split {
+  flex: 1 0 auto;
+}
+
+.u2-domain-children-list > .u2-domain-children-tabs > .u2-tabs-content {
+  overflow: visible;
+}
+
 .u2-domain-children-pane > .u2-domain-children-split {
   align-items: stretch;
 }
@@ -393,10 +403,6 @@
 
 .u2-domain-children-split > .u2-domain-list {
   flex: 0 0 260px;
-}
-
-.u2-domain-children-split > .u2-domain-form {
-  overflow: auto;
 }
 
 .u2-domain-children-error {
@@ -499,6 +505,11 @@
    however tall the form: the entity page scrolls, not the children */
 .u2-domain-app-panes > .u2-domain-children {
   flex: 1 0 360px;
+}
+
+.u2-domain-app-panes > .u2-domain-children-list {
+  flex-basis: auto;
+  min-height: 360px;
 }
 
 .u2-domain-app-panes > .u2-domain-history {

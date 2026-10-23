@@ -23,7 +23,12 @@ export async function route(address: string): Promise<DG.ViewBase | null> {
   const open = DomainApp.openAt(DomainApp.baseOf(`${schema}.${table}`), rest);
   if (open !== undefined)
     return open;
-  const handle = await domains.table(`${schema}.${table}`).catch(() => null);
+  // a table the registry refuses, or an app's configuration that throws: the platform's own view
+  // still opens, but the reason is not lost
+  const handle = await domains.table(`${schema}.${table}`).catch((e) => {
+    console.error(`EMS: ${schema}.${table} did not open as a u2 view:`, e);
+    return null;
+  });
   if (handle === null)
     return null;
   // the platform's own address is the canonical one, and a list opened from it follows the server

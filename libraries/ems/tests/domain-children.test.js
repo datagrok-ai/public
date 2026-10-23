@@ -132,6 +132,34 @@ scoped('a tab per child table, two FKs told apart; the shown tab\'s source share
   assert.deepEqual(parent.session.sources.value, []);
 });
 
+scoped('a child table that does not open fails its own tab; the others work', async () => {
+  emsBackends.domain = crm();
+  const unregister = domains.configure('crm.deal', () => {
+    throw new Error('deal rules did not load');
+  });
+  try {
+    const companies = await domains.table('crm.company');
+    const parent = companies.source();
+    await flush();
+    parent.currentRow.value = parent.rows.byKey('c1');
+    const children = domains.children(parent, {mode: 'list'});
+    await settle();
+    assert.equal(children.root.querySelectorAll('.u2-tabs-tab').length, 3, 'every child table keeps its tab');
+    assert.deepEqual(children.entries.value.map((e) => e.id), [CONTACTS], 'only the tables that opened');
+    assert.equal(children.root.querySelector('[data-u2-part="status"]').textContent, '', 'no error over all tabs');
+    await flush();
+    assert.deepEqual(children.child(CONTACTS).rows.items.value.map((r) => r.name), ['Ann']);
+    children.tabs.activeTab.value = 'crm.deal.seller_id';
+    await flush();
+    const pane = [...children.root.querySelectorAll('[data-u2-part="pane"]')].at(-1);
+    assert.equal(pane.querySelector('.u2-domain-children-error').textContent, 'deal rules did not load');
+    children.dispose();
+    parent.dispose();
+  } finally {
+    unregister();
+  }
+});
+
 scoped('create-related-inline: a draft parent and its child draft save as one transaction; the tab re-queries by the real id', async () => {
   const memory = crm();
   emsBackends.domain = memory;
