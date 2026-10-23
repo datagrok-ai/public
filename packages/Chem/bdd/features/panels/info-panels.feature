@@ -3,7 +3,8 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
   On smiles, the Chemistry group of the canonical_smiles column header offers Rendering and
   Highlight and not Descriptors, while the Chemistry group of a canonical_smiles cell offers
   Descriptors, Properties and MPO and not Rendering: the panel set follows what is current.
-  Toxicity grades the four risks, Drug Likeness gives a score, and 2D Structure draws the molecule.
+  Toxicity grades the four risks, Drug Likeness gives a score (in Crux mode: the Brenk and NIH alerts, and QED with
+  the properties it weighs), and 2D Structure draws the molecule.
   Structural Alerts names the alerts the current molecule raises, with a button to run them over the
   dataset, and says "No alerts" on a molecule that raises none; Pharmacophores counts the feature
   families the current molecule has. Properties lists the molecule's properties (OpenChemLib's in RDKit
@@ -47,13 +48,10 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
     When user clicks on the "cell 1 of canonical_smiles" area of grid
     And user expands Biology accordion header in context panel
     And user expands Toxicity accordion header in context panel
-    Then "Toxicity" pane in "Biology" pane in context panel should contain the text "Mutagenicity"
-    And "Toxicity" pane in "Biology" pane in context panel should contain the text "Tumorigenicity"
-    And "Toxicity" pane in "Biology" pane in context panel should contain the text "Irritating effects"
-    And "Toxicity" pane in "Biology" pane in context panel should contain the text "Reproductive effects"
+    Then "Toxicity" pane in "Biology" pane in context panel should show the Chemical Engine's method
     And "Toxicity" pane in "Biology" pane in context panel should not contain the text "Could not analyze toxicity"
     When user expands "Drug Likeness" accordion header in context panel
-    Then "Drug Likeness" pane in "Biology" pane in context panel should contain the text "Score:"
+    Then "Drug Likeness" pane in "Biology" pane in context panel should show the Chemical Engine's method
     And "Drug Likeness" pane in "Biology" pane in context panel should not contain the text "Could not asses drug likeness"
     And no errors should have been logged
 

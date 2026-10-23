@@ -24,7 +24,8 @@ const DGTypeMap = {
 /**
  * How Crux mode ("Chemical Engine": Crux) computes each property: crux's `chemProperties`, RDKit's definitions
  * (identical to RDKit's values on ChEMBL-10k; crux-core's decision chem-props), each with its method and reference.
- * RDKit mode computes them with OpenChemLib, as before; toxicity and drug-likeness are OpenChemLib's in both modes.
+ * RDKit mode computes them with OpenChemLib, as before (Crux mode's drug-likeness and toxicity: widgets/drug-likeness.ts,
+ * widgets/toxicity.ts).
  */
 export const CRUX_PROPERTY_METHODS: {[name: string]: string} = {
   'MW': 'Average molecular weight from the IUPAC standard atomic weights (RDKit MolWt). OpenChemLib\'s MW ' +

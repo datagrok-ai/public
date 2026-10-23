@@ -567,6 +567,13 @@ export namespace funcs {
     return await grok.functions.call('Chem:Molzip', { molecules, params });
   }
 
+  /**
+   * The Chemical Engine setting in effect for this user: RDKit or Crux
+   */
+  export async function chemicalEngine(): Promise<string> {
+    return await grok.functions.call('Chem:ChemicalEngine', {});
+  }
+
   export async function chemSpaceEditor(call: any ): Promise<any> {
     return await grok.functions.call('Chem:ChemSpaceEditor', { call });
   }
@@ -835,7 +842,7 @@ export namespace funcs {
   }
 
   /**
-   * Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.
+   * Drug likeness: OpenChemLib's score with the fragments contributing to it; with the Chemical Engine Crux, RDKit's QED with the properties it weighs.
    * @param {any} smiles
    *   semType: Molecule
    */
@@ -904,7 +911,7 @@ export namespace funcs {
   }
 
   /**
-   * Toxicity prediction. Calculated by openchemlib
+   * Toxicity: OpenChemLib's risk prediction; with the Chemical Engine Crux, RDKit's FilterCatalog Brenk and NIH alerts.
    * @param {any} smiles
    *   semType: Molecule
    */
@@ -1215,6 +1222,16 @@ export namespace funcs {
    */
   export async function getToxicityRisks(molecules: DG.Column , risks?: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:GetToxicityRisks', { molecules, risks });
+  }
+
+  /**
+   * Counts the alerts of RDKit's FilterCatalog Brenk and NIH sets in each molecule, a column per set. Needs the Chemical Engine Crux.
+   * @param {DG.DataFrame} table - Input data table
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   */
+  export async function addToxicityAlertsColumns(table: DG.DataFrame , molecules: DG.Column , brenk: boolean , nih: boolean ): Promise<void> {
+    return await grok.functions.call('Chem:AddToxicityAlertsColumns', { table, molecules, brenk, nih });
   }
 
   /**

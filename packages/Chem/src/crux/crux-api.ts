@@ -23,6 +23,12 @@ export interface CruxCollectionBuilder {
   finish(): CruxCollection;
 }
 
+/** One FilterCatalog alert crux's `chemAlerts` found in a molecule: its name, and per match the molecule's atoms. */
+export interface ToxicityAlert {
+  name: string;
+  atoms: number[][];
+}
+
 /** A descriptor's values as the chem-chem container returns them: Python's type of its first value, nulls kept. */
 export interface DescriptorValues {
   type: 'int' | 'double';

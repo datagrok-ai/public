@@ -203,6 +203,10 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
       result = structuralAlerts(args[0], args[1]);
     else if (op === 'chemProperties') // Chem's property table (widgets/properties.ts)
       result = JSON.parse(chemWasm.chemProperties(args[0], args[1]));
+    else if (op === 'chemQed') // Crux mode's drug-likeness: QED and its properties (widgets/drug-likeness.ts)
+      result = JSON.parse(chemWasm.chemQed(args[0]));
+    else if (op === 'chemAlerts') // Crux mode's toxicity: FilterCatalog's Brenk and NIH alerts (widgets/toxicity.ts)
+      result = JSON.parse(chemWasm.chemAlerts(args[0], args[1], args[2]));
     else if (op === 'pairUncommonAtomsAndBonds')
       result = pairUncommonAtomsAndBonds(args[0], args[1], args[2]);
     else if (Object.hasOwn(ANALYSIS_JOBS, op)) // MMPA, R-groups, FMCS, fragment linking, molzip (crux-analysis-jobs.ts)

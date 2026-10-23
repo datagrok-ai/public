@@ -3,13 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, test, expect, expectFloat, before, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
-import {assessDruglikeness, drugLikenessWidget} from '../widgets/drug-likeness';
+import {QED_PROPERTIES, assessDruglikeness, cruxQed, drugLikenessWidget} from '../widgets/drug-likeness';
 import {getIdentifiersSingle} from '../widgets/identifiers';
 // import {getPanelElements, molfileWidget} from '../widgets/molfile';
 import {CRUX_PROPERTY_METHODS, getPropertiesMap, propertiesWidget} from '../widgets/properties';
 import {ChemicalEngine, cruxReady, setChemicalEngine} from '../engine/chem-engine';
 import {getStructuralAlerts, structuralAlertsWidget} from '../widgets/structural-alerts';
-import {getRisks, toxicityWidget} from '../widgets/toxicity';
+import {cruxToxicityAlerts, getRisks, toxicityWidget} from '../widgets/toxicity';
 // import {SubstructureFilter} from '../widgets/chem-substructure-filter';
 import * as utils from './utils';
 // import $ from 'cash-dom';
@@ -71,6 +71,30 @@ category('cell panel', async () => {
     //check that widget doesn't throw errors
     for (const mol of molFormats)
       drugLikenessWidget(DG.SemanticValue.fromValueType(mol, DG.SEMTYPE.MOLECULE));
+  });
+
+  test('drug-likeness: Crux mode, QED', async () => {
+    // RDKit's QED.qed and QED.properties (the pinned RDKit's values, crux-core's tools/chem-wasm/
+    // chem_qed_alerts_oracle.py), not OpenChemLib's score: the product owner, 2026-10-22
+    const expected: {[key: string]: number} = {'MW': 133.194, 'ALOGP': 1.3323, 'HBA': 1, 'HBD': 1, 'PSA': 12.03,
+      'ROTB': 0, 'AROM': 1, 'ALERTS': 0};
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      for (const format of ['smiles', 'molV2000', 'molV3000']) {
+        const qed = cruxQed(molFormats_[format]);
+        expect(qed !== null, true, `${format}: read`);
+        expectFloat(qed!['QED'], 0.5627155967397938, 1e-12, `${format}: QED`);
+        for (const [key, value] of Object.entries(expected))
+          expect(qed![key], value, `${format}: ${key}`);
+      }
+      const widget = drugLikenessWidget(DG.SemanticValue.fromValueType(CONST.SMILES, DG.SEMTYPE.MOLECULE));
+      expect(widget.root.textContent!.includes('QED: 0.56'), true, 'the widget shows QED');
+      const labels = Array.from(widget.root.querySelectorAll('tr')).map((tr) => tr.cells[0]?.textContent);
+      expect(labels.join(', '), Object.values(QED_PROPERTIES).join(', '), 'and the properties it weighs');
+    } finally {
+      setChemicalEngine(null);
+    }
   });
 
   test('identifiers', async () => {
@@ -194,6 +218,34 @@ category('cell panel', async () => {
     //check that widget doesn't throw errors
     for (const mol of molFormats)
       toxicityWidget(DG.SemanticValue.fromValueType(mol, DG.SEMTYPE.MOLECULE));
+  });
+
+
+  test('toxicity: Crux mode, Brenk and NIH alerts', async () => {
+    // RDKit's FilterCatalog Brenk and NIH sets (the pinned RDKit's hits and atoms, crux-core's tools/chem-wasm/
+    // chem_qed_alerts_oracle.py), not OpenChemLib's risks: the product owner, 2026-10-22
+    const thioester = 'C=CC(=O)NCCSC(=O)C';
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      expect(JSON.stringify(cruxToxicityAlerts(CONST.SMILES)), '{"Brenk":[],"NIH":[]}', 'no alert');
+      const alerts = cruxToxicityAlerts(thioester)!;
+      expect(JSON.stringify(alerts['Brenk']), '[{"name":"Aliphatic_long_chain","atoms":[[4,5,6,7]]},' +
+        '{"name":"Michael_acceptor_1","atoms":[[0,1,2,3]]},{"name":"thioester","atoms":[[7,8,9]]}]', 'Brenk');
+      expect(JSON.stringify(alerts['NIH']), '[{"name":"acrylate","atoms":[[0,1,2,3]]},' +
+        '{"name":"halo_acrylate","atoms":[[0,1]]},{"name":"thioester","atoms":[[7,8,9,10]]}]', 'NIH');
+      // the widget: each catalog's verdict, each alert drawn
+      const widget = toxicityWidget(DG.SemanticValue.fromValueType(thioester, DG.SEMTYPE.MOLECULE));
+      const verdicts = Array.from(widget.root.querySelectorAll('.chem-toxicity-widget-risk-row'))
+        .map((d) => d.textContent);
+      expect(verdicts.join(', '), '3 alerts, 3 alerts', 'the verdicts');
+      expect(widget.root.querySelectorAll('canvas').length, 6, 'an image per alert');
+      const none = toxicityWidget(DG.SemanticValue.fromValueType(CONST.SMILES, DG.SEMTYPE.MOLECULE));
+      expect(Array.from(none.root.querySelectorAll('.chem-toxicity-widget-risk-row')).map((d) => d.textContent)
+        .join(', '), 'None, None', 'no alert');
+    } finally {
+      setChemicalEngine(null);
+    }
   });
 
 

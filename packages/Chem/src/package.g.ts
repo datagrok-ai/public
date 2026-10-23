@@ -392,6 +392,12 @@ export async function molzip(molecules: string[], params?: any) : Promise<string
   return await PackageFunctions.molzip(molecules, params);
 }
 
+//description: The Chemical Engine setting in effect for this user: RDKit or Crux
+//output: string result
+export function chemicalEngine() : string {
+  return PackageFunctions.chemicalEngine();
+}
+
 //input: funccall call 
 //output: widget result
 //meta.role: editor
@@ -715,7 +721,7 @@ export function descriptorsWidget(smiles: string) : any {
 }
 
 //name: Biology | Drug Likeness
-//description: Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.
+//description: Drug likeness: OpenChemLib's score with the fragments contributing to it; with the Chemical Engine Crux, RDKit's QED with the properties it weighs.
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
@@ -793,7 +799,7 @@ export function structure2d(molecule: string) : any {
 }
 
 //name: Biology | Toxicity
-//description: Toxicity prediction. Calculated by openchemlib
+//description: Toxicity: OpenChemLib's risk prediction; with the Chemical Engine Crux, RDKit's FilterCatalog Brenk and NIH alerts.
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
@@ -1153,6 +1159,17 @@ export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Col
 //meta.vectorFunc: true
 export async function getToxicityRisks(molecules: DG.Column, risks?: string[]) : Promise<any> {
   return await PackageFunctions.getToxicityRisks(molecules, risks);
+}
+
+//name: Toxicity Alerts
+//description: Counts the alerts of RDKit's FilterCatalog Brenk and NIH sets in each molecule, a column per set. Needs the Chemical Engine Crux.
+//input: dataframe table { description: Input data table }
+//input: column molecules { semType: Molecule }
+//input: bool brenk = true { caption: Brenk }
+//input: bool nih = true { caption: NIH }
+//top-menu: Chem | Calculate | Toxicity Alerts...
+export async function addToxicityAlertsColumns(table: DG.DataFrame, molecules: DG.Column, brenk?: boolean, nih?: boolean) : Promise<void> {
+  await PackageFunctions.addToxicityAlertsColumns(table, molecules, brenk, nih);
 }
 
 //description: Generates a hierarchical tree based on the scaffolds presented in dataset

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import {WorkerMessageBusClient} from '../worker-message-bus-client';
 import {Fingerprint, hasNewLines} from '../utils/chem-common';
 import {compileCrux, loadCrux, noteCruxError} from '../engine/crux-module';
-import {DescriptorTiming, INT_NONE, PackedDescriptorValues, isNoneValue} from './crux-api';
+import {DescriptorTiming, INT_NONE, PackedDescriptorValues, ToxicityAlert, isNoneValue} from './crux-api';
 import {CLUSTER_MCS_TIMEOUT_S} from './crux-api';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -30,7 +30,8 @@ const CHUNK_SIZE = 1000;
 const JOB_BASE_MS = 30000;
 /** How a job's timeout starts its message. */
 const JOB_TIMEOUT = 'a Crux job took longer than';
-const JOB_MS_PER_MOLECULE = {descriptors: 500, fingerprints: 20, alerts: 50, scaffoldTree: 200, properties: 20};
+const JOB_MS_PER_MOLECULE = {descriptors: 500, fingerprints: 20, alerts: 50, scaffoldTree: 200, properties: 20, qed: 20,
+  toxicityAlerts: 50};
 // Rascal's options for an activity cliff's MCS (CruxService.pairUncommonAtomsAndBonds): RDKit's defaults but these
 // three, measured on the cliffs of Chem's tests and demo at their cutoffs (2026-10-21)
 /** get_mces' 0.5 gave one cliff of the cutoff-20 test no MCES, 0.4 none. */
@@ -133,6 +134,13 @@ class CruxWorkerClient extends WorkerMessageBusClient {
 
   chemProperties = (molecules: (string | null)[], names: string[]):
     Promise<{[name: string]: (number | string | null)[]}> => this.call('chemProperties', [molecules, names]);
+
+  chemQed = (molecules: (string | null)[]): Promise<{[key: string]: (number | null)[]}> =>
+    this.call('chemQed', [molecules]);
+
+  chemAlerts = (molecules: (string | null)[], catalogs: string[], atoms: boolean):
+    Promise<{[catalog: string]: (ToxicityAlert[] | string[] | null)[]}> =>
+    this.call('chemAlerts', [molecules, catalogs, atoms]);
 
   pairUncommonAtomsAndBonds = (molecule1: string, molecule2: string, details: string): Promise<ISubstruct[] | null> =>
     this.call('pairUncommonAtomsAndBonds', [molecule1, molecule2, details]);
@@ -421,6 +429,26 @@ export class CruxService {
     const parts = await this.inChunks(molecules, JOB_MS_PER_MOLECULE.properties,
       (worker, chunk) => worker.chemProperties(chunk, names));
     return Object.fromEntries(names.map((name) => [name, parts.flatMap((part) => part[name])]));
+  }
+
+  /**
+   * Crux mode's drug-likeness (widgets/drug-likeness.ts) by crux's `chemQed`: RDKit's QED and its eight properties
+   * (`QED`, `MW`, `ALOGP`, `HBA`, `HBD`, `PSA`, `ROTB`, `AROM`, `ALERTS`), a value or null per molecule, the molecules in
+   * chunks across the workers.
+   */
+  async chemQed(molecules: (string | null)[]): Promise<{[key: string]: (number | null)[]}> {
+    const parts = await this.inChunks(molecules, JOB_MS_PER_MOLECULE.qed, (worker, chunk) => worker.chemQed(chunk));
+    return Object.fromEntries(Object.keys(parts[0] ?? {}).map((key) => [key, parts.flatMap((part) => part[key])]));
+  }
+
+  /**
+   * Crux mode's toxicity alerts (widgets/toxicity.ts) by crux's `chemAlerts`: per catalog (`Brenk`, `NIH`) and molecule,
+   * null (not read) or the matching alerts' names, the molecules in chunks across the workers.
+   */
+  async chemAlertNames(molecules: (string | null)[], catalogs: string[]): Promise<{[catalog: string]: (string[] | null)[]}> {
+    const parts = await this.inChunks(molecules, JOB_MS_PER_MOLECULE.toxicityAlerts,
+      (worker, chunk) => worker.chemAlerts(chunk, catalogs, false));
+    return Object.fromEntries(catalogs.map((c) => [c, parts.flatMap((part) => part[c] as (string[] | null)[])]));
   }
 
   /**

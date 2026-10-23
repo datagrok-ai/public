@@ -43,7 +43,7 @@ import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {pharmacophoreFeaturesWidget} from './widgets/pharmacophore-features';
 import {getPharmacophoreFeaturesByFamilies, PharmFamilySet} from './panels/pharmacophore-features';
 import {structure2dWidget} from './widgets/structure2d';
-import {getToxicityRisksColumns, toxicityWidget} from './widgets/toxicity';
+import {getToxicityAlertsColumns, getToxicityRisksColumns, toxicityWidget} from './widgets/toxicity';
 import {_synthonSubstructureSearchWidget, _synthonSimilaritySearchWidget, getSynthonSpaces} from './widgets/synthon-search';
 
 //panels imports
@@ -126,7 +126,7 @@ import {applyDesirabilityTags, collectMpoResultColumns, computeMpo, findSuitable
 import {removeWaterAndSalts, runTransformationReaction} from './utils/reactions/reactions';
 import {transformationReactionsUI, transformationReactionsView, twoComponentReactionsView, twoComponentReactionUI} from './utils/reactions/ui';
 import {scripts} from './package-api';
-import {cruxReady, isCruxRequested, onEngineSwitch} from './engine/chem-engine';
+import {cruxReady, isCruxRequested, onEngineSwitch, requestedEngine} from './engine/chem-engine';
 import {cruxOrRdKitAsync} from './engine/fallback';
 import {getCruxService} from './crux/crux-searches';
 import {clusterMcsByEngine, molzip as molzipOnCrux, MolzipParams} from './engine/analysis-jobs';
@@ -937,6 +937,15 @@ export class PackageFunctions {
     return molzipOnCrux(molecules, params ?? {});
   }
 
+  @grok.decorators.func({
+    name: 'chemicalEngine',
+    description: 'The Chemical Engine setting in effect for this user: RDKit or Crux',
+    outputs: [{name: 'result', type: 'string'}],
+  })
+  static chemicalEngine(): string {
+    return requestedEngine();
+  }
+
   @grok.decorators.editor({outputs: [{name: 'result', type: 'widget'}]})
   static ChemSpaceEditor(
     @grok.decorators.param({type: 'funccall'}) call: DG.FuncCall): DG.Widget {
@@ -1727,7 +1736,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     'name': 'Biology | Drug Likeness',
-    'description': 'Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.',
+    'description': 'Drug likeness: OpenChemLib\'s score with the fragments contributing to it; with the Chemical Engine Crux, RDKit\'s QED with the properties it weighs.',
     'help-url': '/help/domains/chem/info-panels/drug-likeness.md',
     'meta': {'role': 'widgets', 'domain': 'chem'},
   })
@@ -1822,7 +1831,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     'name': 'Biology | Toxicity',
-    'description': 'Toxicity prediction. Calculated by openchemlib',
+    'description': 'Toxicity: OpenChemLib\'s risk prediction; with the Chemical Engine Crux, RDKit\'s FilterCatalog Brenk and NIH alerts.',
     'help-url': '/help/domains/chem/info-panels/toxicity-risks.md',
     'meta': {'role': 'widgets', 'domain': 'chem'},
   })
@@ -2556,6 +2565,35 @@ export class PackageFunctions {
       reproductiveEffects: !risks || !risks.length ? true : risks.includes('reproductiveEffects'),
     });
     return DG.DataFrame.fromColumns(toxCols);
+  }
+
+  @grok.decorators.func({
+    'top-menu': 'Chem | Calculate | Toxicity Alerts...',
+    'name': 'Toxicity Alerts',
+    'description': 'Counts the alerts of RDKit\'s FilterCatalog Brenk and NIH sets in each molecule, a column per set. Needs the Chemical Engine Crux.',
+  })
+  static async addToxicityAlertsColumns(
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({options: {initialValue: 'true', caption: 'Brenk'}}) brenk?: boolean,
+    @grok.decorators.param({options: {initialValue: 'true', caption: 'NIH'}}) nih?: boolean,
+  ): Promise<void> {
+    // the product owner, 2026-10-22: Crux mode's toxicity alerts get their own menu; Toxicity Risks stays OpenChemLib's
+    const catalogs = [...(brenk ? ['Brenk'] : []), ...(nih ? ['NIH'] : [])];
+    if (!catalogs.length) {
+      grok.shell.warning('Please select at least one alert set');
+      return;
+    }
+    const pb = DG.TaskBarProgressIndicator.create('Toxicity alerts ...');
+    try {
+      const cols = await getToxicityAlertsColumns(molecules, catalogs);
+      cols.forEach((col) => {
+        col.name = table.columns.getUnusedName(col.name);
+        table.columns.add(col);
+      });
+    } finally {
+      pb.close();
+    }
   }
 
   @grok.decorators.func({

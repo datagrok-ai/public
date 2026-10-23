@@ -11,6 +11,8 @@ import {getMapIdentifiers} from '../widgets/identifiers';
 import {PackageFunctions} from '../package';
 import {ChemicalEngine, cruxReady, setChemicalEngine} from '../engine/chem-engine';
 import {getPropertiesAsColumns} from '../widgets/properties';
+import {getDrugLikenessColumn} from '../widgets/drug-likeness';
+import {TOXICITY_ALERTS_NEED_CRUX} from '../widgets/toxicity';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 
 category('calculate', () => {
@@ -77,6 +79,66 @@ category('calculate', () => {
     expect(smiles.col('Reproductive effects')?.get(2), 'None', `incorrect Reproductive effects value`);
   }, {stressTest: true});
 
+
+  /** Molecules with and without Brenk / NIH alerts, an empty cell and one no engine reads. */
+  const alertMolecules = () => {
+    const col = DG.Column.fromStrings('smiles', ['c1ccc2c(c1)CCNC2', 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO',
+      'C=CC(=O)NCCSC(=O)C', 'CN1CCC(CC1)Oc2ccc(cc2)C(F)(F)F', 'CC1CCN(CC(O)CN2C(=O)C3=C(SCCS3)C2=O)CC1',
+      'NCc1cnn(O)c1Br', '', 'C1CC(']);
+    col.semType = DG.SEMTYPE.MOLECULE;
+    return col;
+  };
+
+  test('toxicity alerts: Crux mode, Brenk and NIH counts', async () => {
+    // the product owner, 2026-10-22: Crux mode's alerts get their own menu (Toxicity Risks stays OpenChemLib's); the
+    // pinned RDKit's FilterCatalog counts (crux-core's tools/chem-wasm/chem_qed_alerts_oracle.py)
+    const col = alertMolecules();
+    const df = DG.DataFrame.fromColumns([col]);
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      await PackageFunctions.addToxicityAlertsColumns(df, col, true, true);
+      const counts = (name: string) => Array.from({length: df.rowCount}, (_, i) =>
+        df.col(name)!.isNone(i) ? null : df.col(name)!.get(i));
+      expect(df.col('Brenk alerts')?.type, DG.TYPE.INT, 'an int column per set');
+      expect(JSON.stringify(counts('Brenk alerts')), '[0,0,3,0,1,1,null,null]', 'Brenk');
+      expect(JSON.stringify(counts('NIH alerts')), '[0,0,3,0,0,0,null,null]', 'NIH');
+    } finally {
+      setChemicalEngine(null);
+    }
+  });
+
+  test('toxicity alerts: RDKit mode asks for the Crux engine', async () => {
+    const col = alertMolecules();
+    const df = DG.DataFrame.fromColumns([col]);
+    setChemicalEngine(ChemicalEngine.RDKit);
+    let error = '';
+    try {
+      await PackageFunctions.addToxicityAlertsColumns(df, col, true, true);
+    } catch (e: any) {
+      error = e?.message ?? `${e}`;
+    } finally {
+      setChemicalEngine(null);
+    }
+    expect(error, TOXICITY_ALERTS_NEED_CRUX);
+    expect(df.columns.length, 1, 'no column added');
+  });
+
+  test('drug likeness: Crux mode, a QED column', async () => {
+    // RDKit's QED.qed (the pinned RDKit's values, crux-core's tools/chem-wasm/chem_qed_alerts_oracle.py)
+    const expected = [0.5627155967397938, 0.7698182146008907, 0.4990914517777916, 0.8084644545905696,
+      0.7733418707960393, 0.6302835582335422];
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      const qed = await getDrugLikenessColumn(alertMolecules());
+      expect(`${qed.name}:${qed.type}`, 'QED:double');
+      expected.forEach((value, i) => expectFloat(qed.get(i), value, 1e-6, `row ${i} (a float column: 32 bits)`));
+      expect(qed.isNone(6) && qed.isNone(7), true, 'empty for an empty cell and a molecule not read');
+    } finally {
+      setChemicalEngine(null);
+    }
+  });
 
   test('properties', async () => {
     smiles = grok.data.demo.molecules(20);
