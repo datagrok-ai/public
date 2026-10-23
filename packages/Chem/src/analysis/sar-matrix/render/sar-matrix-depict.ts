@@ -179,6 +179,40 @@ function preparedDepiction(molStr: string, template: string | null): string | nu
   return template ? alignToTemplate(plain, template) : plain;
 }
 
+/** Depiction work one task may do before the rest waits for a repaint: the first paint of a matrix of
+ *  large molecules aligns and rasterizes every visible cell, seconds in which the page answers nothing. */
+const PAINT_BUDGET_MS = 50;
+let spent = 0;
+let resetQueued = false;
+/** The sizes each molecule was rasterized at: those come out of the renderer's cache and cost no budget. */
+const rasterized = new DG.LruCache<string, Set<string>>(ALIGN_CACHE_MAX);
+
+function charge(ms: number): void {
+  spent += ms;
+  if (!resetQueued) {
+    resetQueued = true;
+    setTimeout(() => {
+      spent = 0;
+      resetQueued = false;
+    });
+  }
+}
+
+/** Whether this task has used its depiction budget; a painter defers what is not drawn yet past it. */
+export function depictionBudgetSpent(): boolean {
+  return spent >= PAINT_BUDGET_MS;
+}
+
+/** Runs depiction work, charging its time to this task's budget. */
+export function charged<T>(work: () => T): T {
+  const t0 = performance.now();
+  try {
+    return work();
+  } finally {
+    charge(performance.now() - t0);
+  }
+}
+
 /** Scratch canvas the cached `ImageData` is blitted through so the grid's clip is respected
  *  (`putImageData` ignores the clip and would paint over the pinned core column or past the edge). */
 let blitCanvas: OffscreenCanvas | null = null;
@@ -196,25 +230,42 @@ function ensureBlitCanvas(w: number, h: number): OffscreenCanvas {
  *  The molecule raster is rendered on a TRANSPARENT background (so it caches by molecule + size, not
  *  by the per-cell tint); `argb` is laid down here as the background and the molecule composited over
  *  it, which blends the anti-aliased bonds into the tint with no pale fringe. Both the fill and the
- *  blit run at device pixels through the scratch canvas, so the grid's clip is respected. */
+ *  blit run at device pixels through the scratch canvas, so the grid's clip is respected.
+ *
+ *  Past this task's budget, a depiction not drawn before is left out and `deferred` called instead, to
+ *  paint it on a later pass. */
 export function drawDepiction(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-  molStr: string, template: string | null, argb: number): void {
+  molStr: string, template: string | null, argb: number, deferred?: () => void): void {
   const renderer = getMoleculeRenderer();
-  if (!renderer)
-    return;
-  const molblock = preparedDepiction(molStr, template);
-  if (molblock === null)
+  if (!renderer || !molStr)
     return;
   const m = g.getTransform();
   const dw = Math.round(m.a * w);
   const dh = Math.round(m.d * h);
   if (dw < 1 || dh < 1)
     return;
+  const plain = molStr.replace(/\[\*:\d+\]/g, '[*]');
+  const ready = template ? alignCache.get(`${template}${plain}`) : plain;
+  const size = `${dw}x${dh}`;
+  if (deferred !== undefined && depictionBudgetSpent() && (ready === undefined || !rasterized.get(ready)?.has(size))) {
+    deferred();
+    return;
+  }
+  const t0 = performance.now();
+  const molblock = ready ?? preparedDepiction(molStr, template)!;
+  // Marked whether or not it draws: one the renderer cannot read would otherwise be deferred, and its grid
+  // repainted, for as long as the grid is on screen.
+  let sizes = rasterized.get(molblock);
+  if (sizes === undefined)
+    rasterized.set(molblock, sizes = new Set());
+  sizes.add(size);
   let image: ImageData;
   try {
     image = renderer.getCachedMolImageData(molblock, dw, dh);
   } catch {
     return; // malformed structure — leave the cell to its background
+  } finally {
+    charge(performance.now() - t0);
   }
   const scratch = ensureBlitCanvas(dw, dh);
   scratch.getContext('2d')!.putImageData(image, 0, 0);
