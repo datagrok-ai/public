@@ -1,5 +1,5 @@
 /* The import wizard against a real domain table (WO 3-9): a frame picked, its columns auto-mapped
-   against `apitests.item`, the blocking problems, and FINISH posting the mapped columns only
+   against `apitests.item`, the blocking problems, and Import posting the mapped columns only
    through `DomainTableClient.batch`. Fixture rows are prefixed per run and deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -20,6 +20,9 @@ category('U2: domain import', () => {
       {value: {value: string | null}} | undefined;
   const buttonNamed = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.u2-dialog button')]
     .find((b) => b.textContent === text)!;
+  /** Preview's commit button: "Import N …", plain "Import" where the dry run gives no count. */
+  const importButton = () => [...document.querySelectorAll<HTMLButtonElement>('.u2-dialog button')]
+    .find((b) => /^Import( |$)/.test(b.textContent ?? ''))!;
   const reason = () => document.querySelector('.u2-wizard-reason')?.textContent ?? '';
   const report = () => document.querySelector('.u2-domain-import-report')?.textContent ?? '';
   /** The preview's leading cell per row — what the server's dry run predicts for it. */
@@ -67,12 +70,12 @@ category('U2: domain import', () => {
     expect(await running, null);
   });
 
-  test('FINISH posts the mapped columns and the server\'s report comes back', async () => {
+  test('Import posts the mapped columns and the server\'s report comes back', async () => {
     const rows = [1, 2, 3].map((i) => ({sku: `${prefix}-${i}`, name: `Row ${i}`, quantity: String(i), strayColumn: 'x'}));
     const {running} = await open(frame(rows));
     buttonNamed('NEXT').click();
     await delay(400);
-    buttonNamed('NEXT').click();
+    importButton().click();
     for (let i = 0; i < 100 && !report().includes('inserted'); i++)
       await delay(50);
     expect(report().includes('3 inserted, 0 updated'), true, report());
@@ -96,7 +99,9 @@ category('U2: domain import', () => {
       await delay(50);
     expect(verdicts().join(), 'Add,Add', 'the leading column is what the dry run predicts, as a verb');
     const predicted = verdicts().filter((v) => v === 'Add').length;
-    buttonNamed('NEXT').click();
+    expect(importButton().textContent!.startsWith(`Import ${predicted} `), true,
+      `the button names what the dry run will land: ${importButton().textContent}`);
+    importButton().click();
     for (let i = 0; i < 100 && !report().includes('inserted'); i++)
       await delay(50);
     expect(report().includes(`${predicted} inserted, 0 updated`), true, report());
