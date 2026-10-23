@@ -13,7 +13,7 @@ import {checkAgainstMolecules, cutWarning, decomposeByColumns, defaultAxis, hold
   from '../analysis/sar-matrix/sar-matrix-columns';
 import {cellPossible, LinkStages, planLink} from '../analysis/sar-matrix/sar-matrix-link';
 import {computeMatrixConfidence} from '../analysis/sar-matrix/sar-matrix-confidence';
-import {matrixCore} from '../analysis/sar-matrix/sar-matrix-depict';
+import {alignToTemplate, buildAlignmentTemplate, matrixCore} from '../analysis/sar-matrix/sar-matrix-depict';
 import {SarRankScheme} from '../analysis/sar-matrix/sar-matrix-ranking';
 import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/sar-matrix-run';
 import {SCALING_METHODS} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
@@ -173,6 +173,37 @@ category('SAR Matrix', () => {
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
+    }
+  });
+
+  test('cells align to their row\'s core with RDKit\'s depictor, not CoordGen', async () => {
+    // the matrix's cells are laid out by RDKit's depictor before the rigid fit to the row's template: CoordGen's
+    // layout cost ~20x more per cell and froze a 1,000-cell series (the demo's Series 174, 2026-10-23)
+    const core = 'O=C(N[*:1])c1ccc2[nH]ccc2c1';
+    const template = buildAlignmentTemplate(core)!;
+    const rdkit = chemCommonRdKit.getRdKitModule();
+    const coords = (molblock: string) => molblock.split('\n').slice(4).filter((l) => /^\s+-?\d+\.\d+\s+-?\d+\.\d+/.test(l))
+      .map((l) => [Number(l.substring(0, 10)), Number(l.substring(10, 20))]);
+    const templateXy = coords(template);
+    for (const smiles of ['O=C(NCCN(C)C)c1ccc2[nH]ccc2c1', 'O=C(NC1CCN(Cc2ccccc2)CC1)c1ccc2[nH]ccc2c1']) {
+      const aligned = alignToTemplate(smiles, template);
+      expect(aligned.includes('M  END'), true, `${smiles}: aligned`);
+      // the cell's core lies on the template (a rigid fit of the cell's own layout: within a small RMSD)
+      const cellXy = coords(aligned);
+      const match = JSON.parse((() => {
+        const m = rdkit.get_mol(aligned);
+        const q = rdkit.get_mol(template);
+        try {
+          return m.get_substruct_match(q);
+        } finally {
+          m.delete();
+          q.delete();
+        }
+      })()).atoms as number[];
+      const rmsd = Math.sqrt(match.reduce((sum, cellAtom, i) => sum + (cellXy[cellAtom][0] - templateXy[i][0]) ** 2 +
+        (cellXy[cellAtom][1] - templateXy[i][1]) ** 2, 0) / match.length);
+      expect(match.length, templateXy.length, `${smiles}: the whole core matches`);
+      expect(rmsd < 0.3, true, `${smiles}: the core on the template (RMSD ${rmsd.toFixed(3)})`);
     }
   });
 
