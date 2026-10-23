@@ -128,6 +128,8 @@ const OUTCOMES: Record<string, {label: string, variant: BadgeVariant}> = {
   error: {label: 'Error', variant: 'error'},
   aborted: {label: 'Not imported', variant: 'default'},
 };
+/** Why a row whose business key the table or the file already has is skipped. */
+const DUPLICATE = 'Duplicate business key';
 /** Rows of the report's key lookup per query. */
 const KEY_CHUNK = 500;
 
@@ -182,6 +184,10 @@ class ImportFlow {
   private _planned: {frame: DG.DataFrame, key: string, plan: Promise<Planned[]>} | undefined;
   /** Bumped by every post: an older dry run answering last must not paint over a newer one. */
   private _previewGen = 0;
+  /** What the dry run says of committing: '' blocks while it runs, a reason where all-or-nothing
+   * would abort. */
+  private readonly _previewBlock = signal<string | null>(null);
+  private readonly _importText = signal('Import');
 
   constructor(private readonly _table: DomainTable, private readonly _targets: IProperty[],
     private readonly _options: DomainImportOptions,
@@ -194,7 +200,8 @@ class ImportFlow {
         {id: 'source', title: 'Source', content: () => this._sourceStep(),
           canProceed: () => this._frame.value === null ? 'Choose an open table or a file' : null},
         {id: 'mapping', title: 'Mapping', content: () => this._mappingStep(), canProceed: () => this._gate()},
-        {id: 'preview', title: 'Preview', content: () => this._previewStep(), canProceed: () => this._gate()},
+        {id: 'preview', title: 'Preview', content: () => this._previewStep(), nextText: this._importText,
+          canProceed: () => this._gate() ?? this._previewBlock.value},
         {id: 'report', title: 'Report', content: () => this._report, done: true,
           onActivate: () => void this._commit()},
       ],
@@ -304,6 +311,8 @@ class ImportFlow {
     const mapping = [...this._mapping()];
     const options = this._batchOptions();
     const gen = ++this._previewGen;
+    this._previewBlock.value = '';
+    this._importText.value = 'Import';
     const status = span(`Checking ${plural(frame.rowCount, 'row', 'rows')}…`, 'u2-domain-import-summary');
     host.replaceChildren(status);
     let plan: Planned[];
@@ -325,15 +334,18 @@ class ImportFlow {
     } catch (e) {
       if (gen !== this._previewGen)
         return;
-      // the commit is the authority: a preview that cannot reach the server says so and lets NEXT
-      // through
+      // the commit is the authority: a preview that cannot reach the server says so and lets the
+      // import through
       this._checked = undefined;
+      this._previewBlock.value = null;
       host.replaceChildren(span(DomainErrors.message(e), 'u2-domain-import-problem'));
       return;
     }
     if (owner.scope.isDisposed)
       return;
     const sent = ImportFlow._sent(plan);
+    if (report === null)
+      this._previewBlock.value = null;
     const judged = report !== null || this._table.importer?.prepare !== undefined;
     const rows = this._previewRows(plan, sent, report).slice(0, PREVIEW_SHOWN);
     host.replaceChildren(this._rowsTable(owner, 'preview', rows, judged ? this._previewColumns(mapping) :
@@ -350,16 +362,29 @@ class ImportFlow {
     host.append(span(`${report.willInsert} will be added, ${report.willUpdate} updated, ` +
       `${report.willSkip + kept.length - keptErrors} skipped, ${plural(errors, 'row has errors', 'rows have errors')}.`,
     'u2-domain-import-summary'));
+    const valid = sent.length > PREVIEW_ROWS ? null : report.willInsert + report.willUpdate;
+    this._importText.value = valid === null ? 'Import' :
+      `Import ${plural(valid, ImportFlow._singular(this._table), ImportFlow._plural(this._table))}`;
     // the counts are what the batch WOULD do row by row; all-or-nothing makes one bad row the
-    // verdict on all of them, and the report would otherwise contradict this line
-    if (options.allOrNothing !== false && errors > 0)
-      host.append(span(this._allOrNothing === undefined ? 'This import is all or nothing — nothing will be imported.' :
-        'Nothing will be imported while "All or nothing" is on.', 'u2-domain-import-problem'));
+    // verdict on all of them
+    this._previewBlock.value = options.allOrNothing !== false && errors > 0 ? this._abortReason(errors, valid) : null;
     if (sent.length > PREVIEW_ROWS) {
       host.append(span(`Checked the first ${PREVIEW_ROWS.toLocaleString()} of ` +
         `${sent.length.toLocaleString()} rows — the rest are checked on import.`,
       'u2-domain-import-summary'));
     }
+  }
+
+  /** Why the preview will not import: all-or-nothing would abort over the rows with errors. `valid`
+   * is null where the dry run did not see every row. */
+  private _abortReason(errors: number, valid: number | null): string {
+    const lead = plural(errors, 'row has errors', 'rows have errors');
+    if (this._allOrNothing === undefined)
+      return `${lead}, and this import is all or nothing.`;
+    if (valid === 0)
+      return `${lead}, and no row is valid.`;
+    return `${lead}. Uncheck "All or nothing" on Source to import the ` +
+      `${valid === null ? 'valid rows' : plural(valid, 'valid row', 'valid rows')} and skip the rest.`;
   }
 
   /** Every source row as the preview shows it: the importer's verdict where it keeps the row out,
@@ -371,7 +396,7 @@ class ImportFlow {
       const at = sent[dry.index];
       const errors = dry.errors ?? [];
       rows[at] = this._row(at, plan[at], dry.predicted, errors.length > 0 ? this._describe(errors) :
-        plan[at].verdict.note ?? '', errors);
+        plan[at].verdict.note ?? (dry.predicted === 'skip' ? DUPLICATE : ''), errors);
     }
     return rows;
   }
@@ -397,7 +422,8 @@ class ImportFlow {
     const table = owner.runInScope(() => new DataTable<DomainImportRow>({
       rowHeight: this._table.importer?.rowHeight ?? 24,
       keyOf: (row) => String(row.index),
-      columns: columns.map((c) => ({name: c.name, header: c.header, width: c.width, render: (row) => c.render(row)})),
+      columns: columns.map((c) => ({name: c.name, header: c.header, width: c.width,
+        render: (row, _index, cell) => ImportFlow._cell(c.render(row), cell)})),
       cellState: {
         isChanged: () => false,
         errorOf: (key, column) => {
@@ -409,6 +435,15 @@ class ImportFlow {
     table.setItems(rows);
     table.root.classList.add('u2-domain-import-rows', `u2-domain-import-${step}-rows`);
     return table.root;
+  }
+
+  /** A cell's content, its text the cell's title, since a narrow column cuts it; plain text goes
+   * in a span of its own, which can trail off inside the cell that fills the row. */
+  private static _cell(content: HTMLElement | string, cell: HTMLElement): HTMLElement {
+    const label = typeof content === 'string' ? content : content.textContent ?? '';
+    if (label !== '')
+      cell.title = label;
+    return typeof content === 'string' ? span(content, 'u2-domain-import-text') : content;
   }
 
   /** What the preview shows by default: the row's number and verdict, its mapped cells, the note. */
@@ -596,6 +631,11 @@ class ImportFlow {
     return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
   }
 
+  /** The table's singular name, as the user reads it. */
+  private static _singular(table: DomainTable): string {
+    return (table.info.singularName || 'row').replace(/_/g, ' ').toLowerCase();
+  }
+
   /** The table's plural name, as the user reads it. */
   private static _plural(table: DomainTable): string {
     return (table.info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
@@ -748,7 +788,7 @@ class ImportFlow {
       if (row?.status === 'error')
         return this._row(i, p, 'error', p.payload === null ? p.verdict.error ?? '' : this._describe(errors), errors);
       if (row?.status === 'duplicate')
-        return {...this._row(i, p, 'skip', 'Duplicate business key', errors), id: row.existingId ?? null};
+        return {...this._row(i, p, 'skip', DUPLICATE, errors), id: row.existingId ?? null};
       if (p.payload === null)
         return this._kept(i, p);
       if (failed || row === undefined)

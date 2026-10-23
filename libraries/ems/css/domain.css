@@ -529,6 +529,23 @@
   overflow: auto;
 }
 
+/* each cell fills the row's height, so a refused empty cell still shows its tint */
+.u2-domain-import-rows .u2-data-table-row {
+  align-items: stretch;
+}
+
+.u2-domain-import-rows .u2-data-table-row > .u2-data-table-cell {
+  display: flex;
+  align-items: center;
+}
+
+.u2-domain-import-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .u2-domain-import-preview,
 .u2-domain-import-report {
   display: flex;
