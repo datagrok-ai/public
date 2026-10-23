@@ -34,6 +34,18 @@ export class CompoundsApp extends DomainApp {
     super(options);
     this.own(StructureSearch.register());
     this.listSource.hosted = (condition, signal) => StructureSearch.matching(condition, signal);
+    // a saved compound shows the identity stored with it; only a draft's is derived
+    this.effect(() => {
+      const source = this.entitySource.value;
+      if (source === null || source.isDraft)
+        return;
+      const row = source.currentRow.value as RowView<CompoundRow> | null;
+      if (row === null)
+        return;
+      this._showIdentity(row, null);
+      this.panes.prepend(this._identity);
+      return () => this._identity.remove();
+    });
     this.effect(() => {
       const source = this.entitySource.value;
       const edit = source?.edit.value;
@@ -100,11 +112,13 @@ export class CompoundsApp extends DomainApp {
     this._showIdentity(identity, verdict.problem);
   }
 
-  private _showIdentity(identity: CompoundIdentity | null, problem: string | null): void {
+  private _showIdentity(identity: Partial<CompoundIdentity> | null, problem: string | null): void {
+    const shown = (column: keyof CompoundIdentity) => isEmpty(identity?.[column]) ? '—' : identity![column]!;
     this._identity.replaceChildren(ui.h3('Identity'),
       ...(problem === null ? [] : [ui.divText(problem, 'moltrack-ems-problem')]),
       identity === null ? ui.divText(problem === null ? 'Draw a structure to see its identity' : '') :
-        ui.divH([grok.chem.drawMolecule(identity.structure, 160, 120), ui.tableFromMap({'Parent': identity.structure,
-          'Formula': identity.formula, 'InChIKey': identity.inchikey, 'Matching rule': identity.match_rule})]));
+        ui.divH([...(isEmpty(identity.structure) ? [] : [grok.chem.drawMolecule(identity.structure!, 160, 120)]),
+          ui.tableFromMap({'Parent': shown('structure'), 'Formula': shown('formula'), 'InChIKey': shown('inchikey'),
+            'Matching rule': shown('match_rule')})]));
   }
 }
