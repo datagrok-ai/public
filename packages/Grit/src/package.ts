@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {badge, div, divV, span} from '@datagrok-libraries/u2';
 import type {BadgeVariant, RowView} from '@datagrok-libraries/u2';
 import {DomainApp, domains} from '@datagrok-libraries/ems/src/dg';
-import type {DomainRibbon, DomainTable} from '@datagrok-libraries/ems/src/dg';
+import type {DomainRibbon} from '@datagrok-libraries/ems/src/dg';
 import {GritIssueHandler, lookupName, warmLookups} from './grit-issue-handler';
 import {gritDb, IssueRow} from './generated/db';
 import {getGritDb, GritDb} from './generated/db-ui';
@@ -54,23 +54,12 @@ export function gritIssueHandler(): DG.ObjectHandler<DG.DomainRow> {
 
 const priorityVariants: {[name: string]: BadgeVariant} = {critical: 'error', high: 'warning', medium: 'accent'};
 
-/** The id of the `closed` status; null where the lookup table has no such row, so nothing closes. */
-let closedId: string | null = null;
-
-let _grit: Promise<GritDb> | undefined;
-
-/** The typed schema handles (one await, cached per page) with what Grit declares on `issue`:
- * the two actions, the closing rule and the card — made once, shared by every view and test. */
-export function openGrit(): Promise<GritDb> {
-  return _grit ??= Promise.all([getGritDb(), gritDb.statuses.getByKey({name: 'closed'}), warmLookups()])
-    .then(([db, closed]) => {
-      closedId = closed?.id ?? null;
-      declareIssues(db.tables.issues);
-      return db;
-    });
-}
-
-function declareIssues(issues: DomainTable<IssueRow>): void {
+/** What Grit declares on `issue` — the two actions, the closing rule and the card — on every handle over it: the
+ * Issues app's, a child tab's, the `/domains` route's. */
+domains.configure<IssueRow>('grit.issue', async (issues) => {
+  const [closed] = await Promise.all([gritDb.statuses.getByKey({name: 'closed'}), warmLookups()]);
+  // null where the lookup table has no `closed` row, so nothing closes
+  const closedId = closed?.id ?? null;
   const me = () => grok.shell.user.id;
   issues.actions.add({name: 'Assign to me', icon: 'user', requires: 'edit',
     when: (r) => r.assignee !== me(), run: (r) => { r.assignee = me(); }});
@@ -82,6 +71,11 @@ function declareIssues(issues: DomainTable<IssueRow>): void {
     div([span(`#${r.number} ${r.title}`, 'u2-domain-card-title'), ...priorityBadge(r)]),
     ...(r.description ? [span(r.description, 'u2-domain-card-description')] : []),
   ], 'u2-domain-card')};
+});
+
+/** The typed schema handles, one await, cached per page — `issue` dressed by what Grit configures on it. */
+export function openGrit(): Promise<GritDb> {
+  return getGritDb();
 }
 
 function priorityBadge(r: RowView<IssueRow>): HTMLElement[] {
@@ -101,7 +95,7 @@ export class IssuesApp extends DomainApp {
 }
 
 /** A view per Grit table — the issues where they were, at `/apps/Grit/Issues` — over the handles {@link openGrit}
- * configured, so the actions, the closing rule and the card hold in each. Grit's one app answers everything under
+ * opens, so the actions, the closing rule and the card hold in each. Grit's one app answers everything under
  * `/apps/Grit`. */
 const views = domains.views({
   path: '/apps/Grit',
