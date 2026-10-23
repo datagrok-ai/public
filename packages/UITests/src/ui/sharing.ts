@@ -1,4 +1,4 @@
-import {before, category, test, expect, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
+import {before, category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -18,7 +18,8 @@ category('UI: Sharing', () => {
   });
 
   test('scripts.ui', async () => {
-    const newScript = DG.Script.create('');
+    // a script without a language is filtered out of the Scripts gallery (language != "flow")
+    const newScript = DG.Script.create(`//name: ${entityName}\n//language: javascript\n`);
     newScript.name = entityName;
     await grok.dapi.scripts.save(newScript);
     try {
@@ -94,8 +95,8 @@ category('UI: Sharing', () => {
     }
     treeGroupToClick.root.click();
     // Scope to the opened view: document.querySelector can return another view's gallery.
-    await awaitCheck(() => (grok.shell.v?.root?.querySelector('.grok-gallery-grid')?.children?.length ?? 0) > 0,
-      'cannot load gallery grid', 3000);
+    await waitUntil(() => (grok.shell.v?.root?.querySelector('.grok-gallery-grid')?.children?.length ?? 0) > 0,
+      'cannot load gallery grid');
     v = grok.shell.v;
     const gallery = v.root;
     const search = gallery.querySelector('.ui-input-editor') as HTMLInputElement;
@@ -105,43 +106,46 @@ category('UI: Sharing', () => {
     // than the small Dashboards/Databases galleries — 3s was enough for those and not for
     // scripts.ui on the CI stand, where it read as "more than one entity" while the search
     // had simply not applied yet.
-    await awaitCheck(() => gallery.querySelector('.grok-gallery-grid')?.children?.length === 1,
+    await waitUntil(() => gallery.querySelector('.grok-gallery-grid')?.children?.length === 1,
       'search did not narrow the gallery to the test entity', 15000);
-    await delay(2000);
-    let entity = gallery.querySelector('.grok-gallery-grid')!.children[0];
-    if (entity.className !== selector.slice(1)) entity = entity.querySelector(selector) ?? entity;
+    // a card is the gallery item itself; a connection is a node of the data sources tree, which the search filters a
+    // moment after the item appears, so the node is found by the test entity's name
+    const item = gallery.querySelector('.grok-gallery-grid')!.children[0];
+    const named = (el: Element) => (el.textContent ?? '').toLowerCase().includes(entityName);
+    const target = () => item.matches(selector) && named(item) ? item :
+      Array.from(item.querySelectorAll(selector)).find(named) ?? null;
+    await waitUntil(() => target() !== null, `the gallery has no ${selector} for ${entityName}`);
+    const entity = target()!;
     entity.dispatchEvent(new MouseEvent('contextmenu'));
-    await awaitCheck(() => document.querySelector('.d4-menu-item-container.d4-vert-menu.d4-menu-popup') !== null,
-      'cannot find context menu', 5000);
+    await waitUntil(() => document.querySelector('.d4-menu-item-container.d4-vert-menu.d4-menu-popup') !== null,
+      'cannot find context menu');
     const menu = document.querySelector('.d4-menu-item-container.d4-vert-menu.d4-menu-popup');
     const share = Array.from(menu!.querySelectorAll('.d4-menu-item.d4-menu-item-vert'))
       .find((el) => el.textContent === 'Share...') as HTMLElement;
     share.click();
-    await awaitCheck(() => DG.Dialog.getOpenDialogs().find((d) => d.root.style.position === 'fixed' &&
-      (d.title.toLowerCase() === `share ${entityName}` || d.title.toLowerCase() === `share ${(friendlyName ?? '').toLowerCase()}`)) !== undefined, 'cannot find dialog', 10000);
+    await waitUntil(() => DG.Dialog.getOpenDialogs().find((d) => d.root.style.position === 'fixed' &&
+      (d.title.toLowerCase() === `share ${entityName}` || d.title.toLowerCase() === `share ${(friendlyName ?? '').toLowerCase()}`)) !== undefined, 'cannot find dialog');
     const shareDialog = DG.Dialog.getOpenDialogs().find((d) => d.root.style.position === 'fixed' &&
       (d.title.toLowerCase() === `share ${entityName}` || d.title.toLowerCase() === `share ${(friendlyName ?? '').toLowerCase()}`));
     const shareDialogRoot = shareDialog!.root;
-    await awaitCheck(() => shareDialogRoot.querySelector('.d4-user-selector-input') !== null,
-      'cannot enter user for sharing', 3000);
+    await waitUntil(() => shareDialogRoot.querySelector('.d4-user-selector-input') !== null,
+      'cannot enter user for sharing');
     const inputUser = shareDialogRoot.querySelector('.d4-user-selector-input') as HTMLInputElement;
     inputUser.value = 'Admin';
     inputUser.dispatchEvent(new MouseEvent('input'));
-    await awaitCheck(() => (shareDialogRoot.querySelector('.d4-user-selector-drop-down') as HTMLElement)
-      ?.style?.visibility === '', 'cannot find user for sharing', 3000);
-    await delay(100); // no way to handle it
+    const dropDown = () => shareDialogRoot.querySelector('.d4-user-selector-drop-down') as HTMLElement | null;
+    await waitUntil(() => dropDown()?.style?.visibility === '' && (dropDown()?.children?.length ?? 0) > 0,
+      'cannot find user for sharing');
     inputUser.dispatchEvent(new KeyboardEvent('keydown', {keyCode: 40}));
-    await delay(100); // no way to handle it
     inputUser.dispatchEvent(new KeyboardEvent('keydown', {keyCode: 40}));
-    await delay(100); // no way to handle it
     inputUser.dispatchEvent(new KeyboardEvent('keydown', {keyCode: 13}));
-    await delay(300); // no way to handle it
+    // a picked user enables sharing
+    await waitUntil(() => shareDialogRoot.querySelector('.ui-btn.ui-btn-ok.enabled') !== null, 'the user was not picked');
     shareDialogRoot.querySelector('textarea')!.value = 'Message1!';
     (shareDialogRoot.querySelector('.ui-btn.ui-btn-ok.enabled') as HTMLElement).click();
     DG.Balloon.closeAll();
-    await delay(100);
-    await awaitCheck(() => (document.querySelector('.d4-balloon.info') as HTMLElement)?.innerText === 'Shared',
-      'cannot find info balloon', 3000);
+    await waitUntil(() => (document.querySelector('.d4-balloon.info') as HTMLElement)?.innerText === 'Shared',
+      'cannot find info balloon');
     v.close();
   }
 }, { owner: 'aparamonov@datagrok.ai' });

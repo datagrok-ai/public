@@ -92,7 +92,7 @@ export class DgDomainTable implements DomainTableLike {
     this.properties = DgDomainTable.withSystem(registryProperties.map((p) => DgDomainTable.property(p)),
       support.systemColumns);
     if (support.audit)
-      this.audit = (id) => this._audit(id);
+      this.audit = (id, page) => this._audit(id, page);
     if (support.restore)
       this.restore = (id) => this._restore(id);
     if (support.updateWhere) {
@@ -196,10 +196,10 @@ export class DgDomainTable implements DomainTableLike {
   }
 
   /** The row's history as the seam shapes it: `id` is the ROW (the memory backend's key), the
-   * platform's audit sequence number is not kept. */
-  private async _audit(id: string): Promise<AuditEntryLike[]> {
-    const entries = await this.client.audit(id);
-    return entries.map((e) => ({...e, id, tx_id: e.tx_id === null ? '' : String(e.tx_id)}));
+   * platform's audit sequence number is `seq`. */
+  private async _audit(id: string, page?: {limit?: number, before?: number}): Promise<AuditEntryLike[]> {
+    const entries = await this.client.audit(id, page);
+    return entries.map((e) => ({...e, id, seq: e.id, tx_id: e.tx_id === null ? '' : String(e.tx_id)}));
   }
 
   /** The frame with the editor attached over it; `queryDf` already stamps the `~can_*` columns out

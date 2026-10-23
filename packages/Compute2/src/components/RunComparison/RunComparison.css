@@ -52,6 +52,7 @@
 .c2-badge-workflow { background-color: var(--steel-5); }
 .c2-badge-function { background-color: var(--blue-1); }
 .c2-badge-raw { background-color: var(--grey-4); }
+.c2-badge-unsaved { background-color: var(--orange-2); }
 .c2-badge-partial { background-color: var(--grey-4); justify-self: start; }
 
 .c2-confidence-exact { background-color: var(--green-2); }

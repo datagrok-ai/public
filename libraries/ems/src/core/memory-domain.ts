@@ -5,7 +5,7 @@
    way the server orders it (forward `$ref`s, child-first deletes) and lands on every table it
    touches or on none. */
 import {uuid4} from 'datagrok-api/u2core';
-import {Filters, notify, Access, MemoryFrame, Rows, isEmpty} from '@datagrok-libraries/u2';
+import {Filters, notify, Access, MemoryFrame, Rows, isEmpty, Component} from '@datagrok-libraries/u2';
 import type {FilterCondition, FilterGroup, IProperty, AccessData, FieldAccess,
   MemoryColumn} from '@datagrok-libraries/u2';
 import {DomainBackendError, isUnscoped} from './domain-backend.js';
@@ -15,6 +15,9 @@ import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchR
   DomainTransactionOpLike, DomainTransactionResultLike} from './domain-backend.js';
 import type {EditState} from './edit-state.js';
 import {MemoryEditState} from './edit-state.js';
+
+/** A history line as kept: its `seq` is where it stands in the table's history. */
+type AuditLine = Omit<AuditEntryLike, 'seq'>;
 
 export interface MemoryColumnJson {
   type: string;
@@ -230,7 +233,7 @@ export class MemoryDomainBackend implements DomainBackend {
       return refs.get(name);
     };
     const results: DomainTransactionResultLike[] = new Array(ops.length);
-    const audit: [MemoryTable, AuditEntryLike][] = [];
+    const audit: [MemoryTable, AuditLine][] = [];
     const tx = uuid4();
     const ts = new Date().toISOString();
     for (const index of order) {
@@ -356,7 +359,7 @@ export class MemoryTable implements DomainTableLike {
   /** Every ref column → its target address. */
   readonly refs: Record<string, string>;
   /** What every transaction that touched this table recorded, oldest first. */
-  readonly history: AuditEntryLike[] = [];
+  readonly history: AuditLine[] = [];
   /** One bump per transaction that wrote this table's rows — the memory twin of
    * `domain_tables.change_seq` (consolidation 1-5), so `probe` answers an unscoped read with a
    * token instead of a scan, exactly as `DgDomainTable` does. */
@@ -521,8 +524,10 @@ export class MemoryTable implements DomainTableLike {
     return this._backend.transaction(ops);
   }
 
-  audit(id: string): Promise<AuditEntryLike[]> {
-    return Promise.resolve(this.history.filter((line) => line.id === id));
+  audit(id: string, page: {limit?: number, before?: number} = {}): Promise<AuditEntryLike[]> {
+    const lines = this.history.map((line, seq) => ({...line, seq}))
+      .filter((line) => line.id === id && (page.before === undefined || line.seq < page.before));
+    return Promise.resolve(lines.slice(-Math.min(Math.max(page.limit ?? 100, 1), 1000)));
   }
 
   /** The soft delete undone, as the server's `POST …/{id}/restore`: a row whose ref column points
@@ -535,9 +540,10 @@ export class MemoryTable implements DomainTableLike {
   }
 
   /** The filtered bulk edit, as the server's `POST …/{table}/update`: a non-empty filter selects
-   * the LIVE rows the caller may edit, `values` is checked against the writable columns before
-   * anything is written, and at most `limit` rows (the server's cap of {@link maxUpdateWhereRows}
-   * at most) are patched inside ONE transaction — `hasMore` says the filter matched past the cap.
+   * the LIVE rows the caller may edit that `values` would change (so a rerun moves on), `values`
+   * is checked against the writable columns before anything is written, and at most `limit` rows
+   * (the server's cap of {@link maxUpdateWhereRows} at most) are patched inside ONE transaction —
+   * `hasMore` says the filter matched past the cap.
    * Any refusal rolls the whole batch back. */
   async updateWhere(filter: DomainQueryLike['filter'], values: Record<string, unknown>,
     options: {limit?: number} = {}): Promise<{updated: number, hasMore: boolean}> {
@@ -554,8 +560,10 @@ export class MemoryTable implements DomainTableLike {
     // as the server clamps it: a limit of 0 would report `hasMore` forever and write nothing
     const cap = Math.max(1, Math.min(options.limit ?? MemoryTable.maxUpdateWhereRows,
       MemoryTable.maxUpdateWhereRows));
-    // the Edit predicate narrows the selection silently, as the server's does
-    const matched = (await this._where({filter})).filter((row) => this._canEdit(row));
+    const plain = (v: unknown) => v instanceof Date ? v.toISOString() : v ?? null;
+    // the Edit predicate and the values narrow the selection silently, as the server's do
+    const matched = (await this._where({filter})).filter((row) => this._canEdit(row) &&
+      Object.entries(values).some(([column, value]) => !Component.sameValue(plain(row[column]), plain(value))));
     const ids = matched.slice(0, cap).map((row) => String(row.id));
     await this.transaction(ids.map((id) => ({op: 'update' as const, table: this.address, id, values})));
     return {updated: ids.length, hasMore: matched.length > cap};

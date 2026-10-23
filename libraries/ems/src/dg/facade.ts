@@ -10,7 +10,7 @@ import {emsBackends} from '../core/domain-backend.js';
 import * as DG from 'datagrok-api/dg';
 import {Access, Rows, divV, span, timestamp, text} from '@datagrok-libraries/u2';
 import type {Capability, IProperty, ObjectRenderer, Action, ColumnOf, DomainRowLike, RowValues, RowView,
-  ReadonlySignal} from '@datagrok-libraries/u2';
+  ReadonlySignal, NotifyHandle} from '@datagrok-libraries/u2';
 import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
 import {DomainSource} from '../core/domain-source.js';
 import type {DomainSourceOptions} from '../core/domain-source.js';
@@ -27,6 +27,9 @@ import {DomainForm} from './form.js';
 import {DomainGrid, DomainDataTable} from './grid.js';
 import {DomainHistory} from './history.js';
 import {openImport} from './import.js';
+import {DomainViews} from './views.js';
+import type {DomainViewsOptions} from './views.js';
+import type {DomainImporter} from './import.js';
 import {bulkEdit} from './bulk.js';
 import {BindingDialog, BindingWizard, createBinding} from './authoring/binding-dialog.js';
 import {BindingEditDialog, editBinding} from './authoring/binding-edit-dialog.js';
@@ -138,6 +141,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   renderer: ObjectRenderer<RowView<TRow>>;
   /** The renderer the handle was built with — what tells a table an app dressed from a bare one. */
   readonly defaultRenderer: ObjectRenderer<RowView<TRow>>;
+  /** What every import of the table does to its rows first — derived columns, rows already there. */
+  importer: DomainImporter | undefined;
 
   private static readonly _bySource = new WeakMap<DomainSource, DomainTable>();
   private static readonly _byRow = new WeakMap<ReadonlySignal<RowView | null>, DomainSource>();
@@ -204,7 +209,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   /** Opens a saved row: the entity page of the app open over this table (find-or-activate), else
    * the platform's entity view. */
   open(row: RowView<TRow>): void {
-    if (Rows.isDraft(row) || DomainApp.activate(DomainApp.baseOf(this.address), row.id))
+    if (Rows.isDraft(row) || DomainApp.activate(DomainApp.baseOf(this.address), row.id) ||
+        DomainViews.openRow(this.address, row.id))
       return;
     this.handler.openRow(this.row(row));
   }
@@ -325,13 +331,14 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     source.guard(() => this._validate(source));
     // last resort, after every guard: the writer refused over a cell and named neither
     source.nameCell = (row, column, problem) => this._nameCell(row as RowView<TRow>, column, problem);
-    // every refused save is one balloon, form or not; a load failure is the list's and the hint's
-    // to show
+    // every refused save is one balloon, form or not, closed once the refusal is settled; a load
+    // failure is the list's and the hint's to show
+    let balloon: NotifyHandle | null = null;
     source.effect(() => {
       const error = source.error.value;
-      if (error !== undefined && source.state.peek() !== 'error' &&
-          DomainErrors.codeOf(error) !== DomainSource.REFUSED)
-        DomainErrors.report(error, source);
+      balloon?.close();
+      balloon = error !== undefined && source.state.peek() !== 'error' &&
+        DomainErrors.codeOf(error) !== DomainSource.REFUSED ? DomainErrors.report(error, source) : null;
     });
     source.start();
     return source;
@@ -396,6 +403,7 @@ export const domains = {
   children: (parent: DomainSource, options?: DomainChildrenOptions): DomainChildren =>
     new DomainChildren(parent, options),
   app: (options: DomainAppOptions): DomainApp => new DomainApp(options),
+  views: (options: DomainViewsOptions): DomainViews => new DomainViews(options),
   route,
   bulkEdit,
   /** The import wizard over a table: source → mapping → preview → the server's report. */

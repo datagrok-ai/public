@@ -8,7 +8,8 @@ import {emsBackends} from '../src/core/domain-backend.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, signal, Signal, Registry, SpecContext, renderSpec, registerAll, MemoryFrame, Rows, Access, notify} from '@datagrok-libraries/u2';
+import {backends, Scope, signal, Signal, Registry, SpecContext, renderSpec, registerAll, MemoryFrame, Rows, Access, notify,
+  Filters} from '@datagrok-libraries/u2';
 import {registerDomainSources} from '../src/core/registrations.js';
 import {DomainSource} from '../src/core/domain-source.js';
 import {SharedSession} from '../src/core/session.js';
@@ -1054,4 +1055,16 @@ source('afterSave: a count a later refresh outran never overwrites the refresh\'
   await saving;
   assert.equal(src.total.value, 3, 'the late count is dropped');
   src.dispose();
+});
+
+source('hosted: a host condition goes to the server as the ids the app answers', async () => {
+  emsBackends.domain = backend();
+  const off = Filters.operators.register({id: 'has', label: 'has', arity: 1, kinds: ['string'], editor: 'default', host: true});
+  const src = new DomainSource({table: 'grit.issue', query: 'title has "c1ccccc1"'}, env());
+  src.hosted = async () => ['i1', 'i3'];
+  src.start();
+  await flush();
+  assert.deepEqual(titles(src), ['Aspirin', 'Naproxen']);
+  src.dispose();
+  off();
 });

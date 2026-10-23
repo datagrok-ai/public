@@ -1944,9 +1944,12 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_Promote(this.dart, this.schema, this.table, id));
   }
 
-  /** Returns the row's audit trail (before/after diffs, in-transaction with each write). */
-  audit(id: string): Promise<DomainAuditEntry[]> {
-    return domainCall(api.grok_Dapi_Domains_RowAudit(this.dart, this.schema, this.table, id));
+  /** Returns the row's audit trail (before/after diffs, in-transaction with each write), oldest
+   * first: the newest `limit` events (default 100, at most 1000) whose `id` is below `before`.
+   * A page shorter than `limit` reaches the row's first event. */
+  audit(id: string, options?: {limit?: number; before?: number}): Promise<DomainAuditEntry[]> {
+    return domainCall(api.grok_Dapi_Domains_RowAudit(this.dart, this.schema, this.table, id,
+      options?.limit ?? null, options?.before ?? null));
   }
 
   /** Batched facet computation for filter panels: category counts, histograms, min/max, row count,

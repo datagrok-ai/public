@@ -1,4 +1,4 @@
-import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -17,7 +17,7 @@ category('DB: Data sync', () => {
   test('grok connect streaming and data sync', async () => {
     const func: DG.Func = await grok.functions.eval('DbTests:PostgresqlTableWide');
     await func.prepare().call(false, undefined, {processed: false});
-    await awaitCheck(() => grok.shell.tv?.table?.name === 'PostgresqlTableWide', 'Query first batch timeout', 30000);
+    await waitUntil(() => grok.shell.tv?.table?.name === 'PostgresqlTableWide', 'Query first batch timeout', 30000);
     grok.shell.closeTable(grok.shell.tv!.table!);
     grok.shell.tv?.close();
   }, {stressTest: true});
@@ -64,7 +64,6 @@ async function getDataQueryTime(dataQueryName: string): Promise<number> {
 
 async function basicCacheTest(query: string, times: number): Promise<void> {
   const firstExecutionTime = await getDataQueryTime(query);
-  await delay(1000);
   const secondExecutionTime = await getDataQueryTime(query);
   // eslint-disable-next-line max-len
   expect(firstExecutionTime > secondExecutionTime * times, true, `The first execution time ${firstExecutionTime} ms is not more than ${times}x the second execution time ${secondExecutionTime} ms for ${query}`);

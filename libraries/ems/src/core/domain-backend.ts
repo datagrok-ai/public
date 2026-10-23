@@ -215,6 +215,8 @@ export interface DomainBatchValidationLike {
  * transaction, by whom. */
 export interface AuditEntryLike {
   id: string;
+  /** The entry's place in the trail, ascending: the `before` that pages back past it. */
+  seq: number;
   tx_id: string;
   op: string;
   actor_id: string | null;
@@ -248,8 +250,9 @@ export interface DomainTableLike {
   transaction(ops: DomainTransactionOpLike[]): Promise<DomainTransactionResultLike[]>;
   /** The rows as a frame with the writer attached — the one collection a source holds. */
   frame(spec: DomainQueryLike): Promise<DomainFrameLike>;
-  /** A row's history, oldest first — the platform's `client.audit`. */
-  audit?(id: string): Promise<AuditEntryLike[]>;
+  /** A row's history, oldest first — the platform's `client.audit`: the newest `limit` entries
+   * (default 100, at most 1000) whose `seq` is below `before`. */
+  audit?(id: string, page?: {limit?: number, before?: number}): Promise<AuditEntryLike[]>;
   /** Brings a soft-deleted row back (`~is_deleted` off, the `'undelete'` audit op); refused with
    * `validation` where the row refers to a deleted parent. A backend that does not declare it
    * cannot answer a `deleted` query either — `DomainSource` refuses one over it. */

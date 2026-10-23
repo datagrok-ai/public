@@ -10,6 +10,7 @@ import './test/custom-export';
 import './test/url-inputs';
 import './test/project-export-data';
 import './test/run-comparison-extraction';
+import './test/run-comparison-views';
 import './test/run-comparison-matching';
 import './test/run-comparison-selection';
 import './test/run-comparison-builders';

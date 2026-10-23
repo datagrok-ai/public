@@ -7,6 +7,10 @@ import {TestScheduler} from 'rxjs/testing';
 import {createTestScheduler} from '../../../test-utils';
 import {map, take, takeUntil, toArray} from 'rxjs/operators';
 import {Subject} from 'rxjs';
+import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {
+  CONFIG_PATH, OUTPUT_OUTDATED_PATH, readInstanceState, readOutputOutdated,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 
 category('ComputeUtils: Driver mock wrapper', async () => {
   let testScheduler: TestScheduler;
@@ -223,5 +227,27 @@ category('ComputeUtils: Driver FuncCall wrapper', async () => {
     }, 10);
     const val = await adapter.getStateChanges('res', true).pipe(takeUntil(end$), toArray()).toPromise();
     expectDeepEqual(val, [null, 3]);
+  });
+});
+
+category('ComputeUtils: Driver saved run readers', async () => {
+  const probeCall = () =>
+    DG.Script.create('//name: rtdReadersProbe\n//language: javascript\n//output: int x\nx = 1;').prepare();
+
+  test('Outdated flag defaults to false and reads the saved value', async () => {
+    const call = probeCall();
+    expectDeepEqual(readOutputOutdated(call), false);
+    call.options[OUTPUT_OUTDATED_PATH] = serialize(true);
+    expectDeepEqual(readOutputOutdated(call), true);
+    call.options[OUTPUT_OUTDATED_PATH] = serialize(false);
+    expectDeepEqual(readOutputOutdated(call), false);
+  });
+
+  test('Instance state is undefined for a plain run and deserialized for a meta-call', async () => {
+    const call = probeCall();
+    expectDeepEqual(readInstanceState(call), undefined);
+    const state = {type: 'static', configId: 'wf', steps: [{type: 'funccall', configId: 'a', funcCallId: 'id1'}]};
+    call.options[CONFIG_PATH] = serialize(state);
+    expectDeepEqual(readInstanceState(call), state);
   });
 });

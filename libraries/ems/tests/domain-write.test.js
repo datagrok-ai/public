@@ -131,10 +131,11 @@ scoped('the table validators refuse a save no form ever saw', async () => {
   assert.equal(balloons.length, 1, 'one balloon for a refusal no form ever saw');
   assert.match(balloons[0].textContent, /Assign before escalating/);
   assert.equal(await source.save(), false, 'refused again');
-  assert.equal(document.body.querySelectorAll('.u2-notify-error').length, 2, 'one balloon per attempt');
+  assert.equal(document.body.querySelectorAll('.u2-notify-error').length, 1, 'the new refusal replaces the balloon');
   row.reporter = 'u1';
   await flush();
   assert.equal(source.error.value, undefined, 'the next edit takes the refusal back');
+  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'and its balloon');
   assert.match(source.summary.value, /unsaved change/);
   assert.equal(await source.save(), true);
   assert.equal(emsBackends.domain.tableSync('grit.issue').rows.find((r) => r.id === 'i2').priority, 'high');

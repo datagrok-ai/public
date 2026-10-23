@@ -35,6 +35,7 @@ import {applyDefaultGridFloatFormat, canUseResults, disposeViewers, getViewers, 
 import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
 import {getShareAction} from '../../sharing/sharing';
 import {getToggledInputs} from './input-toggles';
+import {compareRibbonIcon} from '../RunComparison/comparison-views';
 
 
 interface ScalarsState {
@@ -299,6 +300,7 @@ export const RichFunctionView = Vue.defineComponent({
     'stepRunChosen': (_call: DG.FuncCall, _readonly: boolean) => true,
     'saveToHistory': (_call: DG.FuncCall) => true,
     'publishRun': (_call: DG.FuncCall) => true,
+    'compareRequested': () => true,
     'runClicked': () => true,
     'actionRequested': (_actionUuid: string, _additionalParams?: Record<string, any>) => true,
     'consistencyReset': (_ioName: string) => true,
@@ -712,6 +714,10 @@ export const RichFunctionView = Vue.defineComponent({
       onClick: () => guardedExport(handler),
     })));
 
+    // the whole model or a standalone function, not a workflow step
+    const isComparable = Vue.computed(() => !!props.history && historyMode.value !== 'step' && !uiBlocked.value);
+
+
     const panelsItems = Vue.computed<RibbonMenuItem[]>(() => [
       {
         text: 'Show form',
@@ -760,6 +766,7 @@ export const RichFunctionView = Vue.defineComponent({
         tooltip: 'Save run to history',
         onClick: () => emit('saveToHistory', currentCall.value),
       }] : []),
+      ...(isComparable.value ? [compareRibbonIcon(() => emit('compareRequested'))] : []),
       ...(props.history && shareAction && !uiBlocked.value ? [{
         icon: 'share-alt',
         tooltip: shareAction.tooltip,
