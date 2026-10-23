@@ -30,6 +30,8 @@ const CHUNK_SIZE = 1000;
 const JOB_BASE_MS = 30000;
 /** How a job's timeout starts its message. */
 const JOB_TIMEOUT = 'a Crux job took longer than';
+/** How long past its own deadline an embedding may keep its worker before the worker is replaced (embed3d). */
+const EMBED3D_MARGIN_MS = 2000;
 const JOB_MS_PER_MOLECULE = {descriptors: 500, fingerprints: 20, alerts: 50, scaffoldTree: 200, properties: 20, qed: 20,
   toxicityAlerts: 50, notation: 50, inchi: 5};
 // Rascal's options for an activity cliff's MCS (CruxService.pairUncommonAtomsAndBonds): RDKit's defaults but these
@@ -143,6 +145,9 @@ class CruxWorkerClient extends WorkerMessageBusClient {
     this.call('chemQed', [molecules]);
 
   inchiInputs = (molecules: string[]): Promise<(Uint8Array | '' | null)[]> => this.call('inchiInputs', [molecules]);
+
+  chemEmbed3d = (molecule: string, options: string): Promise<string | null> =>
+    this.call('chemEmbed3d', [molecule, options]);
 
   chemAlerts = (molecules: (string | null)[], catalogs: string[], atoms: boolean):
     Promise<{[catalog: string]: (ToxicityAlert[] | string[] | null)[]}> =>
@@ -511,6 +516,33 @@ export class CruxService {
       }
     }));
     return results;
+  }
+
+  /**
+   * The 3D Structure pane's coordinates (widgets/structure3d.ts): crux's `chemEmbed3d` of `molecule` with `options`
+   * on the least busy worker, the MOL block or null where Crux makes none. The embedding's own deadline (`timeoutMs`)
+   * ends a molecule ETKDG would not finish, throwing "chemEmbed3d: timed out ...", and leaves the worker as it was; a
+   * worker still busy {@link EMBED3D_MARGIN_MS} past it is replaced, alone (as a cluster past its limit is).
+   */
+  async embed3d(molecule: string, options: {timeoutMs: number}): Promise<string | null> {
+    const w = this.workers.indexOf(this.leastBusy());
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<'late'>((resolve) =>
+      timer = setTimeout(() => resolve('late'), options.timeoutMs + EMBED3D_MARGIN_MS));
+    try {
+      const done = await Promise.race([this.workers[w].chemEmbed3d(molecule, JSON.stringify(options)), late]);
+      if (done === 'late') {
+        this.restartWorker(w);
+        throw new Error(`chemEmbed3d: timed out after ${options.timeoutMs} ms (the worker was replaced)`);
+      }
+      return done;
+    } catch (e: any) {
+      if (/RuntimeError|unreachable|out of bounds|memory/i.test(String(e?.message ?? e)))
+        this.restartWorker(w); // its instance may be broken
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   /** scripts/scaffold_tree.py's JSON of the molecules, from one worker. */

@@ -231,6 +231,8 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
       result = {results, none, unconverted: (args[0] as string[]).flatMap((m, i) => m && results[i] === none ? [i] : [])};
     } else if (op === 'chemProperties') // Chem's property table (widgets/properties.ts)
       result = JSON.parse(chemWasm.chemProperties(args[0], args[1]));
+    else if (op === 'chemEmbed3d') // the 3D Structure pane's coordinates (widgets/structure3d.ts); a timeout throws
+      result = chemWasm.chemEmbed3d(args[0], args[1]) ?? null;
     else if (op === 'inchiInputs') // Crux mode's InChI: the library's input per molecule (engine/worker-jobs.ts)
       result = inchiInputs(args[0], transfer);
     else if (op === 'chemQed') // Crux mode's drug-likeness: QED and its properties (widgets/drug-likeness.ts)

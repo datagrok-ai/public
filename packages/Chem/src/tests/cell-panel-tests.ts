@@ -17,7 +17,7 @@ import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import * as CONST from './const';
 import {structure2dWidget} from '../widgets/structure2d';
-import {cruxEmbed3d, structure3dWidget} from '../widgets/structure3d';
+import {cruxEmbed3d, embed3dOptions, isEmbedTimeout, structure3dWidget} from '../widgets/structure3d';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {molV2000, molV3000} from './utils';
 import {checkPackage} from '../utils/elemental-analysis-utils';
@@ -202,18 +202,18 @@ category('cell panel', async () => {
   });
 
   test('structure3d-widget: Crux mode, chemEmbed3d', async () => {
-    // the panel's 2D MOL block embedded by crux's chemEmbed3d (the script's ETKDG, crux-core decision chem-props),
-    // no Python; the molecule as drawn: its atoms and bonds, 3D coordinates
+    // the panel's 2D MOL block embedded by crux's chemEmbed3d on a Crux worker (ETKDGv3 without Hs, crux-core decision
+    // chem-props), no Python; the molecule as drawn: its atoms and bonds, 3D coordinates
     const rdKitModule = chemCommonRdKit.getRdKitModule();
     setChemicalEngine(ChemicalEngine.RDKit);
     try {
-      expect(cruxEmbed3d(CONST.SMILES), null, 'RDKit mode: the script');
+      expect(await cruxEmbed3d(CONST.SMILES), null, 'RDKit mode: the script');
       setChemicalEngine(ChemicalEngine.Crux);
       expect(await cruxReady(), true, 'the Crux module loads');
       for (const format of ['smiles', 'molV2000', 'molV3000']) {
         const flat = _convertMolNotation(molFormats_[format], DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock,
           rdKitModule);
-        const block = cruxEmbed3d(flat);
+        const block = await cruxEmbed3d(flat);
         expect(block !== null, true, `${format}: embedded`);
         const lines = (b: string) => b.split('\n');
         const counts = (b: string) => lines(b)[3].substring(0, 6);
@@ -224,12 +224,45 @@ category('cell panel', async () => {
           l.substring(31, 34)).join(), `${format}: the atoms`);
         expect(atoms.some((l) => Number(l.substring(20, 30)) !== 0), true, `${format}: 3D coordinates`);
       }
-      expect(cruxEmbed3d(CONST.EMPTY), null, 'no block for no atoms: the script\'s path');
+      expect(await cruxEmbed3d(CONST.EMPTY), null, 'no block for no atoms: the script\'s path');
       await structure3dWidget(CONST.SMILES);
     } finally {
       setChemicalEngine(null);
     }
   });
+
+  test('structure3d-widget: Crux mode, a large macrocycle embeds within its deadline, or gives up', async () => {
+    // a macrocyclic peptide the old embedding (ETKDG v1, unbounded attempts) never finished, freezing the pane
+    // (the product owner, 2026-10-23); with Crux mode's options it embeds, and a deadline too short for it throws
+    // and leaves the worker usable
+    const peptide = 'CCN=C(NCC)NCCCC[C@H]1NC(=O)[C@H](Cc2cc(I)c(O)c(I)c2)NC(=O)[C@@H]([C@H](C)O)NC(=O)[C@H](Cc2cccnc2)' +
+      'NC(=O)[C@H](Cc2ccc(Oc3ccc(O)cc3)cc2)NC(=O)c2ccccc2N(C)C(=O)C(C)=NC(=O)[C@@H](Cc2ccc(F)cc2)NC(=O)[C@H](Cc2cscn2)' +
+      'NC(=O)[C@H](C(C)C)N(C)C(=O)[C@@H](Cc2ccc(OC)cc2)NC(=O)CN(C)C(=O)[C@H]2CCCN2C(=O)Cn2ccc3ccc(cc3c2=O)N2CCN(CC2)' +
+      'C(=O)[C@H]2C[C@@H](O)CN2C(=O)[C@H]([C@@H](C)O)N(C)C1=O';
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      let started = performance.now();
+      const block = await cruxEmbed3d(peptide);
+      expect(block !== null && block.includes('M  END'), true, 'the peptide embeds');
+      expect(performance.now() - started < embed3dOptions().timeoutMs, true, 'within the deadline');
+      started = performance.now();
+      let error: unknown = null;
+      try {
+        // the old path (ETKDG v1, the legacy minimization, no random coordinates), which never embedded it
+        await cruxEmbed3d(peptide, {etkdg: 'v1', legacy: true, randomCoords: false, maxIterations: 0, timeoutMs: 300});
+      } catch (e) {
+        error = e;
+      }
+      expect(isEmbedTimeout(error), true, `a 300 ms deadline throws the timeout (got ${error})`);
+      expect(performance.now() - started < 300 + 1500, true, 'soon after the deadline');
+      expect((await cruxEmbed3d(CONST.SMILES))?.includes('M  END'), true, 'the worker embeds the next molecule');
+      const widget = await structure3dWidget(CONST.SMILES);
+      expect(widget.root.textContent?.includes('No 3D coordinates'), false, 'the pane draws');
+    } finally {
+      setChemicalEngine(null);
+    }
+  }, {timeout: 60000});
 
 
   test('toxicity', async () => {

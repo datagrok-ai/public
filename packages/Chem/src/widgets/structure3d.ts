@@ -5,22 +5,56 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {ChemicalEngine, engineInEffect} from '../engine/chem-engine';
-import {ChemWasm, cruxModuleSync} from '../engine/crux-module';
-import {cruxOrRdKit} from '../engine/fallback';
+import {ChemWasm, cruxModuleSync, noteCruxError} from '../engine/crux-module';
+import {warnCruxFallback} from '../engine/fallback';
+import {getCruxService} from '../crux/crux-searches';
 import type NGL from 'ngl';
 
 const WIDTH = 300;
 const HEIGHT = 300;
 
+/** crux's `chemEmbed3d` options (its JSON). */
+export interface Embed3dOptions {
+  etkdg?: 'v1' | 'v3' | 'srv3';
+  legacy?: boolean | 'auto';
+  randomCoords?: boolean | 'auto';
+  maxIterations?: number;
+  timeoutMs: number;
+  forceField?: 'none' | 'uff';
+  seed?: number;
+}
+
 /**
- * In Crux mode, the script's 3D MOL block by crux's `chemEmbed3d` (RDKit's ETKDG with the fresh script's seed, no
- * Hs added); null otherwise and where Crux gets no 3D block, so the script runs ("Chemical Engine", engine/README.md).
+ * Crux mode's embedding options, crux's own recommendation (`chemEmbed3dRecommendedOptions`, crux-core decision
+ * chem-props, "3D coordinates"): ETKDGv3 without Hs, random starting coordinates for large molecules, at most 200
+ * attempts, a UFF clean-up and a 10 s deadline, so a molecule ETKDG cannot embed in time gives up instead of holding
+ * its worker.
  */
-export function cruxEmbed3d(molecule: string): string | null {
+export function embed3dOptions(): Embed3dOptions {
+  return JSON.parse((cruxModuleSync() as unknown as ChemWasm).chemEmbed3dRecommendedOptions());
+}
+
+/** Whether `e` is an embedding's timeout (crux's `chemEmbed3d` throws it; the worker stays usable). */
+export const isEmbedTimeout = (e: unknown): boolean =>
+  String((e as Error)?.message ?? e).startsWith('chemEmbed3d: timed out');
+
+/**
+ * In Crux mode, `molecule`'s 3D MOL block by crux's `chemEmbed3d` on a Crux worker ({@link embed3dOptions}); null
+ * otherwise, where Crux makes no block and where the call fails, so the script runs ("Chemical Engine",
+ * engine/README.md). A timeout throws: the script would not finish either.
+ */
+export async function cruxEmbed3d(molecule: string, options?: Embed3dOptions): Promise<string | null> {
   if (engineInEffect() !== ChemicalEngine.Crux)
     return null;
-  return cruxOrRdKit('3D Structure', () =>
-    (cruxModuleSync() as unknown as ChemWasm).chemEmbed3d(molecule) ?? null, () => null);
+  try {
+    return await (await getCruxService()).embed3d(molecule, options ?? embed3dOptions());
+  } catch (e) {
+    if (isEmbedTimeout(e))
+      throw e;
+    noteCruxError(e);
+    warnCruxFallback('3D Structure', e);
+    return null;
+  }
 }
 
 export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
@@ -33,10 +67,12 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   }
   let sdf: string;
   try {
-    sdf = MolfileHandler.getInstance(molecule).z.every((coord) => coord === 0) ? cruxEmbed3d(molecule) ??
+    sdf = MolfileHandler.getInstance(molecule).z.every((coord) => coord === 0) ? await cruxEmbed3d(molecule) ??
       (await Chem.smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n') : molecule;
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule has no atoms or malformed'));
+    return new DG.Widget(ui.divText(isEmbedTimeout(e) ?
+      `No 3D coordinates: the embedding took longer than ${embed3dOptions().timeoutMs / 1000} s` :
+      'Molecule has no atoms or malformed'));
   }
   const stringBlob = new Blob([sdf], {type: 'text/plain'});
 
