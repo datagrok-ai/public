@@ -1,12 +1,18 @@
 # Cross-viewer features — what cannot be said yet
 
-Written during the Grid / Filter panel / Legend gap round of 23 Oct 2026 for the features that sit in
+Written during the viewer gaps round of 23 Oct 2026 for the features that sit in
 this folder rather than in a viewer's own: `viewers-docking.feature`,
 `viewers-layout-download.feature` (added in that round: View > Layout > Download gives a `.layout`
-file holding the docked viewers) and `molecule-categories.feature`.
+file; what it holds is the layout API's test) and `molecule-categories.feature`.
 
 ## Still open
 
+- **Properties set through the API step, not the Context Panel** (every viewer's TestTrack case: "In Context
+  Panel > X set Y"). Most viewer features change a property with `user sets {string} property of {widget}`,
+  which writes the look directly; the property-grid editor the user actually clicks is exercised only in a
+  few places (`user selects ... in ... property in context panel`, `user checks ... property in context
+  panel`). Not rewritten in this round: switching every feature to the property-grid gestures is a sweep over
+  others' features. The gestures exist; what is missing is the decision to use them by default.
 - **The splitter between two docked viewers** (`viewers-docking-ui.md`: "drag the splitter between
   them"). dock-spawn's splitter bars carry no name and report no box, so neither a drag nor "the
   left viewer got wider" can be aimed. Needs a name per splitter (`dock-splitter-<n>`, or named by
