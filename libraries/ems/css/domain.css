@@ -414,12 +414,6 @@
   display: none;
 }
 
-/* a ribbon row has no room for a second line: a filter that does not parse says so with the red
-   editor and its tooltip, never by pushing the buttons beside it off the bar */
-.u2-domain-filters .u2-input-error {
-  display: none;
-}
-
 /* the condition builder in a pane on the list's left */
 .u2-domain-app-list > .u2-splitter {
   flex: 1;

@@ -40,7 +40,8 @@ export class DomainFilters extends Control {
   readonly input: ReadonlySignal<FilterQueryInput | FilterBuilder | null>;
   /** What is wrong with the filter in the box while it is one the rows do NOT answer — a refused
    * commit standing over the applied query; null while the two agree, the query in force having
-   * been refused included (the list's error says what happened to that one). */
+   * been refused included (the list's error says what happened to that one). A builder row still
+   * waiting for its value is a draft, not a problem: the rows answer the complete conditions. */
   readonly problem: ReadonlySignal<string | null>;
 
   /** Per source: how a query a control wrote bound is spelled in the box — `DomainApp.presets`
@@ -64,6 +65,8 @@ export class DomainFilters extends Control {
     this.input = this._input;
     this.problem = computed(() => {
       const input = this._input.value;
+      if (input instanceof FilterBuilder)
+        return input.problems.value.find((p) => p.code !== 'missing-value')?.message ?? null;
       const message = input?.problems.value[0]?.message ?? null;
       if (message === null || !(input instanceof FilterQueryInput))
         return message;

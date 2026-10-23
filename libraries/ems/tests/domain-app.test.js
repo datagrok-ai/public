@@ -8,7 +8,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, Rows, notify, allowedActions, Control} from '@datagrok-libraries/u2';
+import {backends, Scope, Rows, notify, allowedActions, Control, Filters} from '@datagrok-libraries/u2';
 import {SharedSession} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
 
@@ -601,12 +601,23 @@ scoped('a refused filter leaves the rows as they were: shown stale, the count st
   // and what it says is the box's own refusal, not a placeholder: a tooltip on a red box is not read
   assert.equal(a.filterProblem.value, box.problems.value[0].message);
   assert.equal(a.summary.value, `3 issues — ${a.filterProblem.value}`);
-  assert.equal(a.status.value.notice, a.filterProblem.value);
+  assert.equal(a.status.value.problem, a.filterProblem.value, 'in the error colour, beside the count');
+  assert.equal(a.status.value.notice, null);
   box.text.value = 'done = true';
   assert.equal(box.commit(), true);
   await flush();
   assert.equal(a.list.root.classList.contains('u2-domain-list-stale'), false);
   assert.equal(a.summary.value, '1 issue');
+  a.dispose();
+});
+
+scoped('a condition just added in the builder is a draft: the rows are not dimmed and the status says nothing', async () => {
+  const {app: a} = await app({filters: {mode: 'builder', placement: 'left'}});
+  await flush();
+  a.filters.input.value.value.value = Filters.group('and', [Filters.cond('title', '=', null)]);
+  await flush();
+  assert.equal(a.list.root.classList.contains('u2-domain-list-stale'), false);
+  assert.deepEqual({...a.status.value}, {count: '3 issues', selected: 0, notice: null, problem: null});
   a.dispose();
 });
 

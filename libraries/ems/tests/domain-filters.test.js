@@ -107,6 +107,23 @@ scoped('the builder keeps a half-written row and sends only the complete conditi
   src.dispose();
 });
 
+scoped('a builder row waiting for its value is a draft; a value the column cannot take is a problem', async () => {
+  const src = await issues({query: ''});
+  const filters = domains.filters(src, {mode: 'builder'});
+  await flush();
+  const builder = filters.input.value;
+  builder.value.value = Filters.group('and', [Filters.cond('done', '=', true), Filters.cond('title', '=', null)]);
+  await flush();
+  assert.equal(builder.problems.value[0].code, 'missing-value');
+  assert.equal(filters.problem.value, null, 'the rows answer the complete conditions: nothing to report');
+  assert.equal(src.query.value, 'done = true');
+  builder.value.value = Filters.group('and', [Filters.cond('weight', '=', 'heavy')]);
+  await flush();
+  assert.notEqual(filters.problem.value, null, 'a wrong value is not a draft');
+  filters.dispose();
+  src.dispose();
+});
+
 scoped('a change while the session is dirty asks: cancel puts the filter back, discard applies it', async () => {
   const src = await issues({query: 'done = true'});
   const filters = domains.filters(src);

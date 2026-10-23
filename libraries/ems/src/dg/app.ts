@@ -340,7 +340,7 @@ export class DomainApp extends Control {
       // the rows answer the filter that was applied, not the one in the box: while that one is
       // invalid they are shown stale, and a refusal of the old one is not the news
       if (!entity && this.list.stale.value && !dirty)
-        return {count, selected, notice: this._filterProblem.value ?? 'Filter not applied', problem};
+        return {count, selected, notice: null, problem: this._filterProblem.value ?? 'Filter not applied'};
       // a live source saw the collection move while this session had changes to protect: what is
       // pending still matters, and so does that the rows under it are no longer the server's
       if (source !== null && source.stale.value)
