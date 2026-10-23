@@ -2,9 +2,9 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: bceb40f00e975b2fe766b4e99604715305121be7
+crux_core_rev: 1dbd6d356a352d141a36b8372e43e04e3b7fd390
 crux_core_dirty: False
-built_utc: 2026-10-23T04:52:02.585Z
+built_utc: 2026-10-23T06:13:37.194Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
@@ -13,18 +13,18 @@ wasm_bindgen.version: 0.2.129
 wasm_bindgen.flags: --target web --remove-name-section
 wasm_opt.version: wasm-opt version 133 (version_133)
 wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-bulk-memory-opt --enable-call-indirect-overlong --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 5100452
-files.chem_wasm_bg.wasm.gzip9: 1928575
-files.chem_wasm_bg.wasm.brotli11: 1423003
+files.chem_wasm_bg.wasm.raw: 5102917
+files.chem_wasm_bg.wasm.gzip9: 1929709
+files.chem_wasm_bg.wasm.brotli11: 1424453
 files.chem_wasm.js.raw: 140606
 files.chem_wasm.js.gzip9: 21517
 files.chem_wasm.js.brotli11: 18117
-cargo_artifact.raw: 7321306
-cargo_artifact.gzip9: 2391951
-cargo_artifact.brotli11: 1704900
+cargo_artifact.raw: 7324002
+cargo_artifact.gzip9: 2393558
+cargo_artifact.brotli11: 1706192
 
-vendored from: a clean build of crux-core main bceb40f00 (build-ship.sh chem)
-chem_wasm_bg.wasm: 5,100,452 B raw, sha256 1f739279dbb3c5ef
+vendored from: a clean build of crux-core main 1dbd6d356 (build-ship.sh chem)
+chem_wasm_bg.wasm: 5,102,917 B raw, sha256 1570f32b89c0634d
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes: get_cxsmarts with the coordinates (chem-cxsmarts-coords), chemEmbed3d for the 3D Structure panel (chem-embed3d) and get_inchi_input, InChI's input for crux-sketch's InChI module (chem-inchi-split), on top of 8d14d9eb2's (chemQed, chemAlerts, molzip, R-group stereo, fingerprint options, MMPA, chemProperties)
+includes: molzip with a stereo double bond between two attachment points (no panic), RDKit's ring-stereo invariant thrown instead of a trap in reactions, R-group labels in RDKit's string order (chem-wasm-fixes-1023), on top of bceb40f00's (CXSMARTS coordinates, chemEmbed3d, get_inchi_input, chemQed, chemAlerts, molzip, R-group stereo, fingerprint options, MMPA, chemProperties)
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)
