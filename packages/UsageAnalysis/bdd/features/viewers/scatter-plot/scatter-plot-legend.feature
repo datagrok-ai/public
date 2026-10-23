@@ -144,7 +144,7 @@ Feature: Scatter plot legend
     Then all rows should pass the filter
     And scatter plot viewer should show 872 rows
     When user clicks on "Asian" item in the legend of scatter plot viewer
-    Then scatter plot viewer should show fewer rows than before
+    Then scatter plot viewer should show 13 rows
     And scatter plot viewer should have less ink than before
     And all rows should pass the filter
     When user clicks on "Asian" item in the legend of scatter plot viewer

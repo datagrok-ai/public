@@ -149,5 +149,7 @@ Feature: Box plot group comparison
     And user removes "SIMPSON_VAL" column
     And user sets "Adjust By" property of box plot viewer to ""
     Then "Adjust By" property of box plot viewer should be ""
+    When user hovers over box plot viewer
+    Then "Adjust by" column input in box plot viewer should be hidden
     And "Adjustment" property of box plot viewer should be ""
     And "Method" property of box plot viewer should be ""

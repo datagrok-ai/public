@@ -156,8 +156,10 @@ test.describe("Box plot group comparison", () => {
       await session.step(149, "And user removes \"SIMPSON_VAL\" column", () => removeColumn(page, "SIMPSON_VAL"));
       await session.step(150, "And user sets \"Adjust By\" property of box plot viewer to \"\"", () => setProperty(page, "Adjust By", el("box plot viewer"), ""));
       await session.step(151, "Then \"Adjust By\" property of box plot viewer should be \"\"", () => propertyShouldBe(page, "Adjust By", el("box plot viewer"), ""));
-      await session.step(152, "And \"Adjustment\" property of box plot viewer should be \"\"", () => propertyShouldBe(page, "Adjustment", el("box plot viewer"), ""));
-      await session.step(153, "And \"Method\" property of box plot viewer should be \"\"", () => propertyShouldBe(page, "Method", el("box plot viewer"), ""));
+      await session.step(152, "When user hovers over box plot viewer", () => hoverOver(page, el("box plot viewer")));
+      await session.step(153, "Then \"Adjust by\" column input in box plot viewer should be hidden", () => shouldBe(page, el("\"Adjust by\" column input in box plot viewer"), "hidden"));
+      await session.step(154, "And \"Adjustment\" property of box plot viewer should be \"\"", () => propertyShouldBe(page, "Adjustment", el("box plot viewer"), ""));
+      await session.step(155, "And \"Method\" property of box plot viewer should be \"\"", () => propertyShouldBe(page, "Method", el("box plot viewer"), ""));
     });
     run.finish();
   });

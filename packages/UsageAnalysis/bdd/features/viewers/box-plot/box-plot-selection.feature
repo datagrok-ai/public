@@ -80,8 +80,10 @@ Feature: Box plot selection and highlight
     And user clears the row selection
 
   Scenario: The hover tooltip and Show Mouse Over Point
-    When user hovers over the "marker" area of box plot viewer
+    When user takes a snapshot of box plot viewer
+    And user hovers over the "marker" area of box plot viewer
     Then tooltip should be visible
+    And box plot viewer should have repainted
     When user moves the pointer away from box plot viewer
     And user sets "Show Mouse Over Point" property of box plot viewer to "false"
     And user hovers over the "marker" area of box plot viewer

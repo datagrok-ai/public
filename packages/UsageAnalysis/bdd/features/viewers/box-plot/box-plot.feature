@@ -127,6 +127,7 @@ Feature: Box plot property surface
     Then "Marker Color" column input in box plot viewer should be hidden
     When user sets "Show Category Selector" property of box plot viewer to "false"
     Then box plot viewer should have repainted by at least 2000 pixels
+    And category1 column input in box plot viewer should be hidden
     When user sets "Show Value Axis" property of box plot viewer to "false"
     Then box plot viewer should have repainted by at least 2000 pixels
     And box plot viewer should not have a "y axis" area
@@ -149,6 +150,7 @@ Feature: Box plot property surface
     When user hovers over box plot viewer
     Then "Marker Size" column input in box plot viewer should be hidden
     And Value column input in box plot viewer should be visible
+    And category1 column input in box plot viewer should be visible
     And "Marker Color" column input in box plot viewer should be visible
 
   Scenario: Axis font

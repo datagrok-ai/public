@@ -47,11 +47,14 @@ Feature: Viewer chrome — title and description, Pick Up / Apply, the context m
     And no errors should have been logged
 
     Examples:
-      | viewer    |
-      | bar chart |
-      | box plot  |
-      | histogram |
-      | pc plot   |
+      | viewer       |
+      | bar chart    |
+      | box plot     |
+      | histogram    |
+      | pc plot      |
+      | pie chart    |
+      | line chart   |
+      | density plot |
 
   Scenario Outline: Pick Up / Apply copies the <viewer>'s <property> onto a second <viewer>, and the two stay apart
     Given user adds a <viewer> viewer
@@ -73,6 +76,8 @@ Feature: Viewer chrome — title and description, Pick Up / Apply, the context m
       | box plot     | Category 1  | RACE      | DIS_POP   |
       | trellis plot | Viewer Type | Bar chart | Histogram |
       | line chart   | lineWidth   | 3         | 5         |
+      | bar chart    | Stack       | SEX       | RACE      |
+      | histogram    | Bins        | 15        | 30        |
 
   Scenario Outline: Tooltip > Edit... opens the tooltip editor of the <viewer>, and CANCEL closes it
     Given user adds a <viewer> viewer

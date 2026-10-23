@@ -62,6 +62,8 @@ Feature: Box plot filter semantics
     And user sets "Marker Color Column" property of box plot viewer to "TPSA"
     Then "Marker Color Column" property of box plot viewer should be "TPSA"
     And box plot viewer should have a "color scale" area
+    And the "color scale" area of box plot viewer should lie outside the "y axis" area
+    And the "color scale" area of box plot viewer should lie outside the "x axis" area
     And no errors should have been logged
     When user resets the filter
     Then the color scale of box plot viewer should cover a wider range than before
