@@ -10,9 +10,10 @@ import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {
-  couldBeSaved, hasAddControls, PipelineWithAdd, hasAnyInconsistency, statusToTooltip, statesToStatus, statusInputs,
-  friendlyIoName,
+  couldBeSaved, hasAddControls, PipelineWithAdd, hasAnyInconsistency, statusToTooltip, statusInputs,
 } from '../../utils';
+import {friendlyIoName, statesToStatus} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
 import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {showSourceRunMenu, sourceRunLabel, sourceRunTooltip} from './source-run';
 import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';

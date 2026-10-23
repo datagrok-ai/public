@@ -2,6 +2,10 @@
 
 ## v.next
 
+* RTD: Added headless runs: `runWorkflow` (by provider) and `runWorkflowConfig` create a workflow from an instance config and, unless a step ready to run has validation errors, run every step that can run; the result state is an instance config tree with each step's values, status, run error, validations and consistency and each workflow's validations, plus a summary; `saveWorkflowRun` and `saveWorkflowConfig` save a result state as a new run, the way Duplicate builds a copy
+* RTD: `runSequence` takes a mock run function in mock mode
+* RTD: The export summary moved to `run-summary` (`getRunSummary`, `statesToStatus`); `ExportSummaryItem` extends `RunSummaryItem`, which adds the node `uuid`
+* RTD: Fixed a step read as running right after its run finished
 * RTD: Loading a saved run whose step function changed or was removed fails with an error naming the step and the missing inputs and outputs instead of a `TypeError`; a missing step function or provider is named in the error
 * Shared utils: Added `getInputToggles` for the `inputToggles` and `inputsHidden` function meta
 * Shared utils: Malformed JSON in the `features`, `dockSpawnConfig`, `customExports` and `mainParams` meta or the `viewer` annotation logs a warning and falls back to the default instead of throwing

@@ -23,6 +23,7 @@ import './test/validation-actions';
 import './test/input-toggles';
 import './test/tree-node';
 import './test/export-summary';
+import './test/headless-run';
 import './test/feedback';
 import './test/tree-utils';
 import './test/inspector-annotation-links';

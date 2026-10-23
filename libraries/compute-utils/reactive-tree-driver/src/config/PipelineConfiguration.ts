@@ -66,14 +66,11 @@ export interface ExportSummaryRollup {
   inconsistent: number,
 }
 
-export interface ExportSummaryItem {
+export interface RunSummaryItem {
   kind: 'step' | 'workflow',
-  /** Folders in the exported zip */
-  path: string[],
+  uuid: string,
   name: string,
   title?: string,
-  /** The step workbook in the zip; absent for workflows and for steps that are not loaded */
-  fileName?: string,
   /** The status the tree shows; absent for workflows and for steps that are not loaded */
   status?: StepStatus,
   runError?: string,
@@ -83,6 +80,13 @@ export interface ExportSummaryItem {
   inconsistentInputs: string[],
   /** Workflows only: counts over all steps below */
   rollup?: ExportSummaryRollup,
+}
+
+export interface ExportSummaryItem extends RunSummaryItem {
+  /** Folders in the exported zip */
+  path: string[],
+  /** The step workbook in the zip; absent for workflows and for steps that are not loaded */
+  fileName?: string,
 }
 
 export interface ExportCbInput {

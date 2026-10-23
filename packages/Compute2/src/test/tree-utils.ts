@@ -10,8 +10,8 @@ import {RestrictionType} from '@datagrok-libraries/compute-utils/reactive-tree-d
 import {
   couldBeSaved, findTreeNodeByPath, findTreeNodeParrent, getRelevantGlobalActions, hasAddControls,
   hasSubtreeAnyInconsistencies, hasSubtreeFixableInconsistencies, isDeletable, isDuplicable, isEachDraggable,
-  statesToStatus,
 } from '../utils';
+import {statesToStatus} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
 import {AugmentedStat} from '../components/TreeWizard/types';
 import {mockDynamicPipeline, mockFuncCall, mockStaticPipeline} from './state-fixtures';
 
