@@ -72,6 +72,11 @@ code the package runs. Datasets: `<reddata>/data/demo/chem/chembl/chembl-100k.cs
 - `node census.mjs <csv|smi> [molecules]` — molecule by molecule, where crux and Chem's RDKit disagree: A (RDKit reads
   it, crux cannot), B (the reverse), C (crux misses the molecule by RDKit's own canonical SMILES). `OUT=<tsv>` lists
   them; worker threads, ~1 minute for the 1M set.
+- `node compare100k.mjs [rows] [only=<names>] [--compare-only]` — every function Chem has moved to Crux, run with
+  Chem's own code on a large dataset (ChEMBL 100k by default) against RDKit mode's engine, RDKit.js 2026.03.6 and
+  Python RDKit 2026.3.6 (`compare100k.py`): identical counts, each difference classified by its cause, one-thread
+  times; `results.md` / `results.json` in `OUT`. The file's head lists its engines, functions and settings. The
+  2026-10-23 run: Crux = RDKit.js 2026.03.6 nearly everywhere; RDKit mode differs mostly by RDKit's own changes.
 - `node mem.mjs <csv> [molecules] [segment size]` — memory per indexed molecule, build speed, molecules crux cannot
   parse. The bytes per molecule include the build's high-water mark (wasm memory never shrinks), so measure on a
   big file: on the 1M set it reads 378 bytes.
