@@ -6,7 +6,7 @@ Feature: A legend that stays where it is put
   mini icon by its chevron stays folded while Position Auto and three resizes make the placement
   re-resolve, and only the icon's click opens it again. A legend column with hundreds of categories
   is docked on the right and lists every category of the rows the plot draws, and Position Auto
-  docks it too rather than laying it over the plot in a corner.
+  docks it too, where the four RACE categories go into a corner.
   From the `playwright-public/legend` specs "panning and zooming never move the legend",
   "a collapsed legend stays collapsed through any auto fallback", "hundreds of categories stay
   virtualised and scrollable" and "a large category count never enters corner mode". One journey
@@ -96,7 +96,10 @@ Feature: A legend that stays where it is put
     When user sets "Legend Position" property of scatter plot viewer to "Auto"
     Then the legend of scatter plot viewer should be docked
     And the legend of scatter plot viewer should list 872 items
-    When user sets "Legend Position" property of scatter plot viewer to "Right"
+    When user sets "Color" property of scatter plot viewer to "RACE"
+    Then the legend of scatter plot viewer should be in a corner
+    When user sets "Color" property of scatter plot viewer to "USUBJID"
+    And user sets "Legend Position" property of scatter plot viewer to "Right"
     And user filters rows where "SEX" is "F"
     Then the legend of scatter plot viewer should list 499 items
     And scatter plot viewer should show 499 rows

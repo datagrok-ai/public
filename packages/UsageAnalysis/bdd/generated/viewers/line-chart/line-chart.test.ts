@@ -21,18 +21,16 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {filterPasses} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, areaNarrower, areaPainted, areaRepainted, areaShorter, closeContextMenu, hasArea, hasNoArea, menuLists, moreInk, noErrors, openContextMenu, painted, pickFromContextMenu, propertyShouldBe, propertyShouldContain, readingIs, readingReads, repainted, reportsError, reportsNoError, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {descriptionAbove, descriptionBelow} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Line chart chrome, chart types and the empty chart", () => {
   const session = feature(test, "features/viewers/line-chart/line-chart.feature", import.meta.url);
   test("Line chart chrome, chart types and the empty chart", {tag: ["@journey", "@viewers", "@realizes:viewers.line-chart"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 10, page);
+    const run = journey(test, 9, page);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
     await session.step(18, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
     await session.step(19, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]), [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]);
@@ -163,28 +161,18 @@ test.describe("Line chart chrome, chart types and the empty chart", () => {
       await session.step(154, "When user sets \"showAggrTypeSelector\" property of line chart viewer to \"true\"", () => setProperty(page, "showAggrTypeSelector", el("line chart viewer"), "true"));
       await session.step(155, "Then no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("The description sits above the plot and Description Position moves it below", async () => {
-      await session.step(158, "When user sets \"description\" property of line chart viewer to \"Chemical space over the idea ids\"", () => setProperty(page, "description", el("line chart viewer"), "Chemical space over the idea ids"));
-      await session.step(159, "Then the description of line chart viewer should be above its content", () => descriptionAbove(page, el("line chart viewer")));
-      await session.step(160, "When user sets \"descriptionPosition\" property of line chart viewer to \"Bottom\"", () => setProperty(page, "descriptionPosition", el("line chart viewer"), "Bottom"));
-      await session.step(161, "Then the description of line chart viewer should be below its content", () => descriptionBelow(page, el("line chart viewer")));
-      await session.step(162, "When user sets \"descriptionVisibilityMode\" property of line chart viewer to \"Never\"", () => setProperty(page, "descriptionVisibilityMode", el("line chart viewer"), "Never"));
-      await session.step(163, "Then the description of line chart viewer should be hidden", () => shouldBe(page, el("the description of line chart viewer"), "hidden"));
-      await session.step(164, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["descriptionVisibilityMode","Always"],["descriptionPosition","Top"],["description",""]]), [["descriptionVisibilityMode","Always"],["descriptionPosition","Top"],["description",""]]);
-      await session.step(168, "Then no errors should have been logged", () => noErrors(page));
-    });
     await run.scenario("The chart-area context menu offers the groups the chart is configured through", async () => {
-      await session.step(171, "When user opens the context menu of line chart viewer", () => openContextMenu(page, el("line chart viewer")));
-      await session.step(172, "Then the open menu should list \"Reset View\"", () => menuLists(page, "Reset View"));
-      await session.step(173, "And the open menu should list \"Tools\"", () => menuLists(page, "Tools"));
-      await session.step(174, "And the open menu should list \"Data\"", () => menuLists(page, "Data"));
-      await session.step(175, "And the open menu should list \"Markers\"", () => menuLists(page, "Markers"));
-      await session.step(176, "And the open menu should list \"Chart Type\"", () => menuLists(page, "Chart Type"));
-      await session.step(177, "And the open menu should list \"Overview\"", () => menuLists(page, "Overview"));
-      await session.step(178, "And the open menu should list \"Selection\"", () => menuLists(page, "Selection"));
-      await session.step(179, "And the open menu should list \"Controls\"", () => menuLists(page, "Controls"));
-      await session.step(180, "When user closes the context menu", () => closeContextMenu(page));
-      await session.step(181, "Then no errors should have been logged", () => noErrors(page));
+      await session.step(158, "When user opens the context menu of line chart viewer", () => openContextMenu(page, el("line chart viewer")));
+      await session.step(159, "Then the open menu should list \"Reset View\"", () => menuLists(page, "Reset View"));
+      await session.step(160, "And the open menu should list \"Tools\"", () => menuLists(page, "Tools"));
+      await session.step(161, "And the open menu should list \"Data\"", () => menuLists(page, "Data"));
+      await session.step(162, "And the open menu should list \"Markers\"", () => menuLists(page, "Markers"));
+      await session.step(163, "And the open menu should list \"Chart Type\"", () => menuLists(page, "Chart Type"));
+      await session.step(164, "And the open menu should list \"Overview\"", () => menuLists(page, "Overview"));
+      await session.step(165, "And the open menu should list \"Selection\"", () => menuLists(page, "Selection"));
+      await session.step(166, "And the open menu should list \"Controls\"", () => menuLists(page, "Controls"));
+      await session.step(167, "When user closes the context menu", () => closeContextMenu(page));
+      await session.step(168, "Then no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

@@ -21,7 +21,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {addCategoricalFilter, filterPasses, filterPassesAll, noneSelected, selectedPassFilter, someSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, clickArea, dragSelectionOverArea, hoverArea, noErrors, painted, pointerAway, propertiesShouldBe, readingAtLeast, readingHigher, readingIs, setProperties, setProperty, showsRows, tooltipColumns, tooltipSomeColumns, tooltipValue} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
@@ -43,7 +43,7 @@ test.describe("Scatter plot tooltip and marker labels", () => {
       await session.step(30, "Then the \"hovered row\" reading of scatter plot viewer should be 11", () => readingIs(page, "hovered row", el("scatter plot viewer"), 11));
       await session.step(31, "And tooltip should be visible", () => shouldBe(page, el("tooltip"), "visible"));
       await session.step(32, "And the tooltip should show some columns", () => tooltipSomeColumns(page));
-      await session.step(33, "And tooltip should contain the text \"168.974\"", () => shouldContainText(page, el("tooltip"), "168.974"));
+      await session.step(33, "And the tooltip should show \"HEIGHT\" as \"168.974\"", () => tooltipValue(page, "HEIGHT", "168.974"));
       await session.step(34, "When user moves the pointer away from scatter plot viewer", () => pointerAway(page, el("scatter plot viewer")));
       await session.step(35, "Then tooltip should be hidden", () => shouldBe(page, el("tooltip"), "hidden"));
       await session.step(36, "And no errors should have been logged", () => noErrors(page));

@@ -2,8 +2,9 @@
 Feature: Statistics — Back Color paints the backdrop of the statistics table
   "Background color" of `statistics-ui.md`: Back Color set on the viewer repaints its backdrop at
   once, and white puts it back. `statistics-date-columns.feature` kept it manual because nothing
-  reported the colour; the claim here is on the pixels inside the viewer's `view` area, the space
-  the table leaves under its eleven rows, with the numbers read again to show the table stayed.
+  reported the colour; the claim here is on the pixels inside the viewer's `view` area — the whole
+  viewer root, where the backdrop shows in the space the table leaves under its eleven rows — with
+  the numbers read again to show the table stayed.
   Not translated: reordering and resizing the statistic columns ("Reorder stat columns", "Resize
   stat columns") — see MISSING.md.
 

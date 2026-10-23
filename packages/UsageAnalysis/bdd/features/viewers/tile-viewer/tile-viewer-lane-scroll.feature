@@ -10,7 +10,7 @@ Feature: Tile viewer — a scrolled lane keeps its place while viewers dock and 
 
   Fixture: demog-1000, lanes on RACE (Caucasian 896 rows, the lane with room to scroll).
 
-  @known-failure:31
+  @known-failure:33
   Scenario: The lane keeps its scroll when the docked histogram closes
     Given user is logged in
     And user opens demog-1000 dataset
@@ -23,10 +23,12 @@ Feature: Tile viewer — a scrolled lane keeps its place while viewers dock and 
     When user remembers the "scroll of lane Caucasian" reading of tile viewer
     And user adds a histogram viewer
     Then histogram viewer should be visible
+    And no viewer of the current view should report an error
     And the "scroll of lane Caucasian" reading of tile viewer should be as remembered
     When user clicks on close icon of histogram viewer
     Then histogram viewer should be absent
     And the open tableview should have 0 histogram viewers
     And the "lanes" reading of tile viewer should be 4
+    And no viewer of the current view should report an error
     And the "scroll of lane Caucasian" reading of tile viewer should be as remembered
     And no errors should have been logged

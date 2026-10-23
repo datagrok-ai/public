@@ -21,9 +21,9 @@ import {addViewerWith, hasArea, hasNoArea, noErrors, pickFromAreaContextMenu, pi
 import {dragLasso} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
-test.describe("A lasso drawn on the scatter plot becomes a polygon region", () => {
+test.describe("A lasso drawn on the scatter plot becomes an area region", () => {
   const session = feature(test, "features/annotation-regions/annotation-regions-scatter-lasso.feature", import.meta.url);
-  test("The lasso becomes a titled polygon region, removed again from the dialog", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:powerpack.dialogs.formula-lines"]}, async ({browser}) => {
+  test("The lasso becomes a titled area region, removed again from the dialog", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:powerpack.dialogs.formula-lines"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
     await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));

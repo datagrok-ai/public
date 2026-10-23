@@ -46,3 +46,27 @@ surface" and the TestTrack `correlation-plot.md` / `correlation-plot-ui.md`. Wha
     Then the "color of cell HEIGHT x AGE" reading of correlation plot viewer should be "#c3c3ff"
     And no errors should have been logged
   ```
+
+- **No cell tooltip while Tooltip > Visible is off** (`correlation-plot-ui.md`, "Tooltip"). The
+  cell tooltip comes from the inner grid's hover, debounced by 200 ms
+  (`grid/features/grid_tooltip.dart:6`), so `tooltip should not contain the text "Pearson R"` right
+  after the hover passes before the tooltip could have appeared — it would pass with the menu item
+  doing nothing. `correlation-plot-colors-and-chrome.feature` keeps the positive half (Visible off
+  flips `showTooltip`, Visible on brings the tooltip back). Needs a tooltip-settled signal: a
+  `tooltip pending` reading (or a render-pending flag the settle step waits on) set from the cell
+  mouse-enter until the debounced handler has run and decided, in `grid_tooltip.dart`, so a
+  negative claim is read only after the grid had its chance to show the tooltip:
+
+  ```gherkin
+  Scenario: With Tooltip > Visible off, a hovered cell shows no tooltip
+    When user picks "Tooltip > Visible" from the context menu of the "cell HEIGHT x AGE" area of correlation plot viewer
+    Then "showTooltip" property of correlation plot viewer should be "false"
+    When user clicks on the "cell STARTED x AGE" area of correlation plot viewer
+    And user hovers over the "cell WEIGHT x HEIGHT" area of correlation plot viewer
+    Then the grid tooltip should have settled
+    And tooltip should not contain the text "Pearson R"
+    When user moves the pointer away from correlation plot viewer
+    And user picks "Tooltip > Visible" from the context menu of the "cell HEIGHT x AGE" area of correlation plot viewer
+    Then "showTooltip" property of correlation plot viewer should be "true"
+    And no errors should have been logged
+  ```

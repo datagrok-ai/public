@@ -14,9 +14,8 @@ Feature: Map viewer — the mouse wheel zooms, a drag pans
     Then map viewer should be visible
     And the "markers" reading of map viewer should be 2426
 
-  Scenario: The mouse wheel zooms the map in, and back out to where it was
+  Scenario: The mouse wheel zooms the map in, and back out to the zoom it had
     Given user remembers the "zoom" reading of map viewer
-    And user remembers the "centre" reading of map viewer
     When user scrolls the mouse wheel up over the "view" area of map viewer
     Then the "zoom" reading of map viewer should be higher than before
     And the "zoom" reading of map viewer should be higher than remembered

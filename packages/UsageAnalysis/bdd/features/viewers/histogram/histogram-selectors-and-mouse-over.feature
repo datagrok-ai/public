@@ -1,7 +1,8 @@
 @journey @viewers @realizes:viewers.histogram
 Feature: Histogram split selector, bins slider, x axis height and mouse-over row
   The on-plot split selector comes and goes with Show Split Selector; the bins slider and the Bins
-  property agree on the bin count it sets (github-2296); X Axis Height makes the axis box taller (it
+  property agree on the bin count it sets (github-2296) — the 169 bins a 40-pixel drag gives depend on
+  the slider's pixel scale at this 500-pixel width, so the number holds for this size only; X Axis Height makes the axis box taller (it
   applies with Auto Layout off — Auto Layout sizes the axis itself, histogram_core.dart);
   the mouse-over row marker follows a hover in the grid and Show Mouse Over Row switches it off. One journey on demog-1000 with a 500 by 400
   histogram of AGE (the in-plot selectors need a root over 200 by 200); every scenario puts back
@@ -52,8 +53,10 @@ Feature: Histogram split selector, bins slider, x axis height and mouse-over row
 
   Scenario: Show Mouse Over Row decides whether a grid hover puts the marker on the baseline
     Given histogram viewer should not have a "mouse over row marker" area
-    When user hovers over the "cell 8 of AGE" area of grid
+    When user takes a snapshot of histogram viewer
+    And user hovers over the "cell 8 of AGE" area of grid
     Then histogram viewer should have a "mouse over row marker" area
+    And the "mouse over row marker" area of histogram viewer should have repainted
     When user moves the pointer away from grid
     Then histogram viewer should not have a "mouse over row marker" area
     When user sets "Show Mouse Over Row" property of histogram viewer to "false"

@@ -8,8 +8,9 @@ Feature: The Annotations group on the box plot's value axis
   45 and its quartiles 36 and 56. The axis is right-clicked at its bottom end, away from the value
   selector. Every scenario empties what it added.
   The line and the band are claimed by what the gesture wrote into the look and by the dialog's
-  inputs: the box plot reports no area for a formula line (see `MISSING.md`), while a region is
-  claimed by the area it is drawn over.
+  inputs: the box plot reports no area for a formula line, while a region is claimed by the area it
+  is drawn over — full width and shorter than the plot; that its height spans exactly Q1..Q3 on the
+  value axis has no claim yet (both in `../annotation-regions/MISSING.md`).
 
   Background:
     Given user is logged in
@@ -41,6 +42,7 @@ Feature: The Annotations group on the box plot's value axis
     And the "viewer regions" reading of box plot viewer should be 1
     And box plot viewer should have a "region 1" area
     And the "region 1" and "view" areas of box plot viewer should be the same width
+    And the "region 1" area of box plot viewer should be shorter than the "view" area
     When user sets "annotationRegions" property of box plot viewer to "[]"
     Then box plot viewer should not have a "region 1" area
     And no errors should have been logged

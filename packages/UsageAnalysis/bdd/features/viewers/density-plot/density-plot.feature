@@ -1,8 +1,8 @@
 @journey @viewers @realizes:viewers.density-plot
 Feature: Density plot chrome, binding and the viewer filter
   What the plot shows around the bins: the colour scale, the two axes, the three on-viewer
-  selectors, the title and the description, and what it draws when it is pointed at another table
-  or given a filter of its own.
+  selectors, and what it draws when it is pointed at another table or given a filter of its own.
+  The title and the description are walked by the density plot row of `viewer-chrome.feature`.
   Every claim about a piece of chrome is that the plot stops REPORTING it, not that some pixels
   moved: `showColorScale` off sets `_colorScaleBounds` to null, and the axes and selectors are the
   computed auto-layout results, so `should not have a "color scale" area` is a real claim and
@@ -79,16 +79,6 @@ Feature: Density plot chrome, binding and the viewer filter
       | showYSelector | true |
     Then the "x selector shown" reading of density plot viewer should be "true"
     And no errors should have been logged
-
-  Scenario: The description sits above the bins and Description Position moves it below them
-    When user sets "description" property of density plot viewer to "Age against height"
-    Then the description of density plot viewer should be above its content
-    When user sets "descriptionPosition" property of density plot viewer to "Bottom"
-    Then the description of density plot viewer should be below its content
-    When user sets properties of density plot viewer:
-      | descriptionPosition | Top |
-      | description         |     |
-    Then no errors should have been logged
 
   Scenario: The viewer's own filter narrows what it bins and leaves the table alone
     When user sets "filter" property of density plot viewer to "${AGE} > 30"

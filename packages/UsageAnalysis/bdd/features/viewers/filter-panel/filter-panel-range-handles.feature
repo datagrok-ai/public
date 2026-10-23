@@ -3,7 +3,8 @@ Feature: The range handles of a numeric filter card
   A numeric card of the filter panel is a histogram with a range slider under it, and its two
   handles are the person's way to narrow the range: the min handle dragged onto a bin raises the
   card's min and filters out the rows below it, the max handle dragged onto a lower bin lowers its
-  max (776 and then 730 of the 1000 rows are left), and a reset brings every row back. The panel's
+  max (776 and then 730 of the 1000 rows are left — counts measured with the card's default bins
+  and its default range snapping, so other bins move them), and a reset brings every row back. The panel's
   other features set the range through the data step; this is the drag. The histogram inside the
   card reports its handles and bins (`range min handle`, `range max handle`, `bin <n>`), and the
   panel reports the card's `min of AGE` / `max of AGE`, so the drag is aimed at named areas and

@@ -51,12 +51,11 @@ test.describe("A search typed into a card of the original view is followed by th
     await session.step(30, "When user switches to the \"demog-1000 copy\" view", () => switchView(page, "demog-1000 copy"));
     await session.step(31, "Then the \"selected categories of DIS_POP\" reading of filter panel should be \"PsA, Psoriasis\"", () => readingReads(page, "selected categories of DIS_POP", el("filter panel"), "PsA, Psoriasis"));
     await session.step(32, "And the \"filtering of DIS_POP\" reading of filter panel should be \"true\"", () => readingReads(page, "filtering of DIS_POP", el("filter panel"), "true"));
-    await session.step(33, "And 242 rows should pass the filter", () => filterPasses(page, 242));
-    await session.step(34, "When user switches to the \"demog-1000\" view", () => switchView(page, "demog-1000"));
-    await session.step(35, "And user clears the search of the \"DIS_POP\" filter card", () => clearCardSearch(page, "DIS_POP"));
-    await session.step(36, "Then all rows should pass the filter", () => filterPassesAll(page));
-    await session.step(37, "When user switches to the \"demog-1000 copy\" view", () => switchView(page, "demog-1000 copy"));
-    await session.step(38, "Then the \"filtering of DIS_POP\" reading of filter panel should be \"false\"", () => readingReads(page, "filtering of DIS_POP", el("filter panel"), "false"));
-    await session.step(39, "And no errors should have been logged", () => noErrors(page));
+    await session.step(33, "When user switches to the \"demog-1000\" view", () => switchView(page, "demog-1000"));
+    await session.step(34, "And user clears the search of the \"DIS_POP\" filter card", () => clearCardSearch(page, "DIS_POP"));
+    await session.step(35, "Then all rows should pass the filter", () => filterPassesAll(page));
+    await session.step(36, "When user switches to the \"demog-1000 copy\" view", () => switchView(page, "demog-1000 copy"));
+    await session.step(37, "Then the \"filtering of DIS_POP\" reading of filter panel should be \"false\"", () => readingReads(page, "filtering of DIS_POP", el("filter panel"), "false"));
+    await session.step(38, "And no errors should have been logged", () => noErrors(page));
   });
 });

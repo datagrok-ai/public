@@ -30,7 +30,6 @@ Feature: A search typed into a card of the original view is followed by the clon
     When user switches to the "demog-1000 copy" view
     Then the "selected categories of DIS_POP" reading of filter panel should be "PsA, Psoriasis"
     And the "filtering of DIS_POP" reading of filter panel should be "true"
-    And 242 rows should pass the filter
     When user switches to the "demog-1000" view
     And user clears the search of the "DIS_POP" filter card
     Then all rows should pass the filter

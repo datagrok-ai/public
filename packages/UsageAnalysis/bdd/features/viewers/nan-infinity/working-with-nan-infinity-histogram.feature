@@ -17,8 +17,10 @@ Feature: A histogram over a column that holds a NaN and an Infinity
 
   Scenario: An Infinity in WEIGHT keeps the value axis finite and the bins as they were
     When user remembers the "axis max" reading of histogram viewer
+    And user takes a snapshot of histogram viewer
     And user sets "WEIGHT" column in row 2 to "Infinity"
-    Then the "axis max" reading of histogram viewer should be a finite number
+    Then histogram viewer should have repainted
+    And the "axis max" reading of histogram viewer should be a finite number
     And the "axis max" reading of histogram viewer should be as remembered
     And the "bins shown" reading of histogram viewer should be 20
     And histogram viewer should report no error
@@ -27,10 +29,12 @@ Feature: A histogram over a column that holds a NaN and an Infinity
 
   Scenario: A NaN in HEIGHT leaves the axis finite
     When user sets "valueColumnName" property of histogram viewer to "HEIGHT"
-    Then the "rows shown" reading of histogram viewer should be 1000
+    Then the "axis max" reading of histogram viewer should differ from before
     When user remembers the "axis max" reading of histogram viewer
+    And user takes a snapshot of histogram viewer
     And user sets "HEIGHT" column in row 1 to "NaN"
-    Then the "axis min" reading of histogram viewer should be a finite number
+    Then histogram viewer should have repainted
+    And the "axis min" reading of histogram viewer should be a finite number
     And the "axis max" reading of histogram viewer should be as remembered
     And histogram viewer should report no error
     And no errors should have been logged

@@ -24,7 +24,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clearField, isExpanded, pressKeyIn, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {contextPanelOpen, contextPanelShows, enterOwnLogin, enterSharingLogin, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {clickArea, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {gridPins, readingContains} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {gridPins} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Pin if editable pins a column for the users who may edit it", () => {
@@ -39,16 +39,17 @@ test.describe("Pin if editable pins a column for the users who may edit it", () 
     await session.step(17, "Then the context panel should show \"SEVERITY\"", () => contextPanelShows(page, "SEVERITY"));
     await session.step(18, "Given Advanced accordion header in context panel is expanded", () => isExpanded(page, el("Advanced accordion header in context panel")));
     await session.step(19, "And Permissions accordion header in context panel is expanded", () => isExpanded(page, el("Permissions accordion header in context panel")));
-    await session.step(22, "When user enters the sharing user's login into \"Editable by\" input in context panel", () => enterSharingLogin(page, el("\"Editable by\" input in context panel")));
+    await session.step(22, "When user enters the current user's login into \"Editable by\" input in context panel", () => enterOwnLogin(page, el("\"Editable by\" input in context panel")));
     await session.step(23, "And user checks \"Pin if editable\" input in context panel", () => check(page, el("\"Pin if editable\" input in context panel")));
-    await session.step(24, "Then the grid should pin the columns \"\"", () => gridPins(page, ""));
-    await session.step(25, "When user enters the current user's login into \"Editable by\" input in context panel", () => enterOwnLogin(page, el("\"Editable by\" input in context panel")));
-    await session.step(26, "Then the grid should pin the columns \"SEVERITY\"", () => gridPins(page, "SEVERITY"));
-    await session.step(27, "When user unchecks \"Pin if editable\" input in context panel", () => uncheck(page, el("\"Pin if editable\" input in context panel")));
-    await session.step(28, "Then the grid should pin the columns \"\"", () => gridPins(page, ""));
-    await session.step(29, "And the \"column order\" reading of grid should contain \"SEVERITY\"", () => readingContains(page, "column order", el("grid"), "SEVERITY"));
-    await session.step(30, "When user clears \"Editable by\" input in context panel", () => clearField(page, el("\"Editable by\" input in context panel")));
-    await session.step(31, "And user presses Enter in \"Editable by\" input in context panel", () => pressKeyIn(page, "Enter", el("\"Editable by\" input in context panel")));
-    await session.step(32, "Then no errors should have been logged", () => noErrors(page));
+    await session.step(24, "Then the grid should pin the columns \"SEVERITY\"", () => gridPins(page, "SEVERITY"));
+    await session.step(25, "When user enters the sharing user's login into \"Editable by\" input in context panel", () => enterSharingLogin(page, el("\"Editable by\" input in context panel")));
+    await session.step(26, "Then the grid should pin the columns \"\"", () => gridPins(page, ""));
+    await session.step(27, "When user enters the current user's login into \"Editable by\" input in context panel", () => enterOwnLogin(page, el("\"Editable by\" input in context panel")));
+    await session.step(28, "Then the grid should pin the columns \"SEVERITY\"", () => gridPins(page, "SEVERITY"));
+    await session.step(29, "When user unchecks \"Pin if editable\" input in context panel", () => uncheck(page, el("\"Pin if editable\" input in context panel")));
+    await session.step(30, "Then the grid should pin the columns \"\"", () => gridPins(page, ""));
+    await session.step(31, "When user clears \"Editable by\" input in context panel", () => clearField(page, el("\"Editable by\" input in context panel")));
+    await session.step(32, "And user presses Enter in \"Editable by\" input in context panel", () => pressKeyIn(page, "Enter", el("\"Editable by\" input in context panel")));
+    await session.step(33, "Then no errors should have been logged", () => noErrors(page));
   });
 });

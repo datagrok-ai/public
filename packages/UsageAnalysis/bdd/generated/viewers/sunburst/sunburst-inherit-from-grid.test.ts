@@ -61,10 +61,11 @@ test.describe("Sunburst takes its segment colors from the grid's color coding wi
     await session.step(42, "When user unchecks \"Inherit From Grid\" property in context panel", () => uncheck(page, el("\"Inherit From Grid\" property in context panel")));
     await session.step(43, "Then the \"segment F\" area of sunburst viewer should contain the color \"#1F77B4\"", () => areaColor(page, "segment F", el("sunburst viewer"), "#1F77B4"));
     await session.step(44, "And the \"segment F\" area of sunburst viewer should not contain the color \"#FF0000\"", () => areaNotColor(page, "segment F", el("sunburst viewer"), "#FF0000"));
-    await session.step(45, "And the \"segment M\" area of sunburst viewer should not contain the color \"#0000FF\"", () => areaNotColor(page, "segment M", el("sunburst viewer"), "#0000FF"));
-    await session.step(46, "When user checks \"Inherit From Grid\" property in context panel", () => check(page, el("\"Inherit From Grid\" property in context panel")));
-    await session.step(47, "Then the \"segment F\" area of sunburst viewer should contain the color \"#FF0000\"", () => areaColor(page, "segment F", el("sunburst viewer"), "#FF0000"));
-    await session.step(48, "And the \"segment M\" area of sunburst viewer should contain the color \"#0000FF\"", () => areaColor(page, "segment M", el("sunburst viewer"), "#0000FF"));
-    await session.step(49, "And no errors should have been logged", () => noErrors(page));
+    await session.step(45, "And the \"segment M\" area of sunburst viewer should contain the color \"#FFBB78\"", () => areaColor(page, "segment M", el("sunburst viewer"), "#FFBB78"));
+    await session.step(46, "And the \"segment M\" area of sunburst viewer should not contain the color \"#0000FF\"", () => areaNotColor(page, "segment M", el("sunburst viewer"), "#0000FF"));
+    await session.step(47, "When user checks \"Inherit From Grid\" property in context panel", () => check(page, el("\"Inherit From Grid\" property in context panel")));
+    await session.step(48, "Then the \"segment F\" area of sunburst viewer should contain the color \"#FF0000\"", () => areaColor(page, "segment F", el("sunburst viewer"), "#FF0000"));
+    await session.step(49, "And the \"segment M\" area of sunburst viewer should contain the color \"#0000FF\"", () => areaColor(page, "segment M", el("sunburst viewer"), "#0000FF"));
+    await session.step(50, "And no errors should have been logged", () => noErrors(page));
   });
 });

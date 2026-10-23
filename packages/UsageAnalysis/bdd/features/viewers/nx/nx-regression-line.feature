@@ -3,16 +3,18 @@ Feature: NX — Tools > Show regression line on a scatter plot that shows only t
   The step of `formula-lines-and-legend-ui.md` that `nx-chain.feature` could only claim as a
   property: Row Source = FilteredSelected, then Tools > Show regression line from the context
   menu. In the chain nothing is selected at that point, so the plot draws no rows and there is
-  nothing to fit. Here the same two steps run on demog-1000 with rows selected, so the line has
-  rows to be drawn through — the `regression lines` reading counts the fits the last frame drew and
-  `regression line` is the band they sweep, both absent before the command.
+  nothing to fit. Here the same two steps run on demog-1000 with rows selected, so the plot shows
+  rows when the line is asked for — the `regression lines` reading counts the fits the last frame
+  drew and `regression line` is the band they sweep, both absent before the command. Which rows the
+  fit was computed over is not reported, so "through the selected rows" is not claimed; see
+  MISSING.md.
   Of the 553 F rows, 499 have both a HEIGHT and a WEIGHT and so are drawn (`rows shown`).
 
   Not claimed: what clearing the selection then does. On the local stand (2026-10-23) the plot
   shows no markers but keeps drawing the previous fit and its equation (`regression lines` stays 1)
   — reported as a candidate finding, not asserted.
 
-  Scenario: The regression line is drawn through the selected rows the plot shows
+  Scenario: The regression line is drawn on a scatter plot that shows only the selected rows
     Given user is logged in
     And user opens demog-1000 dataset
     And user adds a scatter plot viewer with:

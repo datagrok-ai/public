@@ -24,3 +24,33 @@ the Annotations group, its category axis does not).
   the box its title is drawn in, so "the label is shown at the line's end" or "the label moved with
   Label Position" cannot be claimed. Needs a `formula line "<title>" label` area next to the line's
   own, in each viewer's status (`scatterplot_status.dart`, the line chart's and the histogram's).
+- **A lasso region keeps the free-form shape it was drawn with.** `annotation-regions-scatter-lasso.feature`
+  claims an area region keyed to WEIGHT and HEIGHT (`"type":"area"` in the look and a `region 1`
+  area), but `region <n>` is the polygon's bounding rectangle (`regionRect` in
+  `annotation_regions_mixin.dart`), so a lasso stored or drawn as that rectangle would pass too. The
+  stored points are the look's, an API test's subject; what a person sees is the outline. Needs a
+  `region <n> corner` area — a small box inside the bounding rectangle but outside the drawn
+  polygon, reported by `addStatus` for area regions — or a `region <n> vertices` reading of the
+  polygon the last pass drew. Then:
+
+  ```gherkin
+    When user drags a lasso over the "view" area of scatter plot viewer
+    And user clicks OK button in "Formula Lines" dialog
+    Then scatter plot viewer should have a "region 1" area
+    And the "region 1 vertices" reading of scatter plot viewer should be at least 8
+    And the "region 1 corner" area of scatter plot viewer should be painted in no color
+  ```
+- **A box plot region spans Q1..Q3 on the value axis.** `formula-lines-axis-annotations-box-plot.feature`
+  claims the region Add Region draws is as wide as the plot and shorter than it, not that its top
+  and bottom sit at AGE 56 and 36. The status reports the region's rectangle in pixels and no
+  value-axis scale to map them back. Needs `region <n> min` / `region <n> max` readings (the region's
+  Y bounds in data units, as drawn) from `addStatus` in `annotation_regions_mixin.dart`, or a
+  `y = <value>` point area on the box plot's value axis. Then:
+
+  ```gherkin
+    When user picks "Annotations > Add Region" from the context menu of the "bottom edge of y axis" area of box plot viewer
+    And user clicks OK button in "Formula Lines" dialog
+    Then the "region 1 min" reading of box plot viewer should be 36
+    And the "region 1 max" reading of box plot viewer should be 56
+    And no errors should have been logged
+  ```

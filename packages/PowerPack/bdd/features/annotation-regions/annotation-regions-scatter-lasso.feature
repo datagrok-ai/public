@@ -1,12 +1,12 @@
 @viewers @realizes:viewers.scatter-plot @realizes:powerpack.dialogs.formula-lines
-Feature: A lasso drawn on the scatter plot becomes a polygon region
+Feature: A lasso drawn on the scatter plot becomes an area region
   `annotation-regions-drawing.feature` draws a lasso region on the density plot and a rectangle on
   the scatter plot; this is the scatter plot's own lasso. With the Lasso Tool on, Tools > Draw
   Annotation Region turns drawing on, and the lasso drawn over the plot becomes an area region
-  keyed to the X and Y columns, stored as the polygon the pointer went round, and opens PowerPack's
-  Formula Lines dialog. On demog-1000 with small markers; the region is removed through the dialog's
-  Delete at the end. The stored polygon is the look's (an API test's subject); the feature claims
-  only that the region keyed to WEIGHT and HEIGHT is drawn.
+  keyed to the X and Y columns and opens PowerPack's Formula Lines dialog. On demog-1000 with small
+  markers; the region is removed through the dialog's Delete at the end. The feature claims only
+  that an area region keyed to WEIGHT and HEIGHT is drawn; that it keeps the free-form shape the
+  lasso went round has no claim yet (MISSING.md).
 
   Background:
     Given user is logged in
@@ -18,7 +18,7 @@ Feature: A lasso drawn on the scatter plot becomes a polygon region
       | markerDefaultSize | 2      |
     And user resizes scatter plot viewer to 800 by 500
 
-  Scenario: The lasso becomes a titled polygon region, removed again from the dialog
+  Scenario: The lasso becomes a titled area region, removed again from the dialog
     Then the "viewer regions" reading of scatter plot viewer should be 0
     When user picks "Tools > Draw Annotation Region" from the context menu of scatter plot viewer
     Then the "region drawing mode" reading of scatter plot viewer should be "true"

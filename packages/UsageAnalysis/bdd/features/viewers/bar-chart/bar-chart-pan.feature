@@ -7,7 +7,7 @@ Feature: Bar chart panning through zoomed categories
   counting CAST Idea ID by Primary Series Name, bars Triazoles, Pyrrolidines, (blank),
   Aminopiperidines, Diazabicyclooctane from the top.
   Not translated: the mouse wheel over the zoomed categories (step 2) — a notch moves them by a
-  couple of pixels, see the round's report; and the range slider's body, for which the bar chart
+  couple of pixels, see MISSING.md; and the range slider's body, for which the bar chart
   reports no hit area.
 
   Background:
@@ -21,20 +21,20 @@ Feature: Bar chart panning through zoomed categories
 
   Scenario: A plain drag pans the zoomed categories, and a double click resets the view
     When user zooms into the categories from the "bar Pyrrolidines" area to the "bar Triazoles" area of bar chart viewer
-    Then the "bars" reading of bar chart viewer should be 2
-    And bar chart viewer should have a "bar Triazoles" area
+    Then bar chart viewer should have a "bar Triazoles" area
+    And the "bars" reading of bar chart viewer should be 2
     And bar chart viewer should not have a "bar Aminopiperidines" area
     When user drags the "view" area of bar chart viewer by 200 pixels to the up
     Then bar chart viewer should have a "bar Aminopiperidines" area
     And bar chart viewer should not have a "bar Triazoles" area
     And no rows should be selected
     When user drags the "view" area of bar chart viewer by 200 pixels to the up
-    Then the "bars" reading of bar chart viewer should be 2
-    And bar chart viewer should have a "bar Diazabicyclooctane" area
+    Then bar chart viewer should have a "bar Diazabicyclooctane" area
+    And the "bars" reading of bar chart viewer should be 2
     And bar chart viewer should not have a "bar Pyrrolidines" area
     When user drags the "view" area of bar chart viewer by 400 pixels to the down
-    Then the "bars" reading of bar chart viewer should be 2
-    And bar chart viewer should have a "bar Triazoles" area
+    Then bar chart viewer should have a "bar Triazoles" area
+    And the "bars" reading of bar chart viewer should be 2
     And bar chart viewer should not have a "bar Diazabicyclooctane" area
     When user double-clicks on empty plot space of bar chart viewer
     Then the "bars" reading of bar chart viewer should be 5

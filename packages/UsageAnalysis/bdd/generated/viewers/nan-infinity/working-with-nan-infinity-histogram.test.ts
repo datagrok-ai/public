@@ -23,7 +23,7 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {setCell} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, noErrors, painted, readingAsRemembered, readingFinite, readingIs, rememberReading, reportsNoError, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, noErrors, painted, readingAsRemembered, readingDiffers, readingFinite, readingIs, rememberReading, repainted, reportsNoError, setProperty, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("A histogram over a column that holds a NaN and an Infinity", () => {
@@ -38,31 +38,35 @@ test.describe("A histogram over a column that holds a NaN and an Infinity", () =
     await session.step(16, "And the \"bins shown\" reading of histogram viewer should be 20", () => readingIs(page, "bins shown", el("histogram viewer"), 20));
     await run.scenario("An Infinity in WEIGHT keeps the value axis finite and the bins as they were", async () => {
       await session.step(19, "When user remembers the \"axis max\" reading of histogram viewer", () => rememberReading(page, "axis max", el("histogram viewer")));
-      await session.step(20, "And user sets \"WEIGHT\" column in row 2 to \"Infinity\"", () => setCell(page, "WEIGHT", 2, "Infinity"));
-      await session.step(21, "Then the \"axis max\" reading of histogram viewer should be a finite number", () => readingFinite(page, "axis max", el("histogram viewer")));
-      await session.step(22, "And the \"axis max\" reading of histogram viewer should be as remembered", () => readingAsRemembered(page, "axis max", el("histogram viewer")));
-      await session.step(23, "And the \"bins shown\" reading of histogram viewer should be 20", () => readingIs(page, "bins shown", el("histogram viewer"), 20));
-      await session.step(24, "And histogram viewer should report no error", () => reportsNoError(page, el("histogram viewer")));
-      await session.step(25, "And histogram viewer should be painted", () => painted(page, el("histogram viewer")));
-      await session.step(26, "And no errors should have been logged", () => noErrors(page));
+      await session.step(20, "And user takes a snapshot of histogram viewer", () => takeSnapshot(page, el("histogram viewer")));
+      await session.step(21, "And user sets \"WEIGHT\" column in row 2 to \"Infinity\"", () => setCell(page, "WEIGHT", 2, "Infinity"));
+      await session.step(22, "Then histogram viewer should have repainted", () => repainted(page, el("histogram viewer")));
+      await session.step(23, "And the \"axis max\" reading of histogram viewer should be a finite number", () => readingFinite(page, "axis max", el("histogram viewer")));
+      await session.step(24, "And the \"axis max\" reading of histogram viewer should be as remembered", () => readingAsRemembered(page, "axis max", el("histogram viewer")));
+      await session.step(25, "And the \"bins shown\" reading of histogram viewer should be 20", () => readingIs(page, "bins shown", el("histogram viewer"), 20));
+      await session.step(26, "And histogram viewer should report no error", () => reportsNoError(page, el("histogram viewer")));
+      await session.step(27, "And histogram viewer should be painted", () => painted(page, el("histogram viewer")));
+      await session.step(28, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A NaN in HEIGHT leaves the axis finite", async () => {
-      await session.step(29, "When user sets \"valueColumnName\" property of histogram viewer to \"HEIGHT\"", () => setProperty(page, "valueColumnName", el("histogram viewer"), "HEIGHT"));
-      await session.step(30, "Then the \"rows shown\" reading of histogram viewer should be 1000", () => readingIs(page, "rows shown", el("histogram viewer"), 1000));
-      await session.step(31, "When user remembers the \"axis max\" reading of histogram viewer", () => rememberReading(page, "axis max", el("histogram viewer")));
-      await session.step(32, "And user sets \"HEIGHT\" column in row 1 to \"NaN\"", () => setCell(page, "HEIGHT", 1, "NaN"));
-      await session.step(33, "Then the \"axis min\" reading of histogram viewer should be a finite number", () => readingFinite(page, "axis min", el("histogram viewer")));
-      await session.step(34, "And the \"axis max\" reading of histogram viewer should be as remembered", () => readingAsRemembered(page, "axis max", el("histogram viewer")));
-      await session.step(35, "And histogram viewer should report no error", () => reportsNoError(page, el("histogram viewer")));
-      await session.step(36, "And no errors should have been logged", () => noErrors(page));
+      await session.step(31, "When user sets \"valueColumnName\" property of histogram viewer to \"HEIGHT\"", () => setProperty(page, "valueColumnName", el("histogram viewer"), "HEIGHT"));
+      await session.step(32, "Then the \"axis max\" reading of histogram viewer should differ from before", () => readingDiffers(page, "axis max", el("histogram viewer")));
+      await session.step(33, "When user remembers the \"axis max\" reading of histogram viewer", () => rememberReading(page, "axis max", el("histogram viewer")));
+      await session.step(34, "And user takes a snapshot of histogram viewer", () => takeSnapshot(page, el("histogram viewer")));
+      await session.step(35, "And user sets \"HEIGHT\" column in row 1 to \"NaN\"", () => setCell(page, "HEIGHT", 1, "NaN"));
+      await session.step(36, "Then histogram viewer should have repainted", () => repainted(page, el("histogram viewer")));
+      await session.step(37, "And the \"axis min\" reading of histogram viewer should be a finite number", () => readingFinite(page, "axis min", el("histogram viewer")));
+      await session.step(38, "And the \"axis max\" reading of histogram viewer should be as remembered", () => readingAsRemembered(page, "axis max", el("histogram viewer")));
+      await session.step(39, "And histogram viewer should report no error", () => reportsNoError(page, el("histogram viewer")));
+      await session.step(40, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The two values put back leave the axis as it was", async () => {
-      await session.step(39, "When user sets \"HEIGHT\" column in row 1 to \"174.705\"", () => setCell(page, "HEIGHT", 1, "174.705"));
-      await session.step(40, "And user sets \"WEIGHT\" column in row 2 to \"64\"", () => setCell(page, "WEIGHT", 2, "64"));
-      await session.step(41, "And user sets \"valueColumnName\" property of histogram viewer to \"WEIGHT\"", () => setProperty(page, "valueColumnName", el("histogram viewer"), "WEIGHT"));
-      await session.step(42, "Then the \"axis max\" reading of histogram viewer should be a finite number", () => readingFinite(page, "axis max", el("histogram viewer")));
-      await session.step(43, "And histogram viewer should report no error", () => reportsNoError(page, el("histogram viewer")));
-      await session.step(44, "And no errors should have been logged", () => noErrors(page));
+      await session.step(43, "When user sets \"HEIGHT\" column in row 1 to \"174.705\"", () => setCell(page, "HEIGHT", 1, "174.705"));
+      await session.step(44, "And user sets \"WEIGHT\" column in row 2 to \"64\"", () => setCell(page, "WEIGHT", 2, "64"));
+      await session.step(45, "And user sets \"valueColumnName\" property of histogram viewer to \"WEIGHT\"", () => setProperty(page, "valueColumnName", el("histogram viewer"), "WEIGHT"));
+      await session.step(46, "Then the \"axis max\" reading of histogram viewer should be a finite number", () => readingFinite(page, "axis max", el("histogram viewer")));
+      await session.step(47, "And histogram viewer should report no error", () => reportsNoError(page, el("histogram viewer")));
+      await session.step(48, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

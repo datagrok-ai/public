@@ -42,6 +42,7 @@ Feature: Sunburst takes its segment colors from the grid's color coding with Inh
     When user unchecks "Inherit From Grid" property in context panel
     Then the "segment F" area of sunburst viewer should contain the color "#1F77B4"
     And the "segment F" area of sunburst viewer should not contain the color "#FF0000"
+    And the "segment M" area of sunburst viewer should contain the color "#FFBB78"
     And the "segment M" area of sunburst viewer should not contain the color "#0000FF"
     When user checks "Inherit From Grid" property in context panel
     Then the "segment F" area of sunburst viewer should contain the color "#FF0000"

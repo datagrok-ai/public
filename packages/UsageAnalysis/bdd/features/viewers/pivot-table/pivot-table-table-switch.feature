@@ -22,6 +22,8 @@ Feature: Pivot table — the Table property switched to another table and back
     Then pivot table viewer should be bound to table "spgi-100"
     And the "data" reading of pivot table viewer should be "spgi-100"
     And the "rows shown" reading of pivot table viewer should be 100
+    And the "group by" reading of pivot table viewer should be "Cellular assay 1 Curve ID"
+    And the "aggregated rows" reading of pivot table viewer should be 87
     And the "error" reading of pivot table viewer should be ""
     When user sets "table" property of pivot table viewer to "demog-1000"
     Then pivot table viewer should be bound to table "demog-1000"

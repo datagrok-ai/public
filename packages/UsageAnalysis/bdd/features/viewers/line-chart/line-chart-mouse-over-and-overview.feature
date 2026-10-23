@@ -4,8 +4,9 @@ Feature: Line chart mouse-over row line and the stacked bar overview
   type line-chart.feature does not walk) takes its box out of the plot and goes with Overview None;
   a hover over a grid row draws the vertical mouse-over row line, and Show Mouse-over Row Line
   switches it off. Same fixture as line-chart.feature: spgi-100, one point per row on CAST Idea ID.
-  Not translated: Show Mouse-over Category — the line chart never sets the flag its overlay waits
-  for (`LineChartCore._catDraw`), so the property has nothing to switch; see the round's report.
+  Not translated: Show Mouse-over Category — nothing reports which split line a category hovered in
+  another viewer highlights, and the overlay the property also gates waits for a flag the chart never
+  sets (`LineChartCore._catDraw`); see MISSING.md.
 
   Background:
     Given user is logged in
@@ -16,14 +17,16 @@ Feature: Line chart mouse-over row line and the stacked bar overview
     Then the "rows shown" reading of line chart viewer should be 100
     And line chart viewer should report no error
 
-  Scenario: Overview Stacked Bar Chart draws the overview strip under the plot
+  Scenario: Overview > Stacked Bar Chart draws an overview strip under the plot
     Then line chart viewer should not have an "overview" area
     When user picks "Overview > Stacked Bar Chart" from the context menu of line chart viewer
-    Then line chart viewer should have an "overview" area
+    Then "overviewType" property of line chart viewer should be "Stacked Bar Chart"
+    And line chart viewer should have an "overview" area
     And the "overview" area of line chart viewer should be painted
     And the "plot" area of line chart viewer should be shorter than before
     When user picks "Overview > None" from the context menu of line chart viewer
-    Then line chart viewer should not have an "overview" area
+    Then "overviewType" property of line chart viewer should be "None"
+    And line chart viewer should not have an "overview" area
     And no errors should have been logged
 
   Scenario: A grid hover draws the mouse-over row line, and Show Mouse-over Row Line switches it off

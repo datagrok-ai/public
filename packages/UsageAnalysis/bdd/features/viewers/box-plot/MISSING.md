@@ -30,3 +30,24 @@ github-3065, the month and quarter categories) and into claims added to `box-plo
     Then the "hovered row" reading of box plot viewer should be 0
     And no errors should have been logged
   ```
+
+- **The other groups fade under a cross-viewer hover** (`boxplot-pointer-select.md` Scenario 7, step 4,
+  github-3065). `box-plot-hover-and-date-categories.feature` claims the box plot repaints and the
+  hovered Caucasian group keeps its own RACE colour, not that Asian, Black and Other fade. The fade is
+  a translucent back-colour overlay over the whole plot (`fillRect(ctx, overlay.client,
+  alpha(look.backColor, 140))` in `box_plot_core.dart`), and the colour step's tolerance still finds
+  Asian's #1F77B4 under it (a run of 23 Oct: `the "Asian values" area ... should not contain the color
+  "#1F77B4"` failed with 6469 px matched while the screenshot shows the group faded). Needs a
+  `faded groups` reading (the categories drawn under the overlay in the last pass, `""` when none) or
+  an `<category> faded` flag next to `<category> values` in the box plot's status. Then:
+
+  ```gherkin
+  Scenario: A hover on another viewer's bar fades the other groups
+    When user adds a bar chart viewer with:
+      | Split | RACE |
+    And user hovers over the "bar Caucasian" area of bar chart viewer
+    Then the "faded groups" reading of box plot viewer should be "Asian, Black, Other"
+    When user moves the pointer away from grid
+    Then the "faded groups" reading of box plot viewer should be ""
+    And no errors should have been logged
+  ```

@@ -30,7 +30,7 @@ Feature: Scatter plot tooltip and marker labels
     Then the "hovered row" reading of scatter plot viewer should be 11
     And tooltip should be visible
     And the tooltip should show some columns
-    And tooltip should contain the text "168.974"
+    And the tooltip should show "HEIGHT" as "168.974"
     When user moves the pointer away from scatter plot viewer
     Then tooltip should be hidden
     And no errors should have been logged

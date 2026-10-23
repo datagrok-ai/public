@@ -9,7 +9,9 @@ Feature: Tile viewer — a card designed on one table, then rebound to another
   covers (see `tile-viewer-lanes.feature`).
 
   Fixtures: spgi-100 (Stereo Category R_ONE 36, S_ACHIR 34, S_UNKN 18, S_PART 10, S_ABS 2; the
-  auto-generated card holds Idea Created, Primary Series Name, Scaffold Names), demog-1000.
+  auto-generated card holds Idea Created, Primary Series Name, Scaffold Names), demog-1000 (the
+  auto-generated card holds ten of its eleven columns, all but SEVERITY, in an order that changes
+  from run to run — so the 10 is that set, and the list is claimed by what it holds).
 
   Scenario: The designed spgi card gives way to demog's own card when the table changes
     Given user is logged in
@@ -27,6 +29,8 @@ Feature: Tile viewer — a card designed on one table, then rebound to another
     And user clicks on "CLOSE AND APPLY" button
     Then form designer should be absent
     And the "form designed" reading of tile viewer should be "true"
+    And the "fields shown" reading of tile viewer should be 2
+    And the "fields" reading of tile viewer should contain "Idea Created"
     And the "fields" reading of tile viewer should not contain "Scaffold Names"
     When user sets "Table" property of tile viewer to "demog-1000"
     Then tile viewer should be bound to table "demog-1000"
