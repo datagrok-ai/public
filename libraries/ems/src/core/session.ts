@@ -292,11 +292,11 @@ export function confirmDiscard(session: DomainSession, options: {action?: string
       resolve(answer);
     };
     dialog.add(text)
-      .addButton('SAVE', () => decide(session.save()), {primary: true})
       .addButton('DISCARD', () => {
         session.discard();
         decide(true);
       })
+      .addButton('SAVE', () => decide(session.save()), {primary: true})
       .onCancel(() => decide(false))
       .show({modal: true});
   });

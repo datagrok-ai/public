@@ -272,7 +272,8 @@ scoped('confirmDiscard: clean passes silently; SAVE, DISCARD and CANCEL through 
   assert.deepEqual([...dialog.querySelectorAll('p')].map((p) => p.textContent),
     ['2 unsaved changes in the issue.', 'Save them, discard them, or cancel and do not leave this page.']);
   assert.deepEqual([...dialog.querySelectorAll('.u2-dialog-buttons button')].map((b) => b.textContent),
-    ['CANCEL', 'SAVE', 'DISCARD'], 'the u2 dialog keeps CANCEL first');
+    ['CANCEL', 'DISCARD', 'SAVE'], 'CANCEL first and SAVE right-most, as the platform prompt');
+  assert.deepEqual([...dialog.querySelectorAll('.u2-btn-primary')].map((b) => b.textContent), ['SAVE']);
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await answer, false);
   assert.equal(document.body.querySelector('.u2-dialog'), null);

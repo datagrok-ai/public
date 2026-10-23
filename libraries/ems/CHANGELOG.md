@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Unsaved changes: The dialog reads CANCEL · DISCARD · SAVE, with SAVE on the right as the primary, as in the platform's own prompt
 * DomainSource: Added `hosted`: the app answers a host filter condition (a structure search) with the ids of its rows, sent as an id list before every read
 * DomainApp: Added `filters: {mode: 'builder', placement: 'left'}`: the condition builder in a pane beside the list
 * Import: Added `table.importer`: an app derives columns, keeps rows out (already there, repeated in the file, unreadable), maps its own columns and shapes the preview's and report's columns and messages; the report lists every row with its outcome and key, written back to the table on request
