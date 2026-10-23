@@ -100,13 +100,14 @@ export class IssuesApp extends DomainApp {
   }
 }
 
-/** A view per Grit table under the Issues app — the issues at its root, as before — over the handles
- * {@link openGrit} configured, so the actions, the closing rule and the card hold in each. */
+/** A view per Grit table — the issues where they were, at `/apps/Grit/Issues` — over the handles {@link openGrit}
+ * configured, so the actions, the closing rule and the card hold in each. Grit's one app answers everything under
+ * `/apps/Grit`. */
 const views = domains.views({
-  path: '/apps/Grit/Issues',
+  path: '/apps/Grit',
   handle: async (address) => Object.values((await openGrit()).tables).find((t) => t.address === address)!,
   views: [
-    {table: 'grit.issue', name: 'Issues', segment: '', options: {app: IssuesApp, mode: 'cards',
+    {table: 'grit.issue', name: 'Issues', options: {app: IssuesApp, mode: 'cards',
       children: {tables: ['comment']}}},
     {table: 'grit.project', name: 'Projects'},
     {table: 'grit.label', name: 'Labels'},
