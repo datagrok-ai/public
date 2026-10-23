@@ -4,10 +4,24 @@ import {Chem} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+import {ChemicalEngine, engineInEffect} from '../engine/chem-engine';
+import {ChemWasm, cruxModuleSync} from '../engine/crux-module';
+import {cruxOrRdKit} from '../engine/fallback';
 import type NGL from 'ngl';
 
 const WIDTH = 300;
 const HEIGHT = 300;
+
+/**
+ * In Crux mode, the script's 3D MOL block by crux's `chemEmbed3d` (RDKit's ETKDG with the fresh script's seed, no
+ * Hs added); null otherwise and where Crux gets no 3D block, so the script runs ("Chemical Engine", engine/README.md).
+ */
+export function cruxEmbed3d(molecule: string): string | null {
+  if (engineInEffect() !== ChemicalEngine.Crux)
+    return null;
+  return cruxOrRdKit('3D Structure', () =>
+    (cruxModuleSync() as unknown as ChemWasm).chemEmbed3d(molecule) ?? null, () => null);
+}
 
 export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   const rdKitModule = getRdKitModule();
@@ -19,7 +33,7 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   }
   let sdf: string;
   try {
-    sdf = MolfileHandler.getInstance(molecule).z.every((coord) => coord === 0) ?
+    sdf = MolfileHandler.getInstance(molecule).z.every((coord) => coord === 0) ? cruxEmbed3d(molecule) ??
       (await Chem.smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n') : molecule;
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule has no atoms or malformed'));

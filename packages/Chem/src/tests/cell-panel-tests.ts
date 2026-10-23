@@ -17,7 +17,8 @@ import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import * as CONST from './const';
 import {structure2dWidget} from '../widgets/structure2d';
-import {structure3dWidget} from '../widgets/structure3d';
+import {cruxEmbed3d, structure3dWidget} from '../widgets/structure3d';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {molV2000, molV3000} from './utils';
 import {checkPackage} from '../utils/elemental-analysis-utils';
 import {PackageFunctions} from '../package';
@@ -198,6 +199,36 @@ category('cell panel', async () => {
   test('structure3d-widget', async () => {
     for (const mol of molFormats)
       await structure3dWidget(mol);
+  });
+
+  test('structure3d-widget: Crux mode, chemEmbed3d', async () => {
+    // the panel's 2D MOL block embedded by crux's chemEmbed3d (the script's ETKDG, crux-core decision chem-props),
+    // no Python; the molecule as drawn: its atoms and bonds, 3D coordinates
+    const rdKitModule = chemCommonRdKit.getRdKitModule();
+    setChemicalEngine(ChemicalEngine.RDKit);
+    try {
+      expect(cruxEmbed3d(CONST.SMILES), null, 'RDKit mode: the script');
+      setChemicalEngine(ChemicalEngine.Crux);
+      expect(await cruxReady(), true, 'the Crux module loads');
+      for (const format of ['smiles', 'molV2000', 'molV3000']) {
+        const flat = _convertMolNotation(molFormats_[format], DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock,
+          rdKitModule);
+        const block = cruxEmbed3d(flat);
+        expect(block !== null, true, `${format}: embedded`);
+        const lines = (b: string) => b.split('\n');
+        const counts = (b: string) => lines(b)[3].substring(0, 6);
+        expect(counts(block!), counts(flat), `${format}: the atom and bond counts`);
+        const n = Number(counts(flat).substring(0, 3));
+        const atoms = lines(block!).slice(4, 4 + n);
+        expect(atoms.map((l) => l.substring(31, 34)).join(), lines(flat).slice(4, 4 + n).map((l) =>
+          l.substring(31, 34)).join(), `${format}: the atoms`);
+        expect(atoms.some((l) => Number(l.substring(20, 30)) !== 0), true, `${format}: 3D coordinates`);
+      }
+      expect(cruxEmbed3d(CONST.EMPTY), null, 'no block for no atoms: the script\'s path');
+      await structure3dWidget(CONST.SMILES);
+    } finally {
+      setChemicalEngine(null);
+    }
   });
 
 
