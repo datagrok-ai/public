@@ -139,9 +139,11 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
     let echo = false;
     this.effect(() => {
       const value = this.value.value;
+      // a form's refresh re-sends an equal Date mid-typing: reformatting would turn "09:3" into "09:03"
+      const shown = this._parse(input.value);
       if (echo)
         echo = false;
-      else
+      else if (shown === undefined || shown?.getTime() !== value?.getTime())
         input.value = this._format(value);
     });
     this.scope.listen(input, 'input', () => {

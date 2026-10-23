@@ -2,6 +2,7 @@
 
 ## v.next
 
+* DateTimeInput: Fixed typing a time in a form turning "09:3" into "09:03" (and then "09:030", not a date-time): a refresh with the same instant leaves the typed text alone
 * TypeAhead: Fixed Enter on a look-up opened over a held value replacing it with the first row: nothing is highlighted until you move, and Enter keeps the value
 * Filters: Added host operators (`FilterOperator.host`, `OperatorRegistry.hosted()`): conditions the app answers, which parse, format, validate and complete like any other
 * Platform inputs: Fixed a form's own messages on a bridged platform input (a molecule input) showing only as a tooltip: "required" and an app's validator now show under the field, and a refused save names it ("Structure is required", not " is required")
