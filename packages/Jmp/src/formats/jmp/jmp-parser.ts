@@ -5,6 +5,7 @@
 import {ByteReader} from './jmp-reader';
 import {gunzip} from './jmp-decompress';
 import {readTableScripts} from './jmp-scripts';
+import {readColumnProperties} from './jmp-properties';
 import {
   CURRENCY_FORMATS, DATE_FORMATS, DATETIME_FORMATS, DURATION_FORMATS, GZIP_SECTION_START,
   JMP_EPOCH_OFFSET_S, JMP_INT_MISSING, JmpColumn, JmpColumnInfo, JmpColumnKind, JmpData, JmpFormatError, JmpHeader,
@@ -229,7 +230,13 @@ export async function readJmp(bytes: Uint8Array): Promise<JmpTable> {
     if (i > 0 && info.nrows >= YIELD_ROWS)
       await new Promise((resolve) => setTimeout(resolve, 0));
     try {
-      columns.push(await readColumn(r, info, i));
+      const c = await readColumn(r, info, i);
+      columns.push(c);
+      try {
+        c.properties = readColumnProperties(bytes, descriptorEnd(r, c.info), c.descriptor[0]);
+      } catch {
+        // the property layout is provisional (jmp-properties.ts); a surprise there mustn't cost the data
+      }
     } catch (e) {
       columns.push({
         info: info.columns[i], kind: 'unsupported', descriptor: [], data: {type: 'none'},
@@ -244,6 +251,13 @@ export async function readJmp(bytes: Uint8Array): Promise<JmpTable> {
     // the script layout is provisional (jmp-scripts.ts); a surprise there mustn't cost the data
   }
   return {info, columns, scripts};
+}
+
+/** The position just after a column's six descriptor bytes. */
+function descriptorEnd(r: ByteReader, col: JmpColumnInfo): number {
+  r.seek(col.offset);
+  r.lengthPrefixedString(2);
+  return r.pos + 6;
 }
 
 /** The ISO currency code in a currency column's header, or undefined if it isn't where it was in the fixtures. */

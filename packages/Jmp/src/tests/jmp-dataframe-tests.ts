@@ -7,8 +7,11 @@ import {_package} from '../package-test';
 import {addSavedAnalyses, hideJmpHiddenColumns, jmpTableToDataFrame, savedAnalyses, skippedColumns}
   from '../formats/jmp/jmp-to-dataframe';
 import {readJmp} from '../formats/jmp/jmp-parser';
+import {JslNode, parseJsl} from '../formats/jmp/jsl';
 import {fixture, fixtureBytes, FIXTURES} from './jmp-reader-tests';
 import {makeLargeJmp, rowsForSize} from './large-jmp';
+
+type JslCall = Extract<JslNode, {type: 'call'}>;
 
 category('JMP: dataframe', () => {
   test('types and nulls', async () => {
@@ -118,6 +121,34 @@ category('JMP: dataframe', () => {
     } finally {
       tv.close();
     }
+  });
+
+  test('column properties: units, formula, notes, value order', async () => {
+    const t = await fixture('example1');
+    const chars = t.columns.find((c) => c.info.name === 'charconstwidth')!;
+    chars.properties = {properties: ['Notes("Letters")', 'Value Order({Custom Order({"d", "c", "b", "a"})})']
+      .map((text) => ({name: text.slice(0, text.indexOf('(')), text, node: parseJsl(text) as JslCall}))};
+    const df = jmpTableToDataFrame(t);
+    expect(df.col('pressures')!.meta.units, 'kPa');
+    expect(df.col('formula')!.getTag('jmp.formula'), ':ints * 2');
+    expect(df.col('charconstwidth')!.getTag(DG.TAGS.DESCRIPTION), 'Letters');
+    expectArray(df.col('charconstwidth')!.getCategoryOrder(), ['d', 'c', 'b', 'a']);
+    expect(JSON.parse(df.col('charconstwidth')!.getTag('jmp.properties')!).length, 2);
+  });
+
+  test('value labels show as the labels', async () => {
+    const t = await fixture('example1');
+    const ints = t.columns.find((c) => c.info.name === 'ints')!;
+    const order = 'Value Order({Custom Order({3, 1})})';
+    ints.properties = {
+      properties: [{name: 'Value Order', text: order, node: parseJsl(order) as JslCall}],
+      valueLabels: {keys: [1, 3], labels: ['One', 'Three']},
+    };
+    const col = jmpTableToDataFrame(t).col('ints')!;
+    expect(col.type, DG.COLUMN_TYPE.STRING);
+    expectArray(col.toList(), ['One', '2', 'Three', '4']);
+    expectArray(col.getCategoryOrder(), ['Three', 'One']);
+    expect(col.getTag('jmp.valueLabels'), '[[1,"One"],[3,"Three"]]');
   });
 
   test('every fixture converts', async () => {

@@ -44,6 +44,8 @@ async function main(): Promise<void> {
   const notConverted = new Map<string, number>();
   let scripts = 0; let unreadScripts = 0; let flaggedRowStates = 0;
   const flagValues = new Map<number, number>();
+  const properties = new Map<string, {n: number, unread: number}>();
+  let labelled = 0;
   for (const file of files) {
     try {
       const table = await readJmp(new Uint8Array(readFileSync(file)));
@@ -74,6 +76,17 @@ async function main(): Promise<void> {
       if (analyses.length > 0) {
         console.log(`SCRIPTS ${file}: ` + analyses.map((a) => `${a.name} [${a.platform ?? '-'}] ` +
           (a.viewers.length > 0 ? a.viewers.map((v) => v.type).join('+') : 'not converted')).join('; '));
+      }
+      for (const c of table.columns) {
+        for (const p of c.properties?.properties ?? []) {
+          const entry = properties.get(p.name) ?? {n: 0, unread: 0};
+          entry.n++;
+          if (!p.node)
+            entry.unread++;
+          properties.set(p.name, entry);
+        }
+        if (c.properties?.valueLabels)
+          labelled++;
       }
       for (const c of table.columns) {
         if (c.data.type !== 'rowstate' || c.data.flags.every((f) => f === 0))
@@ -112,6 +125,10 @@ async function main(): Promise<void> {
     console.log(`  ${p}: ${converted} converted, ${not} not`);
   for (const [m, n] of [...notConverted].sort((a, b) => b[1] - a[1]).slice(0, 15))
     console.log(`  ${n} × ${m}`);
+  const nProps = [...properties.values()].reduce((n, e) => n + e.n, 0);
+  console.log(`${nProps} column propert${nProps === 1 ? 'y' : 'ies'}, ${labelled} column(s) with value labels`);
+  for (const [name, {n, unread}] of [...properties].sort((a, b) => b[1].n - a[1].n))
+    console.log(`  ${name}: ${n}${unread > 0 ? `, ${unread} unreadable` : ''}`);
   if (flaggedRowStates > 0) {
     console.log(`${flaggedRowStates} row-state column(s) with undecoded bytes set; values (byte4 | byte7 << 8):`);
     for (const [f, n] of [...flagValues].sort((a, b) => a[0] - b[0]))

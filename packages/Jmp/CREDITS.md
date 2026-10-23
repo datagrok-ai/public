@@ -46,6 +46,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
+### jmp-convert
+
+The column-property layout in `src/formats/jmp/jmp-properties.ts` (the
+property list after a column's descriptor bytes, and the value-label
+payload) follows jmp-convert's reader. No source is copied; the layout is
+re-implemented in TypeScript.
+
+- Upstream: https://github.com/davidmathers/jmp-convert
+- Read at commit: `5024c5aba8be0cbfaa21e5a3be85cd9f8a33c3fc` (2026-09-25)
+- License: **MIT**, Copyright (c) 2026 David Mathers
+
 ---
 
 ## 2. Linked at runtime via the Datagrok platform (webpack externals)

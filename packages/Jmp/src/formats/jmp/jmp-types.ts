@@ -2,6 +2,7 @@
 // upstream commit 9fd68aa2651a8dde002ecdbd06af4d8d832b18f2
 
 import type {JmpScript} from './jmp-scripts';
+import type {JmpColumnProperties} from './jmp-properties';
 
 /** First 4 bytes of a .jmp file. */
 export const MAGIC_JMP = [0xff, 0xff, 0x00, 0x00];
@@ -129,6 +130,8 @@ export interface JmpColumn {
   fixedDecimals?: number;
   /** Currency columns only: the ISO 4217 code, e.g. "EUR". */
   currency?: string;
+  /** Column properties (notes, units, formula, value order and the rest) and value labels (jmp-properties.ts). */
+  properties?: JmpColumnProperties;
 }
 
 /** The glyph JMP draws for a row-state marker index. */

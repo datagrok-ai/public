@@ -92,6 +92,12 @@ function tokenize(src: string): Token[] {
         tokens.push({kind: 'string', text, pos});
       continue;
     }
+    // a lone `.` is JSL's missing value
+    if (c === '.' && !/[0-9]/.test(src[i + 1] ?? '')) {
+      tokens.push({kind: 'number', text: '.', pos});
+      i++;
+      continue;
+    }
     if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(src[i + 1] ?? ''))) {
       const m = /^(\d*\.?\d+(?:[eE][+-]?\d+)?|\d+\.)/.exec(src.slice(i))!;
       // dates such as 01Jan2020 continue as a name
@@ -186,7 +192,8 @@ export function parseJsl(src: string): JslNode {
   }
 
   function unary(): JslNode {
-    if (isPunct('-') || isPunct('!') || isPunct('+')) {
+    // a leading `<<` sends to the object before it, as in `Fit Group(..., <<{Profiler(1)})`
+    if (isPunct('-') || isPunct('!') || isPunct('+') || isPunct('<<')) {
       if (++depth > MAX_DEPTH)
         throw new JslSyntaxError('Script is nested too deeply', peek().pos);
       const op = tokens[k++].text;
@@ -198,11 +205,17 @@ export function parseJsl(src: string): JslNode {
   }
 
   function postfix(node: JslNode): JslNode {
-    while (isPunct('[')) {
-      k++;
-      node = {type: 'index', target: node, args: args(']')};
+    for (;;) {
+      if (isPunct('[')) {
+        k++;
+        node = {type: 'index', target: node, args: args(']')};
+      } else if (isPunct('(') && isCall(node, 'Name') && node.args.length === 1 && node.args[0].type === 'string') {
+        // `Name("1a fit")(...)` calls the name `1a fit`, as JMP writes a script named so
+        k++;
+        node = {type: 'call', name: node.args[0].value, args: args(')')};
+      } else
+        return node;
     }
-    return node;
   }
 
   function primary(): JslNode {
@@ -210,9 +223,14 @@ export function parseJsl(src: string): JslNode {
     switch (t.kind) {
     case 'number':
       k++;
-      return {type: 'number', value: Number(t.text)};
+      return {type: 'number', value: t.text === '.' ? NaN : Number(t.text)};
     case 'string':
       k++;
+      // `"Value Ordering"(...)`: JMP writes a property it has no name for as a string called
+      if (isPunct('(')) {
+        k++;
+        return {type: 'call', name: t.text, args: args(')')};
+      }
       return {type: 'string', value: t.text};
     case 'nameLiteral':
     case 'name':

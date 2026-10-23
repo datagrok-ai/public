@@ -2,7 +2,7 @@
 
 > **Purpose:** This spec defines the Datagrok JMP plugin: a browser-side reader for SAS JMP data tables (`.jmp`). It is written for the developer (human or AI agent) building the package. It covers scope, architecture, the file format as far as it is known, type mapping, testing, and the phased roadmap. The [Minitab plugin](../../Minitab/docs/MINITAB_PLUGIN.md) is the structural template.
 
-**Status:** Phase 1 built, 2026-10-21 (v0.1.0, not yet released). The parser matches JMPReader.jl on all 19 reference files; 67 package tests and 7 BDD scenarios pass on a local stand. §11 lists what is left.
+**Status:** Phase 1 built, 2026-10-21; Phase 2 in progress, 2026-10-23 (v0.1.0, not yet released). The parser matches JMPReader.jl on all 19 reference files; 106 package tests and 12 BDD scenarios pass on a local stand. §11 lists what is left.
 
 ---
 
@@ -90,6 +90,7 @@ packages/Jmp/
     │   ├── jmp-parser.ts       # header, metadata, per-column decode (port of metadata.jl + column.jl)
     │   ├── jmp-decompress.ts   # gzip sections via DecompressionStream
     │   ├── jmp-scripts.ts      # saved table scripts: where they sit in the file (§4.5)
+    │   ├── jmp-properties.ts   # column properties and value labels in a column's header (§4.6)
     │   ├── jsl.ts              # a reader for declarative JSL: tokens → tree, never evaluated
     │   ├── jsl-to-viewers.ts   # a saved analysis → Datagrok viewer specs (§11, Phase 3); no platform imports
     │   ├── jmp-to-dataframe.ts # JmpTable → DG.DataFrame (types, tags, semTypes, row states); adds analyses to a view
@@ -202,10 +203,9 @@ A row-state **column** is data the user saved, one state per row. The table's ow
 
 ### 4.4 What is *not* decoded yet (by anyone, publicly)
 
-- Formula expressions (formula columns import as their cached values, which is correct for the data)
-- Column properties: units, notes, value labels, value ordering, spec limits, list check, range check, `Axis`, `Response Limits`, and others
+- What a column property *means* beyond notes, units, formulas, value order, spec limits and value labels (§4.6): the rest are kept as JSL text. `Value Colors` needs JMP's colour numbers, which aren't published: small indices (`"Yes" = 4`) and negative numbers that look like packed RGB (`-4354269`) both occur.
 - Table variables and table notes
-- Saved table scripts: found for the one layout seen so far (§4.5); a file with several, or a long one, may store them differently
+- Saved table scripts: the scan (§4.5) found all 45 scripts in the public corpus (§9.4); long scripts and run-on-open scripts are still unconfirmed
 - Row-state flags (selected / excluded / hidden / labelled), and the table's own row states (§4.3)
 - Column groups
 - The visible/hidden column split is read but only provisionally understood: two lists of column positions, visible then hidden. In `byteintegers.jmp`, the one fixture with a hidden entry, the lists are `[1, 2, 3]` and `[0]`, so the reader takes column 0 ("Column 1") as hidden. The same file has a column (the last) with a display width of 0, which a hidden column might also explain. Needs a file where we know which column is hidden.
@@ -222,7 +222,25 @@ Not in JMPReader.jl. Inferred from the `Source` script JMP saved in the `compact
 
 The text is plain UTF-8 JSL, written as `Name(body)`: the script's name called on the script. The nested lengths look like a property block holding a script list, but one example can't confirm that. The reader (`jmp-scripts.ts`) doesn't rely on them. It scans the bytes between the build string and the first column for `0x03`, a `u32` length, and text of that length that reads as a JSL call, and takes `New Script("name", body)` as well as `Name(body)`. A script that has that shape but doesn't parse is kept with its error, so it can be listed. Any surprise in this scan is caught; it can't cost the table's data.
 
-To confirm with real files: several scripts in one table, names with spaces or punctuation, long scripts (compressed?), and scripts JMP marks as run-on-open.
+Confirmed on the public corpus (§9.4): up to 9 scripts in one table, all found. A name JSL can't write bare is saved as `Name("1a_logistic-regr")(body)`. Still to confirm: long scripts (compressed?) and scripts JMP marks as run-on-open.
+
+### 4.6 Column properties and value labels (provisional)
+
+Not in JMPReader.jl. The container is the one [jmp-convert](https://github.com/davidmathers/jmp-convert) (MIT) reads; what the entries hold was read from the public corpus (§9.4). After a column's six descriptor bytes come 5 bytes for a numeric column (`dt1` `0x01` or `0x0A`) or 4 for any other, then a property list:
+
+```
+u16 count | u64 total length | count × (u16 id | u64 length | payload)
+```
+
+| id | Payload | Seen |
+|---|---|---|
+| `0x07` | JSL properties: each a `u32` length and the property as JSL text, such as `Notes("Was the offer accepted?")`; the list ends with `0xFFFFFFFF` | 91 properties in 13 kinds, in the public corpus and the fixtures: `Formula`, `Notes`, `Units`, `Value Order`, `"Value Ordering"`, `Value Colors`, `Coding`, `Design Role`, `Factor Changes`, `Response Limits`, `Response Probability`, `Intermediate`, `Predicting` |
+| `0x0E` | Value labels: `u32 n`, `u32` length, `n` keys (`f64` for a numeric column, NUL-ended text otherwise), `u32 n`, `u32` length, `n` NUL-ended labels | 2 columns (`Validation`: 0, 1, 2 → Training, Validation, Test) |
+| `0x04` | A coded text column's value pool (jmp-convert) | not seen; no column fails without it |
+
+Columns with no properties have a count of 0. A header that doesn't add up has no properties (`jmp-properties.ts`); a surprise there can't cost the column's data. Every property in the corpus parses as JSL, once the reader takes `.` (missing), a leading `<<`, `Name("x")(...)` and a string called as a name (`"Value Ordering"(...)`, JMP's form for a property it has no name for).
+
+The vendored `example1.jmp` carries `Formula(:ints * 2)` and `Units("kPa")`. The public files have no licence, so they aren't vendored; the other cases are tested on headers built to the layout above.
 
 ---
 
@@ -241,6 +259,7 @@ To confirm with real files: several scripts in one table, names with spaces or p
 | Duration | `double` (seconds) | Set the `units` tag to `s`. Datagrok has no native duration type. |
 | Character (any layout) | `string` | Decoded with `TextDecoder('utf-8')`. |
 | Row state | two `string` columns, `<name> marker` and `<name> color` | The marker column holds JMP's glyph, marker-coded with the nearest Datagrok marker (18 of 32 have one); the colour column holds `#RRGGBB`, colour-coded with itself. Both carry the tag `jmp.rowState` = the JMP column's name. The flags aren't decoded yet (§4.3). |
+| A column with value labels | `string` | Each value's label, or the value itself where it has none, as JMP shows it. The values and labels are kept in the `jmp.valueLabels` tag, `[[value, label], ...]`. |
 | A column the reader can't decode | Not a column | Left out, listed in the preview and named in a warning balloon (§6, §7). It would hold nothing. |
 
 **DataFrame-level tags** (prefix `jmp.`):
@@ -252,6 +271,8 @@ To confirm with real files: several scripts in one table, names with spaces or p
 | `jmp.saveTime` | `savetime`, ISO-8601 |
 | `jmp.charset` | `charset` |
 | `jmp.scripts` | the saved table scripts, as JSON `[{name, text}]`, present only when there are any (§4.5) |
+
+**Column properties** (§4.6): `Notes` → `description`; `Units` → `units`; `Formula` → `jmp.formula`, the JSL expression (the column keeps JMP's cached values); `Value Order` with a custom order, or `"Value Ordering"` → the column's category order (through its labels); `Spec Limits` → `jmp.specLimits`, `{"lsl", "usl", "target"}`. Every property, mapped or not, is kept as JSL text in `jmp.properties`, `[{"name", "text"}]`.
 
 **Column-level tags**: `jmp.format` (raw `dt1..dt6` as hex, for debugging and future decoding), `jmp.displayWidth`, and `jmp.hidden` = `true` on a column JMP hides (provisional, §4.4). A hidden column stays in the table, as in JMP, and is hidden in the grid of a table view the package opens.
 
@@ -360,11 +381,13 @@ The model is the way Crux validates against RDKit: **JMPReader.jl is the referen
 
 8. **JMP: performance** (browser) times the 100 MB file of §8. It runs only with `grok test --benchmark`.
 
-Result on the local stand (2026-10-22): Node pass 86 passed; browser pass 12 passed, the benchmark skipped (and passed when run with `--benchmark`).
+Result on the local stand (2026-10-23): Node pass 92 passed; browser pass 14 passed, the benchmark skipped (and passed when run with `--benchmark`).
 
 ### 9.4 Corpus run (local, not CI)
 
-`npm run corpus -- <folder> [--golden <folder>]` (`tools/jmp-corpus.ts`, through `tsx`) reads every `.jmp` file under the folder with the package's parser and reports files read, files with undecoded columns, and failures grouped by reason; the saved scripts found, by JMP platform, with how many convert to viewers and why the rest don't; and row-state columns whose undecoded bytes are set, with the values seen (§4.3). With `--golden`, it also compares each file with JMPReader.jl's output for it (run `tools/jmp2json.jl` over the same folder first). Run it against a JMP install's `Samples/Data` folder and any customer corpus we're given access to. It hasn't been run on either yet: no JMP install or customer files were at hand. **Acceptance for Phase 1:** ≥ 99% of JMP 17/18 sample files open, with zero files throwing on supported versions. This matches JMPReader.jl's own coverage.
+`npm run corpus -- <folder> [--golden <folder>]` (`tools/jmp-corpus.ts`, through `tsx`) reads every `.jmp` file under the folder with the package's parser and reports files read, files with undecoded columns, and failures grouped by reason; the saved scripts found, by JMP platform, with how many convert to viewers and why the rest don't; and row-state columns whose undecoded bytes are set, with the values seen (§4.3). With `--golden`, it also compares each file with JMPReader.jl's output for it (run `tools/jmp2json.jl` over the same folder first). Run it against a JMP install's `Samples/Data` folder and any customer corpus we're given access to. It also counts column properties by name, with any it can't read, and columns with value labels (§4.6). It hasn't been run on either yet: no JMP install or customer files were at hand.
+
+A **public corpus** stands in until then: 14 `.jmp` files from GitHub repositories, mostly course and lab data saved by JMP 14–17 (`gm105/JMP`, `whippo/Whippo-NCE-2024`, `heyselbi/Marketing-Analytics-auditing`, `pineapplefart/S5_Hackathon_Supplementary`, `ArvindRajen/Salary_Prediction`, `BreakOnExecute/JMPReader`). They have no licence, so they stay outside the repo. Run on 2026-10-23: 13 of 14 read with every column decoded; the 14th is the older `(3,4,3)` format, refused as expected. 45 saved scripts were found and all read (Graph Builder, Distribution, Oneway, Bivariate, Contingency and Tabulate convert; Fit Model, DOE, Multivariate, Partition, Neural and screening don't). 87 column properties in 12 kinds and 2 value-labelled columns, all read. **Acceptance for Phase 1:** ≥ 99% of JMP 17/18 sample files open, with zero files throwing on supported versions. This matches JMPReader.jl's own coverage.
 
 
 ### 9.5 Behaviour (BDD)
@@ -385,7 +408,7 @@ node ../../libraries/bdd/bin/grok-bdd.js compile
 DATAGROK_URL=http://localhost:8080 node ../../libraries/bdd/bin/grok-bdd.js run --reporter=list
 ```
 
-Result on the local stand (2026-10-22): 12 passed, 0 audit findings, run with `--workers=1`. With the default workers, the first scenario on each worker sometimes times out on the stand's cold start (server unavailable at login, or the Files node slow to expand) before any package step runs.
+Result on the local stand (2026-10-23): 12 passed, 0 audit findings, run with `--workers=1`. With the default workers, the first scenario on each worker sometimes times out on the stand's cold start (server unavailable at login, or the Files node slow to expand) before any package step runs.
 ---
 
 ## 10. Licensing and Attribution
@@ -419,9 +442,11 @@ Result on the local stand (2026-10-22): 12 passed, 0 audit findings, run with `-
 ### Phase 2 — Fidelity
 
 - Row-state flags → Datagrok **selection** (selected), **filter** (excluded and hidden, as a saved filter state), and **colour coding** (row colours/markers, where a viewer supports them). Needs files with flags set, and the place JMP keeps the table's own row states (§4.3).
-- Value labels → Datagrok categorical display / value mapping
-- Column properties: units → `units` tag, notes → `description`, spec limits → tags readable by SPC/control-chart viewers
-- Formula text → keep it as a `jmp.formula` tag. Where a translation exists, offer to convert it to a Datagrok calculated column (see the Datagrok formula syntax: no ternary, use `If()`).
+- [x] Value labels → a string column of the labels, values kept in a tag (§4.6, §5)
+- [x] Column properties: units → `units`, notes → `description`, value order → category order, spec limits → `jmp.specLimits`, all kept as JSL text (§4.6)
+- [x] Formula text → a `jmp.formula` tag
+- [ ] Formulas as Datagrok calculated columns, where a translation exists (Datagrok formula syntax: no ternary, use `If()`)
+- [ ] Value colours → categorical colour coding, once JMP's colour numbers are known (§4.4)
 - Table variables and notes → DataFrame tags
 - Older format `(3,4,3)` support, if the corpus shows meaningful volume
 

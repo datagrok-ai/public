@@ -4,6 +4,7 @@ import {_package} from '../package-test';
 import {jmpSecondsToDate, readHeader, readJmp, readMetadata} from '../formats/jmp/jmp-parser';
 import {ByteReader} from '../formats/jmp/jmp-reader';
 import {JmpFormatError, JmpTable, SUPPORTED_VERSION, jmpValues} from '../formats/jmp/jmp-types';
+import {readColumnProperties} from '../formats/jmp/jmp-properties';
 import {compareToGolden, Golden} from './golden';
 
 
@@ -263,4 +264,76 @@ category('JMP: robustness', () => {
       }
     }
   }, {timeout: 120000});
+}, {node: true});
+
+const enc = new TextEncoder();
+
+function concat(parts: (Uint8Array | number[])[]): Uint8Array {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let at = 0;
+  for (const p of parts) {
+    out.set(p, at);
+    at += p.length;
+  }
+  return out;
+}
+
+const u16 = (v: number): number[] => [v & 0xff, v >> 8];
+const u32 = (v: number): number[] => [v & 0xff, (v >> 8) & 0xff, (v >> 16) & 0xff, v >>> 24];
+const u64 = (v: number): number[] => [...u32(v), 0, 0, 0, 0];
+const f64 = (v: number): Uint8Array => new Uint8Array(new Float64Array([v]).buffer);
+const nulText = (items: string[]): Uint8Array => enc.encode(items.map((s) => s + '\0').join(''));
+
+/** A column header after the descriptor bytes, laid out as JMP_PLUGIN.md §4.6 describes. */
+function columnHeader(gap: number, entries: [number, Uint8Array][]): Uint8Array {
+  const body = concat(entries.flatMap(([id, p]) => [u16(id), u64(p.length), p]));
+  return concat([new Array(gap).fill(0), u16(entries.length), u64(body.length), body]);
+}
+
+function jslProperties(texts: string[]): Uint8Array {
+  return concat([...texts.flatMap((t) => [u32(enc.encode(t).length), enc.encode(t)]), u32(0xffffffff)]);
+}
+
+function labelsPayload(keys: Uint8Array, labels: string[]): Uint8Array {
+  const l = nulText(labels);
+  return concat([u32(labels.length), u32(keys.length), keys, u32(labels.length), u32(l.length), l]);
+}
+
+category('JMP: column properties', () => {
+  test('formula and units in a JMP-made file', async () => {
+    const t = await fixture('example1');
+    const props = (name: string): string[] =>
+      t.columns.find((c) => c.info.name === name)!.properties!.properties.map((p) => p.text);
+    expectArray(props('formula'), ['Formula(:ints * 2)']);
+    expectArray(props('pressures'), ['Units("kPa")']);
+    expectArray(props('ints'), []);
+  });
+
+  test('JSL properties, in the order saved', async () => {
+    const texts = ['Notes("Was the offer accepted?")', 'Value Order({Custom Order({"Yes", "No"})})',
+      '"Value Ordering"({"Yes", "No"})'];
+    const p = readColumnProperties(columnHeader(4, [[0x07, jslProperties(texts)]]), 0, 0x02);
+    expectArray(p.properties.map((q) => q.name), ['Notes', 'Value Order', 'Value Ordering']);
+    expect(p.properties.every((q) => q.node !== undefined), true);
+  });
+
+  test('value labels, numeric and text', async () => {
+    const numeric = labelsPayload(concat([f64(0), f64(1), f64(2)]), ['Training', 'Validation', 'Test']);
+    // a numeric column's header has one byte more before the property list
+    const n = readColumnProperties(columnHeader(5, [[0x0e, numeric]]), 0, 0x01);
+    expectArray(n.valueLabels!.keys, [0, 1, 2]);
+    expectArray(n.valueLabels!.labels, ['Training', 'Validation', 'Test']);
+    const text = readColumnProperties(columnHeader(4, [[0x0e, labelsPayload(nulText(['f', 'm']), ['Fri', 'Mon'])]]),
+      0, 0x02);
+    expectArray(text.valueLabels!.keys, ['f', 'm']);
+  });
+
+  test('a header of another shape has none', async () => {
+    expectArray(readColumnProperties(new Uint8Array(32), 0, 0x01).properties, []);
+    const bad = columnHeader(4, [[0x07, jslProperties(['Notes("x")'])]]);
+    bad[6]++; // the total length no longer adds up
+    expectArray(readColumnProperties(bad, 0, 0x02).properties, []);
+    const torn = labelsPayload(f64(1), ['One']).subarray(0, 20);
+    expect(readColumnProperties(columnHeader(5, [[0x0e, torn]]), 0, 0x01).valueLabels === undefined, true);
+  });
 }, {node: true});

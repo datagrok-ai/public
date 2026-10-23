@@ -3,7 +3,8 @@ import {category, expect, expectArray, expectExceptionAsync, test} from '@datagr
 import {_package} from '../package-test';
 import {JslNode, JslSyntaxError, columnNames, findArg, isCall, parseJsl, statements} from '../formats/jmp/jsl';
 import {readJmp} from '../formats/jmp/jmp-parser';
-import {JmpScript} from '../formats/jmp/jmp-scripts';
+import {JmpScript, readTableScripts} from '../formats/jmp/jmp-scripts';
+import {JmpInfo} from '../formats/jmp/jmp-types';
 import {JmpColumnRef, JmpScriptConversion, convertScript} from '../formats/jmp/jsl-to-viewers';
 import {fixture} from './jmp-reader-tests';
 
@@ -61,6 +62,18 @@ category('JMP: JSL', () => {
     const n = parseJsl('f("\\[a "quoted" path]\\", , 2,)') as Extract<JslNode, {type: 'call'}>;
     expect(n.args.length, 2);
     expect(n.args[0].type === 'string' && n.args[0].value, 'a "quoted" path');
+  });
+
+  test('missing values, leading sends, names called', async () => {
+    const n = parseJsl('Add Response(Minimize, "Time", ., ., .)') as Extract<JslNode, {type: 'call'}>;
+    expect(n.args.length, 5);
+    expect(n.args[2].type === 'number' && Number.isNaN(n.args[2].value), true);
+    const g = parseJsl('Fit Group(Fit Model(Y(:y)), <<{Profiler(1)})') as Extract<JslNode, {type: 'call'}>;
+    expect(g.args[1].type === 'unary' && g.args[1].op, '<<');
+    const named = parseJsl('Name("1a fit")(Fit Model(Y(:y)))') as Extract<JslNode, {type: 'call'}>;
+    expect(named.name, '1a fit');
+    expect(isCall(named.args[0], 'Fit Model'), true);
+    expect(isCall(parseJsl('"Value Ordering"({"Yes", "No"})'), 'Value Ordering'), true);
   });
 
   test('syntax errors', async () => {
@@ -136,6 +149,16 @@ category('JMP: saved scripts', () => {
     expect(v.type, 'Bar chart');
     expect(v.options.splitColumnName, 'A');
     expect(v.options.valueAggrType, 'count');
+  });
+
+  test('a script whose name JSL can\'t write bare', async () => {
+    const text = new TextEncoder().encode('Name("1a_logistic-regr")(Fit Model(Y(:sex), Effects(:height)))');
+    const bytes = new Uint8Array([0x03, ...new Uint8Array(new Uint32Array([text.length]).buffer), ...text]);
+    const scripts = readTableScripts(bytes, {propertiesRange: [0, bytes.length]} as JmpInfo);
+    expect(scripts.length, 1);
+    expect(scripts[0].name, '1a_logistic-regr');
+    expect(scripts[0].error === undefined, true);
+    expect(scripts[0].text, 'Fit Model(Y(:sex), Effects(:height))');
   });
 
   test('New Script form', async () => {

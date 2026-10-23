@@ -1,7 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {JMP_EPOCH_OFFSET_S, JMP_INT_MISSING, JmpColumn, JmpData, JmpTable, hexColor, rowStateGlyph} from './jmp-types';
+import {
+  JMP_EPOCH_OFFSET_S, JMP_INT_MISSING, JmpColumn, JmpData, JmpTable, hexColor, jmpValue, rowStateGlyph,
+} from './jmp-types';
+import {JmpValueLabels} from './jmp-properties';
+import {JslNode, isCall, jslKey} from './jsl';
 import {JmpColumnRef, JmpScriptConversion, convertScripts} from './jsl-to-viewers';
 import {isSourceScript} from './jmp-scripts';
 
@@ -57,7 +61,10 @@ export function jmpTableToDataFrame(table: JmpTable, name?: string): DG.DataFram
     if (c.kind === 'rowstate')
       addRowStateColumns(df, c);
     else {
-      const col = df.columns.add(toColumn(c, df.columns.getUnusedName(c.info.name)));
+      const name = df.columns.getUnusedName(c.info.name);
+      const labels = c.properties?.valueLabels;
+      const col = df.columns.add(labels ? labelledColumn(c, name, labels, table.info.nrows) : toColumn(c, name));
+      setColumnTags(col, c);
       if (hidden.has(c))
         col.setTag('jmp.hidden', 'true');
     }
@@ -164,9 +171,94 @@ function toColumn(c: JmpColumn, name: string): DG.Column {
   }
   if (c.fixedDecimals !== undefined)
     col.meta.format = c.fixedDecimals === 0 ? '0' : `0.${'0'.repeat(c.fixedDecimals)}`;
+  return col;
+}
+
+/** A column with value labels shows the labels, as JMP does: a string column of each value's label, or of
+ * the value itself where it has none. The values and their labels are kept in the `jmp.valueLabels` tag. */
+function labelledColumn(c: JmpColumn, name: string, labels: JmpValueLabels, nrows: number): DG.Column {
+  const label = new Map<number | string, string>(labels.keys.map((k, i) => [k, labels.labels[i]]));
+  const index = new Map<string, number>();
+  const categories: string[] = [];
+  const indexes = new Int32Array(nrows);
+  for (let i = 0; i < nrows; i++) {
+    const v = jmpValue(c, i);
+    const text = v === null ? '' : label.get(v) ?? String(v);
+    let k = index.get(text);
+    if (k === undefined) {
+      k = categories.length;
+      categories.push(text);
+      index.set(text, k);
+    }
+    indexes[i] = k;
+  }
+  const col = DG.Column.fromIndexes(name, categories, indexes);
+  col.setTag('jmp.valueLabels', JSON.stringify(labels.keys.map((k, i) => [k, labels.labels[i]])));
+  return col;
+}
+
+/** Tags every imported column gets, and what its JMP column properties map to (JMP_PLUGIN.md §5). */
+function setColumnTags(col: DG.Column, c: JmpColumn): void {
   col.setTag('jmp.format', c.descriptor.map((b) => b.toString(16).padStart(2, '0')).join(' '));
   col.setTag('jmp.displayWidth', `${c.info.width}`);
-  return col;
+  const props = c.properties?.properties ?? [];
+  if (props.length === 0)
+    return;
+  col.setTag('jmp.properties', JSON.stringify(props.map((p) => ({name: p.name, text: p.text}))));
+  const labels = c.properties?.valueLabels;
+  const shown = (v: string | number): string => {
+    const i = labels ? labels.keys.indexOf(v) : -1;
+    return i >= 0 ? labels!.labels[i] : String(v);
+  };
+  for (const p of props) {
+    const node = p.node;
+    if (!node)
+      continue;
+    const text = node.args[0]?.type === 'string' ? node.args[0].value : undefined;
+    if (isCall(node, 'Notes') && text !== undefined)
+      col.setTag(DG.TAGS.DESCRIPTION, text);
+    else if (isCall(node, 'Units') && text !== undefined)
+      col.meta.units = text;
+    else if (isCall(node, 'Formula'))
+      col.setTag('jmp.formula', p.text.slice(p.text.indexOf('(') + 1, p.text.lastIndexOf(')')).trim());
+    else if (isCall(node, 'Spec Limits')) {
+      const limits = specLimits(node);
+      if (Object.keys(limits).length > 0)
+        col.setTag('jmp.specLimits', JSON.stringify(limits));
+    } else if (col.type === DG.TYPE.STRING) {
+      const order = categoryOrder(node);
+      if (order)
+        col.setCategoryOrder(order.map(shown));
+    }
+  }
+}
+
+/** The order of `Value Order({Custom Order({...})})`, or of `"Value Ordering"({...})`, which JMP writes
+ * alongside it. */
+function categoryOrder(node: Extract<JslNode, {type: 'call'}>): (string | number)[] | undefined {
+  let list: JslNode | undefined;
+  const key = jslKey(node.name);
+  if (key === 'valueorder') {
+    const items = node.args[0]?.type === 'list' ? node.args[0].items : node.args;
+    list = items.find((a): a is Extract<JslNode, {type: 'call'}> => isCall(a, 'Custom Order'))?.args[0];
+  } else if (key === 'valueordering')
+    list = node.args[0];
+  if (list?.type !== 'list')
+    return undefined;
+  const values = list.items.map((a) => a.type === 'string' || a.type === 'number' ? a.value : undefined);
+  return values.every((v) => v !== undefined) ? values as (string | number)[] : undefined;
+}
+
+/** `Spec Limits({LSL(1), USL(5), Target(3), Show Limits(0)})` as {lsl, usl, target}, missing ones left out. */
+function specLimits(node: Extract<JslNode, {type: 'call'}>): {lsl?: number, usl?: number, target?: number} {
+  const items = node.args[0]?.type === 'list' ? node.args[0].items : node.args;
+  const out: {lsl?: number, usl?: number, target?: number} = {};
+  for (const [key, name] of [['lsl', 'LSL'], ['usl', 'USL'], ['target', 'Target']] as const) {
+    const arg = items.find((a): a is Extract<JslNode, {type: 'call'}> => isCall(a, name))?.args[0];
+    if (arg?.type === 'number' && !Number.isNaN(arg.value))
+      out[key] = arg.value;
+  }
+  return out;
 }
 
 /** Adds the viewers converted from saved analyses to a table view. Returns the number added; a viewer the

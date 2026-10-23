@@ -53,9 +53,11 @@ function tryScript(raw: Uint8Array): JmpScript | null {
   }
   if (/[\0-\x08\x0e-\x1f]/.test(text))
     return null;
-  const open = text.indexOf('(');
-  const head = text.slice(0, open).trim();
-  if (open <= 0 || !/^("[^"]*"n|[A-Za-z_][\w ]*)$/.test(head))
+  // a name JSL can't write bare is saved as `Name("1a fit")(body)`
+  const named = /^\s*Name\(\s*"([^"]*)"\s*\)\s*\(/i.exec(text);
+  const open = named ? named[0].length - 1 : text.indexOf('(');
+  const head = named ? named[1] : text.slice(0, open).trim();
+  if (open <= 0 || (!named && !/^("[^"]*"n|[A-Za-z_][\w ]*)$/.test(head)))
     return null;
   const inner = text.slice(open + 1, -1).trim();
   try {
