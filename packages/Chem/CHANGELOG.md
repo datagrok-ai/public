@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Added BDD scenarios for the Included in / Not included in pair of the substructure card, Align and Highlight in the card's sketcher, and Ketcher picked in the filter card's sketcher (GROK-12581, GROK-12905)
 * Settings: **Chemical Engine** (RDKit, the default, or Crux): in Crux mode the molecule renderer, `drawMolecule` and `canvasMol` draw through Crux (highlights and scaffold alignment included), with RDKit drawing any molecule Crux cannot read or a call it refuses; descriptors (the dialog's tree and the values: the menu, the panel, `chemDescriptors`, the vector function) are calculated by Crux in web workers instead of the chem-chem container, and the Scaffold Tree is built by Crux in a web worker instead of the Python script, each with the server path as its fallback. The Crux file is fetched only in Crux mode (and by the Crux substructure search). Other packages get RDKit objects from Chem in both modes (`getRdKitModule`, `getRdKitService`); in Crux mode the pictures and values of the moved functions come from Crux
 * Chemical Engine: In Crux mode, a molecule whose descriptors Crux cannot calculate (a row of empty values, e.g. a V3000 molblock Crux's reader rejects) gets the container's values, and the fallback is logged, instead of empty cells
 * Crux: Chem's Crux engine is one WebAssembly file, `vendor/chem-wasm` (crux-core's `chem-wasm`: rendering, search, descriptors, the scaffold tree), compiled once and shared by the main thread and the Crux workers; it replaces the search-only `src/crux/crux_wasm`

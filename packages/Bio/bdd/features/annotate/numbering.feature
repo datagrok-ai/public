@@ -7,9 +7,9 @@ Feature: Antibody numbering with the bundled immunum engine
   the default IMGT run, made next on the same table, numbers by IMGT.
   Engines of other packages (e.g. HMM's ANARCI) come first and are the default when installed, so
   the scenario picks the bundled engine.
-  The project round-trip of a numbering (its aligned column, tags and regions) and its
-  deterministic re-run on the reopened table are tested in Bio src/tests/projects-tests.ts
-  ('antibody_numbering').
+  TestTrack Bio/bio-lifecycle-immunum-wasm.md scenarios 2 and 3 (the numbered table through a saved
+  project, the engine run again on the reopened table) are tested in Bio
+  src/tests/projects-tests.ts ('antibody_numbering').
 
   Not translated: the md's timing bound on the worker call — a duration is not a claim the
   platform signals; the other schemes of the md title (Chothia, AHo) — the bundled engine offers

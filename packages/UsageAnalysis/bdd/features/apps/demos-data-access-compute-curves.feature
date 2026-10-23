@@ -6,6 +6,11 @@ Feature: The Data Access, Compute and Curves demos open from Browse > Apps > Dem
   the TestTrack case Apps/apps.md 2 and playwright-public/browse/demo_apps.test.ts; the case's
   interactivity is claimed on Table Linking, where a current row in one table filters the other.
 
+  From Curves/curves-demo.md, scenarios 1 and 2: a click on a curve cell of Curve Fitting shows the
+  Options, Chart and Fit panes in the Context Panel, and the filter panel opens over the curves without
+  errors (GROK-13784); Assay Curves opens its 43 rows with the Fitted Curve column of semantic type
+  "fit".
+
   Domain Databases turns on the account's "Domain databases" beta setting; the feature remembers the
   setting and puts it back. The Databases demo's connection list is the stand's own content, so only
   the view is claimed there. Plates' Assay Plates demo is not in the tree (its category is not one of
@@ -67,6 +72,37 @@ Feature: The Data Access, Compute and Curves demos open from Browse > Apps > Dem
     Then 2444 rows of table "Demographics" should pass the filter
     And no errors should have been logged
     And no error or warning balloon should have been shown
+
+  Scenario: Curve Fitting shows the curve panes of a clicked cell and opens the filter panel without errors
+    Given the "Curves" package is installed
+    And Apps---Demo---Curves tree node inside browse tree is expanded
+    And user listens for "demo-loaded" custom event
+    When user clicks on Apps---Demo---Curves---Curve-Fitting tree node inside browse tree
+    Then the "demo-loaded" custom event should have fired with path "Curves | Curve Fitting"
+    And the "Curve Fitting" view should be current
+    And the context panel is open
+    When user scrolls the grid to the "multiple prefit" column
+    And user clicks on the "cell 1 of multiple prefit" area of grid
+    Then the current column should be "multiple prefit"
+    And "Options" pane in context panel should be visible
+    And "Chart" pane in context panel should be visible
+    And "Fit" pane in context panel should be visible
+    When user clicks on filter icon in toolbar
+    Then filter panel should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: Assay Curves opens its 43 assay rows with the Fitted Curve column
+    Given the "Curves" package is installed
+    And Apps---Demo---Curves tree node inside browse tree is expanded
+    And user listens for "demo-loaded" custom event
+    When user clicks on Apps---Demo---Curves---Assay-Curves tree node inside browse tree
+    Then the "demo-loaded" custom event should have fired with path "Curves | Assay Curves"
+    And the "Assay Curves" view should be current
+    And the table should have 43 rows
+    And the table should have a column "Fitted Curve"
+    And "Fitted Curve" column should have semantic type "fit"
+    And no errors should have been logged
 
   Scenario: The Domain Databases demo turns the beta setting on, and the feature puts it back
     Given the "enableDomainDatabases" shell setting is put back at feature end

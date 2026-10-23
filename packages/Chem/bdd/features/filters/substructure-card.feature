@@ -5,7 +5,9 @@ Feature: The substructure filter card and its search types
   substructure card; Add Filter | Substructure Filter... with every column checked in its picker
   puts them back. Pyridine drawn on the Structure card keeps 17 rows and the header counter reads 1.
   The card offers seven search types: Not contains keeps exactly the other 83 rows, the ones without
-  pyridine, so the two search types partition the table, and Contains again keeps the same 17 rows. What each search type keeps is tested in Chem
+  pyridine, so the two search types partition the table. Included in keeps none of the rows, no
+  molecule of spgi-100 being part of pyridine, and Not included in keeps all 100, so that pair
+  partitions the table too (TestTrack Chem/chem-filters.md, step 4). Contains again keeps the same 17 rows. What each search type keeps is tested in Chem
   src/tests/substructure-search-tests.ts ('substructure search: search types', 'substructure search: stereo agnostic').
 
   Background:
@@ -68,6 +70,13 @@ Feature: The substructure filter card and its search types
     Then 83 rows should pass the filter
     And the filter should pass exactly the molecules of "Structure" column not containing "c1ccncc1"
     And the "search type of Structure" reading of filter panel should be "Not contains"
+    When user picks search type "Included in" in the "Structure" filter card
+    Then 0 rows should pass the filter
+    And the "search type of Structure" reading of filter panel should be "Included in"
+    When user picks search type "Not included in" in the "Structure" filter card
+    Then 100 rows should pass the filter
+    And the "search type of Structure" reading of filter panel should be "Not included in"
+    And the "structure of Structure" reading of filter panel should be "c1ccncc1"
     When user picks search type "Contains" in the "Structure" filter card
     Then 17 rows should pass the filter
     And the filter should pass exactly the molecules of "Structure" column containing "c1ccncc1"
