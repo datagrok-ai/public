@@ -902,6 +902,15 @@ export namespace funcs {
   }
 
   /**
+   * A molecule with 3D coordinates (a MOL block), by the Chemical Engine in effect
+   * @param {string} molecule
+   *   semType: Molecule
+   */
+  export async function embed3d(molecule: string ): Promise<string> {
+    return await grok.functions.call('Chem:Embed3d', { molecule });
+  }
+
+  /**
    * 2D molecule representation
    * @param {string} molecule
    *   semType: Molecule

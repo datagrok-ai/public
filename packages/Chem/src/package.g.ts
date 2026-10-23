@@ -788,6 +788,13 @@ export async function structure3D(molecule: string) : Promise<any> {
   return await PackageFunctions.structure3D(molecule);
 }
 
+//description: A molecule with 3D coordinates (a MOL block), by the Chemical Engine in effect
+//input: string molecule { semType: Molecule }
+//output: string result
+export async function embed3d(molecule: string) : Promise<string> {
+  return await PackageFunctions.embed3d(molecule);
+}
+
 //name: Structure | 2D Structure
 //description: 2D molecule representation
 //input: string molecule { semType: Molecule }

@@ -79,7 +79,7 @@ import {_importSmi} from './file-importers/smi-importer';
 import {Chem} from './scripts-api';
 import {renderMolecule} from './rendering/render-molecule';
 import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
-import {structure3dWidget} from './widgets/structure3d';
+import {embed3d, structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {
   _demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA, _demoSarMatrix,
@@ -1818,6 +1818,11 @@ export class PackageFunctions {
     return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
       _isSmarts(molecule) || isFragment(molecule) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
         structure3dWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  }
+
+  @grok.decorators.func({description: 'A molecule with 3D coordinates (a MOL block), by the Chemical Engine in effect'})
+  static async embed3d(@grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<string> {
+    return embed3d(molecule);
   }
 
   @grok.decorators.panel({

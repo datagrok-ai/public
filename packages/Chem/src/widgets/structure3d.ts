@@ -4,7 +4,7 @@ import {Chem} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
-import {ChemicalEngine, engineInEffect} from '../engine/chem-engine';
+import {cruxReady, isCruxRequested} from '../engine/chem-engine';
 import {ChemWasm, cruxModuleSync, noteCruxError} from '../engine/crux-module';
 import {warnCruxFallback} from '../engine/fallback';
 import {getCruxService} from '../crux/crux-searches';
@@ -44,7 +44,8 @@ export const isEmbedTimeout = (e: unknown): boolean =>
  * engine/README.md). A timeout throws: the script would not finish either.
  */
 export async function cruxEmbed3d(molecule: string, options?: Embed3dOptions): Promise<string | null> {
-  if (engineInEffect() !== ChemicalEngine.Crux)
+  // Crux requested: wait for its module (a fresh page has not loaded it yet) rather than run the script meanwhile
+  if (!isCruxRequested() || !await cruxReady())
     return null;
   try {
     return await (await getCruxService()).embed3d(molecule, options ?? embed3dOptions());
@@ -57,6 +58,16 @@ export async function cruxEmbed3d(molecule: string, options?: Embed3dOptions): P
   }
 }
 
+/**
+ * `molecule` (SMILES or a MOL block) with 3D coordinates, a MOL block, by the Chemical Engine in effect: Crux's
+ * embedding on a Crux worker in Crux mode ({@link cruxEmbed3d}), the SmilesTo3DCoordinates script in RDKit mode and
+ * for a molecule Crux cannot read. Throws when the embedding times out. Chem's one entry point for 3D coordinates
+ * (`Chem:embed3d`: the 3D Structure pane, Bio's macromolecule pane).
+ */
+export async function embed3d(molecule: string): Promise<string> {
+  return await cruxEmbed3d(molecule) ?? (await Chem.smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n');
+}
+
 export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   const rdKitModule = getRdKitModule();
   try {
@@ -67,8 +78,7 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   }
   let sdf: string;
   try {
-    sdf = MolfileHandler.getInstance(molecule).z.every((coord) => coord === 0) ? await cruxEmbed3d(molecule) ??
-      (await Chem.smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n') : molecule;
+    sdf = MolfileHandler.getInstance(molecule).z.every((coord) => coord === 0) ? await embed3d(molecule) : molecule;
   } catch (e) {
     return new DG.Widget(ui.divText(isEmbedTimeout(e) ?
       `No 3D coordinates: the embedding took longer than ${embed3dOptions().timeoutMs / 1000} s` :

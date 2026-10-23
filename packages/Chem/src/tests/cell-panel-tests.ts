@@ -225,6 +225,11 @@ category('cell panel', async () => {
         expect(atoms.some((l) => Number(l.substring(20, 30)) !== 0), true, `${format}: 3D coordinates`);
       }
       expect(await cruxEmbed3d(CONST.EMPTY), null, 'no block for no atoms: the script\'s path');
+      // the registered entry point runs in the package's own bundle, under the stand's engine (not this test's switch)
+      if (await grok.functions.call('Chem:chemicalEngine') === ChemicalEngine.Crux) {
+        expect(String(await grok.functions.call('Chem:embed3d', {molecule: CONST.SMILES})).includes('M  END'), true,
+          'Chem:embed3d, the entry point other packages call');
+      }
       await structure3dWidget(CONST.SMILES);
     } finally {
       setChemicalEngine(null);
