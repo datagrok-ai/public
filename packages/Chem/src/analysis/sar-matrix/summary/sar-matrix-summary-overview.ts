@@ -111,9 +111,11 @@ export class SummaryOverview {
     const parts = [`core: ${data.coreRole}`, `columns: ${data.axisRole}`];
     if (folded.length > 0)
       parts.push(`folded into rows: ${folded.join(', ')}`);
-    return this.kit.hint(parts.join(' · '),
+    const line = this.kit.hint(parts.join(' · '),
       'Which component runs across the matrix columns only changes the grid\'s layout; every component ' +
       'is ranked and has its swaps pooled either way.');
+    line.classList.add('chem-sar-sum-setup');
+    return line;
   }
 
   private componentRow(data: SummaryData, role: RoleSummary): HTMLElement {

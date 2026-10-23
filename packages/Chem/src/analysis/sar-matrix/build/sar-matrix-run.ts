@@ -2,14 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../../../package';
-import {getRdKitService} from '../../../utils/chem-common-rdkit';
+import {getRdKitModule, getRdKitService} from '../../../utils/chem-common-rdkit';
 import {getMmpFrags} from '../../molecular-matched-pairs/mmp-analysis/mmpa-fragments';
+import {MmpFragments} from '../../molecular-matched-pairs/mmp-analysis/mmpa-misc';
 import {SCALING_METHODS} from '../../molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from '../../molecular-matched-pairs/mmp-viewer/mmpa-utils';
-import {assembleMultiPositionMatrix} from './sar-matrix-assemble';
-import {checkAgainstMolecules, cutWarning, decomposeByColumns, SarFragmentColumns, SeriesCut}
+import {assembleMultiPositionMatrix, linkStaged} from './sar-matrix-assemble';
+import {canonicalSmiles, checkAgainstMolecules, cutWarning, decomposeByColumns, SarFragmentColumns, SeriesCut}
   from './sar-matrix-columns';
-import {ClusterDecomposition, decomposeClusters} from './sar-matrix-decompose';
+import {cachedAtomCount, ClusterDecomposition, decomposeClusters} from './sar-matrix-decompose';
 import {computeMatrixConfidence} from './sar-matrix-confidence';
 import {buildMatchedSeries, buildCoarserLevels, clusterRelatedCores, groupSeriesByColumn, groupSeriesBySite,
   poolUngroupedSeries, poolUngroupedMolecules}
@@ -20,11 +21,10 @@ import {CoreCluster, logSarTime, observedMolecules, SarMatrix, SarMatrixCell} fr
 /**
  * Link each virtual analog's row core to its column substituent in one batched worker call.
  *
- * Single-cut matrices only (empty `refValues`): `mmpLinkFragments` substitutes `[*:1]` alone, so a
- * multi-attachment core would return unresolved `[*:2]…` dummies. Decomposed matrices are linked during
- * assembly instead. `positions` holds only the VARYING positions, so it cannot be the discriminator.
+ * Single-cut matrices only (empty `refValues`): decomposed matrices are linked during assembly. `positions`
+ * holds only the VARYING positions, so it cannot be the discriminator.
  */
-async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void> {
+export async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void> {
   const cores: string[] = [];
   const fragments: string[] = [];
   const targets: SarMatrixCell[] = [];
@@ -46,9 +46,139 @@ async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void> {
   if (targets.length === 0)
     return;
 
-  const linked = await (await getRdKitService()).mmpLinkFragments(cores, fragments);
+  const plan = [{R1: [1]}];
+  const linked = await linkStaged(cores, cores.map(() => plan), (i) => fragments[i]);
   for (let i = 0; i < targets.length; i++)
-    targets[i].smiles = linked[i] ? linked[i] : null;
+    targets[i].smiles = linked[i];
+}
+
+/** The component with the most heavy atoms, canonical: fragmenting a salt carries the counter-ion on a
+ *  substituent, so a combination can rebuild a free base the table holds as its salt, or the reverse.
+ *  Counted in atoms, since a counter-ion such as citrate can be the longer string. */
+function parentStructure(smiles: string): string {
+  if (!smiles.includes('.'))
+    return smiles;
+  const rdkit = getRdKitModule();
+  const size = (component: string): number => cachedAtomCount(component, rdkit);
+  return canonicalSmiles(smiles.split('.')
+    .reduce((a, b) => size(b) > size(a) || (size(b) === size(a) && b > a) ? b : a));
+}
+
+const STEREO_MARK = /[@/\\]/;
+
+/**
+ * Take back the predictions whose structure the table already holds: another cut, core spelling, salt
+ * form or series of a compound in it. Never assayed, the cell is that compound, untested, and keeps its
+ * number when untested compounds are predicted; assayed, or filed under another series, it is
+ * `excluded`. No measurement moves, so the fits, their cross-validation and the counts stand.
+ * A prediction without stereo whose structure the table holds with stereo is `excluded` but names no
+ * compound: the cut lost the configuration, so it may be that compound or one of its isomers.
+ */
+function claimHeldStructures(matrices: SarMatrix[], molecules: string[], table: string[], assayed: Uint8Array,
+  assigned: (string | null)[] | null, predictUnmeasured: boolean): void {
+  const exact = new Map<string, number>();
+  const parents = new Map<string, number>();
+  const stereoFree = new Set<string>();
+  const hold = (held: Map<string, number>, key: string, i: number): void => {
+    const prior = held.get(key);
+    // A repeated compound stands for its assayed copy.
+    if (prior === undefined || (assayed[i] && !assayed[prior]))
+      held.set(key, i);
+  };
+  table.forEach((smiles, i) => {
+    if (!smiles)
+      return;
+    const parent = parentStructure(smiles);
+    hold(exact, smiles, i);
+    hold(parents, parent, i);
+    if (STEREO_MARK.test(parent))
+      stereoFree.add(canonicalSmiles(parent.replace(/@+/g, '').replace(/[/\\]/g, '')));
+  });
+  for (const matrix of matrices) {
+    for (const row of matrix.cells) {
+      row.forEach((cell, ci) => {
+        if (cell.kind !== 'virtual' || cell.smiles === null)
+          return;
+        const parent = parentStructure(cell.smiles);
+        // The exact form first: of a compound held both bare and as a salt, a proposal is the form it spells.
+        const molIdx = exact.get(cell.smiles) ?? parents.get(parent);
+        if (molIdx === undefined) {
+          if (!STEREO_MARK.test(parent) && stereoFree.has(parent)) {
+            matrix.virtualCount--;
+            row[ci] = {kind: 'excluded', value: null, molIdx: null, smiles: null};
+          }
+          return;
+        }
+        matrix.virtualCount--;
+        const own = assigned === null || assigned[molIdx] === matrix.label;
+        if (own && !assayed[molIdx]) {
+          row[ci] = predictUnmeasured ? {...cell, kind: 'unmeasured', molIdx, smiles: molecules[molIdx]} :
+            {kind: 'unmeasured', value: null, molIdx, smiles: molecules[molIdx]};
+        } else {
+          row[ci] = {kind: 'excluded', value: null, molIdx: own ? molIdx : null,
+            smiles: own ? molecules[molIdx] : null};
+        }
+      });
+    }
+  }
+}
+
+/** Each molecule column's canonical structures at the version read: switching the column component
+ *  rebuilds over the same molecules, and canonicalizing a few thousand large ones costs seconds. Keyed by
+ *  the Dart column, since every read of a column from its table returns a new wrapper. */
+const canonicalCache = new WeakMap<object, {version: number, structures: Promise<string[]>}>();
+
+function canonicalStructures(molecules: DG.Column, molList: string[]): Promise<string[]> {
+  const cached = canonicalCache.get(molecules.dart);
+  if (cached?.version === molecules.version)
+    return cached.structures;
+  const structures = getRdKitService()
+    .then((service) => service.convertMolNotation(molList, DG.chem.Notation.Smiles));
+  canonicalCache.set(molecules.dart, {version: molecules.version, structures});
+  structures.catch(() => {
+    if (canonicalCache.get(molecules.dart)?.structures === structures)
+      canonicalCache.delete(molecules.dart);
+  });
+  return structures;
+}
+
+/**
+ * Drops the cuts whose two pieces do not rebuild their own compound. The fragmenter can write a stereocentre at
+ * the cut mirrored, and every analog joined from that piece would carry the wrong configuration. Only a piece
+ * with stereo can come back mirrored; a cut that cannot be joined at all is kept, as its analogs fail anyway.
+ */
+async function dropMirroredCuts(frags: MmpFragments, parents: string[]): Promise<number> {
+  const stereo = /[@/\\]/;
+  const cuts: {row: number, k: number}[] = [];
+  const cores: string[] = [];
+  const values: string[] = [];
+  frags.fragCodes.forEach((codes, row) => codes.forEach(([core, value], k) => {
+    const [a, b] = [frags.idToName[core], frags.idToName[value]];
+    if (stereo.test(a) || stereo.test(b)) {
+      cuts.push({row, k});
+      cores.push(a);
+      values.push(b);
+    }
+  }));
+  if (cuts.length === 0)
+    return 0;
+  const plan = [{R1: [1]}];
+  const rebuilt = await linkStaged(cores, cores.map(() => plan), (i) => values[i]);
+  const dropped = new Map<number, Set<number>>();
+  rebuilt.forEach((smiles, i) => {
+    const parent = parents[cuts[i].row];
+    if (smiles === null || smiles === parent || canonicalSmiles(smiles) === parent)
+      return;
+    if (!dropped.has(cuts[i].row))
+      dropped.set(cuts[i].row, new Set());
+    dropped.get(cuts[i].row)!.add(cuts[i].k);
+  });
+  let count = 0;
+  for (const [row, ks] of dropped) {
+    frags.fragCodes[row] = frags.fragCodes[row].filter((_code, k) => !ks.has(k));
+    count += ks.size;
+  }
+  return count;
 }
 
 /** Row cores, column substituents and observed compounds of an assembled matrix, as comparable sets. */
@@ -213,8 +343,9 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
       continue;
     }
     assayed[i] = 1;
-    activities[i] = scaled[i];
-    if (!Number.isFinite(scaled[i]))
+    // The log of a zero or a negative is NaN, which the scaled column stores as its null: a finite number near 0.
+    activities[i] = scaledCol !== activity && scaledCol.isNone(i) ? NaN : scaled[i];
+    if (!Number.isFinite(activities[i]))
       unscalable++;
   }
   if (unscalable > 0) {
@@ -233,7 +364,10 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   let clusters: CoreCluster[];
   let decomps: (ClusterDecomposition | null)[];
   let cuts: SeriesCut[] = [];
+  // Fragmentation computes the table's canonical structures anyway; read from columns, they are fetched alongside.
+  let canonical: Promise<string[]> | null = null;
   if (params.fragmentColumns) {
+    canonical = canonicalStructures(molecules, molList);
     const read = decomposeByColumns(params.fragmentColumns, assigned, activities);
     ({clusters, decomps, cuts} = read);
     const {checked, mismatched} = await checkAgainstMolecules(read.decomps, molList);
@@ -246,13 +380,32 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     logSarTime(`fragment columns (${clusters.length} groups, ${mismatched}/${checked} mismatched)`, t);
   } else {
     const tFrag = performance.now();
-    const [frags] = await getMmpFrags(molList);
-    logSarTime(`MMP fragmentation (${molList.length} molecules)`, tFrag);
+    // Read as the fragmenter reads them, since one it cannot read fails the whole call, and cut to the
+    // parent, since a counter-ion would ride on a substituent. A row that cannot be read sits out.
+    const structures: string[] = [];
+    const parents: string[] = [];
+    for (let i = 0; i < molList.length; i++) {
+      // Read in slices, so a large table does not hold the page.
+      if (i % 500 === 499)
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      structures.push(canonicalSmiles(molList[i]));
+      parents.push(parentStructure(structures[i]));
+    }
+    const readable = parents.flatMap((parent, i) => parent ? [i] : []);
+    const [read] = await getMmpFrags(readable.map((i) => parents[i]));
+    const fragCodes: [number, number][][] = parents.map(() => []);
+    readable.forEach((row, k) => fragCodes[row] = read.fragCodes[k]);
+    const frags = {...read, fragCodes};
+    canonical = Promise.resolve(structures);
+    logSarTime(`MMP fragmentation (${readable.length} molecules)`, tFrag);
+    t = performance.now();
+    const mirrored = await dropMirroredCuts(frags, parents);
+    logSarTime(`cuts that do not rebuild their compound (${mirrored} dropped)`, t);
     t = performance.now();
     const series = buildMatchedSeries(frags, params.fragmentCutoff);
     logSarTime(`matched series (${series.length} series)`, t);
     t = performance.now();
-    let base = assigned !== null ? groupSeriesByColumn(series, assigned) :
+    let base = assigned !== null ? await groupSeriesByColumn(series, assigned) :
       params.grouping === SarGrouping.Site ?
         await groupSeriesBySite(series) :
         await clusterRelatedCores(series, params.threshold);
@@ -261,7 +414,7 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     // compounds without a shared core are left out rather than grouped by a search.
     if (params.useMcsAnchors && assigned === null) {
       base = await poolUngroupedSeries(base, params.threshold);
-      base = await poolUngroupedMolecules(base, molList, params.threshold);
+      base = await poolUngroupedMolecules(base, parents, params.threshold);
     }
     logSarTime(`grouping by ${assigned !== null ? 'series column' : params.grouping.toLowerCase()} ` +
       `(${base.length} groups)`, t);
@@ -280,7 +433,7 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     // to the clusters that have none.
     const clusterSiteKeys = clusters.map((c) => c.siteKey);
     t = performance.now();
-    decomps = await decomposeClusters(clusterMembers, molList, params.useMcsAnchors, clusterSiteKeys);
+    decomps = await decomposeClusters(clusterMembers, parents, params.useMcsAnchors, clusterSiteKeys);
     logSarTime(`decomposition total (${decomps.filter(Boolean).length}/${clusters.length} clusters decomposed)`, t);
   }
 
@@ -371,6 +524,18 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     t = performance.now();
     await linking;
     logSarTime('virtual structure linking (overlapped)', t);
+    t = performance.now();
+    let table: string[] | null = null;
+    try {
+      table = await canonical!;
+    } catch (e) {
+      // The claim only corrects proposals, so the matrices are worth more than failing the run over it.
+      _package.logger.warning(`SAR Matrix: the structures of "${molecules.name}" could not be canonicalized, ` +
+        `so proposals the table already holds are not taken back: ${e instanceof Error ? e.message : e}`);
+    }
+    if (table !== null)
+      claimHeldStructures(matrices, molList, table, assayed, assigned, params.predictUnmeasured);
+    logSarTime('proposals the table already holds', t);
   }
 
   const ranked = rankMatrices(matrices, params.rankScheme, params.higherIsBetter);

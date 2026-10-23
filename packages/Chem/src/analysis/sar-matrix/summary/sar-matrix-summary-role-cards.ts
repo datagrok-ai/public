@@ -96,7 +96,7 @@ export class SummaryRoleCards {
     badge.classList.add('chem-sar-sum-click');
     badge.onclick = (e: MouseEvent) => {
       e.stopPropagation();
-      this.kit.host.selectRoleValue(role, level.value);
+      this.kit.host.selectRows(level.molIdx);
     };
     return badge;
   }

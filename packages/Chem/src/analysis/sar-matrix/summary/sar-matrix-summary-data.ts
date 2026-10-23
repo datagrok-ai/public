@@ -13,6 +13,27 @@ import {ANALOG_LIST_MAX, BEST_FIT_MIN_N, MIN_LISTED_SUPPORT, MIN_SUPPORT, RGroup
 export * from './sar-matrix-summary-types';
 
 /** Ties end at `matrix.id`: matrices arrive in worker order, which varies run to run. */
+/**
+ * Component columns that read alike in every measured compound are one component written twice, as a bridge
+ * whose two ends each fill a column of their own: fitted apart, they split one effect between them and are
+ * ranked twice. Each merged component keeps the first column's values, under the names of all of them.
+ * Columns blank in every compound are alike without being a bridge, so they are never merged.
+ */
+export function mergeTwinRoles(names: string[], values: string[][]): {names: string[], sources: number[]} {
+  const sources: number[] = [];
+  const merged: string[] = [];
+  for (let r = 0; r < names.length; r++) {
+    const k = values[r].every((v) => v === '') ? -1 :
+      sources.findIndex((q) => values[q].every((v, i) => v === values[r][i]));
+    if (k < 0) {
+      sources.push(r);
+      merged.push(names[r]);
+    } else
+      merged[k] += ` + ${names[r]}`;
+  }
+  return {names: merged, sources};
+}
+
 function finerSeries(a: SummaryRow, b: SummaryRow): boolean {
   return a.matrix.level !== b.matrix.level ? a.matrix.level < b.matrix.level : a.matrix.id < b.matrix.id;
 }
@@ -237,7 +258,7 @@ export class SummaryCollector {
         }
       }
       const stat: SeriesStat = {
-        matrix, root: roots[mi], tier: tiers[mi], cpd: mols.size, realCells, impossibleCells,
+        matrix, tier: tiers[mi], cpd: mols.size, realCells, impossibleCells,
         totalCells: nRows * nCols, lo: realCells ? lo : 0, hi: realCells ? hi : 0, best, bestVirtual,
         typical: fit.grandMean, trusted, virtualCells,
         bestRow: this.bestRow(matrix, fit, dir),
@@ -270,7 +291,9 @@ export class SummaryCollector {
 
     const measured = series.filter((stat) => stat.realCells > 0);
     const confs = series.flatMap((stat) => stat.matrix.confidence ?? []);
-    const roleFit = fitRoleEffects({names: roleNames, values: roleValues, activity: roleActivity,
+    const twins = mergeTwinRoles(roleNames, roleValues);
+    const fitValues = twins.sources.map((r) => roleValues[r]);
+    const roleFit = fitRoleEffects({names: twins.names, values: fitValues, activity: roleActivity,
       molIdx: roleMol, minSupport: MIN_SUPPORT, higherIsBetter: host.higherIsBetter});
     const data: SummaryData = {
       compounds: compounds.size,
@@ -285,12 +308,13 @@ export class SummaryCollector {
       coreRole: host.coreRole,
       coresAreSeries: host.coresAreSeries,
       roleFit,
-      roleBest: new Map(roleNames.map((name, r) => [name, roleBest[r]])),
+      roleBest: new Map(twins.names.map((name, k) => [name, roleBest[twins.sources[k]]])),
+      roleColumn: new Map(twins.names.map((name, k) => [name, roleNames[twins.sources[k]]])),
       nonConverged,
       series,
       startHere: this.mergeStartHere(series, confs.map((conf) => conf.n), dir),
       swaps: rankSwaps(swaps),
-      swapsByRole: poolRoleSwaps(roleNames, roleValues, roleActivity, roleMol, dir, log),
+      swapsByRole: poolRoleSwaps(twins.names, fitValues, roleActivity, roleMol, dir, log),
       swapCandidates,
       ...rankRGroups(acc),
       test, analogs, analogsThin, analogsAny,
@@ -311,7 +335,8 @@ export class SummaryCollector {
     return best;
   }
 
-  /** Merged by lineage root: one series can win several reasons, and a lineage is one place to look. */
+  /** One row per series, holding only the reasons its own numbers win. A reason tied by a series already listed
+   *  goes to that row, so the tiers of one lineage, which share their best compound, stay one row. */
   private mergeStartHere(series: SeriesStat[], confN: number[], dir: number): StartRow[] {
     if (series.length === 0)
       return [];
@@ -333,24 +358,26 @@ export class SummaryCollector {
       return winner;
     };
     // Index-aligned with REASON_WORDS.
-    const slots: (SeriesStat | null)[] = [
-      pick((s) => s.cpd || null),
-      pick((s) => s.realCells ? s.hi - s.lo : null),
-      pick((s) => s.best === null ? null : dir * s.best.value),
-      pick((s) => s.trusted || null),
-      pick((s) => s.matrix.confidence && s.matrix.confidence.n >= nFloor ? s.matrix.confidence.r2 : null),
+    const scores: ((s: SeriesStat) => number | null)[] = [
+      (s) => s.cpd || null,
+      (s) => s.realCells ? s.hi - s.lo : null,
+      (s) => s.best === null ? null : dir * s.best.value,
+      (s) => s.trusted || null,
+      (s) => s.matrix.confidence && s.matrix.confidence.n >= nFloor ? s.matrix.confidence.r2 : null,
     ];
-    const byRoot = new Map<string, StartRow>();
-    for (let slot = 0; slot < slots.length; slot++) {
-      const stat = slots[slot];
-      if (stat === null)
+    const rows: StartRow[] = [];
+    for (let slot = 0; slot < scores.length; slot++) {
+      const score = scores[slot];
+      const winner = pick(score);
+      if (winner === null)
         continue;
-      const held = byRoot.get(stat.root);
+      const top = score(winner);
+      const held = rows.find((row) => score(row.primary) === top);
       if (held === undefined)
-        byRoot.set(stat.root, {primary: stat, reasons: [slot]});
+        rows.push({primary: winner, reasons: [slot]});
       else
         held.reasons.push(slot);
     }
-    return [...byRoot.values()];
+    return rows;
   }
 }

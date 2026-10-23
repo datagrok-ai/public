@@ -136,7 +136,10 @@ export class SummaryPanel extends SummaryKit {
     const chip = chipBadge(`${label} · ${count(n)}`, (tier === null ? `Read every ranking over all ${count(n)} ` +
       'series.' : `Read every ranking over the ${count(n)} series cut at level ${tier} only.`) +
       ' L1 is the finest; each level up is one cut coarser.', 'chem-sar-sum-level');
-    chip.classList.toggle('chem-sar-sum-level-on', this.tierFilter === tier);
+    const on = this.tierFilter === tier;
+    chip.classList.toggle('chem-sar-sum-level-on', on);
+    chip.setAttribute('aria-pressed', String(on));
+    chip.setAttribute('data-u2-item', label);
     chip.onclick = () => this.setTierFilter(tier);
     return chip;
   }

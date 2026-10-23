@@ -2760,7 +2760,10 @@ export class PackageFunctions {
       seriesColumnName: seriesName,
       coreColumnName: named ? coreColumn!.name : '', axisColumnName: named ? axis : '',
       rGroupColumnNames: named ? rgroups.map((c) => c.name) : [],
-      scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors});
+      // Omitted inputs arrive as null, which the parameter defaults don't replace.
+      scaling: scaling ?? '-lg', activityDirection: activityDirection ?? 'Auto (from scaling)',
+      fragmentCutoff: fragmentCutoff ?? 0.4, fragmentationLevels: fragmentationLevels ?? 3,
+      predictVirtual: predictVirtual ?? true, useMcsAnchors: useMcsAnchors ?? false});
     dockSarMatrixTabs(view, viewer);
   }
 

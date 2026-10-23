@@ -60,6 +60,7 @@ export interface SummaryHost {
   readonly coresAreSeries: boolean;
   readonly roleColumns: string[];
   selectRoleValue(role: string, value: string): void;
+  selectRows(rows: number[]): void;
   readonly predictVirtual: boolean;
   readonly predictUnmeasured: boolean;
   readonly computing: boolean;
@@ -210,9 +211,7 @@ export interface RGroupAcc {
 /** Scalars only, so the walk never holds every matrix's fit arrays at once. */
 export interface SeriesStat {
   matrix: SarMatrix;
-  root: string;
   tier: number;
-  /** Not `realCount`, which is captured before pruning. */
   cpd: number;
   realCells: number;
   totalCells: number;
@@ -258,6 +257,8 @@ export interface SummaryData {
   startHere: StartRow[];
   swaps: SwapPool[];
   swapsByRole: Map<string, SwapPool[]>;
+  /** The table column each component reads, by the name the Summary shows: a merged twin has one name for two. */
+  roleColumn: Map<string, string>;
   /** "None clears the gate" is not "no row has two measured cells". */
   swapCandidates: number;
   rgroups: RGroupRow[];

@@ -98,7 +98,7 @@ function majoritySites(values: string[]): number[] {
 }
 
 /** Reads fragment columns in the standard notation, memoized over the distinct strings they hold. */
-class FragmentReader {
+export class FragmentReader {
   readonly structures = new Set<string>();
   private readonly cache = new Map<string, string>();
 
@@ -316,7 +316,7 @@ export function decomposeByColumns(spec: SarFragmentColumns, series: (string | n
 
 const CHECK_SAMPLE = 300;
 
-function canonicalSmiles(molecule: string): string {
+export function canonicalSmiles(molecule: string): string {
   const mol = checkMoleculeValid(molecule);
   try {
     return mol?.is_valid() ? mol.get_smiles() : '';

@@ -90,7 +90,7 @@ export class SummaryEffects {
           (pool.sampled ? ` A group over ${SWAP_ROW_CAP} compounds kept only its extremes.` : ''),
         tip: best === null ? `Select every compound whose ${role} is the one on the right` :
           this.kit.openTip(best.matrix, best.ri, ci),
-        onClick: best === null ? () => host.selectRoleValue(role!, to) :
+        onClick: best === null ? () => host.selectRoleValue(data.roleColumn.get(role!) ?? role!, to) :
           () => host.revealCell(best.matrix, best.ri, ci, position),
       });
     });
@@ -105,7 +105,6 @@ export class SummaryEffects {
   private buildCoreCard(data: SummaryData, cores: SeriesStat[]): HTMLElement {
     const host = this.kit.host;
     const title = `${data.coreRole ?? 'Cores'} — the average of what was made on each`;
-    // Not matrix.scores, which is a raw column mean read before pruning.
     const subtitle = 'Mean activity of each core\'s measured compounds, not adjusted for its substituents: a ' +
       'core only tried with good groups scores high. Unlike the fitted effects, these compare between cores.';
     if (cores.length === 0)

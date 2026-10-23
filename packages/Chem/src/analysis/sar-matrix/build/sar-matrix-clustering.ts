@@ -73,27 +73,71 @@ function isSubset(a: Set<number>, b: Set<number>): boolean {
  * becomes one matrix, labelled with that value. A core whose compounds carry different values is split
  * across them, so a compound never lands in a matrix whose name contradicts its own column. Compounds
  * with no value sit out rather than forming a "blank" series the user never named.
+ *
+ * A compound is reached by one series per cut, so a value's matrix keeps only the site covering most of
+ * its compounds, and each compound only in the largest series there; the value's other compounds sit out.
+ * Pooled, one compound fills a cell on every row it can be cut into, and a column means one position on
+ * some rows and another on the rest.
  */
-export function groupSeriesByColumn(series: MatchedSeries[], values: (string | null)[]): CoreCluster[] {
-  const byValue = new Map<string, Map<string, MatchedSeries>>();
-  for (const matched of series) {
+export async function groupSeriesByColumn(series: MatchedSeries[],
+  values: (string | null)[]): Promise<CoreCluster[]> {
+  const byValue = new Map<string, Map<number, SeriesMember[]>>();
+  series.forEach((matched, i) => {
     for (const member of matched.members) {
       const value = values[member.molIdx];
       if (value === null || value === '')
         continue;
-      let cores = byValue.get(value);
-      if (cores === undefined)
-        byValue.set(value, cores = new Map<string, MatchedSeries>());
-      const core = cores.get(matched.coreSmiles);
-      if (core === undefined)
-        cores.set(matched.coreSmiles, {coreSmiles: matched.coreSmiles, members: [member]});
+      let own = byValue.get(value);
+      if (own === undefined)
+        byValue.set(value, own = new Map<number, SeriesMember[]>());
+      const members = own.get(i);
+      if (members === undefined)
+        own.set(i, [member]);
       else
-        core.members.push(member);
+        members.push(member);
+    }
+  });
+  if (byValue.size === 0)
+    return [];
+
+  const sitesOf = new Map<number, string[]>();
+  for (const [key, members] of await seriesBySite(series)) {
+    for (const i of members) {
+      const keys = sitesOf.get(i);
+      if (keys === undefined)
+        sitesOf.set(i, [key]);
+      else
+        keys.push(key);
     }
   }
-  return [...byValue.entries()].map(([value, cores], i) => ({
-    id: `u${i}`, series: [...cores.values()], siteKey: '', level: 2, label: value,
-  }));
+  return [...byValue.entries()].map(([value, own], u) => {
+    const covered = new Map<string, Set<number>>();
+    for (const [i, members] of own) {
+      for (const key of sitesOf.get(i) ?? []) {
+        const mols = covered.get(key) ?? new Set<number>();
+        members.forEach((member) => mols.add(member.molIdx));
+        covered.set(key, mols);
+      }
+    }
+    let siteKey = '';
+    let best = 0;
+    for (const [key, mols] of covered) {
+      if (mols.size > best || (mols.size === best && key < siteKey))
+        [siteKey, best] = [key, mols.size];
+    }
+    const onSite = [...own.keys()].filter((i) => siteKey === '' || (sitesOf.get(i) ?? []).includes(siteKey))
+      .sort((a, b) => own.get(b)!.length - own.get(a)!.length || a - b);
+    const placed = new Set<number>();
+    const kept: {i: number, members: SeriesMember[]}[] = [];
+    for (const i of onSite) {
+      const members = own.get(i)!.filter((member) => !placed.has(member.molIdx));
+      members.forEach((member) => placed.add(member.molIdx));
+      if (members.length > 0)
+        kept.push({i, members});
+    }
+    return {id: `u${u}`, siteKey, level: 2, label: value, series: kept.sort((a, b) => a.i - b.i)
+      .map(({i, members}) => ({coreSmiles: series[i].coreSmiles, members}))};
+  });
 }
 
 /**
@@ -239,6 +283,9 @@ export async function buildCoarserLevels(clusters: CoreCluster[], extraLevels: n
 /** Past this many cores the all-pairs comparison stops being worth its cost. */
 const MAX_BUTINA_CORES = 3000;
 
+/** Longest stretch the all-pairs loop holds the main thread before letting the page paint. */
+const YIELD_MS = 40;
+
 /**
  * Taylor-Butina sphere-exclusion clustering over core fingerprints (cluster id per input, -1 when the
  * fingerprint could not be built). The densest core claims its within-`cutoff` neighbours as a cluster,
@@ -252,7 +299,13 @@ async function butinaCluster(structures: string[], cutoff: number,
 
   const n = fps.length;
   const neighbours: number[][] = Array.from({length: n}, () => []);
+  // Up to 4.5M comparisons at the cap: yielding between rows keeps the page responsive meanwhile.
+  let sliceStart = performance.now();
   for (let i = 0; i < n; i++) {
+    if (performance.now() - sliceStart > YIELD_MS) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      sliceStart = performance.now();
+    }
     if (!fps[i])
       continue;
     for (let j = i + 1; j < n; j++) {
@@ -314,6 +367,18 @@ export async function clusterRelatedCores(series: MatchedSeries[],
   // matrix pools those into one axis — a column that means one position on some rows and another on
   // the rest, comparable across neither. Split so the rows of a cluster share a site.
   const bySite = await seriesBySite(series);
+  // Sites per series, so a group only visits the sites its own members sit on rather than every site
+  // of the set on every split.
+  const sitesOf = new Map<number, string[]>();
+  for (const [key, members] of bySite) {
+    for (const i of members) {
+      const keys = sitesOf.get(i);
+      if (keys === undefined)
+        sitesOf.set(i, [key]);
+      else
+        keys.push(key);
+    }
+  }
   const clusters: CoreCluster[] = [];
   const emit = (members: number[], siteKey: string): void => {
     clusters.push({id: `c${clusters.length}`, series: members.map((i) => series[i]), siteKey, level: 2});
@@ -323,12 +388,21 @@ export async function clusterRelatedCores(series: MatchedSeries[],
       emit(group, '');
       continue;
     }
-    let remaining = new Set(group);
+    const remaining = new Set(group);
     while (remaining.size > 1) {
+      const shares = new Map<string, number[]>();
+      for (const i of remaining) {
+        for (const key of sitesOf.get(i) ?? []) {
+          const shared = shares.get(key);
+          if (shared === undefined)
+            shares.set(key, [i]);
+          else
+            shared.push(i);
+        }
+      }
       let bestKey = '';
       let best: number[] = [];
-      for (const [key, members] of bySite) {
-        const shared = [...remaining].filter((i) => members.has(i));
+      for (const [key, shared] of shares) {
         // Key breaks a tie so equally large shares always split the same way.
         if (shared.length > best.length || (shared.length === best.length && shared.length > 1 &&
           key < bestKey))
@@ -337,7 +411,8 @@ export async function clusterRelatedCores(series: MatchedSeries[],
       if (best.length < 2)
         break;
       emit(best.sort((a, b) => a - b), bestKey);
-      remaining = new Set([...remaining].filter((i) => !best.includes(i)));
+      for (const i of best)
+        remaining.delete(i);
     }
     for (const i of [...remaining].sort((a, b) => a - b))
       emit([i], '');

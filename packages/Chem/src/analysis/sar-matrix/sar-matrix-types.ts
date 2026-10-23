@@ -42,14 +42,17 @@ export interface CoreCluster {
 
 /** `unmeasured` is a compound the dataset already holds whose activity is missing. It is kept apart
  *  from `empty` so the Free-Wilson fill cannot propose synthesizing something that already exists.
+ *  `excluded` is a compound the dataset holds that this matrix neither measures nor offers: one assayed
+ *  with a value the scaling cannot represent, or one a combination here only rebuilds while it is
+ *  measured in its own cell or filed under another series (`molIdx` null). It is never predicted.
  *  `impossible` is a combination the R-groups cannot form (no attachment point for the substituent);
  *  it is never predicted. */
-export type SarMatrixCellKind = 'real' | 'virtual' | 'empty' | 'unmeasured' | 'impossible';
+export type SarMatrixCellKind = 'real' | 'virtual' | 'empty' | 'unmeasured' | 'excluded' | 'impossible';
 
 export interface SarMatrixCell {
   kind: SarMatrixCellKind;
   /** Observed (real) or predicted (virtual, or unmeasured when untested prediction is on) scaled
-   *  activity; null when empty, and when an unmeasured cell was not predicted. */
+   *  activity; null when empty or excluded, and when an unmeasured cell was not predicted. */
   value: number | null;
   molIdx: number | null;
   smiles: string | null;
@@ -88,10 +91,7 @@ export interface SarMatrix {
   cells: SarMatrixCell[][];
   minActivity: number;
   maxActivity: number;
-  /** Distinct measured molecules, captured BEFORE the connected-component prune, which drops measured
-   *  compounds — and inflated when two records land in one cell. It can exceed what the delivered grid
-   *  holds, so anything reporting a compound count has to walk the cells. `minActivity`/`maxActivity`
-   *  are captured at the same point and carry the same defect. */
+  /** Distinct measured compounds the finished grid holds; `minActivity`/`maxActivity` are their range. */
   realCount: number;
   virtualCount: number;
   scores: {[scheme: string]: number};

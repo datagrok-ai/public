@@ -248,16 +248,27 @@ const FIT_TOLERANCE = 1e-9;
  *  off by and count as converged. */
 const FIT_TOLERANCE_SD = 1e-3;
 
-/** Claim a cell for a compound the set holds but has no activity for, so `fillVirtualCells` cannot
+/** Claim a cell for a compound the set holds but has no usable activity for: left empty, the fill would
  *  predict it and offer it as one to make. Never over a measured cell: two members can share a slot,
  *  and a measurement outranks a blank. A compound that WAS assayed but whose value the chosen scale
- *  cannot represent is left alone — calling it untested would be a false claim about the data. */
+ *  cannot represent is `excluded`, not `unmeasured`: calling it untested would be a false claim about
+ *  the data. */
 function claimUnmeasured(cells: SarMatrixCell[][], ri: number, ci: number, molIdx: number,
   molecules: string[], assayed?: Uint8Array): void {
-  if (assayed?.[molIdx])
-    return;
-  if (cells[ri][ci].kind === 'empty')
-    cells[ri][ci] = {kind: 'unmeasured', value: null, molIdx, smiles: molecules[molIdx]};
+  if (cells[ri][ci].kind === 'empty') {
+    cells[ri][ci] = {kind: assayed?.[molIdx] ? 'excluded' : 'unmeasured', value: null, molIdx,
+      smiles: molecules[molIdx]};
+  }
+}
+
+/** Claim a cell for a measured compound. Two measured compounds sharing a slot (a repeated table row, or two
+ *  cuts landing on one core and substituent) keep the first: a cell shows one compound, and whichever one
+ *  shows is the one every count and the colour range read. The first, so cutting the molecules keeps the
+ *  copy that reading the same table from R-group columns keeps. */
+function claimMeasured(cells: SarMatrixCell[][], ri: number, ci: number, molIdx: number, activity: number,
+  molecules: string[]): void {
+  if (cells[ri][ci].kind !== 'real')
+    cells[ri][ci] = {kind: 'real', value: activity, molIdx, smiles: molecules[molIdx]};
 }
 
 /**
@@ -323,6 +334,25 @@ function pruneUnobservedLines(rows: SarMatrixRow[], columns: SarMatrixColumn[],
   // Labels number the rows as displayed, so they are reassigned rather than left with the gaps a
   // removed core would leave (Core 1, Core 3, Core 6).
   rows.forEach((row, ri) => row.label = `Core ${ri + 1}`);
+}
+
+/** Distinct measured compounds of the finished grid and the range of their values. Read off the cells,
+ *  not the records: the prune drops measured compounds, and a second measured record for an occupied
+ *  cell is not shown. Distinct, because one compound reached through two series fills two cells. */
+function measuredRange(cells: SarMatrixCell[][]): {realCount: number, minActivity: number, maxActivity: number} {
+  const mols = new Set<number>();
+  let minActivity = Infinity;
+  let maxActivity = -Infinity;
+  for (const row of cells) {
+    for (const cell of row) {
+      if (cell.kind !== 'real' || cell.value === null || cell.molIdx === null)
+        continue;
+      mols.add(cell.molIdx);
+      minActivity = Math.min(minActivity, cell.value);
+      maxActivity = Math.max(maxActivity, cell.value);
+    }
+  }
+  return mols.size ? {realCount: mols.size, minActivity, maxActivity} : {realCount: 0, minActivity: 0, maxActivity: 0};
 }
 
 /**
@@ -443,9 +473,6 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   const cells: SarMatrixCell[][] = rows.map(() =>
     columns.map((): SarMatrixCell => ({kind: 'empty', value: null, molIdx: null, smiles: null})));
 
-  let minActivity = Infinity;
-  let maxActivity = -Infinity;
-  const realMols = new Set<number>();
   rowGroups.forEach((group, ri) => {
     for (const record of group.members) {
       const activity = activities[record.molIdx];
@@ -456,15 +483,9 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
         claimUnmeasured(cells, ri, ci, record.molIdx, molecules, assayed);
         continue;
       }
-      cells[ri][ci] = {kind: 'real', value: activity, molIdx: record.molIdx, smiles: molecules[record.molIdx]};
-      realMols.add(record.molIdx);
-      if (activity < minActivity)
-        minActivity = activity;
-      if (activity > maxActivity)
-        maxActivity = activity;
+      claimMeasured(cells, ri, ci, record.molIdx, activity, molecules);
     }
   });
-  const realCount = realMols.size;
   pruneUnobservedLines(rows, columns, cells);
   if (links !== undefined)
     markImpossibleCells(rows, columns, cells, columnPosition, decomp.positions, links);
@@ -479,9 +500,8 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   }
 
   return {
-    id: cluster.id, label: cluster.label ?? '', rows, columns, cells,
-    minActivity: realCount ? minActivity : 0, maxActivity: realCount ? maxActivity : 0,
-    realCount, virtualCount, scores: {}, positions: [columnPosition], refValues,
+    id: cluster.id, label: cluster.label ?? '', rows, columns, cells, ...measuredRange(cells),
+    virtualCount, scores: {}, positions: [columnPosition], refValues,
     siteKey: cluster.siteKey,
     level: cluster.level,
     parentId: cluster.parentId,
@@ -666,11 +686,6 @@ export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: st
   const cells: SarMatrixCell[][] = rows.map(() =>
     columns.map((): SarMatrixCell => ({kind: 'empty', value: null, molIdx: null, smiles: null})));
 
-  let minActivity = Infinity;
-  let maxActivity = -Infinity;
-  // Distinct compounds, not filled cells: one reached through two series sits in two cells, and
-  // counting it twice overstates every "cpd" the UI shows.
-  const realMols = new Set<number>();
   series.forEach((matched, ri) => {
     for (const member of matched.members) {
       const activity = activities[member.molIdx];
@@ -681,15 +696,9 @@ export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: st
         claimUnmeasured(cells, ri, ci, member.molIdx, molecules, assayed);
         continue;
       }
-      cells[ri][ci] = {kind: 'real', value: activity, molIdx: member.molIdx, smiles: molecules[member.molIdx]};
-      realMols.add(member.molIdx);
-      if (activity < minActivity)
-        minActivity = activity;
-      if (activity > maxActivity)
-        maxActivity = activity;
+      claimMeasured(cells, ri, ci, member.molIdx, activity, molecules);
     }
   });
-  const realCount = realMols.size;
   pruneUnobservedLines(rows, columns, cells);
 
   const virtualCount = predict ? fillVirtualCells(cells, rows.length, columns.length, predictUnmeasured) : 0;
@@ -700,9 +709,7 @@ export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: st
     rows,
     columns,
     cells,
-    minActivity: realCount ? minActivity : 0,
-    maxActivity: realCount ? maxActivity : 0,
-    realCount,
+    ...measuredRange(cells),
     virtualCount,
     scores: {},
     positions: ['R1'],

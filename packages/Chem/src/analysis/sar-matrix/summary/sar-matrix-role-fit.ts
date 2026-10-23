@@ -27,6 +27,8 @@ export interface RoleLevel {
   value: string;
   coef: number;
   n: number;
+  /** Source rows of the `n` compounds, so selecting them matches the count. */
+  molIdx: number[];
 }
 
 interface RoleSplit {
@@ -135,6 +137,14 @@ function backfit(codes: Int32Array[], levelCounts: number[], y: Float64Array,
   return {mu, theta, counts, fitted, sweeps, converged};
 }
 
+/** A row's fold from a hash of its index: a table in enumerated order repeats its innermost value every
+ *  few rows, and `row % groups` would put each such value in a fold of its own. */
+function groupOf(row: number, groups: number): number {
+  let h = Math.imul(row ^ (row >>> 16), 0x45d9f3b);
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  return ((h ^ (h >>> 16)) >>> 0) % groups;
+}
+
 function weightedCorrelation(xs: number[], ys: number[], weights: number[]): number | null {
   let total = 0;
   let mx = 0;
@@ -228,6 +238,11 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
   const levelCounts = levelValues.map((values) => values.length);
   const y = Float64Array.from(design.activity);
   const mol = design.molIdx;
+  const levelRows = levelCounts.map((levels) => Array.from({length: levels}, (): number[] => []));
+  for (const k of keep) {
+    for (let r = 0; r < roleCount; r++)
+      levelRows[r][codes[r][k]].push(mol[k]);
+  }
   const full = backfit(codes, levelCounts, y, Int32Array.from(keep));
   const ranked = full.counts.map((counts) =>
     counts.reduce((total, support) => total + (support >= design.minSupport ? 1 : 0), 0));
@@ -251,7 +266,7 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
     const train: number[] = [];
     const test: number[] = [];
     for (const k of keep)
-      (mol[k] % ROLE_CV_FOLDS === fold ? test : train).push(k);
+      (groupOf(mol[k], ROLE_CV_FOLDS) === fold ? test : train).push(k);
     if (test.length === 0)
       continue;
     const trained = backfit(codes, levelCounts, y, Int32Array.from(train));
@@ -276,7 +291,7 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
 
   // Prediction can be unique while the split of credit between components is not; the halves check it.
   const halves = [0, 1].map((half) =>
-    backfit(codes, levelCounts, y, Int32Array.from(keep.filter((k) => mol[k] % 2 === half))));
+    backfit(codes, levelCounts, y, Int32Array.from(keep.filter((k) => groupOf(mol[k], 2) === half))));
 
   const error = cvRmse ?? residualSd;
   const dir = design.higherIsBetter ? 1 : -1;
@@ -293,7 +308,7 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
     for (let v = 0; v < counts.length; v++) {
       rawVar += counts[v] * theta[v] * theta[v];
       if (counts[v] >= design.minSupport)
-        levels.push({value: levelValues[r][v], coef: theta[v], n: counts[v]});
+        levels.push({value: levelValues[r][v], coef: theta[v], n: counts[v], molIdx: levelRows[r][v]});
       if (halves[0].counts[r][v] >= design.minSupport && halves[1].counts[r][v] >= design.minSupport) {
         xs.push(halves[0].theta[r][v]);
         ys.push(halves[1].theta[r][v]);

@@ -19,8 +19,6 @@ export class SarMatrixEditor extends DG.FuncCallEditor {
   private activityInput!: DG.InputBase<DG.Column | null>;
   private coreInput!: DG.InputBase<DG.Column | null>;
   private rGroupsInput!: DG.InputBase<DG.Column[]>;
-  /** Re-entry guard: correcting the R-group list fires its own change handler. */
-  private fixingOverlap = false;
   private axisInput!: DG.ChoiceInput<string | null>;
   private seriesInput!: DG.InputBase<DG.Column | null>;
   private readonly moleculesHost = ui.div();
@@ -51,6 +49,8 @@ export class SarMatrixEditor extends DG.FuncCallEditor {
     tooltipText: 'Also cover the compounds no shared core could group, by searching those for a common core'});
   private readonly predictInput = ui.input.bool('Predict analogs', {value: true,
     tooltipText: 'Fill unmade combinations with Free-Wilson predictions'});
+  /** Scaling as it stood before a non-positive activity forced it to none; it comes back with a positive one. */
+  private scalingBeforeForced: SCALING_METHODS | null = SCALING_METHODS.MINUS_LG;
   private readonly fragmentationForm: HTMLElement;
   private readonly settingsIcon: HTMLElement;
   /** Inputs that map one-to-one onto a function parameter. */
@@ -148,9 +148,15 @@ export class SarMatrixEditor extends DG.FuncCallEditor {
   private onActivityChanged(): void {
     const column = this.activityInput?.value;
     const scalable = column !== null && column !== undefined && column.stats.min > 0;
-    this.scalingInput.enabled = scalable;
-    if (!scalable)
+    if (scalable && !this.scalingInput.enabled) {
+      this.scalingInput.enabled = true;
+      this.scalingInput.value = this.scalingBeforeForced;
+    } else if (!scalable) {
+      if (this.scalingInput.enabled)
+        this.scalingBeforeForced = this.scalingInput.value;
       this.scalingInput.value = SCALING_METHODS.NONE;
+      this.scalingInput.enabled = false;
+    }
     this.drawHistogram();
   }
 
@@ -171,8 +177,10 @@ export class SarMatrixEditor extends DG.FuncCallEditor {
     this.histogramHost.appendChild(this.histogram.root);
   }
 
+  /** The picked R-groups without the core, which the picker still holds until {@link onRGroupsChanged} drops it. */
   private rGroupColumns(): DG.Column[] {
-    return this.rGroupsInput?.value ?? [];
+    const core = this.coreInput?.value?.name;
+    return (this.rGroupsInput?.value ?? []).filter((c) => c.name !== core);
   }
 
   private usesRGroups(): boolean {
@@ -196,12 +204,13 @@ export class SarMatrixEditor extends DG.FuncCallEditor {
     // Corrected rather than refused: whichever picker the user touched last is the one they meant, and
     // an error on a pair of inputs that each look right on their own explains nothing.
     const core = this.coreInput?.value ?? null;
-    if (core !== null && !this.fixingOverlap && this.rGroupColumns().some((c) => c.name === core.name)) {
-      this.fixingOverlap = true;
-      this.rGroupsInput.value = this.rGroupColumns().filter((c) => c.name !== core.name);
-      this.fixingOverlap = false;
-      grok.shell.info(`SAR Matrix: ${core.name} is the core column, so it was dropped from the ` +
-        'R-group columns.');
+    if (core !== null && this.rGroupsInput.value.some((c) => c.name === core.name)) {
+      // Set from inside the input's own change event, the value would re-enter a controller that is still firing.
+      window.setTimeout(() => {
+        this.rGroupsInput.value = this.rGroupsInput.value.filter((c) => c.name !== core.name);
+        grok.shell.info(`SAR Matrix: ${core.name} is the core column, so it was dropped from the ` +
+          'R-group columns.');
+      });
     }
     const columns = this.rGroupColumns();
     const names = columns.map((c) => c.name);
@@ -222,10 +231,13 @@ export class SarMatrixEditor extends DG.FuncCallEditor {
       this.layoutHost.textContent = core === null ? 'Pick the core column.' : 'Pick the R-groups.';
       return;
     }
-    const rows = [core.name, ...this.rGroupColumns().map((c) => c.name).filter((name) => name !== axis)];
+    const rGroupRows = this.rGroupColumns().map((c) => c.name).filter((name) => name !== axis);
     const series = this.seriesInput?.value?.name;
-    this.layoutHost.textContent = `${series ? `One matrix per ${series}` : 'One matrix per core'}  ·  ` +
-      `Rows: ${rows.join(' + ')}  ·  Columns: ${axis}`;
+    // With no R-group on the rows, the build does not split by core: the cores are the rows of one matrix.
+    const matrices = series ? `One matrix per ${series}` :
+      rGroupRows.length > 0 ? 'One matrix per core' : 'One matrix, cores as rows';
+    this.layoutHost.textContent = `${matrices}  ·  Rows: ${[core.name, ...rGroupRows].join(' + ')}  ·  ` +
+      `Columns: ${axis}`;
   }
 
   private syncCall(): void {
@@ -271,6 +283,7 @@ export class SarMatrixEditor extends DG.FuncCallEditor {
   getHistoryString(): string {
     return JSON.stringify({
       ...Object.fromEntries(this.simple.map(([key, input]) => [key, input.value])),
+      activity: this.activityInput?.value?.name ?? null,
       series: this.seriesInput?.value?.name ?? null,
       core: this.coreInput?.value?.name ?? null,
       rgroups: this.rGroupColumns().map((c) => c.name),
@@ -283,11 +296,16 @@ export class SarMatrixEditor extends DG.FuncCallEditor {
       return;
     try {
       const parsed = JSON.parse(history);
+      const table = this.tableInput.value;
+      const activity = table === null || parsed.activity == null ? null : table.col(parsed.activity);
+      if (activity !== null && this.isActivity(activity))
+        this.activityInput.value = activity;
       for (const [key, input] of this.simple) {
         if (parsed[key] != null)
           input.value = parsed[key];
       }
-      const table = this.tableInput.value;
+      // The saved scaling may be a log one that the activity now picked cannot take.
+      this.onActivityChanged();
       if (table !== null) {
         this.seriesInput.value = parsed.series == null ? null : table.col(parsed.series);
         const core = parsed.core == null ? null : table.col(parsed.core);
