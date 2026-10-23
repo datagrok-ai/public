@@ -40,8 +40,9 @@ class BatchesApp extends DomainApp {
     this.effect(() => {
       const id = this._compoundId.value;
       this._compound.remove();
+      // a compound that does not load leaves the header without its card
       if (id !== null)
-        void this._showCompound(id);
+        this._showCompound(id).catch(() => {});
     });
   }
 
