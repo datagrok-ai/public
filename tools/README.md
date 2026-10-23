@@ -151,3 +151,17 @@ For more information on configuring connections, refer to the [Connections](http
   | debug          | Sets a debug breakpoint before each test execution, allowing you to debug the test. Only works in `gui` mode                          |
 
 - `link` command is used for public plugins development to link `datagrok-api` and libraries.
+- `connect-folder` makes a local folder a Datagrok connection. A folder agent in Docker dials out to the server (no
+  inbound port) with a key of its own that can only serve this folder; your keypair (`grok login <server>` first)
+  never leaves the machine. Connecting the same folder again resumes the same connection. Requires Docker and the
+  "Connect local folders" permission.
+
+  ```shell
+  grok connect-folder <folder> [--host <alias>] [--read-only] [--foreground] [--image <ref>] [--force]
+  grok connect-folder list [--host <alias>] [--output json]
+  grok connect-folder start|stop|logs <connection> [-f]
+  grok connect-folder rm <connection>
+  ```
+
+  `<connection>` is the connection name, a connection id prefix (8+ characters), or the folder. `stop` keeps the
+  folder disconnected after a reboot; `rm` removes the container, the key and the connection.

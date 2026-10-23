@@ -27,6 +27,7 @@ describe('grok.js argument parsing', () => {
     stresstest: {dartium: false},
     server: {'send-email': false},
     s: {'send-email': false},
+    'connect-folder': {'read-only': false, 'foreground': false, 'force': false, 'follow': false},
   };
 
   it.each(commandNames)('`grok %s` receives no options it was not given', (command) => {

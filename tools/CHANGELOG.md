@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Added `grok connect-folder`: connects a local folder as a connection, served from a Docker container; the agent image tag is pulled on every connect, so a moved tag replaces a stale local agent
 * Added `grok s ... --log [<spec>]` on every `grok s` command (`grok s o` included): its requests share a `datlas-log-id`, every server instance keeps what they log at the spec (`verbose`, `standard`, levels, debug flags or `all`) in memory only, and at the end the command gathers it and prints it to stderr
 * Added `grok s functions run ... --debug`: a debug call (`?debug=true`) whose own log, a query's stages as the query debugger shows them, is kept and printed the same way
 * Added `grok s o logs request <logId>`: gathers what the requests of one `--log` command logged
