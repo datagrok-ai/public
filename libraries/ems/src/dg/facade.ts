@@ -27,6 +27,8 @@ import {DomainForm} from './form.js';
 import {DomainGrid, DomainDataTable} from './grid.js';
 import {DomainHistory} from './history.js';
 import {openImport} from './import.js';
+import {DomainViews} from './views.js';
+import type {DomainViewsOptions} from './views.js';
 import type {DomainImporter} from './import.js';
 import {bulkEdit} from './bulk.js';
 import {BindingDialog, BindingWizard, createBinding} from './authoring/binding-dialog.js';
@@ -207,7 +209,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   /** Opens a saved row: the entity page of the app open over this table (find-or-activate), else
    * the platform's entity view. */
   open(row: RowView<TRow>): void {
-    if (Rows.isDraft(row) || DomainApp.activate(DomainApp.baseOf(this.address), row.id))
+    if (Rows.isDraft(row) || DomainApp.activate(DomainApp.baseOf(this.address), row.id) ||
+        DomainViews.openRow(this.address, row.id))
       return;
     this.handler.openRow(this.row(row));
   }
@@ -400,6 +403,7 @@ export const domains = {
   children: (parent: DomainSource, options?: DomainChildrenOptions): DomainChildren =>
     new DomainChildren(parent, options),
   app: (options: DomainAppOptions): DomainApp => new DomainApp(options),
+  views: (options: DomainViewsOptions): DomainViews => new DomainViews(options),
   route,
   bulkEdit,
   /** The import wizard over a table: source → mapping → preview → the server's report. */

@@ -14,6 +14,8 @@ export {DomainFilters} from './filters.js';
 export {domainFilterSchema} from './filter-schema.js';
 export type {DomainFiltersOptions, DomainFiltersMode} from './filters.js';
 export {DomainApp} from './app.js';
+export {DomainViews} from './views.js';
+export type {DomainViewsOptions, DomainViewEntry, DomainViewOptions} from './views.js';
 export type {DomainAppOptions, DomainAppPage, DomainAppMode, DomainAppStatus, DomainRibbon} from './app.js';
 export {DomainAddress} from './address.js';
 export {DomainGrid, DomainDataTable} from './grid.js';

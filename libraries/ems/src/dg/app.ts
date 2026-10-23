@@ -67,6 +67,8 @@ export interface DomainAppOptions {
   base: string;
   /** The list's initial query. */
   query?: string;
+  /** The list's initial order, `'!number,title'` (`!` descending). */
+  sort?: string;
   pageSize?: number;
   /** Whether the list follows the server (`DomainSourceOptions.live`), ON by default: it probes
    * the table every {@link liveMs} and reloads while the session is clean, marking the page
@@ -191,7 +193,7 @@ export class DomainApp extends Control {
         DomainApp._bases.delete(table.address);
     });
 
-    this.listSource = this._source({query: _options.query ?? '', pageSize: _options.pageSize,
+    this.listSource = this._source({query: _options.query ?? '', sort: _options.sort, pageSize: _options.pageSize,
       live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
     this.list = this.runInScope(() => new DomainList(this.listSource, {mode: _options.mode}));
