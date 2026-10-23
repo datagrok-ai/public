@@ -408,7 +408,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   async convertMolNotation(molecules: string[], targetNotation: string, kekulize = false): Promise<string[]> {
     if (!molecules || this._requestTerminated)
       return [];
-    let addedToCache = false;
     const result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
       (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 : 'MALFORMED_INPUT_VALUE';
     const results = new Array<string>(molecules.length).fill(result);
@@ -424,13 +423,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         results[i] = '';
         continue;
       }
-      let rdMol = this._molsCache?.get(molecules[i]);
+      // a molecule kekulized here is a fresh one, never cached: the searches reuse the cached ones as read
+      let rdMol = kekulize ? null : this._molsCache?.get(molecules[i]);
       if (!rdMol) {
         const mol: IMolContext = getMolSafe(item, {}, this._rdKitModule);
         rdMol = mol?.mol;
         if (rdMol)
           rdMol.is_qmol = mol?.isQMol;
       }
+      let addedToCache = false;
       if (rdMol) {
         if (kekulize) {
           try {
@@ -465,7 +466,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             results[i] = 'Unknown notation: ' + targetNotation;
             throw Error('Unknown notation: ' + targetNotation);
           }
-          addedToCache = this.addToCache(rdMol);
+          addedToCache = !kekulize && this.addToCache(rdMol);
         } catch {
           // nothing to do, fp is already null
         } finally {

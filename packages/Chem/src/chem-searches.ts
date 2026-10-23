@@ -20,12 +20,13 @@ import {IFpResult} from './rdkit-service/rdkit-service-worker-similarity';
 import {SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName,
   getValuesChangedEventName} from './constants';
 import {SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {filter} from 'rxjs/operators';
 import {cruxReadsQuery, cruxSubstructureSearch, isCruxSearch} from './crux/crux-searches';
 import {ChemicalEngine, isCruxRequested} from './engine/chem-engine';
 import {fingerprintsByEngine, fingerprintsKey} from './engine/worker-jobs';
-import {cruxModuleSync} from './engine/crux-module';
+import {cruxModuleSync, noteCruxError} from './engine/crux-module';
+import {cruxOrRdKit} from './engine/fallback';
 import {FingerprintOptions, fingerprintOptions, fingerprintOptionsKey, needsCrux} from './utils/fingerprint-options';
 
 
@@ -567,22 +568,28 @@ export function getRDKitFpAsUint8Array(mol: RDMol, fingerprint: Fingerprint): Ui
 
 export function chemGetFingerprint(molString: string, fingerprint: Fingerprint, onError?:
   (error: Error) => any, convertToBitArray = true): BitArray {
-  let mol = null;
   try {
-    // in Crux mode the query's fingerprint is Crux's, as the column's are (RDKit's where Crux cannot read it)
+    // in Crux mode the query's fingerprint is Crux's, as the column's are (RDKit's where Crux cannot read it or fails)
     const crux = isCruxRequested() ? cruxModuleSync() : null;
-    mol = crux ? getMolSafe(molString, {}, crux).mol : null;
-    mol ??= getMolSafe(molString, {}, getRdKitModule()).mol;
-    if (mol) {
-      const fp = getRDKitFpAsUint8Array(mol, fingerprint);
+    const fp = (crux ? cruxOrRdKit('fingerprints', () => fingerprintWith(crux, molString, fingerprint, true),
+      () => null) : null) ?? fingerprintWith(getRdKitModule(), molString, fingerprint, false);
+    if (fp)
       return rdKitFingerprintToBitArray(fp) as BitArray;
-    } else
-      throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
+    throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
   } catch (e: any) {
     if (onError)
       return onError(e);
     else
       throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
+  }
+}
+
+/** The fingerprint of a molecule `module` reads, null where it reads none. */
+function fingerprintWith(module: RDModule, molString: string, fingerprint: Fingerprint, crux: boolean):
+  Uint8Array | null {
+  const mol = getMolSafe(molString, {}, module, true, crux ? noteCruxError : undefined).mol;
+  try {
+    return mol ? getRDKitFpAsUint8Array(mol, fingerprint) : null;
   } finally {
     mol?.delete();
   }

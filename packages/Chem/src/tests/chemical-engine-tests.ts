@@ -38,6 +38,7 @@ import {CONTAINER_TIMEOUT, readDataframe} from './utils';
 import {isNoneValue} from '../crux/crux-api';
 import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, SubstructureSearchType} from '../constants';
 import {calculatorMethodInfo} from '../widgets/biochem-properties-widget';
+import {convertNotationForColumn} from '../utils/convert-notation-utils';
 
 /** The renderer's internals the tests read (the molecule's engine, a raster). */
 interface RendererInternals {
@@ -1150,6 +1151,20 @@ category('chemical engine', () => {
     expect(differences.join('; '), '', 'the features per family');
     setChemicalEngine(ChemicalEngine.RDKit);
   }, {timeout: 300000});
+
+  test('break it: a Kekulé conversion leaves the RDKit search its molecules', async () => {
+    // the RDKit pool's convertMolNotation kekulized the molecules its searches had cached (2026-10-23 review)
+    setChemicalEngine(ChemicalEngine.RDKit);
+    try {
+      const molecules = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
+      const before = (await chemSubstructureSearchLibrary(molecules, 'c1ccccc1', '')).trueCount;
+      await convertNotationForColumn(molecules, DG.chem.Notation.Smiles, true);
+      const after = (await chemSubstructureSearchLibrary(molecules, 'c1ccccc1', '')).trueCount;
+      expect(after, before, 'the same hits after the Kekulé conversion');
+    } finally {
+      setChemicalEngine(null);
+    }
+  });
 });
 
 /** The `scaffold` MOL blocks of a scaffold tree, depth first. */
