@@ -8,7 +8,6 @@ import type {Action, RowView} from '@datagrok-libraries/u2';
 import type {CompoundRow} from '../generated/db';
 import {Chemistry, IDENTITY_COLUMNS} from './chemistry';
 import type {CompoundIdentity} from './chemistry';
-import {BulkRegistration} from './registration';
 import {StructureSearch} from './structure-search';
 import {MolTrackTables} from './tables';
 
@@ -60,10 +59,7 @@ export class CompoundsApp extends DomainApp {
 
   // no Bulk edit: it would write past the identity a structure derives
   menuActions(): Action[] {
-    return super.menuActions().filter((action) => action.name !== 'Bulk edit…')
-      .map((action) => action.name !== 'Import…' ? action : {...action,
-        run: () => void BulkRegistration.run(this.table as DomainTable<CompoundRow>)
-          .then((landed) => landed ? this.listSource.refresh() : null)});
+    return super.menuActions().filter((action) => action.name !== 'Bulk edit…');
   }
 
   private async _derive(source: DomainSource): Promise<void> {

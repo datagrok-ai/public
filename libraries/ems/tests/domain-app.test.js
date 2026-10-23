@@ -1458,3 +1458,46 @@ scoped('the read-only bound reaches the frame writer: a row\'s own ~can_edit lif
   assert.deepEqual(Object.keys(bound.fields).filter((c) => bound.fields[c] !== 'readonly'), [], 'nothing writable');
   a.dispose();
 });
+
+// the last test: the views it makes stay registered for the process
+scoped('domains.views: a view per table, addressed and brought forward, where its rows open, an item each', async () => {
+  emsBackends.domain = backend();
+  const docked = [];
+  grok.shell.addView = (view) => docked.push(view) && view;
+  const views = domains.views({path: '/apps/T', views: [
+    {table: 'grit.project', name: 'Projects', options: {history: false}},
+    {table: 'grit.issue', name: 'Open Issues', options: {pageSize: 10, sort: '!number'}},
+  ]});
+  assert.equal(domains.views({path: '/apps/R', views: [{table: 'grit.label', name: 'Labels', segment: ''}]})
+    .baseOf('grit.label'), '/apps/R', 'an empty segment is the app\'s path itself');
+  const until = async (done) => {
+    for (let i = 0; i < 20 && !done(); i++)
+      await flush();
+  };
+  try {
+    const view = await views.open('OpenIssues?entity=i2');
+    const issues = DomainApp.of(view);
+    await flush();
+    assert.deepEqual([view.name, issues.base, issues.entity.value, issues.listSource.sort.value],
+      ['Open Issues', '/apps/T/OpenIssues', 'i2', '!number'], 'the segment is the name without spaces');
+    assert.equal(await views.show('openissues?q=done%20%3D%20true'), view, 'the open view takes the address');
+    await flush();
+    assert.deepEqual([issues.page.value, issues.listSource.query.value, docked.length], ['list', 'done = true', 0]);
+    (await domains.table('grit.project')).open({id: 'p1'});
+    await until(() => docked.length > 0);
+    const projects = DomainApp.of(docked[0]);
+    await flush();
+    assert.deepEqual([projects.base, projects.entity.value], ['/apps/T/Projects', 'p1'],
+      'a row opens in the view docked for its table');
+    const items = [];
+    views.tree({item: (name) => ({onSelected: {subscribe: (run) => items.push([name, run])}})});
+    items[0][1]();
+    await flush();
+    assert.deepEqual([items.map(([name]) => name), projects.page.value, docked.length],
+      [['Projects', 'Open Issues'], 'list', 1], 'an item per view, bringing it to its list');
+  } finally {
+    delete grok.shell.addView;
+    for (const app of [...DomainApp.live])
+      app.dispose();
+  }
+});

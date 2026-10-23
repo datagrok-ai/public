@@ -540,9 +540,10 @@
   overflow: auto;
 }
 
-/* the preview draws the first rows as they would land: a fixed window, its own scroller */
+/* the preview draws the first rows as they would land, the report every row's outcome: a fixed
+   window, its own scroller, as tall as the dialog leaves room for */
 .u2-domain-import-rows {
-  height: 220px;
+  height: 300px;
   overflow: auto;
 }
 

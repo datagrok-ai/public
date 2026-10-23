@@ -17,8 +17,9 @@ interface PlatformInputOptions<T> extends InputOptions<T> {
   dgInput: DartInputLike<T>;
 }
 
-/** A `DG.InputBase` seen by u2 as an `Input<T>`: the platform root is the whole input, so caption
- * and validation message stay the platform's and nothing renders twice. The platform value is
+/** A `DG.InputBase` seen by u2 as an `Input<T>`: the platform root is the whole input, so the caption
+ * and the platform validators' messages stay the platform's; u2's line shows only the verdicts the
+ * platform knows nothing of (required, an app's validator), and nothing renders twice. The platform value is
  * canonical — signal writes reach it through `dgInput.value`, echo-suppressed by comparison — and
  * Dart-side validators (regex, func-param, script) reach `Form.validity` through {@link validity}.
  * The bridge never owns the wrapped input: `dispose()` severs the subscriptions and nothing else. */
@@ -54,11 +55,22 @@ export class PlatformInput<T> extends Input<T, PlatformInputOptions<T>> {
     const validated = onValidated(dgInput.dart)
       .subscribe((messages: string[]) => this._messages.value = PlatformInput._join(messages));
     this.own(() => validated.unsubscribe());
-    this.root.querySelector('.u2-input-error')?.remove();
+    // the platform shows its own validators' verdicts; u2's line carries the rest (required, an app's rule)
+    const line = this.root.querySelector<HTMLElement>('.u2-input-error')!;
+    this.effect(() => line.hidden = this._messages.value !== null);
   }
 
   get dgInput(): DartInputLike<T> {
     return this.options.dgInput;
+  }
+
+  /** The platform's caption: the bridge renders no label of its own, yet a refusal names the field. */
+  get label(): string {
+    return super.label || this.options.dgInput.caption;
+  }
+
+  set label(x: string) {
+    super.label = x;
   }
 
   // registered before the base builds its validation effect, so that effect tracks _messages and

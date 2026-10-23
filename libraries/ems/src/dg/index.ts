@@ -14,6 +14,8 @@ export {DomainFilters} from './filters.js';
 export {domainFilterSchema} from './filter-schema.js';
 export type {DomainFiltersOptions, DomainFiltersMode} from './filters.js';
 export {DomainApp} from './app.js';
+export {DomainViews} from './views.js';
+export type {DomainViewsOptions, DomainViewEntry, DomainViewOptions} from './views.js';
 export type {DomainAppOptions, DomainAppPage, DomainAppMode, DomainAppStatus, DomainRibbon} from './app.js';
 export {DomainAddress} from './address.js';
 export {DomainGrid, DomainDataTable} from './grid.js';
@@ -25,4 +27,5 @@ export type {DomainHistoryTarget} from './history.js';
 export {DomainChildren} from './children.js';
 export type {DomainChildrenOptions, DomainChildrenMode, ChildEntry} from './children.js';
 export type {DomainBulkEditOptions} from './bulk.js';
-export type {DomainImportOptions} from './import.js';
+export type {DomainImportOptions, DomainImporter, DomainImportVerdict, DomainImportRow, DomainImportColumn,
+  DomainImportStep, DomainImportError} from './import.js';
