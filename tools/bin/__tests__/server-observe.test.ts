@@ -106,6 +106,13 @@ describe('problems', () => {
     expect(printed).toContain('x'.repeat(80));
     expect(printed).toMatch(/details\.nested\.n\s+1/);
   });
+
+  it('severity pins one, none unpins it, anything else is refused', async () => {
+    const {calls} = await observe('problems', 'severity', ['p1', 'critical'], {reason: 'the CFO uses it'}, () => ({}));
+    expect(calls).toEqual([{method: 'POST', path: '/problems/p1/severity', body: {severity: 'critical', reason: 'the CFO uses it'}}]);
+    expect((await observe('problems', 'severity', ['p1', 'none'], {}, () => ({}))).calls[0].body.severity).toBeNull();
+    await expect(observe('problems', 'severity', ['p1', 'urgent'], {})).rejects.toThrow('Usage');
+  });
 });
 
 describe('errors', () => {
