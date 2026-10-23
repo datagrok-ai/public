@@ -2,9 +2,9 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: ed3e1aebd71f47b4450c1317e9765ac13519bef1
+crux_core_rev: 9be67471802f738158ff07170b755589dad18306
 crux_core_dirty: False
-built_utc: 2026-10-23T11:10:18.726Z
+built_utc: 2026-10-23T12:39:12.623Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
@@ -13,18 +13,18 @@ wasm_bindgen.version: 0.2.129
 wasm_bindgen.flags: --target web --remove-name-section
 wasm_opt.version: wasm-opt version 133 (version_133)
 wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-bulk-memory-opt --enable-call-indirect-overlong --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 5212896
-files.chem_wasm_bg.wasm.gzip9: 1980853
-files.chem_wasm_bg.wasm.brotli11: 1460254
+files.chem_wasm_bg.wasm.raw: 5829135
+files.chem_wasm_bg.wasm.gzip9: 2164503
+files.chem_wasm_bg.wasm.brotli11: 1561712
 files.chem_wasm.js.raw: 141405
 files.chem_wasm.js.gzip9: 21633
 files.chem_wasm.js.brotli11: 18195
-cargo_artifact.raw: 7386736
-cargo_artifact.gzip9: 2424870
-cargo_artifact.brotli11: 1727903
+cargo_artifact.raw: 7371882
+cargo_artifact.gzip9: 2521504
+cargo_artifact.brotli11: 1764285
 
-vendored from: a clean build of crux-core main ed3e1aebd (build-ship.sh chem)
-chem_wasm_bg.wasm: 5,212,896 B raw, sha256 4b5435b793b018ad
+vendored from: a clean build of crux-core main 9be674718 (build-ship.sh chem)
+chem_wasm_bg.wasm: 5,829,135 B raw, sha256 11e9205d9e12b74d
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes: calcDescriptors' 3D descriptors on ETKDGv3 (legacy, Hs kept) with random coordinates above 50 atoms, 200 attempts, a 5 s per-molecule deadline and a per-call 3D budget (chem-descriptors-3d-v3), on top of 6d5178d11's (CoordGen at s, FMCS at 3)
+includes: chem-wasm-opt-levels-2 (the product owner's 1.3x bar, past RDKit_minimal by their decision): the cdylib built alone (-139 KB gzip, the same exports), rascal and chem-wasm at opt-level 3; FMCS 1.61-1.71x, Rascal MCES 1.76x, R-groups 1.21-1.25x, MMPA and reactions 1.15x, alignment 1.18x faster than 6d5178d11's, outputs byte-identical; on top of ed3e1aebd's
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)
