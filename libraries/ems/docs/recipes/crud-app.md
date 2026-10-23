@@ -115,12 +115,18 @@ asking for one over it is refused by name (`DomainSource.requireRestore`).
 const updated = await domains.bulkEdit(source);         // resolves to the row count, or null
 ```
 
-The dialog offers every column the caller may write, each with an **include checkbox**: only the
-checked columns reach the server, so "clear this field" (checked, left empty) and "leave it alone"
-(unchecked) are different requests. The target is either **N selected** — posted as
-`id in ("…","…")`, refused by name past the server's 1000-row cap — or **all M matching**, the
-list's filter as it stands. A bulk edit is not part of the unit of work: it lands the moment OK is
-pressed, so the session's pending changes are settled through `confirmDiscard` first, and the
+The dialog is one aligned form: **Apply to**, **Change** — a picker over the columns the caller
+may write (a business key only for a single row) — and an editor for each chosen field. Only the
+chosen columns reach the server, so "clear this field" (chosen, left empty) and "leave it alone"
+(not chosen) are different requests; a muted line under each field says which: the selected rows'
+shared value, "N different values", or "Will be cleared". The target is either **N selected** —
+posted as `id in ("…","…")`, refused by name past the server's 1000-row cap — or **all M
+matching**, the list's filter as it stands (plain text when only one exists); the button reads
+"Update N <rows>" and is disabled, with the reason as its tooltip, until a field is chosen. The
+table's validators (`domains.configure`) run over the target rows as they would land — the
+matching ones read for it, at most 1000 — and a refusal, theirs or the server's, stays in the
+dialog's error line. A bulk edit is not part of the unit of work: it lands the moment the button
+is pressed, so the session's pending changes are settled through `confirmDiscard` first, and the
 source re-reads afterwards.
 
 Two refusals worth knowing: "all matching" needs a filter and is refused while a **search** is set

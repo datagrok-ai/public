@@ -496,41 +496,23 @@
   display: none;
 }
 
-/* bulk edit: the include checkbox sits in front of the column's whole input — OUTSIDE it, since a
-   disabled input kills pointer events on its own children. The row carries the field's pitch, so
-   the two class selectors plus the dialog's own beat form.css's own non-input-row padding. */
-.u2-dialog.u2-domain-bulk .u2-form-rows > .u2-domain-bulk-row {
-  display: flex;
-  align-items: center;
-  padding: 0;
+/* bulk edit: "Apply to" and the field picker head the form, in its label column. A plain-text
+   target carries the pitch the form gives its non-input rows */
+.u2-domain-bulk-header > .u2-form-readonly {
+  padding: var(--dg-space-s) 0;
 }
 
-.u2-domain-bulk-row > .u2-input-root {
-  flex: 1;
-  min-width: 0;
-}
-
-.u2-domain-bulk-include {
-  margin: 0 var(--dg-space-s) 0 0;
-  flex: none;
-}
-
-/* the hint under "Apply to", and whatever blocks OK — a line above the buttons, never a balloon
-   on the far edge of the screen */
-.u2-domain-bulk-hint {
-  display: block;
-  padding: 0 0 var(--dg-space-s);
+/* what a chosen field does to the target — the rows' current value, or that it will be cleared —
+   a muted line of its own under the editor, past the label column, as a verdict sits */
+.u2-domain-bulk-current {
+  box-sizing: border-box;
+  flex: 1 0 100%;
+  padding-left: calc(var(--u2-form-label-width, 100px) + var(--dg-space-m));
   color: var(--dg-text-color-light);
   font-size: var(--dg-font-size-small);
 }
 
-.u2-domain-bulk-reason {
-  display: block;
-  padding-top: var(--dg-space-s);
-  color: var(--dg-error);
-}
-
-.u2-domain-bulk-reason:empty {
+.u2-domain-bulk-current:empty {
   display: none;
 }
 

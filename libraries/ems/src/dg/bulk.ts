@@ -1,21 +1,25 @@
 /* `domains.bulkEdit` — one value written into many rows at once (WO 3-8), through the platform's
-   `POST …/{table}/update`. The dialog offers every column the caller may write, each with an
-   include checkbox: only the checked ones reach the server, so "clear this field" (a checked
-   column left empty) and "leave it alone" (unchecked) are different requests. The target is the
-   selection, or everything the list's filter matches; the server narrows both by the Edit
-   predicate and answers how many rows it touched.
+   `POST …/{table}/update`. One aligned form: what the edit applies to, the fields it changes (a
+   picker over the columns the caller may write), and an editor for each chosen field only — so
+   "clear this field" (chosen, left empty) and "leave it alone" (not chosen) are different requests.
+   Under each chosen field a muted line says what it does to the target: the rows' shared value or
+   how many differ, or that it will be cleared. The target is the selection, or everything the
+   list's filter matches; the server narrows both by the Edit predicate and answers how many rows
+   it touched.
 
-   Only targets that can actually be written are offered, and whatever blocks OK is a line above
-   the buttons, never a balloon across the screen — a balloon says what landed, nothing else.
+   Only targets that can actually be written are offered. Whatever blocks the button is its
+   tooltip, and a refusal — the table's validators over the rows as they would land, or the
+   server's — is the dialog's error line, never a balloon: a balloon says what landed, nothing else.
 
-   A bulk edit is NOT part of the unit of work — it lands the moment OK is pressed — so the
+   A bulk edit is NOT part of the unit of work — it lands the moment the button is pressed — so the
    session's pending changes are settled through `confirmDiscard` first. */
-import {signal, computed, Filters, div, span, Dialog, ChoiceInput, notify} from '@datagrok-libraries/u2';
-import type {Signal, IProperty} from '@datagrok-libraries/u2';
+import {signal, computed, Filters, span, Dialog, Input, MultiSelect, RadioInput, Rows, notify, plural, text}
+  from '@datagrok-libraries/u2';
+import type {IProperty, ReadonlySignal, RowView} from '@datagrok-libraries/u2';
 import {confirmDiscard} from '../core/session.js';
 import type {DomainSource} from '../core/domain-source.js';
 import type {DomainQueryLike} from '../core/domain-backend.js';
-import {propertyForm} from '@datagrok-libraries/u2/src/dg/index.js';
+import {ObjectForm, propertyForm} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainTable} from './facade.js';
 import {DomainErrors} from './errors.js';
 
@@ -30,8 +34,14 @@ const MAX_ROWS = 1000;
 const SELECTED = 'selected';
 const MATCHING = 'matching';
 
-/** Writes the checked columns into the rows the dialog's target names; resolves to how many rows
- * the server touched, or null where the dialog was cancelled or the edit refused. */
+interface BulkTarget {
+  kind: typeof SELECTED | typeof MATCHING;
+  label: string;
+  count: number;
+}
+
+/** Writes the chosen columns into the rows the dialog's target names; resolves to how many rows
+ * the server touched, or null where the dialog was cancelled. */
 export async function bulkEdit(source: DomainSource, options: DomainBulkEditOptions = {}): Promise<number | null> {
   const table = DomainTable.of(source)?.table;
   if (table?.updateWhere === undefined) {
@@ -49,7 +59,7 @@ export async function bulkEdit(source: DomainSource, options: DomainBulkEditOpti
   const props: IProperty[] = [];
   for (const name of options.columns ?? properties.map((p) => p.name)) {
     const prop = properties.find((p) => p.name === name);
-    // a bulk value is not a row: a checked field left empty CLEARS the column, and whether the
+    // a bulk value is not a row: a chosen field left empty CLEARS the column, and whether the
     // column tolerates that is the server's per-row answer — nothing here is "required"
     if (prop !== undefined && writable.field(name) === 'editable')
       props.push({...prop, nullable: true});
@@ -75,58 +85,89 @@ function _plural(source: DomainSource): string {
   return (source.schema.info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
 }
 
-/** The targets a bulk edit can actually write: the frame's selection, and — only when the list is
- * filtered and nothing is searched, which `updateWhere` cannot take — everything it matches. */
-function _targets(source: DomainSource): {value: string, label: string}[] {
-  const selected = source.selection.peek().length;
-  const matching = source.search.peek() === '' && _filterOf(source) !== undefined;
-  return [
-    ...(selected === 0 ? [] : [{value: SELECTED, label: `${selected} selected`}]),
-    ...(matching ? [{value: MATCHING, label: `all ${source.total.peek() ?? 0} matching`}] : []),
-  ];
+function _singular(source: DomainSource): string {
+  return source.schema.info.singularName.toLowerCase() || 'row';
 }
 
-function _open(source: DomainSource, props: IProperty[], items: {value: string, label: string}[],
+function _count(source: DomainSource, n: number): string {
+  return plural(n, _singular(source), _plural(source));
+}
+
+/** The targets a bulk edit can actually write: the frame's selection, and — only when the list is
+ * filtered and nothing is searched, which `updateWhere` cannot take — everything it matches. */
+function _targets(source: DomainSource): BulkTarget[] {
+  const selected = source.selection.peek().length;
+  const total = source.total.peek() ?? 0;
+  const matching = source.search.peek() === '' && _filterOf(source) !== undefined;
+  const targets: BulkTarget[] = [];
+  if (selected > 0) {
+    const words = selected === 1 ? _singular(source) : _plural(source);
+    targets.push({kind: SELECTED, label: `${selected.toLocaleString()} selected ${words}`, count: selected});
+  }
+  if (matching)
+    targets.push({kind: MATCHING, label: `All ${_count(source, total)} matching the filter`, count: total});
+  return targets;
+}
+
+function _caption(prop: IProperty): string {
+  const name = prop.friendlyName ?? prop.name ?? '';
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+}
+
+function _open(source: DomainSource, props: IProperty[], targets: BulkTarget[],
   resolve: (n: number | null) => void): void {
+  const handle = DomainTable.of(source)!;
   const dialog = Dialog.create(`Bulk edit ${_plural(source)}`, {name: 'bulk-edit'});
   dialog.root.classList.add('u2-domain-bulk');
-  const target = dialog.runInScope(() => new ChoiceInput({label: 'Apply to', items,
-    value: items[0].value, name: 'target', nullable: false}));
-  const values: Record<string, unknown> = {};
-  const include = new Map<string, Signal<boolean>>();
   const form = dialog.runInScope(() =>
-    propertyForm(props, values, {access: source.access.peek().columnPolicy(), layout: 'tall'}));
+    propertyForm(props, {}, {access: source.access.peek().columnPolicy(), layout: 'normal'}));
+
+  // "Apply to" and the field picker head the same form, in its label column
+  const header = document.createElement('div');
+  header.className = 'u2-domain-bulk-header';
+  form.root.prepend(header);
+  const target = _applyTo(dialog, form, header, targets);
+  const picker = dialog.runInScope(() => new MultiSelect({label: 'Change', name: 'fields', items: [],
+    placeholder: 'Choose the fields to change', fill: true}));
+  form.add(picker, header);
+  // one value on many rows can only collide on a business key
+  const keys = new Set(source.schema.info.businessKey);
+  dialog.effect(() => picker.setItems(props
+    .filter((p) => target.value.count <= 1 || !keys.has(p.name!))
+    .map((p) => ({value: p.name!, label: _caption(p)}))));
+
+  const selection = source.selection.peek();
   for (const prop of props) {
-    const on = signal(false);
-    include.set(prop.name!, on);
     const input = form.input(prop.name!);
     if (input === undefined)
       continue;
-    // OUTSIDE the input's root: a disabled input kills pointer events on everything inside it and
-    // disables the controls it holds, so the box that would enable it would be dead in the water
-    const row = div([_checkbox(prop, on)], 'u2-domain-bulk-row');
-    input.root.replaceWith(row);
-    row.append(input.root);
-    input.enabled = false;
-    input.effect(() => input.enabled = on.value);
+    const current = _current(selection, prop.name!);
+    const hint = span('', 'u2-domain-bulk-current');
+    input.root.append(hint);
+    input.effect(() => {
+      input.visible = picker.value.value.includes(prop.name!);
+      hint.textContent = Input.isEmpty(input.value.value) ? 'Will be cleared' :
+        target.value.kind === SELECTED ? current : '';
+    });
   }
 
+  const checks = handle.validators.columns.length > 0;
   const problem = computed(() => {
-    if (!props.some((p) => include.get(p.name!)!.value))
-      return 'Check the fields to write.';
-    const selected = source.selection.value.length;
-    if (target.value.value === SELECTED && selected > MAX_ROWS) {
-      return `A bulk edit writes at most ${MAX_ROWS} ${_plural(source)} at a time; ${selected} are ` +
+    const {kind, count} = target.value;
+    if (picker.value.value.length === 0)
+      return 'Choose the fields to change';
+    if (kind === SELECTED && count > MAX_ROWS) {
+      return `A bulk edit writes at most ${MAX_ROWS} ${_plural(source)} at a time; ${count} are ` +
         'selected. Narrow the selection, or filter the list and apply to everything it matches.';
     }
+    if (kind === MATCHING && count > MAX_ROWS && checks)
+      return _tooMany(source);
     return null;
   });
-  const reason = span('', 'u2-domain-bulk-reason');
-  dialog.effect(() => reason.textContent = problem.value ?? '');
-  dialog.add(target)
-    .add(span('Checked fields are written to every target row; a checked field left empty clears it.',
-      'u2-domain-bulk-hint'))
-    .add(form).add(reason);
+  const caption = computed(() => {
+    const {count} = target.value;
+    return count > MAX_ROWS ? `Update ${MAX_ROWS} of ${_count(source, count)}` : `Update ${_count(source, count)}`;
+  });
 
   let done = false;
   const finish = (n: number | null) => {
@@ -135,30 +176,43 @@ function _open(source: DomainSource, props: IProperty[], items: {value: string, 
     done = true;
     resolve(n);
   };
-  // busy until the write ends; a failed one (its balloon is up) keeps what the user checked and typed
-  dialog.onOK(async () => {
-    const columns = props.map((p) => p.name!).filter((name) => include.get(name)!.peek());
-    const written = await _run(source, columns, values, target.value.peek() === SELECTED);
-    if (written === null)
-      return false;
-    finish(written);
-  }).okEnabled(computed(() => problem.value === null))
-    .onCancel(() => finish(null)).show({modal: true, width: 460});
+  // busy until the write ends; a refused one keeps what the user chose and typed, the reason in the
+  // dialog's error line
+  const run = async () => {
+    const columns = props.map((p) => p.name!).filter((name) => picker.value.peek().includes(name));
+    finish(await _run(source, form, columns, target.peek().kind === SELECTED));
+  };
+  dialog.effect(() => {
+    dialog.onOK(run, {text: caption.value});
+  });
+  dialog.add(form).okDisabled(problem).onCancel(() => finish(null)).show({modal: true, width: 480});
 }
 
-/** The include checkbox of one column, in front of the input's whole row: an unchecked column is
- * not in the request at all. */
-function _checkbox(prop: IProperty, on: Signal<boolean>): HTMLElement {
-  const name = prop.friendlyName ?? prop.name ?? '';
-  const caption = `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
-  const box = document.createElement('input');
-  box.type = 'checkbox';
-  box.className = 'u2-input-checkbox u2-domain-bulk-include';
-  box.setAttribute('aria-label', caption);
-  box.title = `${caption} (leave empty to clear)`;
-  box.dataset.u2Include = prop.name;
-  box.addEventListener('change', () => on.value = box.checked);
-  return box;
+/** "Apply to": plain text where there is one target, a choice where there are two. */
+function _applyTo(dialog: Dialog, form: ObjectForm, header: HTMLElement, targets: BulkTarget[]):
+  ReadonlySignal<BulkTarget> {
+  if (targets.length === 1) {
+    header.append(ObjectForm.readonlyField('Apply to', 'target', targets[0].label).row);
+    return signal(targets[0]);
+  }
+  const radio = dialog.runInScope(() => new RadioInput({label: 'Apply to', name: 'target',
+    items: targets.map((t) => t.label), value: targets[0].label, nullable: false}));
+  form.add(radio, header);
+  return computed(() => targets.find((t) => t.label === radio.value.value) ?? targets[0]);
+}
+
+/** What a field holds across the selected rows now: their one shared value, or how many differ. */
+function _current(rows: readonly RowView[], column: string): string {
+  const seen = new Set(rows.map((row) => text(row[Rows.caption(column)] ?? row[column])));
+  if (seen.size > 1)
+    return `${seen.size} different values`;
+  const [only] = seen;
+  return only === undefined || only === '' ? 'Currently empty' : `Currently ${only}`;
+}
+
+function _tooMany(source: DomainSource): string {
+  return `The filter matches more than ${MAX_ROWS} ${_plural(source)}, and a bulk edit checks the ` +
+    `table's rules on at most ${MAX_ROWS}. Narrow the filter.`;
 }
 
 /** The list's own filter as the seam takes it — `DomainSource` sends exactly this with every
@@ -168,23 +222,39 @@ function _filterOf(source: DomainSource): DomainQueryLike['filter'] {
   return typeof q === 'string' ? (q === '' ? undefined : q) : Filters.toDomainTree(q, {schema: source.schema});
 }
 
-async function _run(source: DomainSource, columns: string[], values: Record<string, unknown>,
-  selection: boolean): Promise<number | null> {
-  const table = DomainTable.of(source)!.table;
+async function _run(source: DomainSource, form: ObjectForm, columns: string[], selection: boolean):
+  Promise<number> {
+  const handle = DomainTable.of(source)!;
   const filter = selection ? Filters.toDomainTree(Filters.group('and',
     [Filters.cond('id', 'in', source.selection.peek().map((row) => row.id))]), {schema: source.schema}) :
     _filterOf(source);
-  // a checked column with no value clears the column; an unchecked one is not in the request
-  const written = Object.fromEntries(columns.map((name) => [name, values[name] ?? null]));
-  try {
-    const report = await table.updateWhere!(filter, written, {limit: MAX_ROWS});
-    const what = report.updated === 1 ? source.schema.info.singularName.toLowerCase() || 'row' : _plural(source);
-    notify.info(`Updated ${report.updated} ${what}${report.hasMore ?
-      ` — more match than one edit writes (${MAX_ROWS}); run it again.` : '.'}`);
-    await source.refresh();
-    return report.updated;
-  } catch (e) {
-    notify.error(DomainErrors.message(e));
+  // a chosen column left empty clears the column; one not chosen is not in the request
+  const written = Object.fromEntries(columns.map((name) => {
+    const value = form.input(name)?.value.peek();
+    return [name, Input.isEmpty(value) ? null : value];
+  }));
+  const refused = await _check(source, handle, filter, written, selection);
+  if (refused !== null)
+    throw new Error(refused);
+  const report = await handle.table.updateWhere!(filter, written, {limit: MAX_ROWS}).catch((e) => {
+    throw new Error(DomainErrors.message(e));
+  });
+  const what = report.updated === 1 ? _singular(source) : _plural(source);
+  notify.info(`Updated ${report.updated} ${what}${report.hasMore ?
+    ` — more match than one edit writes (${MAX_ROWS}); run it again.` : '.'}`);
+  await source.refresh();
+  return report.updated;
+}
+
+/** The table's validators over the target rows as they would land; null where they pass or the
+ * table has none. The matching rows are read for it, and refused past what one edit writes. */
+async function _check(source: DomainSource, handle: DomainTable, filter: DomainQueryLike['filter'],
+  written: Record<string, unknown>, selection: boolean): Promise<string | null> {
+  if (handle.validators.columns.length === 0)
     return null;
-  }
+  const rows = selection ? source.selection.peek() :
+    await handle.table.query({filter, limit: MAX_ROWS + 1}) as RowView[];
+  if (rows.length > MAX_ROWS)
+    return _tooMany(source);
+  return handle.problem(rows.map((row) => ({...row, ...written})))?.message ?? null;
 }

@@ -373,25 +373,30 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return source;
   }
 
-  /** The validators over every row the batch will send — a form wires them into its inputs, but a
-   * row action or a plain `row.column = …` never goes near a form, and the rule still holds. */
-  private _validate(source: DomainSource<TRow>): string | null {
+  /** The first problem the validators find over `rows`, every registered column of each, named by
+   * row and column — null where all of them pass. */
+  problem(rows: Iterable<RowView<TRow>>): {row: RowView<TRow>, message: string} | null {
     const columns = this.validators.columns;
-    if (columns.length === 0)
-      return null;
-    for (const row of source.pending()) {
-      if (row[Rows.STATE] === 'deleted' || row[Rows.STATE] === 'restored')
-        continue;
+    for (const row of rows) {
       for (const column of columns) {
-        const problem = this.validators.check(column, row[column], row as RowView<TRow>);
-        if (problem === null)
-          continue;
+        const problem = this.validators.check(column, row[column], row);
         // the refusal names the row it is about: from a list, "Status: …" alone names nothing
-        source.markProblem(row.id);
-        return this._nameCell(row, column, problem);
+        if (problem !== null)
+          return {row, message: this._nameCell(row, column, problem)};
       }
     }
     return null;
+  }
+
+  /** The validators over every row the batch will send — a form wires them into its inputs, but a
+   * row action or a plain `row.column = …` never goes near a form, and the rule still holds. */
+  private _validate(source: DomainSource<TRow>): string | null {
+    const found = this.problem(source.pending().filter((row) =>
+      row[Rows.STATE] !== 'deleted' && row[Rows.STATE] !== 'restored'));
+    if (found === null)
+      return null;
+    source.markProblem(found.row.id);
+    return found.message;
   }
 
   /** A refusal about one cell, named: the row's caption and the column's, as a list or a grid
