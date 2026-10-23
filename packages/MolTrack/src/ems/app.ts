@@ -3,9 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {DomainApp} from '@datagrok-libraries/ems/src/dg';
 import type {DomainAppViewOptions} from '@datagrok-libraries/ems/src/dg';
-import {Rows, isEmpty, span} from '@datagrok-libraries/u2';
-import type {RowView} from '@datagrok-libraries/u2';
-import type {CompoundBatchRow, CompoundRow} from '../generated/db';
+import {span} from '@datagrok-libraries/u2';
+import type {CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
 import {CompoundsApp} from './compounds';
 import {MolTrackTables} from './tables';
@@ -91,24 +90,7 @@ export class MolTrackEms {
     const key = KEYS[entry.table];
     if (key !== undefined)
       MolTrackEms._keySearch(app, key);
-    if (entry.table === 'compound' || entry.table === 'compound_batch')
-      MolTrackEms._context(app, entry.table);
     return {view, app};
-  }
-
-  // a new compound shows its identity under its form, not here
-  private static _context(app: DomainApp, table: string): void {
-    let shown: string | null = null;
-    app.effect(() => {
-      const source = app.page.value === 'entity' ? app.entitySource.value : app.listSource;
-      const row = source?.currentRow.value as RowView<CompoundRow | CompoundBatchRow> | null | undefined;
-      const id = row === null || row === undefined ? null : table === 'compound_batch' ?
-        (row as RowView<CompoundBatchRow>).compound_id : Rows.isDraft(row) ? null : row.id;
-      if (isEmpty(id) || id === shown)
-        return;
-      shown = id!;
-      grok.shell.o = ui.wait(async () => MolTrackEms.compoundCard(await moltrackEmsDb.compounds.get(id!)));
-    });
   }
 
   // the server cannot search a formatted key: a typed `DG-000060` becomes `molregno = 60`
