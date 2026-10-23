@@ -7,7 +7,7 @@ Feature: Tree with On Click = Filter filters the table to the clicked branch
   CONTROL, SEX, RACE, picked in the Select columns dialog. Counts on demog-1000: false | F | Asian 7,
   false | M | Asian 8 (every Asian row), true | F | Caucasian 5. A branch is the viewer's
   `branch <path>` area, the line into the node, where a click lands on the node it leads into.
-  A first click made with Shift filters nothing (public#4393), the last scenario's known failure.
+  A first click made with Shift filters to the branch too (public#4393, fixed).
   Translated from the TestTrack case Charts/tree (On Click) and the github-3245 spec
   tree-rowsource-onclick-state-bug.
 
@@ -54,9 +54,6 @@ Feature: Tree with On Click = Filter filters the table to the clicked branch
     And no rows should be selected
     And no errors should have been logged
 
-  # public#4393: a first click made with Shift throws "Cannot read properties of null (reading
-  # 'handleClick')" and filters nothing
-  @known-failure:66
   Scenario: A first click made with Shift filters to the branch as a plain click does
     Given "Misc" category in context panel is expanded
     When user selects "Filter" in "On Click" property in context panel

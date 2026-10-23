@@ -26,7 +26,7 @@ import {filterIsExactlyCategory, filterPasses, noneOfFiltered, noneSelected} fro
 import {autostartsCompleted, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {clickArea, clickAreaHolding, hasArea, noErrors, propertyShouldBe} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
-import {ds, el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Tree with On Click = Filter filters the table to the clicked branch", () => {
   const session = feature(test, "features/viewers/tree/tree-on-click-filter.feature", import.meta.url);
@@ -72,7 +72,7 @@ test.describe("Tree with On Click = Filter filters the table to the clicked bran
     await session.step(54, "And no rows should be selected", () => noneSelected(page));
     await session.step(55, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A first click made with Shift filters to the branch as a plain click does", {tag: ["@viewers", "@realizes:charts.viewer.tree", "@known-failure:66"]}, async ({browser}) => {
+  test("A first click made with Shift filters to the branch as a plain click does", {tag: ["@viewers", "@realizes:charts.viewer.tree"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And the package autostarts have completed", () => autostartsCompleted(page));
@@ -95,14 +95,12 @@ test.describe("Tree with On Click = Filter filters the table to the clicked bran
     await session.step(33, "Then \"Select columns...\" dialog should be absent", () => shouldBe(page, el("\"Select columns...\" dialog"), "absent"));
     await session.step(34, "And \"Hierarchy\" property of tree viewer should be \"CONTROL, SEX, RACE\"", () => propertyShouldBe(page, "Hierarchy", el("tree viewer"), "CONTROL, SEX, RACE"));
     await session.step(35, "And tree viewer should have a \"branch All | false | F | Asian\" area", () => hasArea(page, el("tree viewer"), "branch All | false | F | Asian"));
-    await knownFailure(async () => {
-      await session.step(61, "Given \"Misc\" category in context panel is expanded", () => isExpanded(page, el("\"Misc\" category in context panel")));
-      await session.step(62, "When user selects \"Filter\" in \"On Click\" property in context panel", () => selectIn(page, "Filter", el("\"On Click\" property in context panel")));
-      await session.step(63, "Then \"On Click\" property of tree viewer should be \"Filter\"", () => propertyShouldBe(page, "On Click", el("tree viewer"), "Filter"));
-      await session.step(64, "And 1000 rows should pass the filter", () => filterPasses(page, 1000));
-      await session.step(65, "When user clicks on the \"branch All | false | F | Asian\" area of tree viewer holding Shift", () => clickAreaHolding(page, "branch All | false | F | Asian", el("tree viewer"), "Shift"));
-      await session.step(66, "Then 7 rows should pass the filter", () => filterPasses(page, 7));
-      await session.step(67, "And no errors should have been logged", () => noErrors(page));
-    }, 66);
+    await session.step(58, "Given \"Misc\" category in context panel is expanded", () => isExpanded(page, el("\"Misc\" category in context panel")));
+    await session.step(59, "When user selects \"Filter\" in \"On Click\" property in context panel", () => selectIn(page, "Filter", el("\"On Click\" property in context panel")));
+    await session.step(60, "Then \"On Click\" property of tree viewer should be \"Filter\"", () => propertyShouldBe(page, "On Click", el("tree viewer"), "Filter"));
+    await session.step(61, "And 1000 rows should pass the filter", () => filterPasses(page, 1000));
+    await session.step(62, "When user clicks on the \"branch All | false | F | Asian\" area of tree viewer holding Shift", () => clickAreaHolding(page, "branch All | false | F | Asian", el("tree viewer"), "Shift"));
+    await session.step(63, "Then 7 rows should pass the filter", () => filterPasses(page, 7));
+    await session.step(64, "And no errors should have been logged", () => noErrors(page));
   });
 });
