@@ -9,6 +9,7 @@ import './tests/compute-utils/reactive-tree-driver/dataframe-copies';
 import './tests/compute-utils/reactive-tree-driver/consistency-tolerance';
 import './tests/compute-utils/reactive-tree-driver/instance-persistence';
 import './tests/compute-utils/reactive-tree-driver/state-snapshot';
+import './tests/compute-utils/reactive-tree-driver/load-errors';
 import './tests/compute-utils/reactive-tree-driver/instance-mutations';
 import './tests/compute-utils/reactive-tree-driver/instance-duplicate';
 import './tests/compute-utils/reactive-tree-driver/inspection';

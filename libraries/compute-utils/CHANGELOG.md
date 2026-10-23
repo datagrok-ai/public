@@ -2,6 +2,7 @@
 
 ## v.next
 
+* RTD: Loading a saved run whose step function changed or was removed fails with an error naming the step and the missing inputs and outputs instead of a `TypeError`; a missing step function or provider is named in the error
 * Shared utils: Added `getInputToggles` for the `inputToggles` and `inputsHidden` function meta
 * Shared utils: Malformed JSON in the `features`, `dockSpawnConfig`, `customExports` and `mainParams` meta or the `viewer` annotation logs a warning and falls back to the default instead of throwing
 * RTD: A loaded nested pipeline records the run it came from in `sourceRunId`, which is saved and kept on duplicate

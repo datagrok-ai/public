@@ -175,8 +175,10 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
 }
 
 async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
-  const io = getFuncCallIO(conf.nqName);
   const func = DG.Func.byName(conf.nqName);
+  if (!func)
+    throw new Error(`Step '${conf.id}': function '${conf.nqName}' not found, it was removed or renamed`);
+  const io = getFuncCallIO(conf.nqName);
   readTolerances(func, io, logger);
   const allLinks = [
     ...processLinks(conf.links ?? []),

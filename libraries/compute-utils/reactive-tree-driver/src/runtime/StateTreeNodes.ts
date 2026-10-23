@@ -116,6 +116,15 @@ export class FuncCallNode implements IStoreProvider {
     data: AdapterInitData,
     initValues: boolean,
   ) {
+    const missing = this.config.io!.filter((io) => !data.adapter.hasState(io.id));
+    if (missing.length) {
+      const names = (direction: string) =>
+        missing.filter((io) => io.direction === direction).map((io) => io.id).join(', ');
+      const params = [['inputs', names('input')], ['outputs', names('output')]]
+        .filter(([, list]) => list).map(([kind, list]) => `${kind} ${list}`).join(' and ');
+      throw new Error(`Step '${this.config.id}': saved run ${data.adapter.id} does not match ` +
+        `'${this.config.nqName}', missing ${params}. The function was changed or removed after the run was saved`);
+    }
     this.instancesWrapper.init({...data, initValues});
   }
 
