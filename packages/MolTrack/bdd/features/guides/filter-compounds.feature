@@ -7,42 +7,67 @@ Feature: MolTrack EMS: filter compounds by structure and properties
   the address keeps the filter.
 
   Scenario: Phenols or anilines, without chlorine
+    # caption: Sign in
     Given user is logged in
+    # caption: Simple mode is off
     And simple mode is off
+    # caption: The demo data is loaded
     And the MolTrack EMS demo data is on the server
+    # caption: Open the Compounds view of MolTrack
     And user opens the "Compounds" view of MolTrack EMS
+    # caption: Note how many compounds there are
     When user remembers the text of compound count
-    # caption: The filters are on the left; Advanced nests groups of conditions
+    # caption: Switch the filters to Advanced, to nest conditions
     And user clicks on advanced mode in filters pane
-    # caption: A group inside: either of two substructures
+    # caption: Add a group: either of two substructures
     And user clicks on add group in filters pane
+    # caption: Add its first condition
     And user clicks on last add condition in filters pane
+    # caption: On the parent structure
     And user selects "Parent Structure" in first condition property
+    # caption: Has substructure
     And user selects "has substructure" in first condition operator
-    # caption: The first: a phenol, drawn in the sketcher
+    # caption: Open the sketcher
     And user clicks on molecule canvas in first condition value
+    # caption: Type a phenol
     And user types "c1ccccc1O" into molecule input of sketcher dialog
+    # caption: Press Enter to draw it
     And user presses Enter in molecule input of sketcher dialog
+    # caption: Accept it
     And user clicks on OK button in sketcher dialog
-    # caption: The second, OR the first: an aniline
+    # caption: Add the second condition to the group
     And user clicks on last add condition in filters pane
+    # caption: Again on the parent structure
     And user selects "Parent Structure" in second condition property
+    # caption: Has substructure
     And user selects "has substructure" in second condition operator
+    # caption: Open the sketcher
     And user clicks on molecule canvas in second condition value
+    # caption: Type an aniline
     And user types "c1ccccc1N" into molecule input of sketcher dialog
+    # caption: Press Enter to draw it
     And user presses Enter in molecule input of sketcher dialog
+    # caption: Accept it: phenols or anilines
     And user clicks on OK button in sketcher dialog
+    # caption: The list narrows
     Then compound count should not have the remembered text
+    # caption: Triclosan is among them
     And compound list should contain text "Triclosan"
-    # caption: AND, outside the group: no chlorine in the formula
+    # caption: Add a condition outside the group
     When user clicks on first add condition in filters pane
+    # caption: On the formula
     And user selects "Formula" in third condition property
+    # caption: Does not contain
     And user selects "does not contain" in third condition operator
+    # caption: Type Cl, for chlorine
     And user types "Cl" into third condition value
+    # caption: Press Tab to apply it
     And user presses Tab in third condition value
-    # caption: Phenols and anilines without chlorine: triclosan is gone
+    # caption: Bisphenol A stays
     Then compound list should contain text "Bisphenol A"
+    # caption: Triclosan, with chlorine, is gone
     And compound list should not contain text "Triclosan"
-    # caption: Remove the chlorine condition: triclosan is back
+    # caption: Remove the chlorine condition
     When user clicks on third condition remove
+    # caption: Triclosan is back
     Then compound list should contain text "Triclosan"
