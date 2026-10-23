@@ -1004,6 +1004,10 @@ class GridColumn {
   get caption() { return this.dart.column.getTag(TAGS.FRIENDLY_NAME) ?? this.name; }
   get visible() { return this.dart.visible; }
   set visible(x) { this.dart.visible = x; }
+  /** Unset until a test lays the column out — the double has no layout of its own. */
+  get width() { return this.dart.width; }
+  set width(x) { this.dart.width = x; }
+  get contentCellStyle() { return this.dart.contentCellStyle ??= {}; }
 
   /** What a cell draws: a renderer's `customText` where one was set, the value otherwise. */
   cellText(row) { return this.dart.text[row] ?? String(this.column.get(row) ?? ''); }
@@ -1033,6 +1037,8 @@ export class Grid extends Viewer {
       toList: () => columns.map((c) => held.get(c.name)),
     };
   }
+
+  get onColumnResized() { return this.onEvent('d4-grid-column-resized'); }
 
   /** The editor host hook (grid.ts `attachEditor`): one editor at a time, released on detach. */
   get editor() { return this._editor ?? null; }

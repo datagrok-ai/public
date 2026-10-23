@@ -30,23 +30,28 @@ export interface DomainGridOptions {
  * date, the rest keep the time. */
 const DATE_FORMAT = 'MMM d, yyyy';
 const DATE_TIME_FORMAT = 'MMM d, yyyy HH:mm';
-/** Two lines of caption: the platform wraps a long one, and its second line carries the unit
- * ("Dosed Concentration (uM)"). */
-const HEADER_HEIGHT = 44;
+/** The header holds the longest caption as the platform wraps it at its column's width — at least
+ * two lines, so a unit has its own ("Dosed Concentration (uM)"), and at most four; the full
+ * caption is in the header's tooltip. */
+const HEADER_LINES = {min: 2, max: 4};
+/** The header cell's vertical padding and the room its text keeps from the column's edges. */
+const HEADER_PADDING = 10;
+const HEADER_MARGIN = 8;
 const DATA_TABLE_ROW_HEIGHT = 24;
 
 export class DomainGrid extends Control {
   readonly grid: DG.Grid;
   private _refused: {unsubscribe(): void} | undefined;
+  private static _context: CanvasRenderingContext2D | null | undefined;
 
   constructor(readonly source: DomainSource, private readonly _options: DomainGridOptions = {}) {
     super();
     this.root.classList.add('u2-domain-grid');
     this.root.dataset.u2 = 'domain-grid';
     this.grid = this.runInScope(() =>
-      viewers.grid(source.df as unknown as ReadonlySignal<DG.DataFrame | undefined>,
-        {colHeaderHeight: HEADER_HEIGHT, ..._options.look}));
+      viewers.grid(source.df as unknown as ReadonlySignal<DG.DataFrame | undefined>, _options.look));
     this.root.append(this.grid.root);
+    this._fitHeader();
     // the editor follows the source's writer: attached over each frame the source loads, released
     // when the source lets the frame go
     this.effect(() => {
@@ -68,9 +73,13 @@ export class DomainGrid extends Control {
       if (edit instanceof EditorEditState)
         this._decorate(edit.df);
       this._hideSystem();
+      this._singleLine();
+      this._fitHeader();
     });
+    const resized = this.grid.onColumnResized.subscribe(() => this._fitHeader());
     this.own(() => {
       repointed.unsubscribe();
+      resized.unsubscribe();
       this._refused?.unsubscribe();
     });
   }
@@ -85,6 +94,72 @@ export class DomainGrid extends Control {
     DG.DomainObjectHandler.decorateGrid(this.grid, this.source.table, df);
     this._caption(df);
     this._dateFormat(df);
+    this._fitHeader();
+  }
+
+  /** A cell keeps to one line, cut with an ellipsis: wrapped into a row's height a long text is
+   * clipped mid-line, and the grid's tooltip shows it whole. */
+  private _singleLine(): void {
+    for (const column of this._columns()) {
+      if (column.column !== null)
+        column.contentCellStyle.textWrap = 'ellipsis';
+    }
+  }
+
+  /** The header as tall as the longest caption needs at its column's width — unless the caller's
+   * look sets the height. */
+  private _fitHeader(): void {
+    if (this._options.look?.colHeaderHeight !== undefined)
+      return;
+    const shown = this._columns().filter((c) => c.column !== null && c.visible && c.width > 0);
+    if (shown.length === 0) {
+      this.grid.setOptions({colHeaderHeight: DomainGrid.headerHeight(0)});
+      return;
+    }
+    const font = this.grid.props.colHeaderFont;
+    const measure = (text: string) => DomainGrid._textWidth(text, font);
+    const lines = Math.max(...shown.map((c) =>
+      DomainGrid.captionLines(c.column!.getTag(DG.TAGS.FRIENDLY_NAME) || c.name, c.width - HEADER_MARGIN, measure)));
+    this.grid.setOptions({colHeaderHeight: DomainGrid.headerHeight(lines, font)});
+  }
+
+  private _columns(): DG.GridColumn[] {
+    const columns = this.grid.columns;
+    return Array.from({length: columns.length}, (_, i) => columns.byIndex(i))
+      .filter((c): c is DG.GridColumn => c !== null);
+  }
+
+  /** How many lines `caption` takes wrapped at word boundaries into `width` pixels, as the
+   * platform wraps a header; a word wider than the line takes a line of its own. */
+  static captionLines(caption: string, width: number, measure: (text: string) => number): number {
+    let lines = 0;
+    let line = '';
+    for (const word of caption.split(/\s+/).filter((w) => w !== '')) {
+      const longer = line === '' ? word : `${line} ${word}`;
+      if (line !== '' && measure(longer) > width) {
+        lines++;
+        line = word;
+      }
+      else
+        line = longer;
+    }
+    return line === '' ? lines : lines + 1;
+  }
+
+  /** The header height for `lines` of caption in `font` (the platform's default, 13px, without
+   * one): its line height as the grid's text renderer computes it, between two and four lines. */
+  static headerHeight(lines: number, font = ''): number {
+    const px = Number(/(\d+(?:\.\d+)?)px/.exec(font)?.[1] ?? 13);
+    const shown = Math.min(HEADER_LINES.max, Math.max(HEADER_LINES.min, lines));
+    return shown * (Math.ceil(px * 1.2) + 1) + HEADER_PADDING;
+  }
+
+  private static _textWidth(text: string, font: string): number {
+    const g = DomainGrid._context ??= document.createElement('canvas').getContext('2d');
+    if (g === null)
+      return 0;
+    g.font = font;
+    return g.measureText(text).width;
   }
 
   /** The schema's captions where `decorateGrid` found no per-table meta to take them from —

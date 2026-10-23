@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Child grids: The header grows to the longest caption at its column's width (up to four lines), so a three-line caption with its unit is no longer cut; a long text cell stays on one line with an ellipsis instead of wrapping and clipping, its full text in the tooltip
 * Data tables: Fixed a table stopping at its first page ("100 of 119"): scrolling near the bottom loads the next one, as a list does
 * DomainApp: Added `header`, the entity page above the form, where an app shows what it knows about the record before its fields (a parent card, a summary)
 * Unsaved changes: The dialog reads CANCEL · DISCARD · SAVE, with SAVE on the right as the primary, as in the platform's own prompt

@@ -124,9 +124,39 @@ scoped('the column header fits two lines of caption, unless the caller sets its 
   await flush();
   assert.equal(grid.grid.props.colHeaderHeight, 44, 'a unit on the second line is not cut');
   assert.equal(own.grid.props.colHeaderHeight, 60);
+  own.grid.onColumnResized.fire();
+  assert.equal(own.grid.props.colHeaderHeight, 60, 'a resize does not refit a height the caller set');
   grid.dispose();
   own.dispose();
   src.dispose();
+});
+
+scoped('the header grows to the longest caption at its column\'s width, between two and four lines', () => {
+  const measure = (text) => text.length * 7;
+  assert.equal(DomainGrid.captionLines('Title', 92, measure), 1);
+  assert.equal(DomainGrid.captionLines('Dosed Concentration (uM)', 92, measure), 3);
+  assert.equal(DomainGrid.captionLines('Reported CLint (uL/min/10^6 cells)', 92, measure), 4);
+  assert.equal(DomainGrid.captionLines('Reported CLint (uL/min/10^6 cells)', 300, measure), 1);
+  assert.equal(DomainGrid.captionLines('Supercalifragilistic', 92, measure), 1, 'a long word takes its own line');
+  assert.equal(DomainGrid.headerHeight(0), 44, 'never under two lines');
+  assert.equal(DomainGrid.headerHeight(2), 44);
+  assert.equal(DomainGrid.headerHeight(3), 61, 'a third line of the 13px header font');
+  assert.equal(DomainGrid.headerHeight(9), 78, 'never over four');
+  assert.equal(DomainGrid.headerHeight(3, 'bold 11px Roboto'), 55, 'the grid\'s own header font');
+});
+
+scoped('a cell keeps to one line, cut with an ellipsis', async () => {
+  emsBackends.domain = editorBackend(backend());
+  const src = new DomainSource({table: 'grit.issue', pageSize: 10}, env);
+  const grid = domains.grid(src);
+  src.start();
+  await flush();
+  const columns = grid.grid.columns.toList();
+  assert.equal(columns.length, COLUMNS.length);
+  for (const column of columns)
+    assert.equal(column.contentCellStyle.textWrap, 'ellipsis', column.name);
+  src.dispose();
+  grid.dispose();
 });
 
 scoped('the js-api editor is attached with the source\'s edit state, decorated first, re-attached per frame, released with it', async () => {
