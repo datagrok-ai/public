@@ -5,13 +5,24 @@ export class WorkerMessageBusClient {
   /** Resolves once this worker's module is initialized; gates calls so none reach a still-loading worker
    * (e.g. one that's reloading after a cancel-restart). Reset by each moduleInit. */
   protected _ready: Promise<unknown> = Promise.resolve();
+  /** Set by {@link terminate}: a call made after it rejects with this at once (the worker would never answer). */
+  private _terminated: string | null = null;
   constructor(worker: Worker) {
     this._worker = worker;
+  }
+
+  /** The calls sent and not answered yet (the Crux service gives a long job to the worker with the fewest). */
+  get pendingCalls(): number {
+    return this._pending.size;
   }
   async call(op: string, args: any[] = [], gated = true): Promise<any> {
     if (gated)
       await this._ready; // module init itself runs ungated, else it would wait on its own result
     return new Promise((res, rej) => {
+      if (this._terminated !== null) { // a call that waited for the module, or came, after the worker was ended
+        rej(new Error(this._terminated));
+        return;
+      }
       // https://advancedweb.hu/how-to-use-async-await-with-postmessage/
       // {op, args} -> {op, retval} | {error}
       const channel = new MessageChannel();
@@ -29,11 +40,14 @@ export class WorkerMessageBusClient {
     });
   }
 
-  terminate() {
+  /** Ends the worker; its in-flight calls, and any made after, reject with `reason` ('Worker terminated' by
+   * default). */
+  terminate(reason = 'Worker terminated') {
+    this._terminated = reason;
     // Reject in-flight calls so awaiting callers fail fast instead of hanging once the worker is gone.
     for (const pending of this._pending) {
       pending.port.close();
-      pending.reject(new Error('Worker terminated'));
+      pending.reject(new Error(reason));
     }
     this._pending.clear();
     this._worker.terminate();

@@ -1,5 +1,5 @@
 import {_package} from '../../package';
-import {getRdKitService} from '../../utils/chem-common-rdkit';
+import {linkRGroupFragmentsByEngine} from '../../engine/analysis-jobs';
 import {ClusterDecomposition, positionNumber, PositionRecord} from './sar-matrix-decompose';
 import {cellPossible, FragmentLinks, LinkStages, planLink} from './sar-matrix-link';
 import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixCellKind, SarMatrixColumn,
@@ -478,12 +478,11 @@ export async function linkStaged(cores: string[], plans: (LinkStages | null)[],
   if (buckets.size === 0)
     return result;
 
-  const service = await getRdKitService();
   for (const idxs of buckets.values()) {
     let built: (string | null)[] = idxs.map((i) => cores[i]);
     for (const stage of plans[idxs[0]]!) {
       const positions = Object.keys(stage);
-      const linked = await service.linkRGroupFragments(built.map((piece, k) => piece ?? cores[idxs[k]]),
+      const linked = await linkRGroupFragmentsByEngine(built.map((piece, k) => piece ?? cores[idxs[k]]),
         positions.map((p) => idxs.map((i) => fragmentAt(i, p))),
         positions.map((p) => stage[p]));
       built = built.map((piece, k) => piece === null ? null : (linked[k] || null));
@@ -585,7 +584,7 @@ async function linkVirtualCellStructures(rows: SarMatrixRow[], columns: SarMatri
   }
   if (targets.length === 0)
     return;
-  const linked = await (await getRdKitService()).linkRGroupFragments(cores, fragmentColumns, attachIdx);
+  const linked = await linkRGroupFragmentsByEngine(cores, fragmentColumns, attachIdx);
   for (let i = 0; i < targets.length; i++)
     targets[i].smiles = linked[i] || null;
 }

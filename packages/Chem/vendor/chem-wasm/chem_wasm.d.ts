@@ -249,7 +249,8 @@ export class JSMol {
     get_avalon_fp(details?: string | null): string;
     /**
      * PORT(SmartsWrite.cpp `MolToCXSmarts`): `get_cxsmarts(details)`: the SMARTS, then
-     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order.
+     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order: with a
+     * conformer its coordinates and their wedges, and the link nodes, as `get_cxsmiles` writes them.
      */
     get_cxsmarts(details?: string | null): string;
     /**
@@ -277,6 +278,11 @@ export class JSMol {
      */
     get_inchi(_options?: string | null): string;
     /**
+     * [`mol_inchi_input`]: InChI's input for crux-sketch's `inchiFromInput`; `undefined` where RDKit-js's `get_inchi`
+     * gives `""` without the library, a throw where it throws.
+     */
+    get_inchi_input(options?: string | null): Uint8Array | undefined;
+    /**
      * PORT(minilib.cpp:158-160): `get_json()`: `MolInterchange::MolToJSONData(mol)`, RDKit's
      * commonchem writer with its extensions (`molfile::mol_interchange`, decision `chem-wasm`).
      */
@@ -291,9 +297,10 @@ export class JSMol {
      */
     get_maccs_fp(): string;
     /**
-     * PORT(minilib.cpp `get_mmpa_frags`): `{cores, sidechains}`, two `MolList`s of RDKit's
-     * `MMPA::fragmentMol(mol, minCuts, maxCuts, maxCutBonds)` (its default pattern) results;
-     * a single cut's core is empty (`undefined` from `at` / `next`, RDKit-js's `null`).
+     * PORT(minilib.cpp:592-603, jswrapper.cpp:449-458 `get_mmpa_frags`): `{cores, sidechains}`, two `MolList`s
+     * of RDKit's `MMPA::fragmentMol(mol, minCuts, maxCuts, maxCutBonds)` (its default pattern) results, empty when
+     * no cut has `minCuts` bonds; both `null` where `fragmentMol` returns false (no cuttable bond, or more than
+     * `maxCutBonds`). A single cut's core is empty (`null` from `at` / `next`).
      */
     get_mmpa_frags(min_cuts: number, max_cuts: number, max_cut_bonds: number): any;
     /**
@@ -768,8 +775,36 @@ export class SimilarityResult {
 export function calcDescriptors(molecules: (string | null)[], names: string[]): string;
 
 /**
+ * `chemAlerts(molecules, catalogs, atoms)`: the JSON of each catalog's hits per molecule (module docs); throws on a
+ * catalog other than Brenk and NIH.
+ */
+export function chemAlerts(molecules: (string | null)[], catalogs: string[], atoms: boolean): string;
+
+/**
+ * `chemEmbed3d(molecule, options)`: the MOL block of `molecule` (a SMILES, or a MOL block when it holds `M  END`)
+ * with its RDKit ETKDG coordinates, or `undefined`; throws on bad options and on a timeout (module docs).
+ */
+export function chemEmbed3d(molecule: string, options?: string | null): string | undefined;
+
+/**
+ * `chemEmbed3dRecommendedOptions()`: [`RECOMMENDED_OPTIONS`], the options Chem passes.
+ */
+export function chemEmbed3dRecommendedOptions(): string;
+
+/**
+ * `chemProperties(molecules, names)`: the JSON of Chem's property columns (module docs); throws on a name not in
+ * its table.
+ */
+export function chemProperties(molecules: (string | null)[], names: string[]): string;
+
+/**
+ * `chemQed(molecules)`: the JSON of QED and its eight properties per molecule (module docs).
+ */
+export function chemQed(molecules: (string | null)[]): string;
+
+/**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
- * is `"core,heavy,search,descriptors,scaffold-tree"`.
+ * is `"core,heavy,search,descriptors,scaffold-tree,inchi-input"`.
  */
 export function chemWasmModules(): string;
 
@@ -881,6 +916,18 @@ export function get_rgd_text(cores: string[], details?: string | null): RGroupDe
 export function get_rxn(input: string, details?: string | null): Reaction | undefined;
 
 /**
+ * PORT(jswrapper.cpp:156-212, 921-928): RDKit-js `molzip`, its three forms and Crux's one-molecule form (module
+ * docs): `molzip(a, b, details?)`, `molzip(row, details?)`, `molzip(mol, details?)`. A `JSMol`, or `null`.
+ */
+export function molzip(first: JSMol | Record<string, JSMol>, second?: JSMol | string, details?: string): JSMol | null;
+
+/**
+ * Python's `Chem.molzipFragments(mols, params)` (RDKit's `molzip(decomposition, params)`, which RDKit-js does not
+ * bind): the list's molecules, the core first. A `JSMol`, or `null` for an empty list.
+ */
+export function molzipFragments(mols: MolList, details?: string | null): JSMol | null;
+
+/**
  * PORT(minilib.cpp:864-868): RDKit-js `prefer_coordgen(prefer)`: `RDDepict::preferCoordGen`,
  * process-wide (CoordGen, crate `coordgen`, decision `coordgen`); `true` throws in a build without
  * CoordGen.
@@ -959,6 +1006,11 @@ export interface InitOutput {
     readonly __wbg_rgroupdecomposition_free: (a: number, b: number) => void;
     readonly __wbg_similarityresult_free: (a: number, b: number) => void;
     readonly calcDescriptors: (a: any, b: number, c: number) => [number, number];
+    readonly chemAlerts: (a: any, b: number, c: number, d: number) => [number, number, number, number];
+    readonly chemEmbed3d: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly chemEmbed3dRecommendedOptions: () => [number, number];
+    readonly chemProperties: (a: any, b: number, c: number) => [number, number, number, number];
+    readonly chemQed: (a: any) => [number, number];
     readonly chemWasmModules: () => [number, number];
     readonly collection_engineRev: () => [number, number];
     readonly collection_fromBytes: (a: number, b: number) => [number, number, number];
@@ -1023,6 +1075,7 @@ export interface InitOutput {
     readonly jsmol_get_fp_json: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly jsmol_get_frags: (a: number, b: number, c: number) => [number, number, number];
     readonly jsmol_get_inchi: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly jsmol_get_inchi_input: (a: number, b: number, c: number) => [number, number, number, number];
     readonly jsmol_get_json: (a: number) => [number, number, number, number];
     readonly jsmol_get_kekule_form: (a: number) => [number, number, number, number];
     readonly jsmol_get_maccs_fp: (a: number) => [number, number, number, number];
@@ -1086,6 +1139,8 @@ export interface InitOutput {
     readonly mollist_pop: (a: number, b: number) => any;
     readonly mollist_reset: (a: number) => void;
     readonly mollist_size: (a: number) => number;
+    readonly molzip: (a: any, b: number, c: number, d: number) => [number, number, number];
+    readonly molzipFragments: (a: number, b: number, c: number) => [number, number, number];
     readonly prefer_coordgen: (a: number) => [number, number];
     readonly reaction_delete: (a: number) => void;
     readonly reaction_draw_to_canvas: (a: number, b: any, c: number, d: number) => [number, number, number, number];

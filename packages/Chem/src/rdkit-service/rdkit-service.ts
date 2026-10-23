@@ -6,6 +6,7 @@ import {Fingerprint, rdKitFingerprintToBitArray, withChemCriticalSection} from '
 import {RuleId} from '../panels/structural-alerts';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {IFpResult} from './rdkit-service-worker-similarity';
+import type {FingerprintOptions} from '../utils/fingerprint-options';
 import {LockedEntity} from '../utils/locked-entity';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {PackageFunctions} from '../package';
@@ -13,6 +14,7 @@ import {SubstructureSearchType} from '../constants';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {getRDKitFpAsUint8Array} from '../chem-searches';
 import {IMmpFragmentsResult, IRGroupAnalysisResult} from './rdkit-service-worker-substructure';
+import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 export interface IParallelBatchesRes {
   getProgress: () => number,
   setTerminateFlag: () => void,
@@ -37,6 +39,25 @@ export type SubstructureSearchBatchResult = {
  * machine with many threads, as crux's search pool did (`crux-service.ts`, the same cap).
  */
 const MAX_WORKERS = 16;
+
+/**
+ * Each cluster's MCS as SMILES ('' for none) from FMCS's SMARTS (`mcs`, RdKitService.clusterMCS' raw result), written
+ * by `module` (RDKit's; Crux's in Crux mode, engine/analysis-jobs.ts).
+ */
+export function clusterMcsSmiles(mcs: string[], clusteredMolecules: string[][], module: RDModule): string[] {
+  return mcs.map((it, i) => {
+    if (!it)
+      return '';
+    try {
+      // a one-molecule cluster is its own MCS: read as a query, its implicit hydrogens would be lost
+      const mol = clusteredMolecules[i].length === 1 ? getMolSafe(it, {}, module).mol : getQueryMolSafe(it, '', module);
+      const smiles = mol?.get_smiles();
+      mol?.delete();
+      return smiles ?? '';
+    } catch {}
+    return '';
+  });
+}
 
 export class RdKitService {
   workerCount: number;
@@ -465,9 +486,10 @@ export class RdKitService {
    * predefined RDMols is not used)
    * @param {boolean} getCanonicalSmiles - optional parameter, if passed, in addition to fps function returns
    * canonical smiles
+   * @param {FingerprintOptions} options - optional: radius, size, chirality, features (utils/fingerprint-options.ts)
    * */
   async getFingerprints(fingerprintType: Fingerprint, molecules?: string[],
-    getCanonicalSmiles?: boolean): Promise<IFpResult> {
+    getCanonicalSmiles?: boolean, options?: FingerprintOptions | null): Promise<IFpResult> {
     const t = this;
     const getResult = (data: IFpResult[]): IFpResult => {
       return {
@@ -477,13 +499,13 @@ export class RdKitService {
     };
     const res = molecules ?
       await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-        t.parallelWorkers[i].getFingerprints(fingerprintType, segment, getCanonicalSmiles),
+        t.parallelWorkers[i].getFingerprints(fingerprintType, segment, getCanonicalSmiles, options),
       (data: IFpResult[]) => {
         return getResult(data);
       }) :
       await this._doParallel(
         (i: number, _: number) => {
-          return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules, getCanonicalSmiles);
+          return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules, getCanonicalSmiles, options);
         },
         (data: IFpResult[]) => {
           return getResult(data);
@@ -698,21 +720,7 @@ export class RdKitService {
           return Promise.resolve(mols.length === 1 ? mols[0] : '');
         return this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
       }, 45000, 'MCS calculation'); // stuck for more than 45s => restart the worker, '' for the cluster
-    if (rawSmarts)
-      return res;
-    const rdkit = PackageFunctions.getRdKitModule();
-    return res.map((it, i) => {
-      if (!it)
-        return '';
-      try {
-        // a one-molecule cluster is its own MCS: read as a query, its implicit hydrogens would be lost
-        const mol = clusteredMolecules[i].length === 1 ? getMolSafe(it, {}, rdkit).mol : getQueryMolSafe(it, '', rdkit);
-        const smiles = mol?.get_smiles();
-        mol?.delete();
-        return smiles ?? '';
-      } catch (_) {}
-      return '';
-    });
+    return rawSmarts ? res : clusterMcsSmiles(res, clusteredMolecules, PackageFunctions.getRdKitModule());
   }
 
   /**

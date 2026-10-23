@@ -1,15 +1,19 @@
 // The Crux worker: Chem's one Crux file (vendor/chem-wasm), instantiated from the Module the main thread compiled
 // (engine/crux-module.ts). Substructure search over column segments; in Crux mode ("Chemical engine") descriptors, the
-// scaffold tree, an activity cliff's MCS, and RDKit's own worker code run on Crux (fingerprints, structural alerts).
+// scaffold tree, an activity cliff's MCS, and RDKit's own worker code run on Crux (fingerprints, structural alerts;
+// MMPA, R-groups, FMCS and fragment linking: crux-analysis-jobs.ts).
 import initChemWasm, * as chemWasm from '../../vendor/chem-wasm/chem_wasm.js';
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import type {CruxCollection, CruxWorkerApi, DescriptorValues, PackedDescriptorValues} from './crux-api';
 import {INT_NONE} from './crux-api';
 import {RdKitServiceWorker} from '../rdkit-service/rdkit-service-worker';
+import {notConverted} from '../rdkit-service/rdkit-service-worker-substructure';
 import {MAX_MOL_CACHE_SIZE} from '../rdkit-service/rdkit-service-worker-base';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {getUncommonAtomsAndBondsOfMatches} from '../utils/chem-common';
+import {assertFingerprintOptions} from '../utils/fingerprint-options';
+import {ANALYSIS_JOBS, throwIfTrap} from './crux-analysis-jobs';
 
 const crux = chemWasm as unknown as CruxWorkerApi;
 const ctx: Worker = self as any;
@@ -43,6 +47,30 @@ function unread(molecules: string[], done: (i: number) => boolean): number[] {
 }
 
 /**
+ * InChI's input of each molecule, as RDKit's MolToInchi fills it (chem-wasm's `get_inchi_input`) for crux-sketch's
+ * InChI module to run the library on (engine/worker-jobs.ts); '' where RDKit's `get_inchi` gives '' (an empty cell, no
+ * input, a throw) and null where Crux cannot read the molecule. The inputs' buffers are transferred.
+ */
+function inchiInputs(molecules: string[], transfer: Transferable[]): (Uint8Array | '' | null)[] {
+  return molecules.map((m) => {
+    const mol = m ? getMolSafe(m, {}, chemWasm as unknown as RDModule).mol : null;
+    if (!mol)
+      return m ? null : '';
+    try {
+      const input = (mol as unknown as chemWasm.JSMol).get_inchi_input('');
+      if (input)
+        transfer.push(input.buffer);
+      return input ?? '';
+    } catch (e) {
+      throwIfTrap(e);
+      return '';
+    } finally {
+      mol.delete();
+    }
+  });
+}
+
+/**
  * Which molecules match each rule's SMARTS, as the RDKit worker's `getStructuralAlerts` matches them (a rule's flag is
  * set by its first matching SMARTS), each molecule parsed once; and the rows with a molecule Crux cannot read.
  */
@@ -52,7 +80,8 @@ function structuralAlerts(alerts: {[rule: string]: string[]}, molecules: string[
   const queries = Object.entries(alerts).map(([rule, smarts]) => [rule, smarts.map((s) => {
     try {
       return module.get_qmol(s);
-    } catch {
+    } catch (e) {
+      throwIfTrap(e);
       return null;
     }
   })] as const);
@@ -76,7 +105,9 @@ function structuralAlerts(alerts: {[rule: string]: string[]}, molecules: string[
                 found[rule][i] = true;
                 break;
               }
-            } catch {}
+            } catch (e) {
+              throwIfTrap(e);
+            }
           }
         }
       } finally {
@@ -193,12 +224,30 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
     } else if (op === 'scaffoldTree')
       result = crux.scaffoldTree(args[0], args[1], args[2]);
     else if (op === 'getFingerprints') {
-      const fps = await rdkitShapedWorker().getFingerprints(args[0], args[1], args[2]);
+      assertFingerprintOptions(chemWasm as unknown as RDModule, args[0], args[3]); // a refusal: the RDKit pool's call
+      const fps = await rdkitShapedWorker().getFingerprints(args[0], args[1], args[2], args[3]);
       result = {...fps, unread: unread(args[1], (i) => fps.fps[i] !== null)};
     } else if (op === 'getStructuralAlerts')
       result = structuralAlerts(args[0], args[1]);
+    else if (op === 'convertMolNotation') { // the column conversions (engine/worker-jobs.ts)
+      const results = await rdkitShapedWorker().convertMolNotation(args[0], args[1], args[2]);
+      const none = notConverted(args[1]);
+      const unconverted = (args[0] as string[]).flatMap((m, i) => m && results[i] === none ? [i] : []);
+      result = {results, none, unconverted};
+    } else if (op === 'chemProperties') // Chem's property table (widgets/properties.ts)
+      result = JSON.parse(chemWasm.chemProperties(args[0], args[1]));
+    else if (op === 'chemEmbed3d') // the 3D Structure pane's coordinates (widgets/structure3d.ts); a timeout throws
+      result = chemWasm.chemEmbed3d(args[0], args[1]) ?? null;
+    else if (op === 'inchiInputs') // Crux mode's InChI: the library's input per molecule (engine/worker-jobs.ts)
+      result = inchiInputs(args[0], transfer);
+    else if (op === 'chemQed') // Crux mode's drug-likeness: QED and its properties (widgets/drug-likeness.ts)
+      result = JSON.parse(chemWasm.chemQed(args[0]));
+    else if (op === 'chemAlerts') // Crux mode's toxicity: FilterCatalog's Brenk and NIH alerts (widgets/toxicity.ts)
+      result = JSON.parse(chemWasm.chemAlerts(args[0], args[1], args[2]));
     else if (op === 'pairUncommonAtomsAndBonds')
       result = pairUncommonAtomsAndBonds(args[0], args[1], args[2]);
+    else if (Object.hasOwn(ANALYSIS_JOBS, op)) // MMPA, R-groups, FMCS, fragment linking, molzip (crux-analysis-jobs.ts)
+      result = await ANALYSIS_JOBS[op](rdkitShapedWorker(), chemWasm as unknown as RDModule, ...args);
     else if (op === 'fail::test') // tests: a job that fails with this message
       throw new Error(args[0]);
     else if (op === 'busy::test') { // tests: a job that keeps the worker busy, as a long Crux call does

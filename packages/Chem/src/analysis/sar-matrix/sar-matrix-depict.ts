@@ -12,7 +12,10 @@ import {MatrixGridState} from './sar-matrix-ui-common';
  *  which destroys the alignment this path exists to preserve. The alignment layouts and the scratch
  *  canvas are module state, so everything that draws through them lives here. */
 
-const ALIGN_OPTS = JSON.stringify({useCoordGen: true, allowRGroups: true, acceptFailure: true, alignOnly: true});
+// RDKit's own depictor, not CoordGen: the free layout alignOnly fits to the template is ~20x faster per cell
+// (CoordGen's clash minimization: 9 ms per cell, a 1,000-cell matrix ~9 s on RDKit.js 2024.09) and the templates are
+// RDKit's too
+const ALIGN_OPTS = JSON.stringify({useCoordGen: false, allowRGroups: true, acceptFailure: true, alignOnly: true});
 
 /** Aligned-molblock cache keyed by template + molecule; cleared wholesale past the cap to avoid leaks. */
 const alignCache = new Map<string, string>();

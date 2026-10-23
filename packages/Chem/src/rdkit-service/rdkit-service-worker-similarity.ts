@@ -1,7 +1,8 @@
 import {RdKitServiceWorkerBase} from './rdkit-service-worker-base';
-import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint} from '../utils/chem-common';
+import {Fingerprint} from '../utils/chem-common';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMolSafe, IMolContext} from '../utils/mol-creation_rdkit';
+import {FingerprintOptions, fingerprintDetails, fingerprintOptions} from '../utils/fingerprint-options';
 
 export interface IFpResult{
   fps: Array<Uint8Array | null>;
@@ -9,8 +10,6 @@ export interface IFpResult{
 }
 
 export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
-  readonly _fpLength: number = defaultMorganFpLength;
-  readonly _fpRadius: number = defaultMorganFpRadius;
   constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
@@ -25,15 +24,18 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
    * fps mols are created on the fly
    * @param {boolean} getCanonicalSmiles If passed canonical smiles are also calculated and returned
    * In case it is passed to function RDMols will be created on the fly.
+   * @param {FingerprintOptions} options Optional: radius, size, chirality, features (utils/fingerprint-options.ts);
+   * the defaults give today's fingerprints
    */
 
-  async getFingerprints(fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean): Promise<IFpResult> {
+  async getFingerprints(fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean,
+    options?: FingerprintOptions | null): Promise<IFpResult> {
     if (!molecules || this._requestTerminated)
       return {fps: [], smiles: null};
     const fpLength = molecules.length;
     const fps = new Array<Uint8Array | null>(fpLength).fill(null);
-    const morganFpParams = fingerprintType === Fingerprint.Morgan ?
-      JSON.stringify({radius: this._fpRadius, nBits: this._fpLength}) : null;
+    // today's calls when the options are the defaults (Morgan: {"radius":2,"nBits":2048})
+    const details = fingerprintDetails(fingerprintType, fingerprintOptions(fingerprintType, options));
     const canonicalSmilesArr = getCanonicalSmiles ? new Array<string | null>(fpLength).fill(null) : null;
     for (let i = 0; i < fpLength; ++i) {
 
@@ -59,25 +61,27 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
             canonicalSmilesArr[i] = rdMol.get_smiles();
           switch (fingerprintType) {
             case Fingerprint.Pattern:
-              fps[i] = rdMol.get_pattern_fp_as_uint8array();
+              fps[i] = details ? rdMol.get_pattern_fp_as_uint8array(details) : rdMol.get_pattern_fp_as_uint8array();
               break;
             case Fingerprint.Morgan:
               if (!rdMol.is_qmol) {
                 rdMol.remove_hs_in_place(); // hydrogens can cause identical molecules to have different fingerprints
-                fps[i] = rdMol.get_morgan_fp_as_uint8array(morganFpParams!);
+                fps[i] = rdMol.get_morgan_fp_as_uint8array(details!);
               }
               break;
             case Fingerprint.AtomPair:
-              fps[i] = rdMol.get_atom_pair_fp_as_uint8array();
+              fps[i] = details ? rdMol.get_atom_pair_fp_as_uint8array(details) :
+                rdMol.get_atom_pair_fp_as_uint8array();
               break;
             case Fingerprint.MACCS:
               fps[i] = rdMol.get_maccs_fp_as_uint8array();
               break;
             case Fingerprint.RDKit:
-              fps[i] = rdMol.get_rdkit_fp_as_uint8array();
+              fps[i] = details ? rdMol.get_rdkit_fp_as_uint8array(details) : rdMol.get_rdkit_fp_as_uint8array();
               break;
             case Fingerprint.TopologicalTorsion:
-              fps[i] = rdMol.get_topological_torsion_fp_as_uint8array();
+              fps[i] = details ? rdMol.get_topological_torsion_fp_as_uint8array(details) :
+                rdMol.get_topological_torsion_fp_as_uint8array();
               break;
             default:
               rdMol?.delete();

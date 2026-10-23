@@ -384,6 +384,20 @@ export async function performClusterMCS(molCol: DG.Column, clusterCol: DG.Column
   return await PackageFunctions.performClusterMCS(molCol, clusterCol);
 }
 
+//description: Joins the pieces of each molecule at their matching attachment points (RDKit's molzip, by Crux in both chemical engines): SMILES such as C[*:1].N[*:1] or MOL blocks of several fragments. Returns the joined molecules' canonical SMILES (an empty string for a molecule that is not joined)
+//input: list<string> molecules { description: Molecules that each hold their pieces }
+//input: object params { optional: true; description: RDKit's MolzipParams by name (Label, AtomSymbols, AtomProperty, EnforceValenceRules) }
+//output: list<string> result
+export async function molzip(molecules: string[], params?: any) : Promise<string[]> {
+  return await PackageFunctions.molzip(molecules, params);
+}
+
+//description: The Chemical Engine setting in effect for this user: RDKit or Crux
+//output: string result
+export function chemicalEngine() : string {
+  return PackageFunctions.chemicalEngine();
+}
+
 //input: funccall call 
 //output: widget result
 //meta.role: editor
@@ -395,12 +409,16 @@ export function ChemSpaceEditor(call: DG.FuncCall) : any {
 //input: column col { semType: Molecule }
 //input: string _metric { optional: true }
 //input: string fingerprintType = 'Morgan' { caption: Fingerprint type; optional: true; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
+//input: int radius = 2 { caption: Radius; optional: true; min: 0; max: 10; description: Morgan only. The radius (2 for ECFP4, 3 for ECFP6) }
+//input: int size = 2048 { caption: Size; optional: true; min: 1; description: The number of bits (every type but MACCS, which has 167 keys) }
+//input: bool useChirality = false { caption: Chirality; optional: true; description: Stereocentres count (Morgan, AtomPair, TopologicalTorsion). Computed by Crux in both chemical engines as RDKit 2026.03 does (Chem's RDKit.js gives L- and D-alanine the same Morgan bits) }
+//input: bool useFeatures = false { caption: Features (FCFP); optional: true; description: Morgan only. Feature invariants (FCFP) instead of atom invariants (ECFP). Computed by Crux in both chemical engines bit for bit as RDKit (Chem's RDKit.js has no FCFP) }
 //output: object result
 //meta.supportedSemTypes: Molecule
 //meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
 //meta.role: dim-red-preprocessing-function
-export async function getFingerprints(col: DG.Column, _metric: string | undefined, fingerprintType: any) {
-  return await PackageFunctions.getFingerprints(col, _metric, fingerprintType);
+export async function getFingerprints(col: DG.Column, _metric: string | undefined, fingerprintType: any, radius?: number, size?: number, useChirality?: boolean, useFeatures?: boolean) {
+  return await PackageFunctions.getFingerprints(col, _metric, fingerprintType, radius, size, useChirality, useFeatures);
 }
 
 //name: Chem Space
@@ -703,7 +721,7 @@ export function descriptorsWidget(smiles: string) : any {
 }
 
 //name: Biology | Drug Likeness
-//description: Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.
+//description: Drug likeness: OpenChemLib's score with the fragments contributing to it; with the Chemical Engine Crux, RDKit's QED with the properties it weighs.
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
@@ -770,6 +788,13 @@ export async function structure3D(molecule: string) : Promise<any> {
   return await PackageFunctions.structure3D(molecule);
 }
 
+//description: A molecule with 3D coordinates (a MOL block), by the Chemical Engine in effect
+//input: string molecule { semType: Molecule }
+//output: string result
+export async function embed3d(molecule: string) : Promise<string> {
+  return await PackageFunctions.embed3d(molecule);
+}
+
 //name: Structure | 2D Structure
 //description: 2D molecule representation
 //input: string molecule { semType: Molecule }
@@ -781,7 +806,7 @@ export function structure2d(molecule: string) : any {
 }
 
 //name: Biology | Toxicity
-//description: Toxicity prediction. Calculated by openchemlib
+//description: Toxicity: OpenChemLib's risk prediction; with the Chemical Engine Crux, RDKit's FilterCatalog Brenk and NIH alerts.
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
@@ -1084,7 +1109,7 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 }
 
 //name: Chemical Properties (OCL)
-//description: Calculates chemical properties using OpenChemLib and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
+//description: Calculates chemical properties and adds them as columns to the input table. With the Chemical Engine setting on RDKit (the default) OpenChemLib calculates them, with Crux they follow RDKit's definitions (MW is then the average molecular weight, not the monoisotopic mass). Properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
 //input: bool MW = true 
@@ -1101,7 +1126,10 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 //meta.method_info.author: Open Chem Lib Team
 //meta.method_info.year: 2024
 //meta.method_info.github: https://github.com/actelion/openchemlib
+//meta.method_info.crux_author: RDKit's definitions, calculated by Crux
+//meta.method_info.crux_github: https://github.com/rdkit/rdkit
 //meta.role: hitTriageFunction,transform
+//friendlyName: Chemical Properties
 export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean, molecularFormula?: boolean) : Promise<void> {
   await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge, molecularFormula);
 }
@@ -1138,6 +1166,17 @@ export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Col
 //meta.vectorFunc: true
 export async function getToxicityRisks(molecules: DG.Column, risks?: string[]) : Promise<any> {
   return await PackageFunctions.getToxicityRisks(molecules, risks);
+}
+
+//name: Toxicity Alerts
+//description: Counts the alerts of RDKit's FilterCatalog Brenk and NIH sets in each molecule, a column per set. Needs the Chemical Engine Crux.
+//input: dataframe table { description: Input data table }
+//input: column molecules { semType: Molecule }
+//input: bool brenk = true { caption: Brenk }
+//input: bool nih = true { caption: NIH }
+//top-menu: Chem | Calculate | Toxicity Alerts...
+export async function addToxicityAlertsColumns(table: DG.DataFrame, molecules: DG.Column, brenk?: boolean, nih?: boolean) : Promise<void> {
+  await PackageFunctions.addToxicityAlertsColumns(table, molecules, brenk, nih);
 }
 
 //description: Generates a hierarchical tree based on the scaffolds presented in dataset

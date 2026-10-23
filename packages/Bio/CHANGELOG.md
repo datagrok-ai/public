@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Macromolecule 3D structure: the coordinates come from Chem's `embed3d` (it follows Chem's engine setting: Crux's ETKDGv3 embedding with a 10 s deadline in Crux mode, so a long peptide no longer hangs the server's Python kernel) instead of Bio's own `Embed` script, now removed
 * [core#1067](https://github.com/datagrok-ai/core/issues/1067): Subsequence Search: Fixed an error when the current table has no macromolecule column
 * [core#988](https://github.com/datagrok-ai/core/issues/988): Renderers: Fixed a scatter plot tooltip failing with "method not found on null" on a sequence difference column when no grid shows the table
 * [core#880](https://github.com/datagrok-ai/core/issues/880): Save as FASTA: Fixed an error when clicking OK with no sequence column selected

@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../../package';
-import {getRdKitService} from '../../utils/chem-common-rdkit';
+import {mmpLinkFragmentsByEngine} from '../../engine/analysis-jobs';
 import {getMmpFrags} from '../molecular-matched-pairs/mmp-analysis/mmpa-fragments';
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from '../molecular-matched-pairs/mmp-viewer/mmpa-utils';
@@ -46,7 +46,7 @@ async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void> {
   if (targets.length === 0)
     return;
 
-  const linked = await (await getRdKitService()).mmpLinkFragments(cores, fragments);
+  const linked = await mmpLinkFragmentsByEngine(cores, fragments);
   for (let i = 0; i < targets.length; i++)
     targets[i].smiles = linked[i] ? linked[i] : null;
 }

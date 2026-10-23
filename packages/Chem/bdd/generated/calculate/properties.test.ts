@@ -35,7 +35,7 @@ test.describe("Chemical properties, toxicity risks and InChI from the Calculate 
     await run.scenario("Chemical Properties with no calculator ticked asks for one", async () => {
       await session.step(21, "When user picks \"Chem > Calculate > Chemical Properties...\" from the top menu", () => pickFromTopMenu(page, "Chem > Calculate > Chemical Properties..."));
       await session.step(22, "Then \"Chemical Properties\" dialog should be visible", () => shouldBe(page, el("\"Chemical Properties\" dialog"), "visible"));
-      await session.step(23, "And \"Chemical Properties (OCL)\" calculator in \"Chemical Properties\" dialog should not be checked", () => shouldNotBe(page, el("\"Chemical Properties (OCL)\" calculator in \"Chemical Properties\" dialog"), "checked"));
+      await session.step(23, "And \"Chemical Properties\" calculator in \"Chemical Properties\" dialog should not be checked", () => shouldNotBe(page, el("\"Chemical Properties\" calculator in \"Chemical Properties\" dialog"), "checked"));
       await session.step(24, "When user clicks on OK button in \"Chemical Properties\" dialog", () => clickOn(page, el("OK button in \"Chemical Properties\" dialog")));
       await session.step(25, "Then a warning balloon containing \"Please select at least one calculation\" should have been shown", () => warningBalloonText(page, "Please select at least one calculation"));
       await session.step(26, "And no new column should have been added", () => noNewColumn(page));
@@ -45,11 +45,11 @@ test.describe("Chemical properties, toxicity risks and InChI from the Calculate 
       await session.step(30, "When user picks \"Chem > Calculate > Chemical Properties...\" from the top menu", () => pickFromTopMenu(page, "Chem > Calculate > Chemical Properties..."));
       await session.step(31, "Then \"Chemical Properties\" dialog should be visible", () => shouldBe(page, el("\"Chemical Properties\" dialog"), "visible"));
       await session.step(32, "And Molecules input in \"Chemical Properties\" dialog should contain text \"canonical_smiles\"", () => shouldContainText(page, el("Molecules input in \"Chemical Properties\" dialog"), "canonical_smiles"));
-      await session.step(33, "And \"Chemical Properties (OCL)\" calculator in \"Chemical Properties\" dialog should not be checked", () => shouldNotBe(page, el("\"Chemical Properties (OCL)\" calculator in \"Chemical Properties\" dialog"), "checked"));
+      await session.step(33, "And \"Chemical Properties\" calculator in \"Chemical Properties\" dialog should not be checked", () => shouldNotBe(page, el("\"Chemical Properties\" calculator in \"Chemical Properties\" dialog"), "checked"));
       await session.step(34, "And MW input in \"Chemical Properties\" dialog should be checked", () => shouldBe(page, el("MW input in \"Chemical Properties\" dialog"), "checked"));
       await session.step(35, "And HBA input in \"Chemical Properties\" dialog should not be checked", () => shouldNotBe(page, el("HBA input in \"Chemical Properties\" dialog"), "checked"));
       await session.step(36, "And \"Molecule charge\" input in \"Chemical Properties\" dialog should not be checked", () => shouldNotBe(page, el("\"Molecule charge\" input in \"Chemical Properties\" dialog"), "checked"));
-      await session.step(37, "When user checks \"Chemical Properties (OCL)\" calculator in \"Chemical Properties\" dialog", () => check(page, el("\"Chemical Properties (OCL)\" calculator in \"Chemical Properties\" dialog")));
+      await session.step(37, "When user checks \"Chemical Properties\" calculator in \"Chemical Properties\" dialog", () => check(page, el("\"Chemical Properties\" calculator in \"Chemical Properties\" dialog")));
       await session.step(38, "And user clicks on OK button in \"Chemical Properties\" dialog", () => clickOn(page, el("OK button in \"Chemical Properties\" dialog")));
       await session.step(39, "Then \"Chemical Properties\" dialog should be hidden", () => shouldBe(page, el("\"Chemical Properties\" dialog"), "hidden"));
       await session.step(40, "And 1 new column should have been added", () => newColumnsCount(page, 1));
@@ -60,7 +60,7 @@ test.describe("Chemical properties, toxicity risks and InChI from the Calculate 
     });
     await run.scenario("Chemical Properties with every property adds nine columns", async () => {
       await session.step(47, "When user picks \"Chem > Calculate > Chemical Properties...\" from the top menu", () => pickFromTopMenu(page, "Chem > Calculate > Chemical Properties..."));
-      await session.step(48, "And user checks \"Chemical Properties (OCL)\" calculator in \"Chemical Properties\" dialog", () => check(page, el("\"Chemical Properties (OCL)\" calculator in \"Chemical Properties\" dialog")));
+      await session.step(48, "And user checks \"Chemical Properties\" calculator in \"Chemical Properties\" dialog", () => check(page, el("\"Chemical Properties\" calculator in \"Chemical Properties\" dialog")));
       await session.step(49, "And user checks HBA input in \"Chemical Properties\" dialog", () => check(page, el("HBA input in \"Chemical Properties\" dialog")));
       await session.step(50, "And user checks HBD input in \"Chemical Properties\" dialog", () => check(page, el("HBD input in \"Chemical Properties\" dialog")));
       await session.step(51, "And user checks \"Log P\" input in \"Chemical Properties\" dialog", () => check(page, el("\"Log P\" input in \"Chemical Properties\" dialog")));

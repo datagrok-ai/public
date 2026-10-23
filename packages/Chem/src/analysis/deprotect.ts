@@ -1,11 +1,12 @@
 /* eslint-disable max-len */
-import {MolList, RDModule, RDMol, RDReactionResult} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {MolList, RDModule, RDMol, RDReaction, RDReactionResult} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {Observable, Subject} from 'rxjs';
 import {hasNewLines} from '../utils/chem-common';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
+import {EngineReaction} from '../utils/reactions/reaction-engine';
 
 function correctRGroups(smiles: string): string {
   const elementRGroupRegex = /\[R[1-9]\]/g;
@@ -118,6 +119,46 @@ export class DeprotectEditor extends DG.FuncCallEditor {
   }
 }
 
+/** The molecule's first product with `reaction` on `module` (its H atoms added, then removed) as a MOL block; the
+ * molecule itself when it gives none; throws when the module reads no molecule from it. */
+function deprotectOne(module: RDModule, reaction: RDReaction, molSmiles: string): string {
+  let mols: MolList | null = null;
+  let mol: RDMol | null = null;
+  let rctns: RDReactionResult | null = null;
+  try {
+    mol = module.get_mol(molSmiles);
+    if (!mol)
+      throw new Error(`no molecule read from ${molSmiles}`);
+    mol.add_hs_in_place();
+    mols = new module.MolList();
+    mols.append(mol);
+    rctns = reaction.run_reactants(mols, 1);
+    const size = rctns.size();
+    if (size === 0)
+      return molSmiles;
+    const products = rctns.get(0);
+    try {
+      const firstProduct = products.next();
+      if (!firstProduct)
+        return molSmiles;
+      try {
+        firstProduct.remove_hs_in_place();
+        const deprotectedBlock = firstProduct.get_molblock();
+        return deprotectedBlock ?? molSmiles;
+      } finally {
+        firstProduct.delete();
+      }
+    } finally {
+      products.delete();
+    }
+  } finally {
+    mols?.delete();
+    mol?.delete();
+    rctns?.delete();
+  }
+}
+
+/** In Crux mode the reaction runs on the Crux module, on RDKit's (`rdModule`) per molecule Crux cannot do. */
 export function addDeprotectedColumn(table: DG.DataFrame, molColumn: DG.Column, fragment: string, rdModule: RDModule): DG.Column | null {
   try {
     const fragmentMol = rdModule.get_mol(fragment);
@@ -130,39 +171,17 @@ export function addDeprotectedColumn(table: DG.DataFrame, molColumn: DG.Column, 
     if (!hFragmentSmiles)
       throw new Error('Invalid fragment molecule after adding hydrogens');
     const reactionSmirks = `${hFragmentSmiles}>>[*:1]`;
-    const reaction = rdModule.get_rxn(reactionSmirks);
+    const reaction = EngineReaction.create('deprotection', rdModule, reactionSmirks);
     if (!reaction)
       throw new Error('Failed to create reaction from fragment');
     const molList = molColumn.toList();
     const deprotectedSmiles = molList.map((molSmiles) => {
-      let mols: MolList | null = null;
-      let mol: RDMol | null = null;
-      let rctns: RDReactionResult | null = null;
       try {
         if (molSmiles && !hasNewLines(molSmiles) && molSmiles.length > MAX_SMILES_LENGTH)
           return molSmiles; // do not attempt to parse very long SMILES, will cause MOB.
-        mol = rdModule.get_mol(molSmiles);
-        if (!mol)
-          return molSmiles;
-        mol.add_hs_in_place();
-        mols = new rdModule.MolList();
-        mols.append(mol);
-        rctns = reaction.run_reactants(mols, 1);
-        const size = rctns.size();
-        if (size === 0)
-          return molSmiles;
-        const firstProduct = rctns.get(0).next();
-        if (!firstProduct)
-          return molSmiles;
-        firstProduct.remove_hs_in_place();
-        const deprotectedBlock = firstProduct.get_molblock();
-        return deprotectedBlock ?? molSmiles;
+        return reaction.run((module, rxn) => deprotectOne(module, rxn, molSmiles));
       } catch (_err) {
         return molSmiles;
-      } finally {
-        mols?.delete();
-        mol?.delete();
-        rctns?.delete();
       }
     });
     reaction.delete();

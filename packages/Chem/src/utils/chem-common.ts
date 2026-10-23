@@ -1,5 +1,6 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {getMolSafe} from './mol-creation_rdkit';
+import {MAX_SMILES_LENGTH} from './chem-constants';
 import {MolList, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
@@ -128,6 +129,12 @@ export function rdKitFingerprintToBitArray(fp: Uint8Array): BitArray | null {
 
 export function isMolBlock(s: string): boolean {
   return s.includes('M  END');
+}
+
+/** `m` as Chem hands it to Crux: a MOL block or a SMILES within MAX_SMILES_LENGTH (a longer one can run the wasm out of
+ * memory); null for anything else and an empty cell. */
+export function withinSmilesLimit(m: unknown): string | null {
+  return typeof m === 'string' && m !== '' && (isMolBlock(m) || m.length <= MAX_SMILES_LENGTH) ? m : null;
 }
 
 export function hasNewLines(s: string): boolean {

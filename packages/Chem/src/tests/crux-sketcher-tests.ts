@@ -567,6 +567,26 @@ category('Crux sketcher', () => {
     }
   });
 
+  // The product owner (2026-10-23): SequenceTranslator's Markush enumerator opened Crux empty on Edit: it set a core's
+  // SMILES with setMolFile. Crux reads a SMILES given as a molblock as the SMILES it is, before it is ready and after.
+  test('a SMILES given as a molblock', async () => {
+    grok.chem.currentSketcherType = 'Crux';
+    const host = new DG.chem.Sketcher();
+    host.setMolFile('[*:1]CC(=O)NC1CCN([*:2])CC1');
+    const dialog = ui.dialog().add(host).show();
+    try {
+      await host.sketcherReady();
+      await delay(SETTLE_MS);
+      const crux = () => host.sketcher!.root.querySelector<CruxElement>('crux-sketch')!;
+      expect(crux().isEmpty, false, 'Crux given a SMILES as a molblock before it was ready');
+      host.setMolFile(STEREO_SMILES);
+      await delay(SETTLE_MS);
+      expect(canonical(crux().molfile), canonical(STEREO_SMILES), 'a SMILES given as a molblock once Crux is ready');
+    } finally {
+      dialog.close();
+    }
+  });
+
   test('molV2000', async () => {
     const {v2000} = molblocks(SMILES);
     const s = await openCrux();

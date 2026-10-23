@@ -8,10 +8,6 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace scripts {
-  export async function embed(molecule: string ): Promise<string> {
-    return await grok.functions.call('Bio:Embed', { molecule });
-  }
-
   /**
    * Converts molecules to HELM notation by matching atoms against a monomer library
    * @param {DG.Column} moleculesColumn

@@ -6,6 +6,7 @@ import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-containe
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {CONTAINER_TIMEOUT} from './utils';
+import {isCruxRequested} from '../engine/chem-engine';
 
 category('vector functions', () => {
   before(async () => {
@@ -43,12 +44,24 @@ category('vector functions', () => {
   });
 
   test('convertMoleculeNotation', async () => {
-    await testVectorFunc('Chem:convertMoleculeNotation(${smiles}, \'molblock\', false)', 'molblock', [0], [mol1]);
+    // the stand's engine: in Crux mode the MOL block RDKit.js 2026.03.6 writes (the product owner, 2026-10-23), the
+    // same molecule, its Kekulé form chosen otherwise than RDKit 2024.09's
+    const canonical = (molblock: string) => {
+      const mol = chemCommonRdKit.getRdKitModule().get_mol(molblock);
+      try {
+        return mol.get_smiles();
+      } finally {
+        mol.delete();
+      }
+    };
+    await testVectorFunc('Chem:convertMoleculeNotation(${smiles}, \'molblock\', false)', 'molblock', [0], [mol1],
+      isCruxRequested() ? (val) => typeof val === 'string' && canonical(val) === canonical(mol1) : undefined);
   });
 
   test('getProperties', async () => {
-    await testVectorFunc('Chem:getProperties(${smiles}, [\'LogP\'])', 'LogP', [0, 9],
-      [2.939000129699707, -0.6422999501228333]);
+    // the stand's engine: OpenChemLib's LogP in RDKit mode, Wildman-Crippen's (RDKit's MolLogP) in Crux mode
+    await testVectorFunc('Chem:getProperties(${smiles}, [\'LogP\'])', 'LogP', [0, 9], isCruxRequested() ?
+      [Math.fround(3.1784000000000017), Math.fround(0.34159999999999996)] : [2.939000129699707, -0.6422999501228333]);
   });
 });
 

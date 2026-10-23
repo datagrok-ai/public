@@ -7,6 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {_package} from '../package';
 import {cruxModuleSync, cruxLoadFailed, loadCrux} from './crux-module';
+import {cruxOrRdKit, warnCruxFallback} from './fallback';
 
 export enum ChemicalEngine {
   RDKit = 'RDKit',
@@ -121,6 +122,30 @@ export function renderingModule(rdKitModule: RDModule): {module: RDModule, engin
   if (engineInEffect() === ChemicalEngine.Crux)
     return {module: cruxModuleSync()!, engine: ChemicalEngine.Crux};
   return {module: rdKitModule, engine: ChemicalEngine.RDKit};
+}
+
+/**
+ * A one-molecule job on the main thread (a context panel's) by the engine in effect: in Crux mode, once Crux is ready,
+ * `job(Crux's module, true)`, and `job(rdKitModule, false)` where it gives null (a molecule Crux cannot read) or
+ * throws; in RDKit mode on `rdKitModule`. A cache `job` fills holds one map per module: objects of one module never
+ * reach the other.
+ */
+export function byEngineModule<T>(call: string, rdKitModule: RDModule,
+  job: (module: RDModule, crux: boolean) => T | null): T | null {
+  const {module, engine} = renderingModule(rdKitModule);
+  if (engine !== ChemicalEngine.Crux)
+    return job(rdKitModule, false);
+  let threw = false; // (cruxOrRdKit logs a throw)
+  const crux = cruxOrRdKit(call, () => job(module, true), () => {
+    threw = true;
+    return null;
+  });
+  if (crux !== null)
+    return crux;
+  const rdkit = job(rdKitModule, false);
+  if (!threw && rdkit !== null)
+    warnCruxFallback(call, 'Crux read no molecule, RDKit was asked');
+  return rdkit;
 }
 
 /** In Crux mode, waits for the Crux module (true when it is ready; false in RDKit mode or when it failed to load). */

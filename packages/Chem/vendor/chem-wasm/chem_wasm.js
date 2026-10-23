@@ -718,7 +718,8 @@ export class JSMol {
     }
     /**
      * PORT(SmartsWrite.cpp `MolToCXSmarts`): `get_cxsmarts(details)`: the SMARTS, then
-     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order.
+     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order: with a
+     * conformer its coordinates and their wedges, and the link nodes, as `get_cxsmiles` writes them.
      * @param {string | null} [details]
      * @returns {string}
      */
@@ -861,6 +862,26 @@ export class JSMol {
         }
     }
     /**
+     * [`mol_inchi_input`]: InChI's input for crux-sketch's `inchiFromInput`; `undefined` where RDKit-js's `get_inchi`
+     * gives `""` without the library, a throw where it throws.
+     * @param {string | null} [options]
+     * @returns {Uint8Array | undefined}
+     */
+    get_inchi_input(options) {
+        var ptr0 = isLikeNone(options) ? 0 : passStringToWasm0(options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ret = wasm.jsmol_get_inchi_input(this.__wbg_ptr, ptr0, len0);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        let v2;
+        if (ret[0] !== 0) {
+            v2 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+            wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        }
+        return v2;
+    }
+    /**
      * PORT(minilib.cpp:158-160): `get_json()`: `MolInterchange::MolToJSONData(mol)`, RDKit's
      * commonchem writer with its extensions (`molfile::mol_interchange`, decision `chem-wasm`).
      * @returns {string}
@@ -940,9 +961,10 @@ export class JSMol {
         }
     }
     /**
-     * PORT(minilib.cpp `get_mmpa_frags`): `{cores, sidechains}`, two `MolList`s of RDKit's
-     * `MMPA::fragmentMol(mol, minCuts, maxCuts, maxCutBonds)` (its default pattern) results;
-     * a single cut's core is empty (`undefined` from `at` / `next`, RDKit-js's `null`).
+     * PORT(minilib.cpp:592-603, jswrapper.cpp:449-458 `get_mmpa_frags`): `{cores, sidechains}`, two `MolList`s
+     * of RDKit's `MMPA::fragmentMol(mol, minCuts, maxCuts, maxCutBonds)` (its default pattern) results, empty when
+     * no cut has `minCuts` bonds; both `null` where `fragmentMol` returns false (no cuttable bond, or more than
+     * `maxCutBonds`). A single cut's core is empty (`null` from `at` / `next`).
      * @param {number} min_cuts
      * @param {number} max_cuts
      * @param {number} max_cut_bonds
@@ -1857,6 +1879,12 @@ export class MolList {
         MolListFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
+    static __unwrap(jsValue) {
+        if (!(jsValue instanceof MolList)) {
+            return 0;
+        }
+        return jsValue.__destroy_into_raw();
+    }
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
@@ -2474,8 +2502,124 @@ export function calcDescriptors(molecules, names) {
 }
 
 /**
+ * `chemAlerts(molecules, catalogs, atoms)`: the JSON of each catalog's hits per molecule (module docs); throws on a
+ * catalog other than Brenk and NIH.
+ * @param {(string | null)[]} molecules
+ * @param {string[]} catalogs
+ * @param {boolean} atoms
+ * @returns {string}
+ */
+export function chemAlerts(molecules, catalogs, atoms) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passArrayJsValueToWasm0(catalogs, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemAlerts(molecules, ptr0, len0, atoms);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * `chemEmbed3d(molecule, options)`: the MOL block of `molecule` (a SMILES, or a MOL block when it holds `M  END`)
+ * with its RDKit ETKDG coordinates, or `undefined`; throws on bad options and on a timeout (module docs).
+ * @param {string} molecule
+ * @param {string | null} [options]
+ * @returns {string | undefined}
+ */
+export function chemEmbed3d(molecule, options) {
+    const ptr0 = passStringToWasm0(molecule, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    var ptr1 = isLikeNone(options) ? 0 : passStringToWasm0(options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len1 = WASM_VECTOR_LEN;
+    const ret = wasm.chemEmbed3d(ptr0, len0, ptr1, len1);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    let v3;
+    if (ret[0] !== 0) {
+        v3 = getStringFromWasm0(ret[0], ret[1]);
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    }
+    return v3;
+}
+
+/**
+ * `chemEmbed3dRecommendedOptions()`: [`RECOMMENDED_OPTIONS`], the options Chem passes.
+ * @returns {string}
+ */
+export function chemEmbed3dRecommendedOptions() {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.chemEmbed3dRecommendedOptions();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * `chemProperties(molecules, names)`: the JSON of Chem's property columns (module docs); throws on a name not in
+ * its table.
+ * @param {(string | null)[]} molecules
+ * @param {string[]} names
+ * @returns {string}
+ */
+export function chemProperties(molecules, names) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passArrayJsValueToWasm0(names, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemProperties(molecules, ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * `chemQed(molecules)`: the JSON of QED and its eight properties per molecule (module docs).
+ * @param {(string | null)[]} molecules
+ * @returns {string}
+ */
+export function chemQed(molecules) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.chemQed(molecules);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
- * is `"core,heavy,search,descriptors,scaffold-tree"`.
+ * is `"core,heavy,search,descriptors,scaffold-tree,inchi-input"`.
  * @returns {string}
  */
 export function chemWasmModules() {
@@ -2841,6 +2985,42 @@ export function get_rxn(input, details) {
 }
 
 /**
+ * PORT(jswrapper.cpp:156-212, 921-928): RDKit-js `molzip`, its three forms and Crux's one-molecule form (module
+ * docs): `molzip(a, b, details?)`, `molzip(row, details?)`, `molzip(mol, details?)`. A `JSMol`, or `null`.
+ * @param {JSMol | Record<string, JSMol>} first
+ * @param {JSMol | string} [second]
+ * @param {string} [details]
+ * @returns {JSMol | null}
+ */
+export function molzip(first, second, details) {
+    var ptr0 = isLikeNone(details) ? 0 : passStringToWasm0(details, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len0 = WASM_VECTOR_LEN;
+    const ret = wasm.molzip(first, isLikeNone(second) ? 0 : addToExternrefTable0(second), ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+}
+
+/**
+ * Python's `Chem.molzipFragments(mols, params)` (RDKit's `molzip(decomposition, params)`, which RDKit-js does not
+ * bind): the list's molecules, the core first. A `JSMol`, or `null` for an empty list.
+ * @param {MolList} mols
+ * @param {string | null} [details]
+ * @returns {JSMol | null}
+ */
+export function molzipFragments(mols, details) {
+    _assertClass(mols, MolList);
+    var ptr0 = isLikeNone(details) ? 0 : passStringToWasm0(details, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len0 = WASM_VECTOR_LEN;
+    const ret = wasm.molzipFragments(mols.__wbg_ptr, ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+}
+
+/**
  * PORT(minilib.cpp:864-868): RDKit-js `prefer_coordgen(prefer)`: `RDDepict::preferCoordGen`,
  * process-wide (CoordGen, crate `coordgen`, decision `coordgen`); `true` throws in a build without
  * CoordGen.
@@ -3107,6 +3287,10 @@ function __wbg_get_imports() {
             const ret = typeof(arg0) === 'string';
             return ret;
         },
+        __wbg___wbindgen_is_undefined_8865fb403f8fe9d8: function(arg0) {
+            const ret = arg0 === undefined;
+            return ret;
+        },
         __wbg___wbindgen_jsval_loose_eq_677f21e468d6b461: function(arg0, arg1) {
             const ret = arg0 == arg1;
             return ret;
@@ -3181,6 +3365,16 @@ function __wbg_get_imports() {
             const ret = result;
             return ret;
         },
+        __wbg_instanceof_Object_67a83cdc00c5d141: function(arg0) {
+            let result;
+            try {
+                result = arg0 instanceof Object;
+            } catch (_) {
+                result = false;
+            }
+            const ret = result;
+            return ret;
+        },
         __wbg_instanceof_Uint8Array_828cef2aaacafc31: function(arg0) {
             let result;
             try {
@@ -3203,6 +3397,10 @@ function __wbg_get_imports() {
             const ret = JSMol.__wrap(arg0);
             return ret;
         },
+        __wbg_keys_440be172f17c0265: function(arg0) {
+            const ret = Object.keys(arg0);
+            return ret;
+        },
         __wbg_length_7f3c00c40364105e: function(arg0) {
             const ret = arg0.length;
             return ret;
@@ -3213,6 +3411,10 @@ function __wbg_get_imports() {
         },
         __wbg_mollist_new: function(arg0) {
             const ret = MolList.__wrap(arg0);
+            return ret;
+        },
+        __wbg_mollist_unwrap: function(arg0) {
+            const ret = MolList.__unwrap(arg0);
             return ret;
         },
         __wbg_new_1dbf7428bba60a42: function(arg0) {

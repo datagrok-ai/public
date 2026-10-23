@@ -17,6 +17,10 @@ const canvasWidth = 200;
 const canvasHeight = 100;
 
 const cachedData: DG.LruCache<String, any> = new DG.LruCache<string, string>();
+/** A pair's key in {@link cachedData}: per engine (Crux mode's MCES, RDKit's FMCS), so that a switch computes it
+ * again. */
+const pairKey = (molecule1: string, molecule2: string) =>
+  `${isCruxRequested() ? 'Crux' : 'RDKit'}:${molecule1}_${molecule2}`;
 
 export type ActivityCliffsParams = {
   molColName: string,
@@ -30,14 +34,15 @@ export type ActivityCliffsParams = {
 export function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
   const molecule1 = params.seqCol.get(params.points[0]);
   const molecule2 = params.seqCol.get(params.points[1]);
-  if (!cachedData.has(`${molecule1}_${molecule2}`))
+  if (!cachedData.has(pairKey(molecule1, molecule2)))
     drawMoleculesWithMcsAsync(params, hosts, [molecule1, molecule2]);
   drawMolecules(params, hosts, [molecule1, molecule2]);
 }
 
 async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams, hosts: HTMLElement[], molecules: [string, string]) {
+  const key = pairKey(molecules[0], molecules[1]);
   const mcs = await cliffMcs(molecules);
-  cachedData.set(`${molecules[0]}_${molecules[1]}`, mcs);
+  cachedData.set(key, mcs);
   drawMolecules(params, hosts, molecules);
 }
 
@@ -63,8 +68,8 @@ export async function cliffMcs(molecules: [string, string]): Promise<string | IS
 function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[], molecules: [string, string]) {
   const rdkit = PackageFunctions.getRdKitModule();
   let mcsMol: RDMol | null = null;
-  const mcsGenerated = cachedData.has(`${molecules[0]}_${molecules[1]}`);
-  const mcs: string | ISubstruct[] | null = cachedData.get(`${molecules[0]}_${molecules[1]}`);
+  const mcsGenerated = cachedData.has(pairKey(molecules[0], molecules[1]));
+  const mcs: string | ISubstruct[] | null = cachedData.get(pairKey(molecules[0], molecules[1]));
   try {
     if (mcsGenerated && typeof mcs === 'string')
       mcsMol = rdkit.get_qmol(mcs);
@@ -79,7 +84,7 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[], mol
       drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecule, '',
         {normalizeDepiction: true, straightenDepiction: true}, substruct);
       ui.empty(hosts[index]);
-      if (!cachedData.has(`${molecules[0]}_${molecules[1]}`))
+      if (!cachedData.has(pairKey(molecules[0], molecules[1])))
         hosts[index].append(ui.divText('MCS loading...'));
       hosts[index].append(imageHost);
     });

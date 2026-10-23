@@ -2,8 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import * as chemCommonRdKit from './chem-common-rdkit';
 import $ from 'cash-dom';
+import {convertMolNotationByEngine} from '../engine/worker-jobs';
 
 /**  Dialog for SDF file exporter */
 export function saveAsSdfDialog() {
@@ -86,9 +86,7 @@ export async function getSdfString(
       true : gridCol.visible; // this is needed because of how pinned columns are implemented now
   }) : selectedCols).map((col) => maskedTable.col(col.name)!);
 
-  // precompute the molecules conversions using RDKIT service workers (much faster)
-
-  const rdkitService = await chemCommonRdKit.getRdKitService();
+  // precompute the molecules conversions in the workers of the Chemical Engine in effect (much faster)
   const maskedStructureCol = maskedTable.getCol(structureColumn.name);
   if (maskedStructureCol == null)
     throw new Error(`Column ${structureColumn.name} not found`);
@@ -107,11 +105,11 @@ export async function getSdfString(
     (mol: string) => DG.chem.isMolBlock(mol) && mol.includes('V3000'));
 
   const skipConversion = molList.every((mol) => !mol?.trim() || molBlockCheck(mol));
-  const convertedStructures = skipConversion ? molList : await rdkitService.convertMolNotation(molList, molBlockFormat);
+  const convertedStructures = skipConversion ? molList : await convertMolNotationByEngine(molList, molBlockFormat, false);
   const otherMolCols: {[key: string]: string[]} = {};
   for (const col of visibleCols) {
     if (col !== maskedStructureCol && col.semType === DG.SEMTYPE.MOLECULE)
-      otherMolCols[col.name] = await rdkitService.convertMolNotation(col.toList(), DG.chem.Notation.Smiles);
+      otherMolCols[col.name] = await convertMolNotationByEngine(col.toList(), DG.chem.Notation.Smiles, false);
   }
 
   const rowCount = maskedTable.rowCount;

@@ -558,6 +558,22 @@ export namespace funcs {
     return await grok.functions.call('Chem:PerformClusterMCS', { molCol, clusterCol });
   }
 
+  /**
+   * Joins the pieces of each molecule at their matching attachment points (RDKit's molzip, by Crux in both chemical engines): SMILES such as C[*:1].N[*:1] or MOL blocks of several fragments. Returns the joined molecules' canonical SMILES (an empty string for a molecule that is not joined)
+   * @param {any} molecules - Molecules that each hold their pieces
+   * @param {any} params - RDKit's MolzipParams by name (Label, AtomSymbols, AtomProperty, EnforceValenceRules)
+   */
+  export async function molzip(molecules: any , params?: any ): Promise<any> {
+    return await grok.functions.call('Chem:Molzip', { molecules, params });
+  }
+
+  /**
+   * The Chemical Engine setting in effect for this user: RDKit or Crux
+   */
+  export async function chemicalEngine(): Promise<string> {
+    return await grok.functions.call('Chem:ChemicalEngine', {});
+  }
+
   export async function chemSpaceEditor(call: any ): Promise<any> {
     return await grok.functions.call('Chem:ChemSpaceEditor', { call });
   }
@@ -567,9 +583,13 @@ export namespace funcs {
    *   semType: Molecule
    * @param {string} fingerprintType
    *   choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"]
+   * @param {number} radius - Morgan only. The radius (2 for ECFP4, 3 for ECFP6)
+   * @param {number} size - The number of bits (every type but MACCS, which has 167 keys)
+   * @param {boolean} useChirality - Stereocentres count (Morgan, AtomPair, TopologicalTorsion). Computed by Crux in both chemical engines as RDKit 2026.03 does (Chem's RDKit.js gives L- and D-alanine the same Morgan bits)
+   * @param {boolean} useFeatures - Morgan only. Feature invariants (FCFP) instead of atom invariants (ECFP). Computed by Crux in both chemical engines bit for bit as RDKit (Chem's RDKit.js has no FCFP)
    */
-  export async function getFingerprints(col: DG.Column , _metric?: string , fingerprintType?: string ): Promise<any> {
-    return await grok.functions.call('Chem:GetFingerprints', { col, _metric, fingerprintType });
+  export async function getFingerprints(col: DG.Column , _metric?: string , fingerprintType?: string , radius?: number , size?: number , useChirality?: boolean , useFeatures?: boolean ): Promise<any> {
+    return await grok.functions.call('Chem:GetFingerprints', { col, _metric, fingerprintType, radius, size, useChirality, useFeatures });
   }
 
   /**
@@ -822,7 +842,7 @@ export namespace funcs {
   }
 
   /**
-   * Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.
+   * Drug likeness: OpenChemLib's score with the fragments contributing to it; with the Chemical Engine Crux, RDKit's QED with the properties it weighs.
    * @param {any} smiles
    *   semType: Molecule
    */
@@ -882,6 +902,15 @@ export namespace funcs {
   }
 
   /**
+   * A molecule with 3D coordinates (a MOL block), by the Chemical Engine in effect
+   * @param {string} molecule
+   *   semType: Molecule
+   */
+  export async function embed3d(molecule: string ): Promise<string> {
+    return await grok.functions.call('Chem:Embed3d', { molecule });
+  }
+
+  /**
    * 2D molecule representation
    * @param {string} molecule
    *   semType: Molecule
@@ -891,7 +920,7 @@ export namespace funcs {
   }
 
   /**
-   * Toxicity prediction. Calculated by openchemlib
+   * Toxicity: OpenChemLib's risk prediction; with the Chemical Engine Crux, RDKit's FilterCatalog Brenk and NIH alerts.
    * @param {any} smiles
    *   semType: Molecule
    */
@@ -1167,7 +1196,7 @@ export namespace funcs {
   }
 
   /**
-   * Calculates chemical properties using OpenChemLib and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
+   * Calculates chemical properties and adds them as columns to the input table. With the Chemical Engine setting on RDKit (the default) OpenChemLib calculates them, with Crux they follow RDKit's definitions (MW is then the average molecular weight, not the monoisotopic mass). Properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
    * @param {DG.DataFrame} table - Input data table
    * @param {DG.Column} molecules
    *   semType: Molecule
@@ -1202,6 +1231,16 @@ export namespace funcs {
    */
   export async function getToxicityRisks(molecules: DG.Column , risks?: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:GetToxicityRisks', { molecules, risks });
+  }
+
+  /**
+   * Counts the alerts of RDKit's FilterCatalog Brenk and NIH sets in each molecule, a column per set. Needs the Chemical Engine Crux.
+   * @param {DG.DataFrame} table - Input data table
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   */
+  export async function addToxicityAlertsColumns(table: DG.DataFrame , molecules: DG.Column , brenk: boolean , nih: boolean ): Promise<void> {
+    return await grok.functions.call('Chem:AddToxicityAlertsColumns', { table, molecules, brenk, nih });
   }
 
   /**

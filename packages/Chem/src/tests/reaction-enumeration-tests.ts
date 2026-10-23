@@ -17,6 +17,9 @@ import {MountedViewerRegistry} from '../utils/reaction-enumeration/viewer-mount'
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {parseMultiStepReaction} from '../rendering/rdkit-reaction-renderer';
+import {ChemicalEngine, cruxReady, setChemicalEngine} from '../engine/chem-engine';
+import {lastReactionEngine, setCruxUnreadableReactantsForTests} from '../utils/reactions/reaction-engine';
+import {cruxFallbackCount} from '../engine/fallback';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 
@@ -790,6 +793,52 @@ category('Reaction Enumeration', () => {
   });
 
   // ── end-to-end ──────────────────────────────────────────────────────────
+  test('Crux mode: the demo enumeration gives RDKit mode\'s rows, from Crux', async () => {
+    // the whole run on the Crux module in Crux mode (utils/reactions/reaction-engine.ts): the same products, rounds,
+    // steps and routes as RDKit mode's (510 rows of the demo's 115 templates and 26 building blocks)
+    const setup = await runFullSetup();
+    const run = async (engine: ChemicalEngine) => {
+      setChemicalEngine(engine);
+      if (engine === ChemicalEngine.Crux)
+        expect(await cruxReady(), true, 'the Crux module loads');
+      const result = await enumerate({...setup, config: cloneConfig(setup.config)});
+      expect(lastReactionEngine(), engine, 'the enumeration\'s engine');
+      return result;
+    };
+    try {
+      const rdkitMode = await run(ChemicalEngine.RDKit);
+      const cruxMode = await run(ChemicalEngine.Crux);
+      expect(rdkitMode.rows.length > 100, true, `RDKit mode: ${rdkitMode.rows.length} rows`);
+      expectSameRows(cruxMode.rows, rdkitMode.rows, 'Crux mode vs RDKit mode');
+      expect(cruxMode.warnings.join('\n'), rdkitMode.warnings.join('\n'), 'the warnings');
+    } finally {
+      setChemicalEngine(null);
+    }
+  }, {timeout: 120000});
+
+  test('Crux mode: a building block only RDKit reads gives RDKit mode\'s rows, by RDKit', async () => {
+    // Crux would skip a building block it cannot read that RDKit mode uses (fewer rows, nothing logged): enumerate
+    // checks the inputs on both modules first and runs on RDKit, the fallback counted
+    const setup = await runFullSetup();
+    const run = async (engine: ChemicalEngine) => {
+      setChemicalEngine(engine);
+      if (engine === ChemicalEngine.Crux)
+        expect(await cruxReady(), true, 'the Crux module loads');
+      return enumerate({...setup, config: cloneConfig(setup.config)});
+    };
+    try {
+      const rdkitMode = await run(ChemicalEngine.RDKit);
+      setCruxUnreadableReactantsForTests([setup.buildingBlocks[0]]);
+      const fallbacks = cruxFallbackCount('reaction enumeration');
+      const cruxMode = await run(ChemicalEngine.Crux);
+      expectSameRows(cruxMode.rows, rdkitMode.rows, `Crux mode, ${setup.buildingBlocks[0]} unreadable by Crux`);
+      expect(cruxFallbackCount('reaction enumeration'), fallbacks + 1, 'the run went to RDKit');
+    } finally {
+      setCruxUnreadableReactantsForTests(null);
+      setChemicalEngine(null);
+    }
+  }, {timeout: 120000});
+
   test('end-to-end: one-round depth-first over bundled demo data produces rows', async () => {
     const rdkit = getRdKitModule();
     const templatesDf = await loadCsv('enumerations/reactions.csv');
