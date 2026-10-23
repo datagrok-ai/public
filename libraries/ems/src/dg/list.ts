@@ -89,13 +89,7 @@ export class DomainList extends Control {
         this.list.selectedIndex.value = 0;
     });
 
-    const onScroll = () => {
-      const el = this.list.root;
-      if (el.scrollTop + el.clientHeight > el.scrollHeight - NEAR_BOTTOM_ROWS * itemHeight)
-        void source.loadMore();
-    };
-    this.list.root.addEventListener('scroll', onScroll);
-    this.own(() => this.list.root.removeEventListener('scroll', onScroll));
+    DomainList.pageOnScroll(this, this.list.root, source, itemHeight);
 
     const status = div([], 'u2-domain-list-status');
     status.dataset.u2Part = 'status';
@@ -137,6 +131,17 @@ export class DomainList extends Control {
     });
     this.effect(() => this.root.classList.toggle('u2-domain-list-stale', this.stale.value));
     this.root.append(this.list.root, status);
+  }
+
+  /** The source's next page, loaded as `scroller` comes within a few rows of its bottom — for as
+   * long as `owner` lives. */
+  static pageOnScroll(owner: Control, scroller: HTMLElement, source: DomainSource, itemHeight: number): void {
+    const onScroll = () => {
+      if (scroller.scrollTop + scroller.clientHeight > scroller.scrollHeight - NEAR_BOTTOM_ROWS * itemHeight)
+        void source.loadMore();
+    };
+    scroller.addEventListener('scroll', onScroll);
+    owner.own(() => scroller.removeEventListener('scroll', onScroll));
   }
 
   /** The renderer in force: the option, else the table's (live — an app may replace it), else

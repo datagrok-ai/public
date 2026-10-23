@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Data tables: Fixed a table stopping at its first page ("100 of 119"): scrolling near the bottom loads the next one, as a list does
 * DomainApp: Added `header`, the entity page above the form, where an app shows what it knows about the record before its fields (a parent card, a summary)
 * Unsaved changes: The dialog reads CANCEL · DISCARD · SAVE, with SAVE on the right as the primary, as in the platform's own prompt
 * Added `domains.configure(address, fn, {id})`: an app's validators, renderer, actions and importer apply to every handle over the table, so child tabs, trees, views and the `/domains` route follow the app's rules; registering the same `id` again replaces the entry, so a bundle loaded twice never doubles an action

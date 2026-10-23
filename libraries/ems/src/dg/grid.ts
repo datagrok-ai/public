@@ -15,6 +15,7 @@ import {SYSTEM_COLUMNS} from './backend.js';
 import {EditorEditState} from './editor-state.js';
 import {DomainTable} from './facade.js';
 import {DomainForm} from './form.js';
+import {DomainList} from './list.js';
 
 export interface DomainGridOptions {
   /** The grid's look, each option a value or a signal the grid follows. */
@@ -32,6 +33,7 @@ const DATE_TIME_FORMAT = 'MMM d, yyyy HH:mm';
 /** Two lines of caption: the platform wraps a long one, and its second line carries the unit
  * ("Dosed Concentration (uM)"). */
 const HEADER_HEIGHT = 44;
+const DATA_TABLE_ROW_HEIGHT = 24;
 
 export class DomainGrid extends Control {
   readonly grid: DG.Grid;
@@ -205,11 +207,13 @@ export class DomainDataTable extends Control {
       ...(DomainDataTable.isNumeric(byName.get(name)) ? {align: 'right' as const} : {}),
       render: (row) => this._cell(row, name, byName.get(name)),
     }));
-    const table = this.runInScope(() => new DataTable<RowView>({columns, rowHeight: this._options.rowHeight,
+    const rowHeight = this._options.rowHeight ?? DATA_TABLE_ROW_HEIGHT;
+    const table = this.runInScope(() => new DataTable<RowView>({columns, rowHeight,
       items: source.rows, cellState: this._cellState(),
       onActivate: this._options.onActivate ??
         (() => source.activate.value = source.activate.peek() + 1)}));
     collectionSelection(this, source, table);
+    DomainList.pageOnScroll(this, table.root, source, rowHeight);
     this.root.replaceChildren(table.root);
     this._table.value = table;
   }
