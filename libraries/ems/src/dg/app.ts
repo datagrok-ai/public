@@ -8,7 +8,7 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divV, span, Filters, allowedActions,
-  actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Splitter} from '@datagrok-libraries/u2';
+  actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Splitter, untracked} from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
@@ -91,6 +91,10 @@ export interface DomainAppOptions {
    * the focus: `{'Ctrl+Shift+C': 'Close'}` (modifiers in the order Ctrl, Alt, Shift; Cmd counts
    * as Ctrl). */
   shortcuts?: Record<string, string>;
+  /** What the context panel shows for the current row: the platform's own panel for a row of the
+   * table by default (its details, related rows, history and actions), the object this answers, or
+   * nothing with `false`. A draft clears the panel: there is nothing saved to show. */
+  context?: false | ((row: RowView) => unknown);
 }
 
 export class DomainApp extends Control {
@@ -206,6 +210,8 @@ export class DomainApp extends Control {
       if (row !== null && !Rows.isDraft(row))
         void this.goTo('entity', row.id);
     });
+    if (_options.context !== false)
+      this._context(_options.context ?? ((row) => table.row(row)));
 
     const title = DomainApp.titleOf(table.info);
     this.breadcrumbs = this.runInScope(() => new Breadcrumbs({items: [title], onClick: (index) => {
@@ -594,6 +600,24 @@ export class DomainApp extends Control {
 
   /** Whether the shell shows this app's view — what makes its chrome, outside the app root, the
    * app's own. A hand-built page that never registered a view answers false. */
+  /** The current row of the page in the context panel. A list that reloads passes through no row,
+   * which keeps what is shown; a view in the background does not take the panel. */
+  private _context(show: (row: RowView) => unknown): void {
+    let shown: string | null | undefined;
+    this.effect(() => {
+      const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
+      const row = source?.currentRow.value;
+      if (row === null || row === undefined)
+        return;
+      const id = Rows.isDraft(row) ? null : row.id;
+      if (id === shown || !this._isCurrentView())
+        return;
+      shown = id;
+      // forced: a set holds the panel for a second, and a plain set in that second is dropped
+      grok.shell.setCurrentObject(id === null ? null : untracked(() => show(row)), true, true);
+    });
+  }
+
   private _isCurrentView(): boolean {
     const view = DomainApp._views.get(this);
     return view !== undefined && (grok.shell.v as DG.ViewBase | undefined)?.dart === view.dart;
