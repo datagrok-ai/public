@@ -315,8 +315,7 @@ scoped('a refused row leaves nothing behind and the report says so', async () =>
   assert.match(shown, /Import aborted — 1 row has errors/);
   assert.match(shown, /Uncheck "All or nothing" to import the 1 valid row and skip the rest\./,
     'an aborted all-or-nothing run says what to change');
-  assert.match(shown, /title/, 'the per-row report names the column the row was refused on');
-  assert.match(shown, /Value can't be empty/);
+  assert.match(shown, /Title: Value can't be empty/, 'the per-row report names the field the row was refused on');
   assert.match(shown, /Source row/, 'the issue lines are headed by the source row they are about');
   fire(buttonNamed('CLOSE'), 'click');
   const report = await running;
@@ -523,4 +522,36 @@ scoped('a warehouse refusal — the failing rows and no totals — still renders
     .find((b) => b.textContent === 'BACK'), undefined, 'the way back stands');
   fire(buttonNamed('CLOSE'), 'click');
   assert.equal((await running).error, 'validation');
+});
+
+scoped('an importer derives columns and keeps rows out; the preview and the report say why, row by row', async () => {
+  const memory = backend();
+  emsBackends.domain = memory;
+  const projects = await domains.table('grit.project');
+  projects.importer = {derives: ['description'], prepare: async (rows) => rows.map((r, i) =>
+    i === 1 ? {existing: 'p1', note: 'Already there'} : i === 2 ? {sameAs: 0, note: 'Same as row 1'} :
+      i === 3 ? {error: 'Cannot read it'} : {values: {description: `About ${r.name}`}})};
+  const running = domains.import(projects, {source: frame(['key', 'name'],
+    [{key: 'NEW', name: 'New'}, {key: 'GRIT', name: 'Grit'}, {key: 'NEW', name: 'New'}, {key: 'BAD', name: 'Bad'}])});
+  await flush();
+  named('allOrNothing').value.value = false;
+  named('writeBack').value.value = false;
+  await toMapping();
+  assert.equal(named('name').items.some((x) => x?.label === 'Description'), false, 'what the importer derives is not offered');
+  await toPreview();
+  const rows = document.body.querySelector('.u2-domain-import-rows');
+  rows.clientHeight = 400;
+  fire(rows, 'scroll');
+  await flush();
+  const preview = document.body.querySelector('.u2-domain-import-preview').textContent;
+  assert.match(preview, /1 will be added, 0 updated, 2 skipped, 1 row has errors\./);
+  assert.match(preview, /Already there.*Same as row 1.*Cannot read it/);
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  await flush();
+  assert.match(document.body.querySelector('.u2-domain-import-report').textContent, /1 inserted, 0 updated, 2 skipped, 1 failed\./);
+  fire(buttonNamed('CLOSE'), 'click');
+  const report = await running;
+  assert.deepEqual(report.rows.map((r) => [r.index, r.status]), [[0, 'inserted'], [1, 'skipped'], [2, 'skipped'], [3, 'error']]);
+  assert.equal(memory.tableSync('grit.project').rows.find((r) => r.key === 'NEW')?.description, 'About New');
 });

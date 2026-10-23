@@ -27,6 +27,7 @@ import {DomainForm} from './form.js';
 import {DomainGrid, DomainDataTable} from './grid.js';
 import {DomainHistory} from './history.js';
 import {openImport} from './import.js';
+import type {DomainImporter} from './import.js';
 import {bulkEdit} from './bulk.js';
 import {BindingDialog, BindingWizard, createBinding} from './authoring/binding-dialog.js';
 import {BindingEditDialog, editBinding} from './authoring/binding-edit-dialog.js';
@@ -138,6 +139,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   renderer: ObjectRenderer<RowView<TRow>>;
   /** The renderer the handle was built with — what tells a table an app dressed from a bare one. */
   readonly defaultRenderer: ObjectRenderer<RowView<TRow>>;
+  /** What every import of the table does to its rows first — derived columns, rows already there. */
+  importer: DomainImporter | undefined;
 
   private static readonly _bySource = new WeakMap<DomainSource, DomainTable>();
   private static readonly _byRow = new WeakMap<ReadonlySignal<RowView | null>, DomainSource>();
