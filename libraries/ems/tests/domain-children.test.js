@@ -136,7 +136,7 @@ scoped('a child table that does not open fails its own tab; the others work', as
   emsBackends.domain = crm();
   const unregister = domains.configure('crm.deal', () => {
     throw new Error('deal rules did not load');
-  });
+  }, {id: 'test'});
   try {
     const companies = await domains.table('crm.company');
     const parent = companies.source();
@@ -153,6 +153,28 @@ scoped('a child table that does not open fails its own tab; the others work', as
     await flush();
     const pane = [...children.root.querySelectorAll('[data-u2-part="pane"]')].at(-1);
     assert.equal(pane.querySelector('.u2-domain-children-error').textContent, 'deal rules did not load');
+    children.dispose();
+    parent.dispose();
+  } finally {
+    unregister();
+  }
+});
+
+scoped('a failed tab first is named in the plural and gives way to a tab with rows', async () => {
+  emsBackends.domain = crm();
+  const unregister = domains.configure('crm.deal', () => {
+    throw new Error('deal rules did not load');
+  }, {id: 'test'});
+  try {
+    const companies = await domains.table('crm.company');
+    const parent = companies.source();
+    await flush();
+    parent.currentRow.value = parent.rows.byKey('c1');
+    const children = domains.children(parent, {tables: ['deal', 'contact']});
+    await settle();
+    const labels = [...children.root.querySelectorAll('.u2-tabs-tab')].map((t) => t.textContent);
+    assert.deepEqual(labels.slice(0, 2), ['Deals (Seller)', 'Deals (Buyer)']);
+    assert.equal(children.tabs.activeTab.value, CONTACTS, 'the tab with rows, not the failed first one');
     children.dispose();
     parent.dispose();
   } finally {

@@ -568,7 +568,7 @@ export class DomainApp extends Control {
 
   /** How a table is named in a view title, a breadcrumb root or a child tab: the display name
    * the schema declares, else its plural name made presentable ('order_line' → 'Order lines'). */
-  static titleOf(info: DomainTableInfoLike): string {
+  static titleOf(info: Pick<DomainTableInfoLike, 'pluralName' | 'friendlyName'>): string {
     const plural = (info.pluralName || 'rows').replace(/_/g, ' ');
     return info.friendlyName ?? `${plural.charAt(0).toUpperCase()}${plural.slice(1)}`;
   }

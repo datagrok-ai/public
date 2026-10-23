@@ -381,7 +381,7 @@
 }
 
 /* list mode: a list beside a form, both from the top of the pane, as tall as the form — every field
-   is reached by scrolling the entity page, the one scroller; the list scrolls only past the form */
+   is reached by scrolling the entity page; the list scrolls itself past the form's height */
 .u2-domain-children-list > .u2-domain-children-tabs,
 .u2-domain-children-list > .u2-domain-children-tabs > .u2-tabs-content,
 .u2-domain-children-pane > .u2-domain-children-split {
@@ -401,8 +401,12 @@
   min-width: 0;
 }
 
+/* the list's rows are as tall as every row loaded: sized by them, the split would never let the
+   list scroll, and its next page would never load */
 .u2-domain-children-split > .u2-domain-list {
   flex: 0 0 260px;
+  height: 0;
+  min-height: 100%;
 }
 
 .u2-domain-children-error {

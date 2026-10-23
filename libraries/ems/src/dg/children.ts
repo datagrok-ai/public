@@ -6,6 +6,7 @@
 import {Control, Scope, signal, untracked, ReadonlySignal, div, divH, span, TabStrip, loader,
   Rows} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
+import {toPlural} from '../core/domain-backend.js';
 import {domains, DomainTable} from './facade.js';
 import {DomainApp} from './app.js';
 import {DomainErrors} from './errors.js';
@@ -83,8 +84,8 @@ export class DomainChildren extends Control {
       const address = `${c.schema}.${c.table}`;
       const id = `${address}.${c.fkColumn}`;
       const handle = opened[i];
-      const title = handle.status === 'fulfilled' ? DomainApp.titleOf(handle.value.info) :
-        DomainTable.captionOf({name: c.table});
+      const title = DomainApp.titleOf(handle.status === 'fulfilled' ? handle.value.info :
+        {pluralName: toPlural(c.table)});
       // two FKs to one parent: two tabs for one table, told apart by the FK's caption
       const ambiguous = refs.filter((o) => `${o.schema}.${o.table}` === address).length > 1;
       const label = ambiguous ? `${title} (${c.label})` : title;
@@ -112,13 +113,14 @@ export class DomainChildren extends Control {
   private async _openFirstFilled(entries: readonly ChildEntry[]): Promise<void> {
     const row = this.parent.currentRow.peek();
     const opened = this.tabs.activeTab.peek();
-    if (entries.length < 2 || row === null || Rows.isDraft(row))
+    // the tab already shown may be one whose table did not open: it has no entry and no rows
+    if (row === null || Rows.isDraft(row) || entries.every((e) => e.id === opened))
       return;
     // a count nobody asked for: a table that refuses it just does not win the first tab
     const counts = await Promise.all(entries.map((e) =>
       e.table.table.count({filter: `${e.fk} = "${row.id}"`}).catch(() => 0)));
     const at = counts.findIndex((n) => n > 0);
-    if (at > 0 && !this.scope.isDisposed && this.tabs.activeTab.peek() === opened)
+    if (at >= 0 && entries[at].id !== opened && !this.scope.isDisposed && this.tabs.activeTab.peek() === opened)
       this.tabs.activeTab.value = entries[at].id;
   }
 
@@ -138,8 +140,8 @@ export class DomainChildren extends Control {
       scope = undefined;
       this._sources.delete(entry.id);
       if (row === null) {
-        const singular = this.parent.schema.info.singularName.toLowerCase() || 'row';
-        pane.replaceChildren(span(`Select a ${singular}.`, 'u2-domain-children-hint'));
+        pane.replaceChildren(span(`Select a ${DomainTable.noun(this.parent.schema.info, true)}.`,
+          'u2-domain-children-hint'));
         return;
       }
       // everything built here — the source, the controls — is adopted by the pane's scope
