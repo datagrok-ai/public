@@ -123,4 +123,8 @@ export const ANALYSIS_JOBS: {[op: string]: Job} = {
       attachIdx.map((_, p) => rows.map((row) => row[p + 1])), attachIdx);
   },
   molzip: (_worker, module, molecules: string[], details: string) => molzip(module, molecules, details),
+  /** RdKitServiceWorker.mmpLinkFragments of rows `[core, fragment]` (the MMP viewer's generations, a SAR matrix's
+   * single-cut cells): '' where Crux joins none. */
+  mmpLinkFragments: (worker, _module, rows: string[][]): string[] =>
+    worker.mmpLinkFragments(rows.map((row) => row[0]), rows.map((row) => row[1])),
 };

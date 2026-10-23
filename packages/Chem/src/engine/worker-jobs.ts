@@ -4,6 +4,7 @@
  * does the molecules Crux cannot read, and the whole call when Crux fails. In RDKit mode, the RDKit pool. In Crux mode
  * the RDKit pool starts only when a molecule or a call needs it.
  */
+import type * as DG from 'datagrok-api/dg';
 import {Fingerprint} from '../utils/chem-common';
 import type {IFpResult} from '../rdkit-service/rdkit-service-worker-similarity';
 import {getRdKitService} from '../utils/chem-common-rdkit';
@@ -12,6 +13,9 @@ import {ChemicalEngine, isCruxRequested} from './chem-engine';
 import {cruxOrRdKitAsync, warnCruxFallback} from './fallback';
 import type {RuleId} from '../panels/structural-alerts';
 import {FingerprintOptions, fingerprintOptions, needsCrux} from '../utils/fingerprint-options';
+import {cruxReadsCxExtension} from '../crux/crux-service';
+import {hasNewLines} from '../utils/chem-common';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 
 /** Tests: molecules the Crux workers get as unreadable (see {@link setCruxUnreadableForTests}). */
 let unreadableForTests: Set<string> | null = null;
@@ -73,6 +77,36 @@ export async function fingerprintsByEngine(type: Fingerprint, molecules: string[
     }
     return {fps, smiles: canonical, engine: ChemicalEngine.Crux};
   }, rdkit);
+}
+
+/**
+ * `RdKitService.convertMolNotation(molecules, targetNotation, kekulize)` by the engine in effect: in Crux mode RDKit.js
+ * 2026.03.6's strings (the RDKit Crux reproduces), the RDKit pool's for the rows Crux leaves unconverted and for a
+ * CXSMILES whose query features Crux does not read (a SMILES over Chem's length limit is no one's).
+ */
+export async function convertMolNotationByEngine(molecules: string[], targetNotation: DG.chem.Notation,
+  kekulize: boolean): Promise<string[]> {
+  const rdkit = async (rows: number[] | null) => (await getRdKitService()).convertMolNotation(
+    rows ? rows.map((i) => molecules[i]) : molecules, targetNotation, kekulize);
+  if (!isCruxRequested())
+    return rdkit(null);
+  return cruxOrRdKitAsync('convertMolNotation', async () => {
+    const cx = molecules.map((m) => !!m && !cruxReadsCxExtension(m));
+    const {results, none, unconverted} = await (await getCruxService()).convertMolNotation(
+      forCrux(molecules).map((m, i) => cx[i] ? '' : m), targetNotation, kekulize);
+    const tooLong = (m: string) => !hasNewLines(m) && m.length > MAX_SMILES_LENGTH;
+    const rest = [...unconverted.filter((i) => !tooLong(molecules[i])), ...cx.flatMap((c, i) => c ? [i] : [])];
+    if (rest.length) {
+      const patch = await rdkit(rest);
+      rest.forEach((row, k) => results[row] = patch[k]);
+      const done = rest.filter((_, k) => patch[k] !== none);
+      if (done.length) {
+        warnCruxFallback('convertMolNotation', `RDKit converted ${done.length} molecules Crux did not, e.g. ` +
+          molecules[done[0]]);
+      }
+    }
+    return results;
+  }, () => rdkit(null));
 }
 
 /** `RdKitService.getStructuralAlerts(alerts, molecules)` by the engine in effect. */

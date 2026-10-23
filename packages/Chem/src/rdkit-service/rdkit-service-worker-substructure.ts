@@ -147,6 +147,12 @@ Malformed
   0  0  0  0  0  0            999 V3000
 M  END`;
 
+/** What `convertMolNotation` gives a molecule it cannot read or write in `targetNotation`. */
+export function notConverted(targetNotation: string): string {
+  return (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
+    (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 : 'MALFORMED_INPUT_VALUE';
+}
+
 const cxWithoutCoordsJSON = JSON.stringify({CX_ALL_BUT_COORDS: true});
 
 /** The search's fast read of a candidate (its canonical SMILES): as written, unsanitized; its rings come from a
@@ -408,8 +414,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   async convertMolNotation(molecules: string[], targetNotation: string, kekulize = false): Promise<string[]> {
     if (!molecules || this._requestTerminated)
       return [];
-    const result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
-      (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 : 'MALFORMED_INPUT_VALUE';
+    const result = notConverted(targetNotation);
     const results = new Array<string>(molecules.length).fill(result);
 
     for (let i = 0; i < molecules!.length; ++i) {

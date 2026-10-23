@@ -157,6 +157,29 @@ export async function linkRGroupFragmentsByEngine(cores: string[], fragmentColum
 }
 
 /**
+ * `RdKitService.mmpLinkFragments` (each core joined with its fragment at `[*:1]`, canonical SMILES, '' for none: the MMP
+ * viewer's generations, a SAR matrix's single-cut cells) by the engine in effect: in Crux mode the RDKit worker's code
+ * on the Crux workers, the RDKit pool for a row Crux does not join.
+ */
+export async function mmpLinkFragmentsByEngine(cores: string[], fragments: string[]): Promise<string[]> {
+  const rdkit = async (rows: number[] | null) => (await getRdKitService()).mmpLinkFragments(
+    rows ? rows.map((i) => cores[i]) : cores, rows ? rows.map((i) => fragments[i]) : fragments);
+  if (!isCruxRequested())
+    return rdkit(null);
+  return cruxOrRdKitAsync('mmpLinkFragments', async () => {
+    const smiles = await (await getCruxService()).mmpLinkFragments(forCrux(cores), fragments);
+    const rest = smiles.flatMap((s, i) => s || !cores[i] ? [] : [i]);
+    if (rest.length) {
+      const patch = await rdkit(rest);
+      rest.forEach((i, k) => smiles[i] = patch[k]);
+      if (rest.some((_, k) => patch[k]))
+        warnCruxFallback('mmpLinkFragments', `RDKit joined rows Crux did not, e.g. ${cores[rest[0]]}`);
+    }
+    return smiles;
+  }, () => rdkit(null));
+}
+
+/**
  * RDKit's MolzipParams by name (`RDKit::MolzipParams`, Code/GraphMol/ChemTransforms/MolFragmenter.h), each optional
  * with RDKit's default: `Label` (how pieces name their attachment points: `AtomMapNumber`, `[*:1]`, the
  * default; `Isotope`, `[1*]`; `FragmentOnBonds`, the labels of RDKit's FragmentOnBonds; `AtomType`, the atoms of

@@ -10,10 +10,12 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {HIGHLIGHT_BY_SCAFFOLD_TAG} from '../constants';
 import {IColoredScaffold} from '../rendering/rdkit-cell-renderer';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
+import {byEngineModule} from '../engine/chem-engine';
 
 
 let featuresDf: DG.DataFrame | null = null;
-const _smartsMap: Map<string, RDMol> = new Map();
+/** The features' query molecules, one map per module (RDKit's, and Crux's in Crux mode: `byEngineModule`). */
+const _smartsMaps: Map<RDModule, Map<string, RDMol | null>> = new Map();
 let rdKitModule: RDModule | null = null;
 
 export const FAMILY_INFO: {[key: string]: {name: string; color: string}} = {
@@ -48,43 +50,56 @@ export interface PharmFeatureMatch {
   bonds: number[];
 }
 
-async function loadPharmDataset(): Promise<void> {
-  const path = getRdKitWebRoot() + 'files/pharmacophore-features.csv';
-  featuresDf = await grok.data.loadTable(path);
-  const smartsCol = featuresDf.getCol('smarts');
-  rdKitModule ??= getRdKitModule();
-
-  for (let i = 0; i < smartsCol.length; i++) {
-    const currentSmarts = smartsCol.get(i);
-    if (!_smartsMap.has(currentSmarts)) {
-      try {
-        _smartsMap.set(currentSmarts, rdKitModule.get_qmol(currentSmarts));
-      } catch (e) {
-        console.warn(`Failed to parse pharmacophore SMARTS: ${currentSmarts}`);
+/** The features' query molecules on `module`, read once (a SMARTS it cannot read: none). */
+function queryMols(module: RDModule): Map<string, RDMol | null> {
+  let map = _smartsMaps.get(module);
+  if (!map) {
+    map = new Map();
+    for (const currentSmarts of featuresDf!.getCol('smarts').toList()) {
+      if (!map.has(currentSmarts)) {
+        try {
+          map.set(currentSmarts, module.get_qmol(currentSmarts));
+        } catch (e) {
+          map.set(currentSmarts, null);
+          console.warn(`Failed to parse pharmacophore SMARTS: ${currentSmarts}`);
+        }
       }
     }
+    _smartsMaps.set(module, map);
   }
+  return map;
 }
 
+/** The features `molecule` matches: on Crux in Crux mode, on RDKit for a molecule Crux cannot read. */
 export async function getPharmacophoreFeatures(molecule: string): Promise<PharmFeatureMatch[]> {
   if (featuresDf == null)
-    await loadPharmDataset();
-  rdKitModule ??= getRdKitModule();
+    featuresDf = await grok.data.loadTable(getRdKitWebRoot() + 'files/pharmacophore-features.csv');
+  if (!grok.chem.isMolBlock(molecule) && molecule?.length > MAX_SMILES_LENGTH)
+    throw new Error(`SMILES string longer than ${MAX_SMILES_LENGTH} characters not supported`);
+  return byEngineModule('pharmacophoreFeatures', getRdKitModule(), (module, crux) => {
+    const mol = module.get_mol(molecule);
+    const queries = queryMols(module);
+    if (crux && (!mol || [...queries.values()].includes(null))) {
+      mol?.delete();
+      if (mol)
+        throw new Error('not supported by Crux: a feature\'s SMARTS');
+      return null;
+    }
+    return matchFeatures(mol!, queries, crux);
+  })!;
+}
 
+/** The features of `mol` (deleted here); under Crux a match that throws is thrown (RDKit then matches). */
+function matchFeatures(mol: RDMol, queries: Map<string, RDMol | null>, crux: boolean): PharmFeatureMatch[] {
   const matches: PharmFeatureMatch[] = [];
-  let mol: RDMol | null = null;
   try {
-    if (!grok.chem.isMolBlock(molecule) && molecule?.length > MAX_SMILES_LENGTH)
-      throw new Error(`SMILES string longer than ${MAX_SMILES_LENGTH} characters not supported`);
-    mol = rdKitModule.get_mol(molecule);
-
     const smartsCol = featuresDf!.getCol('smarts');
     const familyCol = featuresDf!.getCol('family');
     const featureNameCol = featuresDf!.getCol('feature_name');
 
     for (let i = 0; i < smartsCol.length; i++) {
       const smarts = smartsCol.get(i);
-      const subMol = _smartsMap.get(smarts);
+      const subMol = queries.get(smarts);
       if (!subMol) continue;
 
       const family = familyCol.get(i);
@@ -114,6 +129,8 @@ export async function getPharmacophoreFeatures(molecule: string): Promise<PharmF
           }
         }
       } catch (e) {
+        if (crux)
+          throw e;
         // Skip invalid matches
       }
     }

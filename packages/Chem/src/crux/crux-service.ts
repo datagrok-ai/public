@@ -31,7 +31,7 @@ const JOB_BASE_MS = 30000;
 /** How a job's timeout starts its message. */
 const JOB_TIMEOUT = 'a Crux job took longer than';
 const JOB_MS_PER_MOLECULE = {descriptors: 500, fingerprints: 20, alerts: 50, scaffoldTree: 200, properties: 20, qed: 20,
-  toxicityAlerts: 50};
+  toxicityAlerts: 50, notation: 50};
 // Rascal's options for an activity cliff's MCS (CruxService.pairUncommonAtomsAndBonds): RDKit's defaults but these
 // three, measured on the cliffs of Chem's tests and demo at their cutoffs (2026-10-21)
 /** get_mces' 0.5 gave one cliff of the cutoff-20 test no MCES, 0.4 none. */
@@ -80,7 +80,7 @@ const CX_FIELDS_CRUX_READS = [/^\([^)]*\)/, /^\$(?!_AV:)[^$]*\$/, /^(?:&|o)\d+:\
 const CX_QUERY_LABEL = /_[pe]$/;
 
 /** Whether the Crux module reads the CXSMILES extension of `molString`, if it has one, as RDKit does. */
-function cruxReadsCxExtension(molString: string): boolean {
+export function cruxReadsCxExtension(molString: string): boolean {
   const extension = hasNewLines(molString) ? null : /\s\|([^|]*)\|\s*$/.exec(molString);
   let rest = extension?.[1] ?? '';
   while (rest !== '') {
@@ -134,6 +134,10 @@ class CruxWorkerClient extends WorkerMessageBusClient {
 
   chemProperties = (molecules: (string | null)[], names: string[]):
     Promise<{[name: string]: (number | string | null)[]}> => this.call('chemProperties', [molecules, names]);
+
+  convertMolNotation = (molecules: string[], targetNotation: string, kekulize: boolean):
+    Promise<{results: string[], none: string, unconverted: number[]}> =>
+    this.call('convertMolNotation', [molecules, targetNotation, kekulize]);
 
   chemQed = (molecules: (string | null)[]): Promise<{[key: string]: (number | null)[]}> =>
     this.call('chemQed', [molecules]);
@@ -432,6 +436,19 @@ export class CruxService {
   }
 
   /**
+   * The molecules in `targetNotation`, as the RDKit pool's `convertMolNotation` gives them (the same worker code, run on
+   * Crux), the rows it left unconverted (a molecule Crux cannot read, a writer it refuses) and what such a row holds.
+   */
+  async convertMolNotation(molecules: string[], targetNotation: string, kekulize: boolean):
+    Promise<{results: string[], none: string, unconverted: number[]}> {
+    const starts: number[] = [];
+    const parts = await this.inChunks(molecules, JOB_MS_PER_MOLECULE.notation,
+      (worker, chunk) => worker.convertMolNotation(chunk, targetNotation, kekulize), CHUNK_SIZE, JOB_BASE_MS, starts);
+    return {results: parts.flatMap((part) => part.results), none: parts[0]?.none ?? '',
+      unconverted: parts.flatMap((part, k) => part.unconverted.map((row) => starts[k] + row))};
+  }
+
+  /**
    * Crux mode's drug-likeness (widgets/drug-likeness.ts) by crux's `chemQed`: RDKit's QED and its eight properties
    * (`QED`, `MW`, `ALOGP`, `HBA`, `HBD`, `PSA`, `ROTB`, `AROM`, `ALERTS`), a value or null per molecule, the molecules in
    * chunks across the workers.
@@ -625,6 +642,14 @@ export class CruxService {
     const rows = cores.map((core, i) => [core, ...fragmentColumns.map((column) => column[i])]);
     return (await this.inChunks(rows, ANALYSIS_MS.link, (worker, chunk) =>
       worker.analysis<string[]>('linkRGroupFragments', [chunk, attachIdx]))).flat();
+  }
+
+  /** The RDKit pool's `mmpLinkFragments` (each core joined with its fragment at `[*:1]`, canonical SMILES, '' for none),
+   * run on Crux, the rows in chunks across the workers. */
+  async mmpLinkFragments(cores: string[], fragments: string[]): Promise<string[]> {
+    const rows = cores.map((core, i) => [core, fragments[i]]);
+    return (await this.inChunks(rows, ANALYSIS_MS.link, (worker, chunk) =>
+      worker.analysis<string[]>('mmpLinkFragments', [chunk]))).flat();
   }
 
   /** RDKit's molzip of each molecule's pieces (`details`: MolzipParams as JSON), the molecules in chunks across the

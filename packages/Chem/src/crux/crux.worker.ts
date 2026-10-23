@@ -8,6 +8,7 @@ import type {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import type {CruxCollection, CruxWorkerApi, DescriptorValues, PackedDescriptorValues} from './crux-api';
 import {INT_NONE} from './crux-api';
 import {RdKitServiceWorker} from '../rdkit-service/rdkit-service-worker';
+import {notConverted} from '../rdkit-service/rdkit-service-worker-substructure';
 import {MAX_MOL_CACHE_SIZE} from '../rdkit-service/rdkit-service-worker-base';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {getUncommonAtomsAndBondsOfMatches} from '../utils/chem-common';
@@ -201,7 +202,11 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
       result = {...fps, unread: unread(args[1], (i) => fps.fps[i] !== null)};
     } else if (op === 'getStructuralAlerts')
       result = structuralAlerts(args[0], args[1]);
-    else if (op === 'chemProperties') // Chem's property table (widgets/properties.ts)
+    else if (op === 'convertMolNotation') { // the column conversions (engine/worker-jobs.ts)
+      const results = await rdkitShapedWorker().convertMolNotation(args[0], args[1], args[2]);
+      const none = notConverted(args[1]);
+      result = {results, none, unconverted: (args[0] as string[]).flatMap((m, i) => m && results[i] === none ? [i] : [])};
+    } else if (op === 'chemProperties') // Chem's property table (widgets/properties.ts)
       result = JSON.parse(chemWasm.chemProperties(args[0], args[1]));
     else if (op === 'chemQed') // Crux mode's drug-likeness: QED and its properties (widgets/drug-likeness.ts)
       result = JSON.parse(chemWasm.chemQed(args[0]));

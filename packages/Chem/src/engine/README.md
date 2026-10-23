@@ -41,6 +41,10 @@ the renderers empty their caches and the grids repaint.
 | FMCS (`getMCS`: the R-group dialog's MCS; Cluster MCS, `performClusterMCS`; the SAR matrix's anchors) | a Crux worker runs the RDKit worker's `mostCommonStructure`; a cluster per job across the pool, within FMCS's own Timeout of 45 s ('' past it, as the RDKit pool gives a cluster whose worker it restarts after 45 s); Cluster MCS' SMILES from the main thread's Crux module | the RDKit pool, per call and per cluster Crux cannot read |
 | Fragment linking (the SAR matrix's `linkRGroupFragments`) | RDKit's molzip on the Crux workers: the RDKit worker's `linkRGroupFragments` joins by molzip where the module has it | the RDKit worker's string assembly, per call and per row molzip does not join |
 | `molzip` (a package function for Bio and other packages) | RDKit's molzip on the Crux workers, in both modes: Chem's RDKit.js has none | none: it throws when the Crux file does not load |
+| Notation conversions (`convertMolNotation`, `canonicalize`, Convert Notation, `_convertMolNotation` and what calls it: `grok.chem.convert`, the sketchers' getters, the panels' SMILES; `utils/convert-notation-utils.ts`, `convertMolNotationByEngine`) | a molecule on the main thread's Crux module, a column the RDKit worker's code on the Crux workers: RDKit.js 2026.03.6's strings (the product owner, 2026-10-23: ~0.9 % of canonical SMILES write stereo marks or order otherwise than Chem's RDKit 2024.09, the same molecules). Code whose next step is RDKit's converts by RDKit in both modes (`_convertMolNotationByRdKit`: reaction drawing, the substructure filter's query names, an R-group core's checks) | per molecule Crux cannot read or refuses, and a CXSMILES whose query features Crux's reader skips (`cruxReadsCxExtension`, the search's guard); per column call |
+| `isSmiles`, `validateMolecule` (`package.ts`) | a molecule Crux reads (`validateMolecule`: as it stands, getMolSafe's first read) is a molecule / valid (`''`) | RDKit for the rest: `validateMolecule`'s messages are RDKit's (Crux keeps no RDKit log) |
+| The context panel's Structural Alerts, Pharmacophores and 2D Structure (`widgets/structural-alerts.ts`, `widgets/pharmacophore-features.ts`, `widgets/structure2d.ts`), the MMP viewer's pair alignment and highlights (`mmp-mol-rendering.ts`, `mmp-substruct-provider.ts`) | the main thread's Crux module (`byEngineModule` in `chem-engine.ts`: one query-molecule cache per module) | per molecule Crux cannot read, a SMARTS it does not read, a call that throws |
+| The MMP viewer's generated molecules and a SAR matrix's single-cut cells (`mmpLinkFragmentsByEngine`) | the RDKit worker's `mmpLinkFragments` on the Crux workers | the RDKit pool per call and per row Crux does not join |
 | Drug Likeness and Toxicity (`widgets/drug-likeness.ts`, `widgets/toxicity.ts`; the product owner, 2026-10-22) | RDKit's QED with the eight properties it weighs (crux's `chemQed`), and RDKit's FilterCatalog Brenk and NIH alerts with their atoms (`chemAlerts`): the panels, their whole-table columns (`QED`, `Brenk alerts`, `NIH alerts`) and Chem \| Calculate \| Toxicity Alerts... | OpenChemLib's score and four risks per molecule Crux cannot read or a failed call; the alert counts have none (RDKit.js has no FilterCatalog: Toxicity Alerts asks for the Crux engine). Toxicity Risks... stays OpenChemLib's in both modes |
 
 Fingerprints by Crux are RDKit 2026.03's, Chem's RDKit is 2024.09: on Chem's test molecules (1,402) Morgan, pattern,
@@ -49,9 +53,8 @@ of them RDKit's own change between the two releases (RDKit.js 2026.03.6 gives Cr
 identically. A fingerprint cache belongs to the engine that filled it: the RDKit substructure search keeps its own
 pattern fingerprints (the plain-named columns) on RDKit in both modes.
 
-In Crux mode the RDKit pool is not started for what has moved; everything else (InChI, conversions, validation,
-reaction drawing, the MMP viewer's pair MCS and generated molecules (`mmpGetMcs`, `mmpLinkFragments`), the
-substructure search's RDKit path, the context panel's other one-molecule widgets) is RDKit in both modes.
+In Crux mode the RDKit pool is not started for what has moved; everything else (InChI, reaction drawing, the
+substructure search's RDKit path, the Identifiers and 3D Structure panes) is RDKit in both modes.
 
 Descriptors in Crux mode are `dockerfiles/chem/chem.py` as this package has it, on the RDKit release Crux reproduces:
 the same tree (groups, versions, names, order; the descriptions RDKit's docstrings give) and the same values (2D within
@@ -83,7 +86,8 @@ from Crux:
 | `getProperties`, `getChemPropertyFunction`, Chemical Properties (Admetica's MW, HitTriage) | OpenChemLib's | Crux's: RDKit's definitions (MW the average weight, not OpenChemLib's monoisotopic mass) |
 | `getMCS`, Cluster MCS (`clusterMCS`), `rGroupDecomposition`, MMP analysis | RDKit | Crux's: RDKit 2026.03's (an MCS SMARTS may name its atoms in another order than Chem's RDKit 2024.09, the same query) |
 | `molzip` | Crux's | Crux's |
-| every other function (`convertMolNotation`, `canonicalize`, `isSmiles`, `validateMolecule`, InChI, ...) | RDKit | RDKit |
+| `convertMolNotation`, `canonicalize`, `grok.chem.convert` (every sketcher's getters), `isSmiles`, `validateMolecule` | RDKit | Crux's: RDKit.js 2026.03.6's strings, RDKit per molecule Crux cannot read; `validateMolecule`'s messages RDKit's |
+| every other function (InChI, ...) | RDKit | RDKit |
 
 ## Moving a feature behind the setting
 

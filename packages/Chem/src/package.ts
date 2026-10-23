@@ -126,8 +126,10 @@ import {applyDesirabilityTags, collectMpoResultColumns, computeMpo, findSuitable
 import {removeWaterAndSalts, runTransformationReaction} from './utils/reactions/reactions';
 import {transformationReactionsUI, transformationReactionsView, twoComponentReactionsView, twoComponentReactionUI} from './utils/reactions/ui';
 import {scripts} from './package-api';
-import {cruxReady, isCruxRequested, onEngineSwitch, requestedEngine} from './engine/chem-engine';
-import {cruxOrRdKitAsync} from './engine/fallback';
+import {ChemicalEngine, cruxReady, engineInEffect, isCruxRequested, onEngineSwitch, requestedEngine}
+  from './engine/chem-engine';
+import {cruxOrRdKit, cruxOrRdKitAsync} from './engine/fallback';
+import {cruxModuleSync, noteCruxError} from './engine/crux-module';
 import {getCruxService} from './crux/crux-searches';
 import {clusterMcsByEngine, molzip as molzipOnCrux, MolzipParams} from './engine/analysis-jobs';
 
@@ -2405,6 +2407,13 @@ export class PackageFunctions {
   @grok.decorators.func()
   static isSmiles(
     @grok.decorators.param({type: 'string'}) s: string): boolean {
+    // "Chemical Engine" (engine/README.md): in Crux mode Crux reads it, RDKit what Crux cannot
+    if (engineInEffect() === ChemicalEngine.Crux && cruxOrRdKit('isSmiles', () => {
+      const mol = getMolSafe(s, {}, cruxModuleSync()!, true, noteCruxError).mol;
+      mol?.delete();
+      return mol !== null;
+    }, () => false))
+      return true;
     const ctx: IMolContext = getMolSafe(s, {}, _rdKitModule, true);
     if (ctx.mol !== null) {
       ctx.mol.delete();
@@ -2989,6 +2998,14 @@ export class PackageFunctions {
 
   @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static validateMolecule(s: string): string | null {
+    // "Chemical Engine" (engine/README.md): in Crux mode a molecule Crux reads as it stands (getMolSafe's first read) is
+    // valid; RDKit writes the message for the rest (Crux keeps no RDKit log)
+    if (engineInEffect() === ChemicalEngine.Crux && cruxOrRdKit('validateMolecule', () => {
+      const ctx = getMolSafe(s, {}, cruxModuleSync()!, true, noteCruxError);
+      ctx.mol?.delete();
+      return ctx.mol !== null && ctx.kekulize && !ctx.isQMol;
+    }, () => false))
+      return '';
     let logHandle: RDLog | null = null;
     let mol: RDMol | null = null;
     try {

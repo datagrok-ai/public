@@ -44,7 +44,18 @@ category('vector functions', () => {
   });
 
   test('convertMoleculeNotation', async () => {
-    await testVectorFunc('Chem:convertMoleculeNotation(${smiles}, \'molblock\', false)', 'molblock', [0], [mol1]);
+    // the stand's engine: in Crux mode the MOL block RDKit.js 2026.03.6 writes (the product owner, 2026-10-23), the
+    // same molecule, its Kekulé form chosen otherwise than RDKit 2024.09's
+    const canonical = (molblock: string) => {
+      const mol = chemCommonRdKit.getRdKitModule().get_mol(molblock);
+      try {
+        return mol.get_smiles();
+      } finally {
+        mol.delete();
+      }
+    };
+    await testVectorFunc('Chem:convertMoleculeNotation(${smiles}, \'molblock\', false)', 'molblock', [0], [mol1],
+      isCruxRequested() ? (val) => typeof val === 'string' && canonical(val) === canonical(mol1) : undefined);
   });
 
   test('getProperties', async () => {
