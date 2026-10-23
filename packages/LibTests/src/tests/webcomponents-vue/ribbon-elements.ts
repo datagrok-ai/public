@@ -1,4 +1,4 @@
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {createMenuItem, createPanelItem, defaultDebounce, updatePanelItem}
   from '@datagrok-libraries/webcomponents-vue/src/ViewService/ribbon-elements';
@@ -70,8 +70,8 @@ category('WebComponentsVue: Ribbon elements', () => {
       {debounce: defaultDebounce, warn: (message: string) => warned.push(message)});
     updatePanelItem(state, panelItem({disabled: true, disabledStyleDebounce: 20}));
     expectDeepEqual(state.el.style.opacity, '');
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    expectDeepEqual(state.el.style.opacity, '0.4');
+    await waitUntil(() => state.el.style.opacity === '0.4', 'the disabled style was not applied after its debounce',
+      1000);
   });
 
   test('renders menu item with optional icon', async () => {

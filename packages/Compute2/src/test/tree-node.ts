@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as Vue from 'vue';
-import {category, test, expect, expectArray, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, waitUntil} from '@datagrok-libraries/test/src/test';
 import {getToolTip, TreeNode} from '../components/TreeWizard/TreeNode';
 import {sourceRunLabel, sourceRunTooltip} from '../components/TreeWizard/source-run';
 
@@ -97,7 +97,7 @@ category('TreeWizard: step node', () => {
     // the menu renders on the next tick; its first label is the header
     const menuItems = async (node: {root: HTMLElement}) => {
       node.root.querySelector('.fa-code-branch')!.closest<HTMLElement>('dg-icon-fa')!.click();
-      await awaitCheck(() => document.querySelector('.d4-menu-popup') !== null, 'source run menu not shown', 3000);
+      await waitUntil(() => document.querySelector('.d4-menu-popup') !== null, 'source run menu not shown', 3000);
       const items = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
         .map((el) => el.textContent?.trim()).slice(1);
       document.querySelectorAll('.d4-menu-popup').forEach((el) => el.remove());

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {after, awaitCheck, before, category, expect,
+import {after, waitUntil, before, category, expect,
   isDialogPresent, test} from '@datagrok-libraries/test/src/test';
 import dayjs from 'dayjs';
 import {AddNewColumnDialog, prepareAddNewColumnFuncCall} from '../dialogs/add-new-column';
@@ -24,8 +24,9 @@ category('Add new column', () => {
     for (const f of funcs) {
       const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
       const dlg = new AddNewColumnDialog(call);
-      await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
-      await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
+      await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+      await waitUntil(() => isDialogPresent(dlg.addColumnTitle),
+        'timed out waiting for isDialogPresent(dlg.addColumnTitle)');
       for (const [expression, result] of Object.entries(FUNC_TESTS[f.name])) {
         const columnName = df.columns.getUnusedName(expression);
         dlg.inputName!.value = columnName;
@@ -36,11 +37,13 @@ category('Add new column', () => {
             insert: expression
           }
         });
-        await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === expression);
+        await waitUntil(() => dlg.codeMirror!.state.doc.toString() === expression,
+          'timed out waiting for dlg.codeMirror!.state.doc.toString() === expression');
         expect(dlg.error, '', `Error '${dlg.error}' is shown for the correct input`);
         dlg.uiDialog!.getButton('OK').click();
         try {
-          await awaitCheck(() => df.columns.contains(columnName));
+          await waitUntil(() => df.columns.contains(columnName),
+            'timed out waiting for df.columns.contains(columnName)');
           const column = df.col(columnName)!;
           expectTyped(column.get(0), result == null && column.type === DG.TYPE.STRING ? '' : result);
         } catch (e) {
@@ -53,8 +56,9 @@ category('Add new column', () => {
   test('validation', async () => {
     const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
     const dlg = new AddNewColumnDialog(call);
-    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
-    await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
+    await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await waitUntil(() => isDialogPresent(dlg.addColumnTitle),
+      'timed out waiting for isDialogPresent(dlg.addColumnTitle)');
     for (const f of Object.keys(FUNC_VALIDATION)) {
         dlg.codeMirror!.dispatch({
           changes: {
@@ -63,8 +67,8 @@ category('Add new column', () => {
             insert: f
           }
         });
-        await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === f, 'expression has\'t been set');
-        await awaitCheck(() => dlg.error === FUNC_VALIDATION[f], 'incorrect validation error');
+        await waitUntil(() => dlg.codeMirror!.state.doc.toString() === f, 'expression has\'t been set');
+        await waitUntil(() => dlg.error === FUNC_VALIDATION[f], 'incorrect validation error');
     }
   });
 
@@ -79,7 +83,7 @@ category('Add new column', () => {
     call.setAuxValue('filterFormulaEditor', true);
     const widget = new DG.Widget(ui.div());
     const dlg = new AddNewColumnDialog(call, widget);
-    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
     const columnsBefore = df.columns.length;
 
     const type = (expression: string) => dlg.codeMirror!.dispatch({changes: {
@@ -91,12 +95,12 @@ category('Add new column', () => {
     // Wait for the verdict's CONTENT, not merely for an attribute — checking
     // presence alone is satisfied by whatever the previous formula left behind.
     type(`\${${numeric}} + 1`);
-    await awaitCheck(() => (widget.root.getAttribute('data-expression-error') ?? '').includes('true/false'),
+    await waitUntil(() => (widget.root.getAttribute('data-expression-error') ?? '').includes('true/false'),
       'an arithmetic formula was accepted as a condition', 20000);
     expect(dlg.error.includes('true/false'), true, `unhelpful message: "${dlg.error}"`);
 
     type(`\${${numeric}} > 30`);
-    await awaitCheck(() => !widget.root.hasAttribute('data-expression-error'),
+    await waitUntil(() => !widget.root.hasAttribute('data-expression-error'),
       'the error outlived the formula that caused it', 20000);
 
     // Accepting publishes the text back onto the call — a host is storing a
@@ -112,7 +116,7 @@ category('Add new column', () => {
     const expression = 'DateParse(${s})';
     const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0]
       .prepare({table: t, name: 'parsed', expression}));
-    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
 
     Object.assign(dlg.errorBehavior, {useValue: true, value: dayjs('1900-01-01'), valueType: DG.COLUMN_TYPE.DATE_TIME, errorColumn: true, errorColName: 'parsed errors'});
     await dlg.updatePreview(expression, false);
@@ -124,7 +128,7 @@ category('Add new column', () => {
     expect(t.col('parsed errors')!.get(1).includes('n/a'), true);
 
     const edit = new AddNewColumnDialog(prepareAddNewColumnFuncCall(t.col('parsed')!));
-    await awaitCheck(() => edit.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await waitUntil(() => edit.codeMirror != null, 'cannot load CodeMirror', 5000);
     expect(edit.errorBehavior.errorColumn && edit.errorBehavior.useValue, true, 'the edit dialog lost the behavior');
     Object.assign(edit.errorBehavior, {useValue: false, errorColumn: false});
     await edit.addNewColumnAction();
@@ -138,7 +142,7 @@ category('Add new column', () => {
     const t = DG.DataFrame.fromColumns([DG.Column.fromStrings('n', ['12', 'many', '30'])]);
     const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0]
       .prepare({table: t, name: 'filled', expression: 'ParseInt(${n})'}));
-    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
     try {
       await dlg.showErrorBehaviorPopup();
       expect(dlg.errorBehavior.valueType, DG.COLUMN_TYPE.INT);
@@ -146,7 +150,7 @@ category('Add new column', () => {
       expect(dlg.getErrorBehaviorParam()?.valueOnError, 7);
     } finally {
       // the popup starts listening for the click that closes it only after it has opened
-      await awaitCheck(() => {
+      await waitUntil(() => {
         document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
         return document.querySelector('.add-new-column-error-popup') == null;
       }, 'the popup did not close', 3000);
@@ -158,7 +162,7 @@ category('Add new column', () => {
     const t = DG.DataFrame.fromColumns([DG.Column.fromStrings('s', ['2023-01-05', 'n/a'])]);
     const expression = 'DateParse(${s})';
     const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0].prepare({table: t, expression}));
-    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
     const type = (input: HTMLInputElement, value: string) => {
       input.value = value;
       input.dispatchEvent(new Event('input', {bubbles: true}));
@@ -173,13 +177,13 @@ category('Add new column', () => {
       const name = dlg.inputName!.input as HTMLInputElement;
       const previewHas = (col: string) => dlg.gridPreview!.dataFrame.col(col) != null;
       type(name, 'c2');
-      await awaitCheck(() => previewHas('c2 errors'), 'the preview has no error column for c2', 5000);
+      await waitUntil(() => previewHas('c2 errors'), 'the preview has no error column for c2', 5000);
       type(name, 'c3');
-      await awaitCheck(() => previewHas('c3 errors'), 'the preview error column does not follow the name', 500);
+      await waitUntil(() => previewHas('c3 errors'), 'the preview error column does not follow the name');
       expect(dlg.getErrorBehaviorParam()?.errorColName, 'c3 errors');
 
       type(popupInput('Column name'), 'mine');
-      await awaitCheck(() => previewHas('mine'), 'the preview does not use the typed name', 5000);
+      await waitUntil(() => previewHas('mine'), 'the preview does not use the typed name', 5000);
       type(name, 'c4');
       expect(dlg.getErrorBehaviorParam()?.errorColName, 'mine');
     } finally {
@@ -191,8 +195,9 @@ category('Add new column', () => {
   test('hints', async () => {
     const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
     const dlg = new AddNewColumnDialog(call);
-    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
-    await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
+    await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await waitUntil(() => isDialogPresent(dlg.addColumnTitle),
+      'timed out waiting for isDialogPresent(dlg.addColumnTitle)');
     for (const f of Object.keys(FUNC_HINTS)) {
       dlg.codeMirror!.dispatch({
         changes: {
@@ -201,9 +206,9 @@ category('Add new column', () => {
           insert: f
         }
       });
-      await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === f, 'expression has\'t been set');
+      await waitUntil(() => dlg.codeMirror!.state.doc.toString() === f, 'expression has\'t been set');
       dlg.codeMirror!.dispatch({selection: {anchor: 5, head: 5}})
-      await awaitCheck(() => dlg.hintDiv.children[0].innerHTML === FUNC_HINTS[f], 'incorrect hint');
+      await waitUntil(() => dlg.hintDiv.children[0].innerHTML === FUNC_HINTS[f], 'incorrect hint');
     }
   });
 
@@ -211,10 +216,11 @@ category('Add new column', () => {
     const call = DG.Func.find({ name: 'AddNewColumn' })[0]
       .prepare({'table': df, 'name': 'My new column', 'expression': '${age}*2', 'type': 'auto'});
     const dlg = new AddNewColumnDialog(call);
-    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
-    await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
+    await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await waitUntil(() => isDialogPresent(dlg.addColumnTitle),
+      'timed out waiting for isDialogPresent(dlg.addColumnTitle)');
     // pre-filled expression triggers the initial preview via a 1s debounce
-    await awaitCheck(() => dlg.gridPreview?.dataFrame.col('My new column') != null,
+    await waitUntil(() => dlg.gridPreview?.dataFrame.col('My new column') != null,
       'initial preview has not been computed', 10000);
     // start a preview refresh and rename while it is still computing
     const refresh = dlg.updatePreview('${age}*2', false);
@@ -234,17 +240,20 @@ category('Add new column', () => {
   test('function at caret becomes current object', async () => {
     const call = DG.Func.find({name: 'AddNewColumn'})[0].prepare({'table': df});
     const dlg = new AddNewColumnDialog(call);
-    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
-    await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
-    await awaitCheck(() => dlg.findFunc('Abs') != null, 'functions are not registered', 5000);
+    await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await waitUntil(() => isDialogPresent(dlg.addColumnTitle),
+      'timed out waiting for isDialogPresent(dlg.addColumnTitle)');
+    await waitUntil(() => dlg.findFunc('Abs') != null, 'functions are not registered', 5000);
     dlg.codeMirror!.dispatch({changes: {from: 0, to: 0, insert: 'Abs(${age})'}});
-    await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === 'Abs(${age})');
+    await waitUntil(() => dlg.codeMirror!.state.doc.toString() === 'Abs(${age})',
+      'timed out waiting for dlg.codeMirror!.state.doc.toString() === \'Abs(${age})\'');
     dlg.codeMirror!.dispatch({selection: {anchor: 2}, userEvent: 'select.pointer'});
-    await awaitCheck(() => grok.shell.o instanceof DG.Func && (grok.shell.o as DG.Func).name === 'Abs',
+    await waitUntil(() => grok.shell.o instanceof DG.Func && (grok.shell.o as DG.Func).name === 'Abs',
       'Abs is not the current object', 3000);
     // inside the argument list the hint still describes the enclosing call
     dlg.codeMirror!.dispatch({selection: {anchor: 6}, userEvent: 'select'});
-    await awaitCheck(() => dlg.hintDiv.children[0]?.textContent === 'Abs(x:num): num', 'no signature inside the call', 3000);
+    await waitUntil(() => dlg.hintDiv.children[0]?.textContent === 'Abs(x:num): num',
+      'no signature inside the call', 3000);
     expect(dlg.hintDiv.children[1]?.textContent ?? '', dlg.findFunc('Abs')!.description ?? '', 'wrong description in the hint');
     expect(dlg.functionInfo('Abs')[0]?.textContent, 'Abs(x:num): num', 'no completion info');
     const table = dlg.findFunc('Table');
@@ -258,8 +267,9 @@ category('Add new column', () => {
     const {EditorState} = await import('@codemirror/state');
     const call = DG.Func.find({name: 'AddNewColumn'})[0].prepare({'table': df});
     const dlg = new AddNewColumnDialog(call);
-    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
-    await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
+    await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await waitUntil(() => isDialogPresent(dlg.addColumnTitle),
+      'timed out waiting for isDialogPresent(dlg.addColumnTitle)');
     dlg.coreFunctionsParams['TestTableFunc'] = {isVectorFunc: false, params: [
       {propName: 'table', propertyType: DG.TYPE.DATA_FRAME},
       {propName: 'column', propertyType: DG.TYPE.COLUMN},
@@ -326,7 +336,7 @@ category('Add new column', () => {
     await t.columns.addNewCalculated('c3', '${n} * 2');
     const dlg = new AddNewColumnDialog(prepareAddNewColumnFuncCall(t.col('c3')!));
     try {
-      await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+      await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
       await dlg.updatePreview('${n} * 3', false);
       const names = dlg.gridPreview!.dataFrame.columns.names();
       expect(names.includes('c3') && !names.includes('c3 (2)'), true, `preview columns: ${names.join(', ')}`);
@@ -342,7 +352,7 @@ category('Add new column', () => {
     const add = async (name: string, type: string) => {
       const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0].prepare({table: t, name, expression}));
       try {
-        await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+        await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
         dlg.inputType!.value = type;
         await dlg.updatePreview(expression, false);
         expect(dlg.error, '', `type ${type} refuses a number`);
@@ -371,7 +381,7 @@ category('Add new column', () => {
     for (const [picked, name, type] of cases) {
       const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0].prepare({table: t}));
       try {
-        await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+        await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
         dlg.inputName!.value = 'e';
         dlg.inputType!.value = picked;
         await dlg.updatePreview('', false);
@@ -398,23 +408,25 @@ category('Add new column', () => {
           insert: ''
         }
       });
-      await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === '', 'code mirror has\'t been cleared');
+      await waitUntil(() => dlg.codeMirror!.state.doc.toString() === '', 'code mirror has\'t been cleared');
     }
     const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
     const dlg = new AddNewColumnDialog(call);
-    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
-    await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
+    await waitUntil(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await waitUntil(() => isDialogPresent(dlg.addColumnTitle),
+      'timed out waiting for isDialogPresent(dlg.addColumnTitle)');
     const absFuncLink = dlg.widgetFunctions?.root.querySelector('[name="span-Abs"]') as HTMLElement;
     //check function is added on click
     absFuncLink.click();
-    await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === 'Abs(x)', 'expression has\'t been set');
+    await waitUntil(() => dlg.codeMirror!.state.doc.toString() === 'Abs(x)', 'expression has\'t been set');
     await clear();
     //check function is added on click and selected column with matching type is added automatically
     dlg.columnsDf!.currentRowIdx = 3;
-    await awaitCheck(() => dlg.selectedColumn?.name === 'age', 'column has\'t been set');
+    await waitUntil(() => dlg.selectedColumn?.name === 'age', 'column has\'t been set');
     absFuncLink.click();
-    await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === 'Abs(${age})', 'expression has\'t been set', 3000);
-    await awaitCheck(() => dlg.gridPreview!.dataFrame.col('Abs(${age})') ? dlg.gridPreview!.dataFrame.get('Abs(${age})', 0) === 61 : false, 'incorrect preview data', 3000);
-    await awaitCheck(() => dlg.gridPreview!.dataFrame.get('Abs(${age})', 9) === 26, 'incorrect preview data', 1000);
+    await waitUntil(() => dlg.codeMirror!.state.doc.toString() === 'Abs(${age})', 'expression has\'t been set', 3000);
+    await waitUntil(() => dlg.gridPreview!.dataFrame.col('Abs(${age})') ? dlg.gridPreview!.dataFrame.get('Abs(${age})', 0) === 61 : false,
+      'incorrect preview data', 3000);
+    await waitUntil(() => dlg.gridPreview!.dataFrame.get('Abs(${age})', 9) === 26, 'incorrect preview data', 1000);
   });
 }, {clear: false});

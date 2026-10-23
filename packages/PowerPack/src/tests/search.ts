@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {initTemplates} from '../search/templates-search';
 import {appSearch, exactAppFuncSearch, functionSearch, helpSearch} from '../search/entity-search';
 import {powerSearch, searchSuggestions} from '../search/power-search';
@@ -24,7 +24,7 @@ async function search(s: string): Promise<{categories: string[], text: string, f
     ui.div([input]);
     const host = ui.div();
     powerSearch(s, host, input);
-    await awaitCheck(() => host.getAttribute('aria-busy') === 'false', `the search for "${s}" has not finished`, 30000);
+    await waitUntil(() => host.getAttribute('aria-busy') === 'false', `the search for "${s}" has not finished`, 30000);
     await delay(10);
     return {categories: [...host.querySelectorAll('.power-pack-search-list-header')].map((h) => h.textContent ?? ''),
       text: (host.textContent ?? '').trim(), failures};

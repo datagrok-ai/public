@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {BehaviorSubject} from 'rxjs';
-import {category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {InputForm} from '@datagrok-libraries/webcomponents-vue';
 import {applyInputsVisibility, isInputEnabled} from '@datagrok-libraries/webcomponents-vue/src/InputForm/utils';
@@ -176,7 +176,7 @@ category('RFV: input visibility', () => {
     });
     app.mount(root);
     try {
-      await awaitCheck(() => !!form?.getInput('c') && !form.getInput('c').visible, 'form not rendered', 10000);
+      await waitUntil(() => !!form?.getInput('c') && !form.getInput('c').visible, 'form not rendered', 10000);
       expect(form!.getInput('a').visible, false);
       expect(form!.getInput('b').visible, true);
     } finally {
@@ -198,7 +198,7 @@ category('RFV: input visibility', () => {
         [consistency('info'), undefined],
       ] as const) {
         icon.validationStatus = {consistency: status};
-        await awaitCheck(() => iconName() === expected,
+        await waitUntil(() => iconName() === expected,
           `${status.restriction}: expected ${expected}, got ${iconName()}`, 3000);
       }
     } finally {
