@@ -134,9 +134,10 @@ category('cell panel', async () => {
     try {
       for (const format of Object.keys(molFormats_)) {
         if (format !== 'smarts' && format !== 'empty') {
-          const propertiesMap = getPropertiesMap(DG.SemanticValue.fromValueType(molFormats_[format], DG.SEMTYPE.MOLECULE));
-          Object.keys(expectedRes).forEach((prop) => expect(propertiesMap[prop].value, expectedRes[prop], `Error for ${format}, ${prop} property,
-            expected ${expectedRes[prop]}, got ${propertiesMap[prop].value}`));
+          const propertiesMap =
+            getPropertiesMap(DG.SemanticValue.fromValueType(molFormats_[format], DG.SEMTYPE.MOLECULE));
+          Object.keys(expectedRes).forEach((prop) => expect(propertiesMap[prop].value, expectedRes[prop],
+            `Error for ${format}, ${prop} property, expected ${expectedRes[prop]}, got ${propertiesMap[prop].value}`));
         }
       }
 
@@ -240,10 +241,10 @@ category('cell panel', async () => {
     // a macrocyclic peptide the old embedding (ETKDG v1, unbounded attempts) never finished, freezing the pane
     // (the product owner, 2026-10-23); with Crux mode's options it embeds, and a deadline too short for it throws
     // and leaves the worker usable
-    const peptide = 'CCN=C(NCC)NCCCC[C@H]1NC(=O)[C@H](Cc2cc(I)c(O)c(I)c2)NC(=O)[C@@H]([C@H](C)O)NC(=O)[C@H](Cc2cccnc2)' +
-      'NC(=O)[C@H](Cc2ccc(Oc3ccc(O)cc3)cc2)NC(=O)c2ccccc2N(C)C(=O)C(C)=NC(=O)[C@@H](Cc2ccc(F)cc2)NC(=O)[C@H](Cc2cscn2)' +
-      'NC(=O)[C@H](C(C)C)N(C)C(=O)[C@@H](Cc2ccc(OC)cc2)NC(=O)CN(C)C(=O)[C@H]2CCCN2C(=O)Cn2ccc3ccc(cc3c2=O)N2CCN(CC2)' +
-      'C(=O)[C@H]2C[C@@H](O)CN2C(=O)[C@H]([C@@H](C)O)N(C)C1=O';
+    const peptide = 'CCN=C(NCC)NCCCC[C@H]1NC(=O)[C@H](Cc2cc(I)c(O)c(I)c2)NC(=O)[C@@H]([C@H](C)O)NC(=O)[C@H](Cc2cccnc2' +
+      ')NC(=O)[C@H](Cc2ccc(Oc3ccc(O)cc3)cc2)NC(=O)c2ccccc2N(C)C(=O)C(C)=NC(=O)[C@@H](Cc2ccc(F)cc2)NC(=O)[C@H](Cc2cscn' +
+      '2)NC(=O)[C@H](C(C)C)N(C)C(=O)[C@@H](Cc2ccc(OC)cc2)NC(=O)CN(C)C(=O)[C@H]2CCCN2C(=O)Cn2ccc3ccc(cc3c2=O)N2CCN(CC2' +
+      ')C(=O)[C@H]2C[C@@H](O)CN2C(=O)[C@H]([C@@H](C)O)N(C)C1=O';
     setChemicalEngine(ChemicalEngine.Crux);
     try {
       expect(await cruxReady(), true, 'the Crux module loads');

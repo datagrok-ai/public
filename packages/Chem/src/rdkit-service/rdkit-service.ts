@@ -54,7 +54,7 @@ export function clusterMcsSmiles(mcs: string[], clusteredMolecules: string[][], 
       const smiles = mol?.get_smiles();
       mol?.delete();
       return smiles ?? '';
-    } catch (_) {}
+    } catch {}
     return '';
   });
 }

@@ -9,8 +9,7 @@ import {ChemicalEngine, engineInEffect, isCruxRequested} from '../engine/chem-en
 import {ChemWasm, cruxModuleSync} from '../engine/crux-module';
 import {cruxOrRdKit, cruxOrRdKitAsync} from '../engine/fallback';
 import {getCruxService} from '../crux/crux-searches';
-import {isMolBlock} from '../utils/chem-common';
-import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
+import {withinSmilesLimit} from '../utils/chem-common';
 import '../../css/chem.css';
 
 /**
@@ -38,10 +37,11 @@ export const QED_COLUMN = 'QED';
  * `chemQed`; null otherwise, and for a molecule Crux cannot read (OpenChemLib's score then shows).
  */
 export function cruxQed(molecule: string): {[key: string]: number} | null {
-  if (engineInEffect() !== ChemicalEngine.Crux)
+  const m = withinSmilesLimit(molecule);
+  if (engineInEffect() !== ChemicalEngine.Crux || m === null)
     return null;
   return cruxOrRdKit('drugLikeness', () => {
-    const values = JSON.parse((cruxModuleSync() as unknown as ChemWasm).chemQed([molecule]));
+    const values = JSON.parse((cruxModuleSync() as unknown as ChemWasm).chemQed([m]));
     return values.QED[0] === null ? null : Object.fromEntries(Object.keys(values).map((k) => [k, values[k][0]]));
   }, () => null);
 }
@@ -65,9 +65,7 @@ export async function getDrugLikenessColumn(molCol: DG.Column<string>): Promise<
   if (!isCruxRequested())
     return ocl();
   return cruxOrRdKitAsync('drugLikeness', async () => {
-    const molecules = molCol.toList().map((m) => typeof m === 'string' && m !== '' &&
-      (isMolBlock(m) || m.length <= MAX_SMILES_LENGTH) ? m : null);
-    const values = await (await getCruxService()).chemQed(molecules);
+    const values = await (await getCruxService()).chemQed(molCol.toList().map(withinSmilesLimit));
     return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, QED_COLUMN, values[QED_COLUMN]);
   }, ocl);
 }

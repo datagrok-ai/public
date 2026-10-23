@@ -197,8 +197,9 @@ category('crux analyses', () => {
     const mcsOf = async () => (await PackageFunctions.performClusterMCS(molCol, clusterCol)).toList();
     const {rdkit, crux} = await inBothEngines(mcsOf, ['cluster MCS']);
     expect(JSON.stringify(crux), JSON.stringify(rdkit), 'each row\'s cluster MCS');
-    expect(JSON.stringify([...new Set(rdkit)]), JSON.stringify(['CCNC(C)=O', 'CCN(C)C', 'CCN(C)C1:N:N:C(C):N:1CC',
-      'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', 'CCOc1ccccc1', null, 'CC(=O)Nc1ccc(O)cc1']),
+    const clusterMcs = ['CCNC(C)=O', 'CCN(C)C', 'CCN(C)C1:N:N:C(C):N:1CC', 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1',
+      'CCOc1ccccc1', null, 'CC(=O)Nc1ccc(O)cc1'];
+    expect(JSON.stringify([...new Set(rdkit)]), JSON.stringify(clusterMcs),
       'the clusters\' MCS (as RDKit.js 2026.03.6 writes them too)');
     setChemicalEngine(ChemicalEngine.Crux);
     // a molecule of the third SPGI series (the RDKit pool's MCS of it) and the one-molecule cluster's (its SMILES

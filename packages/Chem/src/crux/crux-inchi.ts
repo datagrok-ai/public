@@ -1,8 +1,9 @@
 /**
- * InChI in Crux mode, by the split (crux-core decision chem-wasm-inchi, the product owner's call 2026-10-22): Crux fills
- * InChI's input from the molecule as RDKit's MolToInchi fills it (chem-wasm's `get_inchi_input`), and crux-sketch's
- * InChI module, the page's (loaded once, shared with the sketchers), runs only the InChI library on it. The InChI is
- * RDKit.js's `get_inchi()`, the key its `get_inchikey_for_inchi`; Chem fetches no file of its own for InChI.
+ * InChI in Crux mode, by the split (crux-core decision chem-wasm-inchi, the product owner's call 2026-10-22): Crux
+ * fills InChI's input from the molecule as RDKit's MolToInchi fills it (chem-wasm's `get_inchi_input`), and
+ * crux-sketch's InChI module, the page's (loaded once, shared with the sketchers), runs only the InChI library on it.
+ * The InChI is RDKit.js's `get_inchi()`, the key its `get_inchikey_for_inchi`; Chem fetches no file of its own for
+ * InChI.
  */
 import type * as CruxSketch from '../../vendor/crux-sketch/crux-sketch';
 import type {JSMol} from '../../vendor/chem-wasm/chem_wasm.js';

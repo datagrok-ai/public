@@ -182,7 +182,8 @@ category('SAR Matrix', () => {
     const core = 'O=C(N[*:1])c1ccc2[nH]ccc2c1';
     const template = buildAlignmentTemplate(core)!;
     const rdkit = chemCommonRdKit.getRdKitModule();
-    const coords = (molblock: string) => molblock.split('\n').slice(4).filter((l) => /^\s+-?\d+\.\d+\s+-?\d+\.\d+/.test(l))
+    const coords = (molblock: string) => molblock.split('\n').slice(4)
+      .filter((l) => /^\s+-?\d+\.\d+\s+-?\d+\.\d+/.test(l))
       .map((l) => [Number(l.substring(0, 10)), Number(l.substring(10, 20))]);
     const templateXy = coords(template);
     for (const smiles of ['O=C(NCCN(C)C)c1ccc2[nH]ccc2c1', 'O=C(NC1CCN(Cc2ccccc2)CC1)c1ccc2[nH]ccc2c1']) {

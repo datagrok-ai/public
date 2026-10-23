@@ -145,7 +145,8 @@ category('fingerprints', async () => {
     const morgan = (await chemGetFingerprints(col, Fingerprint.Morgan, false)).map(onBits);
     const molecules = col.toList();
     expect(atomPairs[1], (await freshBits(molecules, Fingerprint.AtomPair))[1], 'AtomPair: the edited row');
-    expect(morgan[1], (await freshBits(molecules, Fingerprint.Morgan))[1], 'Morgan: the edited row AtomPair read first');
+    expect(morgan[1], (await freshBits(molecules, Fingerprint.Morgan))[1],
+      'Morgan: the edited row AtomPair read first');
     expect(morgan[0], (await freshBits(molecules, Fingerprint.Morgan))[0], 'Morgan: a row not edited');
   });
 

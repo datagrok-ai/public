@@ -12,8 +12,7 @@ import {ChemicalEngine, engineInEffect, isCruxRequested} from '../engine/chem-en
 import {ChemWasm, cruxModuleSync} from '../engine/crux-module';
 import {cruxOrRdKit, cruxOrRdKitAsync} from '../engine/fallback';
 import {getCruxService} from '../crux/crux-searches';
-import {isMolBlock} from '../utils/chem-common';
-import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
+import {withinSmilesLimit} from '../utils/chem-common';
 
 const DGTypeMap = {
   'float': DG.TYPE.FLOAT,
@@ -24,8 +23,8 @@ const DGTypeMap = {
 /**
  * How Crux mode ("Chemical Engine": Crux) computes each property: crux's `chemProperties`, RDKit's definitions
  * (identical to RDKit's values on ChEMBL-10k; crux-core's decision chem-props), each with its method and reference.
- * RDKit mode computes them with OpenChemLib, as before (Crux mode's drug-likeness and toxicity: widgets/drug-likeness.ts,
- * widgets/toxicity.ts).
+ * RDKit mode computes them with OpenChemLib, as before (Crux mode's drug-likeness and toxicity:
+ * widgets/drug-likeness.ts, widgets/toxicity.ts).
  */
 export const CRUX_PROPERTY_METHODS: {[name: string]: string} = {
   'MW': 'Average molecular weight from the IUPAC standard atomic weights (RDKit MolWt). OpenChemLib\'s MW ' +
@@ -55,10 +54,11 @@ export const CRUX_PROPERTY_METHODS: {[name: string]: string} = {
  * for a molecule Crux cannot read (the caller's OpenChemLib path then gives them).
  */
 function cruxProperties(molecule: string, names: string[]): {[name: string]: any} | null {
-  if (engineInEffect() !== ChemicalEngine.Crux)
+  const m = withinSmilesLimit(molecule);
+  if (engineInEffect() !== ChemicalEngine.Crux || m === null)
     return null;
   return cruxOrRdKit('properties', () => {
-    const values = JSON.parse((cruxModuleSync() as unknown as ChemWasm).chemProperties([molecule], names));
+    const values = JSON.parse((cruxModuleSync() as unknown as ChemWasm).chemProperties([m], names));
     return values[names[0]][0] === null ? null : Object.fromEntries(names.map((name) => [name, values[name][0]]));
   }, () => null);
 }
@@ -178,9 +178,7 @@ export async function getPropertiesAsColumns(smilesCol: DG.Column<string>, props
     }
   };
   const props = isCruxRequested() ? await cruxOrRdKitAsync('properties', async () => {
-    const molecules = smilesCol.toList().map((m) => typeof m === 'string' && m !== '' &&
-      (isMolBlock(m) || m.length <= MAX_SMILES_LENGTH) ? m : null);
-    return (await getCruxService()).chemProperties(molecules, propsMap);
+    return (await getCruxService()).chemProperties(smilesCol.toList().map(withinSmilesLimit), propsMap);
   }, ocl) : await ocl();
   return propsMap.map((p) => DG.Column.fromList(DGTypeMap[PROP_MAP[p].type], p, props[p]));
 }

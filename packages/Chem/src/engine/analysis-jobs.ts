@@ -157,9 +157,9 @@ export async function linkRGroupFragmentsByEngine(cores: string[], fragmentColum
 }
 
 /**
- * `RdKitService.mmpLinkFragments` (each core joined with its fragment at `[*:1]`, canonical SMILES, '' for none: the MMP
- * viewer's generations, a SAR matrix's single-cut cells) by the engine in effect: in Crux mode the RDKit worker's code
- * on the Crux workers, the RDKit pool for a row Crux does not join.
+ * `RdKitService.mmpLinkFragments` (each core joined with its fragment at `[*:1]`, canonical SMILES, '' for none: the
+ * MMP viewer's generations, a SAR matrix's single-cut cells) by the engine in effect: in Crux mode the RDKit worker's
+ * code on the Crux workers, the RDKit pool for a row Crux does not join.
  */
 export async function mmpLinkFragmentsByEngine(cores: string[], fragments: string[]): Promise<string[]> {
   const rdkit = async (rows: number[] | null) => (await getRdKitService()).mmpLinkFragments(

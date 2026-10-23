@@ -13,7 +13,7 @@ import {MAX_MOL_CACHE_SIZE} from '../rdkit-service/rdkit-service-worker-base';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {getUncommonAtomsAndBondsOfMatches} from '../utils/chem-common';
 import {assertFingerprintOptions} from '../utils/fingerprint-options';
-import {ANALYSIS_JOBS} from './crux-analysis-jobs';
+import {ANALYSIS_JOBS, throwIfTrap} from './crux-analysis-jobs';
 
 const crux = chemWasm as unknown as CruxWorkerApi;
 const ctx: Worker = self as any;
@@ -47,9 +47,9 @@ function unread(molecules: string[], done: (i: number) => boolean): number[] {
 }
 
 /**
- * InChI's input of each molecule, as RDKit's MolToInchi fills it (chem-wasm's `get_inchi_input`) for crux-sketch's InChI
- * module to run the library on (engine/worker-jobs.ts); '' where RDKit's `get_inchi` gives '' (an empty cell, no input,
- * a throw) and null where Crux cannot read the molecule. The inputs' buffers are transferred.
+ * InChI's input of each molecule, as RDKit's MolToInchi fills it (chem-wasm's `get_inchi_input`) for crux-sketch's
+ * InChI module to run the library on (engine/worker-jobs.ts); '' where RDKit's `get_inchi` gives '' (an empty cell, no
+ * input, a throw) and null where Crux cannot read the molecule. The inputs' buffers are transferred.
  */
 function inchiInputs(molecules: string[], transfer: Transferable[]): (Uint8Array | '' | null)[] {
   return molecules.map((m) => {
@@ -61,7 +61,8 @@ function inchiInputs(molecules: string[], transfer: Transferable[]): (Uint8Array
       if (input)
         transfer.push(input.buffer);
       return input ?? '';
-    } catch {
+    } catch (e) {
+      throwIfTrap(e);
       return '';
     } finally {
       mol.delete();
@@ -79,7 +80,8 @@ function structuralAlerts(alerts: {[rule: string]: string[]}, molecules: string[
   const queries = Object.entries(alerts).map(([rule, smarts]) => [rule, smarts.map((s) => {
     try {
       return module.get_qmol(s);
-    } catch {
+    } catch (e) {
+      throwIfTrap(e);
       return null;
     }
   })] as const);
@@ -103,7 +105,9 @@ function structuralAlerts(alerts: {[rule: string]: string[]}, molecules: string[
                 found[rule][i] = true;
                 break;
               }
-            } catch {}
+            } catch (e) {
+              throwIfTrap(e);
+            }
           }
         }
       } finally {
@@ -228,7 +232,8 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
     else if (op === 'convertMolNotation') { // the column conversions (engine/worker-jobs.ts)
       const results = await rdkitShapedWorker().convertMolNotation(args[0], args[1], args[2]);
       const none = notConverted(args[1]);
-      result = {results, none, unconverted: (args[0] as string[]).flatMap((m, i) => m && results[i] === none ? [i] : [])};
+      const unconverted = (args[0] as string[]).flatMap((m, i) => m && results[i] === none ? [i] : []);
+      result = {results, none, unconverted};
     } else if (op === 'chemProperties') // Chem's property table (widgets/properties.ts)
       result = JSON.parse(chemWasm.chemProperties(args[0], args[1]));
     else if (op === 'chemEmbed3d') // the 3D Structure pane's coordinates (widgets/structure3d.ts); a timeout throws

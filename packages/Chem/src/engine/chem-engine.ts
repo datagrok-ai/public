@@ -126,8 +126,9 @@ export function renderingModule(rdKitModule: RDModule): {module: RDModule, engin
 
 /**
  * A one-molecule job on the main thread (a context panel's) by the engine in effect: in Crux mode, once Crux is ready,
- * `job(Crux's module, true)`, and `job(rdKitModule, false)` where it gives null (a molecule Crux cannot read) or throws; in RDKit
- * mode on `rdKitModule`. A cache `job` fills holds one map per module: objects of one module never reach the other.
+ * `job(Crux's module, true)`, and `job(rdKitModule, false)` where it gives null (a molecule Crux cannot read) or
+ * throws; in RDKit mode on `rdKitModule`. A cache `job` fills holds one map per module: objects of one module never
+ * reach the other.
  */
 export function byEngineModule<T>(call: string, rdKitModule: RDModule,
   job: (module: RDModule, crux: boolean) => T | null): T | null {

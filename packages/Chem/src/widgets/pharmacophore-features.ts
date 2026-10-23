@@ -59,7 +59,7 @@ function queryMols(module: RDModule): Map<string, RDMol | null> {
       if (!map.has(currentSmarts)) {
         try {
           map.set(currentSmarts, module.get_qmol(currentSmarts));
-        } catch (e) {
+        } catch {
           map.set(currentSmarts, null);
           console.warn(`Failed to parse pharmacophore SMARTS: ${currentSmarts}`);
         }

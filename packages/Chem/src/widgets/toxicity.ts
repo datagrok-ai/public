@@ -12,8 +12,7 @@ import {cruxOrRdKit} from '../engine/fallback';
 import {getCruxService} from '../crux/crux-searches';
 import {ToxicityAlert} from '../crux/crux-api';
 import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
-import {isMolBlock} from '../utils/chem-common';
-import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
+import {withinSmilesLimit} from '../utils/chem-common';
 import '../../css/chem.css';
 
 /**
@@ -47,11 +46,12 @@ export function alertCountColumnName(catalog: string): string {
  * crux's `chemAlerts`, each with its matches' atoms; null otherwise, and for a molecule Crux cannot read.
  */
 export function cruxToxicityAlerts(molecule: string): {[catalog: string]: ToxicityAlert[]} | null {
-  if (engineInEffect() !== ChemicalEngine.Crux)
+  const m = withinSmilesLimit(molecule);
+  if (engineInEffect() !== ChemicalEngine.Crux || m === null)
     return null;
   const catalogs = Object.keys(TOXICITY_ALERT_CATALOGS);
   return cruxOrRdKit('toxicity', () => {
-    const res = JSON.parse((cruxModuleSync() as unknown as ChemWasm).chemAlerts([molecule], catalogs, true));
+    const res = JSON.parse((cruxModuleSync() as unknown as ChemWasm).chemAlerts([m], catalogs, true));
     return res[catalogs[0]][0] === null ? null : Object.fromEntries(catalogs.map((c) => [c, res[c][0]]));
   }, () => null);
 }
@@ -66,9 +66,7 @@ export async function getToxicityAlertsColumns(col: DG.Column<string>, catalogs:
     throw new Error(requestedEngine() === ChemicalEngine.Crux ? TOXICITY_ALERTS_CRUX_FAILED :
       TOXICITY_ALERTS_NEED_CRUX);
   }
-  const molecules = col.toList().map((m) => typeof m === 'string' && m !== '' &&
-    (isMolBlock(m) || m.length <= MAX_SMILES_LENGTH) ? m : null);
-  const res = await (await getCruxService()).chemAlertNames(molecules, catalogs);
+  const res = await (await getCruxService()).chemAlertNames(col.toList().map(withinSmilesLimit), catalogs);
   return catalogs.map((c) => DG.Column.fromList(DG.COLUMN_TYPE.INT, alertCountColumnName(c),
     res[c].map((hits) => hits === null ? null : hits.length)));
 }

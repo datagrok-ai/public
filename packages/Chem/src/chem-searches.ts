@@ -293,7 +293,8 @@ async function getUint8ArrayFingerprints(
     const engine = isCruxRequested() || needsCrux(options) ? ChemicalEngine.Crux : ChemicalEngine.RDKit;
     const fpTag = fingerprintsType + fingerprintOptionsKey(options) + fingerprintsKey(engine);
     const smilesTag = canonicalSmilesColName + fingerprintsKey(engine);
-    const {cols, changedRows} = checkForSavedColumns(molCol, [fpTag, smilesTag]);
+    // the SMILES cache only when it is read and saved again: reading a cache takes its edits
+    const {cols, changedRows} = checkForSavedColumns(molCol, returnSmiles ? [fpTag, smilesTag] : [fpTag]);
     const noChanges = changedRows === null;
     const fgsCheck = cols[fpTag] ?? null;
     if (returnSmiles) {

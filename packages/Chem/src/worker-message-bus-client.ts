@@ -40,7 +40,8 @@ export class WorkerMessageBusClient {
     });
   }
 
-  /** Ends the worker; its in-flight calls, and any made after, reject with `reason` ('Worker terminated' by default). */
+  /** Ends the worker; its in-flight calls, and any made after, reject with `reason` ('Worker terminated' by
+   * default). */
   terminate(reason = 'Worker terminated') {
     this._terminated = reason;
     // Reject in-flight calls so awaiting callers fail fast instead of hanging once the worker is gone.

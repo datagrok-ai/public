@@ -12,6 +12,13 @@ import {CLUSTER_MCS_TIMEOUT_S} from './crux-api';
 /** A cluster's R-group decomposition, as RdKitService.clusterRGroups takes it. */
 export interface RGroupCluster {molecules: string[], core: string, coreIsQMol: boolean, options?: string}
 
+/** Rethrows a wasm trap, which a job must not turn into "no result": the call fails, so the service replaces the worker
+ * (its instance may be broken) and RDKit does the work. Other errors are the job's to handle. */
+export function throwIfTrap(e: unknown): void {
+  if (e instanceof WebAssembly.RuntimeError)
+    throw e;
+}
+
 /** The rows of `molecules` Crux reads no molecule from (an empty one is no such row). */
 function unreadRows(molecules: string[], module: RDModule): number[] {
   const rows: number[] = [];
@@ -35,7 +42,8 @@ function noFragmentation(worker: RdKitServiceWorker, molecule: string): boolean 
   try {
     frags = mol?.get_mmpa_frags(1, 1, 20);
     return !!frags && !frags.cores && !frags.sidechains;
-  } catch {
+  } catch (e) {
+    throwIfTrap(e);
     return false;
   } finally {
     frags?.cores?.delete();
@@ -52,7 +60,8 @@ async function perCluster<C, R>(clusters: C[], molecules: (cluster: C) => string
   for (const cluster of clusters) {
     try {
       results.push(unreadRows(molecules(cluster), module).length > 0 ? null : await run(cluster));
-    } catch {
+    } catch (e) {
+      throwIfTrap(e);
       results.push(null);
     }
   }
@@ -73,6 +82,7 @@ function molzip(module: RDModule, molecules: string[], details: string): {smiles
     try {
       return !read?.mol || read.isQMol ? '' : zippedSmiles(module.molzip(read.mol, details), module);
     } catch (e: any) {
+      throwIfTrap(e);
       error ??= `${molecule}: ${e?.message ?? e}`;
       return '';
     } finally {

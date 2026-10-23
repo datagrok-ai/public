@@ -17,7 +17,8 @@ const canvasWidth = 200;
 const canvasHeight = 100;
 
 const cachedData: DG.LruCache<String, any> = new DG.LruCache<string, string>();
-/** A pair's key in {@link cachedData}: per engine (Crux mode's MCES, RDKit's FMCS), so that a switch computes it again. */
+/** A pair's key in {@link cachedData}: per engine (Crux mode's MCES, RDKit's FMCS), so that a switch computes it
+ * again. */
 const pairKey = (molecule1: string, molecule2: string) =>
   `${isCruxRequested() ? 'Crux' : 'RDKit'}:${molecule1}_${molecule2}`;
 
