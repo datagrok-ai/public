@@ -57,7 +57,8 @@ shown next to the **Performance** header (the previous results stay while the mo
   trains five times on four parts and predicts the fifth, and measures all these predictions together
   (5-fold cross-validation). Each training draws a new random split; its seed is shown and saved with the model
 
-Under the grid, a bullet list gives `Rows: <used> used, <skipped> skipped (missing values)` when rows were left out
+Under the grid, a bullet list gives `Missing values: kept (the method handles them)` when the method kept the empty
+cells of the training features, `Rows: <used> used, <skipped> skipped (missing values)` when rows were left out
 because of missing values, `Validation: 5-fold cross-validation on <rows> rows`, `Seed: <seed>` (the seed can be
 selected, and the copy icon right after it, **Copy the seed**, copies it) and, for two classes, `Positive class:
 <class>`.
@@ -170,7 +171,9 @@ that disappears goes back to its default. Hover an input to see what it does.
 * **Missing values**: shown when a checked feature has empty cells; its tooltip lists the columns and how many cells
   are empty. **Skip rows** (the default) leaves those rows out. **Impute** fills the empty cells from the most similar
   rows (k nearest neighbors, from the EDA package) on a copy, with the settings **Neighbors** and **Distance** shown
-  under it; your table keeps its empty cells
+  under it; your table keeps its empty cells. Not shown for a method that handles missing values (see "Methods"): it
+  always trains with the empty cells kept, and when the features had empty cells **Performance** (also the saved
+  model's) says `Missing values: kept (the method handles them)` and the Runs cell `keep missing values`
 * **One-hot encoding**: shown while a checked feature is text or yes/no, and checked when it appears if every such
   feature has at most 20 categories (ids that **Skip unique categories** leaves out do not count), unchecked
   otherwise; once you toggle it, your choice stays until it hides. Its tooltip: "Lets the model use categories as
@@ -235,9 +238,13 @@ dialog has:
   empty. Only columns of the right kind are offered. Hover a row to see what the feature needs and whether the chosen
   column has empty cells. The rows start folded when every feature has a column; otherwise they start open and the
   line is red
-* **Missing values**: a choice shown only when a chosen column has empty cells. **Skip rows** (the default) gives
-  those rows no prediction; **Impute** fills the empty cells on a copy (**Neighbors**, **Distance**, needs the EDA
-  package) and predicts every row except those it cannot fill (for example, a row whose features are all empty)
+* **Missing values**: a choice shown only when a chosen column has empty cells, preset to how the model was trained.
+  **Skip rows** gives those rows no prediction; **Impute** fills the empty cells on a copy (**Neighbors**,
+  **Distance**, preset to the model's, needs the EDA package) and predicts every row except those it cannot fill (for
+  example, a row whose features are all empty). A model of a method that handles missing values, trained
+  without an explicit Skip rows or Impute (the default, also on data without empty cells), does not show the choice:
+  every row is predicted. A model that does not record how it was trained (an older
+  one) is applied with the gaps kept when its method handles missing values, otherwise with Skip rows
 * **More options** (folded): **Batch size**, the rows predicted in one step (10000 by default); lower it for heavy
   methods
 
@@ -363,14 +370,15 @@ await grok.functions.call('Forge:trainModel', {table: grok.shell.t, target: 'Pet
 * `table`, `target` (a column name): a numerical target makes a regression model, a text or boolean one a classifier
 * `features`: column names; by default every numerical column except the target, bigint columns and integer columns
   without empty cells whose values are all different (row numbers, ids)
-* `method`: `XGBoost`, `Linear Regression`, `PLS Regression`, `Softmax`, `SVM` (the installed methods); by default the
-  method the view suggests for the data
+* `method`: `CatBoost`, `Decision Tree`, `Extra Trees`, `Hist Gradient Boosting`, `k-Nearest Neighbors`, `LDA`,
+  `Linear Regression`, `Naive Bayes`, `Neural Network`, `PLS Regression`, `Random Forest`, `Softmax`, `SVM`,
+  `XGBoost` (the installed methods); by default the method the view suggests for the data
 * `hyperparameters`: the method's settings by name; settings not named keep their defaults
 * `options`: the preparation, each key optional:
 
   | Key | Default | Meaning |
   |---|---|---|
-  | `missingValues` | `skip` | `skip` leaves out the rows with empty cells; `impute` fills the features' empty cells (rows without a target are always left out) |
+  | `missingValues` | `skip`; `keep` for a method that handles missing values | `skip` leaves out the rows with empty cells; `impute` fills the features' empty cells; `keep` gives the rows with empty cells to the method as they are, only for a method that handles missing values (rows without a target are always left out) |
   | `neighbors`, `distance` | the EDA imputer's (`4`, `Euclidean`) | the settings of `impute` |
   | `oneHot` | on when every text or yes/no feature has at most 20 categories (while `skipUniqueCategories` is on, features whose values are all different do not count) | One-hot encoding of text and yes/no features |
   | `skipUniqueCategories` | `true` | leaves out text features whose values are all different |
@@ -399,6 +407,8 @@ not, cancelled and failed ones too; a call refused for its inputs, or whose data
 * `Unknown option 'cutof'. The options are: missingValues, neighbors, distance, oneHot, skipUniqueCategories,
   predictProbability, cutoff, seed, folds.`
 * `Predict probability needs a target with exactly two classes.`
+* `The option 'missingValues' needs skip, impute, keep (keep: only for a method that handles missing values).`,
+  `SVM needs rows without missing values. Choose Skip rows or Impute.`
 * `Enter a name for the model.`, `The table has no known source, so the model cannot keep a reference to it. Use
   storage none or copy.`
 * any problem the view shows for the selection, such as `Choose at least one feature.`
@@ -412,7 +422,10 @@ await grok.functions.call('Forge:applyModel',
 
 `model` is a model id or a name that only one model you can see has. Features are matched to columns of the same name
 (ignoring case); `columnNamesMap` maps the others (`{'Sepal.Length': 'sepal length'}`). A feature without a column, or
-a column of the wrong kind, fails the call with a message and no dialog. Rows with missing values get no prediction.
+a column of the wrong kind, fails the call with a message and no dialog. Missing values are handled as at training:
+a model trained with Skip rows gives the rows with empty cells no prediction, one trained with Impute fills them with
+its settings, one trained with the gaps kept predicts every row; a model that does not record it keeps the gaps when
+its method handles missing values and skips those rows otherwise.
 
 ### Evaluate
 
@@ -436,8 +449,9 @@ await grok.functions.call('Forge:evaluateModel', {model: 'Iris species', table: 
   evaluation, which fails the call with `Evaluation was cancelled.`
 
 The result: `id`, `name`, `table` (the evaluated table's name), `target`, `rowCount` (the rows predicted),
-`skippedRows` (the rows with a missing feature value), `positiveClass` (for two classes), `metrics` (`train` and
-`validation` as saved, `evaluation` on this data) and `insights` (the **Insights & Tips** of the evaluation and of the
+`skippedRows` (the rows with a missing feature value, handled as `applyModel` does; 0 for a model trained with the
+gaps kept), `positiveClass`
+(for two classes), `metrics` (`train` and `validation` as saved, `evaluation` on this data) and `insights` (the **Insights & Tips** of the evaluation and of the
 saved metrics: each a `text`, with the numbers behind it in `detail` or `items`). Nothing is added to the table and the
 evaluation is not recorded as an application. `model` is an id or a unique name, as for `applyModel`. The errors,
 besides the ones of `applyModel`'s mapping:
@@ -592,12 +606,15 @@ the pane **Forge models**.
 
 Forge does not train models itself. Methods live in other packages and in scripts:
 
-* **EDA**: Linear Regression, Softmax, PLS Regression, XGBoost, SVM
+* **EDA**: Linear Regression, Softmax, PLS Regression, XGBoost, SVM, Random Forest, Extra Trees, Hist Gradient
+  Boosting, CatBoost, Decision Tree, k-Nearest Neighbors, Naive Bayes, LDA, Neural Network
 * **Chem**: Chemprop, on servers where it is published
 * **Scripts** that follow the same contract
 
 A method appears only when its package is installed, and every installed method trains in the **Predictive model**
-view. Forge itself never passes an empty cell to a method: **Missing values** skips or fills them first. Methods
+view. Forge passes an empty cell only to a method that handles missing values (XGBoost, Random Forest, Extra Trees,
+Hist Gradient Boosting, CatBoost, Decision Tree): it gets the rows with gaps as they are, and **Missing values** is
+not shown for it. For every other method, **Missing values** skips or fills them first. Methods
 that run in the browser (all of EDA's) keep the training data there; a method that runs on the server (a Python or R
 script, a function marked `meta.mlserver: true`, or Chemprop) receives it. Chemprop and script
 methods follow the same contract but were not available to test on this version's server. **Impute** uses the EDA package's `knnImpute` function; without it, **Missing values**

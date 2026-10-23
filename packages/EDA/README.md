@@ -23,8 +23,17 @@ EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok
   * [PLS](https://en.wikipedia.org/wiki/Partial_least_squares_regression) regression
   * [Gradient Boosting](https://en.wikipedia.org/wiki/Gradient_boosting)
   * [Support vector machine](https://en.wikipedia.org/wiki/Support-vector_machine) (SVM) classification and regression
+  * [Random forest](https://en.wikipedia.org/wiki/Random_forest)
+  * [Extra trees](https://en.wikipedia.org/wiki/Random_forest#ExtraTrees) (extremely randomized trees)
+  * [Hist gradient boosting](https://en.wikipedia.org/wiki/Gradient_boosting) (histogram-based)
+  * [CatBoost](https://en.wikipedia.org/wiki/CatBoost)
+  * [Decision tree](https://en.wikipedia.org/wiki/Decision_tree_learning)
+  * [k-nearest neighbors](https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm) classification and regression
+  * [Naive Bayes](https://en.wikipedia.org/wiki/Naive_Bayes_classifier) classifier
+  * [Linear discriminant analysis](https://en.wikipedia.org/wiki/Linear_discriminant_analysis) (LDA) classifier
+  * [Neural network](https://en.wikipedia.org/wiki/Multilayer_perceptron) (multilayer perceptron)
 
-  The machine learning methods, PCA and PLS run on Crux (scikit-learn and XGBoost ports compiled to WebAssembly).
+  The machine learning methods, PCA and PLS run on Crux (scikit-learn, XGBoost and CatBoost ports compiled to WebAssembly).
 * Group comparison
   * Two-sample [t-test](https://en.wikipedia.org/wiki/Student%27s_t-test) (Welch and Student)
   * One-way analysis of variances ([ANOVA](https://en.wikipedia.org/wiki/One-way_analysis_of_variance))

@@ -6,6 +6,7 @@ import {ModelRow} from '../generated/db';
 import {METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricFinding, metricFindings, MetricId, MetricValues, Split}
   from '../metrics/metrics';
 import {preparationOptionsOf} from '../preparation/preparation-options';
+import {featuresHadGaps} from '../storage/dataset-fingerprint';
 import {MetricsRecord, metricsRecordOf} from '../training/train-model';
 import {numberColumn, readOnlyGrid} from './data-grid';
 import {reportError} from './report-error';
@@ -30,6 +31,8 @@ export interface MetricsSummary {
   metrics: MetricsRecord;
   rowCount: number;
   skippedRows: number;
+  /** The features had missing values and the method took them as they are. */
+  keepsMissingValues?: boolean;
   folds?: number;
   seed?: number;
   evaluation?: MetricsEvaluation;
@@ -121,8 +124,10 @@ export class MetricsTable {
   }
 
   private fillList(): void {
-    const {metrics, rowCount, skippedRows, folds, seed, evaluation} = this.summary;
+    const {metrics, rowCount, skippedRows, keepsMissingValues, folds, seed, evaluation} = this.summary;
     const items: (string | HTMLElement)[][] = [];
+    if (keepsMissingValues)
+      items.push(['Missing values: kept (the method handles them)']);
     if (skippedRows > 0)
       items.push([`Rows: ${rowCount} used, ${skippedRows} skipped (missing values)`]);
     if (folds !== undefined && seed !== undefined)
@@ -154,7 +159,8 @@ export function storedSummary(model: ModelRow): MetricsSummary | null {
   if (metrics === null)
     return null;
   const folds: unknown = model.splitting?.folds;
-  return {metrics, rowCount: model.row_count ?? 0, seed: model.seed,
-    skippedRows: preparationOptionsOf(model.options).missingValues?.skippedRows ?? 0,
+  const missingValues = preparationOptionsOf(model.options).missingValues;
+  return {metrics, rowCount: model.row_count ?? 0, seed: model.seed, skippedRows: missingValues?.skippedRows ?? 0,
+    keepsMissingValues: missingValues?.mode === 'keep' && featuresHadGaps(model.dataset_fingerprint),
     folds: typeof folds === 'number' ? folds : undefined};
 }

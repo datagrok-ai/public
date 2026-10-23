@@ -306,6 +306,240 @@ export namespace funcs {
   }
 
   /**
+   * @param {number} trees - Number of trees in the forest.
+   * @param {number} maxDepth - Largest depth of a tree. Bounds the model size.
+   * @param {number} minSamplesLeaf - Smallest number of training rows a leaf may hold.
+   * @param {string} maxFeatures - Features tried at each split: auto is sqrt for classification and all for regression.
+   *   choices: ["auto","sqrt","log2","all"]
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainRandomForest(df: DG.DataFrame , predictColumn: DG.Column , trees: number , maxDepth: number , minSamplesLeaf: number , maxFeatures: string , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainRandomForest', { df, predictColumn, trees, maxDepth, minSamplesLeaf, maxFeatures, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained random forest model.
+   * @param {any} model - Trained random forest model to apply.
+   */
+  export async function applyRandomForest(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyRandomForest', { df, model });
+  }
+
+  export async function isApplicableRandomForest(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableRandomForest', { df, predictColumn });
+  }
+
+  export async function isInteractiveRandomForest(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveRandomForest', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} trees - Number of trees in the forest.
+   * @param {number} maxDepth - Largest depth of a tree. Bounds the model size.
+   * @param {number} minSamplesLeaf - Smallest number of training rows a leaf may hold.
+   * @param {string} maxFeatures - Features tried at each split: auto is sqrt for classification and all for regression.
+   *   choices: ["auto","sqrt","log2","all"]
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainExtraTrees(df: DG.DataFrame , predictColumn: DG.Column , trees: number , maxDepth: number , minSamplesLeaf: number , maxFeatures: string , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainExtraTrees', { df, predictColumn, trees, maxDepth, minSamplesLeaf, maxFeatures, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained extra trees model.
+   * @param {any} model - Trained extra trees model to apply.
+   */
+  export async function applyExtraTrees(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyExtraTrees', { df, model });
+  }
+
+  export async function isApplicableExtraTrees(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableExtraTrees', { df, predictColumn });
+  }
+
+  export async function isInteractiveExtraTrees(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveExtraTrees', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} iterations - Boosting iterations (trees per class).
+   * @param {number} learningRate - Shrinkage of each tree's contribution.
+   * @param {number} maxLeafNodes - Largest number of leaves per tree.
+   * @param {number} maxDepth - Largest depth of a tree. 0 means no limit.
+   * @param {number} minSamplesLeaf - Smallest number of training rows a leaf may hold.
+   * @param {number} l2 - L2 penalty of the leaf values.
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainHistGradientBoosting(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , learningRate: number , maxLeafNodes: number , maxDepth: number , minSamplesLeaf: number , l2: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainHistGradientBoosting', { df, predictColumn, iterations, learningRate, maxLeafNodes, maxDepth, minSamplesLeaf, l2, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained histogram gradient boosting model.
+   * @param {any} model - Trained histogram gradient boosting model to apply.
+   */
+  export async function applyHistGradientBoosting(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyHistGradientBoosting', { df, model });
+  }
+
+  export async function isApplicableHistGradientBoosting(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableHistGradientBoosting', { df, predictColumn });
+  }
+
+  export async function isInteractiveHistGradientBoosting(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveHistGradientBoosting', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} iterations - Boosting iterations (trees).
+   * @param {number} learningRate - Shrinkage of each tree's contribution.
+   * @param {number} depth - Depth of the symmetric trees.
+   * @param {number} l2LeafReg - L2 regularization of the leaf values.
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainCatBoost(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , learningRate: number , depth: number , l2LeafReg: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainCatBoost', { df, predictColumn, iterations, learningRate, depth, l2LeafReg, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained CatBoost gradient-boosting model.
+   * @param {any} model - Trained CatBoost model to apply.
+   */
+  export async function applyCatBoost(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyCatBoost', { df, model });
+  }
+
+  export async function isApplicableCatBoost(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableCatBoost', { df, predictColumn });
+  }
+
+  export async function isInteractiveCatBoost(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveCatBoost', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} maxDepth - Largest depth of the tree. Bounds the model size.
+   * @param {number} minSamplesLeaf - Smallest number of training rows a leaf may hold.
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainDecisionTree(df: DG.DataFrame , predictColumn: DG.Column , maxDepth: number , minSamplesLeaf: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainDecisionTree', { df, predictColumn, maxDepth, minSamplesLeaf, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained decision tree model.
+   * @param {any} model - Trained decision tree model to apply.
+   */
+  export async function applyDecisionTree(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyDecisionTree', { df, model });
+  }
+
+  export async function isApplicableDecisionTree(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableDecisionTree', { df, predictColumn });
+  }
+
+  export async function isInteractiveDecisionTree(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveDecisionTree', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} neighbors - Training rows that vote for a prediction.
+   * @param {string} weights - Uniform: every neighbor counts the same. Distance: closer neighbors count more.
+   *   choices: ["Uniform","Distance"]
+   */
+  export async function trainKnn(df: DG.DataFrame , predictColumn: DG.Column , neighbors: number , weights: string ): Promise<any> {
+    return await grok.functions.call('EDA:TrainKnn', { df, predictColumn, neighbors, weights });
+  }
+
+  /**
+   * Predict the target for a table using a trained k-nearest neighbors model.
+   * @param {any} model - Trained k-nearest neighbors model to apply.
+   */
+  export async function applyKnn(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyKnn', { df, model });
+  }
+
+  export async function isApplicableKnn(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableKnn', { df, predictColumn });
+  }
+
+  export async function isInteractiveKnn(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveKnn', { df, predictColumn });
+  }
+
+  export async function trainNaiveBayes(df: DG.DataFrame , predictColumn: DG.Column ): Promise<any> {
+    return await grok.functions.call('EDA:TrainNaiveBayes', { df, predictColumn });
+  }
+
+  /**
+   * Classify the rows of a table using a trained Gaussian naive Bayes model.
+   * @param {any} model - Trained naive Bayes classifier model to apply.
+   */
+  export async function applyNaiveBayes(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyNaiveBayes', { df, model });
+  }
+
+  export async function isApplicableNaiveBayes(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableNaiveBayes', { df, predictColumn });
+  }
+
+  export async function isInteractiveNaiveBayes(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveNaiveBayes', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} shrinkage - Covariance shrinkage from 0 (none) to 1. Helps when features outnumber rows.
+   */
+  export async function trainLda(df: DG.DataFrame , predictColumn: DG.Column , shrinkage: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainLda', { df, predictColumn, shrinkage });
+  }
+
+  /**
+   * Classify the rows of a table using a trained linear discriminant analysis (LDA) model.
+   * @param {any} model - Trained LDA classifier model to apply.
+   */
+  export async function applyLda(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyLda', { df, model });
+  }
+
+  export async function isApplicableLda(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableLda', { df, predictColumn });
+  }
+
+  export async function isInteractiveLda(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveLda', { df, predictColumn });
+  }
+
+  /**
+   * @param {string} hiddenLayers - Comma-separated sizes of the hidden layers, e.g. 100 or 64,32.
+   * @param {string} activation - Activation function of the hidden layers.
+   *   choices: ["ReLU","Tanh","Logistic","Identity"]
+   * @param {number} iterations - Largest number of training epochs.
+   * @param {number} learningRate - Step size of the weight updates.
+   * @param {number} alpha - L2 penalty of the weights.
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainMlp(df: DG.DataFrame , predictColumn: DG.Column , hiddenLayers: string , activation: string , iterations: number , learningRate: number , alpha: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainMlp', { df, predictColumn, hiddenLayers, activation, iterations, learningRate, alpha, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained neural network (multilayer perceptron) model.
+   * @param {any} model - Trained neural network model to apply.
+   */
+  export async function applyMlp(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyMlp', { df, model });
+  }
+
+  export async function isApplicableMlp(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableMlp', { df, predictColumn });
+  }
+
+  export async function isInteractiveMlp(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveMlp', { df, predictColumn });
+  }
+
+  /**
    * Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.
    */
   export async function paretoFront(): Promise<void> {

@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import type {MissingValuesSettings} from '../preparation/missing-values';
 
 export const ENGINE_ROLES = ['train', 'apply', 'isApplicable', 'isInteractive', 'visualize'] as const;
 export type EngineRole = typeof ENGINE_ROLES[number];
@@ -33,6 +34,16 @@ export function isServerEngine(engine: Engine): boolean {
 /** The model file embeds training rows (`meta.mlhasrows: true` on `train`), such as SVM's support vectors. */
 export function hasTrainingRows(engine: Engine): boolean {
   return engine.functions.train?.options['mlhasrows'] === 'true';
+}
+
+/** The method takes rows with missing feature values as they are (`meta.mlnativenans: true` on `train`). */
+export function handlesMissingValues(engine: Engine): boolean {
+  return engine.functions.train?.options['mlnativenans'] === 'true';
+}
+
+/** The missing-values handling when none is chosen: `keep` for a method that handles missing values, else `skip`. */
+export function defaultMissingValues(engine: Engine): MissingValuesSettings {
+  return {mode: handlesMissingValues(engine) ? 'keep' : 'skip'};
 }
 
 export function hyperparametersOf(engine: Engine): DG.Property[] {

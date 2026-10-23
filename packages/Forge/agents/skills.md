@@ -130,15 +130,16 @@ Trains as the Predictive model view does, with its defaults and 5-fold cross-val
 - `table`, `target` (a column name): a numerical target makes a regression model, a text or boolean one a classifier
 - `features`: column names; by default every numerical column except the target, bigint columns and integer columns
   without empty cells whose values are all different (row numbers, ids)
-- `method`: `XGBoost`, `Linear Regression`, `PLS Regression`, `Softmax`, `SVM` (the installed methods,
-  `listMethods`); by default the method the view suggests for the data
+- `method`: `CatBoost`, `Decision Tree`, `Extra Trees`, `Hist Gradient Boosting`, `k-Nearest Neighbors`, `LDA`,
+  `Linear Regression`, `Naive Bayes`, `Neural Network`, `PLS Regression`, `Random Forest`, `Softmax`, `SVM`,
+  `XGBoost` (the installed methods, `listMethods`); by default the method the view suggests for the data
 - `hyperparameters`: the method's settings by name, for example `{iterations: 50}`; settings not named keep their
   defaults
 - `options`: the preparation, each key optional:
 
   | Key | Default | Meaning |
   |---|---|---|
-  | `missingValues` | `skip` | `skip` leaves out the rows with empty cells; `impute` fills the features' empty cells (rows without a target are always left out) |
+  | `missingValues` | `skip`; `keep` for a method that handles missing values (XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost, Decision Tree) | `skip` leaves out the rows with empty cells; `impute` fills the features' empty cells; `keep` gives the rows with empty cells to the method as they are, only for a method that handles missing values (rows without a target are always left out) |
   | `neighbors`, `distance` | the EDA imputer's (`4`, `Euclidean`) | the settings of `impute` |
   | `oneHot` | on when every text or yes/no feature has at most 20 categories (while `skipUniqueCategories` is on, features whose values are all different do not count) | One-hot encoding of text and yes/no features |
   | `skipUniqueCategories` | `true` | leaves out text features whose values are all different |
@@ -167,6 +168,8 @@ Errors, for example:
   `The setting 'rate' of Softmax needs a number.`, `The setting 'iterations' of XGBoost must be at most 100.`
 - `Unknown option 'cutof'. The options are: missingValues, neighbors, distance, oneHot, skipUniqueCategories, predictProbability, cutoff, seed, folds.`
 - `Predict probability needs a target with exactly two classes.`
+- `The option 'missingValues' needs skip, impute, keep (keep: only for a method that handles missing values).`,
+  `SVM needs rows without missing values. Choose Skip rows or Impute.`
 - `Enter a name for the model.`,
   `The table has no known source, so the model cannot keep a reference to it. Use storage none or copy.`
 - any problem the view shows for the selection, such as `Choose at least one feature.`
@@ -180,8 +183,11 @@ Forge:applyModel(model: string, table: dataframe, columnNamesMap?: map, showProg
 Adds the prediction column `<target> (predicted)` (`<target> (predicted 2)` and so on when the name is taken) to
 `table` and returns the table. Features are matched to columns of the same name (ignoring case); `columnNamesMap`
 maps the others (`{'Sepal.Length': 'sepal length'}`, model feature name -> table column name), including the
-columns of a close name that `applicableTo` and `listModels` count as fitting. Rows with missing
-values get no prediction. `showProgress`: the cancellable task-bar progress `Predicting <target>`. The application
+columns of a close name that `applicableTo` and `listModels` count as fitting. Missing values are handled as at
+training: a model trained with Skip rows gives the rows with empty cells no prediction, one trained with Impute fills
+them with its settings, one trained with the gaps kept predicts every row; a model that does not record it keeps the
+gaps when its method handles missing values and skips those rows otherwise.
+`showProgress`: the cancellable task-bar progress `Predicting <target>`. The application
 is recorded with the model.
 
 Errors, for example:
@@ -208,8 +214,9 @@ Measures a saved model as **Run Evaluation** does:
   `Evaluation was cancelled.`
 
 Returns `id`, `name`, `table` (the evaluated table's name), `target`, `rowCount` (the rows predicted), `skippedRows`
-(the rows with a missing feature value), `positiveClass` (for two classes), `metrics` (`train` and `validation` as
-saved, `evaluation` on this data) and `insights` (each a `text`, with the numbers behind it in `detail` or `items`).
+(the rows with a missing feature value, handled as `applyModel` does; 0 for a model trained with the gaps kept),
+`positiveClass` (for two
+classes), `metrics` (`train` and `validation` as saved, `evaluation` on this data) and `insights` (each a `text`, with the numbers behind it in `detail` or `items`).
 Nothing is added to the table and the evaluation is not recorded as an application.
 
 Errors, besides the ones of `applyModel`'s mapping:

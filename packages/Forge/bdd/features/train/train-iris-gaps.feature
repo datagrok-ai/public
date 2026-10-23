@@ -23,7 +23,8 @@ Feature: Training on iris with missing values: Skip rows, Impute, and a cell cle
   old tool, which reacts to added and removed columns only), so a cleared cell counts at the next input change. The
   scenario clears a Petal.Length cell while no checked feature has a gap (Preparation hidden), and the next change,
   Petal.Width unchecked, brings Preparation back with the gap counted; with every feature checked again the run uses
-  146 rows.
+  146 rows. The feature trains with SVM: XGBoost, the default method, handles missing values itself (`mlnativenans`)
+  and hides Missing values, so its kept gaps are claimed once, in the first scenario.
 
   Background:
     Given user is logged in
@@ -35,6 +36,8 @@ Feature: Training on iris with missing values: Skip rows, Impute, and a cell cle
     And user picks "ML > Forge > Train..." from the top menu
     Then the "Predictive model" view should be current
     And a new training's result should be shown
+    When user selects "SVM" in Method input
+    Then a new training's result should be shown
     And no balloon of any colour should have been shown
     And no errors should have been logged
 
@@ -65,6 +68,19 @@ Feature: Training on iris with missing values: Skip rows, Impute, and a cell cle
       | options.preprocessingInfo | ["ignore-missing"]               |
       | options.missingValues     | {"mode":"skip","skippedRows":3} |
     And the "text of cell 1 of Preparation" reading of grid viewer in "Runs" results panel should be ""
+    When user selects "XGBoost" in Method input
+    Then a new training's result should be shown
+    And the groups of train form should be "Data, Method"
+    And "Performance" results panel should contain text "Missing values: kept (the method handles them)"
+    And "Performance" results panel should contain text "Validation: 5-fold cross-validation on 149 rows"
+    And the shown training should be the newest training run of the table "forge-test-irisgaps-{time}", with:
+      | status                    | completed                        |
+      | row_count                 | 149                              |
+      | options.preprocessingInfo | []                               |
+      | options.missingValues     | {"mode":"keep","skippedRows":1} |
+    When user selects "SVM" in Method input
+    Then a new training's result should be shown
+    And the groups of train form should be "Data, Preparation, Method"
     When user clicks on editor of Features input
     And user toggles the "Sepal.Width" column in the column list of "Select columns..." dialog
     And user clicks on OK button in "Select columns..." dialog

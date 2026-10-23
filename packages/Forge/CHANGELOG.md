@@ -31,5 +31,7 @@
 * GROK-20932: Added the API functions Forge:listMethods, listModels, getModel, updateModel, evaluateModel and shareModel
 * GROK-20932: Fixed the model's context panel not following an edit or delete made outside the catalog
 * GROK-20932: Added the package knowledge for Datagrok AI (agents/)
+* GROK-20932: Added the missing-values mode keep for methods that handle missing values themselves (meta.mlnativenans): XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost and Decision Tree from EDA always train with keep unless skip or impute is chosen explicitly (API), and Missing values is hidden for them in the Train view; the Performance line "Missing values: kept (the method handles them)" and the Runs cell "keep missing values" show only when the training features had gaps
+* GROK-20932: Made Apply, Forge:applyModel, Run Evaluation and Forge:evaluateModel handle missing values in the mode the model was trained with (skip, impute with its settings, or keep); a model without a recorded mode keeps the gaps when its method handles missing values and skips those rows otherwise; the Apply dialog presets Missing values to that mode and hides it for keep
 
 ## 0.0.1 (2026-09-30)

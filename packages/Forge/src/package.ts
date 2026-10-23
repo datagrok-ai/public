@@ -80,9 +80,9 @@ export async function applyModel(model: string, table: DG.DataFrame, columnNames
 //input: dataframe table {description: The table to learn from}
 //input: string target {description: Name of the column to predict. A numerical column gives a regression model, a text or boolean column a classifier}
 //input: list<string> features {optional: true; description: Names of the columns to learn from. By default every numerical column except the target and id-like whole-number columns}
-//input: string method {optional: true; description: The method as Forge names it (XGBoost, Linear Regression, PLS Regression, Softmax, SVM). By default the method Forge suggests for the data}
+//input: string method {optional: true; description: The method as Forge names it, any method Forge:listMethods lists. By default the method Forge suggests for the data}
 //input: map hyperparameters {optional: true; description: The method's settings by name, for example iterations: 50. Settings not named keep the method's defaults}
-//input: map options {optional: true; description: Data preparation. missingValues: skip (default) or impute, with neighbors and distance for impute. oneHot (default on when every text feature has at most 20 categories), skipUniqueCategories (default true), predictProbability (default false, two-class targets only), cutoff (default 0.5), seed (default random), folds (default 5)}
+//input: map options {optional: true; description: Data preparation. missingValues: skip, impute or keep (default keep for a method that handles missing values, otherwise skip), with neighbors and distance for impute. oneHot (default on when every text feature has at most 20 categories), skipUniqueCategories (default true), predictProbability (default false, two-class targets only), cutoff (default 0.5), seed (default random), folds (default 5)}
 //input: string name {optional: true; description: Saves the model under this name. Without a name the model is trained and measured but not saved}
 //input: string description {optional: true; description: Description of the saved model}
 //input: string tags {optional: true; description: Comma-separated tags of the saved model}

@@ -43,6 +43,12 @@ export function datasetFingerprint(features: DG.Column[], target: DG.Column): Da
   };
 }
 
+/** A feature column of [fingerprint] (all but the last, the target) has missing values. */
+export function featuresHadGaps(fingerprint: {columns?: ColumnFingerprint[]} | undefined): boolean {
+  const columns = fingerprint?.columns;
+  return Array.isArray(columns) && columns.slice(0, -1).some((c) => c.missingCount > 0);
+}
+
 // The raw buffer may be longer than the column.
 function rawBytes(col: DG.Column): Uint8Array {
   const data = col.getRawData();

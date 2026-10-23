@@ -3,7 +3,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {accuracy, classificationDataset, copyCol, mulberry32, numericFeatures, r2, seededRegression} from './utils';
 import {nonNullRows} from '../utils';
-import {trainSoftmax, trainSvm, trainXgboost} from '../crux/methods';
+import {trainCatBoost, trainDecisionTree, trainExtraTrees, trainHistGradientBoosting, trainKnn, trainLda, trainMlp,
+  trainNaiveBayes, trainRandomForest, trainSoftmax, trainSvm, trainXgboost} from '../crux/methods';
 import {trainLinearRegression} from '../regression';
 import {trainPlsRegression} from '../pls/pls-ml';
 
@@ -150,6 +151,15 @@ export const FITS: Record<string, Fit> = {
   softmax: (df, t) => trainSoftmax(df, t, 100, 0.1, 0.001),
   linreg: (df, t) => trainLinearRegression(df, t, 0, 0, 1000),
   pls: (df, t) => trainPlsRegression(df, t, PLS_COMPONENTS),
+  randomForest: (df, t) => trainRandomForest(df, t, 100, 10, 1, 'auto', 0),
+  extraTrees: (df, t) => trainExtraTrees(df, t, 100, 10, 1, 'auto', 0),
+  histGradientBoosting: (df, t) => trainHistGradientBoosting(df, t, 100, 0.1, 31, 0, 20, 0, 0),
+  catBoost: (df, t) => trainCatBoost(df, t, 100, 0.1, 6, 3, 0),
+  decisionTree: (df, t) => trainDecisionTree(df, t, 10, 1, 0),
+  knn: (df, t) => trainKnn(df, t, 5, 'Uniform'),
+  naiveBayes: trainNaiveBayes,
+  lda: (df, t) => trainLda(df, t, 0),
+  mlp: (df, t) => trainMlp(df, t, '100', 'ReLU', 200, 0.001, 0.0001, 0),
 };
 export const PCA_FLAGS: Record<string, [boolean, boolean]> =
   {FF: [false, false], TF: [true, false], FT: [false, true], TT: [true, true]};

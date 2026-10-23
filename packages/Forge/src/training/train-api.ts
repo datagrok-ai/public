@@ -5,7 +5,7 @@ import {defaultHyperparameters, defaultValuesOf, Engine, Hyperparameters, hyperp
 import {methodList} from '../engines/method-list';
 import {errorMessage, ForgeError} from '../forge-error';
 import {ModelStorageMode, ModelTask, TrainingRunStatus} from '../generated/db';
-import {imputeFunction, imputeSettingsOf, MISSING_VALUES_MODES, MissingValuesSettings}
+import {imputeFunction, imputeSettings, imputeSettingsOf, MISSING_VALUES_MODES, MissingValuesSettings}
   from '../preparation/missing-values';
 import {cutoffProblem, DEFAULT_CUTOFF, DEFAULT_STEPS, defaultOneHot, PreparationSteps, twoClasses}
   from '../preparation/pipeline';
@@ -54,7 +54,13 @@ export interface TrainModelResult {
   metrics: MetricsRecord;
 }
 
-interface TrainingOptions { missingValues: MissingValuesSettings; steps: PreparationSteps; seed: number; folds: number }
+/** `missingValues` is undefined when the option was not given: the method decides it. */
+interface TrainingOptions {
+  missingValues?: MissingValuesSettings;
+  steps: PreparationSteps;
+  seed: number;
+  folds: number;
+}
 type ModelSave = Pick<TrainedModel, 'name' | 'description' | 'tags' | 'storage'>;
 
 /** The body of `Forge:trainModel`: the Train view's checks, defaults and 5-fold cross-validation without the view.
@@ -75,6 +81,9 @@ export async function runTrainModel(input: TrainModelInput): Promise<TrainModelR
   const selection: TrainingSelection = {engine: chosen, features, target, hyperparameters: {}, seed: options.seed,
     folds: options.folds, missingValues: options.missingValues, steps: options.steps};
   const engine = engineOf(await checkSelection(selection, engines), chosen, method !== null);
+  // A suggested method has its own rules (an explicit keep, for one): they are checked against it.
+  if (engine !== chosen)
+    engineOf(await checkSelection({...selection, engine}, [engine]), engine, true);
   const hyperparameters = hyperparametersFor(engine, input.hyperparameters ?? {});
   const progress = input.showProgress === false ? undefined :
     DG.TaskBarProgressIndicator.create(`Training ${engine.name} model`, {cancelable: true});
@@ -183,10 +192,12 @@ function optionsOf(options: {[name: string]: unknown}, features: DG.Column[], ta
   const unknown = firstUnknown(options, OPTION_NAMES);
   if (unknown !== undefined)
     throw new ForgeError(`Unknown option '${unknown}'. The options are: ${OPTION_NAMES.join(', ')}.`);
-  const mode = options.missingValues ?? DEFAULT_STEPS.missingValues;
-  const modeName = MISSING_VALUES_MODES.find((m) => m === mode);
-  if (modeName === undefined)
-    throw new ForgeError(`The option 'missingValues' needs ${MISSING_VALUES_MODES.join(' or ')}.`);
+  const given = options.missingValues;
+  const modeName = given === undefined ? null : MISSING_VALUES_MODES.find((m) => m === given);
+  if (modeName === undefined) {
+    throw new ForgeError(`The option 'missingValues' needs ${MISSING_VALUES_MODES.join(', ')} ` +
+      '(keep: only for a method that handles missing values).');
+  }
   const skipUniqueCategories = boolOption(options, 'skipUniqueCategories', DEFAULT_STEPS.skipUniqueCategories);
   const predictProbability = boolOption(options, 'predictProbability', DEFAULT_STEPS.predictProbability);
   if (predictProbability && twoClasses(target) === null)
@@ -199,7 +210,8 @@ function optionsOf(options: {[name: string]: unknown}, features: DG.Column[], ta
     skipUniqueCategories, predictProbability, cutoff};
   const seed = wholeOption(options, 'seed', randomSeed(), 0, MAX_SEED);
   const folds = wholeOption(options, 'folds', FOLDS, 2);
-  return {missingValues: modeName === 'impute' ? imputeOf(options) : {mode: 'skip'}, steps, seed, folds};
+  return {missingValues: modeName === null ? undefined : modeName === 'impute' ? imputeOf(options) : {mode: modeName},
+    steps, seed, folds};
 }
 
 /** Impute with the imputer's defaults overlaid with the `neighbors` and `distance` of [options]; without the
@@ -213,8 +225,7 @@ function imputeOf(options: {[name: string]: unknown}): MissingValuesSettings {
     .filter(([key]) => key === 'neighbors' || key === 'distance'));
   const {neighbors, distance} = {...defaultValuesOf(properties),
     ...settingValues(properties, given, (name) => `The option '${name}'`)};
-  return typeof neighbors === 'number' && typeof distance === 'string' ?
-    {mode: 'impute', impute: {neighbors, distance}} : {mode: 'impute'};
+  return imputeSettings(neighbors, distance);
 }
 
 /** What saving needs, checked before any work: null without a name. Storage `reference` needs the table's origin. */

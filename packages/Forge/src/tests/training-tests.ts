@@ -16,25 +16,32 @@ import {isRecord, PreparationOptions, stringsOf} from '../preparation/preparatio
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {dataInsights, metricInsights, resultInsights} from '../training/insights';
 import {runTrainModel, TrainModelInput} from '../training/train-api';
-import {checkSelection, prepareTraining, recutResult, TrainingProblems, TrainingRequest, TrainingResult,
-  TrainingSelection, trainingEngines, trainModel, trainPredictionOf} from '../training/train-model';
+import {checkSelection, needsRowsWithoutGaps, prepareTraining, recutResult, TrainingProblems, TrainingRequest,
+  TrainingResult, TrainingSelection, trainingEngines, trainModel, trainPredictionOf} from '../training/train-model';
 import {QueuedTraining, TrainingQueue} from '../training/training-queue';
-import {cancelTaskBarEntry, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, engineByName, expectMetrics,
-  expectNoFrames, expectReleased, framesSharing, IMPUTE, inDiscoveryOrder, IRIS, MEASUREMENTS, names, NO_OPTIONS,
-  ONE_HOT_STEPS, openDemoTable, openIris, PREDICT_PROBABILITY, requestOf, runsOf, selectionOf, SKIP_UNIQUE_STEPS,
-  taskBarEntry, twoSpeciesIris, valuesOf} from './test-data';
+import {cancelTaskBarEntry, CLASSIFIERS, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, EDA_METHODS,
+  engineByName, expectMetrics, expectNoFrames, expectReleased, failsWith, framesSharing, GAP_ROWS, IMPUTE,
+  inDiscoveryOrder, IRIS, MEASUREMENTS, names, NO_OPTIONS, ONE_HOT_STEPS, openDemoTable, openIris,
+  PREDICT_PROBABILITY, REGRESSORS, requestOf, runsOf, selectionOf, SKIP_UNIQUE_STEPS, taskBarEntry, twoSpeciesIris,
+  valuesOf, withGaps} from './test-data';
 
 const TIMEOUT = 60000;
 const ENGINE_TIMEOUT = 120000;
 const SKIP: MissingValuesSettings = {mode: 'skip'};
-/** The targets each EDA method can learn on iris: Species (classification), Petal.Length (regression). */
-const ENGINE_TARGETS: [string, string[]][] = [['XGBoost', ['Species', 'Petal.Length']],
-  ['SVM', ['Species', 'Petal.Length']], ['Softmax', ['Species']], ['Linear Regression', ['Petal.Length']],
-  ['PLS Regression', ['Petal.Length']]];
+/** The targets each EDA method without `mlnativenans` learns on iris: Species (classification), Petal.Length
+ * (regression). */
+const SKIP_IMPUTE_TARGETS: [string, string[]][] = [['SVM', ['Species', 'Petal.Length']], ['Softmax', ['Species']],
+  ['Linear Regression', ['Petal.Length']], ['PLS Regression', ['Petal.Length']],
+  ['k-Nearest Neighbors', ['Species', 'Petal.Length']], ['Naive Bayes', ['Species']], ['LDA', ['Species']],
+  ['Neural Network', ['Species', 'Petal.Length']]];
+/** The EDA methods with `mlnativenans` and the iris targets they are checked on. */
+const KEEP_TARGETS: [string, string[]][] = [['XGBoost', ['Species', 'Petal.Length']], ['Random Forest', ['Species']],
+  ['Extra Trees', ['Species']], ['Hist Gradient Boosting', ['Species']], ['CatBoost', ['Species']],
+  ['Decision Tree', ['Species']]];
 const NOT_SOFTMAX = 'Softmax cannot learn from this selection. ' +
   'It needs numerical features and a numerical, text or boolean target.';
 const NO_METHOD = 'No method can learn from this selection. Check the features and the target.';
-const EDA_METHODS = ['Linear Regression', 'Softmax', 'PLS Regression', 'XGBoost', 'SVM'];
+const needsRows = (name: string) => needsRowsWithoutGaps(engineByName(EngineRegistry.discover(), name));
 
 /** A selection of [engine] with its default hyperparameters. */
 function engineSelection(engine: Engine, features: DG.Column[], target: DG.Column,
@@ -388,13 +395,12 @@ category('Training', () => {
 
   test('checkSelection lists the methods, suggests one and says whether it retrains live', async () => {
     const engines = EngineRegistry.discover();
-    const edaNames = (list: Engine[]) => list.map((e) => e.name).filter((name) => ENGINE_TARGETS.some(([n]) =>
-      n === name));
+    const edaNames = (list: Engine[]) => list.map((e) => e.name).filter((name) => EDA_METHODS.includes(name));
     const iris = await openIris();
     const features = columnsOf(iris, MEASUREMENTS);
     const [classifier, frames] = await framesSharing(features,
       () => checkSelection(selectionOf(features, iris.getCol('Species')), engines));
-    expectArray(edaNames(classifier.engines), inDiscoveryOrder(engines, ['XGBoost', 'SVM', 'Softmax']));
+    expectArray(edaNames(classifier.engines), inDiscoveryOrder(engines, CLASSIFIERS));
     expect(classifier.best?.name, 'XGBoost');
     expect(classifier.isInteractive, true);
     const {target, features: featureProblems, missingValues, method} = classifier.problems;
@@ -405,8 +411,7 @@ category('Training', () => {
     const petalLength = iris.getCol('Petal.Length');
     const three = columnsOf(iris, MEASUREMENTS.filter((name) => name !== 'Petal.Length'));
     const regressor = await checkSelection(selectionOf(three, petalLength), engines);
-    expectArray(edaNames(regressor.engines),
-      inDiscoveryOrder(engines, ['XGBoost', 'SVM', 'Linear Regression', 'PLS Regression']));
+    expectArray(edaNames(regressor.engines), inDiscoveryOrder(engines, REGRESSORS));
     expect(regressor.best?.name, 'Linear Regression');
     expect(regressor.problems.method.length, 0);
 
@@ -489,10 +494,8 @@ category('Training', () => {
       expect(edaFailed.length, 0, edaFailed.join(', '));
       return applicable.map((e) => e.name).filter((name) => EDA_METHODS.includes(name));
     };
-    expectArray(await listed([height, weight, sex, race], age),
-      inDiscoveryOrder(engines, ['XGBoost', 'SVM', 'Linear Regression', 'PLS Regression']));
-    expectArray(await listed([age, height, weight, race], sex),
-      inDiscoveryOrder(engines, ['XGBoost', 'SVM', 'Softmax']));
+    expectArray(await listed([height, weight, sex, race], age), inDiscoveryOrder(engines, REGRESSORS));
+    expectArray(await listed([age, height, weight, race], sex), inDiscoveryOrder(engines, CLASSIFIERS));
   }, {timeout: TIMEOUT});
 
   test('replayPreprocessing builds the recorded one-hot columns for a table with a missing and an extra category',
@@ -757,7 +760,7 @@ category('Training', () => {
     expect(skipped.keptRows?.get(3), false);
   }, {timeout: TIMEOUT});
 
-  for (const [name, targets] of ENGINE_TARGETS) {
+  for (const [name, targets] of SKIP_IMPUTE_TARGETS) {
     test(`${name} trains and applies with missing values under Skip rows and Impute`, async () => {
       const calls: string[] = [];
       const gaps: string[] = [];
@@ -766,9 +769,7 @@ category('Training', () => {
         for (const missingValues of [SKIP, IMPUTE]) {
           const iris = await openIris();
           const featureNames = MEASUREMENTS.filter((n) => n !== targetName);
-          const features = columnsOf(iris, featureNames);
-          features[0].set(3, null);
-          features[1].set(70, null);
+          const features = withGaps(columnsOf(iris, featureNames));
           const expectedRows = missingValues.mode === 'skip' ? 148 : 150;
           const what = `${name}, ${targetName}, ${missingValues.mode}`;
 
@@ -782,7 +783,8 @@ category('Training', () => {
           const prediction = await apply(engine, prepared.features, result.blob);
           expect(prediction.length, expectedRows, what);
           expect(prediction.stats.missingValueCount, 0, `${what}: empty predictions`);
-          expect(features[0].isNone(3) && features[1].isNone(70), true, `${what}: the gaps were filled in place`);
+          expect(features[0].isNone(GAP_ROWS[0]) && features[1].isNone(GAP_ROWS[1]), true,
+            `${what}: the gaps were filled in place`);
         }
       }
       // Per target and mode: a train and an apply per fold and for the final model, then the application.
@@ -792,6 +794,53 @@ category('Training', () => {
       expectArray(gaps, []);
     }, {timeout: ENGINE_TIMEOUT});
   }
+
+  for (const [name, targets] of KEEP_TARGETS) {
+    test(`${name} trains and applies on the rows with missing values under keep`, async () => {
+      const calls: string[] = [];
+      const gaps: string[] = [];
+      const engine = gapChecked(engineByName(EngineRegistry.discover(), name), calls, gaps);
+      for (const targetName of targets) {
+        const iris = await openIris();
+        const features = withGaps(columnsOf(iris, MEASUREMENTS.filter((n) => n !== targetName)));
+        const what = `${name}, ${targetName}`;
+
+        const request = await prepareTraining(engineSelection(engine, features, iris.getCol(targetName),
+          {mode: 'keep'}));
+        expect(request.keptRows === null, true, `${what}: rows were skipped`);
+        const result = await trainModel(request);
+        expect(result.rowCount, 150, what);
+        expect(JSON.stringify(result.options.missingValues), JSON.stringify({mode: 'keep', skippedRows: 0}), what);
+        expectArray(result.options.preprocessingInfo, []);
+
+        const prediction = await apply(engine, features, result.blob);
+        expect(prediction.length, 150, what);
+        expect(prediction.stats.missingValueCount, 0, `${what}: empty predictions`);
+      }
+      expect(gaps.some((g) => g === 'train: Sepal.Length' || g === 'train: Sepal.Width'), true,
+        `The gaps did not reach the method: ${gaps.join(', ')}`);
+    }, {timeout: ENGINE_TIMEOUT});
+  }
+
+  test('an explicit skip or impute is honoured for a method that handles missing values', async () => {
+    const calls: string[] = [];
+    const gaps: string[] = [];
+    const engines = EngineRegistry.discover();
+    const xgboost = gapChecked(engineByName(engines, 'XGBoost'), calls, gaps);
+    for (const [missingValues, rows] of [[SKIP, 148], [IMPUTE, 150]] as const) {
+      const iris = await openIris();
+      const features = withGaps(columnsOf(iris, MEASUREMENTS.filter((n) => n !== 'Species')));
+      const request = await prepareTraining(engineSelection(xgboost, features, iris.getCol('Species'), missingValues));
+      expect((await trainModel(request)).rowCount, rows, missingValues.mode);
+    }
+    expectArray(gaps, []);
+
+    const iris = await openIris();
+    const features = withGaps(columnsOf(iris, MEASUREMENTS.filter((n) => n !== 'Species')));
+    const check = await checkSelection(engineSelection(engineByName(engines, 'SVM'), features, iris.getCol('Species'),
+      {mode: 'keep'}), engines);
+    expect(check.problems.missingValues[0], needsRows('SVM'));
+  }, {timeout: ENGINE_TIMEOUT});
 });
 
 /** `forge-test-api-<time>` from the demo file [path] (no creation script). */
@@ -866,6 +915,24 @@ category('Training', () => {
     }
   }, {timeout: ENGINE_TIMEOUT});
 
+  test('runTrainModel: missing values are kept by default only for a method that handles them', async () => {
+    const iris = await apiTable();
+    withGaps(columnsOf(iris, ['Sepal.Length', 'Sepal.Width']));
+    try {
+      const suggested = await runTrainModel({table: iris, target: 'Species', showProgress: false});
+      expect(`${suggested.method} ${suggested.rowCount} ${suggested.skippedRows}`, 'XGBoost 150 0');
+      const svm = await runTrainModel({table: iris, target: 'Species', method: 'SVM', showProgress: false});
+      expect(`${svm.rowCount} ${svm.skippedRows}`, '148 2');
+      await expectExceptionAsync(() => runTrainModel({table: iris, target: 'Species', method: 'SVM',
+        options: {missingValues: 'keep'}, showProgress: false}).then(() => {}), failsWith(needsRows('SVM')));
+      await expectExceptionAsync(() => runTrainModel({table: iris, target: 'Petal.Length', features: ['Sepal.Length',
+        'Sepal.Width'], options: {missingValues: 'keep'}, showProgress: false}).then(() => {}),
+      failsWith(needsRows('Linear Regression')));
+    } finally {
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: ENGINE_TIMEOUT});
+
   test('runTrainModel refuses a wrong input in one sentence and records nothing', async () => {
     const iris = await apiTable();
     const {engines} = trainingEngines();
@@ -881,6 +948,8 @@ category('Training', () => {
       [{options: {cutof: 0.5}}, 'Unknown option \'cutof\'. The options are: missingValues, neighbors, distance, ' +
         'oneHot, skipUniqueCategories, predictProbability, cutoff, seed, folds.'],
       [{options: {predictProbability: true}}, 'Predict probability needs a target with exactly two classes.'],
+      [{options: {missingValues: 'fill'}}, 'The option \'missingValues\' needs skip, impute, keep ' +
+        '(keep: only for a method that handles missing values).'],
       [{name: 'forge-test-api-ref', storage: 'reference'}, 'The table has no known source, so the model cannot ' +
         'keep a reference to it. Use storage none or copy.'],
       [{name: '  '}, 'Enter a name for the model.'],

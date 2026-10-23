@@ -352,6 +352,7 @@ export function isInteractivePLSRegression(df: DG.DataFrame, predictColumn: DG.C
 //output: dynamic model
 //meta.mlname: XGBoost
 //meta.mlrole: train
+//meta.mlnativenans: true
 export async function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column, iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainXGBooster(df, predictColumn, iterations, eta, maxDepth, lambda, alpha);
 }
@@ -428,6 +429,388 @@ export function isApplicableSVM(df: DG.DataFrame, predictColumn: DG.Column) : bo
 //meta.mlrole: isInteractive
 export function isInteractiveSVM(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
   return PackageFunctions.isInteractiveSVM(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//input: int trees = 100 { caption: Trees; min: 1; max: 1000; description: Number of trees in the forest. }
+//input: int maxDepth = 10 { caption: Max depth; min: 1; max: 50; description: Largest depth of a tree. Bounds the model size. }
+//input: int minSamplesLeaf = 1 { caption: Min rows per leaf; min: 1; max: 1000; description: Smallest number of training rows a leaf may hold. }
+//input: string maxFeatures = 'auto' { caption: Features per split; choices: ["auto","sqrt","log2","all"]; description: Features tried at each split: auto is sqrt for classification and all for regression. }
+//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//output: dynamic model
+//meta.mlname: Random Forest
+//meta.mlrole: train
+//meta.mlnativenans: true
+export async function trainRandomForest(df: DG.DataFrame, predictColumn: DG.Column, trees: number, maxDepth: number, minSamplesLeaf: number, maxFeatures: string, seed: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainRandomForest(df, predictColumn, trees, maxDepth, minSamplesLeaf, maxFeatures, seed);
+}
+
+//name: Apply Random Forest
+//description: Predict the target for a table using a trained random forest model.
+//input: dataframe df 
+//input: dynamic model { description: Trained random forest model to apply. }
+//output: dataframe result
+//meta.mlname: Random Forest
+//meta.mlrole: apply
+export async function applyRandomForest(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyRandomForest(df, model);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: Random Forest
+//meta.mlrole: isApplicable
+export function isApplicableRandomForest(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isApplicableRandomForest(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: Random Forest
+//meta.mlrole: isInteractive
+export function isInteractiveRandomForest(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isInteractiveRandomForest(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//input: int trees = 100 { caption: Trees; min: 1; max: 1000; description: Number of trees in the forest. }
+//input: int maxDepth = 10 { caption: Max depth; min: 1; max: 50; description: Largest depth of a tree. Bounds the model size. }
+//input: int minSamplesLeaf = 1 { caption: Min rows per leaf; min: 1; max: 1000; description: Smallest number of training rows a leaf may hold. }
+//input: string maxFeatures = 'auto' { caption: Features per split; choices: ["auto","sqrt","log2","all"]; description: Features tried at each split: auto is sqrt for classification and all for regression. }
+//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//output: dynamic model
+//meta.mlname: Extra Trees
+//meta.mlrole: train
+//meta.mlnativenans: true
+export async function trainExtraTrees(df: DG.DataFrame, predictColumn: DG.Column, trees: number, maxDepth: number, minSamplesLeaf: number, maxFeatures: string, seed: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainExtraTrees(df, predictColumn, trees, maxDepth, minSamplesLeaf, maxFeatures, seed);
+}
+
+//name: Apply Extra Trees
+//description: Predict the target for a table using a trained extra trees model.
+//input: dataframe df 
+//input: dynamic model { description: Trained extra trees model to apply. }
+//output: dataframe result
+//meta.mlname: Extra Trees
+//meta.mlrole: apply
+export async function applyExtraTrees(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyExtraTrees(df, model);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: Extra Trees
+//meta.mlrole: isApplicable
+export function isApplicableExtraTrees(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isApplicableExtraTrees(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: Extra Trees
+//meta.mlrole: isInteractive
+export function isInteractiveExtraTrees(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isInteractiveExtraTrees(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//input: int iterations = 100 { caption: Iterations; min: 1; max: 1000; description: Boosting iterations (trees per class). }
+//input: double learningRate = 0.1 { caption: Learning rate; min: 0.001; max: 1; description: Shrinkage of each tree's contribution. }
+//input: int maxLeafNodes = 31 { caption: Max leaves; min: 2; max: 255; description: Largest number of leaves per tree. }
+//input: int maxDepth = 0 { caption: Max depth; min: 0; max: 50; description: Largest depth of a tree. 0 means no limit. }
+//input: int minSamplesLeaf = 20 { caption: Min rows per leaf; min: 1; max: 1000; description: Smallest number of training rows a leaf may hold. }
+//input: double l2 = 0 { caption: L2; min: 0; max: 100; description: L2 penalty of the leaf values. }
+//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//output: dynamic model
+//meta.mlname: Hist Gradient Boosting
+//meta.mlrole: train
+//meta.mlnativenans: true
+export async function trainHistGradientBoosting(df: DG.DataFrame, predictColumn: DG.Column, iterations: number, learningRate: number, maxLeafNodes: number, maxDepth: number, minSamplesLeaf: number, l2: number, seed: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainHistGradientBoosting(df, predictColumn, iterations, learningRate, maxLeafNodes, maxDepth, minSamplesLeaf, l2, seed);
+}
+
+//name: Apply Hist Gradient Boosting
+//description: Predict the target for a table using a trained histogram gradient boosting model.
+//input: dataframe df 
+//input: dynamic model { description: Trained histogram gradient boosting model to apply. }
+//output: dataframe result
+//meta.mlname: Hist Gradient Boosting
+//meta.mlrole: apply
+export async function applyHistGradientBoosting(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyHistGradientBoosting(df, model);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: Hist Gradient Boosting
+//meta.mlrole: isApplicable
+export function isApplicableHistGradientBoosting(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isApplicableHistGradientBoosting(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: Hist Gradient Boosting
+//meta.mlrole: isInteractive
+export function isInteractiveHistGradientBoosting(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isInteractiveHistGradientBoosting(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//input: int iterations = 100 { caption: Iterations; min: 1; max: 5000; description: Boosting iterations (trees). }
+//input: double learningRate = 0.1 { caption: Learning rate; min: 0.001; max: 1; description: Shrinkage of each tree's contribution. }
+//input: int depth = 6 { caption: Depth; min: 1; max: 16; description: Depth of the symmetric trees. }
+//input: double l2LeafReg = 3 { caption: L2; min: 0; max: 100; description: L2 regularization of the leaf values. }
+//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//output: dynamic model
+//meta.mlname: CatBoost
+//meta.mlrole: train
+//meta.mlnativenans: true
+export async function trainCatBoost(df: DG.DataFrame, predictColumn: DG.Column, iterations: number, learningRate: number, depth: number, l2LeafReg: number, seed: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainCatBoost(df, predictColumn, iterations, learningRate, depth, l2LeafReg, seed);
+}
+
+//name: Apply CatBoost
+//description: Predict the target for a table using a trained CatBoost gradient-boosting model.
+//input: dataframe df 
+//input: dynamic model { description: Trained CatBoost model to apply. }
+//output: dataframe result
+//meta.mlname: CatBoost
+//meta.mlrole: apply
+export async function applyCatBoost(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyCatBoost(df, model);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: CatBoost
+//meta.mlrole: isApplicable
+export function isApplicableCatBoost(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isApplicableCatBoost(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: CatBoost
+//meta.mlrole: isInteractive
+export function isInteractiveCatBoost(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isInteractiveCatBoost(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//input: int maxDepth = 10 { caption: Max depth; min: 1; max: 50; description: Largest depth of the tree. Bounds the model size. }
+//input: int minSamplesLeaf = 1 { caption: Min rows per leaf; min: 1; max: 1000; description: Smallest number of training rows a leaf may hold. }
+//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//output: dynamic model
+//meta.mlname: Decision Tree
+//meta.mlrole: train
+//meta.mlnativenans: true
+export async function trainDecisionTree(df: DG.DataFrame, predictColumn: DG.Column, maxDepth: number, minSamplesLeaf: number, seed: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainDecisionTree(df, predictColumn, maxDepth, minSamplesLeaf, seed);
+}
+
+//name: Apply Decision Tree
+//description: Predict the target for a table using a trained decision tree model.
+//input: dataframe df 
+//input: dynamic model { description: Trained decision tree model to apply. }
+//output: dataframe result
+//meta.mlname: Decision Tree
+//meta.mlrole: apply
+export async function applyDecisionTree(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyDecisionTree(df, model);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: Decision Tree
+//meta.mlrole: isApplicable
+export function isApplicableDecisionTree(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isApplicableDecisionTree(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: Decision Tree
+//meta.mlrole: isInteractive
+export function isInteractiveDecisionTree(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isInteractiveDecisionTree(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//input: int neighbors = 5 { caption: Neighbors; min: 1; max: 100; description: Training rows that vote for a prediction. }
+//input: string weights = 'Uniform' { caption: Weights; choices: ["Uniform","Distance"]; description: Uniform: every neighbor counts the same. Distance: closer neighbors count more. }
+//output: dynamic model
+//meta.mlname: k-Nearest Neighbors
+//meta.mlrole: train
+//meta.mlhasrows: true
+export async function trainKnn(df: DG.DataFrame, predictColumn: DG.Column, neighbors: number, weights: string) : Promise<Uint8Array> {
+  return await PackageFunctions.trainKnn(df, predictColumn, neighbors, weights);
+}
+
+//name: Apply k-Nearest Neighbors
+//description: Predict the target for a table using a trained k-nearest neighbors model.
+//input: dataframe df 
+//input: dynamic model { description: Trained k-nearest neighbors model to apply. }
+//output: dataframe result
+//meta.mlname: k-Nearest Neighbors
+//meta.mlrole: apply
+export async function applyKnn(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyKnn(df, model);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: k-Nearest Neighbors
+//meta.mlrole: isApplicable
+export function isApplicableKnn(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isApplicableKnn(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: k-Nearest Neighbors
+//meta.mlrole: isInteractive
+export function isInteractiveKnn(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isInteractiveKnn(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: dynamic model
+//meta.mlname: Naive Bayes
+//meta.mlrole: train
+export async function trainNaiveBayes(df: DG.DataFrame, predictColumn: DG.Column) : Promise<Uint8Array> {
+  return await PackageFunctions.trainNaiveBayes(df, predictColumn);
+}
+
+//name: Apply Naive Bayes
+//description: Classify the rows of a table using a trained Gaussian naive Bayes model.
+//input: dataframe df 
+//input: dynamic model { description: Trained naive Bayes classifier model to apply. }
+//output: dataframe result
+//meta.mlname: Naive Bayes
+//meta.mlrole: apply
+export async function applyNaiveBayes(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyNaiveBayes(df, model);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: Naive Bayes
+//meta.mlrole: isApplicable
+export function isApplicableNaiveBayes(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isApplicableNaiveBayes(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: Naive Bayes
+//meta.mlrole: isInteractive
+export function isInteractiveNaiveBayes(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isInteractiveNaiveBayes(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//input: double shrinkage = 0 { caption: Shrinkage; min: 0; max: 1; description: Covariance shrinkage from 0 (none) to 1. Helps when features outnumber rows. }
+//output: dynamic model
+//meta.mlname: LDA
+//meta.mlrole: train
+export async function trainLda(df: DG.DataFrame, predictColumn: DG.Column, shrinkage: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainLda(df, predictColumn, shrinkage);
+}
+
+//name: Apply LDA
+//description: Classify the rows of a table using a trained linear discriminant analysis (LDA) model.
+//input: dataframe df 
+//input: dynamic model { description: Trained LDA classifier model to apply. }
+//output: dataframe result
+//meta.mlname: LDA
+//meta.mlrole: apply
+export async function applyLda(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyLda(df, model);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: LDA
+//meta.mlrole: isApplicable
+export function isApplicableLda(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isApplicableLda(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: LDA
+//meta.mlrole: isInteractive
+export function isInteractiveLda(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isInteractiveLda(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//input: string hiddenLayers = 100 { caption: Hidden layers; description: Comma-separated sizes of the hidden layers, e.g. 100 or 64,32. }
+//input: string activation = 'ReLU' { caption: Activation; choices: ["ReLU","Tanh","Logistic","Identity"]; description: Activation function of the hidden layers. }
+//input: int iterations = 200 { caption: Iterations; min: 1; max: 2000; description: Largest number of training epochs. }
+//input: double learningRate = 0.001 { caption: Learning rate; min: 0.00001; max: 1; description: Step size of the weight updates. }
+//input: double alpha = 0.0001 { caption: L2; min: 0; max: 10; description: L2 penalty of the weights. }
+//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//output: dynamic model
+//meta.mlname: Neural Network
+//meta.mlrole: train
+export async function trainMlp(df: DG.DataFrame, predictColumn: DG.Column, hiddenLayers: string, activation: string, iterations: number, learningRate: number, alpha: number, seed: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainMlp(df, predictColumn, hiddenLayers, activation, iterations, learningRate, alpha, seed);
+}
+
+//name: Apply Neural Network
+//description: Predict the target for a table using a trained neural network (multilayer perceptron) model.
+//input: dataframe df 
+//input: dynamic model { description: Trained neural network model to apply. }
+//output: dataframe result
+//meta.mlname: Neural Network
+//meta.mlrole: apply
+export async function applyMlp(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyMlp(df, model);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: Neural Network
+//meta.mlrole: isApplicable
+export function isApplicableMlp(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isApplicableMlp(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: Neural Network
+//meta.mlrole: isInteractive
+export function isInteractiveMlp(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isInteractiveMlp(df, predictColumn);
 }
 
 //name: Pareto Front

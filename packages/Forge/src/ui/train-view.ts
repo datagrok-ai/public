@@ -3,19 +3,21 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {ModelInfo} from '../catalog/model-edit';
-import {defaultHyperparameters, Engine, Hyperparameters, hyperparametersOf} from '../engines/engine';
+import {defaultHyperparameters, Engine, handlesMissingValues, Hyperparameters, hyperparametersOf}
+  from '../engines/engine';
 import {errorMessage} from '../forge-error';
 import {TrainingRunStatus} from '../generated/db';
 import {_package} from '../package';
-import {DatasetFingerprint, datasetFingerprint} from '../storage/dataset-fingerprint';
+import {missingColumnsOf} from '../preparation/missing-values';
+import {DatasetFingerprint, datasetFingerprint, featuresHadGaps} from '../storage/dataset-fingerprint';
 import {datasetRefOf} from '../storage/dataset-ref';
 import {StorageChoice, TrainingRunRecord, trainingRunOf} from '../storage/model-fields';
 import {saveTrainedModel} from '../storage/model-store';
 import {recordTrainingRun} from '../storage/training-run-store';
 import {defaultFeatures} from '../training/default-features';
 import {checkSelection, failedCheck, FOLDS, hasDataProblems, MetricsRecord, prepareTraining, problemMessages,
-  randomSeed, recutResult, retrainsLive, SelectionCheck, trainingEngines, TrainingRequest, TrainingResult,
-  TrainingSelection, trainModel, trainPredictionOf} from '../training/train-model';
+  randomSeed, recutResult, retrainsLive, selectedMissingValues, SelectionCheck, trainingEngines, TrainingRequest,
+  TrainingResult, TrainingSelection, trainModel, trainPredictionOf} from '../training/train-model';
 import {TrainingQueue} from '../training/training-queue';
 import {openApplyDialog} from './apply-model-dialog';
 import {ButtonGate} from './button-gate';
@@ -322,6 +324,7 @@ export class TrainView extends DG.ViewBase {
   /** The Method group of [form] for the current method: Method, its hyperparameters with the values kept for it. */
   private fillMethod(form: TrainForm): void {
     const engine = this.engine;
+    form.preparation.setKeepsMissingValues(handlesMissingValues(engine));
     const values = {...defaultHyperparameters(engine), ...this.hyperparameterValues.get(engine.name)};
     this.unsubscribeMethod();
     form.hyperparameters.clear();
@@ -621,7 +624,8 @@ export class TrainView extends DG.ViewBase {
   private addRun(selection: TrainingSelection, record: TrainingRunRecord | undefined, status: TrainingRunStatus,
     outcome: {metrics?: MetricsRecord; error?: string}): void {
     this.runs.unshift({number: this.runs.length + 1, status, ...TrainView.runInputsOf(selection),
-      rowCount: record?.row_count ?? 0, seed: selection.seed, ...outcome});
+      featureGaps: missingColumnsOf(selection.features).length > 0, rowCount: record?.row_count ?? 0,
+      seed: selection.seed, ...outcome});
     this.runsPanel.update(this.runs);
   }
 
@@ -691,9 +695,10 @@ export class TrainView extends DG.ViewBase {
 
   /** Shows [training] in **Results**: its metrics (in the grid it already holds while the metric rows stay), the
    * insights and the viewers over the rows it was trained on. */
-  private showResults({result, request, engine, table, runId}: Training): void {
+  private showResults({result, request, engine, table, runId, fingerprint}: Training): void {
     const summary = {metrics: result.metrics, rowCount: result.rowCount, folds: FOLDS, seed: result.seed,
-      skippedRows: result.options.missingValues?.skippedRows ?? 0};
+      skippedRows: result.options.missingValues?.skippedRows ?? 0,
+      keepsMissingValues: result.options.missingValues?.mode === 'keep' && featuresHadGaps(fingerprint)};
     this.results.setAttribute(SHOWN_RUN, runId);
     this.showing++;
     this.publishState(this.problem());
@@ -720,9 +725,9 @@ export class TrainView extends DG.ViewBase {
 
   /** The inputs of [selection] that a **Runs** row keeps and a restore sets again. */
   private static runInputsOf(selection: TrainingSelection): RunInputs {
-    const {engine, target, features, hyperparameters, missingValues, steps} = selection;
-    return {engine, targetName: target.name, featureNames: features.map((c) => c.name), hyperparameters, missingValues,
-      steps};
+    const {engine, target, features, hyperparameters, steps} = selection;
+    return {engine, targetName: target.name, featureNames: features.map((c) => c.name), hyperparameters,
+      missingValues: selectedMissingValues(selection), steps};
   }
 
   /** Whether [a] and [b] train the same model: every input but the cutoff, which only re-cuts a result. */

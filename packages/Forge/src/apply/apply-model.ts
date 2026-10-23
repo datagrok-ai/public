@@ -1,12 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {PREDICTION_TAG} from '../constants';
-import {Engine, isComplete} from '../engines/engine';
+import {defaultMissingValues, Engine, isComplete} from '../engines/engine';
 import {apply, LoopProgress, yieldToEventLoop} from '../engines/engine-calls';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
 import {ApplicationInsert, ApplicationSource, ModelRow} from '../generated/db';
-import {MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
+import {imputeSettings, MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
 import {isRecord, PreparationOptions, preparationOptionsOf, stringsOf} from '../preparation/preparation-options';
 import {replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
 import {rowCopy} from '../preparation/row-copy';
@@ -119,12 +119,22 @@ export async function applyWithProgress(request: ApplyRequest, source: Applicati
   }
 }
 
-/** The body of `Forge:applyModel`: exact names plus the given pairs, rows with missing values skipped. */
+/** The missing-values handling [model] was trained with (Impute with its recorded settings); for a model that
+ * records none, `keep` when its method handles missing values, else `skip`. */
+export function missingValuesOf(model: LoadedModel): MissingValuesSettings {
+  const recorded = model.options.missingValues;
+  if (recorded === undefined)
+    return defaultMissingValues(model.engine);
+  return recorded.mode === 'impute' ? imputeSettings(recorded.neighbors, recorded.distance) : {mode: recorded.mode};
+}
+
+/** The body of `Forge:applyModel`: exact names plus the given pairs, missing values handled as at training
+ * ({@link missingValuesOf}). */
 export async function runApplyModel(model: string, table: DG.DataFrame,
   columnNamesMap: {[feature: string]: string} | null, showProgress: boolean): Promise<DG.DataFrame> {
   const loaded = await loadModel(model);
   const request: ApplyRequest = {model: loaded, table, mapping: apiMapping(loaded, table, columnNamesMap),
-    batchSize: DEFAULT_BATCH_SIZE, missingValues: {mode: 'skip'}};
+    batchSize: DEFAULT_BATCH_SIZE, missingValues: missingValuesOf(loaded)};
   await (showProgress ? applyWithProgress(request, 'api') : applyAndRecord(request, 'api'));
   return table;
 }

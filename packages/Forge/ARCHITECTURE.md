@@ -30,8 +30,9 @@ an EMS schema owned by Forge, and the UI on top.
   (`storage/dataset-copy.ts`). A frame stays a parent of its columns and receives their events, so each runs its call
   through `onFrame`, which gives the frame back with `releaseFrame` (its columns removed) when the call ends, whatever
   happens.
-- **Missing values never reach a method.** Rows with gaps are skipped or the gaps are imputed before the engine is
-  called; dates and very large whole numbers (bigint) are not numerical features.
+- **Missing values reach only a method that handles them.** Rows with gaps are skipped or the gaps are imputed before
+  the engine is called, unless the method has `meta.mlnativenans` (see "Missing values"); dates and very large whole
+  numbers (bigint) are not numerical features.
 - **Later:** more engines, MLflow models and the migration of existing models.
 
 ## Components and data flow
@@ -200,7 +201,8 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   rows (task, AUC-ROC) build a new one; a hint shown in between detaches the grid and keeps it. It is a frame of **Metric**, **Train**, **Validation**
   and, with `MetricsSummary.evaluation`, **Evaluation** (format `0.000`) in a
   `readOnlyGrid` with the header texts, the metric descriptions and the full-precision values as tooltips, then a
-  bullet list (`ul`): `Rows: <used> used, <skipped> skipped (missing values)` (only when rows were skipped),
+  bullet list (`ul`): `Missing values: kept (the method handles them)` (only under `keep` when the training features
+  had gaps), `Rows: <used> used, <skipped> skipped (missing values)` (only when rows were skipped),
   `Validation: <folds>-fold cross-validation on <rows> rows`, `Seed: <seed>` with the seed in a selectable
   `forge-seed` span and the copy icon right after it (**Copy the seed**, balloon `Seed <seed> copied.`),
   `Positive class: <class>` (two classes only) and `Evaluation: <table> (<rows> rows[, <n> skipped (missing values)])`
@@ -220,7 +222,8 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   when its columns have gaps, with the tooltip "Rows with missing values in: <col>: N, ...". **Impute** is offered
   only when `Eda:knnImpute` exists; choosing it shows the function's own inputs (**Neighbors**, **Distance**, from
   `imputeSettingsOf` with `defaultValuesOf`) right under it. Hiding them puts their defaults back, so a hidden invalid
-  value cannot block the form.
+  value cannot block the form. `setKeeps(true)` (the Train view, for a method with `handlesMissingValues`) and
+  `restore` of a `keep` setting (the Apply dialog) hide it all and make `settings()` `keep`, with or without gaps.
 - **Preparation** (`ui/preparation-inputs.ts`, `PreparationInputs`, Train view only) owns its `CollapsibleGroup`:
   **Missing values** (the `MissingValuesInputs` above), **One-hot encoding** (shown while a checked feature
   is text or yes/no; checked when it appears if every such feature, the all-unique ones aside while Skip unique
@@ -262,9 +265,17 @@ build their own. After preparation fewer than `2 * folds` rows is a `ForgeError`
 values, N rows remain; training needs at least 10.").
 
 **Missing values in the view.** **Missing values** (see Components) is the first input of **Preparation** and follows
-the checked features. The **Target** tooltip adds "<target>: N rows without a value are skipped." ("1 row without a value is
+the checked features; `fillMethod`, which every method change goes through, hides it for a method that handles
+missing values (`PreparationInputs.setKeepsMissingValues`), and every training of it records `keep`, with or without
+gaps. The **Target** tooltip adds "<target>: N rows without a value are skipped." ("1 row without a value is
 skipped.") when the target has gaps; it is information, not a problem. After a training with skipped rows,
-**Performance** lists `Rows: N used, M skipped (missing values)` first in the bullet list under the metrics grid.
+**Performance** lists `Rows: N used, M skipped (missing values)` first in the bullet list under the metrics grid;
+after a training under `keep` whose features had gaps, `Missing values: kept (the method handles them)` comes before
+it (`keepsMissingValues` of the summary: the recorded mode and `featuresHadGaps` of the training's fingerprint, the
+feature columns' `missingCount`; a saved model's Performance pane, `storedSummary`, reads the same from
+`options.missingValues` and `dataset_fingerprint`). The Runs cell says `keep missing values` likewise only when the
+features had gaps (`SessionRun.featureGaps`, from `missingColumnsOf` of the selection: a run that failed before
+its data was prepared has no fingerprint).
 
 **Defaults in the view.** Target: the table's last column. Features (`defaultFeatures`): every column the methods
 read as numbers (`isReadableNumber`: numerical, not dates, not bigint) except the target and integer columns without
@@ -462,6 +473,20 @@ features (and target) to use, `keptRows` (the input rows kept, or `null` when ev
   cannot fill (a row whose features are all missing) stay empty; those rows are then skipped and counted in
   `failedRows` and `skippedRows`. `settings.impute` holds `neighbors` and `distance`; `imputeSettingsOf(func)` lists
   the function's own inputs for them, and `defaultValuesOf` reads their defaults.
+- **`keep`**: only the rows with a missing target are skipped; the features go to the method with their gaps. It is
+  the default for a method with `meta.mlnativenans` (`handlesMissingValues(engine)`), with or without gaps: in the
+  Train view and in `Forge:trainModel` (resolved after the suggestion may have replaced the chosen method). An
+  explicit `skip` or `impute` (the API's `missingValues` option) is still honoured for such a method; `keep` for any
+  other method is refused ("<Method> needs rows without missing values. Choose Skip rows or Impute.",
+  `needsRowsWithoutGaps`). The Train view hides **Missing values** for such a method. Only when the training features
+  had gaps do the Performance list (after training and of a saved model) say `Missing values: kept (the method
+  handles them)` and the Runs cell `keep missing values` (see "Missing values in the view").
+
+A model is applied (the Apply dialog, `Forge:applyModel`) and evaluated (Run Evaluation, `Forge:evaluateModel`) in the
+mode it was trained with, `missingValuesOf(model)` in `apply/apply-model.ts`: the recorded `skip`, `keep`, or `impute`
+with the recorded neighbors and distance; a model that records no mode gets `keep` when its method handles missing
+values, else `skip`. The Apply dialog hides **Missing values** only when that mode is `keep`; otherwise it shows the
+choice preset to the model's mode (`MissingValuesInputs.restore` when the model is chosen).
 
 It takes and returns column lists; the returned `features` may be the user's own columns.
 
@@ -475,14 +500,17 @@ build no frame.
 At training, `prepareTraining` records the handling in `options`: `preprocessingInfo` gains `impute-missing` when
 imputation ran and `ignore-missing` when a feature has gaps under Skip rows, or imputation left rows unfilled (the ids
 of the built-in tool), and
-`missingValues` is `{mode, neighbors?, distance?, skippedRows}`. Both are information only: an application never
-replays them and chooses its own handling. Imputing before cross-validation lets the held-out rows' values take part
+`missingValues` is `{mode, neighbors?, distance?, skippedRows}`. `preprocessingInfo` is information only: an
+application never replays it; `missingValues` sets the mode a model is applied and evaluated with (`missingValuesOf`,
+see above). Imputing before cross-validation lets the held-out rows' values take part
 in the imputation, as the built-in tool did; a later version may impute per fold.
 
-The methods' own handling of gaps never matters (SVM refuses them at training; Linear Regression, PLS Regression and
-Softmax have none): the Training tests `<Method> trains and applies with missing values under Skip rows and Impute`
-train and apply every EDA method on iris with two gaps in both modes and check that no table or column passed to
-`train` or `apply` has a missing value.
+The methods' own handling of gaps matters only for `mlnativenans` methods: the Training tests `<Method> trains and
+applies with missing values under Skip rows and Impute` train and apply every other EDA method on iris with two gaps
+in both modes and check that no table or column passed to `train` or `apply` has a missing value; `<Method> trains and
+applies on the rows with missing values under keep` train XGBoost, Random Forest, Extra Trees, Hist Gradient
+Boosting, CatBoost and Decision Tree on all 150 rows, check that the gaps reached `train` and that every row gets a
+prediction; and an explicit Skip rows or Impute for XGBoost still keeps the gaps from it.
 
 ## Preparation
 
@@ -853,9 +881,9 @@ schema with its categories.
 
 **Evaluation** (`training/evaluation.ts`). `evaluateModel(request, progress?)` measures a saved model on a table whose
 `target` column holds the actual values (an `EvaluationRequest`: the `LoadedModel`, the table, the target, the column
-mapping, the positive class): `checkApplyRequest`, then `predictRows` with the default batch size and Skip rows; the
-target is the given column, or a copy of its kept rows (`columnRowCopy`). A Predict probability model is measured as at
-training: the classification metrics of the labels with the positive class (the request's, else the options') plus
+mapping, the positive class): `checkApplyRequest`, then `predictRows` with the default batch size and the
+missing-values mode the model was trained with (`missingValuesOf`, see "Missing values"); the target is the given column, or a copy of its kept rows
+(`columnRowCopy`). A Predict probability model is measured as at training: the classification metrics of the labels with the positive class (the request's, else the options') plus
 `auc` of the scores (`probabilityValues`, shared with training), the scores coming back as `score`; any other model
 uses `metricsOf(taskOf(target), ...)` (`taskOf`: regression for a numerical target). A
 row without an actual value is left out by the metrics. The `EvaluationResult` holds the columns, the target and the
@@ -941,7 +969,9 @@ The dialog **Apply predictive model** has:
   top: the dialog focuses the input it was given last on `show()`, so the rows are given to it before the other
   inputs, and the scroll is reset when the rows are rebuilt or **Columns** opens.
 - **Missing values** with **Neighbors** and **Distance** (see Components), following the mapped columns; its validator
-  is `missingValuesProblems` for Impute. It stays outside the groups.
+  is `missingValuesProblems` for Impute. It stays outside the groups. It is preset to the mode the model was trained
+  with (`restore(missingValuesOf(model))` once the model's rows are filled), and hidden when that mode is `keep`: the
+  rows with gaps are then predicted.
 - **More options** (a `CollapsibleGroup`, collapsed): **Batch size** (10000, 1..100000, `Rows predicted in one step.
   Lower it for heavy methods.`); an invalid batch size expands it.
 
@@ -961,7 +991,8 @@ a dialog: `runApplyModel` resolves the model by id or name and, in `apiMapping` 
 maps the features by exact names, overlays the given `columnNamesMap` pairs, and refuses the mapping problems before
 any work, the unmapped features in one sentence first
 ("The table has no column 'a' the model needs. Map it in columnNamesMap." / "The table has no columns 'a', 'b' the
-model needs. Map them in columnNamesMap."). Rows with missing values are skipped; batches of 10000 rows; with
+model needs. Map them in columnNamesMap."). Missing values are handled in the mode the model was trained with
+(`missingValuesOf`, see "Missing values"); batches of 10000 rows; with
 `showProgress` a cancellable task-bar indicator "Predicting <target>". The application is recorded with `source: api`.
 
 ## `Forge:trainModel`
@@ -978,10 +1009,14 @@ without the view (`runTrainModel` in `training/train-api.ts`; the view and the f
 2. The method by name among the complete methods ("No method 'x' is installed. The methods are: ..."); without one,
    the check starts with XGBoost (`PREFERRED_ENGINE` in `train-model.ts`) and takes the method it suggests (`best`), as the view does.
 3. `options`, narrowed key by key (`OPTION_NAMES`; an unknown key is refused with the list) to the view's defaults:
-   `missingValues` `skip` (`impute` with `neighbors` and `distance` checked against `Eda:knnImpute`'s inputs, its
-   defaults otherwise), `oneHot` `defaultOneHot`, `skipUniqueCategories` `true`, `predictProbability` `false` (refused
-   on a target without exactly two classes), `cutoff` `DEFAULT_CUTOFF` (with Predict probability, 0..1 or the view's
-   `Enter a number from 0 to 1.`), `seed` random, `folds` 5.
+   `missingValues` left unset when not given (the selection's `missingValues` is then undefined and
+   `selectedMissingValues` gives the training method's `defaultMissingValues`: `keep` for a method that handles
+   missing values, with or without gaps, else `skip`; `impute` with `neighbors` and `distance` checked against
+   `Eda:knnImpute`'s inputs, its defaults otherwise; an explicit `keep` for a method that does not handle missing
+   values is the check's Missing values problem, `needsRowsWithoutGaps`: when the suggestion replaces the chosen
+   method, the selection is checked again against the suggested one), `oneHot` `defaultOneHot`, `skipUniqueCategories` `true`, `predictProbability`
+   `false` (refused on a target without exactly two classes), `cutoff` `DEFAULT_CUTOFF` (with Predict probability,
+   0..1 or the view's `Enter a number from 0 to 1.`), `seed` random, `folds` 5.
 4. The save, checked before any work: a blank name ("Enter a name for the model."), an unknown storage, `reference`
    without `datasetRefOf(table)`.
 5. `checkSelection`; every problem goes into one `ForgeError`, target and features first.
@@ -1616,8 +1651,10 @@ An engine is the set of functions that share `meta.mlname` (the engine id). `met
 | `isInteractive` | `(df, predictColumn) -> bool` | Optional. `meta.mlupdate: 'false'` turns off live retraining |
 | `visualize` | `(df, targetColumn, predictColumn, model)` | Optional |
 
-Two more `meta` keys on `train`: `mlhasrows: 'true'` (the model file embeds training rows; EDA's SVM) and
-`mlserver: 'true'` (the method runs on the server).
+Three more `meta` keys on `train`: `mlhasrows: 'true'` (the model file embeds training rows; EDA's SVM and
+k-Nearest Neighbors), `mlserver: 'true'` (the method runs on the server) and `mlnativenans: 'true'` (the method takes
+rows with missing feature values as they are; EDA's XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting,
+CatBoost and Decision Tree; see "Missing values").
 
 - An engine is complete, and usable, only with `train`, `apply` and `isApplicable`.
 - A function engine receives the feature table and the target column. A script engine (`DG.Script`) receives one
@@ -1643,7 +1680,8 @@ Two more `meta` keys on `train`: `mlhasrows: 'true'` (the model file embeds trai
 - `applicableEngines(engines, features, target)` (`engines/applicable-engines.ts`) asks every complete engine's
   `isApplicable` at once (`Promise.allSettled`) on the feature columns (each call with its own frame). `applicable` keeps the given order (discovery order: functions first); an engine whose check throws is
   left out and returned in `failed` with its error, for the caller to log (nothing is logged here). On iris, Species
-  gets XGBoost, SVM and Softmax; Petal.Length gets XGBoost, SVM, Linear Regression and PLS Regression.
+  gets every EDA method but Linear Regression and PLS Regression (12); Petal.Length every one but Softmax, Naive Bayes
+  and LDA (11).
 - `selectBestEngine(engines, features, target)` (`engines/best-engine.ts`) is the built-in tool's suggestion, ported
   as is: a feature with the `Molecule` semantic type gives `Chemprop`; a classification (the target is not numerical)
   with at least one categorical and one numerical feature gives `XGBoost`; a regression with five or more numerical
@@ -1656,3 +1694,5 @@ Two more `meta` keys on `train`: `mlhasrows: 'true'` (the model file embeds trai
   a language other than JavaScript, a `train` with `meta.mlserver: 'true'`, or a name in `SERVER_ENGINES`
   (`['Chemprop']`, whose functions do not say so yet).
 - `hasTrainingRows(engine)`: `meta.mlhasrows: 'true'` on `train`.
+- `handlesMissingValues(engine)`: `meta.mlnativenans: 'true'` on `train`; it makes `keep` the default missing-values
+  mode (see "Missing values").

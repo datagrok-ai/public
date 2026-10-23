@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, awaitCheck, before, category, expect, expectArray, expectExceptionAsync, expectFloat, test}
   from '@datagrok-libraries/test/src/test';
-import {applyAndRecord, ApplyRequest, DEFAULT_BATCH_SIZE, LoadedModel, loadModel, predictionName, predictRows,
-  scatteredColumn, targetSchemaOf} from '../apply/apply-model';
+import {applyAndRecord, ApplyRequest, DEFAULT_BATCH_SIZE, LoadedModel, loadModel, missingValuesOf, predictionName,
+  predictRows, runApplyModel, scatteredColumn, targetSchemaOf} from '../apply/apply-model';
 import {compatibility, exactMapping, isSuggested, MAX_NAME_DISTANCE, mappedColumns, mappingProblems, nameDistance,
   suggestMapping} from '../apply/column-matching';
 import {featureColumns} from '../apply/feature-columns';
@@ -23,8 +23,8 @@ import {runTrainModel} from '../training/train-api';
 import {ColumnSchema, metricsRecordOf, prepareTraining, TrainingResult, trainModel} from '../training/train-model';
 import {cancelTaskBarEntry, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, demoDemog, expectMetrics,
   expectNoFrames, expectReleased, failsWith, framesSharing, IMPUTE, IRIS, MEASUREMENTS, ONE_HOT_STEPS, openIris,
-  openIrisFromFile, PREDICT_PROBABILITY, rawValues, requestOf, savedFixture, saveIrisModel, saveSkipUniqueModel,
-  saveTestModel, selectionOf, twoSpeciesIris, valuesOf, XGBOOST_FIELDS} from './test-data';
+  openIrisFromFile, PREDICT_PROBABILITY, rawValues, requestOf, savedFixture, saveIrisModel, saveKeptGapsModel,
+  saveSkipUniqueModel, saveTestModel, selectionOf, svm, twoSpeciesIris, valuesOf, XGBOOST_FIELDS} from './test-data';
 
 const TIMEOUT = 90000;
 const IRIS_FEATURES: ColumnSchema[] = MEASUREMENTS.map((name) => ({name, type: DG.COLUMN_TYPE.FLOAT}));
@@ -558,6 +558,54 @@ category('Apply', () => {
     expect(skipped.rowCount, 149);
     expect(skipped.target.length, 149);
     expect(skipped.skippedRows, 1);
+
+    const keptModel = await saveKeptGapsModel(shared().iris);
+    try {
+      const loaded = await loadModel(keptModel.id);
+      const kept = await evaluateModel({model: loaded, table, target, mapping: exactMapping(loaded.features, table)});
+      expect(kept.rowCount, 150);
+      expect(kept.skippedRows, 0);
+    } finally {
+      await deleteModel(keptModel.id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a model is applied in the missing-values mode it was trained with, else by its method', async () => {
+    const iris = shared().iris;
+    const noRecord = {options: {preprocessingInfo: [], postprocessingInfo: []}};
+    const apiName = `forge-test-mode-${Date.now()}`;
+    const {modelId} = await runTrainModel({table: iris, target: 'Species', name: apiName, showProgress: false});
+    const models = [
+      ['XGBoost by default on clean data', {id: modelId ?? ''}, 0],
+      ['skip', await saveIrisModel(iris), 2],
+      ['keep', await saveKeptGapsModel(iris), 0],
+      ['XGBoost without a record', await saveIrisModel(iris, noRecord), 0],
+      ['SVM without a record', await saveIrisModel(iris, noRecord, svm()), 2],
+    ] as const;
+    try {
+      for (const [i, [what, {id}, skippedRows]] of models.entries()) {
+        const table = irisCopy(`mode-${i}`);
+        table.getCol('Sepal.Width').set(0, null);
+        table.getCol('Petal.Width').set(5, null);
+        await runApplyModel(id, table, null, false);
+        const column = table.getCol('Species (predicted)');
+        expect(column.stats.missingValueCount, skippedRows, what);
+        expect(column.isNone(0) && column.isNone(5), skippedRows > 0, `${what}: the gap rows`);
+        const [record] = await forgeDb.applications.query().where('model_id', '=', id)
+          .where('table_name', '=', table.name);
+        expect(record?.skipped_rows, skippedRows, `${what}: the recorded skipped rows`);
+      }
+      const {model} = shared();
+      const imputed = {...model, options: {...model.options,
+        missingValues: {mode: 'impute' as const, neighbors: 3, distance: 'Manhattan', skippedRows: 0}}};
+      expect(JSON.stringify(missingValuesOf(imputed)),
+        JSON.stringify({mode: 'impute', impute: {neighbors: 3, distance: 'Manhattan'}}));
+    } finally {
+      for (const [, {id}] of models.slice(1))
+        await deleteModel(id);
+      await deleteModelsNamed(apiName);
+      await deleteRunsOf([iris]);
+    }
   }, {timeout: TIMEOUT});
 
   test('evaluateModel and runEvaluateModel of a predict-probability model give its scores and AUC-ROC', async () => {

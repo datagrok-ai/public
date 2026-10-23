@@ -4,7 +4,7 @@ import {ForgeError} from '../forge-error';
 import {columnRowCopy, compactCategories, rowCopy} from './row-copy';
 import {onFrame} from './shared-frame';
 
-export const MISSING_VALUES_MODES = ['skip', 'impute'] as const;
+export const MISSING_VALUES_MODES = ['skip', 'impute', 'keep'] as const;
 export type MissingValuesMode = typeof MISSING_VALUES_MODES[number];
 interface ImputeSettings { neighbors: number; distance: string }
 export interface MissingValuesSettings { mode: MissingValuesMode; impute?: ImputeSettings }
@@ -28,6 +28,12 @@ const IMPUTABLE_TYPES: string[] = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.
   DG.COLUMN_TYPE.DATE_TIME, DG.COLUMN_TYPE.QNUM];
 const NO_IMPUTATION = 'Imputation is not available: the EDA package has no knnImpute function.';
 const TWO_FEATURES = 'Impute needs at least two features. Choose Skip rows or check more features.';
+
+/** Impute with [neighbors] and [distance] when both are known, otherwise with the imputer's defaults. */
+export function imputeSettings(neighbors: unknown, distance: unknown): MissingValuesSettings {
+  return typeof neighbors === 'number' && typeof distance === 'string' ?
+    {mode: 'impute', impute: {neighbors, distance}} : {mode: 'impute'};
+}
 
 export function missingColumnsOf(columns: DG.Column[]): MissingColumn[] {
   return columns
@@ -64,12 +70,14 @@ function imputeProblems(features: DG.Column[], missing: string[], func: DG.Func 
   return problems;
 }
 
-/** [features] with the missing values handled; the input columns are never changed. */
+/** [features] with the missing values handled; the input columns are never changed. keep: only the rows without a
+ * target are skipped. */
 export async function prepareMissingValues(features: DG.Column[], target: DG.Column | undefined,
   settings: MissingValuesSettings): Promise<PreparedData> {
   const rowCount = features[0]?.length ?? target?.length ?? 0;
-  if (settings.mode === 'skip') {
-    const gapped = [...features, ...(target === undefined ? [] : [target])].filter(hasGaps);
+  if (settings.mode !== 'impute') {
+    const gapped = [...(settings.mode === 'skip' ? features : []), ...(target === undefined ? [] : [target])]
+      .filter(hasGaps);
     return {...keep(features, target, keptRowsOf(gapped, rowCount)), imputedColumns: [], failedRows: 0};
   }
 

@@ -85,6 +85,12 @@ export class PreparationInputs {
     this.updateVisibility();
   }
 
+  /** Hides **Missing values** while the method takes the rows with missing values as they are ([keeps]). */
+  setKeepsMissingValues(keeps: boolean): void {
+    this.missingValues.setKeeps(keeps);
+    this.updateVisibility();
+  }
+
   /** Sets the inputs shown for the current selection to [steps] and [missingValues], as a user would; a hidden input
    * keeps its default. Skip unique categories goes first, as it changes the One-hot default. */
   restore(steps: PreparationSteps, missingValues: MissingValuesSettings): void {

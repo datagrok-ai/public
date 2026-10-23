@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {randomInt} from '@datagrok-libraries/utils/src/random';
 import {applicableEngines, EngineFailure} from '../engines/applicable-engines';
 import {selectBestEngine} from '../engines/best-engine';
-import {Engine, Hyperparameters, isComplete} from '../engines/engine';
+import {defaultMissingValues, Engine, handlesMissingValues, Hyperparameters, isComplete} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {apply, isInteractive, LoopProgress, train, yieldToEventLoop} from '../engines/engine-calls';
 import {ForgeError} from '../forge-error';
@@ -32,8 +32,14 @@ export interface TrainingSelection {
   hyperparameters: Hyperparameters;
   seed: number;
   folds: number;
-  missingValues: MissingValuesSettings;
+  /** Undefined when none was chosen: {@link selectedMissingValues} gives the method's default. */
+  missingValues?: MissingValuesSettings;
   steps: PreparationSteps;
+}
+
+/** The selection's missing-values handling, or the method's default when none was chosen. */
+export function selectedMissingValues(selection: TrainingSelection): MissingValuesSettings {
+  return selection.missingValues ?? defaultMissingValues(selection.engine);
 }
 
 /** The data a model is trained on. `features` and `target` are the selection's columns with the missing values
@@ -221,8 +227,16 @@ function ruleProblems(selection: TrainingSelection, prepared: DG.Column[]): Trai
     problems.features.push(`${engine.name} needs numerical features. Uncheck: ${others.join(', ')}.`);
   for (const col of features.filter((c) => c.type === DG.COLUMN_TYPE.BIG_INT))
     problems.features.push(bigIntProblem(col.name, engine.name, 'uncheck it'));
-  problems.missingValues.push(...missingValuesProblems(features, selection.missingValues));
+  const missingValues = selectedMissingValues(selection);
+  problems.missingValues.push(...missingValuesProblems(features, missingValues));
+  if (missingValues.mode === 'keep' && !handlesMissingValues(engine))
+    problems.missingValues.push(needsRowsWithoutGaps(engine));
   return problems;
+}
+
+/** Why `keep` cannot train [engine], a method without `meta.mlnativenans`. */
+export function needsRowsWithoutGaps(engine: Engine): string {
+  return `${engine.name} needs rows without missing values. Choose Skip rows or Impute.`;
 }
 
 function cannotLearn(engine: Engine): string {
@@ -233,7 +247,8 @@ function cannotLearn(engine: Engine): string {
 /** Skips the rows with a missing target, handles the features' missing values as chosen, then applies the
  * preparation steps. */
 export async function prepareTraining(selection: TrainingSelection): Promise<TrainingRequest> {
-  const {engine, hyperparameters, seed, folds, missingValues} = selection;
+  const {engine, hyperparameters, seed, folds} = selection;
+  const missingValues = selectedMissingValues(selection);
   const isSkip = missingValues.mode === 'skip';
   const hasFeatureGaps = isSkip && missingColumnsOf(selection.features).length > 0;
   const handled = await prepareMissingValues(selection.features, selection.target, missingValues);

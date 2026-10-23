@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {ApplyRequest, checkApplyRequest, DEFAULT_BATCH_SIZE, LoadedModel, predictRows} from '../apply/apply-model';
+import {ApplyRequest, checkApplyRequest, DEFAULT_BATCH_SIZE, LoadedModel, missingValuesOf, predictRows}
+  from '../apply/apply-model';
 import {ColumnMapping} from '../apply/column-matching';
 import {LoopProgress} from '../engines/engine-calls';
 import {ModelRow} from '../generated/db';
@@ -37,13 +38,13 @@ export interface EvaluationResult {
   positiveClass?: string;
 }
 
-/** Applies the model to the table's rows (those with a missing feature value skipped) and measures the predictions
- * against the target; a row without an actual value is left out of the metrics. No column is added and no
- * application is recorded. */
+/** Applies the model to the table's rows (missing values handled as at training, `missingValuesOf`) and measures the
+ * predictions against the target; a row without an actual value is left out of the metrics. No column is added and
+ * no application is recorded. */
 export async function evaluateModel(request: EvaluationRequest, progress?: LoopProgress): Promise<EvaluationResult> {
   const {model, table, mapping} = request;
   const applyRequest: ApplyRequest = {model, table, mapping, batchSize: DEFAULT_BATCH_SIZE,
-    missingValues: {mode: 'skip'}};
+    missingValues: missingValuesOf(model)};
   checkApplyRequest(applyRequest);
   const rows = await predictRows(applyRequest, progress);
   const target = rows.keptRows === null ? request.target : columnRowCopy(request.target, rows.keptRows);

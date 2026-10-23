@@ -113,6 +113,25 @@ category('Preparation', () => {
     expectArray(skipped, [3, 7]);
   });
 
+  test('keep drops only the rows without a target', async () => {
+    const rows = 12;
+    const a = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'a', valuesOf(rows, (i) => i, [3]));
+    const b = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => i / 2, [7]));
+    const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(rows, (i) => i, [5]));
+    const prepared = await prepareMissingValues([a, b], y, {mode: 'keep'});
+    expect(prepared.skippedRows, 1);
+    expect(prepared.keptRows?.get(3), true);
+    expect(prepared.keptRows?.get(5), false);
+    expect(prepared.features[0] !== a && prepared.features[1] !== b, true, 'The features were not copied');
+    expectArray(prepared.features.map((c) => c.length), [11, 11]);
+    expect(gapCount(prepared.features), 2);
+    expect(prepared.target?.length, 11);
+    expectArray(prepared.imputedColumns, []);
+
+    const untouched = await prepareMissingValues([a, b], undefined, {mode: 'keep'});
+    expect(untouched.keptRows === null && untouched.features[0] === a, true, 'Rows were skipped without a target');
+  });
+
   test('a copied text column keeps only the categories its rows have', async () => {
     const rows = 12;
     const c = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'c',

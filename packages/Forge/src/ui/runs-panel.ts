@@ -34,6 +34,8 @@ export interface SessionRun {
   hyperparameters: Hyperparameters;
   missingValues: MissingValuesSettings;
   steps: PreparationSteps;
+  /** The features had missing values. */
+  featureGaps: boolean;
   /** The record's training rows; 0 when nothing was recorded. */
   rowCount: number;
   seed: number;
@@ -111,17 +113,24 @@ export class RunsPanel {
     this.host.append(grid.root);
   }
 
-  /** `impute (<neighbors> neighbors, <distance>)`, `one-hot`, `skip unique categories`, `probability (cutoff <c>)`:
-   * the steps the training used; '' for none. */
+  /** `keep missing values` (only when the features had gaps) or `impute (<neighbors> neighbors, <distance>)`,
+   * `one-hot`, `skip unique categories`, `probability (cutoff <c>)`: the steps the training used; '' for none. */
   private static preparationText(run: SessionRun): string {
-    const {missingValues: {mode, impute}, steps} = run;
+    const {steps} = run;
     return [
-      ...(mode !== 'impute' ? [] : [impute === undefined ? 'impute' :
-        `impute (${impute.neighbors} neighbors, ${impute.distance})`]),
+      ...RunsPanel.missingValuesText(run),
       ...(steps.oneHot ? ['one-hot'] : []),
       ...(steps.skipUniqueCategories ? ['skip unique categories'] : []),
       ...(steps.predictProbability ? [`probability (cutoff ${steps.cutoff})`] : []),
     ].join(', ');
+  }
+
+  private static missingValuesText({missingValues: {mode, impute}, featureGaps}: SessionRun): string[] {
+    if (mode === 'keep')
+      return featureGaps ? ['keep missing values'] : [];
+    if (mode !== 'impute')
+      return [];
+    return [impute === undefined ? 'impute' : `impute (${impute.neighbors} neighbors, ${impute.distance})`];
   }
 
   private static metricColumn(id: MetricId): string {

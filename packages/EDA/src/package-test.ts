@@ -14,6 +14,7 @@ import './tests/mva-project-tests';
 import './tests/legacy-models-tests';
 import './tests/crux-bridge-tests';
 import './tests/crux-thresholds-tests';
+import './tests/crux-methods-tests';
 
 export const _package = new DG.Package();
 export {tests};

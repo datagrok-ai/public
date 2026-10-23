@@ -10,7 +10,7 @@ export interface PreparedFeatures { columns: DG.Column[]; target: DG.Column; opt
 
 export const DEFAULT_CUTOFF = 0.5;
 /** The defaults a training starts with, in the Train view and in `Forge:trainModel`. */
-export const DEFAULT_STEPS = {skipUniqueCategories: true, predictProbability: false, missingValues: 'skip'} as const;
+export const DEFAULT_STEPS = {skipUniqueCategories: true, predictProbability: false} as const;
 const CUTOFF_PROBLEM = 'Enter a number from 0 to 1.';
 
 /** Why [value] cannot be the positive class cutoff; null for a number from 0 to 1. */

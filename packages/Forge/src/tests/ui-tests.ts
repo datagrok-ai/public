@@ -34,13 +34,17 @@ import {saveModelDialog} from '../ui/save-model-dialog';
 import {tableModelsPane} from '../ui/table-models-panel';
 import {tagsOfInput} from '../ui/tags-input';
 import {CHECK_DELAY_MS, SHOWN_RUN, TrainView} from '../ui/train-view';
-import {balloonWith, cancelOnceShown, catalogState, columnsOf, deleteRunsOf, demoDemog, expectNoFrames, expectReleased,
-  expectGridsFillPanes, framesSharing, insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile,
-  readUntil, refreshThenChange, runsOf, savedFixture, saveIrisModel, saveSkipUniqueModel, saveTestModel, taskBarEntry,
-  twoSpeciesIris, unbalancedIris, valuesOf, WINE, XGBOOST_FIELDS} from './test-data';
+import {balloonWith, cancelOnceShown, catalogState, CLASSIFIERS, columnsOf, deleteRunsOf, demoDemog, expectNoFrames,
+  expectReleased, expectGridsFillPanes, framesSharing, insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris,
+  openIrisFromFile, readUntil, refreshThenChange, REGRESSORS, runsOf, savedFixture, saveIrisModel, saveKeptGapsModel,
+  saveSkipUniqueModel, saveTestModel, taskBarEntry, twoSpeciesIris, unbalancedIris, valuesOf, WINE,
+  XGBOOST_FIELDS} from './test-data';
 
 const WAIT_MS = 5000;
 const TIMEOUT = 60000;
+/** The methods Method offers on iris, sorted: for Species, and for Petal.Length. */
+const IRIS_CLASSIFIERS = [...CLASSIFIERS].sort();
+const IRIS_REGRESSORS = [...REGRESSORS].sort();
 
 /** Opens the Train view on [table] and waits for the training it starts by itself. */
 async function openTrainView(table: DG.DataFrame): Promise<TrainView> {
@@ -446,7 +450,7 @@ category('UI', () => {
       await awaitCheck(() => view.featuresInput.validity === null, 'Features stays marked', WAIT_MS);
       await awaitTrained(view);
       expect(view.methodInput.value, 'Linear Regression');
-      expectArray([...view.methodInput.items].sort(), ['Linear Regression', 'PLS Regression', 'SVM', 'XGBoost']);
+      expectArray([...view.methodInput.items].sort(), IRIS_REGRESSORS);
       expect(view.lastTraining?.engine.name, 'Linear Regression');
     } finally {
       await closeTrainView(view, [iris]);
@@ -518,7 +522,7 @@ category('UI', () => {
     const tables = [grok.shell.addTable(iris), grok.shell.addTable(other)];
     const view = await openTrainView(iris);
     try {
-      expectArray([...view.methodInput.items].sort(), ['SVM', 'Softmax', 'XGBoost']);
+      expectArray([...view.methodInput.items].sort(), IRIS_CLASSIFIERS);
       expect(view.methodInput.value, 'XGBoost');
       const iterations = () => view.hyperparameterInputs.get('iterations');
       setHyperparameter(view, 'iterations', 25);
@@ -695,6 +699,8 @@ category('UI', () => {
     const runs = () => runsOf([iris]);
     const view = await openTrainView(iris);
     try {
+      view.methodInput.value = 'SVM';
+      await awaitTrained(view);
       const choice = view.missingValuesInputs.choice;
       expect(isShown(choice.root), true, 'Missing values is hidden with a gap');
       expect(choice.inputType, 'Radio');
@@ -705,7 +711,7 @@ category('UI', () => {
       expectNoFrames(frames.filter((f) => !view.resultsPane.frames.includes(f)));
       expect(Array.from(view.root.querySelectorAll('ul > li'), (li) => li.textContent)
         .includes('Rows: 149 used, 1 skipped (missing values)'), true, 'The Results rows item is missing');
-      expect((await runs())[0]?.row_count, 149);
+      expect((await runs()).find((r) => r.id === view.lastTraining?.runId)?.row_count, 149);
 
       const imputeLabel = Array.from(choice.root.querySelectorAll('.ui-radio-button label'))
         .find((label) => label.textContent === 'Impute');
@@ -723,10 +729,10 @@ category('UI', () => {
       expect(view.lastTraining === undefined, true, 'Neighbors 0 trained');
       await awaitCheck(() => resultsText(view).includes('Fix the settings.'),
         'The Results hint is not Fix the settings. for Neighbors 0', WAIT_MS);
-      expect(isTrainShown(view), false, 'Train is shown for XGBoost with Neighbors 0');
+      expect(isTrainShown(view), false, 'Train is shown for SVM with Neighbors 0');
       neighbors.value = 3;
       await awaitTrained(view);
-      expect(isTrainShown(view), false, 'Train is shown for XGBoost with Neighbors 3');
+      expect(isTrainShown(view), false, 'Train is shown for SVM with Neighbors 3');
 
       view.featuresInput.value = columnsOf(iris, ['Sepal.Length', 'Petal.Length', 'Petal.Width']);
       await awaitCheck(() => !isShown(choice.root), 'Missing values stays without gaps', WAIT_MS);
@@ -737,6 +743,31 @@ category('UI', () => {
 });
 
 category('UI: Train', () => {
+  test('Train view hides Missing values for a method that handles them', async () => {
+    const iris = await openIris();
+    iris.getCol('Sepal.Width').set(3, null);
+    const view = await openTrainView(iris);
+    const listItems = () => Array.from(view.root.querySelectorAll('ul > li'), (li) => li.textContent);
+    try {
+      const choice = view.missingValuesInputs.choice;
+      expect(view.methodInput.value, 'XGBoost');
+      expect(isShown(choice.root), false, 'Missing values is shown for XGBoost');
+      expect(isShown(view.preparationInputs.group.root), false, 'Preparation is shown for XGBoost');
+      await awaitCheck(() => listItems().includes('Missing values: kept (the method handles them)'),
+        `No kept line: ${listItems().join(' | ')}`, WAIT_MS);
+      expect(view.lastTraining?.result.rowCount, 150);
+
+      view.methodInput.value = 'SVM';
+      await awaitTrained(view);
+      expect(isShown(choice.root), true, 'Missing values is hidden for SVM');
+      expect(choice.value, 'Skip rows');
+      await awaitCheck(() => listItems().includes('Rows: 149 used, 1 skipped (missing values)') &&
+        !listItems().includes('Missing values: kept (the method handles them)'), listItems().join(' | '), WAIT_MS);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
   test('Target and Features follow a column removed from the table', async () => {
     const iris = await openIris();
     const view = await openTrainView(iris);
@@ -872,6 +903,8 @@ category('UI: Train', () => {
     const preparation = view.preparationInputs;
     const {oneHot, skipUniqueCategories, predictProbability, cutoff} = preparation;
     try {
+      view.methodInput.value = 'SVM';
+      await awaitTrained(view);
       expect(isShown(preparation.group.root) && isShown(view.missingValuesInputs.choice.root), true,
         'Preparation does not show Missing values for HEIGHT and WEIGHT');
       expect([oneHot, skipUniqueCategories, predictProbability, cutoff].some((input) => isShown(input.root)), false,
@@ -1386,6 +1419,9 @@ category('UI: Results', () => {
     iris.getCol('Sepal.Width').set(3, null);
     const view = await openTrainView(iris);
     try {
+      view.methodInput.value = 'SVM';
+      await awaitTrained(view);
+      await awaitCheck(() => view.resultsPane.frames[0]?.rowCount === 149, 'The results show every row', WAIT_MS);
       const frame = view.resultsPane.frames[0];
       frame.mouseOverRowIdx = 5;
       // The kept rows are 0, 1, 2, 4, 5, 6, ...: the 6th is row 6.
@@ -1905,7 +1941,7 @@ category('UI: Apply dialog', () => {
     }
   }, {timeout: TIMEOUT});
 
-  test('Apply dialog shows Missing values and the impute inputs', async () => {
+  test('Apply dialog shows Missing values and the impute inputs for a Skip rows XGBoost model', async () => {
     const iris = await openIris();
     const {id} = await saveIrisModel(iris);
     iris.getCol('Sepal.Width').set(3, null);
@@ -1928,6 +1964,22 @@ category('UI: Apply dialog', () => {
       expect(dialog.input('Distance').value, 'Euclidean');
       missingValues.value = 'Skip rows';
       await awaitCheck(() => !isShown(dialog.input('Neighbors').root), 'The impute inputs stay', WAIT_MS);
+    } finally {
+      opened?.close();
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Apply dialog hides Missing values for a model trained with the gaps kept', async () => {
+    const iris = await openIris();
+    const {id} = await saveKeptGapsModel(iris);
+    iris.getCol('Sepal.Width').set(3, null);
+    let opened: DG.Dialog | undefined;
+    try {
+      const dialog = (await applyModelDialog({table: iris, modelId: id})).show();
+      opened = dialog;
+      expect(isShown(dialog.input('Missing values').root), false, 'Missing values is shown for XGBoost');
+      await awaitCheck(() => !isDisabled(dialog.getButton('OK')), 'OK is disabled', WAIT_MS);
     } finally {
       opened?.close();
       await deleteModel(id);
@@ -3114,6 +3166,8 @@ category('UI: Runs', () => {
     const {oneHot} = view.preparationInputs;
     const choice = view.missingValuesInputs.choice;
     try {
+      view.methodInput.value = 'SVM';
+      await awaitTrained(view);
       view.targetInput.value = demog.getCol('AGE');
       view.featuresInput.value = columnsOf(demog, ['HEIGHT', 'WEIGHT', 'SEX', 'RACE']);
       await awaitCheck(() => isShown(oneHot.root) && oneHot.value, 'One-hot encoding is not checked', WAIT_MS);

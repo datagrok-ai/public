@@ -4,13 +4,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, expect, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
+import {category, test} from '@datagrok-libraries/test/src/test';
 
-import {isClassTarget} from '../crux/methods';
 import {trainPlsRegression} from '../pls/pls-ml';
 import {nonNullRows} from '../utils';
 import {Fit, FITS} from './baseline';
-import {accuracy, numericFeatures, copyCol, decoyColumns, asTable, r2, predictColumn, sameValues} from './utils';
+import {numericFeatures, roundTrip} from './utils';
 
 const IRIS = 'System:DemoFiles/iris.csv';
 const CARS = 'System:DemoFiles/cars.csv';
@@ -18,8 +17,6 @@ const WINE = 'System:DemoFiles/winequality.csv';
 const DEMOG = 'System:DemoFiles/demog.csv';
 
 const TIMEOUT = 60000;
-// Effectively zero: identical params → identical Float32.
-const ROUNDTRIP_EPS = 1e-6;
 
 // ── data helpers ──────────────────────────────────────────────────────
 
@@ -29,58 +26,6 @@ function sampleRows(df: DG.DataFrame, n: number): DG.DataFrame {
     return df;
   const stride = Math.ceil(df.rowCount / n);
   return df.clone(DG.BitSet.create(df.rowCount, (i) => i % stride === 0));
-}
-
-// ── metrics ───────────────────────────────────────────────────────────
-
-type Predict = (cols: DG.ColumnList) => Promise<DG.Column>;
-type Same = (a: DG.Column, b: DG.Column) => boolean;
-
-/** Apply-time contract: order- and extra-column-invariant; missing feature throws. */
-async function expectFeatureMatching(predict: Predict, features: DG.ColumnList, before: DG.Column,
-  same: Same): Promise<void> {
-  const cols = features.toList();
-  const rows = cols[0].length;
-
-  // (1) reversed order
-  expect(same(before, await predict(asTable(cols.map(copyCol).reverse()))), true,
-    'prediction depends on column order (reversed)');
-
-  // (2) rotated order — a permutation distinct from the reverse (>2 features)
-  if (cols.length > 2) {
-    const copies = cols.map(copyCol);
-    expect(same(before, await predict(asTable([...copies.slice(1), copies[0]]))), true,
-      'prediction depends on column order (rotated)');
-  }
-
-  // (3) superset: pick features by name from a scrambled table with extra columns.
-  const decoys = decoyColumns(rows, 2);
-  const superset = [decoys[0], ...cols.map(copyCol).reverse()];
-  superset.splice(1 + Math.floor(cols.length / 2), 0, decoys[1]);
-  expect(same(before, await predict(asTable(superset))), true, 'extra columns in the table disturb the prediction');
-
-  // (4) a missing feature must throw, not silently mispredict
-  await expectExceptionAsync(async () => {
-    await predict(asTable(cols.slice(1).map(copyCol)));
-  }, (e) => e.message.includes('is missing'));
-}
-
-/** Trains on `features`, applies twice (identical), checks feature matching and the training score floor */
-async function roundTrip(label: string, fit: Fit, target: DG.Column, features: DG.ColumnList,
-  floor: number): Promise<void> {
-  const classification = isClassTarget(target);
-  // Classification: identical labels; regression: identical Float32 values (a lossless model reproduces them)
-  const same: Same = (a, b) => sameValues(a, b, classification ? 0 : ROUNDTRIP_EPS);
-  const bytes = await fit(DG.DataFrame.fromColumns(features.toList()), target);
-  const predict: Predict = (cols) => predictColumn(DG.DataFrame.fromColumns(cols.toList()), bytes);
-
-  const before = await predict(features);
-  expect(same(before, await predict(features)), true, `${label}: a second apply changed predictions`);
-  await expectFeatureMatching(predict, features, before, same);
-
-  const score = classification ? accuracy(target, before) : r2(target, before);
-  expect(score > floor, true, `${label}: ${classification ? 'accuracy' : 'R²'} too low: ${score} ` +
-    `(expected > ${floor})`);
 }
 
 const {softmax, linreg, pls, svm, xgboost} = FITS;

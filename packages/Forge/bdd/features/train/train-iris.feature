@@ -67,7 +67,7 @@ Feature: Training a classifier on iris in the Train view
     Then the "Select columns..." dialog should close
     And the same training's result should be shown
     And Method input should have value "XGBoost"
-    And Method input should offer "Softmax, SVM, XGBoost"
+    And Method input should offer "CatBoost, Decision Tree, Extra Trees, Hist Gradient Boosting, k-Nearest Neighbors, LDA, Naive Bayes, Neural Network, Random Forest, Softmax, SVM, XGBoost"
     And Iterations input should have value "20"
     And Rate input should have value "0.3"
     And "Max Depth" input should have value "6"
@@ -176,7 +176,7 @@ Feature: Training a classifier on iris in the Train view
   Scenario: The methods follow the target; an invalid setting blocks training; the splitter resizes the form (5.1)
     When user hovers over label of Method input
     Then tooltip should contain text "The machine learning method that builds the model."
-    And Method input should offer "Linear Regression, PLS Regression, SVM, XGBoost"
+    And Method input should offer "CatBoost, Decision Tree, Extra Trees, Hist Gradient Boosting, k-Nearest Neighbors, Linear Regression, Neural Network, PLS Regression, Random Forest, SVM, XGBoost"
     And the "text of cell 1 of Metric" reading of grid viewer in "Performance" results panel should be "MSE"
     And the "text of cell 4 of Metric" reading of grid viewer in "Performance" results panel should be "R2"
     When user remembers the training run count of the table "forge-test-iris-{time}"

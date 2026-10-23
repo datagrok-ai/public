@@ -3,16 +3,17 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
 import {applicableEngines} from '../engines/applicable-engines';
 import {selectBestEngine} from '../engines/best-engine';
-import {defaultHyperparameters, defaultValuesOf, Engine, hasTrainingRows, hyperparametersOf, isComplete,
-  isServerEngine, rolesOf} from '../engines/engine';
+import {defaultHyperparameters, defaultValuesOf, Engine, handlesMissingValues, hasTrainingRows, hyperparametersOf,
+  isComplete, isServerEngine, rolesOf} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {isApplicable, isInteractive} from '../engines/engine-calls';
 import {SettingDetails} from '../engines/method-list';
 import {runListMethods, runTrainModel} from '../training/train-api';
-import {columnsOf, deleteRunsOf, demoDemog, engineByName, expectReleased, failsWith, framesSharing, inDiscoveryOrder,
-  IRIS, MEASUREMENTS, openDemoTable, valuesOf} from './test-data';
+import {CLASSIFIERS, columnsOf, deleteRunsOf, demoDemog, EDA_METHODS, engineByName, expectReleased, failsWith,
+  framesSharing, inDiscoveryOrder, IRIS, MEASUREMENTS, NATIVE_NANS, openDemoTable, REGRESSORS, valuesOf}
+  from './test-data';
 
-const EDA_ENGINES = ['Linear Regression', 'Softmax', 'PLS Regression', 'XGBoost', 'SVM'];
+const ROWS_ENGINES = ['SVM', 'k-Nearest Neighbors'];
 const BEST_NAMES = ['Chemprop', 'XGBoost', 'PLS Regression', 'Linear Regression'];
 const METHOD_COLUMNS = ['Method', 'Package', 'Method type', 'Runs on', 'Keeps training rows', 'Retrains live', 'Roles',
   'Hyperparameters', 'Settings'];
@@ -43,13 +44,13 @@ function strings(name: string, value: (i: number) => string): DG.Column {
 async function markedMethods(table: DG.DataFrame, target: string | null, column: string): Promise<string[]> {
   const methods = await runListMethods(table, target);
   const names: string[] = methods.getCol('Method').toList();
-  return names.filter((name, i) => EDA_ENGINES.includes(name) && methods.get(column, i) === true).sort();
+  return names.filter((name, i) => EDA_METHODS.includes(name) && methods.get(column, i) === true).sort();
 }
 
 category('Engines', () => {
   test('discovers the EDA engines', async () => {
     const engines = EngineRegistry.discover();
-    for (const name of EDA_ENGINES) {
+    for (const name of EDA_METHODS) {
       const engine = engineByName(engines, name);
       expect(engine.kind, 'function');
       expect(engine.namespace, 'Eda');
@@ -61,7 +62,7 @@ category('Engines', () => {
     const engines = EngineRegistry.discover();
     expect(rolesOf(engineByName(engines, 'PLS Regression')).includes('visualize'), true);
     expect(rolesOf(engineByName(engines, 'XGBoost')).includes('visualize'), false);
-    for (const name of EDA_ENGINES) {
+    for (const name of EDA_METHODS) {
       const engine = engineByName(engines, name);
       expect(rolesOf(engine).includes('isInteractive'), true, `${name} has no isInteractive`);
       expect(engine.isLiveUpdate, true, `${name} is not live`);
@@ -127,13 +128,13 @@ category('Engines', () => {
     const species = iris.getCol('Species');
     const petalLength = iris.getCol('Petal.Length');
     const classifiers = (await applicableEngines(engines, columnsOf(iris, MEASUREMENTS), species)).applicable;
-    expectArray(classifiers.map((e) => e.name).filter((name) => EDA_ENGINES.includes(name)),
-      inDiscoveryOrder(engines, ['XGBoost', 'SVM', 'Softmax']));
+    expectArray(classifiers.map((e) => e.name).filter((name) => EDA_METHODS.includes(name)),
+      inDiscoveryOrder(engines, CLASSIFIERS));
     const features = columnsOf(iris, MEASUREMENTS.filter((name) => name !== 'Petal.Length'));
     const [{applicable, failed}, frames] = await framesSharing(features,
       () => applicableEngines(engines, features, petalLength));
-    expectArray(applicable.map((e) => e.name).filter((name) => EDA_ENGINES.includes(name)),
-      inDiscoveryOrder(engines, ['XGBoost', 'SVM', 'Linear Regression', 'PLS Regression']));
+    expectArray(applicable.map((e) => e.name).filter((name) => EDA_METHODS.includes(name)),
+      inDiscoveryOrder(engines, REGRESSORS));
     expect(failed.length, 0, failed.map((f) => f.engine.name).join(', '));
     expectReleased(frames);
   });
@@ -159,11 +160,15 @@ category('Engines', () => {
 
   test('isServerEngine and hasTrainingRows', async () => {
     const engines = EngineRegistry.discover();
-    for (const name of EDA_ENGINES) {
+    for (const name of EDA_METHODS) {
       const engine = engineByName(engines, name);
       expect(isServerEngine(engine), false, `${name} runs on the server`);
-      expect(hasTrainingRows(engine), name === 'SVM', `${name} training rows`);
+      expect(hasTrainingRows(engine), ROWS_ENGINES.includes(name), `${name} training rows`);
+      expect(handlesMissingValues(engine), NATIVE_NANS.includes(name), `${name} missing values`);
     }
+    expect(handlesMissingValues(namedEngine('forge-test-js', {train: scriptTrain('javascript',
+      {mlnativenans: 'true'})})), true, 'meta.mlnativenans');
+    expect(handlesMissingValues(namedEngine('forge-test-none')), false, 'No train function');
     const python = scriptTrain('python');
     expect(python.language, 'python');
     expect(isServerEngine({...namedEngine('forge-test-py', {train: python}), kind: 'script'}), true, 'Python');
@@ -184,10 +189,10 @@ category('Engines', () => {
     expectArray(methods.columns.names(), METHOD_COLUMNS);
     const names: string[] = methods.getCol('Method').toList();
     expectArray(names, inDiscoveryOrder(engines, engines.filter(isComplete).map((e) => e.name)));
-    for (const name of EDA_ENGINES) {
+    for (const name of EDA_METHODS) {
       const i = names.indexOf(name);
       expect(methods.get('Runs on', i), 'browser', name);
-      expect(methods.get('Keeps training rows', i), name === 'SVM', `${name} training rows`);
+      expect(methods.get('Keeps training rows', i), ROWS_ENGINES.includes(name), `${name} training rows`);
     }
     const xgboost = engineByName(engines, 'XGBoost');
     const settings: SettingDetails[] = JSON.parse(methods.get('Settings', names.indexOf('XGBoost')));
@@ -203,7 +208,7 @@ category('Engines', () => {
 
   test('listMethods marks the applicable and the suggested methods of a table', async () => {
     const iris = await grok.data.files.openTable(IRIS);
-    expectArray(await markedMethods(iris, 'Species', 'Applicable'), ['SVM', 'Softmax', 'XGBoost']);
+    expectArray(await markedMethods(iris, 'Species', 'Applicable'), [...CLASSIFIERS].sort());
     expectArray(await markedMethods(iris, 'Species', 'Suggested'), ['XGBoost']);
     expectArray((await markedMethods(iris, 'Petal.Length', 'Applicable')).filter((name) => name.endsWith('Regression')),
       ['Linear Regression', 'PLS Regression']);
@@ -212,7 +217,7 @@ category('Engines', () => {
   test('listMethods takes the table\'s last column as the target by default', async () => {
     const iris = await grok.data.files.openTable(IRIS);
     expect(iris.columns.byIndex(iris.columns.length - 1).name, 'Species');
-    expectArray(await markedMethods(iris, null, 'Applicable'), ['SVM', 'Softmax', 'XGBoost']);
+    expectArray(await markedMethods(iris, null, 'Applicable'), [...CLASSIFIERS].sort());
     expectArray(await markedMethods(iris, null, 'Suggested'), ['XGBoost']);
   });
 

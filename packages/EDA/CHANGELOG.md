@@ -14,6 +14,8 @@
 * GROK-20932: Changed regression predictions to float columns for integer targets
 * GROK-20932: Changed Linear Regression, Softmax, PLS Regression, XGBoost and SVM training to skip rows with a missing target instead of failing
 * GROK-20932: Removed the sci-comp-ml, XGBoost and LIBSVM wasm modules
+* GROK-20932: Added nine Forge methods on Crux: Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost, Decision Tree, k-Nearest Neighbors, Naive Bayes, LDA and Neural Network (MLP); the stochastic methods have a Seed hyperparameter; kNN keeps the training rows in the model (meta.mlhasrows)
+* GROK-20932: Marked XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost and Decision Tree with meta.mlnativenans: they take rows with missing feature values (Forge no longer skips or imputes them by default)
 
 ## 1.9.1 (WIP)
 

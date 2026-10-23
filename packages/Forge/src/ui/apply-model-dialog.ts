@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {APPLY_COLUMNS, ApplyModelRow, ApplyRequest, applyWithProgress, DEFAULT_BATCH_SIZE, LoadedModel,
-  loadedModelOf, requiredFeaturesOf} from '../apply/apply-model';
+  loadedModelOf, missingValuesOf, requiredFeaturesOf} from '../apply/apply-model';
 import {ColumnMapping, compatibility, isSuggested, kindText, MappingProblem, mappingProblems, suggestMapping}
   from '../apply/column-matching';
 import {applicableTables} from '../catalog/applicable-tables';
@@ -252,6 +252,9 @@ class ApplyForm {
     } finally {
       this.isUpdating = false;
     }
+    this.update();
+    // The preset needs the gaps of the rows just filled; `keep` then hides Missing values.
+    this.missingValues.restore(this.model === null ? {mode: 'skip'} : missingValuesOf(this.model));
     this.update();
     this.columns.setExpanded(this.problems.length > 0);
     this.rowsBlock.scrollTop = 0;

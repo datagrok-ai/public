@@ -8,7 +8,7 @@ claim.
 |---|---|---|
 | `train/train-iris.feature` | 2.1, 6.2 (1-3), 2.5, 5.1, 5.2 (1-2), 5.13 (1-2), 2.2, 2.3, 2.8, 4.7 (1), 5.5, 5.6, 5.7 | the view on iris and its first training, the Runs grid and a restored run, a feature the method cannot use, the methods of a regression and an invalid setting, every method and the user's choice, a classifier's results and its wrong predictions, the Save dialog's Name checks, Save without data and what reached the server, the catalog row and its Details, Reference and Copy, SVM's training rows, the two balloons' links |
 | `train/train-winequality.feature` | 2.4, 5.2 (4), 5.3, 5.12 (1-3, 5) | the type classifier's panels, the quality regressor and the Target/Features conflict, every regression method on 6497 rows, a change that supersedes a training, a regressor's results, a hovered point as the table's row |
-| `train/train-iris-gaps.feature` | 3.11, 3.12, 5.11 (1-3), 5.13 (3) | iris with cleared cells: the Preparation group and its Missing values, Skip rows counted and recorded, Impute with its settings and an invalid one, a feature unchecked and checked again, a cell cleared later counted at the next change, a hovered point as the table's row with the same values |
+| `train/train-iris-gaps.feature` | 3.11, 3.12, 5.11 (1-3), 5.13 (3) | iris with cleared cells, on SVM (XGBoost's keep claimed once): the Preparation group and its Missing values, Skip rows counted and recorded, Impute with its settings and an invalid one, a feature unchecked and checked again, a cell cleared later counted at the next change, a hovered point as the table's row with the same values |
 | `train/train-demog.feature` | 3.14 (1), 3.15 (1), 5.8, 5.9, 5.10, 5.14, 5.4 | demog in the Train view: a date feature and a date target flagged, one-hot on and off, a saved one-hot model replayed on a second demog with an unseen category, an id column left out and not asked for at Apply, Predict probability and its cutoff re-cutting without a training, the saved probability model predicting labels, the ROC curve's AUC and marked point, SVM on a 50000-row demo table on Train only, cancelled and recorded |
 | `integration/table-pane.feature` | 6.1 (1-7), 4.13 (3) | the table pane Forge models after the built-in panes: the fitting lines newest first, the run icon and Train tooltips, the name's tooltip and row menu, the run icon's application, the name opening the model, the lines of other tables (cars lists the demog regressor by close names), "No model fits this table.", Train opening the Train view |
 | `apply/apply-iris.feature` | 3.1 (3-5), 3.4, 4.10, 3.3, 3.13, 3.7 (1, 2, 4), 3.8, 3.14 (2-5), 3.9, 3.5 (1-2) | the Apply dialog's presets and the predictions against the stored Accuracy, the catalog's Apply model icon and the column's tag and Predicted by pane, close, far and repeated column names, missing values skipped and imputed, a row without a model file, Forge:applyModel and its refusal, every red row of the mapping, the old tool's menu and dialog, the trash-icon delete and the orphaned column; every application counted on the server |
@@ -31,6 +31,15 @@ probe (a plain `ui.dialog` with a `ui.setDisabled` button) found the tooltip's h
 tagged, the scenario passes by failing and fails the run once the tooltip shows: drop the tag once the platform is
 fixed. A scenario stops at its first failing step, so its last step (CANCEL) keeps the journey clean only once the
 tooltip shows; until then the harness closes the dialog with Escape after the failure.
+
+Stale since XGBoost, the default method, handles missing values (`mlnativenans`) and hides Missing values; left
+unedited for the BDD resume:
+
+- `apply-iris` 3.13: its XGBoost model's Apply dialog hides Missing values and skips no row; it needs a model of a
+  method without `mlnativenans` (SVM).
+- `train-demog` 3.14: Preparation no longer shows Missing values for XGBoost on demog's gaps.
+- `train-demog` 5.10: Preparation shows Predict probability only for XGBoost, not Missing values.
+- `train-demog` 5.14: a knock-on of 5.10, which stops before Predict probability is checked, so no ROC Curve shows.
 
 ## Running
 
@@ -62,7 +71,7 @@ npx grok-bdd run --reporter=list generated/apply generated/catalog    # one or m
   name in the Share dialog and the Sharing pane is the account's friendly name, read from the server.
 
 The stand needs: Forge published by the session's user (`grok publish local`: the debug build is the admin's), EDA
-with its five methods and `knnImpute` (Impute in `train-iris-gaps`, `apply-iris` and `apply-demog`), PowerGrid (the
+with its fourteen methods and `knnImpute` (Impute in `train-iris-gaps`, `apply-iris` and `apply-demog`), PowerGrid (the
 Forms viewer of Compare), the second account, and `iris.csv`, `winequality.csv`, `demog.csv`, `cars.csv` and
 `country-languages.csv` in `System:DemoFiles`. A run uses at most two lanes, also with `--workers 4`: the `@serial`
 features share one, one after another, and app-and-menus runs beside them. A full run took 4.2 minutes with

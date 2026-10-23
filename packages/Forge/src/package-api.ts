@@ -57,9 +57,9 @@ export namespace funcs {
    * @param {DG.DataFrame} table - The table to learn from
    * @param {string} target - Name of the column to predict. A numerical column gives a regression model, a text or boolean column a classifier
    * @param {any} features - Names of the columns to learn from. By default every numerical column except the target and id-like whole-number columns
-   * @param {string} method - The method as Forge names it (XGBoost, Linear Regression, PLS Regression, Softmax, SVM). By default the method Forge suggests for the data
+   * @param {string} method - The method as Forge names it, any method Forge:listMethods lists. By default the method Forge suggests for the data
    * @param {any} hyperparameters - The method's settings by name, for example iterations: 50. Settings not named keep the method's defaults
-   * @param {any} options - Data preparation. missingValues: skip (default) or impute, with neighbors and distance for impute. oneHot (default on when every text feature has at most 20 categories), skipUniqueCategories (default true), predictProbability (default false, two-class targets only), cutoff (default 0.5), seed (default random), folds (default 5)
+   * @param {any} options - Data preparation. missingValues: skip, impute or keep (default keep for a method that handles missing values, otherwise skip), with neighbors and distance for impute. oneHot (default on when every text feature has at most 20 categories), skipUniqueCategories (default true), predictProbability (default false, two-class targets only), cutoff (default 0.5), seed (default random), folds (default 5)
    * @param {string} name - Saves the model under this name. Without a name the model is trained and measured but not saved
    * @param {string} description - Description of the saved model
    * @param {string} tags - Comma-separated tags of the saved model

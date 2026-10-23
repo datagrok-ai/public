@@ -1,7 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {defaultValuesOf, Hyperparameters} from '../engines/engine';
-import {imputeFunction, imputeSettingsOf, MissingColumn, MissingValuesSettings} from '../preparation/missing-values';
+import {imputeFunction, imputeSettings, imputeSettingsOf, MissingColumn, MissingValuesSettings}
+  from '../preparation/missing-values';
 
 const SKIP_ROWS = 'Skip rows';
 const IMPUTE = 'Impute';
@@ -13,6 +14,7 @@ export class MissingValuesInputs {
   private readonly defaults: Hyperparameters;
   private hasGaps = false;
   private isImputeShown = false;
+  private keeps = false;
 
   constructor(onChanged: () => void, problem: () => string | null) {
     const func = imputeFunction();
@@ -38,11 +40,21 @@ export class MissingValuesInputs {
   }
 
   get visibleInputs(): DG.InputBase[] {
-    return [...(this.hasGaps ? [this.choice] : []), ...(this.isImpute ? this.imputeInputs.values() : [])];
+    return [...(this.isChoiceShown ? [this.choice] : []), ...(this.isImpute ? this.imputeInputs.values() : [])];
   }
 
   get isImpute(): boolean {
-    return this.hasGaps && this.choice.value === IMPUTE;
+    return this.isChoiceShown && this.choice.value === IMPUTE;
+  }
+
+  private get isChoiceShown(): boolean {
+    return this.hasGaps && !this.keeps;
+  }
+
+  /** Hides the inputs while the method takes the rows with missing values as they are ([keeps]). */
+  setKeeps(keeps: boolean): void {
+    this.keeps = keeps;
+    this.updateVisibility();
   }
 
   /** Shows the inputs when some columns have missing values ([missing], from `missingColumnsOf`); the tooltip lists
@@ -54,17 +66,19 @@ export class MissingValuesInputs {
   }
 
   settings(): MissingValuesSettings {
+    if (this.keeps)
+      return {mode: 'keep'};
     if (!this.isImpute)
       return {mode: 'skip'};
-    const neighbors: unknown = this.imputeInputs.get('neighbors')?.value;
-    const distance: unknown = this.imputeInputs.get('distance')?.value;
-    return typeof neighbors === 'number' && typeof distance === 'string' ?
-      {mode: 'impute', impute: {neighbors, distance}} : {mode: 'impute'};
+    return imputeSettings(this.imputeInputs.get('neighbors')?.value, this.imputeInputs.get('distance')?.value);
   }
 
-  /** Sets the choice and, for Impute, its inputs to [settings], as a user would; nothing while the choice is hidden. */
+  /** Sets the inputs to [settings], as a user would: `keep` hides them; the choice and, for Impute, its inputs are
+   * set only while the choice is shown. */
   restore(settings: MissingValuesSettings): void {
-    if (!this.hasGaps)
+    this.keeps = settings.mode === 'keep';
+    this.updateVisibility();
+    if (!this.isChoiceShown)
       return;
     const isImpute = settings.mode === 'impute' && this.imputeInputs.size > 0;
     this.choice.value = isImpute ? IMPUTE : SKIP_ROWS;
@@ -80,7 +94,7 @@ export class MissingValuesInputs {
 
   private updateVisibility(): void {
     const isImputeShown = this.isImpute;
-    ui.setDisplay(this.choice.root, this.hasGaps);
+    ui.setDisplay(this.choice.root, this.isChoiceShown);
     for (const input of this.imputeInputs.values())
       ui.setDisplay(input.root, isImputeShown);
     const isHiding = this.isImputeShown && !isImputeShown;

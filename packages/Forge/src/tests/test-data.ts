@@ -18,6 +18,15 @@ import {prepareTraining, TrainingRequest, TrainingResult, TrainingSelection, tra
 export const IRIS = 'System:DemoFiles/iris.csv';
 export const WINE = 'System:DemoFiles/winequality.csv';
 export const MEASUREMENTS = ['Sepal.Length', 'Sepal.Width', 'Petal.Length', 'Petal.Width'];
+export const EDA_METHODS = ['Linear Regression', 'Softmax', 'PLS Regression', 'XGBoost', 'SVM', 'Random Forest',
+  'Extra Trees', 'Hist Gradient Boosting', 'CatBoost', 'Decision Tree', 'k-Nearest Neighbors', 'Naive Bayes', 'LDA',
+  'Neural Network'];
+/** The EDA methods that learn a text target (iris Species), and those that learn a numerical one (Petal.Length). */
+export const CLASSIFIERS = EDA_METHODS.filter((name) => !name.endsWith('Regression'));
+export const REGRESSORS = EDA_METHODS.filter((name) => !['Softmax', 'Naive Bayes', 'LDA'].includes(name));
+/** The EDA methods with `meta.mlnativenans`. */
+export const NATIVE_NANS = ['XGBoost', 'Random Forest', 'Extra Trees', 'Hist Gradient Boosting', 'CatBoost',
+  'Decision Tree'];
 export const XGBOOST_FIELDS: Pick<ModelInsert, 'engine_name' | 'engine_namespace' | 'engine_kind'> =
   {engine_name: 'XGBoost', engine_namespace: 'Eda', engine_kind: 'function'};
 export const IMPUTE: MissingValuesSettings = {mode: 'impute', impute: {neighbors: 4, distance: 'Euclidean'}};
@@ -153,12 +162,20 @@ export function savedFixture<T>(fixture: T | undefined): T {
   return fixture;
 }
 
-let xgboostEngine: Engine | undefined;
+const edaEngines = new Map<string, Engine>();
 
-export function xgboost(): Engine {
-  xgboostEngine ??= engineByName(EngineRegistry.discover(), 'XGBoost');
-  return xgboostEngine;
+/** The discovered method [name], discovered once per bundle. */
+export function edaEngine(name: string): Engine {
+  let engine = edaEngines.get(name);
+  if (engine === undefined) {
+    engine = engineByName(EngineRegistry.discover(), name);
+    edaEngines.set(name, engine);
+  }
+  return engine;
 }
+
+export const xgboost = () => edaEngine('XGBoost');
+export const svm = () => edaEngine('SVM');
 
 /** The demo file [path], named `forge-test-<prefix>-<time>`. */
 export async function openDemoTable(path: string, prefix: string): Promise<DG.DataFrame> {
@@ -200,8 +217,7 @@ export function names(columns: DG.Column[]): string[] {
 
 /** A selection of the columns themselves, as the Train view makes it. */
 export function selectionOf(features: DG.Column[] | DG.DataFrame, target: DG.Column,
-  missingValues: MissingValuesSettings = {mode: 'skip'}): TrainingSelection {
-  const engine = xgboost();
+  missingValues: MissingValuesSettings = {mode: 'skip'}, engine: Engine = xgboost()): TrainingSelection {
   const columns = features instanceof DG.DataFrame ? features.columns.toList() : features;
   return {engine, features: columns, target, hyperparameters: defaultHyperparameters(engine), seed: 42, folds: 5,
     missingValues, steps: NO_PREPARATION_STEPS};
@@ -237,8 +253,9 @@ export function expectNoFrames(frames: DG.DataFrame[]): void {
 }
 
 export async function requestOf(features: DG.Column[] | DG.DataFrame, target: DG.Column,
-  steps: PreparationSteps = NO_PREPARATION_STEPS): Promise<TrainingRequest> {
-  return prepareTraining({...selectionOf(features, target), steps});
+  steps: PreparationSteps = NO_PREPARATION_STEPS, engine?: Engine,
+  missingValues: MissingValuesSettings = {mode: 'skip'}): Promise<TrainingRequest> {
+  return prepareTraining({...selectionOf(features, target, missingValues, engine), steps});
 }
 
 /** iris without setosa: two classes of Species that overlap, so a method's scores are not all 0 or 1. */
@@ -261,9 +278,9 @@ export async function unbalancedIris(): Promise<DG.DataFrame> {
 
 /** Trains a model of [target] by [features] and saves it as a `forge-test-` model; [fields] override the row. */
 export async function saveTestModel(features: DG.Column[], target: DG.Column, datasetName: string,
-  fields: Partial<ModelFields> = {}, steps: PreparationSteps = NO_PREPARATION_STEPS):
-  Promise<{id: string; name: string; result: TrainingResult}> {
-  const request = await requestOf(features, target, steps);
+  fields: Partial<ModelFields> = {}, steps: PreparationSteps = NO_PREPARATION_STEPS, engine?: Engine,
+  missingValues?: MissingValuesSettings): Promise<{id: string; name: string; result: TrainingResult}> {
+  const request = await requestOf(features, target, steps, engine, missingValues);
   const result = await trainModel(request);
   const fingerprint = datasetFingerprint(request.features, request.target);
   const name = `forge-test-model-${Date.now()}`;
@@ -282,9 +299,29 @@ export async function saveSkipUniqueModel(): Promise<{id: string; name: string; 
 }
 
 /** {@link saveTestModel} of an iris classifier of Species by the measurements. */
-export async function saveIrisModel(iris: DG.DataFrame, fields: Partial<ModelFields> = {}):
+export async function saveIrisModel(iris: DG.DataFrame, fields: Partial<ModelFields> = {}, engine?: Engine,
+  missingValues?: MissingValuesSettings): Promise<{id: string; name: string; result: TrainingResult}> {
+  return saveTestModel(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'), iris.name, fields,
+    NO_PREPARATION_STEPS, engine, missingValues);
+}
+
+/** {@link saveIrisModel} of XGBoost trained under `keep` on a copy of [iris] with gaps at rows 3 and 70. */
+export async function saveKeptGapsModel(iris: DG.DataFrame):
   Promise<{id: string; name: string; result: TrainingResult}> {
-  return saveTestModel(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'), iris.name, fields);
+  const gapped = iris.clone();
+  gapped.name = iris.name;
+  withGaps(columnsOf(gapped, ['Sepal.Width', 'Petal.Width']));
+  return saveIrisModel(gapped, {}, undefined, {mode: 'keep'});
+}
+
+/** The rows the gap tests clear: one in the first column, one in the second. */
+export const GAP_ROWS = [3, 70];
+
+/** [columns] with the value of the first at row 3 and of the second at row 70 cleared, in place. */
+export function withGaps(columns: DG.Column[]): DG.Column[] {
+  for (const [i, row] of GAP_ROWS.entries())
+    columns[i].set(row, null);
+  return columns;
 }
 
 /** Every metric of [expected] within [tolerance] in [actual], and no metric [expected] lacks. */
