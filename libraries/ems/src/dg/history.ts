@@ -52,11 +52,10 @@ export class DomainHistory extends Control {
     this.root.append(section.root);
     this.effect(() => {
       const row = this.row.value;
-      const singular = source.schema.info.singularName.toLowerCase() || 'row';
       // a draft id, and any other key the frame stood in for a row it has no id for, names
       // nothing the server could be asked about
       const hint = this._noHistory.value ? 'This table keeps no history.' :
-        row === null ? `Select a ${singular} to see its history.` :
+        row === null ? `Select a ${DomainTable.noun(source.schema.info, true)} to see its history.` :
           Rows.isService(row.id) ? 'Not saved yet' : null;
       this._hint.textContent = hint ?? '';
       this._hint.hidden = hint === null;

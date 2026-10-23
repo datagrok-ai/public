@@ -6,6 +6,7 @@ import type * as DG from 'datagrok-api/dg';
 import {domains} from './facade.js';
 import {DomainAddress} from './address.js';
 import {DomainApp} from './app.js';
+import {DomainErrors} from './errors.js';
 
 /** The view for a `/domains` address, null where the platform keeps the address: anything that is
  * not a table route (`/domains`, `/domains/<schema>` — the schema gallery and the diagram stay
@@ -24,9 +25,10 @@ export async function route(address: string): Promise<DG.ViewBase | null> {
   if (open !== undefined)
     return open;
   // a table the registry refuses, or an app's configuration that throws: the platform's own view
-  // still opens, but the reason is not lost
+  // still opens, but the reason is not lost — an unknown table is no failure
   const handle = await domains.table(`${schema}.${table}`).catch((e) => {
-    console.error(`EMS: ${schema}.${table} did not open as a u2 view:`, e);
+    if (!DomainErrors.isNotFound(e))
+      console.error(`EMS: ${schema}.${table} did not open as a u2 view:`, e);
     return null;
   });
   if (handle === null)

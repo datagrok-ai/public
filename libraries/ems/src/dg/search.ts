@@ -7,6 +7,7 @@
 import {computed, TextInput} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {confirmDiscard} from '../core/session.js';
+import {DomainTable} from './facade.js';
 
 export interface DomainSearchOptions {
   placeholder?: string;
@@ -21,7 +22,7 @@ export class DomainSearch extends TextInput {
     super({search: true, inline: true, name: 'search', value: source.search.peek(),
       placeholder: options.placeholder ?? computed(() => {
         source.state.value;
-        return `Search ${source.schema.info.pluralName.toLowerCase() || 'rows'}…`;
+        return `Search ${DomainTable.noun(source.schema.info)}…`;
       })});
     this.root.classList.add('u2-domain-search');
     this.root.dataset.u2 = 'domain-search';

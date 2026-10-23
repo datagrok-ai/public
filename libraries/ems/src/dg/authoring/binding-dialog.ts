@@ -212,10 +212,6 @@ export abstract class BindingWizard<TResult> extends Control {
       Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]])));
   }
 
-  protected static _notFound(e: unknown): boolean {
-    return (e as {status?: unknown} | null)?.status === 404 || DomainErrors.codeOf(e) === 'not-found';
-  }
-
   /** A refusal the server answered — not a lost connection, a timeout or a 5xx. */
   protected static _answered(e: unknown): boolean {
     const status = (e as {status?: unknown} | null)?.status;
@@ -546,7 +542,8 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       try {
         await grok.dapi.domains.schema(name).manifest();
       } catch (e) {
-        return BindingDialog._notFound(e) ? null : `Registered schemas could not be checked: ${BindingDialog._failure(e)}`;
+        return DomainErrors.isNotFound(e) ? null :
+          `Registered schemas could not be checked: ${BindingDialog._failure(e)}`;
       }
       model.markTaken(name);
     }
@@ -690,7 +687,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       try {
         registered = await grok.dapi.domains.schema(plan.name).manifest();
       } catch (x) {
-        if (!BindingDialog._notFound(x))
+        if (!DomainErrors.isNotFound(x))
           unread = BindingDialog._failure(x);
       }
       this._outcomeUnknown(plan, e, registered, unread);

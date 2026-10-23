@@ -556,7 +556,7 @@ export class DomainForm extends Control {
   }
 
   static emptyHint(source: DomainSource): string {
-    const name = source.schema.info.singularName.toLowerCase() || 'row';
+    const name = DomainTable.noun(source.schema.info, true);
     return `Select ${/^[aeiou]/.test(name) ? 'an' : 'a'} ${name} to edit.`;
   }
 }

@@ -98,7 +98,7 @@ export abstract class VirtualRows<T> extends Control {
    * item still present when items have keys (see {@link VirtualRowsOptions.keyOf}), else the lead. */
   readonly selectedIndices: ReadonlySignal<ReadonlySet<number>>;
 
-  protected readonly itemHeight: number;
+  readonly itemHeight: number;
   protected readonly content = document.createElement('div');
   protected items: readonly T[] = [];
   /** Identity of an item; a subclass whose items bring their own key replaces it in `setItems`. */

@@ -168,14 +168,13 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   /** Registers `fn` for every handle over `address` made from now on; one registered again under
    * the same `id` replaces the earlier. Returns the unregister function. */
   static configure<TRow extends DomainRowLike = DomainRowLike>(address: string, fn: DomainConfigure<TRow>,
-    options: {id?: string} = {}): () => void {
-    const entries = CONFIGURE.get(address) ?? new Map<unknown, DomainConfigure<any>>();
+    {id}: {id: string}): () => void {
+    const entries = CONFIGURE.get(address) ?? new Map<string, DomainConfigure<any>>();
     CONFIGURE.set(address, entries);
-    const key = options.id ?? fn;
-    entries.set(key, fn);
+    entries.set(id, fn);
     return () => {
-      if (entries.get(key) === fn)
-        entries.delete(key);
+      if (entries.get(id) === fn)
+        entries.delete(id);
     };
   }
 
@@ -390,7 +389,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 // one registry per page, not per bundle: the `/domains` route runs in PowerPack's copy of this
 // library, and must still dress a table with what the app's bundle configured. The version keeps a
 // copy with another `DomainTable` contract off it: bump it when that contract changes
-const CONFIGURE: Map<string, Map<unknown, DomainConfigure<any>>> =
+const CONFIGURE: Map<string, Map<string, DomainConfigure<any>>> =
   (globalThis as Record<PropertyKey, any>)[Symbol.for('ems.configure.v1')] ??= new Map();
 
 /** The handle with everything registered for its address applied, in registration order. */

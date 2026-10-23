@@ -65,10 +65,8 @@ export class DomainList extends Control {
           return [];
         const groups = [{label: this.renderer.caption(row), actions: this.actionsFor(row)}];
         const actions = this.selectionActions(selected);
-        if (actions.length > 0) {
-          const what = source.schema.info.pluralName.toLowerCase().replace(/_/g, ' ') || 'rows';
-          groups.push({label: `${selected.length} ${what}`, actions});
-        }
+        if (actions.length > 0)
+          groups.push({label: `${selected.length} ${DomainTable.noun(source.schema.info)}`, actions});
         return groups;
       },
       onEnter: () => source.activate.value = source.activate.peek() + 1,
@@ -89,7 +87,7 @@ export class DomainList extends Control {
         this.list.selectedIndex.value = 0;
     });
 
-    DomainList.pageOnScroll(this, this.list.root, source, itemHeight);
+    pageOnScroll(this, this.list, source);
 
     const status = div([], 'u2-domain-list-status');
     status.dataset.u2Part = 'status';
@@ -109,7 +107,7 @@ export class DomainList extends Control {
           'u2-domain-list-error'));
       } else if (state === 'ready' && count === 0) {
         const search = source.search.value;
-        const what = source.schema.info.pluralName.toLowerCase() || 'rows';
+        const what = DomainTable.noun(source.schema.info);
         // an empty result the user asked for says so, and offers the way back out of it
         const said = _options.empty ?? (search !== '' ? `No ${what} match "${search}".` :
           filtered ? `No ${what} match the filter.` : `No ${what}.`);
@@ -131,17 +129,6 @@ export class DomainList extends Control {
     });
     this.effect(() => this.root.classList.toggle('u2-domain-list-stale', this.stale.value));
     this.root.append(this.list.root, status);
-  }
-
-  /** The source's next page, loaded as `scroller` comes within a few rows of its bottom — for as
-   * long as `owner` lives. */
-  static pageOnScroll(owner: Control, scroller: HTMLElement, source: DomainSource, itemHeight: number): void {
-    const onScroll = () => {
-      if (scroller.scrollTop + scroller.clientHeight > scroller.scrollHeight - NEAR_BOTTOM_ROWS * itemHeight)
-        void source.loadMore();
-    };
-    scroller.addEventListener('scroll', onScroll);
-    owner.own(() => scroller.removeEventListener('scroll', onScroll));
   }
 
   /** The renderer in force: the option, else the table's (live — an app may replace it), else
@@ -254,4 +241,17 @@ export class DomainList extends Control {
     return info.searchableColumns.filter((c) => c !== info.nameColumn).map((c) => text(row[c]))
       .filter((v) => v !== '').join(' · ');
   }
+}
+
+/** The source's next page, loaded as `rows` scrolls within a few rows of its bottom — for as long
+ * as `owner` lives. */
+export function pageOnScroll(owner: Control, rows: {root: HTMLElement, itemHeight: number},
+  source: DomainSource): void {
+  const scroller = rows.root;
+  const onScroll = () => {
+    if (scroller.scrollTop + scroller.clientHeight > scroller.scrollHeight - NEAR_BOTTOM_ROWS * rows.itemHeight)
+      void source.loadMore();
+  };
+  scroller.addEventListener('scroll', onScroll);
+  owner.own(() => scroller.removeEventListener('scroll', onScroll));
 }

@@ -47,7 +47,7 @@ async function dress(issues) {
 scoped('every handle over the address is configured, the child tab\'s too; unregistering stops it', async () => {
   const memory = backend();
   emsBackends.domain = memory;
-  const unregister = domains.configure('grit.issue', dress);
+  const unregister = domains.configure('grit.issue', dress, {id: 'test'});
   try {
     const first = await domains.table('grit.issue');
     const second = await domains.table('grit.issue');
@@ -108,7 +108,7 @@ scoped('a configure that throws rejects the handle', async () => {
   emsBackends.domain = backend();
   const unregister = domains.configure('grit.issue', async () => {
     throw new Error('lookups did not load');
-  });
+  }, {id: 'test'});
   try {
     await assert.rejects(domains.table('grit.issue'), /lookups did not load/);
   } finally {
