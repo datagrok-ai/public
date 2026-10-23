@@ -1468,6 +1468,8 @@ scoped('domains.views: a view per table, addressed and brought forward, where it
     {table: 'grit.project', name: 'Projects', options: {history: false}},
     {table: 'grit.issue', name: 'Open Issues', options: {pageSize: 10, sort: '!number'}},
   ]});
+  assert.equal(domains.views({path: '/apps/R', views: [{table: 'grit.label', name: 'Labels', segment: ''}]})
+    .baseOf('grit.label'), '/apps/R', 'an empty segment is the app\'s path itself');
   const until = async (done) => {
     for (let i = 0; i < 20 && !done(); i++)
       await flush();

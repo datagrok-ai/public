@@ -12,7 +12,7 @@ import {DomainAddress} from './address.js';
 export type DomainViewOptions = Omit<DomainAppViewOptions, 'name' | 'path'>;
 
 /** One table's view: its name — the tab's and the tree item's — and its segment under the app's path, the name
- * without spaces by default. */
+ * without spaces by default; '' is the app's path itself, where an app's main table keeps the URL it had. */
 export interface DomainViewEntry {
   /** `<schema>.<table>`. */
   table: string;
@@ -91,7 +91,8 @@ export class DomainViews {
 
   /** The route of a table's view: the app's path and the view's segment. */
   baseOf(table: string): string {
-    return `${this._options.path}/${this._segment(this._entry(table))}`;
+    const segment = this._segment(this._entry(table));
+    return segment === '' ? this._options.path : `${this._options.path}/${segment}`;
   }
 
   private _entry(table: string): DomainViewEntry {
