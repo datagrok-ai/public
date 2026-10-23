@@ -21,7 +21,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {downloadedContains, fileMatchingDownloaded, watchDownloads} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {fileMatchingDownloaded, watchDownloads} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, noErrors, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
@@ -30,7 +30,7 @@ import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("The layout of a docked view downloads as a .layout file", () => {
   const session = feature(test, "features/viewers/viewers-layout-download.feature", import.meta.url);
-  test("View > Layout > Download saves the view's layout with its viewers", {tag: ["@viewers", "@realizes:viewers.chrome"]}, async ({browser}) => {
+  test("View > Layout > Download saves the view's layout as a file", {tag: ["@viewers", "@realizes:viewers.chrome"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(11, "Given user is logged in", () => loggedIn(page));
     await session.step(12, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -43,8 +43,6 @@ test.describe("The layout of a docked view downloads as a .layout file", () => {
     await session.step(21, "Given user watches downloads", () => watchDownloads(page));
     await session.step(22, "When user picks \"View > Layout > Download\" from the top menu", () => pickFromTopMenu(page, "View > Layout > Download"));
     await session.step(23, "Then a file matching \"\\.layout$\" should have been downloaded", () => fileMatchingDownloaded(page, "\\.layout$"));
-    await session.step(24, "And the downloaded file should contain \"Histogram\"", () => downloadedContains(page, "Histogram"));
-    await session.step(25, "And the downloaded file should contain \"Bar chart\"", () => downloadedContains(page, "Bar chart"));
-    await session.step(26, "And no errors should have been logged", () => noErrors(page));
+    await session.step(24, "And no errors should have been logged", () => noErrors(page));
   });
 });

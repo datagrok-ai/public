@@ -6,8 +6,8 @@ surface" and the TestTrack `correlation-plot.md` / `correlation-plot-ui.md`. Wha
 
 ## Waiting for the product
 
-- **Selection highlighting in the diagonal histograms** is now a `@known-failure` scenario in
-  `correlation-plot-colors-and-chrome.feature` (core#1087).
+- **Selection highlighting in the diagonal histograms** is now a scenario in
+  `correlation-plot-colors-and-chrome.feature` (core#1087, fixed).
 
 ## Needs a reading
 

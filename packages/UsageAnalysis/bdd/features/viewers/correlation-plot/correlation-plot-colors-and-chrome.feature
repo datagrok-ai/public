@@ -4,7 +4,7 @@ Feature: Correlation plot — cell colours, the cell tooltip switch, the column 
   three features do not: a negative coefficient is drawn blue and a positive one red, a near-zero one
   nearly white; the Tooltip > Visible menu item that mirrors Show Tooltip; a column with no variance
   hovers as "N/A" (GROK-12586); Col Header Font repaints the column labels (GROK-16818); and a
-  selection drawn into the diagonal histograms, a known failure (core#1087). The title and the
+  selection drawn into the diagonal histograms (core#1087, fixed). The title and the
   description are every viewer's, in viewer-chrome.feature.
   Each colour is claimed twice: the cell's resolved background (`color of cell …`, measured) and the
   pixels inside the cell's region on the canvas, where the old spec sampled hard-coded offsets.
@@ -75,9 +75,6 @@ Feature: Correlation plot — cell colours, the cell tooltip switch, the column 
     Then the "header HEIGHT" area of correlation plot viewer should have repainted
     And no errors should have been logged
 
-  # core#1087: a selection change does not repaint the matrix; the diagonal histograms show the
-  # selected share only after an unrelated repaint (a resize, a filter)
-  @known-failure:85
   Scenario: A selection is drawn into the diagonal histograms
     Then the "cell AGE x AGE" area of correlation plot viewer should not contain the color "#FF8C00"
     When user selects the first 20 rows

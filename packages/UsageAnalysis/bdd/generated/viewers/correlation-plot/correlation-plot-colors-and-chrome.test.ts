@@ -29,7 +29,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Correlation plot — cell colours, the cell tooltip switch, the column labels and a selection", () => {
   const session = feature(test, "features/viewers/correlation-plot/correlation-plot-colors-and-chrome.feature", import.meta.url);
-  test("Correlation plot — cell colours, the cell tooltip switch, the column labels and a selection", {tag: ["@journey", "@viewers", "@realizes:viewers.correlation-plot", "@known-failure:85"]}, async ({browser}) => {
+  test("Correlation plot — cell colours, the cell tooltip switch, the column labels and a selection", {tag: ["@journey", "@viewers", "@realizes:viewers.correlation-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 5, page);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
@@ -88,13 +88,13 @@ test.describe("Correlation plot — cell colours, the cell tooltip switch, the c
       await session.step(76, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A selection is drawn into the diagonal histograms", async () => {
-      await session.step(82, "Then the \"cell AGE x AGE\" area of correlation plot viewer should not contain the color \"#FF8C00\"", () => areaNotColor(page, "cell AGE x AGE", el("correlation plot viewer"), "#FF8C00"));
-      await session.step(83, "When user selects the first 20 rows", () => selectFirstRows(page, 20));
-      await session.step(84, "Then 20 rows should be selected", () => selectedRowCount(page, 20));
-      await session.step(85, "And the \"cell AGE x AGE\" area of correlation plot viewer should have repainted", () => areaRepainted(page, "cell AGE x AGE", el("correlation plot viewer")));
-      await session.step(86, "And the \"cell AGE x AGE\" area of correlation plot viewer should contain the color \"#FF8C00\"", () => areaColor(page, "cell AGE x AGE", el("correlation plot viewer"), "#FF8C00"));
-      await session.step(87, "And no errors should have been logged", () => noErrors(page));
-    }, {knownFailure: true, line: 85});
+      await session.step(79, "Then the \"cell AGE x AGE\" area of correlation plot viewer should not contain the color \"#FF8C00\"", () => areaNotColor(page, "cell AGE x AGE", el("correlation plot viewer"), "#FF8C00"));
+      await session.step(80, "When user selects the first 20 rows", () => selectFirstRows(page, 20));
+      await session.step(81, "Then 20 rows should be selected", () => selectedRowCount(page, 20));
+      await session.step(82, "And the \"cell AGE x AGE\" area of correlation plot viewer should have repainted", () => areaRepainted(page, "cell AGE x AGE", el("correlation plot viewer")));
+      await session.step(83, "And the \"cell AGE x AGE\" area of correlation plot viewer should contain the color \"#FF8C00\"", () => areaColor(page, "cell AGE x AGE", el("correlation plot viewer"), "#FF8C00"));
+      await session.step(84, "And no errors should have been logged", () => noErrors(page));
+    });
     run.finish();
   });
 });
