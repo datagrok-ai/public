@@ -37,6 +37,7 @@ import {PHARM_FAMILY_NAMES, PharmFamilySet, runPharmacophoreDetection} from '../
 import {CONTAINER_TIMEOUT, readDataframe} from './utils';
 import {isNoneValue} from '../crux/crux-api';
 import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, SubstructureSearchType} from '../constants';
+import {calculatorMethodInfo} from '../widgets/biochem-properties-widget';
 
 /** The renderer's internals the tests read (the molecule's engine, a raster). */
 interface RendererInternals {
@@ -932,6 +933,21 @@ category('chemical engine', () => {
     expect(isCruxSearch(SubstructureSearchType.NOT_CONTAINS), true, 'Crux mode: Not contains on Crux');
     const crux: DG.BitSet = (await PackageFunctions.searchSubstructure(col, 'c1ccncc1', '')).get(0);
     expect(crux.toString(), rdkit.toString(), 'the same hits in both modes');
+    setChemicalEngine(null);
+  });
+
+  test('the property calculator is Chemical Properties, its method the engine\'s', async () => {
+    // the product owner, 2026-10-22: "(OCL)" leaves the calculator's shown name (its function name stays, for saved
+    // HitTriage campaigns and flows); in Crux mode the dialog names RDKit's definitions as its method
+    const funcs = DG.Func.find({package: 'Chem', meta: {function_family: 'biochem-calculator'}});
+    const func = funcs.find((f) => f.name === 'addChemPropertiesColumns')!;
+    expect(!!func, true, `the OpenChemLib calculator among ${funcs.map((f) => f.name).join(', ')}`);
+    expect(func?.friendlyName, 'Chemical Properties', 'the calculator\'s name');
+    setChemicalEngine(ChemicalEngine.RDKit);
+    expect(calculatorMethodInfo(func).authors, 'Open Chem Lib Team', 'RDKit mode: OpenChemLib');
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(calculatorMethodInfo(func).authors, 'RDKit\'s definitions, calculated by Crux', 'Crux mode: the method');
+    expect(calculatorMethodInfo(func).github, 'https://github.com/rdkit/rdkit', 'Crux mode: the source');
     setChemicalEngine(null);
   });
 

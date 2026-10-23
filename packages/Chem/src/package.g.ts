@@ -1096,7 +1096,7 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 }
 
 //name: Chemical Properties (OCL)
-//description: Calculates chemical properties using OpenChemLib and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
+//description: Calculates chemical properties and adds them as columns to the input table. With the Chemical Engine setting on RDKit (the default) OpenChemLib calculates them, with Crux they follow RDKit's definitions (MW is then the average molecular weight, not the monoisotopic mass). Properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
 //input: bool MW = true 
@@ -1113,7 +1113,10 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 //meta.method_info.author: Open Chem Lib Team
 //meta.method_info.year: 2024
 //meta.method_info.github: https://github.com/actelion/openchemlib
+//meta.method_info.crux_author: RDKit's definitions, calculated by Crux
+//meta.method_info.crux_github: https://github.com/rdkit/rdkit
 //meta.role: hitTriageFunction,transform
+//friendlyName: Chemical Properties
 export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean, molecularFormula?: boolean) : Promise<void> {
   await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge, molecularFormula);
 }

@@ -35,8 +35,9 @@ test.use(specTestOptions);
 
 const MOL_COL = 'canonical_smiles';
 const CALC_DIALOG = '[name="dialog-Chemical-Properties"]';
-// The OpenChemLib calculator inside that dialog — renamed from "Chemical Properties" by GROK-20277.
-const OCL_CALCULATOR = 'Chemical Properties (OCL)';
+// The OpenChemLib calculator inside that dialog, shown as "Chemical Properties" since 2026-10-22 (its function,
+// addChemPropertiesColumns, keeps its declared name "Chemical Properties (OCL)", GROK-20277).
+const OCL_CALCULATOR = 'Chemical Properties';
 // technical: closed OCL risk-level vocabulary, verbatim from Chem/src/open-chem/ocl-service/consts.ts:16-21
 const RISK_LEVELS = ['Unknown', 'None', 'Low', 'High'];
 

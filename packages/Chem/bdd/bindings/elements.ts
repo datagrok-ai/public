@@ -8,7 +8,7 @@ kind('calculator', {
   selector: '.biochem-calc-nav-item',
   match: ['text'],
   editorSelector: 'input[type="checkbox"]',
-  description: 'a calculator row of the Chemical Properties dialog, by its name ("Chemical Properties (OCL)", "logP")',
+  description: 'a calculator row of the Chemical Properties dialog, by its name ("Chemical Properties", "logP")',
 });
 
 kind('reaction', {
