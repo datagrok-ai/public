@@ -9,5 +9,6 @@
 * Compounds: Bulk registration previews every row (new, already registered, repeated, unreadable) and writes the Grok IDs back to the table
 * Grok IDs open their compound from any table, from the context panel and from `?corporate_compound_id=` links
 * Compounds: Every saved compound shows its stored identity (parent, formula, InChIKey, matching rule), not only a new one
+* Batches: A batch page shows its compound (structure, Grok ID and name) at the top
 
 ## 0.0.1 (2025-03-08)

@@ -20,7 +20,8 @@
   color: var(--failure);
 }
 
-.moltrack-ems-identity {
+.moltrack-ems-identity,
+.moltrack-ems-parent {
   gap: 8px;
   padding: 8px 0 16px;
 }
