@@ -1,0 +1,2 @@
+{"tiers": ["viewers"],
+ "audits": {"layout": "fail", "errors": "fail", "leaks": "report"}}

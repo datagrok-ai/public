@@ -1,0 +1,41 @@
+{
+  "name": "@datagrok/jmp",
+  "friendlyName": "JMP",
+  "version": "0.1.0",
+  "description": "Support for JMP data table files",
+  "author": {
+    "name": "Ed Jaeger",
+    "email": "ejaeger@datagrok.ai"
+  },
+  "dependencies": {
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "datagrok-api": "workspace:^",
+    "rxjs": "catalog:"
+  },
+  "scripts": {
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test:bdd": "grok-bdd run",
+    "corpus": "tsx tools/jmp-corpus.ts"
+  },
+  "canEdit": [
+    "Administrators"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Jmp"
+  },
+  "category": "Data Access",
+  "devDependencies": {
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.62.1",
+    "tsx": "^4.20.6"
+  }
+}

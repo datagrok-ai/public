@@ -1,0 +1,121 @@
+// Ported from JMPReader.jl (MIT, (c) 2024 Jaakko Ruohio), src/types.jl and src/constants.jl,
+// upstream commit 9fd68aa2651a8dde002ecdbd06af4d8d832b18f2
+
+import type {JmpScript} from './jmp-scripts';
+
+/** First 4 bytes of a .jmp file. */
+export const MAGIC_JMP = [0xff, 0xff, 0x00, 0x00];
+
+/** Version triple of the format JMPReader.jl supports. */
+export const SUPPORTED_VERSION: [number, number, number] = [0x07, 0x04, 0x00010001];
+
+/** Version triple of an older format that JMPReader.jl rejects. */
+export const OLD_VERSION: [number, number, number] = [0x03, 0x04, 0x03];
+
+/** A gzip-compressed column section starts with this byte sequence (0xCAFEBEEF, little-endian). */
+export const GZIP_SECTION_START = [0xef, 0xbe, 0xfe, 0xca];
+
+/** Seconds between the JMP epoch (1904-01-01) and the Unix epoch (1970-01-01). */
+export const JMP_EPOCH_OFFSET_S = 2082844800;
+
+// Column display formats (dt4). 0x6c=":day:hr:m" and 0x6d=":day:hr:m:s" could be time or
+// duration; like upstream, we treat them as duration.
+export const DATE_FORMATS = new Set([
+  0x65, 0x66, 0x67, 0x6e, 0x6f, 0x70, 0x71, 0x72, 0x75, 0x76, 0x7a, 0x7f, 0x88, 0x8b]);
+export const DATETIME_FORMATS = new Set([
+  0x69, 0x6a, 0x73, 0x74, 0x77, 0x78, 0x79, 0x7b, 0x7c, 0x7d, 0x7e, 0x80, 0x81, 0x82, 0x86, 0x87, 0x89, 0x8a]);
+export const DURATION_FORMATS = new Set([0x6c, 0x6d, 0x83, 0x84, 0x85]);
+export const CURRENCY_FORMATS = new Set([0x5f]);
+export const LONGITUDE_FORMATS = new Set([0x54, 0x55, 0x56]);
+export const LATITUDE_FORMATS = new Set([0x51, 0x52, 0x53]);
+
+/** JMP row-state marker glyphs, by index. */
+export const ROWSTATE_MARKERS = [
+  '•', '+', 'X', '□', '◊', '△', 'Y', 'Z', '◯', '▭', '▯', '*', '⚫', '▬', '▮', '■',
+  '⧫', '▽', '◁', '▷', '▲', '▼', '◀', '▶', '∧', '∨', '<', '>', '∣', '─', '/', '\\',
+];
+
+/** JMP's row-state colour palette, by index. */
+export const ROWSTATE_COLORS = [
+  '#000000', '#555555', '#787878', '#C0C0C0', '#FFFFFF',
+  '#A00922', '#C91629', '#F03246', '#FF5C76', '#FF98A6',
+  '#904700', '#BC5B03', '#E57406', '#FF9138', '#FFB17D',
+  '#706F00', '#AFA502', '#DAD109', '#F0E521', '#FFF977',
+  '#516A00', '#729400', '#90BF04', '#A2DC06', '#C1FF3D',
+  '#00670C', '#11981B', '#21BC2D', '#23E72E', '#6AFF6B',
+  '#007254', '#019970', '#04C791', '#06E3AA', '#0FFFBC',
+  '#006D71', '#01989C', '#0CBCBC', '#06E2E3', '#67FFF7',
+  '#00638F', '#0380B4', '#05A1D2', '#08C5F7', '#75E4FF',
+  '#034AB0', '#0557D6', '#2867FD', '#4E9CFF', '#7E89FF',
+  '#6A02A7', '#8C05CF', '#AB08FC', '#C170FF', '#D29AFF',
+  '#930195', '#B803B9', '#DC06E1', '#FA50FF', '#FD96FF',
+  '#9D0170', '#C5048D', '#E906A4', '#FF49BC', '#FF8CCD',
+];
+
+/** Thrown for any structural problem in a .jmp file. */
+export class JmpFormatError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'JmpFormatError';
+  }
+}
+
+export interface JmpHeader {
+  version: [number, number, number];
+}
+
+export interface JmpInfo {
+  header: JmpHeader;
+  /** JMP version parsed from the build string, e.g. "18.0.1". */
+  jmpVersion: string;
+  buildString: string;
+  charset: string;
+  savetime: Date;
+  nrows: number;
+  ncols: number;
+  columns: JmpColumnInfo[];
+  /** Raw entries of the hidden-column index; their meaning isn't confirmed yet (JMP_PLUGIN.md §4.4). */
+  hiddenIndex: number[];
+  /** Byte range between the build string and the first column, where table properties such as saved
+   * scripts are kept (JMP_PLUGIN.md §4.5). */
+  propertiesRange: [number, number];
+}
+
+export interface JmpColumnInfo {
+  name: string;
+  /** Absolute file offset of the column block. */
+  offset: number;
+  /** Display width in JMP. */
+  width: number;
+}
+
+export type JmpColumnKind =
+  'float' | 'int' | 'bigint' | 'string' | 'date' | 'datetime' | 'duration' |
+  'currency' | 'latitude' | 'longitude' | 'rowstate' | 'unsupported';
+
+export interface JmpColumn {
+  info: JmpColumnInfo;
+  kind: JmpColumnKind;
+  /** Raw descriptor bytes dt1..dt6. */
+  descriptor: number[];
+  /**
+   * Values, one per row; null = missing. Numbers for numeric kinds (dates/durations in
+   * seconds since the JMP epoch), strings for 'string'.
+   */
+  values: (number | string | null)[];
+  /** Set when the column could not be decoded; values are then all null. */
+  decodeError?: string;
+  /** Row-state columns only: per row, the record's bytes not decoded yet (0-based 4 and 7), as
+   * byte4 | byte7 << 8. They are zero in every file read so far; JMP's excluded, hidden, labelled and
+   * selected flags may be there (JMP_PLUGIN.md §4.3). */
+  rowStateFlags?: number[];
+  /** Row-state columns only: per row, the marker index and the colour as #RRGGBB. */
+  rowStates?: {marker: number, color: string}[];
+}
+
+export interface JmpTable {
+  info: JmpInfo;
+  columns: JmpColumn[];
+  /** Saved table scripts (jmp-scripts.ts); empty when there are none or they couldn't be found. */
+  scripts: JmpScript[];
+}
