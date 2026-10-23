@@ -54,7 +54,6 @@ export class RuntimeDriver {
    * @param prompt        user message
    * @param opts.sessionId    reuse to continue a conversation (resume path)
    * @param opts.taskId     id of the queued admission task (queue-task.ts)
-   * @param opts.model        a model id such as 'claude-haiku-5-5' — omit for the runtime default
    * @param opts.systemPromptMode  'bash' | 'none' — omit for the full Datagrok prompt
    * @param opts.stubs        per-tool overrides, merged over DEFAULT_STUBS
    * @param opts.clientTools  view-tool defs to declare for this turn
@@ -173,7 +172,6 @@ export class RuntimeDriver {
         ...(this.apiKey ? {apiKey: this.apiKey} : {}),
         ...(this.mcpServerUrl ? {mcpServerUrl: this.mcpServerUrl} : {}),
         ...(opts.taskId ? {taskId: opts.taskId} : {}),
-        ...(opts.model ? {model: opts.model} : {}),
         ...(opts.systemPromptMode ? {systemPromptMode: opts.systemPromptMode} : {}),
         ...(opts.clientTools?.length ? {clientTools: opts.clientTools} : {}),
         ...(opts.outputSchema ? {outputSchema: opts.outputSchema} : {}),

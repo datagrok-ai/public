@@ -1,0 +1,31 @@
+name,code,role,formula,molecular_weight,description
+HCl,AAC,SALT,HCl,35.97667694091797,Hydrochloric acid
+Hydrogen Sulfate,H2SO4,SALT,H2SO4,0,Hydrogen sulfate
+Methanesulfonic acid,CH4O3S,SALT,,95.98811340332031,
+Maleic acid,,SALT,,0,
+Citric acid,,SALT,,192.02700805664062,
+Acetic acid,,SALT,,0,
+Phosphoric acid,,SALT,,0,
+P-toluenesolfonic acid,,SALT,,0,
+Fumaric acid,,SALT,,0,
+L-Lactatic acid,,SALT,,0,
+Na,,SALT,,22.98976707458496,
+Potassium,,SALT,,0,
+Calcium,,SALT,,,
+Magnesium,,SALT,,,
+Tromethamine (Tris),,SALT,,0,
+Lysine,,SALT,,,
+Arginine,,SALT,,,
+Choline,,SALT,,,
+N-methylglucamine,,SALT,,104.10753631591797,
+Diethanolamine,,SALT,,0,
+Hydrate,,SOLVATE,,18.01056480407715,
+Ethanol,,SOLVATE,,46.041866302490234,
+Methanol,,SOLVATE,,32.026214599609375,
+Isopropanol,,SOLVATE,,0,
+Acetonitrile,,SOLVATE,,0,
+Ethyl acetate,,SOLVATE,,0,
+THF,,SOLVATE,,0,Tetrahydrofuran
+DMSO,,SOLVATE,,0,Dimethyl sulfoxide
+DMF,,SOLVATE,,0,"N,N-Dimethylformamide"
+Acetone,,SOLVATE,,0,

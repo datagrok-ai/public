@@ -95,6 +95,18 @@ scoped('a tree query stays a tree; the builder mode shows rows', async () => {
   src.dispose();
 });
 
+scoped('the builder keeps a half-written row and sends only the complete conditions', async () => {
+  const src = await issues({query: ''});
+  const filters = domains.filters(src, {mode: 'builder'});
+  await flush();
+  const half = {...Filters.cond('title', 'like', null), property: ''};
+  filters.input.value.value.value = Filters.group('and', [Filters.cond('done', '=', true), half]);
+  await flush();
+  assert.deepEqual([src.query.value, filters.input.value.value.value.nodes.length], ['done = true', 2]);
+  filters.dispose();
+  src.dispose();
+});
+
 scoped('a change while the session is dirty asks: cancel puts the filter back, discard applies it', async () => {
   const src = await issues({query: 'done = true'});
   const filters = domains.filters(src);

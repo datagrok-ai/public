@@ -6,7 +6,7 @@ import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
   parseTimeUnit, resolveAxisModes, targetAxisMode, resolveDisplayUnit, pickAutoUnit, targetContexts,
-  selectionGaps, withAnnotatedDefaults, PickerSelections, unmatchedItems,
+  selectionGaps, withAnnotatedDefaults, PickerSelections, unmatchedItems, withoutOutdatedOutputs,
 } from '../components/RunComparison/selection';
 import {ColumnBinding, ColumnTarget, AxisConfigMap, TimeUnit, TableNodeInfo} from '../components/RunComparison/types';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
@@ -825,5 +825,27 @@ category('RunComparison: annotated defaults', () => {
     const next = withAnnotatedDefaults(annotated({defaultAxisMode: 'points', defaultTimeUnits: 'h'}), empty());
     expect(next.axis.a.t.mode, 'points');
     expect(next.axis.a.t.units === undefined, true);
+  });
+});
+
+category('RunComparison: outdated outputs', () => {
+  test('hiding drops only the outdated nodes and leaves the entry untouched', async () => {
+    const nodes = makeEntry('a', [{name: 'Biomass'}, {name: 'Feed'}],
+      [{path: 'profile', columns: [{name: 'time'}]}, {path: 'summary', columns: [{name: 'time'}]}]);
+    nodes.scalars[0].outdated = true;
+    nodes.tables[1].outdated = true;
+    const kept = withoutOutdatedOutputs(nodes);
+    expectArray(kept.scalars.map((s) => s.name), ['Feed']);
+    expectArray(kept.tables.map((t) => t.path), ['profile']);
+    expect(nodes.scalars.length, 2);
+    expect(nodes.tables.length, 2);
+  });
+
+  test('a value backed only by outdated outputs leaves the comparison', async () => {
+    const fresh = makeEntry('a', [{name: 'Biomass'}]);
+    const stale = makeEntry('b', [{name: 'Biomass'}]);
+    stale.scalars[0].outdated = true;
+    expect(matchScalarTargets([fresh, stale]).length, 1);
+    expect(matchScalarTargets([fresh, stale].map(withoutOutdatedOutputs)).length, 0);
   });
 });

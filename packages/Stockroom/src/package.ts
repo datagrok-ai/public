@@ -13,13 +13,38 @@ import '@datagrok-libraries/ems/src/dg/styles.js';
 
 export const _package = new DG.Package();
 
+/** A view per stockroom table under the Stockroom app, the substances at its root. */
+const views = domains.views({
+  path: '/apps/Stockroom/Stockroom',
+  views: [
+    {table: 'stockroom.substance', name: 'Substances', segment: ''},
+    {table: 'stockroom.container', name: 'Containers'},
+    {table: 'stockroom.vendor', name: 'Vendors'},
+    {table: 'stockroom.purchase_order', name: 'Purchase Orders'},
+    {table: 'stockroom.sds_document', name: 'Safety Data Sheets'},
+    {table: 'stockroom.disposal', name: 'Disposals'},
+    {table: 'stockroom.hazard_class', name: 'Hazard Classes'},
+    {table: 'stockroom.h_statement', name: 'Hazard Statements'},
+    {table: 'stockroom.p_statement', name: 'Precautionary Statements'},
+  ],
+});
+
 //name: Stockroom
 //description: Chemical stockroom on the GHS classification — the zero-code app over databases/stockroom/schema.json
 //tags: app
 //meta.icon: images/flask.svg
+//input: string path {meta.url: true; optional: true}
 //output: view result
-export async function stockroomApp(): Promise<DG.ViewBase> {
-  return (await domains.table('stockroom.substance')).app();
+export async function stockroomApp(path?: string): Promise<DG.ViewBase> {
+  return views.open(path ?? '');
+}
+
+//name: stockroomTreeBrowser
+//input: dynamic treeNode
+//meta.role: appTreeBrowser
+//meta.app: Stockroom
+export function stockroomTreeBrowser(treeNode: DG.TreeViewGroup): void {
+  views.tree(treeNode);
 }
 
 /** The Containers app over everything stored under `location`, opened straight on a draft that

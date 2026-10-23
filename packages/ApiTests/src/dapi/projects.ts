@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 // What the ribbon's Save dialog keeps of a table, and how the project brings it back: with Data sync
 // the table carries its creation script and is rebuilt by it on open (marked `.data-sync = success`),
@@ -41,22 +41,11 @@ function runCore(name: string, params: {[name: string]: any}): Promise<_DG.FuncC
   return recorded(DG.Func.find({package: 'core', name})[0], params);
 }
 
-async function poll<T>(read: () => T | Promise<T>, done: (value: T) => boolean, what: string, ms: number = 30000): Promise<T> {
-  const start = Date.now();
-  let value = await read();
-  while (!done(value)) {
-    if (Date.now() - start > ms)
-      throw new Error(`${what}: still ${value} after ${ms} ms`);
-    await delay(100);
-    value = await read();
-  }
-  return value;
-}
-
 async function openSource(source: Source): Promise<_DG.DataFrame> {
   grok.shell.closeAll();
   await source.run();
-  return await poll(() => grok.shell.tables[0], (t) => t?.rowCount === source.rows, 'the table the source opened');
+  await waitUntil(() => grok.shell.tables[0]?.rowCount === source.rows, 'the table the source opened', 30000);
+  return grok.shell.tables[0];
 }
 
 async function saveProject(df: _DG.DataFrame, dataSync: boolean): Promise<Saved> {
@@ -81,7 +70,8 @@ async function saveProject(df: _DG.DataFrame, dataSync: boolean): Promise<Saved>
 async function reopen(saved: Saved, rows: number): Promise<_DG.DataFrame> {
   grok.shell.closeAll();
   await (await grok.dapi.projects.find(saved.project.id)).open();
-  return await poll(() => grok.shell.tables[0], (t) => t?.rowCount === rows, 'the table the project opened');
+  await waitUntil(() => grok.shell.tables[0]?.rowCount === rows, 'the table the project opened', 30000);
+  return grok.shell.tables[0];
 }
 
 async function remove(saved: Saved[]): Promise<void> {
@@ -117,7 +107,7 @@ async function columnChainSurvivesDataSync(source: Source): Promise<void> {
     await runCore('RenameColumn', {table: df, oldColName: source.column, newColName: 'Base'});
     expect(df.col('Plus100')!.getTag('formula'), '${Base} + 100');
     df.set('Base', 0, 500);
-    await poll(() => df.get('Plus200', 0), (v) => v === 700, 'Plus200 of the edited row');
+    await waitUntil(() => df.get('Plus200', 0) === 700, 'Plus200 of the edited row is not recalculated', 30000);
 
     saved.push(await saveProject(df, true));
     let reopened = await reopen(saved[0], source.rows);
@@ -132,7 +122,8 @@ async function columnChainSurvivesDataSync(source: Source): Promise<void> {
     expect(reopened.col('Plus100')!.getTag('formula'), '${Base2} + 100');
     expect(reopened.col('Plus200')!.getTag('formula'), '${Plus100} + 100');
     reopened.set('Base2', 1, 400);
-    await poll(() => reopened.get('Plus200', 1), (v) => v === 600, 'Plus200 of the row edited after the reopen');
+    await waitUntil(() => reopened.get('Plus200', 1) === 600,
+      'Plus200 of the row edited after the reopen is not recalculated', 30000);
     expectColumnPlus(reopened, 'Plus100', 'Base2', 100);
     expectColumnPlus(reopened, 'Plus200', 'Plus100', 100);
   }

@@ -1,0 +1,31 @@
+MolTrack's Crux engine: registration chemistry for the moltrack_ems app
+
+crux_core_rev: 772f6efb3653 (datagrok-ai/crux-core main, 2026-10-21)
+rdkit parity target: 2026.03.6 (crux-core RDKIT_VERSION)
+cargo.rustc: rustc 1.95.0
+wasm_bindgen.version: 0.2.129
+wasm_opt: not run (files are larger than Crux's ship builds)
+
+crux_wasm (module-chem: JSMol, MolStandardize, MolHash / RegistrationHash, fingerprints, substructure):
+  CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS='-C target-feature=+simd128' \
+    cargo build --profile wasm-ship -p crux-wasm --target wasm32-unknown-unknown --no-default-features --features module-chem
+  wasm-bindgen --target web --remove-name-section --out-dir <dir> target/wasm32-unknown-unknown/wasm-ship/crux_wasm.wasm
+  crux_wasm_bg.wasm: 6,544,115 B raw
+
+inchi_wasm (InChI / InChIKey from a MOL block):
+  CARGO_PROFILE_RELEASE_OPT_LEVEL=z cargo build --release -p inchi-wasm --target wasm32-unknown-unknown
+  wasm-bindgen --target web --remove-name-section --out-dir <dir> target/wasm32-unknown-unknown/release/inchi_wasm.wasm
+  inchi_wasm_bg.wasm: 1,848,946 B raw
+
+sha256:
+  crux_wasm_bg.wasm  609e89603ecf3245493ab9551befa76e5ed5234250d742bc655d8e7a793f59d4
+  crux_wasm.js       68df702ccc8229c82fd2a8d50862ff5dba97ee017403a62a1f0259fb7fea49b4
+  inchi_wasm_bg.wasm 2e4813fa5f13fd4b6a6619849f5eb5d6b076f11af213847a87d68865d3c17525
+  inchi_wasm.js      f1c49dd4cdc8bde530a5e11cb539414d352665c4218e2ccdede5b467972b6f1d
+
+NOTICE.crux-wasm: generated for this build by crux-core tools/wasm_notices.py --wasm <the named cargo
+  artifact of module-chem> --features chem; the tool warned that it has no licence text for
+  avalon-toolkit and no upstream entry for seven crux-own crates (crux-fn, crux-fn-core, crux-leaf,
+  dataset-io, mhfp, mol-fns, remote-source) — to be completed by the Crux owners before a release
+NOTICE.inchi-wasm: crux-core crates/inchi-wasm/NOTICE as Chem vendors it (vendor/crux-sketch), not
+  regenerated for this build

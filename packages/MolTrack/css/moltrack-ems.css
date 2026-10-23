@@ -1,0 +1,32 @@
+.moltrack-ems-card {
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.moltrack-ems-card-text {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.moltrack-ems-line {
+  align-items: baseline;
+  gap: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.moltrack-ems-problem {
+  color: var(--failure);
+}
+
+.moltrack-ems-identity {
+  gap: 8px;
+  padding: 8px 0 16px;
+}
+
+.moltrack-ems-bulk-preview {
+  max-height: 360px;
+  min-width: 680px;
+  overflow: auto;
+}

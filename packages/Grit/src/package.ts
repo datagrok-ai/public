@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {badge, div, divV, span} from '@datagrok-libraries/u2';
 import type {BadgeVariant, RowView} from '@datagrok-libraries/u2';
-import {DomainApp} from '@datagrok-libraries/ems/src/dg';
+import {DomainApp, domains} from '@datagrok-libraries/ems/src/dg';
 import type {DomainRibbon, DomainTable} from '@datagrok-libraries/ems/src/dg';
 import {GritIssueHandler, lookupName, warmLookups} from './grit-issue-handler';
 import {gritDb, IssueRow} from './generated/db';
@@ -100,6 +100,23 @@ export class IssuesApp extends DomainApp {
   }
 }
 
+/** A view per Grit table — the issues where they were, at `/apps/Grit/Issues` — over the handles {@link openGrit}
+ * configured, so the actions, the closing rule and the card hold in each. Grit's one app answers everything under
+ * `/apps/Grit`. */
+const views = domains.views({
+  path: '/apps/Grit',
+  handle: async (address) => Object.values((await openGrit()).tables).find((t) => t.address === address)!,
+  views: [
+    {table: 'grit.issue', name: 'Issues', options: {app: IssuesApp, mode: 'cards',
+      children: {tables: ['comment']}}},
+    {table: 'grit.project', name: 'Projects'},
+    {table: 'grit.label', name: 'Labels'},
+    {table: 'grit.status', name: 'Statuses'},
+    {table: 'grit.priority', name: 'Priorities'},
+    {table: 'grit.issue_type', name: 'Issue Types'},
+  ],
+});
+
 //name: Issues
 //description: Issue tracker over entity-mapped domain schemas — the u2 app over grit.issue with Grit's actions, presets and shortcuts
 //tags: app
@@ -107,9 +124,13 @@ export class IssuesApp extends DomainApp {
 //input: string path {meta.url: true; optional: true}
 //output: view result
 export async function issuesApp(path?: string): Promise<DG.ViewBase> {
-  const {issues} = (await openGrit()).tables;
-  const view = issues.app({name: 'Issues', path: '/apps/Grit/Issues', app: IssuesApp, mode: 'cards',
-    children: {tables: ['comment']}});
-  void DomainApp.of(view)!.open(path || undefined);
-  return view;
+  return views.open(path ?? '');
+}
+
+//name: issuesTreeBrowser
+//input: dynamic treeNode
+//meta.role: appTreeBrowser
+//meta.app: Issues
+export function issuesTreeBrowser(treeNode: DG.TreeViewGroup): void {
+  views.tree(treeNode);
 }

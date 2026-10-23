@@ -45,20 +45,17 @@
   height: 5px;
 }
 
-.tutorials-track progress[value],
-.tutorials-bar progress[value] {
+.tutorials-track progress[value] {
   -webkit-appearance: none;
   appearance: none;
 }
 
-.tutorials-track progress[value]::-webkit-progress-bar,
-.tutorials-bar progress[value]::-webkit-progress-bar {
+.tutorials-track progress[value]::-webkit-progress-bar {
   background-color: var(--grey-1);
   border-radius: 2px;
 }
 
-.tutorials-track progress[value]::-webkit-progress-value,
-.tutorials-bar progress[value]::-webkit-progress-value {
+.tutorials-track progress[value]::-webkit-progress-value {
   background-image:
     -webkit-linear-gradient(-45deg,
       transparent 33%, rgba(255, 255, 255, .15) 33%,
@@ -245,42 +242,48 @@ progress[value]::-webkit-progress-value::after {
 }
 
 .tutorials-bar-row {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 12px;
   align-items: center;
-  gap: 4px 10px;
-  padding: 8px 12px;
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: 6px 12px;
 }
 
-.tutorials-bar .tutorials-main-header,
-.tutorials-bar .tutorials-root-header,
-.tutorials-bar .tutorials-root-progress {
-  display: contents;
+.tutorials-bar-meta {
+  max-width: 220px;
+  padding-right: 12px;
+  border-right: 1px solid var(--grey-2);
 }
 
-.tutorials-bar h1 {
-  font-size: 16px;
+.tutorials-bar .d4-flex-row {
+  align-items: center;
+  gap: 6px;
 }
 
-.tutorials-bar progress {
-  width: 80px;
-  height: 5px;
+.tutorials-bar-title,
+.tutorials-bar-section {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.tutorials-bar .tutorials-root-header > button {
-  order: 1;
+.tutorials-bar-title {
+  font-weight: 500;
 }
 
-.tutorials-bar-step {
-  flex: 1 1 300px;
+.tutorials-bar-section {
+  color: var(--grey-5);
 }
 
-.tutorials-bar-step > b {
-  margin-right: 6px;
-}
-
-.tutorials-bar-section:empty,
-.tutorials-bar-section:empty + .d4-ribbon-separator {
-  display: none;
+.tutorials-bar-ring {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(var(--white) 4.5px, transparent 5px),
+    conic-gradient(var(--blue-1) var(--tutorials-progress), var(--grey-2) 0);
 }
 
 /* Animation */

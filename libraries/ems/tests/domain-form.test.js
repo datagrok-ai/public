@@ -263,6 +263,9 @@ scoped('a refused save is one balloon; a failed load is the hint\'s to show, not
   assert.match(document.body.querySelector('.u2-notify-error').textContent, /Row rejected/);
   assert.equal(form.input('title').value.value, 'Ab', 'the edit stays pending');
   assert.equal(src.isDirty.value, true);
+  form.input('title').value.value = 'Abc';
+  await flush();
+  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'the next edit settles the refusal, and its balloon goes');
   form.dispose();
   src.dispose();
   notify.closeAll();
@@ -703,6 +706,26 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   form.dispose();
   assert.equal(await draft.save(), true, 'the guard left with the form');
   save.dispose();
+  draft.dispose();
+});
+
+scoped('a refusal by the table\'s validators shows every verdict too, the failing field focused', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const unregister = table.validators.add('number', (v) => v === 2 ? 'Two is taken' : null);
+  const draft = table.draft({project_id: 'p1'});
+  await flush();
+  const form = domains.form(draft);
+  await flush();
+  draft.currentRow.value.number = 2;
+  await flush();
+  assert.equal(await draft.save(), false);
+  await flush();
+  assert.match(draft.summary.value, /Two is taken/, 'the table\'s guard refused before the form\'s');
+  assert.equal(form.input('title').root.classList.contains('u2-input-untouched'), false, 'the untouched Title says it is required');
+  assert.equal(form.input('number').root.contains(document.activeElement), true);
+  unregister();
+  form.dispose();
   draft.dispose();
 });
 

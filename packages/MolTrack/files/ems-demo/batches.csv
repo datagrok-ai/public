@@ -1,0 +1,55 @@
+Common Name,CAS,smiles,EPA Batch ID,EPA Compound ID,Source,Source Batch Code,Acquired Date,Synthesized Date,Responsible Party,ELN Reference,Purity,Project
+"1,3-Benzenedicarboxylic acid ",121-91-5,C1=CC(=CC(=C1)C(=O)O)C(=O)O,EPA-001-001,EPA-001,EPA,EPA-001,,2024-01-01,chemist 1,cchemist_123,93,Project 1
+Bisphenol AF,1478-61-1,Oc1ccc(cc1)C(c2ccc(O)cc2)(C(F)(F)F)C(F)(F)F,EPA-002-001,EPA-002,Enamine,Enamine-2,2024-12-01,,Lee Leader,,94,Project 2
+"2,5-Di-tert-butylbenzene-1,4-diol",88-58-4,CC(C)(C)C1=CC(O)=C(C=C1O)C(C)(C)C,EPA-003-001,EPA-003,E-Molecule,E-Molecue-3,2024-12-02,,Brad Buyer,,95,Project 3
+2-Ethylhexyl paraben,5153-25-3,CCCCC(CC)COC(=O)C1=CC=C(C=C1)O,EPA-004-001,EPA-004,Sigma-Aldrich,SA-4,2024-12-03,,Penny Project,,96,Project 4
+"3,3',5,5'-Tetrabromobisphenol A",79-94-7,CC(C)(c1cc(Br)c(O)c(Br)c1)c1cc(Br)c(O)c(Br)c1,EPA-005-001,EPA-005,ACME,ACME-5,2024-12-04,,Anna Admin,,97,Project 5
+"4,4'-Sulfonylbis[2-(prop-2-en-1-yl)phenol]",41481-66-7,C=CCc1cc(ccc1O)S(=O)(=O)c2ccc(O)c(CC=C)c2,EPA-006-001,EPA-006,WuXi,WuXi-6,2024-12-05,,VP Val,,98,Project 6
+"4-(1,1,3,3-Tetramethylbutyl)phenol ",140-66-9,CC(C)(C)CC(C)(C)c1ccc(O)cc1,EPA-007-001,EPA-007,Pharmaron,Pharmaron-7,2024-12-06,,CSO Carla,,99,Project 7
+4-Hexylresorcinol,136-77-6,CCCCCCc1cc(O)c(cc1)O,EPA-008-001,EPA-008,EPA,EPA-8,,2024-02-01,chemist 2,zchemist_987,93,Project 1
+4-Nitroaniline,100-01-6,c1cc(ccc1N)N(=O)=O,EPA-009-001,EPA-009,Enamine,Enamine-9,2024-12-01,,Lee Leader,,94,Project 2
+4-Nonylphenol (Branched),84852-15-3,CC(C)CCCCCCc1ccc(O)cc1,EPA-010-001,EPA-010,E-Molecule,E-Molecule-10,2024-12-02,,Brad Buyer,,95,Project 3
+4-Octylphenol,1806-26-4,CCCCCCCCc1ccc(O)cc1,EPA-011-001,EPA-011,Sigma-Aldrich,SA-11,2024-12-03,,Penny Project,,96,Project 4
+4-n-Nonylphenol,104-40-5,CCCCCCCCCc1ccc(O)cc1,EPA-012-001,EPA-012,ACME,ACME-12,2024-12-04,,Anna Admin,,97,Project 5
+6:2 Fluorotelemer alcohol,647-42-7,C(C(C(C(F)(F)F)(F)F)(F)F)(C(C(CCO)(F)F)(F)F)(F)F,EPA-013-001,EPA-013,WuXi,WuXi-13,2024-12-05,,VP Val,,98,Project 6
+Atrazine,1912-24-9,CCNc1nc(Cl)nc(NC(C)C)n1,EPA-014-001,EPA-014,Pharmaron,Pharmaron-14,2024-12-06,,CSO Carla,,99,Project 7
+Benzyl butyl phthalate,85-68-7,CCCCOC(=O)c1ccccc1C(=O)OCC2=CC=CC=C2,EPA-015-001,EPA-015,EPA,EPA-15,,2024-03-01,chemist 1,cchemist_124,93,Project 1
+Benzylparaben,94-18-8,Oc1ccc(cc1)C(=O)OCC2=CC=CC=C2,EPA-016-001,EPA-016,Enamine,Enamine-16,2024-12-01,,Lee Leader,,94,Project 2
+Bisphenol A,80-05-7,CC(C)(c1ccc(O)cc1)c1ccc(O)cc1,EPA-017-001,EPA-017,E-Molecule,E-Molecule-17,2024-12-02,,Brad Buyer,,95,Project 3
+"2,2',4,4'-Tetrahydroxybenzophenone",131-55-5,O=C(C1=CC=C(O)C=C1O)C2=CC=C(O)C=C2O,EPA-018-001,EPA-018,Sigma-Aldrich,SA-18,2024-12-03,,Penny Project,,96,Project 4
+Celecoxib,169590-42-5,c1cc(C)ccc1c2cc(C(F)(F)F)nn2c3ccc(cc3)S(=O)(=O)N,EPA-120-001,EPA-120,ACME,ACME-19,2024-12-04,,Anna Admin,,97,Project 5
+Cymoxanil,57966-95-7,CCNC(=O)NC(=O)C(=NOC)C#N,EPA-020-001,EPA-020,WuXi,WuXi-20,2024-12-05,,VP Val,,98,Project 6
+Dapsone,80-08-0,C1=CC(=CC=C1N)S(=O)(=O)C2=CC=C(C=C2)N,EPA-021-001,EPA-021,Pharmaron,Pharmaron-21,2024-12-06,,CSO Carla,,99,Project 7
+Deltamethrin,52918-63-5,CC1(C(C1C(=O)OC(C#N)C2=CC(=CC=C2)OC3=CC=CC=C3)C=C(Br)Br)C,EPA-022-001,EPA-022,EPA,EPA-22,,2024-04-01,chemist 2,zchemist_986,93,Project 1
+Di(2-ethylhexyl) phthalate,117-81-7,CCCCC(CC)COC(=O)C1=CC=CC=C1C(=O)OCC(CC)CCCC,EPA-023-001,EPA-023,Enamine,Enamine-23,2024-12-01,,Lee Leader,,94,Project 2
+Dibutyl phthalate,84-74-2,CCCCOC(=O)C1=CC=CC=C1C(=O)OCCCC,EPA-024-001,EPA-024,E-Molecule,E-Molecule-24,2024-12-02,,Brad Buyer,,95,Project 3
+Diclobenil,1194-65-6,C1=CC(=C(C(=C1)Cl)C#N)Cl,EPA-025-001,EPA-025,Sigma-Aldrich,SA-25,2024-12-03,,Penny Project,,96,Project 4
+Dicumyl Peroxide,80-43-3,CC(C)(C1=CC=CC=C1)OOC(C)(C)C2=CC=CC=C2,EPA-026-001,EPA-026,ACME,ACME-26,2024-12-04,,Anna Admin,,97,Project 5
+Ethylparaben,120-47-8,CCOC(=O)C1=CC=C(C=C1)O,EPA-027-001,EPA-027,WuXi,WuXi-27,2024-12-05,,VP Val,,98,Project 6
+Fenthion,55-38-9,CC1=C(C=CC(=C1)OP(=S)(OC)OC)SC,EPA-028-001,EPA-028,Pharmaron,Pharmaron-28,2024-12-06,,CSO Carla,,99,Project 7
+Heptylparaben,1085-12-7,CCCCCCCOC(=O)C1=CC=C(C=C1)O,EPA-029-001,EPA-029,EPA,EPA-29,,2024-05-01,chemist 1,cchemist_125,93,Project 1
+Hexaflumuron,86479-06-3,C1=CC(=C(C(=C1)F)C(=O)NC(=O)NC2=CC(=C(C(=C2)Cl)OC(C(F)F)(F)F)Cl)F,EPA-030-001,EPA-030,Enamine,Enamine-30,2024-12-01,,Lee Leader,,94,Project 2
+Hydroxyflutamide,52806-53-8,CC(C)(C(=O)NC1=CC(=C(C=C1)[N+](=O)[O-])C(F)(F)F)O,EPA-031-001,EPA-031,E-Molecule,E-Molecule-31,2024-12-02,,Brad Buyer,,95,Project 3
+Ipconazole,125225-28-7,CC(C)C1CCC(C1(CN2C=NC=N2)O)CC3=CC=C(C=C3)Cl,EPA-032-001,EPA-032,Sigma-Aldrich,SA-32,2024-12-03,,Penny Project,,96,Project 4
+Isofenphos,25311-71-1,CCOP(=S)(NC(C)C)OC1=CC=CC=C1C(=O)OC(C)C,EPA-033-001,EPA-033,ACME,ACME-33,2024-12-04,,Anna Admin,,97,Project 5
+Kaempferol,520-18-3,C1=CC(=CC=C1C2=C(C(=O)C3=C(C=C(C=C3O2)O)O)O)O,EPA-034-001,EPA-034,WuXi,WuXi-34,2024-12-05,,VP Val,,98,Project 6
+Mestranol,72-33-3,CC12CCC3C(C1CCC2(C#C)O)CCC4=C3C=CC(=C4)OC,EPA-035-001,EPA-035,Pharmaron,Pharmaron-35,2024-12-06,,CSO Carla,,99,Project 7
+"p,p'-DDE",72-55-9,C1=CC(=CC=C1C(=C(Cl)Cl)C2=CC=C(C=C2)Cl)Cl,EPA-036-001,EPA-036,EPA,EPA-36,,2024-06-01,chemist 2,zchemist_985,93,Project 1
+Methoxychlor,72-43-5,COC1=CC=C(C=C1)C(C2=CC=C(C=C2)OC)C(Cl)(Cl)Cl,EPA-037-001,EPA-037,Enamine,Enamine-37,2024-12-01,,Lee Leader,,94,Project 2
+Myclobutanil,88671-89-0,CCCCC(CN1C=NC=N1)(C#N)C2=CC=C(C=C2)Cl,EPA-038-001,EPA-038,E-Molecule,E-Molecule-38,2024-12-02,,Brad Buyer,,95,Project 3
+Octyl Gallate,1034-01-1,CCCCCCCCOC(=O)C1=CC(=C(C(=C1)O)O)O,EPA-039-001,EPA-039,Sigma-Aldrich,SA-39,2024-12-03,,Penny Project,,96,Project 4
+Phenthoate,2597-03-7,CCOC(=O)C(C1=CC=CC=C1)SP(=S)(OC)OC,EPA-040-001,EPA-040,ACME,ACME-40,2024-12-04,,Anna Admin,,97,Project 5
+Phoxim,14816-18-3,CCOP(=S)(OCC)ON=C(C#N)C1=CC=CC=C1,EPA-041-001,EPA-041,WuXi,WuXi-41,2024-12-05,,VP Val,,98,Project 6
+Picoxystrobin,117428-22-5,COC=C(C1=CC=CC=C1COC2=CC=CC(=N2)C(F)(F)F)C(=O)OC,EPA-042-001,EPA-042,Pharmaron,Pharmaron-42,2024-12-06,,CSO Carla,,99,Project 7
+Propargite,2312-35-8,CC(C)(C)C1=CC=C(C=C1)OC2CCCCC2OS(=O)OCC#C,EPA-043-001,EPA-043,EPA,EPA-43,,2024-07-01,chemist 1,cchemist_128,93,Project 1
+Propiconazole,60207-90-1,CCCC1COC(O1)(CN2C=NC=N2)C3=C(C=C(C=C3)Cl)Cl,EPA-044-001,EPA-044,Enamine,Enamine-44,2024-12-01,,Lee Leader,,94,Project 2
+Simazine,122-34-9,CCNC1=NC(=NC(=N1)Cl)NCC,EPA-045-001,EPA-045,E-Molecule,E-Molecule-45,2024-12-02,,Brad Buyer,,95,Project 3
+Terbuthylazine,5915-41-3,CCNC1=NC(=NC(=N1)Cl)NC(C)(C)C,EPA-046-001,EPA-046,Sigma-Aldrich,SA-46,2024-12-03,,Penny Project,,96,Project 4
+Triclocarban,101-20-2,C1=CC(=CC=C1NC(=O)NC2=CC(=C(C=C2)Cl)Cl)Cl,EPA-047-001,EPA-047,ACME,ACME-47,2024-12-04,,Anna Admin,,97,Project 5
+Triclosan,3380-34-5,C1=CC(=C(C=C1Cl)O)OC2=C(C=C(C=C2)Cl)Cl,EPA-048-001,EPA-048,WuXi,WuXi-48,2024-12-05,,VP Val,,98,Project 6
+Trimethyl phosphate,512-56-1,COP(=O)(OC)OC,EPA-049-001,EPA-049,Pharmaron,Pharmaron-49,2024-12-06,,CSO Carla,,99,Project 7
+Triphenyl phosphate,115-86-6,C1=CC=C(C=C1)OP(=O)(OC2=CC=CC=C2)OC3=CC=CC=C3,EPA-050-001,EPA-050,EPA,EPA-50,,2024-08-01,chemist 2,zchemist_981,93,Project 1
+Triphenyl phosphite,101-02-0,C1=CC=C(C=C1)OP(OC2=CC=CC=C2)OC3=CC=CC=C3,EPA-051-001,EPA-051,Enamine,Enamine-51,2024-12-01,,Lee Leader,,94,Project 2
+Triphenylethylene,58-72-0,C1=CC=C(C=C1)C=C(C2=CC=CC=C2)C3=CC=CC=C3,EPA-052-001,EPA-052,E-Molecule,E-Molecule-52,2024-12-02,,Brad Buyer,,95,Project 3
+Zearalenone,17924-92-4,CC1CCCC(=O)CCCC=CC2=CC(=CC(=C2C(=O)O1)O)O,EPA-053-001,EPA-053,Sigma-Aldrich,SA-53,2024-12-03,,Penny Project,,96,Project 4
+Metconazole,125116-23-6,CC1(CCC(C1(CN2C=NC=N2)O)CC3=CC=C(C=C3)Cl)C,EPA-054-001,EPA-054,ACME,ACME-54,2024-12-04,,Anna Admin,,97,Project 5

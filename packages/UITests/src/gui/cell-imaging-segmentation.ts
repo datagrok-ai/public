@@ -1,4 +1,4 @@
-import {category, delay, test} from '@datagrok-libraries/test/src/test';
+import {category, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import {checkHTMLElementbyInnerText, getHTMLElementbyInnerText} from './gui-utils';
 
@@ -14,12 +14,20 @@ category('File Panels: Cell Imaging Segmentation', () => {
       }
     }
 
-    grok.shell.o = picCell1; await delay(500);
+    grok.shell.o = picCell1;
+    await waitUntil(() => getHTMLElementbyInnerText('d4-accordion-pane-header',
+      'Cell Imaging Segmentation') !== undefined, 'Cell Imaging Segmentation panel not found');
 
     checkHTMLElementbyInnerText('d4-accordion-pane-header', 'Cell Imaging Segmentation');
 
     const cellsPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Cell Imaging Segmentation');
-    cellsPanel!.click(); await delay(3000);
+    cellsPanel!.click();
+    await waitUntil(() => {
+      const pane = document
+        .getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-cell_imaging_segmentation expanded')[0];
+      return pane !== undefined && (pane.getElementsByClassName('d4-error').length != 0 ||
+        pane.getElementsByClassName('grok-scripting-image-container-info-panel').length != 0);
+    }, 'Cell Imaging Segmentation panel content was not loaded');
 
     if (document
       .getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-cell_imaging_segmentation expanded')[0]
@@ -31,6 +39,6 @@ category('File Panels: Cell Imaging Segmentation', () => {
       .getElementsByClassName('grok-scripting-image-container-info-panel').length != 1)
       throw new Error('Cell Imaging Segmentation content was not rendered in the panel');
 
-    cellsPanel!.click(); await delay(500);
+    cellsPanel!.click();
   });
 });

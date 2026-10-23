@@ -3,7 +3,7 @@
  *  no conversation content ever enters the queue or the platform logs. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {ClaudeRuntimeClient, ClaudeModel} from './runtime-client';
+import {ClaudeRuntimeClient} from './runtime-client';
 
 // Bounds a hold whose turn end was never observed (runtime restarted mid-poll).
 const HOLD_CAP_MS = 30 * 60_000;
@@ -63,7 +63,6 @@ async function taskRoute(): Promise<DG.Func | null> {
 
 export interface ChatTurnOptions {
   systemPromptMode?: string;
-  model?: ClaudeModel;
   clientTools?: {name: string; description: string; inputSchema?: object}[];
 }
 

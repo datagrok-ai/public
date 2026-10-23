@@ -1,13 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
 
-export const ClaudeModel = {
-  Haiku: 'claude-haiku-5-5',
-  Sonnet: 'claude-sonnet-5-5',
-  Opus: 'claude-opus-5-5',
-} as const;
-export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
-
 export type ChunkEvent = {sessionId: string, content: string};
 export type ImageAttachment = {mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp', data: string};
 /** `name` is the bare tool name (mcp prefix stripped). */
@@ -117,7 +110,7 @@ export class ClaudeRuntimeClient {
     }
 
     if (!this.ws)
-      throw new Error('Claude runtime container is not running');
+      throw new Error('AI runtime container is not running');
 
     this.ws.onmessage = (event: MessageEvent) => {
       let data: any;
@@ -190,7 +183,7 @@ export class ClaudeRuntimeClient {
     this._resumable.add(sessionId);
   }
 
-  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel;
+  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string;
     taskId?: string; clientTools?: {name: string; description: string; inputSchema?: object}[];
     images?: ImageAttachment[]}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
@@ -202,7 +195,6 @@ export class ClaudeRuntimeClient {
       ...(this._resumable.has(sessionId) ? {resumeExpected: true} : {}),
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
       ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
-      ...(options?.model ? {model: options.model} : {}),
       ...(options?.taskId ? {taskId: options.taskId} : {}),
       ...(options?.clientTools?.length ? {clientTools: options.clientTools} : {}),
       ...(options?.images?.length ? {images: options.images} : {}),
@@ -247,7 +239,7 @@ export class ClaudeRuntimeClient {
     this.ws.send(payload);
   }
 
-  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel,
+  async query(message: string, options?: {sessionId?: string, outputSchema?: object,
     systemPromptMode?: string, timeoutMs?: number}): Promise<any> {
     await this.ensureConnected();
     const sid = options?.sessionId ?? `query-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
@@ -276,7 +268,6 @@ export class ClaudeRuntimeClient {
       }));
       this.send(sid, message, {
         ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
-        ...(options?.model ? {model: options.model} : {}),
         ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
       });
     });

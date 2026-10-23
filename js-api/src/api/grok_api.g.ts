@@ -781,6 +781,8 @@ export interface IDartApi {
   grok_TreeViewNode_Get_Expanded(node: any): any;
   grok_TreeViewNode_Set_Expanded(node: any, expanded: Bool): any;
   grok_FilesWidget(options: any): any;
+  grok_ChatWidget(chat: any, onServer: Bool): any;
+  grok_EntityChatsWidget(entity: any): any;
   grok_Test_RunViewerTest(viewerName: String): Promise<any>;
   grok_ClickUtils_GetFullPath(x: any): any;
   grok_ClickUtils_GetElementLoggingName(x: any): any;
@@ -1190,6 +1192,15 @@ export interface IDartApi {
   grok_Dapi_Notifications_CountUnread(): Promise<any>;
   grok_Dapi_Notifications_MarkAllAsRead(): Promise<any>;
   grok_Dapi_Notifications_MarkAsRead(notificationId: String): Promise<any>;
+  grok_Dapi_Notifications_Send(userId: String, text: String, data: String): Promise<any>;
+  grok_Dapi_Chats_List(entityId: String, ref: String): Promise<any>;
+  grok_Dapi_Chats_Find(chatId: String): Promise<any>;
+  grok_Dapi_Chats_Comments(chatId: String): Promise<any>;
+  grok_Dapi_Chats_Post(chatId: String, comment: any, chat: any): Promise<any>;
+  grok_Dapi_Chats_Import(chatId: String, comment: any): Promise<any>;
+  grok_Dapi_Chats_DeleteComment(commentId: String): Promise<any>;
+  grok_Dapi_Chats_Watch(chatId: String, watch: Bool): Promise<any>;
+  grok_Dapi_Chats_IsWatched(chatId: String): Promise<any>;
   grok_Dapi_Activity(): any;
   grok_Dapi_Activity_Where(activityClient: any, userId: String, start: any, end: any): any;
   grok_DataSource_Find(s: any, id: String): Promise<any>;
@@ -1273,7 +1284,7 @@ export interface IDartApi {
   grok_Dapi_Domains_DeleteWhere(c: any, schema: String, table: String, filter: any, limit: any): Promise<any>;
   grok_Dapi_Domains_UpdateWhere(c: any, schema: String, table: String, filter: any, values: any, limit: any): Promise<any>;
   grok_Dapi_Domains_Promote(c: any, schema: String, table: String, id: String): Promise<any>;
-  grok_Dapi_Domains_RowAudit(c: any, schema: String, table: String, id: String): Promise<any>;
+  grok_Dapi_Domains_RowAudit(c: any, schema: String, table: String, id: String, limit: any, before: any): Promise<any>;
   grok_Dapi_Domains_PathTo(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_QueryDf(c: any, schema: String, table: String, spec: any): Promise<any>;
   grok_Dapi_Domains_Aggregate(c: any, schema: String, table: String, spec: any): Promise<any>;
