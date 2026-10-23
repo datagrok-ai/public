@@ -7,7 +7,7 @@ import {DomainApp, domains} from '@datagrok-libraries/ems/src/dg';
 import type {DomainRibbon} from '@datagrok-libraries/ems/src/dg';
 import {GritIssueHandler, lookupName, warmLookups} from './grit-issue-handler';
 import {gritDb, IssueRow} from './generated/db';
-import {getGritDb, GritDb} from './generated/db-ui';
+import {getGritDb} from './generated/db-ui';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -54,12 +54,22 @@ export function gritIssueHandler(): DG.ObjectHandler<DG.DomainRow> {
 
 const priorityVariants: {[name: string]: BadgeVariant} = {critical: 'error', high: 'warning', medium: 'accent'};
 
+let _closed: Promise<string | null> | undefined;
+
+/** The id of the `closed` status, looked up once per page; null where the lookup table has no such row, so nothing
+ * closes. */
+function closedStatus(): Promise<string | null> {
+  if (_closed === undefined) {
+    _closed = gritDb.statuses.getByKey({name: 'closed'}).then((closed) => closed?.id ?? null);
+    _closed.catch(() => _closed = undefined);
+  }
+  return _closed;
+}
+
 /** What Grit declares on `issue` — the two actions, the closing rule and the card — on every handle over it: the
  * Issues app's, a child tab's, the `/domains` route's. */
 domains.configure<IssueRow>('grit.issue', async (issues) => {
-  const [closed] = await Promise.all([gritDb.statuses.getByKey({name: 'closed'}), warmLookups()]);
-  // null where the lookup table has no `closed` row, so nothing closes
-  const closedId = closed?.id ?? null;
+  const [closedId] = await Promise.all([closedStatus(), warmLookups()]);
   const me = () => grok.shell.user.id;
   issues.actions.add({name: 'Assign to me', icon: 'user', requires: 'edit',
     when: (r) => r.assignee !== me(), run: (r) => { r.assignee = me(); }});
@@ -71,12 +81,7 @@ domains.configure<IssueRow>('grit.issue', async (issues) => {
     div([span(`#${r.number} ${r.title}`, 'u2-domain-card-title'), ...priorityBadge(r)]),
     ...(r.description ? [span(r.description, 'u2-domain-card-description')] : []),
   ], 'u2-domain-card')};
-});
-
-/** The typed schema handles, one await, cached per page — `issue` dressed by what Grit configures on it. */
-export function openGrit(): Promise<GritDb> {
-  return getGritDb();
-}
+}, {id: 'grit'});
 
 function priorityBadge(r: RowView<IssueRow>): HTMLElement[] {
   const name = lookupName(r.priority_id);
@@ -94,12 +99,12 @@ export class IssuesApp extends DomainApp {
   }
 }
 
-/** A view per Grit table — the issues where they were, at `/apps/Grit/Issues` — over the handles {@link openGrit}
+/** A view per Grit table — the issues where they were, at `/apps/Grit/Issues` — over the handles {@link getGritDb}
  * opens, so the actions, the closing rule and the card hold in each. Grit's one app answers everything under
  * `/apps/Grit`. */
 const views = domains.views({
   path: '/apps/Grit',
-  handle: async (address) => Object.values((await openGrit()).tables).find((t) => t.address === address)!,
+  handle: async (address) => Object.values((await getGritDb()).tables).find((t) => t.address === address)!,
   views: [
     {table: 'grit.issue', name: 'Issues', options: {app: IssuesApp, mode: 'cards',
       children: {tables: ['comment']}}},

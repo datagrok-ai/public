@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Issues: The closing rule, the actions and the card hold wherever an issue is edited: a project's Issues tab, the `/domains` view and bulk edit, which no longer closes unassigned issues
+* Issues: The closing rule, the actions and the card hold wherever an issue is edited: a project's Issues tab, bulk edit, which no longer closes unassigned issues, and the `/domains` view once Grit has loaded
 * u2: Took u2's stylesheet from u2 itself (installed once per page, the newest copy any package carries) instead of the EMS sheet bundle; republish with the other u2 packages
 * EMS: imports from `@datagrok-libraries/ems`
 * GROK-20753: Issues: ribbon slots — `IssuesApp.ribbon()` returns the named `{main, tools, presets}` record and declares the Mine / Open switch as the `presets` slot, instead of appending a positional group

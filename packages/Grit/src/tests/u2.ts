@@ -4,8 +4,9 @@ import type {DomainSource} from '@datagrok-libraries/ems';
 import {DomainApp} from '@datagrok-libraries/ems/src/dg';
 import type {DomainTable} from '@datagrok-libraries/ems/src/dg';
 import {gritDb, IssueRow} from '../generated/db';
+import {getGritDb} from '../generated/db-ui';
 import type {GritDb} from '../generated/db-ui';
-import {IssuesApp, openGrit} from '../package';
+import {IssuesApp} from '../package';
 
 // The code tier over the generated typed handles: the Issues app opens over `getGritDb()`, the
 // table handle is a `DomainTable<IssueRow>`, the actions show under their `when`, the validator
@@ -23,7 +24,7 @@ category('Grit: issues app', () => {
   }
 
   before(async () => {
-    db = await openGrit();
+    db = await getGritDb();
     issues = db.tables.issues;
   });
 
@@ -32,7 +33,7 @@ category('Grit: issues app', () => {
     expect(db.data, gritDb);
     expect(issues.address, 'grit.issue');
     expect(db.tables.comments.address, 'grit.comment');
-    expect(await openGrit(), db, 'cached per page');
+    expect(await getGritDb(), db, 'cached per page');
     expect(issues.access.field('title'), 'editable');
     expect(issues.access.field('number'), 'readonly', 'autoNumber is engine-assigned');
   });
