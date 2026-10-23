@@ -43,7 +43,7 @@ export class CompoundsApp extends DomainApp {
       if (row === null)
         return;
       this._showIdentity(row, null);
-      this.panes.prepend(this._identity);
+      this.header.append(this._identity);
       return () => this._identity.remove();
     });
     this.effect(() => {
@@ -52,7 +52,7 @@ export class CompoundsApp extends DomainApp {
       if (source === null || source === undefined || edit === undefined || !source.isDraft)
         return;
       this._showIdentity(null, null);
-      this.panes.prepend(this._identity);
+      this.header.append(this._identity);
       const changes = edit.onChanged.subscribe(() => void this._derive(source));
       const unguard = source.guard(() => {
         const verdict = CompoundsApp._verdicts.get(source.currentRow.peek()?.id ?? '');

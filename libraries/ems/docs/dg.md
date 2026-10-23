@@ -62,8 +62,13 @@ from the address bar (`?entity=<id>`, `?q=<query>`; a path given is authoritativ
 none reads `location.search`, which is how a cold deep link lands); `path` mirrors them for `appView` and
 `summary` is the session's while dirty, else the page's source's. The list page is a `DomainList`
 over `listSource` (Enter → the entity page); the entity page a source of one under the same
-session, `DomainForm` with `system: 'footer'`, then `panes`; `DomainTable.open(row)` activates a
-live app (`DomainApp.activate(base, id)`) instead of the platform's row view.
+session: `header`, `DomainForm` with `system: 'footer'`, then `panes`; `DomainTable.open(row)`
+activates a live app (`DomainApp.activate(base, id)`) instead of the platform's row view.
+
+The entity page's two slots for a subclass: `header` is the page above the form — what an app shows
+about the record before its fields: a parent card, a summary. It is empty and takes no space until
+the app puts something there, and the app owns what it holds. `panes` is the page below the form,
+where the children and history panes go; the app may add its own beside them.
 
 Override points for a subclass (`class IssuesApp extends DomainApp`):
 

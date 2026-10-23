@@ -19,7 +19,7 @@ const FILTERS = {filters: {mode: 'builder' as const, placement: 'left' as const}
 
 const KEYS: Record<string, string> = {[`${SCHEMA}.compound`]: 'molregno', [`${SCHEMA}.compound_batch`]: 'batch_regno'};
 
-// a batch page shows the compound it is a lot of, above its children; the picker stays the way to set it
+// a batch page shows the compound it is a lot of, above its fields; the picker stays the way to set it
 class BatchesApp extends DomainApp {
   private readonly _compound = ui.divV([], 'moltrack-ems-parent');
   /** The batch's compound, re-read on every edit; the card redraws only when it changes. */
@@ -56,7 +56,7 @@ class BatchesApp extends DomainApp {
     if (this._compoundId.peek() !== id)
       return;
     this._compound.replaceChildren(ui.h3('Compound'), card ?? ui.divText('The compound was not found'));
-    this.panes.prepend(this._compound);
+    this.header.append(this._compound);
   }
 }
 

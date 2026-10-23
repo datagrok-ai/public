@@ -494,6 +494,15 @@
   padding: var(--dg-space-s) var(--dg-space-m) 0;
 }
 
+.u2-domain-app-header {
+  flex: none;
+  padding: 0 var(--dg-space-m);
+}
+
+.u2-domain-app-header:empty {
+  display: none;
+}
+
 .u2-domain-app-panes {
   display: flex;
   flex: 1 0 auto;

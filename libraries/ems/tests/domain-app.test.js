@@ -298,6 +298,21 @@ scoped('the entity page carries the children and history panes under the form; b
   bare.dispose();
 });
 
+scoped('the entity page has an empty header above the form for the app to fill', async () => {
+  const {app: a} = await app();
+  await a.goTo('entity', 'i1');
+  await flush();
+  const page = a.root.querySelector('[data-u2-part="entity-page"]');
+  assert.equal(a.header.dataset.u2Part, 'header');
+  assert.ok(a.header.classList.contains('u2-domain-app-header'));
+  assert.deepEqual([...a.header.children], [], 'nothing in it by default');
+  const order = [...page.children];
+  assert.equal(order[0], a.header, 'above the form');
+  assert.ok(order.indexOf(a.form.value.root.parentElement) > 0);
+  assert.ok(order.indexOf(a.panes) > order.indexOf(a.form.value.root.parentElement));
+  a.dispose();
+});
+
 scoped('DomainTable.app(): the view over the app — name, path, the registries, and the close gate', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');

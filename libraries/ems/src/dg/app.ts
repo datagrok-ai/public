@@ -118,6 +118,10 @@ export class DomainApp extends Control {
   readonly breadcrumbs: Breadcrumbs;
   /** The entity page below the form — where the children and history panes go. */
   readonly panes: HTMLElement;
+  /** The entity page above the form — what an app shows about the record before its fields: a
+   * parent card, a summary. Empty, and taking no space, until an app puts something there; the app
+   * owns what it holds. */
+  readonly header: HTMLElement;
   /** `base?q=…&search=…` on the list page; on the entity page `base/<key>` where the app
    * addresses a row by a path segment ({@link entityPath}), else `base?entity=<id>`. */
   readonly path: ReadonlySignal<string>;
@@ -219,6 +223,8 @@ export class DomainApp extends Control {
     this._formHost = div([], 'u2-domain-app-form');
     this.panes = div([], 'u2-domain-app-panes');
     this.panes.dataset.u2Part = 'panes';
+    this.header = div([], 'u2-domain-app-header');
+    this.header.dataset.u2Part = 'header';
     this.filters = this.runInScope(() => domains.filters(this.listSource, _options.filters));
     // the rows answer the filter that was applied, not the one being written: while the box is
     // invalid they are shown as stale and the count stands down
@@ -232,7 +238,7 @@ export class DomainApp extends Control {
       this.list.root], {direction: 'horizontal', sizes: [0.3, 0.7]})).root] :
       [this.filters.root, this.list.root], 'u2-domain-app-list');
     listPage.dataset.u2Part = 'list-page';
-    const entityPage = divV([this._formHost, this.panes], 'u2-domain-app-entity');
+    const entityPage = divV([this.header, this._formHost, this.panes], 'u2-domain-app-entity');
     entityPage.dataset.u2Part = 'entity-page';
     // above both pages: the entity page always says which row, the list page only in the trash —
     // on a plain list the table's name is the view title already
