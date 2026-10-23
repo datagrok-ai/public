@@ -21,6 +21,7 @@
 // SCAFFOLD_SIZES  the scaffold tree's sizes (default 1000,2000,5000,10000; Crux also at `rows`): the script's time
 //            grows ~n^1.7 (6.7 s at 1000, 21 s at 2000 on an M5 Pro)
 // SCAFFOLD_BUDGET_MIN  minutes the script may take at one size (default 45): past it it is killed and larger sizes skipped
+// ENGINES    comma-separated engines to run (e.g. `crux` after a new Crux file); the others' outputs in OUT/raw are reused
 // RDKITJS    a folder with node_modules/@rdkit/rdkit 2026.3.6 (default <crux-core>/tools/rdkitjs; `npm ci` there once)
 // CRUX_BENCH crux-bench checkout (the search's query sets; default <grok>/crux/crux-bench)
 // CONTAINER  the chem-chem container's URL (e.g. http://localhost:55005): its descriptors timed on 2000 molecules
@@ -381,6 +382,7 @@ const fallbacks = () => globalThis.__engine?.fallbacks?.length ?? 0;
 // in (the child's `current` marker); the next process skips it: such a unit is run again in chunks, a crashed chunk item
 // by item, a crashed item is a counted outcome ("crashed"). The units done are kept in raw/<fn>/<engine>.state-<run>/.
 const RESTART_EXIT = 75;
+const wanted = (engine) => !process.env.ENGINES || process.env.ENGINES.split(',').includes(engine);
 const HEAP_RESTART_BYTES = parseFloat(process.env.HEAP_RESTART_GB ?? '1.5') * 2 ** 30;
 const MAX_RESTARTS = 400;
 const ABORTS = [];
@@ -1629,6 +1631,8 @@ function spawnMeasured(label, cmd, args, opts = {}) {
  * unit of work it marked (the unit recorded as crashed, the next process skips it); the processes in `raw/<fn>/<engine>
  * .processes.json`. */
 function child(fn, engine, rows) {
+  if (!wanted(engine))
+    return;
   const dir = join(RAW, fn, `${engine}.state-${Date.now()}`);
   mkdirSync(dir, {recursive: true});
   const processes = [];
@@ -1662,6 +1666,8 @@ function child(fn, engine, rows) {
   throw new Error(`${fn}/${engine}: more than ${MAX_RESTARTS} restarts`);
 }
 function python(args, {py = PYTHON, timeoutMs} = {}) {
+  if (!wanted({descriptors: 'chempy', scaffoldtree: 'sg'}[args[0]] ?? 'py'))
+    return true;
   const r = spawnMeasured(`python ${args[0]}`, py, ['-I', PY_HELPER, ...args], {timeout: timeoutMs,
     killSignal: 'SIGKILL'});
   return r.status === 0;
@@ -2960,7 +2966,7 @@ if (!isMain) {
       if (f.run)
         await f.run(rows);
       else {
-        for (const engine of f.engines.filter((e) => !process.env.ENGINES || process.env.ENGINES.split(',').includes(e))) {
+        for (const engine of f.engines) {
           try {
             child(fn, engine, rows);
           } catch (e) { // one engine's failure ends only its own run
