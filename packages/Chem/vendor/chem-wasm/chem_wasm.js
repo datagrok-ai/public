@@ -2481,6 +2481,35 @@ export function calcDescriptors(molecules, names) {
 }
 
 /**
+ * `chemAlerts(molecules, catalogs, atoms)`: the JSON of each catalog's hits per molecule (module docs); throws on a
+ * catalog other than Brenk and NIH.
+ * @param {(string | null)[]} molecules
+ * @param {string[]} catalogs
+ * @param {boolean} atoms
+ * @returns {string}
+ */
+export function chemAlerts(molecules, catalogs, atoms) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passArrayJsValueToWasm0(catalogs, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemAlerts(molecules, ptr0, len0, atoms);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * `chemProperties(molecules, names)`: the JSON of Chem's property columns (module docs); throws on a name not in
  * its table.
  * @param {(string | null)[]} molecules
@@ -2505,6 +2534,24 @@ export function chemProperties(molecules, names) {
         return getStringFromWasm0(ptr2, len2);
     } finally {
         wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * `chemQed(molecules)`: the JSON of QED and its eight properties per molecule (module docs).
+ * @param {(string | null)[]} molecules
+ * @returns {string}
+ */
+export function chemQed(molecules) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.chemQed(molecules);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
 }
 

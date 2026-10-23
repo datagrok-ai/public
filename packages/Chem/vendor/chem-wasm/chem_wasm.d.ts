@@ -769,10 +769,21 @@ export class SimilarityResult {
 export function calcDescriptors(molecules: (string | null)[], names: string[]): string;
 
 /**
+ * `chemAlerts(molecules, catalogs, atoms)`: the JSON of each catalog's hits per molecule (module docs); throws on a
+ * catalog other than Brenk and NIH.
+ */
+export function chemAlerts(molecules: (string | null)[], catalogs: string[], atoms: boolean): string;
+
+/**
  * `chemProperties(molecules, names)`: the JSON of Chem's property columns (module docs); throws on a name not in
  * its table.
  */
 export function chemProperties(molecules: (string | null)[], names: string[]): string;
+
+/**
+ * `chemQed(molecules)`: the JSON of QED and its eight properties per molecule (module docs).
+ */
+export function chemQed(molecules: (string | null)[]): string;
 
 /**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
@@ -978,7 +989,9 @@ export interface InitOutput {
     readonly __wbg_rgroupdecomposition_free: (a: number, b: number) => void;
     readonly __wbg_similarityresult_free: (a: number, b: number) => void;
     readonly calcDescriptors: (a: any, b: number, c: number) => [number, number];
+    readonly chemAlerts: (a: any, b: number, c: number, d: number) => [number, number, number, number];
     readonly chemProperties: (a: any, b: number, c: number) => [number, number, number, number];
+    readonly chemQed: (a: any) => [number, number];
     readonly chemWasmModules: () => [number, number];
     readonly collection_engineRev: () => [number, number];
     readonly collection_fromBytes: (a: number, b: number) => [number, number, number];

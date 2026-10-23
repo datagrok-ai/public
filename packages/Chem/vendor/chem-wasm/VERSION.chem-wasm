@@ -2,29 +2,29 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: a8a13647422ea95122e5d303d6186313f9e90600
+crux_core_rev: 8d14d9eb22fd5af99196fd5d68bcd2c9773de3c0
 crux_core_dirty: False
-built_utc: 2026-10-21T21:11:36.697Z
+built_utc: 2026-10-23T02:01:04.985Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
 cargo.rustflags: -C target-feature=+simd128
 wasm_bindgen.version: 0.2.129
 wasm_bindgen.flags: --target web --remove-name-section
-wasm_opt.version: wasm-opt version 117 (version_117)
-wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 5037455
-files.chem_wasm_bg.wasm.gzip9: 1907182
-files.chem_wasm_bg.wasm.brotli11: 1411426
-files.chem_wasm.js.raw: 137619
-files.chem_wasm.js.gzip9: 21061
-files.chem_wasm.js.brotli11: 17717
-cargo_artifact.raw: 7248093
-cargo_artifact.gzip9: 2369869
-cargo_artifact.brotli11: 1686052
+wasm_opt.version: wasm-opt version 133 (version_133)
+wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-bulk-memory-opt --enable-call-indirect-overlong --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
+files.chem_wasm_bg.wasm.raw: 5102328
+files.chem_wasm_bg.wasm.gzip9: 1924885
+files.chem_wasm_bg.wasm.brotli11: 1419177
+files.chem_wasm.js.raw: 139040
+files.chem_wasm.js.gzip9: 21216
+files.chem_wasm.js.brotli11: 17842
+cargo_artifact.raw: 7321698
+cargo_artifact.gzip9: 2393985
+cargo_artifact.brotli11: 1699110
 
-vendored from: a clean build of crux-core main a8a136474 (build-ship.sh chem)
-chem_wasm_bg.wasm: 5,037,455 B raw, sha256 ed1a3b58fd92d516
+vendored from: a clean build of crux-core main 8d14d9eb2 (build-ship.sh chem)
+chem_wasm_bg.wasm: 5,102,328 B raw, sha256 ad86d13c3642fa7e
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes: molzip (RDKit.js's forms, molzip(mol), molzipFragments), RDKit's R-group stereo on mapped dummies, fingerprint useChirality and FCFP as RDKit 2026.03, MMPA's empty cuts (chem-wasm-ports), on top of chemProperties (chem-props) and the MOL-block ring stereo fix (molblock-ring-stereo)
+includes: chemQed (RDKit's QED and its eight properties) and chemAlerts (FilterCatalog's Brenk and NIH alerts with their atoms) for Crux mode's drug-likeness and toxicity (chem-qed-alerts), on top of a8a136474's (molzip, R-group stereo, fingerprint options, MMPA, chemProperties, the MOL-block ring stereo fix)
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)
