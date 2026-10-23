@@ -107,11 +107,11 @@ export class MatrixPainter {
     g.fillStyle = DG.Color.toHtml(HEADER_ARGB);
     g.fillRect(b.x, b.y, b.width, b.height);
 
-    // Position label only on the first column of a group (per-cell clipping can't span columns).
-    // 'R' matches the unnumbered mark the core draws at the site these columns attach to; the core's
-    // numbered marks are the positions its rows differ at, which no column here enumerates.
+    // Position label only on the first column (per-cell clipping can't span columns): every column
+    // carries the one position. 'R' matches the unnumbered mark the core draws at the site these columns
+    // attach to; the core's numbered marks are the positions its rows differ at.
     const posBandH = 16;
-    if (state.firstOfGroup.has(idx)) {
+    if (idx === 0) {
       g.fillStyle = grey6;
       g.font = `600 11px ${GRID_FONT}`;
       g.textAlign = 'left';

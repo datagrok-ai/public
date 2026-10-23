@@ -62,13 +62,12 @@ export interface SummaryHost {
   selectRoleValue(role: string, value: string): void;
   selectRows(rows: number[]): void;
   readonly predictVirtual: boolean;
-  readonly predictUnmeasured: boolean;
   readonly computing: boolean;
   noMatricesMessage(): string;
   formatActivity(value: number): string;
   cellIdText(cell: SarMatrixCell): string | null;
   observedNeighbours(matrix: SarMatrix, ri: number, ci: number): number;
-  revealCell(matrix: SarMatrix, ri: number, ci: number, position?: string): void;
+  revealCell(matrix: SarMatrix, ri: number, ci: number): void;
   revealMatrix(matrix: SarMatrix): void;
   addCellsToMakeList(cells: MatrixCellRef[], emptyMessage: string): void;
 }
@@ -212,13 +211,10 @@ export interface RGroupAcc {
 export interface SeriesStat {
   matrix: SarMatrix;
   tier: number;
-  cpd: number;
   realCells: number;
   totalCells: number;
   /** Zero also where assembly never marked any. */
   impossibleCells: number;
-  lo: number;
-  hi: number;
   best: {ri: number, ci: number, value: number} | null;
   /** The one fitted quantity comparable between matrices. */
   typical: number;
@@ -247,9 +243,6 @@ export interface SummaryData {
   fitHolds: number;
   unchecked: number;
   lowR2: number;
-  axisRole: string | null;
-  coreRole: string | null;
-  coresAreSeries: boolean;
   roleFit: RoleFit | null;
   roleBest: Map<string, Map<string, MatrixCellRef & {value: number}>>;
   nonConverged: number;

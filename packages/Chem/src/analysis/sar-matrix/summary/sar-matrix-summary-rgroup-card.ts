@@ -11,8 +11,8 @@ export class SummaryRGroupCard {
   constructor(private readonly kit: SummaryPanel, private readonly effects: SummaryEffects) {}
 
   build(data: SummaryData): HTMLElement {
-    const title = data.axisRole === null ? 'R-groups — within-series ranking' :
-      `${data.axisRole} — within-series ranking`;
+    const axisRole = this.kit.host.axisRole;
+    const title = `${axisRole ?? 'R-groups'} — within-series ranking`;
     const subtitle = 'Groups that came first at their position in most series that tried them: carry them ' +
       'forward. The number is the margin over each series\' most common substituent.';
     if (!this.kit.host.activityIsLog) {
@@ -29,8 +29,8 @@ export class SummaryRGroupCard {
         ` ${count(data.nonConverged)} series whose fit did not converge are left out.`)));
     }
     const body: HTMLElement[] = [];
-    if (this.effects.roleRanked(data, data.axisRole)) {
-      body.push(ui.divText(`This card counts wins within each series; the ${data.axisRole} view reports one ` +
+    if (this.effects.roleRanked(data, axisRole)) {
+      body.push(ui.divText(`This card counts wins within each series; the ${axisRole} view reports one ` +
         'effect over the whole table.',
       'chem-sar-sum-prose'));
     }
@@ -65,30 +65,28 @@ export class SummaryRGroupCard {
     if (rows.length === 0)
       return undefined;
     const line = ui.divText('', 'chem-sar-cp-hint');
-    this.kit.pendingPaints.push(() => {
-      const rdkit = getRdKitModule();
-      let groups = 0;
-      let references = 0;
-      let n = 0;
-      for (const row of rows) {
-        const {matrix, ci} = row.win;
-        const reference = matrix.refValues[matrix.columns[ci].position];
-        const atoms = cachedAtomCount(row.subst, rdkit);
-        const refAtoms = reference ? cachedAtomCount(reference, rdkit) : 0;
-        if (atoms > 0 && refAtoms > 0) {
-          groups += atoms;
-          references += refAtoms;
-          n++;
-        }
+    const rdkit = getRdKitModule();
+    let groups = 0;
+    let references = 0;
+    let n = 0;
+    for (const row of rows) {
+      const {matrix, ci} = row.win;
+      const reference = matrix.refValues[matrix.columns[ci].position];
+      const atoms = cachedAtomCount(row.subst, rdkit);
+      const refAtoms = reference ? cachedAtomCount(reference, rdkit) : 0;
+      if (atoms > 0 && refAtoms > 0) {
+        groups += atoms;
+        references += refAtoms;
+        n++;
       }
-      if (n === 0)
-        return;
+    }
+    if (n > 0) {
       const won = Math.round(groups / n);
       const beaten = Math.round(references / n);
       line.innerText = won > beaten ? `The winners are bigger than what they beat (${won} vs ${beaten} heavy ` +
         'atoms): part of the gain may be size alone.' :
         `The winners are no bigger than what they beat (${won} vs ${beaten} heavy atoms).`;
-    });
+    }
     ui.tooltip.bind(line, 'Heavy atoms including the attachment point, averaged over the groups above and the ' +
       'series references they are compared with. Potency alone tends to favour larger groups.');
     return line;
@@ -99,11 +97,9 @@ export class SummaryRGroupCard {
     const {win} = row;
     const position = win.matrix.columns[win.ci].position;
     const reference = win.matrix.refValues[position] ?? '';
-    const atoms = this.kit.badge('', 'Heavy atoms including the attachment point: potency alone favours size.');
-    this.kit.pendingPaints.push(() => {
-      const n = cachedAtomCount(row.subst, getRdKitModule());
-      atoms.innerText = n ? `${n} atoms` : '—';
-    });
+    const n = cachedAtomCount(row.subst, getRdKitModule());
+    const atoms = this.kit.badge(n ? `${n} atoms` : '—',
+      'Heavy atoms including the attachment point: potency alone favours size.');
     const badges = [this.tallyBadge(row, opts.loser ? 'last' : 'best'), atoms];
     if (opts.thin)
       badges.push(this.kit.badge('2 series', 'Two lineages only — the number below is the mean of two.', true));
@@ -123,7 +119,7 @@ export class SummaryRGroupCard {
         'Median difference against each series\' most common substituent' +
         (row.magnitudeSeries > 1 ? '' : ` (${reference})`) + `, over ${row.magnitudeSeries} of ${row.k} series.`,
       tip: this.kit.openTip(win.matrix, win.ri, win.ci),
-      onClick: () => host.revealCell(win.matrix, win.ri, win.ci, position),
+      onClick: () => host.revealCell(win.matrix, win.ri, win.ci),
     });
   }
 }

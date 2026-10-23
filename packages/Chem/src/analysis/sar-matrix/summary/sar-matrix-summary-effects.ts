@@ -4,31 +4,22 @@ import {MIN_SUPPORT, SeriesStat, SummaryData, SWAP_MIN_PAIRS, SWAP_MIN_SERIES,
 import {count} from '../sar-matrix-ui-common';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
 import {orient, roleRanks} from './sar-matrix-summary-common';
-import type {RoleSummary} from './sar-matrix-role-fit';
 import {SummaryRoleCards} from './sar-matrix-summary-role-cards';
 import {SummaryRGroupCard} from './sar-matrix-summary-rgroup-card';
 
 export class SummaryEffects {
-  private readonly roleCards: SummaryRoleCards;
-  private readonly rgroupCard: SummaryRGroupCard;
+  readonly roleCards: SummaryRoleCards;
+  readonly rgroupCard: SummaryRGroupCard;
 
   constructor(private readonly kit: SummaryPanel) {
     this.roleCards = new SummaryRoleCards(kit, this);
     this.rgroupCard = new SummaryRGroupCard(kit, this);
   }
 
-  rgroupCardFor(data: SummaryData): HTMLElement {
-    return this.rgroupCard.build(data);
-  }
-
   coreCardFor(data: SummaryData): HTMLElement {
-    return data.coresAreSeries ? this.buildCoreCard(data, this.kit.topCores(data)) :
+    return this.kit.host.coresAreSeries ? this.buildCoreCard(data, this.kit.topCores(data)) :
       ui.divText('Cores do not compare across series here; each series\' best core is in its Key series row.',
         'chem-sar-cp-hint');
-  }
-
-  roleCard(data: SummaryData, role: RoleSummary): HTMLElement {
-    return this.roleCards.roleCard(data, role);
   }
 
   /** Whether the component fit ranks this component, so its own card covers it. */
@@ -91,7 +82,7 @@ export class SummaryEffects {
         tip: best === null ? `Select every compound whose ${role} is the one on the right` :
           this.kit.openTip(best.matrix, best.ri, ci),
         onClick: best === null ? () => host.selectRoleValue(data.roleColumn.get(role!) ?? role!, to) :
-          () => host.revealCell(best.matrix, best.ri, ci, position),
+          () => host.revealCell(best.matrix, best.ri, ci),
       });
     });
     if (rows.length > 0)
@@ -104,7 +95,7 @@ export class SummaryEffects {
 
   private buildCoreCard(data: SummaryData, cores: SeriesStat[]): HTMLElement {
     const host = this.kit.host;
-    const title = `${data.coreRole ?? 'Cores'} — the average of what was made on each`;
+    const title = `${host.coreRole ?? 'Cores'} — the average of what was made on each`;
     const subtitle = 'Mean activity of each core\'s measured compounds, not adjusted for its substituents: a ' +
       'core only tried with good groups scores high. Unlike the fitted effects, these compare between cores.';
     if (cores.length === 0)
@@ -113,8 +104,8 @@ export class SummaryEffects {
       depiction: this.kit.depiction(stat.matrix.rows[0].coreSmiles),
       name: stat.matrix.label,
       badges: this.kit.trustBadges(stat.matrix),
-      desc: `${count(stat.cpd)} cpd · best ${host.formatActivity(stat.best!.value)} · ` +
-        `${host.formatActivity(stat.lo)}–${host.formatActivity(stat.hi)}`,
+      desc: `${count(stat.matrix.realCount)} cpd · best ${host.formatActivity(stat.best!.value)} · ` +
+        `${host.formatActivity(stat.matrix.minActivity)}–${host.formatActivity(stat.matrix.maxActivity)}`,
       value: host.formatActivity(stat.typical),
       caption: 'typical',
       valueTip: 'Count-weighted fitted mean of what was made on this core; good caps lift it.',

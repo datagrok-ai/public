@@ -5,13 +5,11 @@ import {SummaryOverview} from './sar-matrix-summary-overview';
 import {SummaryEffects} from './sar-matrix-summary-effects';
 import {SummaryCollector, SummaryData} from './sar-matrix-summary-data';
 import {chipBadge, count} from '../sar-matrix-ui-common';
-import {SummaryScale} from './sar-matrix-summary-scale';
 import {SummaryKit} from './sar-matrix-summary-kit';
 
 export class SummaryPanel extends SummaryKit {
   readonly root = ui.divV([], 'chem-sar-main chem-sar-sum-root');
   private data: SummaryData | null = null;
-  private paintTimer = 0;
   /** Collecting holds the main thread, so it runs after the loader paints. */
   private collectTimer = 0;
 
@@ -21,7 +19,6 @@ export class SummaryPanel extends SummaryKit {
   private readonly making = new SummaryMaking(this);
   private readonly overview = new SummaryOverview(this);
   readonly effects = new SummaryEffects(this);
-  private readonly scale = new SummaryScale(this);
 
   activateSummaryTab(): void {
     if (this.host.computing) {
@@ -69,20 +66,14 @@ export class SummaryPanel extends SummaryKit {
     this.root.appendChild(ui.divText(text, 'chem-sar-empty-note'));
   }
 
-  release(): void {
-    this.invalidate();
-  }
-
   /** Releases every timer and node, which a dropped reference does not free. */
   private reset(): void {
-    window.clearTimeout(this.paintTimer);
     window.clearTimeout(this.collectTimer);
     this.collectTimer = 0;
     this.data = null;
     // A new analysis has its own tiers; a stale one would filter every matrix out.
     this.tierFilter = null;
-    this.pendingPaints = [];
-    this.stopPainting();
+    this.painter.disconnect();
     ui.empty(this.root);
   }
 
@@ -92,9 +83,7 @@ export class SummaryPanel extends SummaryKit {
     const scrollers = (): HTMLElement[] => [...this.root.querySelectorAll<HTMLElement>(
       '.chem-sar-sum-pane, .chem-sar-sum-flowcol, .chem-sar-sum-making-block')];
     const places = keepPlace ? scrollers().map((el) => el.scrollTop) : [];
-    window.clearTimeout(this.paintTimer);
-    this.pendingPaints = [];
-    this.stopPainting();
+    this.painter.disconnect();
     ui.empty(this.root);
 
     if (host.matrices.length === 0) {
@@ -113,11 +102,6 @@ export class SummaryPanel extends SummaryKit {
     this.root.appendChild(ui.divV([this.overview.head(data), ui.divH([left, right], 'chem-sar-sum-flow')],
       'chem-sar-sum-pane'));
     scrollers().forEach((el, i) => el.scrollTop = places[i] ?? 0);
-    this.paintTimer = window.setTimeout(() => this.flushPaints(), 0);
-  }
-
-  scaleRow(data: SummaryData, coverage: HTMLElement): HTMLElement {
-    return ui.divH([this.scale.build(data), coverage], 'chem-sar-sum-top');
   }
 
   levelInput(): HTMLElement {

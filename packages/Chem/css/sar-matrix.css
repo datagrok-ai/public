@@ -151,11 +151,9 @@ i.chem-sar-card-twisty:hover {
   background: var(--grey-1);
 }
 
-.chem-sar-card.chem-sar-sum-static {
-  cursor: default;
-}
-
+.chem-sar-card.chem-sar-sum-static,
 .chem-sar-card.chem-sar-sum-static:hover {
+  cursor: default;
   background: none;
 }
 
@@ -719,7 +717,6 @@ i.chem-sar-card-twisty:hover {
 
 /* ---- Summary tab ------------------------------------------------------------------------- */
 
-/* Short of room, the chips move to a line of their own as a block rather than splitting. */
 .chem-sar-sum-top {
   flex-wrap: wrap;
   align-items: center;
@@ -805,7 +802,8 @@ i.chem-sar-card-twisty:hover {
   }
 }
 
-.chem-sar-sum-overview {
+.chem-sar-sum-overview,
+.chem-sar-sum-making {
   gap: 8px;
 }
 
@@ -847,8 +845,7 @@ i.chem-sar-card-twisty:hover {
 }
 
 .chem-sar-sum-arrow,
-.chem-sar-sum-faint,
-.chem-sar-sum-about {
+.chem-sar-sum-faint {
   color: var(--grey-4);
 }
 
@@ -861,7 +858,6 @@ i.chem-sar-card-twisty:hover {
   flex: 0 0 90px;
 }
 
-/* The value and the swap halves share the row equally, so both line up down the table. */
 .chem-sar-sum-half,
 .chem-sar-sum-half-head {
   flex: 1 1 0;
@@ -886,8 +882,7 @@ i.chem-sar-card-twisty:hover {
   font-size: 11px;
 }
 
-/* Indented past the row's depiction, so it reads as nested under that row. Its structures and facts wrap inside the
-   column, the facts going under the structures rather than into a sliver beside them. */
+/* Indented past the row's depiction, so it reads as nested under that row. */
 .chem-sar-sum-expand {
   flex-wrap: wrap;
   padding: 2px 12px 10px 48px;
@@ -969,10 +964,6 @@ i.chem-sar-card-twisty:hover {
   cursor: pointer;
 }
 
-.chem-sar-sum-making {
-  gap: 8px;
-}
-
 /* The analogs scroll inside their card and the left column inside itself, so the Summary stays put. */
 .chem-sar-sum-flow {
   flex: 1 1 0;
@@ -1017,6 +1008,7 @@ i.chem-sar-card-twisty:hover {
 }
 
 .chem-sar-sum-about {
+  color: var(--grey-4);
   cursor: help;
 }
 

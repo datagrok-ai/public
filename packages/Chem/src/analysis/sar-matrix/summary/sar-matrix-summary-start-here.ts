@@ -32,7 +32,7 @@ export class SummaryStartHere {
         mark: this.reasonLane(row.reasons),
         // One line even in a half-width column; the denominator and the compound count are in the tooltip.
         desc: `${count(stat.realCells)} measured · ` +
-          `${host.formatActivity(stat.lo)}–${host.formatActivity(stat.hi)}` +
+          `${host.formatActivity(matrix.minActivity)}–${host.formatActivity(matrix.maxActivity)}` +
           (stat.realCells ? ` · typical ${host.formatActivity(stat.typical)}` : ''),
         value: stat.best === null ? '—' : host.formatActivity(stat.best.value),
         caption: 'best',
@@ -40,7 +40,8 @@ export class SummaryStartHere {
           `${host.formatActivity(stat.best.value)} measured; ${neighbours} measured cells share its core ` +
           'or substituent.',
         // Cells the decomposition cannot express are left out of the denominator.
-        tip: (stat.cpd === stat.realCells ? '' : `${count(stat.cpd)} compounds; `) + `${count(stat.realCells)} of ` +
+        tip: (matrix.realCount === stat.realCells ? '' : `${count(matrix.realCount)} compounds; `) +
+          `${count(stat.realCells)} of ` +
           `${count(stat.totalCells - stat.impossibleCells)} ${stat.impossibleCells > 0 ? 'makeable cells' : 'cells'} ` +
           `measured. Click to expand; the grid icon opens ${matrix.label} in the SAR Matrix. "Typical" is the fitted ` +
           'mean of what was made; a big gap to "best" suggests one lucky compound.',

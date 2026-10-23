@@ -38,9 +38,8 @@ export function computeMatrixConfidence(matrix: SarMatrix): Confidence | null {
           continue;
         total++;
         const predicted = looPredictSlice(matrix.cells, rowCount, colIdxs, ri, k);
-        if (predicted === null)
-          continue;
-        pairs.push({observed: cell.value, predicted});
+        if (predicted !== null)
+          pairs.push({observed: cell.value, predicted});
       }
     }
   }

@@ -5,8 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {renderMolecule} from '../../rendering/render-molecule';
 import {fitAdditiveEffects} from './build/sar-matrix-assemble';
 import {closeGridQuietly, SarMatrix, SarMatrixCell} from './sar-matrix-types';
-import {ANALOG_W, CELL_W, CORE_W, isStructure, MatrixCellRef,
-  moleculeGrid} from './sar-matrix-ui-common';
+import {ANALOG_W, CELL_H, CELL_W, CORE_W, isStructure, MatrixCellRef} from './sar-matrix-ui-common';
 
 /** Spelled out in the Context Panel, where there is room to say what produced the number. */
 const FREE_WILSON_METHOD = 'local Free-Wilson (row + column effects)';
@@ -62,7 +61,6 @@ export class MakeListPanel {
 
   constructor(private readonly host: MakeListHost) {}
 
-  /** How many compounds the list holds. */
   get count(): number {
     return this.makeList?.rowCount ?? 0;
   }
@@ -143,8 +141,7 @@ export class MakeListPanel {
       // Decided over the whole list: a batch of named fragments followed by drawn ones is one column.
       for (const name of [MAKELIST_STRUCTURE, 'Core', 'Substituent']) {
         const col = this.makeList.col(name)!;
-        // Over the distinct values and through the panel's own memo: isStructure parses with RDKit, and its
-        // shared cache is smaller than a list of every analog, so each add re-parsed the whole list.
+        // Through the panel's own memo: isStructure parses with RDKit, and its shared cache is smaller than the list.
         col.semType = col.categories.every((value) => !value || this.structureOf(value)) ? DG.SEMTYPE.MOLECULE : '';
       }
       for (const c of fresh)
@@ -246,8 +243,19 @@ export class MakeListPanel {
       ui.divH([open, remove]),
       clear,
     ], 'chem-sar-main-bar'));
-    this.makeListGrid = moleculeGrid(this.makeList,
-      [[MAKELIST_STRUCTURE, ANALOG_W], ['Core', CORE_W], ['Substituent', CELL_W]]);
+    this.makeListGrid = DG.Viewer.grid(this.makeList);
+    // The grid root is a ui-box, which pins itself to a fixed size and leaves the rest of the tab blank.
+    this.makeListGrid.root.style.width = '100%';
+    this.makeListGrid.root.style.height = '100%';
+    // Sized like the matrix cells these came from: the text-oriented defaults leave a molecule column
+    // too short and too narrow to read.
+    this.makeListGrid.setOptions({rowHeight: CELL_H});
+    for (const [name, width] of [[MAKELIST_STRUCTURE, ANALOG_W], ['Core', CORE_W], ['Substituent', CELL_W]] as
+      [string, number][]) {
+      const gridCol = this.makeListGrid.col(name);
+      if (gridCol)
+        gridCol.width = width;
+    }
     this.currentCellSub = this.makeList.onCurrentCellChanged.subscribe(() => this.showCurrentCompound());
     this.root.appendChild(ui.div([this.makeListGrid.root], 'chem-sar-makelist-grid'));
   }

@@ -198,28 +198,18 @@ interface SarHint {
   position?: `${ui.hints.POSITION}`;
   title: string;
   text: string;
-  /** Put the viewer where the hint's anchor exists — a tab, a section — before it is looked for. The
-   *  tour walks four tabs and three sections of one of them, and an anchor on a pane that is not open
-   *  is not in the document at all. */
+  /** Open the tab or section the anchor lives on: an anchor on a pane that is not open is not in the document. */
   before?: () => void;
 }
 
-/** The one element matching `selector` whose text is exactly `title`. */
-function byText(selector: string, title: string): HTMLElement | null {
-  const found = Array.from(document.querySelectorAll(selector))
-    .find((e) => e.textContent?.trim() === title);
-  return found instanceof HTMLElement ? found : null;
-}
-
-/** Click a tab header of the SAR viewer, or of the Summary tab's own sections, by name. */
 function sarTab(title: string): void {
   sarTabHeader(title)?.click();
 }
 
-/** A tab header of the SAR viewer, used as the fallback anchor for hints about a tab the tour has
- *  not opened yet — that tab's own markup does not exist until it is shown once. */
+/** The fallback anchor for hints about a tab the tour has not opened yet, whose markup does not exist yet. */
 function sarTabHeader(title: string): HTMLElement | null {
-  return byText('.d4-tab-header', title);
+  const found = Array.from(document.querySelectorAll('.d4-tab-header')).find((e) => e.textContent?.trim() === title);
+  return found instanceof HTMLElement ? found : null;
 }
 
 /** Open a Summary row or fold while it is closed, which its right-pointing chevron shows, so a step shown
@@ -243,10 +233,8 @@ function openMaking(): void {
   block?.scrollIntoView({block: 'nearest'});
 }
 
-/** The matrix is a canvas grid, so its cells are not elements to anchor to. This lays a marker over
- *  the first data cell — past the core column and the substituent header — so the hint about cells
- *  opens against one instead of against the pane. Fixed-positioned and outside the grid so it cannot
- *  disturb the layout it is measuring, and replaced on each call rather than accumulating. */
+/** A marker over the first data cell: the matrix is a canvas grid, so its cells are not elements to anchor
+ *  to. Fixed-positioned and outside the grid so it cannot disturb the layout it is measuring. */
 function matrixCellAnchor(): Element | null {
   const host = document.querySelector('.chem-sar-grid-host');
   if (!(host instanceof HTMLElement))
@@ -303,9 +291,8 @@ const SAR_HINTS: SarHint[] = [
       'to pair with.',
   },
   {
-    before: () => openIfClosed(document.querySelector('.chem-sar-sum-list > .chem-sar-card')),
-    anchor: () => document.querySelector('.chem-sar-sum-list .chem-sar-card') ??
-      document.querySelector('.chem-sar-sum-overview'),
+    before: () => openIfClosed(at.firstSeries()),
+    anchor: at.firstSeries,
     position: ui.hints.POSITION.TOP,
     title: 'Key series',
     text: 'The series to open first. The squares say why: most compounds, widest range, best ' +
@@ -472,8 +459,7 @@ const SAR_HINTS: SarHint[] = [
       'Analogs gained. The funnel filters on all three.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-xfer-panel .chem-sar-grid-host') ??
-      sarTabHeader('SAR Transfer'),
+    anchor: at.transferGrid,
     position: ui.hints.POSITION.LEFT,
     title: 'Analogs the transfer argues for',
     text: 'Both series over their shared substituents. Dashed "predicted" cells are what the transfer ' +
@@ -500,11 +486,8 @@ const SAR_HINTS: SarHint[] = [
   },
 ];
 
-/**
- * The PROTAC tour. Shorter than the fragmentation one and about a different thing: here the three
- * parts of every molecule are already columns, so nothing is cut and the question is which of the
- * three to change.
- */
+/** The PROTAC tour: the three parts of every molecule are already columns, so nothing is cut and the
+ *  question is which of the three to change. */
 const PROTAC_HINTS: SarHint[] = [
   {
     before: () => sarTab('Summary'),
@@ -519,7 +502,7 @@ const PROTAC_HINTS: SarHint[] = [
     text: 'How many degraders landed in a series, and how many had no analog to pair with.',
   },
   {
-    before: () => openIfClosed(document.querySelector('.chem-sar-sum-list > .chem-sar-card')),
+    before: () => openIfClosed(at.firstSeries()),
     anchor: () => document.querySelector('.chem-sar-sum-list'),
     position: ui.hints.POSITION.TOP,
     title: 'Which series to open first',
@@ -644,7 +627,6 @@ const PROTAC_HINTS: SarHint[] = [
   },
 ];
 
-/** The two SAR demos share this walker and differ only in the step list they hand it. */
 function showSarHint(hints: SarHint[], i: number, previous?: HTMLElement, tries = 0): void {
   previous?.remove();
   if (i >= hints.length) {
@@ -656,9 +638,8 @@ function showSarHint(hints: SarHint[], i: number, previous?: HTMLElement, tries 
     hint.before?.();
   const anchor = hint.anchor();
   if (!(anchor instanceof HTMLElement)) {
-    // A pane the step just opened builds on a timer, so its anchor is not in the document the instant
-    // the tab is clicked. Waiting a few beats for it is the difference between a step and a skipped
-    // step; past that the anchor is genuinely absent and the tour moves on.
+    // A pane the step just opened builds on a timer, so its anchor is waited for a few beats before the
+    // step is skipped.
     if (tries < 8) {
       setTimeout(() => showSarHint(hints, i, undefined, tries + 1), 250);
       return;
@@ -666,9 +647,7 @@ function showSarHint(hints: SarHint[], i: number, previous?: HTMLElement, tries 
     showSarHint(hints, i + 1);
     return;
   }
-  // Cards sit wherever their rank puts them, and one low in the list leaves too little height beside
-  // it for the popup, which then runs past the bottom of the pane. Lifting it to the top of the
-  // scroller first gives the popup the full pane to open into.
+  // A card low in the list leaves too little height beside it, and the popup runs past the bottom of the pane.
   if (anchor.closest('.chem-sar-nav-list'))
     anchor.scrollIntoView({block: 'start'});
   const content = ui.div();
@@ -677,25 +656,7 @@ function showSarHint(hints: SarHint[], i: number, previous?: HTMLElement, tries 
   const buttonHost = ui.divH([], {style: {justifyContent: 'flex-end'}});
   content.append(buttonHost);
   const popup = ui.hints.addHint(anchor, content, hint.position ?? ui.hints.POSITION.BOTTOM);
-  buttonHost.append(i === hints.length - 1 ?
-    ui.button('Close', () => {
-      popup.remove();
-      document.querySelector('.chem-sar-hint-cell')?.remove();
-    }) :
-    ui.button('Next', () => showSarHint(hints, i + 1, popup)));
-}
-
-function showSarHints(hints: SarHint[]): void {
-  const timer = setInterval(() => {
-    // Either landing surface, not the matrix grid alone: the viewer opens on the Summary, and that
-    // grid does not exist until the SAR Matrix tab is shown — which is a step of the tour, not a
-    // precondition for starting it.
-    if (document.querySelector('.chem-sar-sum-overview') || document.querySelector('.chem-sar-grid-host')) {
-      clearInterval(timer);
-      showSarHint(hints, 0);
-    }
-  }, 250);
-  setTimeout(() => clearInterval(timer), 120000);
+  buttonHost.append(ui.button(i === hints.length - 1 ? 'Close' : 'Next', () => showSarHint(hints, i + 1, popup)));
 }
 
 /** Restored from a project rather than run: decomposing the table takes long enough to watch a loader. */
@@ -712,7 +673,15 @@ async function openSarDemo(projectFunc: string, hints: SarHint[]): Promise<void>
         dockSarMatrixTabs(tv, viewer);
     }
   }
-  showSarHints(hints);
+  const timer = setInterval(() => {
+    // Either landing surface: the viewer opens on the Summary, and the matrix grid does not exist until
+    // the SAR Matrix tab is shown, which is a step of the tour.
+    if (document.querySelector('.chem-sar-sum-overview') || document.querySelector('.chem-sar-grid-host')) {
+      clearInterval(timer);
+      showSarHint(hints, 0);
+    }
+  }, 250);
+  setTimeout(() => clearInterval(timer), 120000);
   setTimeout(() => {
     grok.shell.windows.showHelp = true;
     grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#sar-matrix');
@@ -723,11 +692,7 @@ export async function _demoSarMatrix(): Promise<void> {
   await openSarDemo('Chem:SarMatrixDemo', SAR_HINTS);
 }
 
-/**
- * The same analysis over components that are already columns: 2 792 PROTAC degraders from patents,
- * each split into warhead, linker and E3 ligand. Nothing is cut: the matrices are built by grouping,
- * every component is ranked in one fit, and every component's measured pairs are pooled at once.
- */
+/** The same analysis over 2 792 PROTAC degraders whose warhead, linker and E3 ligand are already columns. */
 export async function _demoSarMatrixProtac(): Promise<void> {
   await openSarDemo('Chem:SarMatrixProtacDemo', PROTAC_HINTS);
 }

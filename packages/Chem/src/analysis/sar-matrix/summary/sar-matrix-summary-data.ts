@@ -12,13 +12,8 @@ import {ANALOG_LIST_MAX, BEST_FIT_MIN_N, MIN_LISTED_SUPPORT, MIN_SUPPORT, RGroup
 
 export * from './sar-matrix-summary-types';
 
-/** Ties end at `matrix.id`: matrices arrive in worker order, which varies run to run. */
-/**
- * Component columns that read alike in every measured compound are one component written twice, as a bridge
- * whose two ends each fill a column of their own: fitted apart, they split one effect between them and are
- * ranked twice. Each merged component keeps the first column's values, under the names of all of them.
- * Columns blank in every compound are alike without being a bridge, so they are never merged.
- */
+/** Merges component columns that read alike in every measured compound: a bridge whose two ends each fill a
+ *  column would split one effect between them, fitted apart. Columns blank in every compound are never merged. */
 export function mergeTwinRoles(names: string[], values: string[][]): {names: string[], sources: number[]} {
   const sources: number[] = [];
   const merged: string[] = [];
@@ -34,6 +29,7 @@ export function mergeTwinRoles(names: string[], values: string[][]): {names: str
   return {names: merged, sources};
 }
 
+/** Ties end at `matrix.id`: matrices arrive in worker order, which varies run to run. */
 function finerSeries(a: SummaryRow, b: SummaryRow): boolean {
   return a.matrix.level !== b.matrix.level ? a.matrix.level < b.matrix.level : a.matrix.id < b.matrix.id;
 }
@@ -92,7 +88,6 @@ export class SummaryCollector {
     const obsRow: number[] = [];
     const obsCol: number[] = [];
     const obsVal: number[] = [];
-    const mols = new Set<number>();
     const rowCells: RowCell[] = [];
     // An analog's gain needs the matrix's best measured cell, final only after its rows are walked.
     const riBuf: number[] = [];
@@ -140,12 +135,9 @@ export class SummaryCollector {
       ciBuf.length = 0;
       riAlt.length = 0;
       ciAlt.length = 0;
-      mols.clear();
       let realCells = 0;
       let impossibleCells = 0;
       let trusted = 0;
-      let lo = Infinity;
-      let hi = -Infinity;
       let best: {ri: number, ci: number, value: number} | null = null;
       let bestVirtual: {ri: number, ci: number, value: number} | null = null;
       let virtualCells = 0;
@@ -157,7 +149,6 @@ export class SummaryCollector {
           const value = cell.value;
           if (cell.kind === 'real' && value !== null && cell.molIdx !== null) {
             compounds.add(cell.molIdx);
-            mols.add(cell.molIdx);
             measuredCells++;
             realCells++;
             obsRow.push(ri);
@@ -177,10 +168,6 @@ export class SummaryCollector {
               roleActivity.push(value);
               roleMol.push(cell.molIdx);
             }
-            if (value < lo)
-              lo = value;
-            if (value > hi)
-              hi = value;
             if (best === null || dir * value > dir * best.value)
               best = {ri, ci, value};
             if (cell.smiles !== null)
@@ -258,8 +245,7 @@ export class SummaryCollector {
         }
       }
       const stat: SeriesStat = {
-        matrix, tier: tiers[mi], cpd: mols.size, realCells, impossibleCells,
-        totalCells: nRows * nCols, lo: realCells ? lo : 0, hi: realCells ? hi : 0, best, bestVirtual,
+        matrix, tier: tiers[mi], realCells, impossibleCells, totalCells: nRows * nCols, best, bestVirtual,
         typical: fit.grandMean, trusted, virtualCells,
         bestRow: this.bestRow(matrix, fit, dir),
       };
@@ -299,14 +285,11 @@ export class SummaryCollector {
       compounds: compounds.size,
       untested: untested.size,
       measuredCells,
-      minObserved: measured.length ? Math.min(...measured.map((stat) => stat.lo)) : null,
-      maxObserved: measured.length ? Math.max(...measured.map((stat) => stat.hi)) : null,
+      minObserved: measured.length ? Math.min(...measured.map((stat) => stat.matrix.minActivity)) : null,
+      maxObserved: measured.length ? Math.max(...measured.map((stat) => stat.matrix.maxActivity)) : null,
       trustedNoStructure,
       modelError: confs.length ? median(confs.map((conf) => conf.rmse)) : null,
       fitHolds, unchecked, lowR2,
-      axisRole: host.axisRole,
-      coreRole: host.coreRole,
-      coresAreSeries: host.coresAreSeries,
       roleFit,
       roleBest: new Map(twins.names.map((name, k) => [name, roleBest[twins.sources[k]]])),
       roleColumn: new Map(twins.names.map((name, k) => [name, roleNames[twins.sources[k]]])),
@@ -359,8 +342,8 @@ export class SummaryCollector {
     };
     // Index-aligned with REASON_WORDS.
     const scores: ((s: SeriesStat) => number | null)[] = [
-      (s) => s.cpd || null,
-      (s) => s.realCells ? s.hi - s.lo : null,
+      (s) => s.matrix.realCount || null,
+      (s) => s.realCells ? s.matrix.maxActivity - s.matrix.minActivity : null,
       (s) => s.best === null ? null : dir * s.best.value,
       (s) => s.trusted || null,
       (s) => s.matrix.confidence && s.matrix.confidence.n >= nFloor ? s.matrix.confidence.r2 : null,

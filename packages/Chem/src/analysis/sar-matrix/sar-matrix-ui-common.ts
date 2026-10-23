@@ -100,8 +100,6 @@ export interface MatrixGridState {
   columns: PaneColumn[];
   /** Grid column NAME (never the grid column index, which pinning shifts) -> index into `columns`. */
   colKeyToIdx: Map<string, number>;
-  /** Indices into `columns` that begin an R-position group — only those draw the position label. */
-  firstOfGroup: Set<number>;
   /** False when the column substituents are names; a blank then means none rather than hydrogen. */
   axisIsChemical: boolean;
   /** What the Core header draws: the marked-up core of the one matrix on screen, else the shared core. */
@@ -157,22 +155,6 @@ export function paintMoleculeOnColor(canvas: HTMLCanvasElement, smiles: string, 
   }
 }
 
-/** A grid over molecule columns. Its root is a ui-box, which pins itself to a fixed size unless told to
- *  fill; rows and the named columns are sized like the matrix cells, since the text-oriented defaults
- *  leave a structure too small to read. */
-export function moleculeGrid(frame: DG.DataFrame, widths: [string, number][]): DG.Grid {
-  const grid = DG.Viewer.grid(frame);
-  grid.root.style.width = '100%';
-  grid.root.style.height = '100%';
-  grid.setOptions({rowHeight: CELL_H});
-  for (const [name, width] of widths) {
-    const column = grid.col(name);
-    if (column)
-      column.width = width;
-  }
-  return grid;
-}
-
 /** Text with a hover that qualifies it. */
 export function tipText(text: string, cls: string, tip: string): HTMLElement {
   const el = ui.divText(text, cls);
@@ -183,12 +165,6 @@ export function tipText(text: string, cls: string, tip: string): HTMLElement {
 /** A small badge with a hover that qualifies it; `cls` adds a variant such as `chem-sar-chip-partial`. */
 export function chipBadge(text: string, tip: string, cls = ''): HTMLElement {
   return tipText(text, `chem-sar-chip-badge ${cls}`.trim(), tip);
-}
-
-/** Bring `el` to the top of `scroller` by moving that scroller alone. `scrollIntoView` scrolls every
- *  scrollable ancestor, the dock container included, so it can move the layout around the panel. */
-export function scrollWithin(scroller: HTMLElement, el: HTMLElement): void {
-  scroller.scrollTop += el.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
 }
 
 export function renderMoleculeOnColor(smiles: string, w: number, h: number, argb: number): HTMLElement {

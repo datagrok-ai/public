@@ -92,11 +92,6 @@ export class TransferPanel {
 
   constructor(private readonly host: TransferPanelHost) {}
 
-  /** How many transfers the last scan found; -1 while none has run on the current matrices. */
-  get count(): number {
-    return this.transfersComputed ? this.transfers.length : -1;
-  }
-
   /** The transfers involving a given matrix, strongest first — the matrix pane’s `r` chip reads this. */
   transfersInvolving(matrixIndex: number): Transfer[] {
     return this.transfers.filter((t) => t.a.matrixIndex === matrixIndex || t.b.matrixIndex === matrixIndex);
@@ -388,7 +383,6 @@ export class TransferPanel {
       },
     });
     rankInput.caption = '';
-    // The accessible name stands in for the label the header has no room for.
     rankInput.input.setAttribute('aria-label', 'Rank by');
     ui.tooltip.bind(rankInput.input, () => {
       const mark = (s: string): string => s === this.rankScheme ? '▸ ' : '   ';

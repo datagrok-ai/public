@@ -200,9 +200,8 @@ export class SarMatrixEditor extends DG.FuncCallEditor {
   private onRGroupsChanged(): void {
     if (this.axisInput === undefined)
       return;
-    // A column cannot be both the scaffold every row is drawn from and a substituent hanging off it.
-    // Corrected rather than refused: whichever picker the user touched last is the one they meant, and
-    // an error on a pair of inputs that each look right on their own explains nothing.
+    // A column cannot be both the scaffold and a substituent. Corrected rather than refused: an error on two
+    // inputs that each look right on their own explains nothing.
     const core = this.coreInput?.value ?? null;
     if (core !== null && this.rGroupsInput.value.some((c) => c.name === core.name)) {
       // Set from inside the input's own change event, the value would re-enter a controller that is still firing.

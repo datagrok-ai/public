@@ -18,11 +18,15 @@ import {buildMatchedSeries, buildCoarserLevels, clusterRelatedCores, groupSeries
 import {rankMatrices, SarRankScheme} from './sar-matrix-ranking';
 import {CoreCluster, logSarTime, observedMolecules, SarMatrix, SarMatrixCell} from '../sar-matrix-types';
 
+/** Joins a core to one substituent at its single attachment point. */
+const SINGLE_CUT = [{R1: [1]}];
+
+const STEREO_MARK = /[@/\\]/;
+
 /**
  * Link each virtual analog's row core to its column substituent in one batched worker call.
  *
- * Single-cut matrices only (empty `refValues`): decomposed matrices are linked during assembly. `positions`
- * holds only the VARYING positions, so it cannot be the discriminator.
+ * Single-cut matrices only (empty `refValues`): decomposed matrices are linked during assembly.
  */
 export async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void> {
   const cores: string[] = [];
@@ -46,15 +50,13 @@ export async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void
   if (targets.length === 0)
     return;
 
-  const plan = [{R1: [1]}];
-  const linked = await linkStaged(cores, cores.map(() => plan), (i) => fragments[i]);
+  const linked = await linkStaged(cores, cores.map(() => SINGLE_CUT), (i) => fragments[i]);
   for (let i = 0; i < targets.length; i++)
     targets[i].smiles = linked[i];
 }
 
 /** The component with the most heavy atoms, canonical: fragmenting a salt carries the counter-ion on a
- *  substituent, so a combination can rebuild a free base the table holds as its salt, or the reverse.
- *  Counted in atoms, since a counter-ion such as citrate can be the longer string. */
+ *  substituent. Counted in atoms, since a counter-ion such as citrate can be the longer string. */
 function parentStructure(smiles: string): string {
   if (!smiles.includes('.'))
     return smiles;
@@ -64,15 +66,11 @@ function parentStructure(smiles: string): string {
     .reduce((a, b) => size(b) > size(a) || (size(b) === size(a) && b > a) ? b : a));
 }
 
-const STEREO_MARK = /[@/\\]/;
-
 /**
- * Take back the predictions whose structure the table already holds: another cut, core spelling, salt
- * form or series of a compound in it. Never assayed, the cell is that compound, untested, and keeps its
- * number when untested compounds are predicted; assayed, or filed under another series, it is
- * `excluded`. No measurement moves, so the fits, their cross-validation and the counts stand.
- * A prediction without stereo whose structure the table holds with stereo is `excluded` but names no
- * compound: the cut lost the configuration, so it may be that compound or one of its isomers.
+ * Take back the predictions whose structure the table already holds under another cut, core spelling, salt
+ * form or series: `unmeasured` when never assayed and in this series, else `excluded`. No measurement moves.
+ * One without stereo that the table holds with stereo is `excluded` but names no compound: the cut lost the
+ * configuration, so it may be any of the isomers.
  */
 function claimHeldStructures(matrices: SarMatrix[], molecules: string[], table: string[], assayed: Uint8Array,
   assigned: (string | null)[] | null, predictUnmeasured: boolean): void {
@@ -123,9 +121,8 @@ function claimHeldStructures(matrices: SarMatrix[], molecules: string[], table: 
   }
 }
 
-/** Each molecule column's canonical structures at the version read: switching the column component
- *  rebuilds over the same molecules, and canonicalizing a few thousand large ones costs seconds. Keyed by
- *  the Dart column, since every read of a column from its table returns a new wrapper. */
+/** Each molecule column's canonical structures at the version read, since switching the column component
+ *  rebuilds over the same molecules. Keyed by the Dart column: every read from the table is a new wrapper. */
 const canonicalCache = new WeakMap<object, {version: number, structures: Promise<string[]>}>();
 
 function canonicalStructures(molecules: DG.Column, molList: string[]): Promise<string[]> {
@@ -142,19 +139,15 @@ function canonicalStructures(molecules: DG.Column, molList: string[]): Promise<s
   return structures;
 }
 
-/**
- * Drops the cuts whose two pieces do not rebuild their own compound. The fragmenter can write a stereocentre at
- * the cut mirrored, and every analog joined from that piece would carry the wrong configuration. Only a piece
- * with stereo can come back mirrored; a cut that cannot be joined at all is kept, as its analogs fail anyway.
- */
+/** Drops the cuts whose two pieces do not rebuild their own compound: the fragmenter can write a stereocentre
+ *  at the cut mirrored. A cut that cannot be joined at all is kept, as its analogs fail anyway. */
 async function dropMirroredCuts(frags: MmpFragments, parents: string[]): Promise<number> {
-  const stereo = /[@/\\]/;
   const cuts: {row: number, k: number}[] = [];
   const cores: string[] = [];
   const values: string[] = [];
   frags.fragCodes.forEach((codes, row) => codes.forEach(([core, value], k) => {
     const [a, b] = [frags.idToName[core], frags.idToName[value]];
-    if (stereo.test(a) || stereo.test(b)) {
+    if (STEREO_MARK.test(a) || STEREO_MARK.test(b)) {
       cuts.push({row, k});
       cores.push(a);
       values.push(b);
@@ -162,8 +155,7 @@ async function dropMirroredCuts(frags: MmpFragments, parents: string[]): Promise
   }));
   if (cuts.length === 0)
     return 0;
-  const plan = [{R1: [1]}];
-  const rebuilt = await linkStaged(cores, cores.map(() => plan), (i) => values[i]);
+  const rebuilt = await linkStaged(cores, cores.map(() => SINGLE_CUT), (i) => values[i]);
   const dropped = new Map<number, Set<number>>();
   rebuilt.forEach((smiles, i) => {
     const parent = parents[cuts[i].row];
@@ -320,21 +312,16 @@ export interface SarMatrixParams {
 
 
 /**
- * Run the full SAR Matrix pipeline: fragment molecules, build matched series, group related cores,
- * assemble a potency matrix per group (predicting virtual analogs), and return them ranked.
+ * Scaled activity per row, NaN where missing or unscalable: a null sentinel read as a number would poison
+ * the Free-Wilson fit. `assayed` marks rows holding a value at all, usable or not: a log scale turns a real
+ * zero or negative into NaN, and such a compound must not end up labelled untested.
  */
-export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<number>,
-  params: SarMatrixParams): Promise<SarMatrix[]> {
-  const tTotal = performance.now();
-  const molList = molecules.toList();
-  const scaledCol = params.scaling === SCALING_METHODS.NONE ? activity : scaleActivity(activity, params.scaling);
-  // Missing activities become NaN: a null sentinel read as a number would poison the Free-Wilson fit.
-  // The scan is bounded by row count, since column storage has spare capacity past the last row.
+export function readActivities(activity: DG.Column<number>, scaling: SCALING_METHODS):
+  {activities: Float32Array, assayed: Uint8Array, unscalable: number} {
+  const scaledCol = scaling === SCALING_METHODS.NONE ? activity : scaleActivity(activity, scaling);
+  // Bounded by row count, since column storage has spare capacity past the last row.
   const scaled = scaledCol.getRawData();
   const activities = new Float32Array(activity.length);
-  // Whether the column holds a value at all, which is NOT the same as holding a usable one: a log
-  // scale turns a real zero or negative into ±Infinity or NaN. Such a compound was assayed, so it
-  // must not end up labelled untested — the assemblers read this to tell the two apart.
   const assayed = new Uint8Array(activity.length);
   let unscalable = 0;
   for (let i = 0; i < activities.length; i++) {
@@ -348,6 +335,18 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     if (!Number.isFinite(activities[i]))
       unscalable++;
   }
+  return {activities, assayed, unscalable};
+}
+
+/**
+ * Run the full SAR Matrix pipeline: fragment molecules, build matched series, group related cores,
+ * assemble a potency matrix per group (predicting virtual analogs), and return them ranked.
+ */
+export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<number>,
+  params: SarMatrixParams): Promise<SarMatrix[]> {
+  const tTotal = performance.now();
+  const molList = molecules.toList();
+  const {activities, assayed, unscalable} = readActivities(activity, params.scaling);
   if (unscalable > 0) {
     // Without this the whole analysis can come back empty with nothing to explain it: an all-negative
     // column (ΔG, say) under the default −lg scaling leaves no observed cell anywhere.
@@ -511,11 +510,8 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     _package.logger.warning(cutMessage);
     grok.shell.warning(cutMessage);
   }
-  // Started before the confidence pass rather than after it: linking is a worker round-trip and the
-  // fit is main-thread, so run in sequence each waits on the other for no reason. They touch disjoint
-  // fields — the fit reads `kind`/`value` and writes `confidence`, linking writes `smiles` on virtual
-  // cells — and the fit contains no await, so it runs to completion before the link's continuation
-  // resumes.
+  // Started before the confidence pass, which is main-thread and has no await, while linking is a worker
+  // round-trip. They touch disjoint fields: the fit writes `confidence`, linking `smiles` on virtual cells.
   t = performance.now();
   const linking = params.predictVirtual ? linkVirtualStructures(matrices) : null;
   matrices.forEach((matrix) => matrix.confidence = computeMatrixConfidence(matrix));

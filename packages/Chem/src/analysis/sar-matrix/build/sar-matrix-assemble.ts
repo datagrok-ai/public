@@ -28,16 +28,6 @@ function observedComponents(cells: SarMatrixCell[][], rowCount: number,
   return parent.map((_v, i) => find(i));
 }
 
-/**
- * Fit a two-way additive (Free-Wilson) model and predict empty cells as
- * `rowMean + columnMean - grandMean`.
- *
- * A row and a column each having an observation is necessary but NOT sufficient: the model is only
- * identifiable within a connected component of the observed-cell graph. Two designs that share no
- * compound fix their row and column effects against unrelated baselines, so adding one's row effect to
- * the other's column effect is arithmetic over incomparable offsets — and it errs toward the grand
- * mean, which flatters exactly the core whose own measurements are worst.
- */
 /** Fitted terms of `value ≈ grandMean + rowEffect + colEffect` and the counts behind each arm. Shared
  *  with the context panel so it shows the numbers the prediction was built from. */
 export interface AdditiveFit {
@@ -47,16 +37,12 @@ export interface AdditiveFit {
   rowN: Int32Array;
   colN: Int32Array;
   observed: number;
-  /** Whether the sweeps reached the tolerance instead of exhausting their cap. Until they
-   *  do, the effects are still shrunk toward the zero start by an amount that differs per design, so
-   *  anything comparing effects BETWEEN matrices has to drop the ones that stopped short. */
+  /** Whether the sweeps reached the tolerance. Until they do, the effects are still shrunk toward the
+   *  zero start by an amount that differs per design, so they do not compare BETWEEN matrices. */
   converged: boolean;
 }
 
-/**
- * Fit from observed cells already collected as `(row, column, value)` triples, so a caller that walks
- * the grid for its own reasons does not pay for a second sweep over it.
- */
+/** Fit from observed cells already collected as `(row, column, value)` triples. */
 export function fitAdditiveFromTriples(obsRow: ArrayLike<number>, obsCol: ArrayLike<number>,
   obsVal: ArrayLike<number>, rowCount: number, columnCount: number, maxSweeps = MAX_FIT_SWEEPS): AdditiveFit {
   const rowAcc = new Float64Array(rowCount);
@@ -74,16 +60,10 @@ export function fitAdditiveFromTriples(obsRow: ArrayLike<number>, obsCol: ArrayL
   }
 
   const grandMean = observed ? grandSum / observed : 0;
-  // Alternating least squares for value ≈ grand + row + column. Averaging the margins in one pass
-  // solves that model only when every row is measured at the same columns; with holes it is a
-  // different and worse estimator, and holes are the normal case here. Sweeping the two arms against
-  // each other converges on the least-squares fit, and reproduces the one-pass answer exactly when
-  // the design happens to be balanced.
-  //
-  // Starting both arms at zero against the exact observed mean is what makes the fitted effects
-  // count-centred — `Σ rowN·rowEffect = Σ colN·colEffect = 0` holds after every sweep — so an effect
-  // is read against that matrix's own count-weighted average and nothing else. Warm-starting from
-  // another matrix's effects would silently drop that.
+  // Alternating least squares: averaging the margins in one pass solves the model only when every row is
+  // measured at the same columns, and holes are the normal case here. Starting both arms at zero against
+  // the observed mean keeps the effects count-centred (`Σ rowN·rowEffect = Σ colN·colEffect = 0`), so an
+  // effect is read against that matrix's own average; a warm start from another matrix would drop that.
   const rowEffect = new Float64Array(rowCount);
   const colEffect = new Float64Array(columnCount);
   let converged = observed === 0;
@@ -144,6 +124,8 @@ export function fitAdditiveEffects(cells: SarMatrixCell[][], rowCount: number,
   return fitAdditiveFromTriples(obsRow, obsCol, obsVal, rowCount, columnCount);
 }
 
+/** Predict empty cells as `grandMean + rowEffect + colEffect`, within one connected component of the
+ *  observed-cell graph only: two designs sharing no compound fix their effects against unrelated baselines. */
 export function fitAdditiveModel(cells: SarMatrixCell[][], rowCount: number,
   columnCount: number): (rowIdx: number, colIdx: number) =>
     {value: number, support: number, references: number} | null {
@@ -249,10 +231,8 @@ const FIT_TOLERANCE = 1e-9;
 const FIT_TOLERANCE_SD = 1e-3;
 
 /** Claim a cell for a compound the set holds but has no usable activity for: left empty, the fill would
- *  predict it and offer it as one to make. Never over a measured cell: two members can share a slot,
- *  and a measurement outranks a blank. A compound that WAS assayed but whose value the chosen scale
- *  cannot represent is `excluded`, not `unmeasured`: calling it untested would be a false claim about
- *  the data. */
+ *  predict it and offer it as one to make. Never over a measured cell. A compound that WAS assayed but whose
+ *  value the chosen scale cannot represent is `excluded`, not `unmeasured`: it is not untested. */
 function claimUnmeasured(cells: SarMatrixCell[][], ri: number, ci: number, molIdx: number,
   molecules: string[], assayed?: Uint8Array): void {
   if (cells[ri][ci].kind === 'empty') {
@@ -261,10 +241,8 @@ function claimUnmeasured(cells: SarMatrixCell[][], ri: number, ci: number, molId
   }
 }
 
-/** Claim a cell for a measured compound. Two measured compounds sharing a slot (a repeated table row, or two
- *  cuts landing on one core and substituent) keep the first: a cell shows one compound, and whichever one
- *  shows is the one every count and the colour range read. The first, so cutting the molecules keeps the
- *  copy that reading the same table from R-group columns keeps. */
+/** Claim a cell for a measured compound. Of two sharing a slot (a repeated row, or two cuts landing on one
+ *  core and substituent) the first is kept, so cutting the molecules keeps the copy the R-group columns keep. */
 function claimMeasured(cells: SarMatrixCell[][], ri: number, ci: number, molIdx: number, activity: number,
   molecules: string[]): void {
   if (cells[ri][ci].kind !== 'real')
@@ -337,8 +315,7 @@ function pruneUnobservedLines(rows: SarMatrixRow[], columns: SarMatrixColumn[],
 }
 
 /** Distinct measured compounds of the finished grid and the range of their values. Read off the cells,
- *  not the records: the prune drops measured compounds, and a second measured record for an occupied
- *  cell is not shown. Distinct, because one compound reached through two series fills two cells. */
+ *  not the records: the prune drops measured compounds, and a second record for an occupied cell is not shown. */
 function measuredRange(cells: SarMatrixCell[][]): {realCount: number, minActivity: number, maxActivity: number} {
   const mols = new Set<number>();
   let minActivity = Infinity;

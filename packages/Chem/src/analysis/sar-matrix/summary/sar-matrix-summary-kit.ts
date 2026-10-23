@@ -9,10 +9,9 @@ const REVEAL_GAP_BELOW = 12;
 const REVEAL_GAP_ABOVE = 8;
 
 export class SummaryKit {
-  pendingPaints: (() => void)[] = [];
   private readonly paints: WeakMap<Element, () => void> = new WeakMap();
   /** Draws a structure once it scrolls into view, so a long list costs only the rows on screen. */
-  private readonly painter = new IntersectionObserver((entries) => {
+  protected readonly painter = new IntersectionObserver((entries) => {
     for (const entry of entries) {
       if (!entry.isIntersecting)
         continue;
@@ -93,7 +92,6 @@ export class SummaryKit {
     return row;
   }
 
-  /** A chevron that points down while its section is open. */
   private twisty(): [HTMLElement, (open: boolean) => void] {
     const icon = ui.iconFA('chevron-right');
     icon.classList.add('chem-sar-card-twisty');
@@ -125,18 +123,6 @@ export class SummaryKit {
     return canvas;
   }
 
-  /** Forgets the structures of a page about to be replaced. */
-  stopPainting(): void {
-    this.painter.disconnect();
-  }
-
-  flushPaints(): void {
-    const paints = this.pendingPaints;
-    this.pendingPaints = [];
-    for (const paint of paints)
-      paint();
-  }
-
   badge(text: string, tip: string, partial = false): HTMLElement {
     return chipBadge(text, tip, partial ? 'chem-sar-chip-partial' : '');
   }
@@ -164,10 +150,6 @@ export class SummaryKit {
     return smiles ? this.depiction(smiles) : undefined;
   }
 
-  prose(text: string, tip: string): HTMLElement {
-    return tipText(text, 'chem-sar-sum-prose', tip);
-  }
-
   hint(text: string, tip: string): HTMLElement {
     return tipText(text, 'chem-sar-cp-hint', tip);
   }
@@ -176,7 +158,6 @@ export class SummaryKit {
     return [ui.divText(text, 'chem-sar-cp-hint')];
   }
 
-  /** A closed fold whose body is built on its first opening. */
   lazyFold(title: string, fill: () => HTMLElement[]): [HTMLElement, HTMLElement] {
     const lazy = this.lazyBody(fill);
     const [icon, point] = this.twisty();
@@ -198,8 +179,6 @@ export class SummaryKit {
       if (!filled) {
         filled = true;
         body.append(...fill());
-        // Added after the paint tick, so these depictions need their own.
-        this.flushPaints();
       }
       body.style.display = '';
       this.reveal(body.previousElementSibling, body);
@@ -226,7 +205,6 @@ export class SummaryKit {
     }, 0);
   }
 
-  /** Which way a better value points: 1 when higher is better. */
   get dir(): number {
     return this.host.higherIsBetter ? 1 : -1;
   }
@@ -289,8 +267,8 @@ export class SummaryKit {
 
   /** Series a core ranking may include: only where a matrix is one core. */
   rankableCores(data: SummaryData): SeriesStat[] {
-    return data.coresAreSeries ?
-      data.series.filter((stat) => stat.realCells > 0 && stat.cpd >= MIN_SUPPORT) : [];
+    return this.host.coresAreSeries ?
+      data.series.filter((stat) => stat.realCells > 0 && stat.matrix.realCount >= MIN_SUPPORT) : [];
   }
 
   /** One tier's cores, best first; mixing tiers would count one compound under two cores. */

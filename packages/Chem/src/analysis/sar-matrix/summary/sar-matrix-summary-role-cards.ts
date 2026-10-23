@@ -68,8 +68,6 @@ export class SummaryRoleCards {
     const others = fit.roles.filter((other) => other !== role).map((other) => other.name).join(', ');
     for (const {level, faint} of this.roleRows(role)) {
       const ref = best.get(level.value)!;
-      // The axis is the one role pinned in the Vary filter, so its row can land on the position too.
-      const position = role.name === data.axisRole ? ref.matrix.columns[ref.ci].position : undefined;
       body.push(this.kit.summaryRow({
         depiction: level.value === '' ? null : this.kit.depiction(level.value),
         name: ref.matrix.label,
@@ -81,10 +79,10 @@ export class SummaryRoleCards {
         valueTip: `Over ${count(level.n)} compounds, adjusted for ${others}. A difference from the average, ` +
           'not a potency.',
         faint,
-        tip: role.name === data.coreRole ? this.kit.openMatrixTip(ref.matrix) :
+        tip: role.name === host.coreRole ? this.kit.openMatrixTip(ref.matrix) :
           this.kit.openTip(ref.matrix, ref.ri, ref.ci),
-        onClick: () => role.name === data.coreRole ? host.revealMatrix(ref.matrix) :
-          host.revealCell(ref.matrix, ref.ri, ref.ci, position),
+        onClick: () => role.name === host.coreRole ? host.revealMatrix(ref.matrix) :
+          host.revealCell(ref.matrix, ref.ri, ref.ci),
       }));
     }
     body.push(...dropped);

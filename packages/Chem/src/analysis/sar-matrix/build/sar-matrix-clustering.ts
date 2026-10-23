@@ -74,10 +74,8 @@ function isSubset(a: Set<number>, b: Set<number>): boolean {
  * across them, so a compound never lands in a matrix whose name contradicts its own column. Compounds
  * with no value sit out rather than forming a "blank" series the user never named.
  *
- * A compound is reached by one series per cut, so a value's matrix keeps only the site covering most of
- * its compounds, and each compound only in the largest series there; the value's other compounds sit out.
- * Pooled, one compound fills a cell on every row it can be cut into, and a column means one position on
- * some rows and another on the rest.
+ * A value's matrix keeps only the site covering most of its compounds, and each compound only in the
+ * largest series there: pooled, one compound would fill a cell on every row it can be cut into.
  */
 export async function groupSeriesByColumn(series: MatchedSeries[],
   values: (string | null)[]): Promise<CoreCluster[]> {
@@ -100,16 +98,7 @@ export async function groupSeriesByColumn(series: MatchedSeries[],
   if (byValue.size === 0)
     return [];
 
-  const sitesOf = new Map<number, string[]>();
-  for (const [key, members] of await seriesBySite(series)) {
-    for (const i of members) {
-      const keys = sitesOf.get(i);
-      if (keys === undefined)
-        sitesOf.set(i, [key]);
-      else
-        keys.push(key);
-    }
-  }
+  const sitesOf = await sitesPerSeries(series);
   return [...byValue.entries()].map(([value, own], u) => {
     const covered = new Map<string, Set<number>>();
     for (const [i, members] of own) {
@@ -162,6 +151,21 @@ async function seriesBySite(series: MatchedSeries[]): Promise<Map<string, Set<nu
     }
   }
   return bySite;
+}
+
+/** {@link seriesBySite} inverted: the sites each series sits on, so a group visits only its own. */
+async function sitesPerSeries(series: MatchedSeries[]): Promise<Map<number, string[]>> {
+  const sitesOf = new Map<number, string[]>();
+  for (const [key, members] of await seriesBySite(series)) {
+    for (const i of members) {
+      const keys = sitesOf.get(i);
+      if (keys === undefined)
+        sitesOf.set(i, [key]);
+      else
+        keys.push(key);
+    }
+  }
+  return sitesOf;
 }
 
 export async function groupSeriesBySite(series: MatchedSeries[]): Promise<CoreCluster[]> {
@@ -366,19 +370,7 @@ export async function clusterRelatedCores(series: MatchedSeries[],
   // Similarity alone lets a cluster hold cores whose substituents hang off different places, and the
   // matrix pools those into one axis — a column that means one position on some rows and another on
   // the rest, comparable across neither. Split so the rows of a cluster share a site.
-  const bySite = await seriesBySite(series);
-  // Sites per series, so a group only visits the sites its own members sit on rather than every site
-  // of the set on every split.
-  const sitesOf = new Map<number, string[]>();
-  for (const [key, members] of bySite) {
-    for (const i of members) {
-      const keys = sitesOf.get(i);
-      if (keys === undefined)
-        sitesOf.set(i, [key]);
-      else
-        keys.push(key);
-    }
-  }
+  const sitesOf = await sitesPerSeries(series);
   const clusters: CoreCluster[] = [];
   const emit = (members: number[], siteKey: string): void => {
     clusters.push({id: `c${clusters.length}`, series: members.map((i) => series[i]), siteKey, level: 2});

@@ -6,8 +6,7 @@ import {count, tipText} from '../sar-matrix-ui-common';
 
 type Best = {value: number} | null;
 
-/** Analog rows shown before the rest fold away, so a long list opens without a long scroll; Add all still takes
- *  every one. */
+/** Analog rows shown before the rest fold away; Add all still takes every one. */
 const MAKING_ROWS = 20;
 
 /** At most this many analogs and the card shares its column with the answers instead of leaving it empty. */
@@ -16,7 +15,6 @@ const SHORT_LIST = 3;
 export class SummaryMaking {
   constructor(private readonly kit: SummaryPanel) {}
 
-  /** Compounds to test first when there are any, then those worth making. */
   build(data: SummaryData): HTMLElement {
     const shelf = data.test.take();
     return ui.divV([...shelf.length === 0 ? [] : [this.buildShelf(data, shelf)], this.buildAnalogs(data)],
@@ -26,7 +24,8 @@ export class SummaryMaking {
   private buildShelf(data: SummaryData, shelf: SummaryRow[]): HTMLElement {
     const host = this.kit.host;
     const body: HTMLElement[] = [
-      this.kit.prose('Rows of your table with no activity value, ranked by prediction. No synthesis needed.',
+      tipText('Rows of your table with no activity value, ranked by prediction. No synthesis needed.',
+        'chem-sar-sum-prose',
         `No fit gate, only ≥ ${MIN_LISTED_SUPPORT} measured compounds on both axes: an assay is cheap.`),
     ];
     const bests = this.seriesBests(data);

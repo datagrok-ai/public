@@ -15,7 +15,29 @@ export class SummaryOverview {
   }
 
   head(data: SummaryData): HTMLElement {
-    return this.kit.scaleRow(data, this.coverage(data));
+    return ui.divH([this.scale(data), this.coverage(data)], 'chem-sar-sum-top');
+  }
+
+  private scale(data: SummaryData): HTMLElement {
+    const host = this.kit.host;
+    const raw = host.scalingLabel === 'raw';
+    const parts = [host.activityColumnName || 'Activity'];
+    if (!raw)
+      parts.push(`${host.scalingLabel} applied`);
+    parts.push(host.higherIsBetter ? 'higher is better' : 'lower is better');
+    parts.push(data.minObserved === null ? 'nothing observed' :
+      `observed ${host.formatActivity(data.minObserved)} to ${host.formatActivity(data.maxObserved!)}`);
+    // Log-ness of a raw column is inferred from its direction, so the hover says so.
+    const assumedLog = raw && host.activityIsLog;
+    const line = this.kit.hint(parts.join(' · '), `Every ranking depends on this; ${count(data.measuredCells)} ` +
+      'measured cells.' + (raw ? ' Values are used untransformed.' : '') +
+      (!assumedLog ? '' : ' The column is assumed to be a log already.'));
+    line.classList.add('chem-sar-sum-scale');
+    // Only after a transform: some raw columns are legitimately negative.
+    if (data.maxObserved === null || data.maxObserved >= 0 || raw)
+      return line;
+    return ui.divV([line, ui.divText('Every observed value is negative — check Scaling.',
+      'chem-sar-cp-hint chem-sar-chip-partial')]);
   }
 
   keySeries(data: SummaryData): HTMLElement {
@@ -43,7 +65,7 @@ export class SummaryOverview {
       `${count(total)} table rows. Rows, not compounds: the denominator is the table's raw row count, so ` +
       'this ignores any filter on the source grid.' + (host.unscalableCount === 0 ? '' : ` ${host.scalingLabel} ` +
       'needs positive values; set Scaling to "none" to use the values it cannot scale.') +
-      (data.axisRole !== null ? '' : ' Cores and substituents were found by cutting the molecules, so ' +
+      (host.axisRole !== null ? '' : ' Cores and substituents were found by cutting the molecules, so ' +
       'substituent labels are local to their series.'));
     return ui.divH([ui.divText('·', 'chem-sar-cp-hint'), label], 'chem-sar-sum-chips chem-sar-sum-coverage');
   }
@@ -55,17 +77,18 @@ export class SummaryOverview {
       return findings;
     const detail = this.detail();
     const effects = this.kit.effects;
+    const host = this.kit.host;
     const tiles = ui.divH([
-      this.answerTile(`Best ${data.axisRole ?? 'R-group'}`, this.rgroupAnswer(data), detail,
-        () => effects.rgroupCardFor(data)),
-      this.answerTile(`Best ${data.coreRole ?? 'core'}`, this.coreAnswer(data), detail,
+      this.answerTile(`Best ${host.axisRole ?? 'R-group'}`, this.rgroupAnswer(data), detail,
+        () => effects.rgroupCard.build(data)),
+      this.answerTile(`Best ${host.coreRole ?? 'core'}`, this.coreAnswer(data), detail,
         () => effects.coreCardFor(data)),
       this.answerTile('What improves potency', this.potencyAnswer(data), detail, () => effects.swapCard(data)),
     ], 'chem-sar-sum-answers');
-    if (data.axisRole === null)
+    if (host.axisRole === null)
       return ui.divV([tiles, detail.el]);
     const refusal = ui.divText(this.kit.roleFitRefusal(data) ?? '', 'chem-sar-cp-hint');
-    return ui.divV([ui.divH([refusal, this.setupLine(data)], 'chem-sar-sum-title-row'), tiles, detail.el]);
+    return ui.divV([ui.divH([refusal, this.setupLine()], 'chem-sar-sum-title-row'), tiles, detail.el]);
   }
 
   private buildFindings(data: SummaryData): HTMLElement | null {
@@ -76,7 +99,7 @@ export class SummaryOverview {
       ui.divText('Best measured swap', 'chem-sar-sum-half-head')], 'chem-sar-sum-comp-row chem-sar-sum-comp-head');
     const body: HTMLElement[] = [
       ui.divH([ui.divText(`What to change · ${count(fit.roles.length)} components`, 'chem-sar-cp-section-title'),
-        this.setupLine(data)], 'chem-sar-sum-title-row'),
+        this.setupLine()], 'chem-sar-sum-title-row'),
       head,
       ...fit.roles.slice(0, FINDING_ROWS).map((role) => this.componentRow(data, role)),
     ];
@@ -99,16 +122,15 @@ export class SummaryOverview {
         return;
       open.classList.add('chem-sar-sum-open');
       el.appendChild(build());
-      this.kit.flushPaints();
       this.kit.reveal(trigger, el);
     };
     return {el, toggle};
   }
 
-  private setupLine(data: SummaryData): HTMLElement {
+  private setupLine(): HTMLElement {
     const host = this.kit.host;
-    const folded = host.roleColumns.filter((name) => name !== data.axisRole);
-    const parts = [`core: ${data.coreRole}`, `columns: ${data.axisRole}`];
+    const folded = host.roleColumns.filter((name) => name !== host.axisRole);
+    const parts = [`core: ${host.coreRole}`, `columns: ${host.axisRole}`];
     if (folded.length > 0)
       parts.push(`folded into rows: ${folded.join(', ')}`);
     const line = this.kit.hint(parts.join(' · '),
@@ -129,7 +151,7 @@ export class SummaryOverview {
     ], 'chem-sar-sum-half');
     ui.tooltip.bind(best, () => `${role.name} typically moves ${host.activityColumnName} by ` +
       `${role.spread.toFixed(2)} (a standard deviation, not a range). Click for its full ranking.`);
-    best.onclick = () => detail.toggle(best, () => this.kit.effects.roleCard(data, role));
+    best.onclick = () => detail.toggle(best, () => this.kit.effects.roleCards.roleCard(data, role));
 
     const pool = data.swapsByRole.get(role.name)?.[0];
     const only = ` Pairs alike in every component but ${role.name}, pooled across the rest of the table.`;
@@ -200,7 +222,7 @@ export class SummaryOverview {
         negative: 'no substituent comes first at its position in that many series whose additive fit holds'};
     }
     const top = rows[0];
-    const partner = data.axisRole === null ? 'series' : 'core';
+    const partner = this.kit.host.axisRole === null ? 'series' : 'core';
     if (!this.kit.leads(top.magnitude, rows[1]?.magnitude ?? null, data.modelError)) {
       return {answer: 'Two lead equally',
         negative: `the ${partner} decides — ${top.k} of ${top.tried} against ${rows[1].k} of ` +
@@ -213,7 +235,7 @@ export class SummaryOverview {
 
   private coreAnswer(data: SummaryData): Answer {
     const host = this.kit.host;
-    if (!data.coresAreSeries) {
+    if (!host.coresAreSeries) {
       return {answer: 'Not comparable across series',
         negative: 'a core recurs only inside its own lineage — nothing to pool across series'};
     }
@@ -231,7 +253,7 @@ export class SummaryOverview {
           `${host.formatActivity(data.modelError ?? 0)} model error of each other`};
     }
     return {answer: `${top.matrix.label} · typical ${host.formatActivity(top.typical)} over ` +
-      `${count(top.cpd)} cpd`, negative,
+      `${count(top.matrix.realCount)} cpd`, negative,
     art: this.kit.answerArt(top.matrix.rows[0].keySmiles)};
   }
 
