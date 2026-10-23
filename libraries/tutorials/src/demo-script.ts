@@ -57,7 +57,7 @@ export class DemoScript {
   private _closeBtn: HTMLButtonElement = ui.button(ui.iconFA('chevron-left'), () => this._closeDock(), 'Back to demo');
 
   private _path?: string;
-  private _preDemoView: DG.View | null = null;
+  private _preDemoViews = new Set<DG.ViewBase>();
   DEMO_PATH: string = 'apps/Tutorials/Demo';
 
   private _setBreadcrumbsInViewName(): void {
@@ -184,7 +184,7 @@ export class DemoScript {
   }
 
   private _setViewParams() {
-    if (grok.shell.v && grok.shell.v !== this._preDemoView) {
+    if (grok.shell.v && !this._preDemoViews.has(grok.shell.v)) {
       grok.shell.v.name = this.name;
       grok.shell.v.path = `${this.DEMO_PATH}/${(this._path ?? '').replaceAll(' ', '-')}`;
       this._setBreadcrumbsInViewName();
@@ -403,7 +403,7 @@ export class DemoScript {
   async start(): Promise<void> {
     if (grok.shell.v?.name === this.name)
       grok.shell.v.close();
-    this._preDemoView = grok.shell.v as DG.View | null;
+    this._preDemoViews = new Set(grok.shell.views);
     this._initRoot();
 
     if (this._isAutomatic) {

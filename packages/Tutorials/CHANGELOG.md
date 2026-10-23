@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1110](https://github.com/datagrok-ai/core/issues/1110): Demo app: Fixed a demo that opens no view, or two demos selected in quick succession, renaming an unrelated view or failing with "Cannot set properties of null"
 * [#4374](https://github.com/datagrok-ai/public/issues/4374): Sticky Meta: The tutorial can be passed again, and by several users on one server: each learner gets their own entity type and schema, removed when the tutorial finishes or is closed
 * [core#964](https://github.com/datagrok-ai/core/issues/964): Sticky Meta tutorial: Fixed the annotation step failing with "the schema for tutorial section never appeared" after clicking a molecule cell
 * [core#662](https://github.com/datagrok-ai/core/issues/662): Sticky Meta: Fixed an error when hovering the row header in the last tutorial step
