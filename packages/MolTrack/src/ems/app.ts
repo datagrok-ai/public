@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {DomainApp} from '@datagrok-libraries/ems/src/dg';
 import type {DomainAppViewOptions} from '@datagrok-libraries/ems/src/dg';
-import {Rows, isEmpty, span} from '@datagrok-libraries/u2';
+import {span} from '@datagrok-libraries/u2';
 import type {RowView} from '@datagrok-libraries/u2';
 import type {CompoundBatchRow, CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
@@ -26,9 +26,11 @@ const KEYS: Record<string, string> = {compound: 'molregno', compound_batch: 'bat
 
 const VIEWS: ViewEntry[] = [
   {table: 'compound', name: 'Compounds', sort: '!molregno', options: {app: CompoundsApp, mode: 'cards',
-    include: CompoundsApp.FIELDS, children: {tables: ['compound_batch'], mode: 'list'}}},
+    include: CompoundsApp.FIELDS, children: {tables: ['compound_batch'], mode: 'list'},
+    context: (row) => MolTrackEms.cardOf(row.id)}},
   {table: 'compound_batch', name: 'Batches', sort: '!batch_regno',
-    options: {children: {tables: ['batch_addition', 'assay_result']}}},
+    options: {children: {tables: ['batch_addition', 'assay_result']},
+      context: (row) => MolTrackEms.cardOf((row as RowView<CompoundBatchRow>).compound_id)}},
   {table: 'assay', name: 'Assays', sort: 'name', options: {children: {tables: ['assay_run']}}},
   {table: 'assay_run', name: 'Assay Runs', sort: '!run_date,name', options: {children: {tables: ['assay_result']}}},
   {table: 'assay_result', name: 'Assay Results', sort: '!created_on', options: {children: false}},
@@ -69,6 +71,11 @@ export class MolTrackEms {
       await MolTrackEms.compoundCard(compound));
   }
 
+  // a compound and a batch show the compound's card: its drawing and Grok ID, which the platform's row panel lacks
+  static cardOf(id: string): HTMLElement {
+    return ui.wait(async () => MolTrackEms.compoundCard(await moltrackEmsDb.compounds.get(id)));
+  }
+
   static async compoundCard(compound: CompoundRow): Promise<HTMLElement> {
     const id = MolTrackTables.corporateId(await MolTrackTables.compounds(), 'molregno', compound.molregno);
     const batches = span('');
@@ -91,24 +98,7 @@ export class MolTrackEms {
     const key = KEYS[entry.table];
     if (key !== undefined)
       MolTrackEms._keySearch(app, key);
-    if (entry.table === 'compound' || entry.table === 'compound_batch')
-      MolTrackEms._context(app, entry.table);
     return {view, app};
-  }
-
-  // a new compound shows its identity under its form, not here
-  private static _context(app: DomainApp, table: string): void {
-    let shown: string | null = null;
-    app.effect(() => {
-      const source = app.page.value === 'entity' ? app.entitySource.value : app.listSource;
-      const row = source?.currentRow.value as RowView<CompoundRow | CompoundBatchRow> | null | undefined;
-      const id = row === null || row === undefined ? null : table === 'compound_batch' ?
-        (row as RowView<CompoundBatchRow>).compound_id : Rows.isDraft(row) ? null : row.id;
-      if (isEmpty(id) || id === shown)
-        return;
-      shown = id!;
-      grok.shell.o = ui.wait(async () => MolTrackEms.compoundCard(await moltrackEmsDb.compounds.get(id!)));
-    });
   }
 
   // the server cannot search a formatted key: a typed `DG-000060` becomes `molregno = 60`
