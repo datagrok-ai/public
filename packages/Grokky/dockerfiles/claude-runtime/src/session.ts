@@ -219,7 +219,7 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
 
     const it = runAgentTurn({
       sessionKey: sid, text: message, images: data.images, systemPrompt: buildSystemPrompt(mode),
-      effort: fullPromptTurn ? 'high' : undefined, model: data.model,
+      effort: fullPromptTurn ? 'high' : undefined,
       cwd: userDir || WORKSPACE, userDir, resumeExpected: data.resumeExpected,
       outputSchema: data.outputSchema, clientTools: data.clientTools,
       datagrokMcp: mcpUrl ? {url: mcpUrl, headers: {

@@ -4,6 +4,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {Input, labelText} from '../../core/input-base.js';
+import type {InputOptions} from '../../core/input-base.js';
 import {ObjectRenderer} from '../../core/object-renderer.js';
 import {fromDartInput} from './from-dart-input.js';
 import {Editors} from '../forms/editors.js';
@@ -11,8 +12,10 @@ import {Editors} from '../forms/editors.js';
 /** The platform's molecule editor (sketcher-backed, whatever backend the deployment runs) as a
  * u2 `Input<string>` over the molecule string — form validity, label alignment and the value
  * signal included. Requires the Chem package, like `ui.input.molecule` itself. */
-export function moleculeInput(label: string, options?: {name?: string}): Input<string> {
-  return fromDartInput<string>(ui.input.molecule(label), options?.name);
+export function moleculeInput(label: string,
+  options: Pick<InputOptions<string>, 'name' | 'value' | 'onChanged'> = {}): Input<string> {
+  const {name, value, ...rest} = options;
+  return fromDartInput<string>(ui.input.molecule(label, {value: value ?? ''}), name, rest);
 }
 
 export interface MoleculeRendererOptions {
@@ -42,5 +45,6 @@ export function moleculeRenderer(options: MoleculeRendererOptions = {}): ObjectR
 
 Editors.register({
   match: (prop) => prop.semType === 'Molecule',
-  create: (prop, options) => moleculeInput(labelText(options.label) ?? prop.name!, {name: options.name}),
+  create: (prop, options) => moleculeInput(options.inline ? '' : labelText(options.label) ?? prop.name!,
+    {name: options.name, value: options.value, onChanged: options.onChanged}),
 });

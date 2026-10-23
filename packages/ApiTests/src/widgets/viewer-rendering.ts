@@ -1,4 +1,4 @@
-import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, category, expect, settled, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -16,17 +16,17 @@ category('Viewer: rendering', () => {
       tv.addViewer(DG.VIEWER.HISTOGRAM, {valueColumnName: 'age', splitColumnName: 'race'});
       const fg = tv.getFiltersGroup({createDefaultFilters: false});
       for (const v of tv.viewers) arm(v);
-      await delay(100);
+      await Promise.all(tv.viewers.map((v) => settled(v)));
       fg.updateOrAdd({type: DG.FILTER_TYPE.HISTOGRAM, column: 'weight', min: 100, max: 170}, true);
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'race', selected: ['Black', 'Other']}, true);
-      await awaitCheck(() => df.filter.trueCount < df.rowCount, 'the filters did not apply', 3000);
+      await waitUntil(() => df.filter.trueCount < df.rowCount, 'the filters did not apply');
       const filtered = df.filter.trueCount;
 
       tv.loadLayout(tv.saveLayout());
-      await awaitCheck(() => {
+      await waitUntil(() => {
         const panel = Array.from(tv.viewers).find((v) => v.type === DG.VIEWER.FILTERS) as DG.FilterGroup | undefined;
         return panel?.filters.length === 2 && df.filter.trueCount === filtered;
-      }, 'the layout came back with an empty filter panel', 3000);
+      }, 'the layout came back with an empty filter panel');
     } finally {
       sub.unsubscribe();
       tv.close();
@@ -42,7 +42,7 @@ category('Viewer: rendering', () => {
     try {
       expect(plot.immediateRendering, false);
       // the first render event comes before the viewer has settled; work still pending holds the next repaint
-      await awaitCheck(() => renders > 0 && !plot.isRenderPending, 'plot did not settle', 3000);
+      await waitUntil(() => renders > 0 && !plot.isRenderPending, 'plot did not settle');
       plot.immediateRendering = true;
       expect(plot.immediateRendering, true);
       renders = 0;

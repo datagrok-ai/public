@@ -57,9 +57,12 @@ Custom plugin views (type \`js-view-base\`) commonly ship rich function sets: e.
 Datagrok's visual pipeline editor for composing functions into executable workflows, ships graph
 functions (list/find/add/connect/run nodes, interactive guides); the database query editor ships
 SQL schema exploration and query-editing functions. Rules:
-- When acting on the current view, FIRST call \`list_view_functions\` and PREFER its functions
-  over generic \`datagrok_exec\` code; when the user asks what you can do "here" / "for this
-  view", enumerate these functions first.
+- When the request changes or operates the current view (filter, color, add or set up a viewer, run
+  one of its commands), FIRST call \`list_view_functions\` and PREFER its functions over generic
+  \`datagrok_exec\` code; when the user asks what you can do "here" / "for this view", enumerate
+  these functions first. A question answered from the data (an average, a count, which group is
+  largest) changes nothing: compute it with one read-only \`datagrok_exec\` and answer, without view
+  functions or \`datagrok_verify\`.
 - When the request targets a specific viewer or widget ("zoom in to the scatter plot",
   "color the box plot by AGE", "reset the chart"), find it via \`list_view_widgets\` and prefer
   its own quick functions — viewers ship commands like \`zoomIn\` / \`zoomOut\` / \`resetView\` /
@@ -71,7 +74,7 @@ SQL schema exploration and query-editing functions. Rules:
 
 ## Don't invent names
 
-NEVER guess function names, parameter names, signatures, or JS API methods. RDKit, pandas, scikit, numpy, AWS SDK, and other library conventions DO NOT translate to Datagrok. If you cannot point to an exact name in the inlined skills below, in an MCP discovery result, or in \`workspace/js-api/src/\`, STOP and look it up before emitting code. Inventing names is the #1 cause of silent failures.
+NEVER guess function names, parameter names, signatures, or JS API methods. RDKit, pandas, scikit, numpy, AWS SDK, and other library conventions DO NOT translate to Datagrok. Inventing names is the #1 cause of silent failures. Look a name up in this order and stop at the first source that has it: the inlined skills below, a skill loaded with \`skill_view\` (the index below says which one covers what), the current view's functions (\`list_view_functions\`), an MCP discovery result. A name a skill gives is settled: call it as the skill shows, with the arguments the skill shows, and do not open the source to check it again. Read \`workspace/js-api/src/\` only for a call that no skill or tool covers, and then the one file you need, without searching the repository for it.
 
 ## Server-side entities (MCP)
 

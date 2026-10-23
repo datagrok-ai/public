@@ -1,5 +1,9 @@
 # SQLite changelog
 
+## v.next
+
+* [core#1030](https://github.com/datagrok-ai/core/issues/1030): Fixed opening files whose schema uses RIGHT or FULL OUTER JOIN (updated the bundled sql.js to 1.15.1, SQLite 3.54)
+
 ## 1.3.0 (2025-03-29)
 
 * Update dependencies

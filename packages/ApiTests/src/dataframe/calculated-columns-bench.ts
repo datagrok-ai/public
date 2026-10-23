@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 
 // The limits are the 1 s goal for applying a big layout with formula columns, 0.9 s for calculating its formulas,
 // and about 1.4x the quiet-machine times for the rest, rounded up to 100 ms; a run over a limit fails on purpose
@@ -40,7 +40,7 @@ category('Benchmarks: Calculated columns and layouts', () => {
     const columnCount = table.columns.length + formulas.length;
     const start = performance.now();
     view.loadLayout(DG.ViewLayout.fromJson(layout));
-    await awaitCheck(() => table.columns.length === columnCount, 'formula columns were not added', 60000, 20);
+    await waitUntil(() => table.columns.length === columnCount, 'formula columns were not added', 60000, 20);
     df = table;
     return await waitIdle(start, 200, 30000);
   }
@@ -92,7 +92,7 @@ category('Benchmarks: Calculated columns and layouts', () => {
     const was = deepest.get(row);
     const start = performance.now();
     table.set('b', row, table.get('b', row) + 10);
-    await awaitCheck(() => deepest.get(row) !== was, 'dependent formulas were not recalculated', 60000, 5);
+    await waitUntil(() => deepest.get(row) !== was, 'dependent formulas were not recalculated', 60000, 5);
     return expectFaster(performance.now() - start, 100);
   }, {benchmark: true, timeout: 120000});
 

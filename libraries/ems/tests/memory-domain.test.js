@@ -117,6 +117,16 @@ test('transaction: insert, update with expectedVersion, delete; results per op',
   assert.equal(rows[2].created_on !== undefined && rows[2].updated_on !== undefined, true);
 });
 
+test('transaction: an insert that leaves a column with a default empty gets the declared default', async () => {
+  const ticket = await new MemoryDomainBackend({name: 'desk', tables: {ticket: {businessKey: ['code'], columns: {
+    code: {type: 'string', required: true},
+    status: {type: 'string', required: true, default: 'open'},
+  }}}}).table('desk.ticket');
+  await ticket.transaction([{op: 'insert', table: 'ticket', values: {code: 'T1'}}]);
+  await ticket.transaction([{op: 'insert', table: 'ticket', values: {code: 'T2', status: 'closed'}}]);
+  assert.deepEqual((await ticket.query()).map((r) => [r.code, r.status]), [['T1', 'open'], ['T2', 'closed']]);
+});
+
 test('transaction: a version conflict, a missing row or a required column refuses the WHOLE batch', async () => {
   const be = backend();
   const issue = await be.table('grit.issue');
@@ -468,10 +478,17 @@ test('updateWhere: the filter selects, the cap limits, hasMore says the filter m
 
   assert.deepEqual(await issue.updateWhere('done = false', {priority: 'high'}, {limit: 1}),
     {updated: 1, hasMore: true}, 'the cap stops at limit and reports the rest');
-  assert.deepEqual(await issue.updateWhere('done = false', {priority: 'low'}, {limit: 9999}),
+  assert.deepEqual(await issue.updateWhere('done = false', {title: 'Clamped'}, {limit: 9999}),
     {updated: 2, hasMore: false}, 'and a limit past the cap is clamped down to it');
   assert.deepEqual(await issue.updateWhere('title starts "zzz"', {priority: 'high'}),
     {updated: 0, hasMore: false});
+});
+
+test('updateWhere: a date sent again as a new Date is not rewritten', async () => {
+  const issue = await backend().table('grit.issue');
+  const due = () => ({due: new Date('2026-02-01T00:00:00Z')});
+  assert.equal((await issue.updateWhere('id = "i1"', due())).updated, 1);
+  assert.equal((await issue.updateWhere('id = "i1"', due())).updated, 0);
 });
 
 test('updateWhere: the Edit predicate narrows the selection silently', async () => {

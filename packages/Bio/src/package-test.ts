@@ -38,6 +38,7 @@ import './tests/mm-distance-tests';
 import './tests/activity-cliffs-tests';
 import './tests/sequence-space-test';
 import './tests/editor-loop-tests';
+import './tests/subsequence-search-tests';
 import './tests/scoring';
 import './tests/projects-tests';
 import './tests/antibody-numbering-tests';

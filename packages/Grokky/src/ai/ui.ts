@@ -11,7 +11,7 @@ import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEven
   copyToClipboard} from '../utils';
 import {AIPanel, StreamingPanel} from './panel';
 import {AIWindowManager} from './ai-window';
-import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
+import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
 import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
 import {sendChatTurn} from '../claude/queue-task';
 import {UsageLimiter} from './usage-limiter';
@@ -110,7 +110,7 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     stopListening();
   });
 
-  client.send(sessionId, prompt, {model: ClaudeModel.Sonnet, ...(opts.outputSchema ? {outputSchema: opts.outputSchema} : {})});
+  client.send(sessionId, prompt, opts.outputSchema ? {outputSchema: opts.outputSchema} : undefined);
   return widget;
 }
 
@@ -433,7 +433,7 @@ async function streamOnce(
 
       forSession(client.onError, (evt) => {
         panel.cancelInputRequest();
-        endWithError(`Claude: ${evt.message}`);
+        endWithError(`AI assistant: ${evt.message}`);
       });
 
       forSession(client.onAborted, async () => {
@@ -528,7 +528,7 @@ async function streamOnce(
         }
       });
 
-      subs.push(client.onClose.subscribe(() => endWithError('Claude: connection lost')));
+      subs.push(client.onClose.subscribe(() => endWithError('AI assistant: connection lost')));
 
       subs.push(getAIAbortSubscription().subscribe(() => {
         client.abort(sessionId);
@@ -545,12 +545,12 @@ async function streamOnce(
         // Queued-task admission (queue-task.ts): the queued call only holds the turn's
         // admission slot; the turn itself streams over this socket as usual.
         sendChatTurn(client, sessionId, message, options)
-          .catch((e: any) => endWithError(`Claude: ${e?.message ?? e}`));
+          .catch((e: any) => endWithError(`AI assistant: ${e?.message ?? e}`));
       };
 
       forSession(client.onSessionReset, () => {
         if (resentAfterReset)
-          return endWithError('Claude: the session was lost and could not be restored');
+          return endWithError('AI assistant: the session was lost and could not be restored');
         resentAfterReset = true;
         sendPrompt();
       });
@@ -558,7 +558,7 @@ async function streamOnce(
       sendPrompt();
     } catch (e: any) {
       panel.clearStreaming();
-      grok.shell.error(`Claude runtime: ${e.message}`);
+      grok.shell.error(`AI runtime: ${e.message}`);
       console.error('Claude runtime error:', e);
       cleanup();
       resolve();

@@ -95,6 +95,7 @@ category('RFV: run SimpleInputs2', () => {
       () => view.root.querySelectorAll('input').length >= 3,
       'Form inputs not rendered', 15000,
     );
+    await awaitCheck(() => ribbonIcons(view, 'exchange').length === 1, 'Expected one compare icon', 5000);
 
     await clickBigButton(view.root, 'Run');
     await awaitRunComplete(view.root);
@@ -182,6 +183,7 @@ category('Pipeline: MockPipeline1 static', () => {
       const texts = Array.from(labels).map((l) => l.textContent?.trim());
       return texts.includes('step1') && texts.includes('step2');
     }, 'Tree should show step1 and step2', 10000);
+    await awaitCheck(() => ribbonIcons(view, 'exchange').length === 1, 'Expected one compare icon', 5000);
 
     // Pipeline view's bottom bar shows the unified Next button (same as RFV).
     await awaitCheck(() => {
@@ -260,6 +262,7 @@ for (const nqName of ['Compute2:MockSingleStepPipeline', 'Compute2:MockSingleSte
       expect(hasButton(view.root, 'Double initial temperature'), true, 'Step button action missing');
       expect(view.root.querySelector('[dock-spawn-title="Inputs"]') !== null, true, 'Inputs panel missing');
       expect(ribbonIcons(view, 'save').length, 1, 'Expected exactly one save icon');
+      expect(ribbonIcons(view, 'exchange').length, 1, 'Expected exactly one compare icon');
       expect(ribbonIcons(view, 'folder-tree').length, 0, 'Tree toggle should be hidden');
       expect(ribbonIcons(view, 'share-alt').length <= 1, true, 'Expected at most one share icon');
     });

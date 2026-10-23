@@ -19,7 +19,9 @@ class Connection(TypedDict):
     provider: str
     api_mode: str
     base_url: str
-    api_key: str
+    # On the Anthropic Messages API Hermes sends a string key as x-api-key (send_keys_by_type) and a callable's as
+    # Bearer, except to api.anthropic.com, which gets a Console key as x-api-key either way.
+    api_key: str | Callable[[], str]
 
 
 class ConversationResult(TypedDict, total=False):
@@ -33,6 +35,13 @@ class ConversationResult(TypedDict, total=False):
 class ApiError(TypedDict):
     type: str
     message: str
+
+
+class Usage(TypedDict, total=False):
+    input_tokens: int | None
+    output_tokens: int | None
+    cache_read_tokens: int | None
+    cache_write_tokens: int | None
 
 
 class Activity(TypedDict, total=False):
@@ -86,6 +95,43 @@ class PluginContext(Protocol):
     def register_hook(self, hook_name: str, callback: Hook) -> object: ...
 
     def register_middleware(self, kind: str, callback: Hook) -> object: ...
+
+
+def send_keys_by_type() -> None:
+    """Hermes would send a string key as Bearer to the hosts on its list, Azure's among them, which documents keys in
+    x-api-key or api-key and Bearer for Entra ID: without the list the key's type decides (Connection), on every
+    Anthropic client of the process."""
+    import agent.anthropic_adapter as anthropic_adapter
+    anthropic_adapter._requires_bearer_auth = lambda base_url: False
+
+
+def refuse_aws_sdk() -> None:
+    """Bedrock is reached through its Anthropic and OpenAI routes with an API key, never through the AWS SDK. For a
+    Bedrock address Hermes would install boto3 while the agent starts (a download of half a minute, which fails
+    offline) only to probe the model's context window with SigV4 credentials the runtime does not have; refused, it
+    takes the window from its own table."""
+    import pm
+    import pm.extras
+
+    install = pm.extras.ensure_import
+
+    def ensure_import(extra: str) -> None:
+        if extra == 'bedrock':
+            raise ImportError('the AWS SDK is not part of the Grokky runtime')
+        install(extra)
+
+    pm.extras.ensure_import = pm.ensure_import = ensure_import
+
+
+def usage_cost(model: str, usage: Usage, billing: str, base_url: str) -> float | None:
+    """USD for one call from Hermes' price list for the provider `billing` names, or None when it has no price."""
+    from agent.usage_pricing import CanonicalUsage, estimate_usage_cost
+    canonical = CanonicalUsage(input_tokens=usage.get('input_tokens') or 0,
+                               output_tokens=usage.get('output_tokens') or 0,
+                               cache_read_tokens=usage.get('cache_read_tokens') or 0,
+                               cache_write_tokens=usage.get('cache_write_tokens') or 0)
+    amount = estimate_usage_cost(model, canonical, provider=billing, base_url=base_url).amount_usd
+    return None if amount is None else float(amount)
 
 
 def new_agent(model: str, connection: Connection, session_id: str, store: SessionStore, toolsets: list[str],

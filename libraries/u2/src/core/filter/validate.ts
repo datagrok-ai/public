@@ -118,7 +118,7 @@ function checkCondition(c: FilterCondition, schema: FilterSchema, target: Filter
       }
     }
   }
-  const expressible = target === 'domain' ? op.domain !== undefined :
+  const expressible = target === 'domain' ? op.domain !== undefined || op.host === true :
     target === 'dataframe' ? op.mask !== undefined || op.bitset !== undefined : true;
   if (!expressible)
     problem('not-expressible', `"${c.property} ${c.operator}" cannot be expressed for ${target}`);

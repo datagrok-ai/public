@@ -1,19 +1,21 @@
 /* `domains.import` — the import wizard (WO 3-9), the u2 half of `domain_import_dialog.dart`:
    **source** (any open frame, or any file the platform can read, through `ui.input.table`),
-   **mapping** (a `DataTable` of source column → target, auto-matched by name; only the columns
-   the caller may write are offered), **preview** (the server's dry run over the first 1000 rows —
-   `validate`, which is the commit's own checks inside a rolled-back transaction; the mapped rows
-   alone where the storage has no dry run) and **report** (the commit's). What is posted is the
-   MAPPED columns only, under their target names, so a skipped or renamed source column never
-   reaches the server and the source frame is never touched. The options offered are the ones
-   `support.batch` declares: an option the storage refuses is not on the form and not sent. */
+   **mapping** (a `DataTable` of source column → target, auto-matched by name and semantic type; only
+   the columns the caller may write are offered), **preview** (the server's dry run over the first 1000
+   rows — `validate`, which is the commit's own checks inside a rolled-back transaction; the mapped
+   rows alone where the storage has no dry run) and **report** (every row's outcome and key). What is
+   posted is the MAPPED columns only, under their target names, plus what the table's
+   {@link DomainImporter} derives, so a skipped or renamed source column never reaches the server;
+   the source frame is touched only to write the keys back, when asked. The options offered are
+   the ones `support.batch` declares: an option the storage refuses is not on the form and not sent.
+   An app makes the import its own through `table.importer`: the rows it derives or keeps out, the
+   columns of the preview and the report, how a refusal reads. */
 import * as ui from 'datagrok-api/ui';
 import type * as DG from 'datagrok-api/dg';
-import {signal, Control, button, div, divV, span, plural, text, Wizard, DataTable, BasicTable, ChoiceInput, BoolInput,
-  badge, Form, notify} from '@datagrok-libraries/u2';
-import type {IProperty, ChoiceItem, BadgeVariant} from '@datagrok-libraries/u2';
-import type {DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike,
-  DomainBatchValidationRowLike} from '../core/domain-backend.js';
+import {signal, Control, button, div, divV, span, plural, text, link, Wizard, DataTable, ChoiceInput,
+  BoolInput, badge, Form, notify} from '@datagrok-libraries/u2';
+import type {IProperty, ChoiceItem, BadgeVariant, RowView} from '@datagrok-libraries/u2';
+import type {DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike} from '../core/domain-backend.js';
 import {fromDartInput} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainTable} from './facade.js';
 import {DomainErrors} from './errors.js';
@@ -23,24 +25,111 @@ export interface DomainImportOptions {
   source?: DG.DataFrame;
 }
 
+/** Everything an app can make its own about importing its table — `table.importer`. Every member
+ * is optional: without any, the import maps by name and semantic type, previews the server's dry
+ * run, and reports every row's outcome and key. */
+export interface DomainImporter {
+  /** The columns {@link prepare} fills: the mapping does not offer them. */
+  derives?: string[];
+  /** The target a source column goes to, asked before the name and semantic-type matching;
+   * undefined leaves the column to it. */
+  match?(column: DG.Column, targets: IProperty[]): string | undefined;
+  /** One verdict per row (the mapped cells under their target names), in order; `progress` takes
+   * the number of rows done. */
+  prepare?(rows: Record<string, unknown>[], progress: (done: number) => void): Promise<DomainImportVerdict[]>;
+  /** The columns of the preview or the report, given the ones the import would show: `~row`,
+   * `~result`, each mapped target by its name and `~note` in the preview; `~row`, `~result`, `~key` and
+   * `~note` in the report. */
+  columns?(defaults: DomainImportColumn[], step: DomainImportStep): DomainImportColumn[];
+  /** The height of a preview or report row, for columns that draw. */
+  rowHeight?: number;
+  /** How a refusal reads in a row's note; null leaves it to the default ("Title: Value can't be
+   * empty", "Code is already used"). */
+  describe?(error: DomainImportError, caption: string): string | null;
+  /** The source column each row's key is written back to, offered as an option; false offers none.
+   * By default the business key's caption, where the key is one column. */
+  keyColumn?: string | false;
+}
+
+export type DomainImportStep = 'preview' | 'report';
+
+/** What becomes of one row: it is sent with `values` added, or kept out as the row the table
+ * already has (`existing`, its id), as a repeat of an earlier row of the same file (`sameAs`, its
+ * index) or as an `error`. `label` names it on the row's badge, `note` says why. */
+export interface DomainImportVerdict {
+  values?: Record<string, unknown>;
+  existing?: string;
+  sameAs?: number;
+  error?: string;
+  label?: string;
+  note?: string;
+}
+
+/** A refusal of one row, by the column it is about where it names one. */
+export interface DomainImportError {
+  column?: string;
+  code?: string;
+  message: string;
+}
+
+/** A source row as the preview and the report show it. */
+export interface DomainImportRow {
+  /** Its place in the source frame, from 0. */
+  index: number;
+  /** The mapped cells under their target names, with what the importer derived. */
+  values: Record<string, unknown>;
+  /** What the batch will do or did with it — `insert`, `update`, `skip`, `error`; `aborted` where an
+   * all-or-nothing import committed nothing; '' where nothing says. */
+  kind: string;
+  /** The badge text the verdict chose; '' leaves it to the kind. */
+  label: string;
+  note: string;
+  errors: DomainImportError[];
+  /** The row it is now — in the report, once read back — by id and as the table captions it. */
+  id: string | null;
+  key: string;
+}
+
+/** A column of the preview or the report. */
+export interface DomainImportColumn {
+  name: string;
+  header: string;
+  width?: string;
+  render(row: DomainImportRow): HTMLElement | string;
+}
+
+/** A source row as the import plans it: the mapped cells, what it sends (null where the verdict
+ * keeps it out), and the verdict. */
+interface Planned {
+  cells: Record<string, unknown>;
+  payload: Record<string, unknown> | null;
+  verdict: DomainImportVerdict;
+}
+
 /** What a source column maps to when it maps to nothing. */
 const SKIP = '(skip)';
 /** The preview scans at most this many rows — it is advisory, and the server re-validates every
  * row it is sent; the commit itself is unbounded. */
 const PREVIEW_ROWS = 1000;
-/** Issue lines rendered in a preview or a report; the counts stay exact. */
-const ISSUE_CAP = 20;
 /** Rows the preview draws — what the import looks like, not all of it. */
 const PREVIEW_SHOWN = 20;
-/** The preview's leading column: what the server said it would do with the row. */
-const VERDICT = '~predicted';
-/** A verdict as the preview shows it: the verb, not the wire's op name. */
+/** A row's kind as the preview shows it: the verb, not the wire's op name. */
 const VERDICTS: Record<string, {label: string, variant: BadgeVariant}> = {
   insert: {label: 'Add', variant: 'accent'},
   update: {label: 'Update', variant: 'accent'},
   skip: {label: 'Skip', variant: 'default'},
   error: {label: 'Error', variant: 'error'},
 };
+/** A row's kind as the report shows it, once the batch has run. */
+const OUTCOMES: Record<string, {label: string, variant: BadgeVariant}> = {
+  insert: {label: 'Added', variant: 'accent'},
+  update: {label: 'Updated', variant: 'accent'},
+  skip: {label: 'Skipped', variant: 'default'},
+  error: {label: 'Error', variant: 'error'},
+  aborted: {label: 'Not imported', variant: 'default'},
+};
+/** Rows of the report's key lookup per query. */
+const KEY_CHUNK = 500;
 
 /** One row of the mapping step — the target is the choice input the flow keeps for that column. */
 interface Mapping {column: string}
@@ -59,7 +148,8 @@ export function openImport(table: DomainTable, options: DomainImportOptions = {}
   }
   // an import inserts: the draft policy, so a key typed once on insert is a target too
   const writable = table.access.columnPolicy().forDraft();
-  const targets = table.properties.filter((p) => writable.field(p.name!) === 'editable');
+  const derived = table.importer?.derives ?? [];
+  const targets = table.properties.filter((p) => writable.field(p.name!) === 'editable' && !derived.includes(p.name!));
   if (targets.length === 0) {
     notify.warning(`There is no column of ${table.address} you may write.`);
     return Promise.resolve(null);
@@ -78,6 +168,8 @@ class ImportFlow {
   private _mode?: ChoiceInput;
   private _allOrNothing?: BoolInput;
   private _errorOnDuplicate?: BoolInput;
+  /** Absent where no source column takes the keys back. */
+  private _writeBack?: BoolInput;
   private _wizard!: Wizard;
   private _committed = false;
   private _result: DomainBatchReportLike | null = null;
@@ -85,6 +177,9 @@ class ImportFlow {
   /** The dry run and what it was run for — the mapping, the mode and the flags; the preview posts
    * again only when that key changed. */
   private _checked: {key: string, report: Promise<DomainBatchValidationLike>} | undefined;
+  /** Every row's verdict and what it sends, made once per source and mapping: the importer can be
+   * slow, and the preview and the commit read the same plan. */
+  private _planned: {frame: DG.DataFrame, key: string, plan: Promise<Planned[]>} | undefined;
   /** Bumped by every post: an older dry run answering last must not paint over a newer one. */
   private _previewGen = 0;
 
@@ -107,7 +202,7 @@ class ImportFlow {
       onCancel: () => this._settle(null),
     });
     this._wizard.root.classList.add('u2-domain-import');
-    this._wizard.openInDialog(`Import ${ImportFlow._plural(this._table)}`, {width: 620, height: 520});
+    this._wizard.openInDialog(`Import ${ImportFlow._plural(this._table)}`, {width: 720, height: 560});
   }
 
   /** The first blocking problem, which is what the NEXT button shows and gates on. */
@@ -145,7 +240,12 @@ class ImportFlow {
       this._errorOnDuplicate = new BoolInput({label: 'Error on duplicate', value: false, name: 'errorOnDuplicate',
         tooltipText: 'Treat business-key duplicates as errors instead of skips (insert mode)'});
     }
-    const form = new Form().addAll([picker, this._mode, this._allOrNothing, this._errorOnDuplicate]
+    const column = this._keyColumn();
+    if (column !== null) {
+      this._writeBack = new BoolInput({label: `Add a "${column}" column`, value: true, name: 'writeBack',
+        tooltipText: `Each row of the source table gets the ${this._keyHeader()} it was imported as, or found as`});
+    }
+    const form = new Form().addAll([picker, this._mode, this._allOrNothing, this._errorOnDuplicate, this._writeBack]
       .filter((input) => input !== undefined));
     form.effect(() => {
       const frame = picker.value.value;
@@ -178,10 +278,10 @@ class ImportFlow {
     return table.root;
   }
 
-  /** The server's own verdicts over the mapped cells of the first {@link PREVIEW_ROWS} rows: the
-   * dry run runs every check the commit runs, inside a transaction it rolls back, so the preview
-   * and the report cannot disagree. Posted once per entry into the step, and again only when the
-   * mapping, the mode or the source changed since. */
+  /** The table importer's verdicts over every row, then the server's own over the first
+   * {@link PREVIEW_ROWS} rows it would be sent: the dry run runs every check the commit runs,
+   * inside a transaction it rolls back, so the preview and the report cannot disagree. Posted once
+   * per entry into the step, and again only when the mapping, the mode or the source changed since. */
   private _previewStep(): HTMLElement {
     const host = div([], 'u2-domain-import-preview');
     const control = new Control(host);
@@ -195,64 +295,31 @@ class ImportFlow {
       host.replaceChildren(...problems.map((p) => span(p, 'u2-domain-import-problem')));
       if (frame === null || problems.length > 0)
         return;
-      if (this._table.table.validate === undefined) {
-        const shown = Math.min(frame.rowCount, PREVIEW_SHOWN);
-        const lead = shown < frame.rowCount ? `Showing the first ${shown.toLocaleString()} of ` +
-          `${frame.rowCount.toLocaleString()} rows — rows` : 'Rows';
-        host.append(this._rowsTable(control, frame, [...this._mapping()], null),
-          span(`${lead} are checked when imported.`, 'u2-domain-import-summary'));
-        return;
-      }
       void this._preview(control, host, frame);
     });
     return host;
   }
 
-  /** The rows as they would land, under the target captions; the verdict column and the cell
-   * marks exist only where there was a dry run to say so. */
-  private _rowsTable(owner: Control, frame: DG.DataFrame, mapping: [string, string][],
-    verdicts: Map<number, DomainBatchValidationRowLike> | null): HTMLElement {
-    const errorOf = (index: number, target: string) => (verdicts?.get(index)?.errors ?? [])
-      .find((error) => (error.column ?? '') === (target === VERDICT ? '' : target))?.message ?? null;
-    const table = owner.runInScope(() => new DataTable<number>({
-      rowHeight: 24,
-      keyOf: (i) => String(i),
-      columns: [...(verdicts === null ? [] : [{name: VERDICT, header: 'Result', width: '96px',
-        render: (i: number) => {
-          const verdict = VERDICTS[verdicts.get(i)?.predicted ?? ''];
-          return verdict === undefined ? '' : badge(verdict.label, {variant: verdict.variant});
-        }}]),
-      ...mapping.map(([target, name]) => {
-        const column = frame.columns.byName(name);
-        return {name: target, header: ImportFlow._caption(this, target),
-          render: (i: number) => text(ImportFlow._valueOrNull(column, i))};
-      })],
-      cellState: {
-        isChanged: () => false,
-        errorOf: (key, target) => {
-          const message = errorOf(Number(key), target);
-          return message === null ? null : {message, kind: 'error'};
-        },
-      },
-    }));
-    table.setItems(Array.from({length: Math.min(frame.rowCount, PREVIEW_SHOWN)}, (_, i) => i));
-    table.root.classList.add('u2-domain-import-rows');
-    return table.root;
-  }
-
   private async _preview(owner: Control, host: HTMLElement, frame: DG.DataFrame): Promise<void> {
     const mapping = [...this._mapping()];
     const options = this._batchOptions();
-    const scanned = Math.min(frame.rowCount, PREVIEW_ROWS);
-    const key = JSON.stringify([mapping, options]);
     const gen = ++this._previewGen;
-    let report: DomainBatchValidationLike;
+    const status = span(`Checking ${plural(frame.rowCount, 'row', 'rows')}…`, 'u2-domain-import-summary');
+    host.replaceChildren(status);
+    let plan: Planned[];
+    let report: DomainBatchValidationLike | null = null;
     try {
-      if (this._checked?.key !== key) {
-        this._checked = {key, report: this._table.table.validate!(this._payload(frame, mapping, scanned), options)};
-        host.replaceChildren(span(`Checking ${scanned} rows…`, 'u2-domain-import-summary'));
+      plan = await this._plan(frame, mapping,
+        (done) => status.textContent = `Checking rows: ${done} of ${frame.rowCount}`);
+      const sent = ImportFlow._sent(plan);
+      if (this._table.table.validate !== undefined) {
+        const key = JSON.stringify([mapping, options]);
+        if (this._checked?.key !== key) {
+          const scanned = sent.slice(0, PREVIEW_ROWS).map((i) => plan[i].payload!);
+          this._checked = {key, report: this._table.table.validate(scanned, options)};
+        }
+        report = await this._checked.report;
       }
-      report = await this._checked.report;
       if (gen !== this._previewGen)
         return;
     } catch (e) {
@@ -266,31 +333,176 @@ class ImportFlow {
     }
     if (owner.scope.isDisposed)
       return;
-    host.replaceChildren(this._rowsTable(owner, frame, mapping, new Map(report.rows.map((row) => [row.index, row]))));
+    const sent = ImportFlow._sent(plan);
+    const judged = report !== null || this._table.importer?.prepare !== undefined;
+    const rows = this._previewRows(plan, sent, report).slice(0, PREVIEW_SHOWN);
+    host.replaceChildren(this._rowsTable(owner, 'preview', rows, judged ? this._previewColumns(mapping) :
+      mapping.map(([target]) => this._valueColumn(target))));
+    if (report === null) {
+      const lead = rows.length < frame.rowCount ? `Showing the first ${rows.length.toLocaleString()} of ` +
+        `${frame.rowCount.toLocaleString()} rows — rows` : 'Rows';
+      host.append(span(`${lead} are checked when imported.`, 'u2-domain-import-summary'));
+      return;
+    }
+    const kept = plan.filter((p) => p.payload === null);
+    const keptErrors = kept.filter((p) => p.verdict.error !== undefined).length;
+    const errors = report.errorCount + keptErrors;
     host.append(span(`${report.willInsert} will be added, ${report.willUpdate} updated, ` +
-      `${report.willSkip} skipped, ${plural(report.errorCount, 'row has errors', 'rows have errors')}.`,
+      `${report.willSkip + kept.length - keptErrors} skipped, ${plural(errors, 'row has errors', 'rows have errors')}.`,
     'u2-domain-import-summary'));
     // the counts are what the batch WOULD do row by row; all-or-nothing makes one bad row the
     // verdict on all of them, and the report would otherwise contradict this line
-    if (options.allOrNothing !== false && report.errorCount > 0)
+    if (options.allOrNothing !== false && errors > 0)
       host.append(span(this._allOrNothing === undefined ? 'This import is all or nothing — nothing will be imported.' :
         'Nothing will be imported while "All or nothing" is on.', 'u2-domain-import-problem'));
-    if (scanned < frame.rowCount) {
-      host.append(span(`Checked the first ${scanned.toLocaleString()} of ` +
-        `${frame.rowCount.toLocaleString()} rows — the rest are checked on import.`,
+    if (sent.length > PREVIEW_ROWS) {
+      host.append(span(`Checked the first ${PREVIEW_ROWS.toLocaleString()} of ` +
+        `${sent.length.toLocaleString()} rows — the rest are checked on import.`,
       'u2-domain-import-summary'));
     }
-    const issues: Issue[] = [];
-    let total = 0;
-    for (const row of report.rows) {
-      for (const error of row.errors ?? []) {
-        total++;
-        if (issues.length < ISSUE_CAP)
-          issues.push({row: row.index, column: error.column ?? '', message: error.message});
-      }
+  }
+
+  /** Every source row as the preview shows it: the importer's verdict where it keeps the row out,
+   * the dry run's where the row was sent to it. */
+  private _previewRows(plan: Planned[], sent: number[], report: DomainBatchValidationLike | null): DomainImportRow[] {
+    const rows = plan.map((p, i) => p.payload === null ? this._kept(i, p) :
+      this._row(i, p, report === null ? 'insert' : '', p.verdict.note ?? '', []));
+    for (const dry of report?.rows ?? []) {
+      const at = sent[dry.index];
+      const errors = dry.errors ?? [];
+      rows[at] = this._row(at, plan[at], dry.predicted, errors.length > 0 ? this._describe(errors) :
+        plan[at].verdict.note ?? '', errors);
     }
-    if (issues.length > 0)
-      host.append(ImportFlow._issues(owner, issues, total));
+    return rows;
+  }
+
+  /** A row the plan keeps out of the batch. */
+  private _kept(index: number, planned: Planned): DomainImportRow {
+    const verdict = planned.verdict;
+    return verdict.error !== undefined ? this._row(index, planned, 'error', verdict.error, []) :
+      {...this._row(index, planned, 'skip', verdict.note ?? '', []), id: verdict.existing ?? null};
+  }
+
+  private _row(index: number, planned: Planned, kind: string, note: string, errors: DomainImportError[]):
+    DomainImportRow {
+    return {index, values: planned.payload ?? planned.cells, kind, label: planned.verdict.label ?? '', note, errors,
+      id: null, key: ''};
+  }
+
+  /** The rows as a table, its columns the importer's choice; the cells a refusal names are marked. */
+  private _rowsTable(owner: Control, step: DomainImportStep, rows: DomainImportRow[],
+    defaults: DomainImportColumn[]): HTMLElement {
+    const columns = this._table.importer?.columns?.(defaults, step) ?? defaults;
+    const byIndex = new Map(rows.map((row) => [row.index, row]));
+    const table = owner.runInScope(() => new DataTable<DomainImportRow>({
+      rowHeight: this._table.importer?.rowHeight ?? 24,
+      keyOf: (row) => String(row.index),
+      columns: columns.map((c) => ({name: c.name, header: c.header, width: c.width, render: (row) => c.render(row)})),
+      cellState: {
+        isChanged: () => false,
+        errorOf: (key, column) => {
+          const message = byIndex.get(Number(key))?.errors.find((e) => e.column === column)?.message;
+          return message === undefined ? null : {message, kind: 'error'};
+        },
+      },
+    }));
+    table.setItems(rows);
+    table.root.classList.add('u2-domain-import-rows', `u2-domain-import-${step}-rows`);
+    return table.root;
+  }
+
+  /** What the preview shows by default: the row's number and verdict, its mapped cells, the note. */
+  private _previewColumns(mapping: [string, string][]): DomainImportColumn[] {
+    return [ImportFlow._numberColumn('#', '44px'), ImportFlow._resultColumn(VERDICTS),
+      ...mapping.map(([target]) => this._valueColumn(target)),
+      {name: '~note', header: 'Note', render: (row) => row.note}];
+  }
+
+  /** What the report shows by default: the row's number and outcome, the row it is now, why. */
+  private _reportColumns(saved: Map<string, RowView>): DomainImportColumn[] {
+    return [ImportFlow._numberColumn('Source row', '84px'), ImportFlow._resultColumn(OUTCOMES),
+      {name: '~key', header: this._keyHeader(), width: '120px', render: (row) => this._keyLink(row, saved)},
+      {name: '~note', header: 'Message', render: (row) => row.note}];
+  }
+
+  private _valueColumn(target: string): DomainImportColumn {
+    return {name: target, header: ImportFlow._caption(this, target), render: (row) => text(row.values[target])};
+  }
+
+  private static _numberColumn(header: string, width: string): DomainImportColumn {
+    return {name: '~row', header, width, render: (row) => String(row.index + 1)};
+  }
+
+  private static _resultColumn(kinds: Record<string, {label: string, variant: BadgeVariant}>): DomainImportColumn {
+    return {name: '~result', header: 'Result', width: '110px', render: (row) => {
+      const kind = kinds[row.kind];
+      const label = row.label || kind?.label;
+      return label === undefined ? '' : badge(label, {variant: kind?.variant ?? 'default'});
+    }};
+  }
+
+  /** The row an outcome is about, as a link: the wizard closes and the row opens. */
+  private _keyLink(row: DomainImportRow, saved: Map<string, RowView>): HTMLElement | string {
+    const target = row.id === null ? undefined : saved.get(row.id);
+    return target === undefined ? '' : link(row.key, () => {
+      this._settle(this._result);
+      this._table.open(target);
+    });
+  }
+
+  /** Refusals as a row's note, each named by the field it is about. */
+  private _describe(errors: DomainImportError[]): string {
+    return errors.map((e) => {
+      const caption = e.column ? ImportFlow._caption(this, e.column) : '';
+      return this._table.importer?.describe?.(e, caption) ?? (e.code === 'unique' && caption ?
+        `${caption} is already used` : caption ? `${caption}: ${e.message}` : e.message);
+    }).join('; ');
+  }
+
+  /** Every row's verdict and payload — the importer's verdicts, then the table's validators over
+   * what would be sent: an import is held to the rules a form holds a row to. */
+  private _plan(frame: DG.DataFrame, mapping: [string, string][], progress: (done: number) => void):
+    Promise<Planned[]> {
+    const key = JSON.stringify(mapping);
+    if (this._planned?.frame !== frame || this._planned.key !== key) {
+      const plan = this._planRows(frame, mapping, progress);
+      this._planned = {frame, key, plan};
+      plan.catch(() => {
+        if (this._planned?.plan === plan)
+          this._planned = undefined;
+      });
+    }
+    return this._planned.plan;
+  }
+
+  private async _planRows(frame: DG.DataFrame, mapping: [string, string][], progress: (done: number) => void):
+    Promise<Planned[]> {
+    const rows = this._payload(frame, mapping, frame.rowCount);
+    const prepare = this._table.importer?.prepare;
+    const verdicts = prepare === undefined ? [] : await prepare(rows, progress);
+    return rows.map((cells, i): Planned => {
+      const verdict = verdicts[i] ?? {};
+      if (verdict.error !== undefined || verdict.existing !== undefined || verdict.sameAs !== undefined)
+        return {cells, payload: null, verdict};
+      const payload = {...cells, ...verdict.values};
+      const problem = this._validate(payload);
+      return problem === null ? {cells, payload, verdict} : {cells, payload: null, verdict: {error: problem}};
+    });
+  }
+
+  private _validate(row: Record<string, unknown>): string | null {
+    const validators = this._table.validators;
+    for (const column of validators.columns) {
+      const problem = validators.check(column, row[column], row as RowView);
+      if (problem !== null)
+        return `${ImportFlow._caption(this, column)}: ${problem}`;
+    }
+    return null;
+  }
+
+  /** The source rows the batch is sent, in order — a sent row's place in the batch is its index here. */
+  private static _sent(plan: Planned[]): number[] {
+    return plan.flatMap((p, i) => p.payload === null ? [] : [i]);
   }
 
   /** The mapped rows, under their target names — what is posted, and the only thing that is. */
@@ -324,11 +536,12 @@ class ImportFlow {
     this._recheck.value = this._recheck.peek() + 1;
   }
 
-  /** One target choice per source column, auto-matched case-insensitively against the property's
-   * name and its caption. The choices are kept here, not in the mapping table's cells: the table
-   * recycles its rows, and a choice that lived in a cell would be rebuilt — and lose its value —
-   * on every scroll. */
+  /** One target choice per source column — the importer's match, else the auto-match. The choices
+   * are kept here, not in the mapping table's cells: the table recycles its rows, and a choice that
+   * lived in a cell would be rebuilt — and lose its value — on every scroll. */
   private _remap(frame: DG.DataFrame | null): void {
+    this._checked = undefined;
+    this._planned = undefined;
     for (const choice of this._choices.values())
       choice.dispose();
     this._choices.clear();
@@ -343,8 +556,8 @@ class ImportFlow {
     for (const column of columns) {
       // owned by hand, not by a scope: the first remap runs inside the wizard's own constructor
       // (a source handed in as an option), where there is no wizard to own anything yet
-      const choice = new ChoiceInput({items, value: this._autoMatch(column), inline: true, name: column,
-        nullable: false});
+      const choice = new ChoiceInput({items, value: this._match(frame.columns.byName(column)), inline: true,
+        name: column, nullable: false});
       // the asterisk the forms use: a target the table will not take empty
       choice.effect(() => choice.root.classList.toggle('u2-input-required',
         this._targets.some((p) => p.name === choice.value.value && p.nullable === false)));
@@ -362,8 +575,25 @@ class ImportFlow {
 
   /** The same, by column name. */
   private static _caption(flow: ImportFlow, column: string): string {
-    const prop = flow._targets.find((p) => p.name === column);
+    const prop = flow._table.properties.find((p) => p.name === column);
     return prop === undefined ? column : ImportFlow.captionOf(prop);
+  }
+
+  /** The source column the keys are written back to: the importer's choice, else the business
+   * key's caption where the key is one column. */
+  private _keyColumn(): string | null {
+    const chosen = this._table.importer?.keyColumn;
+    const key = this._table.info.businessKey;
+    return chosen === false ? null : chosen ?? (key.length === 1 ? ImportFlow._caption(this, key[0]) : null);
+  }
+
+  /** What the report's key column is headed: the business key's caption, else the table's noun. */
+  private _keyHeader(): string {
+    const key = this._table.info.businessKey;
+    if (key.length === 1)
+      return ImportFlow._caption(this, key[0]);
+    const name = (this._table.info.singularName || 'row').replace(/_/g, ' ');
+    return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
   }
 
   /** The table's plural name, as the user reads it. */
@@ -371,18 +601,23 @@ class ImportFlow {
     return (table.info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
   }
 
-  /** What a source column is for, read the way a person reads it: "Chemical name" is the name
-   * column and "CAS number" the cas one, so the comparison drops case and everything that is not
-   * a letter or a digit, and an exact hit anywhere beats a partial hit somewhere earlier. */
-  private _autoMatch(column: string): string {
+  /** Where a source column goes: the importer's match, else the name the way a person reads it —
+   * "Chemical name" is the name column and "CAS number" the cas one, so the comparison drops case and
+   * everything that is not a letter or a digit, and an exact hit anywhere beats a partial hit
+   * somewhere earlier — else the one target of the column's semantic type. */
+  private _match(column: DG.Column): string {
+    const chosen = this._table.importer?.match?.(column, this._targets);
+    if (chosen !== undefined && this._targets.some((p) => p.name === chosen))
+      return chosen;
     const plain = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const want = plain(column);
+    const want = plain(column.name);
     if (want === '')
       return SKIP;
     const names = (p: IProperty) => [plain(p.name ?? ''), plain(p.friendlyName ?? '')].filter((n) => n !== '');
     const hit = (test: (a: string) => boolean) => this._targets.find((p) => names(p).some(test))?.name;
+    const typed = column.semType ? this._targets.filter((p) => p.semType === column.semType) : [];
     return hit((a) => a === want) ?? hit((a) => a.startsWith(want) || want.startsWith(a)) ??
-      hit((a) => a.includes(want) || want.includes(a)) ?? SKIP;
+      hit((a) => a.includes(want) || want.includes(a)) ?? (typed.length === 1 ? typed[0].name! : SKIP);
   }
 
   /** Target column → source column, in mapping order; a target claimed twice keeps the first. */
@@ -434,21 +669,41 @@ class ImportFlow {
       return;
     this._committed = true;
     const frame = this._frame.peek()!;
+    const mapping = [...this._mapping()];
+    const options = this._batchOptions();
     this._report.replaceChildren(span(`Importing ${frame.rowCount} rows…`, 'u2-domain-import-summary'));
+    let plan: Planned[];
     // reading the frame is part of the import: a column the picked frame no longer has belongs in
     // the report with everything else the server refuses
     try {
-      this._result = await this._table.table.batch!(
-        this._payload(frame, [...this._mapping()], frame.rowCount), this._batchOptions());
+      plan = await this._plan(frame, mapping, () => {});
+      const sent = ImportFlow._sent(plan);
+      // a row the plan refuses is an error like the server's: all-or-nothing sends nothing then
+      const refused = plan.some((p) => p.verdict.error !== undefined) && options.allOrNothing !== false;
+      const report = refused ? {inserted: 0, updated: 0, skipped: 0, errorCount: 0, error: 'validation', rows: []} :
+        await this._table.table.batch!(sent.map((i) => plan[i].payload!), options);
+      this._result = ImportFlow._merged(report, sent, plan);
     } catch (e) {
       this._report.replaceChildren(span(DomainErrors.message(e), 'u2-domain-import-problem'));
       notify.error(DomainErrors.message(e));
       return;
     }
-    this._render(this._result);
+    await this._render(this._result, plan, frame);
   }
 
-  private _render(report: DomainBatchReportLike): void {
+  /** The batch's report over the source rows: its rows under their source numbers, and the rows
+   * the plan kept out of it as skips and errors of their own — what the caller gets back. */
+  private static _merged(report: DomainBatchReportLike, sent: number[], plan: Planned[]): DomainBatchReportLike {
+    const kept = plan.flatMap((p, i): DomainBatchReportLike['rows'] => p.payload !== null ? [] :
+      [p.verdict.error !== undefined ? {index: i, id: null, status: 'error', errors: [{message: p.verdict.error}]} :
+        {index: i, id: null, status: 'skipped', existingId: p.verdict.existing}]);
+    const errors = kept.filter((r) => r.status === 'error').length;
+    return {...report, skipped: (report.skipped ?? 0) + kept.length - errors,
+      errorCount: report.errorCount === undefined ? undefined : report.errorCount + errors,
+      rows: [...report.rows.map((r) => ({...r, index: sent[r.index]})), ...kept].sort((a, b) => a.index - b.index)};
+  }
+
+  private async _render(report: DomainBatchReportLike, plan: Planned[], frame: DG.DataFrame): Promise<void> {
     const failed = report.error !== undefined;
     // a warehouse refusal carries the failing rows and no totals
     const errorCount = report.errorCount ?? report.rows.filter((row) => row.errors?.length).length;
@@ -457,29 +712,66 @@ class ImportFlow {
       'nothing was committed.' :
       `${ImportFlow._landed(report)}, ${report.skipped ?? 0} skipped, ${errorCount} failed.`,
     failed ? 'u2-domain-import-problem' : 'u2-domain-import-summary'));
-    const issues: Issue[] = [];
-    let total = 0;
-    for (const row of report.rows) {
-      const errors = row.errors ?? [];
-      for (const error of errors) {
-        total++;
-        if (issues.length < ISSUE_CAP)
-          issues.push({row: row.index, column: error.column ?? '', message: error.message});
-      }
-      if (errors.length === 0 && row.status === 'duplicate') {
-        total++;
-        if (issues.length < ISSUE_CAP)
-          issues.push({row: row.index, column: '', message: 'Duplicate business key — skipped'});
-      }
+    const outcomes = this._outcomes(report, plan, failed);
+    let saved = new Map<string, RowView>();
+    try {
+      saved = await this._rowsById([...new Set(outcomes.map((o) => o.id).filter((id): id is string => id !== null))]);
+    } catch (e) {
+      this._report.append(span(`The keys could not be read: ${DomainErrors.message(e)}`, 'u2-domain-import-problem'));
     }
-    if (issues.length > 0)
-      this._report.append(ImportFlow._issues(this._wizard, issues, total));
+    for (const row of outcomes)
+      row.key = row.id === null || !saved.has(row.id) ? '' : this._table.renderer.caption(saved.get(row.id)!);
+    this._report.append(this._rowsTable(this._wizard, 'report', outcomes, this._reportColumns(saved)));
+    const column = this._keyColumn();
+    if (!failed && column !== null && this._writeBack?.value.peek()) {
+      if (frame.columns.names().includes(column))
+        frame.columns.remove(column);
+      frame.columns.addNewString(column).init((i) => outcomes[i].key);
+      this._report.append(span(`Each row's ${this._keyHeader()} is in the "${column}" column of ${frame.name}.`,
+        'u2-domain-import-summary'));
+    }
     if (failed) {
-      this._report.append(...this._wayBack(errorCount));
+      const refused = report.rows.filter((r) => r.status === 'error' && plan[r.index].payload !== null).length;
+      this._report.append(...this._wayBack(ImportFlow._sent(plan).length - refused));
       notify.error('Import failed — nothing was committed. See the report.');
     }
     else
       notify.info(`Imported: ${ImportFlow._landed(report)}`);
+  }
+
+  /** Every source row's outcome: the batch's, else the plan's; a repeat takes its first row's id. */
+  private _outcomes(report: DomainBatchReportLike, plan: Planned[], failed: boolean): DomainImportRow[] {
+    const bySource = new Map(report.rows.map((r) => [r.index, r]));
+    const outcomes = plan.map((p, i): DomainImportRow => {
+      const row = bySource.get(i);
+      const errors = row?.errors ?? [];
+      if (row?.status === 'error')
+        return this._row(i, p, 'error', p.payload === null ? p.verdict.error ?? '' : this._describe(errors), errors);
+      if (row?.status === 'duplicate')
+        return {...this._row(i, p, 'skip', 'Duplicate business key', errors), id: row.existingId ?? null};
+      if (p.payload === null)
+        return this._kept(i, p);
+      if (failed || row === undefined)
+        return this._row(i, p, failed ? 'aborted' : '', '', errors);
+      return {...this._row(i, p, row.status === 'inserted' ? 'insert' : 'update', p.verdict.note ?? '', errors),
+        id: row.id};
+    });
+    plan.forEach((p, i) => {
+      if (p.verdict.sameAs !== undefined)
+        outcomes[i].id = outcomes[p.verdict.sameAs]?.id ?? null;
+    });
+    return outcomes;
+  }
+
+  private async _rowsById(ids: string[]): Promise<Map<string, RowView>> {
+    const rows = new Map<string, RowView>();
+    for (let at = 0; at < ids.length; at += KEY_CHUNK) {
+      const chunk = ids.slice(at, at + KEY_CHUNK);
+      const filter = {property: 'id', operator: '=', value: chunk};
+      for (const row of await this._table.table.query({filter, limit: chunk.length}))
+        rows.set(String(row.id), row as RowView);
+    }
+    return rows;
   }
 
   /** What landed; `merged` stands in for `updated` where the storage cannot tell the two apart. */
@@ -496,8 +788,7 @@ class ImportFlow {
 
   /** The way out of an aborted all-or-nothing run: what to change, and the BACK the report step
    * has none of — the mapping and the source stand, so only the flag has to be turned off. */
-  private _wayBack(errorCount: number): HTMLElement[] {
-    const valid = (this._frame.peek()?.rowCount ?? 0) - errorCount;
+  private _wayBack(valid: number): HTMLElement[] {
     const out: HTMLElement[] = [];
     if (this._allOrNothing?.value.peek() && valid > 0) {
       out.push(span(`Uncheck "All or nothing" to import the ${plural(valid, 'valid row', 'valid rows')} ` +
@@ -511,20 +802,4 @@ class ImportFlow {
     })], 'u2-domain-import-actions'));
     return out;
   }
-
-  private static _issues(owner: Control, issues: Issue[], total: number): HTMLElement {
-    // the wire counts rows from zero; the person reading this counts the source frame from one
-    const table = owner.runInScope(() => new BasicTable<Issue>({items: issues, columns: [
-      {header: 'Source row', render: (x) => String(x.row + 1), width: '90px'},
-      {header: 'Column', render: (x) => x.column, width: '140px'},
-      {header: 'Message', render: (x) => x.message},
-    ]}));
-    const host = div([table.root], 'u2-domain-import-issues');
-    if (total > issues.length)
-      host.append(span(`…and ${total - issues.length} more`));
-    return host;
-  }
-
 }
-
-interface Issue {row: number; column: string; message: string}

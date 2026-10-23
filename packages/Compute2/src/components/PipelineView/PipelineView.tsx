@@ -46,6 +46,7 @@ export const PipelineView = Vue.defineComponent({
     'update:funcCall': (_call: DG.FuncCall, _readonly: boolean) => true,
     'actionRequested': (_actionUuid: string) => true,
     'addNode': (_data: {itemId: string, position: number}) => true,
+    'compareWithOriginal': () => true,
   },
   setup(props, {emit, slots}) {
     Vue.onRenderTriggered((event) => {
@@ -149,6 +150,9 @@ export const PipelineView = Vue.defineComponent({
                     {sourceRunLabel(state.value.isReadonly)} · <a
                       onClick={() => openSourceRun(sourceRunId.value!)}
                     >Open original run</a>
+                    { !state.value.isReadonly && <> · <a
+                      onClick={() => emit('compareWithOriginal')}
+                    >Compare with original</a></> }
                   </div>
                 }
                 { props.body ?
