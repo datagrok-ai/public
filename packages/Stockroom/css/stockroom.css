@@ -1,0 +1,18 @@
+/* Locations: each section fills its splitter panel, so the tree and the containers table get a
+   bounded height and scroll themselves instead of growing past the clipped panel */
+.stockroom-locations > .u2-splitter-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.stockroom-locations > .u2-splitter-panel > .u2-section {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.stockroom-locations > .u2-splitter-panel > .u2-section > .u2-section-body {
+  flex: 1;
+  min-height: 0;
+}

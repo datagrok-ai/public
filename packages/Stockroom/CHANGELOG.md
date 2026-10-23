@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Locations: The containers table scrolls to every container, and containers list by label
 * u2: Took u2's stylesheet from u2 itself (installed once per page, the newest copy any package carries) instead of the EMS sheet bundle; republish with the other u2 packages
 * Fixed `app.spec.json`: `u2-domain-source` moved to the components tray, so the spec renders
 * EMS: imports from `@datagrok-libraries/ems`

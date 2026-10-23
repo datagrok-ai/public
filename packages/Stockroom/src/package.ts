@@ -10,6 +10,7 @@ export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
 import '@datagrok-libraries/ems/src/dg/styles.js';
+import '../css/stockroom.css';
 
 export const _package = new DG.Package();
 
@@ -18,7 +19,7 @@ const views = domains.views({
   path: '/apps/Stockroom/Stockroom',
   views: [
     {table: 'stockroom.substance', name: 'Substances', segment: ''},
-    {table: 'stockroom.container', name: 'Containers'},
+    {table: 'stockroom.container', name: 'Containers', options: {sort: 'label'}},
     {table: 'stockroom.vendor', name: 'Vendors'},
     {table: 'stockroom.purchase_order', name: 'Purchase Orders'},
     {table: 'stockroom.sds_document', name: 'Safety Data Sheets'},
@@ -54,7 +55,7 @@ export function newContainerAt(containers: DomainTable, location: string,
   options: {site?: string, caption?: string} = {}): DG.ViewBase {
   const view = containers.app({
     name: options.caption === undefined ? 'Containers' : `Containers in ${options.caption}`,
-    path: '/apps/Stockroom/Containers', query: `location_id under "${location}"`,
+    path: '/apps/Stockroom/Containers', query: `location_id under "${location}"`, sort: 'label',
     // `site` is required on a container and is what narrows its location picker
     // (`location_id.filter: site = $site`); the picked node carries it, so the draft starts with both
     defaults: {location_id: location, ...(options.site === undefined ? {} : {site: options.site})}});
@@ -75,7 +76,7 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
   // live: a bare source is not polled by default (R-b flips the app's option, not this one), so a
   // container another session moves in shows up here only because this asks for it
   const source = SharedSession.runWith(session, () =>
-    containers.source({session, live: true, pageSize: 100}));
+    containers.source({session, live: true, pageSize: 100, sort: 'label'}));
   // the "all" row is the way back to every container once a node has been picked
   const tree = domains.tree(locations, {allNode: 'All locations'});
   const table = domains.dataTable(source,
@@ -112,6 +113,7 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
     .add(content);
   const panes = new Splitter([section('Locations', tree), section('Containers', table)],
     {direction: 'horizontal', sizes: [0.35, 0.65]});
+  panes.root.classList.add('stockroom-locations');
   return appView({
     name: 'Locations',
     content: panes,
