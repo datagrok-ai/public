@@ -203,7 +203,8 @@ export class TreeViewer extends EChartViewer {
 
       if (this.onClick === 'Filter') {
         const filterClone = this.initialDfFilter!.clone();
-        const viewerFilter = this.applySelectionFilter(isMultiSelect ? this.viewerFilter! : filterClone, path, event.event);
+        const bitset = isMultiSelect ? this.viewerFilter ?? DG.BitSet.create(this.dataFrame.rowCount) : filterClone;
+        const viewerFilter = this.applySelectionFilter(bitset, path, event.event);
         if (this.viewerFilter === null)
           this.viewerFilter = viewerFilter.clone();
         else

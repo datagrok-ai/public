@@ -1465,6 +1465,36 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
   defined by the Mozilla Public License, v. 2.0.
 
 ------------------------------------------------------------------------------
+inchi 1.07.3 (https://github.com/IUPAC-InChI/InChI, tag v1.07.3)
+------------------------------------------------------------------------------
+MIT. Ported in crux-core's inchi.
+LICENSE: MIT, Copyright (c) 2024 InChI Project (file headers: IUPAC and InChI Trust); kept as
+crates/inchi/LICENSE-inchi.txt. sha2.c (Paul Bakker, Christophe Devine) is MIT 'in combination with
+the InChI software package' (notice in crates/inchi/src/sha2.rs). No data files or weights.
+
+MIT License
+
+Copyright (c) 2024 InChI Project
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+------------------------------------------------------------------------------
 numpy 1.26.4 (https://github.com/numpy/numpy)
 ------------------------------------------------------------------------------
 BSD-3-Clause. Ported in crux-core's pycompat (np_sum).
@@ -1573,18 +1603,51 @@ Rust crates from crates.io compiled in
 ------------------------------------------------------------------------------
 Each crate's licence expression, then the licence texts their packages carry (the MIT text where a
 crate offers MIT), one per distinct text:
+  cfg-if 1.0.4: MIT OR Apache-2.0
   console_error_panic_hook 0.1.7: Apache-2.0/MIT
   dlmalloc 0.2.14: MIT/Apache-2.0
+  futures-util 0.3.32: MIT OR Apache-2.0
   itoa 1.0.18: MIT OR Apache-2.0
   js-sys 0.3.106: MIT OR Apache-2.0
   memchr 2.8.3: Unlicense OR MIT
+  once_cell 1.21.4: MIT OR Apache-2.0
   rustc-hash 1.1.0: Apache-2.0/MIT
   rustc-hash 2.1.2: Apache-2.0 OR MIT
+  serde 1.0.228: MIT OR Apache-2.0
   serde-wasm-bindgen 0.6.5: MIT
   serde_core 1.0.228: MIT OR Apache-2.0
   serde_json 1.0.149: MIT OR Apache-2.0
   wasm-bindgen 0.2.129: MIT OR Apache-2.0
+  wasm-bindgen-shared 0.2.129: MIT OR Apache-2.0
   zmij 1.0.21: MIT
+
+[cfg-if 1.0.4, dlmalloc 0.2.14, js-sys 0.3.106, wasm-bindgen 0.2.129, wasm-bindgen-shared 0.2.129]
+
+Copyright (c) 2014 Alex Crichton
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
 
 [console_error_panic_hook 0.1.7]
 
@@ -1614,9 +1677,10 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
-[dlmalloc 0.2.14, js-sys 0.3.106, wasm-bindgen 0.2.129]
+[futures-util 0.3.32]
 
-Copyright (c) 2014 Alex Crichton
+Copyright (c) 2016 Alex Crichton
+Copyright (c) 2017 The Tokio Authors
 
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated
@@ -1642,7 +1706,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
-[itoa 1.0.18, rustc-hash 1.1.0, rustc-hash 2.1.2, serde_core 1.0.228, serde_json 1.0.149, zmij 1.0.21]
+[itoa 1.0.18, once_cell 1.21.4, rustc-hash 1.1.0, rustc-hash 2.1.2, serde 1.0.228, serde_core 1.0.228, serde_json 1.0.149, zmij 1.0.21]
 
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated

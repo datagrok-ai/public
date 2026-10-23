@@ -2,6 +2,11 @@
 
 ## v.next
 
+* RTD: Added headless runs: `runWorkflow` (by provider) and `runWorkflowConfig` create a workflow from an instance config and, unless a step ready to run has validation errors, run every step that can run; the result state is an instance config tree with each step's values, status, run error, validations and consistency and each workflow's validations, plus a summary; `saveWorkflowRun` and `saveWorkflowConfig` save a result state as a new run, the way Duplicate builds a copy
+* RTD: `runSequence` takes a mock run function in mock mode
+* RTD: The export summary moved to `run-summary` (`getRunSummary`, `statesToStatus`); `ExportSummaryItem` extends `RunSummaryItem`, which adds the node `uuid`
+* RTD: Fixed a step read as running right after its run finished
+* RTD: Loading a saved run whose step function changed or was removed fails with an error naming the step and the missing inputs and outputs instead of a `TypeError`; a missing step function or provider is named in the error
 * Shared utils: Added `getInputToggles` for the `inputToggles` and `inputsHidden` function meta
 * Shared utils: Malformed JSON in the `features`, `dockSpawnConfig`, `customExports` and `mainParams` meta or the `viewer` annotation logs a warning and falls back to the default instead of throwing
 * RTD: A loaded nested pipeline records the run it came from in `sourceRunId`, which is saved and kept on duplicate
@@ -11,6 +16,7 @@
 * RTD: Added `setActionVisible` to node meta links: an `actions` query addresses the actions, a later link overrides an earlier one like meta, and `Driver.hiddenActions$` publishes the hidden ones; `showWhen`/`hideWhen` hide an action the same way and withdraw when they stop matching; removed `ViewAction.visible` and the validator controller's `isActionVisible` (which actions a validation result offers is up to the validator)
 * RTD: Fixed validator actions going stale after adding or moving steps: `getValidationAction` returned a removed action and `isActionVisible` an outdated visibility until the validator was recreated; links now resolve actions when matched, and a changed action recreates and reruns them
 * RTD: Added `Driver.inspectLinks` and `Driver.inspectConfig` for debugging: resolved links and actions, including the links generated from annotations with their kind (`rule`, `check`, `required`), with the link, rule or check as written, their empty aliases, the targets `$linked` dropped and action visibility, and the config as written with resolved step io
+* RTD: Added state snapshots: `snapshotState` copies the view state of a workflow or step with its calls, run statuses and restrictions, `loadStateSnapshot` loads a saved run with its step runs into the same shape, and `saveStateSnapshot` saves a snapshot like the driver saves a tree
 * RTD: Removed `Driver.currentConfig$`
 * RTD: Removed the unused `approversGroup` config key
 * RTD: Fixed `setPipelineState` failing with "SelfRef ... not found" when the replaced workflow's step types reference an outer workflow

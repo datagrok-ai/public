@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {MolList, RDModule, RDMol, RDReaction, RDReactionResult} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitService} from '../chem-common-rdkit';
 import {ReactionResult, TwoComponentReactionResult} from './types';
+import {EngineReaction} from './reaction-engine';
 import {SALT_AND_WATER_FRAGMENTS} from './consts';
 
 // ---- Salt / Water removal ----
@@ -43,6 +44,23 @@ function correctRGroups(smiles: string): string {
   return result;
 }
 
+/** The first product set's first product as SMILES (null: none); the set and the product are freed. */
+function firstProductSmiles(result: RDReactionResult): string | null {
+  if (result.size() === 0)
+    return null;
+  const products = result.get(0);
+  try {
+    const product = products.next();
+    try {
+      return product?.get_smiles() ?? null;
+    } finally {
+      product?.delete();
+    }
+  } finally {
+    products.delete();
+  }
+}
+
 // ---- Core: run a single RDKit reaction on one molecule ----
 
 function runSingleReaction(
@@ -56,11 +74,7 @@ function runSingleReaction(
     molList = new rdkit.MolList();
     molList.append(mol);
     result = rxn.run_reactants(molList, maxProducts);
-    if (result.size() === 0)
-      return null;
-    const productList = result.get(0);
-    const productMol = productList.next();
-    return productMol?.get_smiles() ?? null;
+    return firstProductSmiles(result);
   } finally {
     try {result?.delete();} catch (_) {/* noop */}
     try {molList?.delete();} catch (_) {/* noop */}
@@ -84,11 +98,7 @@ function runTwoComponentSingle(
     molList.append(mol1);
     molList.append(mol2);
     result = rxn.run_reactants(molList, maxProducts);
-    if (result.size() === 0)
-      return null;
-    const productList = result.get(0);
-    const productMol = productList.next();
-    return productMol?.get_smiles() ?? null;
+    return firstProductSmiles(result);
   } finally {
     try {result?.delete();} catch (_) {/* noop */}
     try {molList?.delete();} catch (_) {/* noop */}
@@ -111,6 +121,7 @@ async function yieldIfNeeded(i: number, batchSize: number = 50): Promise<void> {
 /**
  * Run a transformation reaction on a list of molecules.
  * The reaction SMARTS should have exactly one reactant.
+ * In Crux mode it runs on the Crux module, RDKit's (`rdkit`) per molecule Crux cannot do (reaction-engine.ts).
  */
 export async function runTransformationReaction(
   rdkit: RDModule,
@@ -128,7 +139,7 @@ export async function runTransformationReaction(
   if (resolvedVariables)
     resolvedSmarts = resolveReactionVariables(resolvedSmarts, resolvedVariables);
 
-  const rxn = rdkit.get_rxn(resolvedSmarts);
+  const rxn = EngineReaction.create('transformation reaction', rdkit, resolvedSmarts);
   if (!rxn)
     throw new Error(`Invalid reaction SMARTS: "${resolvedSmarts}".`);
 
@@ -150,7 +161,7 @@ export async function runTransformationReaction(
         continue;
       }
       try {
-        const product = runSingleReaction(rxn, rdkit, smiles);
+        const product = rxn.run((module, reaction) => runSingleReaction(reaction, module, smiles));
         if (product == null) {
           noProducts++;
           products[i] = smiles;
@@ -186,6 +197,7 @@ export async function runTransformationReaction(
  * Modes:
  *  - 'pairwise': react row i from list 1 with row i from list 2 (uses shorter length)
  *  - 'matrix': react every combination (N*M products)
+ * In Crux mode it runs on the Crux module, RDKit's (`rdkit`) per pair Crux cannot do (reaction-engine.ts).
  */
 export async function runTwoComponentReaction(
   rdkit: RDModule,
@@ -206,7 +218,7 @@ export async function runTwoComponentReaction(
   if (resolvedVariables)
     resolvedSmarts = resolveReactionVariables(resolvedSmarts, resolvedVariables);
 
-  const rxn = rdkit.get_rxn(resolvedSmarts);
+  const rxn = EngineReaction.create('two-component reaction', rdkit, resolvedSmarts);
   if (!rxn)
     throw new Error(`Invalid reaction SMARTS: "${resolvedSmarts}".`);
 
@@ -218,16 +230,16 @@ export async function runTwoComponentReaction(
     const clean2 = removeSaltsAndWater ? canon2.map((s) => removeWaterAndSaltsSingle(s)) : canon2;
 
     if (mode === 'pairwise')
-      return await runPairwise(rxn, rdkit, clean1, clean2, reactants1, reactants2, showInfo);
+      return await runPairwise(rxn, clean1, clean2, reactants1, reactants2, showInfo);
     else
-      return await runMatrix(rxn, rdkit, clean1, clean2, reactants1, reactants2, maxMatrixProducts, showInfo);
+      return await runMatrix(rxn, clean1, clean2, reactants1, reactants2, maxMatrixProducts, showInfo);
   } finally {
     try {rxn.delete();} catch (_) {/* noop */}
   }
 }
 
 async function runPairwise(
-  rxn: RDReaction, rdkit: RDModule,
+  rxn: EngineReaction,
   clean1: string[], clean2: string[],
   orig1: string[], orig2: string[],
   showInfo: boolean,
@@ -251,7 +263,7 @@ async function runPairwise(
       continue;
     }
     try {
-      const product = runTwoComponentSingle(rxn, rdkit, s1, s2);
+      const product = rxn.run((module, reaction) => runTwoComponentSingle(reaction, module, s1, s2));
       r1.push(s1);
       r2.push(s2);
       prods.push(product ? correctRGroups(product) : '');
@@ -273,7 +285,7 @@ async function runPairwise(
 }
 
 async function runMatrix(
-  rxn: RDReaction, rdkit: RDModule,
+  rxn: EngineReaction,
   clean1: string[], clean2: string[],
   orig1: string[], orig2: string[],
   maxProducts: number, showInfo: boolean,
@@ -299,7 +311,7 @@ async function runMatrix(
         continue;
       }
       try {
-        const product = runTwoComponentSingle(rxn, rdkit, s1, s2);
+        const product = rxn.run((module, reaction) => runTwoComponentSingle(reaction, module, s1, s2));
         r1.push(s1);
         r2.push(s2);
         prods.push(product ? correctRGroups(product) : '');

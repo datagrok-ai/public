@@ -121,10 +121,19 @@ export async function saveFuncCall(bridge: FuncCallInstancesBridge) {
     throw new Error(`Attempting to save an empty FuncCall adapter`);
   if (bridge.isRunning$.value)
     throw new Error(`FuncCall node saving during being updated`);
+  return saveCallState(fc, bridge.inputRestrictions$.value, bridge.isOutputOutdated$.value, bridge.runError$.value);
+}
 
-  fc.options[RESTRICTIONS_PATH] = await serializeRestrictions(bridge.inputRestrictions$.value);
-  fc.options[OUTPUT_OUTDATED_PATH] = serialize(bridge.isOutputOutdated$.value, {useJsonDF: false});
-  fc.options[RUN_ERROR_PATH] = bridge.runError$.value;
+/** Saves the call as a new run with its restrictions and run status. */
+export async function saveCallState(
+  fc: DG.FuncCall,
+  restrictions: Record<string, RestrictionState | undefined>,
+  isOutputOutdated: boolean,
+  runError?: string,
+) {
+  fc.options[RESTRICTIONS_PATH] = await serializeRestrictions(restrictions);
+  fc.options[OUTPUT_OUTDATED_PATH] = serialize(isOutputOutdated, {useJsonDF: false});
+  fc.options[RUN_ERROR_PATH] = runError;
 
   fc.newId();
   await historyUtils.saveRun(fc);
@@ -149,6 +158,12 @@ export async function makeMetaCall(nqName: string) {
   return metaCall;
 }
 
+export function setRunMetadata(call: DG.FuncCall, metaData?: ItemMetadata) {
+  if (metaData?.title) call.options['title'] = metaData.title;
+  if (metaData?.description) call.options['description'] = metaData.description;
+  if (metaData?.tags) call.options['tags'] = metaData.tags;
+}
+
 export async function saveInstanceState(
   nqName: string,
   state: any,
@@ -158,9 +173,7 @@ export async function saveInstanceState(
 ) {
   const metaCall = opts?.metaCall ?? await makeMetaCall(nqName);
   metaCall.options[CONFIG_PATH] = serialize(state, {useJsonDF: false});
-  if (metaData?.title) metaCall.options['title'] = metaData.title;
-  if (metaData?.description) metaCall.options['description'] = metaData.description;
-  if (metaData?.tags) metaCall.options['tags'] = metaData.tags;
+  setRunMetadata(metaCall, metaData);
   if (version) metaCall.options['version'] = version;
   for (const [key, value] of Object.entries(opts?.callOptions ?? {}))
     metaCall.options[key] = value;

@@ -208,7 +208,8 @@ export async function molecular3DStructureWidget(
         return new DG.Widget(widgetHost);
       }
       const molBlock2D = result.mol;
-      molBlock3D = (await grok.functions.call('Bio:Embed', {molecule: molBlock2D})) as unknown as string;
+      // Chem's one entry point for 3D coordinates (it follows Chem's engine setting)
+      molBlock3D = (await grok.functions.call('Chem:embed3d', {molecule: molBlock2D})) as unknown as string;
       // rdfkit sometimes fails to convert molv3 to molv2, so we try to convert it via the OCL
       const OCLMol = OCL.Molecule.fromMolfile(molBlock3D);
       if (OCLMol)

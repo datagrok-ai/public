@@ -1,7 +1,7 @@
 inchi-wasm: third-party notices
 
 Crux Sketch's InChI module: InChI and InChIKey of a MOL block, and the molecule of an InChI.
-This WebAssembly module is Rust code of crux-core (https://github.com/datagrok/crux), ported
+This WebAssembly module is Rust code of crux-core (https://github.com/datagrok-ai/crux-core), ported
 from the software below or embedding it. Each part names what the module holds of it and
 reproduces its licence. Written by crux-core's tools/wasm_notices.py from the licence files in
 the repository and the pinned RDKit wheel.

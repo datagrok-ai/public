@@ -5,7 +5,7 @@ import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
 import {isPipelineStepConfig} from '../config/config-utils';
-import {FuncCallAdapter} from './FuncCallAdapters';
+import {FuncCallAdapter, MockResults} from './FuncCallAdapters';
 import {saveFuncCall, saveInstanceState} from './funccall-utils';
 import {FuncCallNode, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
 import {indexFromEnd, pruneByKeys} from '../utils';
@@ -24,6 +24,9 @@ export interface TreeUpdateData {
 }
 
 export class LockError extends Error {}
+
+/** Mock outputs of a step run by its config id, from the step's io values */
+export type MockRun = (configId: string, state: Record<string, any>) => Record<string, any>;
 
 export class StateTree {
   private closed$ = new Subject<true>();
@@ -336,8 +339,13 @@ export class StateTree {
     });
   }
 
-  public runSequence(startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean, includeInfo?: boolean) {
+  public runSequence(
+    startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean, includeInfo?: boolean,
+    mockRun?: MockRun,
+  ) {
     return this.withTreeLock(() => {
+      if (!this.mockMode && mockRun)
+        throw new Error(`Mock run passed to runSequence while mock mode is off`);
       const startNode = includeNonNested ? this.nodeTree.root : this.nodeTree.find((item) => item.uuid === startUuid)?.[0];
       if (startNode == null)
         return of(undefined);
@@ -349,18 +357,19 @@ export class StateTree {
         concatMap((node) => {
           if (!isFuncCallNode(node) || node.isReadonly || node.pendingDependencies$.value?.length)
             return of(undefined);
+          const mockResults: MockResults | undefined = mockRun && ((state) => mockRun(node.config.id, state));
           if (rerunWithConsistent) {
             return node.getStateStore().overrideToConsistent(includeInfo).pipe(
               concatMap(() => this.linksState.waitForLinks()),
               withLatestFrom(node.getStateStore().isRunable$, node.getStateStore().isOutputOutdated$),
               filter(([, runable, outdated]) => runable && outdated),
-              concatMap(() => node.getStateStore().run()),
+              concatMap(() => node.getStateStore().run(mockResults)),
               concatMap(() => this.linksState.waitForLinks()),
             );
           } else {
             if (!node.getStateStore().isRunable$.value || !node.getStateStore().isOutputOutdated$.value)
               return of(undefined);
-            return node.getStateStore().run().pipe(
+            return node.getStateStore().run(mockResults).pipe(
               concatMap(() => this.linksState.waitForLinks()),
             );
           }

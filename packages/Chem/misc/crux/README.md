@@ -72,6 +72,11 @@ code the package runs. Datasets: `<reddata>/data/demo/chem/chembl/chembl-100k.cs
 - `node census.mjs <csv|smi> [molecules]` — molecule by molecule, where crux and Chem's RDKit disagree: A (RDKit reads
   it, crux cannot), B (the reverse), C (crux misses the molecule by RDKit's own canonical SMILES). `OUT=<tsv>` lists
   them; worker threads, ~1 minute for the 1M set.
+- `node compare100k.mjs [rows] [only=<names>] [--compare-only]` — every function Chem has moved to Crux, run with
+  Chem's own code on a large dataset (ChEMBL 100k by default) against RDKit mode's engine, RDKit.js 2026.03.6 and
+  Python RDKit 2026.3.6 (`compare100k.py`): identical counts, each difference classified by its cause, one-thread
+  times; `results.md` / `results.json` in `OUT`. The file's head lists its engines, functions and settings. The
+  2026-10-23 run: Crux = RDKit.js 2026.03.6 nearly everywhere; RDKit mode differs mostly by RDKit's own changes.
 - `node mem.mjs <csv> [molecules] [segment size]` — memory per indexed molecule, build speed, molecules crux cannot
   parse. The bytes per molecule include the build's high-water mark (wasm memory never shrinks), so measure on a
   big file: on the 1M set it reads 378 bytes.
@@ -81,14 +86,14 @@ code the package runs. Datasets: `<reddata>/data/demo/chem/chembl/chembl-100k.cs
   (`http://localhost:8082`, `http://localhost:8888`, `admin`; on the Mac dev stack both are `http://localhost:8889`, the
   API under `/api`); `STAND_WEB` must serve the client on the API's origin — package web workers cannot start
   cross-origin, so not the pub serve port. `CHROME=<path>` runs an installed Chrome when Playwright's own browser is
-  not installed. It leaves the engine property on Crux, the default.
-- Package tests: `grok test --host localhost --category "crux substructure search"`. Crux is the default engine of
-  Contains / Not contains since 2026-10; the existing suites (`substructure search`, `substructure filters`,
-  `scaffold tree`) run on it. To run them on RDKit, set **Substructure Search Engine** to RDKit on the stand
-  (`engine-setting.sh`) for the run — and put it back.
-- `bash engine-setting.sh show | set <RDKit|Crux> [<RDKit|Crux>] | restore` — Chem's **Chemical Engine** (and
-  **Substructure Search Engine**) on a stand through the server's API (the `grok` CLI), for whole runs in Crux mode:
-  package tests, the BDD suite, the tests of the packages that call Chem. `restore` puts back what `set` replaced.
+  not installed. It switches the **Chemical Engine** per engine (the search follows it) and puts back the one it found.
+- Package tests: `grok test --host localhost --category "crux substructure search"`. Since 2026-10-22 Contains / Not
+  contains follows the **Chemical Engine** (there is no **Substructure Search Engine** setting any more): the existing
+  suites (`substructure search`, `substructure filters`, `scaffold tree`) run on RDKit in RDKit mode and on Crux in
+  Crux mode (`engine-setting.sh set Crux` for the run — and `restore` after).
+- `bash engine-setting.sh show | set <RDKit|Crux> | restore` — Chem's **Chemical Engine** on a stand through the
+  server's API (the `grok` CLI), for whole runs in Crux mode: package tests, the BDD suite, the tests of the packages
+  that call Chem. `restore` puts back what `set` replaced.
 
 ## Results
 

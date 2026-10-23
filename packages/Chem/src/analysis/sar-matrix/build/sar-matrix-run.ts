@@ -2,7 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../../../package';
-import {getRdKitModule, getRdKitService} from '../../../utils/chem-common-rdkit';
+import {getRdKitModule} from '../../../utils/chem-common-rdkit';
+import {isCruxRequested} from '../../../engine/chem-engine';
+import {convertMolNotationByEngine} from '../../../engine/worker-jobs';
 import {getMmpFrags} from '../../molecular-matched-pairs/mmp-analysis/mmpa-fragments';
 import {MmpFragments} from '../../molecular-matched-pairs/mmp-analysis/mmpa-misc';
 import {SCALING_METHODS} from '../../molecular-matched-pairs/mmp-viewer/mmp-constants';
@@ -122,16 +124,17 @@ function claimHeldStructures(matrices: SarMatrix[], molecules: string[], table: 
 }
 
 /** Each molecule column's canonical structures at the version read, since switching the column component
- *  rebuilds over the same molecules. Keyed by the Dart column: every read from the table is a new wrapper. */
-const canonicalCache = new WeakMap<object, {version: number, structures: Promise<string[]>}>();
+ *  rebuilds over the same molecules. Keyed by the Dart column: every read from the table is a new wrapper. By the
+ *  engine in effect, the one that writes the linked structures they are compared with. */
+const canonicalCache = new WeakMap<object, {version: number, crux: boolean, structures: Promise<string[]>}>();
 
 function canonicalStructures(molecules: DG.Column, molList: string[]): Promise<string[]> {
+  const crux = isCruxRequested();
   const cached = canonicalCache.get(molecules.dart);
-  if (cached?.version === molecules.version)
+  if (cached?.version === molecules.version && cached.crux === crux)
     return cached.structures;
-  const structures = getRdKitService()
-    .then((service) => service.convertMolNotation(molList, DG.chem.Notation.Smiles));
-  canonicalCache.set(molecules.dart, {version: molecules.version, structures});
+  const structures = convertMolNotationByEngine(molList, DG.chem.Notation.Smiles, false);
+  canonicalCache.set(molecules.dart, {version: molecules.version, crux, structures});
   structures.catch(() => {
     if (canonicalCache.get(molecules.dart)?.structures === structures)
       canonicalCache.delete(molecules.dart);

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Workflows: Added `RunWorkflow` to run a workflow without UI from an initial configuration, as `StartWorkflow` takes it; it returns every step's values, status and validations, and a summary. `SaveWorkflowRun` saves the result to history
 * RFV: In workflows, inputs with the `disabled` or `restricted` restriction are hidden behind a Show linked inputs row and show a link icon while the value is the one the workflow set; `meta.inputToggles` picks the inputs (by category or name, linked or not) and the row captions, the `keepVisible` input annotation exempts an input, and inputs with errors, warnings or an inconsistent value are always shown
 * RFV: In workflows, `meta.inputsHidden` hides every input behind the Show linked inputs row instead of collapsing the form; inputs with errors, warnings or an inconsistent value stay visible. The standalone RFV ignores it and `meta.inputToggles`
 * RFV: In workflows, a dataframe input with the `mutateOnly` annotation can't be replaced under the `restricted` or `info` restriction, only edited in its viewers
@@ -9,12 +10,14 @@
 * RFV: Malformed JSON in `outputCategoryGroups` or an output's `hidden` annotation logs a warning instead of breaking the view
 * Workflows: Nested pipelines have two history loads: Load completed run loads an editable copy, Load completed run (read-only) a locked one; read-only steps and pipelines show a lock on the left of their tree row; both have a branch icon at the end of the row whose menu opens the original run; steps name the source run in the tooltip and menu; a loaded pipeline also has a line in its view to open the original run in a new view
 * Workflows: An editable step or pipeline based on a completed run compares its current state with that run in a new comparison (Compare with original in the branch icon menu or the pipeline view), or adds it to a comparison (Add to comparison...). The compare icon next to Save adds the current state of a workflow or a standalone model to a comparison: a new one when none is open, otherwise the one picked in a dialog (the most recent by default) or a new one. The current state is a snapshot that is not saved to history; outdated outputs ask for confirmation first, and the compared model joins the comparison's model list
-* Run compare: Snapshots of the current state are marked unsaved and ask before removal; runs with outdated outputs are marked, and Hide outdated outputs leaves those outputs out
+* Run compare: Snapshots of the current state are marked unsaved and ask before removal, and a save icon saves one to history; runs with outdated outputs are marked, and Hide outdated outputs leaves those outputs out
 * Workflows: Steps with history have a lock ribbon icon next to history that loads a completed run read-only
 * Workflows: Fixed OpenWorkflowRun opening the default input dialog for runs of functions without a Compute2 editor, such as workflow steps; they open in the Rich Function View, nested pipeline runs in the Tree Wizard
 * Workflows: Read-only subtrees can no longer be duplicated, and duplicating a pipeline that contains one keeps it read-only
 * Workflows: Actions hidden by a node meta link (`setActionVisible`) are not shown
 * Run compare: Selected runs and workflow steps load in parallel; a run that fails to load no longer stops the others, and runs with steps that could not be loaded show a warning
+* Run compare: Fixed runs with the same name merging in charts: a repeated name gets a ` (2)`, ` (3)`... suffix
+* Run compare: Fixed an added run not taking the index picked for the same function's runs, which cleared the merged index row and left the run out of the charts; split and axis mode picks carry over too
 * Run compare: Empty index cells no longer show up as an `undefined` category on a categorical index
 * Run compare: Fixed a blank chart when the first checked value disappears while others stay checked; a charted value stays listed when Hide equal values would hide it
 * Run compare: Chart and export columns carry their units in the name (`Biomass (g/L)`, `Time (h)`), and the Compare list shows each value's units

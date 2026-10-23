@@ -15,7 +15,7 @@ import {Subject, Subscription, timer} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import wu from 'wu';
 import {TaskBarProgressIndicator, chem} from 'datagrok-api/dg';
-import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {_convertMolNotation, _convertMolNotationByRdKit} from '../utils/convert-notation-utils';
 import {getMolSafe, querySmarts} from '../utils/mol-creation_rdkit';
 import {translateQueryAliasesV2000} from '../utils/query-alias-translator';
 import {_package, PackageFunctions} from '../package';
@@ -167,7 +167,7 @@ export class SubstructureFilter extends DG.Filter {
       return molecule;
     const rdkit = PackageFunctions.getRdKitModule();
     return querySmarts(molecule, rdkit) ??
-      _convertMolNotation(molecule, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, rdkit);
+      _convertMolNotationByRdKit(molecule, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, rdkit);
   }
 
   get isFiltering(): boolean {

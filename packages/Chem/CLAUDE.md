@@ -109,11 +109,20 @@ instead of the chem-chem container (`descriptors/descriptors-engine.ts`: the tre
 values from the Crux workers), and the scaffold tree from a Crux worker instead of `scripts/scaffold_tree.py`;
 fingerprints and structural alerts / pharmacophore features run on the Crux pool (the RDKit worker's own code on the
 Crux module, `engine/worker-jobs.ts`; a cached fingerprint column belongs to one engine, saving one drops the other's);
-an activity cliff's MCS is Rascal's MCES from a Crux worker instead of FMCS; everything else stays RDKit. Other
+an activity cliff's MCS is Rascal's MCES from a Crux worker instead of FMCS; the property table is crux's
+`chemProperties` (RDKit's definitions) instead of OpenChemLib's (`widgets/properties.ts`); reactions run on the Crux
+module (`utils/reactions/reaction-engine.ts`; drawing them stays RDKit); FCFP and chiral fingerprints
+(`utils/fingerprint-options.ts`) are Crux's in both modes; everything else stays RDKit. Other
 packages get RDKit objects in both modes (`getRdKitModule`, `getRdKitService`); in Crux mode the pictures and values of
 the moved functions come from Crux. How a feature moves behind the
 setting: `src/engine/README.md`. Tests: category `chemical engine`. Whole suites in Crux mode on a stand:
 `misc/crux/engine-setting.sh set Crux` (the package settings on the server), `restore` after.
+
+In Crux mode MMPA fragmentation, R-group decomposition and FMCS (`engine/analysis-jobs.ts`: `getMmpFrags`,
+`rGroupsMinilib`, `getMCS`, Cluster MCS, the SAR matrix's anchors and clusters) run on the Crux pool, the RDKit worker's
+own code on the Crux module (`crux/crux-analysis-jobs.ts`), with the RDKit pool behind them. `molzip` (RDKit's molzip, a
+package function for other packages) runs on Crux in both modes, Chem's RDKit.js having none; in Crux mode the SAR
+matrix joins its fragments with it. Tests: category `crux analyses`.
 
 The one Crux file is `vendor/chem-wasm/` (crux-core's `crates/chem-wasm`, built with search, descriptors, the scaffold
 tree, rendering and the heavy calls in one wasm; its `VERSION.chem-wasm` names the crux-core revision and the build,
@@ -123,9 +132,11 @@ licences; both are emitted to `dist/` as `VERSION.chem-wasm` and `NOTICE.chem-wa
 
 ### Crux substructure engine
 
-The `SubstructureSearchEngine` package property (`Crux` default since 2026-10, `RDKit`; a saved value stays) picks
-the engine of Contains / Not contains searches inside `chemSubstructureSearchLibrary` — every caller (filter, scaffold
-tree, `searchSubstructure`, filter operators) goes through it; tests switch it with `setSubstructureSearchEngine`.
+The Chemical Engine (`ChemicalEngine`) picks the engine of Contains / Not contains searches inside
+`chemSubstructureSearchLibrary` (`getSubstructureSearchEngine`: Crux in Crux mode, RDKit in RDKit mode; since
+2026-10-22 there is no `SubstructureSearchEngine` property, and a value a server saved for it is not read) — every
+caller (filter, scaffold tree, `searchSubstructure`, filter operators) goes through it; tests override it with
+`setSubstructureSearchEngine`.
 Crux ([crux-core](https://github.com/datagrok-ai/crux-core), Rust → wasm) indexes a column once, in
 segments that double in size per round over `hardwareConcurrency - 2` workers (at most 16, `MAX_WORKERS`: each holds
 a WebAssembly memory, and a page has room for about 120 of them) and are built by the first

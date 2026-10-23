@@ -200,7 +200,10 @@ export const RFVApp = Vue.defineComponent({
     const currentSnapshot = () => {
       const fc = currentFuncCall.value;
       const name = fc.options['title'] ?? fc.func?.friendlyName ?? fc.func?.name;
-      return entryFromLiveCall(fc, currentCallState.value.isOutputOutdated, snapshotName(name));
+      const metadata = {
+        title: fc.options['title'] ?? '', description: fc.options['description'] ?? '', tags: fc.options['tags'] ?? [],
+      };
+      return entryFromLiveCall(fc, currentCallState.value, snapshotName(name), metadata);
     };
 
     const onInputChanged = () => {

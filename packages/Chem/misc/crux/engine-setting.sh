@@ -4,9 +4,9 @@
 # `set` runs Chem with them.
 #
 #   engine-setting.sh show                      Chem's settings, per group that has some
-#   engine-setting.sh set <RDKit|Crux> [<RDKit|Crux>]
-#                                               ChemicalEngine (and SubstructureSearchEngine, when given) for All
-#                                               users and every group that has Chem settings; what was there is saved
+#   engine-setting.sh set <RDKit|Crux>          ChemicalEngine (Contains / Not contains follow it since 2026-10-22: no
+#                                               SubstructureSearchEngine any more) for All users and every group that
+#                                               has Chem settings; what was there is saved
 #   engine-setting.sh restore [<settings.json>] puts back what the last `set` saved, or the per-group maps of the file
 #                                               (the properties route's JSON: {"<group id>": {...}, ...})
 #
@@ -38,24 +38,21 @@ post() {  # post <group id> <settings JSON>
 case "$cmd" in
 show)
   echo "$current" | json 'Object.entries(v).map(([g, p]) => `${g}${g === "'$ALL_USERS'" ? " (All users)" : ""}: ` +
-    `ChemicalEngine ${p.ChemicalEngine ?? "(default RDKit)"}, SubstructureSearchEngine ${p.SubstructureSearchEngine ?? "(default)"}`).join("\n")'
+    `ChemicalEngine ${p.ChemicalEngine ?? "(default RDKit)"}`).join("\n")'
   ;;
 set)
-  engine=${2:?usage: engine-setting.sh set <RDKit|Crux> [<RDKit|Crux>]}
-  search=${3:-}
-  for e in "$engine" ${search:+"$search"}; do
-    case "$e" in
-      RDKit|Crux) ;;
-      *) echo "engine-setting.sh: '$e' is not an engine (RDKit or Crux; the names are case-sensitive)" >&2; exit 2 ;;
-    esac
-  done
+  engine=${2:?usage: engine-setting.sh set <RDKit|Crux>}
+  case "$engine" in
+    RDKit|Crux) ;;
+    *) echo "engine-setting.sh: '$engine' is not an engine (RDKit or Crux; the names are case-sensitive)" >&2; exit 2 ;;
+  esac
   mkdir -p "$(dirname "$STATE")"
   [ -f "$STATE" ] || echo "$current" > "$STATE"   # a second `set` keeps the first one's original values
   for g in $(echo "$current" | json "[...new Set([...Object.keys(v), '$ALL_USERS'])].join(' ')"); do
-    settings=$(echo "$current" | json "JSON.stringify({...(v['$g'] ?? {}), ChemicalEngine: '$engine'$( [ -n "$search" ] && echo ", SubstructureSearchEngine: '$search'")})")
+    settings=$(echo "$current" | json "JSON.stringify({...(v['$g'] ?? {}), ChemicalEngine: '$engine'})")
     post "$g" "$settings"
   done
-  echo "Chem: ChemicalEngine $engine${search:+, SubstructureSearchEngine $search}; the replaced settings are in $STATE"
+  echo "Chem: ChemicalEngine $engine; the replaced settings are in $STATE"
   ;;
 restore)
   from=${2:-$STATE}
@@ -72,7 +69,6 @@ restore)
     fix=$(node -e "const a = JSON.parse(process.argv[1])['$g'] ?? {}, o = JSON.parse(process.argv[2])['$g'] ?? {};
       const out = {...a}; let changed = false;
       if (!('ChemicalEngine' in o) && a.ChemicalEngine && a.ChemicalEngine !== 'RDKit') { out.ChemicalEngine = 'RDKit'; changed = true; }
-      if (!('SubstructureSearchEngine' in o) && a.SubstructureSearchEngine && a.SubstructureSearchEngine !== 'Crux') { out.SubstructureSearchEngine = 'Crux'; changed = true; }
       console.log(changed ? JSON.stringify(out) : '')" "$after" "$saved")
     if [ -n "$fix" ]; then
       post "$g" "$fix"

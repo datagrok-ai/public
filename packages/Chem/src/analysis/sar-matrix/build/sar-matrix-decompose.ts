@@ -1,4 +1,5 @@
-import {getRdKitModule, getRdKitService} from '../../../utils/chem-common-rdkit';
+import {getRdKitModule} from '../../../utils/chem-common-rdkit';
+import {clusterMcsByEngine, clusterRGroupsByEngine} from '../../../engine/analysis-jobs';
 import {IRGroupAnalysisResult} from '../../../rdkit-service/rdkit-service-worker-substructure';
 import {FragmentLinks} from './sar-matrix-link';
 import {logSarTime} from '../sar-matrix-types';
@@ -242,7 +243,6 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
   siteKeys: string[] = []): Promise<(ClusterDecomposition | null)[]> {
   const results = new Array<ClusterDecomposition | null>(clusterMembers.length).fill(null);
   const rdkit = getRdKitModule();
-  const service = await getRdKitService();
 
   // Phase 1 — pick each cluster's anchor source, queueing the ones that need an MCS.
   const preps: ClusterPrep[] = [];
@@ -279,7 +279,7 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
   // `rawSmarts` (last arg) keeps RDKit's SMARTS, which a SMILES round-trip would not survive intact.
   if (wholeMolMcs.length > 0) {
     const t = performance.now();
-    const mcs = await service.clusterMCS(wholeMolMcs.map((q) => q.input), true, true, true);
+    const mcs = await clusterMcsByEngine(wholeMolMcs.map((q) => q.input), true, true, true);
     logSarTime(`MCS anchors over whole molecules (${wholeMolMcs.length} clusters)`, t);
     wholeMolMcs.forEach((q, j) => q.prep.anchor = mcs[j] || null);
   }
@@ -290,7 +290,7 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
     return results;
 
   const t = performance.now();
-  const rgd = await service.clusterRGroups(decomposable.map((prep) => ({
+  const rgd = await clusterRGroupsByEngine(decomposable.map((prep) => ({
     molecules: prep.smiles, core: prep.anchor!, coreIsQMol: prep.anchorIsQuery, options: R_GROUP_OPTIONS,
   })));
   logSarTime(`R-group decomposition (${decomposable.length} clusters)`, t);

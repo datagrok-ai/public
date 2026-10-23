@@ -7,6 +7,7 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
 import {checkPackage} from '../utils/elemental-analysis-utils';
 import {inchiToInchiKey, inchiToSmiles, smilesToCanonical, smilesToInchi, smilesToInchiKey} from '../docker/api';
+import {cruxInchi} from '../crux/crux-inchi';
 
 const CHEMBL = 'Chembl';
 const PUBCHEM = 'PubChem';
@@ -143,11 +144,12 @@ export async function identifiersWidget(molfile: string): Promise<DG.Widget> {
 
 export async function getIdentifiersSingle(molfile: string): Promise<object | null> {
   const rdKitModule = getRdKitModule();
+  const crux = await cruxInchi(molfile); // "Chemical Engine" (engine/README.md): Crux's in Crux mode
   const mol = getMolSafe(molfile, {}, rdKitModule);
   let fullIdentifiersPanel = true;
   if (!mol.mol) return null;
-  const inchi = mol.mol.get_inchi();
-  const inchiKey = rdKitModule.get_inchikey_for_inchi(inchi);
+  const inchi = crux?.inchi ?? mol.mol.get_inchi();
+  const inchiKey = crux?.inchiKey ?? rdKitModule.get_inchikey_for_inchi(inchi);
   if (JSON.parse(mol.mol.get_descriptors())[MW_DESC] > MAX_MW_FOR_IDENTIFIERS)
     fullIdentifiersPanel = false;
   mol.mol.delete();

@@ -7,7 +7,8 @@ import {ComparisonAddition, ComparisonService} from '../components/RunComparison
 import {entryFromLiveCall} from '../components/RunComparison/entry-extraction';
 
 const snapshot = (name: string) => entryFromLiveCall(
-  DG.Script.create('//name: rcViewsProbe\n//language: javascript\n//output: int x\nx = 1;').prepare(), false, name);
+  DG.Script.create('//name: rcViewsProbe\n//language: javascript\n//output: int x\nx = 1;').prepare(),
+  {isOutputOutdated: false}, name);
 
 // picks an option of the Add to comparison dialog and confirms it
 async function pickInDialog(option: (value: string) => boolean) {

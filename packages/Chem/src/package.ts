@@ -43,7 +43,7 @@ import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {pharmacophoreFeaturesWidget} from './widgets/pharmacophore-features';
 import {getPharmacophoreFeaturesByFamilies, PharmFamilySet} from './panels/pharmacophore-features';
 import {structure2dWidget} from './widgets/structure2d';
-import {getToxicityRisksColumns, toxicityWidget} from './widgets/toxicity';
+import {getToxicityAlertsColumns, getToxicityRisksColumns, toxicityWidget} from './widgets/toxicity';
 import {_synthonSubstructureSearchWidget, _synthonSimilaritySearchWidget, getSynthonSpaces} from './widgets/synthon-search';
 
 //panels imports
@@ -79,7 +79,7 @@ import {_importSmi} from './file-importers/smi-importer';
 import {Chem} from './scripts-api';
 import {renderMolecule} from './rendering/render-molecule';
 import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
-import {structure3dWidget} from './widgets/structure3d';
+import {embed3d, structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {
   _demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA, _demoSarMatrix,
@@ -127,9 +127,12 @@ import {applyDesirabilityTags, collectMpoResultColumns, computeMpo, findSuitable
 import {removeWaterAndSalts, runTransformationReaction} from './utils/reactions/reactions';
 import {transformationReactionsUI, transformationReactionsView, twoComponentReactionsView, twoComponentReactionUI} from './utils/reactions/ui';
 import {scripts} from './package-api';
-import {cruxReady, isCruxRequested, onEngineSwitch} from './engine/chem-engine';
-import {cruxOrRdKitAsync} from './engine/fallback';
+import {ChemicalEngine, cruxReady, engineInEffect, isCruxRequested, onEngineSwitch, requestedEngine}
+  from './engine/chem-engine';
+import {cruxOrRdKit, cruxOrRdKitAsync} from './engine/fallback';
+import {cruxModuleSync, noteCruxError} from './engine/crux-module';
 import {getCruxService} from './crux/crux-searches';
+import {clusterMcsByEngine, molzip as molzipOnCrux, MolzipParams} from './engine/analysis-jobs';
 
 export {getMCS};
 export * from './package.g';
@@ -913,7 +916,7 @@ export class PackageFunctions {
       for (let i = 0; i < indexes.length; i++)
         clusteredMols[indexes[i]].push(mols[i]);
 
-      const mcsResult = await (await chemCommonRdKit.getRdKitService()).clusterMCS(clusteredMols, true, true);
+      const mcsResult = await clusterMcsByEngine(clusteredMols, true, true);
       mcsCol.semType = DG.SEMTYPE.MOLECULE;
       mcsCol.init((i) => mcsResult[indexes[i]]);
       mcsCol.setTag('.structure-filter-type', 'Categorical');
@@ -924,6 +927,26 @@ export class PackageFunctions {
     }
     PG.close();
     return mcsCol;
+  }
+
+  @grok.decorators.func({
+    name: 'molzip',
+    description: 'Joins the pieces of each molecule at their matching attachment points (RDKit\'s molzip, by Crux in both chemical engines): SMILES such as C[*:1].N[*:1] or MOL blocks of several fragments. Returns the joined molecules\' canonical SMILES (an empty string for a molecule that is not joined)',
+    outputs: [{name: 'result', type: 'list<string>'}],
+  })
+  static async molzip(
+    @grok.decorators.param({type: 'list<string>', options: {description: 'Molecules that each hold their pieces'}}) molecules: string[],
+    @grok.decorators.param({type: 'object', options: {optional: true, description: 'RDKit\'s MolzipParams by name (Label, AtomSymbols, AtomProperty, EnforceValenceRules)'}}) params?: MolzipParams): Promise<string[]> {
+    return molzipOnCrux(molecules, params ?? {});
+  }
+
+  @grok.decorators.func({
+    name: 'chemicalEngine',
+    description: 'The Chemical Engine setting in effect for this user: RDKit or Crux',
+    outputs: [{name: 'result', type: 'string'}],
+  })
+  static chemicalEngine(): string {
+    return requestedEngine();
   }
 
   @grok.decorators.editor({outputs: [{name: 'result', type: 'widget'}]})
@@ -968,6 +991,15 @@ export class PackageFunctions {
         choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], initialValue: 'Morgan',
       },
     }) fingerprintType: Fingerprint = Fingerprint.Morgan,
+    // the fingerprint options (utils/fingerprint-options.ts): optional, today's fingerprints by default
+    @grok.decorators.param({type: 'int', options: {caption: 'Radius', optional: true, initialValue: '2', min: '0',
+      max: '10', description: 'Morgan only. The radius (2 for ECFP4, 3 for ECFP6)'}}) radius?: number,
+    @grok.decorators.param({type: 'int', options: {caption: 'Size', optional: true, initialValue: '2048', min: '1',
+      description: 'The number of bits (every type but MACCS, which has 167 keys)'}}) size?: number,
+    @grok.decorators.param({options: {caption: 'Chirality', optional: true, initialValue: 'false',
+      description: 'Stereocentres count (Morgan, AtomPair, TopologicalTorsion). Computed by Crux in both chemical engines as RDKit 2026.03 does (Chem\'s RDKit.js gives L- and D-alanine the same Morgan bits)'}}) useChirality?: boolean,
+    @grok.decorators.param({options: {caption: 'Features (FCFP)', optional: true, initialValue: 'false',
+      description: 'Morgan only. Feature invariants (FCFP) instead of atom invariants (ECFP). Computed by Crux in both chemical engines bit for bit as RDKit (Chem\'s RDKit.js has no FCFP)'}}) useFeatures?: boolean,
   ) {
     //TODO: get rid of fallback
     let fingerprintTypeStr = fingerprintType as string;
@@ -975,7 +1007,8 @@ export class PackageFunctions {
       fingerprintTypeStr.endsWith('\'') || fingerprintTypeStr.endsWith('"'))
       fingerprintTypeStr = fingerprintTypeStr.slice(1, -1);
 
-    const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintTypeStr as Fingerprint, false);
+    const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintTypeStr as Fingerprint, false,
+      {radius, size, useChirality, useFeatures});
     malformedDataWarning(fpColumn, col);
     return {entries: fpColumn, options: {}};
   }
@@ -1706,7 +1739,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     'name': 'Biology | Drug Likeness',
-    'description': 'Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.',
+    'description': 'Drug likeness: OpenChemLib\'s score with the fragments contributing to it; with the Chemical Engine Crux, RDKit\'s QED with the properties it weighs.',
     'help-url': '/help/domains/chem/info-panels/drug-likeness.md',
     'meta': {'role': 'widgets', 'domain': 'chem'},
   })
@@ -1788,6 +1821,11 @@ export class PackageFunctions {
         structure3dWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
   }
 
+  @grok.decorators.func({description: 'A molecule with 3D coordinates (a MOL block), by the Chemical Engine in effect'})
+  static async embed3d(@grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<string> {
+    return embed3d(molecule);
+  }
+
   @grok.decorators.panel({
     name: 'Structure | 2D Structure',
     description: '2D molecule representation',
@@ -1801,7 +1839,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     'name': 'Biology | Toxicity',
-    'description': 'Toxicity prediction. Calculated by openchemlib',
+    'description': 'Toxicity: OpenChemLib\'s risk prediction; with the Chemical Engine Crux, RDKit\'s FilterCatalog Brenk and NIH alerts.',
     'help-url': '/help/domains/chem/info-panels/toxicity-risks.md',
     'meta': {'role': 'widgets', 'domain': 'chem'},
   })
@@ -2375,6 +2413,13 @@ export class PackageFunctions {
   @grok.decorators.func()
   static isSmiles(
     @grok.decorators.param({type: 'string'}) s: string): boolean {
+    // "Chemical Engine" (engine/README.md): in Crux mode Crux reads it, RDKit what Crux cannot
+    if (engineInEffect() === ChemicalEngine.Crux && cruxOrRdKit('isSmiles', () => {
+      const mol = getMolSafe(s, {}, cruxModuleSync()!, true, noteCruxError).mol;
+      mol?.delete();
+      return mol !== null;
+    }, () => false))
+      return true;
     const ctx: IMolContext = getMolSafe(s, {}, _rdKitModule, true);
     if (ctx.mol !== null) {
       ctx.mol.delete();
@@ -2440,8 +2485,9 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'name': 'Chemical Properties (OCL)',
-    'description': 'Calculates chemical properties using OpenChemLib and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
-    'meta': {'function_family': 'biochem-calculator', 'method_info.author': 'Open Chem Lib Team', 'method_info.year': '2024', 'method_info.github': 'https://github.com/actelion/openchemlib', 'role': 'hitTriageFunction,transform'},
+    'friendlyName': 'Chemical Properties',
+    'description': 'Calculates chemical properties and adds them as columns to the input table. With the Chemical Engine setting on RDKit (the default) OpenChemLib calculates them, with Crux they follow RDKit\'s definitions (MW is then the average molecular weight, not the monoisotopic mass). Properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
+    'meta': {'function_family': 'biochem-calculator', 'method_info.author': 'Open Chem Lib Team', 'method_info.year': '2024', 'method_info.github': 'https://github.com/actelion/openchemlib', 'method_info.crux_author': 'RDKit\'s definitions, calculated by Crux', 'method_info.crux_github': 'https://github.com/rdkit/rdkit', 'role': 'hitTriageFunction,transform'},
   })
   static async addChemPropertiesColumns(
     @grok.decorators.param({type: 'dataframe', options: {description: 'Input data table'}}) table: DG.DataFrame,
@@ -2534,6 +2580,35 @@ export class PackageFunctions {
       reproductiveEffects: !risks || !risks.length ? true : risks.includes('reproductiveEffects'),
     });
     return DG.DataFrame.fromColumns(toxCols);
+  }
+
+  @grok.decorators.func({
+    'top-menu': 'Chem | Calculate | Toxicity Alerts...',
+    'name': 'Toxicity Alerts',
+    'description': 'Counts the alerts of RDKit\'s FilterCatalog Brenk and NIH sets in each molecule, a column per set. Needs the Chemical Engine Crux.',
+  })
+  static async addToxicityAlertsColumns(
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({options: {initialValue: 'true', caption: 'Brenk'}}) brenk?: boolean,
+    @grok.decorators.param({options: {initialValue: 'true', caption: 'NIH'}}) nih?: boolean,
+  ): Promise<void> {
+    // the product owner, 2026-10-22: Crux mode's toxicity alerts get their own menu; Toxicity Risks stays OpenChemLib's
+    const catalogs = [...(brenk ? ['Brenk'] : []), ...(nih ? ['NIH'] : [])];
+    if (!catalogs.length) {
+      grok.shell.warning('Please select at least one alert set');
+      return;
+    }
+    const pb = DG.TaskBarProgressIndicator.create('Toxicity alerts ...');
+    try {
+      const cols = await getToxicityAlertsColumns(molecules, catalogs);
+      cols.forEach((col) => {
+        col.name = table.columns.getUnusedName(col.name);
+        table.columns.add(col);
+      });
+    } finally {
+      pb.close();
+    }
   }
 
   @grok.decorators.func({
@@ -2947,6 +3022,14 @@ export class PackageFunctions {
 
   @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static validateMolecule(s: string): string | null {
+    // "Chemical Engine" (engine/README.md): in Crux mode a molecule Crux reads as it stands (getMolSafe's first read) is
+    // valid; RDKit writes the message for the rest (Crux keeps no RDKit log)
+    if (engineInEffect() === ChemicalEngine.Crux && cruxOrRdKit('validateMolecule', () => {
+      const ctx = getMolSafe(s, {}, cruxModuleSync()!, true, noteCruxError);
+      ctx.mol?.delete();
+      return ctx.mol !== null && ctx.kekulize && !ctx.isQMol;
+    }, () => false))
+      return '';
     let logHandle: RDLog | null = null;
     let mol: RDMol | null = null;
     try {

@@ -4,6 +4,7 @@
  * does the molecules Crux cannot read, and the whole call when Crux fails. In RDKit mode, the RDKit pool. In Crux mode
  * the RDKit pool starts only when a molecule or a call needs it.
  */
+import type * as DG from 'datagrok-api/dg';
 import {Fingerprint} from '../utils/chem-common';
 import type {IFpResult} from '../rdkit-service/rdkit-service-worker-similarity';
 import {getRdKitService} from '../utils/chem-common-rdkit';
@@ -11,6 +12,11 @@ import {getCruxService} from '../crux/crux-searches';
 import {ChemicalEngine, isCruxRequested} from './chem-engine';
 import {cruxOrRdKitAsync, warnCruxFallback} from './fallback';
 import type {RuleId} from '../panels/structural-alerts';
+import {FingerprintOptions, fingerprintOptions, needsCrux} from '../utils/fingerprint-options';
+import {cruxReadsCxExtension} from '../crux/crux-service';
+import {hasNewLines} from '../utils/chem-common';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
+import {inchisFromInputs} from '../crux/crux-inchi';
 
 /** Tests: molecules the Crux workers get as unreadable (see {@link setCruxUnreadableForTests}). */
 let unreadableForTests: Set<string> | null = null;
@@ -20,8 +26,8 @@ export function setCruxUnreadableForTests(molecules: string[] | null): void {
   unreadableForTests = molecules ? new Set(molecules) : null;
 }
 
-/** The molecules as the Crux workers get them. */
-function forCrux(molecules: string[]): string[] {
+/** The molecules as the Crux workers get them (also analysis-jobs.ts). */
+export function forCrux(molecules: string[]): string[] {
   const unreadable = unreadableForTests;
   return unreadable ? molecules.map((m) => unreadable.has(m) ? 'C1CC(' : m) : molecules;
 }
@@ -32,21 +38,33 @@ export function fingerprintsKey(engine: ChemicalEngine): string {
 }
 
 /**
- * `RdKitService.getFingerprints(type, molecules, smiles)` by the engine in effect (by RDKit when `engine` says so: the
- * RDKit substructure search's own fingerprints), and the engine that answered.
+ * `RdKitService.getFingerprints(type, molecules, smiles, options)` by the engine in effect (by RDKit when `engine` says
+ * so: the RDKit substructure search's own fingerprints), and the engine that answered. FCFP and chirality
+ * (`options.useFeatures`, `options.useChirality`) are Crux's in both modes, with no RDKit behind them: Chem's RDKit.js
+ * has neither (utils/fingerprint-options.ts `needsCrux`).
  */
 export async function fingerprintsByEngine(type: Fingerprint, molecules: string[], smiles: boolean,
   engine: ChemicalEngine = isCruxRequested() ? ChemicalEngine.Crux : ChemicalEngine.RDKit,
+  options?: FingerprintOptions | null,
 ): Promise<IFpResult & {engine: ChemicalEngine}> {
-  const rdkit = async () => ({...await (await getRdKitService()).getFingerprints(type, molecules, smiles),
-    engine: ChemicalEngine.RDKit});
-  if (engine === ChemicalEngine.RDKit)
+  const opts = fingerprintOptions(type, options);
+  const cruxOnly = needsCrux(opts);
+  const rdkit = async () => {
+    if (cruxOnly) { // Crux refused the options or failed (logged by the fallback); RDKit.js has neither
+      throw new Error(`Chem | Crux could not compute these ${type} fingerprints (${JSON.stringify(opts)}), and ` +
+        'only Crux computes FCFP and chirality: see the warning before');
+    }
+    return {...await (await getRdKitService()).getFingerprints(type, molecules, smiles, opts),
+      engine: ChemicalEngine.RDKit};
+  };
+  if (engine === ChemicalEngine.RDKit && !cruxOnly)
     return rdkit();
   return cruxOrRdKitAsync('fingerprints', async () => {
-    const result = await (await getCruxService()).getFingerprints(type, forCrux(molecules), smiles);
+    const result = await (await getCruxService()).getFingerprints(type, forCrux(molecules), smiles, opts);
     const {fps, smiles: canonical, unread} = result;
-    if (unread.length) { // the molecules Crux cannot read: the RDKit pool's fingerprints for them
-      const patch = await (await getRdKitService()).getFingerprints(type, unread.map((i) => molecules[i]), smiles);
+    if (unread.length && !cruxOnly) { // the molecules Crux cannot read: the RDKit pool's fingerprints for them
+      const patch = await (await getRdKitService()).getFingerprints(type, unread.map((i) => molecules[i]), smiles,
+        opts);
       unread.forEach((row, k) => {
         fps[row] = patch.fps[k];
         if (canonical && patch.smiles)
@@ -60,6 +78,65 @@ export async function fingerprintsByEngine(type: Fingerprint, molecules: string[
     }
     return {fps, smiles: canonical, engine: ChemicalEngine.Crux};
   }, rdkit);
+}
+
+/**
+ * `RdKitService.convertMolNotation(molecules, targetNotation, kekulize)` by the engine in effect: in Crux mode RDKit.js
+ * 2026.03.6's strings (the RDKit Crux reproduces), the RDKit pool's for the rows Crux leaves unconverted and for a
+ * CXSMILES whose query features Crux does not read (a SMILES over Chem's length limit is no one's).
+ */
+export async function convertMolNotationByEngine(molecules: string[], targetNotation: DG.chem.Notation,
+  kekulize: boolean): Promise<string[]> {
+  const rdkit = async (rows: number[] | null) => (await getRdKitService()).convertMolNotation(
+    rows ? rows.map((i) => molecules[i]) : molecules, targetNotation, kekulize);
+  if (!isCruxRequested())
+    return rdkit(null);
+  return cruxOrRdKitAsync('convertMolNotation', async () => {
+    const cx = molecules.map((m) => !!m && !cruxReadsCxExtension(m));
+    const {results, none, unconverted} = await (await getCruxService()).convertMolNotation(
+      forCrux(molecules).map((m, i) => cx[i] ? '' : m), targetNotation, kekulize);
+    const tooLong = (m: string) => !hasNewLines(m) && m.length > MAX_SMILES_LENGTH;
+    const rest = [...unconverted.filter((i) => !tooLong(molecules[i])), ...cx.flatMap((c, i) => c ? [i] : [])];
+    if (rest.length) {
+      const patch = await rdkit(rest);
+      rest.forEach((row, k) => results[row] = patch[k]);
+      const done = rest.filter((_, k) => patch[k] !== none);
+      if (done.length) {
+        warnCruxFallback('convertMolNotation', `RDKit converted ${done.length} molecules Crux did not, e.g. ` +
+          molecules[done[0]]);
+      }
+    }
+    return results;
+  }, () => rdkit(null));
+}
+
+/**
+ * `RdKitService.getInchis(molecules)` (`getInchiKeys` when `keys`) by the engine in effect: in Crux mode InChI's input
+ * by the Crux workers and the library by crux-sketch's InChI module (crux/crux-inchi.ts), the RDKit pool for a molecule
+ * Crux cannot read and a CXSMILES whose query features Crux's reader skips.
+ */
+export async function inchisByEngine(molecules: string[], keys: boolean): Promise<string[]> {
+  const rdkit = async (rows: string[]) => {
+    const service = await getRdKitService();
+    return keys ? service.getInchiKeys(rows) : service.getInchis(rows);
+  };
+  if (!isCruxRequested())
+    return rdkit(molecules);
+  return cruxOrRdKitAsync('InChI', async () => {
+    const cx = molecules.map((m) => !!m && !cruxReadsCxExtension(m));
+    const inputs = await (await getCruxService()).inchiInputs(forCrux(molecules).map((m, i) => cx[i] ? '' : m));
+    cx.forEach((c, i) => inputs[i] = c ? null : inputs[i]);
+    const results = await inchisFromInputs(inputs, keys);
+    const rest = results.flatMap((r, i) => r === null ? [i] : []);
+    if (rest.length) {
+      const patch = await rdkit(rest.map((i) => molecules[i]));
+      rest.forEach((row, k) => results[row] = patch[k]);
+      const done = rest.filter((_, k) => patch[k]);
+      if (done.length)
+        warnCruxFallback('InChI', `RDKit wrote ${done.length} InChIs Crux did not, e.g. for ${molecules[done[0]]}`);
+    }
+    return results as string[];
+  }, () => rdkit(molecules));
 }
 
 /** `RdKitService.getStructuralAlerts(alerts, molecules)` by the engine in effect. */

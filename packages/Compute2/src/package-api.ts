@@ -47,6 +47,27 @@ export namespace funcs {
   }
 
   /**
+   * Run a compute workflow without UI and return the state of every step.
+   * @param {string} nqName - Qualified name of the workflow function to run
+   * @param {string} version - Workflow version to run
+   * @param {any} instanceConfig - Optional initial pipeline configuration
+   */
+  export async function runWorkflow(nqName: string , version: string , instanceConfig: any ): Promise<any> {
+    return await grok.functions.call('Compute2:RunWorkflow', { nqName, version, instanceConfig });
+  }
+
+  /**
+   * Save the state returned by RunWorkflow as a new workflow run in history.
+   * @param {string} nqName - Qualified name of the workflow function
+   * @param {string} version - Workflow version
+   * @param {any} state - The state of a RunWorkflow result
+   * @param {any} metadata - Optional title, description and tags
+   */
+  export async function saveWorkflowRun(nqName: string , version: string , state: any , metadata: any ): Promise<any> {
+    return await grok.functions.call('Compute2:SaveWorkflowRun', { nqName, version, state, metadata });
+  }
+
+  /**
    * Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.
    * @param {string} id - Meta FuncCall id of the saved workflow run
    */

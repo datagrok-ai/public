@@ -63,6 +63,24 @@ category('top menu chem space', async () => {
     } finally {DG.Balloon.closeAll();}
   });
 
+  test('chemSpace: the fingerprint options of the dialog reach the fingerprints', async () => {
+    // the dialog's preprocessing settings (getFingerprints' inputs: type, radius, size, chirality, features)
+    // a table of its own: a clone of smallDf would hold the caches the tests before filled
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', smallDf.col('smiles')!.toList())]);
+    df.name = 'chem space options';
+    await grok.data.detectSemanticTypes(df);
+    const tv = grok.shell.addTableView(df);
+    try {
+      const sp = await runChemSpace(df, df.getCol('smiles'), DimReductionMethods.UMAP, BitArrayMetricsNames.Tanimoto,
+        true, {preprocessingFuncArgs: {fingerprintType: 'Morgan', radius: 3, size: 1024}, fastRowCount: 100000});
+      expect(sp != null, true);
+      const caches = df.columns.names().filter((n) => n.startsWith('~smiles.Morgan'));
+      expect(caches.length, 1, caches.join(', '));
+      expect(caches[0].startsWith('~smiles.Morgan(radius=3, size=1024)'), true, caches[0]);
+      expect(df.col(caches[0])!.get(0).length * 8, 1024, 'the fingerprints of 1024 bits');
+    } finally {tv.close();}
+  });
+
   test('chemSpace.allEmpty', async () => {
     const df = DG.DataFrame.fromColumns([
       DG.Column.fromInt32Array('id', Int32Array.from({length: 10}, (_, i) => i + 1)),

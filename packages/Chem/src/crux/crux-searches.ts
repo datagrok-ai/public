@@ -9,15 +9,12 @@ import {Fingerprint} from '../utils/chem-common';
 import {SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType,
   getTerminateEventName} from '../constants';
 import {CruxColumnIndex, CruxSegment, CruxService} from './crux-service';
-import {chemSetting} from '../engine/chem-engine';
+import {isCruxRequested} from '../engine/chem-engine';
 
 export enum SubstructureSearchEngine {
   RDKit = 'RDKit',
   Crux = 'Crux',
 }
-
-/** Package property selecting the engine of substructure searches. */
-const SUBSTRUCTURE_SEARCH_ENGINE_PROPERTY = 'SubstructureSearchEngine';
 
 /** At most this many filter updates before the final one. */
 const MAX_INTERMEDIATE_UPDATES = 6;
@@ -27,17 +24,20 @@ const MIN_UPDATE_GAP_MS = 100;
 let engineOverride: SubstructureSearchEngine | null = null;
 let cruxService: Promise<CruxService> | null = null;
 
-/** Overrides the package property until reset with null. */
+/** Tests: overrides the Chemical Engine's choice of the search engine until reset with null. */
 export function setSubstructureSearchEngine(engine: SubstructureSearchEngine | null): void {
   engineOverride = engine;
 }
 
-/** The engine of Contains / Not contains: Crux (the default) unless the setting says RDKit; a saved value stays. */
+/**
+ * The engine of Contains / Not contains: the Chemical Engine's (Crux in Crux mode, RDKit in RDKit mode, or once the
+ * Crux module has failed to load); it has no setting of its own since 2026-10-22, and a value a server saved for the
+ * retired SubstructureSearchEngine is not read.
+ */
 export function getSubstructureSearchEngine(): SubstructureSearchEngine {
   if (engineOverride)
     return engineOverride;
-  return chemSetting(SUBSTRUCTURE_SEARCH_ENGINE_PROPERTY) === SubstructureSearchEngine.RDKit ?
-    SubstructureSearchEngine.RDKit : SubstructureSearchEngine.Crux;
+  return isCruxRequested() ? SubstructureSearchEngine.Crux : SubstructureSearchEngine.RDKit;
 }
 
 export function getCruxService(): Promise<CruxService> {

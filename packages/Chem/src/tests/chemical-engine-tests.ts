@@ -25,18 +25,28 @@ import {calculateDescriptors, forgetCruxTreeForTests, getDescriptorsTree, lastDe
   setCruxDescriptorGapForTests, setDescriptorTimingForTests} from '../descriptors/descriptors-engine';
 import {cruxFallbackCount, cruxOrRdKitAsync} from '../engine/fallback';
 import * as container from '../docker/api';
-import {SubstructureSearchEngine, cruxReadsQuery, getCruxService, getSubstructureSearchEngine,
+import {SubstructureSearchEngine, cruxReadsQuery, getCruxService, getSubstructureSearchEngine, isCruxSearch,
   resetCruxServiceForTests, setSubstructureSearchEngine} from '../crux/crux-searches';
 import {Fingerprint} from '../utils/chem-common';
 import {FILTER_TYPES, chemGetDiversities, chemGetFingerprints, chemGetSimilarities, chemSubstructureSearchLibrary}
   from '../chem-searches';
-import {alertsByEngine, fingerprintsByEngine, setCruxUnreadableForTests, structuralAlertsByEngine}
+import {alertsByEngine, fingerprintsByEngine, inchisByEngine, setCruxUnreadableForTests, structuralAlertsByEngine}
   from '../engine/worker-jobs';
 import {RuleSet, runStructuralAlertsDetection} from '../panels/structural-alerts';
 import {PHARM_FAMILY_NAMES, PharmFamilySet, runPharmacophoreDetection} from '../panels/pharmacophore-features';
 import {CONTAINER_TIMEOUT, readDataframe} from './utils';
 import {isNoneValue} from '../crux/crux-api';
-import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG} from '../constants';
+import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, SubstructureSearchType} from '../constants';
+import {calculatorMethodInfo} from '../widgets/biochem-properties-widget';
+import {convertNotationForColumn} from '../utils/convert-notation-utils';
+import {cruxInchi} from '../crux/crux-inchi';
+import {getIdentifiersSingle} from '../widgets/identifiers';
+import {getStructuralAlerts} from '../widgets/structural-alerts';
+import {getPharmacophoreFeatures} from '../widgets/pharmacophore-features';
+import {mmpLinkFragmentsByEngine} from '../engine/analysis-jobs';
+import {getInverseSubstructuresAndAlign} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-mol-rendering';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
+import {TOXICITY_ALERTS_CRUX_FAILED, getToxicityAlertsColumns} from '../widgets/toxicity';
 
 /** The renderer's internals the tests read (the molecule's engine, a raster). */
 interface RendererInternals {
@@ -188,9 +198,8 @@ category('chemical engine', () => {
     }
     // package.ts's _package in this bundle is not the published package: chemSetting asks the published one
     console.log(`chemical engine | in package-test.js, package.ts's _package "${chemPackage.name}" settings: ${own}; ` +
-      `chemSetting: ChemicalEngine ${chemSetting('ChemicalEngine')}, SubstructureSearchEngine ` +
-      `${chemSetting('SubstructureSearchEngine')}`);
-    expect(chemSetting('SubstructureSearchEngine') !== undefined || chemSetting('Sketcher') !== undefined, true,
+      `chemSetting: ChemicalEngine ${chemSetting('ChemicalEngine')}, Sketcher ${chemSetting('Sketcher')}`);
+    expect(chemSetting('ChemicalEngine') !== undefined || chemSetting('Sketcher') !== undefined, true,
       'the settings of the published Chem are read');
   });
 
@@ -742,8 +751,10 @@ category('chemical engine', () => {
     }
     const workers = new Set(timing.chunks.map((c) => c.worker)).size;
     const distinct = molecules.categories.length;
-    const what = `${timing.chunks.length} chunks of ${timing.chunks[0].size} on ${workers} of ${timing.workers} workers`;
-    expect(timing.chunks[0].size, Math.ceil(distinct / timing.workers), what);
+    // the chunks are listed as they finish, so the last, smaller one may come first
+    const largest = Math.max(...timing.chunks.map((c) => c.size));
+    const what = `${timing.chunks.length} chunks of up to ${largest} on ${workers} of ${timing.workers} workers`;
+    expect(largest, Math.ceil(distinct / timing.workers), what);
     expect(workers, timing.chunks.length, `one chunk per worker: ${what}`);
     expect(workers > timing.workers / 2, true, what);
     // the same molecules in tens: each call its own chunking
@@ -913,6 +924,40 @@ category('chemical engine', () => {
       expect(crux.toString(), rdkit.toString(), `hits of ${label}`);
     }
     setSubstructureSearchEngine(null);
+  });
+
+  test('the substructure search follows the Chemical Engine', async () => {
+    // no setting of its own since 2026-10-22 (the product owner): RDKit mode searches with RDKit, Crux mode with Crux,
+    // whatever a server saved for the retired SubstructureSearchEngine (this stand's maps hold Crux)
+    const col = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
+    col.semType = DG.SEMTYPE.MOLECULE;
+    setSubstructureSearchEngine(null);
+    setChemicalEngine(ChemicalEngine.RDKit);
+    expect(getSubstructureSearchEngine(), SubstructureSearchEngine.RDKit, 'RDKit mode: the search engine');
+    expect(isCruxSearch(SubstructureSearchType.CONTAINS), false, 'RDKit mode: Contains on RDKit');
+    const rdkit: DG.BitSet = (await PackageFunctions.searchSubstructure(col, 'c1ccncc1', '')).get(0);
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true, 'the Crux module loads');
+    expect(getSubstructureSearchEngine(), SubstructureSearchEngine.Crux, 'Crux mode: the search engine');
+    expect(isCruxSearch(SubstructureSearchType.NOT_CONTAINS), true, 'Crux mode: Not contains on Crux');
+    const crux: DG.BitSet = (await PackageFunctions.searchSubstructure(col, 'c1ccncc1', '')).get(0);
+    expect(crux.toString(), rdkit.toString(), 'the same hits in both modes');
+    setChemicalEngine(null);
+  });
+
+  test('the property calculator is Chemical Properties, its method the engine\'s', async () => {
+    // the product owner, 2026-10-22: "(OCL)" leaves the calculator's shown name (its function name stays, for saved
+    // HitTriage campaigns and flows); in Crux mode the dialog names RDKit's definitions as its method
+    const funcs = DG.Func.find({package: 'Chem', meta: {function_family: 'biochem-calculator'}});
+    const func = funcs.find((f) => f.name === 'addChemPropertiesColumns')!;
+    expect(!!func, true, `the OpenChemLib calculator among ${funcs.map((f) => f.name).join(', ')}`);
+    expect(func?.friendlyName, 'Chemical Properties', 'the calculator\'s name');
+    setChemicalEngine(ChemicalEngine.RDKit);
+    expect(calculatorMethodInfo(func).authors, 'Open Chem Lib Team', 'RDKit mode: OpenChemLib');
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(calculatorMethodInfo(func).authors, 'RDKit\'s definitions, calculated by Crux', 'Crux mode: the method');
+    expect(calculatorMethodInfo(func).github, 'https://github.com/rdkit/rdkit', 'Crux mode: the source');
+    setChemicalEngine(null);
   });
 
   // batch 19b: fingerprints and structural alerts in Crux mode
@@ -1114,6 +1159,330 @@ category('chemical engine', () => {
     expect(differences.join('; '), '', 'the features per family');
     setChemicalEngine(ChemicalEngine.RDKit);
   }, {timeout: 300000});
+
+  // batch 23 (2026-10-23): conversions, validation, the one-molecule panels and the MMP viewer's joins on Crux
+
+  /** RDKit's canonical SMILES of a molecule string (a query's: of its SMARTS), null where RDKit reads none. */
+  const rdkitCanonical = (s: string, query = false): string | null => {
+    const module = chemCommonRdKit.getRdKitModule();
+    let mol = null;
+    try {
+      mol = query ? module.get_qmol(s) : module.get_mol(s);
+      return mol ? (query ? mol.get_smarts() : mol.get_smiles()) : null;
+    } catch {
+      return null;
+    } finally {
+      mol?.delete();
+    }
+  };
+
+  test('conversions: Crux writes the same molecules, RDKit those Crux cannot read', async () => {
+    // Crux writes RDKit.js 2026.03.6's strings (the product owner, 2026-10-23); RDKit mode's are 2024.09's: the same
+    // molecules, read back by RDKit (a SMARTS: the molecule matches it)
+    const all = (await jobMolecules()).filter((m) => m);
+    const molecules = [...all.slice(0, 300), ...all.slice(999, 1199)]; // SMILES, then spgi-100's and mol1K's MOL blocks
+    const targets = [DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, DG.chem.Notation.V3KMolBlock,
+      DG.chem.Notation.Smarts, 'cxsmiles' as DG.chem.Notation];
+    const convertAll = () => targets.map((t) =>
+      molecules.map((m) => PackageFunctions.convertMolNotation(m, DG.chem.Notation.Unknown, t)));
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const rdkit = convertAll();
+    const rdkitColumn = await convertNotationForColumn(DG.Column.fromStrings('m', molecules), DG.chem.Notation.Smiles);
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true, 'the Crux module loads');
+    const fallbacks = cruxFallbackCount('convertMolNotation');
+    const crux = convertAll();
+    const cruxColumn = await convertNotationForColumn(DG.Column.fromStrings('m', molecules), DG.chem.Notation.Smiles);
+    expect(cruxFallbackCount('convertMolNotation'), fallbacks, 'Crux converted every molecule');
+    const differences: string[] = [];
+    let identical = 0;
+    targets.forEach((t, k) => molecules.forEach((m, i) => {
+      const [r, c] = [rdkit[k][i], crux[k][i]];
+      identical += r === c ? 1 : 0;
+      const same = r === c || (t === DG.chem.Notation.Smarts ? rdkitCanonical(c, true) !== null :
+        rdkitCanonical(r) === rdkitCanonical(c));
+      if (!same && differences.length < 5)
+        differences.push(`${t} of ${m.slice(0, 60)}: ${c.slice(0, 80)} vs RDKit's ${r.slice(0, 80)}`);
+    }));
+    molecules.forEach((m, i) => {
+      if (rdkitCanonical(rdkitColumn[i]) !== rdkitCanonical(cruxColumn[i]) && differences.length < 10)
+        differences.push(`the column's SMILES of ${m.slice(0, 60)}: ${cruxColumn[i]} vs RDKit's ${rdkitColumn[i]}`);
+    });
+    console.log(`chemical engine | conversions: ${identical} of ${targets.length * molecules.length} strings ` +
+      `identical to RDKit 2024.09's`);
+    expect(differences.join('; '), '', 'the same molecules');
+    // a molecule Crux cannot read: the RDKit pool converts it in the column
+    setCruxUnreadableForTests([molecules[0]]);
+    try {
+      const column = await convertNotationForColumn(DG.Column.fromStrings('m', molecules.slice(0, 3)),
+        DG.chem.Notation.Smiles);
+      expect(column[0], rdkitColumn[0], 'RDKit\'s string for the molecule Crux cannot read');
+      expect(cruxFallbackCount('convertMolNotation') > fallbacks, true, 'the fallback is counted');
+    } finally {
+      setCruxUnreadableForTests(null);
+      setChemicalEngine(null);
+    }
+  }, {timeout: 300000});
+
+  test('InChI: Crux mode writes RDKit\'s InChIs and keys, the panel\'s and the column\'s', async () => {
+    // the split (crux-core decision chem-wasm-inchi): Crux fills InChI's input, crux-sketch's InChI module runs the
+    // library; RDKit.js 2026.03.6's strings, which Chem's RDKit 2024.09 writes too on these molecules
+    const molecules = [...(await jobMolecules()).filter((m) => m).slice(0, 1199), '', 'C1CC(', '*CC', 'C[Na]',
+      'c1cccc1', '[2H]C([2H])O', 'C/C=C/C', 'C[C@H](N)O |&1:1|'];
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const [rdkit, rdkitKeys] = [await inchisByEngine(molecules, false), await inchisByEngine(molecules, true)];
+    const rdkitPanel = await getIdentifiersSingle(molecules[0]) as {[k: string]: string};
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      const fallbacks = cruxFallbackCount('InChI');
+      const [crux, cruxKeys] = [await inchisByEngine(molecules, false), await inchisByEngine(molecules, true)];
+      const differences = molecules.flatMap((m, i) => crux[i] === rdkit[i] && cruxKeys[i] === rdkitKeys[i] ? [] :
+        [`${m.slice(0, 50)}: ${crux[i]} ${cruxKeys[i]} vs RDKit's ${rdkit[i]} ${rdkitKeys[i]}`]);
+      expect(differences.slice(0, 5).join('; '), '', `the same InChIs and keys (${differences.length} differ)`);
+      expect(cruxFallbackCount('InChI'), fallbacks, 'Crux wrote every InChI (RDKit none)');
+      const panel = await getIdentifiersSingle(molecules[0]) as {[k: string]: string};
+      expect(`${panel['Inchi']} ${panel['Inchi key']}`, `${rdkitPanel['Inchi']} ${rdkitPanel['Inchi key']}`,
+        'the Identifiers panel');
+      expect((await cruxInchi(molecules[0]))?.inchi, rdkit[0], 'the panel\'s InChI is Crux\'s');
+      setCruxUnreadableForTests([molecules[1]]);
+      try {
+        expect((await inchisByEngine(molecules.slice(0, 3), false))[1], rdkit[1], 'RDKit\'s for an unreadable molecule');
+      } finally {
+        setCruxUnreadableForTests(null);
+      }
+    } finally {
+      setChemicalEngine(null);
+    }
+  }, {timeout: 300000});
+
+  test('isSmiles and validateMolecule: Crux mode answers as RDKit mode', async () => {
+    const strings = ['CCO', 'c1ccccc1O', 'C[C@H](N)C(=O)O', '[#6]~[#7]', 'c1cccc1', 'C1CC(', 'not a molecule', '',
+      'C(C)(C)(C)(C)C', ...(await jobMolecules()).slice(-150, -100)];
+    const answers = () => strings.map((s) => // (RDKit's log lines start with their time)
+      `${PackageFunctions.isSmiles(s)}|${PackageFunctions.validateMolecule(s)?.replace(/\[\d\d:\d\d:\d\d\] /g, '')}`);
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const rdkit = answers();
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      const crux = answers();
+      const differ = strings.flatMap((s, i) => rdkit[i] === crux[i] ? [] : [`${s.slice(0, 40)}: ${crux[i]} vs ${rdkit[i]}`]);
+      expect(differ.join('; '), '');
+    } finally {
+      setChemicalEngine(null);
+    }
+  });
+
+  test('structural alerts and pharmacophores panels: Crux matches as RDKit', async () => {
+    const all = (await jobMolecules()).filter((m) => m && m !== 'C1CC(');
+    const molecules = [...all.slice(0, 40), ...all.slice(999, 1039)]; // SMILES and MOL blocks
+    const panels = async () => {
+      const out: string[] = [];
+      for (const m of molecules) {
+        const features = (await getPharmacophoreFeatures(m)).map((f) => `${f.index}:${f.atoms.join(',')}`);
+        out.push(`${(await getStructuralAlerts(m)).join(',')}|${features.join(';')}`);
+      }
+      return out;
+    };
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const rdkit = await panels();
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      const fallbacks = cruxFallbackCount('structuralAlerts') + cruxFallbackCount('pharmacophoreFeatures');
+      const crux = await panels();
+      expect(cruxFallbackCount('structuralAlerts') + cruxFallbackCount('pharmacophoreFeatures'), fallbacks,
+        'Crux matched every molecule');
+      const differ = molecules.flatMap((m, i) => rdkit[i] === crux[i] ? [] : [m.slice(0, 60)]);
+      expect(differ.join('; '), '', 'the same alerts and features');
+      expect(rdkit.some((r) => r.split('|')[0] !== ''), true, 'some molecule has an alert');
+    } finally {
+      setChemicalEngine(null);
+    }
+  }, {timeout: 300000});
+
+  /** Molecule strings meant to break a Crux path (2026-10-23 review): explicit H, a query block, a dative bond, a core,
+   * enhanced stereo, CXSMILES query features, salts, isotopes, radicals, SMARTS, unreadable and over-long strings. */
+  const breakers = (): {[what: string]: string} => {
+    const rdkit = chemCommonRdKit.getRdKitModule();
+    const block = (s: string, query = false, hs = false) => {
+      const mol = query ? rdkit.get_qmol(s) : rdkit.get_mol(s)!;
+      try {
+        if (hs)
+          mol.add_hs_in_place();
+        return mol.get_molblock();
+      } finally {
+        mol.delete();
+      }
+    };
+    return {
+      'explicit H block': block('C[C@H](N)C(=O)O', false, true), 'query block': block('[#7,#8]-c1ccccc1', true),
+      'dative block': block('[NH3]->[Pt+2]<-[NH3]'), 'core': 'c1ccc([*:1])cc1', 'two-point core': '[*:1]C(=O)N[*:2]',
+      'AND group': 'C[C@H](N)C(=O)O |&1:1|', 'OR group': 'C[C@H](O)[C@@H](C)O |o1:1,3|',
+      'query label': '*c1ccccc1 |$Q_e;;;;;;$|', 'ring bond count': 'C1CCCCC1 |rb:0:2|', 'N-oxide': '[O-][n+]1ccccc1',
+      'dative SMILES': '[NH3]->[Pt+2]<-[NH3]', 'salt': 'CC(=O)[O-].[Na+]', 'mixture': 'c1ccccc1.O',
+      'isotopes': '[2H]C([2H])([2H])Oc1ccccc1', 'carbon-13': '[13CH3]O', 'radical': '[CH3]', 'oxygen radical': 'C[O]',
+      'SMARTS': '[#6]~[#7]', 'Daylight SMARTS': '[NX3][CX3]=[OX1]', 'not kekulizable': 'c1cccc1', 'unreadable': 'C1CC(',
+      'not a molecule': 'MALFORMED_INPUT_VALUE', 'over-long SMILES': 'C'.repeat(MAX_SMILES_LENGTH + 1),
+    };
+  };
+
+  test('break it: conversions of hard molecules, Crux mode against RDKit mode', async () => {
+    const molecules = breakers();
+    const targets = [DG.chem.Notation.Smiles, 'cxsmiles' as DG.chem.Notation, DG.chem.Notation.MolBlock,
+      DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smarts, 'cxsmarts' as DG.chem.Notation];
+    const all = () => Object.fromEntries(Object.entries(molecules).map(([what, m]) => [what, [
+      ...targets.map((t) => PackageFunctions.convertMolNotation(m, DG.chem.Notation.Unknown, t)),
+      `${PackageFunctions.isSmiles(m)}|${PackageFunctions.validateMolecule(m)?.replace(/\[\d\d:\d\d:\d\d\] /g, '')}`]]));
+    /** Whether RDKit reads `smarts` as a query its molecule `m` matches (a SMARTS written by RDKit 2026.03 can differ from
+     * 2024.09's, [CH3] as [#6] |^1:0| where 2024.09 wrote [#6H3], the same query on that molecule). */
+    const matchesItself = (smarts: string, m: string) => {
+      const module = chemCommonRdKit.getRdKitModule();
+      let mol = null;
+      let query = null;
+      try {
+        mol = module.get_mol(m);
+        query = module.get_qmol(smarts.replace(/ \|.*\|$/, ''));
+        return !!mol && !!query && mol.get_substruct_match(query) !== '{}';
+      } catch {
+        return false;
+      } finally {
+        mol?.delete();
+        query?.delete();
+      }
+    };
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const rdkit = all();
+    const rdkitSmilesSource = PackageFunctions.convertMolNotation('C[C@H](N)C(=O)O', DG.chem.Notation.Smiles,
+      DG.chem.Notation.MolBlock);
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      const crux = all();
+      const differences: string[] = [];
+      for (const what of Object.keys(molecules)) {
+        crux[what].forEach((c: string, k: number) => {
+          const r = rdkit[what][k];
+          const t = targets[k] ?? 'isSmiles|validateMolecule';
+          const query = t === DG.chem.Notation.Smarts || t === 'cxsmarts';
+          const plain = (x: string) => x.replace(/ \|.*\|$/, ''); // a CXSMILES' molecule (its extension: below)
+          const same = c === r || (k < targets.length && !query && rdkitCanonical(plain(c)) !== null &&
+            rdkitCanonical(plain(c)) === rdkitCanonical(plain(r))) || (query && matchesItself(c, molecules[what]));
+          if (!same)
+            differences.push(`${what} -> ${t}: ${c.slice(0, 90)} vs RDKit's ${r.slice(0, 90)}`);
+        });
+      }
+      expect(differences.join('\n'), '', 'the same molecules and answers');
+      // what RDKit reads and Crux skips goes to RDKit: the same strings
+      for (const what of ['query label', 'ring bond count'])
+        expect(JSON.stringify(crux[what]), JSON.stringify(rdkit[what]), what);
+      expect(crux['AND group'][1].includes('&1:'), true, 'the AND group kept in CXSMILES');
+      expect(crux['AND group'][3].includes('STERAC'), true, 'the AND group kept in V3000');
+      const smilesSource = PackageFunctions.convertMolNotation('C[C@H](N)C(=O)O', DG.chem.Notation.Smiles,
+        DG.chem.Notation.MolBlock);
+      expect(smilesSource.split('\n')[3].slice(12, 15), rdkitSmilesSource.split('\n')[3].slice(12, 15),
+        'a SMILES with a centre: the chiral flag of RDKit mode');
+      expect(rdkitCanonical(smilesSource), rdkitCanonical(rdkitSmilesSource), 'the same molecule');
+    } finally {
+      setChemicalEngine(null);
+    }
+  });
+
+  test('break it: a column\'s conversion across chunks, with rows Crux cannot read', async () => {
+    const base = (await jobMolecules()).filter((m) => m && m !== 'C1CC(');
+    const molecules = Array.from({length: 2500}, (_, i) => i === 1001 ? '' : base[i % base.length]);
+    const unreadable = [0, 999, 1000, 2499];
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const rdkit = await convertNotationForColumn(DG.Column.fromStrings('m', molecules), DG.chem.Notation.MolBlock);
+    setChemicalEngine(ChemicalEngine.Crux);
+    setCruxUnreadableForTests(unreadable.map((i) => molecules[i]));
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      const crux = await convertNotationForColumn(DG.Column.fromStrings('m', molecules), DG.chem.Notation.MolBlock);
+      expect(crux.length, 2500);
+      expect(crux[1001], '', 'an empty cell stays empty');
+      // a row whose molecule Crux "cannot read" gets RDKit's block (each of them is also elsewhere in the column)
+      for (const i of unreadable)
+        expect(crux[i], rdkit[i], `row ${i}: RDKit's block`);
+      const other = crux.filter((b, i) => !unreadable.includes(i) && i !== 1001 && !b.includes('M  END')).length;
+      expect(other, 0, 'every other row a MOL block');
+    } finally {
+      setCruxUnreadableForTests(null);
+      setChemicalEngine(null);
+    }
+  }, {timeout: 300000});
+
+  test('break it: a trap in the panels and conversions leaves RDKit for the session', async () => {
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const molecule = 'CC(=O)Oc1ccccc1C(=O)O';
+    const rdkit = [JSON.stringify(await getStructuralAlerts(molecule)),
+      PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock)];
+    setChemicalEngine(ChemicalEngine.Crux);
+    expect(await cruxReady(), true);
+    setCruxParseTrapForTests(true);
+    try {
+      const alerts = JSON.stringify(await getStructuralAlerts(molecule));
+      expect(isCruxRequested(), false, 'the trap marked Crux failed');
+      expect(alerts, rdkit[0], 'RDKit\'s alerts');
+      expect(PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock), rdkit[1],
+        'RDKit\'s block');
+      expect(PackageFunctions.isSmiles(molecule), true);
+      expect(PackageFunctions.validateMolecule(molecule), '');
+      let error = '';
+      try {
+        await getToxicityAlertsColumns(DG.Column.fromStrings('m', [molecule]), ['Brenk']);
+      } catch (e: any) {
+        error = e.message;
+      }
+      expect(error, TOXICITY_ALERTS_CRUX_FAILED, 'toxicity alerts name the failure');
+    } finally {
+      setCruxParseTrapForTests(false);
+      resetCruxLoaderForTests(null); // the next session's Crux
+    }
+    expect(await cruxReady(), true, 'Crux back after the reset');
+    setChemicalEngine(null);
+  });
+
+  test('break it: a Kekulé conversion leaves the RDKit search its molecules', async () => {
+    // the RDKit pool's convertMolNotation kekulized the molecules its searches had cached (2026-10-23 review)
+    setChemicalEngine(ChemicalEngine.RDKit);
+    try {
+      const molecules = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
+      const before = (await chemSubstructureSearchLibrary(molecules, 'c1ccccc1', '')).trueCount;
+      await convertNotationForColumn(molecules, DG.chem.Notation.Smiles, true);
+      const after = (await chemSubstructureSearchLibrary(molecules, 'c1ccccc1', '')).trueCount;
+      expect(after, before, 'the same hits after the Kekulé conversion');
+    } finally {
+      setChemicalEngine(null);
+    }
+  });
+
+  test('MMP: generated molecules and a pair\'s alignment on Crux', async () => {
+    const cores = ['c1ccc(cc1)[*:1]', 'O=C(N[*:1])c1ccccc1', 'C1CCN(CC1)[*:1]', ''];
+    const fragments = ['[*:1]C(F)(F)F', '[*:1]CCO', '[*:1]c1ccncc1', '[*:1]C'];
+    setChemicalEngine(ChemicalEngine.RDKit);
+    const rdkit = await mmpLinkFragmentsByEngine(cores, fragments);
+    const rdkitPair = await getInverseSubstructuresAndAlign(['c1ccc(cc1)[*:1]'], ['Cc1ccccc1'], ['Oc1ccccc1'],
+      chemCommonRdKit.getRdKitModule());
+    setChemicalEngine(ChemicalEngine.Crux);
+    try {
+      expect(await cruxReady(), true, 'the Crux module loads');
+      const fallbacks = cruxFallbackCount('mmpLinkFragments') + cruxFallbackCount('mmpAlign');
+      const crux = await mmpLinkFragmentsByEngine(cores, fragments);
+      expect(JSON.stringify(crux.map((s) => s && rdkitCanonical(s))),
+        JSON.stringify(rdkit.map((s) => s && rdkitCanonical(s))), 'the same molecules');
+      expect(crux[3], '', 'none for an empty core');
+      const pair = await getInverseSubstructuresAndAlign(['c1ccc(cc1)[*:1]'], ['Cc1ccccc1'], ['Oc1ccccc1'],
+        chemCommonRdKit.getRdKitModule());
+      expect(pair.fromAligned[0].includes('M  END') && pair.toAligned[0].includes('M  END'), true, 'aligned');
+      expect(JSON.stringify([pair.inverse1[0]?.atoms, pair.inverse2[0]?.atoms]),
+        JSON.stringify([rdkitPair.inverse1[0]?.atoms, rdkitPair.inverse2[0]?.atoms]), 'the atoms outside the core');
+      expect(cruxFallbackCount('mmpLinkFragments') + cruxFallbackCount('mmpAlign'), fallbacks, 'Crux did them');
+    } finally {
+      setChemicalEngine(null);
+    }
+  });
 });
 
 /** The `scaffold` MOL blocks of a scaffold tree, depth first. */
