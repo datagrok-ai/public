@@ -67,6 +67,11 @@ export interface DomainAction<TRow extends DomainRowLike = DomainRowLike> {
 export type RowValidator<TRow extends DomainRowLike = DomainRowLike> =
   (value: unknown, row: RowView<TRow>) => string | null;
 
+/** What an app declares on a table — validators, renderer, actions, importer — run over every
+ * handle {@link domains.table} makes for the address. */
+export type DomainConfigure<TRow extends DomainRowLike = DomainRowLike> =
+  (table: DomainTable<TRow>) => void | Promise<void>;
+
 /** What `DomainTable.app()` takes: the app's options without the table, plus the view's name
  * (the plural name by default), its base path (`/domains/<schema>/<table>` by default) and the
  * app class — a `DomainApp` subclass with its own ribbon, presets and shortcuts. */
@@ -146,6 +151,10 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 
   private static readonly _bySource = new WeakMap<DomainSource, DomainTable>();
   private static readonly _byRow = new WeakMap<ReadonlySignal<RowView | null>, DomainSource>();
+  // one registry per page, not per bundle: the `/domains` route runs in PowerPack's copy of this
+  // library, and must still dress a table with what the app's bundle configured
+  private static readonly _configure: Map<string, DomainConfigure<any>[]> =
+    (globalThis as Record<PropertyKey, any>)[Symbol.for('ems.configure')] ??= new Map();
 
   constructor(readonly address: string, readonly table: DomainTableLike, readonly access: Access) {
     this.handler = new DG.DomainObjectHandler(address);
@@ -158,6 +167,26 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 
   get properties(): IProperty[] {
     return this.table.properties;
+  }
+
+  /** Registers `fn` for every handle over `address` made from now on; returns the unregister function. */
+  static configure<TRow extends DomainRowLike = DomainRowLike>(address: string, fn: DomainConfigure<TRow>):
+    () => void {
+    const list = DomainTable._configure.get(address) ?? [];
+    DomainTable._configure.set(address, list);
+    list.push(fn);
+    return () => {
+      const at = list.indexOf(fn);
+      if (at >= 0)
+        list.splice(at, 1);
+    };
+  }
+
+  /** The handle with everything registered for its address applied, in registration order. */
+  static async configured<TRow extends DomainRowLike>(table: DomainTable<TRow>): Promise<DomainTable<TRow>> {
+    for (const fn of [...DomainTable._configure.get(table.address) ?? []])
+      await fn(table);
+    return table;
   }
 
   /** The handle a source was made through, for the controls over it. */
@@ -378,15 +407,20 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 }
 
 export const domains = {
-  /** The table's shape and the caller's access in one round of requests; a handle per call, so
-   * the access is re-acquired by acquiring again. */
+  /** The table's shape and the caller's access in one round of requests, dressed by everything
+   * {@link configure}d for the address; a handle per call, so the access is re-acquired by
+   * acquiring again. */
   async table<TRow extends DomainRowLike = DomainRowLike>(address: string): Promise<DomainTable<TRow>> {
     const backend = emsBackends.domain;
     if (backend === undefined)
       throw new Error('no platform backend for domain tables');
     const table = await backend.table(address);
-    return new DomainTable<TRow>(address, table, Access.from(await table.access()));
+    return DomainTable.configured(new DomainTable<TRow>(address, table, Access.from(await table.access())));
   },
+  /** What an app declares on a table, applied to every handle {@link table} makes for the address —
+   * the app's own views, child tabs, the `/domains` route, trees. Register at module load; `fn` may
+   * be async, and a throw rejects the handle. Returns the unregister function. */
+  configure: DomainTable.configure,
   form: (target: DomainFormTarget, options?: DomainFormOptions): DomainForm => new DomainForm(target, options),
   list: (source: DomainSource, options?: DomainListOptions): DomainList => new DomainList(source, options),
   pick: (table: string, options?: DomainPickOptions): DomainPick => new DomainPick(table, options),
