@@ -249,7 +249,8 @@ export class JSMol {
     get_avalon_fp(details?: string | null): string;
     /**
      * PORT(SmartsWrite.cpp `MolToCXSmarts`): `get_cxsmarts(details)`: the SMARTS, then
-     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order.
+     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order: with a
+     * conformer its coordinates and their wedges, and the link nodes, as `get_cxsmiles` writes them.
      */
     get_cxsmarts(details?: string | null): string;
     /**
@@ -276,6 +277,11 @@ export class JSMol {
      * module Chem already ships (decision `chem-wasm`): throws `not supported by Crux`.
      */
     get_inchi(_options?: string | null): string;
+    /**
+     * [`mol_inchi_input`]: InChI's input for crux-sketch's `inchiFromInput`; `undefined` where RDKit-js's `get_inchi`
+     * gives `""` without the library, a throw where it throws.
+     */
+    get_inchi_input(options?: string | null): Uint8Array | undefined;
     /**
      * PORT(minilib.cpp:158-160): `get_json()`: `MolInterchange::MolToJSONData(mol)`, RDKit's
      * commonchem writer with its extensions (`molfile::mol_interchange`, decision `chem-wasm`).
@@ -775,6 +781,12 @@ export function calcDescriptors(molecules: (string | null)[], names: string[]): 
 export function chemAlerts(molecules: (string | null)[], catalogs: string[], atoms: boolean): string;
 
 /**
+ * `chemEmbed3d(molecule)`: the MOL block of `molecule` (a SMILES, or a MOL block when it holds `M  END`) with its
+ * RDKit ETKDG coordinates, or `undefined` (module docs).
+ */
+export function chemEmbed3d(molecule: string): string | undefined;
+
+/**
  * `chemProperties(molecules, names)`: the JSON of Chem's property columns (module docs); throws on a name not in
  * its table.
  */
@@ -787,7 +799,7 @@ export function chemQed(molecules: (string | null)[]): string;
 
 /**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
- * is `"core,heavy,search,descriptors,scaffold-tree"`.
+ * is `"core,heavy,search,descriptors,scaffold-tree,inchi-input"`.
  */
 export function chemWasmModules(): string;
 
@@ -990,6 +1002,7 @@ export interface InitOutput {
     readonly __wbg_similarityresult_free: (a: number, b: number) => void;
     readonly calcDescriptors: (a: any, b: number, c: number) => [number, number];
     readonly chemAlerts: (a: any, b: number, c: number, d: number) => [number, number, number, number];
+    readonly chemEmbed3d: (a: number, b: number) => [number, number];
     readonly chemProperties: (a: any, b: number, c: number) => [number, number, number, number];
     readonly chemQed: (a: any) => [number, number];
     readonly chemWasmModules: () => [number, number];
@@ -1056,6 +1069,7 @@ export interface InitOutput {
     readonly jsmol_get_fp_json: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly jsmol_get_frags: (a: number, b: number, c: number) => [number, number, number];
     readonly jsmol_get_inchi: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly jsmol_get_inchi_input: (a: number, b: number, c: number) => [number, number, number, number];
     readonly jsmol_get_json: (a: number) => [number, number, number, number];
     readonly jsmol_get_kekule_form: (a: number) => [number, number, number, number];
     readonly jsmol_get_maccs_fp: (a: number) => [number, number, number, number];

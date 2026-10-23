@@ -718,7 +718,8 @@ export class JSMol {
     }
     /**
      * PORT(SmartsWrite.cpp `MolToCXSmarts`): `get_cxsmarts(details)`: the SMARTS, then
-     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order.
+     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order: with a
+     * conformer its coordinates and their wedges, and the link nodes, as `get_cxsmiles` writes them.
      * @param {string | null} [details]
      * @returns {string}
      */
@@ -859,6 +860,26 @@ export class JSMol {
         } finally {
             wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
         }
+    }
+    /**
+     * [`mol_inchi_input`]: InChI's input for crux-sketch's `inchiFromInput`; `undefined` where RDKit-js's `get_inchi`
+     * gives `""` without the library, a throw where it throws.
+     * @param {string | null} [options]
+     * @returns {Uint8Array | undefined}
+     */
+    get_inchi_input(options) {
+        var ptr0 = isLikeNone(options) ? 0 : passStringToWasm0(options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ret = wasm.jsmol_get_inchi_input(this.__wbg_ptr, ptr0, len0);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        let v2;
+        if (ret[0] !== 0) {
+            v2 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+            wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        }
+        return v2;
     }
     /**
      * PORT(minilib.cpp:158-160): `get_json()`: `MolInterchange::MolToJSONData(mol)`, RDKit's
@@ -2510,6 +2531,24 @@ export function chemAlerts(molecules, catalogs, atoms) {
 }
 
 /**
+ * `chemEmbed3d(molecule)`: the MOL block of `molecule` (a SMILES, or a MOL block when it holds `M  END`) with its
+ * RDKit ETKDG coordinates, or `undefined` (module docs).
+ * @param {string} molecule
+ * @returns {string | undefined}
+ */
+export function chemEmbed3d(molecule) {
+    const ptr0 = passStringToWasm0(molecule, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.chemEmbed3d(ptr0, len0);
+    let v2;
+    if (ret[0] !== 0) {
+        v2 = getStringFromWasm0(ret[0], ret[1]);
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    }
+    return v2;
+}
+
+/**
  * `chemProperties(molecules, names)`: the JSON of Chem's property columns (module docs); throws on a name not in
  * its table.
  * @param {(string | null)[]} molecules
@@ -2557,7 +2596,7 @@ export function chemQed(molecules) {
 
 /**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
- * is `"core,heavy,search,descriptors,scaffold-tree"`.
+ * is `"core,heavy,search,descriptors,scaffold-tree,inchi-input"`.
  * @returns {string}
  */
 export function chemWasmModules() {

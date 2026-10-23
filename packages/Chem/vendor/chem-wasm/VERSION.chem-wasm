@@ -2,9 +2,9 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: 8d14d9eb22fd5af99196fd5d68bcd2c9773de3c0
+crux_core_rev: bceb40f00e975b2fe766b4e99604715305121be7
 crux_core_dirty: False
-built_utc: 2026-10-23T02:01:04.985Z
+built_utc: 2026-10-23T04:52:02.585Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
@@ -13,18 +13,18 @@ wasm_bindgen.version: 0.2.129
 wasm_bindgen.flags: --target web --remove-name-section
 wasm_opt.version: wasm-opt version 133 (version_133)
 wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-bulk-memory-opt --enable-call-indirect-overlong --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 5102328
-files.chem_wasm_bg.wasm.gzip9: 1924885
-files.chem_wasm_bg.wasm.brotli11: 1419177
-files.chem_wasm.js.raw: 139040
-files.chem_wasm.js.gzip9: 21216
-files.chem_wasm.js.brotli11: 17842
-cargo_artifact.raw: 7321698
-cargo_artifact.gzip9: 2393985
-cargo_artifact.brotli11: 1699110
+files.chem_wasm_bg.wasm.raw: 5100452
+files.chem_wasm_bg.wasm.gzip9: 1928575
+files.chem_wasm_bg.wasm.brotli11: 1423003
+files.chem_wasm.js.raw: 140606
+files.chem_wasm.js.gzip9: 21517
+files.chem_wasm.js.brotli11: 18117
+cargo_artifact.raw: 7321306
+cargo_artifact.gzip9: 2391951
+cargo_artifact.brotli11: 1704900
 
-vendored from: a clean build of crux-core main 8d14d9eb2 (build-ship.sh chem)
-chem_wasm_bg.wasm: 5,102,328 B raw, sha256 ad86d13c3642fa7e
+vendored from: a clean build of crux-core main bceb40f00 (build-ship.sh chem)
+chem_wasm_bg.wasm: 5,100,452 B raw, sha256 1f739279dbb3c5ef
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes: chemQed (RDKit's QED and its eight properties) and chemAlerts (FilterCatalog's Brenk and NIH alerts with their atoms) for Crux mode's drug-likeness and toxicity (chem-qed-alerts), on top of a8a136474's (molzip, R-group stereo, fingerprint options, MMPA, chemProperties, the MOL-block ring stereo fix)
+includes: get_cxsmarts with the coordinates (chem-cxsmarts-coords), chemEmbed3d for the 3D Structure panel (chem-embed3d) and get_inchi_input, InChI's input for crux-sketch's InChI module (chem-inchi-split), on top of 8d14d9eb2's (chemQed, chemAlerts, molzip, R-group stereo, fingerprint options, MMPA, chemProperties)
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)
