@@ -3,11 +3,11 @@
 ## v.next
 
 * Unsaved changes: The dialog reads CANCEL · DISCARD · SAVE, with SAVE on the right as the primary, as in the platform's own prompt
-* Added `domains.configure(address, fn)`: an app's validators, renderer, actions and importer apply to every handle over the table, so child tabs, trees, views and the `/domains` route follow the app's rules
+* Added `domains.configure(address, fn, {id})`: an app's validators, renderer, actions and importer apply to every handle over the table, so child tabs, trees, views and the `/domains` route follow the app's rules; registering the same `id` again replaces the entry, so a bundle loaded twice never doubles an action
 * Bulk edit: Checked the table's validators over the rows as they would land; a refusal shows inside the dialog instead of a balloon
 * Bulk edit: Redesigned the dialog as one aligned form: a picker chooses the fields to change, each field shows the rows' current value or "Will be cleared", and the button says what it does ("Update 2 issues")
 * Import: The Preview step's button reads "Import 3 vendors" and is disabled, with the reason beside it, when "All or nothing" would abort; a refused cell is tinted, cut-off cells show their full text on hover, and a skipped row says why
-* Child tabs: A list-mode child shows its whole form beside the list, scrolling from the first field, and child tabs keep room for about 8 rows under a tall form; grid headers fit two-line captions, so units are no longer cut
+* Child tabs: A list-mode child grows to its whole form beside the list, reached by scrolling the page, and child tabs keep room for about 8 rows under a tall form; a child table that fails to open shows its error in its own tab while the others work; grid headers fit two-line captions, so units are no longer cut
 * Filters: An invalid query shows its reason under the box in red, and in red in the status bar; a condition just added in the builder no longer dims the list or reports a problem
 * Trash: Restore uses the undo icon instead of a look-alike of Delete
 * DomainSource: Added `hosted`: the app answers a host filter condition (a structure search) with the ids of its rows, sent as an id list before every read

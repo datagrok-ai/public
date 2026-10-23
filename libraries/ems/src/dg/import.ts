@@ -209,7 +209,7 @@ class ImportFlow {
       onCancel: () => this._settle(null),
     });
     this._wizard.root.classList.add('u2-domain-import');
-    this._wizard.openInDialog(`Import ${ImportFlow._plural(this._table)}`, {width: 720, height: 560});
+    this._wizard.openInDialog(`Import ${DomainTable.noun(this._table.info)}`, {width: 720, height: 560});
   }
 
   /** The first blocking problem, which is what the NEXT button shows and gates on. */
@@ -364,7 +364,7 @@ class ImportFlow {
     'u2-domain-import-summary'));
     const valid = sent.length > PREVIEW_ROWS ? null : report.willInsert + report.willUpdate;
     this._importText.value = valid === null ? 'Import' :
-      `Import ${plural(valid, ImportFlow._singular(this._table), ImportFlow._plural(this._table))}`;
+      `Import ${plural(valid, DomainTable.noun(this._table.info, true), DomainTable.noun(this._table.info))}`;
     // the counts are what the batch WOULD do row by row; all-or-nothing makes one bad row the
     // verdict on all of them
     this._previewBlock.value = options.allOrNothing !== false && errors > 0 ? this._abortReason(errors, valid) : null;
@@ -586,7 +586,7 @@ class ImportFlow {
     }
     // the asterisk the forms use, in the option itself: a picker's own list is all the user sees
     const items: ChoiceItem[] = [SKIP, ...this._targets.map((p) =>
-      ({value: p.name!, label: `${ImportFlow.captionOf(p)}${p.nullable === false ? ' *' : ''}`}))];
+      ({value: p.name!, label: `${DomainTable.captionOf(p)}${p.nullable === false ? ' *' : ''}`}))];
     const columns = frame.columns.names();
     for (const column of columns) {
       // owned by hand, not by a scope: the first remap runs inside the wizard's own constructor
@@ -602,16 +602,10 @@ class ImportFlow {
     this._rows.value = columns.map((column) => ({column}));
   }
 
-  /** A target as a form labels it: the declared caption, else the column name made presentable. */
-  static captionOf(prop: IProperty): string {
-    const name = prop.friendlyName ?? (prop.name ?? '').replace(/_/g, ' ');
-    return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
-  }
-
-  /** The same, by column name. */
+  /** A target as a form labels it, by column name. */
   private static _caption(flow: ImportFlow, column: string): string {
     const prop = flow._table.properties.find((p) => p.name === column);
-    return prop === undefined ? column : ImportFlow.captionOf(prop);
+    return prop === undefined ? column : DomainTable.captionOf(prop);
   }
 
   /** The source column the keys are written back to: the importer's choice, else the business
@@ -627,18 +621,8 @@ class ImportFlow {
     const key = this._table.info.businessKey;
     if (key.length === 1)
       return ImportFlow._caption(this, key[0]);
-    const name = (this._table.info.singularName || 'row').replace(/_/g, ' ');
+    const name = DomainTable.noun(this._table.info, true);
     return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
-  }
-
-  /** The table's singular name, as the user reads it. */
-  private static _singular(table: DomainTable): string {
-    return (table.info.singularName || 'row').replace(/_/g, ' ').toLowerCase();
-  }
-
-  /** The table's plural name, as the user reads it. */
-  private static _plural(table: DomainTable): string {
-    return (table.info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
   }
 
   /** Where a source column goes: the importer's match, else the name the way a person reads it —
@@ -696,7 +680,7 @@ class ImportFlow {
     } else {
       for (const p of this._targets) {
         if (p.nullable === false && (p.defaultValue === undefined || p.defaultValue === null) && !seen.has(p.name!)) {
-          problems.push(`Required column "${ImportFlow.captionOf(p)}" is not mapped — ` +
+          problems.push(`Required column "${DomainTable.captionOf(p)}" is not mapped — ` +
             'rows without a value will fail.');
         }
       }

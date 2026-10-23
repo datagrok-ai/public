@@ -86,6 +86,24 @@ scoped('every handle over the address is configured, the child tab\'s too; unreg
   assert.equal(bare.renderer, bare.defaultRenderer);
 });
 
+scoped('one registered again under the same id replaces the earlier: applied once', async () => {
+  emsBackends.domain = backend();
+  const first = domains.configure('grit.issue', dress, {id: 'grit'});
+  // the same bundle evaluated again: an equal function, not the same one
+  const second = domains.configure('grit.issue', (issues) => dress(issues), {id: 'grit'});
+  try {
+    const handle = await domains.table('grit.issue');
+    assert.deepEqual(handle.validators.columns, ['done']);
+    assert.deepEqual(handle.actions.for({id: 'i2', done: false}).map((a) => a.name), ['Close'], 'one action, not two');
+    first();
+    assert.deepEqual((await domains.table('grit.issue')).validators.columns, ['done'],
+      'the replaced entry\'s unregister leaves the one that replaced it');
+  } finally {
+    second();
+  }
+  assert.deepEqual((await domains.table('grit.issue')).validators.columns, []);
+});
+
 scoped('a configure that throws rejects the handle', async () => {
   emsBackends.domain = backend();
   const unregister = domains.configure('grit.issue', async () => {

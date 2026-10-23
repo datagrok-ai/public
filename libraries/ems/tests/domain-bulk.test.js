@@ -187,6 +187,25 @@ scoped('one target is plain text, and one row is offered its business key', asyn
   source.dispose();
 });
 
+scoped('only a chosen field holds the button: one taken back with a bad value no longer blocks it', async () => {
+  const memory = backend();
+  const {source} = await table(memory);
+  select(source, (i) => i === 1);
+  const {running} = await opened(source);
+  choose('number', 'done');
+  await flush();
+  field('number').value.value = 0;
+  await flush();
+  assert.equal(okDisabled(), true, 'a chosen field with a bad value holds the button');
+  choose('done');
+  await flush();
+  assert.equal(shown('number'), false);
+  assert.equal(okDisabled(), false, 'the field taken back is not in the request, nor in the verdict');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+  source.dispose();
+});
+
 scoped('a selection past the cap disables the button and says how many are selected', async () => {
   const memory = many(1001);
   const {source} = await table(memory, {pageSize: 1100});

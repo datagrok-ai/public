@@ -1,5 +1,5 @@
 export {domains, DomainTable} from './facade.js';
-export type {DomainAction, RowValidator, DomainAppViewOptions} from './facade.js';
+export type {DomainAction, RowValidator, DomainAppViewOptions, DomainConfigure} from './facade.js';
 export {DomainForm} from './form.js';
 export type {DomainFormOptions, DomainFormTarget} from './form.js';
 export {DomainList} from './list.js';

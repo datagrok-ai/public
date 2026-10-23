@@ -20,7 +20,7 @@ import {confirmDiscard} from '../core/session.js';
 import type {DomainSource} from '../core/domain-source.js';
 import type {DomainQueryLike} from '../core/domain-backend.js';
 import {ObjectForm, propertyForm} from '@datagrok-libraries/u2/src/dg/index.js';
-import {DomainTable} from './facade.js';
+import {DomainTable, firstProblem} from './facade.js';
 import {DomainErrors} from './errors.js';
 
 export interface DomainBulkEditOptions {
@@ -82,15 +82,11 @@ export async function bulkEdit(source: DomainSource, options: DomainBulkEditOpti
 
 /** The table's plural name, as the user reads it — never "rows". */
 function _plural(source: DomainSource): string {
-  return (source.schema.info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
-}
-
-function _singular(source: DomainSource): string {
-  return source.schema.info.singularName.toLowerCase() || 'row';
+  return DomainTable.noun(source.schema.info);
 }
 
 function _count(source: DomainSource, n: number): string {
-  return plural(n, _singular(source), _plural(source));
+  return plural(n, DomainTable.noun(source.schema.info, true), _plural(source));
 }
 
 /** The targets a bulk edit can actually write: the frame's selection, and — only when the list is
@@ -101,17 +97,12 @@ function _targets(source: DomainSource): BulkTarget[] {
   const matching = source.search.peek() === '' && _filterOf(source) !== undefined;
   const targets: BulkTarget[] = [];
   if (selected > 0) {
-    const words = selected === 1 ? _singular(source) : _plural(source);
+    const words = DomainTable.noun(source.schema.info, selected === 1);
     targets.push({kind: SELECTED, label: `${selected.toLocaleString()} selected ${words}`, count: selected});
   }
   if (matching)
     targets.push({kind: MATCHING, label: `All ${_count(source, total)} matching the filter`, count: total});
   return targets;
-}
-
-function _caption(prop: IProperty): string {
-  const name = prop.friendlyName ?? prop.name ?? '';
-  return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 }
 
 function _open(source: DomainSource, props: IProperty[], targets: BulkTarget[],
@@ -134,7 +125,7 @@ function _open(source: DomainSource, props: IProperty[], targets: BulkTarget[],
   const keys = new Set(source.schema.info.businessKey);
   dialog.effect(() => picker.setItems(props
     .filter((p) => target.value.count <= 1 || !keys.has(p.name!))
-    .map((p) => ({value: p.name!, label: _caption(p)}))));
+    .map((p) => ({value: p.name!, label: DomainTable.captionOf(p)}))));
 
   const selection = source.selection.peek();
   for (const prop of props) {
@@ -239,7 +230,7 @@ async function _run(source: DomainSource, form: ObjectForm, columns: string[], s
   const report = await handle.table.updateWhere!(filter, written, {limit: MAX_ROWS}).catch((e) => {
     throw new Error(DomainErrors.message(e));
   });
-  const what = report.updated === 1 ? _singular(source) : _plural(source);
+  const what = DomainTable.noun(source.schema.info, report.updated === 1);
   notify.info(`Updated ${report.updated} ${what}${report.hasMore ?
     ` — more match than one edit writes (${MAX_ROWS}); run it again.` : '.'}`);
   await source.refresh();
@@ -256,5 +247,5 @@ async function _check(source: DomainSource, handle: DomainTable, filter: DomainQ
     await handle.table.query({filter, limit: MAX_ROWS + 1}) as RowView[];
   if (rows.length > MAX_ROWS)
     return _tooMany(source);
-  return handle.problem(rows.map((row) => ({...row, ...written})))?.message ?? null;
+  return firstProblem(handle, rows.map((row) => ({...row, ...written})))?.message ?? null;
 }

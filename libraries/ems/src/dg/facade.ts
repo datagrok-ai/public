@@ -151,10 +151,6 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 
   private static readonly _bySource = new WeakMap<DomainSource, DomainTable>();
   private static readonly _byRow = new WeakMap<ReadonlySignal<RowView | null>, DomainSource>();
-  // one registry per page, not per bundle: the `/domains` route runs in PowerPack's copy of this
-  // library, and must still dress a table with what the app's bundle configured
-  private static readonly _configure: Map<string, DomainConfigure<any>[]> =
-    (globalThis as Record<PropertyKey, any>)[Symbol.for('ems.configure')] ??= new Map();
 
   constructor(readonly address: string, readonly table: DomainTableLike, readonly access: Access) {
     this.handler = new DG.DomainObjectHandler(address);
@@ -169,24 +165,30 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return this.table.properties;
   }
 
-  /** Registers `fn` for every handle over `address` made from now on; returns the unregister function. */
-  static configure<TRow extends DomainRowLike = DomainRowLike>(address: string, fn: DomainConfigure<TRow>):
-    () => void {
-    const list = DomainTable._configure.get(address) ?? [];
-    DomainTable._configure.set(address, list);
-    list.push(fn);
+  /** Registers `fn` for every handle over `address` made from now on; one registered again under
+   * the same `id` replaces the earlier. Returns the unregister function. */
+  static configure<TRow extends DomainRowLike = DomainRowLike>(address: string, fn: DomainConfigure<TRow>,
+    options: {id?: string} = {}): () => void {
+    const entries = CONFIGURE.get(address) ?? new Map<unknown, DomainConfigure<any>>();
+    CONFIGURE.set(address, entries);
+    const key = options.id ?? fn;
+    entries.set(key, fn);
     return () => {
-      const at = list.indexOf(fn);
-      if (at >= 0)
-        list.splice(at, 1);
+      if (entries.get(key) === fn)
+        entries.delete(key);
     };
   }
 
-  /** The handle with everything registered for its address applied, in registration order. */
-  static async configured<TRow extends DomainRowLike>(table: DomainTable<TRow>): Promise<DomainTable<TRow>> {
-    for (const fn of [...DomainTable._configure.get(table.address) ?? []])
-      await fn(table);
-    return table;
+  /** A column as a form labels it: the declared caption, else the name made presentable. */
+  static captionOf(prop: IProperty): string {
+    const name = prop.friendlyName ?? (prop.name ?? '').replace(/_/g, ' ');
+    return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+  }
+
+  /** The table's noun as a sentence reads it, in lower case: the singular for one row, the plural
+   * otherwise — never "rows" where the table has a name. */
+  static noun(info: DomainTableInfoLike, one = false): string {
+    return (one ? info.singularName || 'row' : info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
   }
 
   /** The handle a source was made through, for the controls over it. */
@@ -359,7 +361,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     DomainTable._byRow.set(source.currentRow, source);
     source.guard(() => this._validate(source));
     // last resort, after every guard: the writer refused over a cell and named neither
-    source.nameCell = (row, column, problem) => this._nameCell(row as RowView<TRow>, column, problem);
+    source.nameCell = (row, column, problem) => nameCell(this, row as RowView<TRow>, column, problem);
     // every refused save is one balloon, form or not, closed once the refusal is settled; a load
     // failure is the list's and the hint's to show
     let balloon: NotifyHandle | null = null;
@@ -373,42 +375,53 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return source;
   }
 
-  /** The first problem the validators find over `rows`, every registered column of each, named by
-   * row and column — null where all of them pass. */
-  problem(rows: Iterable<RowView<TRow>>): {row: RowView<TRow>, message: string} | null {
-    const columns = this.validators.columns;
-    for (const row of rows) {
-      for (const column of columns) {
-        const problem = this.validators.check(column, row[column], row);
-        // the refusal names the row it is about: from a list, "Status: …" alone names nothing
-        if (problem !== null)
-          return {row, message: this._nameCell(row, column, problem)};
-      }
-    }
-    return null;
-  }
-
   /** The validators over every row the batch will send — a form wires them into its inputs, but a
    * row action or a plain `row.column = …` never goes near a form, and the rule still holds. */
   private _validate(source: DomainSource<TRow>): string | null {
-    const found = this.problem(source.pending().filter((row) =>
+    const found = firstProblem(this, source.pending().filter((row) =>
       row[Rows.STATE] !== 'deleted' && row[Rows.STATE] !== 'restored'));
     if (found === null)
       return null;
     source.markProblem(found.row.id);
     return found.message;
   }
+}
 
-  /** A refusal about one cell, named: the row's caption and the column's, as a list or a grid
-   * needs them — the writer's own "Value can't be empty" says nothing about which field. */
-  private _nameCell(row: RowView<TRow>, column: string, problem: string): string {
-    return `${this.renderer.caption(row)}: ${DomainTable._caption(this.properties, column)}: ${problem}`;
-  }
+// one registry per page, not per bundle: the `/domains` route runs in PowerPack's copy of this
+// library, and must still dress a table with what the app's bundle configured. The version keeps a
+// copy with another `DomainTable` contract off it: bump it when that contract changes
+const CONFIGURE: Map<string, Map<unknown, DomainConfigure<any>>> =
+  (globalThis as Record<PropertyKey, any>)[Symbol.for('ems.configure.v1')] ??= new Map();
 
-  private static _caption(properties: IProperty[], column: string): string {
-    const name = properties.find((p) => p.name === column)?.friendlyName ?? column;
-    return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+/** The handle with everything registered for its address applied, in registration order. */
+async function configured<TRow extends DomainRowLike>(table: DomainTable<TRow>): Promise<DomainTable<TRow>> {
+  for (const fn of [...CONFIGURE.get(table.address)?.values() ?? []])
+    await fn(table);
+  return table;
+}
+
+/** The first problem the table's validators find over `rows`, every registered column of each,
+ * named by row and column — null where all of them pass. */
+export function firstProblem<TRow extends DomainRowLike>(table: DomainTable<TRow>, rows: Iterable<RowView<TRow>>):
+  {row: RowView<TRow>, message: string} | null {
+  const columns = table.validators.columns;
+  for (const row of rows) {
+    for (const column of columns) {
+      const problem = table.validators.check(column, row[column], row);
+      // the refusal names the row it is about: from a list, "Status: …" alone names nothing
+      if (problem !== null)
+        return {row, message: nameCell(table, row, column, problem)};
+    }
   }
+  return null;
+}
+
+/** A refusal about one cell, named: the row's caption and the column's, as a list or a grid needs
+ * them — the writer's own "Value can't be empty" says nothing about which field. */
+function nameCell<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>, column: string,
+  problem: string): string {
+  const prop = table.properties.find((p) => p.name === column) ?? {name: column};
+  return `${table.renderer.caption(row)}: ${DomainTable.captionOf(prop)}: ${problem}`;
 }
 
 export const domains = {
@@ -420,11 +433,12 @@ export const domains = {
     if (backend === undefined)
       throw new Error('no platform backend for domain tables');
     const table = await backend.table(address);
-    return DomainTable.configured(new DomainTable<TRow>(address, table, Access.from(await table.access())));
+    return configured(new DomainTable<TRow>(address, table, Access.from(await table.access())));
   },
   /** What an app declares on a table, applied to every handle {@link table} makes for the address —
-   * the app's own views, child tabs, the `/domains` route, trees. Register at module load; `fn` may
-   * be async, and a throw rejects the handle. Returns the unregister function. */
+   * the app's own views, child tabs, the `/domains` route, trees. Register at module load under a
+   * stable `id`, so a bundle evaluated twice replaces its entry rather than adding a second; `fn`
+   * may be async, and a throw rejects the handle. Returns the unregister function. */
   configure: DomainTable.configure,
   form: (target: DomainFormTarget, options?: DomainFormOptions): DomainForm => new DomainForm(target, options),
   list: (source: DomainSource, options?: DomainListOptions): DomainList => new DomainList(source, options),
