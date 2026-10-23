@@ -371,6 +371,7 @@ export async function initAutoTests(package_: _DG.Package, module?: any) {
   }
   const moduleAutoTests = [];
   const moduleDemo = [];
+  let previousDemo: string | null = null;
   const moduleDetectors = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
   const reg = new RegExp(/skip:\s*([^,\s]+)|wait:\s*(\d+)|cat:\s*([^,\s]+)|timeout:\s*(\d+)/g);
@@ -412,13 +413,18 @@ export async function initAutoTests(package_: _DG.Package, module?: any) {
       }
     }
     if (demo) {
-      const wait = f.options['demoWait'] ? parseInt(f.options['demoWait']) : undefined;
       const test = new Test(demoCatName, f.friendlyName, async () => {
-        await delay(300);
+        await uiSettled('the views the previous test closed');
+        // an error raised after the previous demo had settled surfaces here: name the demo it belongs to
+        const late = previousDemo ? await grok.shell.lastError : null;
         grok.shell.clearLastError();
+        if (late)
+          throw new Error(`${previousDemo} raised an error after it finished: ${late}`);
+        previousDemo = f.friendlyName;
         await f.apply();
-        await delay(wait ? wait : 2000);
+        await uiSettled(f.friendlyName);
         const unhandled = await grok.shell.lastError;
+        grok.shell.clearLastError();
         if (unhandled)
           throw new Error(unhandled);
       }, { skipReason: f.options['demoSkip'] });
@@ -936,6 +942,21 @@ export async function settled(viewer: _DG.Viewer, timeout: number = 10000): Prom
     held = box.width > 0 && box.height > 0 && !renderPending(viewer) ? held + 1 : 0;
     return held >= 2;
   }, `${viewer.type} is still rendering`, timeout, 16);
+}
+
+/** Resolves once nothing is on its way to the screen, on two checks in a row: no viewer shown in a table view is
+ * rendering, and no loader (`ui.wait`, `ui.setUpdateIndicator`) or busy region (`aria-busy`) is shown; rejects
+ * after [timeout] ms, naming [what] was still loading. */
+export async function uiSettled(what: string, timeout: number = 20000): Promise<void> {
+  const busy = () => Array.from(document.querySelectorAll<HTMLElement>(
+    '.grok-wait .grok-loader, .d4-update-shadow, [aria-busy="true"]')).some((e) => e.offsetParent !== null) ||
+    Array.from(grok.shell.tableViews).some((tv) => Array.from(tv.viewers)
+      .some((v) => v.root.offsetParent !== null && renderPending(v)));
+  let held = 0;
+  await waitUntil(() => {
+    held = busy() ? 0 : held + 1;
+    return held >= 2;
+  }, `${what}: still loading`, timeout, 16);
 }
 
 // platforms before 2026-09 do not report pending renders
