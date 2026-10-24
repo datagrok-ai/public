@@ -16,18 +16,10 @@ export type SelectionWidgetOptions = {
   activityColumn: DG.Column<number>, columns: AggregationColumns, colorPalette: SeqPalette, isAnalysis: boolean,
 };
 
-/**
- * Creates selection grid with WebLogo rendered in its header.
- * @param table - table with selected sequences.
- * @param options - options for selection widget.
- * @return - selection grid.
- */
-export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidgetOptions): HTMLElement {
-  if (options.tableSelection.trueCount === 0)
-    return ui.divText('No compounds selected');
-
-
-  const newTable = DG.DataFrame.create(table.rowCount);
+/** Builds the "Selected compounds" table from the visible columns of the analysis grid. */
+export function getSelectionTable(options: SelectionWidgetOptions):
+  {newTable: DG.DataFrame, gridSortOrder: {cols: DG.Column[], types: boolean[]} | null} {
+  const newTable = DG.DataFrame.create(options.tableSelection.length);
   newTable.name = 'Selected compounds';
   newTable.filter.copyFrom(options.tableSelection);
   let gridSortOrder: {cols: DG.Column[], types: boolean[]} | null = null;
@@ -61,12 +53,30 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
       (sourceCol.isNumerical ? (i: number): number => sourceColRawData[i] :
         (i: number): string => sourceColCategories[sourceColRawData[i]]));
     const getNullableValue = (i: number): any => sourceCol.isNone(i) ? null : getValue(i);
+    // a virtual column would pass values such as JS BigInt that the platform cannot read as its declared type
     const col = sourceCol.name === options.activityColumn.name ?
       newTable.columns.addNewFloat(gridCol.name).init((i) => getNullableValue(i) as number) :
-      newTable.columns.addNewVirtual(gridCol.name, (i) => getNullableValue(i) as unknown, sourceCol.type as DG.TYPE);
+      !sourceColRawData || !sourceColCategories ? newTable.columns.add(sourceCol.clone()) :
+        newTable.columns.addNewVirtual(gridCol.name, (i) => getNullableValue(i) as unknown, sourceCol.type as DG.TYPE);
+    col.name = gridCol.name;
     for (const [tag, value] of sourceCol.tags)
       col.setTag(tag, value);
   }
+  return {newTable, gridSortOrder};
+}
+
+/**
+ * Creates selection grid with WebLogo rendered in its header.
+ * @param table - table with selected sequences.
+ * @param options - options for selection widget.
+ * @return - selection grid.
+ */
+export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidgetOptions): HTMLElement {
+  if (options.tableSelection.trueCount === 0)
+    return ui.divText('No compounds selected');
+
+
+  const {newTable, gridSortOrder} = getSelectionTable(options);
   const grid = newTable.plot.grid();
   grid.props.showRowHeader = false;
   grid.root.style.maxWidth = '100%';

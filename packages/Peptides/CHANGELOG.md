@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1004](https://github.com/datagrok-ai/core/issues/1004): Selection: Fixed bigint columns in the selected-compounds table failing with a cast error in column tooltips, Details and Filter histograms
 * [core#1010](https://github.com/datagrok-ai/core/issues/1010): Logo Summary Table: Fixed WebLogo cells failing with "row counts differ" when the table is filtered and Web Logo Aggregation Type is not count
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Bio | Analyze | SAR is disabled until the current table has a macromolecule column, instead of warning
 * Tests: Added package tests for the invariant-map and mutation-cliff exports, the mutation-cliff counts and position chart on 200 peptides, and the MCL cluster counts with the Logo Summary Table statistics at thresholds 10, 75 and 96; they replace the counts and oracles of the export, mutation-cliffs and similarity-threshold BDD features
