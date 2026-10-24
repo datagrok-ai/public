@@ -18,11 +18,8 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
   along — NorthwindTest is listed — and the project opens with its 830 rows and no error dialog
   (intended, operator 2026-10-05; a project of a saved query does not bring its connection, see
   projects-northwind-lifecycle-query). The md's "recipient without access gets a Data loading error"
-  and the connection share after it were corrected in the md to this. On core master of 2026-10-19 the
-  share does not bring the connection: the second account's tree still has no NorthwindTest, and its
-  open of the project stops on 'Unable to get project asset "PostgresTest"' with no dialog — that
-  scenario is a known failure, pinned at the tree. The System:Datagrok version for other stands is
-  parked (its row counts differ per server and need a remembered row count).
+  and the connection share after it were corrected in the md to this. The System:Datagrok version for
+  other stands is parked (its row counts differ per server and need a remembered row count).
 
   The project name carries the run's time (letters and digits only); the project (with its table,
   view and grant) is removed at the start and at the end.
@@ -121,9 +118,6 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
     Then the context panel should show "BDDNwLifeDbTable{time}"
     And the sharing pane should list the sharing user
 
-  # the share does not bring the connection on core master of 2026-10-19: the tree does not list NorthwindTest,
-  # and the open stops on 'Unable to get project asset "PostgresTest"' (no ticket yet)
-  @known-failure:134
   Scenario: With the project shared, the second account sees the connection and opens the project with its rows
     When user closes all views
     When user signs in as the sharing user
