@@ -14,9 +14,9 @@ import {getMmpFrags} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa
 import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc';
 import {rGroupsMinilib} from '../analysis/r-group-analysis';
 import {getMCS} from '../utils/most-common-subs';
-import {decomposeClusters} from '../analysis/sar-matrix/sar-matrix-decompose';
-import {linkStaged} from '../analysis/sar-matrix/sar-matrix-assemble';
-import {LinkStages} from '../analysis/sar-matrix/sar-matrix-link';
+import {decomposeClusters} from '../analysis/sar-matrix/build/sar-matrix-decompose';
+import {linkStaged} from '../analysis/sar-matrix/build/sar-matrix-assemble';
+import {LinkStages} from '../analysis/sar-matrix/build/sar-matrix-link';
 
 /**
  * MMPA fragmentation, R-group decomposition and FMCS in Crux mode ("Chemical engine"): engine/analysis-jobs.ts. Each

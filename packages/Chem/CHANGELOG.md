@@ -121,6 +121,14 @@
 * GROK-20955: Names To Smiles: Fixed the run failing on a table that already has a canonical_smiles column; the structures go into a column of their own
 * GROK-18286: Scaffold Tree: Fixed removing a scaffold under a colored one taking the colors column away, and with it the coloring of a plot colored by that column
 * Scaffold Tree: Fixed a removed colored scaffold keeping its color: the removed node was still redrawn once and registered its color again, so the next update brought its highlighting back
+* SAR Matrix: Added a Summary tab, the one the viewer opens on: the scale and coverage of the analysis, which R-group, core and measured swap buys the most (with a single cross-validated additive fit ranking every component where the parts are columns), the series to open first, and the untested compounds and virtual analogs worth making; every row lands on its cell
+* SAR Matrix: Added the PROTAC SAR Matrix demo: 2,792 patent degraders split into warhead, linker and E3 ligand columns
+* SAR Matrix: Fixed a column picked as both the core and an R-group: the dialog drops it from the R-groups and the function refuses it
+* SAR Matrix: Docked the viewer as a tab beside the table's grid
+* SAR Matrix: The matrix's Columns input picks which R-group runs across the columns; the Vary filter is gone
+* SAR Matrix: The analysis rebuilds when rows are added or removed, and follows a renamed molecule, activity, core or R-group column instead of losing it
+* SAR Matrix: A proposal the table already holds (under another cut, core spelling, salt form or series) is shown as that compound, untested or excluded, instead of as a new analog; salts are cut to their parent before fragmenting
+* SAR Matrix: A project saved before this version rebuilds its matrices once when opened (the saved set now carries the settings that built it)
 * Similarity/Diversity search: Each molecule card now announces the row it shows (`data-row`, `name="card-<row>"`), and the viewers report the `search-results` status of `@datagrok-libraries/ml` — `card <row>` hit areas plus `cards` / `current card` / `selected cards` readings — instead of being addressed by position; `isRenderPending` / `onRendered` cover a scheduled or running render
 * Generate Conformers: Fixed the run failing with `AttributeError: Cannot set unknown attribute 'maxAttempts'` — ETKDGv3 takes `maxIterations`
 * Chem | Calculate | IUPAC Name: Added a Python script that names molecules with openclatura

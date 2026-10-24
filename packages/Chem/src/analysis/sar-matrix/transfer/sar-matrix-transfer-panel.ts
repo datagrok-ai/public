@@ -1,14 +1,13 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../../package';
+import {_package} from '../../../package';
 import {computeAllTransfers, Transfer, TransferSide, transferStats, TransferStats}
   from './sar-matrix-transfer';
-import {SarMatrix} from './sar-matrix-types';
-import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, CELL_H, COL_HEADER_H, CORE_BG_ARGB,
-  FrameFilter, GRID_SCROLLBAR_H, HEADER_ARGB, PaneColumn, PaneGridSlot, PaneRow,
-  renderMoleculeOnColor} from './sar-matrix-ui-common';
+import {SarMatrix} from '../sar-matrix-types';
+import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, CELL_H, chipBadge, COL_HEADER_H,
+  CORE_BG_ARGB, FrameFilter, GRID_SCROLLBAR_H, HEADER_ARGB, PaneColumn, PaneGridSlot, PaneRow,
+  renderMoleculeOnColor} from '../sar-matrix-ui-common';
 
 /** A transfer is identified by the core it starts from, so several targets collapse onto one card. */
 function transferSourceKey(t: Transfer): string {
@@ -111,6 +110,7 @@ export class TransferPanel {
   }
 
   showMessage(text: string): void {
+    this.host.releaseSlot(this.transferSlot);
     ui.empty(this.root);
     this.root.appendChild(ui.divText(text, 'chem-sar-empty-note'));
   }
@@ -204,8 +204,7 @@ export class TransferPanel {
       return;
     if (this.host.computing) {
       // Matrices are still building; compute() ends in render(), which re-enters here.
-      ui.empty(this.root);
-      this.root.appendChild(ui.divText('Building SAR matrices...', 'chem-sar-empty-note'));
+      this.showMessage('Building SAR matrices...');
       return;
     }
     if (this.transfersComputed) {
@@ -225,6 +224,9 @@ export class TransferPanel {
       if (this.host.detached || this.host.computing) {
         this.transfersComputing = false;
         ui.setUpdateIndicator(this.root, false);
+        // The build found this scan pending, so it could not put its placeholder up itself.
+        if (!this.host.detached && this.host.transferTabActive)
+          this.activateTransferTab();
         return;
       }
       // Captured before the await so a tab bounce / threshold change in the window can't publish a stale scan.
@@ -348,23 +350,30 @@ export class TransferPanel {
     this.paneEl = null;
     this.stats.clear();
     if (this.transfers.length === 0) {
+      const gated = this.host.transferSimilarity > 0;
       this.root.appendChild(ui.divText(this.host.matrices.length === 0 ?
         'No SAR matrices to compare — build matrices first on the SAR Matrix tab.' :
-        'No SAR transfers detected: no two cores share enough R-groups, on scaffolds alike enough, ' +
-        'with correlated potency trends. Lower "Transfer similarity" to accept less alike scaffolds.',
+        `No SAR transfers detected: no two cores share enough R-groups${gated ? ', on scaffolds alike enough,' : ''} ` +
+        'with correlated potency trends.' +
+        (gated ? ' Lower "Transfer similarity" to accept less alike scaffolds.' : ''),
       'chem-sar-empty-note'));
       return;
     }
     if (this.transferIndex >= this.transfers.length)
       this.transferIndex = 0;
-    this.root.appendChild(this.buildTransferNav());
-    this.paneEl = this.buildTransferPane(this.transfers[this.transferIndex]);
+    const shown = this.rankedGroups();
+    // The pane follows the list: a transfer the filter hides would sit there with no card to say why.
+    if (shown.length > 0 && !shown.some((group) => group.includes(this.transfers[this.transferIndex])))
+      this.transferIndex = this.transfers.indexOf(shown[0][0]);
+    this.root.appendChild(this.buildTransferNav(shown));
+    this.paneEl = shown.length > 0 ? this.buildTransferPane(this.transfers[this.transferIndex]) :
+      ui.divText('No transfer matches the filter — clear it to see the transfers again.', 'chem-sar-empty-note');
     this.root.appendChild(this.paneEl);
   }
 
   /** The list panel: rank control, count chip and filter over a list that nests each source series'
    *  cores beneath it, mirroring the matrix navigator. */
-  private buildTransferNav(): HTMLElement {
+  private buildTransferNav(shown: Transfer[][]): HTMLElement {
     const rankInput = ui.input.choice('Rank by', {
       value: this.rankScheme,
       items: XFER_RANK_SCHEMES,
@@ -374,6 +383,7 @@ export class TransferPanel {
       },
     });
     rankInput.caption = '';
+    rankInput.input.setAttribute('aria-label', 'Rank by');
     ui.tooltip.bind(rankInput.input, () => {
       const mark = (s: string): string => s === this.rankScheme ? '▸ ' : '   ';
       return ui.divV([
@@ -384,7 +394,6 @@ export class TransferPanel {
       ], 'chem-sar-rank-tip');
     });
 
-    const shown = this.rankedGroups();
     const listed = shown.reduce((n, g) => n + g.length, 0);
     const sources = new Set(shown.map((g) => g[0].a.matrixIndex)).size;
     const proposing = shown.filter((g) => g.some((t) => t.predictedSubstituents.length > 0)).length;
@@ -483,10 +492,10 @@ export class TransferPanel {
     }
   }
 
-  /** Every transfer sharing this one's source core — the pane's target-dropdown alternatives. */
+  /** Every listed transfer sharing this one's source core — the pane's target-dropdown alternatives. */
   private transferSiblings(transfer: Transfer): Transfer[] {
     const key = transferSourceKey(transfer);
-    return this.transfers.filter((t) => transferSourceKey(t) === key);
+    return this.transfers.filter((t) => transferSourceKey(t) === key && this.xferFilter.passes(t));
   }
 
   /** One selectable card for a group of transfers sharing a source core. */
@@ -539,25 +548,20 @@ export class TransferPanel {
    *  whether the pairing is worth acting on, with the full wording on hover. */
   private buildTransferChips(transfer: Transfer): HTMLElement {
     const stats = this.statsOf(transfer);
-    const chip = (text: string, tip: string): HTMLElement => {
-      const el = ui.divText(text, 'chem-sar-chip-badge');
-      ui.tooltip.bind(el, () => tip);
-      return el;
-    };
     const items = [
-      chip(`r ${transfer.correlation.toFixed(2)}`,
+      chipBadge(`r ${transfer.correlation.toFixed(2)}`,
         'Correlation of the two cores’ potency trends over the R-groups both have explored. ' +
         '1.00 means they rank the substituents identically.'),
-      chip(stats.foldMatch === null ? 'fold —' : `fold ${stats.foldMatch.toFixed(2)}`,
+      chipBadge(stats.foldMatch === null ? 'fold —' : `fold ${stats.foldMatch.toFixed(2)}`,
         'How far the size of each step carries, not just its direction. 1.00 means a substituent ' +
         'swap is worth the same on both cores; a low value means the trend transfers but the ' +
         'magnitude does not.'),
-      chip(`${transfer.substituents.length} shared`,
+      chipBadge(`${transfer.substituents.length} shared`,
         `${transfer.substituents.length} R-groups at ${transfer.a.position} measured on both cores — ` +
         `the evidence the correlation rests on. Scaffold similarity ${transfer.similarity.toFixed(2)}.`),
     ];
     const gained = transfer.predictedSubstituents.length;
-    items.push(chip(gained === 0 ? 'nothing to make' : `${gained} to make`, gained === 0 ?
+    items.push(chipBadge(gained === 0 ? 'nothing to make' : `${gained} to make`, gained === 0 ?
       'Both cores have already explored the same R-groups, so this transfer argues for no new compound.' :
       `${gained} R-group(s) measured on one core and never made on the other — what this transfer ` +
       'argues for.'));
@@ -590,6 +594,7 @@ export class TransferPanel {
       });
       // Named by its tooltip rather than a label, which keeps the header one row of aligned controls.
       targetInput.caption = '';
+      targetInput.input.setAttribute('aria-label', 'Transfer to');
       targetInput.setTooltip(`Transfer to — the other cores ${from} carries its SAR to. ` +
         'Switching target keeps the source and re-reads the pairing against the core you pick.');
       controls.push(targetInput.root);

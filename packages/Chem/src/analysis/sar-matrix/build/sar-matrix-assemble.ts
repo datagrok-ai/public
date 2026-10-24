@@ -1,10 +1,10 @@
-import {_package} from '../../package';
-import {linkRGroupFragmentsByEngine} from '../../engine/analysis-jobs';
+import {_package} from '../../../package';
+import {linkRGroupFragmentsByEngine} from '../../../engine/analysis-jobs';
 import {ClusterDecomposition, positionNumber, PositionRecord} from './sar-matrix-decompose';
 import {cellPossible, FragmentLinks, LinkStages, planLink} from './sar-matrix-link';
 import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixCellKind, SarMatrixColumn,
   SarMatrixRow}
-  from './sar-matrix-types';
+  from '../sar-matrix-types';
 
 /**
  * Rows and columns joined into components by the cells actually observed, as a union-find over
@@ -28,16 +28,6 @@ function observedComponents(cells: SarMatrixCell[][], rowCount: number,
   return parent.map((_v, i) => find(i));
 }
 
-/**
- * Fit a two-way additive (Free-Wilson) model and predict empty cells as
- * `rowMean + columnMean - grandMean`.
- *
- * A row and a column each having an observation is necessary but NOT sufficient: the model is only
- * identifiable within a connected component of the observed-cell graph. Two designs that share no
- * compound fix their row and column effects against unrelated baselines, so adding one's row effect to
- * the other's column effect is arithmetic over incomparable offsets — and it errs toward the grand
- * mean, which flatters exactly the core whose own measurements are worst.
- */
 /** Fitted terms of `value ≈ grandMean + rowEffect + colEffect` and the counts behind each arm. Shared
  *  with the context panel so it shows the numbers the prediction was built from. */
 export interface AdditiveFit {
@@ -47,53 +37,48 @@ export interface AdditiveFit {
   rowN: Int32Array;
   colN: Int32Array;
   observed: number;
+  /** Whether the sweeps reached the tolerance. Until they do, the effects are still shrunk toward the
+   *  zero start by an amount that differs per design, so they do not compare BETWEEN matrices. */
+  converged: boolean;
 }
 
-export function fitAdditiveEffects(cells: SarMatrixCell[][], rowCount: number,
-  columnCount: number): AdditiveFit {
+/** Fit from observed cells already collected as `(row, column, value)` triples. */
+export function fitAdditiveFromTriples(obsRow: ArrayLike<number>, obsCol: ArrayLike<number>,
+  obsVal: ArrayLike<number>, rowCount: number, columnCount: number, maxSweeps = MAX_FIT_SWEEPS): AdditiveFit {
   const rowAcc = new Float64Array(rowCount);
   const rowN = new Int32Array(rowCount);
   const colAcc = new Float64Array(columnCount);
   const colN = new Int32Array(columnCount);
+  const observed = obsVal.length;
   let grandSum = 0;
-  // The fit sweeps the measured cells repeatedly and the grid is mostly holes, so they are collected
-  // once here rather than rescanned.
-  const obsRow: number[] = [];
-  const obsCol: number[] = [];
-  const obsVal: number[] = [];
-
-  for (let ri = 0; ri < rowCount; ri++) {
-    for (let ci = 0; ci < columnCount; ci++) {
-      const cell = cells[ri][ci];
-      if (cell.kind === 'real' && cell.value !== null) {
-        rowN[ri]++;
-        colN[ci]++;
-        grandSum += cell.value;
-        obsRow.push(ri);
-        obsCol.push(ci);
-        obsVal.push(cell.value);
-      }
-    }
+  let sumSq = 0;
+  for (let k = 0; k < observed; k++) {
+    rowN[obsRow[k]]++;
+    colN[obsCol[k]]++;
+    grandSum += obsVal[k];
+    sumSq += obsVal[k] * obsVal[k];
   }
 
-  const grandMean = obsVal.length ? grandSum / obsVal.length : 0;
-  // Alternating least squares for value ≈ grand + row + column. Averaging the margins in one pass
-  // solves that model only when every row is measured at the same columns; with holes it is a
-  // different and worse estimator, and holes are the normal case here. Sweeping the two arms against
-  // each other converges on the least-squares fit, and reproduces the one-pass answer exactly when
-  // the design happens to be balanced.
+  const grandMean = observed ? grandSum / observed : 0;
+  // Alternating least squares: averaging the margins in one pass solves the model only when every row is
+  // measured at the same columns, and holes are the normal case here. Starting both arms at zero against
+  // the observed mean keeps the effects count-centred (`Σ rowN·rowEffect = Σ colN·colEffect = 0`), so an
+  // effect is read against that matrix's own average; a warm start from another matrix would drop that.
   const rowEffect = new Float64Array(rowCount);
   const colEffect = new Float64Array(columnCount);
-  for (let iteration = 0; iteration < MAX_FIT_SWEEPS; iteration++) {
+  let converged = observed === 0;
+  let lastShift = 0;
+  let remaining = Infinity;
+  for (let iteration = 0; iteration < maxSweeps; iteration++) {
     rowAcc.fill(0);
-    for (let k = 0; k < obsVal.length; k++)
+    for (let k = 0; k < observed; k++)
       rowAcc[obsRow[k]] += obsVal[k] - grandMean - colEffect[obsCol[k]];
     for (let ri = 0; ri < rowCount; ri++) {
       if (rowN[ri])
         rowEffect[ri] = rowAcc[ri] / rowN[ri];
     }
     colAcc.fill(0);
-    for (let k = 0; k < obsVal.length; k++)
+    for (let k = 0; k < observed; k++)
       colAcc[obsCol[k]] += obsVal[k] - grandMean - rowEffect[obsRow[k]];
     let shift = 0;
     for (let ci = 0; ci < columnCount; ci++) {
@@ -103,12 +88,44 @@ export function fitAdditiveEffects(cells: SarMatrixCell[][], rowCount: number,
       shift = Math.max(shift, Math.abs(next - colEffect[ci]));
       colEffect[ci] = next;
     }
-    if (shift < FIT_TOLERANCE)
+    if (shift < FIT_TOLERANCE) {
+      converged = true;
       break;
+    }
+    // The sweeps converge geometrically, so the distance left to the fixed point is shift·r/(1−r).
+    const rate = lastShift > 0 ? shift / lastShift : 1;
+    remaining = rate < 1 ? shift * rate / (1 - rate) : Infinity;
+    lastShift = shift;
   }
-  return {grandMean, rowEffect, colEffect, rowN, colN, observed: obsVal.length};
+  // A sparse design can need thousands of sweeps to reach the fixed step while already sitting a
+  // negligible share of the data's spread from its answer; that is converged for every comparison made.
+  if (!converged)
+    converged = remaining < FIT_TOLERANCE_SD * Math.sqrt(Math.max(0, sumSq / observed - grandMean ** 2));
+  return {grandMean, rowEffect, colEffect, rowN, colN, observed, converged};
 }
 
+export function fitAdditiveEffects(cells: SarMatrixCell[][], rowCount: number,
+  columnCount: number): AdditiveFit {
+  // The fit sweeps the measured cells repeatedly and the grid is mostly holes, so they are collected
+  // once here rather than rescanned.
+  const obsRow: number[] = [];
+  const obsCol: number[] = [];
+  const obsVal: number[] = [];
+  for (let ri = 0; ri < rowCount; ri++) {
+    for (let ci = 0; ci < columnCount; ci++) {
+      const cell = cells[ri][ci];
+      if (cell.kind === 'real' && cell.value !== null) {
+        obsRow.push(ri);
+        obsCol.push(ci);
+        obsVal.push(cell.value);
+      }
+    }
+  }
+  return fitAdditiveFromTriples(obsRow, obsCol, obsVal, rowCount, columnCount);
+}
+
+/** Predict empty cells as `grandMean + rowEffect + colEffect`, within one connected component of the
+ *  observed-cell graph only: two designs sharing no compound fix their effects against unrelated baselines. */
 export function fitAdditiveModel(cells: SarMatrixCell[][], rowCount: number,
   columnCount: number): (rowIdx: number, colIdx: number) =>
     {value: number, support: number, references: number} | null {
@@ -204,22 +221,32 @@ export const MAX_MATRIX_ROWS = 2000;
 /** Ceiling on columns, independent of the cell budget: the pane builds a grid column per substituent,
  *  so few rows must not buy unlimited width. */
 export const MAX_MATRIX_COLS = 500;
-/** Sweep ceiling for the additive fit. It converges geometrically and reaches the tolerance in a
- *  handful of sweeps; the cap only bounds a pathologically ill-conditioned design. */
+/** Default sweep ceiling for the additive fit. A dense series reaches the tolerance in a handful of sweeps;
+ *  a sparse one can need hundreds, but stops here within ~0.01 of its fixed point, which the fill accepts. */
 const MAX_FIT_SWEEPS = 50;
 /** Largest column-effect move that still counts as converged, well under any activity unit in use. */
 const FIT_TOLERANCE = 1e-9;
+/** Distance left to the fixed point, as a share of the observed values' SD, that a capped fit may still be
+ *  off by and count as converged. */
+const FIT_TOLERANCE_SD = 1e-3;
 
-/** Claim a cell for a compound the set holds but has no activity for, so `fillVirtualCells` cannot
- *  predict it and offer it as one to make. Never over a measured cell: two members can share a slot,
- *  and a measurement outranks a blank. A compound that WAS assayed but whose value the chosen scale
- *  cannot represent is left alone — calling it untested would be a false claim about the data. */
+/** Claim a cell for a compound the set holds but has no usable activity for: left empty, the fill would
+ *  predict it and offer it as one to make. Never over a measured cell. A compound that WAS assayed but whose
+ *  value the chosen scale cannot represent is `excluded`, not `unmeasured`: it is not untested. */
 function claimUnmeasured(cells: SarMatrixCell[][], ri: number, ci: number, molIdx: number,
   molecules: string[], assayed?: Uint8Array): void {
-  if (assayed?.[molIdx])
-    return;
-  if (cells[ri][ci].kind === 'empty')
-    cells[ri][ci] = {kind: 'unmeasured', value: null, molIdx, smiles: molecules[molIdx]};
+  if (cells[ri][ci].kind === 'empty') {
+    cells[ri][ci] = {kind: assayed?.[molIdx] ? 'excluded' : 'unmeasured', value: null, molIdx,
+      smiles: molecules[molIdx]};
+  }
+}
+
+/** Claim a cell for a measured compound. Of two sharing a slot (a repeated row, or two cuts landing on one
+ *  core and substituent) the first is kept, so cutting the molecules keeps the copy the R-group columns keep. */
+function claimMeasured(cells: SarMatrixCell[][], ri: number, ci: number, molIdx: number, activity: number,
+  molecules: string[]): void {
+  if (cells[ri][ci].kind !== 'real')
+    cells[ri][ci] = {kind: 'real', value: activity, molIdx, smiles: molecules[molIdx]};
 }
 
 /**
@@ -285,6 +312,24 @@ function pruneUnobservedLines(rows: SarMatrixRow[], columns: SarMatrixColumn[],
   // Labels number the rows as displayed, so they are reassigned rather than left with the gaps a
   // removed core would leave (Core 1, Core 3, Core 6).
   rows.forEach((row, ri) => row.label = `Core ${ri + 1}`);
+}
+
+/** Distinct measured compounds of the finished grid and the range of their values. Read off the cells,
+ *  not the records: the prune drops measured compounds, and a second record for an occupied cell is not shown. */
+function measuredRange(cells: SarMatrixCell[][]): {realCount: number, minActivity: number, maxActivity: number} {
+  const mols = new Set<number>();
+  let minActivity = Infinity;
+  let maxActivity = -Infinity;
+  for (const row of cells) {
+    for (const cell of row) {
+      if (cell.kind !== 'real' || cell.value === null || cell.molIdx === null)
+        continue;
+      mols.add(cell.molIdx);
+      minActivity = Math.min(minActivity, cell.value);
+      maxActivity = Math.max(maxActivity, cell.value);
+    }
+  }
+  return mols.size ? {realCount: mols.size, minActivity, maxActivity} : {realCount: 0, minActivity: 0, maxActivity: 0};
 }
 
 /**
@@ -405,9 +450,6 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   const cells: SarMatrixCell[][] = rows.map(() =>
     columns.map((): SarMatrixCell => ({kind: 'empty', value: null, molIdx: null, smiles: null})));
 
-  let minActivity = Infinity;
-  let maxActivity = -Infinity;
-  const realMols = new Set<number>();
   rowGroups.forEach((group, ri) => {
     for (const record of group.members) {
       const activity = activities[record.molIdx];
@@ -418,15 +460,9 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
         claimUnmeasured(cells, ri, ci, record.molIdx, molecules, assayed);
         continue;
       }
-      cells[ri][ci] = {kind: 'real', value: activity, molIdx: record.molIdx, smiles: molecules[record.molIdx]};
-      realMols.add(record.molIdx);
-      if (activity < minActivity)
-        minActivity = activity;
-      if (activity > maxActivity)
-        maxActivity = activity;
+      claimMeasured(cells, ri, ci, record.molIdx, activity, molecules);
     }
   });
-  const realCount = realMols.size;
   pruneUnobservedLines(rows, columns, cells);
   if (links !== undefined)
     markImpossibleCells(rows, columns, cells, columnPosition, decomp.positions, links);
@@ -441,9 +477,8 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   }
 
   return {
-    id: cluster.id, label: cluster.label ?? '', rows, columns, cells,
-    minActivity: realCount ? minActivity : 0, maxActivity: realCount ? maxActivity : 0,
-    realCount, virtualCount, scores: {}, positions: [columnPosition], refValues,
+    id: cluster.id, label: cluster.label ?? '', rows, columns, cells, ...measuredRange(cells),
+    virtualCount, scores: {}, positions: [columnPosition], refValues,
     siteKey: cluster.siteKey,
     level: cluster.level,
     parentId: cluster.parentId,
@@ -627,11 +662,6 @@ export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: st
   const cells: SarMatrixCell[][] = rows.map(() =>
     columns.map((): SarMatrixCell => ({kind: 'empty', value: null, molIdx: null, smiles: null})));
 
-  let minActivity = Infinity;
-  let maxActivity = -Infinity;
-  // Distinct compounds, not filled cells: one reached through two series sits in two cells, and
-  // counting it twice overstates every "cpd" the UI shows.
-  const realMols = new Set<number>();
   series.forEach((matched, ri) => {
     for (const member of matched.members) {
       const activity = activities[member.molIdx];
@@ -642,15 +672,9 @@ export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: st
         claimUnmeasured(cells, ri, ci, member.molIdx, molecules, assayed);
         continue;
       }
-      cells[ri][ci] = {kind: 'real', value: activity, molIdx: member.molIdx, smiles: molecules[member.molIdx]};
-      realMols.add(member.molIdx);
-      if (activity < minActivity)
-        minActivity = activity;
-      if (activity > maxActivity)
-        maxActivity = activity;
+      claimMeasured(cells, ri, ci, member.molIdx, activity, molecules);
     }
   });
-  const realCount = realMols.size;
   pruneUnobservedLines(rows, columns, cells);
 
   const virtualCount = predict ? fillVirtualCells(cells, rows.length, columns.length, predictUnmeasured) : 0;
@@ -661,9 +685,7 @@ export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: st
     rows,
     columns,
     cells,
-    minActivity: realCount ? minActivity : 0,
-    maxActivity: realCount ? maxActivity : 0,
-    realCount,
+    ...measuredRange(cells),
     virtualCount,
     scores: {},
     positions: ['R1'],

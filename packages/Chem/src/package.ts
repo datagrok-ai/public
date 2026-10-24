@@ -83,6 +83,7 @@ import {embed3d, structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {
   _demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA, _demoSarMatrix,
+  _demoSarMatrixProtac,
   _demoRgroupAnalysis, _demoRGroups, _demoScaffoldTree, _demoSimilarityDiversitySearch,
 } from './demo/demo';
 import {getStructuralAlertsByRules, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
@@ -2817,18 +2818,27 @@ export class PackageFunctions {
     const rgroups = rGroupColumns ?? [];
     const axis = matrixColumns ?? '';
     const named = coreColumn !== null || rgroups.length > 0;
+    if (coreColumn !== null && rgroups.some((c) => c.name === coreColumn.name)) {
+      grok.shell.error(`SAR Matrix: ${coreColumn.name} is named as both the core column and an ` +
+        'R-group column — a column is the scaffold every row is drawn from or a substituent on it, ' +
+        'not both.');
+      return;
+    }
     if (named && (coreColumn === null || coreColumn.name === axis || !rgroups.some((c) => c.name === axis))) {
       grok.shell.error('SAR Matrix: pick the core, the R-groups, and which R-group becomes the matrix columns.');
       return;
     }
     checkCurrentView(table);
     const view = grok.shell.tv as DG.TableView;
+    // Omitted inputs arrive as null, which the parameter defaults don't replace: left out, so the viewer's own
+    // defaults apply.
+    const settings = {scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors};
     const viewer = view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
       activityColumnName: activity.name,
       seriesColumnName: seriesName,
       coreColumnName: named ? coreColumn!.name : '', axisColumnName: named ? axis : '',
       rGroupColumnNames: named ? rgroups.map((c) => c.name) : [],
-      scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors});
+      ...Object.fromEntries(Object.entries(settings).filter(([, value]) => value !== null && value !== undefined))});
     dockSarMatrixTabs(view, viewer);
   }
 
@@ -2926,6 +2936,15 @@ export class PackageFunctions {
   })
   static async demoSarMatrix(): Promise<void> {
     await _demoSarMatrix();
+  }
+
+  @grok.decorators.func({
+    name: 'Demo PROTAC SAR Matrix',
+    description: 'Rank warhead, linker and E3 ligand across 2792 patent degraders whose parts are columns',
+    meta: {demoPath: 'Cheminformatics | PROTAC SAR Matrix'},
+  })
+  static async demoSarMatrixProtac(): Promise<void> {
+    await _demoSarMatrixProtac();
   }
 
   @grok.decorators.func({

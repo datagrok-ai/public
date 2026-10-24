@@ -111,7 +111,8 @@
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
-    "test": "grok test"
+    "test": "grok test",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"

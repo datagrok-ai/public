@@ -1,11 +1,37 @@
 import * as DG from 'datagrok-api/dg';
 
 import * as TextUtils from '@datagrok-libraries/gridext/src/utils/TextUtils';
-import {SarMatrix, SarMatrixCell} from './sar-matrix-types';
-import {drawDepiction, rowTemplate} from './sar-matrix-depict';
+import {SarMatrix, SarMatrixCell} from '../sar-matrix-types';
+import {charged, depictionBudgetSpent, drawDepiction, rowTemplate} from './sar-matrix-depict';
 import {ACTIVITY_SCHEME, CHIP_H, CHIP_MARGIN, CHIP_PAD, cssColor, GRID_FONT, HEADER_ARGB,
   HEADER_W, MatrixGridState, PaneRow, REAL_ALPHA, VIRTUAL_ALPHA, VIRTUAL_ALPHA_MIN, WHITE_ARGB,
-  FULL_SUPPORT} from './sar-matrix-ui-common';
+  FULL_SUPPORT} from '../sar-matrix-ui-common';
+
+/** Grids with a repaint queued for the depictions a paint left out. */
+const repaintQueued = new WeakSet<MatrixGridState>();
+
+/** Queues one more paint of the grid, which draws what the last one had no budget left for. */
+function repaintLater(state: MatrixGridState): () => void {
+  return () => {
+    if (repaintQueued.has(state))
+      return;
+    repaintQueued.add(state);
+    setTimeout(() => {
+      repaintQueued.delete(state);
+      if (state.grid.root.isConnected)
+        state.grid.invalidate();
+    });
+  };
+}
+
+/** The row's alignment template, or undefined when laying it out would overrun this task's budget. */
+function budgetedRowTemplate(state: MatrixGridState, rowIdx: number): string | null | undefined {
+  if (state.rowTemplates[rowIdx] === null && depictionBudgetSpent()) {
+    repaintLater(state)();
+    return undefined;
+  }
+  return charged(() => rowTemplate(state, rowIdx));
+}
 
 /** How a cell corner chip is drawn. The two corners carry different facts and sit on opposite
  *  diagonals so they never collide however wide either gets. */
@@ -64,7 +90,7 @@ export class MatrixPainter {
       const captionH = 14;
       if (state.headerDepiction !== null) {
         drawDepiction(g, b.x, b.y, b.width, Math.max(1, b.height - captionH), state.headerDepiction,
-          state.paneTemplate, HEADER_ARGB);
+          state.paneTemplate, HEADER_ARGB, repaintLater(state));
       }
       g.fillStyle = grey5;
       g.font = `italic 11px ${GRID_FONT}`;
@@ -81,11 +107,11 @@ export class MatrixPainter {
     g.fillStyle = DG.Color.toHtml(HEADER_ARGB);
     g.fillRect(b.x, b.y, b.width, b.height);
 
-    // Position label only on the first column of a group (per-cell clipping can't span columns).
-    // 'R' matches the unnumbered mark the core draws at the site these columns attach to; the core's
-    // numbered marks are the positions its rows differ at, which no column here enumerates.
+    // Position label only on the first column (per-cell clipping can't span columns): every column
+    // carries the one position. 'R' matches the unnumbered mark the core draws at the site these columns
+    // attach to; the core's numbered marks are the positions its rows differ at.
     const posBandH = 16;
-    if (state.firstOfGroup.has(idx)) {
+    if (idx === 0) {
       g.fillStyle = grey6;
       g.font = `600 11px ${GRID_FONT}`;
       g.textAlign = 'left';
@@ -99,7 +125,7 @@ export class MatrixPainter {
     const depW = Math.min(b.width, HEADER_W * 2);
     if (column.substSmiles && state.axisIsChemical) {
       drawDepiction(g, b.x + (b.width - depW) / 2, b.y + posBandH, depW, depH,
-        column.substSmiles, null, HEADER_ARGB);
+        column.substSmiles, null, HEADER_ARGB, repaintLater(state));
     } else {
       // Names are written out: the renderer would draw them as a failure cross.
       const label = column.substSmiles || (state.axisIsChemical ? 'H' : '(none)');
@@ -122,13 +148,14 @@ export class MatrixPainter {
   paintCore(g: CanvasRenderingContext2D, b: DG.Rect, paneRow: PaneRow, rowIdx: number,
     state: MatrixGridState): void {
     const row = paneRow.matrix.rows[paneRow.rowIndex];
-    const template = rowTemplate(state, rowIdx);
+    const template = budgetedRowTemplate(state, rowIdx);
     const labelH = 16;
     const molH = Math.max(1, b.height - labelH);
     // Fill in the depiction's baked-in colour so anti-aliased bonds don't fringe.
     g.fillStyle = DG.Color.toHtml(WHITE_ARGB);
     g.fillRect(b.x, b.y, b.width, b.height);
-    drawDepiction(g, b.x, b.y, b.width, molH, row.keySmiles, template, WHITE_ARGB);
+    if (template !== undefined)
+      drawDepiction(g, b.x, b.y, b.width, molH, row.keySmiles, template, WHITE_ARGB, repaintLater(state));
     g.fillStyle = cssColor(this.host.root, '--grey-6', '#4a4a4a');
     g.font = `600 11px ${GRID_FONT}`;
     g.textAlign = 'center';
@@ -176,8 +203,11 @@ export class MatrixPainter {
     const bg = this.flatTint(matrix, value, alpha);
     g.fillStyle = DG.Color.toHtml(bg);
     g.fillRect(b.x, b.y, b.width, b.height);
-    if (cell.smiles !== null)
-      drawDepiction(g, b.x, b.y, b.width, b.height, cell.smiles, rowTemplate(state, rowIdx), bg);
+    if (cell.smiles !== null) {
+      const template = budgetedRowTemplate(state, rowIdx);
+      if (template !== undefined)
+        drawDepiction(g, b.x, b.y, b.width, b.height, cell.smiles, template, bg, repaintLater(state));
+    }
 
     // '~value' chip, top-left; green when it's the row's most potent observation.
     const isBest = paneRow.markBest === true && !isPredicted && value === this.host.bestRowValue(paneRow);
@@ -209,7 +239,7 @@ export class MatrixPainter {
     // Host-grid link: a selected row's cell gets a blue ring.
     if (cell.molIdx !== null && this.host.dataFrame.selection.get(cell.molIdx)) {
       g.lineWidth = 2;
-      g.strokeStyle = cssColor(this.host.root, '--blue-1', '#2083d5');
+      g.strokeStyle = cssColor(this.host.root, '--blue-2', '#50a9c5');
       g.strokeRect(b.x + 1, b.y + 1, b.width - 2, b.height - 2);
     }
   }
