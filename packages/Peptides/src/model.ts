@@ -1226,12 +1226,14 @@ export class PeptidesModel {
     }));
 
     this.subs.push(grok.events.onAccordionConstructed.subscribe((acc) => {
-      if (!(grok.shell.o instanceof DG.SemanticValue || (grok.shell.o instanceof DG.Column &&
-        this.df.columns.toList().includes(grok.shell.o))))
+      const o = acc.context;
+      const col = o instanceof DG.SemanticValue ? o.cell?.column : o instanceof DG.Column ? o : null;
+      if (!col || !this.df.columns.toList().includes(col))
         return;
 
-
       const actionsPane = acc.getPane('Actions');
+      if (!actionsPane)
+        return;
       const actionsHost = $(actionsPane.root).find('.d4-flex-col');
       const calculateIdentity = ui.label('Calculate identity');
       calculateIdentity.classList.add('d4-link-action');
