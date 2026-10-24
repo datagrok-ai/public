@@ -112,8 +112,12 @@ function tokenize(src: string): Token[] {
       continue;
     }
     if (/[A-Za-z_]/.test(c)) {
-      // a name may contain spaces between words: `Fit Y by X`
-      const m = /^[A-Za-z_][\w]*(?:[ \t]+[A-Za-z_\d][\w]*)*/.exec(src.slice(i))!;
+      // a name may contain spaces between words: `Fit Y by X`. After `:`, JMP 15 writes a column name such as
+      // `:HC Met255 %Oxidation` bare, so a column name may also hold characters that aren't operators.
+      const prev = tokens[tokens.length - 1];
+      const m = (prev?.kind === 'punct' && (prev.text === ':' || prev.text === '::') ?
+        /^[A-Za-z_][\w%.#$@']*(?:[ \t]+[\w%.#$@']+)*/ :
+        /^[A-Za-z_][\w]*(?:[ \t]+[A-Za-z_\d][\w]*)*/).exec(src.slice(i))!;
       tokens.push({kind: 'name', text: m[0], pos});
       i += m[0].length;
       continue;

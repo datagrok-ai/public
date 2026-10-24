@@ -74,6 +74,10 @@ category('JMP: JSL', () => {
     expect(named.name, '1a fit');
     expect(isCall(named.args[0], 'Fit Model'), true);
     expect(isCall(parseJsl('"Value Ordering"({"Yes", "No"})'), 'Value Ordering'), true);
+
+    const bare = parseJsl('Y(:HC Met255 %Oxidation, :ints * 2)') as Extract<JslNode, {type: 'call'}>;
+    expect(bare.args[0].type === 'column' && bare.args[0].name, 'HC Met255 %Oxidation');
+    expect(bare.args[1].type, 'binary');
   });
 
   test('syntax errors', async () => {
@@ -136,6 +140,19 @@ category('JMP: saved scripts', () => {
     expect(/not an analysis/.test(c.reason!), true, c.reason);
   });
 
+  test('a Graph Builder saved by JMP 15', async () => {
+    const t = await readJmp(await _package.files.readAsBytes('tests/jmp15-graph-builder.jmp'));
+    expect(t.scripts.map((sc) => sc.name).join('|'), 'Source|HC Met255 %Oxidation vs. Week_5C');
+    expect(t.scripts[1].error === undefined, true, t.scripts[1].error);
+    const c = convertScript(t.scripts[1], [{name: 'Condition', numeric: false}, {name: 'Temperature', numeric: false},
+      {name: 'Week', numeric: true}, {name: 'HC Met255 %Oxidation', numeric: true}]);
+    expect(c.viewers.length, 1);
+    expect(c.viewers[0].type, 'Scatter plot');
+    expect(c.viewers[0].options.yColumnName, 'HC Met255 %Oxidation');
+    expect(c.viewers[0].options.colorColumnName, 'Condition');
+    expect(c.viewers[0].options.showRegressionLine, true);
+  });
+
   test('files without scripts', async () => {
     for (const name of ['example1', 'rowstate', 'compressed', 'date'])
       expect((await fixture(name)).scripts.length, 0, name);
@@ -159,6 +176,16 @@ category('JMP: saved scripts', () => {
     expect(scripts[0].name, '1a_logistic-regr');
     expect(scripts[0].error === undefined, true);
     expect(scripts[0].text, 'Fit Model(Y(:sex), Effects(:height))');
+  });
+
+  test('a script name JMP 15 wrote bare', async () => {
+    const text = new TextEncoder().encode('HC Met255 %Oxidation vs. Week_5C(Graph Builder(Variables(X(:Week))))');
+    const bytes = new Uint8Array([0x03, ...new Uint8Array(new Uint32Array([text.length]).buffer), ...text]);
+    const scripts = readTableScripts(bytes, {propertiesRange: [0, bytes.length]} as JmpInfo);
+    expect(scripts.length, 1);
+    expect(scripts[0].name, 'HC Met255 %Oxidation vs. Week_5C');
+    expect(scripts[0].error === undefined, true);
+    expect(isCall(scripts[0].body, 'Graph Builder'), true);
   });
 
   test('New Script form', async () => {

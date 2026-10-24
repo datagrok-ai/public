@@ -57,11 +57,13 @@ function tryScript(raw: Uint8Array): JmpScript | null {
   const named = /^\s*Name\(\s*"([^"]*)"\s*\)\s*\(/i.exec(text);
   const open = named ? named[0].length - 1 : text.indexOf('(');
   const head = named ? named[1] : text.slice(0, open).trim();
-  if (open <= 0 || (!named && !/^("[^"]*"n|[A-Za-z_][\w ]*)$/.test(head)))
+  // JMP 15 writes a name such as `HC Met255 %Oxidation vs. Week_5C` bare, which JSL can't parse as a name
+  const bare = /^("[^"]*"n|[A-Za-z_][\w ]*)$/.test(head);
+  if (open <= 0 || (!named && !bare && !/^[^"\\(),:;=]+$/.test(head)))
     return null;
   const inner = text.slice(open + 1, -1).trim();
   try {
-    const root = parseJsl(text);
+    const root = parseJsl(named || bare ? text : `"${head}"${text.slice(open)}`);
     if (root.type !== 'call')
       return null;
     if (isCall(root, 'New Script') && root.args[0]?.type === 'string')

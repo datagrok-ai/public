@@ -2,7 +2,7 @@
 
 > **Purpose:** This spec defines the Datagrok JMP plugin: a browser-side reader for SAS JMP data tables (`.jmp`). It is written for the developer (human or AI agent) building the package. It covers scope, architecture, the file format as far as it is known, type mapping, testing, and the phased roadmap. The [Minitab plugin](../../Minitab/docs/MINITAB_PLUGIN.md) is the structural template.
 
-**Status:** Phase 1 built, 2026-10-21; Phase 2 in progress, 2026-10-23 (v0.1.0, not yet released). The parser matches JMPReader.jl on all 19 reference files; 106 package tests and 12 BDD scenarios pass on a local stand. §11 lists what is left.
+**Status:** Phase 1 built, 2026-10-21; Phase 2 in progress, 2026-10-23 (v0.1.0, not yet released). The parser matches JMPReader.jl on all 19 reference files; 108 package tests and 12 BDD scenarios pass on a local stand. §11 lists what is left.
 
 ---
 
@@ -71,7 +71,7 @@ packages/Jmp/
 ├── files/
 │   ├── jmpreader/          # JMPReader.jl's 19 test files (MIT), unchanged
 │   ├── golden/             # what JMPReader.jl reads from each (tools/jmp2json.jl), committed
-│   └── tests/              # made here: unsupported-column, truncated, not-a-jmp, saved-bar-chart, saved-fit-model
+│   └── tests/              # made here: unsupported-column, truncated, not-a-jmp, saved-bar-chart, saved-fit-model; jmp15-graph-builder (saved by JMP 15, anonymized)
 ├── tools/
 │   ├── jmp2json.jl         # golden-output generator (Julia + JMPReader.jl), dev-only
 │   ├── jmp-corpus.ts       # `npm run corpus -- <dir>`: read a folder of .jmp files, report (§9.4)
@@ -364,6 +364,7 @@ The model is the way Crux validates against RDKit: **JMPReader.jl is the referen
 | JMPReader.jl `test/*.jmp` (19 files covering byte integers, compact pools of UInt8/16/32, compression, currencies, dates, durations, geographic, long column names, row states, `minusfour`, `bugMWE4`) | MIT, part of the upstream repo | **Yes.** Vendor into `files/` with attribution in `CREDITS.md`. |
 | Files made here from the vendored ones (`files/tests/`: a column with a layout byte no JMP writes, a truncated file, CSV under a `.jmp` name) | Ours | **Yes** |
 | Synthetic saved analyses (`files/tests/saved-bar-chart.jmp`, `saved-fit-model.jmp`): `compact_UInt8.jmp` with its `Source` script replaced by one of the same length, so nothing in the file moves (`tools/make-script-fixtures.ts`). They test what the package does with an analysis, not where JMP keeps one (§4.5). | Ours | **Yes**, until files saved by JMP with analyses replace them |
+| A table saved by JMP 15 with a Graph Builder (`files/tests/jmp15-graph-builder.jmp`, 12 rows). Shared by a user and anonymized in place: the `Source` path replaced by one of the same length, the measured values moved by up to ±0.15. JMP 15 writes the script and column names bare (`HC Met255 %Oxidation vs. Week_5C(…)`, `:HC Met255 %Oxidation`). | Shared, anonymized | **Yes**, with the owner's permission |
 | Files we create ourselves in JMP (edge cases: empty table, 0 rows, 1 col, all-missing, very wide, Unicode names, every display format) | Ours | **Yes**, once someone with JMP makes them |
 | JMP's own Samples/Data library (~600 files per version) | SAS copyright | **No.** Run locally only (§9.4). |
 | Customer files | Customer confidential | **No.** Run locally only, with permission. |
@@ -381,7 +382,7 @@ The model is the way Crux validates against RDKit: **JMPReader.jl is the referen
 
 8. **JMP: performance** (browser) times the 100 MB file of §8. It runs only with `grok test --benchmark`.
 
-Result on the local stand (2026-10-23): Node pass 92 passed; browser pass 14 passed, the benchmark skipped (and passed when run with `--benchmark`).
+Result on the local stand (2026-10-23): Node pass 94 passed; browser pass 14 passed, the benchmark skipped (and passed when run with `--benchmark`).
 
 ### 9.4 Corpus run (local, not CI)
 
