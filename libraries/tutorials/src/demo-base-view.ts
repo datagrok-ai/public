@@ -38,6 +38,8 @@ export abstract class BaseViewApp {
   subs: Subscription[] = [];
 
   private debounceTimeout: number | null = null;
+  /** Bumped by every mode change, sketch run and file upload; work started under an older value must leave the view alone. */
+  protected runId = 0;
 
   constructor(parentCall: DG.FuncCall | null) {
     this.parentCall = parentCall;
@@ -116,6 +118,10 @@ export abstract class BaseViewApp {
 
   private async handleModeChange(tab: DG.TabPane): Promise<void> {
     this.mode = tab.header.innerText.split(' ')[0].toLowerCase();
+    ++this.runId;
+    if (this.debounceTimeout)
+      clearTimeout(this.debounceTimeout);
+    this.debounceTimeout = null;
     this.clearTable();
     this.clearForm();
 
@@ -193,6 +199,9 @@ export abstract class BaseViewApp {
   }
 
   async onChanged(smiles: string) {
+    if (this.mode !== 'sketch')
+      return;
+
     if (!smiles) {
       this.clearForm();
       return;
@@ -220,13 +229,16 @@ export abstract class BaseViewApp {
 
   private addNewProcess(smiles: string): () => Promise<void> {
     return async () => {
-      if (!this.tableView) return;
+      if (!this.tableView || this.mode !== 'sketch') return;
 
+      const run = ++this.runId;
       this.clearTable();
       const {dataFrame, grid} = this.tableView;
 
       const col = dataFrame.columns.getOrCreate('smiles', DG.TYPE.STRING);
       await grok.data.detectSemanticTypes(dataFrame);
+      if (run !== this.runId)
+        return;
       col.set(0, smiles);
       col.semType = DG.SEMTYPE.MOLECULE;
       dataFrame.currentCell = dataFrame.cell(0, 'smiles');
@@ -242,11 +254,13 @@ export abstract class BaseViewApp {
       try {
         if (isCachedUploadAvailable) {
           const widget = await this.uploadCachedData();
+          if (run !== this.runId)
+            return;
           this.clearForm();
           if (widget) this.formContainer.appendChild(widget);
         } else if (this.formGenerator) {
           const form = await this.formGenerator();
-          if (form) {
+          if (form && run === this.runId) {
             this.clearForm();
             this.formContainer.appendChild(form);
           }
@@ -263,6 +277,7 @@ export abstract class BaseViewApp {
     this.formContainer.style.visibility = 'hidden';
     this.formContainer.style.position = 'absolute';
 
+    const run = this.runId;
     if (!this.tableView?.grid) return;
     const {grid, dockManager} = this.tableView!;
     if (grid && dockManager) {
@@ -271,6 +286,8 @@ export abstract class BaseViewApp {
 
       const df = await openMoleculeDataset(this.filePath);
       await grok.data.detectSemanticTypes(df);
+      if (run !== this.runId)
+        return;
 
       df.name = this.tableName;
       this.tableView!.dataFrame = df;
@@ -288,9 +305,12 @@ export abstract class BaseViewApp {
       return;
     }
 
+    const run = ++this.runId;
     const csvData = await file.text();
     const table = DG.DataFrame.fromCsv(csvData);
     await grok.data.detectSemanticTypes(table);
+    if (run !== this.runId)
+      return;
     this.tableView!.dataFrame = table;
     this.tableView!.dataFrame.name = this.tableName;
 
@@ -300,7 +320,8 @@ export abstract class BaseViewApp {
         await this.setFunction();
       else
         console.warn('No form generator provided.');
-      await this.processFileData();
+      if (run === this.runId)
+        await this.processFileData();
     } catch (e) {
 
     } finally {
