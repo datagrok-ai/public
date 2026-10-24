@@ -117,6 +117,16 @@ category('hierarchicalClustering', () => {
     tv.close();
   });
 
+  // A table with no name and no view gets a view opened for it
+  test('UI-unnamed-table', async () => {
+    const dataDf: DG.DataFrame = DG.DataFrame.fromCsv('a,b\n1,2\n2,3\n3,4\n4,5');
+    dataDf.name = null as unknown as string;
+    await hierarchicalClusteringUI(dataDf, ['a', 'b'], DistanceMetric.Euclidean, 'average');
+    const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame?.dart === dataDf.dart);
+    expect(tv != null, true);
+    tv!.close();
+  });
+
   test('UI-no-table', async () => {
     const viewCount = Array.from(grok.shell.tableViews).length;
     await hierarchicalClusteringUI(null as unknown as DG.DataFrame, ['a', 'b'], DistanceMetric.Euclidean, 'average');
