@@ -51,7 +51,7 @@ export class MakeListPanel {
   /** The cell each listed compound was collected from, by its Structure value: the grid can delete
    *  rows, so a row's position does not stay with its compound. */
   private readonly sources = new Map<string, MatrixCellRef>();
-  /** Whether a listed value is a structure. Uncapped: it holds only values that were put on the list. */
+  /** Whether a listed value is a structure. Uncapped: it holds only values put on the list, and empties with it. */
   private readonly structures = new Map<string, boolean>();
   /** Current-cell subscription on the list; torn down with the grid it drives. */
   private currentCellSub: {unsubscribe(): void} | null = null;
@@ -221,6 +221,7 @@ export class MakeListPanel {
       if (this.makeList!.rowCount === 0) {
         this.makeList = null;
         this.sources.clear();
+        this.structures.clear();
       }
       this.renderMakeList();
     });
@@ -233,6 +234,7 @@ export class MakeListPanel {
     const clear = ui.button('Clear', () => {
       this.makeList = null;
       this.sources.clear();
+      this.structures.clear();
       this.renderMakeList();
     });
     ui.tooltip.bind(clear, 'Empty the whole list');

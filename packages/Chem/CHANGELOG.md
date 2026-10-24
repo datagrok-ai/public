@@ -125,6 +125,10 @@
 * SAR Matrix: Added the PROTAC SAR Matrix demo: 2,792 patent degraders split into warhead, linker and E3 ligand columns
 * SAR Matrix: Fixed a column picked as both the core and an R-group: the dialog drops it from the R-groups and the function refuses it
 * SAR Matrix: Docked the viewer as a tab beside the table's grid
+* SAR Matrix: The matrix's Columns input picks which R-group runs across the columns; the Vary filter is gone
+* SAR Matrix: The analysis rebuilds when rows are added or removed, and follows a renamed molecule, activity, core or R-group column instead of losing it
+* SAR Matrix: A proposal the table already holds (under another cut, core spelling, salt form or series) is shown as that compound, untested or excluded, instead of as a new analog; salts are cut to their parent before fragmenting
+* SAR Matrix: A project saved before this version rebuilds its matrices once when opened (the saved set now carries the settings that built it)
 * Similarity/Diversity search: Each molecule card now announces the row it shows (`data-row`, `name="card-<row>"`), and the viewers report the `search-results` status of `@datagrok-libraries/ml` — `card <row>` hit areas plus `cards` / `current card` / `selected cards` readings — instead of being addressed by position; `isRenderPending` / `onRendered` cover a scheduled or running render
 * Generate Conformers: Fixed the run failing with `AttributeError: Cannot set unknown attribute 'maxAttempts'` — ETKDGv3 takes `maxIterations`
 * Chem | Calculate | IUPAC Name: Added a Python script that names molecules with openclatura

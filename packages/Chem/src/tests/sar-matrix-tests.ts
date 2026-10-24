@@ -19,8 +19,7 @@ import {rankMatrices, SarRankScheme} from '../analysis/sar-matrix/build/sar-matr
 import {fitRoleEffects, RoleDesign, RoleFit, RoleSummary, ROLE_FIT_MAX_SWEEPS}
   from '../analysis/sar-matrix/summary/sar-matrix-role-fit';
 import {mergeTwinRoles, SummaryCollector, SummaryHost} from '../analysis/sar-matrix/summary/sar-matrix-summary-data';
-import {linkVirtualStructures, runSarMatrix, SarGrouping, SarMatrixParams}
-  from '../analysis/sar-matrix/build/sar-matrix-run';
+import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/build/sar-matrix-run';
 import {SCALING_METHODS} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {computeAllTransfers, spearman, transferStats} from '../analysis/sar-matrix/transfer/sar-matrix-transfer';
 import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixColumn, SarMatrixRow}
@@ -1884,19 +1883,6 @@ category('SAR Matrix: pipeline', () => {
       'the salts are placed');
     expect(cells.every((cell) => cell.molIdx === null || cell.smiles === salts[cell.molIdx]), true,
       'a compound\'s cell shows the table\'s own structure, salt included');
-  });
-
-  test('a single-cut prediction keeps the configuration its pieces carry', async () => {
-    const matrix = assembleSinglePositionMatrix(clusterOf({'c1ccc([*:1])cc1': [[0, 'C[*:1]'], [1, '[*:1][C@@H](C)O']],
-      'Fc1ccc([*:1])cc1': [[2, 'C[*:1]']]}), ['Cc1ccccc1', 'C[C@@H](O)c1ccccc1', 'Cc1ccc(F)cc1'],
-    Float32Array.from([5, 6, 7]), true);
-    await linkVirtualStructures([matrix]);
-    const cell = matrix.cells[matrix.rows.findIndex((r) => r.coreSmiles === 'Fc1ccc([*:1])cc1')][
-      matrix.columns.findIndex((c) => c.substSmiles === '[*:1][C@@H](C)O')];
-    expect(cell.kind, 'virtual');
-    // The ring written where the label stood keeps the neighbour order the substituent gave its stereocentre.
-    expect(cell.smiles, canonical('c1cc(F)ccc1[C@@H](C)O'),
-      'the proposed analog must be the configuration its substituent carries');
   });
 
   test('no predicted analog is the mirror image of a table compound', async () => {

@@ -2818,7 +2818,7 @@ export class PackageFunctions {
     const rgroups = rGroupColumns ?? [];
     const axis = matrixColumns ?? '';
     const named = coreColumn !== null || rgroups.length > 0;
-    if (named && coreColumn !== null && rgroups.some((c) => c.name === coreColumn.name)) {
+    if (coreColumn !== null && rgroups.some((c) => c.name === coreColumn.name)) {
       grok.shell.error(`SAR Matrix: ${coreColumn.name} is named as both the core column and an ` +
         'R-group column — a column is the scaffold every row is drawn from or a substituent on it, ' +
         'not both.');
@@ -2830,15 +2830,15 @@ export class PackageFunctions {
     }
     checkCurrentView(table);
     const view = grok.shell.tv as DG.TableView;
+    // Omitted inputs arrive as null, which the parameter defaults don't replace: left out, so the viewer's own
+    // defaults apply.
+    const settings = {scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors};
     const viewer = view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
       activityColumnName: activity.name,
       seriesColumnName: seriesName,
       coreColumnName: named ? coreColumn!.name : '', axisColumnName: named ? axis : '',
       rGroupColumnNames: named ? rgroups.map((c) => c.name) : [],
-      // Omitted inputs arrive as null, which the parameter defaults don't replace.
-      scaling: scaling ?? '-lg', activityDirection: activityDirection ?? 'Auto (from scaling)',
-      fragmentCutoff: fragmentCutoff ?? 0.4, fragmentationLevels: fragmentationLevels ?? 3,
-      predictVirtual: predictVirtual ?? true, useMcsAnchors: useMcsAnchors ?? false});
+      ...Object.fromEntries(Object.entries(settings).filter(([, value]) => value !== null && value !== undefined))});
     dockSarMatrixTabs(view, viewer);
   }
 

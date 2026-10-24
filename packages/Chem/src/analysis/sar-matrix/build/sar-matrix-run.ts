@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../../../package';
 import {getRdKitModule} from '../../../utils/chem-common-rdkit';
+import {MESSAGE_MALFORMED} from '../../../constants';
 import {isCruxRequested} from '../../../engine/chem-engine';
 import {convertMolNotationByEngine} from '../../../engine/worker-jobs';
 import {getMmpFrags} from '../../molecular-matched-pairs/mmp-analysis/mmpa-fragments';
@@ -30,7 +31,7 @@ const STEREO_MARK = /[@/\\]/;
  *
  * Single-cut matrices only (empty `refValues`): decomposed matrices are linked during assembly.
  */
-export async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void> {
+async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void> {
   const cores: string[] = [];
   const fragments: string[] = [];
   const targets: SarMatrixCell[] = [];
@@ -57,53 +58,67 @@ export async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void
     targets[i].smiles = linked[i];
 }
 
-/** The component with the most heavy atoms, canonical: fragmenting a salt carries the counter-ion on a
- *  substituent. Counted in atoms, since a counter-ion such as citrate can be the longer string. */
-function parentStructure(smiles: string): string {
-  if (!smiles.includes('.'))
-    return smiles;
+/** Canonical SMILES by the engine in effect, in the workers: the engine that writes the linked structures the
+ *  table is compared with. */
+function canonicalByEngine(smiles: string[]): Promise<string[]> {
+  return smiles.length === 0 ? Promise.resolve([]) :
+    convertMolNotationByEngine(smiles, DG.chem.Notation.Smiles, false);
+}
+
+/** Each canonical structure's parent: of a mixture the component with the most heavy atoms, canonical by the same
+ *  engine (fragmenting a salt carries the counter-ion on a substituent; counted in atoms, since a counter-ion such
+ *  as citrate can be the longer string); '' for a row that cannot be read. */
+async function parentStructures(structures: string[]): Promise<string[]> {
   const rdkit = getRdKitModule();
   const size = (component: string): number => cachedAtomCount(component, rdkit);
-  return canonicalSmiles(smiles.split('.')
-    .reduce((a, b) => size(b) > size(a) || (size(b) === size(a) && b > a) ? b : a));
+  const parents = structures.map((s) => s === MESSAGE_MALFORMED ? '' : s);
+  const mixtures = parents.flatMap((s, i) => s.includes('.') ? [i] : []);
+  const largest = await canonicalByEngine(mixtures.map((i) => parents[i].split('.')
+    .reduce((a, b) => size(b) > size(a) || (size(b) === size(a) && b > a) ? b : a)));
+  mixtures.forEach((i, k) => parents[i] = largest[k] === MESSAGE_MALFORMED ? '' : largest[k]);
+  return parents;
 }
 
 /**
  * Take back the predictions whose structure the table already holds under another cut, core spelling, salt
  * form or series: `unmeasured` when never assayed and in this series, else `excluded`. No measurement moves.
  * One without stereo that the table holds with stereo is `excluded` but names no compound: the cut lost the
- * configuration, so it may be any of the isomers.
+ * configuration, so it may be any of the isomers. `table` and `tableParents` are canonical by the engine that wrote
+ * the proposals, so a string compare is a structure compare; a proposal is joined from parents' pieces, so it is
+ * its own parent.
  */
-function claimHeldStructures(matrices: SarMatrix[], molecules: string[], table: string[], assayed: Uint8Array,
-  assigned: (string | null)[] | null, predictUnmeasured: boolean): void {
+async function claimHeldStructures(matrices: SarMatrix[], molecules: string[], table: string[],
+  tableParents: string[], assayed: Uint8Array, assigned: (string | null)[] | null, predictUnmeasured: boolean):
+  Promise<void> {
   const exact = new Map<string, number>();
   const parents = new Map<string, number>();
-  const stereoFree = new Set<string>();
   const hold = (held: Map<string, number>, key: string, i: number): void => {
     const prior = held.get(key);
     // A repeated compound stands for its assayed copy.
     if (prior === undefined || (assayed[i] && !assayed[prior]))
       held.set(key, i);
   };
+  const withStereo: string[] = [];
   table.forEach((smiles, i) => {
-    if (!smiles)
+    const parent = tableParents[i];
+    if (!parent)
       return;
-    const parent = parentStructure(smiles);
     hold(exact, smiles, i);
     hold(parents, parent, i);
     if (STEREO_MARK.test(parent))
-      stereoFree.add(canonicalSmiles(parent.replace(/@+/g, '').replace(/[/\\]/g, '')));
+      withStereo.push(parent.replace(/@+/g, '').replace(/[/\\]/g, ''));
   });
+  const stereoFree = new Set(await canonicalByEngine(withStereo));
   for (const matrix of matrices) {
     for (const row of matrix.cells) {
       row.forEach((cell, ci) => {
         if (cell.kind !== 'virtual' || cell.smiles === null)
           return;
-        const parent = parentStructure(cell.smiles);
+        const smiles = cell.smiles;
         // The exact form first: of a compound held both bare and as a salt, a proposal is the form it spells.
-        const molIdx = exact.get(cell.smiles) ?? parents.get(parent);
+        const molIdx = exact.get(smiles) ?? parents.get(smiles);
         if (molIdx === undefined) {
-          if (!STEREO_MARK.test(parent) && stereoFree.has(parent)) {
+          if (!STEREO_MARK.test(smiles) && stereoFree.has(smiles)) {
             matrix.virtualCount--;
             row[ci] = {kind: 'excluded', value: null, molIdx: null, smiles: null};
           }
@@ -133,7 +148,7 @@ function canonicalStructures(molecules: DG.Column, molList: string[]): Promise<s
   const cached = canonicalCache.get(molecules.dart);
   if (cached?.version === molecules.version && cached.crux === crux)
     return cached.structures;
-  const structures = convertMolNotationByEngine(molList, DG.chem.Notation.Smiles, false);
+  const structures = canonicalByEngine(molList);
   canonicalCache.set(molecules.dart, {version: molecules.version, crux, structures});
   structures.catch(() => {
     if (canonicalCache.get(molecules.dart)?.structures === structures)
@@ -366,10 +381,13 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   let clusters: CoreCluster[];
   let decomps: (ClusterDecomposition | null)[];
   let cuts: SeriesCut[] = [];
-  // Fragmentation computes the table's canonical structures anyway; read from columns, they are fetched alongside.
+  // Fragmentation reads the table's canonical structures anyway; read from columns, they are fetched alongside, and
+  // only for the proposals they are compared with.
   let canonical: Promise<string[]> | null = null;
+  let parents: string[] | null = null;
   if (params.fragmentColumns) {
-    canonical = canonicalStructures(molecules, molList);
+    if (params.predictVirtual)
+      canonical = canonicalStructures(molecules, molList);
     const read = decomposeByColumns(params.fragmentColumns, assigned, activities);
     ({clusters, decomps, cuts} = read);
     const {checked, mismatched} = await checkAgainstMolecules(read.decomps, molList);
@@ -383,25 +401,19 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   } else {
     const tFrag = performance.now();
     // Read as the fragmenter reads them, since one it cannot read fails the whole call, and cut to the
-    // parent, since a counter-ion would ride on a substituent. A row that cannot be read sits out.
-    const structures: string[] = [];
-    const parents: string[] = [];
-    for (let i = 0; i < molList.length; i++) {
-      // Read in slices, so a large table does not hold the page.
-      if (i % 500 === 499)
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      structures.push(canonicalSmiles(molList[i]));
-      parents.push(parentStructure(structures[i]));
-    }
-    const readable = parents.flatMap((parent, i) => parent ? [i] : []);
-    const [read] = await getMmpFrags(readable.map((i) => parents[i]));
-    const fragCodes: [number, number][][] = parents.map(() => []);
+    // parent, since a counter-ion would ride on a substituent. A row that cannot be read sits out. In the workers,
+    // by the engine that writes the proposals these structures are compared with.
+    canonical = canonicalStructures(molecules, molList);
+    const tableParents = await parentStructures(await canonical);
+    parents = tableParents;
+    const readable = tableParents.flatMap((parent, i) => parent ? [i] : []);
+    const [read] = await getMmpFrags(readable.map((i) => tableParents[i]));
+    const fragCodes: [number, number][][] = tableParents.map(() => []);
     readable.forEach((row, k) => fragCodes[row] = read.fragCodes[k]);
     const frags = {...read, fragCodes};
-    canonical = Promise.resolve(structures);
     logSarTime(`MMP fragmentation (${readable.length} molecules)`, tFrag);
     t = performance.now();
-    const mirrored = await dropMirroredCuts(frags, parents);
+    const mirrored = await dropMirroredCuts(frags, tableParents);
     logSarTime(`cuts that do not rebuild their compound (${mirrored} dropped)`, t);
     t = performance.now();
     const series = buildMatchedSeries(frags, params.fragmentCutoff);
@@ -416,7 +428,7 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     // compounds without a shared core are left out rather than grouped by a search.
     if (params.useMcsAnchors && assigned === null) {
       base = await poolUngroupedSeries(base, params.threshold);
-      base = await poolUngroupedMolecules(base, parents, params.threshold);
+      base = await poolUngroupedMolecules(base, tableParents, params.threshold);
     }
     logSarTime(`grouping by ${assigned !== null ? 'series column' : params.grouping.toLowerCase()} ` +
       `(${base.length} groups)`, t);
@@ -435,7 +447,7 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     // to the clusters that have none.
     const clusterSiteKeys = clusters.map((c) => c.siteKey);
     t = performance.now();
-    decomps = await decomposeClusters(clusterMembers, parents, params.useMcsAnchors, clusterSiteKeys);
+    decomps = await decomposeClusters(clusterMembers, tableParents, params.useMcsAnchors, clusterSiteKeys);
     logSarTime(`decomposition total (${decomps.filter(Boolean).length}/${clusters.length} clusters decomposed)`, t);
   }
 
@@ -524,16 +536,15 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     await linking;
     logSarTime('virtual structure linking (overlapped)', t);
     t = performance.now();
-    let table: string[] | null = null;
     try {
-      table = await canonical!;
+      const table = await canonical!;
+      await claimHeldStructures(matrices, molList, table, parents ?? await parentStructures(table), assayed, assigned,
+        params.predictUnmeasured);
     } catch (e) {
       // The claim only corrects proposals, so the matrices are worth more than failing the run over it.
       _package.logger.warning(`SAR Matrix: the structures of "${molecules.name}" could not be canonicalized, ` +
         `so proposals the table already holds are not taken back: ${e instanceof Error ? e.message : e}`);
     }
-    if (table !== null)
-      claimHeldStructures(matrices, molList, table, assayed, assigned, params.predictUnmeasured);
     logSarTime('proposals the table already holds', t);
   }
 

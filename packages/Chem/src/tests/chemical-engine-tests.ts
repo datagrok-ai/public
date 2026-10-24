@@ -595,11 +595,13 @@ category('chemical engine', () => {
         }
       }
     }
-    // the 2D names on 200 molecules, the 3D ones (the container embeds each molecule: slow; values reported only) on 10
-    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList().slice(0, 150);
-    const molblocks = (await readDataframe('tests/spgi-100.csv')).col('Structure')!.toList().slice(0, 50);
+    // the 2D names on 70 molecules (the 100,000-molecule comparison, misc/crux/compare100k.mjs, is the large-scale
+    // check), the 3D ones (the container embeds each molecule: slow; values reported only) on 4; an empty and an
+    // unreadable row with each
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList().slice(0, 50);
+    const molblocks = (await readDataframe('tests/spgi-100.csv')).col('Structure')!.toList().slice(0, 20);
     const molecules = DG.Column.fromStrings('molecules', [...smiles, ...molblocks, '', 'C1CC(']);
-    const few = DG.Column.fromStrings('molecules', [...smiles.slice(0, 6), ...molblocks.slice(0, 2), '', 'C1CC(']);
+    const few = DG.Column.fromStrings('molecules', [...smiles.slice(0, 3), ...molblocks.slice(0, 1), '', 'C1CC(']);
     const [names2D, only3D] = [names.filter((n) => !names3D.has(n)), names.filter((n) => names3D.has(n))];
     const expected = [...await container.calculateDescriptors(molecules, names2D),
       ...only3D.length ? await container.calculateDescriptors(few, only3D) : []];
@@ -793,7 +795,10 @@ category('chemical engine', () => {
 
   test('descriptors: Crux timing on 1,000 and 5,000 molecules', async () => {
     // the small inputs batch 22 splits over all the workers: smiles.csv, and 5,000 unique molecules (each with one of
-    // five small extra fragments), with 3 and 20 descriptors; timings logged
+    // five small extra fragments), with 3 and 20 descriptors; timings logged. A measurement, no check: with
+    // --benchmark only
+    if (!DG.Test.isInBenchmark)
+      return;
     setChemicalEngine(ChemicalEngine.Crux);
     expect(await cruxReady(), true);
     const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList() as string[];
@@ -820,32 +825,31 @@ category('chemical engine', () => {
     } finally {
       setDescriptorTimingForTests(false);
     }
-  }, {timeout: 300000});
+  }, {timeout: 300000, benchmark: true});
 
   test('descriptors: Crux timing on a large table', async () => {
-    // smiles.csv's molecules over and over: 50,000 rows; in benchmark mode (--benchmark) 500,000 with 3, 20 and all
-    // the 2D descriptors, repeated and then unique (each with one of 500 small extra fragments: no two rows alike);
-    // each call's phases, pool and chunks logged
+    // smiles.csv's molecules over and over, 500,000 rows with 3, 20 and all the 2D descriptors, repeated and then
+    // unique (each with one of 500 small extra fragments: no two rows alike); each call's phases, pool and chunks
+    // logged. A measurement: with --benchmark only (the budget test above checks 50,000 rows)
+    if (!DG.Test.isInBenchmark)
+      return;
     setChemicalEngine(ChemicalEngine.Crux);
     expect(await cruxReady(), true);
-    const rows = DG.Test.isInBenchmark ? 500000 : 50000;
+    const rows = 500000;
     const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList() as string[];
     const suffixes = ['', 'O', 'N', 'Cl', 'F', 'Br', 'S', 'C=O', 'C#N', 'OC', 'NC', 'CO', 'CN', 'C(=O)O', 'C(=O)N',
       'OCC', 'NCC', 'SC', 'C(C)C', 'C(C)(C)C', 'CF', 'CCl', 'C(F)(F)F', 'OO', 'NN'];
     const fragment = (k: number) => 'C'.repeat(1 + k % 20) + suffixes[Math.floor(k / 20) % suffixes.length];
-    const tables: [string, DG.Column][] = [['repeated', DG.Column.fromStrings('molecules',
-      Array.from({length: rows}, (_, i) => smiles[i % smiles.length]))]];
-    if (DG.Test.isInBenchmark) {
-      tables.push(['unique', DG.Column.fromStrings('molecules', Array.from({length: rows},
-        (_, i) => `${smiles[i % smiles.length]}.${fragment(Math.floor(i / smiles.length))}`))]);
-    }
+    const tables: [string, DG.Column][] = [
+      ['repeated', DG.Column.fromStrings('molecules', Array.from({length: rows}, (_, i) => smiles[i % smiles.length]))],
+      ['unique', DG.Column.fromStrings('molecules', Array.from({length: rows},
+        (_, i) => `${smiles[i % smiles.length]}.${fragment(Math.floor(i / smiles.length))}`))]];
     const tree = await getDescriptorsTree();
     const names2D = (Object.values(tree) as any[]).flatMap((g) => g.descriptors)
       .filter((d: any) => !d.tags?.includes('3D')).map((d: any) => d.name as string);
     // all the 2D descriptors on the first 100,000 rows only (some 200 columns of 500,000 would not fit a tab)
-    const sets: [string[], number][] = DG.Test.isInBenchmark ?
-      [[['MolWt', 'TPSA', 'MolLogP'], rows], [names2D.slice(0, 20), rows], [names2D, 100000]] :
-      [[['MolWt', 'TPSA', 'MolLogP'], rows]];
+    const sets: [string[], number][] =
+      [[['MolWt', 'TPSA', 'MolLogP'], rows], [names2D.slice(0, 20), rows], [names2D, 100000]];
     setDescriptorTimingForTests(true);
     const runs = tables.flatMap(([kind, column]) => sets.map(([names, n]) => ({kind, names, molecules: n === rows ?
       column : DG.Column.fromStrings('molecules', (column.toList() as string[]).slice(0, n))})));

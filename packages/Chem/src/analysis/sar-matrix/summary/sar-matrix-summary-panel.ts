@@ -52,6 +52,15 @@ export class SummaryPanel extends SummaryKit {
     this.message = false;
   }
 
+  /** For what only the drawing reads (the column names): the same reading, at its level, drawn again when the tab
+   *  shows, instead of collected again. */
+  redraw(): void {
+    if (this.data === null || this.message || this.collectTimer !== 0)
+      return;
+    this.painter.disconnect();
+    ui.empty(this.root);
+  }
+
   private setTierFilter(tier: number | null): void {
     if (this.tierFilter === tier)
       return;

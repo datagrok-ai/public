@@ -10,7 +10,7 @@ Feature: SAR Matrix Summary on component columns
   Scaling at none, unavailable, for the negative solubility and offers -lg again for a positive activity.
   Another component across the columns rebuilds the matrices; a scaling the activity cannot take then leaves
   no matrix and every tab says why; Scaling none and the warhead back across the columns, set together,
-  build the matrices again in one run.
+  build the matrices again.
 
   Background:
     Given user is logged in

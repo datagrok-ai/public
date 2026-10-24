@@ -6,6 +6,8 @@ import * as DG from 'datagrok-api/dg';
 import '../../../css/sar-matrix.css';
 import {_package} from '../../package';
 import {getRdKitModule, getRdKitService} from '../../utils/chem-common-rdkit';
+import {isCruxRequested} from '../../engine/chem-engine';
+import {getCruxService} from '../../crux/crux-searches';
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {nestByContainment, rankMatrices, SarRankScheme} from './build/sar-matrix-ranking';
 import {DEFAULT_TRANSFER_SIMILARITY} from './transfer/sar-matrix-transfer';
@@ -151,12 +153,12 @@ export class SarMatrixViewer extends DG.JsViewer {
   selectedCell: MatrixCellRef | null = null;
   /** Per-SMILES "SAR analysis" panel builders; cleared on recompute and detach. */
   private readonly analogPanels = new Map<string, AnalogPanelBuilder>();
-  /** Armed only for the moment after a cell click, to take the context back if the platform restores
-   *  the table view's previous current object over it. */
+  /** Armed by a cell click until the next key or pointer press, to take the context back if the platform
+   *  restores the table view's previous current object over it. */
   private contextGuard: {unsubscribe(): void} | null = null;
   private readonly host = ui.divH([], 'chem-sar-matrix');
   private readonly tabs: DG.TabControl;
-  /** The three panels split out of this class. They reach back through the members below, which are
+  /** The four panels split out of this class. They reach back through the members below, which are
    *  public for that reason rather than for outside callers. */
   private readonly painter = new MatrixPainter(this);
   private readonly makeListPanel = new MakeListPanel(this);
@@ -422,9 +424,9 @@ export class SarMatrixViewer extends DG.JsViewer {
       const build = this.analogPanels.get(smiles)!;
       acc.addPane('SAR analysis', () => build(), true, acc.panes.length ? acc.panes[0] : null);
     }));
-    // Spawn RDKit workers now so their WASM init overlaps the compute debounce; a failure here is
-    // re-reported by compute().
-    getRdKitService().catch(() => {});
+    // Spawn the engine's workers now so their WASM init overlaps the compute debounce; a failure here is
+    // re-reported by compute(). In Crux mode every step of the build runs on Crux's.
+    (isCruxRequested() ? getCruxService() : getRdKitService()).catch(() => {});
     this.scheduleCompute();
   }
 
@@ -519,8 +521,10 @@ export class SarMatrixViewer extends DG.JsViewer {
     // Some properties don't change the fragmentation, so they must not trigger a full rebuild.
     if (property !== null && RENDER_ONLY_PROPS.includes(property.name)) {
       this.renderMatrixPane();
-      // Cards name rows by the Id column, and this branch never reaches render().
-      this.refreshSummary();
+      // The Summary's cards name rows by the Id column, and this branch never reaches render(); the caption is
+      // the matrix's alone.
+      if (property.name === 'idColumnName')
+        this.redrawSummary();
       return;
     }
     if (property !== null && RERANK_ONLY_PROPS.includes(property.name)) {
@@ -538,8 +542,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.scheduleCompute();
   }
 
-  private refreshSummary(): void {
-    this.summaryPanel.invalidate();
+  private redrawSummary(): void {
+    this.summaryPanel.redraw();
     if (this.summaryTabActive)
       this.summaryPanel.activateSummaryTab();
   }
@@ -675,8 +679,8 @@ export class SarMatrixViewer extends DG.JsViewer {
       return;
     // Keyed afresh, or a saved project would rebuild a set that still matches its table.
     this.matricesData = JSON.stringify({settings: this.settingsKey(), matrices: this.matrices});
-    // Captions and the Summary name the activity and id columns.
-    this.summaryPanel.invalidate();
+    // Captions and the Summary name the activity and id columns: drawn again, the analysis unchanged.
+    this.summaryPanel.redraw();
     this.render();
   }
 
@@ -739,7 +743,9 @@ export class SarMatrixViewer extends DG.JsViewer {
     // Invalidation empties both panels: without a placeholder, either tab would sit blank for the whole build.
     if (this.transferTabActive)
       this.transferPanel.activateTransferTab();
-    this.refreshSummary();
+    this.summaryPanel.invalidate();
+    if (this.summaryTabActive)
+      this.summaryPanel.activateSummaryTab();
     this.resetFilters();
     ui.empty(this.host);
     this.host.appendChild(ui.loader());
@@ -2263,7 +2269,9 @@ export class SarMatrixViewer extends DG.JsViewer {
 
   /** Why the analysis produced nothing, named by the grouping that produced it. */
   noMatricesMessage(): string {
-    if (this.assayedCount > 0 && this.unscalableCount >= this.assayedCount)
+    if (this.assayedCount === 0)
+      return `No SAR matrices found: "${this.activityColumnName}" has no values.`;
+    if (this.unscalableCount >= this.assayedCount)
       return `No SAR matrices found: no activity value can be scaled by ${this.scaling}. Set Scaling to none.`;
     // The fragment cutoff and the grouping don't apply to existing R-group columns.
     if (this.rGroupColumns() !== null) {

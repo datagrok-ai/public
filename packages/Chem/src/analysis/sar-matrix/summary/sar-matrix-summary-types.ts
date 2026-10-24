@@ -20,6 +20,9 @@ export const SWAP_ROW_CAP = 32;
 /** Below three lineages a median is only the mean of two. */
 export const RGROUP_MIN_SERIES = 3;
 
+/** The fewest lineages an R-group row is shown from at all: below RGROUP_MIN_SERIES it is listed as thin. */
+export const RGROUP_THIN_SERIES = 2;
+
 export const BEST_FIT_MIN_N = 8;
 
 export const LOSER_ROWS = 2;

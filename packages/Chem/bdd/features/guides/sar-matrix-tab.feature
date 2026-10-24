@@ -12,6 +12,7 @@ Feature: SAR Matrix tab
     Given user is logged in
     And simple mode is off
     And the package autostarts have completed
+    And the context panel is open
     And user opens the "SarMatrixDemo" project
     Then SAR Matrix Viewer viewer should have built its matrices
     When user clicks on SAR Matrix tab in SAR Matrix Viewer viewer

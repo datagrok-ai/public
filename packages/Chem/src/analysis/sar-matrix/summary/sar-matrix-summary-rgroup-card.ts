@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {cachedAtomCount} from '../build/sar-matrix-decompose';
-import {RGroupRow, SummaryData, SUM_ROWS, SWAP_MIN_SERIES} from './sar-matrix-summary-data';
+import {RGROUP_THIN_SERIES, RGroupRow, SummaryData, SUM_ROWS} from './sar-matrix-summary-data';
 import {count} from '../sar-matrix-ui-common';
 import {shortSmiles} from './sar-matrix-summary-common';
 import type {SummaryEffects} from './sar-matrix-summary-effects';
@@ -25,7 +25,7 @@ export class SummaryRGroupCard {
     if (rows.length === 0 && thin.length === 0) {
       // Non-convergence is named because nothing else on screen shows it.
       return this.effects.card(title, subtitle, this.kit.reason('No substituent comes first at its position in ' +
-        `${SWAP_MIN_SERIES} series whose additive fit holds.` + (data.nonConverged === 0 ? '' :
+        `${RGROUP_THIN_SERIES} series whose additive fit holds.` + (data.nonConverged === 0 ? '' :
         ` ${count(data.nonConverged)} series whose fit did not converge are left out.`)));
     }
     const body: HTMLElement[] = [];
@@ -41,8 +41,9 @@ export class SummaryRGroupCard {
     }
     body.push(...rows);
     if (thin.length > 0) {
-      body.push(ui.divText('Won in only two series — a median over two lineages is the mean of two ' +
-        'numbers:', 'chem-sar-cp-hint'));
+      const n = RGROUP_THIN_SERIES;
+      body.push(ui.divText(`Won in only ${n} series — a median over ${n} lineages is the mean of ${n} numbers:`,
+        'chem-sar-cp-hint'));
       body.push(...thin);
     }
     if (data.rgroupLosers.length > 0) {
@@ -101,8 +102,10 @@ export class SummaryRGroupCard {
     const atoms = this.kit.badge(n ? `${n} atoms` : '—',
       'Heavy atoms including the attachment point: potency alone favours size.');
     const badges = [this.tallyBadge(row, opts.loser ? 'last' : 'best'), atoms];
-    if (opts.thin)
-      badges.push(this.kit.badge('2 series', 'Two lineages only — the number below is the mean of two.', true));
+    if (opts.thin) {
+      const k = RGROUP_THIN_SERIES;
+      badges.push(this.kit.badge(`${k} series`, `${k} lineages only — the number below is the mean of ${k}.`, true));
+    }
     // Only one series' reference can be named; a pooled median has several.
     const comparator = row.magnitudeSeries > 1 ? 'each series\' own reference' : shortSmiles(reference);
     return this.kit.summaryRow({

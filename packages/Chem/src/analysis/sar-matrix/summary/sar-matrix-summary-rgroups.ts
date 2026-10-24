@@ -1,8 +1,8 @@
 import {AdditiveFit} from '../build/sar-matrix-assemble';
 import {median} from '../build/sar-matrix-decompose';
 import {SarMatrix, SarMatrixCell} from '../sar-matrix-types';
-import {LOSER_ROWS, RGROUP_MIN_SERIES, RGroupAcc, RGroupRow, RGroupWin, SUM_ROWS,
-  SWAP_MIN_SERIES} from './sar-matrix-summary-types';
+import {LOSER_ROWS, RGROUP_MIN_SERIES, RGROUP_THIN_SERIES, RGroupAcc, RGroupRow, RGroupWin, SUM_ROWS}
+  from './sar-matrix-summary-types';
 
 function bestMeasured(cells: SarMatrixCell[], dir: number): number {
   let best = -1;
@@ -99,7 +99,7 @@ function rankPool(pool: Map<string, RGroupWin[]>, tried: Map<string, Set<string>
   const rows: RGroupRow[] = [];
   for (const [subst, entries] of pool) {
     const trusted = entries.filter((win) => win.fitHolds);
-    if (trusted.length < SWAP_MIN_SERIES)
+    if (trusted.length < RGROUP_THIN_SERIES)
       continue;
     const deltas = trusted.map((win) => win.refDelta).filter((d): d is number => d !== null);
     trusted.sort((a, b) => strongerWin(a, b, keep) ? -1 : 1);

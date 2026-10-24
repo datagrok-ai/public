@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import {RoleSummary} from './sar-matrix-role-fit';
-import {MIN_SUPPORT, RGROUP_MIN_SERIES, SummaryData, SWAP_MIN_PAIRS,
+import {MIN_SUPPORT, RGROUP_MIN_SERIES, RGROUP_THIN_SERIES, SummaryData, SWAP_MIN_PAIRS,
   SWAP_MIN_SERIES} from './sar-matrix-summary-data';
 import {count, tipText} from '../sar-matrix-ui-common';
 import {FINDING_ROWS, NOTHING_AT_POSITION, orient, Answer, shortSmiles, roleRanks} from './sar-matrix-summary-common';
@@ -218,7 +218,7 @@ export class SummaryOverview {
     const rows = data.rgroups;
     if (rows.length === 0) {
       // Name the series floor that the empty list actually failed.
-      return {answer: `None in ${data.rgroupsThin.length ? RGROUP_MIN_SERIES : SWAP_MIN_SERIES} series`,
+      return {answer: `None in ${data.rgroupsThin.length ? RGROUP_MIN_SERIES : RGROUP_THIN_SERIES} series`,
         negative: 'no substituent comes first at its position in that many series whose additive fit holds'};
     }
     const top = rows[0];
@@ -254,7 +254,7 @@ export class SummaryOverview {
     }
     return {answer: `${top.matrix.label} · typical ${host.formatActivity(top.typical)} over ` +
       `${count(top.matrix.realCount)} cpd`, negative,
-    art: this.kit.answerArt(top.matrix.rows[0].keySmiles)};
+    art: this.kit.answerArt(top.matrix.rows[0].coreSmiles)};
   }
 
   private potencyAnswer(data: SummaryData): Answer {

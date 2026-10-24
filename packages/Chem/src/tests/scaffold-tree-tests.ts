@@ -176,7 +176,11 @@ category('scaffold tree', () => {
   });
 
   test('the Python script on a 750-molecule sample', async () => {
-    // timing (the stand's Python): the tree the RDKit engine builds from the sample of a 4,950-molecule table
+    // timing (the stand's Python): the tree the RDKit engine builds from the sample of a 4,950-molecule table. A
+    // measurement: with --benchmark only (chemical engine's "scaffold tree: Crux against the Python script" checks
+    // the script's tree node by node)
+    if (!DG.Test.isInBenchmark)
+      return;
     const values = (await largeTable(5)).col('smiles')!.toList() as string[];
     const rows = scaffoldTreeSampleRows(values, SCAFFOLD_TREE_MAX_MOLECULES, (m) => !!m);
     const sample = DG.Column.fromStrings('smiles', rows.map((r) => values[r]));
@@ -193,7 +197,7 @@ category('scaffold tree', () => {
     } finally {
       setChemicalEngine(null);
     }
-  }, {timeout: 900000});
+  }, {timeout: 900000, benchmark: true});
 
   async function editStructure(scaffoldTree: ScaffoldTreeViewer, group: DG.TreeViewGroup, smiles: string) {
     await scaffoldTree.openEditSketcher(group);

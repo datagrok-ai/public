@@ -53,11 +53,13 @@ npx grok-bdd run generated --workers=2 --reporter=line
 npx grok-bdd run generated/filters                    # one folder
 ```
 
-The Chem bindings are the package's own screen parts and checks (`bindings/`): RDKit comparisons of
-molecule columns (`molecules.ts`), the substructure card's search type and cutoff controls
-(`filter-card.ts`), the Scaffold Tree and MMP readiness barriers (`scaffold-tree.ts`), the MPO
-profiles on the server (`mpo.ts`), the dialogs whose OK button has to be caught as it appears
-(`dialogs.ts`), Ketcher's template toolbar (`ketcher.ts`) and Crux (`crux.ts`). The sketcher reports
+The Chem bindings are the package's own screen parts and checks (`bindings/`): Chem's elements
+(`elements.ts`) and datasets (`datasets.ts`), RDKit comparisons of molecule columns
+(`molecules.ts`), the Scaffold Tree and MMP readiness barriers (`scaffold-tree.ts`), the SAR
+Matrix's (`sar-matrix.ts`), the Chemical Engine's panes (`engine.ts`), the MPO profiles on the
+server (`mpo.ts`), the dialogs whose OK button has to be caught as it appears (`dialogs.ts`),
+Ketcher's template toolbar (`ketcher.ts`) and Crux (`crux.ts`). The substructure card's search
+type and cutoff controls are the library's (`tiers/viewers/filter-panel.ts`). The sketcher reports
 its atoms and bonds as hit areas (`atom 0`, `bond 0`) and its `ready`, `pending`, `smiles`, `atoms`,
 `bonds` and `mode` readings, so the viewers tier's area and reading steps take it as `crux sketcher
 widget`; that widget, Crux's own controls by their test ids and the molecule readings (`the "smiles"

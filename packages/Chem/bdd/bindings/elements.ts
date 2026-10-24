@@ -59,7 +59,6 @@ element('analog worth making detail', {selector: '.chem-sar-sum-making-block .ch
 element('Never assayed card', {selector: '.chem-sar-sum-making > .chem-sar-sum-card:not(.chem-sar-sum-making-block)',
   description: 'the card of the SAR Matrix Summary above Worth making: compounds of the table with no activity value, ranked by their prediction; absent while there are none'});
 element('never assayed row', {selector: '.chem-sar-sum-making > .chem-sar-sum-card:not(.chem-sar-sum-making-block) .chem-sar-card',
-  parts: {name: '.chem-sar-card-name'},
   description: 'a compound of the Never assayed card ("first never assayed row"): its id, its support ("n=3"), its place and its predicted value'});
 element('Queue for testing button', {selector: '.chem-sar-sum-making > .chem-sar-sum-card:not(.chem-sar-sum-making-block) .chem-sar-sum-chips button',
   description: 'the button under the Never assayed card that puts every compound of it on the Make list; its caption counts them ("Queue these 3 for testing")'});
@@ -70,8 +69,6 @@ element('Summary evidence', {selector: '.chem-sar-sum-detail:not(:empty)',
 element('evidence row', {selector: '.chem-sar-sum-detail .chem-sar-card',
   parts: {'open icon': '.fa-th', 'count badge': '.chem-sar-sum-click', value: '.chem-sar-card-title', name: '.chem-sar-card-name'},
   description: 'a row of the evidence open on the Summary ("first evidence row"); "open icon of …" opens it on the SAR Matrix tab, "count badge of …" ("12 cpd") selects the compounds it counts, "value of …" is the number on its right (an effect, or a swap\'s weakest pair)'});
-element('scale line', {selector: '.chem-sar-sum-scale',
-  description: 'the line at the top of the SAR Matrix Summary saying which way is better, the scaling and the range the analysis reads'});
 element('setup line', {selector: '.chem-sar-sum-setup',
   description: 'the line of the SAR Matrix Summary saying how the matrices were built: which column runs across them'});
 element('What to change title', {selector: '.chem-sar-sum-comp > .chem-sar-sum-title-row > .chem-sar-cp-section-title',
