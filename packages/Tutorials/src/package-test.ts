@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 import './tests/app-test';
 import './tests/tutorial-test';
+import './tests/demo-app-test';
 
 export const _package = new DG.Package();
 export {tests};
