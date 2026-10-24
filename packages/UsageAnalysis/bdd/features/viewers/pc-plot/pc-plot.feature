@@ -15,8 +15,8 @@ Feature: PC plot axes, vertical scale and chrome
   "colour by HEIGHT" and "per-column log scale" steps (every scenario already ends on that floor,
   so each is folded into a step with a geometric claim, here or in the sibling features); the
   Lines > Line Width menu slider, a canvas-drawn control with no handle, which writes the same
-  property this feature sets; and the manual checklist (hover colours, undock/dock, Undo, the
-  General menu, the grid-to-plot column drag). Selection, colour, the range filter, the density
+  property this feature sets; and the manual checklist (hover colours, undock/dock, the General
+  menu, the grid-to-plot column drag) — Undo is in `pc-plot-hover-and-layout.feature`. Selection, colour, the range filter, the density
   overlay, transformations, persistence and Row Source have features of their own.
 
   Background:

@@ -23,7 +23,7 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe, shouldContainText, shouldHaveItems, shouldNotContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, noErrors, propertyShouldBe, readingHigher, readingIs, readingLower, repainted, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, noErrors, propertyShouldBe, readingIs, repainted, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Bar chart stack aggregation and datetime split", () => {
@@ -69,10 +69,10 @@ test.describe("Bar chart stack aggregation and datetime split", () => {
       await session.step(48, "And Split column input in bar chart viewer should contain text \"STARTED\"", () => shouldContainText(page, el("Split column input in bar chart viewer"), "STARTED"));
       await session.step(49, "And Split column input in bar chart viewer should not contain text \"RACE\"", () => shouldNotContainText(page, el("Split column input in bar chart viewer"), "RACE"));
       await session.step(50, "When user sets \"Split Map\" property of bar chart viewer to \"month\"", () => setProperty(page, "Split Map", el("bar chart viewer"), "month"));
-      await session.step(51, "Then the \"bars\" reading of bar chart viewer should be higher than before", () => readingHigher(page, "bars", el("bar chart viewer")));
+      await session.step(51, "Then the \"bars\" reading of bar chart viewer should be 12", () => readingIs(page, "bars", el("bar chart viewer"), 12));
       await session.step(52, "And bar chart viewer should have repainted", () => repainted(page, el("bar chart viewer")));
       await session.step(53, "When user sets \"Split Map\" property of bar chart viewer to \"year\"", () => setProperty(page, "Split Map", el("bar chart viewer"), "year"));
-      await session.step(54, "Then the \"bars\" reading of bar chart viewer should be lower than before", () => readingLower(page, "bars", el("bar chart viewer")));
+      await session.step(54, "Then the \"bars\" reading of bar chart viewer should be 3", () => readingIs(page, "bars", el("bar chart viewer"), 3));
       await session.step(55, "And bar chart viewer should have repainted", () => repainted(page, el("bar chart viewer")));
       await session.step(56, "And \"Split\" property of bar chart viewer should be \"STARTED\"", () => propertyShouldBe(page, "Split", el("bar chart viewer"), "STARTED"));
       await session.step(57, "And no errors should have been logged", () => noErrors(page));

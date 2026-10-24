@@ -114,11 +114,11 @@ test.describe("Scatter plot legend", () => {
       await session.step(140, "Then the legend of scatter plot viewer should list 6 items", () => legendLists(page, el("scatter plot viewer"), 6));
       await session.step(141, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("A click on a legend entry hides that category on the canvas, not in the table", async () => {
+    await run.scenario("A click on a legend entry narrows the canvas to that category, not the table", async () => {
       await session.step(144, "Then all rows should pass the filter", () => filterPassesAll(page));
       await session.step(145, "And scatter plot viewer should show 872 rows", () => showsRows(page, el("scatter plot viewer"), 872));
       await session.step(146, "When user clicks on \"Asian\" item in the legend of scatter plot viewer", () => clickLegendItem(page, "Asian", el("scatter plot viewer")));
-      await session.step(147, "Then scatter plot viewer should show fewer rows than before", () => showsFewerRows(page, el("scatter plot viewer")));
+      await session.step(147, "Then scatter plot viewer should show 13 rows", () => showsRows(page, el("scatter plot viewer"), 13));
       await session.step(148, "And scatter plot viewer should have less ink than before", () => lessInk(page, el("scatter plot viewer")));
       await session.step(149, "And all rows should pass the filter", () => filterPassesAll(page));
       await session.step(150, "When user clicks on \"Asian\" item in the legend of scatter plot viewer", () => clickLegendItem(page, "Asian", el("scatter plot viewer")));

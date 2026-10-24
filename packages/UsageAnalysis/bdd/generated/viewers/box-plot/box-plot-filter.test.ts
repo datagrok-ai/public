@@ -24,6 +24,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {addCalculated, filterBetween, filterIsExactly, filterPassesAll, filterPassesFewer, removeColumn, resetFilter, rowCount, tableColumnIncomplete} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, hasArea, hasNoArea, narrowerRange, noErrors, propertyShouldBe, repainted, sameRange, scaleNarrower, scaleWider, setProperty, showsFewerRows, showsRows, widerRange} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {areaLies} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot filter semantics", () => {
@@ -84,13 +85,15 @@ test.describe("Box plot filter semantics", () => {
       await session.step(62, "And user sets \"Marker Color Column\" property of box plot viewer to \"TPSA\"", () => setProperty(page, "Marker Color Column", el("box plot viewer"), "TPSA"));
       await session.step(63, "Then \"Marker Color Column\" property of box plot viewer should be \"TPSA\"", () => propertyShouldBe(page, "Marker Color Column", el("box plot viewer"), "TPSA"));
       await session.step(64, "And box plot viewer should have a \"color scale\" area", () => hasArea(page, el("box plot viewer"), "color scale"));
-      await session.step(65, "And no errors should have been logged", () => noErrors(page));
-      await session.step(66, "When user resets the filter", () => resetFilter(page));
-      await session.step(67, "Then the color scale of box plot viewer should cover a wider range than before", () => scaleWider(page, el("box plot viewer")));
-      await session.step(68, "When user filters rows where \"Average Mass\" is between 300 and 400", () => filterBetween(page, "Average Mass", 300, 400));
-      await session.step(69, "Then the color scale of box plot viewer should cover a narrower range than before", () => scaleNarrower(page, el("box plot viewer")));
-      await session.step(70, "When user resets the filter", () => resetFilter(page));
-      await session.step(71, "And user sets \"Marker Color Column\" property of box plot viewer to \"\"", () => setProperty(page, "Marker Color Column", el("box plot viewer"), ""));
+      await session.step(65, "And the \"color scale\" area of box plot viewer should lie outside the \"y axis\" area", () => areaLies(page, "color scale", el("box plot viewer"), "outside", "y axis"));
+      await session.step(66, "And the \"color scale\" area of box plot viewer should lie outside the \"x axis\" area", () => areaLies(page, "color scale", el("box plot viewer"), "outside", "x axis"));
+      await session.step(67, "And no errors should have been logged", () => noErrors(page));
+      await session.step(68, "When user resets the filter", () => resetFilter(page));
+      await session.step(69, "Then the color scale of box plot viewer should cover a wider range than before", () => scaleWider(page, el("box plot viewer")));
+      await session.step(70, "When user filters rows where \"Average Mass\" is between 300 and 400", () => filterBetween(page, "Average Mass", 300, 400));
+      await session.step(71, "Then the color scale of box plot viewer should cover a narrower range than before", () => scaleNarrower(page, el("box plot viewer")));
+      await session.step(72, "When user resets the filter", () => resetFilter(page));
+      await session.step(73, "And user sets \"Marker Color Column\" property of box plot viewer to \"\"", () => setProperty(page, "Marker Color Column", el("box plot viewer"), ""));
     });
     run.finish();
   });

@@ -140,11 +140,11 @@ Feature: Scatter plot legend
     Then the legend of scatter plot viewer should list 6 items
     And no errors should have been logged
 
-  Scenario: A click on a legend entry hides that category on the canvas, not in the table
+  Scenario: A click on a legend entry narrows the canvas to that category, not the table
     Then all rows should pass the filter
     And scatter plot viewer should show 872 rows
     When user clicks on "Asian" item in the legend of scatter plot viewer
-    Then scatter plot viewer should show fewer rows than before
+    Then scatter plot viewer should show 13 rows
     And scatter plot viewer should have less ink than before
     And all rows should pass the filter
     When user clicks on "Asian" item in the legend of scatter plot viewer

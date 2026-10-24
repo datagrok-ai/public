@@ -24,7 +24,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, selectIn, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {filterPasses, filterPassesAll, filterTo, resetFilter, tableFilterCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, areaColor, areaNotColor, areaPainted, boundTable, closeContextMenu, dragAreaBy, hasArea, hasNoArea, legendLists, legendSide, lessInk, loadLayout, moreInk, noErrors, openContextMenu, pickFromAreaContextMenu, pickFromContextMenu, pointerAway, propertiesShouldBe, propertyShouldBe, propertyShouldNotBe, readingHigher, readingIs, repainted, repaintedBy, resizeTo, rightClickArea, saveLayoutToServer, setProperties, setProperty, showsRows, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, areaColor, areaNotColor, areaPainted, boundTable, closeContextMenu, dragAreaBy, hasArea, hasNoArea, legendLists, legendSide, lessInk, loadLayout, moreInk, noErrors, openContextMenu, pickFromAreaContextMenu, pickFromContextMenu, pointerAway, propertiesShouldBe, propertyShouldBe, readingHigher, readingIs, repainted, repaintedBy, resizeTo, rightClickArea, saveLayoutToServer, setProperties, setProperty, showsRows, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Histogram property surface", () => {
@@ -42,7 +42,7 @@ test.describe("Histogram property surface", () => {
     await session.step(20, "And histogram viewer should have a \"bin 8\" area", () => hasArea(page, el("histogram viewer"), "bin 8"));
     await session.step(21, "And histogram viewer should have an \"x axis\" area", () => hasArea(page, el("histogram viewer"), "x axis"));
     await session.step(22, "And histogram viewer should have a \"y axis\" area", () => hasArea(page, el("histogram viewer"), "y axis"));
-    await run.scenario("The value column and the bin count, from the panel and from the plot", async () => {
+    await run.scenario("The value column and the bin count, from the panel and from the plot (github-2296)", async () => {
       await session.step(25, "When user sets \"Value\" property of histogram viewer to \"WEIGHT\"", () => setProperty(page, "Value", el("histogram viewer"), "WEIGHT"));
       await session.step(26, "Then Value column input in histogram viewer should contain text \"WEIGHT\"", () => shouldContainText(page, el("Value column input in histogram viewer"), "WEIGHT"));
       await session.step(27, "And the \"axis min\" reading of histogram viewer should be higher than before", () => readingHigher(page, "axis min", el("histogram viewer")));
@@ -60,8 +60,8 @@ test.describe("Histogram property surface", () => {
       await session.step(39, "And user hovers over histogram viewer", () => hoverOver(page, el("histogram viewer")));
       await session.step(40, "Then histogram viewer should have a \"bins slider\" area", () => hasArea(page, el("histogram viewer"), "bins slider"));
       await session.step(41, "When user drags the \"bins slider\" area of histogram viewer by 40 pixels to the right", () => dragAreaBy(page, "bins slider", el("histogram viewer"), 40, "right"));
-      await session.step(42, "Then \"Bins\" property of histogram viewer should not be \"50\"", () => propertyShouldNotBe(page, "Bins", el("histogram viewer"), "50"));
-      await session.step(43, "And the \"bins shown\" reading of histogram viewer should be higher than before", () => readingHigher(page, "bins shown", el("histogram viewer")));
+      await session.step(42, "Then \"Bins\" property of histogram viewer should be \"169\"", () => propertyShouldBe(page, "Bins", el("histogram viewer"), "169"));
+      await session.step(43, "And the \"bins shown\" reading of histogram viewer should be 169", () => readingIs(page, "bins shown", el("histogram viewer"), 169));
       await session.step(44, "And histogram viewer should have repainted by at least 2000 pixels", () => repaintedBy(page, el("histogram viewer"), 2000));
       await session.step(45, "When user sets \"Bins\" property of histogram viewer to \"20\"", () => setProperty(page, "Bins", el("histogram viewer"), "20"));
       await session.step(46, "Then the \"bins shown\" reading of histogram viewer should be 20", () => readingIs(page, "bins shown", el("histogram viewer"), 20));

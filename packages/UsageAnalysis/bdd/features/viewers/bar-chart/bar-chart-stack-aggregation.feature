@@ -48,10 +48,10 @@ Feature: Bar chart stack aggregation and datetime split
     And Split column input in bar chart viewer should contain text "STARTED"
     And Split column input in bar chart viewer should not contain text "RACE"
     When user sets "Split Map" property of bar chart viewer to "month"
-    Then the "bars" reading of bar chart viewer should be higher than before
+    Then the "bars" reading of bar chart viewer should be 12
     And bar chart viewer should have repainted
     When user sets "Split Map" property of bar chart viewer to "year"
-    Then the "bars" reading of bar chart viewer should be lower than before
+    Then the "bars" reading of bar chart viewer should be 3
     And bar chart viewer should have repainted
     And "Split" property of bar chart viewer should be "STARTED"
     And no errors should have been logged

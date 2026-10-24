@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Added BDD scenarios for the box plot's axis Annotations (Add Line, Band, Region on the value axis, none on the category axis) and a lasso region on the scatter plot, with MISSING.md for the region shape and its value span
 * [core#770](https://github.com/datagrok-ai/core/issues/770): Added `chatMessageInput` (`tags: chatInput`) — the u2 MessageInput with @-mentions of users, the compose and edit box of the platform chat
 * [core#859](https://github.com/datagrok-ai/core/issues/859): Viewer gallery: Fixed the Add Viewer dialog not opening when a viewer function has no package
 * Add New Column: Changed OK with an empty formula to add a plain empty column of the picked type (auto gives a string column) with no formula, where a picked type was refused as a mismatch

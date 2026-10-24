@@ -23,7 +23,7 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, isExpanded, pressKey, selectIn, shouldBe, shouldContainText, shouldHaveText, shouldHaveValue, shouldNotBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnCount, currentRowIs, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
-import {colorCodedAs, colorOff, columnsSelected, currentRowValue, filterPassesAll, filterPassesFewer, noColumnsSelected, passingAsRemembered, rememberPassing, removeColumn, rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {colorCodedAs, colorOff, columnsSelected, currentRowValue, filterPasses, filterPassesAll, noColumnsSelected, passingAsRemembered, rememberPassing, removeColumn, rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {closeCurrentView, contextPanelOpen, contextPanelShows, openDataset, openDatasetRowsAs, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {areaTaller, clickArea, clickAreaHolding, closeContextMenu, doubleClickArea, dragAreaBy, dragAreaToArea, eventFired, hasArea, hasNoArea, hoverArea, listenFor, noErrors, pickFromAreaContextMenu, propertyShouldBe, readingAsRemembered, readingBetween, readingHigher, readingIs, readingLower, readingNotAsRemembered, readingReads, readingSame, readingsEqual, rememberReading, repainted, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {readingContains} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
@@ -192,7 +192,7 @@ test.describe("Grid column geometry", () => {
       await session.step(201, "When user hovers over the \"view\" area of histogram viewer in column popup", () => hoverArea(page, "view", el("histogram viewer in column popup")));
       await session.step(202, "And user drags the \"range min handle\" area of histogram viewer in column popup to the \"bin 10\" area", () => dragAreaToArea(page, "range min handle", el("histogram viewer in column popup"), "bin 10"));
       await session.step(203, "Then the \"range min\" reading of histogram viewer in column popup should be higher than before", () => readingHigher(page, "range min", el("histogram viewer in column popup")));
-      await session.step(204, "And fewer than 1000 rows should pass the filter", () => filterPassesFewer(page, 1000));
+      await session.step(204, "And 326 rows should pass the filter", () => filterPasses(page, 326));
       await session.step(205, "When user remembers how many rows pass the filter", () => rememberPassing(page));
       await session.step(206, "And user remembers the \"range min\" reading of histogram viewer in column popup", () => rememberReading(page, "range min", el("histogram viewer in column popup")));
       await session.step(207, "And user clicks on \"Add filter\" action in column popup", () => clickOn(page, el("\"Add filter\" action in column popup")));

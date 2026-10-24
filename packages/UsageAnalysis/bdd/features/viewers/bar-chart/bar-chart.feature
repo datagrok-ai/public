@@ -150,7 +150,7 @@ Feature: Bar chart property surface
     When user sets "Legend Position" property of bar chart viewer to "Top"
     Then the legend of bar chart viewer should be on the top
     When user sets "Legend Position" property of bar chart viewer to "Bottom"
-    Then "Legend Position" property of bar chart viewer should be "Bottom"
+    Then the legend of bar chart viewer should be on the bottom
     And legend of bar chart viewer should be visible
     When user sets properties of bar chart viewer:
       | Stack             |      |
