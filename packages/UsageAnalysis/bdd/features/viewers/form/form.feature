@@ -12,6 +12,12 @@ Feature: Form viewer
   The md's manual design mode is a scenario of its own: with the toolbar's design toggle on, a field
   dragged down stays below the fields it passed once the toggle is off, and a form saved to a file
   after that brings the field back to its new place when the file is loaded over a rebuilt form.
+  From the md's manual sections: Column selector — the toolbar's column list dialog builds the form
+  from the columns checked in it, and opened again it starts from the fields shown; Column changes
+  reaction — a column renamed in the grid's Column Properties dialog renames its field and the
+  label beside it (step 3, a deleted column, is the removed-column scenario: the field stays);
+  Table switching — the Table property moves a default form to spgi-100's columns and back, and a
+  form built from columns chosen in that dialog shows spgi-100's columns too.
 
   Background:
     Given user is logged in
@@ -31,6 +37,44 @@ Feature: Form viewer
     And the "DIS_POP" reading of form viewer should be "Indigestion"
     And form viewer should have a "field AGE" area
     And form viewer should have a "label AGE" area
+    And no errors should have been logged
+
+  Scenario: Bound to another table the form shows that table's columns
+    Given user opens spgi dataset
+    And user switches to the "demog-1000" table view
+    When user sets "table" property of form viewer to "spgi-100"
+    Then form viewer should be bound to table "spgi-100"
+    And the "fields shown" reading of form viewer should be 13
+    And form viewer should have a "field TPSA" area
+    And form viewer should have a "field Series" area
+    And form viewer should not have a "field AGE" area
+    When user sets "table" property of form viewer to "demog-1000"
+    Then form viewer should be bound to table "demog-1000"
+    And the "fields shown" reading of form viewer should be 11
+    And form viewer should have a "field USUBJID" area
+    And form viewer should not have a "field TPSA" area
+    And the "AGE" reading of form viewer should be "26"
+    And no errors should have been logged
+
+  Scenario: A form built from chosen columns shows the new table's columns once Table is switched
+    Given user opens spgi dataset
+    And user switches to the "demog-1000" table view
+    When user clicks on the "select columns" area of form viewer
+    Then "Select columns..." dialog should be visible
+    When user clicks on "None" link in "Select columns..." dialog
+    And user toggles the "AGE" column in the column list of "Select columns..." dialog
+    And user toggles the "SEX" column in the column list of "Select columns..." dialog
+    Then "2 checked" text in "Select columns..." dialog should be visible
+    When user clicks on OK button in "Select columns..." dialog
+    Then the "fields shown" reading of form viewer should be 2
+    When user sets "table" property of form viewer to "spgi-100"
+    Then form viewer should be bound to table "spgi-100"
+    And the "fields shown" reading of form viewer should be 13
+    And form viewer should have a "field TPSA" area
+    And form viewer should not have a "field AGE" area
+    When user sets "table" property of form viewer to "demog-1000"
+    Then form viewer should be bound to table "demog-1000"
+    And the "fields shown" reading of form viewer should be 11
     And no errors should have been logged
 
   Scenario: A column's colour coding reaches its field
@@ -131,6 +175,51 @@ Feature: Form viewer
     When user sets "Show Navigation" property of form viewer to "true"
     Then form viewer should have a "next row" area
 
+  Scenario: The toolbar's column list builds the form from the columns checked in it
+    When user clicks on the "select columns" area of form viewer
+    Then "Select columns..." dialog should be visible
+    And "11 checked" text in "Select columns..." dialog should be visible
+    When user clicks on "None" link in "Select columns..." dialog
+    Then "0 checked" text in "Select columns..." dialog should be visible
+    When user toggles the "AGE" column in the column list of "Select columns..." dialog
+    And user toggles the "SEX" column in the column list of "Select columns..." dialog
+    Then "2 checked" text in "Select columns..." dialog should be visible
+    When user clicks on OK button in "Select columns..." dialog
+    Then "Select columns..." dialog should be absent
+    And the "fields shown" reading of form viewer should be 2
+    And form viewer should have a "field AGE" area
+    And form viewer should have a "field SEX" area
+    And form viewer should not have a "field RACE" area
+    And the "AGE" reading of form viewer should be "26"
+    When user clicks on the "select columns" area of form viewer
+    Then "2 checked" text in "Select columns..." dialog should be visible
+    When user toggles the "RACE" column in the column list of "Select columns..." dialog
+    Then "3 checked" text in "Select columns..." dialog should be visible
+    When user clicks on OK button in "Select columns..." dialog
+    Then "Select columns..." dialog should be absent
+    And the "fields shown" reading of form viewer should be 3
+    And form viewer should have a "field RACE" area
+    And form viewer should have a "field SEX" area
+    And the "RACE" reading of form viewer should be "Caucasian"
+    And no errors should have been logged
+
+  Scenario: A column renamed in the grid renames its field and the field's label
+    Then form viewer should have a "label AGE" area
+    When user picks "Column Properties..." from the context menu of the "header AGE" area of grid
+    Then "AGE" dialog should be visible
+    When user types "AGE_NEW" into "New name:" input in "AGE" dialog
+    And user clicks on OK button in "AGE" dialog
+    Then the table should have a column "AGE_NEW"
+    And form viewer should have a "field AGE_NEW" area
+    And form viewer should have a "label AGE_NEW" area
+    And form viewer should not have a "label AGE" area
+    And form viewer should not have a "field AGE" area
+    And the "AGE_NEW" reading of form viewer should be "26"
+    When user renames "AGE_NEW" column to "AGE"
+    Then form viewer should have a "field AGE" area
+    And form viewer should have a "label AGE" area
+    And no errors should have been logged
+
   Scenario: The field set follows the columns it is given
     When user sets "columnNames" property of form viewer to "AGE, SEX"
     Then the "fields shown" reading of form viewer should be 2
@@ -220,3 +309,4 @@ Feature: Form viewer
     When user clicks on close icon of form viewer
     Then form viewer should be absent
     And no errors should have been logged
+

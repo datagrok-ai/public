@@ -275,12 +275,20 @@ export const taggedProjectOnServer = Given('a project named {string} tagged {str
 /** A tag added in the Details pane is saved after the pane shows it: a "#tag" search sent before then finds nothing.
  * The project is found in the complete listing (a name filter on projects finds nothing) and read whole by its id: a
  * listed project carries no tags. */
-export const projectTaggedOnServer = Then('the project named {string} should be tagged {string} on the server', async (page: Page, name: string, tag: string) => {
+async function projectTagReader(page: Page, name: string, tag: string): Promise<() => Promise<boolean>> {
   const found = (await serverEntities(page, 'projects', '', false)).filter((p) => p.name === name || p.friendlyName === name);
   expect(found.length, `projects named "${name}" on the server`).toBe(1);
-  await expect.poll(() => page.evaluate(async ([id, t]) => (await grok.dapi.projects.find(id)).hasTag(t), [found[0].id, tag] as [string, string]),
+  return () => page.evaluate(async ([id, t]) => (await grok.dapi.projects.find(id)).hasTag(t), [found[0].id, tag] as [string, string]);
+}
+
+export const projectTaggedOnServer = Then('the project named {string} should be tagged {string} on the server', async (page: Page, name: string, tag: string) => {
+  await expect.poll(await projectTagReader(page, name, tag),
     {message: `whether the project "${name}" carries the tag "${tag}" on the server`}).toBe(true);
 }, {tier: 'api', description: 'the entity tag as the server keeps it, which a "#tag" search of the gallery finds'});
+
+export const projectNotTaggedOnServer = Then('the project named {string} should not be tagged {string} on the server', async (page: Page, name: string, tag: string) => {
+  expect(await (await projectTagReader(page, name, tag))(), `whether the project "${name}" carries the tag "${tag}" on the server`).toBe(false);
+}, {tier: 'api', description: 'one read of the server, made after the claim that the save ended (its error balloon): a grant with no edit right did not tag'});
 
 /* The "user's own" cleanups are for names a feature does not choose — a tutorial dictates them, and
    people who took it by hand saved theirs under the same names: those of other users stay. */
@@ -707,14 +715,22 @@ export const suggestionsNotOfferOwn = Then('the user suggestions should not offe
 
 /* The grant row of the second account in a Share dialog; its Remove button shows while the row is
    hovered. The row goes at once, the grant only when the dialog is confirmed. */
-export const removeSharingUser = When('user removes the sharing user from {element}', async (page: Page, target: ElementRef) => {
-  const shown = sharingShownName();
-  const row = (await locate(page, target)).locator('[name^="div-permissions-row-"]').filter({hasText: new RegExp(shown, 'i')}).first();
-  await expect(row, `the grant row of "${shown}"`).toBeVisible({timeout: pollMs(15000)});
+async function removeGrantRow(page: Page, target: ElementRef, name: string): Promise<void> {
+  const row = (await locate(page, target)).locator('[name^="div-permissions-row-"]').filter({visible: true})
+    .filter({hasText: new RegExp(escapeRegExp(name), 'i')}).first();
+  await expect(row, `the grant row of "${name}"`).toBeVisible({timeout: pollMs(15000)});
   await row.hover();
   await row.locator('[name="button-Remove"]').click();
-  await expect(row, `the grant row of "${shown}" after Remove`).toBeHidden();
-}, {tier: 'ui', description: 'hovers the grant row of DATAGROK_SHARING_LOGIN and clicks its Remove button'});
+  await expect(row, `the grant row of "${name}" after Remove`).toBeHidden();
+}
+
+export const removeSharingUser = When('user removes the sharing user from {element}', (page: Page, target: ElementRef) =>
+  removeGrantRow(page, target, sharingShownName()),
+{tier: 'ui', description: 'hovers the grant row of DATAGROK_SHARING_LOGIN and clicks its Remove button'});
+
+export const removeGrant = When('user removes {string} from {element}', (page: Page, name: string, target: ElementRef) =>
+  removeGrantRow(page, target, name),
+{tier: 'ui', description: 'hovers the visible grant row that names the user or group ("All users") and clicks its Remove button; the name is matched as text within the row'});
 
 export const sharingUserLevel = Then('the access level of the sharing user in {element} should be {string}', async (page: Page, target: ElementRef, level: string) => {
   const shown = sharingShownName();
@@ -1503,6 +1519,7 @@ async function saveQuery(page: Page, name: string, connection: string, sql: stri
     await grok.dapi.queries.save(conn.query(n, s));
   }, [name, connection, sql] as [string, string, string]);
   await expectNamedCount(page, 'queries', 'queries', name, 1);
+  await refreshBrowseTree(page);
 }
 
 export const queryOnServer = Given('a query {string} on {string} reads {string}', (page: Page, name: string, connection: string, sql: string) =>

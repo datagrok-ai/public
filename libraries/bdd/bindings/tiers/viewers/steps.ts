@@ -333,11 +333,11 @@ export const areaColor = Then('the {string} area of {widget} should contain the 
 
 export const areasDiffer = Then('the {string} and {string} areas of {widget} should be painted in different colors',
   (page: Page, a: string, b: string, target: ElementRef) => v.expectAreaColorsAlike(page, target, a, b, false),
-  {description: 'one area has a color the other does not — per-category coloring, not chrome'});
+  {description: 'one area has a hue the other does not — per-category coloring; greys (text, gridlines, edges) do not count'});
 
 export const areasSame = Then('the {string} and {string} areas of {widget} should be painted in the same colors',
   (page: Page, a: string, b: string, target: ElementRef) => v.expectAreaColorsAlike(page, target, a, b, true),
-  {description: 'every significant color of either area has a match in the other — a linked color coding, a swatch and its category'});
+  {description: 'every significant hue of either area has a match in the other — a linked color coding, a swatch and its category; greys do not count'});
 
 export const areaNotColor = Then('the {string} area of {widget} should not contain the color {string}', (page: Page, area: string, target: ElementRef, color: string) =>
   v.expectAreaNotColor(page, target, area, color), {description: 'no pixel of the #rrggbb color (nor a shade of it) inside the hit area, read once'});

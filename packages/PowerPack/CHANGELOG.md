@@ -2,7 +2,10 @@
 
 ## v.next
 
+* Formula Lines: Marked the OK button `aria-disabled` while the formula is invalid, as the platform's dialogs mark a disabled button
+* Tests: Added BDD scenarios for the box plot's axis Annotations (Add Line, Band, Region on the value axis, none on the category axis) and a lasso region on the scatter plot, with MISSING.md for the region shape and its value span
 * [core#770](https://github.com/datagrok-ai/core/issues/770): Added `chatMessageInput` (`tags: chatInput`) — the u2 MessageInput with @-mentions of users, the compose and edit box of the platform chat
+* Tests: Added BDD scenarios for a rejected formula line (GROK-17282) and a line chart's formula line and band coming back from a layout (GROK-19943)
 * [core#859](https://github.com/datagrok-ai/core/issues/859): Viewer gallery: Fixed the Add Viewer dialog not opening when a viewer function has no package
 * Add New Column: Changed OK with an empty formula to add a plain empty column of the picked type (auto gives a string column) with no formula, where a picked type was refused as a mismatch
 * Add New Column: Fixed the value for the rows that fail being dropped on OK when the gear was opened before the preview had computed the formula's type; the gear is named "Rows that fail"

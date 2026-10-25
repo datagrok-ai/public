@@ -11,9 +11,11 @@ Feature: The Sticky Meta tutorial
   Translated from playwright-tests/e2e/stickymeta (the TestTrack Sticky Meta cases walked the same
   screens outside the tutorial).
 
-  Everything the tutorial saves has a fixed name, so it is swept before the walk and removed after it
-  (the annotated value goes with its schema). Serial, for the fixed names and because a finished
-  tutorial writes its completion record into the account's settings, which every page syncs whole.
+  The tutorial names what it saves after the account (`molecule-tutorial-<login>`, `schema for
+  tutorial <login>`, since #4374) and removes both when it finishes; they are also swept before the walk
+  and after it, for a walk that failed halfway (the annotated value goes with its schema). Serial, for
+  those per-account names and because a finished tutorial writes its completion record into the
+  account's settings, which every page syncs whole.
 
   Background:
     Given user is logged in
@@ -21,7 +23,7 @@ Feature: The Sticky Meta tutorial
     And the package autostarts have completed
     And the "tutorials" user settings are put back at feature end
     And the "achievement-badges" user settings are put back at feature end
-    And the Sticky Meta schema "schema for tutorial" and entity type "molecule-tutorial" are removed now and at feature end
+    And the Sticky Meta schema "schema for tutorial {login}" and entity type "molecule-tutorial-{login}" are removed now and at feature end
     And the "Sticky Meta" tutorial is not completed yet
     And the Tutorials app is open
 
@@ -39,13 +41,13 @@ Feature: The Sticky Meta tutorial
     Given the tutorial step "Explore entity type dialog" should not be done yet
     When user goes through the tour to its end
     Then the tutorial step "Explore entity type dialog" should be done
-    When user enters "molecule-tutorial" into "Name" input in "Create a new entity type" dialog
-    Then the tutorial step "Set \"Name\" to \"molecule-tutorial\"" should be done
+    When user enters "molecule-tutorial-{login}" into "Name" input in "Create a new entity type" dialog
+    Then the tutorial step "Set \"Name\" to \"molecule-tutorial-{login}\"" should be done
     When user enters "semtype=Molecule" into "Matching expression" input in "Create a new entity type" dialog
     Then the tutorial step "Set \"Matching expression\" to \"semtype=Molecule\"" should be done
     When user clicks on OK button in "Create a new entity type" dialog
     Then the tutorial step "Save entity type" should be done
-    Then the entity type "molecule-tutorial" should exist
+    Then the entity type "molecule-tutorial-{login}" should exist
 
     Given the tutorial step "Open schemas node" should not be done yet
     When user clicks on Platform---Sticky-Meta---Schemas tree node inside browse tree
@@ -56,14 +58,14 @@ Feature: The Sticky Meta tutorial
     Given the tutorial step "Explore schema dialog" should not be done yet
     When user goes through the tour to its end
     Then the tutorial step "Explore schema dialog" should be done
-    When user enters "schema for tutorial" into "Name" input in "Create a new schema" dialog
-    Then the tutorial step "Set \"Name\" to \"schema for tutorial\"" should be done
+    When user enters "schema for tutorial {login}" into "Name" input in "Create a new schema" dialog
+    Then the tutorial step "Set \"Name\" to \"schema for tutorial {login}\"" should be done
     When user clicks on "select entities" action in "Create a new schema" dialog
     Then the tutorial step "Select associated entity" should be done
-    And "Select types for schema for tutorial" dialog should be visible
-    When user checks "molecule-tutorial" property in "Select types for schema for tutorial" dialog
-    Then the tutorial step "Select molecule-tutorial" should be done
-    When user clicks on OK button in "Select types for schema for tutorial" dialog
+    And "Select types for schema for tutorial {login}" dialog should be visible
+    When user checks "molecule-tutorial-{login}" property in "Select types for schema for tutorial {login}" dialog
+    Then the tutorial step "Select molecule-tutorial-{login}" should be done
+    When user clicks on OK button in "Select types for schema for tutorial {login}" dialog
     Then the tutorial step "Confirm entity selection" should be done
     When user enters "project name" into second "Name" input in "Create a new schema" dialog
     Then the tutorial step "Set property \"Name\" to \"project name\"" should be done
@@ -71,7 +73,7 @@ Feature: The Sticky Meta tutorial
     Then the tutorial step "Set property \"Type\" to \"string\"" should be done
     When user clicks on OK button in "Create a new schema" dialog
     Then the tutorial step "Save schema" should be done
-    And the Sticky Meta schema "schema for tutorial" should exist
+    And the Sticky Meta schema "schema for tutorial {login}" should exist
 
     Given the tutorial step "In the Sticky Meta molecules table, click the first cell in the smiles column" should not be done yet
     When user clicks on the "cell 1 of smiles" area of grid
@@ -81,7 +83,7 @@ Feature: The Sticky Meta tutorial
     When user types "Tutorial" into "project name" input in context panel
     Then the tutorial step "Set \"project name\" to \"Tutorial\"" should be done
     When user clicks on Save button in "Sticky meta" pane in context panel
-    Then the tutorial step "Click SAVE under \"schema for tutorial\"" should be done
+    Then the tutorial step "Click SAVE under \"schema for tutorial {login}\"" should be done
     And Save button in "Sticky meta" pane in context panel should be disabled
     When user hovers over the "cell 1 of smiles" area of grid
     Then the tutorial step "Hover a cell to verify metadata tooltip." should be done

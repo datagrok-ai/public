@@ -86,29 +86,42 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   const testDir = config.projects[0]?.testDir;
   if (testDir)
     process.chdir(dirname(testDir));
+  let api = process.env.DATAGROK_API_URL ?? `${url}/api`;
   if (!process.env.DATAGROK_AUTH_TOKEN) {
     const name = process.env.DATAGROK_SERVER ?? 'localhost';
     const server = grokServers()[name];
     const candidates = [process.env.DATAGROK_API_URL, `${url}/api`, server?.url].filter((x): x is string => !!x);
     let token: string | undefined;
-    let api: string | undefined;
-    for (api of candidates) {
+    for (const candidate of candidates) {
       if (!server?.key)
         break;
-      token = await mintToken(api, server.key).catch(() => undefined);
-      if (token)
+      token = await mintToken(candidate, server.key).catch(() => undefined);
+      if (token) {
+        api = candidate;
         break;
+      }
     }
     if (!token) {
       console.log(`bdd: no dev-key token for "${name}" — signing in through the login form`);
+      process.env.DATAGROK_RUN_LOGIN ??= process.env.DATAGROK_LOGIN ?? 'admin';
       await formLogin(url);
       return;
     }
     process.env.DATAGROK_AUTH_TOKEN = token;
-    process.env.DATAGROK_SHARING_LOGIN ??= await ensureSecondAccount(api!, token);
+    process.env.DATAGROK_SHARING_LOGIN ??= await ensureSecondAccount(api, token);
   }
+  process.env.DATAGROK_RUN_LOGIN ??= await currentLogin(api, process.env.DATAGROK_AUTH_TOKEN ?? '');
   await warmClient(url);
   await libSetup(config);
+}
+
+/** The login of the account a session token belongs to: what a feature's `{login}` resolves to. */
+async function currentLogin(apiUrl: string, token: string): Promise<string> {
+  const user = await fetch(`${apiUrl.replace(/\/$/, '')}/users/current`, {headers: {Authorization: token}, signal: AbortSignal.timeout(10000)})
+    .then((r) => r.json()).catch(() => ({})) as {login?: string};
+  if (!user.login)
+    throw new Error(`bdd: ${apiUrl}/users/current named no account for the run's token, so {login} has no value`);
+  return user.login;
 }
 
 export const SECOND_LOGIN = 'bddsecond';

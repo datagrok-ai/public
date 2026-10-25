@@ -28,7 +28,8 @@ export {auditModes, markLeakBaseline} from './audit.js';
 type Test = TestType<PlaywrightTestArgs & PlaywrightTestOptions, PlaywrightWorkerArgs & PlaywrightWorkerOptions>;
 
 export interface FeatureSession {
-  /** Resolves {run} to this feature instance's unique suffix and {time} to its start in epoch ms. */
+  /** Resolves {run} to this feature instance's unique suffix, {time} to its start in epoch ms and {login} to
+   * the login of the account the run started as (global-setup's DATAGROK_RUN_LOGIN). */
   text(value: string): string;
   /** The feature's page — opened on first use, shared by the scenarios that follow. */
   page(browser: Browser): Promise<Page>;
@@ -320,7 +321,15 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   // a login takes only [a-z0-9._-], and a user can never be deleted, so a fixture user is named by
   // when it was made; two features of one worker never start in the same millisecond
   const time = String(lastTime = Math.max(Date.now(), lastTime + 1));
-  const text = (value: string): string => value.replaceAll('{run}', runId).replaceAll('{time}', time);
+  const text = (value: string): string => {
+    const resolved = value.replaceAll('{run}', runId).replaceAll('{time}', time);
+    if (!resolved.includes('{login}'))
+      return resolved;
+    const login = process.env.DATAGROK_RUN_LOGIN;
+    if (!login)
+      throw new Error(`"${value}" names {login}, and the run has no login: global-setup sets DATAGROK_RUN_LOGIN`);
+    return resolved.replaceAll('{login}', login);
+  };
   const file = path && specUrl ? featureFile(specUrl, path) : undefined;
   test.afterEach(async () => {
     const p = page;
@@ -530,6 +539,25 @@ export async function resetShell(page: Page): Promise<void> {
     // the next one without the links it looks for
     for (const key of Object.keys(localStorage).filter((k) => /^(Accordion:|card-view-render-mode-|domains-render-mode-)/.test(k)))
       localStorage.removeItem(key);
+    // the Browse tree keeps (and saves) every group a feature opened: the tree each later feature met grew, its
+    // Refresh refetched every open group, and a node further down left the panel's view
+    try {
+      const browse = w.grok.shell.browsePanel ? w.DG.toJs(w.grok.shell.browsePanel) : null;
+      const open: any[] = [];
+      const stack: any[] = browse?.mainTree ? [w.DG.toJs(browse.mainTree)] : [];
+      while (stack.length > 0)
+        for (const child of stack.pop().children)
+          if (child instanceof w.DG.TreeViewGroup) {
+            stack.push(child);
+            if (child.expanded)
+              open.push(child);
+          }
+      for (const group of open.reverse())
+        group.expanded = false;
+    }
+    catch (e) {
+      console.warn(`bdd: the Browse tree was not collapsed: ${e}`);
+    }
     return Array.from(document.querySelectorAll('.d4-dialog, [data-u2="dialog"]'))
       .filter((e) => (e as HTMLElement).offsetParent !== null).map((e) => e.getAttribute('name') ?? e.tagName).join(', ');
   }, NOTICES).catch(() => '');

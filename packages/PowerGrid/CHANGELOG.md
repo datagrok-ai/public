@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Added BDD claims for Ctrl+Z bringing a removed source column back to its place (GROK-19942) and a known-failure scenario for the Tags column left blank after that Ctrl+Z ([#4378](https://github.com/datagrok-ai/public/issues/4378))
 * Tags: Made a Tags column as wide as its widest cell when the renderer takes over, instead of 80 px that shortened the tags
 * [core#644](https://github.com/datagrok-ai/core/issues/644): Skip rendering the Forms viewer while it has no table
 * [core#656](https://github.com/datagrok-ai/core/issues/656): Migrate legacy pie chart subsectors without functionType when reading settings

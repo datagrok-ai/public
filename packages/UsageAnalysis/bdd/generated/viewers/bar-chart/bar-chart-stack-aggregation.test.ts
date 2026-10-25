@@ -23,7 +23,7 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe, shouldContainText, shouldHaveItems, shouldNotContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, noErrors, propertyShouldBe, readingHigher, readingIs, readingLower, repainted, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, noErrors, propertyShouldBe, readingIs, repainted, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Bar chart stack aggregation and datetime split", () => {
@@ -33,10 +33,9 @@ test.describe("Bar chart stack aggregation and datetime split", () => {
     const run = journey(test, 5, page);
     await session.step(9, "Given user is logged in", () => loggedIn(page));
     await session.step(10, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(11, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"],["Value","AGE"],["Value Aggr Type","avg"]]), [["Split","RACE"],["Value","AGE"],["Value Aggr Type","avg"]]);
-    await session.step(15, "Then the \"bars\" reading of bar chart viewer should be 4", () => readingIs(page, "bars", el("bar chart viewer"), 4));
+    await session.step(11, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"],["Value","AGE"],["Value Aggr Type","avg"],["Stack","SEX"]]), [["Split","RACE"],["Value","AGE"],["Value Aggr Type","avg"],["Stack","SEX"]]);
+    await session.step(16, "Then the \"bars\" reading of bar chart viewer should be 4", () => readingIs(page, "bars", el("bar chart viewer"), 4));
     await run.scenario("A Stack under avg draws no segments and no legend", async () => {
-      await session.step(18, "When user sets \"Stack\" property of bar chart viewer to \"SEX\"", () => setProperty(page, "Stack", el("bar chart viewer"), "SEX"));
       await session.step(19, "Then the \"stack segments\" reading of bar chart viewer should be 0", () => readingIs(page, "stack segments", el("bar chart viewer"), 0));
       await session.step(20, "And legend of bar chart viewer should be hidden", () => shouldBe(page, el("legend of bar chart viewer"), "hidden"));
       await session.step(21, "And no errors should have been logged", () => noErrors(page));
@@ -69,10 +68,10 @@ test.describe("Bar chart stack aggregation and datetime split", () => {
       await session.step(48, "And Split column input in bar chart viewer should contain text \"STARTED\"", () => shouldContainText(page, el("Split column input in bar chart viewer"), "STARTED"));
       await session.step(49, "And Split column input in bar chart viewer should not contain text \"RACE\"", () => shouldNotContainText(page, el("Split column input in bar chart viewer"), "RACE"));
       await session.step(50, "When user sets \"Split Map\" property of bar chart viewer to \"month\"", () => setProperty(page, "Split Map", el("bar chart viewer"), "month"));
-      await session.step(51, "Then the \"bars\" reading of bar chart viewer should be higher than before", () => readingHigher(page, "bars", el("bar chart viewer")));
+      await session.step(51, "Then the \"bars\" reading of bar chart viewer should be 12", () => readingIs(page, "bars", el("bar chart viewer"), 12));
       await session.step(52, "And bar chart viewer should have repainted", () => repainted(page, el("bar chart viewer")));
       await session.step(53, "When user sets \"Split Map\" property of bar chart viewer to \"year\"", () => setProperty(page, "Split Map", el("bar chart viewer"), "year"));
-      await session.step(54, "Then the \"bars\" reading of bar chart viewer should be lower than before", () => readingLower(page, "bars", el("bar chart viewer")));
+      await session.step(54, "Then the \"bars\" reading of bar chart viewer should be 3", () => readingIs(page, "bars", el("bar chart viewer"), 3));
       await session.step(55, "And bar chart viewer should have repainted", () => repainted(page, el("bar chart viewer")));
       await session.step(56, "And \"Split\" property of bar chart viewer should be \"STARTED\"", () => propertyShouldBe(page, "Split", el("bar chart viewer"), "STARTED"));
       await session.step(57, "And no errors should have been logged", () => noErrors(page));

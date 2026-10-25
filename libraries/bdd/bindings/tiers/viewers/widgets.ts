@@ -704,45 +704,77 @@ export const dragAreaOntoElement = When('user drags the {string} area of {widget
    None, and a grid whose rows are the table's columns — `__name` holds the column name and `x` the
    check box. The grid reports `cell <r> of <col>` and `text of cell <r> of <col>` like any grid, so a
    row is found by its name and its box is clicked where the grid says it is. */
-interface ColumnListRow {row: number; name: string; checked: boolean; x: number; y: number}
+/* `cut`: the list's bottom edge cuts the row, and the grid reports only the part it shows, whose middle
+   is off the middle of the box a click must land near. */
+interface ColumnListRow {row: number; name: string; checked: boolean; x: number; y: number; height: number; cut: boolean}
 
-async function columnListRows(page: Page, target: ElementRef): Promise<ColumnListRow[]> {
-  await v.installViewerRuntime(page);
+async function columnListGrid(page: Page, target: ElementRef): Promise<Locator> {
   const host = (await locate(page, target)).filter({visible: true}).first();
   const grid = host.locator('[name="viewer-Grid"]').filter({visible: true}).first();
   await grid.waitFor({timeout: pollMs(5000)});
-  return grid.evaluate((el) => {
+  return grid;
+}
+
+async function columnListRows(page: Page, target: ElementRef): Promise<ColumnListRow[]> {
+  await v.installViewerRuntime(page);
+  return (await columnListGrid(page, target)).evaluate((el) => {
     const w = (window as any).__bdd.viewerOf(el);
     const s = w.getWidgetStatus();
     const canvas = (s.parts?.canvas ?? el.querySelector('canvas')) as Element;
     const c = canvas.getBoundingClientRect();
-    const rows: ColumnListRow[] = [];
+    const found: {row: number; box: {x: number; y: number; width: number; height: number}}[] = [];
     for (const key of Object.keys(s.hitAreas)) {
       const m = /^cell (\d+) of __name$/.exec(key);
       const box = m ? s.hitAreas[`cell ${m[1]} of x`] : undefined;
-      if (!m || !box)
-        continue;
-      rows.push({row: Number(m[1]), name: String(s.values[`text of cell ${m[1]} of __name`] ?? ''),
-        checked: s.values[`text of cell ${m[1]} of x`] === 'true', x: c.x + box.x + box.width / 2, y: c.y + box.y + box.height / 2});
+      if (m && box)
+        found.push({row: Number(m[1]), box});
     }
-    return rows.sort((a, b) => a.row - b.row);
+    const full = Math.max(0, ...found.map((f) => f.box.height));
+    return found.map(({row, box}): ColumnListRow => ({row, name: String(s.values[`text of cell ${row} of __name`] ?? ''),
+      checked: s.values[`text of cell ${row} of x`] === 'true', x: c.x + box.x + box.width / 2, y: c.y + box.y + box.height / 2,
+      height: box.height, cut: box.height < full - 0.5})).sort((a, b) => a.row - b.row);
   });
 }
 
 const rowNamed = (rows: ColumnListRow[], name: string): ColumnListRow | undefined => rows.find((r) => r.name === name);
 const namesOf = (rows: ColumnListRow[]): string => rows.map((r) => r.name).join(', ');
 
+/** The row, wheeled into full view first when the list has scrolled it out of sight or cuts it, as a person
+ *  scrolls the list to it: the list's order says which way and how far. */
+async function revealInColumnList(page: Page, target: ElementRef, column: string): Promise<ColumnListRow> {
+  let rows: ColumnListRow[] = [];
+  await expect.poll(async () => (rows = await columnListRows(page, target)).length,
+    {timeout: pollMs(5000), message: `the column list of ${target.phrase} shows no rows`}).toBeGreaterThan(0);
+  const order = await g.columnGridNames(await columnListGrid(page, target));
+  const at = order.indexOf(column);
+  if (at < 0)
+    throw new Error(`no "${column}" row in the column list of ${target.phrase}; it holds: ${order.join(', ')}`);
+  for (let turn = 0; turn < 5; turn++) {
+    const row = rowNamed(rows, column);
+    if (row && !row.cut)
+      return row;
+    const whole = rows.filter((r) => !r.cut);
+    const shown = whole.map((r) => order.indexOf(r.name));
+    const by = at > Math.max(...shown) ? at - Math.max(...shown) : at - Math.min(...shown);
+    // the grid scrolls a row per row height the wheel turned past one
+    const height = Math.max(...rows.map((r) => r.height));
+    const before = rows.map((r) => r.row).join();
+    await page.mouse.move(whole[0].x, whole[0].y);
+    await page.mouse.wheel(0, (by + Math.sign(by) / 2) * height);
+    await expect.poll(async () => (rows = await columnListRows(page, target)).map((r) => r.row).join(),
+      {timeout: pollMs(2000), message: `the column list of ${target.phrase} did not scroll towards "${column}"`}).not.toBe(before);
+  }
+  throw new Error(`the column list of ${target.phrase} did not bring "${column}" into full view; it shows: ${namesOf(rows)}`);
+}
+
 export const toggleInColumnList = When('user toggles the {string} column in the column list of {element}',
   async (page: Page, column: string, target: ElementRef) => {
-    let rows: ColumnListRow[] = [];
-    await expect.poll(async () => rowNamed(rows = await columnListRows(page, target), column) !== undefined,
-      {timeout: pollMs(5000), message: `no "${column}" row in the column list of ${target.phrase}; it shows: ${namesOf(rows)}`}).toBe(true);
-    let row = rowNamed(rows, column)!;
+    let row = await revealInColumnList(page, target, column);
     // a list in a dialog that just opened is still finding its place: the box is clicked where
     // two reads in a row agree it is
     await expect.poll(async () => {
       const again = rowNamed(await columnListRows(page, target), column);
-      const still = again !== undefined && again.x === row.x && again.y === row.y;
+      const still = again !== undefined && !again.cut && again.x === row.x && again.y === row.y;
       row = again ?? row;
       return still;
     }, {timeout: pollMs(3000), message: `the "${column}" row of the column list of ${target.phrase} keeps moving`}).toBe(true);
@@ -759,8 +791,13 @@ export const toggleInColumnList = When('user toggles the {string} column in the 
 
 async function expectChecked(page: Page, column: string, target: ElementRef, checked: boolean): Promise<void> {
   let rows: ColumnListRow[] = [];
-  await expect.poll(async () => rowNamed(rows = await columnListRows(page, target), column)?.checked,
-    {timeout: pollMs(5000), message: `"${column}" in the column list of ${target.phrase} (it shows: ${namesOf(rows)})`}).toBe(checked);
+  try {
+    await expect.poll(async () => rowNamed(rows = await columnListRows(page, target), column)?.checked, {timeout: pollMs(5000)}).toBe(checked);
+  }
+  catch {
+    const row = rowNamed(rows, column);
+    throw new Error(`"${column}" in the column list of ${target.phrase} is ${row ? (row.checked ? 'checked' : 'not checked') : 'not shown'}; it shows: ${namesOf(rows)}`);
+  }
 }
 
 export const checkedInColumnList = Then('the {string} column should be checked in the column list of {element}',
@@ -771,10 +808,7 @@ export const uncheckedInColumnList = Then('the {string} column should not be che
 
 /** Every column the list holds, in its order. */
 async function columnListNames(page: Page, target: ElementRef): Promise<string[]> {
-  const host = (await locate(page, target)).filter({visible: true}).first();
-  const grid = host.locator('[name="viewer-Grid"]').filter({visible: true}).first();
-  await grid.waitFor({timeout: pollMs(5000)});
-  return g.columnGridNames(grid);
+  return g.columnGridNames(await columnListGrid(page, target));
 }
 
 export const columnListExactly = Then('the column list of {element} should be exactly {string}',

@@ -30,13 +30,10 @@ Feature: Scatter plot legend
   goes to Conditional, the coding that gives a numeric column items with colors of their own; the
   new scheme's stops and the inversion are written through the column (the dialog's scheme picker
   has no named swatches).
-  Known failure, GROK-20896: a layout that holds two scatter plots with the same Filter brings the
-  second one back with its Filter set but not applied — it draws all 872 rows and its legend lists
-  all four races, while the first one comes back drawing its 38. The operator reproduced it by hand
-  and filed the ticket; reproduced in the suite too, and outside it with plain JS: the second
-  viewer's rows shown goes from 38 to 872 across saveLayout/loadLayout whether the first viewer's
-  Filter, the second's or neither was changed in between. With one scatter plot the layout is
-  restored correctly. Take the mark off when the ticket is closed.
+  GROK-20896 (fixed): a layout holding two scatter plots with the same Filter used to bring the
+  second one back with its Filter set but not applied — it drew all 872 rows and its legend listed
+  all four races, while the first came back drawing its 38. This scenario guards the fix: the second
+  plot now comes back drawing its 38 and listing its two races, as the first does.
   The numerical Color with empty values is legend-ui's gradient case: its scale is drawn in one
   hue, so it is claimed as painted with finite ends rather than as a gradient of several colors.
   The box plot's markers under a numeric Marker Color are already painted in every hue, so a new
@@ -100,8 +97,11 @@ Feature: Scatter plot legend
     Then "M" legend item in legend of scatter plot viewer should be selected
     And scatter plot viewer should show fewer rows than before
     And all rows should pass the filter
+    And the "opacity" style of "F" legend item in legend of scatter plot viewer should contain "0.5"
+    And the "opacity" style of "M" legend item in legend of scatter plot viewer should contain "1"
     When user clicks on "M" item in the legend of scatter plot viewer
     Then scatter plot viewer should show 872 rows
+    And the "opacity" style of "F" legend item in legend of scatter plot viewer should contain "1"
     And no errors should have been logged
 
   Scenario: A date Markers column gets a map picker in the legend, and the pick regroups the markers
@@ -140,11 +140,11 @@ Feature: Scatter plot legend
     Then the legend of scatter plot viewer should list 6 items
     And no errors should have been logged
 
-  Scenario: A click on a legend entry hides that category on the canvas, not in the table
+  Scenario: A click on a legend entry narrows the canvas to that category, not the table
     Then all rows should pass the filter
     And scatter plot viewer should show 872 rows
     When user clicks on "Asian" item in the legend of scatter plot viewer
-    Then scatter plot viewer should show fewer rows than before
+    Then scatter plot viewer should show 13 rows
     And scatter plot viewer should have less ink than before
     And all rows should pass the filter
     When user clicks on "Asian" item in the legend of scatter plot viewer
@@ -208,9 +208,9 @@ Feature: Scatter plot legend
     And the "Asian" item in the legend of scatter plot viewer should be colored "#9467BD"
     And the "Black" item in the legend of scatter plot viewer should be colored "#BCBD22"
     And the "view" area of scatter plot viewer should contain the color "#BCBD22"
-    When user saves the current view as project "bdd-scatter-plot-legend-colors"
+    When user saves the current view as project "bdd-scatter-plot-legend-colors-{time}"
     And user closes all views
-    And user opens the "bdd-scatter-plot-legend-colors" project
+    And user opens the "bdd-scatter-plot-legend-colors-{time}" project
     Then the open tableview should have 1 scatter plot viewer
     And the legend of scatter plot viewer should list 4 items
     And the "Asian" item in the legend of scatter plot viewer should be colored "#9467BD"
@@ -410,9 +410,9 @@ Feature: Scatter plot legend
     And the "100-170" item in the legend of scatter plot viewer should be colored "#FFA500"
     And scatter plot viewer should not have a "color scale" area
     And the "view" area of box plot viewer should contain the color "#00FFFF"
-    When user saves the current view as project "bdd-scatter-plot-legend-coding"
+    When user saves the current view as project "bdd-scatter-plot-legend-coding-{time}"
     And user closes all views
-    And user opens the "bdd-scatter-plot-legend-coding" project
+    And user opens the "bdd-scatter-plot-legend-coding-{time}" project
     Then "WEIGHT" column should be color-coded conditionally
     And the legend of scatter plot viewer should list 2 items
     And the "40-100" item in the legend of scatter plot viewer should be colored "#00FFFF"

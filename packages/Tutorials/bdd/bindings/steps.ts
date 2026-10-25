@@ -148,7 +148,21 @@ export const stepDone = Then('the tutorial step {string} should be done', async 
     const states = await entries.evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-checked')}${e.getAttribute('aria-invalid') === 'true' ? ' invalid' : ''}`));
     return states.length === 0 ? 'not listed' : states.includes('true') ? 'done' : states.join(', ');
   }, {message: `the tutorial step "${instruction}"`}).toBe('done');
-}, {description: 'the entry with exactly this instruction is listed and checked (aria-checked) — not shown as could-not-complete'});
+  // A step listens only while it is listed (Tutorial.action lists it and subscribes in one task), and after a
+  // step is done the tutorial runs its own code before it lists the next one: a gesture made in that gap — a
+  // hover, a current-row change — is lost. So the claim also waits until the next step is listed.
+  await expect.poll(() => entries.first().evaluate((entry) => {
+    const done = Array.from(document.querySelectorAll('.grok-tutorial-entry[role="checkbox"]'))
+      .filter((e) => e.getAttribute('aria-label') === entry.getAttribute('aria-label') && e.getAttribute('aria-checked') === 'true')
+      .map((e) => Number((e as HTMLElement).dataset.step));
+    const next = Math.max(...done) + 1;
+    const max = Number(document.querySelector('.tutorials-bar [role="progressbar"]')?.getAttribute('aria-valuemax'));
+    if (next >= max || document.querySelector('.tutorials-bar-section')?.textContent === 'Congratulations!' ||
+        document.querySelector(`.grok-tutorial-entry[role="checkbox"][data-step="${next}"]`))
+      return 'listed';
+    return `step ${next + 1} of ${max} not listed yet`;
+  }), {message: `the step after "${instruction}"`, timeout: pollMs(60000)}).toBe('listed');
+}, {description: 'the entry with exactly this instruction is listed and checked (aria-checked) — not shown as could-not-complete — and the tutorial has listed the step after it, so a gesture for that step is heard'});
 
 export const stepCurrent = Then('the tutorial step {string} should be current', async (page: Page, instruction: string) => {
   const entries = await stepEntry(page, instruction);

@@ -19,8 +19,8 @@ Feature: Grid cell editing and the clipboard
   once the appended row was deleted (seen on dev in two runs, not reproduced outside the journey;
   reported to the operator).
 
-  Not translated, and why: from `grid-ui.md` "Context Panel - Permissions", the "Pin if editable" switch is not claimed, and the refusal
-  message is matched by its text, not by the login it names.
+  The refusal message is matched by its text, not by the login it names. The "Pin if editable" switch
+  (`grid-ui.md` "Context Panel - Permissions") is in `grid-pin-if-editable.feature`.
 
   Background:
     Given user is logged in
