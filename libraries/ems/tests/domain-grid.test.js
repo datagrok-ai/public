@@ -22,7 +22,8 @@ const DG = await import('datagrok-api/dg');
 
 /** The look the grid host reads to fit its header, columns and height. */
 const LOOK = [new Property('colHeaderHeight', 'int', {defaultValue: 22}),
-  new Property('colHeaderFont', 'string', {defaultValue: 'bold 13px Roboto'}), new Property('rowHeight', 'int', {defaultValue: 28})];
+  new Property('colHeaderFont', 'string', {defaultValue: 'bold 13px Roboto'}),
+  new Property('defaultCellFont', 'string', {defaultValue: '13px Roboto'}), new Property('rowHeight', 'int', {defaultValue: 28})];
 
 function scoped(name, body) {
   test(name, async () => {
@@ -241,8 +242,10 @@ scoped('a column is as wide as its data and its caption in two lines, over a flo
   assert.equal(DomainGrid.columnWidth(text, false, 900, 36), 320, 'one long text does not take the pane');
   assert.equal(DomainGrid.columnWidth({name: 'n', type: 'double'}, false, 40, 141), 141, 'the caption\'s width');
   assert.equal(DomainGrid.columnWidth({name: 'b', type: 'bool'}, false, 30, 20), 48, 'a flag the least');
-  assert.equal(DomainGrid.columnWidth({name: 'p', type: 'string', semType: 'grit.project'}, false, 280, 50), 160,
-    'a reference draws a name, not the id the data width measures');
+  assert.equal(DomainGrid.columnWidth({name: 'p', type: 'string', semType: 'grit.project'}, false, 100, 50), 160,
+    'a reference keeps the floor of a name');
+  assert.equal(DomainGrid.columnWidth({name: 'p', type: 'string', semType: 'grit.project'}, false, 230, 50), 230,
+    'and is as wide as the names it draws');
   assert.equal(DomainGrid.columnWidth(text, true, 20, 36), 160, 'the name column the most');
 });
 

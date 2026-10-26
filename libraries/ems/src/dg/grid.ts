@@ -193,18 +193,31 @@ export class DomainGrid extends Control {
       if (c.column === null || !c.visible)
         continue;
       const caption = c.column.getTag(DG.TAGS.FRIENDLY_NAME) || c.name;
-      c.width = DomainGrid.columnWidth(byName.get(c.column.name), c.column.name === nameColumn, c.getDataWidth(),
+      c.width = DomainGrid.columnWidth(byName.get(c.column.name), c.column.name === nameColumn,
+        DomainGrid._namesWidth(df, c.column.name, this.grid.props.defaultCellFont) ?? c.getDataWidth(),
         DomainGrid.captionWidth(caption, measure) + HEADER_MARGIN);
     }
   }
 
+  /** The widest target name a ref column draws (`~caption_<column>`), or null where none rides
+   * with the rows. */
+  private static _namesWidth(df: DG.DataFrame, column: string, font: string): number | null {
+    const names = df.columns.byName(Rows.caption(column));
+    if (names === null)
+      return null;
+    let widest = 0;
+    for (let i = 0; i < df.rowCount; i++)
+      widest = Math.max(widest, DomainGrid.textWidth(String(names.get(i) ?? ''), font));
+    return widest + HEADER_MARGIN * 2;
+  }
+
   /** A column's width from its data width and its caption's: a floor by type (a flag the least,
    * the name and a reference the most), a cap, and the larger of the two widths between them. A
-   * reference draws the target's name, never the id the data width measures. */
+   * reference's data width is its target names' ({@link _namesWidth}), never the ids'. */
   static columnWidth(prop: IProperty | undefined, isName: boolean, data: number, caption: number): number {
     const reference = prop !== undefined && DomainTable.isReference(prop);
     const floor = isName ? COLUMN_WIDTH.name : reference ? COLUMN_WIDTH.reference : DomainGrid._floorOf(prop);
-    return Math.round(Math.min(COLUMN_WIDTH.max, Math.max(floor, reference ? 0 : data, caption)));
+    return Math.round(Math.min(COLUMN_WIDTH.max, Math.max(floor, data, caption)));
   }
 
   private static _floorOf(prop: IProperty | undefined): number {
