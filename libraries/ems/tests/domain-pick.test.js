@@ -49,7 +49,7 @@ function mount(pick) {
   return pick.root.querySelector('input');
 }
 
-scoped('candidates come from the target\'s name column; a pick writes the id, typing clears it', async () => {
+scoped('candidates come from the target\'s name column; a pick writes the id, only ✕ clears it', async () => {
   emsBackends.domain = backend();
   const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0});
   const input = mount(pick);
@@ -72,7 +72,14 @@ scoped('candidates come from the target\'s name column; a pick writes the id, ty
   assert.equal(input.value, 'Grit', 'and its name comes back on blur');
   type(input, '');
   await flush();
-  assert.equal(pick.value.value, null, 'clearing the text clears the value');
+  assert.equal(pick.value.value, 'p1', 'clearing the text is not a clear: the box only looks empty while focused');
+  fire(input, 'blur');
+  await flush();
+  assert.equal(input.value, 'Grit', 'and the held name comes back on blur, with nothing to say');
+  assert.equal(pick.root.querySelector('[data-u2-part="hint"]').hidden, true);
+  fire(pick.root.querySelector('.u2-input-clear'), 'click');
+  await flush();
+  assert.equal(pick.value.value, null, '✕ clears');
   pick.dispose();
 });
 
@@ -125,7 +132,7 @@ scoped('an extra filter narrows the candidates; an empty query lists them all', 
   fire(box, 'keydown', {key: 'ArrowDown'});
   await flush();
   await flush();
-  assert.deepEqual(options(), ['Grit', 'Datagrok'], 'in the table\'s own order, not by name');
+  assert.deepEqual(options(), ['Datagrok', 'Grit'], 'sorted by what they show');
   all.dispose();
 });
 
@@ -170,7 +177,7 @@ scoped('without a backend the search reports the failure in the popup', async ()
   pick.dispose();
 });
 
-scoped('ergonomics: the candidates open on focus in the table\'s order, a held value is not swapped by Enter, the ' +
+scoped('ergonomics: the candidates open on focus sorted by name, a held value is not swapped by Enter, the ' +
   'no placeholder, ✕ clears', async () => {
     emsBackends.domain = backend();
     const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p2'});
@@ -182,7 +189,7 @@ scoped('ergonomics: the candidates open on focus in the table\'s order, a held v
     await flush();
     await flush();
     assert.equal(pick.typeAhead.isOpen.value, true, 'open on focus');
-    assert.deepEqual(options(), ['Grit', 'Datagrok'], 'the empty query lists the first candidates as the table orders them');
+    assert.deepEqual(options(), ['Datagrok', 'Grit'], 'the empty query lists the first candidates by name');
     assert.equal(document.body.querySelector('.u2-typeahead-option-active'), null, 'nothing highlighted over a held value');
     fire(input, 'keydown', {key: 'Enter'});
     await flush();
@@ -247,8 +254,8 @@ scoped('opened on focus, Enter alone commits the highlighted first candidate', a
   await flush();
   fire(input, 'keydown', {key: 'Enter'});
   await flush();
-  assert.equal(pick.value.value, 'p1', 'Grit, the first in the table\'s order');
-  assert.equal(input.value, 'Grit');
+  assert.equal(pick.value.value, 'p2', 'Datagrok, the first by name');
+  assert.equal(input.value, 'Datagrok');
   pick.dispose();
 });
 
@@ -288,8 +295,8 @@ scoped('a fast Enter: the pick is made when the candidates land — the name typ
   assert.equal(pick.value.value, null);
   await flush();
   await flush();
-  assert.equal(pick.value.value, 'p1', 'the first candidate: Grit, in the table\'s order');
-  assert.equal(input.value, 'Grit');
+  assert.equal(pick.value.value, 'p2', 'the first candidate: Datagrok, by name');
+  assert.equal(input.value, 'Datagrok');
   assert.equal(pick.typeAhead.isPickPending, false);
 
   type(input, 'grit');
@@ -358,4 +365,85 @@ scoped('DomainPick.bind: a bound filter is a tree, an empty sibling leaves the n
   const tree = {property: 'key', operator: '=', value: 'DG'};
   assert.deepEqual(DomainPick.bind(tree), {filter: tree, unbound: []});
   assert.deepEqual(DomainPick.bind(undefined), {unbound: []});
+});
+
+/** A table an app captions by its formatted key: what MolTrack's compounds look like to a picker. */
+function compounds(opened = []) {
+  const rows = [{id: 'c1', molregno: 62, common_name: 'Caffeine'}, {id: 'c2', molregno: 482, common_name: 'Bisphenol A'},
+    {id: 'c3', molregno: 19, common_name: 'Aspirin'}];
+  const matches = (row, node) => Array.isArray(node) ? node.every((n) => n === 'and' || matches(row, n)) :
+    row[node.property] === node.value;
+  const table = {
+    address: 'mt.compound',
+    properties: [{name: 'molregno', type: 'int', format: 'DG-000000'}, {name: 'common_name', type: 'string'}],
+    info: {nameColumn: null, businessKey: ['molregno'], searchableColumns: ['common_name'], singularName: 'Compound',
+      pluralName: 'Compounds'},
+    query: async (spec) => rows
+      .filter((row) => spec.search === undefined || row.common_name.toLowerCase().includes(spec.search.toLowerCase()))
+      .filter((row) => spec.filter === undefined || matches(row, spec.filter))
+      .sort((a, b) => spec.sort === 'molregno' ? a.molregno - b.molregno : 0)
+      .slice(0, spec.limit),
+    count: async () => rows.length,
+  };
+  emsBackends.domain = {table: async () => table, saveAll: () => Promise.resolve(true)};
+  DomainPick.host = {caption: async () => (row) => `DG-${String(row.molregno).padStart(6, '0')}`,
+    open: (address, id) => opened.push([address, id])};
+}
+
+scoped('a table an app captions: the table\'s search, the app\'s caption over the row\'s name, the key as written',
+  async () => {
+    try {
+      compounds();
+      assert.deepEqual(await DomainPick.search('mt.compound', 'caff'),
+        [{id: 'c1', name: 'DG-000062', detail: 'Caffeine'}], 'the searchable columns, not the bare number');
+      assert.equal((await DomainPick.search('mt.compound', 'DG-000482'))[0].id, 'c2', 'the key as the table writes it');
+      assert.equal((await DomainPick.search('mt.compound', '482'))[0].id, 'c2', 'and as a bare number');
+      assert.deepEqual(await DomainPick.resolve('mt.compound', 'c2'), {id: 'c2', name: 'DG-000482', detail: 'Bisphenol A'},
+        'a held value reads as the app shows it');
+      const page = await DomainPick.page('mt.compound', '', {limit: 2});
+      assert.deepEqual(page.items.map((item) => item.name), ['DG-000019', 'DG-000062']);
+      assert.equal(page.total, 3, 'a page short of the whole answer counts it');
+    }
+    finally {
+      DomainPick.host = undefined;
+    }
+  });
+
+scoped('the popup says how many more there are; Open follows the held reference', async () => {
+  const opened = [];
+  try {
+    compounds(opened);
+    const pick = new DomainPick('mt.compound', {label: 'Compound', debounceMs: 0, limit: 2, value: 'c1'});
+    const input = mount(pick);
+    await flush();
+    await flush();
+    assert.equal(input.value, 'DG-000062');
+    pick.typeAhead.open();
+    await flush();
+    await flush();
+    assert.equal(document.body.querySelector('.u2-typeahead-footer').textContent, '2 of 3 — type to narrow');
+    assert.deepEqual([...document.body.querySelectorAll('.u2-domain-pick-detail')].map((el) => el.textContent),
+      ['Aspirin', 'Caffeine'], 'each identifier with the row\'s name under it');
+    fire(pick.root.querySelector('.u2-pick-open'), 'click');
+    assert.deepEqual(opened, [['mt.compound', 'c1']]);
+    pick.dispose();
+  }
+  finally {
+    DomainPick.host = undefined;
+  }
+});
+
+scoped('a short lookup reads as a dropdown: no typing, a click lists it all', async () => {
+  emsBackends.domain = backend();
+  const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0});
+  const input = mount(pick);
+  await flush();
+  await flush();
+  assert.equal(pick.root.classList.contains('u2-pick-short'), true, 'two projects fit one popup');
+  assert.equal(input.readOnly, true);
+  fire(input, 'click');
+  await flush();
+  await flush();
+  assert.deepEqual(options(), ['Datagrok', 'Grit']);
+  pick.dispose();
 });

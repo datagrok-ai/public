@@ -59,6 +59,37 @@
   color: var(--dg-text-color-light);
 }
 
+/* a short lookup reads as a dropdown: a chevron at rest instead of the search magnifier, the clear
+   taking its place while hovered */
+.u2-pick-short .u2-typeahead-input {
+  cursor: pointer;
+}
+
+.u2-pick-short .u2-pick-box::before {
+  visibility: visible;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E") no-repeat center / 12px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+
+.u2-pick-short:hover .u2-pick-box:has(> .u2-input-clear:not([hidden]))::before {
+  visibility: hidden;
+}
+
+/* a candidate whose caption is an identifier names the row on a muted line */
+.u2-domain-pick-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.u2-domain-pick-detail {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
 .u2-domain-draft {
   font-style: italic;
   color: var(--dg-text-color-light);
