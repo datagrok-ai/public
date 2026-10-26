@@ -7,7 +7,7 @@
    the table's actions. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divH, divV, span, link,
+import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divH, divV, span,
   icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu}
   from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
@@ -221,8 +221,7 @@ export class DomainApp extends Control {
 
     const title = DomainApp.titleOf(table.info);
     this.breadcrumbs = this.runInScope(() => new Breadcrumbs({items: [title], onClick: (index) => {
-      // in the trash the root crumb reads "Issues › Trash" and is the way back out of it; the ⋯
-      // menu's "Exit trash" must not be the only one
+      // in the trash the root crumb reads "Issues › Trash" and is the way back out of it
       if (index === 0)
         void (this.trash.peek() ? this.setTrash(false) : this.goTo('list'));
     }}));
@@ -241,8 +240,7 @@ export class DomainApp extends Control {
     });
     const plural = DomainTable.noun(table.info);
     const banner = this.runInScope(() => divH([icon('info-circle'),
-      span(`Deleted ${plural}. Restore what you need, then Save.`),
-      link(`Back to ${plural}`, () => void this.setTrash(false))], 'u2-domain-app-trash-banner'));
+      span(`Deleted ${plural}. Restore what you need, then Save.`)], 'u2-domain-app-trash-banner'));
     banner.dataset.u2Part = 'trash-banner';
     this.effect(() => banner.hidden = !this.trash.value);
     const listPage = divV([banner, ...(_options.filters?.placement === 'left' ? [this.filters.pane(this.list.root)] :
@@ -488,7 +486,7 @@ export class DomainApp extends Control {
 
   /** The Actions menu, in sections: the presets on a {@link compact} ribbon, the entity page's row
    * actions, the table-wide ones (import, bulk edit), and the switch to the deleted rows. Nothing
-   * writes in the trash, so only the way out of it is offered there. */
+   * writes in the trash, so it offers nothing there: the breadcrumb is the way out. */
   menuActions(): Action[] {
     const trash = this.trash.peek();
     // what the caller may do (`requires`) and what the table can do at all are different
@@ -504,10 +502,8 @@ export class DomainApp extends Control {
       table.push({name: 'Bulk edit…', icon: 'edit', requires: 'edit',
         run: () => void domains.bulkEdit(this.listSource)});
     }
-    const plural = DomainTable.noun(this.table.info);
-    const mode: Action[] = menu.trash === false || !support.deleted || !support.restore ? [] : [{
-      name: trash ? `Back to ${plural}` : 'Show deleted', icon: trash ? 'arrow-left' : 'history',
-      requires: 'delete', run: () => void this.setTrash(!trash)}];
+    const mode: Action[] = trash || menu.trash === false || !support.deleted || !support.restore ? [] : [{
+      name: 'Show deleted', icon: 'history', requires: 'delete', run: () => void this.setTrash(true)}];
     const presets = this.compact.peek() && this._page.peek() === 'list' && !trash ? this._presets : [];
     return [presets, this._rowActions(), table, mode].filter((section) => section.length > 0)
       .flatMap((section, i) => i === 0 ? section : [{...section[0], separator: true}, ...section.slice(1)]);
@@ -712,6 +708,7 @@ export class DomainApp extends Control {
     control.effect(() => {
       this._page.value;
       this.compact.value;
+      this.trash.value;
       this._entitySource.value?.currentRow.value;
       control.root.hidden = allowedActions(this.menuActions(), {access: this.listSource.access.value}).length === 0;
     });

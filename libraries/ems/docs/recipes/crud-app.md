@@ -101,7 +101,7 @@ source.deleted.value = 'only';        // 'exclude' (default) | 'include' | 'only
 ```
 
 In the app that flip is one move: the list page is shown, the breadcrumb reads
-`<Table> › Trash` and a line over the list says what the page is, with **Back to <rows>**; a
+`<Table> › Trash` (the root crumb leads back) and a line over the list says what the page is; a
 deleted row is read-only until it comes back, and keeps its line with when it was deleted; the
 path grows `?trash=1`, and the whole thing is ONE history entry — Back leaves the trash.
 Each row offers **Restore** where `~can_delete` says the caller may (restore IS the Delete grant,

@@ -85,7 +85,7 @@ category('U2: domain trash', () => {
     expect(app.list.actionsFor(row).map((a) => a.name).join(), 'Restore');
     expect(app.list.root.querySelector(`[data-u2-row="${goneId}"]`)!
       .classList.contains('u2-domain-list-deleted'), true);
-    expect(app.menuActions().map((a) => a.name.replace(/^Back to .*/, 'Back to')).join(), 'Back to');
+    expect(app.menuActions().length, 0);
   });
 
   const restore = (): void => {
