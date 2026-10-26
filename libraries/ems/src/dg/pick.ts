@@ -13,13 +13,12 @@ export type {PickInputOptions} from '@datagrok-libraries/u2';
 export interface PickItem {
   id: string;
   name: string;
-  /** A muted second line: what the row is called where its caption is an identifier. */
+  /** A muted second line: the row's name where the caption is an identifier. */
   detail?: string;
 }
 
-/** What a picker asks of the layer that knows a table's app: the caption its configured renderer
- * gives a row (null where no app dressed the table — the name column is the caption then), and
- * how to open a row. Installed by the dg layer (`form.ts`); a headless picker has none. */
+/** The app's caption for a table's rows (null without an app renderer) and how to open a row; set by
+ * `form.ts`, so this module needs no import of the facade. */
 export interface PickHost {
   caption(address: string): Promise<((row: Record<string, unknown>) => string) | null>;
   open(address: string, id: string): void;
@@ -44,9 +43,7 @@ export interface DomainPickOptions extends InputOptions<string | null> {
 
 export class DomainPick extends PickInput<PickItem> {
   static host: PickHost | undefined;
-  /** The most rows a lookup read as a dropdown holds. */
   static readonly SHORT = 10;
-  /** Per backend, so a backend swapped in (a test, a reconnect) counts its own tables. */
   private static readonly _short = new WeakMap<object, Map<string, Promise<boolean>>>();
   /** The target's plural name once a search has seen its table — the empty row's wording. */
   private static readonly _plural = new Map<string, string>();
@@ -58,6 +55,7 @@ export class DomainPick extends PickInput<PickItem> {
     let shown: {count: number, total: number} | null = null;
     const caption = (name: string) => siblings?.properties.find((p) => p.name === name)?.friendlyName ?? name;
     const host = DomainPick.host;
+    const self: {pick?: DomainPick} = {};
     super({
       ...rest,
       typeAhead: () => new TypeAhead<PickItem>({
@@ -68,7 +66,10 @@ export class DomainPick extends PickInput<PickItem> {
             return [];
           const page = await DomainPick.page(table, query, {filter: bound.filter, limit});
           shown = {count: page.items.length, total: page.total};
-          return page.items;
+          // the held value opens the list, so it is never missing from it
+          const held = self.pick?.typeAhead.selected.peek() ?? null;
+          return held === null || query.trim() !== '' ? page.items :
+            [held, ...page.items.filter((item) => item.id !== held.id)];
         },
         itemText: (item) => item.name,
         keyOf: (item) => item.id,
@@ -91,8 +92,9 @@ export class DomainPick extends PickInput<PickItem> {
           host.open(table, id);
       },
     });
+    self.pick = this;
     this.root.dataset.u2 = 'domain-pick';
-    // a short lookup (a status, a priority) reads as a dropdown: a click lists it all, typing has nothing to narrow
+    // a short lookup (a status, a priority) reads as a dropdown
     void DomainPick.isShort(table).then((short) => {
       if (!short || this.scope.isDisposed)
         return;
@@ -108,7 +110,7 @@ export class DomainPick extends PickInput<PickItem> {
     }, () => undefined);
   }
 
-  /** Whether the whole table fits one popup — at most {@link SHORT} rows, counted once per table. */
+  /** Whether the whole table fits one popup; counted once per table and backend. */
   static isShort(table: string): Promise<boolean> {
     const backend = emsBackends.domain;
     if (backend === undefined)
@@ -132,9 +134,8 @@ export class DomainPick extends PickInput<PickItem> {
     return (await DomainPick.page(table, query, options)).items;
   }
 
-  /** One popup's worth: the rows the table's search finds (its searchable columns, else the name
-   * column), the row whose key is written as typed — `482` or `DG-000482` — first, the rest sorted
-   * by caption; and how many rows match in all. */
+  /** One popup's worth, by the table's own search, sorted by caption — a row whose key is typed
+   * (`482`, `DG-000482`) first — and how many rows match in all. */
   static async page(table: string, query: string,
     options: {filter?: DomainPickOptions['filter'], limit?: number} = {}): Promise<{items: PickItem[], total: number}> {
     const t = await DomainPick.table(table);
@@ -158,8 +159,8 @@ export class DomainPick extends PickInput<PickItem> {
   }
 
   /** The item behind an id; a draft id is the draft's caption from the live source holding it,
-   * no query issued; an id the table does not answer is shown as itself. A table an app dressed
-   * reads the row and captions it as the app does; otherwise a backend that declares
+   * no query issued; an id the table does not answer is shown as itself. A table with an app caption
+   * reads the row; otherwise a backend that declares
    * `resolveNames` answers it there — over the platform that is the registry's resolver, batched
    * and cached, so a formful of refs is one call; every other backend reads the row. */
   static async resolve(table: string, id: string): Promise<PickItem> {
@@ -180,7 +181,6 @@ export class DomainPick extends PickInput<PickItem> {
     return row === undefined ? {id, name: id} : DomainPick.item(row, t.info, caption);
   }
 
-  /** A candidate row: the caption over a muted line naming the row where the caption does not. */
   static renderItem(item: PickItem): HTMLElement {
     const name = span(item.name, 'u2-typeahead-text');
     name.dataset.u2Part = 'item-label';
@@ -232,8 +232,8 @@ export class DomainPick extends PickInput<PickItem> {
     return nodes.length === 0 ? undefined : nodes;
   }
 
-  /** A row as a candidate: the app's caption (else the name column, else the id), and where that
-   * caption is not the row's name, the name — else the first searchable value — as its detail. */
+  /** The app's caption (else the name column, else the id); the name or a searchable value as its
+   * detail where the caption is not the name. */
   static item(row: Record<string, unknown>, info: DomainTableInfoLike,
     caption: ((row: Record<string, unknown>) => string) | null = null): PickItem {
     const named = text(row[DomainPick.nameColumn(info)]);
@@ -250,8 +250,7 @@ export class DomainPick extends PickInput<PickItem> {
     return info.nameColumn ?? (info.businessKey.length === 1 ? info.businessKey[0] : undefined);
   }
 
-  /** A query that is the table's one numeric key as the table writes it — `482`, or `DG-000482`
-   * under the column's `DG-000000` format — as a condition on that key. */
+  /** A query that is the table's single numeric key, bare or in its format (`DG-000482`), as a condition. */
   static keyCondition(t: DomainTableLike, query: string): DomainCondition | undefined {
     const key = t.info.businessKey.length === 1 ? t.info.businessKey[0] : undefined;
     const prop = t.properties.find((p) => p.name === key);
