@@ -215,7 +215,8 @@ scoped('New: the entity page over a pristine draft; once saved the page is the r
   assert.deepEqual(ribbon[1].map((c) => c.root.dataset.u2), ['domain-search']);
   assert.equal(ribbon[1][0].root.hidden, false);
   const listPage = a.root.querySelector('[data-u2-part="list-page"]');
-  assert.equal(listPage.children[0] === a.filters.root, true, 'the query box is the list page first row');
+  assert.equal([...listPage.children].find((el) => !el.hidden) === a.filters.root, true,
+    'the query box is the list page first row');
   fire(slots.main[0].root, 'click');
   await flush();
   assert.equal(a.page.value, 'entity');
@@ -1565,8 +1566,13 @@ scoped('the ribbon keeps its slots: New holds its place in the trash, the search
   await flush();
   assert.equal(add.hidden, false, 'the slot stays');
   assert.equal(add.style.visibility, 'hidden', 'but there is nothing to create in the trash');
-  assert.equal(await a.setTrash(false), true);
+  const banner = a.root.querySelector('[data-u2-part="trash-banner"]');
+  assert.equal(banner.hidden, false, 'the trash says it is the trash');
+  assert.match(banner.textContent, /^Deleted issues\. Restore what you need, then Save\.Back to issues$/);
+  fire(banner.querySelector('.u2-link'), 'click');
   await flush();
+  assert.equal(a.trash.value, false, 'and the way back out is on the same line');
+  assert.equal(banner.hidden, true);
   assert.equal(add.style.visibility, '');
   a.dispose();
 });

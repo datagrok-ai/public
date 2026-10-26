@@ -7,8 +7,8 @@
    the table's actions. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divV, span, Filters, allowedActions,
-  actionsMenu, iconButton, buttonWithIcon, ButtonGroup, Breadcrumbs, Rows} from '@datagrok-libraries/u2';
+import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divH, divV, span, link, icon, Filters,
+  allowedActions, actionsMenu, iconButton, buttonWithIcon, ButtonGroup, Breadcrumbs, Rows} from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
@@ -236,8 +236,15 @@ export class DomainApp extends Control {
       this._filterProblem.value = problem;
       this.list.stale.value = problem !== null;
     });
-    const listPage = divV(_options.filters?.placement === 'left' ? [this.filters.pane(this.list.root)] :
-      [this.filters.root, this.list.root], 'u2-domain-app-list');
+    // the trash is a mode of the list, said in a line of its own with the way back out of it
+    const plural = DomainTable.noun(table.info);
+    const banner = this.runInScope(() => divH([icon('info-circle'),
+      span(`Deleted ${plural}. Restore what you need, then Save.`),
+      link(`Back to ${plural}`, () => void this.setTrash(false))], 'u2-domain-app-trash-banner'));
+    banner.dataset.u2Part = 'trash-banner';
+    this.effect(() => banner.hidden = !this.trash.value);
+    const listPage = divV([banner, ...(_options.filters?.placement === 'left' ? [this.filters.pane(this.list.root)] :
+      [this.filters.root, this.list.root])], 'u2-domain-app-list');
     listPage.dataset.u2Part = 'list-page';
     const entityPage = divV([this.header, this._formHost, this.panes], 'u2-domain-app-entity');
     entityPage.dataset.u2Part = 'entity-page';
