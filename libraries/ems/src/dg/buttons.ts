@@ -3,7 +3,7 @@
    New is the one permission-gated button (hidden without `insert`), the fields and actions
    having degraded by access already. Controls rather than bare buttons, so the effects they run
    have an owner — `appView` disposes ribbon controls with the content. */
-import {Control, button} from '@datagrok-libraries/u2';
+import {Control, button, iconButton} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
 import type {DomainSession} from '../core/session.js';
 import type {RowView} from '@datagrok-libraries/u2';
@@ -13,6 +13,8 @@ export type SessionTarget = DomainSession | DomainSource;
 
 export interface SessionButtonOptions {
   text?: string;
+  /** An icon button with the text as its tooltip — the platform ribbon's form; text by default. */
+  icon?: string;
 }
 
 export class SessionButton extends Control {
@@ -20,9 +22,11 @@ export class SessionButton extends Control {
   readonly session: DomainSession;
 
   constructor(target: SessionTarget, text: string,
-    options: {primary?: boolean, run: (session: DomainSession) => unknown}) {
+    options: {primary?: boolean, icon?: string, run: (session: DomainSession) => unknown}) {
     const session = SessionButton.sessionOf(target);
-    const el = button(text, () => void options.run(session), {primary: options.primary});
+    const run = () => void options.run(session);
+    const el = options.icon === undefined ? button(text, run, {primary: options.primary}) :
+      iconButton(options.icon, run, {tooltip: text});
     super(el);
     this.button = el;
     this.session = session;
@@ -51,9 +55,12 @@ export function saveButton(target: SessionTarget, options: SessionButtonOptions 
 }
 
 export function discardButton(target: SessionTarget, options: SessionButtonOptions = {}): SessionButton {
-  const control = new SessionButton(target, options.text ?? 'Discard', {run: (session) => session.discard()});
+  const icon = options.icon;
+  const control = new SessionButton(target, options.text ?? (icon === undefined ? 'Discard' : 'Discard changes'),
+    {icon, run: (session) => session.discard()});
   control.root.dataset.u2 = 'discard-button';
-  control.button.title = 'Discard changes';
+  if (icon === undefined)
+    control.button.title = 'Discard changes';
   return control;
 }
 
@@ -65,8 +72,9 @@ export function discardButton(target: SessionTarget, options: SessionButtonOptio
 export function newButton(source: DomainSource,
   values: Record<string, unknown> | ((last: RowView | null) => Record<string, unknown>) = {},
   options: SessionButtonOptions = {}): Control {
-  const el = button(options.text ?? 'New', () => source.newRow(
-    typeof values === 'function' ? values(source.currentRow.peek()) : values));
+  const add = () => source.newRow(typeof values === 'function' ? values(source.currentRow.peek()) : values);
+  const el = options.icon === undefined ? button(options.text ?? 'New', add) :
+    iconButton(options.icon, add, {tooltip: options.text ?? 'New'});
   const control = new Control(el);
   control.root.dataset.u2 = 'new-button';
   control.effect(() => {

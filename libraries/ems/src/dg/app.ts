@@ -412,11 +412,14 @@ export class DomainApp extends Control {
   ribbon(): DomainRibbon {
     if (this._ribbon !== undefined)
       return this._ribbon;
-    const add = new Control(button('New', () => void this.create()));
+    // icon-first, as the platform's ribbons are: SAVE is the one raised button
+    const singular = this.table.info.singularName.toLowerCase() || 'row';
+    const add = new Control(this.runInScope(() =>
+      iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`})));
     add.root.dataset.u2 = 'new-button';
     add.effect(() => add.root.hidden = !this.listSource.access.value.can('insert'));
     const save = domains.saveButton(this.session);
-    const discard = domains.discardButton(this.session);
+    const discard = this.runInScope(() => domains.discardButton(this.session, {icon: 'undo'}));
     const more = this._actionsMenu();
     // the status bar is text: the way to act on "Data changed" is here, and only while it stands
     const reload = new Control(button('Refresh', () => void this.refresh()));
