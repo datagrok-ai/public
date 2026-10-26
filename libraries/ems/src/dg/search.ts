@@ -15,6 +15,9 @@ export interface DomainSearchOptions {
   debounceMs?: number;
 }
 
+/** The longest column list the placeholder spells out. */
+const PLACEHOLDER_CHARS = 20;
+
 export class DomainSearch extends TextInput {
   private _timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -24,7 +27,7 @@ export class DomainSearch extends TextInput {
         source.state.value;
         const columns = DomainSearch.columns(source).join(', ');
         // a list too long for the box is left to the tooltip
-        return columns === '' || columns.length > 20 ? `Search ${DomainTable.noun(source.schema.info)}…` :
+        return columns === '' || columns.length > PLACEHOLDER_CHARS ? `Search ${DomainTable.noun(source.schema.info)}…` :
           `Search ${columns}…`;
       })});
     this.root.classList.add('u2-domain-search');
@@ -85,7 +88,7 @@ export class DomainSearch extends TextInput {
     const props = source.schema.properties;
     return source.schema.info.searchableColumns.map((name) => {
       const prop = props.find((p) => p.name === name);
-      return (prop?.friendlyName ?? prop?.caption ?? name.replace(/_/g, ' ')).toLowerCase();
+      return DomainTable.captionOf(prop ?? {name}).toLowerCase();
     });
   }
 

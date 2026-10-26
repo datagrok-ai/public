@@ -1,11 +1,12 @@
 /* `domains.pick`: u2's `PickInput` over a domain table, searching it as the table's own search does
    through the domain seam, so it works over the memory backend as it does over the server. */
-import {emsBackends} from '../core/domain-backend.js';
+import {emsBackends, nounOf} from '../core/domain-backend.js';
 import {InputOptions, text, div, span, TypeAhead, Filters, Rows, PickInput} from '@datagrok-libraries/u2';
 import type {ObjectRenderer, DomainCondition, DomainConditionNode, DomainConditionTree,
   FilterSchema} from '@datagrok-libraries/u2';
 import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
 import {DomainSource} from '../core/domain-source.js';
+import type {DomainTable} from './facade.js';
 
 export {PickInput};
 export type {PickInputOptions} from '@datagrok-libraries/u2';
@@ -18,10 +19,11 @@ export interface PickItem {
 }
 
 /** The app's caption for a table's rows (null without an app renderer) and how to open a row; set by
- * `form.ts`, so this module needs no import of the facade. */
+ * `form.ts`, so this module needs no runtime import of the facade. */
 export interface PickHost {
   caption(address: string): Promise<((row: Record<string, unknown>) => string) | null>;
   open(address: string, id: string): void;
+  handle(address: string): Promise<DomainTable>;
 }
 
 export interface DomainPickOptions extends InputOptions<string | null> {
@@ -44,7 +46,7 @@ export interface DomainPickOptions extends InputOptions<string | null> {
 export class DomainPick extends PickInput<PickItem> {
   static host: PickHost | undefined;
   static readonly SHORT = 10;
-  private static readonly _short = new WeakMap<object, Map<string, Promise<boolean>>>();
+  private static readonly _short = new WeakMap<DomainTable, Promise<boolean>>();
   /** The target's plural name once a search has seen its table — the empty row's wording. */
   private static readonly _plural = new Map<string, string>();
 
@@ -103,20 +105,13 @@ export class DomainPick extends PickInput<PickItem> {
   }
 
   /** Whether the whole table fits one popup; counted once per table and backend. */
-  static isShort(table: string): Promise<boolean> {
-    const backend = emsBackends.domain;
-    if (backend === undefined)
-      return Promise.resolve(false);
-    let counted = DomainPick._short.get(backend);
-    if (counted === undefined) {
-      counted = new Map();
-      DomainPick._short.set(backend, counted);
-    }
-    let short = counted.get(table);
-    if (short === undefined) {
-      short = DomainPick.table(table).then((t) => t.count()).then((n) => n <= DomainPick.SHORT);
-      counted.set(table, short);
-    }
+  static async isShort(table: string): Promise<boolean> {
+    if (DomainPick.host === undefined)
+      return false;
+    const handle = await DomainPick.host.handle(table);
+    let short = DomainPick._short.get(handle);
+    if (short === undefined)
+      DomainPick._short.set(handle, short = handle.table.count().then((n) => n <= DomainPick.SHORT));
     return short;
   }
 
@@ -160,7 +155,7 @@ export class DomainPick extends PickInput<PickItem> {
     if (draft !== undefined) {
       const info = draft.source.schema.info;
       const name = text(draft.row[DomainPick.nameColumn(info)]);
-      return {id, name: name === '' ? `New ${(info.singularName || 'row').replace(/_/g, ' ').toLowerCase()}` : name};
+      return {id, name: name === '' ? `New ${nounOf(info, true)}` : name};
     }
     const caption = await DomainPick.host?.caption(table) ?? null;
     const backend = emsBackends.domain;

@@ -140,9 +140,9 @@ async function checkTrashHistory(page) {
     JSON.stringify({before, trash, back, forward}));
 }
 
-/** 3 — PHYSICAL clicks on the bulk-edit field picker, then the Update button. The hit targets are
- * what U23 was about: the picker opens at its own coordinates, its option takes the click, the
- * chosen field's editor appears, and the edit lands on the row the list is narrowed to. */
+/** 3 — PHYSICAL clicks on the bulk-edit field picker, then the Update button: the picker opens at
+ * its own coordinates, its option takes the click, the chosen field's editor appears, and the edit
+ * lands on the row the list is narrowed to. */
 async function checkBulkPicker(page) {
   const value = `E2E${TAG}`;
   await openDomain(page, SUBSTANCE, `cas = "${PROBE}"`);
@@ -151,7 +151,7 @@ async function checkBulkPicker(page) {
   await page.waitForSelector('.u2-domain-bulk', {timeout: 20000});
   const editor = page.locator('.u2-dialog [data-u2-name="molecular_formula"] input.u2-input-editor').first();
   const before = await editor.isVisible();
-  // real clicks at the elements' own coordinates — dispatchEvent would prove nothing about U23
+  // real clicks at the elements' own coordinates — dispatchEvent would prove nothing about the hit targets
   await page.locator('.u2-dialog [data-u2-name="fields"] .u2-multi-select-field').first().click();
   await page.locator('.u2-multi-select-option[data-value="molecular_formula"]').first().click();
   await page.locator('.u2-dialog .u2-dialog-title-text').first().click();

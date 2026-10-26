@@ -6,7 +6,7 @@
    (`domains.form(src)`, `domains.list(src)`, …): one object, each member constructing at call
    time, so the modules behind it may import this one back. `TRow` (an app's own row type) types
    the rows every registry and source hands out; the default reads any column as unknown. */
-import {emsBackends} from '../core/domain-backend.js';
+import {emsBackends, capital, nounOf} from '../core/domain-backend.js';
 import * as DG from 'datagrok-api/dg';
 import {Access, Rows, allowedActions, divV, span, timestamp, text, notify, plural, untracked}
   from '@datagrok-libraries/u2';
@@ -151,10 +151,28 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 
   private static readonly _bySource = new WeakMap<DomainSource, DomainTable>();
   private static readonly _byRow = new WeakMap<ReadonlySignal<RowView | null>, DomainSource>();
+  private static readonly _shared = new WeakMap<object, Map<string, Promise<DomainTable<any>>>>();
 
   constructor(readonly address: string, readonly table: DomainTableLike, readonly access: Access) {
     this.handler = new DG.DomainObjectHandler(address);
     this.renderer = this.defaultRenderer = DomainTable.handlerRenderer(this);
+  }
+
+  /** One configured handle over `address` per backend, for whoever only reads it. */
+  static shared<TRow extends DomainRowLike = DomainRowLike>(address: string): Promise<DomainTable<TRow>> {
+    const backend = emsBackends.domain;
+    if (backend === undefined)
+      return domains.table<TRow>(address);
+    let handles = DomainTable._shared.get(backend);
+    if (handles === undefined)
+      DomainTable._shared.set(backend, handles = new Map());
+    let handle = handles.get(address);
+    if (handle === undefined) {
+      handle = domains.table<TRow>(address);
+      handle.catch(() => handles!.delete(address));
+      handles.set(address, handle);
+    }
+    return handle as Promise<DomainTable<TRow>>;
   }
 
   get info(): DomainTableInfoLike {
@@ -185,12 +203,12 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   }
 
   static capital(text: string): string {
-    return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+    return capital(text);
   }
 
   /** The table's noun in lower case, singular for one row. */
   static noun(info: DomainTableInfoLike, one = false): string {
-    return (one ? info.singularName || 'row' : info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
+    return nounOf(info, one);
   }
 
   /** The handle a source was made through, for the controls over it. */

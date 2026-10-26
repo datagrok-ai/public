@@ -19,7 +19,7 @@ import type {IProperty, ChoiceItem, BadgeVariant, RowView} from '@datagrok-libra
 import type {DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike} from '../core/domain-backend.js';
 import {fromDartInput} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainTable} from './facade.js';
-import {DomainDataTable, DomainGrid} from './grid.js';
+import {DomainDataTable} from './grid.js';
 import {DomainErrors} from './errors.js';
 
 export interface DomainImportOptions {
@@ -479,8 +479,10 @@ class ImportFlow {
     const table = owner.runInScope(() => new DataTable<DomainImportRow>({
       rowHeight: this._table.importer?.rowHeight ?? 24,
       keyOf: (row) => String(row.index),
-      columns: columns.map((c) => ({name: c.name, header: c.header, width: ImportFlow._share(c, rows),
-        render: (row, _index, cell) => ImportFlow._cell(c.render(row), cell)})),
+      columns: columns.map((c) => ({name: c.name, header: c.header, width: c.width, render: (row) => {
+        const content = c.render(row);
+        return typeof content === 'string' ? span(content, 'u2-domain-import-text') : content;
+      }})),
       cellState: {
         isChanged: () => false,
         errorOf: (key, column) => {
@@ -492,29 +494,6 @@ class ImportFlow {
     table.setItems(rows);
     table.root.classList.add('u2-domain-import-rows', `u2-domain-import-${step}-rows`);
     return table.root;
-  }
-
-  /** A growing column's share of the width by what its cells hold. */
-  private static _share(column: DomainImportColumn, rows: DomainImportRow[]): string | undefined {
-    const track = /^minmax\((\d+)px, [\d.]+fr\)$/.exec(column.width ?? '');
-    if (track === null)
-      return column.width;
-    const font = `${getComputedStyle(document.body).fontSize} ${getComputedStyle(document.body).fontFamily}`;
-    let widest = DomainGrid.textWidth(column.header, `bold ${font}`);
-    for (const row of rows) {
-      const content = column.render(row);
-      widest = Math.max(widest, DomainGrid.textWidth(typeof content === 'string' ? content : content.textContent ?? '', font));
-    }
-    const width = Math.min(Math.ceil(widest) + 16, 400);
-    return `minmax(${Math.min(Number(track[1]), width)}px, ${width}fr)`;
-  }
-
-  /** Plain text in a span of its own, so it can trail off; the full text is the cell's title. */
-  private static _cell(content: HTMLElement | string, cell: HTMLElement): HTMLElement {
-    const label = typeof content === 'string' ? content : content.textContent ?? '';
-    if (label !== '')
-      cell.title = label;
-    return typeof content === 'string' ? span(content, 'u2-domain-import-text') : content;
   }
 
   /** What the preview shows by default: the row's number and verdict, its mapped cells, the note. */

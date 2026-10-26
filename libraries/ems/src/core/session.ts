@@ -3,7 +3,7 @@
    `DomainBackend.saveAll` — one `discard`, and the events a paired form follows. A source alone
    is a session of one; the sources built for one spec instance or one app share the ambient
    session (`SharedSession.runWith`), and a hand-built page passes `{session}` explicitly. */
-import {emsBackends} from './domain-backend.js';
+import {emsBackends, capital, nounOf} from './domain-backend.js';
 import {signal, computed, ReadonlySignal, Emitter, plural, notify, Dialog, Rows, div} from '@datagrok-libraries/u2';
 import type {ObservableLike, SpecInstance, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from './domain-source.js';
@@ -188,10 +188,10 @@ export class SharedSession implements DomainSession {
   private static _landed(source: DomainSource, changes: number, verb: string): string {
     const info = source.schema.info;
     const one = changes === 1;
-    const what = (one ? info.singularName || 'row' : info.pluralName || 'rows').replace(/_/g, ' ');
+    const what = nounOf(info, one);
     if (verb === 'saved' && !one)
       return `${changes} changes saved`;
-    const subject = one ? `${what.charAt(0).toUpperCase()}${what.slice(1)}` : `${changes} ${what.toLowerCase()}`;
+    const subject = one ? capital(what) : `${changes} ${what}`;
     return `${subject} ${verb}`;
   }
 
@@ -253,13 +253,12 @@ export class SharedSession implements DomainSession {
     const lost = `will be lost if you ${action}.`;
     if (pending.length !== 1) {
       const summary = session instanceof SharedSession ? session.summary.peek() : '';
-      return {title: 'Save changes?', body: `${summary === '' ? 'The changes' :
-        `${summary.charAt(0).toUpperCase()}${summary.slice(1)}`} ${lost}`};
+      return {title: 'Save changes?', body: `${summary === '' ? 'The changes' : capital(summary)} ${lost}`};
     }
     const [{source, row}] = pending;
     const info = source.schema.info;
     if (Rows.isDraft(row)) {
-      const noun = (info.singularName || 'row').replace(/_/g, ' ').toLowerCase();
+      const noun = nounOf(info, true);
       return {title: `Save the new ${noun}?`, body: `The new ${noun} ${lost}`};
     }
     const caption = source.caption?.(row) ?? SharedSession._rowName(source, row);
@@ -276,7 +275,7 @@ export class SharedSession implements DomainSession {
   /** How a refusal names a row without a renderer: the table's singular name and the row's name. */
   private static _nameOf(source: DomainSource, row: RowView): string {
     const what = (source.schema.info.singularName || source.table).replace(/_/g, ' ');
-    return `${what.charAt(0).toUpperCase()}${what.slice(1)} "${SharedSession._rowName(source, row)}"`;
+    return `${capital(what)} "${SharedSession._rowName(source, row)}"`;
   }
 
   /** The row's name column, else its business key, else its id. */

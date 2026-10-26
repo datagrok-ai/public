@@ -53,17 +53,6 @@ export class DomainViews {
     return views !== undefined;
   }
 
-  /** Takes these views out of where rows open. */
-  dispose(): void {
-    for (const entry of this._options.views) {
-      const left = (DomainViews._byTable.get(entry.table) ?? []).filter((v) => v !== this);
-      if (left.length === 0)
-        DomainViews._byTable.delete(entry.table);
-      else
-        DomainViews._byTable.set(entry.table, left);
-    }
-  }
-
   /** A new view at an address under the path — `Batches`, `Compounds?entity=<id>`; '' is the first view's list —
    * what the app func answers the router, which docks it. The router hands over the path alone: where the address
    * bar is this view's, its query is replayed by the view itself. */

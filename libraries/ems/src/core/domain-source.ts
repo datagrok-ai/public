@@ -10,7 +10,7 @@ import type {FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterSca
   RowsLike, RowValues, RowView, DataFrameLike, BindProp, BindSource, ComponentEnv,
   ComponentStart} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
-import {emsBackends, DomainBackendError} from './domain-backend.js';
+import {emsBackends, DomainBackendError, capital, nounOf} from './domain-backend.js';
 import type {DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike, DomainReadScope,
   DomainTableInfoLike, DomainTableLike} from './domain-backend.js';
 import {SharedSession} from './session.js';
@@ -1009,22 +1009,22 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return plural(changes, 'unsaved change', 'unsaved changes');
     }
     const state = this.state.value;
-    const singular = (this._schema.info.singularName || 'row').replace(/_/g, ' ').toLowerCase();
+    const singular = nounOf(this._schema.info, true);
     // a draft is a row, not a row of the table yet; a draft source is a create form until the
     // draft is saved — then it holds the row it made, and says so, until the next New
     const loaded = items.filter((r) => !Rows.isDraft(r)).length;
     if (this.isDraft && (loaded === 0 || (this.currentRow.value !== null && Rows.isDraft(this.currentRow.value))))
       return state === 'ready' ? `New ${singular}` : state === 'loading' ? 'Loading…' : '';
     if (this.isDraft)
-      return `${singular.charAt(0).toUpperCase()}${singular.slice(1)} saved`;
+      return `${capital(singular)} saved`;
     if (state !== 'ready' && loaded === 0)
       return state === 'loading' ? 'Loading…' : '';
     const total = this.total.value;
-    const many = (this._schema.info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
+    const many = nounOf(this._schema.info);
     if (this.deleted.value === 'only')
       return plural(total ?? loaded, `deleted ${singular}`, `deleted ${many}`);
     return !this.isDraft && total !== null && loaded < total ?
-      `${loaded.toLocaleString()} of ${total.toLocaleString()}` :
+      `${loaded.toLocaleString()} of ${total.toLocaleString()} ${many}` :
       plural(loaded, singular, many);
   }
 

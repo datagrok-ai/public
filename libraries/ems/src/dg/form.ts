@@ -85,7 +85,6 @@ export class DomainForm extends Control {
   private readonly _captions = new Map<string, {id: string, caption: string, address?: string}>();
   private _returnTo: string | undefined;
   private _focusing = false;
-  private static readonly _handles = new WeakMap<object, Map<string, Promise<DomainTable>>>();
   private _editSub: {unsubscribe(): void} | undefined;
   private readonly _subs: {unsubscribe(): void}[];
 
@@ -101,7 +100,7 @@ export class DomainForm extends Control {
       for (const input of this._form.value?.inputs ?? []) {
         const message = input.validity.value;
         if (message !== null) {
-          const caption = `${input.label.charAt(0).toUpperCase()}${input.label.slice(1)}`;
+          const caption = DomainTable.capital(input.label);
           return message === EMPTY ? `${caption} is required` : `${caption}: ${message}`;
         }
       }
@@ -435,25 +434,6 @@ export class DomainForm extends Control {
     return block;
   }
 
-  /** The configured handle over `address`, acquired once per backend. */
-  static handle(address: string): Promise<DomainTable> {
-    const backend = emsBackends.domain;
-    if (backend === undefined)
-      return domains.table(address);
-    let handles = DomainForm._handles.get(backend);
-    if (handles === undefined) {
-      handles = new Map();
-      DomainForm._handles.set(backend, handles);
-    }
-    let handle = handles.get(address);
-    if (handle === undefined) {
-      handle = domains.table(address);
-      handle.catch(() => handles!.delete(address));
-      handles.set(address, handle);
-    }
-    return handle;
-  }
-
   /** The system columns the schema carries, in the platform's order. */
   static systemProps(source: DomainSource): IProperty[] {
     const props: IProperty[] = source.schema.properties;
@@ -641,9 +621,10 @@ export class DomainForm extends Control {
 }
 
 DomainPick.host = {
-  caption: (address) => DomainForm.handle(address).then((t) => t.renderer === t.defaultRenderer ? null :
+  caption: (address) => DomainTable.shared(address).then((t) => t.renderer === t.defaultRenderer ? null :
     (row: Record<string, unknown>) => t.renderer.caption(row as RowView)),
-  open: (address, id) => void DomainForm.handle(address).then((t) => t.open({id} as RowView)),
+  open: (address, id) => void DomainTable.shared(address).then((t) => t.open({id} as RowView)),
+  handle: (address) => DomainTable.shared(address),
 };
 
 // the editors a schema's reference columns get everywhere a form is generated: a picker over the

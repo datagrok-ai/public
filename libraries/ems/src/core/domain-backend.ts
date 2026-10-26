@@ -310,6 +310,15 @@ export class DomainBackendError extends Error {
   }
 }
 
+/** The table's noun in lower case, singular for one row. */
+export function nounOf(info: {singularName?: string, pluralName?: string}, one = false): string {
+  return (one ? info.singularName || 'row' : info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
+}
+
+export function capital(text: string): string {
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+}
+
 /** The platform's `StringUtils.toSingular` (ddt utils.dart). */
 export function toSingular(s: string): string {
   if (s.length <= 2 || !s.endsWith('s') || s.endsWith('ss') || s.endsWith('is') || s.endsWith('us'))

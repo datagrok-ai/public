@@ -215,7 +215,7 @@ export class DomainChildren extends Control {
           divH([domains.list(child).root, domains.form(child).root], 'u2-domain-children-split');
         const empty = span(`No ${entry.label.toLowerCase()}.`, 'u2-domain-children-empty');
         const add = domains.newButton(child);
-        // a list's form takes the focus itself; the grid needs it handed over
+        // a list's form takes the focus itself; the grid needs it handed over once the button's own click has refocused it
         if (grid !== null)
           add.root.addEventListener('click', () => queueMicrotask(() => grid.grid.root.focus()));
         pane.replaceChildren(divH([add.root], 'u2-domain-children-toolbar'), body, empty);

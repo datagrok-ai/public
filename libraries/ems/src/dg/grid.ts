@@ -35,10 +35,8 @@ export interface DomainGridOptions {
  * date, the rest keep the time. */
 const DATE_FORMAT = 'MMM d, yyyy';
 const DATE_TIME_FORMAT = 'MMM d, yyyy HH:mm';
-/** At least two lines, so a unit gets its own: "Dosed Concentration (uM)". */
-const HEADER_LINES = {min: 2, max: 4};
-const HEADER_PADDING = 10;
-const HEADER_MARGIN = 8;
+/** Two lines, so a unit gets its own: "Dosed Concentration (uM)". */
+const HEADER_HEIGHT = 44;
 /** Floors by type, so an empty frame still gets readable columns, and a cap. */
 const COLUMN_WIDTH = {flag: 48, number: 64, date: 96, text: 96, name: 160, reference: 160, max: 320};
 const SCROLLBAR = 12;
@@ -49,7 +47,6 @@ export class DomainGrid extends Control {
   private _rows: {unsubscribe(): void}[] = [];
   /** Fitted once per frame, so a column the user resized keeps its width. */
   private _fittedTo: unknown;
-  private static _context: CanvasRenderingContext2D | null | undefined;
 
   constructor(readonly source: DomainSource, private readonly _options: DomainGridOptions = {}) {
     super();
@@ -58,7 +55,8 @@ export class DomainGrid extends Control {
     this.grid = this.runInScope(() =>
       viewers.grid(source.df as unknown as ReadonlySignal<DG.DataFrame | undefined>, _options.look));
     this.root.append(this.grid.root);
-    this._fitHeader();
+    if (_options.look?.colHeaderHeight === undefined)
+      this.grid.setOptions({colHeaderHeight: HEADER_HEIGHT});
     // the editor follows the source's writer: attached over each frame the source loads, released
     // when the source lets the frame go
     this.effect(() => {
@@ -82,13 +80,9 @@ export class DomainGrid extends Control {
       this._hideSystem();
       this._singleLine();
       this._fitColumns();
-      this._fitHeader();
       this._followRows();
     });
-    const resized = this.grid.onColumnResized.subscribe(() => {
-      this._fitHeader();
-      this._fitHeight();
-    });
+    const resized = this.grid.onColumnResized.subscribe(() => this._fitHeight());
     const open = _options.open;
     const clicked = this.grid.onCellClick.subscribe((cell) => {
       if (open === undefined || !cell.isTableCell || cell.tableColumn?.name !== open.column)
@@ -119,7 +113,6 @@ export class DomainGrid extends Control {
     DomainGrid.sortByCaption(df);
     this._caption(df);
     this._formats(df);
-    this._fitHeader();
   }
 
   /** A ref column sorts by the name it shows (`~caption_<column>`), else by the id. */
@@ -149,21 +142,6 @@ export class DomainGrid extends Control {
     }
   }
 
-  private _fitHeader(): void {
-    if (this._options.look?.colHeaderHeight !== undefined)
-      return;
-    const shown = this._columns().filter((c) => c.column !== null && c.visible && c.width > 0);
-    if (shown.length === 0) {
-      this.grid.setOptions({colHeaderHeight: DomainGrid.headerHeight(0)});
-      return;
-    }
-    const font = this.grid.props.colHeaderFont;
-    const measure = (text: string) => DomainGrid.textWidth(text, font);
-    const lines = Math.max(...shown.map((c) =>
-      DomainGrid.captionLines(c.column!.getTag(DG.TAGS.FRIENDLY_NAME) || c.name, c.width - HEADER_MARGIN, measure)));
-    this.grid.setOptions({colHeaderHeight: DomainGrid.headerHeight(lines, font)});
-  }
-
   /** `--u2-domain-grid-height`: what a child pane caps the grid at, so a short table has no empty rules. */
   private _fitHeight(): void {
     const rows = Math.max(1, this.grid.dataFrame?.rowCount ?? 0);
@@ -187,87 +165,27 @@ export class DomainGrid extends Control {
     if (df === null || df === undefined || this._fittedTo === df.dart)
       return;
     this._fittedTo = df.dart;
-    const font = this.grid.props.colHeaderFont;
-    const measure = (text: string) => DomainGrid.textWidth(text, font);
     const byName = new Map(this.source.schema.properties.map((p): [string, IProperty] => [p.name!, p]));
     const nameColumn = this.source.schema.info.nameColumn;
     for (const c of this._columns()) {
       if (c.column === null || !c.visible)
         continue;
-      const caption = c.column.getTag(DG.TAGS.FRIENDLY_NAME) || c.name;
-      c.width = DomainGrid.columnWidth(byName.get(c.column.name), c.column.name === nameColumn,
-        DomainGrid._namesWidth(df, c.column.name, this.grid.props.defaultCellFont) ?? c.getDataWidth(),
-        DomainGrid.captionWidth(caption, measure) + HEADER_MARGIN);
+      const floor = DomainGrid._floorOf(byName.get(c.column.name), c.column.name === nameColumn);
+      c.width = Math.round(Math.min(COLUMN_WIDTH.max, Math.max(floor, c.getDataWidth())));
     }
   }
 
-  /** The widest name a ref column draws, null without `~caption_<column>`. */
-  private static _namesWidth(df: DG.DataFrame, column: string, font: string): number | null {
-    const names = df.columns.byName(Rows.caption(column));
-    if (names === null)
-      return null;
-    let widest = 0;
-    for (let i = 0; i < df.rowCount; i++)
-      widest = Math.max(widest, DomainGrid.textWidth(String(names.get(i) ?? ''), font));
-    return widest + HEADER_MARGIN * 2;
-  }
-
-  static columnWidth(prop: IProperty | undefined, isName: boolean, data: number, caption: number): number {
-    const reference = prop !== undefined && DomainTable.isReference(prop);
-    const floor = isName ? COLUMN_WIDTH.name : reference ? COLUMN_WIDTH.reference : DomainGrid._floorOf(prop);
-    return Math.round(Math.min(COLUMN_WIDTH.max, Math.max(floor, data, caption)));
-  }
-
-  private static _floorOf(prop: IProperty | undefined): number {
+  private static _floorOf(prop: IProperty | undefined, isName: boolean): number {
     const type = prop?.propertyType ?? prop?.type;
-    return type === 'bool' ? COLUMN_WIDTH.flag : DomainDataTable.isNumeric(prop) ? COLUMN_WIDTH.number :
-      type === 'datetime' ? COLUMN_WIDTH.date : COLUMN_WIDTH.text;
-  }
-
-  /** The narrowest width that lays `caption` out in two lines broken at a word. */
-  static captionWidth(caption: string, measure: (text: string) => number): number {
-    const words = caption.split(/\s+/).filter((w) => w !== '');
-    let best = measure(words.join(' '));
-    for (let at = 1; at < words.length; at++)
-      best = Math.min(best, Math.max(measure(words.slice(0, at).join(' ')), measure(words.slice(at).join(' '))));
-    return best;
+    return isName ? COLUMN_WIDTH.name : prop !== undefined && DomainTable.isReference(prop) ? COLUMN_WIDTH.reference :
+      type === 'bool' ? COLUMN_WIDTH.flag : DomainDataTable.isNumeric(prop) ? COLUMN_WIDTH.number :
+        type === 'datetime' ? COLUMN_WIDTH.date : COLUMN_WIDTH.text;
   }
 
   private _columns(): DG.GridColumn[] {
     const columns = this.grid.columns;
     return Array.from({length: columns.length}, (_, i) => columns.byIndex(i))
       .filter((c): c is DG.GridColumn => c !== null);
-  }
-
-  /** Lines `caption` takes wrapped at words into `width`, as the platform wraps a header. */
-  static captionLines(caption: string, width: number, measure: (text: string) => number): number {
-    let lines = 0;
-    let line = '';
-    for (const word of caption.split(/\s+/).filter((w) => w !== '')) {
-      const longer = line === '' ? word : `${line} ${word}`;
-      if (line !== '' && measure(longer) > width) {
-        lines++;
-        line = word;
-      }
-      else
-        line = longer;
-    }
-    return line === '' ? lines : lines + 1;
-  }
-
-  /** Line height as the grid's text renderer computes it; 13px without a font. */
-  static headerHeight(lines: number, font = ''): number {
-    const px = Number(/(\d+(?:\.\d+)?)px/.exec(font)?.[1] ?? 13);
-    const shown = Math.min(HEADER_LINES.max, Math.max(HEADER_LINES.min, lines));
-    return shown * (Math.ceil(px * 1.2) + 1) + HEADER_PADDING;
-  }
-
-  static textWidth(text: string, font: string): number {
-    const g = DomainGrid._context ??= document.createElement('canvas').getContext('2d');
-    if (g === null)
-      return 0;
-    g.font = font;
-    return g.measureText(text).width;
   }
 
   /** The schema's captions where `decorateGrid` found no per-table meta to take them from —
@@ -341,9 +259,8 @@ export interface DomainDataTableOptions {
 /** `domains.dataTable` — the source's rows as the HTML {@link DataTable}: virtualized rows of
  * pooled cells, the columns derived from the table's schema the way the grid's decoration
  * derives them, the headers sorting through the source, and the source's writer painting the
- * cells (pending amber, refused red). Read-only by design (ruling 5: the Dart grid stays THE
- * editor) — what it is for is a wide
- * collection beside a tree or a form, where a canvas viewer is more than the page needs. */
+ * cells (pending amber, refused red). Read-only by design (the Dart grid stays THE editor) —
+ * what it is for is a wide collection beside a tree or a form, where a canvas viewer is more than the page needs. */
 export class DomainDataTable extends Control {
   /** The table, once the source's schema is known — it is what the columns are derived from. */
   readonly table: ReadonlySignal<DataTable<RowView> | null>;

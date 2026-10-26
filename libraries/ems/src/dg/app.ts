@@ -7,7 +7,7 @@
    the table's actions. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {Control, signal, computed, batch, untracked, ReadonlySignal, Signal, button, div, divH, divV, span, link,
+import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divH, divV, span, link,
   icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu}
   from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
@@ -305,7 +305,13 @@ export class DomainApp extends Control {
       const source = this._entitySource.value;
       const empty = source !== null && source.state.value === 'ready' && source.rows.items.value.length === 0;
       const settled = !this.session.isDirty.value && !this.session.isSaving.value;
-      if (empty && settled && source === this._deleting)
+      if (source !== this._deleting)
+        this._deleting = null;
+      if (this._deleting === null || !settled)
+        return;
+      // taken by the save, or put back by a discard
+      this._deleting = null;
+      if (empty)
         queueMicrotask(() => void this.goTo('list'));
     });
 
@@ -358,12 +364,8 @@ export class DomainApp extends Control {
         this._count.value = this.table.renderer.caption(row);
       else if (source.state.value === 'error' || entity && !source.isDraft && source.state.value === 'ready')
         this._count.value = '';
-      else if (source.error.value === undefined && source.changeCount.value === 0) {
-        // paging, the source says "50 of 119": the noun is kept
-        const summary = source.summary.value;
-        this._count.value = /^\S+ of \S+$/.test(summary) ? `${summary} ${DomainTable.noun(source.schema.info)}` :
-          summary;
-      }
+      else if (source.error.value === undefined && source.changeCount.value === 0)
+        this._count.value = source.summary.value;
     });
     this.status = computed(() => {
       const entity = this._page.value === 'entity';
@@ -460,16 +462,9 @@ export class DomainApp extends Control {
       add.root.classList.toggle('u2-domain-app-invisible', trash);
     });
     const save = domains.saveButton(this.session);
-    const discard = domains.discardButton(this.session);
-    // Discard on an untouched create page leaves it
     const pristine = () => !this.session.isDirty.value && this._page.value === 'entity' &&
       DomainApp._isDraft(this._entitySource.value, this._entitySource.value?.currentRow.value ?? null);
-    discard.effect(() => discard.button.disabled = this.session.isSaving.value || !this.session.isDirty.value &&
-      !pristine());
-    discard.button.addEventListener('click', () => {
-      if (untracked(pristine))
-        void this.goTo('list');
-    });
+    const discard = domains.discardButton(this.session, {leave: {when: pristine, run: () => void this.goTo('list')}});
     const more = this._actionsMenu();
     // the status bar is text: the way to act on "Data changed" is here, and only while it stands
     const reload = new Control(button('Refresh', () => void this.refresh()));
@@ -648,15 +643,10 @@ export class DomainApp extends Control {
       dirty[0].summary.value : this.session.summary.value;
   }
 
-  private static _capital(text: string): string {
-    return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
-  }
-
   /** How a table is named in a view title, a breadcrumb root or a child tab: the display name
    * the schema declares, else its plural name made presentable ('order_line' → 'Order lines'). */
   static titleOf(info: Pick<DomainTableInfoLike, 'pluralName' | 'friendlyName'>): string {
-    const plural = (info.pluralName || 'rows').replace(/_/g, ' ');
-    return info.friendlyName ?? `${plural.charAt(0).toUpperCase()}${plural.slice(1)}`;
+    return info.friendlyName ?? DomainTable.capital((info.pluralName || 'rows').replace(/_/g, ' '));
   }
 
   /** Plain-key shortcuts stay out of text entry; chords with Ctrl/Alt still fire there. */
@@ -741,7 +731,7 @@ export class DomainApp extends Control {
         const column = desc ? current.slice(1) : current;
         const menu = new Menu();
         for (const prop of source.schema.properties.filter((p) => p.ref === undefined && p.name !== 'id')) {
-          menu.item(prop.friendlyName ?? prop.caption ?? prop.name, () => write(`${desc ? '!' : ''}${prop.name}`),
+          menu.item(DomainTable.captionOf(prop), () => write(`${desc ? '!' : ''}${prop.name}`),
             {check: prop.name === column});
         }
         menu.separator();
@@ -984,7 +974,7 @@ export class DomainApp extends Control {
       });
       const {children, history, include} = this._options;
       const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include,
-        empty: `${DomainApp._capital(DomainTable.noun(this.table.info, true))} "${entity}" was not found.`}));
+        empty: `${DomainTable.capital(DomainTable.noun(this.table.info, true))} "${entity}" was not found.`}));
       this._panes = this.runInScope(() => [
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
         ...(history === false || !this.table.table.support.audit ? [] :

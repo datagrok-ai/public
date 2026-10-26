@@ -21,14 +21,13 @@ export class SessionButton extends Control {
   readonly session: DomainSession;
 
   constructor(target: SessionTarget, text: string,
-    options: {primary?: boolean, gated?: boolean, run: (session: DomainSession) => unknown}) {
+    options: {primary?: boolean, enabled?: () => boolean, run: (session: DomainSession) => unknown}) {
     const session = SessionButton.sessionOf(target);
     const el = button(text, () => void options.run(session), {primary: options.primary});
     super(el);
     this.button = el;
     this.session = session;
-    this.effect(() => el.disabled = !session.isDirty.value || session.isSaving.value ||
-      options.gated === true && session.validity.value !== null);
+    this.effect(() => el.disabled = session.isSaving.value || !(options.enabled?.() ?? session.isDirty.value));
   }
 
   static sessionOf(target: SessionTarget): DomainSession {
@@ -40,11 +39,11 @@ export class SessionButton extends Control {
  * hands the focus back to the paired form; the session's primary button, where Tab from a form's
  * last field lands. */
 export function saveButton(target: SessionTarget, options: SessionButtonOptions = {}): SessionButton {
-  const control = new SessionButton(target, options.text ?? 'Save',
-    {primary: true, gated: true, run: (session) => session.save()});
+  const session = SessionButton.sessionOf(target);
+  const control = new SessionButton(target, options.text ?? 'Save', {primary: true,
+    enabled: () => session.isDirty.value && session.validity.value === null, run: () => session.save()});
   control.root.dataset.u2 = 'save-button';
   control.button.title = 'Save (Ctrl+S)';
-  const session = control.session;
   session.primaryButton = control.button;
   control.own(() => {
     if (session.primaryButton === control.button)
@@ -53,8 +52,14 @@ export function saveButton(target: SessionTarget, options: SessionButtonOptions 
   return control;
 }
 
-export function discardButton(target: SessionTarget, options: SessionButtonOptions = {}): SessionButton {
-  const control = new SessionButton(target, options.text ?? 'Discard', {run: (session) => session.discard()});
+/** `leave`: while `when` holds, Discard is on over a clean session and runs `leave.run` instead — off an
+ * untouched create page. */
+export function discardButton(target: SessionTarget,
+  options: SessionButtonOptions & {leave?: {when: () => boolean, run: () => void}} = {}): SessionButton {
+  const leave = options.leave;
+  const control = new SessionButton(target, options.text ?? 'Discard', {
+    enabled: leave === undefined ? undefined : () => SessionButton.sessionOf(target).isDirty.value || leave.when(),
+    run: (session) => leave?.when() ? leave.run() : session.discard()});
   control.root.dataset.u2 = 'discard-button';
   control.button.title = 'Discard changes';
   return control;
