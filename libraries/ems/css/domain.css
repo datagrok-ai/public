@@ -14,10 +14,31 @@
   border-bottom-color: var(--dg-border);
 }
 
-/* the amber edge of a pending change, the grid's dirty cell in form terms */
+/* the amber edge of a pending change, the list's pending mark in form terms: drawn over the editor's
+   left padding, so the value does not move */
 .u2-input-changed > .u2-input-box {
-  border-left: 3px solid var(--dg-orange-2);
-  padding-left: var(--dg-space-xs);
+  position: relative;
+}
+
+.u2-input-changed > .u2-input-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  width: 3px;
+  pointer-events: none;
+  background: var(--dg-orange-2);
+}
+
+/* a bridged platform input's box holds its caption too: the edge goes on its editor instead */
+.u2-input-changed[data-u2='dart-input'] > .u2-input-box::before {
+  content: none;
+}
+
+.u2-input-changed[data-u2='dart-input'] .u2-input-editor {
+  box-shadow: -5px 0 0 -2px var(--dg-orange-2);
 }
 
 /* the system columns as a footer: compact, muted */
