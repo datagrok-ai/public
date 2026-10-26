@@ -776,7 +776,7 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   fire(more.root, 'click');
   await flush();
   const items = [...document.querySelectorAll('[role="menuitem"] .u2-menu-label')].map((el) => el.textContent);
-  assert.deepEqual(items, ['Import…', 'Bulk edit…', 'Trash']);
+  assert.deepEqual(items, ['Import…', 'Bulk edit…', 'Show deleted issues']);
   assert.equal(a.breadcrumbs.root.hidden, true, 'a plain list has no breadcrumb: the view title names the table');
 
   a.listSource.edit.value.markDeleted('i2');
@@ -1426,7 +1426,8 @@ scoped('support ⇒ absent: Bulk edit goes with updateWhere, the History pane wi
   const a = domains.app({table: await domains.table('grit.issue'), base: BASE, pageSize: 10});
   document.body.append(a.root);
   await flush();
-  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Trash'], 'no Bulk edit without updateWhere');
+  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Show deleted issues'],
+    'no Bulk edit without updateWhere');
   await a.goTo('entity', 'i1');
   await flush();
   assert.deepEqual([...a.panes.children].map((el) => el.dataset.u2), ['domain-children'],
@@ -1517,4 +1518,26 @@ scoped('domains.views: a view per table, addressed and brought forward, where it
     for (const app of [...DomainApp.live])
       app.dispose();
   }
+});
+
+scoped('the entity page Actions menu: the row first, Delete last of it, then the table; a deleted row leaves', async () => {
+  const {table, app: a} = await app();
+  table.actions.add({name: 'Close', icon: 'check', run: (r) => r.done = true});
+  assert.equal(await a.goTo('entity', 'i1'), true);
+  await flush();
+  const actions = a.menuActions();
+  assert.deepEqual(actions.map((x) => x.name), ['Close', 'Delete', 'Import…', 'Bulk edit…', 'Show deleted issues']);
+  assert.deepEqual(actions.map((x) => x.separator === true), [false, false, true, false, true],
+    'the row, the table and the mode switch are sections of their own');
+  const more = a.ribbon().main.find((c) => c.root.dataset.u2 === 'actions-menu');
+  assert.equal(more.root.textContent, 'Actions', 'a labelled button, not a glyph');
+  actions.find((x) => x.name === 'Delete').run();
+  await flush();
+  assert.equal(a.session.isDirty.value, true, 'staged, like a list row, until the Save');
+  assert.equal(await a.session.save(), true);
+  await flush();
+  await flush();
+  assert.equal(a.page.value, 'list', 'nothing left on the page once the save took the row');
+  assert.equal(a.listSource.rows.items.value.some((r) => r.id === 'i1'), false);
+  a.dispose();
 });

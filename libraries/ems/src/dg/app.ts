@@ -8,7 +8,7 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divV, span, Filters, allowedActions,
-  actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows} from '@datagrok-libraries/u2';
+  actionsMenu, iconButton, buttonWithIcon, ButtonGroup, Breadcrumbs, Rows} from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
@@ -160,6 +160,8 @@ export class DomainApp extends Control {
   private _panes: Control[] = [];
   private _ribbon: DomainRibbon | undefined;
   private _unloadGuard: ((e: BeforeUnloadEvent) => void) | undefined;
+  /** The entity page's source whose row the Actions menu deleted. */
+  private _deleting: DomainSource | null = null;
   private readonly _sync: ViewSync;
 
   private static readonly _byView = new WeakMap<DG.ViewBase, DomainApp>();
@@ -285,6 +287,15 @@ export class DomainApp extends Control {
       if (rows === 0 && had)
         queueMicrotask(() => void this.goTo('list'));
       had = rows > 0;
+    });
+
+    // and a row deleted from its own page: once the save has taken it, the page has nothing to show
+    this.effect(() => {
+      const source = this._entitySource.value;
+      const empty = source !== null && source.state.value === 'ready' && source.rows.items.value.length === 0;
+      const settled = !this.session.isDirty.value && !this.session.isSaving.value;
+      if (empty && settled && source === this._deleting)
+        queueMicrotask(() => void this.goTo('list'));
     });
 
     this.path = computed(() => {
@@ -439,27 +450,31 @@ export class DomainApp extends Control {
     return [main, tools, presets].filter((group) => group.length > 0);
   }
 
-  /** The table-wide actions of the ⋯ menu: the import wizard, the bulk edit over what the list
-   * holds, and the trash. Nothing writes in the trash, so only the way out of it is offered there. */
+  /** The Actions menu, in sections: on the entity page the row's own actions first (the table's
+   * row actions, then Delete), then the table-wide ones — the import wizard and the bulk edit over
+   * what the list holds — and last the switch to the deleted rows. Nothing writes in the trash, so
+   * only the way out of it is offered there. */
   menuActions(): Action[] {
     const trash = this.trash.peek();
     // what the caller may do (`requires`) and what the table can do at all are different
     // questions: a permission hides an action, an undeclared support leaves it out entirely
     const support = this.table.table.support;
-    const out: Action[] = [];
+    const table: Action[] = [];
     if (!trash && support.writes && !this.listSource.readOnly.value) {
-      out.push({name: 'Import…', icon: 'upload', requires: 'insert', run: () =>
+      table.push({name: 'Import…', icon: 'upload', requires: 'insert', run: () =>
         void domains.import(this.table).then((report) => report === null ? null : this.listSource.refresh())});
     }
     if (!trash && support.updateWhere) {
-      out.push({name: 'Bulk edit…', icon: 'edit', requires: 'edit',
+      table.push({name: 'Bulk edit…', icon: 'edit', requires: 'edit',
         run: () => void domains.bulkEdit(this.listSource)});
     }
-    if (support.deleted && support.restore) {
-      out.push({name: trash ? 'Exit trash' : 'Trash', icon: trash ? 'arrow-left' : 'trash-alt',
-        requires: 'delete', run: () => void this.setTrash(!trash)});
-    }
-    return out;
+    const plural = DomainTable.noun(this.table.info);
+    // a mode, not a verb: named for what the list shows, never "Trash" beside the actions
+    const mode: Action[] = support.deleted && support.restore ? [{name: trash ? `Back to ${plural}` :
+      `Show deleted ${plural}`, icon: trash ? 'arrow-left' : 'history', requires: 'delete',
+    run: () => void this.setTrash(!trash)}] : [];
+    return [this._rowActions(), table, mode].filter((section) => section.length > 0)
+      .flatMap((section, i) => i === 0 ? section : [{...section[0], separator: true}, ...section.slice(1)]);
   }
 
   /** Moves between the live collection and the trash — ONE switch: the list's `deleted` mode, its
@@ -626,20 +641,36 @@ export class DomainApp extends Control {
     action.run();
   }
 
-  /** The ⋯ button: the menu is built on every open, so its items read the mode in force.
+  /** The Actions button — labelled, beside SAVE, the app's one overflow entry (the view's ≡ is the
+   * platform's): the menu is built on every open, so its items read the page and the mode in force.
    * Permission ⇒ hidden — the button is gone while the access allows nothing in it. */
   private _actionsMenu(): Control {
     const control = this.runInScope(() => {
-      const el = iconButton('ellipsis-v', () => {}, {tooltip: 'More actions'});
+      const open = () => actionsMenu(this.menuActions(), {access: this.listSource.access.peek()}).show({anchor: el});
+      const el = buttonWithIcon('Actions', 'chevron-down', open, {iconRight: true});
       el.dataset.u2 = 'actions-menu';
-      el.title = 'More actions';
-      el.addEventListener('click', () =>
-        actionsMenu(this.menuActions(), {access: this.listSource.access.peek()}).show({anchor: el}));
       return new Control(el);
     });
-    control.effect(() => control.root.hidden =
-      allowedActions(this.menuActions(), {access: this.listSource.access.value}).length === 0);
+    control.effect(() => {
+      this._page.value;
+      this._entitySource.value?.currentRow.value;
+      control.root.hidden = allowedActions(this.menuActions(), {access: this.listSource.access.value}).length === 0;
+    });
     return control;
+  }
+
+  /** The entity page's row, as the Actions menu acts on it: the table's row actions, and Delete —
+   * staged like a list row's, the page going back to the list once the save has taken the row. */
+  private _rowActions(): Action[] {
+    const source = this._page.peek() === 'entity' ? this._entitySource.peek() : null;
+    const row = source?.currentRow.peek() ?? null;
+    if (source === null || row === null || Rows.isDraft(row))
+      return [];
+    return allowedActions([...this.table.actions.for(row), {name: 'Delete', icon: 'trash-alt', requires: 'delete',
+      shortcut: 'Del', destructive: true, run: () => {
+        this._deleting = source;
+        source.edit.peek()?.markDeleted(row.id);
+      }}], {access: source.access.peek(), row});
   }
 
   /** Trash mode is one flip of the list source's `deleted` mode: the search box, the filters and

@@ -19,8 +19,11 @@ export interface Action {
   shortcut?: string;
   /** Grey text after the name in a menu — what the action runs over ("3 issues"). */
   detail?: string;
-  /** Throws something away: listed last, after a separator in menus, and red on hover. */
+  /** Throws something away: listed last in its section, after a separator in menus, and red on
+   * hover. */
   destructive?: boolean;
+  /** Starts a new section of a menu: a separator above it. */
+  separator?: boolean;
   run: () => void;
 }
 
@@ -37,17 +40,38 @@ export interface ActionsOptions {
 export function allowedActions(actions: Action[], options?: ActionsOptions): Action[] {
   const table = options?.access ?? Access.full;
   const access = options?.row === undefined ? table : table.row(options.row);
-  return actions.filter((action) => action.requires === undefined || access.can(action.requires));
+  const out: Action[] = [];
+  // a section whose head is denied still starts where its first allowed action does
+  let separator = false;
+  for (const action of actions) {
+    if (action.requires !== undefined && !access.can(action.requires)) {
+      separator ||= action.separator === true;
+      continue;
+    }
+    out.push(separator && !action.separator ? {...action, separator: true} : action);
+    separator = false;
+  }
+  return out;
 }
 
-/** The destructive actions after the rest, each part in its own order. */
+/** The destructive actions after the rest of their section, each part in its own order. */
 function ordered(actions: Action[]): Action[] {
-  return [...actions.filter((a) => !a.destructive), ...actions.filter((a) => a.destructive)];
+  const sections: Action[][] = [];
+  for (const action of actions) {
+    if (sections.length === 0 || action.separator)
+      sections.push([]);
+    sections[sections.length - 1].push(action);
+  }
+  return sections.flatMap((section) => {
+    const sorted = [...section.filter((a) => !a.destructive), ...section.filter((a) => a.destructive)];
+    return sorted.map((a, i) => i === 0 && section[0].separator && !a.separator ? {...a, separator: true} : a);
+  });
 }
 
 function addItems(menu: Menu, actions: Action[]): void {
   for (const [i, action] of actions.entries()) {
-    if (action.destructive && i > 0 && !actions[i - 1].destructive)
+    const previous = actions[i - 1];
+    if (previous !== undefined && (action.separator || action.destructive && !previous.destructive))
       menu.separator();
     menu.item(action.name, action.run,
       {icon: action.icon, enabled: action.enabled, shortcut: action.shortcut, detail: action.detail});

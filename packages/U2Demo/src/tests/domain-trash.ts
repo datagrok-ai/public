@@ -58,9 +58,10 @@ category('U2: domain trash', () => {
     await items().deleteWhere(query);
   });
 
-  test('a deleted row leaves the list; the ⋯ menu offers Trash', async () => {
+  test('a deleted row leaves the list; the Actions menu offers the deleted rows', async () => {
     expect(names(), 'Alpha,Beta');
-    expect(app.menuActions().map((a) => a.name).join(), 'Import…,Bulk edit…,Trash');
+    expect(app.menuActions().map((a) => a.name.replace(/^Show deleted .*/, 'Show deleted')).join(),
+      'Import…,Bulk edit…,Show deleted');
     const row = app.listSource.rows.byKey(goneId)!;
     const del = app.list.actionsFor(row).find((a) => a.name === 'Delete')!;
     expect(del !== undefined, true, 'Delete is the row action on a live row');
@@ -85,7 +86,7 @@ category('U2: domain trash', () => {
     expect(app.list.actionsFor(row).map((a) => a.name).join(), 'Restore');
     expect(app.list.root.querySelector(`[data-u2-row="${goneId}"]`)!
       .classList.contains('u2-domain-list-deleted'), true);
-    expect(app.menuActions().map((a) => a.name).join(), 'Exit trash');
+    expect(app.menuActions().map((a) => a.name.replace(/^Back to .*/, 'Back to')).join(), 'Back to');
   });
 
   const restore = (): void => {

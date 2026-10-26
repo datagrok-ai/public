@@ -111,8 +111,9 @@ category('U2: domain bulk', () => {
     await items().deleteWhere(query);
   });
 
-  test('the ⋯ menu offers Import…, Bulk edit… and Trash', async () => {
-    expect(app.menuActions().map((a) => a.name).join(), 'Import…,Bulk edit…,Trash');
+  test('the Actions menu offers Import…, Bulk edit… and the deleted rows', async () => {
+    expect(app.menuActions().map((a) => a.name.replace(/^Show deleted .*/, 'Show deleted')).join(),
+      'Import…,Bulk edit…,Show deleted');
   });
 
   test('the field picker decides what is written; the button says why it is off, never a balloon', async () => {
