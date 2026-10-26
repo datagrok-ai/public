@@ -8,7 +8,7 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, signal, computed, batch, untracked, ReadonlySignal, Signal, button, div, divH, divV, span, link,
-  icon, Filters, allowedActions, actionsMenu, iconButton, buttonWithIcon, ButtonGroup, Breadcrumbs, Rows}
+  icon, Filters, allowedActions, actionsMenu, iconButton, buttonWithIcon, ButtonGroup, Breadcrumbs, Rows, Menu}
   from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
@@ -333,8 +333,15 @@ export class DomainApp extends Control {
       }
       const q = this.listSource.query.value;
       const search = this.listSource.search.value;
-      const path = this._withTrash(Filters.queryPath(this.base, typeof q === 'string' ? q : Filters.format(q)));
-      return search === '' ? path : `${path}${path.includes('?') ? '&' : '?'}search=${encodeURIComponent(search)}`;
+      const sort = this.listSource.sort.value;
+      let path = this._withTrash(Filters.queryPath(this.base, typeof q === 'string' ? q : Filters.format(q)));
+      if (search !== '')
+        path = `${path}${path.includes('?') ? '&' : '?'}search=${encodeURIComponent(search)}`;
+      // the order the user picked; the app's own and the trash's are the page's defaults (the trash's
+      // is read here too, as the mode flips a moment before the order it gives back)
+      if (!this.trash.value && sort !== TRASH_SORT && sort !== (this._options.sort ?? ''))
+        path = `${path}${path.includes('?') ? '&' : '?'}sort=${encodeURIComponent(sort)}`;
+      return path;
     });
     this._sync = new ViewSync({
       path: this.path,
@@ -485,10 +492,13 @@ export class DomainApp extends Control {
     reload.root.dataset.u2 = 'refresh-button';
     reload.effect(() => reload.root.hidden = !this.stale.value);
     const search = domains.search(this.listSource);
-    for (const control of [add, save, discard, more, reload, search])
+    const sort = this._sortMenu();
+    for (const control of [add, save, discard, more, reload, search, sort])
       this.own(() => control.dispose());
     this._listOnly(search);
-    return this._ribbon = {main: [add, save, discard, more, reload], tools: [search], presets: []};
+    // the trash keeps its own newest-deleted order
+    this._listOnly(sort, () => this.trash.value);
+    return this._ribbon = {main: [add, save, discard, more, reload], tools: [search, sort], presets: []};
   }
 
   /** The ribbon as `appView` takes it — `[main, tools, presets]`, empty slots dropped.
@@ -738,6 +748,34 @@ export class DomainApp extends Control {
     return control;
   }
 
+  /** The list's order, chosen by the user: a column and a direction, written to the source's
+   * sort (the server orders the pages) and carried in the path as `?sort=`. Through the gate, as a
+   * reload drops what is pending. */
+  private _sortMenu(): Control {
+    const source = this.listSource;
+    const write = (sort: string) => void confirmDiscard(this.session, {action: 'change the order'})
+      .then((ok) => ok && (source.sort.value = sort));
+    const control = this.runInScope(() => {
+      const el = iconButton('sort-amount-down', () => {
+        const current = source.sort.peek().split(',')[0] ?? '';
+        const desc = current.startsWith('!');
+        const column = desc ? current.slice(1) : current;
+        const menu = new Menu();
+        for (const prop of source.schema.properties.filter((p) => p.ref === undefined && p.name !== 'id')) {
+          menu.item(prop.friendlyName ?? prop.caption ?? prop.name, () => write(`${desc ? '!' : ''}${prop.name}`),
+            {check: prop.name === column});
+        }
+        menu.separator();
+        menu.item('Ascending', () => write(column), {check: column !== '' && !desc, enabled: column !== ''});
+        menu.item('Descending', () => write(`!${column}`), {check: desc, enabled: column !== ''});
+        menu.show({anchor: el});
+      }, {tooltip: 'Sort by'});
+      el.dataset.u2 = 'sort-menu';
+      return new Control(el);
+    });
+    return control;
+  }
+
   /** The entity page's row, as the Actions menu acts on it: the table's row actions, and Delete —
    * staged like a list row's, the page going back to the list once the save has taken the row. */
   private _rowActions(): Action[] {
@@ -776,15 +814,17 @@ export class DomainApp extends Control {
     return this.trash.value ? `${path}${path.includes('?') ? '&' : '?'}trash=1` : path;
   }
 
-  /** Shown on the list page only — and with them the ribbon panel they sit in, whose divider would
-   * otherwise stay behind with nothing after it. */
+  /** Shown on the list page only — and the ribbon panel it sits in goes once nothing in it shows,
+   * or its divider would stay behind with nothing after it. */
   private _listOnly(control: Control, folded: () => boolean = () => false): void {
     this.effect(() => {
       const shown = this._page.value === 'list' && !folded();
       control.root.hidden = !shown;
       const panel = control.root.closest<HTMLElement>('.d4-ribbon-panel');
-      if (panel !== null && Array.from(panel.children).every((item) => item.contains(control.root)))
-        panel.style.display = shown ? '' : 'none';
+      if (panel !== null) {
+        panel.style.display = Array.from(panel.children)
+          .every((item) => (item.children[0] as HTMLElement | undefined)?.hidden ?? true) ? 'none' : '';
+      }
     });
   }
 
@@ -892,16 +932,19 @@ export class DomainApp extends Control {
       return false;
     const q = params.get('q') ?? '';
     const search = params.get('search') ?? '';
+    const trash = this._mode.peek() === 'trash';
+    const sort = trash ? this.listSource.sort.peek() : params.get('sort') ?? this._options.sort ?? '';
     const current = this.listSource.query.peek();
     // already on the list, the gate `goTo` skipped: the query is changing under pending changes
     if ((typeof current === 'string' ? current : Filters.format(current)) === q &&
-        this.listSource.search.peek() === search)
+        this.listSource.search.peek() === search && this.listSource.sort.peek() === sort)
       return true;
     if (!await confirmDiscard(this.session, {action: 'change the filter'}))
       return false;
     batch(() => {
       this.listSource.query.value = q;
       this.listSource.search.value = search;
+      this.listSource.sort.value = sort;
     });
     return true;
   }

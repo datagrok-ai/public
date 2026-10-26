@@ -214,7 +214,7 @@ scoped('New: the entity page over a pristine draft; once saved the page is the r
   assert.equal(ribbon.length, 2, 'the empty presets slot is not a group');
   // only the search box rides the ribbon: the shell's is one fixed 32px line with `overflow:
   // hidden`, and the query box is a row of the LIST PAGE instead
-  assert.deepEqual(ribbon[1].map((c) => c.root.dataset.u2), ['domain-search']);
+  assert.deepEqual(ribbon[1].map((c) => c.root.dataset.u2), ['domain-search', 'sort-menu']);
   assert.equal(ribbon[1][0].root.hidden, false);
   const listPage = a.root.querySelector('[data-u2-part="list-page"]');
   assert.equal([...listPage.children].find((el) => !el.hidden) === a.filters.root, true,
@@ -1562,10 +1562,12 @@ scoped('the ribbon keeps its slots: New holds its place in the trash, the search
   const {main, tools} = a.ribbon();
   const panel = document.createElement('div');
   panel.className = 'd4-ribbon-panel';
-  const item = document.createElement('div');
-  item.className = 'd4-ribbon-item';
-  item.append(tools[0].root);
-  panel.append(item);
+  for (const tool of tools) {
+    const item = document.createElement('div');
+    item.className = 'd4-ribbon-item';
+    item.append(tool.root);
+    panel.append(item);
+  }
   document.body.append(panel);
   assert.equal(await a.goTo('entity', 'i1'), true);
   await flush();
@@ -1645,5 +1647,34 @@ scoped('menu switches a built-in item off; Discard on an untouched create page g
 scoped('the count keeps its noun while paging: "2 of 3 issues"', async () => {
   const {app: a} = await app({pageSize: 2});
   assert.equal(a.status.value.count, '2 of 3 issues');
+  a.dispose();
+});
+
+scoped('the list order is the user\'s: Sort by writes the source and the path, and a path brings it back', async () => {
+  const {app: a} = await app();
+  const sort = a.ribbon().tools.find((c) => c.root.dataset.u2 === 'sort-menu');
+  document.body.append(sort.root);
+  fire(sort.root, 'click');
+  await flush();
+  const panel = () => [...document.body.querySelectorAll('.u2-menu')].at(-1);
+  const item = (label) => [...panel().querySelectorAll('.u2-menu-item')]
+    .find((e) => e.querySelector('.u2-menu-label').textContent.toLowerCase() === label.toLowerCase());
+  fire(item('Title'), 'click');
+  await flush();
+  assert.equal(a.listSource.sort.value, 'title');
+  assert.equal(a.path.value, `${BASE}?sort=title`);
+  fire(sort.root, 'click');
+  fire(item('Descending'), 'click');
+  await flush();
+  assert.equal(a.listSource.sort.value, '!title');
+  assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), ['Naproxen', 'Ibuprofen', 'Aspirin'],
+    'the server orders the rows');
+  assert.equal(await a.open(`${BASE}?sort=number`), true);
+  assert.equal(a.listSource.sort.value, 'number', 'read back from the address');
+  assert.equal(await a.open(BASE), true);
+  assert.equal(a.listSource.sort.value, '', 'and the default again without it');
+  assert.equal(await a.setTrash(true), true);
+  await flush();
+  assert.equal(sort.root.hidden, true, 'the trash keeps its newest-deleted order');
   a.dispose();
 });
