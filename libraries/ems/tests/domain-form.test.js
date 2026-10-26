@@ -5,13 +5,15 @@
    from tests/dg-stub.mjs. */
 
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, mock} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, signal, Registry, SpecContext, renderSpec, registerAll, notify} from '@datagrok-libraries/u2';
+import {backends, Scope, signal, Registry, SpecContext, renderSpec, registerAll, notify, Tooltip}
+  from '@datagrok-libraries/u2';
 import {registerDomainSources} from '../src/core/registrations.js';
 import {DomainSource} from '../src/core/domain-source.js';
+import {confirmDiscard} from '../src/core/session.js';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {backend} from './domain-fixtures.mjs';
 
@@ -526,24 +528,167 @@ scoped('a pristine draft is not red: verdicts show once a field is edited or lef
   const form = domains.form(draft);
   await flush();
   const title = form.input('title');
+  const shown = (input) => input.root.querySelector('[data-u2-part="error"]').textContent;
   assert.equal(title.validity.value, 'Value can\'t be empty', 'the verdict exists');
-  assert.equal(title.root.classList.contains('u2-input-untouched'), true, 'but is not shown yet');
+  assert.equal(shown(title), '', 'but is not shown yet');
   // DOM doubles are cyclic: compare identity as a boolean, never hand them to assert's inspector
   assert.equal(document.activeElement === title.root.querySelector('input'), true,
     'the draft starts with its first empty required field focused');
   fire(title.root.querySelector('input'), 'focusout');
-  assert.equal(title.root.classList.contains('u2-input-untouched'), false, 'leaving the field shows it');
+  assert.equal(shown(title), '', 'focused by the form and left, the user was never in it');
+  fire(title.root.querySelector('input'), 'keydown', {key: 'Tab'});
+  fire(title.root.querySelector('input'), 'focusout');
+  assert.equal(shown(title), 'Value can\'t be empty', 'leaving the field shows it');
   const number = form.input('number');
-  assert.equal(number.root.classList.contains('u2-input-untouched'), true);
   number.value.value = 3;
   await flush();
-  assert.equal(number.root.classList.contains('u2-input-untouched'), false, 'editing the field shows it');
+  assert.equal(number.touched.value, false, 'a write from code — the form re-reading its row — is no touch');
+  const editor = number.root.querySelector('input');
+  editor.value = '4';
+  fire(editor, 'input');
+  await flush();
+  assert.equal(number.touched.value, true, 'editing the field shows its verdict');
   const due = form.input('due');
-  assert.equal(due.root.classList.contains('u2-input-untouched'), true);
+  assert.equal(due.touched.value, false);
   assert.equal(form.validate(), false);
-  assert.equal(due.root.classList.contains('u2-input-untouched'), false, 'validate() shows every verdict');
+  assert.equal(due.touched.value, true, 'validate() shows every verdict');
   form.dispose();
   draft.dispose();
+});
+
+scoped('a draft: touching one required field shows only its verdict, and Save is off saying why', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const src = table.draft({project_id: 'p1'});
+  await flush();
+  const form = domains.form(src);
+  const save = domains.saveButton(src);
+  document.body.append(save.root);
+  await flush();
+  const title = form.input('title');
+  const shown = (input) => input.root.querySelector('[data-u2-part="error"]').textContent;
+  const editor = title.root.querySelector('input');
+  editor.value = 'x';
+  fire(editor, 'input');
+  editor.value = '';
+  fire(editor, 'input');
+  fire(editor, 'keydown', {key: 'Tab'});
+  fire(editor, 'focusout');
+  await flush();
+  assert.equal(shown(title), 'Value can\'t be empty');
+  const others = form.form.inputs.filter((input) => input !== title && input.validity.peek() !== null);
+  assert.deepEqual(others.map(shown).filter((text) => text !== ''), [], 'no field the user did not touch speaks');
+  assert.equal(save.button.getAttribute('aria-disabled'), 'true', 'Save is off on an invalid form');
+  assert.equal(src.session.validity.value, 'Title is required', 'and its tooltip says why');
+  editor.value = 'Aspirin';
+  fire(editor, 'input');
+  await flush();
+  assert.equal(save.button.hasAttribute('aria-disabled'), false, 'a valid dirty form saves');
+  save.dispose();
+  form.dispose();
+  src.dispose();
+});
+
+scoped('only a valid edit reaches the row; an invalid one is still an unsaved change: the gates ask, Discard drops it', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = domains.form(src);
+  const discard = domains.discardButton(src);
+  await flush();
+  const row = src.rows.byKey('i1');
+  const title = form.input('title').root.querySelector('input');
+  title.value = '';
+  fire(title, 'input');
+  await flush();
+  assert.equal(row.title, 'Aspirin', 'an empty required title is not written');
+  assert.equal(src.isDirty.value, true, 'but it is the user\'s unsaved change');
+  assert.equal(src.summary.value, '1 unsaved change');
+  assert.equal(discard.button.hasAttribute('aria-disabled'), false, 'Discard can drop it');
+  assert.equal(src.session.validity.value, 'Title is required', 'and Save says why it is off');
+  let answered;
+  const gate = confirmDiscard(src.session, {action: 'leave this page'}).then((ok) => answered = ok);
+  await flush();
+  assert.equal(document.querySelector('[data-u2-name="unsaved-changes"]') !== null, true, 'leaving asks first');
+  [...document.querySelectorAll('[data-u2-name="unsaved-changes"] button')].find((b) => b.textContent === 'CANCEL').click();
+  await gate;
+  assert.equal(answered, false, 'and a cancel keeps the edit');
+  assert.equal(form.input('title').value.value, '');
+  const weight = form.input('weight').root.querySelector('input');
+  weight.value = '2.5';
+  fire(weight, 'input');
+  await flush();
+  assert.equal(row.weight, 2.5, 'a valid edit is');
+  assert.equal(form.input('title').value.value, '', 'the row\'s write-back keeps the invalid edit in its field');
+  src.discard();
+  await flush();
+  assert.equal(form.input('title').value.value, 'Aspirin', 'Discard drops it');
+  assert.equal(form.input('title').touched.value, false);
+  assert.equal(row.weight, 1.5);
+  assert.equal(src.isDirty.value, false, 'nothing is left pending');
+  discard.dispose();
+  form.dispose();
+  src.dispose();
+});
+
+scoped('the unsaved-changes prompt holds SAVE off while the save would be refused, saying why, live', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = domains.form(src);
+  await flush();
+  const title = form.input('title').root.querySelector('input');
+  const type = async (text) => {
+    title.value = text;
+    fire(title, 'input');
+    await flush();
+  };
+  await type('');
+  let answered;
+  const gate = confirmDiscard(src.session, {action: 'leave this page'}).then((ok) => answered = ok);
+  await flush();
+  const button = (text) => [...document.querySelectorAll('[data-u2-name="unsaved-changes"] button')]
+    .find((b) => b.textContent === text);
+  const save = button('SAVE');
+  assert.equal(save.getAttribute('aria-disabled'), 'true');
+  assert.equal(save.getAttribute('aria-description'), 'Title is required', 'the reason Save carries');
+  assert.equal(button('DISCARD').hasAttribute('aria-disabled'), false);
+  assert.equal(button('CANCEL').hasAttribute('aria-disabled'), false);
+  save.click();
+  await flush();
+  assert.equal(answered, undefined, 'a press on it does nothing');
+  assert.equal(document.querySelector('.u2-notify-error'), null, 'and raises no refusal');
+  await type('Aspirin 2');
+  assert.equal(save.hasAttribute('aria-disabled'), false, 'a fix made under the prompt turns it on');
+  assert.equal(save.hasAttribute('aria-description'), false);
+  await type('');
+  assert.equal(save.getAttribute('aria-disabled'), 'true');
+  button('DISCARD').click();
+  await gate;
+  assert.equal(answered, true);
+  assert.equal(form.input('title').value.value, 'Aspirin', 'DISCARD drops the edit');
+  assert.equal(src.isDirty.value, false);
+  form.dispose();
+  src.dispose();
+});
+
+scoped('the writer\'s verdict on the row\'s value never blocks a new value from being written', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = domains.form(src);
+  await flush();
+  const row = src.rows.byKey('i1');
+  row.number = 0;
+  form.refresh();
+  await flush();
+  assert.match(form.input('number').validity.value ?? '', /at least 1/, 'the row holds what the writer refuses');
+  const number = form.input('number').root.querySelector('input');
+  number.value = '5';
+  fire(number, 'input');
+  await flush();
+  assert.equal(form.input('number').validity.value, null);
+  assert.equal(row.number, 5, 'the fix is written');
+  src.discard();
+  form.dispose();
+  src.dispose();
 });
 
 scoped('an edited field carries the amber edge until the change is saved or discarded', async () => {
@@ -635,8 +780,20 @@ scoped('Save carries its shortcut as the tooltip and is the session\'s primary b
     const discard = domains.discardButton(src);
     document.body.append(form.root, save.root, discard.root);
     await flush();
-    assert.equal(save.button.title, 'Save (Ctrl+S)');
-    assert.equal(discard.button.title, 'Discard changes');
+    // the hover delay run on fake timers
+    const tooltip = (el) => {
+      mock.timers.enable({apis: ['setTimeout']});
+      try {
+        fire(el, 'pointerenter');
+        mock.timers.tick(300);
+        return Tooltip.root.textContent;
+      } finally {
+        fire(el, 'pointerleave');
+        mock.timers.reset();
+      }
+    };
+    assert.equal(await tooltip(save.button), 'Save (Ctrl+S)');
+    assert.equal(await tooltip(discard.button), 'Discard changes');
     assert.equal(src.session.primaryButton, save.button);
     const last = form.form.inputs.at(-1);
     const editor = last.root.querySelector('.u2-input-editor');
@@ -656,6 +813,14 @@ scoped('Save carries its shortcut as the tooltip and is the session\'s primary b
     const first = form.form.inputs[0].root.querySelector('.u2-input-editor');
     prevented = !fire(first, 'keydown', {key: 'Tab', cancelable: true});
     assert.equal(prevented, false, 'only the last field hands over');
+    form.input('title').value.value = '';
+    await flush();
+    assert.equal(save.button.getAttribute('aria-disabled'), 'true', 'an invalid form holds Save off');
+    assert.equal(await tooltip(save.button), 'Title is required', 'saying why');
+    focusable.focus();
+    prevented = !fire(focusable, 'keydown', {key: 'Tab', cancelable: true});
+    assert.equal(prevented, true);
+    assert.equal(document.activeElement, save.button, 'Tab still reaches it, so the keyboard reads the reason');
     save.dispose();
     assert.equal(src.session.primaryButton, undefined, 'released with the button');
     discard.dispose();
@@ -693,12 +858,17 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   draft.currentRow.value.number = 2;
   await flush();
   assert.equal(form.problem.value, 'Title is required');
+  assert.equal(save.button.getAttribute('aria-disabled'), 'true', 'Save is off, its tooltip saying why');
   fire(save.button, 'click');
+  await flush();
+  assert.equal(draft.summary.value === 'Cannot save: Title is required', false, 'and a press on it does nothing');
+  fire(form.root, 'keydown', {key: 's', ctrlKey: true});
   await flush();
   await flush();
   assert.match(document.body.querySelector('.u2-notify-error')?.textContent ?? '', /Cannot save: Title is required/);
   assert.equal(draft.summary.value, 'Cannot save: Title is required', 'the guard\'s refusal is the source\'s error');
-  assert.equal(form.input('title').root.classList.contains('u2-input-untouched'), false, 'the verdict is shown');
+  assert.equal(form.input('title').root.querySelector('[data-u2-part="error"]').textContent, 'Value can\'t be empty',
+    'the verdict is shown');
   assert.equal(emsBackends.domain.tableSync('grit.issue').rows.length, 3, 'nothing was written');
   form.input('title').value.value = 'Titled';
   await flush();

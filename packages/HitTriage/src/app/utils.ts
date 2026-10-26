@@ -177,7 +177,7 @@ export async function loadCampaigns<T extends AppName>(
       }
       campaignNamesMap[campaignJson.name] = campaignJson;
     } catch (e) {
-      console.error(e);
+      console.warn(`Skipped campaign ${appName}/${folder.name}:`, e);
     }
     return null;
   });
@@ -189,7 +189,8 @@ async function checkPermissions(authorId: string, groupIdList: string[]): Promis
   try {
     const userId = DG.User.current().id;
     const userGroupId = DG.User.current().group?.id;
-    if (authorId === userId)
+    // the server does not list the members of All users, so the loop below would never find the user there
+    if (authorId === userId || groupIdList.includes(DG.Group.defaultGroupsIds['All users']))
       return true;
     for (const groupId of groupIdList) {
       const group = await grok.dapi.groups.find(groupId);

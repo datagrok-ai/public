@@ -91,15 +91,17 @@ right. Each rule names the API that makes it easy.
   `onChanged`; `reset` also clears the touched state and any unreadable text. `Input.system()` is
   the input's own pruning, and it is *not* silent.
 - **Two verdicts.** `validity` judges the value from the start (what Save goes by — disable it and
-  say why in its tooltip); `error` is what the input shows, a required field only once touched
-  (what a tab marker or a status line goes by). A `Form` has both.
+  say why in its tooltip); `error` is what the input shows, only once it was edited, left or
+  validated (what a tab marker or a status line goes by). A `Form` has both.
 - **Tabs mark themselves.** Give a tab a `validity` signal, or make its content a `Form`. Before
   reaching for tabs in a narrow panel, consider showing what matters and folding the rest into a
   `Section` with a `hint` (what it holds), a `validity` (an error is never hidden by the fold) and a
   `persistKey` (the user's open or close is remembered).
 - **Say why something is disabled.** `button(text, fn, {disabled: reason})` and
   `dialog.okDisabled(reason)` take the reason (a string or a signal of one) and show it as the
-  tooltip; a dialog's OK also names the form's first failing field.
+  tooltip; a dialog's OK also names the form's first failing field. A disabled u2 button is
+  `aria-disabled` and keeps its tab stop, so keyboard focus shows the reason too; a press on it does
+  nothing.
 - **One label column across forms.** Forms that must line up — the tabs of one editor, a header
   over a body — share a `LabelColumn`; `labelWidth` fixes a column (one-letter captions).
 - **Widths are options, not CSS.** `fill: true` stretches an editor across its row; `width`

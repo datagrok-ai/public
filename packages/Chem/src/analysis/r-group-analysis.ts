@@ -18,6 +18,7 @@ import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
+import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {Subscription} from 'rxjs';
 
 const R_GROUP_PARAMS_STORAGE_NAME = 'r-group-params';
@@ -243,7 +244,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     }
     return prefixIdx;
   };
-  const rGroupPrefixRe = `${params.rGroupName}\\d+`;
+  const rGroupPrefixRe = `${StringUtils.escapeRegExp(params.rGroupName)}\\d+`;
   const corePrefixRe = `Core`;
   const rGroupPrefixIdx = getPrefixIdx(rGroupPrefixRe);
   const corePrefixIdx = getPrefixIdx(corePrefixRe);

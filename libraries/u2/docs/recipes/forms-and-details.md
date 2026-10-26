@@ -4,7 +4,7 @@
 
 | Situation | Use |
 |---|---|
-| Editing an object that has Property metadata (`DG.Property`, viewer props, domain rows) | `propertyForm(props, target)` / `objectForm(source)` (u2/dg) — editors, validation and write-through are generated |
+| Editing an object that has Property metadata (`DG.Property`, viewer props, domain rows) | `propertyForm(props, target)` / `objectForm(source)` (u2/dg) — editors, validation and writing valid values through are generated |
 | A hand-assembled set of inputs | `Form` — shared label column, aggregated validity, Enter navigation |
 | Descriptor-driven settings panel (many small typed values) | `PropertyGrid` |
 | Read-only details of a selected item | `tableFromMap` — muted keys, wrapping values |
@@ -15,9 +15,10 @@
   right after the label column — never centered, never pushed to mid-pane.
 - Long read-only values **wrap** (`tableFromMap` does this by default); inputs ellipsize.
 - Required comes from the model (`nullable: false`) or the input's `required` option, not from a
-  hand-added asterisk; an empty required input shows its error once edited, left or validated,
-  and `form.validate()` shows every error and focuses the first offender. Hidden and disabled
-  inputs never fail the form.
+  hand-added asterisk; an input shows its error — a required one left empty, a validator's — once
+  edited, left or validated, and `form.validate()` shows every error and focuses the first offender.
+  Save and OK go by the verdict from the start: disabled, the reason in their tooltip. Hidden and
+  disabled inputs never fail the form.
 - Every input takes the same contract options: `readOnly` (selectable, not editable), `required`,
   `visible`, `enabled` — each a value or a signal, followed live — plus `focus()`, `fill` and
   `onEnter` / `onEscape` handlers that keep the key from the form and the dialog.

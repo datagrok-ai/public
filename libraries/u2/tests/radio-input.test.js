@@ -113,6 +113,7 @@ smoke('validators come from the input base; dispose kills the listeners', async 
   const input = mount(new RadioInput({label: 'Stage', items: STAGES}));
   input.addValidator((v) => v === null ? 'Pick a stage' : null);
   assert.equal(input.validity.value, 'Pick a stage');
+  input.touch();
   assert.equal(input.root.querySelector('.u2-input-error').textContent, 'Pick a stage');
 
   pick(input, 'Discovery');

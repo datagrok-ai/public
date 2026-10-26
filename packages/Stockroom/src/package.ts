@@ -93,21 +93,14 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
     return node === null ? source.summary.value :
       `${source.summary.value} in ${locations.renderer.caption(node)}, including sublocations`;
   });
-  const addButton = button('New container', () => {
+  const add = Control.build(() => button('New container', () => {
     const node = tree.selected.value;
     if (node !== null) {
       newContainerAt(containers, node.id, {site: typeof node.site === 'string' ? node.site : undefined,
         caption: locations.renderer.caption(node)});
     }
-  });
-  const add = new Control(addButton);
+  }, {disabled: computed(() => tree.selected.value === null ? 'Select a location first' : null)}));
   add.root.dataset.u2 = 'new-container-button';
-  add.effect(() => {
-    const none = tree.selected.value === null;
-    addButton.disabled = none;
-    // a disabled button takes no pointer events, so the hover that shows the hint lands on the host
-    add.root.title = addButton.title = none ? 'Select a location first' : '';
-  });
   const section = (title: string, content: Control): Section => new Section({title, collapsible: false})
     .add(content);
   const panes = new Splitter([section('Locations', tree), section('Containers', table)],

@@ -258,8 +258,8 @@ export class SharedSession implements DomainSession {
 
 /** THE gate in front of whatever would drop pending changes — a navigation, a filter change, a
  * view close: resolves to whether the caller may proceed. Clean → true without a dialog; a save
- * in flight → a warning and false; else the user saves (false when the save is refused),
- * discards, or cancels. */
+ * in flight → a warning and false; else the user saves (false when the save is refused; SAVE is
+ * off while the session's validity says why), discards, or cancels. */
 export function confirmDiscard(session: DomainSession, options: {action?: string, subject?: string} = {}):
   Promise<boolean> {
   // saving first: a batch in flight is clean for a while before its write-back lands, and the
@@ -292,7 +292,7 @@ export function confirmDiscard(session: DomainSession, options: {action?: string
       resolve(answer);
     };
     dialog.add(text)
-      .addButton('SAVE', () => decide(session.save()), {primary: true})
+      .addButton('SAVE', () => decide(session.save()), {primary: true, disabled: session.validity})
       .addButton('DISCARD', () => {
         session.discard();
         decide(true);

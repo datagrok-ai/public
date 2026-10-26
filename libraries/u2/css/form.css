@@ -343,12 +343,12 @@
 
 /* a raised button in a form is the platform's form button, blue-2 and 12px in
    (grok.css .ui-form .ui-btn.ui-btn-raised) — in the form's button row too, wherever addButtons placed it */
-.u2-form .u2-btn-primary:not(:disabled),
-.u2-form .u2-btn-primary:hover:not(:disabled),
-.u2-form .u2-btn-primary:active:not(:disabled),
-.u2-form-buttons .u2-btn-primary:not(:disabled),
-.u2-form-buttons .u2-btn-primary:hover:not(:disabled),
-.u2-form-buttons .u2-btn-primary:active:not(:disabled) {
+.u2-form .u2-btn-primary:not(:disabled, [aria-disabled='true']),
+.u2-form .u2-btn-primary:hover:not(:disabled, [aria-disabled='true']),
+.u2-form .u2-btn-primary:active:not(:disabled, [aria-disabled='true']),
+.u2-form-buttons .u2-btn-primary:not(:disabled, [aria-disabled='true']),
+.u2-form-buttons .u2-btn-primary:hover:not(:disabled, [aria-disabled='true']),
+.u2-form-buttons .u2-btn-primary:active:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-blue-2);
 }
 

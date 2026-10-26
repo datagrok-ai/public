@@ -412,6 +412,9 @@ export class DomainApp extends Control {
     add.effect(() => add.root.hidden = !this.listSource.access.value.can('insert'));
     const save = domains.saveButton(this.session);
     const discard = domains.discardButton(this.session);
+    // nothing on a read-only page is saved — the trash until a restore is staged
+    save.effect(() => save.root.hidden = discard.root.hidden = !this.session.isDirty.value &&
+      ((this._page.value === 'entity' ? this._entitySource.value : this.listSource)?.readOnly.value ?? false));
     const more = this._actionsMenu();
     // the status bar is text: the way to act on "Data changed" is here, and only while it stands
     const reload = new Control(button('Refresh', () => void this.refresh()));

@@ -241,7 +241,7 @@ export class MapIdentifiersEditor extends DG.FuncCallEditor {
     this.fromSourceInput = ui.input.choice('From Source', {value: funcCall.inputs['fromSource'] ?? SMILES,
       items: UniChemSource.idNamesChoices, nullable: false, onValueChanged: () => this.syncCall()});
     this.toSourceInput = ui.input.choice('To Source',
-      {value: funcCall.inputs['toSource'] ?? UniChemSource.idNamesChoices[0],
+      {value: funcCall.inputs['toSource'] ?? CHEMBL.toLowerCase(),
         items: UniChemSource.idNamesChoices, nullable: false, onValueChanged: () => this.syncCall()});
     root.appendChild(this.tableInput.root);
     root.appendChild(this.fromSourceInput.root);

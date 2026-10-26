@@ -284,8 +284,8 @@
   color: var(--dg-text-color-light);
 }
 
-.u2-fb-remove:hover:not(:disabled),
-.u2-fb-add:hover:not(:disabled) {
+.u2-fb-remove:hover:not(:disabled, [aria-disabled='true']),
+.u2-fb-add:hover:not(:disabled, [aria-disabled='true']) {
   color: var(--dg-text-color);
 }
 
@@ -376,6 +376,6 @@
   border-radius: 999px;
 }
 
-.u2-btn.u2-fb-join:hover:not(:disabled) {
+.u2-btn.u2-fb-join:hover:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-hover);
 }

@@ -2,13 +2,16 @@
    lazy content is built once under the step's own scope. In dialog mode the wizard's own footer
    carries the buttons — the Dialog's button row stays empty — and any close that is not a finish
    reports a cancel, which covers CANCEL, the ✕ and Esc in one place; while a step's commit, an
-   action or the finish runs, none of them closes and the rail does not move: Esc and ✕ abort the
-   run's signal instead. A run that throws or rejects keeps the step and shows the message. */
+   action or the finish runs, none of them closes and the rail does not move: they abort the run's
+   signal instead, and a run that ignores it is abandoned 2 s later — the dialog closes, saying so.
+   A run that throws or rejects keeps the step and shows the message. */
 import {signal, computed, untracked, batch, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
-import {button} from '../../core/elements.js';
+import {button, describeDisabled} from '../../core/elements.js';
+import {Tooltip} from '../../core/tooltip.js';
 import {Dialog} from './dialog.js';
+import {notify} from '../display/notify.js';
 import type {IItemsState} from '../../core/widget-like.js';
 
 /** What a step's commit, an action and the finish get: `signal` aborts when the user presses Esc
@@ -80,6 +83,9 @@ interface Step {
 
 let wizardCount = 0;
 
+/** How long a run that ignores its abort keeps the dialog open. */
+const ABANDON_MS = 2000;
+
 /** Events: `step` (the step id, on every visit), `finish`, `cancel`. */
 export class Wizard extends Control {
   readonly currentStep: ReadonlySignal<string>;
@@ -110,8 +116,10 @@ export class Wizard extends Control {
   private readonly _recheck = signal(0);
   private readonly _busy = signal(false);
   private readonly _error = signal<string | null>(null);
-  /** The run in flight: Esc and ✕ abort it. */
+  /** The run in flight: CANCEL, Esc and ✕ abort it. */
   private _pending: AbortController | undefined;
+  /** Lets go of a run that ignored its abort. */
+  private _abandon: ReturnType<typeof setTimeout> | undefined;
   /** The last step whose commit went through: what it registered stands, so nothing goes back to it. */
   private _committed = -1;
   private readonly _blockReason: ReadonlySignal<string | null>;
@@ -152,6 +160,8 @@ export class Wizard extends Control {
 
     this._back = this._button('BACK', () => this.back());
     this._next = this._button('NEXT', () => this.next(), true);
+    // a disabled NEXT keeps its tab stop: the keyboard reaches it, and its tooltip says why
+    Tooltip.bind(this._next, () => this._blockReason.peek() ?? '', this.scope);
     this._footer.append(left, this._back, this._next);
     this.root.append(this._rail, this._content, this._footer);
 
@@ -172,6 +182,7 @@ export class Wizard extends Control {
     this.effect(() => this._applyStep());
     this.effect(() => this._applyNextText());
     this.effect(() => this._applyGate());
+    this.own(() => clearTimeout(this._abandon));
     this.effect(() => {
       const message = this._error.value;
       this._errorRow.textContent = message ?? '';
@@ -260,7 +271,7 @@ export class Wizard extends Control {
         }));
       this._dialog = dialog;
       this._cancel = this._button('CANCEL', () => {
-        if (!this._busy.peek())
+        if (this._guard())
           dialog.close();
       });
       this._footer.insertBefore(this._cancel, this._back);
@@ -351,6 +362,8 @@ export class Wizard extends Control {
       if (this._pending !== abort || this.scope.isDisposed)
         return;
       this._pending = undefined;
+      clearTimeout(this._abandon);
+      this._abandon = undefined;
       batch(() => {
         this._busy.value = false;
         fn();
@@ -371,9 +384,23 @@ export class Wizard extends Control {
       this._error.value = e instanceof Error ? e.message : String(e);
   }
 
-  /** The dialog's veto: nothing closes while a run is in flight — the Esc or ✕ aborts its signal. */
+  /** The dialog's veto: nothing closes while a run is in flight — CANCEL, Esc or ✕ aborts its signal,
+   * and a run still not settled {@link ABANDON_MS} after that is let go: the dialog closes, saying so. */
   private _guard(): boolean {
-    this._pending?.abort();
+    const run = this._pending;
+    if (run !== undefined) {
+      run.abort();
+      this._abandon ??= setTimeout(() => {
+        this._abandon = undefined;
+        if (this._pending !== run || this.scope.isDisposed)
+          return;
+        this._pending = undefined;
+        this._busy.value = false;
+        notify.warning(`${this._steps[this._index.peek()].options.title}: the step did not stop when cancelled ` +
+          'and was abandoned');
+        this._dialog?.close();
+      }, ABANDON_MS);
+    }
     return !this._busy.peek();
   }
 
@@ -439,9 +466,8 @@ export class Wizard extends Control {
     const busy = this._busy.value;
     const current = this._steps[this._index.value];
     this._next.disabled = reason !== null;
+    describeDisabled(this._next, reason);
     this._back.disabled = busy;
-    if (this._cancel !== undefined)
-      this._cancel.disabled = busy;
     this.root.classList.toggle('u2-wizard-busy', busy);
     this.root.setAttribute('aria-busy', String(busy));
     current.actions.forEach((b, i) => b.disabled = busy || current.options.actions![i].enabled?.value === false);

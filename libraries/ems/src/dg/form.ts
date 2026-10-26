@@ -12,7 +12,8 @@ import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Row
   timestamp, EMPTY, isEmpty, text, loader} from '@datagrok-libraries/u2';
 import type {Input, InputOptions, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
-import {propertyForm, ObjectForm, Editors, userInput, entityInput} from '@datagrok-libraries/u2/src/dg/index.js';
+import {propertyForm, ObjectForm, Editors, userInput, entityInput, kindOf}
+  from '@datagrok-libraries/u2/src/dg/index.js';
 import type {ObjectFormOptions} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainSource} from '../core/domain-source.js';
 import {DomainTable} from './facade.js';
@@ -46,7 +47,6 @@ export interface DomainFormOptions extends Pick<ObjectFormOptions,
   system?: 'hidden' | 'footer';
 }
 
-const UNTOUCHED = 'u2-input-untouched';
 const CHANGED = 'u2-input-changed';
 const REQUIRED = 'u2-input-required';
 
@@ -120,12 +120,14 @@ export class DomainForm extends Control {
       this._verdict.hidden = lines.length === 0;
     });
     // the keyboard path to Save: the ribbon is the shell's, outside the form's tab order — Ctrl+S
-    // saves, and Tab past the last field lands on the session's Save button
+    // saves, and Tab past the last field lands on the session's Save button while there is something
+    // to save, a Save the form holds off too: its tooltip says why
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Tab' && !e.shiftKey) {
         const target = source.session.primaryButton as HTMLButtonElement | undefined;
         const last = this._form.peek()?.inputs.at(-1);
-        if (target !== undefined && !target.disabled && last !== undefined && last.root.contains(e.target as Node)) {
+        if (target !== undefined && source.session.isDirty.peek() && !source.session.isSaving.peek() &&
+            last !== undefined && last.root.contains(e.target as Node)) {
           e.preventDefault();
           target.focus();
         }
@@ -146,7 +148,10 @@ export class DomainForm extends Control {
       if (problem !== null)
         this.validate();
       return problem;
-    });
+    }, this.problem);
+    // an invalid edit the form never writes is still the user's unsaved change: the gates ask before
+    // dropping it, and Discard drops it
+    const unhold = source.holdUnwritten(computed(() => this._form.value?.unwritten.value ?? 0));
     // a refusal raised elsewhere (the table's validators run before this guard) shows every verdict too
     this.effect(() => {
       const code = DomainErrors.codeOf(source.error.value);
@@ -156,7 +161,11 @@ export class DomainForm extends Control {
         untracked(() => this.validate());
     });
     this._subs = [source.session.onSaved.subscribe(() => this.focus()),
-      source.session.onDiscarded.subscribe(() => this.focus())];
+      source.session.onDiscarded.subscribe(() => {
+        // an invalid edit never reached the row, so the revert left it standing: it goes too
+        this._form.peek()?.reset();
+        this.focus();
+      })];
     let seen = source.activate.peek();
     this.effect(() => {
       const bumped = source.activate.value;
@@ -167,6 +176,7 @@ export class DomainForm extends Control {
     });
     this.own(() => {
       unguard();
+      unhold();
       for (const s of this._subs)
         s.unsubscribe();
       this._shown?.dispose();
@@ -200,8 +210,6 @@ export class DomainForm extends Control {
     const form = this._form.peek();
     if (form === null)
       return false;
-    for (const input of form.inputs)
-      input.root.classList.remove(UNTOUCHED);
     this._checkConstraints();
     return form.validate();
   }
@@ -297,7 +305,6 @@ export class DomainForm extends Control {
     const source = this.source;
     const options = this._options;
     const table = DomainTable.of(source);
-    const draft = Rows.isDraft(row);
     const system = new Set(SYSTEM_COLUMNS.map(([name]) => name));
     const view = access.row(row);
     // a ref column with a schema filter picks among the rows its siblings allow
@@ -309,10 +316,7 @@ export class DomainForm extends Control {
     const form = propertyForm(source.schema.properties.filter((p) => !system.has(p.name)), row, {
       include: options.include, exclude: options.exclude, layout: options.layout, condensed: options.condensed,
       overrides, access: view,
-      onChanged: (name, value) => {
-        options.onChanged?.(name, value);
-        this._checkConstraints();
-      },
+      onChanged: options.onChanged,
     });
     form.root.dataset.u2Row = row.id;
     // the schema constraints, pre-validated here; one naming a column the caller may not see is
@@ -333,22 +337,21 @@ export class DomainForm extends Control {
       if (name === undefined)
         continue;
       input.root.classList.toggle(REQUIRED, !input.nullable);
-      input.addValidator((value) =>
-        source.edit.peek()?.errorOf(row.id, name) ?? table?.validators.check(name, value, row) ?? null);
-      // a pristine draft is not wrong yet: a field's verdict shows once it was edited or left
-      if (draft) {
-        input.root.classList.add(UNTOUCHED);
-        const touched = () => input.root.classList.remove(UNTOUCHED);
+      // the writer's verdict is about the value the row holds; an edit the form has not written yet
+      // (it writes only valid ones) is judged by the table's rules alone, or it could never be written
+      const kind = kindOf(source.schema.properties.find((p) => p.name === name)!);
+      input.addValidator((value) => (ObjectForm.same(value, ObjectForm.coerce(kind, row[name])) ?
+        source.edit.peek()?.errorOf(row.id, name) : null) ?? table?.validators.check(name, value, row) ?? null);
+      // and a constraint is judged on what the fields hold, written or not
+      if (this._constraints.some((c) => c.columns.includes(name))) {
         let initial = true;
         input.effect(() => {
           input.value.value;
           if (initial)
             initial = false;
           else
-            touched();
+            untracked(() => this._checkConstraints());
         });
-        input.root.addEventListener('focusout', touched);
-        input.own(() => input.root.removeEventListener('focusout', touched));
       }
     }
     this._markChanged(form, row);
