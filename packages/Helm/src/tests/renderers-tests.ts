@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 import {fromEvent} from 'rxjs';
 
 import {
-  after, before, category, test, expect, awaitCheck, delay, testEvent
+  after, before, category, test, expect, waitUntil, delay, testEvent
 } from '@datagrok-libraries/test/src/test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
@@ -51,9 +51,9 @@ category('renderers', () => {
     const helmCol: DG.Column<string> = df.getCol('HELM');
 
     const tv: DG.TableView = grok.shell.addTableView(df);
-    await awaitCheck(() => {
+    await waitUntil(() => {
       return $(tv.root).find('.d4-grid canvas').length > 0;
-    }, 'Table view canvas not found', 100);
+    }, 'Table view canvas not found');
 
     await grok.data.detectSemanticTypes(df);
 

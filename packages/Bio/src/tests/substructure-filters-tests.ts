@@ -7,7 +7,9 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import wu from 'wu';
 
-import {after, before, category, test, expect, delay, testEvent, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {
+  after, before, category, test, expect, testEvent, uiSettled, waitUntil,
+} from '@datagrok-libraries/test/src/test';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
   getUserLibSettings, setUserLibSettings
@@ -183,9 +185,7 @@ category('bio-substructure-filters', async () => {
         await testEvent(df.onRowsFiltered, () => {}, () => {
           bf.props = new BioFilterProps('PEPTIDE1{C}$$$$V2.0', undefined, _package.logger);
         }, 20000);
-        setTimeout(() => view.grid.invalidate(), 500);
         await awaitGrid(view.grid);
-        await delay(1000);
         _package.logger.debug(`${logPrefix}, filter 2 changed.`);
         expect(filter.dataFrame!.filter.trueCount, 2);
         expect(filter.dataFrame!.filter.toBinaryString(), '1001');
@@ -193,7 +193,7 @@ category('bio-substructure-filters', async () => {
         dlg.close();
       }
       await filter.awaitRendered();
-      await delay(3000); //TODO: await for grid.onLookChanged
+      await uiSettled('helm-dialog');
     }
   }, {});
 
@@ -309,9 +309,6 @@ category('bio-substructure-filters', async () => {
         await awaitGrid(view.grid);
         //debugger;
 
-        _package.logger.debug('Bio tests: substructureFilters/sync-helm, before changed event');
-        await delay(f1.debounceTime * 2);
-        _package.logger.debug('Bio tests: substructureFilters/sync-helm, after changed event');
         expect(df.filter.trueCount, fTrueCount);
 
         await f1.awaitRendered();
@@ -323,7 +320,7 @@ category('bio-substructure-filters', async () => {
       }
       await Promise.all([f1.awaitRendered(), f2.awaitRendered()]);
       await awaitGrid(view.grid);
-      await delay(3000); //TODO: await for grid.onLookChanged
+      await uiSettled('sync-helm');
     }
   });
 
@@ -357,7 +354,9 @@ category('bio-substructure-filters', async () => {
     const fg = (await df.plot.fromType(DG.VIEWER.FILTERS,
       {filters: filterList})) as DG.FilterGroup;
     view.dockManager.dock(fg, DG.DOCK_TYPE.LEFT);
-    await delay(100);
+    await waitUntil(() => fg.filters.length === 2 &&
+      fg.filters.every((f) => (f as BioSubstructureFilter).bioFilter != null),
+    'the bio filters have not been created');
     await awaitGrid(view.grid);
 
     const seq1Filter = fg.filters[0] as BioSubstructureFilter;
@@ -424,11 +423,11 @@ category('bio-substructure-filters', async () => {
     const fg = (await df.plot.fromType(DG.VIEWER.FILTERS,
       {filters: filterList})) as DG.FilterGroup;
     view.dockManager.dock(fg, DG.DOCK_TYPE.LEFT);
-    await delay(100);
+    await waitUntil(() => fg.filters.length === 1, 'the bio filter has not been created');
     await awaitGrid(view.grid);
 
     const seqFilter = fg.filters[0] as BioSubstructureFilter;
-    await awaitCheck(() => seqFilter.bioFilter !== null, 'FastaBioFilter hasn\'t been created', 1000);
+    await waitUntil(() => seqFilter.bioFilter !== null, 'FastaBioFilter hasn\'t been created', 1000);
     const seqBf = seqFilter.bioFilter as FastaBioFilter;
     await testEvent(df.onRowsFiltered, () => {}, () => {
       seqBf.props = new BioFilterProps(fSubStr, undefined, _package.logger);
@@ -439,7 +438,8 @@ category('bio-substructure-filters', async () => {
 
     const fgResetIconEl: HTMLElement = $(fg.root).find('i[name="icon-arrow-rotate-left"]')[0] as HTMLElement;
     fgResetIconEl.click();
-    await delay(100);
+    await waitUntil(() => seqBf.props.substructure === '' && seqBf.substructureInput.value === '',
+      'the filter has not been reset');
     await awaitGrid(view.grid);
     expect(seqBf.props.substructure, '');
     expect(seqBf.substructureInput.value, '');
@@ -456,7 +456,8 @@ category('bio-substructure-filters', async () => {
     const fg1 = (await df.plot.fromType(DG.VIEWER.FILTERS,
       {filters: filterList})) as DG.FilterGroup;
     const fg1Dn = view.dockManager.dock(fg1, DG.DOCK_TYPE.LEFT);
-    await delay(100);
+    await waitUntil(() => (fg1.filters[0] as BioSubstructureFilter)?.bioFilter != null,
+      'the bio filter has not been created');
     await awaitGrid(view.grid);
     fg1.close();
     await awaitGrid(view.grid);
@@ -464,7 +465,8 @@ category('bio-substructure-filters', async () => {
     const fg2 = (await df.plot.fromType(DG.VIEWER.FILTERS,
       {filters: filterList})) as DG.FilterGroup;
     const fg2Dn = view.dockManager.dock(fg2, DG.DOCK_TYPE.LEFT);
-    await delay(100);
+    await waitUntil(() => (fg2.filters[0] as BioSubstructureFilter)?.bioFilter != null,
+      'the reopened bio filter has not been created');
     await awaitGrid(view.grid);
   }, {});
 

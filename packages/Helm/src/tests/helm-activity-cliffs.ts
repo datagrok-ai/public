@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, awaitCheck, before, category, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, before, category, test} from '@datagrok-libraries/test/src/test';
 
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
@@ -76,7 +76,7 @@ async function _testActivityCliffsOpen(tv: DG.TableView, df: DG.DataFrame, drMet
     return cliffsLink.length > 0 &&
       ((cliffsLink[0] as HTMLElement).innerText.toLowerCase() === `${tgtNumberCliffs} cliffs`);
   };
-  await awaitCheck(() => {
+  await waitUntil(() => {
     return checkScatterPlotInitialized();
   }, 'activity cliffs failed');
 }

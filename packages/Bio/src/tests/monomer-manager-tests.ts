@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, awaitCheck, category, expect, expectArray, expectObject, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, category, expect, expectArray, expectObject, test} from '@datagrok-libraries/test/src/test';
 import {Monomer, RGroup} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {Control, Scope} from '@datagrok-libraries/u2';
 
@@ -265,7 +265,7 @@ category('monomerManager: editor', () => {
     // the manager of this bundle — the package's own bundle keeps a singleton of its own
     const manager = await MonomerManager.getInstance();
     const view = grok.shell.v = await manager.getViewRoot();
-    await awaitCheck(() => view.root.querySelector('.monomer-manager-editor') !== null,
+    await waitUntil(() => view.root.querySelector('.monomer-manager-editor') !== null,
       'the Manage Monomers view did not dock its editor', 30000);
     try {
       const editor = Control.forElement(view.root.querySelector('.monomer-manager-editor')) as MonomerEditor;
@@ -277,7 +277,7 @@ category('monomerManager: editor', () => {
       expectArray(editor.rgroups.rgroups.value.map((r) => r.capGroupName), ['H', 'NH2']);
       expect(manager.validateMonomerForm(), null);
       view.close();
-      await awaitCheck(() => disposed, 'the editor outlived its view', 10000);
+      await waitUntil(() => disposed, 'the editor outlived its view', 10000);
     } finally {
       Array.from(grok.shell.tableViews).find((v) => v.name === MonomerManager.VIEW_NAME)?.close();
     }
