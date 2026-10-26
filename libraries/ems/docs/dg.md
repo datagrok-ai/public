@@ -16,9 +16,9 @@ host too, over `MemoryFrame` — is what the headless tests and the gallery run.
 | `domains.configure<TRow>(address, fn, {id})` | what an app declares on a table — `actions`, `validators`, `renderer`, `importer` — applied to every handle `domains.table(address)` makes: `fn(table)` may be async and is awaited (a throw rejects the handle); registered at module load under a stable `id`, which is required (a bundle evaluated twice replaces its entry), so a child tab, a tree, a view and the `/domains` route get the same rules as the app; one registry per page, whichever bundle's copy of ems builds the handle; returns the unregister function. Recipe: `docs/recipes/custom-app.md` |
 | `table.source(options)` / `table.draft(values)` | a started `DomainSource<TRow>` (`options.defaults`, `src.newRow(values)`: `Partial` of the typed row); a `draft: true` source of one pristine draft. Both are tracked, so the controls find the handle (`DomainTable.of(src)`); `src.session` is the unit of work Save drives, `src.activate` the signal a list bumps on Enter |
 | `table.app(options?)` | the table as a platform view (`grok.shell.addView(issues.app())`): a `DomainApp` under its own session in an `appView` — list ⇄ entity page, ribbon, status, URL, the unsaved gates. `options.app` names a `DomainApp` subclass to build instead (see below); `name`, `path`, and the app's own options pass through |
-| `domains.app(options)` | the `DomainApp` control alone (`{table, base, query?, pageSize?, mode?, include?, children?, history?, shortcuts?}`) for a hand-built view with its own chrome — see "Domain apps" below for what it does and how it is subclassed |
+| `domains.app(options)` | the `DomainApp` control alone (`{table, base, query?, sort?, pageSize?, live?, liveMs?, mode?, itemHeight?, defaults?, include?, children?, history?, filters?, shortcuts?, menu?}`, see the table below) for a hand-built view with its own chrome — see "Domain apps" below for what it does and how it is subclassed |
 | `domains.form(target, options?)` | `DomainForm` over a `DomainSource`, its `currentRow` signal, or a bare row (+ `source`): a fresh `propertyForm` per row under the row's access — the system columns left out (`system: 'footer'` shows them as a muted block: Id/Version/Created/Updated/Author, local times, the author resolved, a draft's id "assigned on save"), a readonly reference showing its target's name, a pristine draft's verdicts held back until a field is edited or left (`validate()` shows them all), an edited field marked with an amber edge, `focus()` on the first field; validity = schema rules + `table.validators` + the writer's per-cell errors (over the platform the editor maps the server's column errors onto the cells and resolves a 409 itself). Paired through the source: it guards `src.save()` (a refusal is "Cannot save: <Caption> is required" whichever path ran — the button, Ctrl+S, `cmd:save`), takes the focus back on the session's `onSaved`/`onDiscarded` and on `src.activate`; a refused save is one balloon, a 403 also drops the access caches |
-| `domains.list(src, options?)` | `DomainList`: a `VirtualList` over `src.rows`, `brief` or `cards` (the recipe card: title, one muted description line, the creation time; a handler's own card where it defines one), Open (saved rows) + Delete (`requires: 'delete'`) + the table's and the list's own actions per row; a row marked deleted stays struck through with Restore until the save; selection = `src.currentRow` (a loaded list starts on its first row), Enter bumps `src.activate` (the paired form takes the focus), Delete deletes, the selected row's actions rove into the tab order; the next page near the bottom, loading/empty/error under the rows |
+| `domains.list(src, options?)` | `DomainList`: a `VirtualList` over `src.rows`, `brief` or `cards` (the recipe card: title, one muted description line, the creation time; a handler's own card where it defines one), Open (saved rows, Enter) + the table's and the list's own actions + Delete last (`requires: 'delete'`, Del) per row, the hover block over the row's end; a row marked deleted stays struck through on a red tint with an Undo until the save; a multi-selection's menu lists what every picked row offers first ("Close · 3 issues"); the current row is grey, the selection an accent stripe; selection = `src.currentRow` (a loaded list starts on its first row, drawn as current once the list has the focus), Enter bumps `src.activate` (the paired form takes the focus), Delete deletes, the selected row's actions rove into the tab order; the next page near the bottom; loading, an empty result and a failed load as one centred state inside the list's frame (`emptyState` from u2), with the way out — Clear search, Clear filter, Retry, or New <row> where `options.create` is given |
 | `domains.pick(table, options?)` | `DomainPick`, an `Input<string \| null>` face over a `TypeAhead` that queries the target table by its name column (else the first business-key column, else the id); `PickInput` is the same face over any type-ahead — the `User`/`Group` editors ride it |
 | `domains.grid(src, options?)` | `DomainGrid`: the platform grid over the source's frame with the source's writer attached (`Grid.attachEditor`), the table's handler decorating the columns; `options.look` binds `IGridSettings` |
 | `domains.search(src, options?)` | `DomainSearch`, a ribbon search box two-way with `src.search` — the schema's searchable columns, AND-ed with the query; written after a pause (`debounceMs`, 300), at once on Enter, cleared by Escape; every search the user makes goes through `confirmDiscard` (H6) — refused while a batch is being written back, asked about while changes are pending |
@@ -51,15 +51,20 @@ app per tier):
 | `name` | `info.pluralName` | the view's name |
 | `path` | `/domains/<schema>/<table>` | the base of the app's paths; `acceptsPath`/`handlePath` route deep links under it |
 | `app` | `DomainApp` | the class to build — a subclass with its own ribbon, presets and shortcuts |
-| `query`, `pageSize`, `mode` | `''`, 50, `'brief'` | the list page's source and row shape |
+| `query`, `sort`, `pageSize` | `''`, the table's order, 50 | the list page's source; `sort` is `'!number,title'` (`!` descending). A user's own order (the ribbon's Sort by) rides the path as `?sort=` |
+| `live`, `liveMs` | `true`, the source's | the list follows the server while the session is clean, and says "Data changed — Refresh" while it is not |
+| `mode`, `itemHeight` | `'brief'`, 28 / 64 | the list's row shape and height — a taller card fits a larger picture |
+| `defaults` | `{}` | what every draft the app opens starts with (a location's id on a containers app) |
 | `include` | every column | the entity form's columns, in this order |
 | `children` | `true` | the children pane: `false`, or `DomainChildrenOptions` (`tables`, `mode`) |
-| `history` | `true` | the history pane |
+| `history` | `true` | the history pane, where the table keeps an audit; `domains.history(source, row?, {include})` groups the columns the form does not show as derived |
+| `filters` | the query box on top | `DomainFiltersOptions` (`mode: 'query' \| 'builder'`) plus `placement: 'left'` for the builder in a pane beside the list |
 | `shortcuts` | `{}` | key → action name, see below |
+| `menu` | every item on | `{import?, bulkEdit?, trash?}`: `false` drops that built-in Actions item |
 
 What the app does (`app.ts`): `page` (`'list' \| 'entity'`) and `entity` (the row id, `'new'` for a
 draft) are read-only signals — `goTo(page, id?)` is their only writer and `open(path?)` the way in
-from the address bar (`?entity=<id>`, `?q=<query>`; a path given is authoritative, `open()` with
+from the address bar (`?entity=<id>`, `?q=<query>`, `?search=`, `?sort=`, `?trash=1`; a path given is authoritative, `open()` with
 none reads `location.search`, which is how a cold deep link lands); `path` mirrors them for `appView` and
 `summary` is the session's while dirty, else the page's source's. The list page is a `DomainList`
 over `listSource` (Enter → the entity page); the entity page a source of one under the same
@@ -73,9 +78,19 @@ where the children and history panes go; the app may add its own beside them.
 
 Override points for a subclass (`class IssuesApp extends DomainApp`):
 
-- `ribbon(): (Control \| HTMLElement)[][]` — `[[New, Save, Discard], [search, filters]]`, built
-  once and owned by the app; extend it with `[...super.ribbon(), [...]]`. New opens `?entity=new`
-  and is hidden without `insert`; search and filters show on the list page only.
+- `ribbon(): DomainRibbon` — named slots, built once and owned by the app: `main` (New, Save,
+  Discard as icon buttons with SAVE the one raised button, the labelled Actions menu, Refresh),
+  `tools` (the search box and the Sort by menu, list page only) and `presets` (empty by default).
+  Extend a slot: `({...super.ribbon(), presets: [this.presets(...)]})`; `ribbonGroups()` is the
+  positional shape `appView` takes. New opens `?entity=new` and is hidden without `insert`; in the
+  trash its slot stays, empty, so Save and Discard do not move.
+- `menuActions(): Action[]` — the Actions menu, in sections: the presets while the ribbon is
+  `compact`; on the entity page the row's own actions (the table's row actions, then Delete, staged
+  until the Save); Import… and Bulk edit…; then "Show deleted <rows>" ("Back to <rows>" in the
+  trash). `menu: {import, bulkEdit, trash}` switches a built-in item off; an override should
+  extend the result rather than replace it.
+- `compact: Signal<boolean>` — set while the app is narrower than 900px: the presets fold into the
+  Actions menu.
 - `presets(...entries: [label, query][]): ButtonGroup` — a single-toggle switch writing the list's
   query; `$me` binds to the current user's id (`Filters.bind`), the preset equal to the query in
   force is shown pressed, a press while dirty goes through the gate; list page only.
@@ -94,6 +109,13 @@ length of its write-back) in front of every way to drop unsaved changes:
 | the search box | `DomainSearch` → `{action: 'change the search'}`; the text is put back on cancel |
 | the view's ✕ | `grok.events.onViewRemoving` — `preventDefault`, then `view.close()` once confirmed (`{action: 'close the view'}`) |
 | the browser tab | `guardUnload()` — `beforeunload` armed while `session.isDirty` or `session.isSaving` |
+
+Several tables as one app: `new DomainViews({path, views: [{table, name, segment?, options?}], handle?, ready?})`
+answers the app func's router (`open(address)`), fills its tree (`tree(node)`), and is where a row of
+any of its tables opens from anywhere (`DomainViews.openRow`); `dispose()` takes it out of that.
+The platform's own `/domains/<schema>/<table>[/<key>]` addresses reach the same `DomainApp` through
+`route(address)` (`dg/routes.ts`), which PowerPack's `domainRoutes` func exposes to the Dart router;
+an app already open over the table takes the address.
 
 Editor rules registered at import: a property whose `semType` is a table address
 (`<schema>.<table>`) gets `domains.pick` over that table; `User` → the user picker, `Group` → the

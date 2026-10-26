@@ -106,7 +106,7 @@ const METAS: ComponentMeta[] = [
       SOURCE,
       {name: 'mode', type: 'string', choices: ['brief', 'cards'], structural: true,
         description: 'One line per row, or a card.'},
-      {name: 'itemHeight', type: 'int', structural: true, description: 'Row height in pixels (28 brief, 96 cards).'},
+      {name: 'itemHeight', type: 'int', structural: true, description: 'Row height in pixels (28 brief, 64 cards).'},
       {name: 'empty', type: 'string', structural: true, description: 'What an empty result says.'},
     ],
     defaults: {mode: 'brief'},

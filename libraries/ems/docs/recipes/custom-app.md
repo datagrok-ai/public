@@ -11,8 +11,8 @@ registry each on the table handle, nothing re-implemented. Reference implementat
 ```ts
 import * as grok from 'datagrok-api/grok';
 import {badge, divV, span, timestamp} from '@datagrok-libraries/u2';
-import type {Control} from '@datagrok-libraries/u2';
 import {DomainApp, domains} from '@datagrok-libraries/ems/src/dg';
+import type {DomainRibbon} from '@datagrok-libraries/ems/src/dg';
 import {gritDb, IssueRow} from './generated/db';           // grok api: typed data clients
 import {getGritDb} from './generated/db-ui';               // grok api --ui: typed u2 handles
 
@@ -33,9 +33,12 @@ domains.configure<IssueRow>('grit.issue', async (issues) => {
 
 class IssuesApp extends DomainApp {
   shortcuts = {'m': 'Assign to me', 'c': 'Close'};        // plain keys fire outside text entry; chords (Ctrl+Shift+C) everywhere
-  ribbon(): (Control | HTMLElement)[][] {
-    return [...super.ribbon(), [this.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"']   // a FK path, no id needed)]];
+  ribbon(): DomainRibbon {
+    // built once: the ribbon is asked for again, and a second presets() would add a second switch
+    return this._ribbon ??= {...super.ribbon(),
+      presets: [this.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]};   // a FK path
   }
+  private _ribbon: DomainRibbon | undefined;
 }
 
 //name: Issues
@@ -63,8 +66,10 @@ registered for the address over it (awaited in order; a throw rejects the handle
 | `table.actions.add({name, icon?, requires?, enabled?, when?(row), run(row)})` | the ribbon, the row's hover actions, the context menu, the shortcuts. `requires` names a capability (`'edit'`, a schema `permissions` name such as `'approve'`) — denied, the action is not rendered; `when` narrows it per row; returns the unregister |
 | `table.validators.add(column, (value, row) => message \| null)` | a rule the form checks on every change, beside the schema's and the server's; the message shows on the column's field and refuses Save |
 | `table.renderer: ObjectRenderer<RowView<TRow>>` | `caption`, `icon?`, `listItem?`, `markup?`, `tooltip?`, `card?` — lists, cards, pickers, chips, breadcrumbs; spread the default to override one |
-| `class X extends DomainApp` | `ribbon()` returns `[[New, Save, Discard], [search, filters]]` — extend it; `presets(...[label, query])` is a query switch (`$me` = the current user's id; the one matching the query in force is pressed; hidden off the list page; a press while dirty goes through the gate); `shortcuts` maps `'Ctrl+Shift+C'`-style keys onto action names, run over the current row while the app has the focus; `header` is the entity page above the form — what an app shows about the record before its fields (a parent card, a summary), empty until filled; `panes` is the page below the form, beside the children and history |
-| `table.app({app: X, ...})` | the view: `name`, `path`, `query`, `pageSize`, `mode`, `include`, `children`, `history`, `shortcuts` — see [crud-app](crud-app.md) |
+| `class X extends DomainApp` | `ribbon()` returns `{main, tools, presets}` — extend a slot (see [dg.md](../dg.md)); `presets(...[label, query])` is a query switch (`$me` = the current user's id; the one matching the query in force is pressed; hidden off the list page; a press while dirty goes through the gate); `shortcuts` maps `'Ctrl+Shift+C'`-style keys onto action names, run over the current row while the app has the focus; `header` is the entity page above the form — what an app shows about the record before its fields (a parent card, a summary), empty until filled; `panes` is the page below the form, beside the children and history |
+| `table.app({app: X, ...})` | the view: `name`, `path`, `query`, `sort`, `pageSize`, `live`, `mode`, `itemHeight`, `defaults`, `include`, `children`, `history`, `filters`, `shortcuts`, `menu` — see [dg.md](../dg.md) |
+| `table.importer` | how the import wizard reads the app's columns: derived columns, rows kept out, the preview's and the report's columns and messages (see the CHANGELOG entry) |
+| `source` option `hosted` | a host filter condition (a structure search) the app answers with ids, sent before every read |
 | `domains.app({table, base, ...})` | the `DomainApp` control alone, for a hand-built `appView` with its own chrome |
 
 ## Master–detail in one session
@@ -74,8 +79,10 @@ table inside the parent's session, the FK defaulted to the parent's id. Written 
 project form over a grid of its issues, one Save:
 
 ```ts
-import {SharedSession, Splitter, computed} from '@datagrok-libraries/u2';
-import {appView, domains} from '@datagrok-libraries/u2/src/dg/index.js';
+import {Splitter, computed} from '@datagrok-libraries/u2';
+import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
+import {SharedSession} from '@datagrok-libraries/ems';
+import {domains} from '@datagrok-libraries/ems/src/dg';
 
 const {projects, issues} = (await getGritDb()).tables;
 const session = new SharedSession();                       // or build under SharedSession.runWith(session, …)
