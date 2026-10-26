@@ -282,7 +282,10 @@ export function hoistColumns(dataFrame: DG.DataFrame, columns: DG.Column[]): Hoi
 
 /// The expensive, cacheable phase: column-major sweep of the raw array mapping values to desirability scores.
 /// Depends only on column data + line + missing-value handling, never on weights.
-export function mapColumnDesirability(h: HoistedColumn, rowCount: number): ColumnDesirability {
+/// When coverage is given, increments it for every row where the column has a value.
+export function mapColumnDesirability(
+  h: HoistedColumn, rowCount: number, coverage: Int32Array | null = null,
+): ColumnDesirability {
   const {raw, valNull, isCat, cats, catScore, isQnum} = h;
   const line = isCat ? null : (h.template as NumericalDesirability).line;
   const inv = !isCat && (h.template as NumericalDesirability).inverted === true;
@@ -306,14 +309,13 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
 
   const D = new Float32Array(rowCount);
   let state: Uint8Array | null = null; // lazily allocated on the first skip/bail row
-  let missing: Uint8Array | null = null; // lazily allocated on the first empty cell
 
   for (let i = 0; i < rowCount; ++i) {
     const q = isQnum ? DG.Qnum.getQ(raw[i]) : DG.QNUM_EXACT;
     const v = isQnum ? DG.Qnum.getValue(raw[i]) : raw[i];
     const isEmpty = v === valNull || (isQnum && isNaN(v));
-    if (isEmpty)
-      (missing ??= new Uint8Array(rowCount))[i] = 1;
+    if (!isEmpty && coverage !== null)
+      ++coverage[i];
     if (isEmpty || (log && v <= 0 && q !== DG.QNUM_GREATER)) {
       if (missState !== RowState.Contribute) {
         (state ??= new Uint8Array(rowCount))[i] = missState;
@@ -345,7 +347,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
     const y = covered ? lineY(xs!, line!, x) : 0;
     D[i] = covered && inv ? 1 - y : y;
   }
-  return {D, state, missing};
+  return {D, state};
 }
 
 /// The cheap phase (always re-run; depends on weights + aggregation): folds the per-column desirabilities
@@ -450,20 +452,6 @@ export function buildDesirabilityColumns(
   return result;
 }
 
-/// Builds the column with the number of scored properties that have a value in each row.
-export function buildCoverageColumn(maps: ColumnDesirability[], profileName: string, rowCount: number): DG.Column {
-  const coverage = new Int32Array(rowCount).fill(maps.length);
-  for (const {missing} of maps) {
-    if (missing === null)
-      continue;
-    for (let i = 0; i < rowCount; ++i)
-      coverage[i] -= missing[i];
-  }
-  const c = DG.Column.int(getMpoCoverageColumnName(profileName), rowCount);
-  c.setRawData(coverage, false);
-  return c;
-}
-
 /// Stateful MPO engine for the interactive preview: same contract as mpo(), but caches each column's
 /// desirability mapping (the expensive phase) keyed by df.id|column, so editing one curve recomputes only that
 /// column while the rest reuse the cache and only the cheap reduction re-runs. Call release() on teardown.
@@ -489,16 +477,18 @@ export class MpoCalculator {
 
     const hoisted = hoistColumns(dataFrame, columns);
     const maps: ColumnDesirability[] = [];
+    // Counted in the mapping sweep, so a cached column would go uncounted: coverage maps every column.
+    const coverage = createCoverageColumn ? new Int32Array(rowCount) : null;
     for (const h of hoisted) {
       const lineKey = desirabilityKey(h.template);
       const key = `${dataFrame.id}|${h.col.name}`;
       const hit = this.cache.get(key);
-      if (hit && hit.lineKey === lineKey && hit.D.length === rowCount) {
-        maps.push({D: hit.D, state: hit.state, missing: hit.missing});
+      if (coverage === null && hit && hit.lineKey === lineKey && hit.D.length === rowCount) {
+        maps.push({D: hit.D, state: hit.state});
         continue;
       }
-      const m = mapColumnDesirability(h, rowCount);
-      this.cache.set(key, {lineKey, D: m.D, state: m.state, missing: m.missing});
+      const m = mapColumnDesirability(h, rowCount, coverage);
+      this.cache.set(key, {lineKey, D: m.D, state: m.state});
       maps.push(m);
     }
 
@@ -508,7 +498,8 @@ export class MpoCalculator {
 
     const desirabilityColumns = createDesirabilityColumns ?
       buildDesirabilityColumns(columns, maps, profileName, rowCount) : undefined;
-    const coverageColumn = createCoverageColumn ? buildCoverageColumn(maps, profileName, rowCount) : undefined;
+    const coverageColumn = coverage ?
+      DG.Column.fromInt32Array(getMpoCoverageColumnName(profileName), coverage) : undefined;
 
     return {scoreColumn: resultColumn, desirabilityColumns, coverageColumn};
   }
