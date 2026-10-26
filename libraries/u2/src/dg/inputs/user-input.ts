@@ -6,23 +6,35 @@ import * as DG from 'datagrok-api/dg';
 import {TypeAhead} from '../../components/inputs/typeahead.js';
 import {PickInput} from '../../components/inputs/pick-input.js';
 import type {InputOptions} from '../../core/input-base.js';
-import {dapiSource} from '../entities/dapi-source.js';
+import {sanitizeFilterValue} from '../entities/dapi-source.js';
 
 const SEARCH_FIELDS = ['firstName', 'lastName', 'login', 'email'];
 const AVATAR_HUES = 6;
+const PAGE = 20;
 
 /** Smart-filter `like` wraps the value in `%…%` server-side, so the sanitized substring goes
- * in as is. */
+ * in as is. The empty query lists the current user first; a page that is not the whole answer
+ * says how much more there is. */
 export function userInput(placeholder = 'User…'): TypeAhead<DG.User> {
+  let total: number | null = null;
   return new TypeAhead<DG.User>({
-    source: dapiSource(() => grok.dapi.users,
-      {filter: (q) => q ? SEARCH_FIELDS.map((f) => `${f} like "${q}"`).join(' or ') : undefined}),
+    source: async (query) => {
+      const q = sanitizeFilterValue(query);
+      const filter = q ? SEARCH_FIELDS.map((f) => `${f} like "${q}"`).join(' or ') : undefined;
+      const users = await grok.dapi.users.list({pageSize: PAGE, ...(filter === undefined ? {} : {filter})});
+      total = users.length < PAGE ? null :
+        await (filter === undefined ? grok.dapi.users : grok.dapi.users.filter(filter)).count();
+      const me = q === '' ? grok.shell.user : undefined;
+      return me ? [me, ...users.filter((user) => user.id !== me.id)] : users;
+    },
     itemText: (user) => user.friendlyName,
     keyOf: (user) => user.id,
     render: renderUser,
     placeholder,
     openOnFocus: true,
     maxHeight: 320,
+    matchWidth: false,
+    footer: () => total === null || total <= PAGE ? null : `${PAGE} of ${total} — type to narrow`,
   });
 }
 
@@ -40,9 +52,9 @@ function renderUser(user: DG.User): HTMLElement {
   const name = line('u2-typeahead-user-name', user.friendlyName);
   name.dataset.u2Part = 'item-label';
   text.append(name);
-  const secondary = user.login || user.email;
-  if (secondary && secondary !== user.friendlyName)
-    text.append(line('u2-typeahead-user-secondary', secondary));
+  // every row two lines high: the login, else the email where the login is the name itself
+  const secondary = user.login && user.login !== user.friendlyName ? user.login : user.email ?? '';
+  text.append(line('u2-typeahead-user-secondary', secondary === user.friendlyName ? '' : secondary));
   row.append(avatar(user), text);
   return row;
 }

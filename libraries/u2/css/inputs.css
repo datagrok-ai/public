@@ -1012,6 +1012,17 @@ textarea.u2-list-area {
   color: var(--dg-text-color-light);
 }
 
+.u2-suggest-footer {
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
+}
+
+.u2-suggest-footer[hidden] {
+  display: none;
+}
+
 .u2-suggest-retry {
   height: var(--dg-inline-control-height);
   padding: 0 var(--dg-space-m);

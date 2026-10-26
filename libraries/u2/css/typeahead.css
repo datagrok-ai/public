@@ -27,6 +27,18 @@
   color: var(--dg-text-color-light);
 }
 
+/* a popup sized to its rows (`matchWidth: false`): readable short values, never the field's whole
+   width; a matched popup's inline min-width outranks both */
+.u2-typeahead-popup {
+  min-width: 240px;
+  max-width: 480px;
+}
+
+/* the open popup hangs over the field's verdict line: the line steps aside until it closes */
+.u2-input-root:has(.u2-typeahead-input[aria-expanded='true']) > .u2-input-error {
+  visibility: hidden;
+}
+
 .u2-typeahead-option-active .u2-typeahead-text,
 .u2-typeahead-option-active .u2-typeahead-user-name {
   color: var(--dg-accent);
@@ -60,6 +72,10 @@
 .u2-typeahead-user-secondary {
   font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
+}
+
+.u2-typeahead-user-secondary:empty::before {
+  content: '\00a0';
 }
 
 .u2-avatar {
@@ -137,6 +153,35 @@
 
 .u2-pick-box .u2-typeahead-input {
   padding: 0 20px 0 var(--dg-space-s);
+}
+
+.u2-pick-box-open .u2-typeahead-input {
+  padding-right: 40px;
+}
+
+/* Open follows the reference: beside the clear, revealed on hover as the clear is */
+.u2-btn.u2-icon-btn.u2-pick-open {
+  position: absolute;
+  right: 20px;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  font-size: var(--dg-font-size-xs);
+  color: var(--dg-text-color-light);
+  visibility: hidden;
+}
+
+.u2-input-root:not(.u2-input-disabled):hover .u2-pick-open,
+.u2-pick-box:focus-within .u2-pick-open {
+  visibility: visible;
+}
+
+.u2-btn.u2-icon-btn.u2-pick-open:hover {
+  color: var(--dg-text-color);
+}
+
+.u2-pick-open[hidden] {
+  display: none;
 }
 
 /* a blur that put the held pick's name back says so, on the verdict line, until the next focus */

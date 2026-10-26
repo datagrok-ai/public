@@ -33,6 +33,10 @@ export interface TypeAheadOptions<T> {
   emptyText?: string | ((query: string) => string);
   /** A ceiling on the popup's height (a CSS length or pixels), under the room the overlay gives it. */
   maxHeight?: number | string;
+  /** At least as wide as the box (default); `false` sizes the popup to its rows, 240px at least. */
+  matchWidth?: boolean;
+  /** A muted line under the candidates, read whenever they change — "10 of 20 — type to narrow". */
+  footer?: () => string | null;
   /** The accessible name (`aria-label` on the editor); a type-ahead shows no caption of its own. */
   label?: string;
   /** Enter with the popup closed: handled here, never seen by the form or dialog around. */
@@ -151,6 +155,8 @@ export class TypeAhead<T> extends Control {
       onRetry: () => this._source?.retry(),
       emptyText: options.emptyText,
       maxHeight: options.maxHeight,
+      matchWidth: options.matchWidth,
+      footer: options.footer,
     });
     this.isOpen = this._list.isOpen;
     // a fast Enter: the intent was clear — the name typed, else the first candidate, once they land
@@ -293,6 +299,16 @@ export class TypeAhead<T> extends Control {
         this._commit(ev.index);
         break;
     }
+  }
+
+  /** Opens the candidates as focus does — the first of them over a held item, not its name as a
+   * query; what a host whose box takes no typing (a short lookup read as a dropdown) does on a click. */
+  open(): void {
+    if (this._source && this.selected.peek() !== null)
+      this._source.query('');
+    else
+      this._refresh();
+    this._openPopup();
   }
 
   /** Closes the candidates without touching the selection — what a host does when something

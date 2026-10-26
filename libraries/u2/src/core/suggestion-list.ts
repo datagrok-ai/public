@@ -41,6 +41,10 @@ export interface SuggestionListOptions<T> {
   emptyText?: string | ((query: string) => string);
   /** A ceiling on the popup's height, under the room the overlay gives it. */
   maxHeight?: number | string;
+  /** At least as wide as the anchor (default); `false` sizes the popup to its rows. */
+  matchWidth?: boolean;
+  /** A muted line under the rows ("10 of 20 — type to narrow"), read whenever they change; null for none. */
+  footer?: () => string | null;
 }
 
 export class SuggestionList<T> {
@@ -56,6 +60,7 @@ export class SuggestionList<T> {
   private readonly _active = signal(-1);
   private readonly _list = document.createElement('div');
   private readonly _status = document.createElement('div');
+  private readonly _footer = document.createElement('div');
   /** The rows on show: the items while open, past the hint and ready; nothing otherwise. */
   private readonly _shown: ReadonlySignal<T[]>;
   private _rowSeq = 0;
@@ -72,7 +77,9 @@ export class SuggestionList<T> {
     this.popup.setAttribute('role', 'listbox');
     options.anchor.setAttribute('aria-controls', this.popup.id);
     this._list.className = 'u2-suggest-options';
-    this.popup.append(this._list, this._status);
+    this._footer.className = `u2-suggest-footer ${options.prefix}-footer`;
+    this._footer.hidden = true;
+    this.popup.append(this._list, this._status, this._footer);
     this._shown = computed(() => {
       const state = options.view.value;
       return this._open.value && options.text.value.length >= options.minChars && state.kind === 'ready' ?
@@ -85,6 +92,11 @@ export class SuggestionList<T> {
     Scope.runWith(options.scope, () => each(this._list, this._shown,
       (item, index) => keyOf ? keyOf(item) : SuggestionList.keyOf(item, index), (item) => this._option(item)));
     options.scope.effect(() => this._renderStatus());
+    options.scope.effect(() => {
+      const text = this._shown.value.length > 0 ? options.footer?.() ?? null : null;
+      this._footer.textContent = text ?? '';
+      this._footer.hidden = text === null;
+    });
     options.scope.effect(() => this._highlight());
     options.scope.effect(() => this._applyActive());
   }
@@ -98,7 +110,7 @@ export class SuggestionList<T> {
       return;
     this._open.value = true;
     this._closeOverlay = Overlay.show(this._options.anchor, this.popup, this._options.scope,
-      {maxHeight: this._options.maxHeight});
+      {maxHeight: this._options.maxHeight, matchWidth: this._options.matchWidth});
   }
 
   dismiss(): void {
