@@ -381,3 +381,62 @@
 .u2-btn.u2-fb-join:hover:not(:disabled) {
   background: var(--dg-hover);
 }
+
+/* narrow (the u2-fb-narrow class on the builder or its pane): a condition is a card, its value on a
+   second line; spaced by a transparent border so a drop between two still lands on a row */
+.u2-fb-narrow .u2-fb-rows,
+.u2-fb-narrow .u2-fb-group-rows {
+  gap: 0;
+}
+
+.u2-fb-narrow .u2-fb-cond:not(.u2-fb-nested) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-areas: 'prop op remove' 'value value value';
+  align-items: center;
+  gap: var(--dg-space-xs) var(--dg-space-s);
+  padding: var(--dg-space-s);
+  background: var(--dg-bg-secondary);
+  background-clip: padding-box;
+  border-bottom: var(--dg-space-s) solid transparent;
+}
+
+.u2-fb-narrow .u2-fb-advanced .u2-fb-cond:not(.u2-fb-nested) {
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-areas: 'handle prop op remove' 'handle value value value';
+}
+
+.u2-fb-narrow .u2-fb-group {
+  background-clip: padding-box;
+  border-bottom: var(--dg-space-s) solid transparent;
+}
+
+.u2-fb-narrow .u2-fb-group .u2-fb-cond:not(.u2-fb-nested) {
+  background: var(--dg-bg);
+}
+
+.u2-fb-narrow .u2-fb-group .u2-fb-group .u2-fb-cond:not(.u2-fb-nested) {
+  background: var(--dg-bg-secondary);
+}
+
+.u2-fb-narrow .u2-fb-cond > .u2-fb-handle {
+  grid-area: handle;
+}
+
+.u2-fb-narrow .u2-fb-cond > .u2-fb-prop,
+.u2-fb-narrow .u2-fb-cond > .u2-fb-prop-text {
+  grid-area: prop;
+}
+
+.u2-fb-narrow .u2-fb-cond > .u2-fb-op,
+.u2-fb-narrow .u2-fb-cond > .u2-fb-op-text {
+  grid-area: op;
+}
+
+.u2-fb-narrow .u2-fb-cond > .u2-fb-values {
+  grid-area: value;
+}
+
+.u2-fb-narrow .u2-fb-cond > .u2-fb-remove {
+  grid-area: remove;
+}

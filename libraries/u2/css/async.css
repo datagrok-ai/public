@@ -105,6 +105,15 @@
   color: var(--dg-error);
 }
 
+/* quiet (the u2-async-quiet class on any host): a failure as a muted line */
+.u2-async-quiet .u2-async-error {
+  padding: var(--dg-space-s) 0;
+}
+
+.u2-async-quiet .u2-async-error-message {
+  color: var(--dg-text-color-light);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .u2-loader-spinner {
     width: auto;

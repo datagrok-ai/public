@@ -27,6 +27,19 @@
   outline-offset: calc(-1 * var(--dg-focus-ring-width));
 }
 
+/* the platform grid's look (the u2-list-no-ring class on the list): the current row's colour is
+   the only focus mark */
+.u2-list.u2-list-no-ring:focus-visible,
+.u2-list.u2-list-no-ring:focus-visible .u2-list-row-current {
+  outline: none;
+}
+
+/* the list's border and ground, for what stands in for its rows (an empty state) */
+.u2-list-frame {
+  border: var(--dg-border-width) solid var(--dg-border);
+  background: var(--dg-bg);
+}
+
 .u2-list-content {
   position: relative;
 }

@@ -191,6 +191,21 @@
   max-width: 150px;
 }
 
+/* the u2-form-fill class on the form's host: in the auto form's wide state numbers, dates and
+   choices fill the row too, so every editor ends at one right edge */
+.u2-form-fill .u2-form-auto.u2-form-wide .u2-input-root .u2-input-box:has(> .u2-input-editor:is(.u2-number, .u2-date)),
+.u2-form-fill .u2-form-auto.u2-form-wide .u2-input-root[data-u2='choice-input'] .u2-input-box {
+  flex: 1;
+  max-width: none;
+}
+
+.u2-form-fill .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2] .u2-input-editor:is(.u2-number, .u2-date),
+.u2-form-fill .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='choice-input'] select.u2-input-editor {
+  flex: 1;
+  width: auto;
+  max-width: none;
+}
+
 /* a checklist row's caption follows its box and takes no part in the label column */
 .u2-form .u2-input-caption-after > .u2-input-label {
   min-width: 0;

@@ -301,3 +301,18 @@
   right: auto;
   left: 0;
 }
+
+/* flush (the u2-tabs-flush class on the strip): tabs and content start at the strip's edge, and
+   the shown panel takes the content's height */
+.u2-tabs.u2-tabs-flush:not(.u2-tabs-vertical) > .u2-tabs-header .u2-tabs-tab:first-child {
+  padding-left: 0;
+}
+
+.u2-tabs-flush > .u2-tabs-content {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.u2-tabs-flush > .u2-tabs-content > .u2-tabs-panel {
+  height: 100%;
+}

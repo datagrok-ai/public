@@ -150,3 +150,23 @@
 .u2-data-table-row .u2-cell-readonly {
   color: var(--dg-text-color-light);
 }
+
+/* an input in a cell fills it; its verdict has no line to go to */
+.u2-data-table-row .u2-data-table-cell > .u2-input-root {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.u2-data-table-row .u2-data-table-cell > .u2-input-root > .u2-input-box {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.u2-data-table-row .u2-data-table-cell > .u2-input-root .u2-input-editor {
+  width: 100%;
+}
+
+.u2-data-table-cell > .u2-input-root > .u2-input-error {
+  display: none;
+}
