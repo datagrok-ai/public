@@ -697,6 +697,7 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   draft.currentRow.value.number = 2;
   await flush();
   assert.equal(form.problem.value, 'Title is required');
+  assert.equal(save.button.disabled, true, 'Save is off while a field is in error');
   fire(save.button, 'click');
   await flush();
   await flush();
@@ -708,6 +709,7 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   form.input('title').value.value = 'Titled';
   await flush();
   assert.equal(form.problem.value, null);
+  assert.equal(save.button.disabled, false, 'and on again once it is fixed');
   form.dispose();
   assert.equal(await draft.save(), true, 'the guard left with the form');
   save.dispose();
@@ -724,6 +726,7 @@ scoped('VR-46/47: one refusal balloon per session, replaced by the next; in full
   source.rows.byKey('i2').number = 3;
   assert.equal(await source.save(), false);
   await flush();
+  assert.match(source.session.validity.value, /Three is taken/, 'a refusal holds Save until an edit answers it');
   let balloons = [...document.body.querySelectorAll('.u2-notify-error')];
   assert.equal(balloons.length, 1);
   assert.match(balloons[0].textContent, /Cannot save: .*Three is taken/, 'another row than the current: named in full');

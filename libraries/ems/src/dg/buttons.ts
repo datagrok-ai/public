@@ -1,5 +1,6 @@
 /* Save, Discard and New over a session — a source's own session of one today, the phase-2
    session over several tables tomorrow. State ⇒ disabled: nothing to save, or a save in flight;
+   Save also while the session's validity blocks it (a field in error, a refusal not yet answered);
    New is the one permission-gated button (hidden without `insert`), the fields and actions
    having degraded by access already. Controls rather than bare buttons, so the effects they run
    have an owner — `appView` disposes ribbon controls with the content. */
@@ -22,7 +23,7 @@ export class SessionButton extends Control {
   readonly session: DomainSession;
 
   constructor(target: SessionTarget, text: string,
-    options: {primary?: boolean, icon?: string, run: (session: DomainSession) => unknown}) {
+    options: {primary?: boolean, icon?: string, gated?: boolean, run: (session: DomainSession) => unknown}) {
     const session = SessionButton.sessionOf(target);
     const run = () => void options.run(session);
     const el = options.icon === undefined ? button(text, run, {primary: options.primary}) :
@@ -30,7 +31,8 @@ export class SessionButton extends Control {
     super(el);
     this.button = el;
     this.session = session;
-    this.effect(() => el.disabled = !session.isDirty.value || session.isSaving.value);
+    this.effect(() => el.disabled = !session.isDirty.value || session.isSaving.value ||
+      options.gated === true && session.validity.value !== null);
   }
 
   static sessionOf(target: SessionTarget): DomainSession {
@@ -42,7 +44,8 @@ export class SessionButton extends Control {
  * hands the focus back to the paired form; the session's primary button, where Tab from a form's
  * last field lands. */
 export function saveButton(target: SessionTarget, options: SessionButtonOptions = {}): SessionButton {
-  const control = new SessionButton(target, options.text ?? 'Save', {primary: true, run: (session) => session.save()});
+  const control = new SessionButton(target, options.text ?? 'Save',
+    {primary: true, gated: true, run: (session) => session.save()});
   control.root.dataset.u2 = 'save-button';
   control.button.title = 'Save (Ctrl+S)';
   const session = control.session;

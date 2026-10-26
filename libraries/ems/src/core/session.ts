@@ -58,7 +58,7 @@ export class SharedSession implements DomainSession {
     this.sources = this._sources;
     this.isDirty = computed(() => this._sources.value.some((s) => s.isDirty.value));
     this.changeCount = computed(() => this._sources.value.reduce((n, s) => n + s.changeCount.value, 0));
-    this.validity = computed(() => this._sources.value.map((s) => s.validity.value).find((v) => v !== null) ?? null);
+    this.validity = computed(() => this._sources.value.map((s) => s.blocked.value).find((v) => v !== null) ?? null);
     this.isSaving = computed(() => this._saving.value || this._sources.value.some((s) => s.isSaving.value));
     this.summary = computed(() => {
       const changes = this.changeCount.value;

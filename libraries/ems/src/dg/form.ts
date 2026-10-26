@@ -159,7 +159,7 @@ export class DomainForm extends Control {
       if (problem !== null)
         this.validate();
       return problem;
-    });
+    }, this.problem);
     // a refusal raised elsewhere (the table's validators run before this guard) shows every verdict too
     this.effect(() => {
       const code = DomainErrors.codeOf(source.error.value);
