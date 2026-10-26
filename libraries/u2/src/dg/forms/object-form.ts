@@ -18,7 +18,8 @@ import {BigIntInput} from '../../components/inputs/bigint-input.js';
 import {QNumInput} from '../../components/inputs/qnum-input.js';
 import {BoolInput} from '../../components/inputs/bool-input.js';
 import {ChoiceInput, MultiChoiceInput} from '../../components/inputs/choice-input.js';
-import {DateTimeInput} from '../../components/inputs/date-input.js';
+import {DateInput, DateTimeInput} from '../../components/inputs/date-input.js';
+import {Dates} from '../../core/dates.js';
 import {TextArea} from '../../components/inputs/text-input.js';
 import {RadioInput} from '../../components/inputs/radio-input.js';
 import {ColorInput} from '../../components/inputs/color-input.js';
@@ -235,6 +236,13 @@ function formatter(prop: IProperty): ((value: number) => string) | undefined {
   return (value) => dgFormat(value, format);
 }
 
+/** A `datetime` whose display format names no time of day (`yyyy-MM-dd`) holds a calendar day,
+ * stored as its UTC midnight: it edits and reads as that day in every time zone. */
+function dateOnly(prop: IProperty): boolean {
+  const format = prop.format;
+  return (prop.propertyType ?? prop.type) === 'datetime' && format != null && format !== '' && !/[Hhms]/.test(format);
+}
+
 /** What `NumberInput.bindProperty` applies Dart-side (`number_input.dart`): bounds, step
  * and format from the property, a clicker on bounded ints, a slider on floats or on explicit
  * `showSlider`, units as the postfix. */
@@ -290,7 +298,7 @@ export function inputForProperty(prop: IProperty | null,
     case 'qnum':
       return new QNumInput({...merged, format: formatter(prop)});
     case 'datetime':
-      return new DateTimeInput(merged);
+      return dateOnly(prop) ? new DateInput({...merged, utcDates: true}) : new DateTimeInput(merged);
     case 'list':
       return prop.choices != null && prop.choices.length > 0 ?
         new MultiChoiceInput({...merged, items: prop.choices}) : new ListInput(merged);
@@ -350,7 +358,7 @@ export class ObjectForm extends Form {
           if (field.input !== null)
             field.input.value.value = this._read(field.prop, field.kind);
           else
-            field.text!.textContent = text(this._read(field.prop, 'readonly'));
+            field.text!.textContent = ObjectForm.display(field.prop, this._read(field.prop, null));
         }
       });
     } finally {
@@ -385,7 +393,7 @@ export class ObjectForm extends Form {
     const access = this._access.field(prop.name!);
     if (access === 'readonly') {
       const {row, value} = ObjectForm.readonlyField(labelText(override.label) ?? ObjectForm._caption(prop),
-        prop.name!, text(this._read(prop, 'readonly')));
+        prop.name!, ObjectForm.display(prop, this._read(prop, null)));
       const tooltip = labelText(override.tooltipText) ?? prop.description;
       if (tooltip)
         row.title = tooltip;
@@ -441,6 +449,25 @@ export class ObjectForm extends Form {
       set(this.target, value);
       this._onChanged?.(prop.name!, value);
     });
+  }
+
+  /** A value as text the way its property shows it: a number through its `format` (`DG.format`,
+   * where the platform is loaded), a calendar day by the format's `yyyy`, `MM` and `dd`. */
+  static display(prop: IProperty, value: unknown): string {
+    if (value === null || value === undefined || value === '')
+      return '';
+    const format = formatter(prop);
+    if (typeof value === 'number' && format !== undefined)
+      return format(value);
+    if (dateOnly(prop)) {
+      const date = ObjectForm.coerce('datetime', value) as Date | null;
+      if (date !== null) {
+        const {year, month, day} = Dates.utcParts(date);
+        const pad = (x: number) => String(x).padStart(2, '0');
+        return prop.format!.replace('yyyy', String(year)).replace('MM', pad(month)).replace('dd', pad(day));
+      }
+    }
+    return text(value);
   }
 
   /** The caption + value line a field renders as where it is text rather than an editor —

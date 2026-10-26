@@ -13,7 +13,7 @@ import {Editors} from '../forms/editors.js';
  * u2 `Input<string>` over the molecule string — form validity, label alignment and the value
  * signal included. Requires the Chem package, like `ui.input.molecule` itself. */
 export function moleculeInput(label: string,
-  options: Pick<InputOptions<string>, 'name' | 'value' | 'onChanged'> = {}): Input<string> {
+  options: Pick<InputOptions<string>, 'name' | 'value' | 'onChanged' | 'nullable'> = {}): Input<string> {
   const {name, value, ...rest} = options;
   return fromDartInput<string>(ui.input.molecule(label, {value: value ?? ''}), name, rest);
 }
@@ -46,5 +46,5 @@ export function moleculeRenderer(options: MoleculeRendererOptions = {}): ObjectR
 Editors.register({
   match: (prop) => prop.semType === 'Molecule',
   create: (prop, options) => moleculeInput(options.inline ? '' : labelText(options.label) ?? prop.name!,
-    {name: options.name, value: options.value, onChanged: options.onChanged}),
+    {name: options.name, value: options.value, onChanged: options.onChanged, nullable: options.nullable}),
 });

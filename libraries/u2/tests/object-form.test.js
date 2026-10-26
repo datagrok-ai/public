@@ -619,3 +619,34 @@ form('a column named description is a textarea unless an editor hint says otherw
   assert.equal(f.inputs[2].root.dataset.u2, 'text-input', 'the hint wins');
   f.dispose();
 });
+
+form('a readonly value shows as its property formats it: a number through DG.format, a day by its pattern', () => {
+  const props = [prop('molregno', 'int', {format: 'DG-000000'}), prop('acquired', 'datetime', {format: 'yyyy-MM-dd'}),
+    prop('note', 'string')];
+  const access = Access.from({can: {view: true}, fields: {molregno: 'readonly', acquired: 'readonly', note: 'readonly'}});
+  try {
+    globalThis.DG = {format: (value, format) => `DG-${String(value).padStart(format.length - 3, '0')}`};
+    const source = {molregno: 62, acquired: '2024-12-04T00:00:00Z', note: 'x'};
+    const f = mount(propertyForm(props, source, {access}));
+    const shown = (name) => f.root.querySelector(`[data-u2-name="${name}"] [data-u2-part="readonly-value"]`).textContent;
+    assert.equal(shown('molregno'), 'DG-000062', 'the key as the breadcrumb spells it');
+    assert.equal(shown('acquired'), '2024-12-04', 'the stored UTC day, in every time zone, without a time');
+    assert.equal(shown('note'), 'x');
+    source.molregno = 482;
+    f.refresh();
+    assert.equal(shown('molregno'), 'DG-000482', 'a refresh formats too');
+    f.dispose();
+  }
+  finally {
+    delete globalThis.DG;
+  }
+});
+
+form('a datetime whose format names no time edits as a UTC calendar day', () => {
+  const props = [prop('acquired', 'datetime', {format: 'yyyy-MM-dd'}), prop('seen', 'datetime')];
+  const source = {acquired: '2024-12-04T00:00:00Z', seen: '2024-12-04T10:30:00Z'};
+  const f = mount(propertyForm(props, source));
+  assert.deepEqual(kinds(f), ['date-input', 'datetime-input'], 'a day, and a moment');
+  assert.equal(editorOf(f, 'acquired').value, '2024-12-04', 'no time, no shift');
+  f.dispose();
+});

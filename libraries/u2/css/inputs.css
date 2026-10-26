@@ -205,6 +205,25 @@ textarea.u2-input-editor {
   padding: 0;
 }
 
+/* a bridged platform input brings its own caption: a required one carries the asterisk there,
+   hanging past a right-aligned caption as u2's own does */
+.u2-input-required[data-u2='dart-input'] .ui-input-label::after {
+  content: '*';
+  margin-left: var(--dg-space-xs);
+  color: var(--dg-error);
+}
+
+.u2-form:not(.u2-form-captions-left):not(.u2-form-tall) .u2-input-required[data-u2='dart-input'] .ui-input-label {
+  position: relative;
+  overflow: visible;
+}
+
+.u2-form:not(.u2-form-captions-left):not(.u2-form-tall) .u2-input-required[data-u2='dart-input'] .ui-input-label::after {
+  position: absolute;
+  left: 100%;
+  margin-left: 1px;
+}
+
 /* the empty canvas's "Click to edit" is a hint, drawn as every other placeholder is */
 .u2-input-root[data-u2='dart-input'] .d4-input-molecule-canvas-hint {
   color: var(--dg-text-color-light);
