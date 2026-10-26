@@ -4,7 +4,7 @@
 /* ---
 generated: features/projects/projects-url-parameters.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [views.projects, views.functions, core#569, core#566, core#630, core#568, GROK-20006]
+sub_features_covered: [views.projects, views.functions, core#569, core#566, core#630, core#568, GROK-20006, core#1127]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -30,7 +30,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("A dashboard on a query with a parameter: Toolbox > Source, URL parameters and saved values", () => {
   const session = feature(test, "features/projects/projects-url-parameters.feature", import.meta.url);
-  test("A dashboard on a query with a parameter: Toolbox > Source, URL parameters and saved values", {tag: ["@journey", "@realizes:views.projects", "@realizes:views.functions", "@known-failure:84", "@realizes:core#569", "@realizes:core#566", "@realizes:core#630", "@realizes:core#568", "@realizes:GROK-20006", "@known-failure:239"]}, async ({browser}) => {
+  test("A dashboard on a query with a parameter: Toolbox > Source, URL parameters and saved values", {tag: ["@journey", "@realizes:views.projects", "@realizes:views.functions", "@known-failure:84", "@realizes:core#569", "@realizes:core#566", "@realizes:core#630", "@realizes:core#568", "@realizes:GROK-20006", "@known-failure:239", "@realizes:core#1127"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 16, page);
     await session.step(41, "Given user is logged in", () => loggedIn(page));

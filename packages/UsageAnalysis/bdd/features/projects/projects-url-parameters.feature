@@ -24,7 +24,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
 
   Right after the first save the Source link carries the alias "type" set in the Save dialog and
   Source offers the sliders icon (core#630, core#568: both used to need a reopen of the project).
-  Known failures: core#630 — typeName unticked under the
+  Known failures: core#1127 — typeName unticked under the
   sliders icon and the dashboard saved (the "Save dashboard to apply changes" hint gone), the
   Source link still ends with ?type=Script; it loses the parameter only after the project is
   reopened (the md checks the link right after unticking; before the save the link keeps
@@ -231,7 +231,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     And sliders-h icon in Source pane in toolbox should be visible
     And "Save dashboard to apply changes" text in toolbox should be hidden
 
-  @known-failure:239 @realizes:core#630
+  @known-failure:239 @realizes:core#1127
   Scenario: Saved with the parameter taken out, the Source link no longer carries it
     When user moves the pointer away from Source pane in toolbox
     And user hovers over copy icon in Source pane in toolbox
