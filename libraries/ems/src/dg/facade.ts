@@ -330,7 +330,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       const name = column === undefined ? undefined : row[column];
       if (name !== null && name !== undefined && name !== '')
         return {text: String(name), draft: false};
-      return Rows.isDraft(row) ? {text: `New ${info.singularName.toLowerCase() || 'row'}`, draft: true} :
+      return Rows.isDraft(row) ? {text: `New ${DomainTable.noun(info, true)}`, draft: true} :
         {text: row.id, draft: false};
     };
     const titleOf = (row: RowView): HTMLElement => {

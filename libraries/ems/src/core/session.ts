@@ -277,7 +277,7 @@ export class SharedSession implements DomainSession {
   /** How a refusal names a row without a renderer: the table's singular name and the row's own
    * name ({@link _rowName}). */
   private static _nameOf(source: DomainSource, row: RowView): string {
-    const what = source.schema.info.singularName || source.table;
+    const what = (source.schema.info.singularName || source.table).replace(/_/g, ' ');
     return `${what.charAt(0).toUpperCase()}${what.slice(1)} "${SharedSession._rowName(source, row)}"`;
   }
 

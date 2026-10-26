@@ -993,7 +993,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return plural(changes, 'unsaved change', 'unsaved changes');
     }
     const state = this.state.value;
-    const singular = this._schema.info.singularName.toLowerCase() || 'row';
+    const singular = (this._schema.info.singularName || 'row').replace(/_/g, ' ').toLowerCase();
     // a draft is a row, not a row of the table yet; a draft source is a create form until the
     // draft is saved — then it holds the row it made, and says so, until the next New
     const loaded = items.filter((r) => !Rows.isDraft(r)).length;
@@ -1004,7 +1004,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     if (state !== 'ready' && loaded === 0)
       return state === 'loading' ? 'Loading…' : '';
     const total = this.total.value;
-    const many = this._schema.info.pluralName.toLowerCase() || 'rows';
+    const many = (this._schema.info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
     if (this.deleted.value === 'only')
       return plural(total ?? loaded, `deleted ${singular}`, `deleted ${many}`);
     return !this.isDraft && total !== null && loaded < total ?

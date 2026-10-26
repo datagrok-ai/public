@@ -167,7 +167,7 @@ export class DomainPick extends PickInput<PickItem> {
     if (draft !== undefined) {
       const info = draft.source.schema.info;
       const name = text(draft.row[DomainPick.nameColumn(info)]);
-      return {id, name: name === '' ? `New ${info.singularName.toLowerCase() || 'row'}` : name};
+      return {id, name: name === '' ? `New ${(info.singularName || 'row').replace(/_/g, ' ').toLowerCase()}` : name};
     }
     const caption = await DomainPick.host?.caption(table) ?? null;
     const backend = emsBackends.domain;

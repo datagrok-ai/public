@@ -212,7 +212,7 @@ export class DomainList extends Control {
     const actions = search !== '' ? [button('Clear search', () => source.search.value = '')] :
       filtered ? [clearFilter()] :
         create !== undefined && !trash && source.access.value.can('insert') ?
-          [button(`New ${info.singularName.toLowerCase() || 'row'}`, () => create(), {primary: true})] : [];
+          [button(`New ${DomainTable.noun(info, true)}`, () => create(), {primary: true})] : [];
     const said = this._options.empty ?? (search !== '' ? `No ${what} match "${search}"` :
       filtered ? `No ${what} match the filter` : trash ? 'Trash is empty' : `No ${what} yet`);
     const state = emptyState(said, {icon: search !== '' ? 'search' : trash ? 'trash-alt' : 'inbox', actions});

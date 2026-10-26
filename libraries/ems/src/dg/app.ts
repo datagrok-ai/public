@@ -458,7 +458,7 @@ export class DomainApp extends Control {
     if (this._ribbon !== undefined)
       return this._ribbon;
     // icon-first, as the platform's ribbons are: SAVE is the one raised button
-    const singular = this.table.info.singularName.toLowerCase() || 'row';
+    const singular = DomainTable.noun(this.table.info, true);
     const add = new Control(this.runInScope(() =>
       iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`})));
     add.root.dataset.u2 = 'new-button';
@@ -1012,7 +1012,7 @@ export class DomainApp extends Control {
       });
       const {children, history, include} = this._options;
       const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include,
-        empty: `${DomainApp._capital(this.table.info.singularName || 'row')} "${entity}" was not found.`}));
+        empty: `${DomainApp._capital(DomainTable.noun(this.table.info, true))} "${entity}" was not found.`}));
       this._panes = this.runInScope(() => [
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
         ...(history === false || !this.table.table.support.audit ? [] :
