@@ -6,7 +6,6 @@ import type {RowView} from '@datagrok-libraries/u2';
 import type {AssayResultRow, CompoundBatchRow, CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
 import {Chemistry, HASH_COLUMNS, MATCH_RULES} from './chemistry';
-import {CompoundsApp} from './compounds';
 import {BulkRegistration} from './registration';
 import type {MatchRule} from './chemistry';
 
@@ -81,7 +80,6 @@ export class MolTrackTables {
   }
 
   private static _configureCompounds(table: DomainTable<CompoundRow>): void {
-    CompoundsApp.configure(table);
     table.importer = BulkRegistration.importer(table);
     table.validators.add('cas', (value) =>
       typeof value === 'string' && value !== '' && !CAS.test(value) ? 'CAS must look like 50-78-2' : null);

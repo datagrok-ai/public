@@ -22,17 +22,14 @@ export class CompoundsApp extends DomainApp {
   static readonly FIELDS = ['molregno', 'original_structure', 'common_name', 'cas', 'epa_compound_id', 'usan',
     'iupac_name', 'source', 'source_compound_code', 'mol_logp'];
 
-  private static readonly _verdicts = new Map<string, Verdict>();
-  private readonly _drafts = new Set<string>();
+  private readonly _verdicts = new Map<string, Verdict>();
   private readonly _identity = ui.divV([], 'moltrack-ems-identity');
-
-  static configure(compounds: DomainTable<CompoundRow>): void {
-    compounds.validators.add('original_structure', (_, row) => CompoundsApp._verdicts.get(row.id)?.problem ?? null);
-  }
 
   constructor(options: DomainAppOptions) {
     super(options);
     this.own(StructureSearch.register());
+    this.own((this.table as DomainTable<CompoundRow>).validators.add('original_structure', (_, row) =>
+      this._verdicts.get(row.id)?.problem ?? null));
     this.listSource.hosted = (condition, signal) => StructureSearch.matching(condition, signal);
     // a saved compound shows the identity stored with it; only a draft's is derived
     this.effect(() => {
@@ -55,16 +52,14 @@ export class CompoundsApp extends DomainApp {
       this.header.append(this._identity);
       const changes = edit.onChanged.subscribe(() => void this._derive(source));
       const unguard = source.guard(() => {
-        const verdict = CompoundsApp._verdicts.get(source.currentRow.peek()?.id ?? '');
+        const verdict = this._verdicts.get(source.currentRow.peek()?.id ?? '');
         return verdict?.pending ? 'The structure is still being checked' : verdict?.problem ?? null;
       });
       return () => {
         changes.unsubscribe();
         unguard();
         this._identity.remove();
-        for (const id of this._drafts)
-          CompoundsApp._verdicts.delete(id);
-        this._drafts.clear();
+        this._verdicts.clear();
       };
     });
   }
@@ -79,11 +74,10 @@ export class CompoundsApp extends DomainApp {
     if (row === null || !Rows.isDraft(row))
       return;
     const input = row.original_structure ?? '';
-    if (CompoundsApp._verdicts.get(row.id)?.input === input)
+    if (this._verdicts.get(row.id)?.input === input)
       return;
     const verdict: Verdict = {input, pending: input !== '', problem: null};
-    CompoundsApp._verdicts.set(row.id, verdict);
-    this._drafts.add(row.id);
+    this._verdicts.set(row.id, verdict);
     let identity: CompoundIdentity | null = null;
     if (input !== '') {
       const rule = MolTrackTables.matchRule();
@@ -100,7 +94,7 @@ export class CompoundsApp extends DomainApp {
         identity = null;
       }
     }
-    if (CompoundsApp._verdicts.get(row.id) !== verdict)
+    if (this._verdicts.get(row.id) !== verdict)
       return;
     verdict.pending = false;
     for (const column of IDENTITY_COLUMNS) {
