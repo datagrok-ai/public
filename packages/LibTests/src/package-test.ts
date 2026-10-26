@@ -80,6 +80,7 @@ import './tests/webcomponents/viewer-host';
 import './tests/webcomponents-vue/ribbon-core';
 import './tests/webcomponents-vue/ribbon-elements';
 import './tests/webcomponents-vue/ribbon-service';
+import './tests/webcomponents-vue/tabs';
 import './tests/webcomponents-vue/ribbon-components';
 
 export const _package = new DG.Package();

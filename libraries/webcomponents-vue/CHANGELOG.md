@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tabs: Added a tab strip styled like `ui.tabControl`, with closable tabs and an optional + tab; every pane stays mounted, inactive ones are hidden, and a pane taller than the strip's host scrolls; headers and + work from the keyboard (Enter, Space) and are linked to their panes for screen readers
 * InputForm: Added the `hiddenInputs` prop; the `hidden` meta still hides an input
 * InputForm: A dataframe input with the `mutateOnly` annotation is disabled under the `restricted` or `info` restriction
 * IconFA, ComboPopup: the tooltip is also the `aria-label`, with role `button` for clickable items and `img` for status icons
