@@ -25,8 +25,8 @@
   background-repeat: no-repeat;
 }
 
-/* the platform's twistie (tree_view.css .d4-tree-view-tri) as a caret icon in a box one indent
-   step wide, so a child's caret sits under its parent's label */
+/* the platform's twistie (tree_view.css .d4-tree-view-tri) as a chevron in a box one indent
+   step wide, so a child's chevron sits under its parent's label */
 .u2-tree-row > .u2-tree-twistie {
   display: inline-flex;
   flex: 0 0 auto;
@@ -98,4 +98,12 @@
    the tooltip and the detail */
 .u2-tree-row-disabled .u2-tree-label {
   color: var(--dg-text-color-light);
+}
+
+/* the selected node as the platform tree draws it (.d4-tree-view-node-selected): a grey band
+   under text in its own colour, not the list's accent */
+.u2-tree .u2-list-row-selected,
+.u2-tree .u2-list-row-selected:hover {
+  background: var(--dg-grey-1);
+  color: var(--dg-text-color);
 }
