@@ -9,7 +9,7 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Rows, Access, Filters, div, span,
-  timestamp, EMPTY, isEmpty, text, loader, link, iconButton} from '@datagrok-libraries/u2';
+  timestamp, EMPTY, isEmpty, text, loader, link, iconButton, notify} from '@datagrok-libraries/u2';
 import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
 import {propertyForm, ObjectForm, Editors, userPick, groupPick} from '@datagrok-libraries/u2/src/dg/index.js';
@@ -437,7 +437,8 @@ export class DomainForm extends Control {
       parts.push(div(['v', version], 'u2-domain-form-system-item'));
     if (names.has('id')) {
       const id = String(row.id);
-      const copy = iconButton('copy', () => void navigator.clipboard?.writeText(id), {tooltip: `Copy id ${id}`});
+      const copy = iconButton('copy', () => void navigator.clipboard?.writeText(id)
+        .then(() => notify.info('Id copied to clipboard')), {tooltip: `Copy id ${id}`});
       copy.classList.add('u2-domain-form-system-copy');
       parts.push(div([copy, 'Id'], 'u2-domain-form-system-item'));
     }
