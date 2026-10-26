@@ -180,7 +180,6 @@ export class DomainApp extends Control {
 
   private static readonly _byView = new WeakMap<DG.ViewBase, DomainApp>();
   private static readonly _views = new WeakMap<DomainApp, DG.ViewBase>();
-  private static readonly _bases = new Map<string, string>();
 
   constructor(private readonly _options: DomainAppOptions) {
     super();
@@ -206,12 +205,7 @@ export class DomainApp extends Control {
     document.addEventListener('keydown', onSave);
     this.own(() => document.removeEventListener('keydown', onSave));
     DomainApp.live.add(this);
-    DomainApp._bases.set(table.address, this.base);
-    this.own(() => {
-      DomainApp.live.delete(this);
-      if (DomainApp._bases.get(table.address) === this.base)
-        DomainApp._bases.delete(table.address);
-    });
+    this.own(() => DomainApp.live.delete(this));
 
     this.listSource = this._source({query: _options.query ?? '', sort: _options.sort, pageSize: _options.pageSize,
       live: _options.live ?? true, liveMs: _options.liveMs});
@@ -417,8 +411,6 @@ export class DomainApp extends Control {
   rebase(base: string): void {
     if (base === '' || base === this._base.peek())
       return;
-    if (DomainApp._bases.get(this.table.address) === this._base.peek())
-      DomainApp._bases.set(this.table.address, base);
     this._base.value = base;
   }
 
@@ -859,9 +851,10 @@ export class DomainApp extends Control {
     return DomainApp._byView.get(view);
   }
 
-  /** The base path of the app last opened over a table address. */
+  /** The base path of the app open over a table address — the one the shell shows, else the one
+   * opened last. Read off the apps alive, so a closed app never answers for the table. */
   static baseOf(address: string): string | undefined {
-    return DomainApp._bases.get(address);
+    return DomainApp._pick((app) => app.table.address === address)?.base;
   }
 
   /** Ties an app to the view showing it (`DomainTable.app()`): {@link of} answers for it and
@@ -900,8 +893,15 @@ export class DomainApp extends Control {
     return DomainApp._views.get(app);
   }
 
+  /** The app at a base — several share one where an app opens a view per parent (Stockroom's
+   * locations): the one the shell shows, else the one opened last. */
   private static _at(base: string | undefined): DomainApp | undefined {
-    return base === undefined ? undefined : [...DomainApp.live].find((app) => app.base === base);
+    return base === undefined ? undefined : DomainApp._pick((app) => app.base === base);
+  }
+
+  private static _pick(test: (app: DomainApp) => boolean): DomainApp | undefined {
+    const apps = [...DomainApp.live].filter(test);
+    return apps.find((app) => app._isCurrentView()) ?? apps[apps.length - 1];
   }
 
   private static _front(app: DomainApp): void {

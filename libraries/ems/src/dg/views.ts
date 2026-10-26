@@ -34,21 +34,34 @@ export interface DomainViewsOptions {
 }
 
 export class DomainViews {
-  /** Where each table's rows open: the views made over it last. */
-  private static readonly _byTable = new Map<string, DomainViews>();
+  /** Where each table's rows open: every views object over it, the latest last, until disposed. */
+  private static readonly _byTable = new Map<string, DomainViews[]>();
 
   constructor(private readonly _options: DomainViewsOptions) {
     for (const entry of _options.views)
-      DomainViews._byTable.set(entry.table, this);
+      DomainViews._byTable.set(entry.table, [...DomainViews._byTable.get(entry.table) ?? [], this]);
   }
 
   /** Opens a saved row of `table` in the view of it some views have — brought forward at the row, or docked; false
-   * where no views show the table. */
+   * where no views show the table. The views with an app open over the table win over the latest made. */
   static openRow(table: string, id: string): boolean {
-    const views = DomainViews._byTable.get(table);
+    const all = DomainViews._byTable.get(table) ?? [];
+    const open = all.filter((v) => [...DomainApp.live].some((app) => app.base === v.baseOf(table)));
+    const views = open[open.length - 1] ?? all[all.length - 1];
     if (views !== undefined)
       void views.show(`${views._segment(views._entry(table))}?entity=${encodeURIComponent(DomainAddress.escape(id))}`);
     return views !== undefined;
+  }
+
+  /** Takes these views out of where rows open — a package that rebuilds its views drops the old. */
+  dispose(): void {
+    for (const entry of this._options.views) {
+      const left = (DomainViews._byTable.get(entry.table) ?? []).filter((v) => v !== this);
+      if (left.length === 0)
+        DomainViews._byTable.delete(entry.table);
+      else
+        DomainViews._byTable.set(entry.table, left);
+    }
   }
 
   /** A new view at an address under the path — `Batches`, `Compounds?entity=<id>`; '' is the first view's list —

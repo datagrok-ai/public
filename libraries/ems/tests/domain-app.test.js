@@ -1678,3 +1678,15 @@ scoped('the list order is the user\'s: Sort by writes the source and the path, a
   assert.equal(sort.root.hidden, true, 'the trash keeps its newest-deleted order');
   a.dispose();
 });
+
+scoped('the registries read the apps alive: closing the latest app over a table leaves the earlier one answering', async () => {
+  const {table, app: first} = await app();
+  const second = domains.app({table, base: '/apps/T/Other', pageSize: 10});
+  document.body.append(second.root);
+  await flush();
+  assert.equal(DomainApp.baseOf('grit.issue'), '/apps/T/Other', 'the one opened last');
+  second.dispose();
+  assert.equal(DomainApp.baseOf('grit.issue'), BASE, 'not forgotten with the other one');
+  first.dispose();
+  assert.equal(DomainApp.baseOf('grit.issue'), undefined);
+});
