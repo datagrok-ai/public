@@ -8,7 +8,7 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, signal, computed, batch, untracked, ReadonlySignal, Signal, button, div, divH, divV, span, link,
-  icon, Filters, allowedActions, actionsMenu, iconButton, buttonWithIcon, ButtonGroup, Breadcrumbs, Rows, Menu}
+  icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu}
   from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
@@ -722,13 +722,12 @@ export class DomainApp extends Control {
     action.run();
   }
 
-  /** The Actions button — labelled, beside SAVE, the app's one overflow entry (the view's ≡ is the
-   * platform's): the menu is built on every open, so its items read the page and the mode in force.
+  /** The ⋮ button: the menu is built on every open, so its items read the page and the mode in force.
    * Permission ⇒ hidden — the button is gone while the access allows nothing in it. */
   private _actionsMenu(): Control {
     const control = this.runInScope(() => {
       const open = () => actionsMenu(this.menuActions(), {access: this.listSource.access.peek()}).show({anchor: el});
-      const el = buttonWithIcon('Actions', 'chevron-down', open, {iconRight: true});
+      const el = iconButton('ellipsis-v', open, {tooltip: 'More actions'});
       el.dataset.u2 = 'actions-menu';
       return new Control(el);
     });

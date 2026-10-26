@@ -59,7 +59,7 @@ under its own `SharedSession`:
   (`DomainTable.open(row)`) activates the running app instead of a second view.
 - **The ribbon** is `DomainApp.ribbon()`, three named slots: `main` — New and Discard as icon
   buttons, Save (Ctrl+S; Tab from the form's last field lands on it) the one raised button, the
-  labelled **Actions** menu (below), Refresh shown only while the page is stale; `tools` — the
+  ⋮ **Actions** menu (below), Refresh shown only while the page is stale; `tools` — the
   search box and the Sort by menu, on the list page only; `presets` — empty unless a subclass
   fills it. New is hidden without `insert`; Discard is disabled while there is nothing to save,
   except on an untouched create page, which it leaves. The filter box is a row of the list page,
@@ -83,7 +83,7 @@ under its own `SharedSession`:
 
 ## The Actions menu: import, bulk edit, the deleted rows
 
-The ribbon's Actions menu is `DomainApp.menuActions()`, in sections, each item gated on the
+The ribbon's ⋮ Actions menu is `DomainApp.menuActions()`, in sections, each item gated on the
 capability it needs, so a caller without it never sees the item: on the entity page the row's own
 actions first (the table's row actions, then Delete); Import… and Bulk edit…; then **Show deleted
 <rows>**. `menu: {bulkEdit: false}` drops a built-in item. A `DomainApp` subclass that adds to the

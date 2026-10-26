@@ -1549,7 +1549,7 @@ scoped('the entity page Actions menu: the row first, Delete last of it, then the
   assert.deepEqual(actions.map((x) => x.separator === true), [false, false, true, false, true],
     'the row, the table and the mode switch are sections of their own');
   const more = a.ribbon().main.find((c) => c.root.dataset.u2 === 'actions-menu');
-  assert.equal(more.root.textContent, 'Actions', 'a labelled button, not a glyph');
+  assert.equal(more.root.getAttribute('aria-label'), 'More actions', 'the ⋮ icon button');
   actions.find((x) => x.name === 'Delete').run();
   await flush();
   assert.equal(a.session.isDirty.value, true, 'staged, like a list row, until the Save');
