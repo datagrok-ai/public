@@ -124,8 +124,10 @@ export class DomainPick extends PickInput<PickItem> {
     const caption = await DomainPick.host?.caption(table) ?? null;
     const limit = options.limit ?? 10;
     const q = query.trim();
-    const scope = q !== '' && t.info.searchableColumns.length > 0 ?
-      {search: q, filter: DomainPick.filter(undefined, '', options.filter)} :
+    const extra = DomainPick.filter(undefined, '', options.filter);
+    const key = DomainPick.keyCondition(t, q);
+    const scope = key !== undefined ? {filter: DomainPick.orKey(t.info, q, key, extra)} :
+      q !== '' && t.info.searchableColumns.length > 0 ? {search: q, filter: extra} :
       {filter: DomainPick.filter(DomainPick.nameColumn(t.info), q, options.filter)};
     const sort = t.info.nameColumn ?? (t.info.businessKey.length === 1 ? t.info.businessKey[0] : undefined);
     const rows = await t.query({...scope, sort, limit: limit + 1});
@@ -216,6 +218,42 @@ export class DomainPick extends PickInput<PickItem> {
     const detail = [info.nameColumn, ...info.searchableColumns].filter((c): c is string => c != null)
       .map((c) => text(row[c])).find((v) => v !== '' && v !== name);
     return detail === undefined ? {id: String(row.id), name} : {id: String(row.id), name, detail};
+  }
+
+  /** The search over the searchable columns (else the name column) OR-ed with `key`, AND-ed with `extra`. */
+  private static orKey(info: DomainTableInfoLike, q: string, key: DomainConditionNode,
+    extra: DomainConditionNode[] | undefined): DomainConditionTree {
+    const columns = info.searchableColumns.length > 0 ? info.searchableColumns : [DomainPick.nameColumn(info)];
+    const match: DomainConditionNode[] = [key];
+    for (const c of columns)
+      match.push('or', {property: c, operator: 'like', value: `%${Filters.escapeLike(q)}%`});
+    return extra === undefined ? match : [match, 'and', ...extra];
+  }
+
+  /** The query as the name column's number in its display format (`DG-000482`): the whole ID is that
+   * number, a part after the prefix a range of numbers, bare digits a substring of the number. */
+  private static keyCondition(t: DomainTableLike, query: string): DomainConditionNode | undefined {
+    const column = DomainPick.nameColumn(t.info);
+    const prop = t.properties.find((p) => p.name === column);
+    const type = prop?.propertyType ?? prop?.type;
+    const format = prop?.format ?? '';
+    if ((type !== 'int' && type !== 'bigint') || format === '' || query === '')
+      return undefined;
+    const prefix = /^[^0#]*/.exec(format)![0];
+    const width = /^[0#]*/.exec(format.slice(prefix.length))![0].length;
+    const anchored = prefix !== '' && query.toUpperCase().startsWith(prefix.toUpperCase());
+    const digits = anchored ? query.slice(prefix.length) : query;
+    if (!/^\d{1,15}$/.test(digits))
+      return undefined;
+    if (!anchored) {
+      const bare = digits.replace(/^0+/, '');
+      return bare === '' ? undefined : {property: column, operator: 'like', value: `%${bare}%`};
+    }
+    if (digits.length >= width)
+      return {property: column, operator: '=', value: Number(digits)};
+    const scale = 10 ** (width - digits.length);
+    return [{property: column, operator: '>=', value: Number(digits) * scale}, 'and',
+      {property: column, operator: '<', value: (Number(digits) + 1) * scale}];
   }
 
   private static table(address: string): Promise<DomainTableLike> {
