@@ -53,9 +53,12 @@
   --dg-hover-subtle: var(--dg-grey-1);
   --dg-selection-bg: #DCEAF8;
   --dg-selection-text: var(--dg-accent);
-  /* the grid's row states as d4 paints them: GridLook currentRowColor and selectedRowsColor at alpha 50 */
-  --dg-grid-current-row: rgba(0, 255, 0, 0.2);
-  --dg-grid-selected-row: rgba(220, 220, 80, 0.2);
+  /* the grid's row states as d4 paints them (GridLook): current row, mouse-over row and selection at
+     alpha 50/255, and the mouse-over row's opaque 4px stripe */
+  --dg-grid-current-row: rgba(0, 255, 0, 0.196);
+  --dg-grid-selected-row: rgba(220, 220, 80, 0.196);
+  --dg-grid-mouse-over-row: rgba(184, 211, 237, 0.196);
+  --dg-grid-mouse-over-stripe: #48A6F2;
   --dg-border: var(--dg-grey-2);
   --dg-border-subtle: var(--dg-grey-1);
   --dg-focus: var(--dg-blue-1);

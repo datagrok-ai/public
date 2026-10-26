@@ -223,18 +223,37 @@
   white-space: nowrap;
 }
 
-/* a record's rows read as the platform grid's: the current row (the one the form shows) green, a
-   selected one the grid's selection tint, with no stripe and no focus box */
-.u2-domain-list-rows .u2-list-row-selected {
+/* a record's rows read as the platform grid's, its layers in the grid's order: the current row, the
+   mouse-over row with its stripe, then the selection over both — no accent stripe, no focus box.
+   --u2-row-bg is the row's colour without the stripe: the hover actions over its end are painted
+   with it */
+.u2-list.u2-domain-list-rows .u2-list-row {
+  --u2-domain-row-base: var(--dg-bg);
+  --u2-domain-row-current: transparent;
+  --u2-domain-row-over: transparent;
+  --u2-domain-row-stripe: transparent;
+  --u2-domain-row-selected: transparent;
+  --u2-row-bg: linear-gradient(var(--u2-domain-row-selected), var(--u2-domain-row-selected)),
+    linear-gradient(var(--u2-domain-row-over), var(--u2-domain-row-over)),
+    linear-gradient(var(--u2-domain-row-current), var(--u2-domain-row-current)), var(--u2-domain-row-base);
+  background: linear-gradient(var(--u2-domain-row-selected), var(--u2-domain-row-selected)),
+    linear-gradient(to right, var(--u2-domain-row-stripe) 4px, transparent 4px),
+    linear-gradient(var(--u2-domain-row-over), var(--u2-domain-row-over)),
+    linear-gradient(var(--u2-domain-row-current), var(--u2-domain-row-current)), var(--u2-domain-row-base);
+}
+
+.u2-list.u2-domain-list-rows .u2-list-row-current {
+  --u2-domain-row-current: var(--dg-grid-current-row);
+}
+
+.u2-list.u2-domain-list-rows .u2-list-row:hover {
+  --u2-domain-row-over: var(--dg-grid-mouse-over-row);
+  --u2-domain-row-stripe: var(--dg-grid-mouse-over-stripe);
+}
+
+.u2-list.u2-domain-list-rows .u2-list-row-selected {
+  --u2-domain-row-selected: var(--dg-grid-selected-row);
   box-shadow: none;
-}
-
-.u2-domain-list-rows .u2-list-row.u2-list-row-selected {
-  background: var(--dg-grid-selected-row);
-}
-
-.u2-domain-list-rows .u2-list-row.u2-list-row-current {
-  background: var(--dg-grid-current-row);
 }
 
 .u2-list.u2-domain-list-rows:focus-visible .u2-list-row-current {
@@ -244,11 +263,11 @@
 /* the row a load makes current is no pick: unmarked until the list has the focus, and never drawn
    as selected until it is clicked or keyed */
 .u2-domain-list-seeded .u2-list-row.u2-list-row-selected:not(:hover) {
-  background: none;
+  --u2-domain-row-selected: transparent;
 }
 
 .u2-domain-list-seeded .u2-list:not(:focus) .u2-list-row-current:not(:hover) {
-  background: none;
+  --u2-domain-row-current: transparent;
 }
 
 /* a change waiting for the save, a staged restore among them: the amber edge of a pending change */
@@ -260,7 +279,7 @@
 /* a delete waiting for the save stays readable: struck through on a red tint, never faded. A row
    in the trash is deleted already and reads as any other row */
 .u2-list-row.u2-domain-list-deleted.u2-domain-list-pending {
-  background: var(--dg-red-1);
+  --u2-domain-row-base: var(--dg-red-1);
 }
 
 .u2-domain-list-deleted.u2-domain-list-pending .u2-domain-list-content {
