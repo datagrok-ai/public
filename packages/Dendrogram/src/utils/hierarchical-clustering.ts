@@ -136,6 +136,7 @@ export async function hierarchicalClusteringUI(
 
   const loaderNB = attachLoaderDivToGrid(tv.grid, neighborWidth);
   let loaderClosed = false;
+  loaderNB.onClosed.subscribe(() => loaderClosed = true);
   const closeLoader = () => {
     if (loaderClosed) return;
     loaderClosed = true;
@@ -171,6 +172,8 @@ export async function hierarchicalClusteringUI(
        distanceMatrix!.data, preparedDf.rowCount, linkageCode
     );
     const clusterMatrix = await clusterMatrixWorker;
+    if (loaderClosed)
+      return;
 
     // const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
     // Replace rows indexes with filtered

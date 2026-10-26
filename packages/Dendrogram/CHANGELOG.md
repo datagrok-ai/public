@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1112](https://github.com/datagrok-ai/core/issues/1112): Hierarchical Clustering: Fixed the dendrogram still appearing, or an error being raised, after the user removed it with Remove Dendrogram while clustering was running
 * [core#1111](https://github.com/datagrok-ai/core/issues/1111): Hierarchical Clustering: Fixed "Not a table id: null" when clustering a table that has no name
 * [core#1001](https://github.com/datagrok-ai/core/issues/1001): Hierarchical Clustering: Fixed the dialog clustering a closed table, or showing no Features for a newly opened one, when tables were closed or opened while it was open
 * [core#916](https://github.com/datagrok-ai/core/issues/916): Dendrogram: Fixed hovering a viewer in another view of the table throwing "Cannot read properties of null (reading 'mouseOverRowIdx')" after the view with the tree was closed

@@ -10,7 +10,7 @@ import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {getClusterMatrixWorker, LinkageMethodCode} from '@datagrok-libraries/math';
 
-import {hierarchicalClusteringDialog, hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
+import {DENDROGRAM_NEIGHBOR_TEMP_NAME, hierarchicalClusteringDialog, hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
 import {TreeHelper} from '../utils/tree-helper';
 
 import {_package} from '../package-test';
@@ -117,6 +117,20 @@ category('hierarchicalClustering', () => {
     tv.close();
   });
 
+  // Remove Dendrogram on the loader while clustering runs cancels the dendrogram
+  test('UI-loader-removed-no-dendrogram', async () => {
+    const dataDf: DG.DataFrame = DG.DataFrame.fromCsv('a,b\n1,2\n2,3\n3,4\n4,5');
+    dataDf.name = 'testHCLoaderRemoved';
+    const tv: DG.TableView = grok.shell.addTableView(dataDf);
+    try {
+      const hcPromise = hierarchicalClusteringUI(dataDf, ['a', 'b'], DistanceMetric.Euclidean, 'average');
+      tv.grid.root.querySelector<HTMLElement>('.dendrogram-loader .dendrogram-close-bttn')!.click();
+      await hcPromise;
+      expect(!!tv.grid.temp[DENDROGRAM_NEIGHBOR_TEMP_NAME], false, 'dendrogram attached after the loader was removed');
+      expect(tv.grid.root.querySelector('.dendrogram-loader'), null, 'loader');
+    } finally {
+      tv.close();
+    }
   // A table with no name and no view gets a view opened for it
   test('UI-unnamed-table', async () => {
     const dataDf: DG.DataFrame = DG.DataFrame.fromCsv('a,b\n1,2\n2,3\n3,4\n4,5');
