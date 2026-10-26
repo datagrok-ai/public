@@ -3,7 +3,6 @@
 ## v.next
 
 * Added `domains.configure(address, fn, {id})`: an app's rules apply to every handle over the table
-* DomainApp: Added `header`, a slot above the entity form
 * Bulk edit: Redesigned the dialog as one form with a field picker
 * Bulk edit: Refusals and the table's validators show in the dialog
 * Import: The Preview button names what lands and says why it is held

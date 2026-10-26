@@ -478,14 +478,13 @@ export class DomainForm extends Control {
   }
 
   private _applyCaptions(row: RowView): void {
-    for (const [name, {id, caption}] of this._captions) {
+    for (const [name, {id, caption, address}] of this._captions) {
       if (String(row[name] ?? '') !== id)
         continue;
       const el = this.root.querySelector<HTMLElement>(`[data-u2-name="${name}"] [data-u2-part="readonly-value"]`);
       if (el === null)
         continue;
       const host = DomainPick.host;
-      const address = this._captions.get(name)!.address;
       if (host === undefined || address === undefined || caption === '' || Rows.isDraft(id))
         el.textContent = caption;
       else

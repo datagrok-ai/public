@@ -170,7 +170,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _rows: FrameRows;
   private readonly _columns = new Map<string, Signal<unknown>>();
   private readonly _guards = new Set<() => string | null>();
-  private readonly _live = signal<readonly ReadonlySignal<string | null>[]>([]);
+  private readonly _live = signal<readonly (ReadonlySignal<string | null> | undefined)[]>([]);
   /** What the caller listed as {@link DomainSourceOptions.captions}; undefined is the default. */
   private readonly _captionOption: string[] | undefined;
   private _table: DomainTableLike | undefined;
@@ -242,7 +242,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       const code = (error as {code?: unknown} | undefined)?.code;
       if ((code === 'validation' || code === DomainSource.REFUSED) && this._state.value !== 'error')
         return DomainSource._message(error);
-      return this.validity.value ?? this._live.value.map((live) => live.value).find((v) => v !== null) ?? null;
+      return this.validity.value ?? this._live.value.map((live) => live?.value ?? null).find((v) => v !== null) ?? null;
     });
     this.isSaving = computed(() => this._edit.value?.isSaving.value ?? false);
     this.summary = computed(() => this._summary());
@@ -515,12 +515,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * Answers the unregister. */
   guard(check: () => string | null, live?: ReadonlySignal<string | null>): () => void {
     this._guards.add(check);
-    if (live !== undefined)
-      this._live.value = [...this._live.peek(), live];
+    this._live.value = [...this._live.peek(), live];
     return () => {
       this._guards.delete(check);
-      if (live !== undefined)
-        this._live.value = this._live.peek().filter((s) => s !== live);
+      this._live.value = this._live.peek().filter((s) => s !== live);
     };
   }
 
