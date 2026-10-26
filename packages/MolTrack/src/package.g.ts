@@ -116,7 +116,7 @@ export async function getEmsBatch(grokId: string) {
 //description: The rows of a MolTrack EMS table that match a filter and, for compounds, a structure condition
 //input: string table = 'compound' { choices: ["compound","compound_batch","addition","batch_addition","assay","assay_run","assay_result"]; description: Table to search. }
 //input: string filter { optional: true; description: Filter in the list filter grammar, such as: common_name contains "acid" and mol_logp > 2. }
-//input: string structure { optional: true; description: SMILES or molfile the compounds are matched against; compound table only. }
+//input: string structure { optional: true; description: SMILES or molfile the compounds are matched against (compounds only) }
 //input: string structureOperator = 'has substructure' { optional: true; choices: ["has substructure","is substructure of","is similar to","is exactly"]; description: How the structure is matched. }
 //output: dataframe result
 export async function searchEms(table: string, filter?: string, structure?: string, structureOperator?: string) : Promise<any> {

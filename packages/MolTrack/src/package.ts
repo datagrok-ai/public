@@ -277,7 +277,7 @@ export class PackageFunctions {
   static async searchEms(
     @grok.decorators.param({options: {initialValue: 'compound', choices: ['compound', 'compound_batch', 'addition', 'batch_addition', 'assay', 'assay_run', 'assay_result'], description: 'Table to search.'}}) table: string,
     @grok.decorators.param({options: {optional: true, description: 'Filter in the list filter grammar, such as: common_name contains "acid" and mol_logp > 2.'}}) filter?: string,
-    @grok.decorators.param({options: {optional: true, description: 'SMILES or molfile the compounds are matched against; compound table only.'}}) structure?: string,
+    @grok.decorators.param({options: {optional: true, description: 'SMILES or molfile the compounds are matched against (compounds only)'}}) structure?: string,
     @grok.decorators.param({options: {optional: true, initialValue: 'has substructure', choices: ['has substructure', 'is substructure of', 'is similar to', 'is exactly'], description: 'How the structure is matched.'}}) structureOperator?: string,
   ): Promise<DG.DataFrame> {
     return await MolTrackEms.search(table, filter ?? '', structure ?? '', structureOperator ?? 'has substructure');
