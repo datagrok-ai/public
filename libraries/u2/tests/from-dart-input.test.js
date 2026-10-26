@@ -206,6 +206,7 @@ bridge('without the core surface only u2 validators apply', () => {
   assert.equal(input.validity.value, null, 'an older platform is opaque to u2');
   input.addValidator((value) => value === '' ? 'Required' : null);
   assert.equal(input.validity.value, 'Required');
+  input.touch();
   assert.equal(input.root.querySelector('.u2-input-error').textContent, 'Required',
     'and u2 keeps its own error line, since the platform shows no u2 message');
   input.dispose();

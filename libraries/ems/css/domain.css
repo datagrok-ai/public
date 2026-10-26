@@ -4,16 +4,6 @@
   padding: var(--dg-space-m);
 }
 
-/* a pristine draft is not wrong yet: a field's verdict shows once it was edited or left */
-.u2-input-untouched .u2-input-error {
-  display: none;
-}
-
-.u2-input-untouched .u2-input-editor.u2-invalid,
-.u2-input-untouched .u2-input-editor.u2-invalid:focus {
-  border-bottom-color: var(--dg-border);
-}
-
 /* the amber edge of a pending change, the grid's dirty cell in form terms */
 .u2-input-changed > .u2-input-box {
   border-left: 3px solid var(--dg-orange-2);

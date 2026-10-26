@@ -780,8 +780,8 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   assert.equal(a.mode.value, 'live', 'the root crumb leaves the trash');
   assert.equal(await a.setTrash(true), true);
   await flush();
-  assert.equal(save.root.hidden, false, 'a restore is saved: the trash is a page that saves (R-c)');
-  assert.equal(discard.root.hidden, false);
+  assert.equal(save.root.hidden, true, 'nothing in the trash is edited: no Save while nothing is staged');
+  assert.equal(discard.root.hidden, true);
   assert.equal(add.root.hidden, true, 'and nothing to insert: the access is narrowed');
 
   const row = a.listSource.rows.byKey('i2');
@@ -791,6 +791,8 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   a.list.actionsFor(row)[0].run();
   await flush();
   assert.equal(a.session.isDirty.value, true, 'a restore is staged into the session, not written');
+  assert.deepEqual([save.root.hidden, discard.root.hidden], [false, false],
+    'a restore is saved: Save and Discard are there once one is staged (R-c)');
   assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), ['Ibuprofen'], 'and the row stays put');
   // one dirty source words its own pending changes: "1 restore pending", not the session's
   // count of them (M1)

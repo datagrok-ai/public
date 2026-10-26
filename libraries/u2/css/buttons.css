@@ -27,11 +27,11 @@
   border: var(--dg-border-width) solid transparent;
 }
 
-.u2-btn.u2-icon-btn:hover:not(:disabled) {
+.u2-btn.u2-icon-btn:hover:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-hover-subtle);
 }
 
-.u2-btn.u2-icon-btn:active:not(:disabled),
+.u2-btn.u2-icon-btn:active:not(:disabled, [aria-disabled='true']),
 .u2-btn.u2-icon-btn-pressed {
   color: var(--dg-accent);
   background: var(--dg-steel-1);
@@ -64,7 +64,7 @@
 }
 
 /* a disabled one keeps the disabled skin: white on this fill was unreadable */
-.d4-ribbon-item .u2-btn.u2-btn-primary:not(:disabled) {
+.d4-ribbon-item .u2-btn.u2-btn-primary:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-accent-secondary);
 }
 
@@ -80,7 +80,7 @@
   font-weight: var(--dg-font-weight-regular);
 }
 
-.d4-toolbox .u2-btn.u2-btn-primary:not(:disabled) {
+.d4-toolbox .u2-btn.u2-btn-primary:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-accent-secondary);
 }
 
@@ -137,11 +137,11 @@
   border-bottom-right-radius: var(--dg-radius);
 }
 
-.u2-btn-group-item:hover:not(:disabled) {
+.u2-btn-group-item:hover:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-hover-subtle);
 }
 
-.u2-btn-group-item:active:not(:disabled) {
+.u2-btn-group-item:active:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-steel-1);
 }
 
@@ -160,7 +160,7 @@
   border-color: var(--dg-focus);
 }
 
-.u2-btn-group-item:disabled {
+.u2-btn-group-item:is(:disabled, [aria-disabled='true']) {
   color: var(--dg-text-color-disabled);
   background: var(--dg-bg);
   cursor: default;

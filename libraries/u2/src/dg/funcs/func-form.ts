@@ -846,8 +846,7 @@ export class FuncCallForm extends Form {
     // the disable sweeps every button under root — the state element's Retry must stay clickable
     if (!field.input.enabled) {
       const retry = field.state?.root.querySelector<HTMLButtonElement>('.u2-param-source-retry');
-      if (retry != null)
-        retry.disabled = false;
+      retry?.removeAttribute('disabled');
     }
   }
 

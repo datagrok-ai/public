@@ -538,6 +538,7 @@ w3('a table with no passing columns names the cause instead of the generic requi
   pickTable(f, 'df', 'nums');
   await flush();
   assert.equal(f.getInput('cat').validity.peek(), 'No categorical columns in \'nums\'');
+  f.getInput('cat').touch();
   assert.equal(f.getInput('cat').root.querySelector('.u2-input-error').textContent,
     'No categorical columns in \'nums\'', 'the cause is on the field, not the generic message');
 

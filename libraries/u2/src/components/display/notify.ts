@@ -1,5 +1,6 @@
 /* Notifications — the u2 counterpart of the platform's `Balloon` (d4/widgets/balloon): a
-   top-right stack of per-type balloons. Ported semantics: info auto-hides, warning and error
+   top-right stack of per-type balloons; on a platform page the platform layer routes them into the
+   platform's own stack instead (`presenter`, src/dg). Ported semantics: info auto-hides, warning and error
    stay until closed; hovering pauses the countdown; `oneTimeKey` persists across sessions,
    `singleKey` dedupes concurrent balloons; copy and close reveal on hover; a click anywhere
    on the balloon closes it. Deliberately not ported: `appendHtml` for string content — a
@@ -32,11 +33,19 @@ export interface NotifyHandle {
   close(): void;
 }
 
+/** Shows a balloon somewhere else than u2's own stack — the platform's, inside the platform
+ * (`src/dg`) — and calls `closed` once it is gone; undefined leaves it to u2's stack. Runs after the
+ * `oneTimeKey` and `singleKey` checks, which u2 keeps. */
+export type NotifyPresenter = (content: string | HTMLElement, type: NotifyType, options: NotifyOptions,
+  closed: () => void) => NotifyHandle | undefined;
+
 const TYPE_ICONS: Record<NotifyType, string> = {
   info: 'info-circle', warning: 'exclamation-triangle', error: 'times-circle',
 };
 
 class Notify {
+  /** Set by the platform layer: one balloon stack, the platform's, on a platform page. */
+  static presenter: NotifyPresenter | undefined;
   private static _container: HTMLElement | undefined;
   private static readonly _singleKeys = new Set<string>();
   private static readonly _open = new Set<() => void>();
@@ -73,6 +82,24 @@ class Notify {
       return null;
     if (singleKey !== undefined)
       Notify._singleKeys.add(singleKey);
+
+    let routedClose: (() => void) | undefined;
+    let gone = false;
+    const released = () => {
+      gone = true;
+      if (routedClose !== undefined)
+        Notify._open.delete(routedClose);
+      if (singleKey !== undefined)
+        Notify._singleKeys.delete(singleKey);
+    };
+    const routed = Notify.presenter?.(content, type, options, released);
+    if (routed !== undefined) {
+      routedClose = routed.close;
+      // a presenter that could not show it released it already
+      if (!gone)
+        Notify._open.add(routed.close);
+      return routed;
+    }
 
     const body = div([], 'u2-notify-content');
     if (typeof content === 'string')

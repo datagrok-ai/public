@@ -121,8 +121,19 @@ function _open(source: DomainSource, props: IProperty[], items: {value: string, 
     }
     return null;
   });
+  // what blocks OK is its tooltip from the start, and the line above the buttons once the user has acted
+  const acted = signal(false);
+  // a pick in an input's popup (a calendar, a list) counts too: it fires nothing inside the dialog
+  dialog.runInScope(() => {
+    for (const input of [target, ...form.inputs])
+      input.on('userInput', () => acted.value = true);
+  });
+  dialog.effect(() => {
+    if (props.some((p) => include.get(p.name!)!.value))
+      acted.value = true;
+  });
   const reason = span('', 'u2-domain-bulk-reason');
-  dialog.effect(() => reason.textContent = problem.value ?? '');
+  dialog.effect(() => reason.textContent = acted.value ? problem.value ?? '' : '');
   dialog.add(target)
     .add(span('Checked fields are written to every target row; a checked field left empty clears it.',
       'u2-domain-bulk-hint'))
@@ -142,7 +153,7 @@ function _open(source: DomainSource, props: IProperty[], items: {value: string, 
     if (written === null)
       return false;
     finish(written);
-  }).okEnabled(computed(() => problem.value === null))
+  }).okDisabled(problem)
     .onCancel(() => finish(null)).show({modal: true, width: 460});
 }
 

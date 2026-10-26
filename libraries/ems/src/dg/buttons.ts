@@ -1,9 +1,10 @@
 /* Save, Discard and New over a session — a source's own session of one today, the phase-2
-   session over several tables tomorrow. State ⇒ disabled: nothing to save, or a save in flight;
-   New is the one permission-gated button (hidden without `insert`), the fields and actions
-   having degraded by access already. Controls rather than bare buttons, so the effects they run
-   have an owner — `appView` disposes ribbon controls with the content. */
-import {Control, button} from '@datagrok-libraries/u2';
+   session over several tables tomorrow. State ⇒ disabled: nothing to save, a save in flight, or
+   — Save — a batch that may not go, its reason the tooltip; New is the one permission-gated button
+   (hidden without `insert`), the fields and actions having degraded by access already. Controls
+   rather than bare buttons, so the effects they run have an owner — `appView` disposes ribbon
+   controls with the content. */
+import {Control, Scope, button, computed} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
 import type {DomainSession} from '../core/session.js';
 import type {RowView} from '@datagrok-libraries/u2';
@@ -19,14 +20,16 @@ export class SessionButton extends Control {
   readonly button: HTMLButtonElement;
   readonly session: DomainSession;
 
-  constructor(target: SessionTarget, text: string,
-    options: {primary?: boolean, run: (session: DomainSession) => unknown}) {
+  /** `disabled` is `true`, or why the button is off — `button()`'s own option, read live. */
+  constructor(target: SessionTarget, text: string, options: {primary?: boolean, tooltip: string,
+    run: (session: DomainSession) => unknown, disabled: (session: DomainSession) => boolean | string}) {
     const session = SessionButton.sessionOf(target);
-    const el = button(text, () => void options.run(session), {primary: options.primary});
-    super(el);
+    const scope = new Scope();
+    const el = Scope.runWith(scope, () => button(text, () => void options.run(session),
+      {primary: options.primary, tooltip: options.tooltip, disabled: computed(() => options.disabled(session))}));
+    super(el, scope);
     this.button = el;
     this.session = session;
-    this.effect(() => el.disabled = !session.isDirty.value || session.isSaving.value);
   }
 
   static sessionOf(target: SessionTarget): DomainSession {
@@ -38,9 +41,10 @@ export class SessionButton extends Control {
  * hands the focus back to the paired form; the session's primary button, where Tab from a form's
  * last field lands. */
 export function saveButton(target: SessionTarget, options: SessionButtonOptions = {}): SessionButton {
-  const control = new SessionButton(target, options.text ?? 'Save', {primary: true, run: (session) => session.save()});
+  const control = new SessionButton(target, options.text ?? 'Save', {primary: true, tooltip: 'Save (Ctrl+S)',
+    run: (session) => session.save(),
+    disabled: (session) => session.isSaving.value || (session.validity.value ?? !session.isDirty.value)});
   control.root.dataset.u2 = 'save-button';
-  control.button.title = 'Save (Ctrl+S)';
   const session = control.session;
   session.primaryButton = control.button;
   control.own(() => {
@@ -51,9 +55,9 @@ export function saveButton(target: SessionTarget, options: SessionButtonOptions 
 }
 
 export function discardButton(target: SessionTarget, options: SessionButtonOptions = {}): SessionButton {
-  const control = new SessionButton(target, options.text ?? 'Discard', {run: (session) => session.discard()});
+  const control = new SessionButton(target, options.text ?? 'Discard', {tooltip: 'Discard changes',
+    run: (session) => session.discard(), disabled: (session) => !session.isDirty.value || session.isSaving.value});
   control.root.dataset.u2 = 'discard-button';
-  control.button.title = 'Discard changes';
   return control;
 }
 

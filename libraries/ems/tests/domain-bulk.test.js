@@ -1,15 +1,15 @@
 /* `domains.bulkEdit` (WO 3-8) on the memory backend: only targets that can be written are offered
-   (never "all N matching" while a search the server cannot take is set), whatever blocks OK is a
-   line above the buttons with OK disabled, the include checkbox — outside the input it enables —
+   (never "all N matching" while a search the server cannot take is set), whatever blocks OK is OK's
+   tooltip from the start and a line above the buttons once the user acted, the include checkbox — outside the input it enables —
    decides what is sent, nothing in the dialog is "required" (a checked field left empty CLEARS
    the column), the unsaved gate runs before it opens, and the report speaks the table's words. */
 
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, mock} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, Control, notify} from '@datagrok-libraries/u2';
+import {backends, Scope, Control, Tooltip, notify} from '@datagrok-libraries/u2';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {SCHEMA, backend} from './domain-fixtures.mjs';
 
@@ -53,9 +53,23 @@ function check(name) {
 /** The target picker: its value is `selected` or `matching`. */
 const target = () => Control.forElement(document.querySelector('[data-u2-name="target"]'));
 const targets = () => [...target().root.querySelectorAll('option')].map((o) => o.textContent);
-/** What blocks OK, said in the dialog rather than across the screen. */
+/** What blocks OK, said in the dialog rather than across the screen — once the user has acted. */
 const reason = () => document.body.querySelector('.u2-domain-bulk-reason')?.textContent ?? '';
 const okDisabled = () => buttonNamed('OK').disabled === true;
+
+/** What OK's tooltip says: why it is off, from the start — its hover delay run on fake timers. */
+function okTooltip() {
+  const ok = buttonNamed('OK');
+  mock.timers.enable({apis: ['setTimeout']});
+  try {
+    fire(ok, 'pointerenter');
+    mock.timers.tick(300);
+    return Tooltip.root.textContent;
+  } finally {
+    fire(ok, 'pointerleave');
+    mock.timers.reset();
+  }
+}
 
 /** The dialog up and rendered; the promise is handed back WRAPPED — an async function
  * returning it would chain on it and never come back until the dialog is answered. */
@@ -102,7 +116,8 @@ scoped('the checked columns are written to the selection; an unchecked one is le
   assert.equal(includeBox('done').parentElement.classList.contains('u2-domain-bulk-row'), true);
   assert.equal(field('done').enabled, false, 'an unchecked column has no editor');
   assert.equal(okDisabled(), true);
-  assert.match(reason(), /Check the fields to write/);
+  assert.equal(reason(), '', 'nothing is wrong before the user did anything');
+  assert.match(await okTooltip(), /Check the fields to write/, 'OK says why it is off');
   assert.equal(field('title').root.querySelector('.u2-input-error')?.textContent ?? '', '',
     'nothing in a bulk dialog is required: an empty checked field CLEARS the column');
   check('done');
@@ -129,7 +144,12 @@ scoped('nothing checked keeps OK disabled and says so inline; CANCEL resolves nu
   select(source, () => true);
   const {running} = await opened(source);
   assert.equal(okDisabled(), true);
-  assert.match(reason(), /Check the fields to write/);
+  assert.equal(reason(), '', 'a dialog just opened is not wrong yet');
+  assert.match(await okTooltip(), /Check the fields to write/);
+  check('done');
+  check('done');
+  await flush();
+  assert.match(reason(), /Check the fields to write/, 'once the user acted, the line says it');
   assert.equal(balloon('warning'), '', 'a refusal is not a balloon on the far edge of the screen');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);

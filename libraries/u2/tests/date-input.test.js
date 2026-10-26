@@ -7,7 +7,7 @@ process.env.TZ = 'America/New_York';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
-import {Scope} from '../src/index.js';
+import {Scope, Dates} from '../src/index.js';
 import {DateInput, DateTimeInput} from '../src/components/inputs/date-input.js';
 import {markSpan, spanOf} from '../src/core/span.js';
 
@@ -275,7 +275,7 @@ smoke('the grid marks today, the selection, adjacent months and out-of-range day
 });
 
 smoke('grid keyboard: arrows, Home/End, PageUp/PageDown, Shift+Page, Enter selects', async () => {
-  const input = mount(new DateInput({label: 'Date', value: new Date(2026, 7, 15)}));
+  const input = mount(new DateInput({label: 'Date', value: new Date(2026, 7, 15), firstDayOfWeek: 1}));
   await open(input);
   assert.equal(active().length, 1);
   assert.equal(active()[0].dataset.date, '2026-08-15', 'opening makes the picked day active');
@@ -370,6 +370,67 @@ smoke('DateTimeInput: segments step and wrap, and a day change keeps the time', 
   fire(segments[1], 'keydown', {key: 'Enter'});
   assert.equal(input.isOpen.value, false, 'Enter commits date and time together');
   assert.equal(editor(input).value, '2026-08-18 14:05');
+  input.dispose();
+});
+
+/** Runs `body` as a browser whose language is `language`. */
+async function inLocale(language, body) {
+  const saved = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  Object.defineProperty(globalThis, 'navigator', {value: {language}, configurable: true});
+  try {
+    await body();
+  } finally {
+    if (saved === undefined)
+      delete globalThis.navigator;
+    else
+      Object.defineProperty(globalThis, 'navigator', saved);
+  }
+}
+
+smoke('the week starts on the browser locale\'s first day: Sunday in en-US, Monday in de-DE; headers and grid agree', async () => {
+  assert.equal(Dates.firstDayOfWeek('en-US'), 0);
+  assert.equal(Dates.firstDayOfWeek('de-DE'), 1);
+  for (const [language, headers, first] of [
+    ['en-US', ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'], '2026-07-26'],
+    ['de-DE', ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'], '2026-07-27'],
+  ]) {
+    await inLocale(language, async () => {
+      const input = mount(new DateInput({label: 'Date', value: new Date(2026, 7, 15)}));
+      await open(input);
+      assert.deepEqual(popup().querySelectorAll('.u2-date-weekday').map((d) => d.textContent), headers, language);
+      assert.equal(days()[0].dataset.date, first, `${language}: the first cell is the first header's day`);
+      assert.equal(new Date(days()[0].dataset.date).getUTCDay(), headers[0] === 'Su' ? 0 : 1);
+      input.dispose();
+    });
+  }
+});
+
+smoke('without the engine\'s week info, the US-like regions start on Sunday and the rest on Monday', () => {
+  const proto = Intl.Locale.prototype;
+  const saved = ['getWeekInfo', 'weekInfo'].map((key) => [key, Object.getOwnPropertyDescriptor(proto, key)]);
+  for (const [key] of saved)
+    Object.defineProperty(proto, key, {value: undefined, configurable: true});
+  try {
+    assert.equal(Dates.firstDayOfWeek('en-CA'), 0);
+    assert.equal(Dates.firstDayOfWeek('fr-FR'), 1);
+  } finally {
+    for (const [key, descriptor] of saved) {
+      if (descriptor === undefined)
+        delete proto[key];
+      else
+        Object.defineProperty(proto, key, descriptor);
+    }
+  }
+});
+
+smoke('a pick in the calendar popup is the user\'s edit: a validator\'s message shows at once', async () => {
+  const input = mount(new DateInput({label: 'Date', value: new Date(2026, 7, 15), firstDayOfWeek: 1}));
+  input.addValidator((v) => v !== null && v.getDay() === 0 ? 'No Sundays' : null);
+  await open(input);
+  fire(day('2026-08-16'), 'click');
+  assert.equal(input.validity.value, 'No Sundays');
+  assert.equal(input.touched.value, true, 'the popup fired nothing at the input, and it is touched all the same');
+  assert.equal(input.root.querySelector('[data-u2-part="error"]').textContent, 'No Sundays');
   input.dispose();
 });
 

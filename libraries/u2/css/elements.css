@@ -72,18 +72,19 @@
   user-select: none;
 }
 
-.u2-btn:hover:not(:disabled) {
+.u2-btn:hover:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-hover-subtle);
 }
 
-.u2-btn:active:not(:disabled) {
+.u2-btn:active:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-hover);
 }
 
-/* still hit by the pointer: its tooltip says why it is disabled, and a click on it lands nowhere
-   instead of falling through to what is under it. Spelled out, so it also wins over an older copy
-   of this sheet that a package built before it injected earlier */
-.u2-btn:disabled {
+/* disabled by `aria-disabled` (core/elements.ts focusableWhenDisabled), natively only inside a
+   disabled input: still hit by the pointer and still a tab stop, so its tooltip says why. The
+   pointer events are spelled out, so they also win over an older copy of this sheet that a
+   package built before it injected earlier */
+.u2-btn:is(:disabled, [aria-disabled='true']) {
   color: var(--dg-text-color-disabled);
   cursor: default;
   pointer-events: auto;
@@ -96,19 +97,19 @@
   background: var(--dg-accent);
 }
 
-.u2-btn-primary:hover:not(:disabled) {
+.u2-btn-primary:hover:not(:disabled, [aria-disabled='true']) {
   color: var(--dg-white);
   background: var(--dg-accent);
   filter: contrast(90%) brightness(110%);
 }
 
-.u2-btn-primary:active:not(:disabled) {
+.u2-btn-primary:active:not(:disabled, [aria-disabled='true']) {
   color: var(--dg-white);
   background: var(--dg-accent);
   filter: brightness(85%);
 }
 
-.u2-btn-primary:disabled {
+.u2-btn-primary:is(:disabled, [aria-disabled='true']) {
   color: var(--dg-grey-4);
   background: var(--dg-steel-2);
 }
