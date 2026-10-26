@@ -69,9 +69,10 @@ export class DomainHistory extends Control {
       if (failed)
         this._summary.value = 'unavailable';
     });
-    // folded by default, as the platform's own History pane; the user's choice is kept
+    // folded by default, as the platform's own History pane; the user's choice is kept. The chevron
+    // follows the title: the pane has no left gutter for it to sit in
     this.section = this.runInScope(() => new Section({title: 'History', hint: this._summary, expanded: false,
-      persistKey: 'u2-domain-history'}));
+      persistKey: 'u2-domain-history', chevron: 'end'}));
     this.section.add(this._hint, this.view.root);
     this.root.append(this.section.root);
     this.effect(() => {
