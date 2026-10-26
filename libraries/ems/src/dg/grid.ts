@@ -109,9 +109,28 @@ export class DomainGrid extends Control {
     if (this.grid.dataFrame?.dart !== df.dart)
       return;
     DG.DomainObjectHandler.decorateGrid(this.grid, this.source.table, df);
+    DomainGrid.sortByCaption(df);
     this._caption(df);
     this._dateFormat(df);
     this._fitHeader();
+  }
+
+  /** A ref column holds ids but shows the target's name: a header click sorts by the name the
+   * row carries (`~caption_<column>`), falling back to the id where none was projected. */
+  static sortByCaption(df: DG.DataFrame): void {
+    for (const column of df.columns.toList()) {
+      const captions = df.columns.byName(Rows.caption(column.name));
+      if (captions === null)
+        continue;
+      const names = new Map<unknown, string>();
+      for (let i = 0; i < df.rowCount; i++) {
+        const name = captions.get(i);
+        if (name !== null && name !== '')
+          names.set(column.get(i), String(name));
+      }
+      const text = (id: unknown) => names.get(id) ?? String(id ?? '');
+      column.valueComparer = (a, b) => text(a).localeCompare(text(b));
+    }
   }
 
   /** A cell keeps to one line, cut with an ellipsis: wrapped into a row's height a long text is
@@ -134,7 +153,7 @@ export class DomainGrid extends Control {
       return;
     }
     const font = this.grid.props.colHeaderFont;
-    const measure = (text: string) => DomainGrid._textWidth(text, font);
+    const measure = (text: string) => DomainGrid.textWidth(text, font);
     const lines = Math.max(...shown.map((c) =>
       DomainGrid.captionLines(c.column!.getTag(DG.TAGS.FRIENDLY_NAME) || c.name, c.width - HEADER_MARGIN, measure)));
     this.grid.setOptions({colHeaderHeight: DomainGrid.headerHeight(lines, font)});
@@ -167,7 +186,7 @@ export class DomainGrid extends Control {
       return;
     this._fittedTo = df.dart;
     const font = this.grid.props.colHeaderFont;
-    const measure = (text: string) => DomainGrid._textWidth(text, font);
+    const measure = (text: string) => DomainGrid.textWidth(text, font);
     const byName = new Map(this.source.schema.properties.map((p): [string, IProperty] => [p.name!, p]));
     const nameColumn = this.source.schema.info.nameColumn;
     for (const c of this._columns()) {
@@ -235,7 +254,7 @@ export class DomainGrid extends Control {
     return shown * (Math.ceil(px * 1.2) + 1) + HEADER_PADDING;
   }
 
-  private static _textWidth(text: string, font: string): number {
+  static textWidth(text: string, font: string): number {
     const g = DomainGrid._context ??= document.createElement('canvas').getContext('2d');
     if (g === null)
       return 0;
