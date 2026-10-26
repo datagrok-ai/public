@@ -97,6 +97,13 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
   const table = domains.dataTable(source,
     {columns: ['label', 'substance_id', 'location_id', 'lot', 'quantity', 'unit', 'expires'],
       onActivate: (row) => containers.open(row)});
+  // short values get short tracks, so the names keep their room
+  const widths: Record<string, string> = {label: '56px', quantity: '72px', unit: '48px'};
+  table.effect(() => {
+    const grid = table.table.value;
+    if (grid !== null)
+      grid.columns = grid.columns.map((c) => widths[c.name] === undefined ? c : {...c, width: widths[c.name]});
+  });
   // one node, one subtree: `under` matches the node and everything below it, through the ref
   // column into the tree — nothing selected is the whole table
   tree.effect(() => {
