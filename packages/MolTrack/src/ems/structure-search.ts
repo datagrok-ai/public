@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {Filters, KIND} from '@datagrok-libraries/u2';
-import type {FilterCondition, FilterGroup} from '@datagrok-libraries/u2';
+import type {FilterCondition, FilterGroup, FilterOperator} from '@datagrok-libraries/u2';
 import {moltrackEmsDb} from '../generated/db';
 import {Chemistry, HASH_COLUMNS} from './chemistry';
 import {MolTrackTables} from './tables';
@@ -16,9 +16,9 @@ export class StructureSearch {
   static readonly OPERATORS = [StructureSearch.SUBSTRUCTURE, StructureSearch.SUPERSTRUCTURE, StructureSearch.SIMILAR,
     StructureSearch.EXACT];
 
-  static register(): () => void {
-    return Filters.operators.register(StructureSearch.OPERATORS.map((id) => ({id, label: id, arity: 1 as const,
-      kinds: [KIND.STRING], semType: DG.SEMTYPE.MOLECULE, exclusive: true, editor: 'default' as const, host: true})));
+  static operators(): FilterOperator[] {
+    return StructureSearch.OPERATORS.map((id) => ({id, label: id, arity: 1 as const,
+      kinds: [KIND.STRING], semType: DG.SEMTYPE.MOLECULE, exclusive: true, editor: 'default' as const, host: true}));
   }
 
   static threshold(): number {

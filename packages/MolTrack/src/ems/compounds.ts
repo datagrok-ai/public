@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {DomainApp} from '@datagrok-libraries/ems/src/dg';
+import {DomainApp, DomainFilters} from '@datagrok-libraries/ems/src/dg';
 import type {DomainAppOptions, DomainTable} from '@datagrok-libraries/ems/src/dg';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {Filters, Rows, isEmpty} from '@datagrok-libraries/u2';
@@ -27,7 +27,7 @@ export class CompoundsApp extends DomainApp {
 
   constructor(options: DomainAppOptions) {
     super(options);
-    this.own(StructureSearch.register());
+    this.own(DomainFilters.registerOperators(this.table.address, StructureSearch.operators()));
     this.own((this.table as DomainTable<CompoundRow>).validators.add('original_structure', (_, row) =>
       this._verdicts.get(row.id)?.problem ?? null));
     this.listSource.hosted = (condition, signal) => StructureSearch.matching(condition, signal);
