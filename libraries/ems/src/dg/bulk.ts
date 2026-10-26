@@ -2,10 +2,10 @@
    `POST …/{table}/update`. One aligned form: what the edit applies to, the fields it changes (a
    picker over the columns the caller may write), and an editor for each chosen field only — so
    "clear this field" (chosen, left empty) and "leave it alone" (not chosen) are different requests.
-   Under each chosen field a muted line says what it does to the target: the rows' shared value or
-   how many differ, or that it will be cleared. The target is the selection, or everything the
-   list's filter matches; the server narrows both by the Edit predicate and answers how many rows
-   it touched.
+   Under each chosen field a muted line says what it does to the target: how many values it
+   overwrites where the selected rows differ, or that it will be cleared. The target is the
+   selection, or everything the list's filter matches; the server narrows both by the Edit
+   predicate and answers how many rows it touched.
 
    Only targets that can actually be written are offered. Whatever blocks the button is its
    tooltip and the footer's warning, and a refusal — the table's validators over the rows as they
@@ -14,8 +14,7 @@
 
    A bulk edit is NOT part of the unit of work — it lands the moment the button is pressed — so the
    session's pending changes are settled through `confirmDiscard` first. */
-import {signal, computed, Filters, span, Dialog, Input, MultiSelect, RadioInput, Rows, notify, plural, statusLine,
-  text}
+import {signal, computed, Filters, span, Dialog, Input, MultiSelect, RadioInput, notify, plural, statusLine, text}
   from '@datagrok-libraries/u2';
 import type {IProperty, ReadonlySignal, RowView} from '@datagrok-libraries/u2';
 import {confirmDiscard} from '../core/session.js';
@@ -211,13 +210,10 @@ function _applyTo(dialog: Dialog, form: ObjectForm, header: HTMLElement, targets
   return computed(() => targets.find((t) => t.label === radio.value.value) ?? targets[0]);
 }
 
-/** What a field holds across the selected rows now: their one shared value, or how many differ. */
+/** How many values a field holds across the selected rows, where they differ; '' where they share one. */
 function _current(rows: readonly RowView[], column: string): string {
-  const seen = new Set(rows.map((row) => text(row[Rows.caption(column)] ?? row[column])));
-  if (seen.size > 1)
-    return `${seen.size} different values`;
-  const [only] = seen;
-  return only === undefined || only === '' ? 'Currently empty' : `Currently ${only}`;
+  const seen = new Set(rows.map((row) => text(row[column])));
+  return seen.size > 1 ? `${seen.size} different values` : '';
 }
 
 function _tooMany(source: DomainSource): string {

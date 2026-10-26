@@ -147,7 +147,7 @@ scoped('the chosen columns are written to the selection; one not chosen is left 
   source.dispose();
 });
 
-scoped('under each chosen field: the shared value, how many differ, or that it will be cleared', async () => {
+scoped('under each chosen field: how many values differ, or that it will be cleared; a shared one says nothing', async () => {
   const memory = backend();
   const {source} = await table(memory, {query: 'number > 0'});
   select(source, (i) => i !== 0);
@@ -161,7 +161,7 @@ scoped('under each chosen field: the shared value, how many differ, or that it w
   field('title').value.value = 'Renamed';
   await flush();
   assert.equal(hint('title'), '2 different values');
-  assert.equal(hint('done'), 'Currently false', 'both selected issues are open');
+  assert.equal(hint('done'), '', 'both selected issues are open: nothing to warn of');
 
   target().value.value = 'All 3 issues matching the filter';
   await flush();
@@ -187,7 +187,7 @@ scoped('one target is plain text, and one row is offered its business key', asyn
   await flush();
   field('title').value.value = 'X';
   await flush();
-  assert.equal(hint('title'), 'Currently Ibuprofen');
+  assert.equal(hint('title'), '', 'one row: no other value to tell apart');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
   source.dispose();
