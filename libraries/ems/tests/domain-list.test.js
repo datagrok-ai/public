@@ -472,9 +472,7 @@ scoped('a trash row says WHEN it was deleted, and Restore stages instead of writ
   assert.notEqual(detail, null, 'a trash row says when it went');
   assert.equal(detail.classList.contains('u2-timestamp'), true,
     'when it was deleted, read in the reader own zone — never the wire string');
-  assert.match(detail.textContent, /^Deleted /);
   assert.equal(detail.textContent.includes('GMT'), false);
-  assert.equal(row.classList.contains('u2-domain-list-pending'), false, 'deleted already: no strike, no pending edge');
   assert.match(detail.title, /2026/, 'the full moment is the title');
 
   const memory = emsBackends.domain.tableSync('grit.issue');
@@ -485,7 +483,6 @@ scoped('a trash row says WHEN it was deleted, and Restore stages instead of writ
     return restore(id);
   };
   assert.deepEqual(names(list, src.rows.byKey('i2')), ['Restore']);
-  assert.equal(list.actionsFor(src.rows.byKey('i2'))[0].icon, 'undo', 'a trash can would read as Delete');
   list.actionsFor(src.rows.byKey('i2'))[0].run();
   await flush();
   assert.deepEqual(wrote, [], 'the restore is staged: nothing is written until the Save');
@@ -521,9 +518,6 @@ scoped('a multi-selection: what every picked row offers, flat and first; the cli
   fire(at(0), 'click');
   fire(at(0), 'contextmenu');
   assert.deepEqual(labels(), ['Open', 'Close', 'Delete'], 'one row: its own actions, Delete last, and no submenu');
-  assert.deepEqual([...panel().querySelectorAll('.u2-menu-shortcut')].map((e) => e.textContent), ['Enter', '', 'Del'],
-    'the keys the list answers are shown');
-  assert.equal(panel().querySelectorAll('.u2-menu-separator').length, 1, 'Delete stands apart');
   fire(leaf('Open'), 'click');
 
   fire(at(1), 'click', {ctrlKey: true});

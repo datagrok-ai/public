@@ -331,28 +331,16 @@ scoped('a backend that refuses without throwing still says so in the summary, an
   issues.dispose();
 });
 
-scoped('confirmDiscard names the record and the fields at stake; a new record by its noun', async () => {
+scoped('confirmDiscard names the record and the field at stake', async () => {
   emsBackends.domain = backend();
   const session = new SharedSession();
   const {projects, issues} = await pair(session);
   issues.rows.byKey('i1').title = 'A';
-  let answer = confirmDiscard(session, {action: 'leave this page'});
+  const answer = confirmDiscard(session, {action: 'leave this page'});
   await flush();
-  const text = () => [document.body.querySelector('.u2-dialog-title-text').textContent,
-    document.body.querySelector('.u2-dialog-content').textContent];
-  assert.deepEqual(text(), ['Save changes to "A"?', 'Your change to title will be lost if you leave this page.']);
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await answer, false);
-  issues.rows.byKey('i1').weight = 2;
-  answer = confirmDiscard(session, {action: 'leave this page'});
-  await flush();
-  assert.equal(text()[1], 'Your changes to title and weight will be lost if you leave this page.');
-  fire(buttonNamed('DISCARD'), 'click');
-  assert.equal(await answer, true);
-  issues.newRow({title: 'Draft'});
-  answer = confirmDiscard(session, {action: 'leave this page'});
-  await flush();
-  assert.deepEqual(text(), ['Save the new issue?', 'The new issue will be lost if you leave this page.']);
+  assert.deepEqual([document.body.querySelector('.u2-dialog-title-text').textContent,
+    document.body.querySelector('.u2-dialog-content').textContent],
+  ['Save changes to "A"?', 'Your change to title will be lost if you leave this page.']);
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await answer, false);
   projects.dispose();

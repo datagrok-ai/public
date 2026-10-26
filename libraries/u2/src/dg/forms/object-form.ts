@@ -456,13 +456,13 @@ export class ObjectForm extends Form {
     });
   }
 
-  /** A value as its property's `format` shows it. */
   private _showText(field: Field): void {
     const shown = ObjectForm._display(field.prop, this._read(field.prop, null));
     field.text!.textContent = shown || (field.emptyText ?? '');
     field.text!.classList.toggle('u2-form-readonly-empty', shown === '' && field.emptyText !== undefined);
   }
 
+  /** A value as its property's `format` shows it. */
   private static _display(prop: IProperty, value: unknown): string {
     if (value === null || value === undefined || value === '')
       return '';

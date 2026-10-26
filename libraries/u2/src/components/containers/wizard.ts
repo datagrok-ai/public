@@ -149,7 +149,6 @@ export class Wizard extends Control {
     this.status.dataset.u2Part = 'status';
     const left = document.createElement('span');
     left.className = 'u2-wizard-left';
-    left.append(this.status, this._errorRow);
 
     this._back = this._button('BACK', () => this.back());
     this._next = this._button('NEXT', () => this.next());
@@ -172,7 +171,7 @@ export class Wizard extends Control {
     this._reason = this.runInScope(() => statusLine(computed(() => this._blockReason.value || null)));
     this._reason.classList.add('u2-wizard-reason', 'u2-status-line-warning');
     this._reason.dataset.u2Part = 'reason';
-    this._errorRow.parentElement!.insertBefore(this._reason, this._errorRow);
+    left.append(this.status, this._reason, this._errorRow);
 
     this.effect(() => this._applyStep());
     this.effect(() => this._applyNextText());

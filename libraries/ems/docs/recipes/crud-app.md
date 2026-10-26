@@ -125,8 +125,8 @@ const updated = await domains.bulkEdit(source);         // resolves to the row c
 The dialog is one aligned form: **Apply to**, **Change** — a picker over the columns the caller
 may write (a business key only for a single row) — and an editor for each chosen field. Only the
 chosen columns reach the server, so "clear this field" (chosen, left empty) and "leave it alone"
-(not chosen) are different requests; a muted line under each field says which: the selected rows'
-shared value, "N different values", or "Will be cleared". The target is either **N selected** —
+(not chosen) are different requests; a muted line under each field says "N different values"
+where the selected rows differ, or "Will be cleared". The target is either **N selected** —
 posted as `id in ("…","…")`, refused by name past the server's 1000-row cap — or **all M
 matching**, the list's filter as it stands (plain text when only one exists); the button reads
 "Update N <rows>" and is disabled, with the reason as its tooltip, until a field is chosen. The

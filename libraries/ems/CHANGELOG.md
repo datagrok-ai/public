@@ -2,14 +2,17 @@
 
 ## v.next
 
-* Added `domains.configure(address, fn, {id})`: an app's validators, renderer, actions and importer apply to every handle over the table, so child tabs, trees, views and the `/domains` route follow the app's rules
-* DomainApp: Added `header`, a slot above the entity form for a parent card or a summary
-* Bulk edit: Redesigned the dialog as one form: pick the fields to change, see how many values differ or that a field will be cleared, and press "Update 2 issues"; the table's validators are checked, and a refusal stays in the dialog
-* Import: The Preview button names what lands ("Import 3 vendors") and is held, with the reason, when "All or nothing" would abort; refused cells are tinted, cut-off text shows on hover, and a skipped row says why
-* Child tabs: Grids keep room for about 8 rows and fit two-line captions with units; a list-mode child scrolls and loads its next page beside its form; a tab that fails to open shows its error while the others work
-* Data tables: Fixed a table stopping at its first page; scrolling near the bottom loads the next one
-* Filters: An invalid query shows its reason under the box; a condition just added in the builder no longer dims the list
-* Unsaved changes: The dialog reads CANCEL · DISCARD · SAVE, with SAVE as the primary on the right
+* Added `domains.configure(address, fn, {id})`: an app's rules apply to every handle over the table
+* DomainApp: Added `header`, a slot above the entity form
+* Bulk edit: Redesigned the dialog as one form with a field picker
+* Bulk edit: Refusals and the table's validators show in the dialog
+* Import: The Preview button names what lands and says why it is held
+* Import: Refused cells are tinted and a skipped row says why
+* Child tabs: Grids fit two-line captions with units
+* Child tabs: A tab that fails to open shows its error
+* Data tables: Fixed a table stopping at its first page
+* Filters: An invalid query shows its reason under the box
+* Unsaved changes: The dialog reads CANCEL · DISCARD · SAVE
 * Trash: Restore uses the undo icon
 * DomainSource: Added `hosted`: the app answers a host filter condition (a structure search) with the ids of its rows, sent as an id list before every read
 * DomainApp: Added `filters: {mode: 'builder', placement: 'left'}`: the condition builder in a pane beside the list

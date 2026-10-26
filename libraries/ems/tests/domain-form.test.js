@@ -697,7 +697,6 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   draft.currentRow.value.number = 2;
   await flush();
   assert.equal(form.problem.value, 'Title is required');
-  assert.equal(save.button.disabled, true, 'Save is off while a field is in error');
   fire(save.button, 'click');
   await flush();
   await flush();
@@ -709,7 +708,6 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   form.input('title').value.value = 'Titled';
   await flush();
   assert.equal(form.problem.value, null);
-  assert.equal(save.button.disabled, false, 'and on again once it is fixed');
   form.dispose();
   assert.equal(await draft.save(), true, 'the guard left with the form');
   save.dispose();

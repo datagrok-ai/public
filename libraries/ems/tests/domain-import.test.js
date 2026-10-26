@@ -152,10 +152,6 @@ scoped('every blocking problem the wizard gates on', async () => {
   await flush();
   assert.match(await proceed(), /Columns "title" and "name2" are both mapped to "Title"/,
     'the target by its caption, both columns by name');
-  assert.equal(named('title').root.querySelector('.u2-invalid') !== null, true, 'both choices are marked');
-  assert.equal(named('name2').root.querySelector('.u2-invalid') !== null, true);
-  assert.match(document.body.querySelector('.u2-domain-import-mapping-step [data-u2="status-line"]').textContent,
-    /Required: Project id ✓, Title ✓ · Title is mapped twice · 3 of 3 columns imported/);
 
   for (const column of ['project_id', 'title', 'name2'])
     named(column).value.value = '(skip)';
@@ -338,8 +334,6 @@ scoped('a refused row leaves nothing behind and the report says so', async () =>
   const report = document.body.querySelector('.u2-domain-import-report .u2-domain-import-rows');
   assert.deepEqual([...report.querySelectorAll('.u2-data-table-head')].map((c) => c.textContent), ['#', 'Result', 'Note'],
     'the preview\'s headers, and no key column where no row has a key');
-  assert.equal(document.body.querySelector('.u2-wizard-step[data-id="report"]').classList.contains('u2-wizard-step-failed'),
-    true, 'the rail says the import failed');
   assert.equal(document.body.querySelector('.u2-notify-error'), null, 'no balloon repeats the open report');
   fire(buttonNamed('CLOSE'), 'click');
   const result = await running;

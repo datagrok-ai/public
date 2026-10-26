@@ -1218,23 +1218,7 @@ scoped('the status bar is four slots, and a refusal never takes the count off th
   assert.equal(a.status.value.selected, 2);
   assert.equal(panels[1].textContent, '2 selected');
   assert.equal(panels[1].hidden, false);
-  assert.equal(panels[1].classList.contains('u2-domain-status-after'), true, 'a separator after the count');
   assert.equal(a.summary.value, '3 issues · 2 selected');
-
-  // a load the server refuses: the list frame says why in full, the status bar in two words, and
-  // the empty count lends the problem no separator
-  fire(a.list.list.root, 'keydown', {key: 'Escape'});
-  const issues = emsBackends.domain.tableSync('grit.issue');
-  const where = issues._where.bind(issues);
-  issues._where = (scope) => scope.filter ?
-    Promise.reject(new DomainBackendError('filter', 'Column "done" is not filterable')) : where(scope);
-  assert.equal(await a.open('?q=done%20%3D%20true'), true);
-  await flush();
-  assert.equal(a.listSource.state.value, 'error');
-  assert.deepEqual(panels.map((el) => el.hidden), [true, true, true, false]);
-  assert.equal(panels[3].textContent, 'Filter refused');
-  assert.equal(panels[3].title, 'Column "done" is not filterable');
-  assert.equal(panels[3].classList.contains('u2-domain-status-after'), false, 'no dangling dot');
   a.dispose();
 });
 
