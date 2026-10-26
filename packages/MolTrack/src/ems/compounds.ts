@@ -64,10 +64,8 @@ export class CompoundsApp extends DomainApp {
     });
   }
 
-  // no Bulk edit: it would write past the identity a structure derives
   menuActions(): Action[] {
-    return [...super.menuActions().filter((action) => action.name !== 'Bulk edit…'),
-      {name: 'Open as table', icon: 'table', run: () => void this._openAsTable()}];
+    return [...super.menuActions(), {name: 'Open as table', icon: 'table', run: () => void this._openAsTable()}];
   }
 
   /** The list's rows, structure filters included, in a table view. */
