@@ -319,3 +319,21 @@ scoped('scrolling to the end loads the next pages into the same rows', async () 
   dt.dispose();
   src.dispose();
 });
+
+scoped('a row\'s context menu: Open, the table\'s actions and the caller\'s', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  table.actions.add({name: 'Close', run: () => {}});
+  const src = table.source({pageSize: 10});
+  const dt = domains.dataTable(src, {columns: ['title'], actions: [{name: 'Escalate', run: () => {}}]});
+  document.body.append(dt.root);
+  await flush();
+  dt.table.value.root.clientHeight = 400;
+  await flush();
+  fire(cell(dt, 0, 'title'), 'contextmenu');
+  assert.deepEqual(document.querySelectorAll('[role="menuitem"]').map((el) => el.textContent),
+    ['Open', 'Close', 'Escalate']);
+  fire(document.querySelector('[role="menuitem"]'), 'click');
+  dt.dispose();
+  src.dispose();
+});

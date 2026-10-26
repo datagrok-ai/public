@@ -5,12 +5,11 @@
    large table affordable. `expandTo` walks the row's ancestors (the platform's `GET …/{id}/path`,
    which EXCLUDES the row itself), opens every one of them and then selects the row. What the
    tree is FOR is driving a collection: `selected` feeds a source's query as `<fk> under "<id>"`. */
-import {Control, computed, signal, ReadonlySignal, div, span, VirtualTree, allowedActions,
-  loader} from '@datagrok-libraries/u2';
+import {Control, computed, signal, ReadonlySignal, div, span, VirtualTree, loader} from '@datagrok-libraries/u2';
 import type {TreeNode, Action, DomainRowLike, RowView} from '@datagrok-libraries/u2';
 import {DomainBackendError} from '../core/domain-backend.js';
 import type {DomainQueryLike} from '../core/domain-backend.js';
-import {domains, ActionRegistry, DomainTable} from './facade.js';
+import {domains, DomainTable} from './facade.js';
 import type {DomainAction} from './facade.js';
 import {DomainErrors} from './errors.js';
 
@@ -158,13 +157,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
   /** Every action that applies to the node's row and that the caller may run on it: Open, the
    * table's registry, the tree's own. */
   actionsFor(row: RowView<TRow>): Action[] {
-    const table = this._table;
-    if (table === undefined)
-      return [];
-    const actions: Action[] = [{name: 'Open', icon: 'folder-open', run: () => table.open(row)}];
-    actions.push(...table.actions.for(row));
-    actions.push(...ActionRegistry.bind(this._options.actions ?? [], row));
-    return allowedActions(actions, {access: table.access, row});
+    return this._table?.rowActions(row, this._options.actions) ?? [];
   }
 
   /** The named refusal for a table the registry does not declare a hierarchy: there is no column

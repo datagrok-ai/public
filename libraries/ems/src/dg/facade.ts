@@ -8,7 +8,7 @@
    the rows every registry and source hands out; the default reads any column as unknown. */
 import {emsBackends} from '../core/domain-backend.js';
 import * as DG from 'datagrok-api/dg';
-import {Access, Rows, divV, span, timestamp, text} from '@datagrok-libraries/u2';
+import {Access, Rows, allowedActions, divV, span, timestamp, text} from '@datagrok-libraries/u2';
 import type {Capability, IProperty, ObjectRenderer, Action, ColumnOf, DomainRowLike, RowValues, RowView,
   ReadonlySignal, NotifyHandle} from '@datagrok-libraries/u2';
 import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
@@ -234,6 +234,13 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     if (Rows.isDraft(row))
       delete values.id;
     return this.handler.rowFrom(values);
+  }
+
+  /** What a row offers where it is shown read-only — a tree node, a data table row: Open, the
+   * table's registry and the caller's own, those the caller may run on it. */
+  rowActions(row: RowView<TRow>, extra: readonly DomainAction<TRow>[] = []): Action[] {
+    return allowedActions([{name: 'Open', icon: 'folder-open', run: () => this.open(row)},
+      ...this.actions.for(row), ...ActionRegistry.bind(extra, row)], {access: this.access, row});
   }
 
   /** Opens a saved row: the entity page of the app open over this table (find-or-activate), else

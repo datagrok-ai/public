@@ -14,6 +14,7 @@ import type {Bindable} from '@datagrok-libraries/u2/src/dg/index.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {EditorEditState} from './editor-state.js';
 import {DomainTable} from './facade.js';
+import type {DomainAction} from './facade.js';
 import {DomainForm} from './form.js';
 import {pageOnScroll} from './list.js';
 
@@ -302,6 +303,8 @@ export interface DomainDataTableOptions {
   /** Enter on the selected row, or a double-click on it; by default the row is handed to the
    * form paired through the source, as a list's Enter hands it over. */
   onActivate?: (row: RowView, index: number) => void;
+  /** A row's context menu, on top of Open and the table's own registry. */
+  actions?: DomainAction[];
 }
 
 /** `domains.dataTable` — the source's rows as the HTML {@link DataTable}: virtualized rows of
@@ -367,6 +370,7 @@ export class DomainDataTable extends Control {
     }));
     const table = this.runInScope(() => new DataTable<RowView>({columns, rowHeight: this._options.rowHeight,
       items: source.rows, sort: source.sort, cellState: this._cellState(),
+      contextActions: (row) => DomainTable.of(source)?.rowActions(row, this._options.actions) ?? [],
       onActivate: this._options.onActivate ??
         (() => source.activate.value = source.activate.peek() + 1)}));
     collectionSelection(this, source, table);
