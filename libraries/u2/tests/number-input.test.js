@@ -279,3 +279,12 @@ smoke('commitOn change: typing marks bad text at once but writes only on blur', 
   assert.equal(input.value.peek(), 9);
   input.dispose();
 });
+
+smoke('placeholder: shown in the empty field, and live from a signal', () => {
+  const text = signal('Auto');
+  const input = mount(new NumberInput({label: 'Animals', placeholder: text}));
+  assert.equal(editor(input).placeholder, 'Auto');
+  text.value = 'Auto (target power)';
+  assert.equal(editor(input).placeholder, 'Auto (target power)');
+  input.dispose();
+});

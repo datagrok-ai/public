@@ -95,7 +95,11 @@ export class FileInput extends Input<DG.FileInfo | null, FileInputOptions> {
     this.scope.listen(field, 'input', () => {
       this._queried = ++this._turn;
       this._text.value = field.value;
-      this._source.query(field.value);
+      // an emptied box is no file (a path query for '' never answers, so it would keep the last one)
+      if (field.value === '')
+        this.value.value = null;
+      else
+        this._source.query(field.value);
     });
 
     const editor = document.createElement('div');

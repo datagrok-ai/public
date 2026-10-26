@@ -463,3 +463,26 @@ ui('tooltip: role tooltip, and the anchor is described by it only while it shows
   assert.equal(el.getAttribute('aria-describedby'), 'own-hint', 'the link goes with the tooltip');
   c.dispose();
 });
+
+ui('iconButton, buttonWithIcon: disabled with a reason, as button() takes it; without one, as before', async () => {
+  const c = new Control();
+  const reason = signal('Run the plan first');
+  const [save, remove, plain] = c.runInScope(() => [
+    buttonWithIcon('Save', 'save', () => {}, {disabled: reason, tooltip: 'Save the plan'}),
+    iconButton('times', () => {}, {disabled: true, tooltip: 'Remove'}),
+    iconButton('list', () => {}, {tooltip: 'Choose'}),
+  ]);
+  document.body.append(save, remove, plain);
+  assert.equal(save.disabled, true);
+  assert.equal(remove.disabled, true);
+  assert.equal(plain.disabled, false);
+  assert.equal(remove.getAttribute('aria-label'), 'Remove', 'an icon-only button keeps its accessible name');
+  assert.equal(plain.getAttribute('aria-label'), 'Choose');
+  fire(save, 'pointerenter');
+  await new Promise((r) => setTimeout(r, 700));
+  assert.equal(Tooltip.root.textContent, 'Run the plan first', 'the reason is the tooltip while disabled');
+  fire(save, 'pointerleave');
+  reason.value = null;
+  assert.equal(save.disabled, false);
+  c.dispose();
+});

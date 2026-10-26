@@ -2,6 +2,13 @@
 
 ## v.next
 
+* Viewers: An option bound to a signal now reaches a package (JS) viewer: its properties appear a tick after it is made, and the link waits for the property (it bound nothing, silently)
+* funcForm: An override's `visible: false` hides its field (the param's `visible:` expression alone decided it)
+* funcForm: Added `collapsedCategories` — categories that open folded, their headers still shown (`['Advanced']`)
+* funcForm: A `file` param gets a field (the FileInput registered for the type) instead of landing in `unsupported`
+* FileInput: Emptying the box clears the file (the value kept the last one)
+* Buttons: `iconButton` and `buttonWithIcon` take `disabled` with its reason, as `button` does — the reason is the tooltip while disabled
+* NumberInput: Added `placeholder`, as TextInput and QNumInput have: what an empty value means ("Auto")
 * Filters: Added host operators (`FilterOperator.host`, `OperatorRegistry.hosted()`): conditions the app answers, which parse, format, validate and complete like any other
 * Platform inputs: Fixed a form's own messages on a bridged platform input (a molecule input) showing only as a tooltip: "required" and an app's validator now show under the field, and a refused save names it ("Structure is required", not " is required")
 * Molecule input: Fixed a filter row not hearing the molecule drawn in it: `moleculeInput` and `fromDartInput` take `value` and `onChanged`

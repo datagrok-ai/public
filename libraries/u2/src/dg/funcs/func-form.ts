@@ -77,6 +77,9 @@ export interface FuncFormOptions {
   showRun?: LiveOption<boolean>;
   /** After a successful run and save. */
   onRun?: (call: FuncCallLike) => void;
+  /** Categories that open folded, their headers still shown (`['Advanced']`: what most runs leave
+   * as it is). */
+  collapsedCategories?: string[];
 }
 
 /** The structural slice funcForm reads off a func-call parameter — DG.FuncCallParam and the
@@ -465,8 +468,10 @@ export class FuncCallForm extends Form {
     // each header is a Section whose header carries the u2-form-category classes, so the
     // auto-hide machinery and the category skin stay exactly where they were; a header owning
     // no fields (a group heading, a duplicate) renders plain — a chevron over nothing lies
+    const folded = new Set(this._formOptions.collapsedCategories ?? []);
     const section = (name: string, collapsible: boolean, levelClass?: string): Section => {
-      const s = this.runInScope(() => new Section({title: name, collapsible}));
+      const s = this.runInScope(() => new Section({title: name, collapsible,
+        expanded: !(collapsible && folded.has(name))}));
       s.header.classList.add('u2-form-category');
       if (levelClass !== undefined)
         s.header.classList.add(levelClass);
@@ -560,6 +565,9 @@ export class FuncCallForm extends Form {
       return 'multiChoices';
     if (type === 'list')
       return prop.choices != null && prop.choices.length > 0 ? 'field' : 'unsupported';
+    // a file param: the input registered for the type (u2/dg's FileInput) edits its FileInfo
+    if (type === 'file' && editor === null)
+      return 'field';
     if (!SCALARS.has(type))
       return 'unsupported';
     return editor === null || HINTS.has(String(editor).toLowerCase()) ? 'field' : 'unsupported';
@@ -796,9 +804,11 @@ export class FuncCallForm extends Form {
   }
 
   /** The one owner of root visibility: the `visible:` expression × the showTableSelectors
-   * contract (which used to write `root.hidden` inline at build). */
+   * contract (which used to write `root.hidden` inline at build) × an override's `visible`. */
   private _applyVisible(field: FuncField): void {
-    field.input.root.hidden = !field.exprVisible ||
+    const own = this._formOptions.overrides?.[field.param.name]?.visible;
+    const shown = own === undefined || (own instanceof Signal ? own.peek() : own);
+    field.input.root.hidden = !shown || !field.exprVisible ||
       (field.route === 'table' && this._formOptions.showTableSelectors === false);
     this._updateHeaders();
   }
