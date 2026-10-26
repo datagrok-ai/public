@@ -45,17 +45,47 @@
   box-shadow: -5px 0 0 -2px var(--dg-orange-2);
 }
 
-/* the system columns as a footer: compact, muted */
+/* the system columns as one muted line under the fields: captions pale, values a step darker */
 .u2-domain-form-system {
-  margin-top: var(--dg-space-m);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: var(--dg-space-s);
   padding-top: var(--dg-space-s);
-  border-top: var(--dg-border-width) solid var(--dg-border);
-  color: var(--dg-text-color-light);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
   font-size: var(--dg-font-size-small);
+  line-height: 22px;
+  color: var(--dg-text-color-light);
 }
 
-.u2-domain-form-system .u2-form-readonly-value {
-  min-height: 0;
+.u2-domain-form-system[hidden] {
+  display: none;
+}
+
+.u2-domain-form-system-item {
+  white-space: nowrap;
+}
+
+.u2-domain-form-system-item + .u2-domain-form-system-item::before {
+  content: '·';
+  padding: 0 var(--dg-space-s);
+}
+
+.u2-domain-form-system-value {
+  color: var(--dg-grey-5);
+}
+
+.u2-btn.u2-icon-btn.u2-domain-form-system-copy {
+  vertical-align: middle;
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  font-size: var(--dg-font-size-xs);
+  color: var(--dg-text-color-light);
+}
+
+/* a key the server assigns, on a form that has not saved yet */
+.u2-domain-form-assigned {
   color: var(--dg-text-color-light);
 }
 
