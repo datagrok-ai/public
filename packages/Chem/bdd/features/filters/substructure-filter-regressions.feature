@@ -23,6 +23,7 @@ Feature: Substructure filter regressions from closed issues
     And user opens spgi-100 dataset
     And user clicks on filter icon in toolbar
 
+  @realizes:public#3328
   Scenario: The panel switched off and on again filters by the structure the card holds (public#3328)
     When user clicks on "Sketch" text in "Structure" filter card
     And user types "c1ccncc1" into molecule input of sketcher dialog
@@ -42,6 +43,7 @@ Feature: Substructure filter regressions from closed issues
     And the filter should pass exactly the molecules of "Structure" column containing "c1ccncc1"
     And no errors should have been logged
 
+  @realizes:public#1473
   Scenario: Use as filter on a Core cell filters the Core card, not the Structure card (public#1473)
     When user scrolls the grid to the "Core" column
     And user picks "Current Value > Use as filter" from the context menu of the "cell 1 of Core" area of grid
@@ -52,6 +54,7 @@ Feature: Substructure filter regressions from closed issues
     And 19 rows should pass the filter
     And no errors should have been logged
 
+  @realizes:public#2512 @realizes:public#2639
   Scenario: A search type changed on the original's card is followed by the clone, and a structure changed on the clone by the original (public#2512, public#2639)
     When user clicks on "Sketch" text in "Structure" filter card
     And user types "c1ccncc1" into molecule input of sketcher dialog
@@ -83,6 +86,7 @@ Feature: Substructure filter regressions from closed issues
     And 15 rows should pass the filter
     And no errors should have been logged
 
+  @realizes:public#2628 @realizes:public#2473
   Scenario: Use as filter still filters after a cloned view dropped its Structure card (public#2628, public#2473)
     When user picks "View > Layout > Clone View" from the top menu
     Then filter panel should be visible
@@ -96,6 +100,7 @@ Feature: Substructure filter regressions from closed issues
     And 1 row should pass the filter
     And no errors should have been logged
 
+  @realizes:public#697
   Scenario: Cancel on a new structure drawn with Filter as you draw gives every row back (public#697)
     When user clicks on "Sketch" text in "Structure" filter card
     And user checks "Filter as you draw" input in sketcher dialog
@@ -109,6 +114,7 @@ Feature: Substructure filter regressions from closed issues
     And the "filtering of Structure" reading of filter panel should be "false"
     And no errors should have been logged
 
+  @realizes:public#697
   Scenario: Cancel on an edited structure drawn with Filter as you draw gives the old structure back (public#697)
     When user clicks on "Sketch" text in "Structure" filter card
     And user types "c1ccncc1" into molecule input of sketcher dialog
@@ -127,6 +133,7 @@ Feature: Substructure filter regressions from closed issues
     And the "structure of Structure" reading of filter panel should be "c1ccncc1"
     And no errors should have been logged
 
+  @realizes:public#1239
   Scenario: The header popup's substructure filter still holds its molecule when the popup is opened again (public#1239)
     When user hovers over the "header Structure" area of grid
     And user clicks on "Column options" icon in grid

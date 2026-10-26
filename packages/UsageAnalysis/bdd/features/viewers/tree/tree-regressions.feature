@@ -31,6 +31,7 @@ Feature: Tree regressions of closed issues
     And "Hierarchy" property of tree viewer should be "CONTROL, SEX, RACE"
     And tree viewer should have a "branch All | false | F | Asian" area
 
+  @realizes:public#3298
   Scenario: Control+click adds a branch to the filter, and Select works again after Filter (public#3298)
     Given "Misc" category in context panel is expanded
     When user selects "Filter" in "On Click" property in context panel
@@ -52,6 +53,7 @@ Feature: Tree regressions of closed issues
     Then 15 rows should be selected
     And no errors should have been logged
 
+  @realizes:public#3249
   Scenario: Rows selected in the grid are drawn on the tree (public#3249)
     When user takes a snapshot of tree viewer
     And user selects rows where "RACE" is "Asian"

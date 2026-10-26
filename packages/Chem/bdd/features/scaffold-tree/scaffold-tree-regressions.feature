@@ -19,6 +19,7 @@ Feature: Scaffold Tree regressions from closed issues
     And the package autostarts have completed
     And user opens spgi dataset
 
+  @realizes:public#3408
   Scenario: Closing a viewer with a colored scaffold drops the colors column and the highlight (public#3408)
     When user picks "Chem > Analyze > Scaffold Tree" from the top menu
     Then Scaffold Tree viewer should be visible
@@ -38,6 +39,7 @@ Feature: Scaffold Tree regressions from closed issues
     And "Structure" column should have tag ".chem-scaffold-tree-highlight" equal to "[]"
     And no errors should have been logged
 
+  @realizes:public#2459 @realizes:public#2154
   Scenario: The filter panel's reset unchecks the checked scaffold (public#2459, public#2154)
     When user picks "Chem > Analyze > Scaffold Tree" from the top menu
     And user hovers over Scaffold Tree viewer
@@ -58,6 +60,7 @@ Feature: Scaffold Tree regressions from closed issues
     And the "checked of node 1" reading of Scaffold Tree viewer should be "false"
     And no errors should have been logged
 
+  @realizes:public#2964
   Scenario: Selection to Filter holds its filter while a scaffold tree is in the view (public#2964)
     When user clicks on filter icon in toolbar
     And user picks "Chem > Analyze > Scaffold Tree" from the top menu
@@ -75,6 +78,7 @@ Feature: Scaffold Tree regressions from closed issues
     And 1 row should pass the filter
     And no errors should have been logged
 
+  @realizes:public#2315
   Scenario: Order or Hide Columns lists the same columns after a tree with a checked scaffold is added (public#2315)
     When user picks "Order or Hide Columns..." from the context menu of the "header Id" area of grid
     Then Order or Hide Columns dialog should be visible
@@ -96,6 +100,7 @@ Feature: Scaffold Tree regressions from closed issues
     When user clicks on CLOSE button in Order or Hide Columns dialog
     Then no errors should have been logged
 
+  @realizes:public#2626
   Scenario: A child of a scaffold drawn with an explicit H opens with no superstructure warning (public#2626)
     When user picks "Chem > Analyze > Scaffold Tree" from the top menu
     And user hovers over Scaffold Tree viewer
@@ -122,6 +127,7 @@ Feature: Scaffold Tree regressions from closed issues
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
+  @realizes:public#2135
   Scenario: Editing one scaffold keeps another one checked (public#2135)
     When user picks "Chem > Analyze > Scaffold Tree" from the top menu
     And user hovers over Scaffold Tree viewer
@@ -154,6 +160,7 @@ Feature: Scaffold Tree regressions from closed issues
     And 32 rows should pass the filter
     And no errors should have been logged
 
+  @realizes:public#2322
   Scenario: A property changed with a scaffold tree filter on the panel keeps the viewer's properties in the context panel (public#2322)
     When user clicks on filter icon in toolbar
     And user picks "Add Filter | Scaffold Tree Filter..." from the viewer menu of filter panel

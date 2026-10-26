@@ -12,6 +12,7 @@ Feature: Similarity Search regressions from closed issues
     And the package autostarts have completed
     And user opens smiles dataset
 
+  @realizes:public#4288
   Scenario: The Similarity Search viewer follows the filter, and Row Source All gives back every row (public#4288)
     When user picks "Chem > Search > Similarity Search..." from the top menu
     Then Chem Similarity Search viewer should be visible

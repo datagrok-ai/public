@@ -17,6 +17,7 @@ Feature: Line chart regressions — row source, row groups, categories and the l
     Given user is logged in
 
   # public#2350
+  @realizes:public#2350
   Scenario: A layout with a categorical X and Row Source Selected loads with nothing selected (public#2350)
     Given user opens demog-1000 dataset
     When user adds a line chart viewer with:
@@ -40,6 +41,7 @@ Feature: Line chart regressions — row source, row groups, categories and the l
 
   # public#1650, public#1628: Pyrrolidines holds 21 rows at 20 distinct masses (the chart aggregates
   # the pair), Aminopiperidines 4 at 4
+  @realizes:public#1650 @realizes:public#1628
   Scenario: A split chart under Row Source Selected logs nothing and draws exactly the selected rows (public#1650)
     Given user opens spgi dataset
     When user adds a line chart viewer with:
@@ -63,6 +65,7 @@ Feature: Line chart regressions — row source, row groups, categories and the l
     And no errors should have been logged
 
   # public#3709
+  @realizes:public#3709
   Scenario: A row group hovered in a bar chart repaints the line chart only while Show Mouse Over Row Group is on (public#3709)
     Given user opens demog-1000 dataset
     When user adds a line chart viewer with:
@@ -84,6 +87,7 @@ Feature: Line chart regressions — row source, row groups, categories and the l
     Then no errors should have been logged
 
   # public#1582
+  @realizes:public#1582
   Scenario: A molecule column on X draws a category per structure (public#1582)
     Given user opens spgi dataset
     When user adds a line chart viewer with:
@@ -95,6 +99,7 @@ Feature: Line chart regressions — row source, row groups, categories and the l
     And no errors should have been logged
 
   # public#2485: the column's values run from 0.04 to 31.5 (two zeros, which a log axis drops)
+  @realizes:public#2485
   Scenario: A logarithmic Y axis fits the data (public#2485)
     Given user opens spgi dataset
     When user adds a line chart viewer with:

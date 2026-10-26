@@ -23,6 +23,7 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     And no rows should be selected
 
   # public#3189
+  @realizes:public#3189
   Scenario: Labels for selected rows are not drawn for the rows the filter took out (public#3189)
     When user sets properties of scatter plot viewer:
       | Label Columns   | AGE      |
@@ -45,6 +46,7 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     And no errors should have been logged
 
   # public#1156
+  @realizes:public#1156
   Scenario: A viewer Filter keeps its rows when a calculated column is added (public#1156)
     When user sets "Filter" property of scatter plot viewer to '${RACE} in ["Asian", "Black"]'
     Then scatter plot viewer should show 38 rows
@@ -58,6 +60,7 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     And no errors should have been logged
 
   # public#552
+  @realizes:public#552
   Scenario: A zoom under Zoom and Filter = no action survives filtering in the filter panel (public#552)
     When user sets properties of scatter plot viewer:
       | Zoom and Filter    | no action |
@@ -83,6 +86,7 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     And no errors should have been logged
 
   # public#1348
+  @realizes:public#1348
   Scenario: A plot shrunk almost to nothing filters no row, and the panel's reset gives every row back (public#1348)
     When user opens the filter panel
     And user resizes scatter plot viewer to 40 by 40
@@ -97,6 +101,7 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     And no errors should have been logged
 
   # public#2089
+  @realizes:public#2089
   Scenario: Mouse Drag = Select makes a plain drag select, and Pan makes it pan again (public#2089)
     When user sets "Zoom and Filter" property of scatter plot viewer to "no action"
     And user remembers the "x axis min" reading of scatter plot viewer
@@ -116,6 +121,7 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     And no errors should have been logged
 
   # public#3613
+  @realizes:public#3613
   Scenario: Show Selected Rows = false draws the selected markers without the highlight (public#3613)
     When user selects rows where "SEX" is "F"
     Then scatter plot viewer should show a selection highlight
@@ -129,6 +135,7 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     And no errors should have been logged
 
   # public#3176
+  @realizes:public#3176
   Scenario: Every label of the selected rows comes back after a zoom in and out (public#3176)
     When user sets properties of scatter plot viewer:
       | Zoom and Filter | no action |
@@ -152,6 +159,7 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     And no errors should have been logged
 
   # public#801
+  @realizes:public#801
   Scenario: After a zoom a click on a marker makes its row current (public#801)
     When user scrolls the mouse wheel up 2 times over the "view" area of scatter plot viewer
     Then scatter plot viewer should show fewer rows than before
@@ -164,6 +172,7 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     And no errors should have been logged
 
   # public#1174
+  @realizes:public#1174
   Scenario: A selection box takes the markers whose Color value is empty (public#1174)
     When user adds a calculated column "RACE_F" with formula "if(${SEX} == \"F\", ${RACE}, null)"
     And user sets "Color" property of scatter plot viewer to "RACE_F"
@@ -177,6 +186,7 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     And no errors should have been logged
 
   # public#376
+  @realizes:public#376
   Scenario: The range slider moves a logarithmic axis (public#376)
     When user sets properties of scatter plot viewer:
       | Zoom and Filter | no action   |
@@ -196,6 +206,7 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     And no errors should have been logged
 
   # public#1744
+  @realizes:public#1744
   Scenario: A logarithmic axis on an all-empty column under filter by zoom filters no row (public#1744)
     When user adds a calculated column "NO_VALUES" with formula "if(${AGE} > 1000, ${WEIGHT}, null)"
     Then "NO_VALUES" column should have missing values

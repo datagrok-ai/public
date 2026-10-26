@@ -12,6 +12,7 @@ Feature: Line chart legend regressions
     And user opens demog-1000 dataset
 
   # core#825, public#3463
+  @realizes:core#825 @realizes:public#3463
   Scenario: The split legend lists no Y / split pair that has no data (core#825)
     When user adds a calculated column "H_F" with formula "if(${SEX} == \"F\", ${HEIGHT}, null)"
     And user adds a calculated column "W_M" with formula "if(${SEX} == \"M\", ${WEIGHT}, null)"
@@ -29,6 +30,7 @@ Feature: Line chart legend regressions
     And no errors should have been logged
 
   # public#1651
+  @realizes:public#1651
   Scenario: Under Row Source = Selected the split legend lists the categories of the selected rows (public#1651)
     When user adds a line chart viewer with:
       | xColumnName      | AGE      |

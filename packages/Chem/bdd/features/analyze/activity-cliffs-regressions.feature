@@ -11,6 +11,7 @@ Feature: Activity Cliffs regressions from closed issues
     And the package autostarts have completed
     And user opens activity-cliffs dataset
 
+  @realizes:public#1512
   Scenario: The Activity cliffs panel stays with the view of its analysis (public#1512)
     When user picks "Chem > Analyze > Activity Cliffs..." from the top menu
     And user clicks on OK button in "Activity Cliffs" dialog

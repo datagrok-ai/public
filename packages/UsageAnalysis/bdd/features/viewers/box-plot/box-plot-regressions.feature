@@ -13,6 +13,7 @@ Feature: Box plot regressions from closed issues
     Given user is logged in
 
   # core#307
+  @realizes:core#307
   Scenario: Toggling Show Empty Categories keeps the zoom (core#307)
     Given user opens spgi dataset
     When user adds a box plot viewer with:
@@ -31,6 +32,7 @@ Feature: Box plot regressions from closed issues
     And no errors should have been logged
 
   # public#3469
+  @realizes:public#3469
   Scenario: An explicit Marker Color Column survives a Category 1 change (public#3469)
     Given user opens demog-1000 dataset
     When user adds a box plot viewer with:
@@ -45,6 +47,7 @@ Feature: Box plot regressions from closed issues
     And no errors should have been logged
 
   # public#2764
+  @realizes:public#2764
   Scenario: A Shift-drag picks its category when the categories to its left are filtered out (public#2764)
     Given user opens demog-1000 dataset
     When user adds a box plot viewer with:
@@ -65,6 +68,7 @@ Feature: Box plot regressions from closed issues
     And no errors should have been logged
 
   # public#3066
+  @realizes:public#3066
   Scenario: The selection is highlighted under a linear and under a conditional colouring (public#3066)
     Given user opens demog-1000 dataset
     When user colors "HEIGHT" column linearly from "#00FF00" to "#0000FF"
@@ -87,6 +91,7 @@ Feature: Box plot regressions from closed issues
     Then no errors should have been logged
 
   # public#1379
+  @realizes:public#1379
   Scenario: Show Outside Values off takes the outlier markers away (public#1379)
     Given user opens demog-1000 dataset
     When user adds a box plot viewer with:

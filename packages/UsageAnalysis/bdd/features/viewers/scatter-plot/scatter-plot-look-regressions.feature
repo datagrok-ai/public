@@ -20,6 +20,7 @@ Feature: Scatter plot regressions — markers, colors, layouts and the project
     Then scatter plot viewer should show 872 rows
 
   # public#2285
+  @realizes:public#2285
   Scenario: Marker Default Size changes the markers (public#2285)
     When user sets "markerDefaultSize" property of scatter plot viewer to "12"
     Then scatter plot viewer should have more ink than before
@@ -31,6 +32,7 @@ Feature: Scatter plot regressions — markers, colors, layouts and the project
 
   # public#3695: the fix describes the limit on the property ("Supports up to 20 categories; otherwise,
   # a common regression line is shown"), it does not grey the property out
+  @realizes:public#3695
   Scenario: Over 20 color categories Regression Per Category draws one common line (public#3695)
     When user sets properties of scatter plot viewer:
       | Show Regression Line    | true |
@@ -47,6 +49,7 @@ Feature: Scatter plot regressions — markers, colors, layouts and the project
     And no errors should have been logged
 
   # public#2658
+  @realizes:public#2658
   Scenario: Color Min and Color Max narrow the color scale (public#2658)
     When user sets "Color" property of scatter plot viewer to "AGE"
     Then the "color scale min" reading of scatter plot viewer should be 18
@@ -64,6 +67,7 @@ Feature: Scatter plot regressions — markers, colors, layouts and the project
     Then no errors should have been logged
 
   # public#1434
+  @realizes:public#1434
   Scenario: Removing the grid's linear coloring gives the color scale its own range back (public#1434)
     When user colors "AGE" column linearly from "#0000FF" to "#FF0000" over 30 to 40
     And user sets "Color" property of scatter plot viewer to "AGE"
@@ -76,6 +80,7 @@ Feature: Scatter plot regressions — markers, colors, layouts and the project
     Then no errors should have been logged
 
   # public#2402
+  @realizes:public#2402
   Scenario: An explicit X window comes back from a layout (public#2402)
     When user sets properties of scatter plot viewer:
       | xMin | 100 |
@@ -97,6 +102,7 @@ Feature: Scatter plot regressions — markers, colors, layouts and the project
     And no errors should have been logged
 
   # core#375
+  @realizes:core#375
   Scenario: The window a zoom left comes back with the project (core#375)
     When user drags the min handle of the "x" range slider of scatter plot viewer by 40 pixels
     Then the "x axis min" reading of scatter plot viewer should be higher than before

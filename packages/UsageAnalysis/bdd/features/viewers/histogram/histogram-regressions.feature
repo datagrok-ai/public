@@ -22,6 +22,7 @@ Feature: Histogram regressions from closed issues
     And the "error" reading of histogram viewer should be ""
 
   # core#998 (a)
+  @realizes:core#998
   Scenario: Under the viewer's own Filter a bin click selects only the rows the bar counts (core#998)
     When user sets "Filter" property of histogram viewer to "${SEX} == \"F\""
     Then histogram viewer should show 553 rows
@@ -34,6 +35,7 @@ Feature: Histogram regressions from closed issues
     And no errors should have been logged
 
   # core#998 (b)
+  @realizes:core#998
   Scenario: A split with a single bin can be hovered without errors (core#998)
     When user sets "Split" property of histogram viewer to "SEX"
     Then histogram viewer should have a "line F" area
@@ -50,6 +52,7 @@ Feature: Histogram regressions from closed issues
     Then the "bins shown" reading of histogram viewer should be 20
 
   # core#998 (c)
+  @realizes:core#998
   Scenario: A logarithmic X axis over a column with no positive value is reported, not thrown (core#998)
     When user adds a calculated column "NEG_AGE" with formula "0 - ${AGE}"
     And user sets "Value" property of histogram viewer to "NEG_AGE"
@@ -67,6 +70,7 @@ Feature: Histogram regressions from closed issues
     Then no errors should have been logged
 
   # core#998 (d)
+  @realizes:core#998
   Scenario: A Y Min above the Y Max is reported, not thrown (core#998)
     When user sets properties of histogram viewer:
       | Y Min | 80 |
@@ -83,6 +87,7 @@ Feature: Histogram regressions from closed issues
     And no errors should have been logged
 
   # public#2301
+  @realizes:public#2301
   Scenario: The min handle dragged past the max handle leaves a valid range (public#2301)
     When user hovers over the "view" area of histogram viewer
     Then histogram viewer should have a "range min handle" area
@@ -97,6 +102,7 @@ Feature: Histogram regressions from closed issues
     And the "range min" reading of histogram viewer should be 18
 
   # public#130
+  @realizes:public#130
   Scenario: Split lines take the split column's category colours (public#130)
     When user colors "SEX" column categorically:
       | F | #00FF00 |

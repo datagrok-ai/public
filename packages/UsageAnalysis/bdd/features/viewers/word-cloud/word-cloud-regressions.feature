@@ -4,6 +4,7 @@ Feature: Word cloud regressions of closed issues
   earthquakes (2426 events, the cloud on MagType) the click now selects exactly that word's rows and
   nothing is logged (Mb holds 72 rows).
 
+  @realizes:core#255
   Scenario: Clicking a word with a Map open selects its rows and logs nothing (core#255)
     Given user is logged in
     And user opens earthquakes dataset

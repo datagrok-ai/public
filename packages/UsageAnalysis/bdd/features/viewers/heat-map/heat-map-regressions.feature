@@ -15,6 +15,7 @@ Feature: Heat map regressions of closed issues
     Then the "columns shown" reading of heat map viewer should be 11
     And heat map viewer should be painted
 
+  @realizes:core#928
   Scenario: Max Heatmap Columns 0 says why the map is empty, and 100 takes the hint away (core#928)
     When user sets "maxHeatmapColumns" property of heat map viewer to "0"
     Then heat map viewer should show the text "No columns to show: Max Heatmap Columns is 0"
@@ -26,6 +27,7 @@ Feature: Heat map regressions of closed issues
     And heat map viewer should not show the text "No columns to show"
     And no errors should have been logged
 
+  @realizes:core#931
   Scenario: A layout brings the stacked heat map back on its own tab (core#931)
     Given user adds a histogram viewer
     When user stacks heat map viewer onto histogram viewer as a tab

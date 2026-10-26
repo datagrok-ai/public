@@ -5,6 +5,7 @@ Feature: Correlation plot regressions of closed issues
   matrix (its header is gone) while the pinned name column and every row header stay; showing the
   column again brings its header back.
 
+  @realizes:public#3492
   Scenario: Hiding a column in Order or Hide Columns keeps the row names (public#3492)
     Given user is logged in
     And user opens demog-1000 dataset

@@ -19,6 +19,7 @@ Feature: Formula lines — closed GitHub issues guarded on the scatter plot
     And user opens demog-1000 dataset
 
   # public#3177
+  @realizes:public#3177
   Scenario: A line on the axis tokens follows the columns on the axes, a line on column names does not
     Given user adds a scatter plot viewer with:
       | xColumnName  | WEIGHT |
@@ -37,6 +38,7 @@ Feature: Formula lines — closed GitHub issues guarded on the scatter plot
     And no errors should have been logged
 
   # public#3019
+  @realizes:public#3019
   Scenario: Viewer formula lines on two scatter plots come back with the project
     Given user adds a scatter plot viewer with:
       | xColumnName | WEIGHT |
@@ -57,6 +59,7 @@ Feature: Formula lines — closed GitHub issues guarded on the scatter plot
     And no errors should have been logged
 
   # public#542
+  @realizes:public#542
   Scenario: Bands on columns with parentheses in their names are drawn
     Given user adds a scatter plot viewer with:
       | xColumnName | WEIGHT |
@@ -78,6 +81,7 @@ Feature: Formula lines — closed GitHub issues guarded on the scatter plot
     Then no errors should have been logged
 
   # public#699
+  @realizes:public#699
   Scenario: A valid line is drawn next to an invalid one, also after a layout round trip
     Given user adds a scatter plot viewer with:
       | xColumnName  | WEIGHT |
@@ -98,6 +102,7 @@ Feature: Formula lines — closed GitHub issues guarded on the scatter plot
     Then no errors should have been logged
 
   # public#3390, public#3389
+  @realizes:public#3390 @realizes:public#3389
   Scenario: The Formula Lines dialog opened from a trellis cell previews the inner scatter plot's X and Y
     Given user adds a trellis plot viewer with:
       | X Column Names | SEX          |
@@ -125,6 +130,7 @@ Feature: Formula lines — closed GitHub issues guarded on the scatter plot
     Then no errors should have been logged
 
   # public#425
+  @realizes:public#425
   Scenario: Formula Lines stays in the context menu after the axis type is switched from the axis menu
     Given user adds a scatter plot viewer with:
       | xColumnName | WEIGHT |

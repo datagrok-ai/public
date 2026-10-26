@@ -13,6 +13,7 @@ Feature: Scatter plot regressions — labels and missing columns
     Given user is logged in
 
   # public#3120
+  @realizes:public#3120
   Scenario: A label is dragged under Mouse Drag = Select (public#3120)
     Given user opens demog-1000 dataset
     And user adds a scatter plot viewer with:
@@ -30,6 +31,7 @@ Feature: Scatter plot regressions — labels and missing columns
     And no errors should have been logged
 
   # public#3323
+  @realizes:public#3323
   Scenario: A label is dragged when Show Labels For is All and a panel filter is set (public#3323)
     Given user opens demog-1000 dataset
     And user adds a scatter plot viewer with:
@@ -48,6 +50,7 @@ Feature: Scatter plot regressions — labels and missing columns
     And no errors should have been logged
 
   # public#3041, public#3040
+  @realizes:public#3041 @realizes:public#3040
   Scenario: A molecule column as the label column draws labels (public#3041)
     Given user opens spgi-100 dataset
     And user adds a scatter plot viewer with:
@@ -60,6 +63,7 @@ Feature: Scatter plot regressions — labels and missing columns
     And no errors should have been logged
 
   # public#2867
+  @realizes:public#2867
   Scenario: A plot whose logarithmic X column is removed lets the layout be saved (public#2867)
     Given user opens demog-1000 dataset
     And user adds a scatter plot viewer with:

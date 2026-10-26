@@ -15,6 +15,7 @@ Feature: Grid summary columns — regressions of closed issues
     And user opens demog-1000 dataset
     Then the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"
 
+  @realizes:public#1093
   Scenario: A summary column stays when another column is hidden and shown again (public#1093)
     When user picks "Add > Summary Columns > Sparklines" from the context menu of the "cell 2 of USUBJID" area of grid
     Then the "cell type of Sparklines" reading of grid should be "sparkline"
@@ -30,6 +31,7 @@ Feature: Grid summary columns — regressions of closed issues
     And the "cell type of Sparklines" reading of grid should be "sparkline"
     And no errors should have been logged
 
+  @realizes:public#1093
   Scenario: A summary column itself is hidden and shown again in Order or Hide Columns (public#1093)
     When user picks "Add > Summary Columns > Sparklines" from the context menu of the "cell 2 of USUBJID" area of grid
     Then grid should have a "header Sparklines" area

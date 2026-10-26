@@ -14,6 +14,7 @@ Feature: Trellis plot regressions of closed issues
   Background:
     Given user is logged in
 
+  @realizes:public#2144
   Scenario: An inner bar chart keeps its own setting through a pie chart and back (public#2144)
     Given user opens demog-1000 dataset
     And user adds a trellis plot viewer with:
@@ -34,6 +35,7 @@ Feature: Trellis plot regressions of closed issues
     And the "cell signature F | Caucasian" reading of trellis plot viewer should be as remembered
     And no errors should have been logged
 
+  @realizes:public#3617
   Scenario: Include Nulls off redraws the inner bar charts, and on brings their picture back (public#3617)
     Given user opens spgi dataset
     And user adds a trellis plot viewer with:
@@ -49,6 +51,7 @@ Feature: Trellis plot regressions of closed issues
     Then the "cell signature Chemist 13 | R_ONE" reading of trellis plot viewer should be as remembered
     And no errors should have been logged
 
+  @realizes:public#1547
   Scenario: Inner bar charts draw complete on the first pass (public#1547)
     Given user opens spgi dataset
     And user adds a trellis plot viewer with:

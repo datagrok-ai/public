@@ -14,6 +14,7 @@ Feature: Network diagram regressions of closed issues
     Then the "nodes" reading of network diagram viewer should be 4
     And network diagram viewer should be painted
 
+  @realizes:core#869
   Scenario: The icon node shape draws every node and logs nothing per node (core#869)
     When user sets "nodeShape" property of network diagram viewer to "icon"
     Then network diagram viewer should have repainted
@@ -26,6 +27,7 @@ Feature: Network diagram regressions of closed issues
     When user sets "nodeShape" property of network diagram viewer to "dot"
     Then the "nodes" reading of network diagram viewer should be 4
 
+  @realizes:public#2129
   Scenario: Auto Layout drops the column selectors on a small diagram, and Auto Layout off keeps them (public#2129)
     Then network diagram viewer should have a "node 1 selector" area
     And network diagram viewer should have a "node 2 selector" area

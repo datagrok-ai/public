@@ -8,6 +8,7 @@ Feature: Forms viewer — regressions of closed issues
   that has been rebuilt for the empty row. The same claim on the core Form viewer is that viewer's
   own (UsageAnalysis `viewers/form`).
 
+  @realizes:public#3561
   Scenario: An empty integer cell shows an empty field on the card (public#3561)
     Given user is logged in
     And user opens a table "ints" with:

@@ -29,6 +29,7 @@ Feature: Filter panel regressions
     Then the filter panel should have 0 filters
     And all rows should pass the filter
 
+  @realizes:public#790
   Scenario: Reset filters gives back the rows a missing-values choice dropped (public#790)
     When user adds a card for "HEIGHT" to the filter panel
     And user picks "Missing values | Filter out missing values" from the indicator menu of the "HEIGHT" filter card
@@ -48,6 +49,7 @@ Feature: Filter panel regressions
     Then the filter panel should have 0 filters
     And no errors should have been logged
 
+  @realizes:public#2364
   Scenario: A min/max range wholly outside the column's values keeps no row (public#2364)
     When user adds a card for "AGE" to the filter panel
     And user picks "Min / max" from the indicator menu of the "AGE" filter card
@@ -61,6 +63,7 @@ Feature: Filter panel regressions
     Then all rows should pass the filter
     And no errors should have been logged
 
+  @realizes:public#1343
   Scenario: Range handles brought back to the ends keep every row (public#1343)
     When user adds a card for "AGE" to the filter panel
     And user hovers over the "view" area of histogram viewer in filter panel
@@ -80,6 +83,7 @@ Feature: Filter panel regressions
     Then the filter panel should have 0 filters
     And no errors should have been logged
 
+  @realizes:public#2359
   Scenario: A second card's search icon takes the typing while the first search is open (public#2359)
     When user adds a card for "RACE" to the filter panel
     And user adds a card for "DIS_POP" to the filter panel
@@ -96,6 +100,7 @@ Feature: Filter panel regressions
     Then all rows should pass the filter
     And no errors should have been logged
 
+  @realizes:public#1986
   Scenario: A header dragged onto the panel stays where it was in the grid (public#1986)
     Then the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"
     When user drags the "header RACE" area of grid onto the "view" area of filter panel
@@ -106,6 +111,7 @@ Feature: Filter panel regressions
     Then the filter panel should have 0 filters
     And no errors should have been logged
 
+  @realizes:public#3027
   Scenario: Text selected in a card's search is copied as text (public#3027)
     When user adds a card for "DIS_POP" to the filter panel
     And user hovers over "DIS_POP" filter card
@@ -119,6 +125,7 @@ Feature: Filter panel regressions
     Then all rows should pass the filter
     And no errors should have been logged
 
+  @realizes:core#479
   Scenario: A column holding one value is listed as a row after the cards (core#479)
     When user adds a calculated column "probe_class" with formula '"low"'
     And user adds a card for "RACE" to the filter panel
@@ -132,6 +139,7 @@ Feature: Filter panel regressions
     Then the filter panel should have 0 filters
     And no errors should have been logged
 
+  @realizes:public#2501
   Scenario: Adding viewers does not shrink the filter panel (public#2501)
     When user adds a card for "RACE" to the filter panel
     And user remembers the size of filter panel
@@ -142,6 +150,7 @@ Feature: Filter panel regressions
     And filter panel should keep its remembered width
     And no errors should have been logged
 
+  @realizes:public#2943 @realizes:public#1242
   Scenario: The header popup still filters after the column's card left the panel (public#2943, public#1242)
     When user adds a card for "AGE" to the filter panel
     And user hovers over "AGE" filter card

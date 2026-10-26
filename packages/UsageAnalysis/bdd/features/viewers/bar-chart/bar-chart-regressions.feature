@@ -14,6 +14,7 @@ Feature: Bar chart regressions from closed issues
     And user opens demog-1000 dataset
 
   # core#974 (a)
+  @realizes:core#974
   Scenario: A vertical bar chart with every row filtered out logs nothing (core#974)
     When user adds a bar chart viewer with:
       | Split       | RACE     |
@@ -31,6 +32,7 @@ Feature: Bar chart regressions from closed issues
     And no errors should have been logged
 
   # public#2562
+  @realizes:public#2562
   Scenario: A datetime Split with Split Map month comes back from a layout with its twelve bars (public#2562)
     When user adds a bar chart viewer with:
       | Split     | STARTED |

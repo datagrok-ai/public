@@ -19,6 +19,7 @@ Feature: Legend regressions on the scatter plot
     Then scatter plot viewer should show 872 rows
 
   # public#1209
+  @realizes:public#1209
   Scenario: A viewer Filter that empties the plot and lets rows back brings the legend back (public#1209)
     When user sets properties of scatter plot viewer:
       | Color             | RACE |
@@ -44,6 +45,7 @@ Feature: Legend regressions on the scatter plot
     And no errors should have been logged
 
   # public#2505
+  @realizes:public#2505
   Scenario: A viewer Filter set after Markers drops the filtered-out categories from the marker legend (public#2505)
     When user sets "Markers" property of scatter plot viewer to "RACE"
     Then the legend of scatter plot viewer should list 4 items
@@ -59,6 +61,7 @@ Feature: Legend regressions on the scatter plot
     And no errors should have been logged
 
   # public#2965
+  @realizes:public#2965
   Scenario: With Color and Markers on the same column a color is picked from the legend (public#2965)
     When user sets properties of scatter plot viewer:
       | Color             | RACE   |
@@ -82,6 +85,7 @@ Feature: Legend regressions on the scatter plot
     And no errors should have been logged
 
   # public#3289
+  @realizes:public#3289
   Scenario: A Color column of a thousand categories leaves the Markers section on the screen (public#3289)
     When user sets properties of scatter plot viewer:
       | Color             | USUBJID |

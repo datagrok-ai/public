@@ -6,6 +6,7 @@ Feature: Matrix plot regressions of closed issues
   and switching back gives the first table's columns and sliders again. The small table is two
   numerical columns made for the feature; the Table property is picked in the context panel.
 
+  @realizes:core#321
   Scenario: The Table property re-tiles the matrix to a two-column table without slider dots, and back (core#321)
     Given user is logged in
     And user opens a table "two-numbers" with:

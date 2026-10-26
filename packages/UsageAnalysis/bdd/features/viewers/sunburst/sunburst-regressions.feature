@@ -10,6 +10,7 @@ Feature: Sunburst regressions of closed issues
     Given user is logged in
     And the package autostarts have completed
 
+  @realizes:public#2292
   Scenario: The Table property moves the sunburst to another table and back (public#2292)
     Given user opens spgi dataset
     And user opens demog-1000 dataset

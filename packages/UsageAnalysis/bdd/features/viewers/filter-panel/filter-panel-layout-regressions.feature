@@ -19,6 +19,7 @@ Feature: Filter panel regressions across layouts and cloned views
     Then the filter panel should have 0 filters
     And all rows should pass the filter
 
+  @realizes:public#3059
   Scenario: A layout saved after a card search was reset brings back no filtering (public#3059)
     When user adds a card for "DIS_POP" to the filter panel
     And user hovers over "DIS_POP" filter card
@@ -39,6 +40,7 @@ Feature: Filter panel regressions across layouts and cloned views
     And counter of filter panel should be hidden
     And no errors should have been logged
 
+  @realizes:public#1837 @realizes:public#1460
   Scenario: The master toggle switched off in one view is switched back on from the clone (public#1837, public#1460)
     When user adds a card for "RACE" to the filter panel
     And user clicks on the "category Black of RACE" area of filter panel
@@ -64,6 +66,7 @@ Feature: Filter panel regressions across layouts and cloned views
     Then all rows should pass the filter
     And no errors should have been logged
 
+  @realizes:public#1103
   Scenario: A layout saved with the master toggle off comes back off, and switched on every card filters (public#1103)
     When user adds a card for "RACE" to the filter panel
     And user clicks on the "category Black of RACE" area of filter panel
@@ -85,6 +88,7 @@ Feature: Filter panel regressions across layouts and cloned views
     Then checkbox of "RACE" filter card should be checked
     And no errors should have been logged
 
+  @realizes:public#791
   Scenario: A missing-values choice that came back with a layout can be undone (public#791)
     When user adds a card for "HEIGHT" to the filter panel
     And user picks "Missing values | Filter out missing values" from the indicator menu of the "HEIGHT" filter card
@@ -104,6 +108,7 @@ Feature: Filter panel regressions across layouts and cloned views
     When user closes the context menu
     Then no errors should have been logged
 
+  @realizes:public#377
   Scenario: A layout with unchecked categories brings the card's indicator back (public#377)
     When user adds a card for "RACE" to the filter panel
     And user clicks on the "category Black of RACE" area of filter panel
@@ -122,6 +127,7 @@ Feature: Filter panel regressions across layouts and cloned views
     And the "selected categories of RACE" reading of filter panel should be "Asian, Black, Caucasian, Other"
     And no errors should have been logged
 
+  @realizes:public#1464
   Scenario: The order the cards were dragged into comes back with the layout (public#1464)
     When user adds a card for "RACE" to the filter panel
     And user adds a card for "SEX" to the filter panel
@@ -136,6 +142,7 @@ Feature: Filter panel regressions across layouts and cloned views
     Then the "cards" reading of filter panel should be "AGE, RACE, SEX"
     And no errors should have been logged
 
+  @realizes:public#1889
   Scenario: The card's sort menu orders the categories by count, and the layout keeps the order (public#1889)
     When user adds a card for "DIS_POP" to the filter panel
     Then the "category RA of DIS_POP" area of filter panel should lie below the "category Psoriasis of DIS_POP" area
@@ -151,6 +158,7 @@ Feature: Filter panel regressions across layouts and cloned views
     And the "category RA of DIS_POP" area of filter panel should lie above the "category Psoriasis of DIS_POP" area
     And no errors should have been logged
 
+  @realizes:public#319
   Scenario: A view cloned after Reset filters comes up unfiltered (public#319)
     When user adds a card for "RACE" to the filter panel
     And user clicks on the "category Black of RACE" area of filter panel
