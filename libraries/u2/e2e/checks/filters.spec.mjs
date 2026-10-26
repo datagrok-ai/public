@@ -69,7 +69,7 @@ export async function fixture(page) {
 }
 
 async function checkAddRow(page) {
-  await builder(page, 'empty').locator('.u2-fb-footer [data-u2-part="add"]').click();
+  await builder(page, 'empty').locator('.u2-fb-header [data-u2-part="add"]').click();
   await page.waitForTimeout(150);
   const added = await rows(page, 'empty').count();
   await setRow(rows(page, 'empty').first(), 'age', '>', 30);
@@ -148,17 +148,17 @@ async function checkQueryInputCompletion(page) {
 async function checkNesting(page) {
   await openPage(page, 'filters', 'empty');
   const b = builder(page, 'empty');
-  await b.locator('.u2-fb-footer [data-u2-part="add"]').click();
+  await b.locator('.u2-fb-header [data-u2-part="add"]').click();
   await setRow(rows(page, 'empty').first(), 'age', '>', 30);
   await modeLink(page, 'empty').click();
   await page.waitForTimeout(150);
-  await b.locator('.u2-fb-footer [data-u2-part="add-group"]').click();
+  await b.locator('.u2-fb-header [data-u2-part="add-group"]').click();
   await page.waitForTimeout(150);
   const g1 = b.locator(GROUP).first();
-  await g1.locator('.u2-fb-group-footer [data-u2-part="add-group"]').first().click();
+  await g1.locator('.u2-fb-group-header [data-u2-part="add-group"]').first().click();
   await page.waitForTimeout(150);
   const g2 = g1.locator(GROUP).first();
-  await g2.locator('.u2-fb-group-footer [data-u2-part="add"]').first().click();
+  await g2.locator('.u2-fb-group-header [data-u2-part="add"]').first().click();
   await page.waitForTimeout(150);
   await setRow(g2.locator(ROW).first(), 'age', '>', 5);
   await page.waitForTimeout(150);
@@ -175,14 +175,14 @@ async function checkNesting(page) {
 
 async function checkNot(page) {
   const g1 = builder(page, 'empty').locator(GROUP).first();
-  await g1.locator('.u2-fb-group-header [data-u2-part="not"] input').first().click();
+  await g1.locator('.u2-fb-group-header [data-u2-part="not"]').first().click();
   await page.waitForTimeout(150);
   const negated = await g1.evaluate((el) => el.classList.contains('u2-fb-negated'));
   const query = await queryOf(page, 'empty');
   await shot(page, 'filters-5-not-group');
   ok('filters/5a/the-not-chip-negates-the-group-and-the-query-reads-not',
     negated && query.includes('not ('), `negated=${negated} query="${query}"`);
-  await g1.locator('.u2-fb-group-header [data-u2-part="not"] input').first().click();
+  await g1.locator('.u2-fb-group-header [data-u2-part="not"]').first().click();
   await page.waitForTimeout(150);
 }
 
@@ -192,14 +192,14 @@ async function checkModeGuard(page) {
   const g1 = b.locator(GROUP).first();
   const hint = b.locator('[data-u2-part="hint"]').first();
   const flatten = hint.locator('a').first();
-  await g1.locator('.u2-fb-group-footer [data-u2-part="add"]').first().click();
+  await g1.locator('.u2-fb-group-header [data-u2-part="add"]').first().click();
   await page.waitForTimeout(150);
   await modeLink(page, 'empty').click();
   await page.waitForTimeout(150);
   const refused = !(await hidden(hint)) && (await modeLink(page, 'empty').textContent()) === 'Simple';
   const noFlatten = await hidden(flatten);
   await shot(page, 'filters-6-simple-refused');
-  await g1.locator('[data-u2-part="connector"] [data-id="and"]').first().click();
+  await g1.locator('[data-u2-part="connector"] button').filter({hasText: /^and$/}).first().click();
   await page.waitForTimeout(150);
   await modeLink(page, 'empty').click();
   await page.waitForTimeout(150);

@@ -55,7 +55,7 @@ export async function render(main) {
   const intro = el('p');
   intro.innerHTML = 'Schema-driven query builder over an immutable <code>FilterGroup</code>: one ' +
     'row per condition (property → operator → value), a single <code>and</code>/<code>or</code> ' +
-    'toggle ("Match all/any of these"), Add condition under the rows adds and ✕ removes. Editors come from the property kind ' +
+    'toggle, <code>+</code> adds and <code>−</code> removes. Editors come from the property kind ' +
     '(number, choice, a date-time box that also takes a span such as <code>-1w</code>, tags for <code>in</code>), the query ' +
     'string is <code>Filters.format(value)</code> and problems come from ' +
     '<code>Filters.validate</code>. Everything here runs on a literal schema — no platform.';
@@ -133,8 +133,7 @@ export async function render(main) {
     return [fb, readout('status', computed(() => JSON.stringify({mode: fb.mode.value, problems: fb.problems.value.length})))];
   });
   main.append(el('p', 'u2-gallery-status',
-    'Each group has its own "Match all/any", an "Exclude matches" box, Add condition, Add group and ✕; the ' +
-    'shaded, indented block marks ' +
+    'Each group has its own and/or, a `not` chip, + condition, + group and −; the left rule marks ' +
     'the depth. Drag a row by its grip onto a group header to move it inside, or between rows to ' +
     'reorder; Esc cancels. "Simple" is refused while groups exist unless they can be flattened.'));
 

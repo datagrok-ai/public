@@ -1,8 +1,7 @@
 /* Schema-driven query builder over one immutable `FilterGroup`. Simple mode shows the root group
-   as a list of condition rows under one "Match all|any of these" choice, with Add condition below
-   them; horizontal lays the same rows out inline with a connector chip between them; advanced mode
-   renders sub-groups recursively (a header and a footer per group, an indented shaded block per
-   depth), adds the "Exclude matches" box (`not`), Add group and the drag handles. Rows are
+   as a list of condition rows joined by one `and`/`or` toggle; horizontal lays the same rows out
+   inline with a connector chip between them; advanced mode renders sub-groups recursively (a
+   header per group, a left rule per depth), adds `not`, `+ group` and the drag handles. Rows are
    keyed by node id and reordered in place under whichever group holds them, so an edit never
    detaches the editor being typed into.
    Automation: `data-u2-node="<id>"` on rows and groups; `data-u2-part` values `prop op prop-text
@@ -208,7 +207,9 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     this._modeLink.dataset.u2Part = 'mode';
     this._modeLink.hidden = o.template?.allowAdvanced === false;
     this._rootRow.header.append(this._modeLink);
-    this._none = span('No conditions.', 'u2-fb-none');
+    this._none = this._host.allowAdd ? link('No conditions — add one', () => this.addCondition()) :
+      span('No conditions');
+    this._none.classList.add('u2-fb-none');
     this._none.dataset.u2Part = 'none';
     this._hintText = span('', 'u2-fb-hint-text');
     this._flatten = link('Flatten', () => {
@@ -352,8 +353,8 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     this._panel.classList.toggle('u2-fb-advanced', advanced);
     this._rootRow.header.hidden = horizontal;
     this._rootRow.update(root);
-    if (!horizontal && this._rootRow.add.parentElement !== this._rootRow.footer)
-      this._rootRow.footer.prepend(this._rootRow.add);
+    if (!horizontal && this._rootRow.add.parentElement !== this._rootRow.header)
+      this._rootRow.header.insertBefore(this._rootRow.add, this._rootRow.addGroup);
 
     const seen = new Set<string>();
     // a value not filled in yet is no mistake until the row is left or the builder validated
@@ -366,7 +367,6 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     }
     for (const join of this._joins.values())
       join.textContent = root.op;
-    this._rootRow.syncFooter();
   }
 
   private _renderChildren(group: FilterGroup, into: FilterGroupRow, advanced: boolean, horizontal: boolean,
@@ -394,8 +394,8 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
       if (row instanceof FilterGroupRow)
         this._renderChildren(node as FilterGroup, row, advanced, false, problems, seen);
     }
-    if (order.length === 0)
-      order.push(into === this._rootRow ? this._none : into.empty);
+    if (order.length === 0 && into === this._rootRow)
+      order.push(this._none);
     if (horizontal && !this._rootRow.add.hidden)
       order.push(this._rootRow.add);
     FilterBuilder._place(into.rows, order);

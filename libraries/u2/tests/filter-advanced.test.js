@@ -59,17 +59,9 @@ function part(el, name) {
   return el.querySelector(`[data-u2-part="${name}"]`);
 }
 
-/** The header or footer part of the group `el` itself, not of a nested group. */
+/** The header part of the group `el` itself, not of a nested group. */
 function own(el, name) {
-  return el.children[0].querySelector(`[data-u2-part="${name}"]`) ??
-    el.children[2].querySelector(`[data-u2-part="${name}"]`);
-}
-
-/** A click on the `not` checkbox. */
-function toggle(not) {
-  const box = not.querySelector('input');
-  box.checked = !box.checked;
-  fire(box, 'change');
+  return el.children[0].querySelector(`[data-u2-part="${name}"]`);
 }
 
 function layout(fb, rects) {
@@ -100,9 +92,7 @@ smoke('advanced mode renders the group hierarchy: data-u2-node on groups, a head
     true);
   const header = fb.root.querySelector('.u2-fb-header');
   assert.equal(part(header, 'not').hidden, false, 'the root has not in advanced mode');
-  assert.equal(part(header, 'not').textContent.includes('Exclude matches'), true, 'not is a captioned checkbox');
-  assert.equal(part(header, 'connector').textContent, 'allany', 'the connector reads as match all|any');
-  assert.equal(part(fb.root.querySelector('.u2-fb-footer'), 'add-group').hidden, false);
+  assert.equal(part(header, 'add-group').hidden, false);
   assert.equal(part(header, 'mode').textContent, 'Simple');
   const handle = part(node(fb, 'f1'), 'handle');
   assert.equal(handle.hidden, false, 'handles show in advanced mode');
@@ -115,15 +105,16 @@ smoke('advanced mode renders the group hierarchy: data-u2-node on groups, a head
 smoke('not toggles group.not on a sub-group and on the root; the query shows it', () => {
   const fb = mount(new FilterBuilder({schema: SCHEMA, mode: 'advanced', value: nested()}));
   const not = own(node(fb, 'f4'), 'not');
-  toggle(not);
+  fire(not, 'click');
   assert.equal(Filters.find(fb.value.peek(), 'f4').not, true);
-  assert.equal(not.querySelector('input').checked, true);
+  assert.equal(not.classList.contains('u2-fb-not-on'), true);
+  assert.equal(not.getAttribute('aria-pressed'), 'true');
   assert.equal(node(fb, 'f4').classList.contains('u2-fb-negated'), true);
   assert.equal(fb.query.peek(), 'age > 30 and not (sex = "F" or name like "a")');
-  toggle(not);
+  fire(not, 'click');
   assert.equal('not' in Filters.find(fb.value.peek(), 'f4'), false, 'off is the key gone, not false');
   assert.equal(fb.query.peek(), 'age > 30 and (sex = "F" or name like "a")');
-  toggle(part(fb.root.querySelector('.u2-fb-header'), 'not'));
+  fire(part(fb.root.querySelector('.u2-fb-header'), 'not'), 'click');
   assert.equal(fb.value.peek().not, true);
   assert.equal(fb.query.peek(), Filters.format(fb.value.peek()));
   assert.equal(fb.query.peek().startsWith('not ('), true);
@@ -145,8 +136,8 @@ smoke('a group header edits its own group: and|or, + condition, + group, − rem
   assert.equal(Filters.isGroup(sub.nodes[3]), true);
   assert.equal(sub.nodes[3].op, 'or', 'the other connector than the parent');
   assert.equal(part(group, 'rows').children[3].dataset.u2, 'filter-group', 'nested two levels');
-  assert.equal(part(part(group, 'rows').children[3], 'rows').children[0].textContent,
-    'Empty group: add a condition', 'an empty sub-group says so');
+  assert.equal(part(group, 'rows').children[3].querySelector('.u2-fb-none'), null,
+    'only the root shows the empty hint');
   fire(own(group, 'remove'), 'click');
   assert.deepEqual(nodes(fb).map((n) => n.dataset.u2Node), ['f1']);
   assert.equal(fb.root.querySelector('.u2-fb-hint').hidden, true);
@@ -198,7 +189,7 @@ smoke('mode guard: the header link switches to advanced; back to simple is refus
   assert.equal(hint.hidden, true);
   assert.deepEqual(nodes(fb).map((n) => n.dataset.u2Node), ['f1', 'f2', 'f3']);
   assert.equal(fb.root.querySelector('.u2-fb-header [data-u2-part="not"]').hidden, true);
-  assert.equal(fb.root.querySelector('.u2-fb-footer [data-u2-part="add-group"]').hidden, true);
+  assert.equal(fb.root.querySelector('.u2-fb-header [data-u2-part="add-group"]').hidden, true);
   assert.equal(part(node(fb, 'f1'), 'handle').hidden, true, 'no handles in simple mode');
 });
 
@@ -325,16 +316,15 @@ smoke('templates: a group lock is inherited by its rows, allowAdd hides both add
   };
   const fb = mount(new FilterBuilder({schema: SCHEMA, mode: 'advanced', template,
     value: Filters.applyTemplate(template)}));
-  const footer = fb.root.querySelector('.u2-fb-footer');
-  assert.equal(part(footer, 'add').hidden, true);
-  assert.equal(part(footer, 'add-group').hidden, true);
-  assert.equal(footer.hidden, true, 'nothing to add: the footer stands down');
+  const header = fb.root.querySelector('.u2-fb-header');
+  assert.equal(part(header, 'add').hidden, true);
+  assert.equal(part(header, 'add-group').hidden, true);
   const locked = node(fb, 'f4');
   assert.equal(locked.classList.contains('u2-fb-locked'), true);
   assert.equal(own(locked, 'remove').hidden, true);
   assert.equal(own(locked, 'add').hidden, true);
   assert.equal(own(locked, 'add-group').hidden, true);
-  assert.equal(own(locked, 'not').querySelector('input').disabled, true);
+  assert.equal(own(locked, 'not').disabled, true);
   assert.equal(own(locked, 'connector').querySelector('[data-id="and"]').disabled, true);
   for (const id of ['f2', 'f3']) {
     const row = node(fb, id);
