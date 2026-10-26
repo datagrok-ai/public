@@ -469,7 +469,6 @@
       "family": "action",
       "role": "button",
       "nameFrom": [
-        "text",
         "aria",
         "title"
       ],

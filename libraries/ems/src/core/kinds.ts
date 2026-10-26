@@ -56,7 +56,7 @@ export const EMS_KINDS: readonly U2KindDef[] = [
   button('discard-button'),
   button('new-button'),
   button('refresh-button'),
-  {kind: 'actions-menu', noun: 'dropdown button', family: 'action', role: 'button', nameFrom: ['text', 'aria', 'title'],
+  {kind: 'actions-menu', noun: 'dropdown button', family: 'action', role: 'button', nameFrom: ['aria', 'title'],
     parts: {}, state: ['label', 'open'], gestures: ['press', 'open', 'pick']},
   {kind: 'sort-menu', noun: 'dropdown button', aliases: ['sort'], family: 'action', role: 'button',
     nameFrom: ['aria', 'title'], parts: {}, state: ['label', 'open'], gestures: ['press', 'open', 'pick']},
