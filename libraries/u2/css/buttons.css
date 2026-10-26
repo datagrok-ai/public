@@ -68,6 +68,19 @@
   background: var(--dg-accent-secondary);
 }
 
+/* a disabled one takes none of the ribbon item's hover (d4 `.d4-ribbon-item > :hover`): no tint, no
+   pointer */
+.d4-ribbon-item > .u2-btn:disabled:hover {
+  cursor: default;
+  color: var(--dg-text-color-disabled);
+  background-color: transparent;
+}
+
+.d4-ribbon-item > .u2-btn.u2-btn-primary:disabled:hover {
+  color: var(--dg-grey-4);
+  background-color: var(--dg-steel-2);
+}
+
 .d4-toolbox .u2-btn:not(.u2-icon-btn) {
   height: var(--dg-button-height);
   padding: 0 11px;
