@@ -1,12 +1,13 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {button, computed, Control, Section, Splitter} from '@datagrok-libraries/u2';
+import {button, computed, Control, Section, Splitter, SuggestInput} from '@datagrok-libraries/u2';
 import type {RowView, Text} from '@datagrok-libraries/u2';
 import {SharedSession} from '@datagrok-libraries/ems';
-import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
+import {appView, Editors} from '@datagrok-libraries/u2/src/dg/index.js';
 import {domains, DomainApp} from '@datagrok-libraries/ems/src/dg';
 import type {DomainTable} from '@datagrok-libraries/ems/src/dg';
+import {stockroomDb} from './generated/db';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -14,6 +15,16 @@ import '@datagrok-libraries/ems/src/dg/styles.js';
 import '../css/stockroom.css';
 
 export const _package = new DG.Package();
+
+// a site is typed freely, offered from the sites the locations already name, so a container's
+// location picker is not gated on a name typed from memory
+Editors.register({
+  match: (prop) => prop.semType === 'Stockroom site',
+  create: (_, options) => new SuggestInput({...options, minChars: 0, openOnFocus: true, source: async (text) => {
+    const sites = await stockroomDb.locations.aggregate({groupBy: ['site'], measures: [{fn: 'count'}], sort: 'site'});
+    return sites.map((s) => String(s.site)).filter((s) => s.toLowerCase().includes(text.toLowerCase()));
+  }}),
+});
 
 /** A view per stockroom table under the Stockroom app, the substances at its root. */
 const views = domains.views({
