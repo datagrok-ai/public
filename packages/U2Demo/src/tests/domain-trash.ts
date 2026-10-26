@@ -58,7 +58,7 @@ category('U2: domain trash', () => {
     await items().deleteWhere(query);
   });
 
-  test('a deleted row leaves the list; the Actions menu offers the deleted rows', async () => {
+  test('a deleted row leaves the list; the ⋯ menu offers Show deleted', async () => {
     expect(names(), 'Alpha,Beta');
     expect(app.menuActions().map((a) => a.name).join(), 'Import…,Bulk edit…,Show deleted');
     const row = app.listSource.rows.byKey(goneId)!;

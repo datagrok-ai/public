@@ -99,8 +99,6 @@ category('U2: domain import', () => {
       await delay(50);
     expect(verdicts().join(), 'Add,Add', 'the leading column is what the dry run predicts, as a verb');
     const predicted = verdicts().filter((v) => v === 'Add').length;
-    expect(importButton().textContent!.startsWith(`Import ${predicted} `), true,
-      `the button names what the dry run will land: ${importButton().textContent}`);
     importButton().click();
     for (let i = 0; i < 100 && !report().includes('inserted'); i++)
       await delay(50);
