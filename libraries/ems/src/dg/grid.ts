@@ -189,12 +189,9 @@ export class DomainGrid extends Control {
   }
 
   private static _floorOf(prop: IProperty | undefined): number {
-    switch (prop?.propertyType ?? prop?.type) {
-      case 'bool': return COLUMN_WIDTH.flag;
-      case 'int': case 'bigint': case 'double': case 'float': case 'num': return COLUMN_WIDTH.number;
-      case 'datetime': return COLUMN_WIDTH.date;
-      default: return COLUMN_WIDTH.text;
-    }
+    const type = prop?.propertyType ?? prop?.type;
+    return type === 'bool' ? COLUMN_WIDTH.flag : DomainDataTable.isNumeric(prop) ? COLUMN_WIDTH.number :
+      type === 'datetime' ? COLUMN_WIDTH.date : COLUMN_WIDTH.text;
   }
 
   /** The narrowest width that lays `caption` out in two lines broken at a word — the header never
