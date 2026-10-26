@@ -32,8 +32,10 @@ EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok
   * [Naive Bayes](https://en.wikipedia.org/wiki/Naive_Bayes_classifier) classifier
   * [Linear discriminant analysis](https://en.wikipedia.org/wiki/Linear_discriminant_analysis) (LDA) classifier
   * [Neural network](https://en.wikipedia.org/wiki/Multilayer_perceptron) (multilayer perceptron)
+  * [RealMLP](https://github.com/dholzmueller/pytabkit) (tuned-default tabular MLP, pytabkit)
+  * [TabM](https://github.com/yandex-research/tabm) (parameter-efficient MLP ensemble)
 
-  The machine learning methods, PCA and PLS run on Crux (scikit-learn, XGBoost and CatBoost ports compiled to WebAssembly).
+  The machine learning methods, PCA and PLS run on Crux (scikit-learn, XGBoost and CatBoost ports and the RealMLP / TabM neural tabular models compiled to WebAssembly).
 * Group comparison
   * Two-sample [t-test](https://en.wikipedia.org/wiki/Student%27s_t-test) (Welch and Student)
   * One-way analysis of variances ([ANOVA](https://en.wikipedia.org/wiki/One-way_analysis_of_variance))

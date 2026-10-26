@@ -20,8 +20,8 @@ artifact.
 Datagrok's Crux engine (crux-core, the commit pinned in `crux/engine.toml`),
 built as the `crux-wasm` crate with the feature list of `crux/engine.toml` and
 shipped as `crux/eda/crux_wasm.js` + `crux_wasm_bg.wasm` (copied to
-`dist/crux/eda/`). It runs PCA, PLS, linear and logistic regression, XGBoost
-and SVM. The module contains Rust ports of the following upstreams (the crates
+`dist/crux/eda/`). It runs PCA, PLS, linear and logistic regression, XGBoost,
+SVM and the RealMLP and TabM neural models. The module contains Rust ports of the following upstreams (the crates
 compiled into the shipped binary; licenses as declared by the crux crates:
 `Cargo.toml` `license`, the `LICENSE*` files and `LICENSE` consts of the
 crates, the model `upstreams()`, the pins in `upstreams/*.toml`):
@@ -51,6 +51,11 @@ crates, the model `upstreams()`, the pins in `upstreams/*.toml`):
 | David M. Gay's dtoa.c (float formatting) | | Lucent notice (permissive) | `pycompat` |
 | RDKit (molecule model, SMILES / SMARTS, descriptors, fingerprints, MolStandardize, reactions) | 2026.03.6 | BSD-3-Clause | `rk`, `smi-compiler`, `smarts-parser`, `molstandardize`, `rxn` |
 | Avalon Toolkit (Avalon fingerprints, as RDKit builds it) | 2.0.5-pre.3 | BSD-3-Clause | `rk` |
+| pytabkit (RealMLP) | 1.7.3 | Apache-2.0 | `realmlp` |
+| TabM | 0.0.3 | Apache-2.0 | `tabm` |
+| rtdl_num_embeddings | 0.0.12 | Apache-2.0 | `tabm` |
+| delu (EarlyStopping, random.seed) | 0.0.25 | MIT | `tabm` |
+| PyTorch (CPU generator streams, autograd / optimizer / init / loss semantics) | 2.13.0 | BSD-3-Clause | `nn-train`, `nn`, `pycompat` |
 | Eigen (dense decompositions, self-adjoint eigensolver, SVD) | 3.4.0 / 3.3.9 | **MPL-2.0** | `eigen` |
 
 - scikit-learn: https://scikit-learn.org — `Copyright (c) 2007-2026 The scikit-learn developers`
@@ -77,6 +82,11 @@ crates, the model `upstreams()`, the pins in `upstreams/*.toml`):
 - dtoa.c: `Copyright (c) 1991, 2000, 2001 by Lucent Technologies` (author David M. Gay)
 - RDKit: https://github.com/rdkit/rdkit — `Copyright (C) Greg Landrum and other RDKit contributors`
 - Avalon Toolkit: https://github.com/rdkit/ava-formake — `Copyright 2001-2011 Novartis Pharma AG`
+- pytabkit: https://github.com/dholzmueller/pytabkit — `Copyright David Holzmüller, Léo Grinsztajn, Ingo Steinwart`
+- TabM: https://github.com/yandex-research/tabm — `Copyright 2024 Yandex LLC`
+- rtdl_num_embeddings: https://github.com/yandex-research/rtdl-num-embeddings — `Copyright 2023 Yandex LLC`
+- delu: https://github.com/Yura52/delu
+- PyTorch: https://github.com/pytorch/pytorch — `Copyright (c) 2016- Facebook, Inc (Adam Paszke) and contributors`
 - Eigen: https://gitlab.com/libeigen/eigen — MPL-2.0 (https://mozilla.org/MPL/2.0/). The
   Source Code Form of the ported Eigen files is the `eigen` crate of crux-core at the commit
   pinned in `crux/engine.toml`; the original is available at the URL above.
@@ -114,6 +124,50 @@ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+The BSD-3-Clause notice of PyTorch, whose semantics the `nn-train`, `nn` and
+`pycompat` crates port:
+
+```
+Copyright (c) 2016-     Facebook, Inc            (Adam Paszke)
+Copyright (c) 2014-     Facebook, Inc            (Soumith Chintala)
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+3. Neither the names of Facebook, Deepmind Technologies, NYU, NEC Laboratories America
+   and IDIAP Research Institute nor the names of its contributors may be
+   used to endorse or promote products derived from this software without
+   specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
 ```
 
 ### Apache Arrow JavaScript (apache-arrow, 21.x)

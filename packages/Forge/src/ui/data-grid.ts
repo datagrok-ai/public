@@ -12,9 +12,10 @@ export interface GridTooltips {
   cells?: {[column: string]: (row: number) => string};
 }
 
-/** The platform grid over [df] for a pane or a section: read-only, no row header, as tall as its rows (then it
- * scrolls), as wide as its host, with [tooltips] on the headers and the cells. */
-export function readOnlyGrid(df: DG.DataFrame, tooltips: GridTooltips = {}): DG.Grid {
+/** The platform grid over [df] for a pane or a section: read-only, no row header, as tall as its rows up to
+ * [maxRows] (then it scrolls), as wide as its host, with [tooltips] on the headers and the cells. */
+export function readOnlyGrid(df: DG.DataFrame, tooltips: GridTooltips = {},
+  maxRows = MAX_VISIBLE_ROWS): DG.Grid {
   const grid = DG.Viewer.grid(df);
   grid.props.allowEdit = false;
   grid.props.showRowHeader = false;
@@ -22,7 +23,7 @@ export function readOnlyGrid(df: DG.DataFrame, tooltips: GridTooltips = {}): DG.
   grid.props.showAddNewRowIcon = false;
   // Inline, computed: one header row and the rows, so a short table shows no scroll bar.
   grid.root.style.width = '100%';
-  grid.root.style.height = `${(Math.min(df.rowCount, MAX_VISIBLE_ROWS) + 1) * grid.props.rowHeight + 2}px`;
+  grid.root.style.height = `${(Math.min(df.rowCount, maxRows) + 1) * grid.props.rowHeight + 2}px`;
   TOOLTIPS.set(grid.root, tooltips);
   grid.onCellTooltip((cell, x, y) => {
     const text = gridTooltip(grid, cell);

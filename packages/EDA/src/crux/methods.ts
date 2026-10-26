@@ -6,6 +6,10 @@ const SVM_KERNELS: Record<string, string> = {Linear: 'linear', Polynomial: 'poly
 const KNN_WEIGHTS: Record<string, string> = {Uniform: 'uniform', Distance: 'distance'};
 const MLP_ACTIVATIONS: Record<string, string> =
   {ReLU: 'relu', Tanh: 'tanh', Logistic: 'logistic', Identity: 'identity'};
+const REALMLP_VARIANTS: Record<string, string> = {'TD': 'td', 'TD-S': 'td_s'};
+const TABM_EMBEDDINGS: Record<string, string> =
+  {'Piecewise linear': 'piecewise-linear', 'Periodic': 'periodic', 'Linear-ReLU': 'linear-relu', 'None': 'none'};
+const HIDDEN_LAYERS = /^[1-9]\d*(,[1-9]\d*)*$/;
 
 /** INT or FLOAT: the only feature types the Crux bridge accepts */
 export function isNumericColumn(col: DG.Column): boolean {
@@ -52,6 +56,19 @@ function validate(method: string, rules: [boolean, string][]): void {
   }
 }
 
+function hiddenLayers(method: string, text: string, example: string): string {
+  const layers = text.replace(/\s/g, '');
+  validate(method, [[HIDDEN_LAYERS.test(layers),
+    `hidden layers must be comma-separated positive integers, e.g. ${example}`]]);
+  return layers;
+}
+
+const positiveInt = (v: number, name: string): [boolean, string] =>
+  [Number.isInteger(v) && v >= 1, `${name} must be a positive integer`];
+
+const validFraction = (f: number): [boolean, string] =>
+  [f >= 0.05 && f <= 0.5, 'validation fraction must be from 0.05 to 0.5'];
+
 export function isSoftmaxApplicable(features: DG.ColumnList, target: DG.Column): boolean {
   return isNumeric(features) && isClassTarget(target);
 }
@@ -90,9 +107,9 @@ export function trainXgboost(df: DG.DataFrame, target: DG.Column, iterations: nu
   lambda: number, alpha: number): Promise<Uint8Array> {
   const classification = isClassTarget(target);
   validate('XGBoost', [
-    [Number.isInteger(iterations) && iterations >= 1, 'iterations must be a positive integer'],
+    positiveInt(iterations, 'iterations'),
     [eta > 0 && eta <= 1, 'eta must be in (0, 1]'],
-    [Number.isInteger(maxDepth) && maxDepth >= 1, 'max depth must be a positive integer'],
+    positiveInt(maxDepth, 'max depth'),
     [lambda >= 0, 'lambda must be non-negative'],
     [alpha >= 0, 'alpha must be non-negative'],
     [!classification || classCount(target) >= 2, 'classification target must have at least 2 categories'],
@@ -109,7 +126,7 @@ export function isSvmInteractive(features: DG.ColumnList, target: DG.Column): bo
 /** libsvm's C-SVC / epsilon-SVR; `gamma = 0` keeps libsvm's 1 / n_features */
 export function trainSvm(df: DG.DataFrame, target: DG.Column, kernel: string, cost: number, gamma: number,
   degree: number, coef0: number, epsilon: number): Promise<Uint8Array> {
-  validate('SVM', [[Number.isInteger(degree) && degree >= 1, 'degree must be a positive integer']]);
+  validate('SVM', [positiveInt(degree, 'degree')]);
   const classification = isClassTarget(target);
   const estimator = {kernel: SVM_KERNELS[kernel] ?? 'rbf', C: cost, gamma: gamma === 0 ? 1 / df.columns.length : gamma,
     degree, coef0, ...(classification ? {} : {svr_epsilon: epsilon})};
@@ -177,7 +194,7 @@ export function isCatBoostInteractive(features: DG.ColumnList, target: DG.Column
 export function trainCatBoost(df: DG.DataFrame, target: DG.Column, iterations: number, learningRate: number,
   depth: number, l2LeafReg: number, seed: number): Promise<Uint8Array> {
   validate('CatBoost', [
-    [Number.isInteger(iterations) && iterations >= 1, 'iterations must be a positive integer'],
+    positiveInt(iterations, 'iterations'),
     [learningRate > 0 && learningRate <= 1, 'learning rate must be in (0, 1]'],
     [Number.isInteger(depth) && depth >= 1 && depth <= 16, 'depth must be an integer from 1 to 16'],
     [l2LeafReg >= 0, 'L2 must be non-negative'],
@@ -248,15 +265,62 @@ export function isMlpInteractive(features: DG.ColumnList, target: DG.Column): bo
 }
 
 /** `alpha` is always sent: Crux's classifier default is 1.0, not scikit-learn's 1e-4 */
-export function trainMlp(df: DG.DataFrame, target: DG.Column, hiddenLayers: string, activation: string,
+export function trainMlp(df: DG.DataFrame, target: DG.Column, hiddenLayerSizes: string, activation: string,
   iterations: number, learningRate: number, alpha: number, seed: number): Promise<Uint8Array> {
-  const layers = hiddenLayers.replace(/\s/g, '');
-  validate('Neural Network', [
-    [/^[1-9]\d*(,[1-9]\d*)*$/.test(layers),
-      'hidden layers must be comma-separated positive integers, e.g. 100 or 64,32'],
-    [alpha >= 0, 'L2 must be non-negative'],
-  ]);
+  const layers = hiddenLayers('Neural Network', hiddenLayerSizes, '100 or 64,32');
+  validate('Neural Network', [[alpha >= 0, 'L2 must be non-negative']]);
   return cruxFit(taskOf(target), 'mlp', df, target, {estimator: {hidden_layer_sizes: layers,
     activation: MLP_ACTIVATIONS[activation] ?? 'relu', max_iter: iterations, learning_rate: learningRate, alpha,
     tol: 1e-4}, preprocess: 'standard', seed});
+}
+
+export function isRealMlpApplicable(features: DG.ColumnList, target: DG.Column): boolean {
+  return isNumeric(features) && isAnyTarget(target) && target.length <= 10000 && cells(features, target) <= 1e5;
+}
+
+/** One fit takes 0.7-1 s on iris and Forge runs six per retrain */
+export function isRealMlpInteractive(_features: DG.ColumnList, _target: DG.Column): boolean {
+  return false;
+}
+
+/** `learningRate = 0` sends no `lr` (RealMLP's default: 0.04 for classification, 0.2 for regression) */
+export function trainRealMlp(df: DG.DataFrame, target: DG.Column, variant: string, epochs: number,
+  hiddenLayerSizes: string, learningRate: number, batchSize: number, validationFraction: number, seed: number):
+  Promise<Uint8Array> {
+  const layers = hiddenLayers('RealMLP', hiddenLayerSizes, '256,256,256 or 128,128');
+  validate('RealMLP', [
+    positiveInt(epochs, 'epochs'),
+    positiveInt(batchSize, 'batch size'),
+    [learningRate >= 0, 'learning rate must be non-negative (0 keeps the RealMLP default)'],
+    validFraction(validationFraction),
+  ]);
+  return cruxFit(taskOf(target), 'realmlp', df, target, {estimator: {variant: REALMLP_VARIANTS[variant] ?? 'td',
+    n_epochs: epochs, hidden_sizes: layers.split(',').map(Number), batch_size: batchSize,
+    val_fraction: validationFraction, ...(learningRate > 0 ? {lr: learningRate} : {})}, seed});
+}
+
+export function isTabmApplicable(features: DG.ColumnList, target: DG.Column): boolean {
+  return isNumeric(features) && isAnyTarget(target) && target.length <= 20000 && cells(features, target) <= 2e5;
+}
+
+export function isTabmInteractive(features: DG.ColumnList, target: DG.Column): boolean {
+  return target.length <= 200 && cells(features, target) <= 2000;
+}
+
+/** TabM ignores unknown estimator keys silently, so the names below must match crux's exactly */
+export function trainTabm(df: DG.DataFrame, target: DG.Column, ensembleSize: number, width: number,
+  embeddings: string, epochs: number, patience: number, learningRate: number, dropout: number,
+  validationFraction: number, seed: number): Promise<Uint8Array> {
+  validate('TabM', [
+    positiveInt(ensembleSize, 'ensemble size'),
+    positiveInt(width, 'width'),
+    positiveInt(epochs, 'epochs'),
+    positiveInt(patience, 'patience'),
+    [learningRate > 0, 'learning rate must be positive'],
+    [dropout >= 0 && dropout < 1, 'dropout must be from 0 to below 1'],
+    validFraction(validationFraction),
+  ]);
+  return cruxFit(taskOf(target), 'tabm', df, target, {estimator: {k: ensembleSize, d_block: width,
+    embeddings: TABM_EMBEDDINGS[embeddings] ?? 'piecewise-linear', max_epochs: epochs, patience, lr: learningRate,
+    dropout, val_fraction: validationFraction}, seed});
 }

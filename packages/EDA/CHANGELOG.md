@@ -16,6 +16,8 @@
 * GROK-20932: Removed the sci-comp-ml, XGBoost and LIBSVM wasm modules
 * GROK-20932: Added nine Forge methods on Crux: Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost, Decision Tree, k-Nearest Neighbors, Naive Bayes, LDA and Neural Network (MLP); the stochastic methods have a Seed hyperparameter; kNN keeps the training rows in the model (meta.mlhasrows)
 * GROK-20932: Marked XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost and Decision Tree with meta.mlnativenans: they take rows with missing feature values (Forge no longer skips or imputes them by default)
+* GROK-20932: Added two Forge methods on Crux's neural tabular models: RealMLP (pytabkit 1.7.3) and TabM (TabM 0.0.3 with rtdl_num_embeddings); both have a Seed hyperparameter; TabM takes rows with missing feature values (meta.mlnativenans)
+* GROK-20932: Rebuilt the Crux module with crux-fn/realmlp and crux-fn/tabm (same crux revision; saved models keep working)
 
 ## 1.9.1 (WIP)
 

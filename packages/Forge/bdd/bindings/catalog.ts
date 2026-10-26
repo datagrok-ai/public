@@ -5,7 +5,7 @@ import type {Page} from '@playwright/test';
 import {Then, When} from '@datagrok-libraries/bdd';
 import {atFeatureEnd, type ElementRef, expect, gestures, locate, menuNames, openTopMenu, pollMs, viewers}
   from '@datagrok-libraries/bdd/runtime';
-import {catalogRowOf, drawnTexts, modelArea} from './catalog-grid.js';
+import {catalogRowOf, cellOfRow, drawnTexts, modelArea} from './catalog-grid.js';
 import {listOf, revokeSharingGrant, sharingAccount} from './grok-s.js';
 import {slidePointer} from './pointer.js';
 
@@ -100,15 +100,30 @@ export const hoverModel = When('user hovers over the Forge model {string} in {wi
 
 export const modelCellReads = Then('the {string} cell of the Forge model {string} in {widget} should read {string}',
   async (page: Page, column: string, name: string, target: ElementRef, text: string) => {
-    await expect.poll(() => viewers.onViewer(page, target, (el, [n, c]) => {
-      const values: Record<string, unknown> = DG.Widget.find(el).getWidgetStatus().values ?? {};
-      const key = Object.keys(values).find((k) => /^text of cell \d+ of name$/.test(k) && values[k] === n);
-      if (key === undefined)
-        return 'no drawn row of the model';
-      const cell = `${key.replace(/ of name$/, '')} of ${c}`;
-      return cell in values ? String(values[cell]) : `(no drawn ${cell})`;
-    }, [name, column] as [string, string]), {message: `the "${column}" cell of "${name}" in ${target.phrase}`}).toBe(text);
+    await expect.poll(() => cellOfRow(page, target, 'name', name, column),
+      {message: `the "${column}" cell of "${name}" in ${target.phrase}`}).toBe(text);
   }, {description: 'the drawn text of the cell of the frame\'s column (tags, engine_name, ...) in the model\'s row'});
+
+/* The Methods grid sorts by name, and another package's method (Chemprop) shifts the rows: a method is found by name. */
+export const methodCellReads = Then('the {string} cell of the method {string} in {widget} should read {string}',
+  async (page: Page, column: string, method: string, target: ElementRef, text: string) => {
+    await expect.poll(() => cellOfRow(page, target, 'Method', method, column),
+      {message: `the "${column}" cell of the method "${method}" in ${target.phrase}`}).toBe(text);
+  }, {description: 'the drawn text of the column\'s cell in the row whose Method cell shows the method'});
+
+export const methodAbove = Then('the method {string} should be listed above the method {string} in {widget}',
+  async (page: Page, upper: string, lower: string, target: ElementRef) => {
+    const rows = [await catalogRowOf(page, target, upper, 'Method'), await catalogRowOf(page, target, lower, 'Method')];
+    expect(rows[0] < rows[1], `the rows of "${upper}" and "${lower}" in ${target.phrase}: ${rows.join(', ')}`).toBe(true);
+  }, {description: 'both methods are drawn, the first in a row above the second'});
+
+export const hoverMethodCell = When('user hovers over the {string} cell of the method {string} in {widget}',
+  async (page: Page, column: string, method: string, target: ElementRef) => {
+    const c = await modelArea(page, target, method, (row) => `cell ${row} of ${column}`, 'Method');
+    await page.mouse.move(c.x - 3, c.y - 3);
+    await page.mouse.move(c.x, c.y);
+    await viewers.settle(page, target);
+  }, {tier: 'ui', description: 'the pointer moves onto the column\'s cell in the row whose Method cell shows the method'});
 
 /* The grid reports only the rows it draws: a negative read of them passes for a row scrolled out of sight. */
 export const catalogListsNot = Then('{widget} should not list the Forge model {string}', async (page: Page,

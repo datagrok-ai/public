@@ -20,13 +20,13 @@ export const WINE = 'System:DemoFiles/winequality.csv';
 export const MEASUREMENTS = ['Sepal.Length', 'Sepal.Width', 'Petal.Length', 'Petal.Width'];
 export const EDA_METHODS = ['Linear Regression', 'Softmax', 'PLS Regression', 'XGBoost', 'SVM', 'Random Forest',
   'Extra Trees', 'Hist Gradient Boosting', 'CatBoost', 'Decision Tree', 'k-Nearest Neighbors', 'Naive Bayes', 'LDA',
-  'Neural Network'];
+  'Neural Network', 'RealMLP', 'TabM'];
 /** The EDA methods that learn a text target (iris Species), and those that learn a numerical one (Petal.Length). */
 export const CLASSIFIERS = EDA_METHODS.filter((name) => !name.endsWith('Regression'));
 export const REGRESSORS = EDA_METHODS.filter((name) => !['Softmax', 'Naive Bayes', 'LDA'].includes(name));
 /** The EDA methods with `meta.mlnativenans`. */
 export const NATIVE_NANS = ['XGBoost', 'Random Forest', 'Extra Trees', 'Hist Gradient Boosting', 'CatBoost',
-  'Decision Tree'];
+  'Decision Tree', 'TabM'];
 export const XGBOOST_FIELDS: Pick<ModelInsert, 'engine_name' | 'engine_namespace' | 'engine_kind'> =
   {engine_name: 'XGBoost', engine_namespace: 'Eda', engine_kind: 'function'};
 export const IMPUTE: MissingValuesSettings = {mode: 'impute', impute: {neighbors: 4, distance: 'Euclidean'}};

@@ -4,7 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import {accuracy, classificationDataset, copyCol, mulberry32, numericFeatures, r2, seededRegression} from './utils';
 import {nonNullRows} from '../utils';
 import {trainCatBoost, trainDecisionTree, trainExtraTrees, trainHistGradientBoosting, trainKnn, trainLda, trainMlp,
-  trainNaiveBayes, trainRandomForest, trainSoftmax, trainSvm, trainXgboost} from '../crux/methods';
+  trainNaiveBayes, trainRandomForest, trainRealMlp, trainSoftmax, trainSvm, trainTabm,
+  trainXgboost} from '../crux/methods';
 import {trainLinearRegression} from '../regression';
 import {trainPlsRegression} from '../pls/pls-ml';
 
@@ -160,6 +161,8 @@ export const FITS: Record<string, Fit> = {
   naiveBayes: trainNaiveBayes,
   lda: (df, t) => trainLda(df, t, 0),
   mlp: (df, t) => trainMlp(df, t, '100', 'ReLU', 200, 0.001, 0.0001, 0),
+  realMlp: (df, t) => trainRealMlp(df, t, 'TD', 128, '256,256,256', 0, 256, 0.2, 0),
+  tabm: (df, t) => trainTabm(df, t, 8, 128, 'Piecewise linear', 32, 16, 0.002, 0.1, 0.2, 0),
 };
 export const PCA_FLAGS: Record<string, [boolean, boolean]> =
   {FF: [false, false], TF: [true, false], FT: [false, true], TT: [true, true]};

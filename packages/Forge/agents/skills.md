@@ -131,15 +131,15 @@ Trains as the Predictive model view does, with its defaults and 5-fold cross-val
 - `features`: column names; by default every numerical column except the target, bigint columns and integer columns
   without empty cells whose values are all different (row numbers, ids)
 - `method`: `CatBoost`, `Decision Tree`, `Extra Trees`, `Hist Gradient Boosting`, `k-Nearest Neighbors`, `LDA`,
-  `Linear Regression`, `Naive Bayes`, `Neural Network`, `PLS Regression`, `Random Forest`, `Softmax`, `SVM`,
-  `XGBoost` (the installed methods, `listMethods`); by default the method the view suggests for the data
+  `Linear Regression`, `Naive Bayes`, `Neural Network`, `PLS Regression`, `Random Forest`, `RealMLP`, `Softmax`,
+  `SVM`, `TabM`, `XGBoost` (the installed methods, `listMethods`); by default the method the view suggests for the data
 - `hyperparameters`: the method's settings by name, for example `{iterations: 50}`; settings not named keep their
   defaults
 - `options`: the preparation, each key optional:
 
   | Key | Default | Meaning |
   |---|---|---|
-  | `missingValues` | `skip`; `keep` for a method that handles missing values (XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost, Decision Tree) | `skip` leaves out the rows with empty cells; `impute` fills the features' empty cells; `keep` gives the rows with empty cells to the method as they are, only for a method that handles missing values (rows without a target are always left out) |
+  | `missingValues` | `skip`; `keep` for a method that handles missing values (XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost, Decision Tree, TabM) | `skip` leaves out the rows with empty cells; `impute` fills the features' empty cells; `keep` gives the rows with empty cells to the method as they are, only for a method that handles missing values (rows without a target are always left out) |
   | `neighbors`, `distance` | the EDA imputer's (`4`, `Euclidean`) | the settings of `impute` |
   | `oneHot` | on when every text or yes/no feature has at most 20 categories (while `skipUniqueCategories` is on, features whose values are all different do not count) | One-hot encoding of text and yes/no features |
   | `skipUniqueCategories` | `true` | leaves out text features whose values are all different |

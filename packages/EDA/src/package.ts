@@ -40,7 +40,8 @@ import {isSoftmaxApplicable, isSoftmaxInteractive, isSvmApplicable, isSvmInterac
   isCatBoostApplicable, isCatBoostInteractive, trainCatBoost, isDecisionTreeApplicable, isDecisionTreeInteractive,
   trainDecisionTree, isKnnApplicable, isKnnInteractive, trainKnn, isNaiveBayesApplicable, isNaiveBayesInteractive,
   trainNaiveBayes, isLdaApplicable, isLdaInteractive, trainLda, isMlpApplicable, isMlpInteractive,
-  trainMlp} from './crux/methods';
+  trainMlp, isRealMlpApplicable, isRealMlpInteractive, trainRealMlp, isTabmApplicable, isTabmInteractive,
+  trainTabm} from './crux/methods';
 import {cruxPredict, modelFeatures, readCruxManifest} from './crux/crux-model';
 
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
@@ -1343,6 +1344,139 @@ export class PackageFunctions {
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
     return isMlpInteractive(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'RealMLP',
+      'mlrole': 'train',
+    },
+    'name': 'trainRealMlp',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainRealMlp(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'string', 'options': {'caption': 'Variant', 'choices': ['TD', 'TD-S'], 'initialValue': 'TD', 'description': 'TD: the tuned defaults (numerical embeddings, parametric activations, dropout, weight decay). TD-S: the simplified variant.'}}) variant: string,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Epochs', 'min': '1', 'max': '2000', 'initialValue': '128', 'description': 'Training epochs. The best epoch on the validation split is kept.'}}) epochs: number,
+    @grok.decorators.param({'type': 'string', 'options': {'caption': 'Hidden layers', 'initialValue': '256,256,256', 'description': 'Comma-separated sizes of the hidden layers, e.g. 256,256,256 or 128,128.'}}) hiddenLayers: string,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Learning rate', 'min': '0', 'max': '1', 'initialValue': '0', 'description': 'Base learning rate. 0 keeps the RealMLP default (0.04 for classification, 0.2 for regression).'}}) learningRate: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Batch size', 'min': '1', 'max': '4096', 'initialValue': '256', 'description': 'Rows per optimizer step.'}}) batchSize: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Validation fraction', 'min': '0.05', 'max': '0.5', 'initialValue': '0.2', 'description': 'Share of the training rows held out to pick the best epoch.'}}) validationFraction: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    return trainRealMlp(df, predictColumn, variant, epochs, hiddenLayers, learningRate, batchSize, validationFraction,
+      seed);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'RealMLP',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply RealMLP',
+    'description': 'Predict the target for a table using a trained RealMLP (tuned-default tabular MLP) model.',
+  })
+  static async applyRealMlp(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained RealMLP model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'RealMLP',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableRealMlp',
+  })
+  static isApplicableRealMlp(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isRealMlpApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'RealMLP',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveRealMlp',
+  })
+  static isInteractiveRealMlp(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isRealMlpInteractive(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'TabM',
+      'mlrole': 'train',
+      'mlnativenans': 'true',
+    },
+    'name': 'trainTabm',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainTabm(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Ensemble size', 'min': '1', 'max': '128', 'initialValue': '8', 'description': 'Weight-sharing MLPs averaged at prediction (the TabM paper uses 32).'}}) ensembleSize: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Width', 'min': '1', 'max': '2048', 'initialValue': '128', 'description': 'Units per hidden layer (the paper uses 512).'}}) width: number,
+    @grok.decorators.param({'type': 'string', 'options': {'caption': 'Embeddings', 'choices': ['Piecewise linear', 'Periodic', 'Linear-ReLU', 'None'], 'initialValue': 'Piecewise linear', 'description': 'Embeddings of the numerical features. Piecewise linear over quantile bins is the paper\'s best.'}}) embeddings: string,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Epochs', 'min': '1', 'max': '1000', 'initialValue': '32', 'description': 'Largest number of training epochs. Early stopping may end training sooner.'}}) epochs: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Patience', 'min': '1', 'max': '100', 'initialValue': '16', 'description': 'Epochs without a better validation score before training stops.'}}) patience: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Learning rate', 'min': '0.00001', 'max': '1', 'initialValue': '0.002', 'description': 'AdamW learning rate.'}}) learningRate: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Dropout', 'min': '0', 'max': '0.9', 'initialValue': '0.1', 'description': 'Dropout rate of the hidden layers.'}}) dropout: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Validation fraction', 'min': '0.05', 'max': '0.5', 'initialValue': '0.2', 'description': 'Share of the training rows held out to pick the best epoch.'}}) validationFraction: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    return trainTabm(df, predictColumn, ensembleSize, width, embeddings, epochs, patience, learningRate, dropout,
+      validationFraction, seed);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'TabM',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply TabM',
+    'description': 'Predict the target for a table using a trained TabM (ensemble tabular MLP) model.',
+  })
+  static async applyTabm(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained TabM model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'TabM',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableTabm',
+  })
+  static isApplicableTabm(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isTabmApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'TabM',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveTabm',
+  })
+  static isInteractiveTabm(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isTabmInteractive(df.columns, predictColumn);
   }
 
   @grok.decorators.func({

@@ -813,6 +813,99 @@ export function isInteractiveMlp(df: DG.DataFrame, predictColumn: DG.Column) : b
   return PackageFunctions.isInteractiveMlp(df, predictColumn);
 }
 
+//input: dataframe df 
+//input: column predictColumn 
+//input: string variant = 'TD' { caption: Variant; choices: ["TD","TD-S"]; description: TD: the tuned defaults (numerical embeddings, parametric activations, dropout, weight decay). TD-S: the simplified variant. }
+//input: int epochs = 128 { caption: Epochs; min: 1; max: 2000; description: Training epochs. The best epoch on the validation split is kept. }
+//input: string hiddenLayers = 256,256,256 { caption: Hidden layers; description: Comma-separated sizes of the hidden layers, e.g. 256,256,256 or 128,128. }
+//input: double learningRate = 0 { caption: Learning rate; min: 0; max: 1; description: Base learning rate. 0 keeps the RealMLP default (0.04 for classification, 0.2 for regression). }
+//input: int batchSize = 256 { caption: Batch size; min: 1; max: 4096; description: Rows per optimizer step. }
+//input: double validationFraction = 0.2 { caption: Validation fraction; min: 0.05; max: 0.5; description: Share of the training rows held out to pick the best epoch. }
+//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//output: dynamic model
+//meta.mlname: RealMLP
+//meta.mlrole: train
+export async function trainRealMlp(df: DG.DataFrame, predictColumn: DG.Column, variant: string, epochs: number, hiddenLayers: string, learningRate: number, batchSize: number, validationFraction: number, seed: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainRealMlp(df, predictColumn, variant, epochs, hiddenLayers, learningRate, batchSize, validationFraction, seed);
+}
+
+//name: Apply RealMLP
+//description: Predict the target for a table using a trained RealMLP (tuned-default tabular MLP) model.
+//input: dataframe df 
+//input: dynamic model { description: Trained RealMLP model to apply. }
+//output: dataframe result
+//meta.mlname: RealMLP
+//meta.mlrole: apply
+export async function applyRealMlp(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyRealMlp(df, model);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: RealMLP
+//meta.mlrole: isApplicable
+export function isApplicableRealMlp(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isApplicableRealMlp(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: RealMLP
+//meta.mlrole: isInteractive
+export function isInteractiveRealMlp(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isInteractiveRealMlp(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//input: int ensembleSize = 8 { caption: Ensemble size; min: 1; max: 128; description: Weight-sharing MLPs averaged at prediction (the TabM paper uses 32). }
+//input: int width = 128 { caption: Width; min: 1; max: 2048; description: Units per hidden layer (the paper uses 512). }
+//input: string embeddings = 'Piecewise linear' { caption: Embeddings; choices: ["Piecewise linear","Periodic","Linear-ReLU","None"]; description: Embeddings of the numerical features. Piecewise linear over quantile bins is the paper's best. }
+//input: int epochs = 32 { caption: Epochs; min: 1; max: 1000; description: Largest number of training epochs. Early stopping may end training sooner. }
+//input: int patience = 16 { caption: Patience; min: 1; max: 100; description: Epochs without a better validation score before training stops. }
+//input: double learningRate = 0.002 { caption: Learning rate; min: 0.00001; max: 1; description: AdamW learning rate. }
+//input: double dropout = 0.1 { caption: Dropout; min: 0; max: 0.9; description: Dropout rate of the hidden layers. }
+//input: double validationFraction = 0.2 { caption: Validation fraction; min: 0.05; max: 0.5; description: Share of the training rows held out to pick the best epoch. }
+//input: int seed = 0 { caption: Seed; min: 0; max: 2147483647; description: Random seed. The same seed gives the same model. }
+//output: dynamic model
+//meta.mlname: TabM
+//meta.mlrole: train
+//meta.mlnativenans: true
+export async function trainTabm(df: DG.DataFrame, predictColumn: DG.Column, ensembleSize: number, width: number, embeddings: string, epochs: number, patience: number, learningRate: number, dropout: number, validationFraction: number, seed: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainTabm(df, predictColumn, ensembleSize, width, embeddings, epochs, patience, learningRate, dropout, validationFraction, seed);
+}
+
+//name: Apply TabM
+//description: Predict the target for a table using a trained TabM (ensemble tabular MLP) model.
+//input: dataframe df 
+//input: dynamic model { description: Trained TabM model to apply. }
+//output: dataframe result
+//meta.mlname: TabM
+//meta.mlrole: apply
+export async function applyTabm(df: DG.DataFrame, model: any) : Promise<any> {
+  return await PackageFunctions.applyTabm(df, model);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: TabM
+//meta.mlrole: isApplicable
+export function isApplicableTabm(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isApplicableTabm(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: TabM
+//meta.mlrole: isInteractive
+export function isInteractiveTabm(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isInteractiveTabm(df, predictColumn);
+}
+
 //name: Pareto Front
 //description: Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.
 //top-menu: ML | Pareto Front...

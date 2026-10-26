@@ -259,7 +259,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     And the "Preparation" group should show exactly the inputs "Missing values, Predict probability"
     And "Predict probability" input should not be checked
     And Method input should have value "XGBoost"
-    And Method input should offer "CatBoost, Decision Tree, Extra Trees, Hist Gradient Boosting, k-Nearest Neighbors, LDA, Naive Bayes, Neural Network, Random Forest, Softmax, SVM, XGBoost"
+    And Method input should offer "CatBoost, Decision Tree, Extra Trees, Hist Gradient Boosting, k-Nearest Neighbors, LDA, Naive Bayes, Neural Network, Random Forest, RealMLP, Softmax, SVM, TabM, XGBoost"
     And the "rows" reading of grid viewer in "Performance" results panel should be 6
     And the "text of cell 1 of Metric" reading of grid viewer in "Performance" results panel should be "Accuracy"
     And the "text of cell 2 of Metric" reading of grid viewer in "Performance" results panel should be "F1"
@@ -275,7 +275,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     And "Positive class cutoff" input should have value "0.5"
     And a new training's result should be shown
     And Method input should have value "Linear Regression"
-    And Method input should offer "CatBoost, Decision Tree, Extra Trees, Hist Gradient Boosting, k-Nearest Neighbors, Linear Regression, Neural Network, PLS Regression, Random Forest, SVM, XGBoost"
+    And Method input should offer "CatBoost, Decision Tree, Extra Trees, Hist Gradient Boosting, k-Nearest Neighbors, Linear Regression, Neural Network, PLS Regression, Random Forest, RealMLP, SVM, TabM, XGBoost"
     And the "rows" reading of grid viewer in "Performance" results panel should be 7
     And the "text of cell 7 of Metric" reading of grid viewer in "Performance" results panel should be "AUC-ROC"
     When user hovers over label of "Positive class cutoff" input

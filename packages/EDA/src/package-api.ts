@@ -540,6 +540,68 @@ export namespace funcs {
   }
 
   /**
+   * @param {string} variant - TD: the tuned defaults (numerical embeddings, parametric activations, dropout, weight decay). TD-S: the simplified variant.
+   *   choices: ["TD","TD-S"]
+   * @param {number} epochs - Training epochs. The best epoch on the validation split is kept.
+   * @param {string} hiddenLayers - Comma-separated sizes of the hidden layers, e.g. 256,256,256 or 128,128.
+   * @param {number} learningRate - Base learning rate. 0 keeps the RealMLP default (0.04 for classification, 0.2 for regression).
+   * @param {number} batchSize - Rows per optimizer step.
+   * @param {number} validationFraction - Share of the training rows held out to pick the best epoch.
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainRealMlp(df: DG.DataFrame , predictColumn: DG.Column , variant: string , epochs: number , hiddenLayers: string , learningRate: number , batchSize: number , validationFraction: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainRealMlp', { df, predictColumn, variant, epochs, hiddenLayers, learningRate, batchSize, validationFraction, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained RealMLP (tuned-default tabular MLP) model.
+   * @param {any} model - Trained RealMLP model to apply.
+   */
+  export async function applyRealMlp(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyRealMlp', { df, model });
+  }
+
+  export async function isApplicableRealMlp(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableRealMlp', { df, predictColumn });
+  }
+
+  export async function isInteractiveRealMlp(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveRealMlp', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} ensembleSize - Weight-sharing MLPs averaged at prediction (the TabM paper uses 32).
+   * @param {number} width - Units per hidden layer (the paper uses 512).
+   * @param {string} embeddings - Embeddings of the numerical features. Piecewise linear over quantile bins is the paper's best.
+   *   choices: ["Piecewise linear","Periodic","Linear-ReLU","None"]
+   * @param {number} epochs - Largest number of training epochs. Early stopping may end training sooner.
+   * @param {number} patience - Epochs without a better validation score before training stops.
+   * @param {number} learningRate - AdamW learning rate.
+   * @param {number} dropout - Dropout rate of the hidden layers.
+   * @param {number} validationFraction - Share of the training rows held out to pick the best epoch.
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainTabm(df: DG.DataFrame , predictColumn: DG.Column , ensembleSize: number , width: number , embeddings: string , epochs: number , patience: number , learningRate: number , dropout: number , validationFraction: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainTabm', { df, predictColumn, ensembleSize, width, embeddings, epochs, patience, learningRate, dropout, validationFraction, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained TabM (ensemble tabular MLP) model.
+   * @param {any} model - Trained TabM model to apply.
+   */
+  export async function applyTabm(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyTabm', { df, model });
+  }
+
+  export async function isApplicableTabm(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableTabm', { df, predictColumn });
+  }
+
+  export async function isInteractiveTabm(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveTabm', { df, predictColumn });
+  }
+
+  /**
    * Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.
    */
   export async function paretoFront(): Promise<void> {

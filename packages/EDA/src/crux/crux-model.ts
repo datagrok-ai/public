@@ -17,7 +17,7 @@ const FEATURES_KEY = 'eda.features';
 export type CruxTask = 'regression' | 'classification';
 
 export interface CruxFitParams {
-  estimator?: Record<string, number | string | boolean>;
+  estimator?: Record<string, number | string | boolean | number[]>;
   preprocess?: 'standard' | 'minmax' | 'maxabs' | 'robust';
   seed?: number;
 }

@@ -113,8 +113,8 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   the test bundle) registers nothing twice; the model commands and the follower are set up only with a newly
   registered handler.
 - Every table of data in the UI is `readOnlyGrid` (`ui/data-grid.ts`): `DG.Viewer.grid` without editing, row header,
-  current-row indicator and new-row icon, as wide as its host and as tall as its rows (up to 15,
-  then it scrolls: an inline height of `(rows + 1) * rowHeight + 2` px), with tooltips from `{headers, cells}` (by column name; the cells
+  current-row indicator and new-row icon, as wide as its host and as tall as its rows (up to 15 by default,
+  then it scrolls: an inline height of `(rows + 1) * rowHeight + 2` px; the app's Methods grid shows every method), with tooltips from `{headers, cells}` (by column name; the cells
   as functions of the row) through `onCellTooltip` (`gridTooltip`; a cell without its own text shows its value).
   `numberColumn` builds the grids' float columns (format `0.000`); `textColumn` and `boolColumn` (`columns.ts`, not UI,
   also used by `catalog/`, `engines/method-list.ts` and `training/train-api.ts` for the API lists) their string and bool columns.
@@ -509,7 +509,7 @@ The methods' own handling of gaps matters only for `mlnativenans` methods: the T
 applies with missing values under Skip rows and Impute` train and apply every other EDA method on iris with two gaps
 in both modes and check that no table or column passed to `train` or `apply` has a missing value; `<Method> trains and
 applies on the rows with missing values under keep` train XGBoost, Random Forest, Extra Trees, Hist Gradient
-Boosting, CatBoost and Decision Tree on all 150 rows, check that the gaps reached `train` and that every row gets a
+Boosting, CatBoost, Decision Tree and TabM on all 150 rows, check that the gaps reached `train` and that every row gets a
 prediction; and an explicit Skip rows or Impute for XGBoost still keeps the gaps from it.
 
 ## Preparation
@@ -1654,7 +1654,7 @@ An engine is the set of functions that share `meta.mlname` (the engine id). `met
 Three more `meta` keys on `train`: `mlhasrows: 'true'` (the model file embeds training rows; EDA's SVM and
 k-Nearest Neighbors), `mlserver: 'true'` (the method runs on the server) and `mlnativenans: 'true'` (the method takes
 rows with missing feature values as they are; EDA's XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting,
-CatBoost and Decision Tree; see "Missing values").
+CatBoost, Decision Tree and TabM; see "Missing values").
 
 - An engine is complete, and usable, only with `train`, `apply` and `isApplicable`.
 - A function engine receives the feature table and the target column. A script engine (`DG.Script`) receives one
@@ -1680,8 +1680,8 @@ CatBoost and Decision Tree; see "Missing values").
 - `applicableEngines(engines, features, target)` (`engines/applicable-engines.ts`) asks every complete engine's
   `isApplicable` at once (`Promise.allSettled`) on the feature columns (each call with its own frame). `applicable` keeps the given order (discovery order: functions first); an engine whose check throws is
   left out and returned in `failed` with its error, for the caller to log (nothing is logged here). On iris, Species
-  gets every EDA method but Linear Regression and PLS Regression (12); Petal.Length every one but Softmax, Naive Bayes
-  and LDA (11).
+  gets every EDA method but Linear Regression and PLS Regression (14); Petal.Length every one but Softmax, Naive Bayes
+  and LDA (13).
 - `selectBestEngine(engines, features, target)` (`engines/best-engine.ts`) is the built-in tool's suggestion, ported
   as is: a feature with the `Molecule` semantic type gives `Chemprop`; a classification (the target is not numerical)
   with at least one categorical and one numerical feature gives `XGBoost`; a regression with five or more numerical

@@ -371,8 +371,8 @@ await grok.functions.call('Forge:trainModel', {table: grok.shell.t, target: 'Pet
 * `features`: column names; by default every numerical column except the target, bigint columns and integer columns
   without empty cells whose values are all different (row numbers, ids)
 * `method`: `CatBoost`, `Decision Tree`, `Extra Trees`, `Hist Gradient Boosting`, `k-Nearest Neighbors`, `LDA`,
-  `Linear Regression`, `Naive Bayes`, `Neural Network`, `PLS Regression`, `Random Forest`, `Softmax`, `SVM`,
-  `XGBoost` (the installed methods); by default the method the view suggests for the data
+  `Linear Regression`, `Naive Bayes`, `Neural Network`, `PLS Regression`, `Random Forest`, `RealMLP`, `Softmax`,
+  `SVM`, `TabM`, `XGBoost` (the installed methods); by default the method the view suggests for the data
 * `hyperparameters`: the method's settings by name; settings not named keep their defaults
 * `options`: the preparation, each key optional:
 
@@ -607,13 +607,13 @@ the pane **Forge models**.
 Forge does not train models itself. Methods live in other packages and in scripts:
 
 * **EDA**: Linear Regression, Softmax, PLS Regression, XGBoost, SVM, Random Forest, Extra Trees, Hist Gradient
-  Boosting, CatBoost, Decision Tree, k-Nearest Neighbors, Naive Bayes, LDA, Neural Network
+  Boosting, CatBoost, Decision Tree, k-Nearest Neighbors, Naive Bayes, LDA, Neural Network, RealMLP, TabM
 * **Chem**: Chemprop, on servers where it is published
 * **Scripts** that follow the same contract
 
 A method appears only when its package is installed, and every installed method trains in the **Predictive model**
 view. Forge passes an empty cell only to a method that handles missing values (XGBoost, Random Forest, Extra Trees,
-Hist Gradient Boosting, CatBoost, Decision Tree): it gets the rows with gaps as they are, and **Missing values** is
+Hist Gradient Boosting, CatBoost, Decision Tree, TabM): it gets the rows with gaps as they are, and **Missing values** is
 not shown for it. For every other method, **Missing values** skips or fills them first. Methods
 that run in the browser (all of EDA's) keep the training data there; a method that runs on the server (a Python or R
 script, a function marked `meta.mlserver: true`, or Chemprop) receives it. Chemprop and script

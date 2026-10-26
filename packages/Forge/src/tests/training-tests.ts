@@ -33,11 +33,11 @@ const SKIP: MissingValuesSettings = {mode: 'skip'};
 const SKIP_IMPUTE_TARGETS: [string, string[]][] = [['SVM', ['Species', 'Petal.Length']], ['Softmax', ['Species']],
   ['Linear Regression', ['Petal.Length']], ['PLS Regression', ['Petal.Length']],
   ['k-Nearest Neighbors', ['Species', 'Petal.Length']], ['Naive Bayes', ['Species']], ['LDA', ['Species']],
-  ['Neural Network', ['Species', 'Petal.Length']]];
+  ['Neural Network', ['Species', 'Petal.Length']], ['RealMLP', ['Species']]];
 /** The EDA methods with `mlnativenans` and the iris targets they are checked on. */
 const KEEP_TARGETS: [string, string[]][] = [['XGBoost', ['Species', 'Petal.Length']], ['Random Forest', ['Species']],
   ['Extra Trees', ['Species']], ['Hist Gradient Boosting', ['Species']], ['CatBoost', ['Species']],
-  ['Decision Tree', ['Species']]];
+  ['Decision Tree', ['Species']], ['TabM', ['Species']]];
 const NOT_SOFTMAX = 'Softmax cannot learn from this selection. ' +
   'It needs numerical features and a numerical, text or boolean target.';
 const NO_METHOD = 'No method can learn from this selection. Check the features and the target.';

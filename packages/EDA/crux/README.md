@@ -35,19 +35,22 @@ Source: crux-core, branch `eda/module-eda`, commit `d23ccae34`. Toolchain: Rust 
 from Git Bash, from the crux-core root:
 
 ```bash
-CARGO_TARGET_DIR=target/wasm-eda CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS="-C target-feature=+simd128" cargo build --profile wasm-ship -p crux-wasm --target wasm32-unknown-unknown --no-default-features --features "crux-fn/ml,crux-fn/ml-model,crux-fn/xgboost,crux-fn/catboost,crux-fn/conformal,crux-fn/hpo,crux-fn/shap,crux-fn/imblearn"
-wasm-bindgen --target nodejs --out-name crux_wasm --out-dir target/wasm-eda/pkg-node target/wasm-eda/wasm32-unknown-unknown/wasm-ship/crux_wasm.wasm
-wasm-bindgen --target web --out-name crux_wasm --out-dir target/wasm-eda/pkg-web target/wasm-eda/wasm32-unknown-unknown/wasm-ship/crux_wasm.wasm
+CARGO_TARGET_DIR=target/wasm-eda-neural CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS="-C target-feature=+simd128" cargo build --profile wasm-ship -p crux-wasm --target wasm32-unknown-unknown --no-default-features --features "crux-fn/ml,crux-fn/ml-model,crux-fn/xgboost,crux-fn/catboost,crux-fn/conformal,crux-fn/hpo,crux-fn/shap,crux-fn/imblearn,crux-fn/realmlp,crux-fn/tabm"
+wasm-bindgen --target nodejs --out-name crux_wasm --out-dir target/wasm-eda-neural/pkg-node target/wasm-eda-neural/wasm32-unknown-unknown/wasm-ship/crux_wasm.wasm
+wasm-bindgen --target web --out-name crux_wasm --out-dir target/wasm-eda-neural/pkg-web target/wasm-eda-neural/wasm32-unknown-unknown/wasm-ship/crux_wasm.wasm
 ```
 
-The feature set has no `crux-fn/lightgbm`, so the module registers 49 functions, without `ml.lightgbm_train` /
-`ml.lightgbm_predict`, and `ml.regress` / `ml.classify` reject `model: "lightgbm"`. The `lightgbm` crate is still
-compiled in as a dependency of the `shap` crate (its tree explainer).
+The module registers 54 functions. `crux-fn/realmlp` and `crux-fn/tabm` add the RealMLP and TabM model kinds of
+`ml.fit` / `ml.predict` (`model: "realmlp"` / `"tabm"`, the path EDA uses) and the five one-shot functions
+`tabular.realmlp_classify`, `tabular.realmlp_regress`, `tabular.realmlp_predict`, `tabular.tabm_regress`,
+`tabular.tabm_classify` (not used by EDA). The feature set has no `crux-fn/lightgbm`, so there is no
+`ml.lightgbm_train` / `ml.lightgbm_predict`, and `ml.regress` / `ml.classify` reject `model: "lightgbm"`. The
+`lightgbm` crate is still compiled in as a dependency of the `shap` crate (its tree explainer).
 
-The nodejs target is only for node probes. Sizes at `d23ccae34`: raw `crux_wasm.wasm` 16,406,303 B,
-`crux_wasm_bg.wasm` 15,038,039 B (5,047,201 B gzipped).
+The nodejs target is only for node probes. Sizes at `d23ccae34`: raw `crux_wasm.wasm` 17,890,482 B,
+`crux_wasm_bg.wasm` 16,425,504 B (5,494,711 B gzipped).
 
-Then copy `target/wasm-eda/pkg-web/{crux_wasm.js,crux_wasm_bg.wasm}` (not the `.d.ts` files) into `eda/`, write
+Then copy `target/wasm-eda-neural/pkg-web/{crux_wasm.js,crux_wasm_bg.wasm}` (not the `.d.ts` files) into `eda/`, write
 `eda/ENGINE_REV` = the 12-hex commit, update `engine.toml`, and run `grok build --force` in EDA (Turborepo does not
 see a swapped module and would replay the old `dist/`). If the worker changed, copy
 `crates/crux-wasm/js/crux-module-worker.mjs` to `crux-module-worker.js`.

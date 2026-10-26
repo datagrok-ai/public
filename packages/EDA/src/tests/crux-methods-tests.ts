@@ -7,8 +7,9 @@ import {isCatBoostApplicable, isCatBoostInteractive, isDecisionTreeApplicable, i
   isExtraTreesApplicable, isExtraTreesInteractive, isHistGradientBoostingApplicable,
   isHistGradientBoostingInteractive, isKnnApplicable, isKnnInteractive, isLdaApplicable, isLdaInteractive,
   isMlpApplicable, isMlpInteractive, isNaiveBayesApplicable, isNaiveBayesInteractive, isRandomForestApplicable,
-  isRandomForestInteractive, trainCatBoost, trainHistGradientBoosting, trainKnn, trainLda, trainMlp,
-  trainRandomForest} from '../crux/methods';
+  isRandomForestInteractive, isRealMlpApplicable, isRealMlpInteractive, isTabmApplicable, isTabmInteractive,
+  trainCatBoost, trainHistGradientBoosting, trainKnn, trainLda, trainMlp, trainRandomForest, trainRealMlp,
+  trainTabm} from '../crux/methods';
 import {readCruxManifest} from '../crux/crux-model';
 import {Fit, FITS, loadCase} from './baseline';
 import {accuracy, applyTwice, asTable, classificationDataset, copyCol, demogFrame, expectGapsKept, expectRejected,
@@ -39,6 +40,7 @@ interface MethodCase {
   seeded: boolean;
   shapes: {applicable: [Shape, boolean][], interactive: [Shape, boolean][]};
   tests?: [string, () => Promise<void>][];
+  boolRows?: number;
 }
 
 const floatShape = (rows: number, features: number): Shape => ({rows, features, target: 'float'});
@@ -171,6 +173,62 @@ const METHODS: MethodCase[] = [
       await expectRejected([['abc', () => mlp('abc')], ['0', () => mlp('0')], ['64,,32', () => mlp('64,,32')]]);
       expect((await paramsOf(mlp(' 64, 32 '))).hidden_layer_sizes, '64,32');
     }]]},
+  {name: 'RealMLP', fit: FITS.realMlp, ...NON_NATIVE, seeded: true, floors: {species: 0.9, petal: 0.9},
+    boolRows: 1000, applicable: isRealMlpApplicable, interactive: isRealMlpInteractive,
+    params: both({model: 'realmlp', variant: 'td', n_epochs: 128, hidden_sizes: [256, 256, 256], batch_size: 256,
+      val_fraction: 0.2, random_state: 0}),
+    shapes: {applicable: [[floatShape(10000, 10), true], [floatShape(10001, 1), false], [floatShape(5000, 21), false]],
+      interactive: [[floatShape(10, 1), false], [floatShape(150, 4), false]]},
+    tests: [['Hidden layers text', async () => {
+      const {df, species} = await irisSpecies();
+      const realMlp = (layers: string) => trainRealMlp(df, species, 'TD', 4, layers, 0, 256, 0.2, 0);
+      await expectRejected([['abc', () => realMlp('abc')], ['0', () => realMlp('0')],
+        ['64,,32', () => realMlp('64,,32')]]);
+      expect(JSON.stringify((await paramsOf(realMlp(' 128, 64 '))).hidden_sizes), JSON.stringify([128, 64]));
+    }], ['Validation', async () => {
+      const {df, species} = await irisSpecies();
+      await expectRejected([
+        ['epochs 0', () => trainRealMlp(df, species, 'TD', 0, '256,256,256', 0, 256, 0.2, 0)],
+        ['batch size 0', () => trainRealMlp(df, species, 'TD', 4, '256,256,256', 0, 0, 0.2, 0)],
+        ['learning rate -1', () => trainRealMlp(df, species, 'TD', 4, '256,256,256', -1, 256, 0.2, 0)],
+        ['validation fraction 0', () => trainRealMlp(df, species, 'TD', 4, '256,256,256', 0, 256, 0, 0)],
+        ['validation fraction 0.6', () => trainRealMlp(df, species, 'TD', 4, '256,256,256', 0, 256, 0.6, 0)],
+      ]);
+    }], ['Learning rate and variant', async () => {
+      const {df, species} = await irisSpecies();
+      const realMlp = (variant: string, lr: number) => trainRealMlp(df, species, variant, 4, '256,256,256', lr, 256,
+        0.2, 0);
+      expect('lr' in await paramsOf(realMlp('TD', 0)), false, 'learning rate 0 must not be sent');
+      expect((await paramsOf(realMlp('TD', 0.05))).lr, 0.05);
+      expect((await paramsOf(realMlp('TD-S', 0))).variant, 'td_s');
+    }]]},
+  {name: 'TabM', fit: FITS.tabm, ...TREES, floors: {species: 0.85, petal: 0.9},
+    applicable: isTabmApplicable, interactive: isTabmInteractive,
+    params: both({model: 'tabm', k: 8, d_block: 128, embeddings: 'piecewise-linear', max_epochs: 32, patience: 16,
+      lr: 0.002, dropout: 0.1, val_fraction: 0.2, random_state: 0}),
+    shapes: {applicable: [[floatShape(20000, 10), true], [floatShape(20001, 1), false], [floatShape(10000, 21), false]],
+      interactive: [[floatShape(200, 10), true], [floatShape(201, 1), false], [floatShape(100, 21), false]]},
+    tests: [['Validation', async () => {
+      const {df, species} = await irisSpecies();
+      const tabm = (k: number, width: number, epochs: number, patience: number, lr: number, dropout: number,
+        fraction: number) => trainTabm(df, species, k, width, 'Piecewise linear', epochs, patience, lr, dropout,
+        fraction, 0);
+      await expectRejected([
+        ['ensemble size 0', () => tabm(0, 128, 2, 16, 0.002, 0.1, 0.2)],
+        ['width 0', () => tabm(8, 0, 2, 16, 0.002, 0.1, 0.2)],
+        ['epochs 0', () => tabm(8, 128, 0, 16, 0.002, 0.1, 0.2)],
+        ['patience 0', () => tabm(8, 128, 2, 0, 0.002, 0.1, 0.2)],
+        ['learning rate 0', () => tabm(8, 128, 2, 16, 0, 0.1, 0.2)],
+        ['dropout 1', () => tabm(8, 128, 2, 16, 0.002, 1, 0.2)],
+        ['validation fraction 0', () => tabm(8, 128, 2, 16, 0.002, 0.1, 0)],
+      ]);
+    }], ['Embeddings', async () => {
+      const {df, species} = await irisSpecies();
+      const tabm = (embeddings: string) => trainTabm(df, species, 8, 128, embeddings, 2, 16, 0.002, 0.1, 0.2, 0);
+      expect((await paramsOf(tabm('None'))).embeddings, 'none');
+      expect((await paramsOf(tabm('Periodic'))).embeddings, 'periodic');
+      expect((await paramsOf(tabm('Linear-ReLU'))).embeddings, 'linear-relu');
+    }]]},
 ];
 
 const sortedJson = (o: object) => JSON.stringify(Object.entries(o).sort(([a], [b]) => a.localeCompare(b)));
@@ -265,10 +323,13 @@ for (const m of METHODS) {
     if (m.classification) {
       test('Bool target', async () => {
         const {df, target} = await demogFrame('CONTROL', ['AGE', 'HEIGHT', 'WEIGHT'], true);
-        expect(target.type, DG.COLUMN_TYPE.BOOL, 'CONTROL is expected to be a boolean column');
-        const prediction = await applyTwice(df, await m.fit(df, target), m.name);
+        const mask = DG.BitSet.create(df.rowCount, (i) => i < (m.boolRows ?? df.rowCount));
+        const frame = df.clone(mask);
+        const bool = target.clone(mask);
+        expect(bool.type, DG.COLUMN_TYPE.BOOL, 'CONTROL is expected to be a boolean column');
+        const prediction = await applyTwice(frame, await m.fit(frame, bool), m.name);
         expect(prediction.type, DG.COLUMN_TYPE.BOOL, 'prediction of a bool target must be a BOOL column');
-        expect(accuracy(target, prediction) > 0.5, true, 'training accuracy is no better than chance');
+        expect(accuracy(bool, prediction) > 0.5, true, 'training accuracy is no better than chance');
       }, {timeout: TIMEOUT});
     }
 

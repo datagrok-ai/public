@@ -71,7 +71,7 @@ npx grok-bdd run --reporter=list generated/apply generated/catalog    # one or m
   name in the Share dialog and the Sharing pane is the account's friendly name, read from the server.
 
 The stand needs: Forge published by the session's user (`grok publish local`: the debug build is the admin's), EDA
-with its fourteen methods and `knnImpute` (Impute in `train-iris-gaps`, `apply-iris` and `apply-demog`), PowerGrid (the
+with its sixteen methods and `knnImpute` (Impute in `train-iris-gaps`, `apply-iris` and `apply-demog`), PowerGrid (the
 Forms viewer of Compare), the second account, and `iris.csv`, `winequality.csv`, `demog.csv`, `cars.csv` and
 `country-languages.csv` in `System:DemoFiles`. A run uses at most two lanes, also with `--workers 4`: the `@serial`
 features share one, one after another, and app-and-menus runs beside them. A full run took 4.2 minutes with
@@ -126,7 +126,8 @@ named after its table).
   `train.ts`, `server.ts`, `apply.ts` and `table-pane.ts`.
 - `pointer.ts` (no steps): the pointer's approach to a target, from a point beside it and then in five moves, for the
   hovers whose tooltip answers a moving pointer (`catalog.ts`, `columns.ts`, `train.ts`).
-- `catalog-grid.ts` (no steps): the row of the catalog grid that shows a model, from the grid's drawn cells, the
+- `catalog-grid.ts` (no steps): the row of the catalog grid that shows a model (or of the Methods grid that shows a
+  method: the key column is a parameter), from the grid's drawn cells, a cell of that row read in one snapshot, the
   centre of an area of that row, and what a grid draws as text (its headers' captions and its cells).
 - `grok-s.ts` (no steps): the CLI, the identity guard, the model, run, application and share reads, the second
   account and the take-back of its grant, the model and run sweeps and the one feature-end sweep that the sweep and
@@ -184,7 +185,8 @@ named after its table).
 - `catalog.ts`: the catalog's loads (`user remembers the catalog loads`, `every catalog should have reloaded`, `the
   shown catalog should have reloaded`, `the first Forge view should be shown`; every open Forge view's models pane,
   a hidden one read through `grok.shell.views`, in the order of the shell's views), a model's row selected with
-  Control, right-clicked, hovered (entering from the left), its cell read, the grid not listing it (by its frame,
+  Control, right-clicked, hovered (entering from the left), its cell read, a method's cell read or hovered and one
+  method listed above another (the Methods grid, by method name), the grid not listing it (by its frame,
   after the grid settled), a grid's selected rows, a grid scrolled to a column, the captions a grid draws (the header
   cells' text, `showFriendlyName` off) and a text in none of its drawn cells and headers, the open views of a name, a
   top-menu group's items exactly, and the Share dialog's second account picked (its grant on the model in the context

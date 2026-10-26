@@ -24,7 +24,9 @@ Feature: The Forge app, its menus, and the old tool beside it
 
   Where the product moved on from the manual text: ML | Forge | Models focuses an open catalog rather than opening a
   second one (1.2's "a second instance"), so the feature claims that the menu makes the Forge view current from a
-  table view and that one Forge view is open; Methods lists the methods by name (stage 5), not in 1.3's order.
+  table view and that one Forge view is open; Methods lists the methods by name (stage 5), not in 1.3's order, and
+  lists every installed package's methods, so the feature finds each EDA method by its name and claims neither the
+  row count nor a row's position (a stand with Chem lists Chemprop too).
 
   Background:
     Given user is logged in
@@ -62,53 +64,43 @@ Feature: The Forge app, its menus, and the old tool beside it
   Scenario: Methods lists the installed methods with their package, type, roles and settings; Engine appears nowhere (1.3)
     Given user switches to the "Forge" view
     Then first grid viewer should show the columns "Method, Package, Method type, Roles, Hyperparameters"
-    And the "rows" reading of first grid viewer should be 14
-    And the "text of cell 1 of Method" reading of first grid viewer should be "CatBoost"
-    And the "text of cell 2 of Method" reading of first grid viewer should be "Decision Tree"
-    And the "text of cell 3 of Method" reading of first grid viewer should be "Extra Trees"
-    And the "text of cell 4 of Method" reading of first grid viewer should be "Hist Gradient Boosting"
-    And the "text of cell 5 of Method" reading of first grid viewer should be "k-Nearest Neighbors"
-    And the "text of cell 6 of Method" reading of first grid viewer should be "LDA"
-    And the "text of cell 7 of Method" reading of first grid viewer should be "Linear Regression"
-    And the "text of cell 8 of Method" reading of first grid viewer should be "Naive Bayes"
-    And the "text of cell 9 of Method" reading of first grid viewer should be "Neural Network"
-    And the "text of cell 10 of Method" reading of first grid viewer should be "PLS Regression"
-    And the "text of cell 11 of Method" reading of first grid viewer should be "Random Forest"
-    And the "text of cell 12 of Method" reading of first grid viewer should be "Softmax"
-    And the "text of cell 13 of Method" reading of first grid viewer should be "SVM"
-    And the "text of cell 14 of Method" reading of first grid viewer should be "XGBoost"
-    And the "text of cell 1 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 2 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 3 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 4 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 5 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 6 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 7 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 8 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 9 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 10 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 11 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 12 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 13 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 14 of Package" reading of first grid viewer should be "Eda"
-    And the "text of cell 1 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 2 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 3 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 4 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 5 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 6 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 7 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 8 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 9 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 10 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 11 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 12 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 13 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 14 of Method type" reading of first grid viewer should be "function"
-    And the "text of cell 14 of Roles" reading of first grid viewer should be "train, apply, isApplicable, isInteractive"
-    And the "text of cell 14 of Hyperparameters" reading of first grid viewer should be "iterations, eta, maxDepth, lambda, alpha"
-    And the "text of cell 10 of Roles" reading of first grid viewer should be "train, apply, isApplicable, isInteractive, visualize"
-    And the "text of cell 10 of Hyperparameters" reading of first grid viewer should be "components"
+    And the method "CatBoost" should be listed above the method "Decision Tree" in first grid viewer
+    And the "Package" cell of the method "CatBoost" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "Decision Tree" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "Extra Trees" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "Hist Gradient Boosting" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "k-Nearest Neighbors" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "LDA" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "Linear Regression" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "Naive Bayes" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "Neural Network" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "PLS Regression" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "Random Forest" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "RealMLP" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "Softmax" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "SVM" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "TabM" in first grid viewer should read "Eda"
+    And the "Package" cell of the method "XGBoost" in first grid viewer should read "Eda"
+    And the "Method type" cell of the method "CatBoost" in first grid viewer should read "function"
+    And the "Method type" cell of the method "Decision Tree" in first grid viewer should read "function"
+    And the "Method type" cell of the method "Extra Trees" in first grid viewer should read "function"
+    And the "Method type" cell of the method "Hist Gradient Boosting" in first grid viewer should read "function"
+    And the "Method type" cell of the method "k-Nearest Neighbors" in first grid viewer should read "function"
+    And the "Method type" cell of the method "LDA" in first grid viewer should read "function"
+    And the "Method type" cell of the method "Linear Regression" in first grid viewer should read "function"
+    And the "Method type" cell of the method "Naive Bayes" in first grid viewer should read "function"
+    And the "Method type" cell of the method "Neural Network" in first grid viewer should read "function"
+    And the "Method type" cell of the method "PLS Regression" in first grid viewer should read "function"
+    And the "Method type" cell of the method "Random Forest" in first grid viewer should read "function"
+    And the "Method type" cell of the method "RealMLP" in first grid viewer should read "function"
+    And the "Method type" cell of the method "Softmax" in first grid viewer should read "function"
+    And the "Method type" cell of the method "SVM" in first grid viewer should read "function"
+    And the "Method type" cell of the method "TabM" in first grid viewer should read "function"
+    And the "Method type" cell of the method "XGBoost" in first grid viewer should read "function"
+    And the "Roles" cell of the method "XGBoost" in first grid viewer should read "train, apply, isApplicable, isInteractive"
+    And the "Hyperparameters" cell of the method "XGBoost" in first grid viewer should read "iterations, eta, maxDepth, lambda, alpha"
+    And the "Roles" cell of the method "PLS Regression" in first grid viewer should read "train, apply, isApplicable, isInteractive, visualize"
+    And the "Hyperparameters" cell of the method "PLS Regression" in first grid viewer should read "components"
     And forge app should not contain text "Engine"
     And no drawn cell or header of first grid viewer should contain "Engine"
     And no drawn cell or header of second grid viewer should contain "Engine"
@@ -128,14 +120,14 @@ Feature: The Forge app, its menus, and the old tool beside it
     Then tooltip should contain text "Refresh"
     When user hovers over the "header Roles" area of first grid viewer
     Then tooltip should contain text "What the method can do."
-    When user hovers over the "cell 2 of Method type" area of first grid viewer
+    When user hovers over the "Method type" cell of the method "Decision Tree" in first grid viewer
     Then tooltip should contain text "A package function."
-    When user hovers over the "cell 14 of Roles" area of first grid viewer
+    When user hovers over the "Roles" cell of the method "XGBoost" in first grid viewer
     Then tooltip should contain text "train: Trains a model on a table and a target column, returns the model"
     And tooltip should contain text "apply: Applies a trained model to a table, returns the predictions"
     And tooltip should contain text "isApplicable: Tells whether the method can learn from the given data"
     And tooltip should contain text "isInteractive: Tells whether training is fast enough to rerun on every change"
-    When user hovers over the "cell 10 of Roles" area of first grid viewer
+    When user hovers over the "Roles" cell of the method "PLS Regression" in first grid viewer
     Then tooltip should contain text "isInteractive: Tells whether training is fast enough to rerun on every change"
     And tooltip should contain text "visualize: Shows method-specific views of a trained model"
     When user closes the current view

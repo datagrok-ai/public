@@ -83,8 +83,10 @@ export class ForgeApp extends DG.ViewBase {
       'Method type': (row) => KIND_MEANINGS[engines[row].kind],
       'Roles': (row) => rolesOf(engines[row]).map((r) => `${r}: ${ROLE_MEANINGS[r]}`).join('\n'),
       'Hyperparameters': (row) => hyperparametersOf(engines[row]).map((p) => `${p.name}: ${p.description}`).join('\n'),
-    }});
-    const methodsPane = ui.panel([ui.h2('Methods'), this.methodsGrid.root]);
+    }}, engines.length);
+    const methodsPane = ui.box(ui.panel([ui.h2('Methods'), this.methodsGrid.root]));
+    // Inline: the split's 50% basis (ui.css) would cut the methods off; the pane takes its rows' height.
+    methodsPane.style.flex = '0 0 auto';
 
     this.grid = DG.Viewer.grid(models);
     // Inline: the platform's 400px width for a box in a panel (ui.css) gives way only to an element style.
