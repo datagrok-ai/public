@@ -77,9 +77,10 @@ domains.configure<IssueRow>('grit.issue', async (issues) => {
     when: (r) => closedId !== null && r.status_id !== closedId, run: (r) => { r.status_id = closedId!; }});
   issues.validators.add('status_id', (v, r) =>
     closedId !== null && v === closedId && !r.assignee ? 'Assign before closing' : null);
+  // the status heads the second line, so a card without a description still fills its height
   issues.renderer = {...issues.renderer, card: (r) => divV([
     div([span(`#${r.number} ${r.title}`, 'u2-domain-card-title'), ...priorityBadge(r)]),
-    ...(r.description ? [span(r.description, 'u2-domain-card-description')] : []),
+    span([lookupName(r.status_id), r.description].filter((d) => !!d).join(' · '), 'u2-domain-card-description'),
   ], 'u2-domain-card')};
 }, {id: 'grit'});
 
