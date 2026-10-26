@@ -856,10 +856,19 @@
   padding: 0 var(--dg-space-m);
 }
 
-/* under the form the children keep a tab strip, a toolbar, a two-line header and about 8 rows,
-   however tall the form: the entity page scrolls, not the children */
+/* under the form a child grid is as tall as its rows, up to about 8 of them, however tall the
+   form: the entity page scrolls, not the children, and a short grid leaves no blank under it */
 .u2-domain-app-panes > .u2-domain-children {
-  flex: 1 0 360px;
+  flex: none;
+  min-height: 0;
+}
+
+.u2-domain-app-panes > .u2-domain-children:not(.u2-domain-children-list) > .u2-domain-children-tabs {
+  flex: none;
+}
+
+.u2-domain-app-panes .u2-domain-children-pane > .u2-domain-grid {
+  max-height: 320px;
 }
 
 .u2-domain-app-panes > .u2-domain-children-list {
