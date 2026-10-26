@@ -84,7 +84,12 @@
   background: var(--dg-hover-subtle);
 }
 
-.u2-row-actions .u2-row-action-destructive:hover {
+/* the platform's hover icons (Chem's scaffold tree): actions in blue, a destructive one in red */
+.u2-row-actions .u2-btn.u2-icon-btn {
+  color: var(--dg-accent);
+}
+
+.u2-row-actions .u2-btn.u2-icon-btn.u2-row-action-destructive {
   color: var(--dg-error);
 }
 
