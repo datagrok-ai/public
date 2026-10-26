@@ -3123,6 +3123,21 @@ importers:
         specifier: 'catalog:'
         version: 1.11.23
 
+  packages/PmxStudio:
+    dependencies:
+      '@datagrok-libraries/test':
+        specifier: workspace:^
+        version: link:../../libraries/test
+      '@datagrok-libraries/u2':
+        specifier: workspace:^
+        version: link:../../libraries/u2
+      datagrok-api:
+        specifier: workspace:^
+        version: link:../../js-api
+      echarts:
+        specifier: ^5.0.0
+        version: 5.6.0
+
   packages/PowerGrid:
     dependencies:
       '@datagrok-libraries/statistics':

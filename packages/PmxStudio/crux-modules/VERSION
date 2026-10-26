@@ -1,0 +1,2 @@
+crux-core 0d0199251 (main), modules nonclinical and stats
+built 2026-10-26 with tools/parity/wasm-modules/modules.py build --bindgen web (README, "Crux modules")
