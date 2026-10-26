@@ -149,9 +149,10 @@ scoped('under each chosen field: the shared value, how many differ, or that it w
   const {running} = await opened(source);
   choose('title', 'done', 'weight');
   await flush();
-  assert.equal(hint('title'), 'Will be cleared', 'a chosen field left empty clears the column');
+  assert.equal(hint('weight'), 'Will be cleared', 'a chosen field left empty clears the column');
+  assert.equal(hint('title'), 'Required: it cannot be cleared', 'unless the column is required');
   assert.equal(field('title').root.querySelector('.u2-input-error')?.textContent ?? '', '',
-    'nothing in a bulk dialog is required');
+    'nothing red in the body: the button\'s tooltip says it');
   field('title').value.value = 'Renamed';
   await flush();
   assert.equal(hint('title'), '2 different values');
@@ -448,5 +449,45 @@ scoped('a backend that declares no writes offers no bulk edit, and says so by na
   const {source} = await table(memory);
   assert.equal(await domains.bulkEdit(source), null);
   assert.match(balloon('error'), /does not support bulk edits/);
+  source.dispose();
+});
+
+scoped('on a filtered list, the one row the user clicked is not the target: the filter is', async () => {
+  const memory = backend();
+  const {source} = await table(memory, {query: 'number > 0'});
+  select(source, (i) => i === 1);
+  source.currentRow.value = source.selection.value[0];
+  const {running} = await opened(source);
+  assert.deepEqual(targets(), ['1 selected issue', 'All 3 issues matching the filter'], 'both are still offered');
+  assert.equal(target().value.value, 'All 3 issues matching the filter');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+
+  select(source, (i) => i !== 1);
+  const again = await opened(source);
+  assert.equal(target().value.value, '2 selected issues', 'a selection the user made is the target');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await again.running, null);
+  source.dispose();
+});
+
+scoped('a required field wears the asterisk, and choosing it empty holds the button: it cannot be cleared', async () => {
+  const memory = backend();
+  const {source} = await table(memory);
+  select(source, (i) => i === 1);
+  const {running} = await opened(source);
+  choose('title');
+  await flush();
+  assert.equal(field('title').root.classList.contains('u2-input-required'), true);
+  field('title').value.value = '';
+  await flush();
+  assert.equal(hint('title'), 'Required: it cannot be cleared');
+  assert.equal(okDisabled(), true);
+  assert.match(await okReason(), /Title is required/);
+  field('title').value.value = 'Kept';
+  await flush();
+  assert.equal(okDisabled(), false);
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
   source.dispose();
 });

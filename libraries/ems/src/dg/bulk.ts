@@ -59,11 +59,11 @@ export async function bulkEdit(source: DomainSource, options: DomainBulkEditOpti
   const props: IProperty[] = [];
   for (const name of options.columns ?? properties.map((p) => p.name)) {
     const prop = properties.find((p) => p.name === name);
-    // a bulk value is not a row: a chosen field left empty CLEARS the column, and whether the
-    // column tolerates that is the server's per-row answer — nothing here is "required"
+    // nullable in the form, so an unchosen field never holds it; a required one chosen empty is refused in `_open`
     if (prop !== undefined && writable.field(name) === 'editable')
       props.push({...prop, nullable: true});
   }
+  const required = new Set(properties.filter((p) => p.nullable === false).map((p) => p.name!));
   if (props.length === 0) {
     notify.warning(`There is no column of ${source.table} you may write.`);
     return null;
@@ -77,7 +77,7 @@ export async function bulkEdit(source: DomainSource, options: DomainBulkEditOpti
   }
   if (!await confirmDiscard(source.session, {action: 'edit rows in bulk'}))
     return null;
-  return new Promise((resolve) => _open(source, props, targets, resolve));
+  return new Promise((resolve) => _open(source, props, required, targets, resolve));
 }
 
 /** The table's plural name, as the user reads it — never "rows". */
@@ -105,7 +105,15 @@ function _targets(source: DomainSource): BulkTarget[] {
   return targets;
 }
 
-function _open(source: DomainSource, props: IProperty[], targets: BulkTarget[],
+/** The target the dialog opens on: the selection, unless it is only the row the user clicked — on a
+ * filtered list that edit means the filter. */
+function _preferred(source: DomainSource, targets: BulkTarget[]): BulkTarget {
+  const selection = source.selection.peek();
+  const clicked = selection.length === 1 && selection[0].id === source.currentRow.peek()?.id;
+  return (clicked ? targets.find((t) => t.kind === MATCHING) : undefined) ?? targets[0];
+}
+
+function _open(source: DomainSource, props: IProperty[], required: Set<string>, targets: BulkTarget[],
   resolve: (n: number | null) => void): void {
   const handle = DomainTable.of(source)!;
   const dialog = Dialog.create(`Bulk edit ${_plural(source)}`, {name: 'bulk-edit'});
@@ -117,7 +125,7 @@ function _open(source: DomainSource, props: IProperty[], targets: BulkTarget[],
   const header = document.createElement('div');
   header.className = 'u2-domain-bulk-header';
   form.root.prepend(header);
-  const target = _applyTo(dialog, form, header, targets);
+  const target = _applyTo(dialog, form, header, targets, _preferred(source, targets));
   const picker = dialog.runInScope(() => new MultiSelect({label: 'Change', name: 'fields', items: [],
     placeholder: 'Choose the fields to change', fill: true}));
   form.add(picker, header);
@@ -135,18 +143,24 @@ function _open(source: DomainSource, props: IProperty[], targets: BulkTarget[],
     const current = _current(selection, prop.name!);
     const hint = span('', 'u2-domain-bulk-current');
     input.root.append(hint);
+    input.root.classList.toggle('u2-input-required', required.has(prop.name!));
     input.effect(() => {
       input.visible = picker.value.value.includes(prop.name!);
-      hint.textContent = Input.isEmpty(input.value.value) ? 'Will be cleared' :
-        target.value.kind === SELECTED ? current : '';
+      hint.textContent = !Input.isEmpty(input.value.value) ? (target.value.kind === SELECTED ? current : '') :
+        required.has(prop.name!) ? 'Required: it cannot be cleared' : 'Will be cleared';
     });
   }
 
   const checks = handle.validators.columns.length > 0;
   const problem = computed(() => {
     const {kind, count} = target.value;
-    if (picker.value.value.length === 0)
+    const chosen = picker.value.value;
+    if (chosen.length === 0)
       return 'Choose the fields to change';
+    const cleared = props.find((p) => chosen.includes(p.name!) && required.has(p.name!) &&
+      Input.isEmpty(form.input(p.name!)?.value.value));
+    if (cleared !== undefined)
+      return `${DomainTable.captionOf(cleared)} is required: enter a value, or take it out of the change`;
     if (kind === SELECTED && count > MAX_ROWS) {
       return `A bulk edit writes at most ${MAX_ROWS} ${_plural(source)} at a time; ${count} are ` +
         'selected. Narrow the selection, or filter the list and apply to everything it matches.';
@@ -180,14 +194,14 @@ function _open(source: DomainSource, props: IProperty[], targets: BulkTarget[],
 }
 
 /** "Apply to": plain text where there is one target, a choice where there are two. */
-function _applyTo(dialog: Dialog, form: ObjectForm, header: HTMLElement, targets: BulkTarget[]):
-  ReadonlySignal<BulkTarget> {
+function _applyTo(dialog: Dialog, form: ObjectForm, header: HTMLElement, targets: BulkTarget[],
+  preferred: BulkTarget): ReadonlySignal<BulkTarget> {
   if (targets.length === 1) {
     header.append(ObjectForm.readonlyField('Apply to', 'target', targets[0].label).row);
     return signal(targets[0]);
   }
   const radio = dialog.runInScope(() => new RadioInput({label: 'Apply to', name: 'target',
-    items: targets.map((t) => t.label), value: targets[0].label, nullable: false}));
+    items: targets.map((t) => t.label), value: preferred.label, nullable: false}));
   form.add(radio, header);
   return computed(() => targets.find((t) => t.label === radio.value.value) ?? targets[0]);
 }
