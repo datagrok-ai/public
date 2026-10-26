@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import {DomainApp, DomainFilters} from '@datagrok-libraries/ems/src/dg';
 import type {DomainAppOptions, DomainTable} from '@datagrok-libraries/ems/src/dg';
 import type {DomainSource} from '@datagrok-libraries/ems';
-import {Filters, Rows, isEmpty} from '@datagrok-libraries/u2';
+import {Filters, Rows, Section, isEmpty} from '@datagrok-libraries/u2';
 import type {Action, RowView} from '@datagrok-libraries/u2';
 import type {CompoundRow} from '../generated/db';
 import {Chemistry, IDENTITY_COLUMNS} from './chemistry';
@@ -24,6 +24,8 @@ export class CompoundsApp extends DomainApp {
 
   private readonly _verdicts = new Map<string, Verdict>();
   private readonly _identity = ui.divV([], 'moltrack-ems-identity');
+  private readonly _identityHeading =
+    this.runInScope(() => new Section({title: 'Identity', collapsible: false})).header;
 
   constructor(options: DomainAppOptions) {
     super(options);
@@ -125,7 +127,7 @@ export class CompoundsApp extends DomainApp {
     const shown = (column: keyof CompoundIdentity) => isEmpty(identity?.[column]) ? '—' : identity![column]!;
     const rule = shown('match_rule');
     // the parent is drawn, not spelled out; the rows stack under it so they form no third caption column
-    this._identity.replaceChildren(ui.h3('Identity'),
+    this._identity.replaceChildren(this._identityHeading,
       ...(problem === null ? [] : [ui.divText(problem, 'moltrack-ems-problem')]),
       identity === null ? ui.divText(problem === null ? 'Draw a structure to see its identity' : '',
         'moltrack-ems-hint') :
