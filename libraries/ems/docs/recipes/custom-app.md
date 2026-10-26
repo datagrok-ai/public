@@ -111,6 +111,13 @@ ambient session, so their sources join it without the option.
 - **A validator returns a message or null**, synchronously, from the row it is given; a rule the
   grammar can say (`end_date >= start_date`) belongs in `schema.json` `constraints` instead, so
   the server checks it too.
+- **A validator is feedback; a constraint is the rule.** Validators run in the browser, inside EMS
+  views and EMS writes (forms, child grids, import, bulk edit). REST calls, package functions
+  (the ones Grokky calls) and other packages write past them. A rule that must hold, and that
+  reads only the row's own columns, goes in `constraints`: the form pre-checks it and the server
+  enforces it as a CHECK. A validator is for what a CHECK cannot say: a rule over other rows or a
+  service (MolTrack's "Already registered as DG-…"), or one that names a lookup row, such as
+  Grit's "Assign before closing" (`closed` is a row of `status`, whose id differs per install).
 - **Presets are queries**, bound through `Filters.bind`; a preset the user cannot express in the
   filter box (`$me`) is exactly what they are for.
 
