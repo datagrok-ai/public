@@ -125,7 +125,7 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
     if (input === undefined)
       continue;
     const current = _current(selection, prop.name!);
-    const hint = span('', 'u2-domain-bulk-current');
+    const hint = span('', 'u2-domain-bulk-current u2-form-note');
     input.root.append(hint);
     input.root.classList.toggle('u2-input-required', required.has(prop.name!));
     input.effect(() => {

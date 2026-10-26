@@ -239,7 +239,7 @@ class ImportFlow {
       picker.value.value = this._options.source;
     else if (open.length === 1)
       picker.value.value = open[0];
-    const summary = span('', 'u2-domain-import-picked');
+    const summary = span('', 'u2-domain-import-picked u2-form-note');
     const batch = this._table.table.support.batch;
     if (batch.upsert) {
       this._mode = new ChoiceInput({label: 'Mode', name: 'mode', value: 'insert', nullable: false,

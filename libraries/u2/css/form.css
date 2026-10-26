@@ -85,6 +85,16 @@
   padding-left: 0;
 }
 
+/* a muted line under an editor or a row, past the label column as a verdict is */
+.u2-form:not(.u2-form-tall) .u2-form-note {
+  padding-left: calc(var(--u2-form-label-width, 100px) + var(--dg-space-m));
+}
+
+.u2-form-note {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
 /* a platform input bridged into a platform form or dialog (asDartInput) brings only its box: it
    grows there as the platform's own text editors do (ui.css:659-664) */
 .u2-form input.u2-input-editor,

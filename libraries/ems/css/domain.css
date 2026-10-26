@@ -478,8 +478,7 @@
   min-width: max-content;
 }
 
-.u2-btn-group[data-u2='domain-presets']::before {
-  content: 'Show:';
+.u2-domain-presets-label {
   margin-right: var(--dg-space-s);
   font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
@@ -634,9 +633,6 @@
 .u2-domain-bulk-current {
   box-sizing: border-box;
   flex: 1 0 100%;
-  padding-left: calc(var(--u2-form-label-width, 100px) + var(--dg-space-m));
-  color: var(--dg-text-color-light);
-  font-size: var(--dg-font-size-small);
 }
 
 .u2-domain-bulk-current:empty {
@@ -666,12 +662,6 @@
   flex: 1 1 auto;
   min-height: 120px;
   overflow: auto;
-}
-
-.u2-domain-import-source .u2-form-rows > .u2-domain-import-picked {
-  padding-left: calc(var(--u2-form-label-width, 100px) + var(--dg-space-m));
-  color: var(--dg-text-color-light);
-  font-size: var(--dg-font-size-small);
 }
 
 .u2-domain-import-picked:empty {

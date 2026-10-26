@@ -450,7 +450,7 @@ textarea.u2-input-editor {
 }
 
 .u2-input-clear:hover {
-  filter: contrast(80%) brightness(120%);
+  color: var(--dg-accent-secondary);
 }
 
 .u2-input-clear[hidden] {
