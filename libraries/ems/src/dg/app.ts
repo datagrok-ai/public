@@ -32,8 +32,9 @@ export type DomainAppMode = 'live' | 'trash';
 /** What the status bar says while a live source is behind the server ({@link DomainApp.refresh}). */
 const STALE = 'Data changed — Refresh';
 
-/** Below this width the ribbon is cut by the view (about 1100px of window with the Browse panel). */
-const COMPACT_WIDTH = 900;
+/** Below this width the ribbon is cut by the view (a 1100px window with the Browse and context panels
+ * leaves about 530px; 1440px leaves about 790px, which holds the presets). */
+const COMPACT_WIDTH = 700;
 
 /** The trash reads newest-deleted first: a soft delete is a write, so it stamps `updated_on`. */
 const TRASH_SORT = '!updated_on';
