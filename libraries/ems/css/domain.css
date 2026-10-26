@@ -247,8 +247,8 @@
   flex: none;
   align-items: center;
   gap: var(--dg-space-s);
-  margin: var(--dg-space-s) var(--dg-space-m) 0;
-  padding: var(--dg-space-s) var(--dg-space-m);
+  margin: var(--dg-space-l) var(--dg-space-m);
+  padding: var(--dg-space-m) var(--dg-space-l);
   color: var(--dg-text-color);
   background: var(--dg-steel-1);
   border-radius: var(--dg-radius);
@@ -256,10 +256,6 @@
 
 .u2-domain-app-trash-banner > .u2-icon {
   color: var(--dg-accent);
-}
-
-.u2-domain-app-trash-banner > .u2-link {
-  margin-left: auto;
 }
 
 .u2-list-row.u2-domain-list-invalid {
