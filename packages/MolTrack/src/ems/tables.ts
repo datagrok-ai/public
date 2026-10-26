@@ -101,7 +101,7 @@ export class MolTrackTables {
     const caption = (row: RowView<CompoundRow>) => Rows.isDraft(row) ? 'New compound' :
       MolTrackTables.corporateId(table, 'molregno', row.molregno);
     const card = (row: RowView<CompoundRow>) => divH([
-      row.structure ? grok.chem.drawMolecule(row.structure, 84, 56) : span(''),
+      row.structure ? grok.chem.drawMolecule(row.structure, 120, 80) : span(''),
       divV([
         span(caption(row), 'u2-domain-card-title'),
         MolTrackTables._text(row.common_name ?? '', 'u2-domain-card-description'),

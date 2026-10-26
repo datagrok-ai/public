@@ -68,7 +68,7 @@ const VIEWS = domains.views({
   ready: (app, table) => MolTrackEms.ready(app, table),
   views: [
     {table: `${SCHEMA}.compound`, name: 'Compounds', options: {...FILTERS, sort: '!molregno', app: CompoundsApp,
-      mode: 'cards', include: CompoundsApp.FIELDS, children: {tables: ['compound_batch'], mode: 'list'},
+      mode: 'cards', itemHeight: 88, include: CompoundsApp.FIELDS, children: {tables: ['compound_batch'], mode: 'list'},
       // no Bulk edit: it would write past the identity a structure derives
       menu: {bulkEdit: false}}},
     {table: `${SCHEMA}.compound_batch`, name: 'Batches', options: {...FILTERS, sort: '!batch_regno', app: BatchesApp,
