@@ -142,7 +142,7 @@ export class CompoundsApp extends DomainApp {
     const ruleName = `${rule.charAt(0)}${rule.slice(1).toLowerCase().replace(/_/g, ' ')}`;
     const field = (caption: string, value: string | Node) => ObjectForm.readonlyField(caption, caption, value).row;
     const rows = ui.divV([field('Formula', shown('formula')), field('InChIKey', shown('inchikey')),
-      field('Matching rule', ruleName)]);
+      field('Matching rule', ruleName)], 'u2-form');
     const structure = identity?.structure;
     // the parent is drawn only where it differs from the Structure the form draws (a salt or a charge taken off)
     if (!isEmpty(structure)) {
