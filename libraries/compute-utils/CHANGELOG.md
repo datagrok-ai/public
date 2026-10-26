@@ -2,6 +2,7 @@
 
 ## v.next
 
+* RTD: Fixed steps running before their validators or data links finished: a link counts as running, and locks tree mutations, from the moment its inputs change until its handler finishes, including the debounce wait, the batch and an async handler; while the tree is locked (init, runs, mutations, headless runs), validators skip their debounce
 * RTD: Added headless runs: `runWorkflow` (by provider) and `runWorkflowConfig` create a workflow from an instance config and, unless a step ready to run has validation errors, run every step that can run; the result state is an instance config tree with each step's values, status, run error, validations and consistency and each workflow's validations, plus a summary; `saveWorkflowRun` and `saveWorkflowConfig` save a result state as a new run, the way Duplicate builds a copy
 * RTD: `runSequence` takes a mock run function in mock mode
 * RTD: The export summary moved to `run-summary` (`getRunSummary`, `statesToStatus`); `ExportSummaryItem` extends `RunSummaryItem`, which adds the node `uuid`
