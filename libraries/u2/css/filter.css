@@ -223,6 +223,11 @@
   min-width: 60px;
 }
 
+/* the column's name is what a narrow row is read by: the operator gives way first */
+.u2-fb-cond > .u2-fb-op {
+  flex-shrink: 3;
+}
+
 .u2-fb-cond > .u2-fb-prop > .u2-input-box,
 .u2-fb-cond > .u2-fb-op > .u2-input-box {
   flex: 1 1 auto;
