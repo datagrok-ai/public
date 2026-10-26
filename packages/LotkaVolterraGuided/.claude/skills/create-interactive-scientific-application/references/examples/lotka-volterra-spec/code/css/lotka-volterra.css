@@ -1,0 +1,55 @@
+/* Lotka-Volterra Predator-Prey Simulation — Application Styles */
+
+/* Equilibrium and stats display panel */
+.lotka-volterra-app-stats-panel {
+  padding: 8px;
+  border-radius: 4px;
+  background-color: var(--grey-1, #f5f5f5);
+  margin-top: 8px;
+  gap: 4px;
+}
+
+.lotka-volterra-app-stats-panel > label {
+  font-weight: 600;
+  color: var(--grey-5, #555);
+}
+
+.lotka-volterra-app-stats-value {
+  font-family: var(--font-family-monospace, monospace);
+  color: var(--grey-6, #333);
+  text-align: right;
+}
+
+.lotka-volterra-app-optimize-btn--disabled {
+  pointer-events: none;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Ribbon help icon */
+.lotka-volterra-app-help-icon {
+  font-size: large;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+/* Grid column header tooltip */
+.lotka-volterra-app-col-tooltip {
+  gap: 4px;
+}
+
+.lotka-volterra-app-tooltip-range {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.lotka-volterra-app-tooltip-min {
+  font-weight: bold;
+  color: #8B0000;
+}
+
+.lotka-volterra-app-tooltip-max {
+  font-weight: bold;
+  color: #006400;
+}

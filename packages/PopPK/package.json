@@ -1,0 +1,42 @@
+{
+  "name": "PopPK",
+  "friendlyName": "PopPK",
+  "version": "0.0.1",
+  "description": "PopPK package",
+  "dependencies": {
+    "datagrok-api": "^1.26.0",
+    "cash-dom": "^8.1.5",
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/utils": "^4.6.5"
+  },
+  "devDependencies": {
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "debug-poppk": "webpack && grok publish",
+    "release-poppk": "webpack && grok publish --release",
+    "build-poppk": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "test": "grok test",
+    "debug-poppk-dev": "webpack && grok publish dev",
+    "release-poppk-dev": "webpack && grok publish dev --release",
+    "debug-poppk-local": "webpack && grok publish local",
+    "release-poppk-local": "webpack && grok publish local --release",
+    "debug-poppk-release": "webpack && grok publish release",
+    "release-poppk-release": "webpack && grok publish release --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/PopPK"
+  }
+}

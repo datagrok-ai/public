@@ -1,0 +1,25 @@
+/* Levins Metapopulation Model — Application Styles */
+
+/* Rho badge (e0/m ratio indicator) */
+.levins-rho-badge {
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 4px;
+  color: white;
+}
+
+.levins-rho-badge--persists {
+  background-color: #4CAF50;
+}
+
+.levins-rho-badge--extinct {
+  background-color: #F44336;
+}
+
+/* Disabled icon button (ui.iconFA) */
+.levins-btn--disabled {
+  pointer-events: none;
+  opacity: 0.4;
+}
