@@ -59,3 +59,56 @@ depend on the UI. Every case was reproduced on localhost, core master `d9ff84a96
    {string} on the server` (added) is the negative of the positive step. `projects-regressions-shared-tag.feature`
    now claims, before its error-balloon known failure, that the tag the second account added is not on the
    server — the refused save — as well as the balloon.
+
+## Edge cases — what the features cannot say yet
+
+What `save-project-dialog-edge-cases`, `data-sync-edge-cases` and `project-gallery-edge-cases` leave out,
+written with no library, binding or code change.
+
+### Still open
+
+**Steps requested**
+
+1. **One option of a Dart radio group: checked and disabled.** The phrase would be
+   `item "Save original project" of radio input in "Save project" dialog should be disabled` (and `… should be
+   checked`). `item … of …` reads u2 controls only, and the Save dialog's save mode is a Dart `RadioInput`
+   (`.ui-input-radio`, one `<input type="radio">` per option with its `<label for>`). `"Save a copy" input in
+   "Save project" dialog` and `"Save original project" text in …` resolve to the whole group, so a View and use
+   recipient's dialog reads every option as disabled and none as checked; a click on the disabled option is
+   refused by the browser's actionability check before it lands, so the refusal cannot be shown by a gesture
+   either. The recipient scenario reads the mode off the "Copy of <name>" name instead. Needed for "Save original
+   project is disabled and Save a copy is selected" (`dashboard.md`, "Saving a dashboard").
+2. **The validation message of a Dart text input.** The Rename dialog's validator says "Name must contain at least
+   one letter" (`DbEntityMeta.getRenameDialog`), but the text is not in the dialog's text and `… should have the
+   error "…"` answers only for u2 controls. A reading of the message a Dart `InputBase` shows (or puts in its
+   tooltip) would let `project-gallery-edge-cases` claim the words as well as the invalid mark and the disabled OK.
+
+**Questions for owners**
+
+1. **Every table left out with the cross icon, then OK.** The dialog saves a project with no table, or refuses?
+   core#945 settled only the quick-OK path; nothing states this one.
+2. **The data-synced file deleted from Files, or the creation script deleted (not broken), then the project
+   reopened.** Is the Data loading error dialog the expected answer, as for a deleted query (`dashboard.md`, "When
+   the source changes", names only the query)?
+3. **A View and use recipient's card menu.** Rename... and Delete Project: hidden, or shown disabled? The server's
+   refusal is ApiTests `permissions.ts`; the menu has no stated behaviour (core#305 is the same class for Share).
+4. **The owner deletes a project a recipient has open, then the recipient clicks SAVE or REFRESH.** `browse.md`
+   documents only the deleted-table variant.
+5. **A URL parameter value of the wrong type** (`?maxId=abc` for an int parameter), for a dashboard address and for a
+   function run link: back to the form, as core#446 settled for a missing value, or an error?
+6. **A URL parameter alias emptied, or set to another parameter's name.**
+
+**Cases with a source, not written in this round**
+
+1. **A URL parameter value with `&`, `#`, a space or a non-ASCII letter** goes through Source > copy link > the
+   address and comes back unchanged (the link carries the value typed, `project-url-parameters.md`). It needs the
+   parameterized-query journey of `projects-url-parameters.feature` as its set-up.
+2. **A column a calculated column uses removed from the query output**: the dashboard opens with a warning and an
+   empty calculated column (`dashboard.md`, "When the source changes"). The calculated-column chain over a renamed
+   source is ApiTests `dapi/projects.ts`; the warning the user sees is not claimed anywhere.
+
+### Won't do
+
+- Two sessions both saving the original project: `dashboard.md` ("Versioning") documents that the last save wins
+  without a warning; nothing to guard while that stays the documented behaviour.
+- A long project name: the only bound is the 255-character `friendly_name` column, a datlas assertion if any.

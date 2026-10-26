@@ -16,7 +16,7 @@ Feature: Histogram edge cases
     Then histogram viewer should show 1000 rows
     And the "error" reading of histogram viewer should be ""
 
-  @edge-cases
+  @edge-cases @realizes:core#998
   Scenario: Bins set to 0 is reported instead of drawn
     When user sets "Bins" property of histogram viewer to "0"
     Then the "error" reading of histogram viewer should be "bins should be a positive integer"
@@ -26,7 +26,7 @@ Feature: Histogram edge cases
     And the "bins shown" reading of histogram viewer should be 20
     And no errors should have been logged
 
-  @edge-cases
+  @edge-cases @realizes:core#998
   Scenario: A range normalized to the filter logs no error when every row is filtered out
     When user sets "Normalize To Filter" property of histogram viewer to "true"
     And user enters "60" into the "range min input" area of histogram viewer

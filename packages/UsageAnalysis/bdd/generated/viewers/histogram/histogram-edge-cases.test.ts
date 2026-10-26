@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/histogram/histogram-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.histogram]
+sub_features_covered: [viewers.histogram, core#998]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -28,7 +28,7 @@ import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Histogram edge cases", () => {
   const session = feature(test, "features/viewers/histogram/histogram-edge-cases.feature", import.meta.url);
-  test("Bins set to 0 is reported instead of drawn", {tag: ["@viewers", "@realizes:viewers.histogram", "@edge-cases"]}, async ({browser}) => {
+  test("Bins set to 0 is reported instead of drawn", {tag: ["@viewers", "@realizes:viewers.histogram", "@edge-cases", "@realizes:core#998"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(9, "Given user is logged in", () => loggedIn(page));
     await session.step(10, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -44,7 +44,7 @@ test.describe("Histogram edge cases", () => {
     await session.step(26, "And the \"bins shown\" reading of histogram viewer should be 20", () => readingIs(page, "bins shown", el("histogram viewer"), 20));
     await session.step(27, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A range normalized to the filter logs no error when every row is filtered out", {tag: ["@viewers", "@realizes:viewers.histogram", "@edge-cases"]}, async ({browser}) => {
+  test("A range normalized to the filter logs no error when every row is filtered out", {tag: ["@viewers", "@realizes:viewers.histogram", "@edge-cases", "@realizes:core#998"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(9, "Given user is logged in", () => loggedIn(page));
     await session.step(10, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));

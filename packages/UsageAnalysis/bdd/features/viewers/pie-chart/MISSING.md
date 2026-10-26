@@ -14,7 +14,3 @@ Written for `pie-chart-edge-cases.feature`: the edge cases of this viewer that t
 **API or Dart tests to write**
 
 1. Dart regTest: more than 200000 categories shows "too many categories" (`pie_chart_core.dart`, `validateState`).
-
-## Won't do
-
-- The other core#982 fixes (On Click switched to Select and back, the category changed while the pie filters, an unsupported Category Map from a layout, the table switch keeping the columns): each has a Dart regTest in `viewers_test.dart` ("Fixed issues | Pie chart …"); the feature keeps the one whose gesture is a wedge click under a Filter formula.

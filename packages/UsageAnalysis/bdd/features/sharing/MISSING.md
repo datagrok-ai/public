@@ -91,3 +91,26 @@ Still to write: a folder share gives read but not write, and files outside the f
 `share-files-and-spaces-permissions` A/B). A script has no Execute privilege of its own (its type lists
 only View, Edit, Delete and Share), so View is what lets the grantee run it, and the existing View and
 use test covers it.
+
+## 8. Edge cases (`share-dialog-edge-cases`) — still open
+
+Written for the edge-case feature, with no library, binding or code change. That feature claims Escape after a
+recipient is picked, a removal cancelled, and core#980 (an email with no account, a known failure).
+
+### Questions for owners
+
+1. **OK with no recipient, or with text typed that never became a recipient** (not an email): today the dialog
+   says "Shared" and nothing is granted (the root cause of core#980). Should OK be disabled, or say that nobody
+   was picked?
+2. **A disabled user in the suggestions**: is a disabled account offered as a recipient? Disabling keeps the
+   shares a user has (`help/govern/access-control/users-and-groups.md`); nothing says whether new ones may be made.
+3. **A grant revoked while the recipient has the entity open**: what the recipient's session shows on its next
+   refresh or save. Help documents last-write-wins for edits, nothing for a revoke.
+4. **A user who holds Share through a group** (core#379): "You don't have a permission to share". The consistency
+   the ticket asks for is a server rule; once decided, the UI part is the refusal balloon or the share going
+   through, and the matrix belongs to ApiTests `permissions.ts`.
+
+### Won't do
+
+- **What a View-and-use recipient may do with a shared query or space** beyond re-sharing and putting it into a
+  view-only space: the server's answer is ApiTests `permissions.ts` (§7); `sharing-recipient` claims the UI side.

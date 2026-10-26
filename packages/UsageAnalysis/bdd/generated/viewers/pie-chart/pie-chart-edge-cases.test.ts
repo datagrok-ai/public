@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/pie-chart/pie-chart-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.pie-chart]
+sub_features_covered: [viewers.pie-chart, core#982]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -78,18 +78,18 @@ test.describe("Pie chart edge cases — empty and one-row tables, an empty row s
     await session.step(60, "Then all rows should pass the filter", () => filterPassesAll(page));
     await session.step(61, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Under a Filter formula a wedge click in Filter mode keeps exactly the clicked category (core#982)", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pie-chart"]}, async ({browser}) => {
+  test("Under a Filter formula a wedge click in Filter mode keeps exactly the clicked category (core#982)", {tag: ["@viewers", "@edge-cases", "@realizes:viewers.pie-chart", "@realizes:core#982"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
-    await session.step(64, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(65, "When user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"],["On Click","Filter"],["Filter","${AGE} > 40"]]), [["Category","RACE"],["On Click","Filter"],["Filter","${AGE} > 40"]]);
-    await session.step(69, "Then pie chart viewer should show 635 rows", () => showsRows(page, el("pie chart viewer"), 635));
-    await session.step(70, "And the \"angle value of Caucasian\" reading of pie chart viewer should be 562", () => readingIs(page, "angle value of Caucasian", el("pie chart viewer"), 562));
-    await session.step(71, "When user clicks on the \"slice Caucasian\" area of pie chart viewer", () => clickArea(page, "slice Caucasian", el("pie chart viewer")));
-    await session.step(72, "Then the filter should pass exactly the rows where \"RACE\" is \"Caucasian\"", () => filterIsExactlyCategory(page, "RACE", "Caucasian"));
-    await session.step(73, "And 896 rows should pass the filter", () => filterPasses(page, 896));
-    await session.step(74, "When user clicks on the \"empty space\" area of pie chart viewer", () => clickArea(page, "empty space", el("pie chart viewer")));
-    await session.step(75, "Then all rows should pass the filter", () => filterPassesAll(page));
-    await session.step(76, "And no errors should have been logged", () => noErrors(page));
+    await session.step(65, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(66, "When user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"],["On Click","Filter"],["Filter","${AGE} > 40"]]), [["Category","RACE"],["On Click","Filter"],["Filter","${AGE} > 40"]]);
+    await session.step(70, "Then pie chart viewer should show 635 rows", () => showsRows(page, el("pie chart viewer"), 635));
+    await session.step(71, "And the \"angle value of Caucasian\" reading of pie chart viewer should be 562", () => readingIs(page, "angle value of Caucasian", el("pie chart viewer"), 562));
+    await session.step(72, "When user clicks on the \"slice Caucasian\" area of pie chart viewer", () => clickArea(page, "slice Caucasian", el("pie chart viewer")));
+    await session.step(73, "Then the filter should pass exactly the rows where \"RACE\" is \"Caucasian\"", () => filterIsExactlyCategory(page, "RACE", "Caucasian"));
+    await session.step(74, "And 896 rows should pass the filter", () => filterPasses(page, 896));
+    await session.step(75, "When user clicks on the \"empty space\" area of pie chart viewer", () => clickArea(page, "empty space", el("pie chart viewer")));
+    await session.step(76, "Then all rows should pass the filter", () => filterPassesAll(page));
+    await session.step(77, "And no errors should have been logged", () => noErrors(page));
   });
 });

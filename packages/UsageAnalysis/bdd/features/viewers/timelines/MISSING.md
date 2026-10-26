@@ -24,6 +24,11 @@ feature; it lists what the feature could not claim and why.
 3. **An invalid Date Format** (free text, `:87`): what is shown?
 4. **The mixed date types warning**: is a warning on hover the intended answer to a Start and an
    End of different types?
+5. **Events with a missing start or end date while Show Open Intervals is off.** Help
+   (`timelines.md`) says "Include events with missing dates by enabling Show Open Intervals", yet
+   with the option off such an event is still drawn, as a point at its known date; with the option
+   on it becomes an interval to the edge of the data. Should an event with a missing date be left
+   out while the option is off, or is the help to say that it is drawn as a point?
 
 ### 3. API or Dart tests to write
 

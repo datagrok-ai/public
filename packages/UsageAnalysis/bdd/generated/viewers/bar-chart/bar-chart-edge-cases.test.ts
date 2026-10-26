@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/bar-chart/bar-chart-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.bar-chart]
+sub_features_covered: [viewers.bar-chart, core#974]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -30,7 +30,7 @@ import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Bar chart edge cases", () => {
   const session = feature(test, "features/viewers/bar-chart/bar-chart-edge-cases.feature", import.meta.url);
-  test("A vertical bar chart over a table with every row deleted draws no bars and logs no error", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases"]}, async ({browser}) => {
+  test("A vertical bar chart over a table with every row deleted draws no bars and logs no error", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@realizes:core#974"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await session.step(17, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -42,7 +42,7 @@ test.describe("Bar chart edge cases", () => {
     await session.step(25, "And the \"bars\" reading of bar chart viewer should be 0", () => readingIs(page, "bars", el("bar chart viewer"), 0));
     await session.step(26, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A negative Bar Corner Radius draws the bars and logs no error", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases"]}, async ({browser}) => {
+  test("A negative Bar Corner Radius draws the bars and logs no error", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@realizes:core#974"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await session.step(30, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -52,7 +52,7 @@ test.describe("Bar chart edge cases", () => {
     await session.step(36, "And the \"bar Caucasian\" area of bar chart viewer should be painted", () => areaPainted(page, "bar Caucasian", el("bar chart viewer")));
     await session.step(37, "And no errors should have been logged", () => noErrors(page));
   });
-  test("The tooltip shows a category with markup characters as typed", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases"]}, async ({browser}) => {
+  test("The tooltip shows a category with markup characters as typed", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@realizes:core#974"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await session.step(41, "Given user opens a table \"markup-categories\" with:", () => openTableOf(page, "markup-categories", [["Category","Value"],["a<b","1"],["a<b","2"],["x & y","3"]]), [["Category","Value"],["a<b","1"],["a<b","2"],["x & y","3"]]);
@@ -65,7 +65,7 @@ test.describe("Bar chart edge cases", () => {
     await session.step(53, "Then tooltip should contain text \"x & y\"", () => shouldContainText(page, el("tooltip"), "x & y"));
     await session.step(54, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A Filter click on a chart stacked by a date column is released after an unrelated setting changes", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases"]}, async ({browser}) => {
+  test("A Filter click on a chart stacked by a date column is released after an unrelated setting changes", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@realizes:core#974"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await session.step(58, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -77,7 +77,7 @@ test.describe("Bar chart edge cases", () => {
     await session.step(67, "Then all rows should pass the filter", () => filterPassesAll(page));
     await session.step(68, "And no errors should have been logged", () => noErrors(page));
   });
-  test("With Row Source All and Show Filtered Rows every bar stays when every row is filtered out", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases"]}, async ({browser}) => {
+  test("With Row Source All and Show Filtered Rows every bar stays when every row is filtered out", {tag: ["@viewers", "@realizes:viewers.bar-chart", "@edge-cases", "@realizes:core#974"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await session.step(72, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));

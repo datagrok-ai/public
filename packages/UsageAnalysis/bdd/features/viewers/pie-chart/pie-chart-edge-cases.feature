@@ -60,6 +60,7 @@ Feature: Pie chart edge cases — empty and one-row tables, an empty row set, a 
     Then all rows should pass the filter
     And no errors should have been logged
 
+  @realizes:core#982
   Scenario: Under a Filter formula a wedge click in Filter mode keeps exactly the clicked category (core#982)
     Given user opens demog-1000 dataset
     When user adds a pie chart viewer with:

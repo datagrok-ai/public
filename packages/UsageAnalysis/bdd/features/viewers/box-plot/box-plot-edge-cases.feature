@@ -16,7 +16,7 @@ Feature: Box plot edge cases
       | Category 1 | SEX |
     Then box plot viewer should be painted
 
-  @edge-cases
+  @edge-cases @realizes:core#960
   Scenario: A box plot over a table with every row deleted logs no error
     When user selects all rows
     And user deletes the selected rows
@@ -24,14 +24,14 @@ Feature: Box plot edge cases
     And box plot viewer should report no error
     And no errors should have been logged
 
-  @edge-cases
+  @edge-cases @realizes:core#960
   Scenario: A box plot with every row filtered out logs no error
     When user filters rows where "AGE" is between 200 and 300
     Then 0 rows should pass the filter
     And box plot viewer should report no error
     And no errors should have been logged
 
-  @edge-cases
+  @edge-cases @realizes:core#960
   Scenario: The pointer over a box plot shrunk below its axes logs no error
     When user resizes box plot viewer to 170 by 150
     Then box plot viewer should not have a "x axis" area

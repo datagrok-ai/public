@@ -40,6 +40,26 @@ the lead on 2026-10-11; what is not planned is under "Won't do", with the reason
 
 Nothing planned.
 
+## Edge cases (`schema-edge-cases.feature`) — still open
+
+Written for the edge-case feature, with no library, binding or code change. It claims the confirmation before a
+taken schema name drops the existing schema's properties (CANCEL keeps them), a matching expression not in
+"tag=value" form refused, an address naming no schema, and core#677 (a schema deleted from the Browse tree stays in
+the tree; known failure). What follows has no source for its expected behaviour.
+
+### Questions for owners
+
+1. **OK in the confirmation for a taken schema name.** Does it replace the existing schema (its properties and their
+   values dropped, as the message warns) or add a second schema under the same name? The dialog builds a new schema
+   with a new id (`property_schema_meta.dart` `createNewCommand`), so the message and the save may disagree.
+2. **Text typed into an `int` or `double` property in the cell's Sticky meta dialog.** Is it refused in the input,
+   or saved as empty?
+3. **Edit for all properties with no row selected.** Is the command offered, and what does Save write?
+4. **The molecule column removed or renamed while its sticky columns are shown.** What the sticky columns and the
+   column's Sticky meta pane should show afterwards.
+5. **An entity type deleted while a schema is still associated with it** (the reverse order of core#316): refused,
+   or the schema detached and its values removed?
+
 ## Won't do
 
 - **The marker of a cell with metadata.** A status provider on the grid that reports every drawn dot is the kind

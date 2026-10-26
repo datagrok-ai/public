@@ -1,9 +1,6 @@
 @viewers @edge-cases @realizes:charts.viewer.timelines
-Feature: Timelines edge cases: missing dates, a cleared color, long lane names, no rows
-  Guards for the data shapes under the Timelines viewer, on small tables written here. An event with
-  a missing start or end date is drawn only when Show Open Intervals is on (help timelines.md:
-  "Include events with missing dates by enabling Show Open Intervals"): of the four events below,
-  two have both dates, so two intervals are drawn with the option off and four with it on. Clearing
+Feature: Timelines edge cases: a cleared color, long lane names, no rows
+  Guards for the data shapes under the Timelines viewer, on small tables written here. Clearing
   Color after it was set takes the legend away without an error (public#617). Lanes whose names are
   200 characters long are still drawn (public#1973). A filter that removes every row leaves no
   interval and no error.
@@ -24,15 +21,7 @@ Feature: Timelines edge cases: missing dates, a cleared color, long lane names, 
     Then "start" column should have type "datetime"
     And timelines viewer should be painted
 
-  Scenario: Events with a missing date are drawn only with Show Open Intervals on
-    When user sets "showOpenIntervals" property of timelines viewer to "false"
-    Then the "intervals" reading of timelines viewer should be 2
-    When user sets "showOpenIntervals" property of timelines viewer to "true"
-    Then the "intervals" reading of timelines viewer should be 4
-    When user sets "showOpenIntervals" property of timelines viewer to "false"
-    Then the "intervals" reading of timelines viewer should be 2
-    And no errors should have been logged
-
+  @realizes:public#617
   Scenario: Clearing Color takes the legend away without an error
     When user sets "colorColumnName" property of timelines viewer to "grade"
     Then the legend of timelines viewer should list 2 items
@@ -50,6 +39,7 @@ Feature: Timelines edge cases: missing dates, a cleared color, long lane names, 
     Then the "rows shown" reading of timelines viewer should be 4
     And no errors should have been logged
 
+  @realizes:public#1973
   Scenario: Lanes with 200-character names are drawn (public#1973)
     Given user opens a table "long-lanes" with:
       | subject                                                                                                                                                                                                  | start      | end        |

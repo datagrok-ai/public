@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/box-plot/box-plot-edge-cases.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.box-plot]
+sub_features_covered: [viewers.box-plot, core#960]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -29,7 +29,7 @@ import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot edge cases", () => {
   const session = feature(test, "features/viewers/box-plot/box-plot-edge-cases.feature", import.meta.url);
-  test("A box plot over a table with every row deleted logs no error", {tag: ["@viewers", "@realizes:viewers.box-plot", "@edge-cases"]}, async ({browser}) => {
+  test("A box plot over a table with every row deleted logs no error", {tag: ["@viewers", "@realizes:viewers.box-plot", "@edge-cases", "@realizes:core#960"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
     await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -41,7 +41,7 @@ test.describe("Box plot edge cases", () => {
     await session.step(24, "And box plot viewer should report no error", () => reportsNoError(page, el("box plot viewer")));
     await session.step(25, "And no errors should have been logged", () => noErrors(page));
   });
-  test("A box plot with every row filtered out logs no error", {tag: ["@viewers", "@realizes:viewers.box-plot", "@edge-cases"]}, async ({browser}) => {
+  test("A box plot with every row filtered out logs no error", {tag: ["@viewers", "@realizes:viewers.box-plot", "@edge-cases", "@realizes:core#960"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
     await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -52,7 +52,7 @@ test.describe("Box plot edge cases", () => {
     await session.step(31, "And box plot viewer should report no error", () => reportsNoError(page, el("box plot viewer")));
     await session.step(32, "And no errors should have been logged", () => noErrors(page));
   });
-  test("The pointer over a box plot shrunk below its axes logs no error", {tag: ["@viewers", "@realizes:viewers.box-plot", "@edge-cases"]}, async ({browser}) => {
+  test("The pointer over a box plot shrunk below its axes logs no error", {tag: ["@viewers", "@realizes:viewers.box-plot", "@edge-cases", "@realizes:core#960"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
     await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));

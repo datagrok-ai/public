@@ -12,7 +12,7 @@ Feature: Bar chart edge cases
   Background:
     Given user is logged in
 
-  @edge-cases
+  @edge-cases @realizes:core#974
   Scenario: A vertical bar chart over a table with every row deleted draws no bars and logs no error
     Given user opens demog-1000 dataset
     And user adds a bar chart viewer with:
@@ -25,7 +25,7 @@ Feature: Bar chart edge cases
     And the "bars" reading of bar chart viewer should be 0
     And no errors should have been logged
 
-  @edge-cases
+  @edge-cases @realizes:core#974
   Scenario: A negative Bar Corner Radius draws the bars and logs no error
     Given user opens demog-1000 dataset
     And user adds a bar chart viewer with:
@@ -36,7 +36,7 @@ Feature: Bar chart edge cases
     And the "bar Caucasian" area of bar chart viewer should be painted
     And no errors should have been logged
 
-  @edge-cases
+  @edge-cases @realizes:core#974
   Scenario: The tooltip shows a category with markup characters as typed
     Given user opens a table "markup-categories" with:
       | Category | Value |
@@ -53,7 +53,7 @@ Feature: Bar chart edge cases
     Then tooltip should contain text "x & y"
     And no errors should have been logged
 
-  @edge-cases
+  @edge-cases @realizes:core#974
   Scenario: A Filter click on a chart stacked by a date column is released after an unrelated setting changes
     Given user opens demog-1000 dataset
     And user adds a bar chart viewer with:
@@ -67,7 +67,7 @@ Feature: Bar chart edge cases
     Then all rows should pass the filter
     And no errors should have been logged
 
-  @edge-cases
+  @edge-cases @realizes:core#974
   Scenario: With Row Source All and Show Filtered Rows every bar stays when every row is filtered out
     Given user opens demog-1000 dataset
     And user adds a bar chart viewer with:

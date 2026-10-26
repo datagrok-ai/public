@@ -39,6 +39,16 @@ fast). Section numbers are the first list's.
 
 Nothing planned.
 
+## Edge cases (`table-manager-edge-cases.feature`) — still open
+
+Written for the edge-case feature, with no library, binding or code change. It claims the Table Manager with no
+table open (an empty list, no error). What follows has no source for its expected behaviour.
+
+### Questions for owners
+
+1. **An empty first name, or a very long one, in the profile's Enter new name dialog.** Refused, trimmed, or saved?
+2. **An empty molecule cell in a CSV export.** An empty field, or a placeholder text?
+
 ## Won't do (the lead's triage, 2026-10-11)
 
 - **"and" / "or" in the table view's Search box (GROK-20229).** Deferred: the box parses its whole text with one
