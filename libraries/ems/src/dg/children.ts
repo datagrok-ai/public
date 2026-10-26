@@ -19,6 +19,9 @@ export interface DomainChildrenOptions {
   tables?: string[];
   /** `grid` (default): the platform grid; `list`: a list beside a form. */
   mode?: DomainChildrenMode;
+  /** Per child table (`<schema>.<table>` or the bare name), in grid mode: the columns the grid shows,
+   * in order, and the column whose cell opens the child's own page. */
+  grids?: Record<string, {columns?: string[], open?: string}>;
 }
 
 /** One tab: the child table, the FK column pointing at the parent, the tab's id and label. */
@@ -48,10 +51,12 @@ export class DomainChildren extends Control {
   private readonly _status: HTMLElement;
   private readonly _sources = new Map<string, DomainSource>();
   private readonly _tabStates = new Map<string, TabState>();
+  private readonly _grids: NonNullable<DomainChildrenOptions['grids']>;
 
   constructor(readonly parent: DomainSource, options: DomainChildrenOptions = {}) {
     super();
     this.mode = options.mode ?? 'grid';
+    this._grids = options.grids ?? {};
     this.entries = this._entries;
     this.root.classList.add('u2-domain-children', `u2-domain-children-${this.mode}`);
     this.root.dataset.u2 = 'domain-children';
@@ -210,7 +215,10 @@ export class DomainChildren extends Control {
         this._sources.set(entry.id, child);
         state.current.value = child;
         // the parent's id is the same on every row here, and the column is not the user's to edit
-        const grid = this.mode === 'grid' ? domains.grid(child, {hiddenColumns: [entry.fk]}) : null;
+        const shape = this._grids[entry.table.address] ?? this._grids[entry.table.address.split('.').pop()!] ?? {};
+        const open = shape.open;
+        const grid = this.mode === 'grid' ? domains.grid(child, {hiddenColumns: [entry.fk], columns: shape.columns,
+          ...(open === undefined ? {} : {open: {column: open, run: (r: RowView) => entry.table.open(r)}})}) : null;
         const body = grid?.root ??
           divH([domains.list(child).root, domains.form(child).root], 'u2-domain-children-split');
         const empty = span(`No ${entry.label.toLowerCase()}.`, 'u2-domain-children-empty');

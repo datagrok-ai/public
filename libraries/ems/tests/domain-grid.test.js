@@ -290,6 +290,27 @@ scoped('hiddenColumns: what the caller hides goes with the system columns; a val
   src.dispose();
 });
 
+scoped('columns: only these, in order; a click on the open column hands its row over', async () => {
+  const inner = editorBackend(backend());
+  emsBackends.domain = inner;
+  const table = await domains.table('grit.issue');
+  const src = table.source({pageSize: 10});
+  const opened = [];
+  const grid = domains.grid(src, {columns: ['title', 'due'], open: {column: 'title', run: (row) => opened.push(row.id)}});
+  await flush();
+  assert.deepEqual(['title', 'due', 'priority'].map((n) => grid.grid.columns.byName(n).visible), [true, true, false]);
+  assert.deepEqual(grid.grid.dart.order, ['title', 'due']);
+  const at = 1;
+  const id = String(src.df.value.columns.byName('id').get(at));
+  const cell = (column) => ({isTableCell: true, tableRowIndex: at, tableColumn: {name: column}, grid: grid.grid});
+  grid.grid.onCellClick.fire(cell('due'));
+  assert.deepEqual(opened, [], 'another column does not open');
+  grid.grid.onCellClick.fire(cell('title'));
+  assert.deepEqual(opened, [id]);
+  grid.dispose();
+  src.dispose();
+});
+
 scoped('ref cells draw the target row\'s caption; an id the platform cannot name keeps the id', async () => {
   emsBackends.domain = editorBackend(backend());
   DG.DomainObjectHandler.names['grit.project|p1'] = 'Grit';

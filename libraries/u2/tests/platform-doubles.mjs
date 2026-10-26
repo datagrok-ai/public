@@ -1038,10 +1038,16 @@ export class Grid extends Viewer {
       byName: (name) => held.get(name) ?? null,
       byIndex: (i) => held.get(columns[i]?.name) ?? null,
       toList: () => columns.map((c) => held.get(c.name)),
+      setVisible: (names) => {
+        for (const [name, c] of held)
+          c.visible = names.includes(name);
+      },
+      setOrder: (names) => this.dart.order = names,
     };
   }
 
   get onColumnResized() { return this.onEvent('d4-grid-column-resized'); }
+  get onCellClick() { return this.onEvent('d4-grid-cell-click'); }
 
   /** The editor host hook (grid.ts `attachEditor`): one editor at a time, released on detach. */
   get editor() { return this._editor ?? null; }

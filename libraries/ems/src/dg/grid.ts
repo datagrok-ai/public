@@ -24,6 +24,11 @@ export interface DomainGridOptions {
   /** Columns the grid never shows, on top of the system ones — a child collection's FK to the
    * parent every row repeats. */
   hiddenColumns?: string[];
+  /** The columns to show, in this order; every column but the system and hidden ones by default. */
+  columns?: string[];
+  /** A click on a cell of `column` hands its saved row to `run` — a child grid opening the child's
+   * own page from its key. */
+  open?: {column: string, run: (row: RowView) => void};
 }
 
 /** What a datetime column without a format of its own is drawn with: a `DateTime.toString()`
@@ -92,9 +97,18 @@ export class DomainGrid extends Control {
       this._fitHeader();
       this._fitHeight();
     });
+    const open = _options.open;
+    const clicked = this.grid.onCellClick.subscribe((cell) => {
+      if (open === undefined || !cell.isTableCell || cell.tableColumn?.name !== open.column)
+        return;
+      const row = source.rows.byKey(String(cell.grid.dataFrame.get('id', cell.tableRowIndex!)));
+      if (row !== undefined && !Rows.isDraft(row))
+        open.run(row);
+    });
     this.own(() => {
       repointed.unsubscribe();
       resized.unsubscribe();
+      clicked.unsubscribe();
       this._refused?.unsubscribe();
       for (const s of this._rows)
         s.unsubscribe();
@@ -111,7 +125,7 @@ export class DomainGrid extends Control {
     DG.DomainObjectHandler.decorateGrid(this.grid, this.source.table, df);
     DomainGrid.sortByCaption(df);
     this._caption(df);
-    this._dateFormat(df);
+    this._formats(df);
     this._fitHeader();
   }
 
@@ -291,6 +305,12 @@ export class DomainGrid extends Control {
 
   /** The columns a form keeps in its footer, and whatever the caller hid, are not the grid's to show. */
   private _hideSystem(): void {
+    const shown = this._options.columns;
+    if (shown !== undefined) {
+      this.grid.columns.setVisible(shown);
+      this.grid.columns.setOrder(shown);
+      return;
+    }
     for (const name of [...SYSTEM_COLUMNS.map(([column]) => column), ...(this._options.hiddenColumns ?? [])]) {
       const column = this.grid.columns.byName(name);
       if (column !== null)
@@ -298,16 +318,18 @@ export class DomainGrid extends Control {
     }
   }
 
-  /** A datetime column with no format of its own: a date where every value it holds falls on
-   * midnight, date and time otherwise. */
-  private _dateFormat(df: DG.DataFrame): void {
+  /** A column without a format tag takes the schema's format, as the form shows the value — and a
+   * datetime with no format at all is a date where every value it holds falls on midnight, date and
+   * time otherwise. */
+  private _formats(df: DG.DataFrame): void {
     for (const p of this.source.schema.properties) {
-      if ((p.propertyType ?? p.type) !== 'datetime' || (p.format ?? '') !== '')
-        continue;
       const column = df.columns.byName(p.name!);
       if (column === null || (column.getTag(DG.TAGS.FORMAT) ?? '') !== '')
         continue;
-      column.setTag(DG.TAGS.FORMAT, DomainGrid.isDateOnly(column) ? DATE_FORMAT : DATE_TIME_FORMAT);
+      if ((p.format ?? '') !== '')
+        column.setTag(DG.TAGS.FORMAT, p.format!);
+      else if ((p.propertyType ?? p.type) === 'datetime')
+        column.setTag(DG.TAGS.FORMAT, DomainGrid.isDateOnly(column) ? DATE_FORMAT : DATE_TIME_FORMAT);
     }
   }
 

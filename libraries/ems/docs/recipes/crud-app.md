@@ -78,7 +78,7 @@ under its own `SharedSession`:
 | `query`, `sort`, `pageSize`, `mode: 'brief' \| 'cards'`, `itemHeight` | the list page's initial query, order, page size, row shape and row height |
 | `live`, `defaults`, `filters`, `menu` | following the server, what a draft starts with, the filter box or builder (`placement: 'left'`), and `{import, bulkEdit, trash}: false` to drop a built-in Actions item — see [dg.md](../dg.md) |
 | `include: string[]` | the form's columns, in this order |
-| `children: false \| {tables, mode: 'grid' \| 'list'}`, `history: false` | the entity-page panes (both on by default) |
+| `children: false \| {tables, mode: 'grid' \| 'list', grids}`, `history: false` | the entity-page panes (both on by default) |
 | `shortcuts`, `app` | keys onto the table's actions, and a `DomainApp` subclass — the [code tier](custom-app.md) |
 
 ## The Actions menu: import, bulk edit, the deleted rows
