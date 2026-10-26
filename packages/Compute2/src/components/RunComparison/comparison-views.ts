@@ -11,7 +11,7 @@ import {RunComparisonApp} from '../../apps/RunComparisonApp';
 import {isRoleOnlyModelFilter} from '../../package-instance';
 import {setVueAppOptions} from '../../utils';
 import {ComparisonEntry} from './types';
-import {COMPARISON_SERVICE, ComparisonService} from './comparison-service';
+import {COMPARISON_SERVICE, ComparisonAddition, ComparisonService} from './comparison-service';
 
 export interface ComparisonView {
   view: DG.ViewBase;
@@ -21,9 +21,7 @@ export interface ComparisonView {
 export const openComparisonViews = Vue.shallowRef<ComparisonView[]>([]);
 
 /** Opens a new Run Comparison view, loading the runs by id, adding the entries and selecting the model. */
-export function openRunComparison({runIds = [], entries = [], model}: {
-  runIds?: string[], entries?: ComparisonEntry[], model?: DG.Func,
-} = {}) {
+export function openRunComparison({runIds = [], entries = [], model}: ComparisonAddition = {}) {
   const view = new DG.ViewBase();
   view.name = 'Run Comparison';
   view.helpUrl = '/help/compute/run-comparison.md';
@@ -55,23 +53,23 @@ export function openRunComparison({runIds = [], entries = [], model}: {
 
 const NEW_COMPARISON = 'New comparison';
 
-/** Adds the entry to the open view the user picks, the most recent one by default, or to a new view. */
-export function showAddToComparisonDialog(entry: ComparisonEntry, model?: DG.Func) {
+/** Adds to the open view the user picks, the most recent one by default, or to a new view. */
+export function showAddToComparisonDialog(name: string, addition: ComparisonAddition) {
   const views = openComparisonViews.value;
   const labels = views.map((item, i) => {
     const names = item.service.entryNames;
     return `${i + 1}. ${item.view.name}: ${names.length ? names.join(', ') : 'no runs yet'}`;
   });
   const input = ui.input.radio('', {value: labels[labels.length - 1], items: [NEW_COMPARISON, ...labels]});
-  ui.dialog(`Add '${entry.name}' to comparison`)
+  ui.dialog(`Add '${name}' to comparison`)
     .add(input)
     .onOK(() => {
       const target = views[labels.indexOf(input.value ?? '')];
       if (!target) {
-        openRunComparison({entries: [entry], model});
+        openRunComparison(addition);
         return;
       }
-      target.service.add({entries: [entry], model});
+      target.service.add(addition);
       grok.shell.v = target.view;
     })
     // modal, so the listed views can't be closed while the dialog is open
@@ -100,10 +98,16 @@ export const compareWithOriginal = (snapshot: ComparisonEntry, originalRunId: st
   confirmOutdated(snapshot, () => openRunComparison({runIds: [originalRunId], entries: [snapshot], model}));
 
 /** A new view when none is open, otherwise the user picks one. */
+const addToNewOrPicked = (name: string, addition: ComparisonAddition) => openComparisonViews.value.length > 0 ?
+  showAddToComparisonDialog(name, addition) :
+  openRunComparison(addition);
+
 export const addToComparison = (snapshot: ComparisonEntry, model?: DG.Func) =>
-  confirmOutdated(snapshot, () => openComparisonViews.value.length > 0 ?
-    showAddToComparisonDialog(snapshot, model) :
-    openRunComparison({entries: [snapshot], model}));
+  confirmOutdated(snapshot, () => addToNewOrPicked(snapshot.name, {entries: [snapshot], model}));
+
+/** A saved run, like the original, is added without the outdated confirmation. */
+export const addRunToComparison = (runId: string, name: string, model?: DG.Func) =>
+  addToNewOrPicked(name, {runIds: [runId], model});
 
 type ItemGuard = Partial<Omit<RibbonItemBase, 'onClick' | 'tooltip'>>;
 

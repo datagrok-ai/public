@@ -1,10 +1,14 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect, expectArray, waitUntil} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, awaitCheck, waitUntil} from '@datagrok-libraries/test/src/test';
+import {historyUtils} from '@datagrok-libraries/compute-utils';
+import {OUTPUT_OUTDATED_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
+import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {
-  addToComparison, compareWithOriginal, confirmOutdated, openComparisonViews, openRunComparison,
+  addRunToComparison, addToComparison, compareWithOriginal, confirmOutdated, openComparisonViews, openRunComparison,
 } from '../components/RunComparison/comparison-views';
 import {ComparisonAddition, ComparisonService} from '../components/RunComparison/comparison-service';
 import {entryFromLiveCall} from '../components/RunComparison/entry-extraction';
+import {deleteSavedRun} from './utils';
 
 const snapshot = (name: string) => entryFromLiveCall(
   DG.Script.create('//name: rcViewsProbe\n//language: javascript\n//output: int x\nx = 1;').prepare(),
@@ -110,5 +114,27 @@ category('RunComparison: views', () => {
       openComparisonViews.value.forEach((item) => item.view.close());
     }
     await waitUntil(() => openComparisonViews.value.length === 0, 'closed views are still tracked', 3000);
+  });
+
+  test('a saved run is added without asking, once per view', async () => {
+    openComparisonViews.value.forEach((item) => item.view.close());
+    await awaitCheck(() => openComparisonViews.value.length === 0, 'views from earlier tests are still open', 3000);
+    const call = DG.Func.byName('Compute2:SimpleInputs2').prepare({a: 1, b: 2, c: 'x'});
+    call.options['title'] = 'rcViewsSaved';
+    call.options[OUTPUT_OUTDATED_PATH] = serialize(true);
+    const saved = await historyUtils.saveRun(call, {newId: true});
+    try {
+      addRunToComparison(saved.id, 'rcViewsSaved');
+      expect(openComparisonViews.value.length, 1);
+      const [view] = openComparisonViews.value;
+      await awaitCheck(() => view.service.entryNames.length === 1, 'the saved run did not reach the new view', 3000);
+      expectArray(view.service.entryNames, ['rcViewsSaved']);
+
+      await view.service.add({runIds: [saved.id]});
+      expectArray(view.service.entryNames, ['rcViewsSaved']);
+    } finally {
+      openComparisonViews.value.forEach((item) => item.view.close());
+      await deleteSavedRun(saved.id);
+    }
   });
 });

@@ -48,7 +48,7 @@ import {entryFromSnapshot} from '../RunComparison/entry-extraction';
 import {snapshotState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/state-snapshot';
 import {setRunMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {
-  addToComparison, compareRibbonIcon, compareWithOriginal, snapshotName,
+  addRunToComparison, addToComparison, compareRibbonIcon, compareWithOriginal, snapshotName,
 } from '../RunComparison/comparison-views';
 
 
@@ -189,7 +189,17 @@ export const TreeWizard = Vue.defineComponent({
       state.funcCall?.func : (state.nqName ? DG.Func.byName(state.nqName) : undefined);
     const compareNodeWithOriginal = (state: PipelineState) =>
       compareWithOriginal(snapshotOf(state), state.sourceRunId!, modelOf(state));
-    const addNodeToComparison = (state: PipelineState) => addToComparison(snapshotOf(state), modelOf(state));
+    // an unedited saved model and read-only copies equal their saved runs; editable copies aren't tracked
+    const savedRunOf = (state: PipelineState) => state.uuid === treeState.value?.uuid ?
+      (hasNotSavedEdits.value ? undefined : currentMetaCallData.value?.id) :
+      (state.isReadonly ? state.sourceRunId : undefined);
+    const addNodeToComparison = (state: PipelineState) => {
+      const runId = savedRunOf(state);
+      if (runId)
+        addRunToComparison(runId, nodeName(state), modelOf(state));
+      else
+        addToComparison(snapshotOf(state), modelOf(state));
+    };
     const addModelToComparison = () => addNodeToComparison(treeState.value!);
 
     const runSubtreeWithConfirm = (startUuid: string, rerunWithConsistent?: boolean) => {
