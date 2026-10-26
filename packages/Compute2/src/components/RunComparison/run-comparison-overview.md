@@ -7,12 +7,13 @@ The tool lives in `packages/Compute2/src/components/RunComparison/` and is split
 | Shared types | `types.ts` | `datagrok-api` (type-only) | node infos, bindings, targets, `ComparisonEntry`, `isNumericType` |
 | Matching | `matching.ts` | none (unit-testable) | name similarity, units compatibility, clustering into targets |
 | Selection | `selection.ts` | none (unit-testable) | index-row computation, entry statuses, filters, multi-value compatibility |
-| Target selection | `target-selection.ts` | none | single pick / multi-value state transitions (clicks, mode toggle, reconciliation), override pruning |
+| Target selection | `target-selection.ts` | none | single pick / multi-value state transitions (clicks, mode toggle, reconciliation), charted targets in chart order, candidate toggles and override pruning |
 | Entry extraction | `entry-extraction.ts` | `datagrok-api`, `compute-utils` (incl. RTD) | FuncCall/DataFrame → `ComparisonEntry` (the only file with server calls) |
 | Chart building | `comparison-builders.ts` | `datagrok-api` (no server) | entries + targets → long-format chart DataFrames; `buildComparison` dispatch |
 | Chart spec | `chart-spec.ts` | `datagrok-api` (constants only) | comparison result → viewer type, options, minimum height, or a hint |
 | Mappings dialog | `mappings-dialog.ts` | `datagrok-api` | the Mappings `ui.dialog` for name and unit mappings, with the values in no compare row |
-| UI | `RunComparison.tsx` | Vue 3, `webcomponents-vue` | state, reactivity, rendering |
+| UI | `RunComparison.tsx` | Vue 3, `webcomponents-vue` | shared state (runs, picks, mappings, matched values), sidebar, index pickers, tabs |
+| Tab UI | `ComparisonTab.tsx` | Vue 3, `webcomponents-vue` | one comparison: Compare list with its own selection, chart, export |
 | Views | `comparison-views.ts` | `datagrok-api`, Vue | opens comparison views, tracks the open ones, Compare with original / Add to comparison, outdated-outputs confirmation |
 
 It's launched from the Model Hub ribbon (`Tools > Compare Runs...` → `Compute2:CompareRuns` in `package.ts`) and from workflows and the standalone RFV (see Entry points). Every launch goes through `openRunComparison({runIds, entries, model})` in `comparison-views.ts`, which mounts `RunComparisonApp` — a thin wrapper forwarding `roleOnlyFilter` to the `RunComparison` component — and provides the view's `ComparisonService` (`comparison-service.ts`). The component connects to the service on setup: `add({runIds, entries, model, selectModel})` loads runs by id, adds entries and joins the model to the model list (selecting it on request), and `entryNames` lists what the view compares. The launcher's first `add` (with `selectModel`) is the start-up load, and Add to comparison uses the same `add` on an open view.
@@ -67,6 +68,8 @@ Two design rules keep the model simple:
 - **`computeIndexRows(...)`** — builds the rows of the "Index columns" picker UI. One row per table, or — with "Merge same functions" on — one row per group of tables that come from the same function (`nqName` + output name), so picking an index once applies to all runs of that model. Merged rows only offer columns present with the same type in *every* group member; stored selections that no longer match candidates are treated as unset rather than kept stale. Takes the raw `AxisModeSelection` and sets `IndexRow.axis` (`{mode, units?}`) when the current index is numeric/datetime — `units` for numeric only, prefilled from column metadata; merged rows agree on a non-default mode like `current` does (any disagreement displays as `series`).
 - **`compatibleTargetsFor(anchor, targets, getColumnType)`** — multi-value mode is split into a *suggestion* predicate and builder-enforced validity. It never mixes kinds: for a scalar anchor every scalar target is compatible (all scalars are numeric by construction); for a column anchor every column target is, provided both the anchor's and its own index are line-chartable (numeric/datetime) everywhere. Columns and scalars follow the same rule — no shared run is required, and picks from different tables of one run are fine: the builder charts each (run, table) as its own block, split by `Step`. It never decides validity of an already selected combination: the builder pads missing picks with nulls, so editing picks can never eject a selected target. Note the layering: cross-source reconciliation (which run/step/raw table holds the same quantity) is already settled by the clusterer and recorded in each target's bindings — so a single target freely mixes a workflow step's table with a plain CSV.
 - **`unmatchedItems(entries, targets, indexColumns)`**: the values matching considers (numeric scalars, numeric non-index columns of indexed tables) that no target picks or lists as a candidate, grouped by normalized name and units with their run count, sorted by name; values whose name and units equal a target's are left out (no mapping can place them, e.g. a repeated step only one run has); the Mappings dialog lists them (first 10, then **...more**) with **Map name** / **Map units** shortcuts that fill the first empty mapping row.
+- **`listedTargets(targets, options)`** — the Compare list: in multi mode the suggestions plus everything charted (a charted target that became incompatible stays so it can be unchecked), equal targets hidden unless charted, the filter matching the name and the step context. **`equalTargetKeys`** runs `isTargetEqualAcrossRuns` over the targets, fetching each column once.
+- **`statusChips(statuses)`** — red chips for excluded runs, amber ones (with the missing axis mode) for matched runs that chart as a plain series. **`groupCandidatesByEntry`** groups a column target's candidates by run for the expanded row.
 - **`selectionGaps(selected)`** — per selected target, the charted runs (union over the selection) it has no data for; drives the **partial** badge in either selection order.
 - **`getEntryStatuses`** — per-run participation status for the selected target, so the UI can flag excluded runs with a reason (`'no similar data'`, `'index not set'`, `'disabled'` — the run has candidates but the user toggled them all off — or `'units differ'` with the run's `units`, when the run has the value under an exact, normalized or mapped name in units that neither match nor convert). With an `AxisConfigMap` passed, matched runs on a *partially* configured target additionally get `warning: 'relative timeseries not set'` or `'independent points not set'` (amber chip — the run still charts, just as a plain series).
 - **Axis mode helpers** — `parseTimeUnit` (units-metadata prefill; bare `m` deliberately unrecognized), `resolveAxisModes` (stored picks → non-`series`-only `AxisConfigMap`, gated on a numeric/datetime index; units for `timeseries` on a numeric index only), `targetAxisMode` (require-all gate per mode: `full`/`partial`/`none` over a set of bindings — a target's, or the builder's (run, table) blocks), `resolveDisplayUnit` (first numeric `timeseries` binding's units, datetime-only → `'auto'`), `pickAutoUnit` (largest of days/h/min/s spanning ≥ 2 units, else ms).
@@ -85,9 +88,11 @@ All builders produce a *long/concatenated* DataFrame — there is deliberately n
 
 `getIndexAxis` decides how the index behaves. A float axis is named with the index units when every charted table agrees on them up to spelling (`Time (h)`; otherwise just `Time`), like the elapsed axis with its display unit; units live in column names rather than `meta.units` so they survive any export. By default (no `AxisConfigMap` passed, or the require-all gate fails) the axis follows the index column types: all-datetime → datetime index, any non-numeric → "key index" (string, drives a bar chart instead of a line chart), else float. With the `timeseries` mode configured on every participating table (and every index actually numeric/datetime), the axis is `elapsed`: each run's index converts to ms (datetime via epoch ms, numeric scaled by its declared units), always shifts by its own table's min non-null value (auto-alignment — first point of every run and step is 0), and lands in one display unit as a 64-bit float column named `` `<index> (<unit>)` `` (`Column.fromFloat64Array` — `fromList(FLOAT)` can store 32-bit, which would quantize large values; label deduped against value columns). The result carries `timeSeriesUnit` on the elapsed path. The `points` mode does not touch the axis at all — the same require-all gate just sets `isScatter` on the result (a key index disables it), which flips the chart from a line to a scatterplot. The require-all gates are evaluated over every block's table.
 
-## `RunComparison.tsx` — Vue state and reactivity
+## `RunComparison.tsx` and `ComparisonTab.tsx` — Vue state and reactivity
 
-### Important state (all in `setup()`)
+One view holds several comparisons of the same runs, in tabs (`Tabs` from `webcomponents-vue`; every pane stays mounted, so a hidden tab keeps its chart and its options). With fewer than two runs the index pickers and tabs are hidden, not unmounted, so the tabs keep their state while runs are swapped. The tabs fill the height under the index pickers (at least 300px) and a tab taller than that scrolls on its own, with the tab strip in place. `RunComparison` owns everything about the data and hands it to each tab as one `SharedComparison` object of refs, created once in `setup`, so tabs track exactly the refs they read. A `ComparisonTab` owns how it looks at the data: the selection, the list toggles and filter, and the chart. Tabs are numbered (`Comparison 2`) until they chart a value, then named after it (`Biomass +1` for several); the last tab has no close icon, and closing the shown tab shows its right neighbor, or the left one at the end.
+
+### Shared state (`RunComparison`)
 
 | State | Purpose |
 |---|---|
@@ -97,26 +102,39 @@ All builders produce a *long/concatenated* DataFrame — there is deliberately n
 | `indexSelection`, `splitSelection` | `Record<entryId, Record<tablePath, columnName>>` — user's index/split picks |
 | `axisModeSelection` | per-table `{mode, units}` row-semantics picks — `series` (default), `timeseries` (relative), or `points` (independent) — stale picks kept but ignored; `resolveAxisModes` derives the non-default-only `AxisConfigMap` consumed by builders and statuses |
 | `mergeSameFuncs` | merge toggle feeding the index pickers (numeric/datetime/string indexes are always offered — the old float/datetime gating toggles are gone) |
-| `hideEqual` | "Hide equal values" toggle (on by default): targets whose data is identical across all bound runs (`isTargetEqualAcrossRuns` in selection.ts — scalar values, or value/index/split column contents) are dropped from `filteredTargets`; multi-mode selections stay visible |
-| `targetSelection` | `{selectedKey, multiMode, multiKeys}`, read through the `selectedTargetKey` / `multiMode` / `multiKeys` computeds and changed only through the `target-selection.ts` transitions (see below) |
-| `candidateOverrides` | `Record<targetKey, Record<candidateId, boolean>>` — manual enable/disable toggles, fed into `matchColumnTargets`; a watcher on `targets` prunes entries whose target/candidate no longer resolves (`pruneOverrides`) |
-| `nameMappings`, `unitMappings` | user-defined name pairs and unit factors; edited in the **Mappings** dialog (`showMappingsDialog`, link in the Compare header), converted via `buildAliasGroups` / `buildUnitConverter` and fed into both matchers |
+| `hideOutdated` | **Hide outdated outputs**: drops flagged outputs before matching, so it applies to every tab (the toggle shows in each tab's Compare header) |
+| `candidateOverrides` | `Record<targetKey, Record<candidateId, boolean>>` — manual enable/disable toggles, fed into `matchColumnTargets`; a watcher on `targets` prunes entries whose target/candidate no longer resolves (`pruneOverrides`). Shared: toggling a run's column in one tab changes every tab charting that value |
+| `nameMappings`, `unitMappings` | user-defined name pairs and unit factors; edited in the **Mappings** dialog (`showMappingsDialog`, link in each tab's Compare header), converted via `buildAliasGroups` / `buildUnitConverter` and fed into both matchers |
+| `tabs`, `activeTab`, `tabTitles` | the open tabs, the shown one, and the names the tabs report |
+| `indexFilter` | index pickers search box |
+| `historyHeight`, `sidebarWidth` | resizable layout dims |
+
+### Per-tab state (`ComparisonTab`)
+
+| State | Purpose |
+|---|---|
+| `targetSelection` | `{selectedKey, multiMode, multiKeys}`, read through the `selectedTargetKey` / `multiMode` computeds and changed only through the `target-selection.ts` transitions (see below); a watcher on the shared `targets` reconciles it |
+| `hideEqual` | "Hide equal values" toggle (on by default): targets in the shared, lazily computed `equalKeys` are dropped from `filteredTargets`; charted values stay listed |
 | `expandedTargetKeys` | which target rows have their candidate checklist expanded |
 | `scalarChartType` | radar/PC-plot switch for multi-scalar charts; `radarAvailable` (Charts package deployed?) forces PC plot and hides the switch when radar can't render |
-| `indexFilter`, `targetFilter` | list search boxes |
+| `sharedScale` | **Shared y axis** switch |
+| `targetFilter` | Compare list search box |
 | `chartViewer` | last-created `DG.Viewer`, kept for the workspace-snapshot export |
-| `historyHeight`, `sidebarWidth`, `chartHeight` | resizable layout dims |
+| `chartHeight` | user override for the chart height; the per-type minimum still applies |
 
 ### The reactive chain of `computed`s
 
-Everything re-derives from `entries` + the selections:
+Everything re-derives from `entries` + the selections. In `RunComparison`:
 
 1. `indexColumnsMap` / `splitColumnsMap` — validated Map form of the selections: an index pick counts only while its column exists in that table with an index-candidate type (or is the table's annotated default); a split pick additionally requires a valid split column against the current index.
-2. `targets` — `matchScalarTargets` + `matchColumnTargets`, sorted scalars first, then columns, alphabetically by display name — stable, so toggling candidates never reorders the list; the row displays the live enabled `coverage`. Changing an index selection immediately re-runs matching.
-3. `selectedTarget`, `compatibleTargets` (multi-value candidates for the current anchor), `filteredTargets`.
-4. `comparison` — `buildComparison` over the anchor (single mode) or the multi-value selection, wrapped in `markRaw` (DataFrames must not be made reactive); `currentChartSpec` turns it into a `ChartSpec`.
-5. `indexRows` / `filteredIndexRows` — via `computeIndexRows` for the picker UI.
-6. `entryStatuses` — exclusion chips.
+2. `targets` — `matchScalarTargets` + `matchColumnTargets`, sorted scalars first, then columns, alphabetically by display name — stable, so toggling candidates never reorders the list; the row displays the live enabled `coverage`. Changing an index selection immediately re-runs matching. `equalKeys` (lazy: only computed while a tab hides equal values) and `contexts` follow.
+3. `indexRows` / `filteredIndexRows` — via `computeIndexRows` for the picker UI.
+
+In each `ComparisonTab`:
+
+4. `selectedTarget`, `compatibleTargets` (multi-value candidates for the current anchor), `filteredTargets` (`listedTargets`).
+5. `charted` (`chartedTargets`: the anchor, or the multi-value selection anchor first), `gaps`, and `comparison` — `buildComparison` over `charted`, wrapped in `markRaw` (DataFrames must not be made reactive); `currentChartSpec` turns it into a `ChartSpec`.
+6. `entryStatuses` — exclusion chips, through `statusChips`.
 
 ### Notable mechanics
 
@@ -139,7 +157,7 @@ Everything re-derives from `entries` + the selections:
   Single-value charts read their y column from the result's `valueColumnName` (the deduped label), not from `target.displayName`.
 
   Column multi-value mode scales the minimum chart height by the number of stacked value panels (`250px` per value, a flat `250px` for the shared panel); multi-scalar uses a flat minimum (one chart, not stacked series).
-- **Export** (`exportComparison`): `snapshotData` clones `chartDf` and captures the chart with its current options (`chartViewer.getOptions()`), so user tweaks to the chart carry over. The dialog offers OPEN IN WORKSPACE (`snapshotView` — adds a table view of the snapshot to the workspace) and SAVE & SHARE (`saveAndShare` — a serialized layout captured via `captureTableLayout` and handed with the table to the platform project-save dialog, which handles upload, layout linking, and sharing). The save-dialog plumbing (`canSaveProject`, `showProjectSaveDialog`, `captureTableLayout`) is shared with the RFV project export in `src/project-export.ts`; when the platform has no save-dialog API, the dialog degrades to OPEN IN WORKSPACE only.
+- **Export** (`exportComparison`, per tab): `snapshotData` clones `chartDf` and captures the chart with its current options (`chartViewer.getOptions()`), so user tweaks to the chart carry over. The dialog offers OPEN IN WORKSPACE (`snapshotView` — adds a table view of the snapshot to the workspace) and SAVE & SHARE (`saveAndShare` — a serialized layout captured via `captureTableLayout` and handed with the table to the platform project-save dialog, which handles upload, layout linking, and sharing). The save-dialog plumbing (`canSaveProject`, `showProjectSaveDialog`, `captureTableLayout`) is shared with the RFV project export in `src/project-export.ts`; when the platform has no save-dialog API, the dialog degrades to OPEN IN WORKSPACE only.
 
 ## Entry points and tests
 
@@ -153,4 +171,4 @@ Every snapshot launch goes through `confirmOutdated`, which asks before comparin
 
 `History.tsx` also has an `allowCompare` prop with a `compareSelected` handler — but that path opens the *old* compute-utils `RunComparisonView`; the new tool explicitly passes `allowCompare={false}` to its embedded History.
 
-Tests live in `src/test/`, mirroring the source split: `run-comparison-extraction.ts` (annotation defaults, raw table ids, workflow steps, snapshots, live vs serialized driver states, a saved run round trip), `run-comparison-views.ts` (the comparison service, open views tracking, Add to comparison into a new or a picked view, Compare with original, outdated confirmation), `run-comparison-matching.ts` (names/units, clustering), `run-comparison-selection.ts` (statuses, filters, index rows, hiding outdated outputs), `run-comparison-target-selection.ts` (selection transitions, override pruning), `run-comparison-builders.ts` (DataFrame building, dispatch), and `run-comparison-chart-spec.ts` (viewer choice), with shared fixtures in `run-comparison-fixtures.ts`. The source run menu is tested in `tree-node.ts`, and the compare icon placement in `rfv.ts`. The component itself (`RunComparison.tsx`, `mappings-dialog.ts`) has no tests. User docs are at `help/compute/run-comparison.md`.
+Tests live in `src/test/`, mirroring the source split: `run-comparison-extraction.ts` (annotation defaults, raw table ids, workflow steps, snapshots, live vs serialized driver states, a saved run round trip), `run-comparison-views.ts` (the comparison service, open views tracking, Add to comparison into a new or a picked view, Compare with original, outdated confirmation), `run-comparison-matching.ts` (names/units, clustering), `run-comparison-selection.ts` (statuses, filters, index rows, hiding outdated outputs, the Compare list, equal target keys, status chips, candidate groups), `run-comparison-target-selection.ts` (selection transitions, charted targets, candidate toggles, override pruning), `run-comparison-builders.ts` (DataFrame building, dispatch), `run-comparison-chart-spec.ts` (viewer choice), and `run-comparison-component.ts` (the mounted view over workspace tables: listing and charting values, Hide equal values, multi-value selection, removing a run, export, a tab taller than the view scrolling to its chart, and tabs — separate selections and toggles over shared picks, a hidden chart kept and redrawn, closing and adding tabs, state kept while fewer than two runs are compared), with shared fixtures in `run-comparison-fixtures.ts`. The source run menu is tested in `tree-node.ts`, and the compare icon placement in `rfv.ts`. `mappings-dialog.ts` has no tests; the `Tabs` component (platform tab classes, panes kept mounted, close and +, pane scrolling, keyboard and ARIA) is tested in LibTests (`WebComponentsVue: Tabs`). User docs are at `help/compute/run-comparison.md`.
