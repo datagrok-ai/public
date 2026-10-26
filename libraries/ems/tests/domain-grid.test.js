@@ -20,12 +20,17 @@ const {EditorEditState} = await import('../src/dg/editor-state.js');
 const {registerDomainComponents} = await import('../src/dg/registrations.js');
 const DG = await import('datagrok-api/dg');
 
+/** The look the grid host reads to fit its header, columns and height. */
+const LOOK = [new Property('colHeaderHeight', 'int', {defaultValue: 22}),
+  new Property('colHeaderFont', 'string', {defaultValue: 'bold 13px Roboto'}), new Property('rowHeight', 'int', {defaultValue: 28})];
+
 function scoped(name, body) {
   test(name, async () => {
     const live = Scope.liveCount;
     const saved = {...backends};
     const savedEms = {...emsBackends};
-    WidgetDescriptor.registry = [new WidgetDescriptor('Grid', [new Property('allowEdit', 'bool', {defaultValue: false})])];
+    WidgetDescriptor.registry = [new WidgetDescriptor('Grid', [new Property('allowEdit', 'bool', {defaultValue: false}),
+      ...LOOK])];
     try {
       await body();
     } finally {
@@ -115,7 +120,6 @@ scoped('over a memory source: the frame is the grid\'s; the memory writer is not
 });
 
 scoped('the column header fits two lines of caption, unless the caller sets its own height', async () => {
-  WidgetDescriptor.registry = [new WidgetDescriptor('Grid', [new Property('colHeaderHeight', 'int', {defaultValue: 22})])];
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
   const src = table.source({pageSize: 10});
@@ -223,6 +227,45 @@ scoped('on attach: the schema\'s captions as friendly names, the system columns 
   assert.equal(columns.byName('priority').name, 'priority', 'the grid column keeps the column\'s name');
   assert.equal(src.df.value.columns.byName('due').getTag('format'), 'MMM d, yyyy',
     'a datetime column whose values all fall on midnight is a date');
+  grid.dispose();
+  src.dispose();
+});
+
+scoped('a column is as wide as its data and its caption in two lines, over a floor by type and under a cap', () => {
+  const measure = (text) => text.length * 7;
+  assert.equal(DomainGrid.captionWidth('Text', measure), 28);
+  assert.equal(DomainGrid.captionWidth('Dosed Concentration (uM)', measure), 126, '"Dosed" over "Concentration (uM)"');
+  const text = {name: 'text', type: 'string'};
+  assert.equal(DomainGrid.columnWidth(text, false, 20, 36), 96, 'an empty text column still reads');
+  assert.equal(DomainGrid.columnWidth(text, false, 210, 36), 210, 'the data\'s own width');
+  assert.equal(DomainGrid.columnWidth(text, false, 900, 36), 320, 'one long text does not take the pane');
+  assert.equal(DomainGrid.columnWidth({name: 'n', type: 'double'}, false, 40, 141), 141, 'the caption\'s width');
+  assert.equal(DomainGrid.columnWidth({name: 'b', type: 'bool'}, false, 30, 20), 48, 'a flag the least');
+  assert.equal(DomainGrid.columnWidth({name: 'p', type: 'string', semType: 'grit.project'}, false, 280, 50), 160,
+    'a reference draws a name, not the id the data width measures');
+  assert.equal(DomainGrid.columnWidth(text, true, 20, 36), 160, 'the name column the most');
+});
+
+scoped('the shown columns are fitted once per frame; the height follows the rows', async () => {
+  const inner = editorBackend(backend());
+  emsBackends.domain = inner;
+  const table = await domains.table('grit.issue');
+  const src = table.source({pageSize: 10});
+  const grid = domains.grid(src);
+  await flush();
+  const columns = grid.grid.columns;
+  assert.equal(columns.byName('title').width, 160, 'the name column');
+  assert.equal(columns.byName('priority').width, 96);
+  assert.equal(columns.byName('id').width, undefined, 'a hidden column is left alone');
+  columns.byName('priority').width = 300;
+  grid.grid.onDataFrameChanged.fire();
+  assert.equal(columns.byName('priority').width, 300, 'a width the user set stays over the same frame');
+  const rows = src.df.value.rowCount;
+  const height = () => grid.root.style.getPropertyValue('--u2-domain-grid-height');
+  assert.equal(height(), `${44 + rows * 28 + 12}px`, 'the header, the rows and a scrollbar');
+  src.df.value.dart.rows.push({});
+  src.df.value.onRowsAdded.fire();
+  assert.equal(height(), `${44 + (rows + 1) * 28 + 12}px`);
   grid.dispose();
   src.dispose();
 });

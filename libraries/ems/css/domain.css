@@ -269,6 +269,13 @@
   min-height: 0;
 }
 
+/* a child grid is as tall as its rows (`--u2-domain-grid-height`, set by the grid) and never
+   taller than the pane: a short table ends at its last row, not in empty column rules */
+.u2-domain-children-pane > .u2-domain-grid {
+  flex: 0 1 auto;
+  height: var(--u2-domain-grid-height, auto);
+}
+
 /* history: one line per audit entry — when, who, what, the changed columns trailing off */
 .u2-domain-history {
   display: flex;

@@ -37,10 +37,20 @@ const HEADER_LINES = {min: 2, max: 4};
 /** The header cell's vertical padding and the room its text keeps from the column's edges. */
 const HEADER_PADDING = 10;
 const HEADER_MARGIN = 8;
+/** A fitted column's width in pixels: the data's own, over a floor by what the column holds — so
+ * an empty frame still gets columns a value can be read in — and under a cap, so one long text
+ * does not take the pane. */
+const COLUMN_WIDTH = {flag: 48, number: 64, date: 96, text: 96, name: 160, reference: 160, max: 320};
+/** Room under the rows for the grid's horizontal scrollbar. */
+const SCROLLBAR = 12;
 
 export class DomainGrid extends Control {
   readonly grid: DG.Grid;
   private _refused: {unsubscribe(): void} | undefined;
+  private _rows: {unsubscribe(): void}[] = [];
+  /** The frame the columns were last fitted to: a frame is fitted once, so a column the user
+   * resized keeps its width until the next one. */
+  private _fittedTo: unknown;
   private static _context: CanvasRenderingContext2D | null | undefined;
 
   constructor(readonly source: DomainSource, private readonly _options: DomainGridOptions = {}) {
@@ -73,13 +83,20 @@ export class DomainGrid extends Control {
         this._decorate(edit.df);
       this._hideSystem();
       this._singleLine();
+      this._fitColumns();
       this._fitHeader();
+      this._followRows();
     });
-    const resized = this.grid.onColumnResized.subscribe(() => this._fitHeader());
+    const resized = this.grid.onColumnResized.subscribe(() => {
+      this._fitHeader();
+      this._fitHeight();
+    });
     this.own(() => {
       repointed.unsubscribe();
       resized.unsubscribe();
       this._refused?.unsubscribe();
+      for (const s of this._rows)
+        s.unsubscribe();
     });
   }
 
@@ -120,6 +137,73 @@ export class DomainGrid extends Control {
     const lines = Math.max(...shown.map((c) =>
       DomainGrid.captionLines(c.column!.getTag(DG.TAGS.FRIENDLY_NAME) || c.name, c.width - HEADER_MARGIN, measure)));
     this.grid.setOptions({colHeaderHeight: DomainGrid.headerHeight(lines, font)});
+  }
+
+  /** The rows' own height, the header and a scrollbar included, as `--u2-domain-grid-height`: what
+   * a child pane caps the grid at, so a short table is not followed by empty column rules. */
+  private _fitHeight(): void {
+    const rows = Math.max(1, this.grid.dataFrame?.rowCount ?? 0);
+    const look = this.grid.props;
+    this.root.style.setProperty('--u2-domain-grid-height',
+      `${look.colHeaderHeight + rows * look.rowHeight + SCROLLBAR}px`);
+  }
+
+  private _followRows(): void {
+    for (const s of this._rows)
+      s.unsubscribe();
+    const df = this.grid.dataFrame;
+    this._rows = df === null || df === undefined ? [] :
+      [df.onRowsAdded.subscribe(() => this._fitHeight()), df.onRowsRemoved.subscribe(() => this._fitHeight())];
+    this._fitHeight();
+  }
+
+  /** Each shown column as wide as what it holds and its caption laid out in the header's two
+   * lines, once per frame: the platform sizes a column by the frame it first saw, which for a
+   * child is often an empty one. */
+  private _fitColumns(): void {
+    const df = this.grid.dataFrame;
+    if (df === null || df === undefined || this._fittedTo === df.dart)
+      return;
+    this._fittedTo = df.dart;
+    const font = this.grid.props.colHeaderFont;
+    const measure = (text: string) => DomainGrid._textWidth(text, font);
+    const byName = new Map(this.source.schema.properties.map((p): [string, IProperty] => [p.name!, p]));
+    const nameColumn = this.source.schema.info.nameColumn;
+    for (const c of this._columns()) {
+      if (c.column === null || !c.visible)
+        continue;
+      const caption = c.column.getTag(DG.TAGS.FRIENDLY_NAME) || c.name;
+      c.width = DomainGrid.columnWidth(byName.get(c.column.name), c.column.name === nameColumn, c.getDataWidth(),
+        DomainGrid.captionWidth(caption, measure) + HEADER_MARGIN);
+    }
+  }
+
+  /** A column's width from its data width and its caption's: a floor by type (a flag the least,
+   * the name and a reference the most), a cap, and the larger of the two widths between them. A
+   * reference draws the target's name, never the id the data width measures. */
+  static columnWidth(prop: IProperty | undefined, isName: boolean, data: number, caption: number): number {
+    const reference = prop !== undefined && DomainTable.isReference(prop);
+    const floor = isName ? COLUMN_WIDTH.name : reference ? COLUMN_WIDTH.reference : DomainGrid._floorOf(prop);
+    return Math.round(Math.min(COLUMN_WIDTH.max, Math.max(floor, reference ? 0 : data, caption)));
+  }
+
+  private static _floorOf(prop: IProperty | undefined): number {
+    switch (prop?.propertyType ?? prop?.type) {
+      case 'bool': return COLUMN_WIDTH.flag;
+      case 'int': case 'bigint': case 'double': case 'float': case 'num': return COLUMN_WIDTH.number;
+      case 'datetime': return COLUMN_WIDTH.date;
+      default: return COLUMN_WIDTH.text;
+    }
+  }
+
+  /** The narrowest width that lays `caption` out in two lines broken at a word — the header never
+   * has fewer, so a column that wide costs it no height. */
+  static captionWidth(caption: string, measure: (text: string) => number): number {
+    const words = caption.split(/\s+/).filter((w) => w !== '');
+    let best = measure(words.join(' '));
+    for (let at = 1; at < words.length; at++)
+      best = Math.min(best, Math.max(measure(words.slice(0, at).join(' ')), measure(words.slice(at).join(' '))));
+    return best;
   }
 
   private _columns(): DG.GridColumn[] {
