@@ -22,7 +22,7 @@ export type DomainHistoryTarget = RowView | ReadonlySignal<RowView | null>;
 
 export interface DomainHistoryOptions {
   /** The columns the user edits — the form's `include`. A change to any other column (one the app
-   * derives, as a hash from a structure) is named under "Also changed", without its values. */
+   * derives, as a hash from a structure) is left out. */
   include?: string[];
 }
 
@@ -205,22 +205,18 @@ export class DomainHistory extends Control {
     return line;
   }
 
-  /** One line per changed column the user edits; the columns derived from them by name only, on a
-   * line of their own; past {@link SHOWN_CHANGES} lines the rest fold under "N more". */
+  /** One line per changed column the user edits — what the app derives from them (a structure's
+   * hashes) is not the user's change and is left out; past {@link SHOWN_CHANGES} lines the rest fold
+   * under "N more". */
   private _changes(entry: AuditEntryLike): HTMLElement | null {
-    const changed = this.changedColumns(entry);
-    if (changed.length === 0)
-      return null;
     const include = this._options.include;
+    const changed = this.changedColumns(entry);
     const own = include === undefined ? changed : changed.filter(({prop}) => include.includes(prop.name!));
-    const derived = changed.filter((c) => !own.includes(c));
+    if (own.length === 0)
+      return null;
     const lines = own.map(({prop, before, after}) => divH([span(DomainTable.captionOf(prop), 'u2-domain-history-field'),
       this._value(prop, before), span('→', 'u2-domain-history-arrow'), this._value(prop, after)],
     'u2-domain-history-change'));
-    if (derived.length > 0) {
-      lines.push(div([span('Also changed', 'u2-domain-history-field'),
-        span(derived.map(({prop}) => DomainTable.captionOf(prop)).join(', '))], 'u2-domain-history-derived'));
-    }
     const box = divV(lines, 'u2-domain-history-changes');
     const folded = lines.slice(SHOWN_CHANGES);
     if (folded.length > 0) {

@@ -436,13 +436,8 @@
 }
 
 .u2-domain-history-field,
-.u2-domain-history-arrow,
-.u2-domain-history-derived {
+.u2-domain-history-arrow {
   color: var(--dg-text-color-light);
-}
-
-.u2-domain-history-derived > .u2-domain-history-field {
-  margin-right: var(--dg-space-s);
 }
 
 .u2-domain-history-value {

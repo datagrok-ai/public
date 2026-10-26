@@ -244,12 +244,12 @@ scoped('HI-1: "(empty)" for a missing value, dates as dates, derived columns by 
   assert.equal(all.includes('Description: (empty) → d'), true, all.join('; '));
   const due = all.find((c) => c.startsWith('Due: '));
   assert.equal(/^Due: \(empty\) → [^:]*2026$/.test(due), true, `a date at midnight UTC is a date, no time: ${due}`);
-  assert.equal(line.querySelector('.u2-domain-history-derived').textContent, 'Also changedTags, Priority',
-    'the columns outside the form by name only');
-  const folded = [...line.querySelectorAll('.u2-domain-history-change, .u2-domain-history-derived')].filter((l) => l.hidden);
-  assert.equal(folded.length, 2, 'past five lines the rest fold');
+  assert.equal(line.textContent.includes('Tags') || line.textContent.includes('Priority'), false,
+    'the columns outside the form are not the user\'s change');
+  const folded = [...line.querySelectorAll('.u2-domain-history-change')].filter((l) => l.hidden);
+  assert.equal(folded.length, 1, 'past five lines the rest fold');
   const expand = line.querySelector('.u2-domain-history-expand');
-  assert.equal(expand.textContent, '2 more');
+  assert.equal(expand.textContent, '1 more');
   fire(expand, 'click');
   assert.equal(folded.every((l) => !l.hidden) && !expand.isConnected, true);
   history.dispose();
