@@ -161,7 +161,8 @@ export class DomainFilters extends Control {
     const input = this.runInScope(() => this.mode === 'builder' ?
       new FilterBuilder({schema, target: 'domain', inline: true}) :
       new FilterQueryInput({schema, target: 'domain', inline: true, name: 'filters',
-        placeholder: this._options.placeholder ?? 'Filter…',
+        placeholder: this._options.placeholder ?? (schema.properties.length === 0 ? 'Filter…' :
+          `Filter, e.g. ${Filters.formatProperty(schema.properties[0].name)} = …`),
         display: (tree) => DomainFilters._shownAs.get(source)?.get(Filters.format(tree)) ?? null}));
     const box = input instanceof FilterQueryInput ? input : null;
     this.effect(() => {

@@ -58,6 +58,7 @@ scoped('a query set in code formats into the box; a committed text writes the qu
   assert.equal(filters.root.dataset.u2, 'domain-filters');
   await flush();
   const input = filters.input.value;
+  assert.equal(input.placeholder, 'Filter, e.g. title = …', 'an example on the name column says what the box takes');
   assert.equal(input.root.dataset.u2, 'filter-query-input', 'the query box, once the schema is known');
   assert.equal(input.text.value, '');
   src.query.value = 'done=true';
