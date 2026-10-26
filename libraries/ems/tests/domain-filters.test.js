@@ -124,6 +124,23 @@ scoped('a builder row waiting for its value is a draft; a value the column canno
   src.dispose();
 });
 
+scoped('the builder offers the name column first and the system columns last; a new row starts on the name', async () => {
+  const src = await issues({query: ''});
+  const filters = domains.filters(src, {mode: 'builder'});
+  await flush();
+  const builder = filters.input.value;
+  const names = builder.options.schema.properties.map((p) => p.name);
+  assert.equal(names[0], 'title');
+  const system = ['id', 'version', 'created_on', 'updated_on', 'author_id'].filter((n) => names.includes(n));
+  assert.equal(system.length > 0, true);
+  assert.deepEqual(names.slice(-system.length).sort(), [...system].sort(), 'the system columns close the list');
+  builder.addCondition();
+  await flush();
+  assert.equal(builder.value.value.nodes[0].property, 'title');
+  filters.dispose();
+  src.dispose();
+});
+
 scoped('the builder pane: its title row holds the mode switch and a fold; folded, a tab counts the conditions', async () => {
   const src = await issues({query: Filters.group('and', [Filters.cond('done', '=', true)])});
   const filters = domains.filters(src, {mode: 'builder'});

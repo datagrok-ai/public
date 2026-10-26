@@ -11,7 +11,7 @@ import type {FilterGroup, FilterProblem, FilterProperty, FilterSchema, FilterVal
 import type {DomainSource} from '../core/domain-source.js';
 import {confirmDiscard} from '../core/session.js';
 import {DomainPick} from './pick.js';
-import {DgDomainBackend} from './backend.js';
+import {DgDomainBackend, SYSTEM_COLUMNS} from './backend.js';
 
 export type DomainFiltersMode = 'query' | 'builder';
 
@@ -92,13 +92,22 @@ export class DomainFilters extends Control {
   /** The table's schema with the platform's values behind it; over another backend (the gallery,
    * the tests) the properties alone. Either way the offer is narrowed the same way. */
   private async _schema(): Promise<FilterSchema> {
-    const own = this.source.schema;
+    const own = {...this.source.schema, properties: this._ordered()};
     const operators = await this._operators();
     if (!(emsBackends.domain instanceof DgDomainBackend))
       return {...own, operators, values: (prop, query, signal, ctx) => this._under(prop, query, ctx) ?? EMPTY};
     const {values, resolveRef, renderer} = await domainFilterSchema(this.source.table);
     return {...own, operators, resolveRef, renderer,
       values: (prop, query, signal, ctx) => this._under(prop, query, ctx) ?? values!(prop, query, signal, ctx)};
+  }
+
+  /** The name column first and the system columns last: a new condition starts on the column a user
+   * filters by, and the pickers lead with the table's own columns. */
+  private _ordered(): FilterProperty[] {
+    const {properties, info} = this.source.schema;
+    const name = info.nameColumn ?? info.businessKey[0];
+    const rank = (p: FilterProperty) => p.name === name ? 0 : SYSTEM_COLUMNS.some(([n]) => n === p.name) ? 2 : 1;
+    return [...properties].sort((a, b) => rank(a) - rank(b));
   }
 
   /** The candidates for an `under` term: the ROWS of the hierarchy it walks — every location,

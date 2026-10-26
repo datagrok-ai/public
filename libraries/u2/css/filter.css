@@ -310,6 +310,11 @@
   box-shadow: inset 2px 0 0 var(--dg-error);
 }
 
+/* a value not filled in yet: only the empty slot is marked */
+.u2-fb-missing .u2-fb-values .u2-input-editor {
+  border-bottom-color: var(--dg-error);
+}
+
 .u2-fb-nested-text {
   font-family: var(--dg-font-family-mono);
   font-size: var(--dg-font-size-small);

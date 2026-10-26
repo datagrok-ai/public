@@ -115,7 +115,8 @@ smoke('empty tree says so; Add condition under the rows adds a row on the first 
   assert.equal(fb.validity.peek(), fb.problems.peek()[0].message, 'validity is the first problem');
   assert.equal(rows(fb)[0].classList.contains('u2-fb-invalid'), false, 'a fresh row is quiet until touched');
   fb.touch();
-  assert.equal(rows(fb)[0].classList.contains('u2-fb-invalid'), true);
+  assert.deepEqual(['u2-fb-invalid', 'u2-fb-missing'].map((c) => rows(fb)[0].classList.contains(c)), [false, true],
+    'a missing value marks its empty slot, not the row');
   assert.equal(rows(fb)[0].title, fb.problems.peek()[0].message);
   const problem = part(rows(fb)[0], 'problem');
   assert.equal(problem.hidden, false, 'the row tells its problem on a line of its own');

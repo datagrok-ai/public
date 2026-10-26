@@ -385,7 +385,8 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
         row.update(node as FilterCondition);
       else
         row.update(node as FilterGroup);
-      row.setProblem(problems.find((p) => p.nodeId === node.id)?.message ?? null);
+      const problem = problems.find((p) => p.nodeId === node.id);
+      row.setProblem(problem?.message ?? null, problem?.code === 'missing-value');
       seen.add(node.id);
       if (horizontal && order.length > 0)
         order.push(this._join(node.id));
