@@ -864,7 +864,8 @@ class ImportFlow {
       'nothing was committed.';
     this._report.replaceChildren(ImportFlow._headline(failed ? [[aborted, 'error']] : counts, 'Nothing was imported'));
     this._report.classList.toggle('u2-domain-import-aborted', failed);
-    this._wizard.setStepFailed('report', failed);
+    // a row that did not land is the report's news, even where the rest did
+    this._wizard.setStepFailed('report', failed || errorCount > 0);
     const outcomes = this._outcomes(report, plan, failed);
     let saved = new Map<string, RowView>();
     try {
