@@ -100,36 +100,6 @@ export const compoundCount = Then('{int} compound(s) with the structure {string}
     [`${SCHEMA}.compound`, structure] as const), {message: `live compounds with the structure ${structure}`}).toBe(n);
 }, {tier: 'api', description: 'reads the compound table on the server: the live rows of that standardized structure'});
 
-export const compoundsNamed = Then('{int} compound(s) named {string} should be registered on the server', async (page: Page, n: number, name: string) => {
-  await expect.poll(() => page.evaluate(([table, s]) =>
-    grok.dapi.domains.table(table).count({filter: {property: 'common_name', operator: '=', value: s}}),
-    [`${SCHEMA}.compound`, name] as const), {message: `live compounds named ${name}`}).toBe(n);
-}, {tier: 'api', description: 'reads the compound table on the server: the live rows of that common name'});
-
-export const serverRefusesDuplicate = Then('the server should refuse another compound with the remembered compound\'s registration hash',
-  async (page: Page) => {
-    const id = remembered.get(page);
-    if (id === undefined)
-      throw new Error('no compound was remembered: "user remembers the compound the breadcrumbs name" comes first');
-    const outcome = await page.evaluate(async ([schema, molregno]) => {
-      const compounds = grok.dapi.domains.table(`${schema}.compound`);
-      const [c] = await compounds.query({filter: {property: 'molregno', operator: '=', value: molregno}});
-      let inserted: {id: string, created: boolean}[];
-      try {
-        inserted = await compounds.insert({original_structure: c.original_structure, structure: c.structure, hash_mol: c.hash_mol});
-      }
-      catch (e: any) {
-        const error = e?.body?.rows?.[0]?.errors?.[0];
-        return `refused: ${error?.column} ${error?.code}`;
-      }
-      for (const r of inserted.filter((r) => r.created))
-        await compounds.deleteWhere({property: 'id', operator: '=', value: r.id});
-      return 'inserted';
-    }, [SCHEMA, Number(id.replace(/\D/g, ''))] as const);
-    expect(outcome, 'a second compound with a registered hash, sent past the form').toBe('refused: hash_mol unique');
-  }, {tier: 'api', description: 'inserts a copy of the remembered compound\'s structure and registration hash straight through ' +
-    'the API, past the form\'s check: the server must refuse it as a duplicate of hash_mol (a row it let in is deleted)'});
-
 const rememberedTexts = new WeakMap<Page, Map<string, string>>();
 
 export const rememberText = When('user remembers the text of {element}', async (page: Page, target: ElementRef) => {
