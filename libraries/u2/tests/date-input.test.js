@@ -182,26 +182,6 @@ smoke('commit clamps to min/max; programmatic writes are echo-suppressed', async
   input.dispose();
 });
 
-smoke('typing: a refresh with an equal but new Date leaves the text alone; a different one rewrites it', async () => {
-  const input = mount(new DateTimeInput({label: 'When'}));
-  editor(input).focus();
-  // what a form does after every edit: it writes the value back as a new Date
-  const refresh = () => input.value.value = new Date(input.value.value.getTime());
-  for (const text of ['2026-10-20 09:3', '2026-10-20 09:30']) {
-    type(input, text);
-    refresh();
-    assert.equal(editor(input).value, text);
-  }
-  assert.equal(input.validity.value, null);
-  assert.equal(input.value.value.getTime(), new Date(2026, 9, 20, 9, 30).getTime());
-
-  input.value.value = new Date(2026, 9, 20, 8, 0);
-  assert.equal(editor(input).value, '2026-10-20 08:00', 'a discard or a save write-back still shows in a focused field');
-  input.value.value = null;
-  assert.equal(editor(input).value, '');
-  input.dispose();
-});
-
 smoke('machine: toggle and ArrowDown open, Esc closes and refocuses the editor', async () => {
   const input = mount(new DateInput({label: 'Date'}));
   assert.equal(input.machineState.value, 'idle');

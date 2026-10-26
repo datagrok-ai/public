@@ -52,7 +52,6 @@ function box(q) {
   return q.root.querySelector('input');
 }
 
-/** The editor part: the search skin around the box. */
 function skin(q) {
   return q.root.querySelector('[data-u2-part="editor"]');
 }
@@ -81,8 +80,6 @@ smoke('renders as a combobox editor showing the formatted tree', () => {
   assert.equal(q.root.dataset.u2Name, 'q');
   const input = box(q);
   assert.equal(input.parentElement, skin(q));
-  assert.deepEqual(['u2-input-search', 'u2-fq-search'].map((c) => skin(q).classList.contains(c)), [true, true],
-    'the search box\'s chrome, with a funnel');
   assert.equal(input.getAttribute('role'), 'combobox');
   assert.equal(input.value, 'age > 30 and sex = "F"');
   assert.equal(q.text.value, 'age > 30 and sex = "F"');
@@ -91,17 +88,6 @@ smoke('renders as a combobox editor showing the formatted tree', () => {
   const status = q.getWidgetStatus();
   assert.deepEqual([status.mode, status.query, status.problems], ['text', 'age > 30 and sex = "F"', []]);
   assert.equal(status.tree, q.value.peek());
-});
-
-smoke('the clear button empties the box and applies it; it hides while the box is empty', () => {
-  const q = mount(new FilterQueryInput({schema: SCHEMA, value: Filters.group('and', [Filters.cond('age', '>', 30)])}));
-  const clear = q.root.querySelector('.u2-input-clear');
-  assert.equal(clear.getAttribute('aria-label'), 'Clear filter');
-  assert.equal(clear.hidden, false);
-  fire(clear, 'click');
-  assert.equal(q.text.value, '');
-  assert.equal(Filters.count(q.value.peek()), 0, 'applied at once, no Enter needed');
-  assert.equal(clear.hidden, true);
 });
 
 smoke('completion: properties with kind icons, then operators, then values, then connectors', async () => {

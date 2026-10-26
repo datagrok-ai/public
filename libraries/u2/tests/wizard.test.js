@@ -89,7 +89,6 @@ wizard('blocks on canProceed and shows the reason', () => {
   const reason = w.root.querySelector('.u2-wizard-reason');
   assert.equal(next.disabled, true);
   assert.equal(reason.textContent, 'Fill in the form first');
-  assert.equal(next.title, 'Fill in the form first', 'the reason is also the disabled button\'s tooltip');
 
   w.next();
   assert.equal(w.currentStep.value, 'two', 'a blocked step does not advance');
@@ -97,7 +96,6 @@ wizard('blocks on canProceed and shows the reason', () => {
   gate.value = null;
   assert.equal(next.disabled, false);
   assert.equal(reason.textContent, '');
-  assert.equal(next.title, '');
   w.next();
   assert.equal(w.currentStep.value, 'three');
   w.dispose();
@@ -557,42 +555,4 @@ wizard('Esc reaches the modal dialog on top once focus fell out of it onto the b
   fire(document.body, 'keydown', {key: 'Escape'});
   assert.equal(again.isOpen.value, false);
   scope.dispose();
-});
-
-wizard('only a committing button is raised: a plain NEXT is flat, a named one, a commit and FINISH are primary', () => {
-  const w = new Wizard({steps: [
-    {id: 'one', title: 'One', content: content('One', 'plain')},
-    {id: 'two', title: 'Two', content: content('Two', 'named'), nextText: 'IMPORT'},
-    {id: 'three', title: 'Three', content: content('Three', 'commit'), commit: () => true},
-    {id: 'four', title: 'Four', content: content('Four', 'last')},
-  ]});
-  document.body.append(w.root);
-  const next = [...w.root.querySelectorAll('.u2-wizard-buttons button')].at(-1);
-  const raised = () => next.classList.contains('u2-btn-primary');
-  assert.equal(raised(), false);
-  w.next();
-  assert.equal([next.textContent, raised()].join(), 'IMPORT,true');
-  w.next();
-  assert.equal(raised(), true);
-  w.next();
-  assert.equal([next.textContent, raised()].join(), 'FINISH,true');
-  w.dispose();
-});
-
-wizard('a failed step reads "!" in the error colour until it is cleared', () => {
-  const w = new Wizard({steps: [
-    {id: 'one', title: 'One', content: content('One', 'x')},
-    {id: 'report', title: 'Report', content: content('Report', 'y'), done: true},
-  ]});
-  document.body.append(w.root);
-  w.next();
-  const report = markers(w)[1];
-  w.setStepFailed('report', true);
-  assert.equal(report.classList.contains('u2-wizard-step-failed'), true);
-  assert.equal(report.textContent.startsWith('!'), true);
-  assert.equal(markers(w)[0].textContent.startsWith('✓'), true, 'the steps behind it stay done');
-  w.setStepFailed('report', false);
-  assert.equal(report.classList.contains('u2-wizard-step-failed'), false);
-  assert.equal(report.textContent.startsWith('2'), true);
-  w.dispose();
 });

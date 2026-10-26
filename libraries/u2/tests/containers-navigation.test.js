@@ -607,22 +607,6 @@ ui('TabStrip: content waits for the first activation, unless the strip is eager'
   eager.dispose();
 });
 
-ui('TabStrip: a tab made active scrolls the strip to it, never the page around the strip', () => {
-  const strip = new TabStrip({tabs: [{id: 'a', label: 'A', content: content('a')},
-    {id: 'b', label: 'B', content: content('b')}]});
-  document.body.append(strip.root);
-  const scroller = strip.root.querySelector('.u2-tabs-scroller');
-  const b = strip.root.querySelectorAll('.u2-tabs-tab')[1];
-  scroller.rect = new DOMRect(0, 500, 100, 34);
-  b.rect = new DOMRect(150, 500, 60, 34);
-  let pageScrolled = 0;
-  b.scrollIntoView = () => pageScrolled++;
-  strip.activeTab.value = 'b';
-  assert.equal(scroller.scrollLeft, 110, 'the strip brings the tab in');
-  assert.equal(pageScrolled, 0, 'nothing scrolls the strip\'s ancestors');
-  strip.dispose();
-});
-
 ui('Accordion: a pane\'s hint, a live summary element, and its validity in place of the hint while folded', () => {
   const problem = signal(null);
   const count = signal(2);

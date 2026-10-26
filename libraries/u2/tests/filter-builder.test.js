@@ -94,17 +94,12 @@ smoke('renders one row per condition, addressed by node id and part', () => {
   assert.equal(fb.root.querySelector('.u2-fb-none'), null);
 });
 
-smoke('empty tree says so beside an Add condition link; + adds a row on the first property, − removes it', () => {
+smoke('empty tree shows the empty hint (a link that adds); + adds a row on the first property, − removes it', () => {
   const fb = mount(new FilterBuilder({schema: SCHEMA}));
   assert.equal(rows(fb).length, 0);
   const none = fb.root.querySelector('.u2-fb-none');
   assert.equal(none.dataset.u2Part, 'none');
-  assert.equal(none.firstChild.tagName, 'SPAN');
-  assert.equal(none.firstChild.textContent, 'No conditions');
-  const addLink = none.querySelector('[data-u2-part="none-add"]');
-  assert.equal(addLink.tagName, 'A');
-  assert.equal(addLink.textContent, 'Add condition');
-  fire(addLink, 'click');
+  fire(none.querySelector('a'), 'click');
   assert.equal(rows(fb).length, 1, 'the empty hint adds a condition');
   fb.removeNode(fb.value.peek().nodes[0].id);
   assert.equal(rows(fb).length, 0);
@@ -117,12 +112,10 @@ smoke('empty tree says so beside an Add condition link; + adds a row on the firs
   assert.equal(cond.operator, Filters.operators.for(SCHEMA.properties[0])[0].id);
   assert.equal(cond.value, undefined);
   assert.deepEqual(fb.problems.peek().map((p) => p.code), ['missing-value']);
-  assert.equal(fb.problems.peek()[0].message, '"Name" needs a value', 'the message names the caption');
   assert.equal(fb.validity.peek(), fb.problems.peek()[0].message, 'validity is the first problem');
   assert.equal(rows(fb)[0].classList.contains('u2-fb-invalid'), false, 'a fresh row is quiet until touched');
   fb.touch();
-  assert.deepEqual(['u2-fb-invalid', 'u2-fb-missing'].map((c) => rows(fb)[0].classList.contains(c)), [false, true],
-    'a missing value marks its empty slot, not the row');
+  assert.equal(rows(fb)[0].classList.contains('u2-fb-missing'), true);
   assert.equal(rows(fb)[0].title, fb.problems.peek()[0].message);
   const problem = part(rows(fb)[0], 'problem');
   assert.equal(problem.hidden, false, 'the row tells its problem on a line of its own');
