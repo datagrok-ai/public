@@ -32,7 +32,8 @@ export interface WizardStep {
   /** What the closing button reads on the last step (FINISH by default). */
   finishText?: string;
   /** What NEXT reads on this step (NEXT by default) — CREATE on a step whose commit registers; a
-   * signal where the wording follows the state (SAVE, then REOPEN once a save's outcome is unknown). */
+   * signal where the wording follows the state (SAVE, then REOPEN once a save's outcome is unknown).
+   * A named NEXT, like a step with a {@link commit} and FINISH, is the raised primary; a plain NEXT is flat. */
   nextText?: string | ReadonlySignal<string>;
   /** Work NEXT runs before leaving this step: the wizard waits on it and nothing closes meanwhile;
    * `false` keeps the step (a commit the server refused), and so does a throw or a rejection, whose
@@ -110,6 +111,7 @@ export class Wizard extends Control {
   private readonly _recheck = signal(0);
   private readonly _busy = signal(false);
   private readonly _error = signal<string | null>(null);
+  private readonly _failed = signal<ReadonlySet<string>>(new Set());
   /** The run in flight: Esc and ✕ abort it. */
   private _pending: AbortController | undefined;
   /** The last step whose commit went through: what it registered stands, so nothing goes back to it. */
@@ -151,7 +153,7 @@ export class Wizard extends Control {
     left.append(this.status, this._reason, this._errorRow);
 
     this._back = this._button('BACK', () => this.back());
-    this._next = this._button('NEXT', () => this.next(), true);
+    this._next = this._button('NEXT', () => this.next());
     this._footer.append(left, this._back, this._next);
     this.root.append(this._rail, this._content, this._footer);
 
@@ -244,6 +246,17 @@ export class Wizard extends Control {
       this._index.value = at;
   }
 
+  /** Marks a step as failed — a report over work that did not land: its marker reads "!" in the
+   * error colour until it is cleared. */
+  setStepFailed(id: string, failed: boolean): void {
+    const next = new Set(this._failed.peek());
+    if (failed)
+      next.add(id);
+    else
+      next.delete(id);
+    this._failed.value = next;
+  }
+
   /** Shows the wizard as a modal dialog; repeated calls reopen the same one. */
   openInDialog(title: string, options: {width?: number, height?: number} = {}): Dialog {
     if (!this._dialog) {
@@ -263,6 +276,7 @@ export class Wizard extends Control {
         if (!this._busy.peek())
           dialog.close();
       });
+      this._cancel.classList.add('u2-wizard-cancel');
       this._footer.insertBefore(this._cancel, this._back);
     }
     return this._dialog.show({modal: true, width: options.width, height: options.height});
@@ -380,6 +394,7 @@ export class Wizard extends Control {
   private _applyStep(): void {
     const index = this._index.value;
     const current = this._steps[index];
+    const failed = this._failed.value;
     this._visited.add(current.options.id);
     for (let i = 0; i < this._steps.length; i++) {
       const step = this._steps[i];
@@ -390,9 +405,10 @@ export class Wizard extends Control {
       const done = visited && i < index;
       step.marker.classList.toggle('u2-wizard-step-current', on);
       step.marker.classList.toggle('u2-wizard-step-done', done);
+      step.marker.classList.toggle('u2-wizard-step-failed', failed.has(step.options.id));
       step.marker.setAttribute('aria-disabled', String(!on && (!visited || i <= this._committed)));
       step.marker.tabIndex = on ? 0 : -1;
-      step.circle.textContent = done ? '✓' : String(i + 1);
+      step.circle.textContent = failed.has(step.options.id) ? '!' : done ? '✓' : String(i + 1);
       step.panel.style.display = on ? '' : 'none';
       if (on)
         step.marker.setAttribute('aria-current', 'step');
@@ -430,8 +446,11 @@ export class Wizard extends Control {
     const index = this._index.value;
     const current = this._steps[index].options;
     const next = typeof current.nextText === 'string' ? current.nextText : current.nextText?.value;
-    this._next.textContent = index < this._steps.length - 1 ? next ?? 'NEXT' : current.done === true ? 'CLOSE' :
-      current.finishText ?? 'FINISH';
+    const last = index === this._steps.length - 1;
+    this._next.textContent = !last ? next ?? 'NEXT' : current.done === true ? 'CLOSE' : current.finishText ?? 'FINISH';
+    // raised only where pressing it commits, as the platform's dialogs raise only their committing button
+    this._next.classList.toggle('u2-btn-primary', current.done !== true &&
+      (last || current.commit !== undefined || current.nextText !== undefined));
   }
 
   private _applyGate(): void {
@@ -439,6 +458,7 @@ export class Wizard extends Control {
     const busy = this._busy.value;
     const current = this._steps[this._index.value];
     this._next.disabled = reason !== null;
+    this._next.title = reason ?? '';
     this._back.disabled = busy;
     if (this._cancel !== undefined)
       this._cancel.disabled = busy;

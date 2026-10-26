@@ -17,6 +17,12 @@
   height: 100%;
 }
 
+/* the wizard pads its own rail, body and footer: the dialog body's padding would indent all of them
+   past the title */
+.u2-dialog-content:has(> .u2-wizard) {
+  padding: 0;
+}
+
 .u2-wizard-steps {
   display: flex;
   align-items: center;
@@ -54,7 +60,7 @@
 /* the ring goes on the circle: the step element also carries the connector line before it */
 .u2-wizard-step:focus-visible .u2-wizard-marker {
   outline: var(--dg-focus-ring);
-  outline-offset: var(--dg-space-xs);
+  outline-offset: 0;
 }
 
 .u2-wizard-marker {
@@ -89,9 +95,9 @@
 }
 
 .u2-wizard-step-done .u2-wizard-marker {
-  color: var(--dg-white);
-  background: var(--dg-success);
-  border-color: var(--dg-success);
+  color: var(--dg-accent);
+  background: var(--dg-bg);
+  border-color: var(--dg-accent);
 }
 
 .u2-wizard-step-current {
@@ -103,6 +109,12 @@
   color: var(--dg-white);
   background: var(--dg-accent);
   border-color: var(--dg-accent);
+}
+
+.u2-wizard-step-failed .u2-wizard-marker {
+  color: var(--dg-white);
+  background: var(--dg-error);
+  border-color: var(--dg-error);
 }
 
 .u2-wizard-busy .u2-wizard-steps {
@@ -118,13 +130,20 @@
   overflow-wrap: anywhere;
 }
 
+/* the dialog's footer (dialog.css .u2-dialog-buttons): the same rule and padding */
 .u2-wizard-buttons {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
   gap: var(--dg-space-m);
-  padding: 0 var(--dg-space-l) var(--dg-space-l);
+  padding: var(--dg-space-m) var(--dg-space-l);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
+}
+
+/* dismissing stands apart from stepping: CANCEL, a gap, then BACK and NEXT */
+.u2-wizard-cancel {
+  margin-right: var(--dg-space-l);
 }
 
 /* the host's status line and the gate's reason share the footer's left side */
