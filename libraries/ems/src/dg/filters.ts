@@ -6,7 +6,7 @@
 import {domainFilterSchema} from './filter-schema.js';
 import {emsBackends} from '../core/domain-backend.js';
 import {Control, computed, signal, ReadonlySignal, Filters, FilterQueryInput, FilterBuilder, Splitter,
-  div, divH, divV, span, icon, iconButton} from '@datagrok-libraries/u2';
+  div, divH, divV, span} from '@datagrok-libraries/u2';
 import type {FilterGroup, FilterOperator, FilterProblem, FilterProperty, FilterSchema,
   FilterValueItem} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
@@ -225,39 +225,18 @@ export class DomainFilters extends Control {
     this.source.query.value = this._echo;
   }
 
-  /** The filters in a pane on `list`'s left, at least 220px wide: a title row with the builder's mode
-   * switch and a fold; folded, a narrow tab that says how many conditions are applied. */
+  /** The filters in a pane on `list`'s left, at least 220px wide, under a title row that holds the
+   * builder's mode switch. */
   pane(list: HTMLElement): HTMLElement {
     return this.runInScope(() => {
-      const folded = signal(false);
-      const fold = iconButton('angle-double-left', () => folded.value = true, {tooltip: 'Hide filters'});
-      const head = divH([span('Filters', 'u2-domain-app-filters-title'), fold], 'u2-domain-app-filters-head');
-      const count = computed(() => Filters.count(DomainFilters.treeOf(this.source.query.value)));
-      const tab = div([icon('angle-double-right'),
-        span(computed(() => count.value === 0 ? 'Filters' : `Filters (${count.value})`))], 'u2-domain-app-filters-tab');
-      tab.dataset.u2Part = 'filters-tab';
-      tab.tabIndex = 0;
-      tab.setAttribute('role', 'button');
-      tab.title = 'Show filters';
-      this.scope.listen(tab, 'click', () => folded.value = false);
-      this.scope.listen(tab, 'keydown', (e) => {
-        if ((e as KeyboardEvent).key === 'Enter' || (e as KeyboardEvent).key === ' ')
-          folded.value = false;
-      });
+      const head = divH([span('Filters', 'u2-domain-app-filters-title')], 'u2-domain-app-filters-head');
       const pane = divV([head, this.root], 'u2-domain-app-filters-pane');
-      const splitter = new Splitter([div([pane, tab], 'u2-domain-app-filters-host'), list],
-        {direction: 'horizontal', sizes: [0.3, 0.7], minSize: 220});
       this.effect(() => {
         const input = this._input.value;
         if (input instanceof FilterBuilder)
-          head.insertBefore(input.modeSwitch, fold);
+          head.append(input.modeSwitch);
       });
-      this.effect(() => {
-        splitter.root.classList.toggle('u2-domain-app-filters-folded', folded.value);
-        pane.hidden = folded.value;
-        tab.hidden = !folded.value;
-      });
-      return splitter.root;
+      return new Splitter([pane, list], {direction: 'horizontal', sizes: [0.3, 0.7], minSize: 220}).root;
     });
   }
 

@@ -169,7 +169,7 @@ scoped('an operator registered for one table is offered there and not on another
   assert.equal(Filters.operators.all().some((o) => o.id === 'sounds like'), false, 'unregistered with its owner');
 });
 
-scoped('the builder pane: its title row holds the mode switch and a fold; folded, a tab counts the conditions', async () => {
+scoped('the builder pane: its title row holds the mode switch; the pane is always shown beside the list', async () => {
   const src = await issues({query: Filters.group('and', [Filters.cond('done', '=', true)])});
   const filters = domains.filters(src, {mode: 'builder'});
   const list = document.createElement('div');
@@ -180,16 +180,8 @@ scoped('the builder pane: its title row holds the mode switch and a fold; folded
   const builder = filters.input.value;
   assert.equal(builder.modeSwitch.parentElement, head, 'Simple/Advanced sits on the title row');
   assert.equal(root.querySelector('.u2-domain-app-filters-title').textContent, 'Filters');
-  const tab = root.querySelector('[data-u2-part="filters-tab"]');
-  assert.equal(tab.hidden, true);
-  fire(head.querySelector('.u2-icon-btn'), 'click');
-  await flush();
-  assert.equal(root.classList.contains('u2-domain-app-filters-folded'), true);
-  assert.deepEqual([tab.hidden, tab.textContent], [false, 'Filters (1)']);
-  assert.equal(root.querySelector('.u2-domain-app-filters-pane').hidden, true);
-  fire(tab, 'click');
-  await flush();
-  assert.deepEqual([tab.hidden, root.classList.contains('u2-domain-app-filters-folded')], [true, false]);
+  assert.equal(root.querySelector('.u2-domain-app-filters-pane').hidden, false);
+  assert.equal(root.querySelector('[data-u2-part="filters-tab"]'), null, 'no fold');
   filters.dispose();
   src.dispose();
 });

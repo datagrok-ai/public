@@ -666,15 +666,8 @@
   border: none;
 }
 
-.u2-domain-app-filters-host {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
 .u2-domain-app-filters-pane {
-  flex: 1;
-  min-height: 0;
+  height: 100%;
   overflow: auto;
   gap: var(--dg-space-s);
   padding: 0 var(--dg-space-m) var(--dg-space-s);
@@ -695,40 +688,6 @@
 
 .u2-domain-app-filters-head > .u2-fb-mode {
   margin-left: 0;
-}
-
-.u2-domain-app-filters-pane[hidden],
-.u2-domain-app-filters-tab[hidden] {
-  display: none;
-}
-
-/* folded: the pane gives way to a narrow tab that names it and counts the conditions in force */
-.u2-domain-app-filters-folded > .u2-splitter-panel:first-child {
-  flex: 0 0 28px !important;
-}
-
-.u2-domain-app-filters-folded > .u2-splitter-panel:nth-child(2) {
-  flex: 1 1 0 !important;
-}
-
-.u2-domain-app-filters-folded > .u2-sash {
-  display: none;
-}
-
-.u2-domain-app-filters-tab {
-  display: flex;
-  align-items: center;
-  gap: var(--dg-space-s);
-  height: 100%;
-  padding: var(--dg-space-m) 0;
-  writing-mode: vertical-rl;
-  color: var(--dg-text-color);
-  border-right: var(--dg-border-width) solid var(--dg-border);
-  cursor: pointer;
-}
-
-.u2-domain-app-filters-tab:hover {
-  background: var(--dg-hover-subtle);
 }
 
 /* in the narrow pane a condition is one card: property and operator side by side, the value under
