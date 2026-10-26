@@ -2,17 +2,15 @@
 
 ## v.next
 
-* Child grids: The header grows to the longest caption at its column's width (up to four lines), so a three-line caption with its unit is no longer cut; a long text cell stays on one line with an ellipsis instead of wrapping and clipping, its full text in the tooltip
-* Data tables: Fixed a table stopping at its first page ("100 of 119"): scrolling near the bottom loads the next one, as a list does
-* DomainApp: Added `header`, the entity page above the form, where an app shows what it knows about the record before its fields (a parent card, a summary)
-* Unsaved changes: The dialog reads CANCEL · DISCARD · SAVE, with SAVE on the right as the primary, as in the platform's own prompt
-* Added `domains.configure(address, fn, {id})`: an app's validators, renderer, actions and importer apply to every handle over the table, so child tabs, trees, views and the `/domains` route follow the app's rules; the `id` is required, and registering the same `id` again replaces the entry, so a bundle loaded twice never doubles an action
-* Bulk edit: Checked the table's validators over the rows as they would land; a refusal shows inside the dialog instead of a balloon
-* Bulk edit: Redesigned the dialog as one aligned form: a picker chooses the fields to change, each field shows the rows' current value or "Will be cleared", and the button says what it does ("Update 2 issues")
-* Import: The Preview step's button reads "Import 3 vendors" and is disabled, with the reason beside it, when "All or nothing" would abort; a refused cell is tinted, cut-off cells show their full text on hover, and a skipped row says why
-* Child tabs: A list-mode child grows to its whole form beside the list, reached by scrolling the page, while the list scrolls itself and loads its next page; child tabs keep room for about 8 rows under a tall form; a child table that fails to open shows its error in its own tab while the others work, and a tab with rows opens first instead; grid headers fit two-line captions, so units are no longer cut
-* Filters: An invalid query shows its reason under the box in red, and in red in the status bar; a condition just added in the builder no longer dims the list or reports a problem
-* Trash: Restore uses the undo icon instead of a look-alike of Delete
+* Added `domains.configure(address, fn, {id})`: an app's validators, renderer, actions and importer apply to every handle over the table, so child tabs, trees, views and the `/domains` route follow the app's rules
+* DomainApp: Added `header`, a slot above the entity form for a parent card or a summary
+* Bulk edit: Redesigned the dialog as one form: pick the fields to change, see how many values differ or that a field will be cleared, and press "Update 2 issues"; the table's validators are checked, and a refusal stays in the dialog
+* Import: The Preview button names what lands ("Import 3 vendors") and is held, with the reason, when "All or nothing" would abort; refused cells are tinted, cut-off text shows on hover, and a skipped row says why
+* Child tabs: Grids keep room for about 8 rows and fit two-line captions with units; a list-mode child scrolls and loads its next page beside its form; a tab that fails to open shows its error while the others work
+* Data tables: Fixed a table stopping at its first page; scrolling near the bottom loads the next one
+* Filters: An invalid query shows its reason under the box; a condition just added in the builder no longer dims the list
+* Unsaved changes: The dialog reads CANCEL · DISCARD · SAVE, with SAVE as the primary on the right
+* Trash: Restore uses the undo icon
 * DomainSource: Added `hosted`: the app answers a host filter condition (a structure search) with the ids of its rows, sent as an id list before every read
 * DomainApp: Added `filters: {mode: 'builder', placement: 'left'}`: the condition builder in a pane beside the list
 * Import: Added `table.importer`: an app derives columns, keeps rows out (already there, repeated in the file, unreadable), maps its own columns and shapes the preview's and report's columns and messages; the report lists every row with its outcome and key, written back to the table on request

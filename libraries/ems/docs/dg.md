@@ -13,7 +13,7 @@ host too, over `MemoryFrame` — is what the headless tests and the gallery run.
 |---|---|
 | `src/dg/styles.js` | a side-effect import: every stylesheet the domain stack paints with (tokens, the inputs and their editors, the list and the grid, the breadcrumb, the tabs, the section, the filter box, the dialogs and balloons). An app built on `domains.*` imports this one module instead of a hand-kept list of sheets; a package rendering other u2 controls adds those sheets itself |
 | `domains.table<TRow>(address)` | one await → `DomainTable<TRow>`: `properties`, `info`, `access` (an `Access`), `handler` (the platform's `DomainObjectHandler` for the rows — never registered by u2), and the registries an app fills once: `actions` (`DomainAction {name, icon?, requires?, when?(row), run(row)}`), `validators.add(column, (value, row) => message \| null)`, `renderer` (an `ObjectRenderer<RowView<TRow>>`; the handler's rendering, the name column as caption). `TRow` is the app's own row interface (`IssueRow` from the generated `db.ts`; any `{id: string}` qualifies): rows, `defaults`, `newRow` values and the callbacks of both registries are typed by it, `validators.add` offers its keys, and a `DomainTable<IssueRow>` goes wherever a `DomainTable` is expected — the controls take any. Default: `DomainRowLike`, every column `unknown` |
-| `domains.configure<TRow>(address, fn, {id})` | what an app declares on a table — `actions`, `validators`, `renderer`, `importer` — applied to every handle `domains.table(address)` makes: `fn(table)` may be async and is awaited (a throw rejects the handle); registered at module load under a stable `id`, which is required (a bundle evaluated twice replaces its entry), so a child tab, a tree, a view and the `/domains` route get the same rules as the app; one registry per page, whichever bundle's copy of ems builds the handle; returns the unregister function. Recipe: `docs/recipes/custom-app.md` |
+| `domains.configure<TRow>(address, fn, {id})` | the app's `actions`, `validators`, `renderer` and `importer`, applied to every handle `domains.table(address)` makes, so child tabs, trees, views and the `/domains` route follow the app's rules. `fn` may be async (a throw rejects the handle); register at module load under a stable `id` (the same `id` again replaces the entry). Returns the unregister function. Recipe: `docs/recipes/custom-app.md` |
 | `table.source(options)` / `table.draft(values)` | a started `DomainSource<TRow>` (`options.defaults`, `src.newRow(values)`: `Partial` of the typed row); a `draft: true` source of one pristine draft. Both are tracked, so the controls find the handle (`DomainTable.of(src)`); `src.session` is the unit of work Save drives, `src.activate` the signal a list bumps on Enter |
 | `table.app(options?)` | the table as a platform view (`grok.shell.addView(issues.app())`): a `DomainApp` under its own session in an `appView` — list ⇄ entity page, ribbon, status, URL, the unsaved gates. `options.app` names a `DomainApp` subclass to build instead (see below); `name`, `path`, and the app's own options pass through |
 | `domains.app(options)` | the `DomainApp` control alone (`{table, base, query?, sort?, pageSize?, live?, liveMs?, mode?, itemHeight?, defaults?, include?, children?, history?, filters?, shortcuts?, menu?}`, see the table below) for a hand-built view with its own chrome — see "Domain apps" below for what it does and how it is subclassed |
@@ -71,10 +71,8 @@ over `listSource` (Enter → the entity page); the entity page a source of one u
 session: `header`, `DomainForm` with `system: 'footer'`, then `panes`; `DomainTable.open(row)`
 activates a live app (`DomainApp.activate(base, id)`) instead of the platform's row view.
 
-The entity page's two slots for a subclass: `header` is the page above the form — what an app shows
-about the record before its fields: a parent card, a summary. It is empty and takes no space until
-the app puts something there, and the app owns what it holds. `panes` is the page below the form,
-where the children and history panes go; the app may add its own beside them.
+The entity page's two slots for a subclass: `header`, above the form (a parent card, a summary;
+empty until the app fills it), and `panes`, below it, beside the children and history.
 
 Override points for a subclass (`class IssuesApp extends DomainApp`):
 

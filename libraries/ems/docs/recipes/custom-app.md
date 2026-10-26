@@ -34,7 +34,7 @@ domains.configure<IssueRow>('grit.issue', async (issues) => {
 class IssuesApp extends DomainApp {
   shortcuts = {'m': 'Assign to me', 'c': 'Close'};        // plain keys fire outside text entry; chords (Ctrl+Shift+C) everywhere
   ribbon(): DomainRibbon {
-    // built once: the ribbon is asked for again, and a second presets() would add a second switch
+    // built once: a second presets() would add a second switch
     return this._ribbon ??= {...super.ribbon(),
       presets: [this.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]};   // a FK path
   }
@@ -62,11 +62,11 @@ registered for the address over it (awaited in order; a throw rejects the handle
 | Piece | What it is |
 |---|---|
 | `getGritDb(): Promise<GritDb>` | generated (`grok api --ui`): `{schema, data, tables}` — `data` the typed dapi clients (`gritDb.issues.query(...)`), `tables` one `DomainTable<XRow>` per table, opened in parallel. Without the generator: `await domains.table<IssueRow>('grit.issue')` |
-| `domains.configure<TRow>(address, fn, {id})` | `fn(table)` — sync or async — dresses every handle `domains.table(address)` makes from then on: the app's own, a child tab's, a tree's, a view's, the `/domains` route's (once the app's bundle has loaded). Register at module load under a stable `id` (required): registering the same `id` again replaces the entry, so a bundle evaluated twice never doubles the actions. The return value unregisters |
+| `domains.configure<TRow>(address, fn, {id})` | `fn(table)`, sync or async, dresses every handle `domains.table(address)` makes from then on (the `/domains` route's once the app's bundle has loaded). Register at module load under a stable `id`: the same `id` again replaces the entry. Returns the unregister function |
 | `table.actions.add({name, icon?, requires?, enabled?, when?(row), run(row)})` | the ribbon, the row's hover actions, the context menu, the shortcuts. `requires` names a capability (`'edit'`, a schema `permissions` name such as `'approve'`) — denied, the action is not rendered; `when` narrows it per row; returns the unregister |
 | `table.validators.add(column, (value, row) => message \| null)` | a rule the form checks on every change, beside the schema's and the server's; the message shows on the column's field and refuses Save |
 | `table.renderer: ObjectRenderer<RowView<TRow>>` | `caption`, `icon?`, `listItem?`, `markup?`, `tooltip?`, `card?` — lists, cards, pickers, chips, breadcrumbs; spread the default to override one |
-| `class X extends DomainApp` | `ribbon()` returns `{main, tools, presets}` — extend a slot (see [dg.md](../dg.md)); `presets(...[label, query])` is a query switch (`$me` = the current user's id; the one matching the query in force is pressed; hidden off the list page; a press while dirty goes through the gate); `shortcuts` maps `'Ctrl+Shift+C'`-style keys onto action names, run over the current row while the app has the focus; `header` is the entity page above the form — what an app shows about the record before its fields (a parent card, a summary), empty until filled; `panes` is the page below the form, beside the children and history |
+| `class X extends DomainApp` | `ribbon()` returns `{main, tools, presets}` — extend a slot (see [dg.md](../dg.md)); `presets(...[label, query])` is a query switch (`$me` = the current user's id; the one matching the query in force is pressed; hidden off the list page; a press while dirty goes through the gate); `shortcuts` maps `'Ctrl+Shift+C'`-style keys onto action names, run over the current row while the app has the focus; `header` is above the entity form (empty until filled), `panes` below it |
 | `table.app({app: X, ...})` | the view: `name`, `path`, `query`, `sort`, `pageSize`, `live`, `mode`, `itemHeight`, `defaults`, `include`, `children`, `history`, `filters`, `shortcuts`, `menu` — see [dg.md](../dg.md) |
 | `table.importer` | how the import wizard reads the app's columns: derived columns, rows kept out, the preview's and the report's columns and messages (see the CHANGELOG entry) |
 | `source` option `hosted` | a host filter condition (a structure search) the app answers with ids, sent before every read |
