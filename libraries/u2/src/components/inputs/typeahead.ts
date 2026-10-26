@@ -157,6 +157,7 @@ export class TypeAhead<T> extends Control {
       maxHeight: options.maxHeight,
       matchWidth: options.matchWidth,
       footer: options.footer,
+      currentKey: () => selected.value === null ? null : (options.keyOf ?? itemText)(selected.value),
     });
     this.isOpen = this._list.isOpen;
     // a fast Enter: the intent was clear — the name typed, else the first candidate, once they land

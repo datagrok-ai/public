@@ -1022,6 +1022,10 @@ textarea.u2-list-area {
   background: var(--dg-selection-bg);
 }
 
+.u2-suggest-option-current {
+  font-weight: var(--dg-font-weight-bold);
+}
+
 .u2-suggest-loading,
 .u2-suggest-empty,
 .u2-suggest-error,

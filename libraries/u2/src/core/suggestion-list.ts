@@ -45,6 +45,8 @@ export interface SuggestionListOptions<T> {
   matchWidth?: boolean;
   /** A muted line under the rows; null for none. */
   footer?: () => string | null;
+  /** The {@link keyOf} of the item the box holds, marked in the rows. */
+  currentKey?: () => string | null;
 }
 
 export class SuggestionList<T> {
@@ -236,7 +238,11 @@ export class SuggestionList<T> {
     const count = this._shown.value.length;
     const els = this._list.children;
     const active = this._active.value;
+    const items = this._shown.value;
+    const current = this._options.currentKey?.() ?? null;
+    const keyOf = this._options.keyOf;
     for (let i = 0; i < count; i++) {
+      els[i].classList.toggle('u2-suggest-option-current', current !== null && keyOf?.(items[i]) === current);
       els[i].classList.toggle('u2-suggest-option-active', i === active);
       els[i].classList.toggle(`${this._options.prefix}-option-active`, i === active);
       els[i].setAttribute('aria-selected', i === active ? 'true' : 'false');
