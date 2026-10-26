@@ -3,8 +3,9 @@
 import * as DG from 'datagrok-api/dg';
 import {
   AggregationCode, AGG_CODE, CacheEntry, CategoricalDesirability, ColumnDesirability, CURRENT_MPO_VERSION,
-  DESIRABILITY_PROFILE_TYPE, DesirabilityLine, DesirabilityMode, DesirabilityProfile, HoistedColumn, MpoResult,
-  MpoScale, NumericalDesirability, PropertyDesirability, QualifierPolicy, RowState, WeightedAggregation,
+  DESIRABILITY_PROFILE_TYPE, DesirabilityLine, DesirabilityMode, DesirabilityProfile, getMpoCoverageColumnName,
+  HoistedColumn, MpoResult, MpoScale, NumericalDesirability, PropertyDesirability, QualifierPolicy, RowState,
+  WeightedAggregation,
 } from './mpo-types';
 
 // mpo-types is the types/constants barrel for this module; re-export it so consumers keep importing from './mpo'.
@@ -305,11 +306,15 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
 
   const D = new Float32Array(rowCount);
   let state: Uint8Array | null = null; // lazily allocated on the first skip/bail row
+  let missing: Uint8Array | null = null; // lazily allocated on the first empty cell
 
   for (let i = 0; i < rowCount; ++i) {
     const q = isQnum ? DG.Qnum.getQ(raw[i]) : DG.QNUM_EXACT;
     const v = isQnum ? DG.Qnum.getValue(raw[i]) : raw[i];
-    if (v === valNull || (isQnum && isNaN(v)) || (log && v <= 0 && q !== DG.QNUM_GREATER)) {
+    const isEmpty = v === valNull || (isQnum && isNaN(v));
+    if (isEmpty)
+      (missing ??= new Uint8Array(rowCount))[i] = 1;
+    if (isEmpty || (log && v <= 0 && q !== DG.QNUM_GREATER)) {
       if (missState !== RowState.Contribute) {
         (state ??= new Uint8Array(rowCount))[i] = missState;
         D[i] = NaN;
@@ -340,7 +345,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
     const y = covered ? lineY(xs!, line!, x) : 0;
     D[i] = covered && inv ? 1 - y : y;
   }
-  return {D, state};
+  return {D, state, missing};
 }
 
 /// The cheap phase (always re-run; depends on weights + aggregation): folds the per-column desirabilities
@@ -445,6 +450,20 @@ export function buildDesirabilityColumns(
   return result;
 }
 
+/// Builds the column with the number of scored properties that have a value in each row.
+export function buildCoverageColumn(maps: ColumnDesirability[], profileName: string, rowCount: number): DG.Column {
+  const coverage = new Int32Array(rowCount).fill(maps.length);
+  for (const {missing} of maps) {
+    if (missing === null)
+      continue;
+    for (let i = 0; i < rowCount; ++i)
+      coverage[i] -= missing[i];
+  }
+  const c = DG.Column.int(getMpoCoverageColumnName(profileName), rowCount);
+  c.setRawData(coverage, false);
+  return c;
+}
+
 /// Stateful MPO engine for the interactive preview: same contract as mpo(), but caches each column's
 /// desirability mapping (the expensive phase) keyed by df.id|column, so editing one curve recomputes only that
 /// column while the rest reuse the cache and only the cheap reduction re-runs. Call release() on teardown.
@@ -458,6 +477,7 @@ export class MpoCalculator {
     aggregation: WeightedAggregation,
     isDifferent: boolean = false,
     createDesirabilityColumns: boolean = false,
+    createCoverageColumn: boolean = false,
   ): MpoResult {
     if (columns.length === 0)
       throw new Error('No columns provided for MPO calculation.');
@@ -474,11 +494,11 @@ export class MpoCalculator {
       const key = `${dataFrame.id}|${h.col.name}`;
       const hit = this.cache.get(key);
       if (hit && hit.lineKey === lineKey && hit.D.length === rowCount) {
-        maps.push({D: hit.D, state: hit.state});
+        maps.push({D: hit.D, state: hit.state, missing: hit.missing});
         continue;
       }
       const m = mapColumnDesirability(h, rowCount);
-      this.cache.set(key, {lineKey, D: m.D, state: m.state});
+      this.cache.set(key, {lineKey, D: m.D, state: m.state, missing: m.missing});
       maps.push(m);
     }
 
@@ -488,8 +508,9 @@ export class MpoCalculator {
 
     const desirabilityColumns = createDesirabilityColumns ?
       buildDesirabilityColumns(columns, maps, profileName, rowCount) : undefined;
+    const coverageColumn = createCoverageColumn ? buildCoverageColumn(maps, profileName, rowCount) : undefined;
 
-    return {scoreColumn: resultColumn, desirabilityColumns};
+    return {scoreColumn: resultColumn, desirabilityColumns, coverageColumn};
   }
 
   /// Drops all cached desirability arrays. Call on dialog close / dataframe switch.
@@ -506,7 +527,8 @@ export function mpo(
   aggregation: WeightedAggregation,
   isDifferent: boolean = false,
   createDesirabilityColumns: boolean = false,
+  createCoverageColumn: boolean = false,
 ): MpoResult {
   return new MpoCalculator()
-    .compute(dataFrame, columns, profileName, aggregation, isDifferent, createDesirabilityColumns);
+    .compute(dataFrame, columns, profileName, aggregation, isDifferent, createDesirabilityColumns, createCoverageColumn);
 }

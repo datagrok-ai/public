@@ -77,6 +77,10 @@ export function getMpoScoreColumnName(name: string): string {
   return name ? `MPO ${name}` : 'MPO';
 }
 
+export function getMpoCoverageColumnName(scoreColumnName: string): string {
+  return `${scoreColumnName} coverage`;
+}
+
 /// A map of desirability lines with their weights
 export type DesirabilityProfile = {
   type: typeof DESIRABILITY_PROFILE_TYPE;
@@ -90,6 +94,7 @@ export type DesirabilityProfile = {
 export type MpoResult = {
   scoreColumn: DG.Column;
   desirabilityColumns?: DG.Column[];
+  coverageColumn?: DG.Column;
 }
 
 /// The raw-data array kinds DG.Column.getRawData() can return (int/categorical → Int32Array, float → Float32/64, etc).
@@ -118,9 +123,11 @@ export interface HoistedColumn {
 
 /// Per-column desirability mapping result: D[i] is the desirability score (NaN where the column does not
 /// contribute), and state marks each row with a RowState. state is null when every row contributes (the common case).
+/// missing[i] is 1 where the cell is empty; null when the column has no empty cells.
 export interface ColumnDesirability {
   D: Float32Array;
   state: Uint8Array | null;
+  missing: Uint8Array | null;
 }
 
 /// One cached column mapping in MpoCalculator: the result plus the line/missing-value fingerprint that validates it.
@@ -128,6 +135,7 @@ export interface CacheEntry {
   lineKey: string;
   D: Float32Array;
   state: Uint8Array | null;
+  missing: Uint8Array | null;
 }
 
 // Numeric codes for the per-cell aggregation switch in reduceMpo() — cheaper to branch on than strings.

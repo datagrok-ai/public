@@ -3294,12 +3294,13 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Score column', description: 'Name of the resulting score column, e.g. "MPO <profile name>". The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name'}}) profileName: string,
     @grok.decorators.param({type: 'string', options: {initialValue: 'Average', choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
     createDesirabilityColumns: boolean = false,
+    @grok.decorators.param({options: {description: 'Also add a column with the number of scored properties that have a value in each row'}}) createCoverageColumn: boolean = false,
   ): DG.DataFrame | null {
     if (columns.length === 0)
       return null;
     const cols = Array.from(columns);
     const isDifferent = df.rowCount !== cols[0].length;
-    const result = mpo(df, cols, profileName, aggregation, isDifferent, createDesirabilityColumns);
+    const result = mpo(df, cols, profileName, aggregation, isDifferent, createDesirabilityColumns, createCoverageColumn);
     const resultColumns = collectMpoResultColumns(df, result, isDifferent);
     return resultColumns.length > 0 ? DG.DataFrame.fromColumns(resultColumns) : null;
   }
