@@ -1011,7 +1011,8 @@ export class DomainApp extends Control {
         empty: `${DomainApp._capital(this.table.info.singularName || 'row')} "${entity}" was not found.`}));
       this._panes = this.runInScope(() => [
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
-        ...(history === false || !this.table.table.support.audit ? [] : [domains.history(source)]),
+        ...(history === false || !this.table.table.support.audit ? [] :
+          [domains.history(source, undefined, {include})]),
       ]);
       this._formHost.replaceChildren(form.root);
       this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
