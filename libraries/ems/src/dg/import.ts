@@ -19,7 +19,7 @@ import type {IProperty, ChoiceItem, BadgeVariant, RowView} from '@datagrok-libra
 import type {DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike} from '../core/domain-backend.js';
 import {fromDartInput} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainTable} from './facade.js';
-import {DomainDataTable} from './grid.js';
+import {DomainDataTable, DomainGrid} from './grid.js';
 import {DomainErrors} from './errors.js';
 
 export interface DomainImportOptions {
@@ -57,7 +57,8 @@ export type DomainImportStep = 'preview' | 'report';
 
 /** What becomes of one row: it is sent with `values` added, or kept out as the row the table
  * already has (`existing`, its id), as a repeat of an earlier row of the same file (`sameAs`, its
- * index) or as an `error`. `label` names it on the row's badge, `note` says why. */
+ * index) or as an `error`. The badge says the verb the counts use; `label` names the verdict
+ * where the row has no verb of its own, `note` says why. */
 export interface DomainImportVerdict {
   values?: Record<string, unknown>;
   existing?: string;
@@ -131,8 +132,6 @@ const OUTCOMES: Record<string, {label: string, variant: BadgeVariant}> = {
   error: {label: 'Error', variant: 'error'},
   aborted: {label: 'Not imported', variant: 'default'},
 };
-/** Why a row whose business key the table or the file already has is skipped. */
-const DUPLICATE = 'Duplicate business key';
 /** Why a valid row of an aborted all-or-nothing run did not land. */
 const ABORTED = 'Another row has errors';
 /** Rows of the report's key lookup per query. */
@@ -256,7 +255,7 @@ class ImportFlow {
     }
     const duplicates = `A row whose ${this._keyHeader()} the table already has is an error instead of a skip`;
     if (batch.skipDuplicates) {
-      this._errorOnDuplicate = new BoolInput({label: `Existing ${DomainTable.noun(this._table.info)} are errors`,
+      this._errorOnDuplicate = new BoolInput({label: `Refuse ${DomainTable.noun(this._table.info)} that exist`,
         value: false, name: 'errorOnDuplicate', tooltipText: duplicates});
     }
     const column = this._keyColumn();
@@ -273,7 +272,10 @@ class ImportFlow {
         `${plural(frame.rowCount, 'row', 'rows')}, ${plural(frame.columns.names().length, 'column', 'columns')}`;
       if (this._writeBack !== undefined) {
         this._writeBack.visible = frame !== null;
-        this._writeBack.label = frame === null ? '' : `Write ${this._keyHeader()} back to ${frame.name}`;
+        // the table's name stays out of the caption: a long one widened the label column
+        this._writeBack.label = `Write ${this._keyHeader()} back`;
+        this._writeBack.tooltipText = frame === null ? '' :
+          `Adds a "${column}" column to ${frame.name} with each row's ${this._keyHeader()}, as imported or as found`;
       }
       this._frame.value = frame;
       this._remap(frame);
@@ -325,11 +327,13 @@ class ImportFlow {
   private _mappingStatus(): string {
     this._recheck.value;
     const mapped = this._mapping();
-    const imported = [...this._choices.values()].filter((c) => c.value.peek() !== SKIP).length;
+    const targets = [...this._choices.values()].map((c) => c.value.peek()).filter((t): t is string => t !== null && t !== SKIP);
+    const twice = [...new Set(targets.filter((t, i) => targets.indexOf(t) !== i))];
     const required = this._required()
       .map((name) => `${ImportFlow._caption(this, name)} ${mapped.has(name) ? '✓' : '✗'}`);
     return [...(required.length > 0 ? [`Required: ${required.join(', ')}`] : []),
-      `${imported} of ${plural(this._choices.size, 'column', 'columns')} imported`].join(' · ');
+      ...twice.map((name) => `${ImportFlow._caption(this, name)} is mapped twice`),
+      `${targets.length} of ${plural(this._choices.size, 'column', 'columns')} imported`].join(' · ');
   }
 
   /** The table importer's verdicts over every row, then the server's own over the first
@@ -407,17 +411,18 @@ class ImportFlow {
     const kept = plan.filter((p) => p.payload === null);
     const keptErrors = kept.filter((p) => p.verdict.error !== undefined).length;
     const errors = report.errorCount + keptErrors;
+    const checked = sent.length > PREVIEW_ROWS ? `Checked the first ${PREVIEW_ROWS.toLocaleString()} of ` +
+      `${sent.length.toLocaleString()} rows — the rest are checked on import:` : '';
     host.prepend(ImportFlow._headline(ImportFlow._counts([[report.willInsert, 'to add', 'success'],
       [report.willUpdate, 'to update', 'success'], [report.willSkip + kept.length - keptErrors, 'to skip', 'default'],
       [errors, errors === 1 ? 'error' : 'errors', 'error']]), 'Nothing to import'));
-    const checked = sent.length > PREVIEW_ROWS ? `Checked the first ${PREVIEW_ROWS.toLocaleString()} of ` +
-      `${sent.length.toLocaleString()} rows — the rest are checked on import.` : '';
-    const lead = [showing === '' ? '' : `${showing}.`, checked].filter((s) => s !== '').join(' ');
-    if (lead !== '')
-      host.append(span(lead, 'u2-domain-import-summary'));
+    if (checked !== '')
+      host.prepend(span(checked, 'u2-domain-import-summary'));
+    if (showing !== '')
+      host.append(span(`${showing}.`, 'u2-domain-import-summary'));
     const valid = sent.length > PREVIEW_ROWS ? null : report.willInsert + report.willUpdate;
-    this._importText.value = valid === null ? 'Import' :
-      `Import ${plural(valid, DomainTable.noun(this._table.info, true), DomainTable.noun(this._table.info))}`;
+    const noun = (n: number) => plural(n, DomainTable.noun(this._table.info, true), DomainTable.noun(this._table.info));
+    this._importText.value = `Import ${noun(valid ?? sent.length)}`;
     // the counts are what the batch WOULD do row by row; all-or-nothing makes one bad row the
     // verdict on all of them
     this._previewBlock.value = options.allOrNothing !== false && errors > 0 ? this._abortReason(errors, valid) : null;
@@ -455,7 +460,7 @@ class ImportFlow {
       const at = sent[dry.index];
       const errors = dry.errors ?? [];
       rows[at] = this._row(at, plan[at], dry.predicted, errors.length > 0 ? this._describe(errors) :
-        plan[at].verdict.note ?? (dry.predicted === 'skip' ? DUPLICATE : ''), errors);
+        plan[at].verdict.note ?? (dry.predicted === 'skip' ? this._duplicate() : ''), errors);
     }
     return rows;
   }
@@ -484,7 +489,7 @@ class ImportFlow {
     const table = owner.runInScope(() => new DataTable<DomainImportRow>({
       rowHeight: this._table.importer?.rowHeight ?? 24,
       keyOf: (row) => String(row.index),
-      columns: columns.map((c) => ({name: c.name, header: c.header, width: c.width,
+      columns: columns.map((c) => ({name: c.name, header: c.header, width: ImportFlow._share(c, rows),
         render: (row, _index, cell) => ImportFlow._cell(c.render(row), cell)})),
       cellState: {
         isChanged: () => false,
@@ -497,6 +502,22 @@ class ImportFlow {
     table.setItems(rows);
     table.root.classList.add('u2-domain-import-rows', `u2-domain-import-${step}-rows`);
     return table.root;
+  }
+
+  /** A growing column's share of the width by what its cells hold, so a long name gets more room
+   * than a short note instead of the same; a fixed or content-free column keeps its own. */
+  private static _share(column: DomainImportColumn, rows: DomainImportRow[]): string | undefined {
+    const track = /^minmax\((\d+)px, [\d.]+fr\)$/.exec(column.width ?? '');
+    if (track === null)
+      return column.width;
+    const font = `${getComputedStyle(document.body).fontSize} ${getComputedStyle(document.body).fontFamily}`;
+    let widest = DomainGrid.textWidth(column.header, `bold ${font}`);
+    for (const row of rows) {
+      const content = column.render(row);
+      widest = Math.max(widest, DomainGrid.textWidth(typeof content === 'string' ? content : content.textContent ?? '', font));
+    }
+    const width = Math.min(Math.ceil(widest) + 16, 400);
+    return `minmax(${Math.min(Number(track[1]), width)}px, ${width}fr)`;
   }
 
   /** A cell's content, its text the cell's title, since a narrow column cuts it; plain text goes
@@ -542,7 +563,7 @@ class ImportFlow {
   private static _resultColumn(kinds: Record<string, {label: string, variant: BadgeVariant}>): DomainImportColumn {
     return {name: '~result', header: 'Result', width: '88px', render: (row) => {
       const kind = kinds[row.kind];
-      const label = row.label || kind?.label;
+      const label = kind?.label ?? (row.label || undefined);
       if (label === undefined)
         return '';
       const variant = kind?.variant ?? 'default';
@@ -711,6 +732,11 @@ class ImportFlow {
   }
 
   /** What the report's key column is headed: the business key's caption, else the table's noun. */
+  /** Why a row whose key the table or the file already has is skipped. */
+  private _duplicate(): string {
+    return `${this._keyHeader()} already exists`;
+  }
+
   private _keyHeader(): string {
     const key = this._table.info.businessKey;
     if (key.length === 1)
@@ -884,7 +910,7 @@ class ImportFlow {
       if (row?.status === 'error')
         return this._row(i, p, 'error', p.payload === null ? p.verdict.error ?? '' : this._describe(errors), errors);
       if (row?.status === 'duplicate')
-        return {...this._row(i, p, 'skip', DUPLICATE, errors), id: row.existingId ?? null};
+        return {...this._row(i, p, 'skip', this._duplicate(), errors), id: row.existingId ?? null};
       if (p.payload === null)
         return this._kept(i, p);
       if (failed || row === undefined)
