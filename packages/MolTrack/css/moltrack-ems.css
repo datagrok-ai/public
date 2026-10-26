@@ -1,6 +1,7 @@
 .moltrack-ems-card {
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
+  gap: var(--dg-space-l);
+  padding-top: var(--dg-space-s);
   overflow: hidden;
 }
 
@@ -22,8 +23,8 @@
 .moltrack-ems-run {
   flex: 0 0 280px;
   overflow: hidden;
-  white-space: nowrap;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .moltrack-ems-problem {

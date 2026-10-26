@@ -104,7 +104,7 @@ export class MolTrackTables {
       row.structure ? grok.chem.drawMolecule(row.structure, 84, 56) : span(''),
       divV([
         span(caption(row), 'u2-domain-card-title'),
-        span(row.common_name ?? '', 'u2-domain-card-description'),
+        MolTrackTables._text(row.common_name ?? '', 'u2-domain-card-description'),
         span(row.formula ?? '', 'u2-domain-card-description'),
       ], 'moltrack-ems-card-text'),
     ], 'moltrack-ems-card');
