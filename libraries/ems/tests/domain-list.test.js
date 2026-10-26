@@ -5,6 +5,7 @@
 
 import {emsBackends} from '../src/core/domain-backend.js';
 import {test} from 'node:test';
+import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
@@ -597,6 +598,39 @@ scoped('a vetoed restore is worded as a restore: the row, and what to bring back
     message: 'Cannot save: Column "project_id" references a deleted row in "project"'}, trash),
   'Cannot restore "Aspirin": its project was deleted too. Restore the project first.');
   trash.dispose();
+});
+
+scoped('the seeded row stays unpainted through focus, hover and stray keys; a pick or Down shows it', async () => {
+  const {src} = await issues();
+  const list = domains.list(src);
+  mount(list);
+  await flush();
+  const row = (i) => list.list.root.querySelector(`.u2-list-row[data-index="${i}"]`);
+  const seeded = () => list.root.classList.contains('u2-domain-list-seeded');
+  fire(list.list.root, 'focus');
+  fire(row(0), 'mouseover');
+  for (const key of ['Tab', 'Shift', 'Control'])
+    fire(list.list.root, 'keydown', {key});
+  fire(list.list.root, 'click');
+  assert.equal(seeded(), true, 'focus, hover, a click off the rows and non-navigation keys are no pick');
+  assert.equal(src.currentRow.peek()?.id, row(0).dataset.u2Row, 'the seed still gives the keys and the context a row');
+  fire(list.list.root, 'keydown', {key: 'ArrowDown'});
+  assert.equal(seeded(), false, 'Down picks');
+  assert.equal(row(0).classList.contains('u2-list-row-current'), true, 'the first Down lands on the seeded row');
+  fire(list.list.root, 'keydown', {key: 'ArrowDown'});
+  assert.equal(row(1).classList.contains('u2-list-row-current'), true, 'the next one moves on');
+  list.dispose();
+  src.dispose();
+});
+
+scoped('domain.css never paints the seeded row as current or selected, whatever the focus or hover', () => {
+  const css = readFileSync(new URL('../css/domain.css', import.meta.url), 'utf8');
+  const rules = css.match(/[^{}]*u2-domain-list-seeded[^{]*\{[^}]*\}/g) ?? [];
+  assert.equal(rules.length, 2);
+  for (const rule of rules) {
+    assert.doesNotMatch(rule.split('{')[0], /:focus|:hover/, rule);
+    assert.match(rule, /--u2-domain-row-(current|selected): transparent/);
+  }
 });
 
 scoped('a seeded row is current but no pick; a pending delete reads with an Undo; an empty table offers New', async () => {

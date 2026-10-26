@@ -265,13 +265,13 @@
   outline: none;
 }
 
-/* the row a load makes current is no pick: unmarked until the list has the focus, and never drawn
-   as selected until it is clicked or keyed */
-.u2-domain-list-seeded .u2-list-row.u2-list-row-selected:not(:hover) {
+/* the row a load makes current is no pick: neither current nor selected is drawn on it, focused or
+   hovered, until the user picks a row (list.ts drops the class) */
+.u2-domain-list-seeded .u2-list.u2-domain-list-rows .u2-list-row-selected {
   --u2-domain-row-selected: transparent;
 }
 
-.u2-domain-list-seeded .u2-list:not(:focus) .u2-list-row-current:not(:hover) {
+.u2-domain-list-seeded .u2-list.u2-domain-list-rows .u2-list-row-current {
   --u2-domain-row-current: transparent;
 }
 
