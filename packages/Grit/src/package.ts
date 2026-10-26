@@ -54,22 +54,13 @@ export function gritIssueHandler(): DG.ObjectHandler<DG.DomainRow> {
 
 const priorityVariants: {[name: string]: BadgeVariant} = {critical: 'error', high: 'warning', medium: 'accent'};
 
+/** The id of the `closed` status; null where the lookup table has no such row, so nothing closes. */
 let _closed: Promise<string | null> | undefined;
 
-/** The id of the `closed` status, looked up once per page; null where the lookup table has no such row, so nothing
- * closes. */
-function closedStatus(): Promise<string | null> {
-  if (_closed === undefined) {
-    _closed = gritDb.statuses.getByKey({name: 'closed'}).then((closed) => closed?.id ?? null);
-    _closed.catch(() => _closed = undefined);
-  }
-  return _closed;
-}
-
-/** What Grit declares on `issue` — the two actions, the closing rule and the card — on every handle over it: the
- * Issues app's, a child tab's, the `/domains` route's. */
+/** The two actions, the closing rule and the card, on every handle over `issue`. */
 domains.configure<IssueRow>('grit.issue', async (issues) => {
-  const [closedId] = await Promise.all([closedStatus(), warmLookups()]);
+  const [closedId] = await Promise.all([
+    _closed ??= gritDb.statuses.getByKey({name: 'closed'}).then((closed) => closed?.id ?? null), warmLookups()]);
   const me = () => grok.shell.user.id;
   issues.actions.add({name: 'Assign to me', icon: 'user', requires: 'edit',
     when: (r) => r.assignee !== me(), run: (r) => { r.assignee = me(); }});
@@ -100,9 +91,8 @@ export class IssuesApp extends DomainApp {
   }
 }
 
-/** A view per Grit table — the issues where they were, at `/apps/Grit/Issues` — over the handles {@link getGritDb}
- * opens, so the actions, the closing rule and the card hold in each. Grit's one app answers everything under
- * `/apps/Grit`. */
+/** A view per Grit table — the issues where they were, at `/apps/Grit/Issues`. Grit's one app answers everything
+ * under `/apps/Grit`. */
 const views = domains.views({
   path: '/apps/Grit',
   handle: async (address) => Object.values((await getGritDb()).tables).find((t) => t.address === address)!,

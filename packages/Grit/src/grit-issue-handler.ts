@@ -24,13 +24,9 @@ let lookupNames: Map<string, string> | null = null;
 let lookupsLoading: Promise<Map<string, string>> | null = null;
 
 export function warmLookups(): Promise<Map<string, string>> {
-  if (lookupsLoading === null) {
-    lookupsLoading = Promise
-      .all([gritDb.statuses.query({}), gritDb.priorities.query({}), gritDb.issueTypes.query({})])
-      .then((tables) => lookupNames = new Map(tables.flat().map((r) => [r.id, r.name])));
-    lookupsLoading.catch(() => lookupsLoading = null);
-  }
-  return lookupsLoading;
+  return lookupsLoading ??= Promise
+    .all([gritDb.statuses.query({}), gritDb.priorities.query({}), gritDb.issueTypes.query({})])
+    .then((tables) => lookupNames = new Map(tables.flat().map((r) => [r.id, r.name])));
 }
 
 export function lookupName(id?: string): string | null {

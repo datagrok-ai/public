@@ -4,8 +4,7 @@ import type {DomainSource} from '@datagrok-libraries/ems';
 import {DomainApp} from '@datagrok-libraries/ems/src/dg';
 import type {DomainTable} from '@datagrok-libraries/ems/src/dg';
 import {gritDb, IssueRow} from '../generated/db';
-import {getGritDb} from '../generated/db-ui';
-import type {GritDb} from '../generated/db-ui';
+import {getGritDb, GritDb} from '../generated/db-ui';
 import {IssuesApp} from '../package';
 
 // The code tier over the generated typed handles: the Issues app opens over `getGritDb()`, the
@@ -49,7 +48,7 @@ category('Grit: issues app', () => {
       expect(app.shortcuts['m'], 'Assign to me');
       expect(app.shortcuts['c'], 'Close');
       const ribbon = app.ribbon();
-      expect(ribbon.main.length, 5, 'New, Save, Discard, Actions, Refresh');
+      expect(ribbon.main.length, 5, 'New, Save, Discard, the ⋯ menu, Refresh');
       expect(ribbon.tools.length, 2, 'the search box and Sort by');
       expect(ribbon.presets.length, 1, 'the Mine / Open switch');
       const presets = ribbon.presets[0];
