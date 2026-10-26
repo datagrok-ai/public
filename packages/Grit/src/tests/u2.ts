@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import {before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {DomainApp} from '@datagrok-libraries/ems/src/dg';
 import type {DomainTable} from '@datagrok-libraries/ems/src/dg';
@@ -16,8 +16,7 @@ category('Grit: issues app', () => {
 
   /** The first load settled, or the reason it did not. */
   async function ready(src: DomainSource): Promise<void> {
-    for (let i = 0; i < 200 && (src.state.value === 'idle' || src.state.value === 'loading'); i++)
-      await delay(50);
+    await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading', 'the source did not load');
     if (src.state.value !== 'ready')
       throw new Error(`source is ${src.state.value}: ${String(src.error.value)}`);
   }

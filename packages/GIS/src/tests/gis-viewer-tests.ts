@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
-import {before, after, category, expect, test, testViewer} from '@datagrok-libraries/test/src/test';
+import {before, after, category, expect, test, testViewer, waitUntil} from '@datagrok-libraries/test/src/test';
 
 import * as GUIUTILS from './gui-utils';
 import {SEMTYPEGIS} from '../gis-semtypes';
@@ -39,6 +39,9 @@ category('MapViewer', async () => {
 
   test('viewerProperties', async () => {
     const mapViewer = (DG.Viewer.fromType('Map', testDF) as GisViewer);
+    // the package creates the viewer after fromType returns, and its properties with it
+    await waitUntil(() => (mapViewer.getOptions(true) as {look: GUIUTILS.Indexable}).look.markerOpacity !== undefined,
+      'the map viewer did not register its properties');
     let options = await GUIUTILS.getOptions(mapViewer);
     expect(options.markerOpacity, 80);
     expect(options.markerDefaultSize, 5);

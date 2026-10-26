@@ -1,4 +1,4 @@
-import { after, awaitCheck, before, category, delay, expect, test } from '@datagrok-libraries/test/src/test';
+import { after, before, category, delay, expect, test, waitUntil } from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -6,14 +6,20 @@ import { _testSetMolfile, _testSetSmarts, _testSetSmiles } from './ketcher-utils
 import { KetcherSketcher } from '../ketcher';
 
 /** A Ketcher sketcher in a dialog of its own, once its Ketcher has started. */
-async function openKetcher(): Promise<{ketcher: any, dialog: DG.Dialog}> {
+async function openKetcher(): Promise<{ketcher: any, dialog: DG.Dialog, sketcher: KetcherSketcher}> {
   const func = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}, name: 'ketcherSketcher'})[0];
   grok.chem.currentSketcherType = func.friendlyName;
   const s = new grok.chem.Sketcher();
   const dialog = ui.dialog().add(s).show();
   await s.sketcherReady();
-  await awaitCheck(() => (s.sketcher as KetcherSketcher)?._sketcher !== null, 'Ketcher did not start', 20000);
-  return {ketcher: (s.sketcher as KetcherSketcher)._sketcher!, dialog};
+  await waitUntil(() => (s.sketcher as KetcherSketcher)?._sketcher !== null, 'Ketcher did not start', 20000);
+  return {ketcher: (s.sketcher as KetcherSketcher)._sketcher!, dialog, sketcher: s.sketcher as KetcherSketcher};
+}
+
+/** Closes the dialog and resolves once its sketcher has detached, which ends that Ketcher's subscriptions. */
+async function close({dialog, sketcher}: {dialog: DG.Dialog, sketcher: KetcherSketcher}): Promise<void> {
+  dialog.close();
+  await waitUntil(() => (sketcher as any)._detached === true, 'the closed Ketcher did not detach');
 }
 
 
@@ -85,7 +91,7 @@ category('ketcher', async () => {
   test('a Ketcher closed or paused leaves no subscription on the page\'s settings service', async () => {
     // the settings service the Ketchers share (ketcher-core's singleton), as each Ketcher holds it
     const services = new Set<any>();
-    const opened = async (): Promise<{ketcher: any, dialog: DG.Dialog}> => {
+    const opened = async (): Promise<{ketcher: any, dialog: DG.Dialog, sketcher: KetcherSketcher}> => {
       const k = await openKetcher();
       services.add(k.ketcher.settingsService);
       return k;
@@ -93,11 +99,8 @@ category('ketcher', async () => {
     const listeners = (): number => Array.from(services)
       .reduce((n, s) => n + (s?.emitter?.listenerCount?.('settings:changed') ?? 0), 0);
     const closed = async (n: number): Promise<void> => {
-      for (let i = 0; i < n; i++) {
-        const {dialog} = await opened();
-        dialog.close();
-        await delay(300);
-      }
+      for (let i = 0; i < n; i++)
+        await close(await opened());
     };
     await closed(1);
     const settled = listeners();
@@ -106,9 +109,8 @@ category('ketcher', async () => {
       `the settings listeners after three more Ketchers opened and closed (${services.size} settings services)`);
     const paused = await opened();
     const last = await opened();
-    last.dialog.close();
-    paused.dialog.close();
-    await delay(300);
+    await close(last);
+    await close(paused);
     expect(listeners(), settled, 'the settings listeners after a Ketcher paused by another, and both closed');
   }, {timeout: 120000});
 
@@ -140,12 +142,15 @@ category('ketcher', async () => {
     const sketcher: KetcherSketcher = await func.apply();
     const dialog = ui.dialog().add(sketcher.root).show();
     try {
-      await awaitCheck(() => sketcher._sketcher !== null, 'Ketcher did not start', 20000);
+      await waitUntil(() => sketcher._sketcher !== null, 'Ketcher did not start', 20000);
       const inTurn = (sketcher.constructor as any)._inTurn as <T>(c: () => Promise<T>) => Promise<T>;
-      const earlier = inTurn(() => delay(1500));
+      // an earlier conversion that finishes only after the sketcher has closed
+      let finishEarlier!: () => void;
+      const gate = new Promise<void>((resolve) => finishEarlier = resolve);
+      const earlier = inTurn(() => gate);
       const smarts = sketcher.getSmarts();
-      await delay(300);
       sketcher.detach();
+      finishEarlier();
       await earlier;
       expect(await smarts, '', 'the SMARTS of the closed sketcher');
     } finally {
