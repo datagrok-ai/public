@@ -566,22 +566,40 @@
    ribbon past, and the whole view scrolls sideways instead */
 .u2-domain-search {
   flex: 1 1 auto;
-  min-width: 90px;
+  min-width: 72px;
 }
 
 .d4-ribbon-panel:has(> .d4-ribbon-item > .u2-domain-search) {
   flex: 1 1 auto;
-  min-width: 0;
+  min-width: 104px;
   max-width: 340px;
 }
 
 .d4-ribbon-item:has(> .u2-domain-search) {
   flex: 1 1 160px;
-  min-width: 90px;
+  min-width: 72px;
 }
 
 .d4-ribbon-item > .u2-domain-search {
   width: 100%;
+}
+
+.u2-domain-search > .u2-input-box,
+.u2-domain-search > .u2-input-box > .u2-input-editor {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* the panels' row is sized to its content, so the search panel had no room to grow into; when the
+   view narrows, the search gives way and the buttons keep their size (the shell pins every panel's
+   flex-shrink inline, so their floor is a min-width) */
+.d4-ribbon:has(> .d4-ribbon-panel > .d4-ribbon-item > .u2-domain-search) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.d4-ribbon:has(> .d4-ribbon-panel > .d4-ribbon-item > .u2-domain-search) > .d4-ribbon-panel:not(:has(.u2-domain-search)) {
+  min-width: max-content;
 }
 
 /* the presets are a framed switch, led by what they do */
