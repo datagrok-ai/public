@@ -114,6 +114,7 @@ scoped('the chosen columns are written to the selection; one not chosen is left 
   assert.deepEqual(targets(), ['2 selected issues', 'All 3 issues matching the filter']);
   assert.equal(target().value.value, '2 selected issues', 'a selection is the default target');
   assert.equal(ok().textContent, 'Update 2 issues', 'the button says what it does');
+  assert.equal(ok().classList.contains('u2-btn-primary'), true, 'the committing button is raised');
   assert.equal(offered().includes('id'), false, 'a system column is not offered');
   assert.equal(offered().includes('number'), false, 'a business key is not offered for two rows');
   assert.equal(offered().includes('project_id'), false);

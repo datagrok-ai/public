@@ -188,7 +188,7 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
     finish(await _run(source, form, columns, target.peek().kind === SELECTED));
   };
   dialog.effect(() => {
-    dialog.onOK(run, {text: caption.value});
+    dialog.onOK(run, {text: caption.value, primary: true});
   });
   dialog.add(form).okDisabled(problem).onCancel(() => finish(null)).show({modal: true, width: 480});
 }
