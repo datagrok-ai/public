@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import { _testSetMolfile, _testSetSmarts, _testSetSmiles } from './ketcher-utils';
 import { KetcherSketcher } from '../ketcher';
+import { MolSerializer } from 'ketcher-core';
 
 /** A Ketcher sketcher in a dialog of its own, once its Ketcher has started. */
 async function openKetcher(): Promise<{ketcher: any, dialog: DG.Dialog, sketcher: KetcherSketcher}> {
@@ -136,6 +137,72 @@ category('ketcher', async () => {
     expect(conversions.map((m) => String(m.data.options.monomerLibrary ?? '').length).join(', '),
       conversions.map(() => '0').join(', '), 'the monomer library sent with each conversion (its length)');
   });
+
+  // a tool's preview or stroke in progress was reverted by its atoms' ids on a molecule loaded meanwhile, deleting the
+  // loaded atoms, and every mouse move over the page threw in findClosestBond after it
+  test('a molecule loaded during a tool gesture keeps its atoms', async () => {
+    const molfile = (atoms: number[][], bonds: number[][]): string => [
+      '', '  Ketcher', '',
+      `${String(atoms.length).padStart(3)}${String(bonds.length).padStart(3)}  0  0  0  0  0  0  0  0999 V2000`,
+      ...atoms.map(([x, y]) =>
+        `${x.toFixed(4).padStart(10)}${y.toFixed(4).padStart(10)}    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0`),
+      ...bonds.map((b) => b.map((v) => String(v).padStart(3)).join('') + '  0  0  0  0'),
+      'M  END'].join('\n');
+    const benzene = molfile([[1.4, 0], [0.7, 1.2124], [-0.7, 1.2124], [-1.4, 0], [-0.7, -1.2124], [0.7, -1.2124]],
+      [[1, 2, 2], [2, 3, 1], [3, 4, 2], [4, 5, 1], [5, 6, 2], [6, 1, 1]]);
+    const naphthalene = molfile([[1.2124, 0.7], [0, 1.4], [-1.2124, 0.7], [-1.2124, -0.7], [0, -1.4], [1.2124, -0.7],
+      [2.4249, 1.4], [3.6373, 0.7], [3.6373, -0.7], [2.4249, -1.4]],
+    [[1, 2, 2], [2, 3, 1], [3, 4, 2], [4, 5, 1], [5, 6, 2], [6, 1, 1],
+      [1, 7, 1], [7, 8, 2], [8, 9, 1], [9, 10, 2], [10, 6, 1]]);
+    const gestures: {name: string, tool: string, opts: () => object, before: string[], after: string[]}[] = [
+      {name: 'a template preview', tool: 'template', opts: () => ({struct: new MolSerializer().deserialize(benzene)}),
+        before: ['mousemove'], after: ['mouseleave']},
+      {name: 'a template press', tool: 'template', opts: () => ({struct: new MolSerializer().deserialize(benzene)}),
+        before: ['mousemove', 'mousedown'], after: ['mouseup']},
+      {name: 'a bond drag', tool: 'bond', opts: () => ({type: 1, stereo: 0}),
+        before: ['mousedown', 'mousemove'], after: ['mousemove', 'mouseup']},
+    ];
+    const func = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}, name: 'ketcherSketcher'})[0];
+    for (const gesture of gestures) {
+      const sketcher: KetcherSketcher = await func.apply();
+      const dialog = ui.dialog().add(sketcher.root).show();
+      try {
+        await waitUntil(() => sketcher._sketcher !== null, 'Ketcher did not start', 20000);
+        const editor = (sketcher._sketcher as any).editor;
+        editor.tool(gesture.tool, gesture.opts());
+        const area: HTMLElement = editor.render.clientArea;
+        const svg = area.querySelector('svg')!;
+        const box = area.getBoundingClientRect();
+        let dx = 0;
+        const at = (): MouseEventInit => ({bubbles: true, button: 0, buttons: 1,
+          clientX: box.left + box.width / 2 + dx, clientY: box.top + box.height / 2});
+        const fire = (type: string): void => {
+          if (type === 'mousemove')
+            dx += 40;
+          (type === 'mouseleave' ? area : svg).dispatchEvent(new MouseEvent(type, at()));
+        };
+        for (const type of gesture.before)
+          fire(type);
+        // the step Ketcher's setMolecule ends with, once Indigo has read the molecule
+        editor.struct(new MolSerializer().deserialize(naphthalene), false);
+        for (const type of gesture.after)
+          fire(type);
+        const atoms = [...editor.struct().atoms.values()].filter((a: any) => !a.isPreview).length;
+        expect(atoms, 10, `the atoms of the molecule loaded during ${gesture.name}`);
+        let thrown = '';
+        try {
+          editor.findItem(new MouseEvent('mousemove', at()), ['atoms', 'bonds']);
+        }
+        catch (e: any) {
+          thrown = String(e?.message ?? e);
+        }
+        expect(thrown, '', `the hit test of a mouse move after ${gesture.name}`);
+      } finally {
+        sketcher.detach();
+        dialog.close();
+      }
+    }
+  }, {timeout: 120000});
 
   test('a SMARTS export waiting its turn when the sketcher closes', async () => {
     const func = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}, name: 'ketcherSketcher'})[0];
