@@ -25,9 +25,9 @@ category('U2: domain import', () => {
     .find((b) => /^Import( |$)/.test(b.textContent ?? ''))!;
   const reason = () => document.querySelector('.u2-wizard-reason')?.textContent ?? '';
   const report = () => document.querySelector('.u2-domain-import-report')?.textContent ?? '';
-  /** The preview's leading cell per row — what the server's dry run predicts for it. */
+  /** The preview's result badge per row — what the server's dry run predicts for it. */
   const verdicts = () => [...document.querySelectorAll('.u2-domain-import-rows .u2-data-table-row')]
-    .map((row) => row.firstElementChild?.textContent ?? '');
+    .map((row) => row.querySelector('.u2-badge')?.textContent ?? '');
 
   /** The source frame: every value a string, the way a CSV arrives. `strayColumn` matches no column. */
   function frame(rows: {sku: string, name: string, quantity: string, strayColumn: string}[]): DG.DataFrame {
@@ -76,9 +76,9 @@ category('U2: domain import', () => {
     buttonNamed('NEXT').click();
     await delay(400);
     importButton().click();
-    for (let i = 0; i < 100 && !report().includes('inserted'); i++)
+    for (let i = 0; i < 100 && !report().includes('added'); i++)
       await delay(50);
-    expect(report().includes('3 inserted, 0 updated'), true, report());
+    expect(report().includes('3 added'), true, report());
     buttonNamed('CLOSE').click();
     const result = await running as {inserted: number};
     expect(result.inserted, 3);
@@ -97,12 +97,12 @@ category('U2: domain import', () => {
     buttonNamed('NEXT').click();
     for (let i = 0; i < 100 && verdicts().length === 0; i++)
       await delay(50);
-    expect(verdicts().join(), 'Add,Add', 'the leading column is what the dry run predicts, as a verb');
+    expect(verdicts().join(), 'Add,Add', 'the result column is what the dry run predicts, as a verb');
     const predicted = verdicts().filter((v) => v === 'Add').length;
     importButton().click();
-    for (let i = 0; i < 100 && !report().includes('inserted'); i++)
+    for (let i = 0; i < 100 && !report().includes('added'); i++)
       await delay(50);
-    expect(report().includes(`${predicted} inserted, 0 updated`), true, report());
+    expect(report().includes(`${predicted} added`), true, report());
     buttonNamed('CLOSE').click();
     await running;
   });

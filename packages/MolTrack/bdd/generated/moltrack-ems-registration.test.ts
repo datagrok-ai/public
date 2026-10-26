@@ -30,7 +30,7 @@ test.describe("MolTrack EMS: registering a compound", () => {
     await session.step(13, "And user opens the MolTrack EMS app", () => openEms(page));
     enter(page, "MolTrack EMS");
     await run.scenario("A new structure is registered through the form", async () => {
-      await session.step(16, "When user clicks on \"New\" button in app ribbon", () => clickOn(page, el("\"New\" button in app ribbon")));
+      await session.step(16, "When user clicks on \"New compound\" button in app ribbon", () => clickOn(page, el("\"New compound\" button in app ribbon")));
       await session.step(17, "Then breadcrumbs should contain text \"New compound\"", () => shouldContainText(page, el("breadcrumbs"), "New compound"));
       await session.step(18, "When user clicks on molecule canvas in \"Structure\" dart input", () => clickOn(page, el("molecule canvas in \"Structure\" dart input")));
       await session.step(19, "And user types \"CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O\" into molecule input of sketcher dialog", () => typeInto(page, "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O", el("molecule input of sketcher dialog")));
@@ -46,7 +46,7 @@ test.describe("MolTrack EMS: registering a compound", () => {
       await session.step(29, "When user remembers the compound the breadcrumbs name", () => rememberCompound(page));
     });
     await run.scenario("Its sodium salt is refused as the compound already registered", async () => {
-      await session.step(32, "When user clicks on \"New\" button in app ribbon", () => clickOn(page, el("\"New\" button in app ribbon")));
+      await session.step(32, "When user clicks on \"New compound\" button in app ribbon", () => clickOn(page, el("\"New compound\" button in app ribbon")));
       await session.step(33, "And user clicks on molecule canvas in \"Structure\" dart input", () => clickOn(page, el("molecule canvas in \"Structure\" dart input")));
       await session.step(34, "And user types \"CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)[O-].[Na+]\" into molecule input of sketcher dialog", () => typeInto(page, "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)[O-].[Na+]", el("molecule input of sketcher dialog")));
       await session.step(35, "And user presses Enter in molecule input of sketcher dialog", () => pressKeyIn(page, "Enter", el("molecule input of sketcher dialog")));

@@ -13,7 +13,7 @@ Feature: MolTrack EMS: register a compound
     And no compound with the structure "CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O" is registered, now and at feature end
     And user opens the "Compounds" view of MolTrack EMS
     # caption: Start a new compound
-    When user clicks on "New" button in app ribbon
+    When user clicks on "New compound" button in app ribbon
     # caption: Draw the structure: click the empty picture to open the sketcher
     And user clicks on molecule canvas in "Structure" dart input
     # caption: Type or paste a SMILES
@@ -30,7 +30,7 @@ Feature: MolTrack EMS: register a compound
     And 1 compound with the structure "CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O" should be registered on the server
     When user remembers the compound the breadcrumbs name
     # caption: Now its sodium salt
-    And user clicks on "New" button in app ribbon
+    And user clicks on "New compound" button in app ribbon
     And user clicks on molecule canvas in "Structure" dart input
     And user types "CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)[O-].[Na+]" into molecule input of sketcher dialog
     And user presses Enter in molecule input of sketcher dialog

@@ -13,7 +13,7 @@ Feature: MolTrack EMS: registering a compound
     And user opens the MolTrack EMS app
 
   Scenario: A new structure is registered through the form
-    When user clicks on "New" button in app ribbon
+    When user clicks on "New compound" button in app ribbon
     Then breadcrumbs should contain text "New compound"
     When user clicks on molecule canvas in "Structure" dart input
     And user types "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O" into molecule input of sketcher dialog
@@ -29,7 +29,7 @@ Feature: MolTrack EMS: registering a compound
     When user remembers the compound the breadcrumbs name
 
   Scenario: Its sodium salt is refused as the compound already registered
-    When user clicks on "New" button in app ribbon
+    When user clicks on "New compound" button in app ribbon
     And user clicks on molecule canvas in "Structure" dart input
     And user types "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)[O-].[Na+]" into molecule input of sketcher dialog
     And user presses Enter in molecule input of sketcher dialog

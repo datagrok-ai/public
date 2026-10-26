@@ -18,9 +18,9 @@ async function openView(page: Page, view: string): Promise<void> {
   await page.evaluate(async (path) => {
     grok.shell.addView(await grok.functions.call('Moltrack:molTrackEmsApp', {path}));
   }, view);
-  // loaded: the first row, or the empty state a table with no rows shows
-  await page.locator('[data-u2="domain-list"] :is([data-u2-row], .u2-domain-list-empty)').filter({visible: true})
-    .first().waitFor({timeout: 60000});
+  // loaded: the first row, the empty state a table with no rows shows, or the record a deep link opens
+  await page.locator('[data-u2="domain-list"] :is([data-u2-row], .u2-domain-list-empty), [data-u2="domain-form"]')
+    .filter({visible: true}).first().waitFor({timeout: 60000});
 }
 
 export const openEms = Given('user opens the MolTrack EMS app', (page: Page) => openView(page, ''),
