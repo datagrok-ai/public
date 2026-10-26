@@ -38,6 +38,8 @@
 
 /* disabled, what edits the tree reads as unavailable too */
 .u2-input-disabled .u2-fb .u2-btn.u2-icon-btn,
+.u2-input-disabled .u2-fb .u2-fb-add,
+.u2-input-disabled .u2-fb .u2-fb-add-group,
 .u2-input-disabled .u2-fb .u2-fb-mode {
   color: var(--dg-text-color-light);
 }
@@ -71,8 +73,34 @@
 .u2-fb-header,
 .u2-fb-group-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--dg-space-m);
+  gap: var(--dg-space-s) var(--dg-space-m);
+  min-width: 0;
+}
+
+/* "Match [all|any] of these": the connector reads as a choice, not as two loose chips */
+.u2-fb-match {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+}
+
+.u2-fb-match-text {
+  white-space: nowrap;
+}
+
+/* `not` is a checkbox of its own, set apart from the connector it combines with */
+.u2-fb-not.u2-input-root {
+  margin-left: var(--dg-space-s);
+  padding: 0;
+}
+
+.u2-fb-footer,
+.u2-fb-group-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dg-space-s) var(--dg-space-m);
 }
 
 .u2-fb-mode {
@@ -80,14 +108,24 @@
   font-size: var(--dg-font-size-small);
 }
 
-/* a sub-group: one rule per depth, its rows indented under the header */
+/* a sub-group: indented on its own background, a rule per depth; one inside it goes back to white */
 .u2-fb-group {
-  padding-left: var(--dg-space-m);
+  margin-left: var(--dg-space-l);
+  padding: var(--dg-space-s) var(--dg-space-s) var(--dg-space-s) var(--dg-space-m);
+  background: var(--dg-bg-secondary);
   border-left: 2px solid var(--dg-border);
+}
+
+.u2-fb-group .u2-fb-group {
+  background: var(--dg-bg);
 }
 
 .u2-fb-group-header {
   min-height: var(--dg-control-height);
+}
+
+.u2-fb-group-header > .u2-fb-remove {
+  margin-left: auto;
 }
 
 .u2-fb-group-rows {
@@ -99,23 +137,6 @@
 
 .u2-fb-group.u2-fb-negated {
   border-left-color: var(--dg-accent);
-}
-
-/* `not` reads as a chip like the connector; lit when on */
-.u2-btn.u2-fb-not {
-  height: var(--dg-inline-control-height);
-  padding: 0 var(--dg-space-m);
-  font-size: var(--dg-font-size-small);
-  font-weight: var(--dg-font-weight-medium);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--dg-text-color);
-}
-
-.u2-btn.u2-fb-not-on {
-  color: var(--dg-selection-text);
-  background: var(--dg-selection-bg);
-  border-color: var(--dg-selection-bg);
 }
 
 .u2-fb-handle {
@@ -156,13 +177,10 @@
   opacity: 0.5;
 }
 
-/* the and/or toggle reads as two small chips, not as toolbar buttons */
+/* the all/any choice: two framed cells as tall as an inline control */
 .u2-fb-connector .u2-btn-group-item {
+  height: var(--dg-inline-control-height);
   padding: 0 var(--dg-space-m);
-  font-size: var(--dg-font-size-small);
-  font-weight: var(--dg-font-weight-medium);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 /* conditions stand apart; the pickers of one, when a narrow host stacks them, stay close */
@@ -279,13 +297,11 @@
   color: var(--dg-text-color-light);
 }
 
-.u2-fb-remove,
-.u2-fb-add {
+.u2-fb-remove {
   color: var(--dg-text-color-light);
 }
 
-.u2-fb-remove:hover:not(:disabled),
-.u2-fb-add:hover:not(:disabled) {
+.u2-fb-remove:hover:not(:disabled) {
   color: var(--dg-text-color);
 }
 

@@ -2,16 +2,17 @@
    A row never touches the tree: edits go to the host as a patch, the host writes a new root and calls `update()`. */
 import {Scope} from '../../core/scope.js';
 import {Control} from '../../core/component.js';
-import {div, span, button} from '../../core/elements.js';
+import {div, span} from '../../core/elements.js';
 import type {Input} from '../../core/input-base.js';
 import {markSpan, resolveSpan, spanOf} from '../../core/span.js';
-import {iconButton} from '../actions/buttons.js';
+import {iconButton, buttonWithIcon} from '../actions/buttons.js';
 import {ButtonGroup} from '../actions/button-group.js';
 import {icon} from '../display/icon.js';
 import {ChoiceInput} from '../inputs/choice-input.js';
 import {TextInput} from '../inputs/text-input.js';
 import {NumberInput} from '../inputs/number-input.js';
 import {BigIntInput} from '../inputs/bigint-input.js';
+import {BoolInput} from '../inputs/bool-input.js';
 import {DateTimeInput} from '../inputs/date-input.js';
 import {SuggestInput} from '../inputs/suggest-input.js';
 import {TagsInput} from '../inputs/tags-input.js';
@@ -409,18 +410,21 @@ export class FilterNestedRow extends Control {
   }
 }
 
-/** A group in advanced mode — and, as `root`, the builder's own header and row host: the and/or
- * toggle, `not`, `+ condition`, `+ group`, `−` (not for the root) and `rows`, which the builder
- * fills with the children it reconciles. */
+/** A group in advanced mode — and, as `root`, the builder's own header and row host: "Match all|any
+ * of these", `not`, `✕` (not for the root), then `rows`, which the builder fills with the children it
+ * reconciles, and the footer with `Add condition` and `Add group`. */
 export class FilterGroupRow extends Control {
   readonly header: HTMLElement;
   readonly rows: HTMLElement;
+  readonly footer: HTMLElement;
   readonly connector: ButtonGroup;
-  readonly not: HTMLButtonElement;
+  readonly not: BoolInput;
   readonly add: HTMLButtonElement;
   readonly addGroup: HTMLButtonElement;
   readonly remove: HTMLButtonElement | undefined;
   readonly handle: HTMLElement | undefined;
+  /** What a sub-group with no rows shows; the root's is the builder's own. */
+  readonly empty: HTMLElement;
 
   private readonly _host: FilterRowHost;
   private _group: FilterGroup;
@@ -439,23 +443,27 @@ export class FilterGroupRow extends Control {
       this.root.dataset.u2 = 'filter-group';
       this.root.dataset.u2Node = group.id;
     }
-    this.connector = new ButtonGroup({toggle: 'single', density: 'toolbar',
-      items: [{id: 'and', label: 'and'}, {id: 'or', label: 'or'}]});
+    this.connector = new ButtonGroup({toggle: 'single', items: [{id: 'and', label: 'all'}, {id: 'or', label: 'any'}]});
     this.connector.root.classList.add('u2-fb-connector');
     this.connector.root.dataset.u2Part = 'connector';
-    this.not = button('not', () => this._host.change(this.id, {not: this._group.not === true ? undefined : true}));
-    this.not.classList.add('u2-fb-not');
-    this.not.dataset.u2Part = 'not';
-    this.not.title = 'Negate the group';
-    this.add = this.runInScope(() => iconButton('plus', () => this._host.add(this.id, 'condition'),
-      {tooltip: 'Add condition'}));
+    this.not = new BoolInput({label: 'Exclude matches', captionAfter: true,
+      tooltipText: 'Keep what this group does not match', onChanged: (v) => {
+        if (v !== (this._group.not === true))
+          this._host.change(this.id, {not: v ? true : undefined});
+      }});
+    this.not.root.classList.add('u2-fb-not');
+    this.not.root.dataset.u2Part = 'not';
+    this.add = this.runInScope(() => buttonWithIcon('Add condition', 'plus',
+      () => this._host.add(this.id, 'condition')));
     this.add.classList.add('u2-fb-add');
     this.add.dataset.u2Part = 'add';
-    this.addGroup = this.runInScope(() => iconButton('folder-plus', () => this._host.add(this.id, 'group'),
-      {tooltip: 'Add group'}));
+    this.addGroup = this.runInScope(() => buttonWithIcon('Add group', 'folder-plus',
+      () => this._host.add(this.id, 'group')));
     this.addGroup.classList.add('u2-fb-add-group');
     this.addGroup.dataset.u2Part = 'add-group';
-    const parts: HTMLElement[] = [this.connector.root, this.not, this.add, this.addGroup];
+    const match = div([span('Match', 'u2-fb-match-text'), this.connector.root, span('of these', 'u2-fb-match-text')],
+      'u2-fb-match');
+    const parts: HTMLElement[] = [match, this.not.root];
     if (!root) {
       this.handle = dragHandle();
       this.remove = this.runInScope(() => removeButton(() => this._host.remove(this.id), 'group'));
@@ -465,7 +473,9 @@ export class FilterGroupRow extends Control {
     this.header = div(parts, root ? 'u2-fb-header' : 'u2-fb-group-header');
     this.rows = div([], root ? 'u2-fb-rows' : 'u2-fb-group-rows');
     this.rows.dataset.u2Part = 'rows';
-    this.root.append(this.header, this.rows);
+    this.footer = div([this.add, this.addGroup], root ? 'u2-fb-footer' : 'u2-fb-group-footer');
+    this.empty = span('Empty group: add a condition', 'u2-fb-none');
+    this.root.append(this.header, this.rows, this.footer);
     this.effect(() => {
       const op = this.connector.selected.value[0] as 'and' | 'or' | undefined;
       if (op !== undefined && op !== this._group.op)
@@ -483,19 +493,24 @@ export class FilterGroupRow extends Control {
     const locked = lock !== 'none';
     this.root.classList.toggle('u2-fb-locked', locked);
     this.root.classList.toggle('u2-fb-negated', group.not === true);
-    this.not.classList.toggle('u2-fb-not-on', group.not === true);
-    this.not.setAttribute('aria-pressed', String(group.not === true));
-    this.not.hidden = !advanced;
-    this.not.disabled = locked;
+    this.not.value.value = group.not === true;
+    this.not.root.hidden = !advanced;
+    this.not.enabled = !locked;
     this.connector.setEnabled('and', !locked);
     this.connector.setEnabled('or', !locked);
     this.add.hidden = locked || !this._host.allowAdd;
     this.add.disabled = this._host.properties().length === 0;
     this.addGroup.hidden = !advanced || locked || !this._host.allowAdd;
+    this.syncFooter();
     if (this.remove)
       this.remove.hidden = locked;
     if (this.handle)
       this.handle.hidden = locked;
+  }
+
+  /** The footer stands down when nothing in it is shown — the add button may have moved out to the rows. */
+  syncFooter(): void {
+    this.footer.hidden = Array.from(this.footer.children).every((el) => (el as HTMLElement).hidden);
   }
 
   /** A group's problem (nesting, a lock) is the header's title: the rows below carry their own. */

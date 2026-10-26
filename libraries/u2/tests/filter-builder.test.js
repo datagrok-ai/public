@@ -94,17 +94,16 @@ smoke('renders one row per condition, addressed by node id and part', () => {
   assert.equal(fb.root.querySelector('.u2-fb-none'), null);
 });
 
-smoke('empty tree shows the empty hint (a link that adds); + adds a row on the first property, − removes it', () => {
+smoke('empty tree says so; Add condition under the rows adds a row on the first property, ✕ removes it', () => {
   const fb = mount(new FilterBuilder({schema: SCHEMA}));
   assert.equal(rows(fb).length, 0);
   const none = fb.root.querySelector('.u2-fb-none');
-  assert.equal(none.tagName, 'A');
+  assert.equal(none.tagName, 'SPAN');
   assert.equal(none.dataset.u2Part, 'none');
-  fire(none, 'click');
-  assert.equal(rows(fb).length, 1, 'the empty hint adds a condition');
-  fb.removeNode(fb.value.peek().nodes[0].id);
-  assert.equal(rows(fb).length, 0);
+  assert.equal(none.textContent, 'No conditions.');
   const add = fb.root.querySelector('[data-u2-part="add"]');
+  assert.equal(add.parentElement, fb.root.querySelector('.u2-fb-footer'), 'under the rows, not in the header');
+  assert.equal(add.textContent, 'Add condition');
   fire(add, 'click');
   assert.equal(rows(fb).length, 1);
   assert.equal(fb.root.querySelector('.u2-fb-none'), null);
@@ -239,7 +238,7 @@ smoke('horizontal: rows inline with a join chip between them that flips the op; 
   assert.deepEqual(host.querySelectorAll('.u2-fb-join').map((j) => j.textContent), ['or', 'or']);
   fb.removeNode('f2');
   assert.deepEqual(host.children.map((el) => el.dataset.u2Node ?? el.className),
-    ['f1', 'u2-btn u2-fb-join', 'f3', 'u2-btn u2-icon-btn u2-fb-add']);
+    ['f1', 'u2-btn u2-fb-join', 'f3', 'u2-btn u2-fb-add']);
 });
 
 smoke('locks: value keeps the editor and hides remove, all disables everything, allowAdd hides +', () => {
