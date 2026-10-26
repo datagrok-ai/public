@@ -30,3 +30,11 @@
   min-width: 680px;
   overflow: auto;
 }
+
+.moltrack-ems-home {
+  align-self: flex-start;
+}
+
+.moltrack-ems-home td:first-child {
+  padding-right: 24px;
+}
