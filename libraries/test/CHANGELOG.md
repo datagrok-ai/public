@@ -6,6 +6,7 @@
 * The `BinaryImage` column of the detectors' test data holds a PNG instead of zero bytes, which PowerGrid's detector no longer treats as an image
 * Added the TestTrack shared-page lanes (`shared-page`: worker-shared `test`/`localTest` with `resetShell`), the `known-open-bug`, `filter-panel`, `forms` and `balloons` helpers, and the viewer, property-grid, canvas and event-wait helpers in `viewers`
 * Added `openDatagrok`, local/server lanes, the timing ledger, the `__readCsv` bridge and per-context token minting to `spec-login`, and `saveProjectViaApi`/`saveProjectViaUI`/`drainPendingDeletes` to `projects`, keeping the CI fixes and existing signatures
+* `uiSettled` resolves at once under Node.js, so the Node runner no longer reports an `Unhandled exceptions` failure after every category
 
 ## 1.4.1 (2026-09-17)
 

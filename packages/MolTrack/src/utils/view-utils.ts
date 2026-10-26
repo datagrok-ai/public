@@ -175,15 +175,6 @@ export async function getStatisticsWidget(
 }
 
 export function getQuickActionsWidget(): HTMLElement {
-  const boltIcon = ui.iconFA('bolt');
-  boltIcon.classList.add('moltrack-bolt-icon');
-
-  const quickActionsLabel = ui.label('Quick Actions');
-  quickActionsLabel.classList.add('moltrack-quick-label');
-
-  const quickActionsTitle = ui.divH([boltIcon, quickActionsLabel]);
-  quickActionsTitle.classList.add('moltrack-quick-actions');
-
   const linksConfig: { label: string; createView: () => Promise<IViewContainer>}[] = [
     {
       label: 'Register compound',
@@ -216,15 +207,24 @@ export function getQuickActionsWidget(): HTMLElement {
     },
   ];
 
-  const quickLinks = ui.divV(
-    linksConfig.map((cfg) =>
-      ui.link(cfg.label, async () => {
-        grok.shell.v.close();
-        const view = await cfg.createView();
-        view.show();
-      }),
-    ),
-  );
+  return quickActionsWidget(linksConfig.map((cfg) => ({label: cfg.label, run: async () => {
+    grok.shell.v.close();
+    const view = await cfg.createView();
+    view.show();
+  }})));
+}
+
+export function quickActionsWidget(links: {label: string; run: () => void}[]): HTMLElement {
+  const boltIcon = ui.iconFA('bolt');
+  boltIcon.classList.add('moltrack-bolt-icon');
+
+  const quickActionsLabel = ui.label('Quick Actions');
+  quickActionsLabel.classList.add('moltrack-quick-label');
+
+  const quickActionsTitle = ui.divH([boltIcon, quickActionsLabel]);
+  quickActionsTitle.classList.add('moltrack-quick-actions');
+
+  const quickLinks = ui.divV(links.map((link) => ui.link(link.label, link.run)));
   quickLinks.classList.add('moltrack-quick-links');
 
   const container = ui.divV([quickActionsTitle, quickLinks]);
