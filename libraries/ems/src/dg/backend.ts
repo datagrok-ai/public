@@ -19,8 +19,8 @@ const COPIED = ['type', 'propertyType', 'semType', 'nullable', 'choices', 'min',
   'description', 'inputType', 'editor', 'defaultValue', 'format', 'units', 'showSlider', 'showPlusMinus',
   'category'] as const;
 
-/** Each of js-api's `DOMAIN_SYSTEM_COLUMNS` as the frame types it, with the caption a form shows:
- * a column js-api adds or drops fails the build here instead of going missing. */
+/** js-api `DOMAIN_SYSTEM_COLUMNS` as the frame types them, with a form's captions; `satisfies`
+ * fails the build when js-api's list changes. */
 const SYSTEM_SHAPES = {
   id: ['string', 'Id'], version: ['int', 'Version'], created_on: ['datetime', 'Created'],
   updated_on: ['datetime', 'Updated'], author_id: ['string', 'Author'],

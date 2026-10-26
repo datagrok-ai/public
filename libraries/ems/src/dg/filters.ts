@@ -41,14 +41,13 @@ export class DomainFilters extends Control {
   readonly input: ReadonlySignal<FilterQueryInput | FilterBuilder | null>;
   /** What is wrong with the filter in the box while it is one the rows do NOT answer — a refused
    * commit, or a link's query the grammar refuses, standing over the applied query; null while the
-   * two agree. A builder row still waiting for its value is a draft, not a problem: the rows answer
-   * the complete conditions. */
+   * two agree. A builder row still waiting for its value is a draft, not a problem. */
   readonly problem: ReadonlySignal<string | null>;
 
   /** Per source: how a query a control wrote bound is spelled in the box — `DomainApp.presets`
    * registers `assignee = "<id>"` → `assignee = $me`, so the switch does not paste a uuid there. */
   private static readonly _shownAs = new WeakMap<DomainSource, Map<string, string>>();
-  /** Per table address: the operators {@link registerOperators} offers there and nowhere else. */
+  /** Per table address: the operators {@link registerOperators} offers only there. */
   private static readonly _scoped = new Map<string, FilterOperator[]>();
 
   private readonly _input = signal<FilterQueryInput | FilterBuilder | null>(null);
@@ -101,8 +100,7 @@ export class DomainFilters extends Control {
       values: (prop, query, signal, ctx) => this._under(prop, query, ctx) ?? values!(prop, query, signal, ctx)};
   }
 
-  /** The name column first and the system columns last: a new condition starts on the column a user
-   * filters by, and the pickers lead with the table's own columns. */
+  /** The name column first and the system columns last, so a new condition starts on the name. */
   private _ordered(): FilterProperty[] {
     const {properties, info} = this.source.schema;
     const name = info.nameColumn ?? info.businessKey[0];
@@ -184,8 +182,7 @@ export class DomainFilters extends Control {
       // the same wording a typed refusal gets: a `?q=` a link carried fails the same way
       this._rawProblems = parsed === null ? [] :
         FilterQueryInput.worded(q as string, schema, parsed.problems);
-      // nor does it go to the server: the rows answer no filter, and the box tells the mistake the
-      // way it tells a typed one, instead of a load error with a Retry that cannot help
+      // nor does it go to the server: the rows answer no filter, and the box says why
       if (this._raw !== null && box !== null) {
         this._accepted = Filters.group('and');
         this._echo = '';
@@ -225,8 +222,7 @@ export class DomainFilters extends Control {
     this.source.query.value = this._echo;
   }
 
-  /** The filters in a pane on `list`'s left, at least 220px wide, under a title row that holds the
-   * builder's mode switch. */
+  /** The filters in a pane on `list`'s left, the builder's mode switch on its title row. */
   pane(list: HTMLElement): HTMLElement {
     return this.runInScope(() => {
       const head = divH([span('Filters', 'u2-domain-app-filters-title')], 'u2-domain-app-filters-head');
@@ -251,9 +247,8 @@ export class DomainFilters extends Control {
     }
   }
 
-  /** Registers `ops` with the operator registry, where the grammar reads them, but offers them only in the
-   * filters over `table` — an app's own operators (a chemistry search) do not reach another app's
-   * columns of the same kind. The returned function unregisters them; an app owns it with its view. */
+  /** Registers `ops` with the operator registry, but offers them only in the filters over `table`,
+   * so one app's operators do not reach another app's columns of the same kind. Answers the unregister. */
   static registerOperators(table: string, ops: FilterOperator[]): () => void {
     const unregister = Filters.operators.register(ops);
     DomainFilters._scoped.set(table, [...DomainFilters._scoped.get(table) ?? [], ...ops]);

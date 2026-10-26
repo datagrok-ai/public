@@ -2,8 +2,7 @@
    one line per changed column, `<caption>  <before> → <after>`. Reads `table.audit(id)` through
    the seam a page at a time, so the memory backend's history shows the same way; "Show older"
    under the list loads the next page, and the pane is refreshed when the row's session saves. A
-   draft has no history yet, and says so. The pane is a folded accordion pane whose header sums up
-   the latest entry. */
+   draft has no history yet, and says so. */
 import {emsBackends} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
 import {Component, Control, signal, AsyncSource, div, divH, divV, span, timestamp, text, badge, button, AsyncView,
@@ -21,8 +20,7 @@ import {DomainErrors} from './errors.js';
 export type DomainHistoryTarget = RowView | ReadonlySignal<RowView | null>;
 
 export interface DomainHistoryOptions {
-  /** The columns the user edits — the form's `include`. A change to any other column (one the app
-   * derives, as a hash from a structure) is left out. */
+  /** The columns the user edits (the form's `include`); changes to derived columns are left out. */
   include?: string[];
 }
 
@@ -31,7 +29,6 @@ const OPS: Record<string, [label: string, variant: BadgeVariant]> = {
   promote: ['shared', 'accent'], undelete: ['restored', 'success'],
 };
 const PAGE_SIZE = 50;
-/** The changed columns an entry lists before the rest fold under "N more". */
 const SHOWN_CHANGES = 5;
 const NO_VALUE = '(empty)';
 
@@ -44,9 +41,7 @@ export class DomainHistory extends Control {
   /** Whether the table keeps no history at all — its handle declares it, so the pane says so
    * instead of showing an empty list nothing will ever fill. */
   private readonly _noHistory = signal(false);
-  /** The folded header's line: the latest entry, "updated Oct 23, 2026 by Admin". */
   private readonly _summary = signal('');
-  /** Why the last load failed, as the platform said it — the tooltip behind "History is unavailable". */
   private _failure = '';
   /** id → the name behind it, resolved once per pane: the actors and the ref cells alike. */
   private readonly _names = new Map<string, Promise<string>>();
@@ -69,7 +64,6 @@ export class DomainHistory extends Control {
       if (failed)
         this._summary.value = 'unavailable';
     });
-    // folded by default, as the platform's own History pane; the user's choice is kept
     const accordion = this.runInScope(() => new Accordion());
     this.pane = accordion.addPane('History', div([this._hint, this.view.root]),
       {hint: this._summary, expanded: false, persistKey: 'u2-domain-history'});
@@ -117,8 +111,7 @@ export class DomainHistory extends Control {
       .map((prop) => ({prop, before: before[prop.name!], after: after[prop.name!]}));
   }
 
-  /** A cell as the line reads it: a datetime as every u2 surface stamps it (a value at midnight UTC
-   * is a date, never shifted a day by the local zone), a number through the schema's format. */
+  /** A value at midnight UTC is a date, never shifted a day by the local zone. */
   private static _display(raw: unknown, prop?: IProperty): string {
     if (isEmpty(raw))
       return NO_VALUE;
@@ -141,7 +134,6 @@ export class DomainHistory extends Control {
       const entries = await table.audit(id, {limit: PAGE_SIZE});
       return entries.slice().reverse();
     } catch (e) {
-      // the pane says it plainly beside its Retry; what the server said is the tooltip
       this._failure = DomainErrors.message(e, this.source);
       throw new Error('History is unavailable');
     }
@@ -178,7 +170,6 @@ export class DomainHistory extends Control {
     return divV([list, more], 'u2-domain-history-trail');
   }
 
-  /** The folded header's line, from the newest entry. */
   private _summarize(entry: AuditEntryLike): void {
     const [label] = OPS[entry.op] ?? [entry.op];
     const when = `${label} ${timestamp(entry.ts).textContent ?? ''}`;
@@ -205,9 +196,6 @@ export class DomainHistory extends Control {
     return line;
   }
 
-  /** One line per changed column the user edits — what the app derives from them (a structure's
-   * hashes) is not the user's change and is left out; past {@link SHOWN_CHANGES} lines the rest fold
-   * under "N more". */
   private _changes(entry: AuditEntryLike): HTMLElement | null {
     const include = this._options.include;
     const changed = this.changedColumns(entry);

@@ -132,7 +132,6 @@ const OUTCOMES: Record<string, {label: string, variant: BadgeVariant}> = {
   error: {label: 'Error', variant: 'error'},
   aborted: {label: 'Not imported', variant: 'default'},
 };
-/** Why a valid row of an aborted all-or-nothing run did not land. */
 const ABORTED = 'Another row has errors';
 /** Rows of the report's key lookup per query. */
 const KEY_CHUNK = 500;
@@ -188,11 +187,9 @@ class ImportFlow {
   private _planned: {frame: DG.DataFrame, key: string, plan: Promise<Planned[]>} | undefined;
   /** Bumped by every post: an older dry run answering last must not paint over a newer one. */
   private _previewGen = 0;
-  /** What the dry run says of committing: '' blocks while it runs, a reason where all-or-nothing
-   * would abort. */
+  /** '' while the dry run runs, a reason where all-or-nothing would abort. */
   private readonly _previewBlock = signal<string | null>(null);
   private readonly _importText = signal('Import');
-  /** The last import was aborted and committed nothing: the report offers BACK. */
   private readonly _aborted = signal(false);
 
   constructor(private readonly _table: DomainTable, private readonly _targets: IProperty[],
@@ -272,7 +269,6 @@ class ImportFlow {
         `${plural(frame.rowCount, 'row', 'rows')}, ${plural(frame.columns.names().length, 'column', 'columns')}`;
       if (this._writeBack !== undefined) {
         this._writeBack.visible = frame !== null;
-        // the table's name stays out of the caption: a long one widened the label column
         this._writeBack.label = `Write ${this._keyHeader()} back`;
         this._writeBack.tooltipText = frame === null ? '' :
           `Adds a "${column}" column to ${frame.name} with each row's ${this._keyHeader()}, as imported or as found`;
@@ -309,7 +305,6 @@ class ImportFlow {
       'u2-domain-import-mapping-step');
   }
 
-  /** The first values of a source column, so a cryptic name can be mapped by what it holds. */
   private _sample(name: string): HTMLElement {
     const frame = this._frame.peek();
     const column = frame?.columns.byName(name);
@@ -323,7 +318,6 @@ class ImportFlow {
     return sample;
   }
 
-  /** Which required targets are mapped, and how many source columns are imported. */
   private _mappingStatus(): string {
     this._recheck.value;
     const mapped = this._mapping();
@@ -428,19 +422,16 @@ class ImportFlow {
     this._previewBlock.value = options.allOrNothing !== false && errors > 0 ? this._abortReason(errors, valid) : null;
   }
 
-  /** The line a step leads with: each outcome after its dot; `none` where there is nothing to say. */
   private static _headline(items: [string, BadgeVariant][], none: string): HTMLElement {
     return div(items.length === 0 ? [span(none, 'u2-domain-import-count')] : items.map(([words, variant]) =>
       div([dot(variant), span(words)], 'u2-domain-import-count')), 'u2-domain-import-outcome');
   }
 
-  /** Counts as the headline says them, zeros left out. */
   private static _counts(counts: [number, string, BadgeVariant][]): [string, BadgeVariant][] {
     return counts.filter(([n]) => n > 0).map(([n, words, variant]) => [`${n.toLocaleString()} ${words}`, variant]);
   }
 
-  /** Why the preview will not import: all-or-nothing would abort over the rows with errors. `valid`
-   * is null where the dry run did not see every row. */
+  /** `valid` is null where the dry run did not see every row. */
   private _abortReason(errors: number, valid: number | null): string {
     const lead = plural(errors, 'row has errors', 'rows have errors');
     if (this._allOrNothing === undefined)
@@ -481,7 +472,6 @@ class ImportFlow {
   /** The rows as a table, its columns the importer's choice; the cells a refusal names are marked. */
   private _rowsTable(owner: Control, step: DomainImportStep, rows: DomainImportRow[],
     defaults: DomainImportColumn[]): HTMLElement {
-    // the report's key column says nothing where no row has a key — an aborted run
     const keyless = rows.every((row) => row.key === '');
     const columns = (this._table.importer?.columns?.(defaults, step) ?? defaults)
       .filter((c) => c.name !== '~key' || !keyless);
@@ -504,8 +494,7 @@ class ImportFlow {
     return table.root;
   }
 
-  /** A growing column's share of the width by what its cells hold, so a long name gets more room
-   * than a short note instead of the same; a fixed or content-free column keeps its own. */
+  /** A growing column's share of the width by what its cells hold. */
   private static _share(column: DomainImportColumn, rows: DomainImportRow[]): string | undefined {
     const track = /^minmax\((\d+)px, [\d.]+fr\)$/.exec(column.width ?? '');
     if (track === null)
@@ -520,8 +509,7 @@ class ImportFlow {
     return `minmax(${Math.min(Number(track[1]), width)}px, ${width}fr)`;
   }
 
-  /** A cell's content, its text the cell's title, since a narrow column cuts it; plain text goes
-   * in a span of its own, which can trail off inside the cell that fills the row. */
+  /** Plain text in a span of its own, so it can trail off; the full text is the cell's title. */
   private static _cell(content: HTMLElement | string, cell: HTMLElement): HTMLElement {
     const label = typeof content === 'string' ? content : content.textContent ?? '';
     if (label !== '')
@@ -558,8 +546,6 @@ class ImportFlow {
     return {name: '~note', header: 'Note', width: 'minmax(160px, 2fr)', render: (row) => row.note};
   }
 
-  /** The row's verdict as a badge; an error leads with a red dot, so the row that needs attention
-   * stands out of the routine ones. */
   private static _resultColumn(kinds: Record<string, {label: string, variant: BadgeVariant}>): DomainImportColumn {
     return {name: '~result', header: 'Result', width: '88px', render: (row) => {
       const kind = kinds[row.kind];
@@ -710,7 +696,6 @@ class ImportFlow {
     this._rows.value = columns.map((column) => ({column}));
   }
 
-  /** The source columns mapped to `target`, in mapping order; none for a skipped column. */
   private _claimants(target: string | null): string[] {
     if (target === null || target === SKIP)
       return [];
@@ -731,18 +716,16 @@ class ImportFlow {
     return chosen === false ? null : chosen ?? (key.length === 1 ? ImportFlow._caption(this, key[0]) : null);
   }
 
-  /** What the report's key column is headed: the business key's caption, else the table's noun. */
-  /** Why a row whose key the table or the file already has is skipped. */
   private _duplicate(): string {
     return `${this._keyHeader()} already exists`;
   }
 
+  /** What the report's key column is headed: the business key's caption, else the table's noun. */
   private _keyHeader(): string {
     const key = this._table.info.businessKey;
     if (key.length === 1)
       return ImportFlow._caption(this, key[0]);
-    const name = DomainTable.noun(this._table.info, true);
-    return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+    return DomainTable.capital(DomainTable.noun(this._table.info, true));
   }
 
   /** Where a source column goes: the importer's match, else the name the way a person reads it —
@@ -803,8 +786,7 @@ class ImportFlow {
     return problems;
   }
 
-  /** The targets the import needs mapped: the business key it matches on when it adds or updates,
-   * else every column the table will not take empty and fills no default into. */
+  /** Upsert matches on the business key; insert needs every required column without a default. */
   private _required(): string[] {
     if (this._mode?.value.peek() === 'upsert')
       return this._table.info.businessKey;
@@ -835,7 +817,7 @@ class ImportFlow {
     } catch (e) {
       this._report.replaceChildren(span(DomainErrors.message(e), 'u2-domain-import-problem'));
       this._wizard.setStepFailed('report', true);
-      // the report says it while it is open; a balloon only for a dialog closed before the end
+      // a balloon only for a dialog closed before the end
       if (this._settled)
         notify.error(DomainErrors.message(e));
       return;
@@ -864,7 +846,6 @@ class ImportFlow {
       'nothing was committed.';
     this._report.replaceChildren(ImportFlow._headline(failed ? [[aborted, 'error']] : counts, 'Nothing was imported'));
     this._report.classList.toggle('u2-domain-import-aborted', failed);
-    // a row that did not land is the report's news, even where the rest did
     this._wizard.setStepFailed('report', failed || errorCount > 0);
     const outcomes = this._outcomes(report, plan, failed);
     let saved = new Map<string, RowView>();
@@ -893,7 +874,6 @@ class ImportFlow {
       }
       this._aborted.value = true;
     }
-    // the report says it while it is open; a balloon only for a dialog closed before the end
     if (!this._settled)
       return;
     if (failed)
@@ -937,16 +917,14 @@ class ImportFlow {
     return rows;
   }
 
-  /** What the batch did, in the preview's words; `merged` stands in for `updated` where the storage
-   * cannot tell the two apart. */
+  /** `merged` stands in for `updated` where the storage cannot tell the two apart. */
   private static _landed(report: DomainBatchReportLike, errors: number): [number, string, BadgeVariant][] {
     return [[report.inserted ?? 0, 'added', 'success'], [report.updated ?? 0, 'updated', 'success'],
       [report.merged ?? 0, 'merged', 'success'], [report.skipped ?? 0, 'skipped', 'default'],
       [errors, errors === 1 ? 'error' : 'errors', 'error']];
   }
 
-  /** The way out of an aborted all-or-nothing run, the report's BACK: the mapping and the source
-   * stand, so only the flag has to be turned off. */
+  /** The report's BACK after an aborted run: the mapping and the source stand. */
   private _again(): void {
     this._committed = false;
     this._result = null;

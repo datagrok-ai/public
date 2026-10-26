@@ -68,8 +68,7 @@ export interface DomainAction<TRow extends DomainRowLike = DomainRowLike> {
 export type RowValidator<TRow extends DomainRowLike = DomainRowLike> =
   (value: unknown, row: RowView<TRow>) => string | null;
 
-/** What an app declares on a table — validators, renderer, actions, importer — run over every
- * handle {@link domains.table} makes for the address. */
+/** An app's setup of a table — validators, renderer, actions, importer. */
 export type DomainConfigure<TRow extends DomainRowLike = DomainRowLike> =
   (table: DomainTable<TRow>) => void | Promise<void>;
 
@@ -166,8 +165,9 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return this.table.properties;
   }
 
-  /** Registers `fn` for every handle over `address` made from now on; one registered again under
-   * the same `id` replaces the earlier. Returns the unregister function. */
+  /** Registers `fn` for every handle over `address` made from now on; the same `id` again replaces
+   * it, so a bundle evaluated twice does not add a second. `fn` may be async; a throw rejects the
+   * handle. Returns the unregister function. */
   static configure<TRow extends DomainRowLike = DomainRowLike>(address: string, fn: DomainConfigure<TRow>,
     {id}: {id: string}): () => void {
     const entries = CONFIGURE.get(address) ?? new Map<string, DomainConfigure<any>>();
@@ -181,12 +181,14 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 
   /** A column as a form labels it: the declared caption, else the name made presentable. */
   static captionOf(prop: IProperty): string {
-    const name = prop.friendlyName ?? (prop.name ?? '').replace(/_/g, ' ');
-    return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+    return DomainTable.capital(prop.friendlyName ?? (prop.name ?? '').replace(/_/g, ' '));
   }
 
-  /** The table's noun as a sentence reads it, in lower case: the singular for one row, the plural
-   * otherwise — never "rows" where the table has a name. */
+  static capital(text: string): string {
+    return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+  }
+
+  /** The table's noun in lower case, singular for one row. */
   static noun(info: DomainTableInfoLike, one = false): string {
     return (one ? info.singularName || 'row' : info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
   }
@@ -237,8 +239,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return this.handler.rowFrom(values);
   }
 
-  /** What a row offers where it is shown read-only — a tree node, a data table row: Open, the
-   * table's registry and the caller's own, those the caller may run on it. */
+  /** What a read-only row offers — a tree node, a data table row: Open, the table's actions and the caller's. */
   rowActions(row: RowView<TRow>, extra: readonly DomainAction<TRow>[] = []): Action[] {
     return allowedActions([{name: 'Open', icon: 'folder-open', run: () => this.open(row)},
       ...this.actions.for(row), ...ActionRegistry.bind(extra, row)], {access: this.access, row});
@@ -329,10 +330,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       const column = info.nameColumn ?? info.businessKey[0];
       const name = column === undefined ? undefined : row[column];
       // a bare number names nothing on its own: "Purchase order 9", not "9"
-      if (typeof name === 'number' || typeof name === 'bigint') {
-        const noun = DomainTable.noun(info, true);
-        return {text: `${noun.charAt(0).toUpperCase()}${noun.slice(1)} ${name}`, draft: false};
-      }
+      if (typeof name === 'number' || typeof name === 'bigint')
+        return {text: `${DomainTable.capital(DomainTable.noun(info, true))} ${name}`, draft: false};
       if (name !== null && name !== undefined && name !== '')
         return {text: String(name), draft: false};
       return Rows.isDraft(row) ? {text: `New ${DomainTable.noun(info, true)}`, draft: true} :
@@ -375,8 +374,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     // last resort, after every guard: the writer refused over a cell and named neither
     source.nameCell = (row, column, problem) => nameCell(this, row as RowView<TRow>, column, problem, source);
     source.caption = (row) => this.renderer.caption(row as RowView<TRow>);
-    // a refused save is one balloon per session, replacing the one the attempt before raised, and
-    // closed once the refusal is settled; a load failure is the list's and the hint's to show
+    // one refusal balloon per session, closed once the refusal is settled; a load failure is the
+    // list's to show
     source.effect(() => {
       const error = source.error.value;
       const shown = BALLOONS.get(source.session);
@@ -395,10 +394,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return source;
   }
 
-  /** The fields of the current row that carry their own error for a refusal about that row, by
-   * caption — the balloon names them ("Fix Status to save") and leaves the why to the fields; none
-   * where the refusal is about another row, or names nothing a field shows, and the balloon words it
-   * in full. */
+  /** The captions of the current row's fields in error, for a refusal about that row; none makes the
+   * balloon word the refusal in full. */
   private _fieldsToFix(source: DomainSource<TRow>, error: unknown): string[] {
     const row = source.currentRow.peek();
     const about = source.problemRow.peek();
@@ -422,24 +419,20 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   }
 }
 
-/** The refusal balloon each session has up, and the source that raised it. */
 const BALLOONS = new WeakMap<object, {source: DomainSource<any>, balloon: NotifyHandle | null}>();
 
 // one registry per page, not per bundle: the `/domains` route runs in PowerPack's copy of this
-// library, and must still dress a table with what the app's bundle configured. The version keeps a
-// copy with another `DomainTable` contract off it: bump it when that contract changes
+// library; bump the version when the `DomainTable` contract changes
 const CONFIGURE: Map<string, Map<string, DomainConfigure<any>>> =
   (globalThis as Record<PropertyKey, any>)[Symbol.for('ems.configure.v1')] ??= new Map();
 
-/** The handle with everything registered for its address applied, in registration order. */
 async function configured<TRow extends DomainRowLike>(table: DomainTable<TRow>): Promise<DomainTable<TRow>> {
   for (const fn of [...CONFIGURE.get(table.address)?.values() ?? []])
     await fn(table);
   return table;
 }
 
-/** The first problem the table's validators find over `rows`, every registered column of each,
- * named by row and column — null where all of them pass. */
+/** The first problem the table's validators find over `rows`, named by row and column. */
 export function firstProblem<TRow extends DomainRowLike>(table: DomainTable<TRow>, rows: Iterable<RowView<TRow>>,
   source?: DomainSource<TRow>): {row: RowView<TRow>, message: string} | null {
   const columns = table.validators.columns;
@@ -464,8 +457,7 @@ function nameCell<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: Row
   return `${rowName(table, row, source)}: ${field}${problem}`;
 }
 
-/** The row as a refusal names it: its caption — or, where all the table can caption it by is its
- * id (a child row with no name column), its place among the source's rows: "Order line 2". */
+/** The row's caption — or, where that is only its id, its place among the source's rows: "Order line 2". */
 function rowName<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>,
   source?: DomainSource<TRow>): string {
   const caption = table.renderer.caption(row);
@@ -473,13 +465,12 @@ function rowName<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowV
     source.rows.items.peek().findIndex((r) => r.id === row.id);
   if (at < 0)
     return caption;
-  const noun = DomainTable.noun(table.info, true);
-  return `${noun.charAt(0).toUpperCase()}${noun.slice(1)} ${at + 1}`;
+  return `${DomainTable.capital(DomainTable.noun(table.info, true))} ${at + 1}`;
 }
 
 export const domains = {
-  /** The table's shape and the caller's access in one round of requests, dressed by everything
-   * {@link configure}d for the address; a handle per call, so the access is re-acquired by
+  /** The table's shape and the caller's access in one round of requests, with everything
+   * {@link configure}d for the address applied; a handle per call, so the access is re-acquired by
    * acquiring again. */
   async table<TRow extends DomainRowLike = DomainRowLike>(address: string): Promise<DomainTable<TRow>> {
     const backend = emsBackends.domain;
@@ -488,10 +479,6 @@ export const domains = {
     const table = await backend.table(address);
     return configured(new DomainTable<TRow>(address, table, Access.from(await table.access())));
   },
-  /** What an app declares on a table, applied to every handle {@link table} makes for the address —
-   * the app's own views, child tabs, the `/domains` route, trees. Register at module load under a
-   * stable `id`, so a bundle evaluated twice replaces its entry rather than adding a second; `fn`
-   * may be async, and a throw rejects the handle. Returns the unregister function. */
   configure: DomainTable.configure,
   form: (target: DomainFormTarget, options?: DomainFormOptions): DomainForm => new DomainForm(target, options),
   list: (source: DomainSource, options?: DomainListOptions): DomainList => new DomainList(source, options),

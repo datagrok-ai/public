@@ -21,12 +21,10 @@ export interface DomainTreeOptions<TRow extends DomainRowLike = DomainRowLike> {
   /** Actions on top of Open and the table's own registry, per node. */
   actions?: DomainAction<TRow>[];
   /** A first row standing for the whole table ('All locations'): selecting it is `selected`
-   * null, which is what a collection bound to the tree reads as "no subtree filter". It is the
-   * tree's selection whenever no node is, so "everything" has one look. Without it the only way
-   * back to everything is clicking the selected node again. */
+   * null, which is what a collection bound to the tree reads as "no subtree filter"; it is selected
+   * whenever no node is. Without it the only way back to everything is clicking the selected node again. */
   allNode?: string;
-  /** How many children one request reads; a level larger than that is read in several
-   * (default 500). */
+  /** How many children one request reads (default 500); a larger level is read in pages. */
   pageSize?: number;
 }
 
@@ -67,7 +65,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     const render = _options.render;
     this.tree = this.runInScope(() => new VirtualTree<RowView<TRow>>({
       contextActions: (node) => node.data === undefined ? [] : this.actionsFor(node.data),
-      // the all row is no location: muted, set off from the rows under it
       render: (node) => node.id === ALL ? span(node.label, 'u2-domain-tree-all') :
         render === undefined ? span(node.label) : render(node.data!),
     }));
@@ -170,7 +167,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     }
   }
 
-  /** No node: the all row where there is one, else nothing selected — the same "everything". */
+  /** No node: the all row where there is one, else nothing selected. */
   private _clear(): void {
     if (this._options.allNode === undefined)
       this.tree.clearSelection();
@@ -178,8 +175,8 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       void this.tree.expandPath([ALL]);
   }
 
-  /** One level, every row of it a page at a time: the rows whose parent column is `id` — null for
-   * the roots, which is what the `is empty` operator compiles to. */
+  /** One level, a page at a time: the rows whose parent column is `id` — null for the roots, which
+   * is what the `is empty` operator compiles to. */
   private async _children(id: string | null): Promise<TreeNode<RowView<TRow>>[]> {
     const table = this._table!;
     const limit = this._options.pageSize ?? PAGE_SIZE;

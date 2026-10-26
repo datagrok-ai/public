@@ -26,8 +26,7 @@ export interface DomainGridOptions {
   hiddenColumns?: string[];
   /** The columns to show, in this order; every column but the system and hidden ones by default. */
   columns?: string[];
-  /** A click on a cell of `column` hands its saved row to `run` — a child grid opening the child's
-   * own page from its key. */
+  /** A click on a cell of `column` hands its saved row to `run`. */
   open?: {column: string, run: (row: RowView) => void};
 }
 
@@ -36,26 +35,19 @@ export interface DomainGridOptions {
  * date, the rest keep the time. */
 const DATE_FORMAT = 'MMM d, yyyy';
 const DATE_TIME_FORMAT = 'MMM d, yyyy HH:mm';
-/** The header holds the longest caption as the platform wraps it at its column's width — at least
- * two lines, so a unit has its own ("Dosed Concentration (uM)"), and at most four; the full
- * caption is in the header's tooltip. */
+/** At least two lines, so a unit gets its own: "Dosed Concentration (uM)". */
 const HEADER_LINES = {min: 2, max: 4};
-/** The header cell's vertical padding and the room its text keeps from the column's edges. */
 const HEADER_PADDING = 10;
 const HEADER_MARGIN = 8;
-/** A fitted column's width in pixels: the data's own, over a floor by what the column holds — so
- * an empty frame still gets columns a value can be read in — and under a cap, so one long text
- * does not take the pane. */
+/** Floors by type, so an empty frame still gets readable columns, and a cap. */
 const COLUMN_WIDTH = {flag: 48, number: 64, date: 96, text: 96, name: 160, reference: 160, max: 320};
-/** Room under the rows for the grid's horizontal scrollbar. */
 const SCROLLBAR = 12;
 
 export class DomainGrid extends Control {
   readonly grid: DG.Grid;
   private _refused: {unsubscribe(): void} | undefined;
   private _rows: {unsubscribe(): void}[] = [];
-  /** The frame the columns were last fitted to: a frame is fitted once, so a column the user
-   * resized keeps its width until the next one. */
+  /** Fitted once per frame, so a column the user resized keeps its width. */
   private _fittedTo: unknown;
   private static _context: CanvasRenderingContext2D | null | undefined;
 
@@ -102,8 +94,7 @@ export class DomainGrid extends Control {
       if (open === undefined || !cell.isTableCell || cell.tableColumn?.name !== open.column)
         return;
       const row = source.rows.byKey(String(cell.grid.dataFrame.get('id', cell.tableRowIndex!)));
-      // the platform brings the clicked grid's view back to the front once this handler returns, so a
-      // view the run opens would lose to it: the run waits for the click to be over
+      // the platform brings the clicked grid's view back to the front after this handler
       if (row !== undefined && !Rows.isDraft(row))
         setTimeout(() => open.run(row));
     });
@@ -131,8 +122,7 @@ export class DomainGrid extends Control {
     this._fitHeader();
   }
 
-  /** A ref column holds ids but shows the target's name: a header click sorts by the name the
-   * row carries (`~caption_<column>`), falling back to the id where none was projected. */
+  /** A ref column sorts by the name it shows (`~caption_<column>`), else by the id. */
   static sortByCaption(df: DG.DataFrame): void {
     for (const column of df.columns.toList()) {
       const captions = df.columns.byName(Rows.caption(column.name));
@@ -149,20 +139,16 @@ export class DomainGrid extends Control {
     }
   }
 
-  /** A cell keeps to one line, cut with an ellipsis: wrapped into a row's height a long text is
-   * clipped mid-line, and the grid's tooltip shows it whole. */
+  /** A wrapped text is clipped mid-line by the row height; the tooltip shows it whole. */
   private _singleLine(): void {
     for (const column of this._columns()) {
       if (column.column === null)
         continue;
       column.contentCellStyle.textWrap = 'ellipsis';
-      // one-line captions sit on the line two-line ones end on, not centred between them
       column.headerCellStyle.vertAlign = 'bottom';
     }
   }
 
-  /** The header as tall as the longest caption needs at its column's width — unless the caller's
-   * look sets the height. */
   private _fitHeader(): void {
     if (this._options.look?.colHeaderHeight !== undefined)
       return;
@@ -178,8 +164,7 @@ export class DomainGrid extends Control {
     this.grid.setOptions({colHeaderHeight: DomainGrid.headerHeight(lines, font)});
   }
 
-  /** The rows' own height, the header and a scrollbar included, as `--u2-domain-grid-height`: what
-   * a child pane caps the grid at, so a short table is not followed by empty column rules. */
+  /** `--u2-domain-grid-height`: what a child pane caps the grid at, so a short table has no empty rules. */
   private _fitHeight(): void {
     const rows = Math.max(1, this.grid.dataFrame?.rowCount ?? 0);
     const look = this.grid.props;
@@ -196,9 +181,7 @@ export class DomainGrid extends Control {
     this._fitHeight();
   }
 
-  /** Each shown column as wide as what it holds and its caption laid out in the header's two
-   * lines, once per frame: the platform sizes a column by the frame it first saw, which for a
-   * child is often an empty one. */
+  /** The platform sizes a column by the first frame it saw, for a child often an empty one. */
   private _fitColumns(): void {
     const df = this.grid.dataFrame;
     if (df === null || df === undefined || this._fittedTo === df.dart)
@@ -218,8 +201,7 @@ export class DomainGrid extends Control {
     }
   }
 
-  /** The widest target name a ref column draws (`~caption_<column>`), or null where none rides
-   * with the rows. */
+  /** The widest name a ref column draws, null without `~caption_<column>`. */
   private static _namesWidth(df: DG.DataFrame, column: string, font: string): number | null {
     const names = df.columns.byName(Rows.caption(column));
     if (names === null)
@@ -230,9 +212,6 @@ export class DomainGrid extends Control {
     return widest + HEADER_MARGIN * 2;
   }
 
-  /** A column's width from its data width and its caption's: a floor by type (a flag the least,
-   * the name and a reference the most), a cap, and the larger of the two widths between them. A
-   * reference's data width is its target names' ({@link _namesWidth}), never the ids'. */
   static columnWidth(prop: IProperty | undefined, isName: boolean, data: number, caption: number): number {
     const reference = prop !== undefined && DomainTable.isReference(prop);
     const floor = isName ? COLUMN_WIDTH.name : reference ? COLUMN_WIDTH.reference : DomainGrid._floorOf(prop);
@@ -245,8 +224,7 @@ export class DomainGrid extends Control {
       type === 'datetime' ? COLUMN_WIDTH.date : COLUMN_WIDTH.text;
   }
 
-  /** The narrowest width that lays `caption` out in two lines broken at a word — the header never
-   * has fewer, so a column that wide costs it no height. */
+  /** The narrowest width that lays `caption` out in two lines broken at a word. */
   static captionWidth(caption: string, measure: (text: string) => number): number {
     const words = caption.split(/\s+/).filter((w) => w !== '');
     let best = measure(words.join(' '));
@@ -261,8 +239,7 @@ export class DomainGrid extends Control {
       .filter((c): c is DG.GridColumn => c !== null);
   }
 
-  /** How many lines `caption` takes wrapped at word boundaries into `width` pixels, as the
-   * platform wraps a header; a word wider than the line takes a line of its own. */
+  /** Lines `caption` takes wrapped at words into `width`, as the platform wraps a header. */
   static captionLines(caption: string, width: number, measure: (text: string) => number): number {
     let lines = 0;
     let line = '';
@@ -278,8 +255,7 @@ export class DomainGrid extends Control {
     return line === '' ? lines : lines + 1;
   }
 
-  /** The header height for `lines` of caption in `font` (the platform's default, 13px, without
-   * one): its line height as the grid's text renderer computes it, between two and four lines. */
+  /** Line height as the grid's text renderer computes it; 13px without a font. */
   static headerHeight(lines: number, font = ''): number {
     const px = Number(/(\d+(?:\.\d+)?)px/.exec(font)?.[1] ?? 13);
     const shown = Math.min(HEADER_LINES.max, Math.max(HEADER_LINES.min, lines));
@@ -320,9 +296,8 @@ export class DomainGrid extends Control {
     }
   }
 
-  /** A column without a format tag takes the schema's format, as the form shows the value — and a
-   * datetime with no format at all is a date where every value it holds falls on midnight, date and
-   * time otherwise. */
+  /** The schema's format where the column has none; an unformatted datetime is a date when every
+   * value falls on midnight. */
   private _formats(df: DG.DataFrame): void {
     for (const p of this.source.schema.properties) {
       const column = df.columns.byName(p.name!);
@@ -359,7 +334,7 @@ export interface DomainDataTableOptions {
   /** Enter on the selected row, or a double-click on it; by default the row is handed to the
    * form paired through the source, as a list's Enter hands it over. */
   onActivate?: (row: RowView, index: number) => void;
-  /** A row's context menu, on top of Open and the table's own registry. */
+  /** Context menu actions on top of Open and the table's registry. */
   actions?: DomainAction[];
 }
 
@@ -367,7 +342,7 @@ export interface DomainDataTableOptions {
  * pooled cells, the columns derived from the table's schema the way the grid's decoration
  * derives them, the headers sorting through the source, and the source's writer painting the
  * cells (pending amber, refused red). Read-only by design (ruling 5: the Dart grid stays THE
- * editor), so no cell is drawn as one the caller may not write — what it is for is a wide
+ * editor) — what it is for is a wide
  * collection beside a tree or a form, where a canvas viewer is more than the page needs. */
 export class DomainDataTable extends Control {
   /** The table, once the source's schema is known — it is what the columns are derived from. */

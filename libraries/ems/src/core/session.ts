@@ -245,9 +245,8 @@ export class SharedSession implements DomainSession {
     return false;
   }
 
-  /** What the unsaved-changes dialog says: the record by its caption and the fields edited on it
-   * ("Save changes to "Caffeine"?" over "Your changes to CAS and USAN will be lost if you leave
-   * this page."), a new record by its noun, several by the summary. */
+  /** The unsaved-changes dialog's title and body: one record by its caption and edited fields, a new
+   * one by its noun, several by the summary. */
   static atStake(session: DomainSession, action: string): {title: string, body: string} {
     const pending = session instanceof SharedSession ?
       session._sources.peek().flatMap((source) => source.pending().map((row) => ({source, row}))) : [];
@@ -274,8 +273,7 @@ export class SharedSession implements DomainSession {
         `Your ${fields.length === 1 ? 'change' : 'changes'} to ${list} ${lost}`};
   }
 
-  /** How a refusal names a row without a renderer: the table's singular name and the row's own
-   * name ({@link _rowName}). */
+  /** How a refusal names a row without a renderer: the table's singular name and the row's name. */
   private static _nameOf(source: DomainSource, row: RowView): string {
     const what = (source.schema.info.singularName || source.table).replace(/_/g, ' ');
     return `${what.charAt(0).toUpperCase()}${what.slice(1)} "${SharedSession._rowName(source, row)}"`;
@@ -293,7 +291,7 @@ export class SharedSession implements DomainSession {
 /** THE gate in front of whatever would drop pending changes — a navigation, a filter change, a
  * view close: resolves to whether the caller may proceed. Clean → true without a dialog; a save
  * in flight → a warning and false; else the user saves (false when the save is refused),
- * discards, or cancels. The dialog names the record and the fields at stake, not the buttons. */
+ * discards, or cancels. */
 export function confirmDiscard(session: DomainSession, options: {action?: string} = {}): Promise<boolean> {
   // saving first: a batch in flight is clean for a while before its write-back lands, and the
   // caller must not be let through that window either

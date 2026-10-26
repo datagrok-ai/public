@@ -19,8 +19,7 @@ export interface DomainChildrenOptions {
   tables?: string[];
   /** `grid` (default): the platform grid; `list`: a list beside a form. */
   mode?: DomainChildrenMode;
-  /** Per child table (`<schema>.<table>` or the bare name), in grid mode: the columns the grid shows,
-   * in order, and the column whose cell opens the child's own page. */
+  /** Grid mode, per child table (address or bare name): the columns shown and the one that opens a row. */
   grids?: Record<string, {columns?: string[], open?: string}>;
 }
 
@@ -32,8 +31,6 @@ export interface ChildEntry {
   label: string;
 }
 
-/** What a tab follows: its rows' count, the child source while the tab is shown, and whether the
- * pane holds nothing but its empty message. */
 interface TabState {
   count: Signal<number | null>;
   current: Signal<DomainSource | undefined>;
@@ -44,7 +41,7 @@ export class DomainChildren extends Control {
   readonly tabs: TabStrip;
   readonly mode: DomainChildrenMode;
   /** The tabs, once the child tables are known — the parent loaded and the handles acquired; a
-   * table that did not open has a tab with its error, and no entry. */
+   * table that did not open has an error tab and no entry. */
   readonly entries: ReadonlySignal<readonly ChildEntry[]>;
 
   private readonly _entries = signal<readonly ChildEntry[]>([]);
@@ -106,7 +103,6 @@ export class DomainChildren extends Control {
       const label = ambiguous ? `${title} (${c.label})` : title;
       const pane = div([], 'u2-domain-children-pane');
       pane.dataset.u2Part = 'pane';
-      // a child table that does not open fails its own tab; the others still work
       if (handle.status === 'rejected') {
         pane.append(span(DomainErrors.message(handle.reason), 'u2-domain-children-error'));
         this.tabs.addTab({id, label, content: () => pane});
@@ -150,8 +146,7 @@ export class DomainChildren extends Control {
     });
   }
 
-  /** What a tab is marked invalid with: the refusal its child source carries, never a failed load,
-   * which the pane shows itself. */
+  /** The refusal the tab's child source carries; a failed load is the pane's to show. */
   private static _problem(source: DomainSource | undefined): string | null {
     const error = source?.error.value;
     const code = DomainErrors.codeOf(error);
@@ -159,23 +154,20 @@ export class DomainChildren extends Control {
       (code !== 'validation' && code !== DomainSource.REFUSED) ? null : DomainErrors.message(error, source);
   }
 
-  /** Every tab's rows counted for the parent row — its label says how many. A row opens on a tab
-   * that has something in it (`pick`): the first child table with rows, the first tab when none has
-   * or the counts do not answer. A tab shown meanwhile is the user's. */
+  /** Counts every tab's rows for its label; with `pick`, opens the first tab with rows unless the
+   * user has picked one meanwhile. */
   private async _count(entries: readonly ChildEntry[], row: RowView | null, pick: boolean): Promise<void> {
     for (const e of entries)
       this._tabStates.get(e.id)!.count.value = null;
     if (row === null || Rows.isDraft(row))
       return;
     const opened = this.tabs.activeTab.peek();
-    // a count nobody asked for: a table that refuses it just goes without, and does not win the first tab
     const counts = await Promise.all(entries.map((e) =>
       e.table.table.count({filter: `${e.fk} = "${row.id}"`}).catch(() => null)));
     if (this.scope.isDisposed || this.parent.currentRow.peek()?.id !== row.id)
       return;
     for (const [i, e] of entries.entries())
       this._tabStates.get(e.id)!.count.value ??= counts[i];
-    // the tab already shown may be one whose table did not open: it has no entry and no rows
     if (!pick || entries.every((e) => e.id === opened))
       return;
     const at = counts.findIndex((n) => n !== null && n > 0);
@@ -223,7 +215,7 @@ export class DomainChildren extends Control {
           divH([domains.list(child).root, domains.form(child).root], 'u2-domain-children-split');
         const empty = span(`No ${entry.label.toLowerCase()}.`, 'u2-domain-children-empty');
         const add = domains.newButton(child);
-        // the press leaves the focus where the new row is typed: the grid's row; a list's form takes it itself
+        // a list's form takes the focus itself; the grid needs it handed over
         if (grid !== null)
           add.root.addEventListener('click', () => queueMicrotask(() => grid.grid.root.focus()));
         pane.replaceChildren(divH([add.root], 'u2-domain-children-toolbar'), body, empty);

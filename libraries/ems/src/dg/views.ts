@@ -34,7 +34,7 @@ export interface DomainViewsOptions {
 }
 
 export class DomainViews {
-  /** Where each table's rows open: every views object over it, the latest last, until disposed. */
+  /** Where each table's rows open: every views object over it, the latest last. */
   private static readonly _byTable = new Map<string, DomainViews[]>();
 
   constructor(private readonly _options: DomainViewsOptions) {
@@ -43,7 +43,7 @@ export class DomainViews {
   }
 
   /** Opens a saved row of `table` in the view of it some views have — brought forward at the row, or docked; false
-   * where no views show the table. The views with an app open over the table win over the latest made. */
+   * where no views show the table. Views with an app open over the table win over the latest made. */
   static openRow(table: string, id: string): boolean {
     const all = DomainViews._byTable.get(table) ?? [];
     const open = all.filter((v) => [...DomainApp.live].some((app) => app.base === v.baseOf(table)));
@@ -53,7 +53,7 @@ export class DomainViews {
     return views !== undefined;
   }
 
-  /** Takes these views out of where rows open — a package that rebuilds its views drops the old. */
+  /** Takes these views out of where rows open. */
   dispose(): void {
     for (const entry of this._options.views) {
       const left = (DomainViews._byTable.get(entry.table) ?? []).filter((v) => v !== this);

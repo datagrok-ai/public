@@ -1,7 +1,7 @@
 /* `domains.search` — the ribbon search box over a source: the search variant of `TextInput`
    (magnifier, ✕), writing `source.search` after a quiet spell, on Enter at once, cleared by
    Escape; two-way, so a search set in code shows in the box. The server runs it over the
-   table's `searchable` columns, AND-ed with the query — what the placeholder and the tooltip say. A search the USER makes goes through the
+   table's `searchable` columns, AND-ed with the query. A search the USER makes goes through the
    gate (STATE-CONTRACT H6), as the filters do — it answers at once while there is nothing to lose
    and refuses while a batch is being written back; cancel puts the previous text back. */
 import {computed, TextInput} from '@datagrok-libraries/u2';
@@ -19,12 +19,11 @@ export class DomainSearch extends TextInput {
   private _timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(readonly source: DomainSource, options: DomainSearchOptions = {}) {
-    // the box says what it searches, so it is not read as a second filter
     super({search: true, inline: true, name: 'search', value: source.search.peek(),
       placeholder: options.placeholder ?? computed(() => {
         source.state.value;
         const columns = DomainSearch.columns(source).join(', ');
-        // a list the box can't show whole reads as cut: the tooltip names the columns instead
+        // a list too long for the box is left to the tooltip
         return columns === '' || columns.length > 20 ? `Search ${DomainTable.noun(source.schema.info)}…` :
           `Search ${columns}…`;
       })});

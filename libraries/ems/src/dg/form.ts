@@ -81,15 +81,10 @@ export class DomainForm extends Control {
   /** The system block under the fields, re-read with the row: the writer lands the server-assigned
    * columns (`number`, `version`, `created_on`, `author_id`) after the insert, not with it. */
   private _system: HTMLElement | null = null;
-  /** Per readonly reference column of the current row: the id shown, the caption resolved for it,
-   * and the table it points into (none for a user or a group). */
+  /** Per readonly reference column of the current row: the id shown, its caption and target table. */
   private readonly _captions = new Map<string, {id: string, caption: string, address?: string}>();
-  /** The input that had the focus when a keystroke saved: where the focus goes back to. */
   private _returnTo: string | undefined;
-  /** Set while {@link focus} moves the focus — a field the form focused is not touched by leaving it. */
   private _focusing = false;
-  /** The configured handles the pickers and readonly references caption and open rows through, per
-   * backend, so a backend swapped in acquires its own. */
   private static readonly _handles = new WeakMap<object, Map<string, Promise<DomainTable>>>();
   private _editSub: {unsubscribe(): void} | undefined;
   private readonly _subs: {unsubscribe(): void}[];
@@ -362,7 +357,7 @@ export class DomainForm extends Control {
           else
             touched();
         });
-        // the focus the form put there is not the user's: leaving it untyped shows no verdict yet
+        // the focus the form placed is not the user's: leaving it untyped shows no verdict yet
         let placed = false;
         const onFocusIn = () => placed = this._focusing;
         const onInteract = () => placed = false;
@@ -398,9 +393,7 @@ export class DomainForm extends Control {
     }
   }
 
-  /** The system columns as one muted line — "Created Oct 21, 2026 by Admin · Updated 11:13 PM · v2"
-   * and a copy of the id — the author's caption once resolved; empty on a draft, which has none of
-   * them yet. */
+  /** The system columns as one muted line: "Created Oct 21, 2026 by Admin · Updated 11:13 PM · v2", Id copy. */
   private _footer(row: RowView): HTMLElement {
     const block = div([], 'u2-domain-form-system');
     block.dataset.u2Part = 'system';
@@ -446,8 +439,7 @@ export class DomainForm extends Control {
     return block;
   }
 
-  /** A draft's empty readonly field that is not a reference — a key or number the server assigns —
-   * says so instead of showing a caption with nothing after it. */
+  /** A draft's empty readonly non-reference field reads "assigned on save". */
   static markAssigned(form: ObjectForm, row: RowView): void {
     const draft = Rows.isDraft(row);
     for (const prop of form.properties) {
@@ -463,8 +455,7 @@ export class DomainForm extends Control {
     }
   }
 
-  /** The configured handle over `address`, acquired once — what pickers and readonly references
-   * caption and open rows through. */
+  /** The configured handle over `address`, acquired once per backend. */
   static handle(address: string): Promise<DomainTable> {
     const backend = emsBackends.domain;
     if (backend === undefined)
@@ -525,7 +516,7 @@ export class DomainForm extends Control {
       // nothing one request later
       this._captions.set(name, {id: String(id), caption: typeof caption === 'string' ? caption : '', address});
       projected = true;
-      // the server captions a row by its name column; an app that dresses the table captions it its own way
+      // the server captions by the name column; an app renderer may caption it otherwise
       const dressed = address === undefined || caption === null ? undefined : DomainPick.host?.caption(address);
       void dressed?.then((app) => app === null ? undefined : resolve(), () => undefined);
     }
@@ -542,7 +533,6 @@ export class DomainForm extends Control {
         continue;
       const host = DomainPick.host;
       const address = this._captions.get(name)!.address;
-      // a reference into a table is a way there
       if (host === undefined || address === undefined || caption === '' || Rows.isDraft(id))
         el.textContent = caption;
       else

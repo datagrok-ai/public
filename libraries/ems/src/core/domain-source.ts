@@ -126,8 +126,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** How a refusal the writer raised over one cell is worded; the table's registry sets it (the
    * row's caption and the column's), and without it the writer's own message stands. */
   nameCell: ((row: RowView, column: string, problem: string) => string) | undefined;
-  /** How the user knows a row — the table's renderer caption; the registry sets it, and without it
-   * a sentence names the row by its name column. */
+  /** The row's caption as the table's renderer gives it; the registry sets it. */
   caption: ((row: RowView) => string) | undefined;
   /** The ids of the rows one host condition (`FilterOperator.host`) matches — the app's answer, put in place
    * of the condition before every read. */
@@ -140,8 +139,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly isDirty: ReadonlySignal<boolean>;
   readonly changeCount: ReadonlySignal<number>;
   readonly validity: ReadonlySignal<string | null>;
-  /** Why Save stays off now, null while it may run: a refusal no edit has answered yet, the writer's
-   * validity, then a paired form's verdict. */
+  /** Why Save stays off: an unanswered refusal, the writer's validity, then a form's live verdict. */
   readonly blocked: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   /** "50 of 2,077", "12 issues", "3 unsaved changes" — what a status bar shows. */
@@ -513,8 +511,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   /** A check Save runs first — a form registers its own, so a refusal names the field ("Cannot
-   * save: Title is required"); `live`, the same verdict as it changes, keeps Save off meanwhile
-   * ({@link blocked}). Answers the unregister. */
+   * save: Title is required"); `live`, the same verdict as it changes, feeds {@link blocked}.
+   * Answers the unregister. */
   guard(check: () => string | null, live?: ReadonlySignal<string | null>): () => void {
     this._guards.add(check);
     if (live !== undefined)

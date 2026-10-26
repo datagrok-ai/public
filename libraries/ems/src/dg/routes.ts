@@ -24,8 +24,7 @@ export async function route(address: string): Promise<DG.ViewBase | null> {
   const open = DomainApp.openAt(DomainApp.baseOf(`${schema}.${table}`), rest);
   if (open !== undefined)
     return open;
-  // a table the registry refuses, or an app's configuration that throws: the platform's own view
-  // still opens, but the reason is not lost — an unknown table is no failure
+  // the platform's own view opens instead; an unknown table is no failure worth logging
   const handle = await domains.table(`${schema}.${table}`).catch((e) => {
     if (!DomainErrors.isNotFound(e))
       console.error(`EMS: ${schema}.${table} did not open as a u2 view:`, e);

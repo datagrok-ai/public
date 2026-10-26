@@ -310,8 +310,7 @@ export class DomainBackendError extends Error {
   }
 }
 
-/** The platform's `StringUtils.toSingular` (ddt utils.dart): regular forms only; a noun already
- * singular in `-is`/`-us`/`-ss` passes through. */
+/** The platform's `StringUtils.toSingular` (ddt utils.dart). */
 export function toSingular(s: string): string {
   if (s.length <= 2 || !s.endsWith('s') || s.endsWith('ss') || s.endsWith('is') || s.endsWith('us'))
     return s;
@@ -320,7 +319,7 @@ export function toSingular(s: string): string {
   return /(xes|zzes|ches|shes|sses|tuses)$/.test(s) ? s.slice(0, -2) : s.slice(0, -1);
 }
 
-/** The platform's `StringUtils.toPlural` (ddt utils.dart): the plural name the registry gives a table. */
+/** The platform's `StringUtils.toPlural` (ddt utils.dart). */
 export function toPlural(s: string): string {
   if (s.length === 0)
     return s;
