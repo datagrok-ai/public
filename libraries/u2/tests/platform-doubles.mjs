@@ -1008,6 +1008,7 @@ class GridColumn {
   get width() { return this.dart.width; }
   set width(x) { this.dart.width = x; }
   get contentCellStyle() { return this.dart.contentCellStyle ??= {}; }
+  get headerCellStyle() { return this.dart.headerCellStyle ??= {}; }
   /** The platform measures the values in the cell font; the double has no font, so a test sets it. */
   getDataWidth() { return this.dart.dataWidth ?? 0; }
 

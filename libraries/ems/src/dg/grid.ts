@@ -137,8 +137,11 @@ export class DomainGrid extends Control {
    * clipped mid-line, and the grid's tooltip shows it whole. */
   private _singleLine(): void {
     for (const column of this._columns()) {
-      if (column.column !== null)
-        column.contentCellStyle.textWrap = 'ellipsis';
+      if (column.column === null)
+        continue;
+      column.contentCellStyle.textWrap = 'ellipsis';
+      // one-line captions sit on the line two-line ones end on, not centred between them
+      column.headerCellStyle.vertAlign = 'bottom';
     }
   }
 
