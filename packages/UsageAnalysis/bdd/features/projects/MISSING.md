@@ -10,10 +10,10 @@ and core#626 (`projects-regressions-rename-from-status-bar.feature`), all as `@k
 core#945 and core#567 as regression guards (`projects-regressions-quick-save.feature`,
 `projects-url-parameters-list.feature`); core#628, core#627 and core#463
 already are (`projects-complex`, `projects-lifecycle-spaces`, `projects-regressions-query`). The rest of the
-GROK-20511 group (core#446) is covered too: core#569 and core#630 (the link after the parameter is unticked)
-in `projects-url-parameters.feature`, core#446 in `projects-function-url-run.feature`, and the fixed core#566,
-core#568 and core#630 (the alias right after the save) by the Source checks after a save under a new name
-(`projects-url-parameters.feature`).
+GROK-20511 group (core#446) is covered too: core#569 and core#1127 (the link after the parameter is
+unticked) in `projects-url-parameters.feature`, the fixed core#446 (a run link without a required value) in
+`projects-function-url-run.feature`, and the fixed core#566, core#568 and core#630 (the alias right after
+the save) by the Source checks after a save under a new name (`projects-url-parameters.feature`).
 
 ## API and server tests requested
 
