@@ -817,6 +817,9 @@ export class DomainApp extends Control {
       if (panel !== null) {
         panel.style.display = Array.from(panel.children)
           .every((item) => (item.children[0] as HTMLElement | undefined)?.hidden ?? true) ? 'none' : '';
+        const divider = panel.previousElementSibling;
+        if (divider instanceof HTMLElement && divider.classList.contains('d4-ribbon-separator'))
+          divider.style.display = panel.style.display;
       }
     });
   }
