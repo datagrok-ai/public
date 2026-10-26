@@ -314,6 +314,7 @@ export const U2_KINDS: readonly U2KindDef[] = [
   def('display', 'count-badge', 'badge', {state: ['text']}),
   def('display', 'dot', 'badge', {state: ['text']}),
   def('display', 'status-line', 'status line', {role: 'status', nameFrom: ['text'], state: ['text']}),
+  def('display', 'empty-state', 'empty state', {role: 'status', nameFrom: ['text'], state: ['text']}),
   def('display', 'tag', 'tag', {nameFrom: ['text'], state: ['text', 'selected', 'pressed']}),
   def('display', 'chip', 'chip', {nameFrom: ['text'], state: ['text', 'selected', 'pressed']}),
   def('display', 'bind-chip', 'chip', {nameFrom: ['text'], state: ['text', 'selected', 'pressed']}),

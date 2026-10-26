@@ -6305,6 +6305,21 @@
       "gestures": []
     },
     {
+      "kind": "empty-state",
+      "noun": "empty state",
+      "family": "display",
+      "role": "status",
+      "nameFrom": [
+        "text"
+      ],
+      "parts": {},
+      "state": [
+        "text"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
       "kind": "tag",
       "noun": "tag",
       "family": "display",

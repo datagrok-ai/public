@@ -197,8 +197,9 @@
   display: none;
 }
 
-/* nothing to show: the message takes the rows' own area, centred, and the empty scroller with its
-   border goes — a caption hanging under a 400px empty box is not an empty state */
+/* nothing to show, or a failed load: the message takes the rows' own area, centred inside the same
+   frame — a caption hanging under a 400px empty box is not an empty state, and a page whose frame
+   comes and goes with the results jumps */
 .u2-domain-list-blank > .u2-domain-list-rows {
   display: none;
 }
@@ -209,16 +210,8 @@
   align-items: center;
   justify-content: center;
   min-height: 0;
-}
-
-.u2-domain-list-nothing {
-  align-items: center;
-  gap: var(--dg-space-s);
-}
-
-.u2-domain-list-error {
-  align-items: center;
-  gap: var(--dg-space-m);
+  border: var(--dg-border-width) solid var(--dg-border);
+  background: var(--dg-bg);
 }
 
 .u2-domain-card {

@@ -24,8 +24,11 @@ export interface DomainListOptions {
   /** Actions on top of Open, Delete and the table's own registry. */
   actions?: DomainAction[];
   renderer?: ObjectRenderer<RowView>;
-  /** What an empty result says (default: "No <rows>."). */
+  /** What an empty result says (default: "No <rows> yet"). */
   empty?: string;
+  /** Makes the first row: what an empty list offers as its primary action, where the caller may
+   * insert and nothing hides the rows. */
+  create?: () => void;
 }
 
 /** A card is the handler's card — a title, a description line and the creation time. */
@@ -102,36 +105,32 @@ export class DomainList extends Control {
       const count = source.rows.items.value.length;
       const q = source.query.value;
       const filtered = typeof q === 'string' ? q.trim() !== '' : q.nodes.length > 0;
+      const clearFilter = () => button('Clear filter', () => source.query.value = '', {primary: true});
       if (state === 'loading' && count === 0)
         status.replaceChildren(loader('Loading…'));
       else if (state === 'error') {
-        // a filter the server refuses is a dead end without this: Retry runs it again
-        const actions = [button('Retry', () => void source.refresh())];
-        if (filtered)
-          actions.push(button('Clear filter', () => source.query.value = ''));
-        status.replaceChildren(divH([span(DomainErrors.message(source.error.value, source)), ...actions],
-          'u2-domain-list-error'));
-      } else if (state === 'ready' && count === 0) {
-        const search = source.search.value;
-        const what = DomainTable.noun(source.schema.info);
-        // an empty result the user asked for says so, and offers the way back out of it
-        const said = _options.empty ?? (search !== '' ? `No ${what} match "${search}".` :
-          filtered ? `No ${what} match the filter.` : `No ${what}.`);
-        status.replaceChildren(divV([span(said, 'u2-domain-list-empty'),
-          ...(search === '' ? [] : [button('Clear search', () => source.search.value = '')]),
-        ], 'u2-domain-list-nothing'));
-      } else
+        // a filter the server refuses is a dead end without the way out of it: Retry runs it again
+        const failed = emptyState(DomainErrors.message(source.error.value, source), {icon: 'exclamation-circle',
+          error: true, actions: [...filtered ? [clearFilter()] : [], button('Retry', () => void source.refresh())]});
+        failed.classList.add('u2-domain-list-error');
+        status.replaceChildren(failed);
+      } else if (state === 'ready' && count === 0)
+        status.replaceChildren(this._empty(filtered, clearFilter));
+      else
         status.replaceChildren();
-      // the rows have nothing to scroll: the message takes their place instead of hanging under
-      // an empty box
-      this.root.classList.toggle('u2-domain-list-blank', state === 'ready' && count === 0);
+      // the rows have nothing to scroll: the message takes their place, inside the same frame
+      this.root.classList.toggle('u2-domain-list-blank', count === 0 && (state === 'ready' || state === 'error'));
     });
-    // a refusal names one row: marked where it is drawn, and unmarked with the refusal
+    // a refusal names one row: marked where it is drawn, brought into view, and unmarked with the
+    // refusal
     this.effect(() => {
-      source.problemRow.value;
+      const problem = source.problemRow.value;
       source.error.value;
       for (const el of Array.from(this.list.root.querySelectorAll<HTMLElement>('[data-u2-row]')))
         this._markProblem(el);
+      const at = problem === null ? -1 : source.rows.items.peek().findIndex((r) => r.id === problem);
+      if (at >= 0)
+        this.list.scrollToIndex(at);
     });
     this.effect(() => this.root.classList.toggle('u2-domain-list-stale', this.stale.value));
     this.root.append(this.list.root, status);
@@ -185,10 +184,32 @@ export class DomainList extends Control {
       const same = actions.find((a) => a.name === action.name);
       return same !== undefined && same.enabled !== false;
     }));
-    return shared.map((action) => ({name: action.name, icon: action.icon, run: () => {
-      for (const actions of per)
-        actions.find((a) => a.name === action.name)!.run();
-    }}));
+    const detail = `${rows.length} ${DomainTable.noun(this.source.schema.info)}`;
+    return shared.map((action) => ({name: action.name, icon: action.icon, detail, destructive: action.destructive,
+      run: () => {
+        for (const actions of per)
+          actions.find((a) => a.name === action.name)!.run();
+      }}));
+  }
+
+  /** An empty result says what it is empty of, and offers the way back out of it: the search, the
+   * filter, or the first row where nothing hides any. */
+  private _empty(filtered: boolean, clearFilter: () => HTMLElement): HTMLElement {
+    const source = this.source;
+    const search = source.search.value;
+    const info = source.schema.info;
+    const what = DomainTable.noun(info);
+    const trash = source.deleted.value === 'only';
+    const create = this._options.create;
+    const actions = search !== '' ? [button('Clear search', () => source.search.value = '')] :
+      filtered ? [clearFilter()] :
+        create !== undefined && !trash && source.access.value.can('insert') ?
+          [button(`New ${info.singularName.toLowerCase() || 'row'}`, () => create(), {primary: true})] : [];
+    const said = this._options.empty ?? (search !== '' ? `No ${what} match "${search}"` :
+      filtered ? `No ${what} match the filter` : trash ? 'Trash is empty' : `No ${what} yet`);
+    const state = emptyState(said, {icon: search !== '' ? 'search' : trash ? 'trash-alt' : 'inbox', actions});
+    state.classList.add('u2-domain-list-nothing');
+    return state;
   }
 
   /** The rows the multi-selection holds, in selection order. */

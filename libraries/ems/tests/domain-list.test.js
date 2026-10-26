@@ -121,11 +121,11 @@ scoped('actions: Open on saved rows through the handler, Delete under the row\'s
   table.actions.add({name: 'Escalate', icon: 'arrow-up', requires: 'edit', when: (r) => r.title !== 'Naproxen',
     run: (r) => r.title = `${r.title}!`});
   const list = domains.list(src, {actions: [{name: 'Copy id', run: () => {}}]});
-  assert.deepEqual(names(list, src.rows.byKey('i1')), ['Open', 'Delete', 'Escalate', 'Copy id']);
+  assert.deepEqual(names(list, src.rows.byKey('i1')), ['Open', 'Escalate', 'Copy id', 'Delete']);
   assert.deepEqual(names(list, src.rows.byKey('i2')), ['Open', 'Escalate', 'Copy id'], 'no ~can_delete');
-  assert.deepEqual(names(list, src.rows.byKey('i3')), ['Open', 'Delete', 'Copy id'], 'when: false');
+  assert.deepEqual(names(list, src.rows.byKey('i3')), ['Open', 'Copy id', 'Delete'], 'when: false');
   const draft = src.newRow({title: 'Draft'});
-  assert.deepEqual(names(list, draft), ['Delete', 'Escalate', 'Copy id'], 'a draft has no address to open');
+  assert.deepEqual(names(list, draft), ['Escalate', 'Copy id', 'Delete'], 'a draft has no address to open');
   list.actionsFor(src.rows.byKey('i1')).find((a) => a.name === 'Escalate').run();
   assert.equal(src.rows.byKey('i1').title, 'Aspirin!', 'bound to the row');
   list.actionsFor(src.rows.byKey('i1')).find((a) => a.name === 'Open').run();
@@ -144,7 +144,7 @@ scoped('actions: Open on saved rows through the handler, Delete under the row\'s
   list.actionsFor(src.rows.byKey('i1')).find((a) => a.name === 'Restore').run();
   await flush();
   assert.equal(src.summary.value, '2 unsaved changes', 'the Escalate edit is back, and the draft');
-  assert.deepEqual(names(list, src.rows.byKey('i1')), ['Open', 'Delete', 'Escalate', 'Copy id']);
+  assert.deepEqual(names(list, src.rows.byKey('i1')), ['Open', 'Escalate', 'Copy id', 'Delete']);
   list.dispose();
   src.dispose();
 
@@ -216,7 +216,8 @@ scoped('the status area: loading, then empty or the failure with a retry', async
   const status = list.root.querySelector('[data-u2-part="status"]');
   assert.equal(status.querySelector('.u2-loader') !== null, true, 'loading');
   await flush();
-  assert.equal(status.textContent, 'No issues match the filter.', 'an empty result says why it is empty');
+  assert.equal(status.querySelector('.u2-empty-state-text').textContent, 'No issues match the filter',
+    'an empty result says why it is empty');
   list.dispose();
   src.dispose();
 
@@ -441,13 +442,13 @@ scoped('an empty result says what it is empty OF, and a search offers the way ou
   const status = list.root.querySelector('[data-u2-part="status"]');
   assert.equal(list.root.classList.contains('u2-domain-list-blank'), true,
     'the message takes the rows own area and the empty scroller goes');
-  assert.match(status.textContent, /No issues match the filter\./);
-  assert.equal(status.querySelector('button'), null, 'nothing to clear: the filter is not the search box');
+  assert.match(status.textContent, /No issues match the filter/);
+  assert.equal(status.querySelector('button').textContent, 'Clear filter', 'the way out of a filter that hides everything');
 
   src.query.value = '';
   src.search.value = 'nonesuch';
   await flush();
-  assert.match(status.textContent, /No issues match "nonesuch"\./);
+  assert.match(status.textContent, /No issues match "nonesuch"/);
   fire(status.querySelector('button'), 'click');
   await flush();
   assert.equal(src.search.value, '', 'Clear search brings the rows back');
@@ -467,11 +468,13 @@ scoped('a trash row says WHEN it was deleted, and Restore stages instead of writ
   mount(list);
   await flush();
   const row = list.root.querySelector('[data-u2-row="i2"]');
-  const detail = row.querySelector('.u2-domain-list-details');
-  assert.notEqual(detail, null, 'a trash row carries a detail line');
+  const detail = row.querySelector('.u2-domain-list-when');
+  assert.notEqual(detail, null, 'a trash row says when it went');
   assert.equal(detail.classList.contains('u2-timestamp'), true,
     'when it was deleted, read in the reader own zone — never the wire string');
+  assert.match(detail.textContent, /^Deleted /);
   assert.equal(detail.textContent.includes('GMT'), false);
+  assert.equal(row.classList.contains('u2-domain-list-pending'), false, 'deleted already: no strike, no pending edge');
   assert.match(detail.title, /2026/, 'the full moment is the title');
 
   const memory = emsBackends.domain.tableSync('grit.issue');
@@ -500,7 +503,7 @@ scoped('a trash row says WHEN it was deleted, and Restore stages instead of writ
   src.dispose();
 });
 
-scoped('a multi-selection: one submenu over every picked row, offering only what all of them offer', async () => {
+scoped('a multi-selection: what every picked row offers, flat and first; the clicked row in a submenu', async () => {
   const issueRows = ROWS.issue.map((r) => ({...r}));
   issueRows[2]['~can_delete'] = false;
   emsBackends.domain = backend({rows: {issue: issueRows, project: ROWS.project.map((r) => ({...r}))}});
@@ -511,12 +514,16 @@ scoped('a multi-selection: one submenu over every picked row, offering only what
   const at = (i) => list.list.root.querySelector(`.u2-list-row[data-index="${i}"]`);
   const panel = () => [...document.body.querySelectorAll('.u2-menu')].at(-1);
   const labels = () => [...panel().querySelectorAll('.u2-menu-label')].map((e) => e.textContent);
+  const details = () => [...panel().querySelectorAll('.u2-menu-detail')].map((e) => e.textContent);
   const leaf = (name) => [...panel().querySelectorAll('[role="menuitem"]')]
     .find((e) => e.querySelector('.u2-menu-label').textContent === name);
 
   fire(at(0), 'click');
   fire(at(0), 'contextmenu');
-  assert.deepEqual(labels(), ['Open', 'Delete', 'Close'], 'one row: its own actions and no submenu');
+  assert.deepEqual(labels(), ['Open', 'Close', 'Delete'], 'one row: its own actions, Delete last, and no submenu');
+  assert.deepEqual([...panel().querySelectorAll('.u2-menu-shortcut')].map((e) => e.textContent), ['Enter', '', 'Del'],
+    'the keys the list answers are shown');
+  assert.equal(panel().querySelectorAll('.u2-menu-separator').length, 1, 'Delete stands apart');
   fire(leaf('Open'), 'click');
 
   fire(at(1), 'click', {ctrlKey: true});
@@ -524,15 +531,14 @@ scoped('a multi-selection: one submenu over every picked row, offering only what
   assert.deepEqual(src.selection.value.map((r) => r.id), ['i1', 'i2'], 'the frame follows the picked rows');
   fire(at(1), 'contextmenu');
   assert.deepEqual([...list.list.selectedIndices.value], [0, 1], 'the right-click did not collapse it');
-  // both targets are named: the clicked row and the selection, neither of them implied (M2)
-  assert.deepEqual(labels(), ['Ibuprofen', '2 issues']);
+  // both targets are named: the selection on each of its items, the clicked row on its submenu (M2)
+  assert.deepEqual(labels(), ['Close', 'Delete', 'Ibuprofen'], 'Open takes one page: never offered over a selection');
+  assert.deepEqual(details().filter((d) => d !== ''), ['2 issues', '2 issues']);
   fire(panel().querySelectorAll('.u2-menu-item-sub')[0], 'click');
-  assert.deepEqual(labels(), ['Open', 'Delete', 'Close'], 'the clicked row keeps its own actions');
+  assert.deepEqual(labels(), ['Open', 'Close', 'Delete'], 'the clicked row keeps its own actions');
   fire(leaf('Open'), 'click');
 
   fire(at(1), 'contextmenu');
-  fire(panel().querySelectorAll('.u2-menu-item-sub')[1], 'click');
-  assert.deepEqual(labels(), ['Delete', 'Close'], 'Open takes one page: never offered over a selection');
   fire(leaf('Close'), 'click');
   await flush();
   assert.deepEqual(src.rows.items.value.map((r) => r.done), [true, true, false], 'both picked rows, and only them');
@@ -540,9 +546,7 @@ scoped('a multi-selection: one submenu over every picked row, offering only what
   fire(at(2), 'click');
   fire(at(0), 'click', {ctrlKey: true});
   fire(at(0), 'contextmenu');
-  assert.deepEqual(labels(), ['Aspirin', '2 issues']);
-  fire(panel().querySelectorAll('.u2-menu-item-sub')[1], 'click');
-  assert.deepEqual(labels(), ['Close'], 'i3 has no ~can_delete: Delete applies to the selection no longer');
+  assert.deepEqual(labels(), ['Close', 'Aspirin'], 'i3 has no ~can_delete: Delete applies to the selection no longer');
   fire(leaf('Close'), 'click');
   list.dispose();
   src.dispose();
@@ -593,4 +597,43 @@ scoped('a vetoed restore is worded as a restore: the row, and what to bring back
     message: 'Cannot save: Column "project_id" references a deleted row in "project"'}, trash),
   'Cannot restore "Aspirin": its project was deleted too. Restore the project first.');
   trash.dispose();
+});
+
+scoped('a seeded row is current but no pick; a pending delete reads with an Undo; an empty table offers New', async () => {
+  const {src} = await issues();
+  const list = domains.list(src);
+  mount(list);
+  await flush();
+  const row = (i) => list.list.root.querySelector(`.u2-list-row[data-index="${i}"]`);
+  assert.equal(row(0).classList.contains('u2-list-row-current'), true, 'the load puts the lead on the first row');
+  assert.equal(list.root.classList.contains('u2-domain-list-seeded'), true, 'drawn unpicked until the list is used');
+  fire(row(1), 'click');
+  assert.equal(list.root.classList.contains('u2-domain-list-seeded'), false);
+  assert.equal(row(1).classList.contains('u2-list-row-current'), true);
+  assert.equal(row(0).classList.contains('u2-list-row-current'), false);
+
+  src.edit.value.markDeleted('i2');
+  await flush();
+  const deleted = list.list.root.querySelector('[data-u2-row="i2"]');
+  assert.equal(deleted.classList.contains('u2-domain-list-pending'), true, 'a pending delete has the pending edge');
+  const undo = deleted.querySelector('.u2-domain-list-undo .u2-link');
+  assert.equal(undo.textContent, 'Undo', 'undone in words, not a bare icon');
+  fire(undo, 'click');
+  await flush();
+  assert.equal(src.isDirty.value, false);
+  list.dispose();
+  src.dispose();
+
+  emsBackends.domain = backend({rows: {issue: [], project: ROWS.project.map((r) => ({...r}))}});
+  const {src: none} = await issues();
+  let made = 0;
+  const empty = domains.list(none, {create: () => made++});
+  mount(empty);
+  await flush();
+  const state = empty.root.querySelector('.u2-empty-state');
+  assert.equal(state.querySelector('.u2-empty-state-text').textContent, 'No issues yet');
+  fire(state.querySelector('button'), 'click');
+  assert.equal(made, 1, 'the first row is one press away');
+  empty.dispose();
+  none.dispose();
 });

@@ -7,6 +7,7 @@ import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {untracked} from '../../core/signals.js';
 import {button} from '../../core/elements.js';
+import {icon} from './icon.js';
 
 export interface AsyncViewOptions {
   empty?: string;
@@ -25,6 +26,37 @@ export function loader(text?: string): HTMLElement {
     label.className = 'u2-loader-text';
     label.textContent = text;
     el.append(label);
+  }
+  return el;
+}
+
+export interface EmptyStateOptions {
+  /** Platform icon name, drawn large and muted above the sentence. */
+  icon?: string;
+  /** The way forward: a primary "New issue", a "Clear filter". */
+  actions?: HTMLElement[];
+  /** A failure rather than an absence: the icon and the sentence in the error colour. */
+  error?: boolean;
+}
+
+/** One look for "nothing here" and "this failed" alike: an icon, a sentence and the actions out of
+ * it, centred in whatever area holds it. */
+export function emptyState(text: string, options?: EmptyStateOptions): HTMLElement {
+  const el = document.createElement('div');
+  el.className = options?.error ? 'u2-empty-state u2-empty-state-error' : 'u2-empty-state';
+  el.dataset.u2 = 'empty-state';
+  el.setAttribute('role', options?.error ? 'alert' : 'status');
+  if (options?.icon !== undefined)
+    el.append(icon(options.icon, {cls: 'u2-empty-state-icon'}));
+  const line = document.createElement('div');
+  line.className = 'u2-empty-state-text';
+  line.textContent = text;
+  el.append(line);
+  if ((options?.actions ?? []).length > 0) {
+    const actions = document.createElement('div');
+    actions.className = 'u2-empty-state-actions';
+    actions.append(...options!.actions!);
+    el.append(actions);
   }
   return el;
 }

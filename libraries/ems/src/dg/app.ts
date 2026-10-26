@@ -200,7 +200,8 @@ export class DomainApp extends Control {
     this.listSource = this._source({query: _options.query ?? '', sort: _options.sort, pageSize: _options.pageSize,
       live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
-    this.list = this.runInScope(() => new DomainList(this.listSource, {mode: _options.mode}));
+    this.list = this.runInScope(() => new DomainList(this.listSource, {mode: _options.mode,
+      create: () => void this.create()}));
     // Enter on a row is the way into the entity page
     let seen = this.listSource.activate.peek();
     this.effect(() => {
