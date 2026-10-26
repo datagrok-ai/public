@@ -3,7 +3,7 @@
    summary following the page, the entity source sharing the session (one transaction for an
    edit on each page), find-or-activate through `DomainTable.open`, and New as a draft page. */
 
-import {emsBackends, DomainBackendError} from '../src/core/domain-backend.js';
+import {emsBackends} from '../src/core/domain-backend.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
@@ -547,7 +547,7 @@ scoped('a ?q= the grammar refuses never loads: the text stays red in the box, th
   assert.equal(box.text.value, 'validator', 'the offending text is in the box, to be fixed in place');
   assert.equal(box.validity.value !== null, true, 'red, with the reason on the editor');
   assert.equal(filters.problem.value, 'Expected an operator', 'told the way a typed mistake is');
-  assert.match(a.summary.value, /Expected an operator/);
+  assert.equal(a.summary.value, '3 issues — Expected an operator');
   assert.equal(filters.root.querySelector('.u2-domain-filters-note').hidden, false,
     'the rows are said to answer the last valid filter');
   assert.equal(add.root.hidden, false, 'New follows the access');
@@ -1206,9 +1206,9 @@ scoped('the status bar is four slots, and a refusal never takes the count off th
   const panels = DomainApp.statusPanels(a);
   await flush();
   assert.deepEqual(panels.map((el) => el.dataset.u2Part), ['count', 'selected', 'notice', 'problem']);
-  assert.deepEqual(panels.map((el) => el.className.split(' ')[0]),
-    ['u2-domain-status-count', 'u2-domain-status-selected', 'u2-domain-status-notice',
-      'u2-domain-status-problem']);
+  assert.deepEqual(panels.map((el) => el.className),
+    ['u2-domain-status-count', 'u2-domain-status-selected u2-domain-status-after',
+      'u2-domain-status-notice u2-domain-status-after', 'u2-domain-status-problem u2-domain-status-after']);
   assert.equal(panels[0].textContent, '3 issues');
   assert.deepEqual(panels.map((el) => el.hidden), [false, true, true, true], 'an empty slot is away');
 

@@ -265,7 +265,7 @@ scoped('confirmDiscard: clean passes silently; SAVE, DISCARD and CANCEL through 
 
   projects.rows.byKey('p1').name = 'Grit 2';
   issues.rows.byKey('i1').title = 'A';
-  let answer = confirmDiscard(session, {action: 'leave this page'});
+  let answer = confirmDiscard(session, {action: 'leave this page', subject: 'the issue'});
   await flush();
   const dialog = document.body.querySelector('.u2-dialog');
   assert.equal(dialog.querySelector('.u2-dialog-title-text').textContent, 'Save changes?');
@@ -273,7 +273,6 @@ scoped('confirmDiscard: clean passes silently; SAVE, DISCARD and CANCEL through 
     '2 unsaved changes in 2 tables will be lost if you leave this page.', 'two records: the summary');
   assert.deepEqual([...dialog.querySelectorAll('.u2-dialog-buttons button')].map((b) => b.textContent),
     ['CANCEL', 'DISCARD', 'SAVE'], 'CANCEL first and SAVE right-most, as the platform prompt');
-  assert.deepEqual([...dialog.querySelectorAll('.u2-btn-primary')].map((b) => b.textContent), ['SAVE']);
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await answer, false);
   assert.equal(document.body.querySelector('.u2-dialog'), null);

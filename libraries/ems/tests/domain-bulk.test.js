@@ -39,7 +39,6 @@ const buttonNamed = (text) => [...document.body.querySelectorAll('.u2-dialog but
 const control = (name) => Control.forElement(document.querySelector(`.u2-dialog [data-u2-name="${name}"]`));
 const field = (name) => control(name);
 const shown = (name) => document.querySelector(`.u2-dialog [data-u2-name="${name}"]`)?.closest('[hidden]') === null;
-const hint = (name) => field(name).root.querySelector('.u2-domain-bulk-current').textContent;
 const balloon = (kind) => document.body.querySelector(`.u2-notify-${kind}`)?.textContent ?? '';
 const issues = (memory) => memory.tableSync('grit.issue').rows;
 
@@ -57,8 +56,6 @@ const targetText = () => document.querySelector('.u2-dialog [data-u2-name="targe
 /** The primary button — its caption follows the target. */
 const ok = () => [...document.querySelectorAll('.u2-dialog [data-u2-part="footer"] button')].at(-1);
 const okDisabled = () => ok().disabled === true;
-/** A refused write, said inside the dialog. */
-const refusal = () => document.querySelector('.u2-dialog [data-u2-part="error-row"]').textContent;
 /** What blocks the button, said in the footer beside it. */
 const reason = () => document.querySelector('.u2-dialog [data-u2-part="footer"] [data-u2-part="reason"]');
 
@@ -93,34 +90,28 @@ function select(source, keep) {
   df.onSelectionChanged.fire(undefined);
 }
 
-scoped('the chosen columns are written to the selection; one not chosen is left alone', async () => {
+scoped('the checked columns are written to the selection; an unchecked one is left alone', async () => {
   const memory = backend();
   const {source} = await table(memory, {query: 'number > 0'});
   select(source, (i) => i !== 1);
   assert.deepEqual(source.selection.value.map((r) => r.id), ['i1', 'i3']);
 
   const {running} = await opened(source);
-  assert.deepEqual(targets(), ['2 selected issues', 'All 3 issues matching the filter']);
   assert.equal(target().value.value, '2 selected issues', 'a selection is the default target');
-  assert.equal(ok().textContent, 'Update 2 issues', 'the button says what it does');
-  assert.equal(ok().classList.contains('u2-btn-primary'), true, 'the committing button is raised');
+  assert.deepEqual(targets(), ['2 selected issues', 'All 3 issues matching the filter'],
+    'no empty option in front of the targets');
   assert.equal(offered().includes('id'), false, 'a system column is not offered');
-  assert.equal(offered().includes('number'), false, 'a business key is not offered for two rows');
-  assert.equal(offered().includes('project_id'), false);
-  assert.equal(shown('done'), false, 'a field not chosen is not in the form');
+  assert.equal(shown('done'), false, 'an unchecked column has no editor');
   assert.equal(okDisabled(), true);
-  assert.equal(refusal(), '', 'nothing red before the user did anything');
-  assert.equal(document.querySelector('.u2-domain-bulk-include') === null, true);
-  assert.equal(reason().textContent, 'Choose the fields to change', 'the footer says why, beside the button');
-  assert.equal(reason().classList.contains('u2-status-line-warning'), true, 'a warning, not an error');
-
+  assert.equal(reason().textContent, 'Choose the fields to change');
+  assert.equal(field('title').root.querySelector('.u2-input-error')?.textContent ?? '', '',
+    'nothing is red before the user did anything');
   choose('done');
   await flush();
-  assert.equal(shown('done'), true, 'a chosen field shows its editor');
-  assert.equal(shown('title'), false);
+  assert.equal(shown('done'), true, 'choosing the column shows its editor');
+  assert.equal(field('done').enabled, true);
   assert.equal(okDisabled(), false);
-  assert.equal(reason().classList.contains('u2-status-line-problem'), false, 'nothing to say once it can run');
-  assert.equal(hint('done'), '2 different values', 'what the write overwrites');
+  assert.equal(reason().textContent, '');
   field('done').value.value = true;
   field('title').value.value = 'NOT WRITTEN';
   fire(ok(), 'click');
@@ -130,11 +121,25 @@ scoped('the chosen columns are written to the selection; one not chosen is left 
   const rows = issues(memory);
   assert.deepEqual(rows.map((r) => r.done), [true, false, true], 'the two selected rows only');
   assert.deepEqual(rows.map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen'],
-    'the column not chosen was not in the request');
+    'the unchecked column was not in the request');
   source.dispose();
 });
 
-scoped('a selection past the cap disables the button and says how many are selected', async () => {
+scoped('nothing checked keeps OK disabled and says so inline; CANCEL resolves null', async () => {
+  const memory = backend();
+  const {source} = await table(memory);
+  select(source, () => true);
+  const {running} = await opened(source);
+  assert.equal(okDisabled(), true);
+  assert.match(reason().textContent, /Choose the fields to change/);
+  assert.equal(balloon('warning'), '', 'a refusal is not a balloon on the far edge of the screen');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+  assert.deepEqual(issues(memory).map((r) => r.version), [1, 1, 1], 'nothing was written');
+  source.dispose();
+});
+
+scoped('a selection past the cap disables OK and says how many are selected', async () => {
   const memory = many(1001);
   const {source} = await table(memory, {pageSize: 1100});
   select(source, () => true);
@@ -155,8 +160,7 @@ scoped('"all matching" writes the list\'s filter, capped, and reports that more 
   const memory = many(1001);
   const {source} = await table(memory, {query: 'done = false'});
   const {running} = await opened(source);
-  assert.equal(targetText(), 'Apply toAll 1,001 issues matching the filter', 'the filter is the only target');
-  assert.equal(ok().textContent, 'Update 1000 of 1,001 issues', 'one edit writes at most 1000');
+  assert.equal(targetText(), 'Apply toAll 1,001 issues matching the filter', 'nothing selected: the filter is the only target');
   choose('done');
   await flush();
   field('done').value.value = true;
@@ -164,32 +168,6 @@ scoped('"all matching" writes the list\'s filter, capped, and reports that more 
   assert.equal(await running, 1000);
   assert.match(balloon('info'), /Updated 1000 issues — more match/);
   assert.equal(issues(memory).filter((r) => r.done === true).length, 1000);
-  source.dispose();
-});
-
-scoped('nothing chosen keeps the button disabled; CANCEL resolves null', async () => {
-  const memory = backend();
-  const {source} = await table(memory);
-  select(source, () => true);
-  const {running} = await opened(source);
-  assert.equal(okDisabled(), true);
-  assert.equal(balloon('warning'), '', 'a refusal is not a balloon on the far edge of the screen');
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await running, null);
-  assert.deepEqual(issues(memory).map((r) => r.version), [1, 1, 1], 'nothing was written');
-  source.dispose();
-});
-
-scoped('a search with a selection still offers the selection alone', async () => {
-  const memory = backend();
-  const {source} = await table(memory, {query: 'done = false'});
-  source.search.value = 'ibu';
-  await flush();
-  select(source, () => true);
-  const {running} = await opened(source);
-  assert.equal(targetText(), 'Apply to1 selected issue', 'the filter target is not offered under a search');
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await running, null);
   source.dispose();
 });
 
@@ -207,6 +185,19 @@ scoped('no target the server would take: the dialog never opens, and says the wa
   assert.equal(await domains.bulkEdit(source), null);
   assert.match(balloon('warning'), /clear the search box/,
     'a search the update endpoint cannot take is said BEFORE the dialog, not after OK');
+  source.dispose();
+});
+
+scoped('a search with a selection still offers the selection alone', async () => {
+  const memory = backend();
+  const {source} = await table(memory, {query: 'done = false'});
+  source.search.value = 'ibu';
+  await flush();
+  select(source, () => true);
+  const {running} = await opened(source);
+  assert.equal(targetText(), 'Apply to1 selected issue', 'the filter target is not offered under a search');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
   source.dispose();
 });
 

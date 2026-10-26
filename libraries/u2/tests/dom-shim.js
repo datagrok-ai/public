@@ -646,11 +646,6 @@ class Element extends Node {
 
 class HTMLElement extends Element {}
 class HTMLDivElement extends HTMLElement {}
-
-/** The shim draws nothing: a canvas has no 2d context, as in a browser that cannot give one. */
-class HTMLCanvasElement extends HTMLElement {
-  getContext() { return null; }
-}
 class HTMLButtonElement extends HTMLElement {}
 class HTMLAnchorElement extends HTMLElement {}
 class HTMLOptionElement extends HTMLElement {}
@@ -689,7 +684,6 @@ function Option(text = '', value = '') {
 const TAGS = {
   input: HTMLInputElement, textarea: HTMLTextAreaElement, select: HTMLSelectElement,
   option: HTMLOptionElement, button: HTMLButtonElement, a: HTMLAnchorElement, div: HTMLDivElement,
-  canvas: HTMLCanvasElement,
 };
 
 function collect(root, visit) {

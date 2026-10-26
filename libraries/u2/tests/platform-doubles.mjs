@@ -1004,13 +1004,6 @@ class GridColumn {
   get caption() { return this.dart.column.getTag(TAGS.FRIENDLY_NAME) ?? this.name; }
   get visible() { return this.dart.visible; }
   set visible(x) { this.dart.visible = x; }
-  /** Unset until a test lays the column out — the double has no layout of its own. */
-  get width() { return this.dart.width; }
-  set width(x) { this.dart.width = x; }
-  get contentCellStyle() { return this.dart.contentCellStyle ??= {}; }
-  get headerCellStyle() { return this.dart.headerCellStyle ??= {}; }
-  /** The platform measures the values in the cell font; the double has no font, so a test sets it. */
-  getDataWidth() { return this.dart.dataWidth ?? 0; }
 
   /** What a cell draws: a renderer's `customText` where one was set, the value otherwise. */
   cellText(row) { return this.dart.text[row] ?? String(this.column.get(row) ?? ''); }
@@ -1038,11 +1031,6 @@ export class Grid extends Viewer {
       byName: (name) => held.get(name) ?? null,
       byIndex: (i) => held.get(columns[i]?.name) ?? null,
       toList: () => columns.map((c) => held.get(c.name)),
-      setVisible: (names) => {
-        for (const [name, c] of held)
-          c.visible = names.includes(name);
-      },
-      setOrder: (names) => this.dart.order = names,
     };
   }
 

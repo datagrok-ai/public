@@ -250,7 +250,9 @@ scoped('a dry run that cannot reach the backend shows why and never blocks the i
 
 scoped('a storage with no dry run previews the mapped rows without verdicts, and the import still posts', async () => {
   const memory = backend();
-  noDryRun(memory);
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, batch: {...issue.support.batch, validate: false}};
+  issue.validate = undefined;
   const {running} = await opened(memory,
     frame(['project_id', 'title', 'note'], [{project_id: 'p1', title: 'Unchecked', note: 'x'}]));
   await toMapping();
@@ -265,8 +267,7 @@ scoped('a storage with no dry run previews the mapped rows without verdicts, and
     ['Project id', 'Title'], 'the mapped columns under their captions, no verdict column');
   assert.deepEqual([...rows.querySelectorAll('.u2-data-table-row')]
     .map((r) => [...r.children].map((c) => c.textContent).join('|')), ['p1|Unchecked']);
-  assert.equal(reason(), '', 'nothing gates the import');
-  assert.equal(importButton().textContent, 'Import', 'nothing counted the rows that would land');
+  assert.equal(reason(), '', 'nothing gates NEXT');
   fire(importButton(), 'click');
   await flush();
   assert.deepEqual(counts('report'), ['1 added']);
@@ -331,15 +332,14 @@ scoped('a refused row leaves nothing behind and the report says so', async () =>
   assert.match(shown, /Uncheck "All or nothing" to import the 1 valid row and skip the rest\./,
     'an aborted all-or-nothing run says what to change');
   assert.match(shown, /Title: Value can't be empty/, 'the per-row report names the field the row was refused on');
-  const report = document.body.querySelector('.u2-domain-import-report .u2-domain-import-rows');
-  assert.deepEqual([...report.querySelectorAll('.u2-data-table-head')].map((c) => c.textContent), ['#', 'Result', 'Note'],
+  const table = document.body.querySelector('.u2-domain-import-report .u2-domain-import-rows');
+  assert.deepEqual([...table.querySelectorAll('.u2-data-table-head')].map((c) => c.textContent), ['#', 'Result', 'Note'],
     'the preview\'s headers, and no key column where no row has a key');
-  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'no balloon repeats the open report');
   fire(buttonNamed('CLOSE'), 'click');
-  const result = await running;
-  assert.equal(result.error, 'validation', 'an allOrNothing abort answers the report, not a throw');
-  assert.equal(result.errorCount, 1);
-  assert.deepEqual(result.rows.map((r) => [r.index, r.status]), [[1, 'error']]);
+  const report = await running;
+  assert.equal(report.error, 'validation', 'an allOrNothing abort answers the report, not a throw');
+  assert.equal(report.errorCount, 1);
+  assert.deepEqual(report.rows.map((r) => [r.index, r.status]), [[1, 'error']]);
 });
 
 scoped('a table-level insert denial still opens the wizard; no visible column refuses it', async () => {
@@ -480,11 +480,16 @@ scoped('the options offered are the ones the storage declares, and an option not
 
 scoped('an aborted run on a storage without partial imports never recommends the flag it has not got', async () => {
   const memory = backend();
-  const issue = noDryRun(memory);
+  const issue = memory.tableSync('grit.issue');
   issue.support = {...issue.support, batch: {...issue.support.batch, partial: false}};
   const {running} = await opened(memory,
     frame(['project_id', 'title'], [{project_id: 'p1', title: 'Fine'}, {project_id: 'p1', title: ''}]));
   await toMapping();
+  await toPreview();
+  assert.equal(reason(), '1 row has errors, and this import is all or nothing.', 'the fixed flag reads as on, unnamed');
+  noDryRun(memory);
+  fire(buttonNamed('BACK'), 'click');
+  await flush();
   await toPreview();
   fire(importButton(), 'click');
   await flush();

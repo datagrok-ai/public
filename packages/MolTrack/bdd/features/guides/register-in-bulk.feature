@@ -24,10 +24,12 @@ Feature: MolTrack EMS: register compounds in bulk
     Then import mapping should contain text "smiles"
     When user clicks on "Next" button in "Import compounds" dialog
     # caption: The preview: three new compounds
-    Then import preview should contain text "3 will be added"
+    Then import preview should contain text "3 to add"
+    And import preview should contain text "1 to skip"
+    And import preview should contain text "1 error"
     When user clicks on "Import 3 compounds" button in "Import compounds" dialog
     # caption: The report
-    Then import report should contain text "3 inserted"
+    Then import report should contain text "3 added"
     When user clicks on "Close" button in "Import compounds" dialog
     # caption: Every row of the table gets its Grok ID back
     Then "Grok ID" column of table "bulk-registration" should have type "string"

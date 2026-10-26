@@ -496,11 +496,12 @@ scoped('system columns: out by default, one muted line on request — local time
   const footer = form.root.querySelector('[data-u2-part="system"]');
   const row = (name) => footer.querySelector(`[data-u2-name="${name}"]`);
   assert.deepEqual([...footer.querySelectorAll('.u2-domain-form-system-item')].map((el) => el.textContent.split(' ')[0]),
-    ['Created', 'Updated', 'v1', 'Id'], 'created by whom, updated, the version, a copy of the id');
+    ['Created', 'Updated', 'v1', 'Id']);
+  assert.deepEqual([...footer.querySelectorAll('[data-u2-name]')].map((el) => el.dataset.u2Name),
+    ['created_on', 'author_id', 'updated_on', 'version']);
+  assert.equal(footer.querySelector('.u2-domain-form-system-copy').getAttribute('aria-label'), 'Copy id i1');
   assert.equal(row('version').querySelector('[data-u2-part="readonly-value"]').textContent, '1');
   assert.equal(row('created_on').querySelector('.u2-timestamp') !== null, true, 'a local short date, the full one on hover');
-  assert.match(footer.querySelector('.u2-domain-form-system-copy').getAttribute('aria-label'), /i1/,
-    'the id rides the copy button, not a line of its own');
   src.currentRow.value = null;
   form.dispose();
   const draft = table.draft({title: 'Draft'});
@@ -873,6 +874,8 @@ scoped('the system footer follows the row: a saved draft shows the number, versi
     assert.equal(Rows.isDraft(draft.currentRow.value), false, 'the draft is a saved row now');
     assert.deepEqual(labels(), ['created_on', 'author_id', 'updated_on', 'version'],
       'and the footer says so without the form being rebuilt');
+    assert.equal(form.root.querySelector('.u2-domain-form-system-copy').getAttribute('aria-label'),
+      `Copy id ${draft.currentRow.value.id}`);
     const value = (name) => form.root
       .querySelector(`[data-u2-part="system"] [data-u2-name="${name}"] [data-u2-part="readonly-value"]`).textContent;
     // the insert answers `{id, version}` alone: the rest is the writer's post-save re-read, and it
