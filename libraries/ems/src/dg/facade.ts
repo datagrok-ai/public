@@ -388,24 +388,26 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
         return;
       BALLOONS.get(source.session)?.balloon?.close();
       const fix = untracked(() => this._fieldsToFix(source, error));
-      BALLOONS.set(source.session, {source, balloon: fix === 0 ? DomainErrors.report(error, source) :
-        notify.error(`Fix ${plural(fix, 'field', 'fields')} to save`)});
+      BALLOONS.set(source.session, {source, balloon: fix.length === 0 ? DomainErrors.report(error, source) :
+        notify.error(`Fix ${fix.join(', ')} to save`)});
     });
     source.start();
     return source;
   }
 
-  /** How many fields of the row the form shows carry their own error for a refusal about that row
-   * — then the balloon need not say it again ("Fix 1 field to save"); 0 where the refusal is about
-   * another row, or names nothing a field shows, and the balloon words it in full. */
-  private _fieldsToFix(source: DomainSource<TRow>, error: unknown): number {
+  /** The fields of the current row that carry their own error for a refusal about that row, by
+   * caption — the balloon names them ("Fix Status to save") and leaves the why to the fields; none
+   * where the refusal is about another row, or names nothing a field shows, and the balloon words it
+   * in full. */
+  private _fieldsToFix(source: DomainSource<TRow>, error: unknown): string[] {
     const row = source.currentRow.peek();
     const about = source.problemRow.peek();
     if (DomainErrors.codeOf(error) !== 'validation' || row === null || (about !== null && about !== row.id))
-      return 0;
+      return [];
     const edit = source.edit.peek();
     return this.properties.filter(({name}) => name !== undefined &&
-      ((edit?.errorOf(row.id, name) ?? null) !== null || this.validators.check(name, row[name], row) !== null)).length;
+      ((edit?.errorOf(row.id, name) ?? null) !== null || this.validators.check(name, row[name], row) !== null))
+      .map((p) => DomainTable.captionOf(p));
   }
 
   /** The validators over every row the batch will send — a form wires them into its inputs, but a

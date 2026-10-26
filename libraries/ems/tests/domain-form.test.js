@@ -700,7 +700,7 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   fire(save.button, 'click');
   await flush();
   await flush();
-  assert.equal(document.body.querySelector('.u2-notify-error')?.textContent, 'Fix 1 field to save',
+  assert.equal(document.body.querySelector('.u2-notify-error')?.textContent, 'Fix Title to save',
     'the field says what is wrong; the balloon does not say it again');
   assert.equal(draft.summary.value, 'Cannot save: Title is required', 'the guard\'s refusal is the source\'s error');
   assert.equal(form.input('title').root.classList.contains('u2-input-untouched'), false, 'the verdict is shown');
@@ -734,8 +734,8 @@ scoped('VR-46/47: one refusal balloon per session, replaced by the next; in full
   source.currentRow.value = source.rows.byKey('i2');
   assert.equal(await source.save(), false);
   await flush();
-  assert.equal(document.body.querySelector('.u2-notify-error').textContent, 'Fix 1 field to save',
-    'the current row\'s field shows its error itself');
+  assert.equal(document.body.querySelector('.u2-notify-error').textContent, 'Fix Number to save',
+    'the current row\'s field shows its error itself; the balloon names it');
   source.revert();
   await flush();
   assert.equal(document.body.querySelectorAll('.u2-notify-error').length, 0, 'settled: the balloon goes');
