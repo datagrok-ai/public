@@ -83,15 +83,13 @@ function _targets(source: DomainSource): BulkTarget[] {
   const selected = source.selection.peek().length;
   const total = source.total.peek() ?? 0;
   const matching = source.search.peek() === '' && _filterOf(source) !== undefined;
-  const targets: BulkTarget[] = [];
-  if (selected > 0) {
-    const words = nounOf(source.schema.info, selected === 1);
-    targets.push({kind: SELECTED, label: `${selected.toLocaleString()} selected ${words}`, count: selected});
-  }
-  if (matching)
-    targets.push({kind: MATCHING, count: total,
-      label: `All ${total.toLocaleString()} ${nounOf(source.schema.info, total === 1)} matching the filter`});
-  return targets;
+  const info = source.schema.info;
+  return [
+    ...(selected === 0 ? [] : [{kind: SELECTED, count: selected,
+      label: `${selected.toLocaleString()} selected ${nounOf(info, selected === 1)}`} as const]),
+    ...(matching ? [{kind: MATCHING, count: total,
+      label: `All ${total.toLocaleString()} ${nounOf(info, total === 1)} matching the filter`} as const] : []),
+  ];
 }
 
 /** On a filtered list, a selection of just the clicked row means the filter. */
@@ -232,7 +230,6 @@ async function _run(source: DomainSource, form: ObjectForm, columns: string[], s
   return report.updated;
 }
 
-/** The table's validators over the target rows as they would land. */
 async function _check(source: DomainSource, handle: DomainTable, filter: DomainQueryLike['filter'],
   written: Record<string, unknown>, selection: boolean): Promise<string | null> {
   if (handle.validators.columns.length === 0)

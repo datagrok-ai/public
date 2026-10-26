@@ -82,7 +82,6 @@ export class DomainGrid extends Control {
       this._fitColumns();
       this._followRows();
     });
-    const resized = this.grid.onColumnResized.subscribe(() => this._fitHeight());
     const open = _options.open;
     const clicked = this.grid.onCellClick.subscribe((cell) => {
       if (open === undefined || !cell.isTableCell || cell.tableColumn?.name !== open.column)
@@ -94,7 +93,6 @@ export class DomainGrid extends Control {
     });
     this.own(() => {
       repointed.unsubscribe();
-      resized.unsubscribe();
       clicked.unsubscribe();
       this._refused?.unsubscribe();
       for (const s of this._rows)
@@ -116,7 +114,7 @@ export class DomainGrid extends Control {
   }
 
   /** A ref column sorts by the name it shows (`~caption_<column>`), else by the id. */
-  static sortByCaption(df: DG.DataFrame): void {
+  private static sortByCaption(df: DG.DataFrame): void {
     for (const column of df.columns.toList()) {
       const captions = df.columns.byName(Rows.caption(column.name));
       if (captions === null)
@@ -154,8 +152,7 @@ export class DomainGrid extends Control {
     for (const s of this._rows)
       s.unsubscribe();
     const df = this.grid.dataFrame;
-    this._rows = df === null || df === undefined ? [] :
-      [df.onRowsAdded.subscribe(() => this._fitHeight()), df.onRowsRemoved.subscribe(() => this._fitHeight())];
+    this._rows = !df ? [] : [df.onRowsAdded, df.onRowsRemoved].map((e) => e.subscribe(() => this._fitHeight()));
     this._fitHeight();
   }
 
@@ -214,8 +211,7 @@ export class DomainGrid extends Control {
     }
   }
 
-  /** The schema's format where the column has none; an unformatted datetime is a date when every
-   * value falls on midnight. */
+  /** The schema's format where the column has none; a datetime without one is a date when all are midnight. */
   private _formats(df: DG.DataFrame): void {
     for (const p of this.source.schema.properties) {
       const column = df.columns.byName(p.name!);

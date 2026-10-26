@@ -84,8 +84,7 @@ export class DomainSearch extends TextInput {
     });
   }
 
-  /** The searched columns as the form captions them, in lower case. */
-  static columns(source: DomainSource): string[] {
+  private static columns(source: DomainSource): string[] {
     const props = source.schema.properties;
     return source.schema.info.searchableColumns.map((name) => {
       const prop = props.find((p) => p.name === name);

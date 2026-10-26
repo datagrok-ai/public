@@ -401,8 +401,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return source;
   }
 
-  /** The captions of the current row's fields in error, for a refusal about that row; none makes the
-   * balloon word the refusal in full. */
+  /** The captions of the current row's fields in error, for a refusal about that row. */
   private _fieldsToFix(source: DomainSource<TRow>, error: unknown): string[] {
     const row = source.currentRow.peek();
     const about = source.problemRow.peek();

@@ -198,8 +198,7 @@ export class DomainHistory extends Control {
 
   private _changes(entry: AuditEntryLike): HTMLElement | null {
     const include = this._options.include;
-    const changed = this.changedColumns(entry);
-    const own = include === undefined ? changed : changed.filter(({prop}) => include.includes(prop.name!));
+    const own = this.changedColumns(entry).filter(({prop}) => include === undefined || include.includes(prop.name!));
     if (own.length === 0)
       return null;
     const lines = own.map(({prop, before, after}) => divH([span(DomainTable.captionOf(prop), 'u2-domain-history-field'),

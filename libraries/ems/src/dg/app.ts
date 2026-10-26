@@ -81,7 +81,6 @@ export interface DomainAppOptions {
   live?: boolean;
   liveMs?: number;
   mode?: DomainListMode;
-  /** The list's row height. */
   itemHeight?: number;
   /** Switches off a built-in item of the Actions menu, `{bulkEdit: false}`. */
   menu?: {bulkEdit?: boolean};
@@ -168,7 +167,6 @@ export class DomainApp extends Control {
   private _ribbon: DomainRibbon | undefined;
   private _unloadGuard: ((e: BeforeUnloadEvent) => void) | undefined;
   private _deleting: DomainSource | null = null;
-  /** The presets as menu items, for a {@link compact} ribbon. */
   private readonly _presets: Action[] = [];
   private readonly _sync: ViewSync;
 
@@ -304,7 +302,6 @@ export class DomainApp extends Control {
         this._deleting = null;
       if (this._deleting === null || !settled)
         return;
-      // taken by the save, or put back by a discard
       this._deleting = null;
       if (empty)
         queueMicrotask(() => void this.goTo('list'));
@@ -481,9 +478,8 @@ export class DomainApp extends Control {
     return [main, tools, presets].filter((group) => group.length > 0);
   }
 
-  /** The Actions menu, in sections: the presets on a {@link compact} ribbon, the entity page's row
-   * actions, the table-wide ones (import, bulk edit), and the switch to the deleted rows. Nothing
-   * writes in the trash, so it offers nothing there: the breadcrumb is the way out. */
+  /** The Actions menu: the presets on a {@link compact} ribbon, the entity page's row actions, import
+   * and bulk edit, Show deleted. Nothing in the trash: the breadcrumb is the way out. */
   menuActions(): Action[] {
     const trash = this.trash.peek();
     // what the caller may do (`requires`) and what the table can do at all are different
@@ -605,7 +601,6 @@ export class DomainApp extends Control {
         const text = reads[at](status);
         el.textContent = text;
         el.hidden = text === '';
-        // a separator only after a slot that says something
         el.classList.toggle('u2-domain-status-after', reads.slice(0, at).some((read) => read(status) !== ''));
         el.title = name === 'problem' && text !== (status.problem ?? '') ? status.problem ?? '' : '';
       });
@@ -776,7 +771,6 @@ export class DomainApp extends Control {
     return this.trash.value ? `${path}${path.includes('?') ? '&' : '?'}trash=1` : path;
   }
 
-  /** Shown on the list page only. */
   private _listOnly(control: Control, folded: () => boolean = () => false): void {
     this.effect(() => control.root.hidden = this._page.value !== 'list' || folded());
   }
@@ -812,8 +806,7 @@ export class DomainApp extends Control {
     return DomainApp._byView.get(view);
   }
 
-  /** The base path of the app open over a table address — the one the shell shows, else the one
-   * opened last. */
+  /** The base path of the app open over a table address: the one the shell shows, else the last. */
   static baseOf(address: string): string | undefined {
     return DomainApp._pick((app) => app.table.address === address)?.base;
   }

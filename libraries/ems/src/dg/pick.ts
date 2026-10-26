@@ -147,8 +147,8 @@ export class DomainPick extends PickInput<PickItem> {
 
   /** The item behind an id; a draft id is the draft's caption from the live source holding it,
    * no query issued; an id the table does not answer is shown as itself. A table with an app caption
-   * reads the row; otherwise a backend that declares `resolveNames` answers it there — over the platform that is the registry's resolver, batched
-   * and cached, so a formful of refs is one call; every other backend reads the row. */
+   * reads the row; otherwise a backend that declares `resolveNames` answers it there — over the
+   * platform the registry's resolver, batched and cached; every other backend reads the row. */
   static async resolve(table: string, id: string): Promise<PickItem> {
     const draft = Rows.isDraft(id) ? DomainSource.draftOf(id) : undefined;
     if (draft !== undefined) {

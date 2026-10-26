@@ -40,8 +40,7 @@ interface TabState {
 export class DomainChildren extends Control {
   readonly tabs: TabStrip;
   readonly mode: DomainChildrenMode;
-  /** The tabs, once the child tables are known — the parent loaded and the handles acquired; a
-   * table that did not open has an error tab and no entry. */
+  /** The tabs, once the parent is loaded and the handles acquired; a table that failed has no entry. */
   readonly entries: ReadonlySignal<readonly ChildEntry[]>;
 
   private readonly _entries = signal<readonly ChildEntry[]>([]);
@@ -117,14 +116,13 @@ export class DomainChildren extends Control {
         this._watch(entry, pane);
         return pane;
       }});
-      const counted = computed(() => state.count.value === null ? label : `${label} (${state.count.value})`);
       this.effect(() => {
-        const text = counted.value;
-        untracked(() => this.tabs.setTabLabel(id, text));
-      });
-      this.effect(() => {
+        const count = state.count.value;
         const dirty = state.current.value?.isDirty.value ?? false;
-        untracked(() => this.tabs.setDirty(id, dirty));
+        untracked(() => {
+          this.tabs.setTabLabel(id, count === null ? label : `${label} (${count})`);
+          this.tabs.setDirty(id, dirty);
+        });
       });
     }
     this.effect(() => {

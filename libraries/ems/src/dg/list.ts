@@ -177,7 +177,6 @@ export class DomainList extends Control {
       }}));
   }
 
-  /** An empty result says what it is empty of, and offers the way out of it. */
   private _empty(filtered: boolean, clearFilter: () => HTMLElement): HTMLElement {
     const source = this.source;
     const search = source.search.value;

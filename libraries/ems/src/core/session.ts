@@ -278,7 +278,6 @@ export class SharedSession implements DomainSession {
     return `${capital(what)} "${SharedSession._rowName(source, row)}"`;
   }
 
-  /** The row's name column, else its business key, else its id. */
   private static _rowName(source: DomainSource, row: RowView): string {
     const info = source.schema.info;
     const column = info.nameColumn ?? info.businessKey[0];

@@ -167,7 +167,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     }
   }
 
-  /** No node: the all row where there is one, else nothing selected. */
   private _clear(): void {
     if (this._options.allNode === undefined)
       this.tree.clearSelection();

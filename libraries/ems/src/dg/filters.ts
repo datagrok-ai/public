@@ -258,11 +258,7 @@ export class DomainFilters extends Control {
     DomainFilters._scoped.set(table, [...DomainFilters._scoped.get(table) ?? [], ...ops]);
     return () => {
       unregister();
-      const left = (DomainFilters._scoped.get(table) ?? []).filter((op) => !ops.includes(op));
-      if (left.length === 0)
-        DomainFilters._scoped.delete(table);
-      else
-        DomainFilters._scoped.set(table, left);
+      DomainFilters._scoped.set(table, (DomainFilters._scoped.get(table) ?? []).filter((op) => !ops.includes(op)));
     };
   }
 
