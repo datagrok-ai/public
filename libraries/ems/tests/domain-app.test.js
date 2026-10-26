@@ -1609,3 +1609,21 @@ scoped('itemHeight sizes the list rows: an app draws taller cards', async () => 
   assert.equal(b.list.list.itemHeight, 64, 'the card default otherwise');
   b.dispose();
 });
+
+scoped('menu switches a built-in item off; Discard on an untouched create page goes back to the list', async () => {
+  const {app: a} = await app({menu: {bulkEdit: false}});
+  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Show deleted issues'], 'no Bulk edit');
+  const discard = a.ribbon().main.find((c) => c.root.dataset.u2 === 'discard-button');
+  assert.equal(discard.button.disabled, true, 'nothing to discard on the list');
+  assert.equal(await a.create(), true);
+  await flush();
+  assert.equal(a.page.value, 'entity');
+  assert.equal(a.session.isDirty.value, false, 'a pristine draft');
+  assert.equal(discard.button.disabled, false, 'but the draft page itself can be left by Discard');
+  fire(discard.button, 'click');
+  await flush();
+  await flush();
+  assert.equal(a.page.value, 'list');
+  assert.equal(discard.button.disabled, true);
+  a.dispose();
+});

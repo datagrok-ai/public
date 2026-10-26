@@ -7,8 +7,9 @@
    the table's actions. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divH, divV, span, link, icon, Filters,
-  allowedActions, actionsMenu, iconButton, buttonWithIcon, ButtonGroup, Breadcrumbs, Rows} from '@datagrok-libraries/u2';
+import {Control, signal, computed, batch, untracked, ReadonlySignal, Signal, button, div, divH, divV, span, link,
+  icon, Filters, allowedActions, actionsMenu, iconButton, buttonWithIcon, ButtonGroup, Breadcrumbs, Rows}
+  from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
@@ -81,6 +82,9 @@ export interface DomainAppOptions {
   mode?: DomainListMode;
   /** The list's row height — a card taller than the default 64px fits a larger picture. */
   itemHeight?: number;
+  /** Switches off a built-in item of the Actions menu, `{bulkEdit: false}`; every one is on by
+   * default where the table supports it. */
+  menu?: {import?: boolean, bulkEdit?: boolean, trash?: boolean};
   /** What every draft the app creates starts with — the preset a view that opened the app carries
    * (a location's id on a containers app). Threaded into the entity page's draft source. */
   defaults?: Record<string, unknown>;
@@ -460,6 +464,15 @@ export class DomainApp extends Control {
     });
     const save = domains.saveButton(this.session);
     const discard = this.runInScope(() => domains.discardButton(this.session, {icon: 'undo'}));
+    // a create page nothing was typed into has nothing to discard but itself: Discard leaves it
+    const pristine = () => !this.session.isDirty.value && this._page.value === 'entity' &&
+      DomainApp._isDraft(this._entitySource.value, this._entitySource.value?.currentRow.value ?? null);
+    discard.effect(() => discard.button.disabled = this.session.isSaving.value || !this.session.isDirty.value &&
+      !pristine());
+    discard.button.addEventListener('click', () => {
+      if (untracked(pristine))
+        void this.goTo('list');
+    });
     const more = this._actionsMenu();
     // the status bar is text: the way to act on "Data changed" is here, and only while it stands
     const reload = new Control(button('Refresh', () => void this.refresh()));
@@ -489,18 +502,19 @@ export class DomainApp extends Control {
     // what the caller may do (`requires`) and what the table can do at all are different
     // questions: a permission hides an action, an undeclared support leaves it out entirely
     const support = this.table.table.support;
+    const menu = this._options.menu ?? {};
     const table: Action[] = [];
-    if (!trash && support.writes && !this.listSource.readOnly.value) {
+    if (!trash && menu.import !== false && support.writes && !this.listSource.readOnly.value) {
       table.push({name: 'Import…', icon: 'upload', requires: 'insert', run: () =>
         void domains.import(this.table).then((report) => report === null ? null : this.listSource.refresh())});
     }
-    if (!trash && support.updateWhere) {
+    if (!trash && menu.bulkEdit !== false && support.updateWhere) {
       table.push({name: 'Bulk edit…', icon: 'edit', requires: 'edit',
         run: () => void domains.bulkEdit(this.listSource)});
     }
     const plural = DomainTable.noun(this.table.info);
     // a mode, not a verb: named for what the list shows, never "Trash" beside the actions
-    const mode: Action[] = support.deleted && support.restore ? [{name: trash ? `Back to ${plural}` :
+    const mode: Action[] = menu.trash !== false && support.deleted && support.restore ? [{name: trash ? `Back to ${plural}` :
       `Show deleted ${plural}`, icon: trash ? 'arrow-left' : 'history', requires: 'delete',
     run: () => void this.setTrash(!trash)}] : [];
     const presets = this.compact.peek() && this._page.peek() === 'list' && !trash ? this._presets : [];
