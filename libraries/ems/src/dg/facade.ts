@@ -360,7 +360,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     DomainTable._byRow.set(source.currentRow, source);
     source.guard(() => this._validate(source));
     // last resort, after every guard: the writer refused over a cell and named neither
-    source.nameCell = (row, column, problem) => nameCell(this, row as RowView<TRow>, column, problem);
+    source.nameCell = (row, column, problem) => nameCell(this, row as RowView<TRow>, column, problem, source);
     // every refused save is one balloon, form or not, closed once the refusal is settled; a load
     // failure is the list's and the hint's to show
     let balloon: NotifyHandle | null = null;
@@ -378,7 +378,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
    * row action or a plain `row.column = …` never goes near a form, and the rule still holds. */
   private _validate(source: DomainSource<TRow>): string | null {
     const found = firstProblem(this, source.pending().filter((row) =>
-      row[Rows.STATE] !== 'deleted' && row[Rows.STATE] !== 'restored'));
+      row[Rows.STATE] !== 'deleted' && row[Rows.STATE] !== 'restored'), source);
     if (found === null)
       return null;
     source.markProblem(found.row.id);
@@ -401,15 +401,15 @@ async function configured<TRow extends DomainRowLike>(table: DomainTable<TRow>):
 
 /** The first problem the table's validators find over `rows`, every registered column of each,
  * named by row and column — null where all of them pass. */
-export function firstProblem<TRow extends DomainRowLike>(table: DomainTable<TRow>, rows: Iterable<RowView<TRow>>):
-  {row: RowView<TRow>, message: string} | null {
+export function firstProblem<TRow extends DomainRowLike>(table: DomainTable<TRow>, rows: Iterable<RowView<TRow>>,
+  source?: DomainSource<TRow>): {row: RowView<TRow>, message: string} | null {
   const columns = table.validators.columns;
   for (const row of rows) {
     for (const column of columns) {
       const problem = table.validators.check(column, row[column], row);
       // the refusal names the row it is about: from a list, "Status: …" alone names nothing
       if (problem !== null)
-        return {row, message: nameCell(table, row, column, problem)};
+        return {row, message: nameCell(table, row, column, problem, source)};
     }
   }
   return null;
@@ -418,9 +418,22 @@ export function firstProblem<TRow extends DomainRowLike>(table: DomainTable<TRow
 /** A refusal about one cell, named: the row's caption and the column's, as a list or a grid needs
  * them — the writer's own "Value can't be empty" says nothing about which field. */
 function nameCell<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>, column: string,
-  problem: string): string {
+  problem: string, source?: DomainSource<TRow>): string {
   const prop = table.properties.find((p) => p.name === column) ?? {name: column};
-  return `${table.renderer.caption(row)}: ${DomainTable.captionOf(prop)}: ${problem}`;
+  return `${rowName(table, row, source)}: ${DomainTable.captionOf(prop)}: ${problem}`;
+}
+
+/** The row as a refusal names it: its caption — or, where all the table can caption it by is its
+ * id (a child row with no name column), its place among the source's rows: "Order line 2". */
+function rowName<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>,
+  source?: DomainSource<TRow>): string {
+  const caption = table.renderer.caption(row);
+  const at = caption !== row.id || source === undefined ? -1 :
+    source.rows.items.peek().findIndex((r) => r.id === row.id);
+  if (at < 0)
+    return caption;
+  const noun = DomainTable.noun(table.info, true);
+  return `${noun.charAt(0).toUpperCase()}${noun.slice(1)} ${at + 1}`;
 }
 
 export const domains = {

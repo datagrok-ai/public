@@ -116,3 +116,19 @@ scoped('a configure that throws rejects the handle', async () => {
   }
   assert.equal((await domains.table('grit.issue')).address, 'grit.issue');
 });
+
+scoped('a refusal names a row the table cannot caption by its place among the source\'s rows', async () => {
+  const {MemoryDomainBackend} = await import('../src/core/memory-domain.js');
+  emsBackends.domain = new MemoryDomainBackend({name: 'shop', tables: {line: {singularName: 'Order line',
+    columns: {quantity: {type: 'int'}}}}}, {rows: {line: [{id: 'u1', quantity: 1}, {id: 'u2', quantity: 2}]}});
+  const lines = await domains.table('shop.line');
+  lines.validators.add('quantity', (value) => value < 0 ? 'Must not be negative' : null);
+  const src = lines.source();
+  await flush();
+  src.rows.byKey('u2').quantity = -5;
+  assert.equal(await src.save(), false);
+  await flush();
+  assert.match(String(src.error.value?.message ?? src.error.value), /Order line 2: Quantity: Must not be negative/,
+    'not "u2: Quantity: …"');
+  src.dispose();
+});
