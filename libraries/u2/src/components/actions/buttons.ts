@@ -14,6 +14,8 @@ export interface IconButtonOptions {
   /** Pressed state: the click writes it and an effect mirrors it into `aria-pressed`, so a
    * toggling button needs an ambient Scope. */
   toggle?: Signal<boolean>;
+  /** A menu built on every press and shown under the button; pressed again, it closes. */
+  menu?: () => Menu;
 }
 
 const NO_OWNER = 'u2: signal binding needs an owner — ' +
@@ -47,9 +49,16 @@ function tip(el: HTMLElement, text: string): void {
 export function iconButton(name: string, onClick: (e: MouseEvent) => void,
   options?: IconButtonOptions): HTMLButtonElement {
   const toggle = options?.toggle;
+  let menu: Menu | undefined;
   const el = button(icon(name, {variant: options?.variant}), (e) => {
     if (toggle)
       toggle.value = !toggle.peek();
+    if (options?.menu !== undefined) {
+      const open = menu?.isOpen.peek() === true;
+      menu?.close();
+      menu = open ? undefined : options.menu();
+      menu?.show({anchor: el});
+    }
     onClick(e);
   });
   el.classList.add('u2-icon-btn');

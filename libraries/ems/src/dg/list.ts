@@ -33,7 +33,6 @@ export interface DomainListOptions {
 /** A card is the handler's card — a title, a description line and the creation time. */
 const HEIGHTS: Record<DomainListMode, number> = {brief: 28, cards: 64};
 const NEAR_BOTTOM_ROWS = 5;
-const PICK_KEYS = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End', 'PageDown', 'PageUp', 'Enter', ' ']);
 
 export class DomainList extends Control {
   readonly list: VirtualList<RowView>;
@@ -73,49 +72,18 @@ export class DomainList extends Control {
     this.list.setItems(source.rows.items as ReadonlySignal<RowView[]>);
 
     collectionSelection(this, source, this.list);
-    // a list over a table starts on its first row; a draft source is a form's, not a list's. The
-    // seeded row is drawn current only once the user picks it, and the first Down lands on it
+    // a list over a table starts on its first row; a draft source is a form's, not a list's
     let seeded = source.isDraft;
     this.effect(() => {
       const items = source.rows.items.value;
       if (seeded || source.state.value !== 'ready' || items.length === 0)
         return;
       seeded = true;
-      if (source.currentRow.peek() !== null)
-        return;
-      this.list.selectedIndex.value = 0;
-      this.root.classList.add('u2-domain-list-seeded');
-    });
-    const onClick = (e: Event) => {
-      if ((e.target as Element).closest('.u2-list-row') !== null)
-        this.root.classList.remove('u2-domain-list-seeded');
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (!PICK_KEYS.has(e.key) || !this.root.classList.contains('u2-domain-list-seeded'))
-        return;
-      this.root.classList.remove('u2-domain-list-seeded');
-      if (e.key === 'ArrowDown' && this.list.selectedIndex.peek() === 0) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      }
-    };
-    this.list.root.addEventListener('click', onClick);
-    this.list.root.addEventListener('keydown', onKey, true);
-    this.own(() => {
-      this.list.root.removeEventListener('click', onClick);
-      this.list.root.removeEventListener('keydown', onKey, true);
+      if (source.currentRow.peek() === null)
+        this.list.seed(0);
     });
 
     pageOnScroll(this, this.list, source);
-    // a line the row cuts reads in full on hover
-    const onOver = (e: Event) => {
-      const el = e.target as HTMLElement;
-      if (el.closest('.u2-domain-list-content') !== null && el.title === '' && el.scrollWidth > el.clientWidth)
-        el.title = el.textContent ?? '';
-    };
-    this.list.root.addEventListener('mouseover', onOver);
-    this.own(() => this.list.root.removeEventListener('mouseover', onOver));
-
     const status = div([], 'u2-domain-list-status');
     status.dataset.u2Part = 'status';
     this.effect(() => {

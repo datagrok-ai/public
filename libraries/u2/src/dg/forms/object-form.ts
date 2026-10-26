@@ -39,6 +39,8 @@ export interface FieldOverride extends Partial<InputOptions<any>> {
   /** Replaces the generated input entirely — a semType-specific editor, say. The form wires it to
    * the property and lays it out, but never owns it: dispose it with whatever created it. */
   input?: Input<any>;
+  /** A readonly field's text while its value is empty, muted ("assigned on save"). */
+  emptyText?: string;
 }
 
 export interface ObjectFormOptions {
@@ -81,6 +83,7 @@ interface Field {
   input: Input<any> | null;
   access: FieldAccess;
   text?: HTMLElement;
+  emptyText?: string;
 }
 
 export type InputFactory = (prop: IProperty, options: InputOptions<any>) => Input<any>;
@@ -358,7 +361,7 @@ export class ObjectForm extends Form {
           if (field.input !== null)
             field.input.value.value = this._read(field.prop, field.kind);
           else
-            field.text!.textContent = ObjectForm._display(field.prop, this._read(field.prop, null));
+            this._showText(field);
         }
       });
     } finally {
@@ -393,12 +396,14 @@ export class ObjectForm extends Form {
     const access = this._access.field(prop.name!);
     if (access === 'readonly') {
       const {row, value} = ObjectForm.readonlyField(labelText(override.label) ?? ObjectForm._caption(prop),
-        prop.name!, ObjectForm._display(prop, this._read(prop, null)));
+        prop.name!, '');
       const tooltip = labelText(override.tooltipText) ?? prop.description;
       if (tooltip)
         row.title = tooltip;
       this.addElement(row);
-      this._fields.push({prop, kind: 'readonly', input: null, access, text: value});
+      const field: Field = {prop, kind: 'readonly', input: null, access, text: value, emptyText: override.emptyText};
+      this._showText(field);
+      this._fields.push(field);
       return;
     }
     const kind = kindOf(prop);
@@ -452,6 +457,12 @@ export class ObjectForm extends Form {
   }
 
   /** A value as its property's `format` shows it. */
+  private _showText(field: Field): void {
+    const shown = ObjectForm._display(field.prop, this._read(field.prop, null));
+    field.text!.textContent = shown || (field.emptyText ?? '');
+    field.text!.classList.toggle('u2-form-readonly-empty', shown === '' && field.emptyText !== undefined);
+  }
+
   private static _display(prop: IProperty, value: unknown): string {
     if (value === null || value === undefined || value === '')
       return '';

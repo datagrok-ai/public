@@ -775,7 +775,7 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   await flush();
   assert.equal(save.root.hidden, false, 'a restore is saved: the trash is a page that saves (R-c)');
   assert.equal(discard.root.hidden, false);
-  assert.equal(add.root.style.visibility, 'hidden', 'and nothing to insert: the access is narrowed — the slot stays');
+  assert.equal(add.root.classList.contains('u2-domain-app-invisible'), true, 'and nothing to insert: the slot stays');
 
   const row = a.listSource.rows.byKey('i2');
   assert.deepEqual(a.list.actionsFor(row).map((x) => x.name), ['Restore'], 'the row action Delete became Restore');

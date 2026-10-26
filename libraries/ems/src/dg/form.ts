@@ -289,7 +289,6 @@ export class DomainForm extends Control {
       }
       const form = this._build(row, access);
       this._form.value = form;
-      DomainForm.markAssigned(form, row);
       const system = this._options.system === 'footer' ? this._footer(row) : null;
       this._system = system;
       this.root.replaceChildren(form.root, this._verdict, ...(system === null ? [] : [system]));
@@ -315,6 +314,11 @@ export class DomainForm extends Control {
     for (const [name, filter] of Object.entries(table?.info.refFilters ?? {})) {
       const extra: Partial<DomainPickOptions> = {filter, params: () => row, siblings: source.schema};
       overrides = {...overrides, [name]: {...overrides?.[name], ...extra}};
+    }
+    // a draft's empty readonly field is filled by the save
+    for (const prop of draft ? source.schema.properties : []) {
+      if (!DomainTable.isReference(prop))
+        overrides = {...overrides, [prop.name!]: {emptyText: 'assigned on save', ...overrides?.[prop.name!]}};
     }
     const form = propertyForm(source.schema.properties.filter((p) => !system.has(p.name)), row, {
       include: options.include, exclude: options.exclude, layout: options.layout, condensed: options.condensed,
@@ -348,35 +352,27 @@ export class DomainForm extends Control {
       // a pristine draft is not wrong yet: a field's verdict shows once it was edited or left
       if (draft) {
         input.root.classList.add(UNTOUCHED);
-        const touched = () => input.root.classList.remove(UNTOUCHED);
         let initial = true;
         input.effect(() => {
           input.value.value;
           if (initial)
             initial = false;
           else
-            touched();
-        });
-        // the focus the form placed is not the user's: leaving it untyped shows no verdict yet
-        let placed = false;
-        const onFocusIn = () => placed = this._focusing;
-        const onInteract = () => placed = false;
-        const onFocusOut = () => {
-          if (!placed)
-            touched();
-          placed = false;
-        };
-        input.root.addEventListener('focusin', onFocusIn);
-        input.root.addEventListener('keydown', onInteract);
-        input.root.addEventListener('pointerdown', onInteract);
-        input.root.addEventListener('focusout', onFocusOut);
-        input.own(() => {
-          input.root.removeEventListener('focusin', onFocusIn);
-          input.root.removeEventListener('keydown', onInteract);
-          input.root.removeEventListener('pointerdown', onInteract);
-          input.root.removeEventListener('focusout', onFocusOut);
+            input.root.classList.remove(UNTOUCHED);
         });
       }
+    }
+    if (draft) {
+      // the focus the form placed is not the user's: leaving it untyped shows no verdict yet
+      let placed = false;
+      form.scope.listen(form.root, 'focusin', () => placed = this._focusing);
+      form.scope.listen(form.root, 'keydown', () => placed = false);
+      form.scope.listen(form.root, 'pointerdown', () => placed = false);
+      form.scope.listen(form.root, 'focusout', (e) => {
+        if (!placed)
+          (e.target as Element).closest(`.${UNTOUCHED}`)?.classList.remove(UNTOUCHED);
+        placed = false;
+      });
     }
     this._markChanged(form, row);
     return form;
@@ -437,22 +433,6 @@ export class DomainForm extends Control {
     }
     block.append(...parts);
     return block;
-  }
-
-  /** A draft's empty readonly non-reference field reads "assigned on save". */
-  static markAssigned(form: ObjectForm, row: RowView): void {
-    const draft = Rows.isDraft(row);
-    for (const prop of form.properties) {
-      const name = prop.name!;
-      const el = form.input(name) !== undefined || DomainTable.isReference(prop) ? null :
-        form.root.querySelector<HTMLElement>(`[data-u2-name="${name}"] [data-u2-part="readonly-value"]`);
-      if (el === null)
-        continue;
-      const assigned = draft && isEmpty(row[name]);
-      if (assigned)
-        el.textContent = 'assigned on save';
-      el.classList.toggle('u2-domain-form-assigned', assigned);
-    }
   }
 
   /** The configured handle over `address`, acquired once per backend. */
@@ -575,7 +555,6 @@ export class DomainForm extends Control {
     if (form === null || row === null)
       return;
     form.refresh();
-    DomainForm.markAssigned(form, row);
     for (const input of form.inputs)
       input.revalidate();
     this._markChanged(form, row);

@@ -70,6 +70,10 @@
   white-space: pre-wrap;
 }
 
+.u2-form-readonly-empty {
+  color: var(--dg-text-color-light);
+}
+
 /* a verdict is a line of its own under the editor, past the label column in the caption-left
    layouts (the max-width it once had clamped its flex basis, so it fit beside the editor and
    shrank it instead) */

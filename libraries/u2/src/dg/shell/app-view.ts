@@ -53,8 +53,27 @@ export function appView(options: AppViewOptions): DG.ViewBase {
     return wrap;
   };
 
-  if (options.ribbon)
-    view.setRibbonPanels(options.ribbon.map((group) => group.map(place)));
+  if (options.ribbon) {
+    const groups = options.ribbon.map((group) => group.map(place));
+    view.setRibbonPanels(groups);
+    // a panel whose items are all hidden goes, with its divider
+    const fold = () => {
+      for (const group of groups) {
+        const panel = group[0]?.closest<HTMLElement>('.d4-ribbon-panel');
+        if (panel == null)
+          continue;
+        panel.style.display = group.every((el) => el.hidden) ? 'none' : '';
+        const divider = panel.previousElementSibling;
+        if (divider instanceof HTMLElement && divider.classList.contains('d4-ribbon-separator'))
+          divider.style.display = panel.style.display;
+      }
+    };
+    const observer = new MutationObserver(fold);
+    for (const el of groups.flat())
+      observer.observe(el, {attributes: true, attributeFilter: ['hidden']});
+    content.own(() => observer.disconnect());
+    fold();
+  }
   if (options.toolbox)
     view.toolbox = place(options.toolbox);
   const status = options.status;

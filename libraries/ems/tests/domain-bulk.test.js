@@ -1,16 +1,11 @@
-/* `domains.bulkEdit` (WO 3-8) on the memory backend: only targets that can be written are offered
-   (never "all N matching" while a search the server cannot take is set), one aligned form whose
-   field picker decides what is sent, a muted line under each chosen field (the rows' value, how
-   many differ, or "will be cleared"), the button caption following the target, whatever blocks it
-   its tooltip, the table's validators over the rows as they would land, refusals in the dialog
-   rather than a balloon, the unsaved gate before it opens, and the report in the table's words. */
+/* `domains.bulkEdit` on the memory backend. */
 
 import {emsBackends} from '../src/core/domain-backend.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, Control, Tooltip, notify} from '@datagrok-libraries/u2';
+import {backends, Scope, Control, notify} from '@datagrok-libraries/u2';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {SCHEMA, backend} from './domain-fixtures.mjs';
 
@@ -64,14 +59,8 @@ const ok = () => [...document.querySelectorAll('.u2-dialog [data-u2-part="footer
 const okDisabled = () => ok().disabled === true;
 /** A refused write, said inside the dialog. */
 const refusal = () => document.querySelector('.u2-dialog [data-u2-part="error-row"]').textContent;
-/** What blocks the button: its tooltip, never a red line in the body. */
-async function okReason() {
-  fire(ok(), 'pointerenter');
-  await new Promise((r) => setTimeout(r, 700));
-  const text = Tooltip.root.textContent;
-  fire(ok(), 'pointerleave');
-  return text;
-}
+/** What blocks the button, said in the footer beside it. */
+const reason = () => document.querySelector('.u2-dialog [data-u2-part="footer"] [data-u2-part="reason"]');
 
 /** The dialog up and rendered; the promise is handed back WRAPPED — an async function
  * returning it would chain on it and never come back until the dialog is answered. */
@@ -120,19 +109,17 @@ scoped('the chosen columns are written to the selection; one not chosen is left 
   assert.equal(offered().includes('project_id'), false);
   assert.equal(shown('done'), false, 'a field not chosen is not in the form');
   assert.equal(okDisabled(), true);
-  assert.equal(await okReason(), 'Choose the fields to change');
   assert.equal(refusal(), '', 'nothing red before the user did anything');
   assert.equal(document.querySelector('.u2-domain-bulk-include') === null, true);
-  const reason = document.querySelector('.u2-dialog [data-u2-part="footer"] .u2-domain-bulk-reason');
-  assert.equal(reason.textContent, 'Choose the fields to change', 'the footer says why, beside the button');
-  assert.equal(reason.classList.contains('u2-status-line-warning'), true, 'a warning, not an error');
+  assert.equal(reason().textContent, 'Choose the fields to change', 'the footer says why, beside the button');
+  assert.equal(reason().classList.contains('u2-status-line-warning'), true, 'a warning, not an error');
 
   choose('done');
   await flush();
   assert.equal(shown('done'), true, 'a chosen field shows its editor');
   assert.equal(shown('title'), false);
   assert.equal(okDisabled(), false);
-  assert.equal(reason.classList.contains('u2-status-line-problem'), false, 'nothing to say once it can run');
+  assert.equal(reason().classList.contains('u2-status-line-problem'), false, 'nothing to say once it can run');
   assert.equal(hint('done'), '2 different values', 'what the write overwrites');
   field('done').value.value = true;
   field('title').value.value = 'NOT WRITTEN';
@@ -157,7 +144,7 @@ scoped('a selection past the cap disables the button and says how many are selec
   await flush();
   field('done').value.value = true;
   assert.equal(okDisabled(), true);
-  assert.match(await okReason(), /at most 1000 issues at a time; 1001 are selected/);
+  assert.match(reason().textContent, /at most 1000 issues at a time; 1001 are selected/);
   assert.equal(issues(memory).filter((r) => r.done === true).length, 0, 'nothing was written');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);

@@ -81,10 +81,6 @@
   font-size: var(--dg-font-size-xs);
 }
 
-.u2-domain-form-assigned {
-  color: var(--dg-text-color-light);
-}
-
 .u2-domain-app-form :is(.u2-form, .u2-domain-form-system) {
   max-width: 560px;
 }
@@ -100,21 +96,6 @@
   flex: 1;
   width: auto;
   max-width: none;
-}
-
-/* a short lookup reads as a dropdown */
-.u2-pick-short .u2-typeahead-input {
-  cursor: pointer;
-}
-
-.u2-pick-short .u2-pick-box::before {
-  visibility: visible;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E") no-repeat center / 12px;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E") no-repeat center / 12px;
-}
-
-.u2-pick-short:hover .u2-pick-box:has(> .u2-input-clear:not([hidden]))::before {
-  visibility: hidden;
 }
 
 .u2-domain-pick-item {
@@ -214,36 +195,6 @@
   white-space: nowrap;
 }
 
-/* the platform grid's row colours; --u2-row-bg (no stripe) paints the hover actions over the row's end */
-.u2-list.u2-domain-list-rows .u2-list-row {
-  --u2-domain-row-base: var(--dg-bg);
-  --u2-domain-row-current: transparent;
-  --u2-domain-row-over: transparent;
-  --u2-domain-row-stripe: transparent;
-  --u2-domain-row-selected: transparent;
-  --u2-row-bg: linear-gradient(var(--u2-domain-row-selected), var(--u2-domain-row-selected)),
-    linear-gradient(var(--u2-domain-row-over), var(--u2-domain-row-over)),
-    linear-gradient(var(--u2-domain-row-current), var(--u2-domain-row-current)), var(--u2-domain-row-base);
-  background: linear-gradient(var(--u2-domain-row-selected), var(--u2-domain-row-selected)),
-    linear-gradient(to right, var(--u2-domain-row-stripe) 4px, transparent 4px),
-    linear-gradient(var(--u2-domain-row-over), var(--u2-domain-row-over)),
-    linear-gradient(var(--u2-domain-row-current), var(--u2-domain-row-current)), var(--u2-domain-row-base);
-}
-
-.u2-list.u2-domain-list-rows .u2-list-row-current {
-  --u2-domain-row-current: var(--dg-grid-current-row);
-}
-
-.u2-list.u2-domain-list-rows .u2-list-row:hover {
-  --u2-domain-row-over: var(--dg-grid-mouse-over-row);
-  --u2-domain-row-stripe: var(--dg-grid-mouse-over-stripe);
-}
-
-.u2-list.u2-domain-list-rows .u2-list-row-selected {
-  --u2-domain-row-selected: var(--dg-grid-selected-row);
-  box-shadow: none;
-}
-
 .u2-list.u2-domain-list-rows:focus-visible .u2-list-row-current {
   outline: none;
 }
@@ -252,22 +203,13 @@
   outline: none;
 }
 
-/* the row a load makes current is not drawn as picked until the user picks (list.ts drops the class) */
-.u2-domain-list-seeded .u2-list.u2-domain-list-rows .u2-list-row-selected {
-  --u2-domain-row-selected: transparent;
-}
-
-.u2-domain-list-seeded .u2-list.u2-domain-list-rows .u2-list-row-current {
-  --u2-domain-row-current: transparent;
-}
-
 .u2-list-row.u2-domain-list-restored,
 .u2-list-row.u2-domain-list-pending {
   box-shadow: inset 3px 0 0 0 var(--dg-orange-2);
 }
 
 .u2-list-row.u2-domain-list-deleted.u2-domain-list-pending {
-  --u2-domain-row-base: var(--dg-red-1);
+  --u2-list-row-base: var(--dg-red-1);
 }
 
 .u2-domain-list-deleted.u2-domain-list-pending .u2-domain-list-content {
@@ -827,16 +769,6 @@
   display: none;
 }
 
-.u2-domain-bulk-reason {
-  flex: 1 1 auto;
-  justify-content: center;
-  text-align: center;
-}
-
-.u2-domain-bulk-reason:not(.u2-status-line-problem) {
-  display: none;
-}
-
 .u2-domain-import .u2-wizard-content {
   display: flex;
   flex-direction: column;
@@ -1005,4 +937,8 @@
 
 .u2-domain-tree .u2-list-row:has(.u2-domain-tree-all) {
   border-bottom: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-domain-app-invisible {
+  visibility: hidden;
 }

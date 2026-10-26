@@ -29,6 +29,17 @@ export class PickInput<T> extends Input<string | null, PickInputOptions<T>> {
     return this._typeAhead;
   }
 
+  /** No typing: the box reads as a dropdown and a click opens the list — for a short lookup. */
+  asDropdown(): void {
+    const input = this._typeAhead.root.querySelector('input')!;
+    input.readOnly = true;
+    this.root.classList.add('u2-pick-dropdown');
+    this.scope.listen(input, 'click', () => {
+      if (!this._typeAhead.isOpen.peek())
+        this._typeAhead.open();
+    });
+  }
+
   // runs from the base constructor, so the coupling state lives here rather than in fields the
   // subclass initializers would reset afterwards
   protected createEditor(): HTMLElement {

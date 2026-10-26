@@ -55,36 +55,38 @@ export class DomainPick extends PickInput<PickItem> {
     let shown: {count: number, total: number} | null = null;
     const caption = (name: string) => siblings?.properties.find((p) => p.name === name)?.friendlyName ?? name;
     const host = DomainPick.host;
-    const self: {pick?: DomainPick} = {};
     super({
       ...rest,
-      typeAhead: () => new TypeAhead<PickItem>({
-        source: async (query) => {
-          const bound = DomainPick.bind(filter, params?.());
-          unbound = bound.unbound;
-          if (unbound.length > 0)
-            return [];
-          const page = await DomainPick.page(table, query, {filter: bound.filter, limit});
-          shown = {count: page.items.length, total: page.total};
-          // the held value opens the list, so it is never missing from it
-          const held = self.pick?.typeAhead.selected.peek() ?? null;
-          return held === null || query.trim() !== '' ? page.items :
-            [held, ...page.items.filter((item) => item.id !== held.id)];
-        },
-        itemText: (item) => item.name,
-        keyOf: (item) => item.id,
-        render: listItem ?? DomainPick.renderItem,
-        placeholder,
-        debounceMs,
-        openOnFocus: true,
-        matchWidth: false,
-        footer: () => shown === null || shown.total <= shown.count ? null :
-          `${shown.count} of ${shown.total} — type to narrow`,
-        // an empty table is not a dead end: say what there is none of yet
-        emptyText: (query) => unbound.length > 0 ? `Pick a ${caption(unbound[0]).toLowerCase()} first` :
-          query.trim() === '' ?
-            `No ${(DomainPick._plural.get(table) ?? table.split('.').pop()!).toLowerCase()} yet` : 'No matches',
-      }),
+      typeAhead: () => {
+        const typeAhead: TypeAhead<PickItem> = new TypeAhead<PickItem>({
+          source: async (query) => {
+            const bound = DomainPick.bind(filter, params?.());
+            unbound = bound.unbound;
+            if (unbound.length > 0)
+              return [];
+            const page = await DomainPick.page(table, query, {filter: bound.filter, limit});
+            shown = {count: page.items.length, total: page.total};
+            // the held value opens the list, so it is never missing from it
+            const held = typeAhead.selected.peek();
+            return held === null || query.trim() !== '' ? page.items :
+              [held, ...page.items.filter((item) => item.id !== held.id)];
+          },
+          itemText: (item) => item.name,
+          keyOf: (item) => item.id,
+          render: listItem ?? DomainPick.renderItem,
+          placeholder,
+          debounceMs,
+          openOnFocus: true,
+          matchWidth: false,
+          footer: () => shown === null || shown.total <= shown.count ? null :
+            `${shown.count} of ${shown.total} — type to narrow`,
+          // an empty table is not a dead end: say what there is none of yet
+          emptyText: (query) => unbound.length > 0 ? `Pick a ${caption(unbound[0]).toLowerCase()} first` :
+            query.trim() === '' ?
+              `No ${(DomainPick._plural.get(table) ?? table.split('.').pop()!).toLowerCase()} yet` : 'No matches',
+        });
+        return typeAhead;
+      },
       idOf: (item) => item.id,
       resolve: (id) => DomainPick.resolve(table, id),
       open: host === undefined ? undefined : (id) => {
@@ -92,21 +94,11 @@ export class DomainPick extends PickInput<PickItem> {
           host.open(table, id);
       },
     });
-    self.pick = this;
     this.root.dataset.u2 = 'domain-pick';
     // a short lookup (a status, a priority) reads as a dropdown
     void DomainPick.isShort(table).then((short) => {
-      if (!short || this.scope.isDisposed)
-        return;
-      const input = this.typeAhead.root.querySelector('input')!;
-      input.readOnly = true;
-      this.root.classList.add('u2-pick-short');
-      const onClick = () => {
-        if (!this.typeAhead.isOpen.peek())
-          this.typeAhead.open();
-      };
-      input.addEventListener('click', onClick);
-      this.own(() => input.removeEventListener('click', onClick));
+      if (short && !this.scope.isDisposed)
+        this.asDropdown();
     }, () => undefined);
   }
 

@@ -100,6 +100,14 @@
   color: var(--dg-text-color-light);
 }
 
+/* the platform tree's grey, not the grid's row colours */
+.u2-tree .u2-list-row:hover,
+.u2-tree .u2-list-row-current {
+  --u2-list-row-over: var(--dg-hover-subtle);
+  --u2-list-row-stripe: transparent;
+  --u2-list-row-current: var(--dg-hover-subtle);
+}
+
 /* the selected node as the platform tree draws it (.d4-tree-view-node-selected) */
 .u2-tree .u2-list-row-selected,
 .u2-tree .u2-list-row-selected:hover {

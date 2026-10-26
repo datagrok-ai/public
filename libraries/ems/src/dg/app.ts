@@ -457,7 +457,7 @@ export class DomainApp extends Control {
     add.effect(() => {
       const trash = this.trash.value;
       add.root.hidden = !trash && !this.listSource.access.value.can('insert');
-      add.root.style.visibility = trash ? 'hidden' : '';
+      add.root.classList.toggle('u2-domain-app-invisible', trash);
     });
     const save = domains.saveButton(this.session);
     const discard = domains.discardButton(this.session);
@@ -714,8 +714,8 @@ export class DomainApp extends Control {
    * Permission ⇒ hidden — the button is gone while the access allows nothing in it. */
   private _actionsMenu(): Control {
     const control = this.runInScope(() => {
-      const el = DomainApp._menuButton('ellipsis-v', 'More actions',
-        () => actionsMenu(this.menuActions(), {access: this.listSource.access.peek()}));
+      const el = iconButton('ellipsis-v', () => {}, {tooltip: 'More actions',
+        menu: () => actionsMenu(this.menuActions(), {access: this.listSource.access.peek()})});
       el.dataset.u2 = 'actions-menu';
       return new Control(el);
     });
@@ -735,7 +735,7 @@ export class DomainApp extends Control {
     const write = (sort: string) => void confirmDiscard(this.session, {action: 'change the order'})
       .then((ok) => ok && (source.sort.value = sort));
     const control = this.runInScope(() => {
-      const el = DomainApp._menuButton('sort-amount-down', 'Sort by', () => {
+      const el = iconButton('sort-amount-down', () => {}, {tooltip: 'Sort by', menu: () => {
         const current = source.sort.peek().split(',')[0] ?? '';
         const desc = current.startsWith('!');
         const column = desc ? current.slice(1) : current;
@@ -748,26 +748,11 @@ export class DomainApp extends Control {
         menu.item('Ascending', () => write(column), {check: column !== '' && !desc, enabled: column !== ''});
         menu.item('Descending', () => write(`!${column}`), {check: desc, enabled: column !== ''});
         return menu;
-      });
+      }});
       el.dataset.u2 = 'sort-menu';
       return new Control(el);
     });
     return control;
-  }
-
-  /** A ribbon icon whose menu is built on every open; pressed again, it closes it. */
-  private static _menuButton(name: string, tooltip: string, build: () => Menu): HTMLButtonElement {
-    let menu: Menu | undefined;
-    const el = iconButton(name, () => {
-      const open = menu?.isOpen.peek() === true;
-      menu?.close();
-      menu = undefined;
-      if (open)
-        return;
-      menu = build();
-      menu.show({anchor: el});
-    }, {tooltip});
-    return el;
   }
 
   /** The entity page row's actions: the table's, and Delete, staged like a list row's. */
@@ -807,20 +792,9 @@ export class DomainApp extends Control {
     return this.trash.value ? `${path}${path.includes('?') ? '&' : '?'}trash=1` : path;
   }
 
-  /** Shown on the list page only; the ribbon panel goes, with its divider, once nothing in it shows. */
+  /** Shown on the list page only. */
   private _listOnly(control: Control, folded: () => boolean = () => false): void {
-    this.effect(() => {
-      const shown = this._page.value === 'list' && !folded();
-      control.root.hidden = !shown;
-      const panel = control.root.closest<HTMLElement>('.d4-ribbon-panel');
-      if (panel !== null) {
-        panel.style.display = Array.from(panel.children)
-          .every((item) => (item.children[0] as HTMLElement | undefined)?.hidden ?? true) ? 'none' : '';
-        const divider = panel.previousElementSibling;
-        if (divider instanceof HTMLElement && divider.classList.contains('d4-ribbon-separator'))
-          divider.style.display = panel.style.display;
-      }
-    });
+    this.effect(() => control.root.hidden = this._page.value !== 'list' || folded());
   }
 
   /** A preset's query with `$me` bound, as a tree — parsed against the table's schema once it is

@@ -152,7 +152,7 @@ export class DataTable<T> extends VirtualRows<T> {
       (row as HTMLElement).style.gridTemplateColumns = this._template;
   }
 
-  /** Header sorting, column resizing, and a cut cell's full text as its tooltip. */
+  /** Header sorting and column resizing. */
   private _listen(): void {
     const scope = this.scope;
     scope.listen(this.root, 'click', (e) => {
@@ -165,11 +165,6 @@ export class DataTable<T> extends VirtualRows<T> {
       const handle = (e.target as Element).closest('.u2-data-table-resize');
       if (handle !== null)
         this._startResize(e as PointerEvent, handle.parentElement!);
-    });
-    scope.listen(this.content, 'mouseover', (e) => {
-      const cell = (e.target as Element).closest('.u2-data-table-cell') as HTMLElement | null;
-      if (cell !== null && cell.title === '' && cell.scrollWidth > cell.clientWidth)
-        cell.title = cell.textContent ?? '';
     });
     this.own(() => this._endResize?.());
   }

@@ -182,3 +182,18 @@
   font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
 }
+
+/* PickInput.asDropdown: no typing, a chevron */
+.u2-pick-dropdown .u2-typeahead-input {
+  cursor: pointer;
+}
+
+.u2-pick-dropdown .u2-pick-box::before {
+  visibility: visible;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E") no-repeat center / 12px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+
+.u2-pick-dropdown:hover .u2-pick-box:has(> .u2-input-clear:not([hidden]))::before {
+  visibility: hidden;
+}

@@ -45,18 +45,42 @@
   cursor: pointer;
 }
 
-.u2-list-row:hover {
-  background: var(--dg-hover-subtle);
+/* the platform grid's row colours, layered; --u2-row-bg (no stripe) paints the hover actions over the row's end */
+.u2-list-row {
+  --u2-list-row-base: var(--dg-bg);
+  --u2-list-row-current: transparent;
+  --u2-list-row-over: transparent;
+  --u2-list-row-stripe: transparent;
+  --u2-list-row-selected: transparent;
+  --u2-row-bg: linear-gradient(var(--u2-list-row-selected), var(--u2-list-row-selected)),
+    linear-gradient(var(--u2-list-row-over), var(--u2-list-row-over)),
+    linear-gradient(var(--u2-list-row-current), var(--u2-list-row-current)), var(--u2-list-row-base);
+  background: linear-gradient(var(--u2-list-row-selected), var(--u2-list-row-selected)),
+    linear-gradient(to right, var(--u2-list-row-stripe) 4px, transparent 4px),
+    linear-gradient(var(--u2-list-row-over), var(--u2-list-row-over)),
+    linear-gradient(var(--u2-list-row-current), var(--u2-list-row-current)), var(--u2-list-row-base);
 }
 
-/* the current row grey (the Browse tree's .d4-current), the selection an accent stripe, so the
-   current row stands out inside a multi-selection */
 .u2-list-row-current {
-  background: var(--dg-hover-subtle);
+  --u2-list-row-current: var(--dg-grid-current-row);
+}
+
+.u2-list-row:hover {
+  --u2-list-row-over: var(--dg-grid-mouse-over-row);
+  --u2-list-row-stripe: var(--dg-grid-mouse-over-stripe);
 }
 
 .u2-list-row-selected {
-  box-shadow: inset 3px 0 0 0 var(--dg-accent);
+  --u2-list-row-selected: var(--dg-grid-selected-row);
+}
+
+/* a row picked for the user is not drawn as picked until the user picks */
+.u2-list-seeded .u2-list-row-selected {
+  --u2-list-row-selected: transparent;
+}
+
+.u2-list-seeded .u2-list-row-current {
+  --u2-list-row-current: transparent;
 }
 
 /* hover-revealed action block (src/components/actions.ts): invisible until its row — a list row
