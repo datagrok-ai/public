@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import {DomainApp, DomainFilters} from '@datagrok-libraries/ems/src/dg';
 import type {DomainAppOptions, DomainTable} from '@datagrok-libraries/ems/src/dg';
 import type {DomainSource} from '@datagrok-libraries/ems';
-import {Filters, Rows, Section, isEmpty} from '@datagrok-libraries/u2';
+import {Filters, Form, Rows, Section, isEmpty} from '@datagrok-libraries/u2';
 import {ObjectForm} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {Action, RowView} from '@datagrok-libraries/u2';
 import type {CompoundRow} from '../generated/db';
@@ -25,6 +25,7 @@ export class CompoundsApp extends DomainApp {
 
   private readonly _verdicts = new Map<string, Verdict>();
   private readonly _identity = this.runInScope(() => new Section({title: 'Identity', collapsible: false}));
+  private _identityForm: Form | null = null;
 
   constructor(options: DomainAppOptions) {
     super(options);
@@ -64,8 +65,6 @@ export class CompoundsApp extends DomainApp {
         this._verdicts.clear();
       };
     });
-    this.effect(() =>
-      this._identity.root.style.setProperty('--u2-form-label-width', `${this.labelColumn.width.value}px`));
   }
 
   menuActions(): Action[] {
@@ -131,18 +130,21 @@ export class CompoundsApp extends DomainApp {
     const rule = shown('match_rule');
     const ruleName = `${rule.charAt(0)}${rule.slice(1).toLowerCase().replace(/_/g, ' ')}`;
     const field = (caption: string, value: string | Node) => ObjectForm.readonlyField(caption, caption, value).row;
-    const rows = ui.divV([field('Formula', shown('formula')), field('InChIKey', shown('inchikey')),
-      field('Matching rule', ruleName)], 'u2-form');
+    const formula = field('Formula', shown('formula'));
+    this._identityForm?.dispose();
+    const form = this._identityForm = this.runInScope(() => new Form({labelColumn: this.labelColumn}))
+      .addElement(formula)
+      .addElement(field('InChIKey', shown('inchikey'))).addElement(field('Matching rule', ruleName));
     const structure = identity?.structure;
     // the parent is drawn only where it differs from the Structure the form draws (a salt or a charge taken off)
     if (!isEmpty(structure)) {
       void Chemistry.same(original ?? '', structure!).catch(() => false).then((same) => {
         if (!same)
-          rows.prepend(field('Parent', grok.chem.drawMolecule(structure!, 160, 120)));
+          formula.before(field('Parent', grok.chem.drawMolecule(structure!, 160, 120)));
       });
     }
     this._identity.body.replaceChildren(...(problem === null ? [] : [ui.divText(problem, 'moltrack-ems-problem')]),
       identity === null ? ui.divText(problem === null ? 'Draw a structure to see its identity' : '',
-        'moltrack-ems-hint') : rows);
+        'moltrack-ems-hint') : form.root);
   }
 }
