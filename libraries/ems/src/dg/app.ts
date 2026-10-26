@@ -283,7 +283,9 @@ export class DomainApp extends Control {
       // them) move under it without `currentRow` changing, so the caption follows the rows tick
       source?.rows.items.value;
       const row = source?.currentRow.value ?? null;
-      const caption = row === null ? '…' : table.renderer.caption(row);
+      // a row the table does not have is named by the address that asked for it
+      const caption = row !== null ? table.renderer.caption(row) :
+        source?.state.value === 'ready' && !source.isDraft ? this._entity.peek() ?? '…' : '…';
       this.breadcrumbs.setItems([title, caption]);
     });
     // the entity page over a draft: once saved, the page is the row's
@@ -360,7 +362,7 @@ export class DomainApp extends Control {
       const row = entity ? source.currentRow.value : null;
       if (row !== null && !Rows.isDraft(row))
         this._count.value = this.table.renderer.caption(row);
-      else if (source.state.value === 'error')
+      else if (source.state.value === 'error' || entity && !source.isDraft && source.state.value === 'ready')
         this._count.value = '';
       else if (source.error.value === undefined && source.changeCount.value === 0) {
         // paging, the source says "50 of 119": the status bar keeps the noun it has once all are in
@@ -653,6 +655,10 @@ export class DomainApp extends Control {
     // a source's summary leads with its refusal, which is the `problem` slot already
     return dirty.length === 1 && dirty[0].error.value === undefined ?
       dirty[0].summary.value : this.session.summary.value;
+  }
+
+  private static _capital(text: string): string {
+    return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
   }
 
   /** How a table is named in a view title, a breadcrumb root or a child tab: the display name
@@ -959,7 +965,7 @@ export class DomainApp extends Control {
       });
       const {children, history, include} = this._options;
       const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include,
-        empty: `${this.table.info.singularName || 'Row'} "${entity}" was not found.`}));
+        empty: `${DomainApp._capital(this.table.info.singularName || 'row')} "${entity}" was not found.`}));
       this._panes = this.runInScope(() => [
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
         ...(history === false || !this.table.table.support.audit ? [] : [domains.history(source)]),

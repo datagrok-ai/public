@@ -112,7 +112,9 @@ scoped('open(path): ?entity= restores the entity page, ?q= the list under the qu
   assert.equal(a.listSource.query.value, '');
   await a.open(`${BASE}?entity=nope`);
   await flush();
-  assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /not found/);
+  assert.equal(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, 'Issue "nope" was not found.');
+  assert.deepEqual(crumbs(a), ['Issues', 'nope'], 'named by the address, not an endless "…"');
+  assert.equal(a.status.value.count, '', 'and no "0 issues" for a page that is one row');
   a.dispose();
 });
 
