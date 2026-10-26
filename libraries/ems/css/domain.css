@@ -951,6 +951,11 @@
   min-width: 0;
 }
 
+.u2-domain-import-mapping .u2-data-table-cell > .u2-input-root > .u2-input-box {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .u2-domain-import-mapping .u2-data-table-cell > .u2-input-root .u2-input-editor {
   width: 100%;
 }
