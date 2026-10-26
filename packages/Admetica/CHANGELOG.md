@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1055](https://github.com/datagrok-ai/core/issues/1055): Demo: Fixed errors and a wrong table shown when switching between Sketch and File quickly
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Chem | Admetica | Calculate is disabled unless the current table view has a molecule column, instead of showing a message
 
 ## 1.3.2 (2026-09-16)

@@ -47,9 +47,12 @@ export class DockingViewApp extends BaseViewApp {
     return null;
   }
 
-  protected async uploadCachedData(): Promise<HTMLElement> {
+  protected async uploadCachedData(): Promise<HTMLElement | null> {
+    const run = this.runId;
     const datasetPath = 'System:AppData/Docking/demo_files/demo_app_sample.csv';
     const csvText = await grok.dapi.files.readAsText(datasetPath);
+    if (run !== this.runId)
+      return null;
     const sampleData = DG.DataFrame.fromCsv(csvText);
 
     const poseColumn = sampleData.getCol('pose');
