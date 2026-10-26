@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1110](https://github.com/datagrok-ai/core/issues/1110): Demo app: Fixed demos and demo scripts renaming an unrelated view or failing with "Cannot set properties of null"
 * Tutorial: A running tutorial shows its current step in a bar docked on top; `showAllSteps()` opens the full pane
 * Tutorial: `cleanup()` removes what a tutorial created on the server; it runs when the tutorial finishes and when it is closed
 
