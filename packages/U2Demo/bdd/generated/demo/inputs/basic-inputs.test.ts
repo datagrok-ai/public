@@ -80,7 +80,7 @@ test.describe("Basic inputs", () => {
     const page = await session.page(browser);
     await session.step(8, "Given user opens the \"Basic inputs\" demo page", () => openDemoPage(page, "Basic inputs"));
     enter(page, "U2 Demo");
-    await session.step(52, "Then error of Code input should have text \"Value is required\"", () => shouldHaveText(page, el("error of Code input"), "Value is required"));
+    await session.step(52, "Then error of Code input should be hidden", () => shouldBe(page, el("error of Code input"), "hidden"));
     await session.step(53, "And value of \"code validity\" readout should have text \"Value is required\"", () => shouldHaveText(page, el("value of \"code validity\" readout"), "Value is required"));
     await session.step(54, "When user types \"ABC-123\" into Code input", () => typeInto(page, "ABC-123", el("Code input")));
     await session.step(55, "Then error of Code input should be hidden", () => shouldBe(page, el("error of Code input"), "hidden"));

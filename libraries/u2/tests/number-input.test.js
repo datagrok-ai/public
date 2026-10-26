@@ -5,6 +5,7 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {NumberInput} from '../src/components/inputs/number-input.js';
@@ -91,6 +92,15 @@ smoke('the stepper walks an out-of-range value back into range and the validity 
   assert.equal(editor(input).value, '10');
   assert.equal(input.validity.value, null);
   input.dispose();
+});
+
+smoke('the slider hangs under the field in room the editor keeps, never over the next row', () => {
+  const sheet = readFileSync(new URL('../css/number.css', import.meta.url), 'utf8');
+  const hang = /\.u2-number-slider \{[^}]*bottom: -(\d+)px;/.exec(sheet);
+  const room = /\.u2-input-editor\.u2-number:has\(> \.u2-number-slider\) \{\s*margin-bottom: (\d+)px;/.exec(sheet);
+  assert.notEqual(hang, null);
+  assert.notEqual(room, null, 'an editor with a slider keeps room below itself');
+  assert.equal(room[1], hang[1], 'as much as the slider hangs');
 });
 
 smoke('the slider materializes only within real bounds', () => {

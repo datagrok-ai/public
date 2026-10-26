@@ -93,6 +93,10 @@ smoke('invalid: aria-invalid and aria-describedby point at the error the user re
   input.addValidator((v) => v ? null : 'Code is required');
   const editor = input.root.querySelector('input');
   const error = input.root.querySelector('[data-u2-part="error"]');
+  assert.equal(state(input.root).valid, false, 'the verdict is there from the start');
+  assert.equal(editor.hasAttribute('aria-invalid'), false, 'and shows once the input is touched');
+  assert.equal(state(input.root).error, null);
+  input.touch();
   assert.equal(editor.getAttribute('aria-invalid'), 'true');
   assert.equal(editor.getAttribute('aria-describedby'), error.id);
   assert.equal(error.textContent, 'Code is required');

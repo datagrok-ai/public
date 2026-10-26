@@ -12,8 +12,7 @@ const HOVER = 'Number rows keep the platform\'s hover chrome, ported as it is: t
   '− + clicker are invisible at rest and appear the moment the pointer enters the input. Each ' +
   'side reveals its OWN chrome and nothing else, so hover the two `Dose` cells one after the ' +
   'other — a bare cell means the pointer is on the other one, not that the chrome is missing. ' +
-  'The revealed slider overlaps the row below by 9px — that is what the platform does, not a ' +
-  'layout bug.';
+  'The platform\'s revealed slider overlaps the row below by 9px; u2\'s row keeps that room for it.';
 
 const EDITOR = 'The leading `…` opens that row\'s own metadata in the context panel: an identity ' +
   'section, plus the fields its type actually has (bounds and slider flags for numbers, choices ' +

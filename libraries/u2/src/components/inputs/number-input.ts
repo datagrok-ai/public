@@ -40,9 +40,10 @@ const FLOAT = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
  * rail (20×20, blue, left of the units) and the slider, absolutely positioned under the field at
  * its full width. u2's own hover spinner has no Dart counterpart and is opt-in (`spinner: true`).
  *
+ * The slider hangs 9px under the field as the platform's does (`d4.css:81-89`: `bottom: -9px`), but
+ * the editor keeps that room below itself, so it never covers the next row as the platform's does.
+ *
  * Ported quirks — the platform's behavior, deliberately not improved here:
- * - the revealed slider overlaps whatever is below it by 9px (`d4.css:81-89`: `bottom: -9px;
- *   z-index: 2`), so in a form it sits over the next row;
  * - at rest nothing hints that a slider or a clicker exists — they are `visibility: hidden` until
  *   the pointer enters the input (`d4.css:130-134`);
  * - the platform's clicker steps past min/max everywhere (`number_input.dart:66-68` adds `step`

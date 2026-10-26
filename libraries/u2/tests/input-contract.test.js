@@ -99,6 +99,10 @@ smoke('required: aria-required; an empty value is invalid, shown only once touch
   assert.equal(s.error, null, 'state.error is what the user sees');
   assert.equal(s.required, true);
   fire(editor, 'focusout');
+  assert.equal(input.root.querySelector('[data-u2-part="error"]').textContent, '',
+    'focused from code and left, nobody was in it');
+  fire(editor, 'pointerdown');
+  fire(editor, 'focusout');
   assert.equal(input.root.querySelector('[data-u2-part="error"]').textContent, EMPTY, 'leaving it shows it');
   assert.equal(editor.getAttribute('aria-invalid'), 'true');
   s = state(input.root);
@@ -423,7 +427,7 @@ smoke('a decimal in a whole-number field says so', async () => {
   id.dispose();
 });
 
-smoke('error and touched: what the input shows — a required verdict waits for the touch, validity does not', async () => {
+smoke('error and touched: what the input shows — every verdict waits for the touch, validity does not', async () => {
   const name = mount(new TextInput({label: 'Name', required: true}));
   assert.equal(name.validity.value, EMPTY);
   assert.equal(name.error.value, null, 'a fresh form shows nothing');
@@ -435,9 +439,34 @@ smoke('error and touched: what the input shows — a required verdict waits for 
   assert.equal(name.error.value, null);
   const id = mount(new NumberInput({label: 'ID', value: 1}));
   id.addValidator((v) => v > 0 ? 'Positive is taken' : null);
-  assert.equal(id.error.value, 'Positive is taken', 'a validator speaks at once');
+  assert.equal(id.validity.value, 'Positive is taken', 'a validator judges at once');
+  assert.equal(id.error.value, null, 'and shows nothing before the touch');
+  const field = id.root.querySelector('.u2-number-box input');
+  field.value = '2';
+  fire(field, 'input');
+  assert.equal(id.error.value, 'Positive is taken', 'an edit shows it');
   name.dispose();
   id.dispose();
+});
+
+smoke('a form shows no verdict until a field is touched or the form validated; validity is there from the start', async () => {
+  const name = new TextInput({label: 'Name', name: 'name', required: true});
+  const code = new TextInput({label: 'Code', name: 'code', value: 'x'});
+  code.addValidator((v) => v === 'x' ? 'Not x' : null);
+  const form = mount(new Form().addAll([name, code]));
+  const shown = (input) => input.root.querySelector('[data-u2-part="error"]').textContent;
+  assert.equal(form.validity.value, EMPTY, 'Save goes by the verdict from the start');
+  assert.deepEqual([shown(name), shown(code), form.error.value], ['', '', null]);
+  const editor = code.root.querySelector('input');
+  fire(editor, 'keydown', {key: 'Tab'});
+  fire(editor, 'focusout');
+  assert.deepEqual([shown(name), shown(code)], ['', 'Not x'], 'only the field the user left');
+  assert.equal(form.validate(), false);
+  assert.deepEqual([shown(name), shown(code)], [EMPTY, 'Not x'], 'validate shows them all');
+  assert.equal(document.activeElement, name.root.querySelector('input'), 'and focuses the first offender');
+  form.dispose();
+  name.dispose();
+  code.dispose();
 });
 
 smoke('addOptions: a caller puts its own icon on an input\'s options rail', async () => {

@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {debug} from 'datagrok-api/u2core';
 import {Scope, Control, Overlay, Dialog, Form, TextInput, NumberInput, Combobox, PropertyGrid, button, divH, span, signal,
-  computed, Tooltip}
+  computed, Tooltip, EMPTY}
   from '../src/index.js';
 
 function smoke(name, body) {
@@ -329,12 +329,69 @@ smoke('getButton finds OK by its caption, CANCEL, custom buttons and ✕; addBut
   dialog.dispose();
 });
 
+smoke('an OK the form holds off is aria-disabled and focusable; a click does nothing, Enter shows every verdict', () => {
+  let accepted = 0;
+  const name = new TextInput({label: 'Name', name: 'name', required: true});
+  const code = new TextInput({label: 'Code', name: 'code', required: true});
+  const dialog = Dialog.create('New collection').add(new Form().addAll([name, code])).onOK(() => accepted++);
+  dialog.show();
+  const ok = dialog.getButton('OK');
+  const shown = (input) => input.root.querySelector('[data-u2-part="error"]').textContent;
+  assert.equal(ok.getAttribute('aria-disabled'), 'true', 'off from the first render');
+  assert.equal(ok.hasAttribute('disabled'), false, 'and a tab stop, whose tooltip names the field');
+  assert.deepEqual([shown(name), shown(code)], ['', ''], 'a fresh form shows nothing');
+  fire(ok, 'click');
+  assert.equal(accepted, 0, 'a click on it does nothing');
+  fire(code.root.querySelector('input'), 'keydown', {key: 'Enter'});
+  assert.equal(accepted, 0, 'Enter in the form never presses it');
+  assert.deepEqual([shown(name), shown(code)], [EMPTY, EMPTY], 'it shows every verdict');
+  assert.equal(document.activeElement, name.root.querySelector('input'), 'and focuses the first offender');
+  assert.equal(dialog.isOpen.value, true);
+  dialog.dispose();
+});
+
+smoke('a footer button off for a reason is aria-disabled and says why, live; a press does nothing', () => {
+  const pressed = [];
+  const reason = signal('Title is required');
+  const dialog = Dialog.create('Unsaved changes').addButton('SAVE', () => pressed.push('save'), {disabled: reason})
+    .onCancel(() => {});
+  dialog.show();
+  const save = dialog.getButton('SAVE');
+  assert.equal(save.getAttribute('aria-disabled'), 'true');
+  assert.equal(save.getAttribute('aria-description'), 'Title is required');
+  fire(save, 'click');
+  assert.deepEqual(pressed, []);
+  reason.value = null;
+  assert.equal(save.hasAttribute('aria-disabled'), false);
+  fire(save, 'click');
+  assert.deepEqual(pressed, ['save']);
+  assert.equal(dialog.getButton('CANCEL').hasAttribute('aria-disabled'), false);
+  dialog.dispose();
+});
+
+smoke('Enter on a valid form whose OK is held off for a reason focuses OK, whose tooltip says why', () => {
+  let accepted = 0;
+  const name = new TextInput({label: 'Name', name: 'name', value: 'Plates'});
+  const dialog = Dialog.create('New collection').add(new Form().add(name))
+    .okDisabled(signal('Pick a project first')).onOK(() => accepted++);
+  dialog.show();
+  const ok = dialog.getButton('OK');
+  assert.equal(ok.getAttribute('aria-description'), 'Pick a project first');
+  const editor = name.root.querySelector('input');
+  editor.focus();
+  fire(editor, 'keydown', {key: 'Enter'});
+  assert.equal(accepted, 0);
+  assert.equal(document.activeElement, ok, 'not a silent Enter');
+  dialog.dispose();
+});
+
 smoke('leaving an empty required field for CANCEL shows no verdict before the press lands', () => {
   const name = new TextInput({label: 'Name', name: 'name', required: true});
   const dialog = Dialog.create('New collection').add(new Form().add(name)).onOK(() => {});
   dialog.show();
   const cancel = dialog.getButton('CANCEL');
   const error = () => name.root.querySelector('[data-u2-part="error"]').textContent;
+  fire(name.root.querySelector('input'), 'pointerdown');
   fire(name.root.querySelector('input'), 'focusout', {relatedTarget: cancel});
   assert.equal(error(), '', 'the line would move CANCEL from under the pointer');
   fire(cancel, 'click');
@@ -342,8 +399,13 @@ smoke('leaving an empty required field for CANCEL shows no verdict before the pr
 
   const other = new TextInput({label: 'Other', name: 'other', required: true});
   document.body.append(other.root);
-  fire(other.root.querySelector('input'), 'focusout', {relatedTarget: document.body});
-  assert.notEqual(other.root.querySelector('[data-u2-part="error"]').textContent, '', 'left for anything else, it shows');
+  const editor = other.root.querySelector('input');
+  const shown = () => other.root.querySelector('[data-u2-part="error"]').textContent;
+  fire(editor, 'focusout', {relatedTarget: document.body});
+  assert.equal(shown(), '', 'focused from code and left untouched — a form starting on it — it shows nothing');
+  fire(editor, 'keydown', {key: 'Tab'});
+  fire(editor, 'focusout', {relatedTarget: document.body});
+  assert.notEqual(shown(), '', 'left by the user for anything else, it shows');
   other.dispose();
 });
 

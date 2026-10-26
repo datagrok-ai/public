@@ -1407,9 +1407,15 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule', caption: 'Sequence', nullable: false}}) sequence: DG.Column<string>,
     @grok.decorators.param({type: 'string', options: {caption: 'Motif', nullable: false, description: 'A monomer run, or a regular expression over the sequence'}}) motif: string,
   ): DG.DataFrame {
+    try {
+      new RegExp(motif);
+    } catch {
+      grok.shell.warning(`Motif Search: "${motif}" is not a valid regular expression`);
+      return table.clone(DG.BitSet.create(table.rowCount));
+    }
     const sh = _package.seqHelper.getSeqHandler(sequence);
     const separator = sh.notation === NOTATION.SEPARATOR ? sh.separator : undefined;
-    return table.clone(linearSubstructureSearch(motif, sequence, separator));
+    return table.clone(linearSubstructureSearch(motif, sequence, separator, true));
   }
 
   @grok.decorators.func({

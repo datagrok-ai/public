@@ -132,8 +132,11 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     const text = this._text.peek();
     const {root, problems} = Filters.parse(text, o.schema, o.target);
     this._problems.value = FilterQueryInput.worded(text, o.schema, problems);
-    if (problems.length > 0)
+    // a refused commit is the user's apply: its reason shows at once
+    if (problems.length > 0) {
+      this.touch();
       return false;
+    }
     this._dirty = false;
     this._raw.value = null;
     const current = this.value.peek();
@@ -172,6 +175,8 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     this._text.value = text;
     this._problems.value = problems;
     this.revalidate();
+    if (problems.length > 0)
+      this.touch();
   }
 
   getWidgetStatus(): FilterQueryInputStatus {

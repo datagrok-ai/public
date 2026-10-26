@@ -131,6 +131,8 @@ category('hierarchicalClustering', () => {
     } finally {
       tv.close();
     }
+  });
+
   // A table with no name and no view gets a view opened for it
   test('UI-unnamed-table', async () => {
     const dataDf: DG.DataFrame = DG.DataFrame.fromCsv('a,b\n1,2\n2,3\n3,4\n4,5');

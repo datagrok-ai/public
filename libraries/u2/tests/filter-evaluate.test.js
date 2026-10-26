@@ -57,6 +57,11 @@ async function rows(nodes, options = {}) {
 
 const one = (property, operator, value, options) => rows([Filters.cond(property, operator, value, options)]);
 
+test('a pattern that is no regular expression matches nothing, either way round, and never throws', async () => {
+  assert.deepEqual(await one('s', 'matches', '('), []);
+  assert.deepEqual(await one('s', '!matches', '[a-'), []);
+});
+
 test('BitArray: fill, invert, and, or keep the tail beyond length clear', () => {
   const all = new BitArray(35, true);
   assert.equal(all.getBuffer().length, 2);

@@ -113,6 +113,20 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     return group.id;
   }
 
+  get enabled(): boolean {
+    return super.enabled;
+  }
+
+  /** The rows follow: every editor in them reads and acts disabled, and a locked one keeps its lock
+   * once the builder is enabled again. */
+  set enabled(x: boolean) {
+    super.enabled = x;
+    for (const row of this._rows?.values() ?? []) {
+      if (row instanceof FilterRow)
+        row.applyLock();
+    }
+  }
+
   /** Shows every row's problem — what Apply or `Form.validate` asks for. */
   touch(): void {
     super.touch();
@@ -190,6 +204,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
       properties: () => this._properties(),
       operators: (prop) => this._operators(prop),
       lockOf: (id) => this._lockOf(id),
+      enabled: () => this.enabled,
       advanced: () => this._advanced(),
       change: (id, patch) => this._change(id, patch),
       add: (parentId, kind) => kind === 'group' ? this.addGroup(parentId) : this.addCondition(parentId),
@@ -364,6 +379,8 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     }
     for (const join of this._joins.values())
       join.textContent = root.op;
+    // a row mounted while the builder is disabled starts with live controls
+    this.refreshEnabled();
   }
 
   private _renderChildren(group: FilterGroup, into: FilterGroupRow, advanced: boolean, horizontal: boolean,

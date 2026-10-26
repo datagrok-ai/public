@@ -5,6 +5,7 @@
 import {signal, Signal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {Tooltip} from '../../core/tooltip.js';
+import {focusableWhenDisabled} from '../../core/elements.js';
 import {icon} from '../display/icon.js';
 import type {IItemsState} from '../../core/widget-like.js';
 
@@ -61,10 +62,8 @@ export class ButtonGroup extends Control {
 
   setEnabled(id: string, enabled: boolean): void {
     const el = this._buttons.get(id);
-    if (!el)
-      return;
-    el.disabled = !enabled;
-    this._roving();
+    if (el)
+      el.disabled = !enabled;
   }
 
   /** The base state plus the selection as the value (the id under `single`) and the current id. */
@@ -84,7 +83,7 @@ export class ButtonGroup extends Control {
   }
 
   private _build(item: ButtonGroupItem, iconOnly: boolean): HTMLButtonElement {
-    const el = document.createElement('button');
+    const el = focusableWhenDisabled(document.createElement('button'));
     el.type = 'button';
     el.className = 'u2-btn-group-item';
     el.dataset.id = item.id;
@@ -142,18 +141,12 @@ export class ButtonGroup extends Control {
     }
   }
 
+  /** Every cell, a disabled one too: the arrow keys still reach it. */
   private _stops(): HTMLButtonElement[] {
-    const stops: HTMLButtonElement[] = [];
-    for (const item of this._items) {
-      const el = this._buttons.get(item.id)!;
-      if (!el.disabled)
-        stops.push(el);
-    }
-    return stops;
+    return this._items.map((item) => this._buttons.get(item.id)!);
   }
 
-  // the tab stop is tracked by id, not by position: disabling or enabling a cell must not slide
-  // the stop onto a different button
+  // the tab stop is tracked by id, not by position
   private _roving(): void {
     const stops = this._stops();
     for (const el of this._buttons.values())

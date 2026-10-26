@@ -4,7 +4,7 @@ export {asDartInput, dartInputFor, DartInput} from './inputs/input-bridge.js';
 export type {DartInputOptions, PropertyInputBuilder} from './inputs/input-bridge.js';
 export {columnInput, tableInput, tablesInput, ColumnPicker} from './inputs/pickers.js';
 export type {ColumnInputOptions, ColumnPickerOptions} from './inputs/pickers.js';
-export {ObjectForm, propertyForm, objectForm, inputForProperty, PlatformInputs} from './forms/object-form.js';
+export {ObjectForm, propertyForm, objectForm, inputForProperty, kindOf, PlatformInputs} from './forms/object-form.js';
 export type {IProperty} from '../core/property-like.js';
 export type {PropertySource, ObjectFormOptions, FieldOverride,
   PropertyInputOptions, InputFactory} from './forms/object-form.js';
@@ -77,6 +77,8 @@ export {FilterSchemas, filterRenderer, filterRef, frameLike, toBitSet} from './f
 export type {DataFrameFilterSchema} from './filter/index.js';
 // side-effect only: filling `backends` is what makes the data sources work in the platform
 import './shell/source-backends.js';
+// side-effect only: on a platform page u2's notifications go into the platform's balloon stack
+import './shell/balloons.js';
 
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';

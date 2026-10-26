@@ -181,14 +181,51 @@ export interface ButtonOptions {
   primary?: boolean;
   /** Hover text; a function is asked at hover time. */
   tooltip?: string | (() => string);
-  /** `true`, or WHY the button is disabled — the reason becomes its tooltip, so the user learns what
-   * to fix; `false`, `null` or `''` enable it. A signal is followed live. */
+  /** `true`, or WHY the button is disabled — the reason becomes its tooltip, shown on hover and on
+   * keyboard focus, so the user learns what to fix; `false`, `null` or `''` enable it. A signal is
+   * followed live. See {@link focusableWhenDisabled}. */
   disabled?: boolean | string | null | ReadonlySignal<boolean | string | null>;
+}
+
+/** A u2 button is disabled by `aria-disabled`, never by the native attribute: it keeps its tab stop, so
+ * the keyboard reaches it and its tooltip says why, while a click, Enter or Space on it does nothing.
+ * `el.disabled` reads and writes that state; a native `disabled` (an input sets one on the controls
+ * inside it) still reads as disabled. {@link button} applies it; a button built by hand opts in, and
+ * states its reason with {@link describeDisabled}. */
+export function focusableWhenDisabled(el: HTMLButtonElement): HTMLButtonElement {
+  Object.defineProperty(el, 'disabled', {
+    configurable: true,
+    get: () => el.getAttribute('aria-disabled') === 'true' || el.hasAttribute('disabled'),
+    set: (x: boolean) => {
+      if (x)
+        el.setAttribute('aria-disabled', 'true');
+      else
+        el.removeAttribute('aria-disabled');
+    },
+  });
+  // registered first: the button's own listeners and the ones it bubbles to never hear the press (a
+  // capture-phase listener on an ancestor still does)
+  el.addEventListener('click', (e) => {
+    if (el.getAttribute('aria-disabled') !== 'true')
+      return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }, true);
+  return el;
+}
+
+/** Keeps WHY a button is off in its `aria-description`, so a screen reader says it on focus, not only
+ * the hover tooltip; `null` or `''` clears it. */
+export function describeDisabled(el: HTMLButtonElement, reason: string | null): void {
+  if (reason)
+    el.setAttribute('aria-description', reason);
+  else
+    el.removeAttribute('aria-description');
 }
 
 export function button(text: Text | HTMLElement, onClick: (e: MouseEvent) => void,
   options?: ButtonOptions): HTMLButtonElement {
-  const el = element('button', 'u2-btn', options?.primary ? 'u2-btn-primary' : undefined);
+  const el = focusableWhenDisabled(element('button', 'u2-btn', options?.primary ? 'u2-btn-primary' : undefined));
   el.type = 'button';
   el.dataset.u2 = 'button';
   if (text instanceof HTMLElement)
@@ -197,7 +234,10 @@ export function button(text: Text | HTMLElement, onClick: (e: MouseEvent) => voi
     setText(el, text);
   listen<MouseEvent>(el, 'click', (e) => onClick(e));
   const disabled = options?.disabled;
-  const apply = (x: boolean | string | null | undefined) => el.disabled = x === true || (typeof x === 'string' && x !== '');
+  const apply = (x: boolean | string | null | undefined) => {
+    el.disabled = x === true || (typeof x === 'string' && x !== '');
+    describeDisabled(el, typeof x === 'string' ? x : null);
+  };
   if (isSignal(disabled))
     owner().effect(() => apply(disabled.value as boolean | string | null));
   else

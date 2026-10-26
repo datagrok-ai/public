@@ -130,8 +130,12 @@
   filter: brightness(90%) contrast(90%);
 }
 
-/* absolute, full field width, overlapping the row below by 9px — the platform's own geometry
-   (d4.css:81-89), quirk included */
+/* absolute, full field width, hanging 9px under the field — the platform's own geometry
+   (d4.css:81-89) — over room the editor keeps below itself, so it never covers the row underneath */
+.u2-input-editor.u2-number:has(> .u2-number-slider) {
+  margin-bottom: 9px;
+}
+
 .u2-number-slider {
   position: absolute;
   right: 0;

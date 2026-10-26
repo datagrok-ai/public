@@ -247,6 +247,8 @@ smoke('validators and Form validity come from the input base', async () => {
   const ms = select({label: 'Properties'});
   ms.addValidator((v) => v.length < 2 ? 'Pick at least 2' : null);
   assert.equal(ms.validity.value, 'Pick at least 2');
+  assert.equal(field(ms).classList.contains('u2-invalid'), false, 'shown once touched');
+  ms.touch();
   assert.equal(field(ms).classList.contains('u2-invalid'), true);
   assert.equal(ms.root.querySelector('.u2-input-error').textContent, 'Pick at least 2');
 

@@ -166,6 +166,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _rows: FrameRows;
   private readonly _columns = new Map<string, Signal<unknown>>();
   private readonly _guards = new Set<() => string | null>();
+  /** The guards' verdicts, live — what {@link validity} reads first. */
+  private readonly _problems = signal<readonly ReadonlySignal<string | null>[]>([]);
+  /** Edits controls hold that no row has taken ({@link holdUnwritten}). */
+  private readonly _unwritten = signal<readonly ReadonlySignal<number>[]>([]);
   /** What the caller listed as {@link DomainSourceOptions.captions}; undefined is the default. */
   private readonly _captionOption: string[] | undefined;
   private _table: DomainTableLike | undefined;
@@ -229,9 +233,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._rows = new FrameRows(this._df, this.scope,
       {onWrite: (id, column, value) => this._edit.peek()?.setValue(id, column, value)});
     this.rows = this._rows as RowsLike<RowView> as RowsLike<RowView<TRow>>;
-    this.isDirty = computed(() => this._edit.value?.isDirty.value ?? false);
-    this.changeCount = computed(() => this._edit.value?.changeCount.value ?? 0);
-    this.validity = computed(() => this._edit.value?.validity.value ?? null);
+    this.isDirty = computed(() => (this._edit.value?.isDirty.value ?? false) || this._held() > 0);
+    this.changeCount = computed(() => (this._edit.value?.changeCount.value ?? 0) + this._held());
+    this.validity = computed(() => {
+      for (const problem of this._problems.value) {
+        if (problem.value !== null)
+          return problem.value;
+      }
+      return this._edit.value?.validity.value ?? null;
+    });
     this.isSaving = computed(() => this._edit.value?.isSaving.value ?? false);
     this.summary = computed(() => this._summary());
     this.session = options.session ?? SharedSession.ambient ?? new SharedSession();
@@ -499,10 +509,29 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   /** A check Save runs first — a form registers its own, so a refusal names the field ("Cannot
-   * save: Title is required"). Answers the unregister. */
-  guard(check: () => string | null): () => void {
+   * save: Title is required"). `problem` is the same verdict live: it joins {@link validity}, which
+   * keeps Save off and says why from the first render. Answers the unregister. */
+  guard(check: () => string | null, problem?: ReadonlySignal<string | null>): () => void {
     this._guards.add(check);
-    return () => this._guards.delete(check);
+    if (problem !== undefined)
+      this._problems.value = [...this._problems.peek(), problem];
+    return () => {
+      this._guards.delete(check);
+      if (problem !== undefined)
+        this._problems.value = this._problems.peek().filter((p) => p !== problem);
+    };
+  }
+
+  /** Edits a control holds that the rows have not taken — a form's fields left invalid, which a form
+   * never writes: they count as unsaved changes (every gate asks, Discard drops them) though no row
+   * carries them. Answers the unregister. */
+  holdUnwritten(count: ReadonlySignal<number>): () => void {
+    this._unwritten.value = [...this._unwritten.peek(), count];
+    return () => this._unwritten.value = this._unwritten.peek().filter((c) => c !== count);
+  }
+
+  private _held(): number {
+    return this._unwritten.value.reduce((n, count) => n + count.value, 0);
   }
 
   /** What keeps this source's batch from being sent — a guard's refusal, then the writer's

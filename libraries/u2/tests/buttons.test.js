@@ -46,14 +46,43 @@ ui('button: disabled with a reason — the reason is the tooltip; a signal drive
   ]);
   document.body.append(del, edit, plain);
   assert.equal(del.disabled, true);
+  assert.equal(del.getAttribute('aria-description'), 'Only the author can delete', 'a screen reader says it on focus');
   fire(del, 'pointerenter');
   await new Promise((r) => setTimeout(r, 700));
   assert.equal(Tooltip.root.textContent, 'Only the author can delete');
   fire(del, 'pointerleave');
   reason.value = null;
   assert.equal(del.disabled, false);
+  assert.equal(del.hasAttribute('aria-description'), false);
   assert.equal(edit.disabled, true);
+  assert.equal(edit.hasAttribute('aria-description'), false, 'no reason given, none described');
   assert.equal(plain.disabled, false);
+  c.dispose();
+});
+
+ui('button: disabled is aria-disabled, never native — it keeps its tab stop and a press does nothing', async () => {
+  const c = new Control();
+  const pressed = [];
+  const heard = [];
+  const reason = signal('Pick a file first');
+  const save = c.runInScope(() => button('Save', () => pressed.push('save'), {disabled: reason}));
+  const host = document.createElement('div');
+  host.addEventListener('click', () => heard.push('host'));
+  host.append(save);
+  document.body.append(host);
+  assert.equal(save.getAttribute('aria-disabled'), 'true');
+  assert.equal(save.hasAttribute('disabled'), false);
+  save.click();
+  assert.deepEqual([pressed, heard], [[], []], 'neither the button nor what it bubbles to hears the press');
+  save.disabled = false;
+  assert.equal(save.hasAttribute('aria-disabled'), false, '`disabled` writes the ARIA state');
+  save.click();
+  assert.deepEqual(pressed, ['save']);
+  save.disabled = true;
+  assert.equal(save.disabled, true, 'and reads it');
+  save.setAttribute('disabled', '');
+  save.disabled = false;
+  assert.equal(save.disabled, true, 'a native disabled — a disabled input sets one inside it — still reads as disabled');
   c.dispose();
 });
 
@@ -241,28 +270,36 @@ ui('ButtonGroup iconOnly: labels become the tooltip and the accessible name', ()
   labelled.dispose();
 });
 
-ui('ButtonGroup: densities are class-driven, and setEnabled moves a cell out of the tab order', () => {
+ui('ButtonGroup: densities are class-driven; a disabled cell is aria-disabled, reachable and inert', () => {
   for (const density of ['form', 'toolbar', 'ribbon']) {
     const group = new ButtonGroup({items: [{id: 'a', label: 'A'}], density});
     assert.equal(group.root.classList.contains(`u2-btn-group-${density}`), true);
     group.dispose();
   }
 
+  const clicked = [];
   const group = new ButtonGroup({items: [
     {id: 'run', label: 'Run'},
-    {id: 'stop', label: 'Stop', enabled: false},
+    {id: 'stop', label: 'Stop', enabled: false, onClick: () => clicked.push('stop')},
     {id: 'reset', label: 'Reset'},
-  ], density: 'toolbar'});
-  assert.equal(cell(group, 'stop').disabled, true);
+  ], toggle: 'single', density: 'toolbar'});
+  const stop = cell(group, 'stop');
+  assert.equal(stop.disabled, true);
+  assert.equal(stop.getAttribute('aria-disabled'), 'true');
+  assert.equal(stop.hasAttribute('disabled'), false, 'never the native attribute: it keeps its tab stop');
 
   document.body.append(group.root);
   fire(group.root, 'keydown', {key: 'ArrowRight'});
-  assert.deepEqual(tabStops(group), ['reset'], 'a disabled cell is skipped');
+  assert.deepEqual(tabStops(group), ['stop'], 'the roving focus reaches a disabled cell, whose tooltip says why');
+  stop.click();
+  assert.deepEqual(clicked, [], 'a press on it does nothing');
+  assert.deepEqual(group.selected.value, [], 'and selects nothing');
 
   group.setEnabled('stop', true);
-  assert.equal(cell(group, 'stop').disabled, false);
-  fire(group.root, 'keydown', {key: 'ArrowLeft'});
-  assert.deepEqual(tabStops(group), ['stop'], 'enabling puts it back in the roving order');
+  assert.equal(stop.disabled, false);
+  assert.equal(stop.hasAttribute('aria-disabled'), false);
+  stop.click();
+  assert.deepEqual(clicked, ['stop']);
 
   group.setEnabled('run', false);
   assert.equal(cell(group, 'run').disabled, true);

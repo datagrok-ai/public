@@ -418,6 +418,10 @@ class Element extends Node {
     return this.childNodes.filter((c) => c instanceof Element);
   }
 
+  get lastElementChild() {
+    return this.children.at(-1) ?? null;
+  }
+
   get firstChild() {
     return this.childNodes[0] ?? null;
   }

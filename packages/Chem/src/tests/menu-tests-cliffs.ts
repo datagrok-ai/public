@@ -6,6 +6,7 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {before, after, expect, category, test, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {ActivityCliffsEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
 import {cliffMcs, createPropPanelElement, createTooltipElement} from '../analysis/activity-cliffs';
 import {MALFORMED_DATA_WARNING_CLASS} from '../constants';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
@@ -113,6 +114,17 @@ category('top menu activity cliffs', async () => {
 
   test('activityCliffsOpen.molV3000', async () => {
     await _testActivityCliffsOpen(await readDataframe('v3000_sample.csv'), 'molecule', 'Activity', 80, 185);
+  });
+
+  test('activityCliffsEditor.defaultActivity', async () => {
+    const defaultOf = (csv: string) =>
+      ActivityCliffsEditor.getDefaultActivityColumn(DG.DataFrame.fromCsv(csv).columns.toList())?.name;
+    expect(defaultOf('ID,Mol Wt.,Plate #,In-vivo Activity,Assay #1(IC50)\n1,242.3,1,60,1.5\n2,256.4,1,50,1.2'),
+      'In-vivo Activity');
+    expect(defaultOf('ID,Kd #1\n1,1.7\n2,1.9'), 'Kd #1');
+    expect(defaultOf('activity_id,pIC50\n31863,6.2\n31864,7.1'), 'pIC50');
+    expect(defaultOf('ID,Row,Mol Wt.\n1,1,242.3\n2,2,256.4'), 'Mol Wt.');
+    expect(defaultOf('ID,Row\n1,1\n2,2'), 'ID');
   });
 
   test('activityCliffs.emptyValues', async () => {
