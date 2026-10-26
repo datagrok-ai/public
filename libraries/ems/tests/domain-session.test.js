@@ -265,12 +265,12 @@ scoped('confirmDiscard: clean passes silently; SAVE, DISCARD and CANCEL through 
 
   projects.rows.byKey('p1').name = 'Grit 2';
   issues.rows.byKey('i1').title = 'A';
-  let answer = confirmDiscard(session, {action: 'leave this page', subject: 'the issue'});
+  let answer = confirmDiscard(session, {action: 'leave this page'});
   await flush();
   const dialog = document.body.querySelector('.u2-dialog');
-  assert.equal(dialog.querySelector('.u2-dialog-title-text').textContent, 'Unsaved changes');
-  assert.deepEqual([...dialog.querySelectorAll('p')].map((p) => p.textContent),
-    ['2 unsaved changes in the issue.', 'Save them, discard them, or cancel and do not leave this page.']);
+  assert.equal(dialog.querySelector('.u2-dialog-title-text').textContent, 'Save changes?');
+  assert.equal(dialog.querySelector('.u2-dialog-content').textContent,
+    '2 unsaved changes in 2 tables will be lost if you leave this page.', 'two records: the summary');
   assert.deepEqual([...dialog.querySelectorAll('.u2-dialog-buttons button')].map((b) => b.textContent),
     ['CANCEL', 'DISCARD', 'SAVE'], 'CANCEL first and SAVE right-most, as the platform prompt');
   assert.deepEqual([...dialog.querySelectorAll('.u2-btn-primary')].map((b) => b.textContent), ['SAVE']);
@@ -281,7 +281,7 @@ scoped('confirmDiscard: clean passes silently; SAVE, DISCARD and CANCEL through 
 
   answer = confirmDiscard(session);
   await flush();
-  assert.match(document.body.querySelector('.u2-dialog p').textContent, /in this view\./);
+  assert.match(document.body.querySelector('.u2-dialog-content').textContent, /will be lost if you continue\./);
   fire(buttonNamed('SAVE'), 'click');
   assert.equal(await answer, true);
   assert.equal(session.isDirty.value, false, 'saved');
@@ -331,15 +331,28 @@ scoped('a backend that refuses without throwing still says so in the summary, an
   issues.dispose();
 });
 
-scoped('confirmDiscard agrees in number: one change is "it", several are "them"', async () => {
+scoped('VS-58: confirmDiscard names the record and the fields at stake; a new record by its noun', async () => {
   emsBackends.domain = backend();
   const session = new SharedSession();
   const {projects, issues} = await pair(session);
   issues.rows.byKey('i1').title = 'A';
-  const answer = confirmDiscard(session, {action: 'leave this page'});
+  let answer = confirmDiscard(session, {action: 'leave this page'});
   await flush();
-  assert.deepEqual([...document.body.querySelectorAll('.u2-dialog p')].map((p) => p.textContent),
-    ['1 unsaved change in this view.', 'Save it, discard it, or cancel and do not leave this page.']);
+  const text = () => [document.body.querySelector('.u2-dialog-title-text').textContent,
+    document.body.querySelector('.u2-dialog-content').textContent];
+  assert.deepEqual(text(), ['Save changes to "A"?', 'Your change to title will be lost if you leave this page.']);
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await answer, false);
+  issues.rows.byKey('i1').weight = 2;
+  answer = confirmDiscard(session, {action: 'leave this page'});
+  await flush();
+  assert.equal(text()[1], 'Your changes to title and weight will be lost if you leave this page.');
+  fire(buttonNamed('DISCARD'), 'click');
+  assert.equal(await answer, true);
+  issues.newRow({title: 'Draft'});
+  answer = confirmDiscard(session, {action: 'leave this page'});
+  await flush();
+  assert.deepEqual(text(), ['Save the new issue?', 'The new issue will be lost if you leave this page.']);
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await answer, false);
   projects.dispose();

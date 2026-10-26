@@ -368,6 +368,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     source.guard(() => this._validate(source));
     // last resort, after every guard: the writer refused over a cell and named neither
     source.nameCell = (row, column, problem) => nameCell(this, row as RowView<TRow>, column, problem, source);
+    source.caption = (row) => this.renderer.caption(row as RowView<TRow>);
     // every refused save is one balloon, form or not, closed once the refusal is settled; a load
     // failure is the list's and the hint's to show
     let balloon: NotifyHandle | null = null;

@@ -126,6 +126,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** How a refusal the writer raised over one cell is worded; the table's registry sets it (the
    * row's caption and the column's), and without it the writer's own message stands. */
   nameCell: ((row: RowView, column: string, problem: string) => string) | undefined;
+  /** How the user knows a row — the table's renderer caption; the registry sets it, and without it
+   * a sentence names the row by its name column. */
+  caption: ((row: RowView) => string) | undefined;
   /** The ids of the rows one host condition (`FilterOperator.host`) matches — the app's answer, put in place
    * of the condition before every read. */
   hosted: ((condition: FilterCondition, signal?: AbortSignal) => Promise<string[]>) | undefined;
