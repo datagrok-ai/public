@@ -157,7 +157,7 @@ scoped('every blocking problem the wizard gates on', async () => {
   assert.equal(named('title').root.querySelector('.u2-invalid') !== null, true, 'both choices are marked');
   assert.equal(named('name2').root.querySelector('.u2-invalid') !== null, true);
   assert.match(document.body.querySelector('.u2-domain-import-mapping-step [data-u2="status-line"]').textContent,
-    /Required: Project id ✓, Title ✓ · 3 of 3 columns imported/);
+    /Required: Project id ✓, Title ✓ · Title is mapped twice · 3 of 3 columns imported/);
 
   for (const column of ['project_id', 'title', 'name2'])
     named(column).value.value = '(skip)';
@@ -570,7 +570,8 @@ scoped('an importer maps, derives and keeps rows out, and makes the preview its 
   await flush();
   const preview = document.body.querySelector('.u2-domain-import-preview').textContent;
   assert.deepEqual(counts('preview'), ['1 to add', '2 to skip', '1 error']);
-  assert.match(preview, /Exists.*Already there.*Same as row 1.*Cannot read it/, 'the verdict\'s label on the badge');
+  assert.match(preview, /Skip.*Already there.*Skip.*Same as row 1.*Cannot read it/,
+    'the badge says the verb the counts use, the verdict says why');
   assert.match(preview, /Loud.*NEW.*GRIT/, 'and the importer\'s own column');
   fire(importButton(), 'click');
   await flush();
@@ -630,7 +631,7 @@ scoped('a storage without partial imports holds the import without naming a flag
   assert.equal(await running, null);
 });
 
-scoped('the import waits for the dry run, and reads plain "Import" past the rows it checks', async () => {
+scoped('the import waits for the dry run, and names every row it sends past the rows it checks', async () => {
   const memory = backend();
   const issue = memory.tableSync('grit.issue');
   let answer;
@@ -646,7 +647,7 @@ scoped('the import waits for the dry run, and reads plain "Import" past the rows
   answer();
   await flush();
   assert.equal(importButton().disabled, false);
-  assert.equal(importButton().textContent, 'Import', 'the dry run saw the first 1,000 rows: no count');
+  assert.equal(importButton().textContent, 'Import 1,001 issues', 'the rows it sends, checked or not');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
 });
@@ -666,7 +667,7 @@ scoped('a row the dry run skips says why in the preview', async () => {
   fire(table, 'scroll');
   await flush();
   const [first, second] = [...table.querySelectorAll('.u2-data-table-row')];
-  assert.equal([...second.children].at(-1).textContent, 'Duplicate business key');
+  assert.equal([...second.children].at(-1).textContent, 'Issue already exists');
   assert.equal(first.children[4].title, 'New', 'a cell a narrow column cuts reads in full on hover');
   assert.equal(importButton().textContent, 'Import 1 issue');
   fire(buttonNamed('CANCEL'), 'click');
@@ -685,8 +686,8 @@ scoped('the source step speaks the task: what was picked, where the keys go, and
     await flush();
     assert.equal(named('source').value.value, only, 'the one open table is picked');
     assert.equal(document.body.querySelector('.u2-domain-import-picked').textContent, '2 rows, 2 columns');
-    assert.equal(named('writeBack').label, 'Write Key back to projects.csv', 'the key, back into the picked table');
-    assert.equal(named('errorOnDuplicate').label, 'Existing projects are errors');
+    assert.equal(named('writeBack').label, 'Write Key back', 'the key, back into the picked table');
+    assert.equal(named('errorOnDuplicate').label, 'Refuse projects that exist');
     named('mode').value.value = 'upsert';
     await flush();
     assert.equal(named('errorOnDuplicate').enabled, false);
