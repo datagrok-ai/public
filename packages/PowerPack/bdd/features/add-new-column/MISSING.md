@@ -37,7 +37,11 @@ test can check goes there.
 
 ## Still open
 
-Nothing planned.
+- **GROK-20931, a function name clicked in the formula becomes the current object** (the Context Panel shows
+  `Abs`). The library has `user hovers over the text {string} in {element}` but no click on a text inside an
+  element; `table-and-column-functions.feature` leaves it out until there is one.
+- **GROK-20931, the signature and description beside the highlighted completion** (`.cm-completionInfo`).
+  No noun names the completion info; the hint line under the editor is claimed instead.
 
 ## Won't do
 

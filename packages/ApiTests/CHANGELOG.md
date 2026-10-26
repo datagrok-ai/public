@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1128](https://github.com/datagrok-ai/core/issues/1128): Calculated columns: Added a check, skipped until the fix, that a formula naming its column as a string (`Avg(Column("x"))`, `Value("x", 0)`) recalculates after an edit
 * [core#1050](https://github.com/datagrok-ai/core/issues/1050): Replaced fixed delays and short `awaitCheck` polls with event and state waits, unskipped the kml/kmz format tests, and added an `exclude` input to `test`
 * Chats: Added tests for `grok.dapi.chats`, `DG.ChatWidget` and `grok.dapi.users.notifications.send`
 * Permissions: Added `Dapi: permissions` checks that the owner keeps every privilege once every grant is revoked, that a space shared for viewing cannot be changed, deleted or shared further by the grantee, and that a connection shared on its own shares none of its queries
