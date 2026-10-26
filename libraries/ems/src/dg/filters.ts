@@ -205,8 +205,12 @@ export class DomainFilters extends Control {
         }
       });
     });
-    const note = div(['Showing results for the last valid filter'], 'u2-domain-filters-note');
-    this.effect(() => note.hidden = this.problem.value === null);
+    const note = div([], 'u2-domain-filters-note');
+    this.effect(() => {
+      note.hidden = this.problem.value === null;
+      note.textContent = this._accepted.nodes.length === 0 ? 'Filter not applied: showing all rows' :
+        'Showing results for the last valid filter';
+    });
     this.root.replaceChildren(input.root, note);
     this._input.value = input;
   }
