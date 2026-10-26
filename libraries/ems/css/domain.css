@@ -503,17 +503,6 @@
   margin-left: calc(-1 * var(--dg-space-m));
 }
 
-/* one child table: a heading over its pane, as History has, instead of a strip of one tab */
-.u2-domain-children-heading {
-  padding: var(--dg-space-s) 0;
-  font-family: var(--dg-font-family);
-  font-size: var(--dg-font-size);
-}
-
-.u2-domain-children-single > .u2-domain-children-tabs > .u2-tabs-header {
-  display: none;
-}
-
 .u2-domain-children-split {
   flex: 1;
   min-height: 0;

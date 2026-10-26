@@ -4,7 +4,7 @@
    FK is the parent's draft id; the server orders the inserts). Once the parent is saved, the
    current row re-points to its real id and the tab re-queries by it. */
 import {Control, Scope, signal, computed, untracked, ReadonlySignal, Signal, div, divH, span, TabStrip, loader,
-  Rows, Section} from '@datagrok-libraries/u2';
+  Rows} from '@datagrok-libraries/u2';
 import type {RowView} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
 import {toPlural} from '../core/domain-backend.js';
@@ -90,9 +90,6 @@ export class DomainChildren extends Control {
       return;
     this._status.replaceChildren();
     const entries: ChildEntry[] = [];
-    // one child table is a heading over its pane, not a strip of one tab
-    const single = refs.length === 1;
-    this.root.classList.toggle('u2-domain-children-single', single);
     for (const [i, c] of refs.entries()) {
       const address = `${c.schema}.${c.table}`;
       const id = `${address}.${c.fkColumn}`;
@@ -108,8 +105,6 @@ export class DomainChildren extends Control {
       if (handle.status === 'rejected') {
         pane.append(span(DomainErrors.message(handle.reason), 'u2-domain-children-error'));
         this.tabs.addTab({id, label, content: () => pane});
-        if (single)
-          this._heading(label);
         continue;
       }
       const entry: ChildEntry = {id, table: handle.value, fk: c.fkColumn, label};
@@ -130,8 +125,6 @@ export class DomainChildren extends Control {
         const dirty = state.current.value?.isDirty.value ?? false;
         untracked(() => this.tabs.setDirty(id, dirty));
       });
-      if (single)
-        this._heading(counted, validity);
     }
     this.effect(() => {
       const shown = this.tabs.activeTab.value;
@@ -150,13 +143,6 @@ export class DomainChildren extends Control {
       untracked(() => void this._count(entries, row, !picked));
       picked = true;
     });
-  }
-
-  /** The heading of a single child table, in the section look the history pane has. */
-  private _heading(title: string | ReadonlySignal<string>, validity?: ReadonlySignal<string | null>): void {
-    const heading = this.runInScope(() => new Section({title, collapsible: false, validity}));
-    heading.header.classList.add('u2-domain-children-heading');
-    this.root.insertBefore(heading.header, this.tabs.root);
   }
 
   /** What a tab is marked invalid with: the refusal its child source carries, never a failed load,
@@ -223,13 +209,12 @@ export class DomainChildren extends Control {
           defaults: {[entry.fk]: row.id}, session: this.parent.session, empty: draft});
         this._sources.set(entry.id, child);
         state.current.value = child;
-        // the parent's id is the same on every row here, and the column is not the user's to edit;
-        // a list-mode form sits in half the pane, its captions over the editors
+        // the parent's id is the same on every row here, and the column is not the user's to edit
         const grid = this.mode === 'grid' ? domains.grid(child, {hiddenColumns: [entry.fk]}) : null;
         const body = grid?.root ??
-          divH([domains.list(child).root, domains.form(child, {layout: 'tall'}).root], 'u2-domain-children-split');
+          divH([domains.list(child).root, domains.form(child).root], 'u2-domain-children-split');
         const empty = span(`No ${entry.label.toLowerCase()}.`, 'u2-domain-children-empty');
-        const add = domains.newButton(child, {}, {text: `Add ${DomainTable.noun(entry.table.info, true)}`});
+        const add = domains.newButton(child);
         // the press leaves the focus where the new row is typed: the grid's row; a list's form takes it itself
         if (grid !== null)
           add.root.addEventListener('click', () => queueMicrotask(() => grid.grid.root.focus()));
