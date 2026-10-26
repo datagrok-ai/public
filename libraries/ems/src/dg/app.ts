@@ -32,8 +32,7 @@ export type DomainAppMode = 'live' | 'trash';
 /** What the status bar says while a live source is behind the server ({@link DomainApp.refresh}). */
 const STALE = 'Data changed — Refresh';
 
-/** Below this width the ribbon is cut by the view (a 1100px window with the Browse and context panels
- * leaves about 530px; 1440px leaves about 790px, which holds the presets). */
+/** Below this width the ribbon has no room for the presets. */
 const COMPACT_WIDTH = 700;
 
 /** The trash reads newest-deleted first: a soft delete is a write, so it stamps `updated_on`. */
@@ -81,10 +80,9 @@ export interface DomainAppOptions {
   live?: boolean;
   liveMs?: number;
   mode?: DomainListMode;
-  /** The list's row height — a card taller than the default 64px fits a larger picture. */
+  /** The list's row height. */
   itemHeight?: number;
-  /** Switches off a built-in item of the Actions menu, `{bulkEdit: false}`; every one is on by
-   * default where the table supports it. */
+  /** Switches off a built-in item of the Actions menu, `{bulkEdit: false}`. */
   menu?: {import?: boolean, bulkEdit?: boolean, trash?: boolean};
   /** What every draft the app creates starts with — the preset a view that opened the app carries
    * (a location's id on a containers app). Threaded into the entity page's draft source. */
@@ -128,9 +126,7 @@ export class DomainApp extends Control {
   readonly breadcrumbs: Breadcrumbs;
   /** The entity page below the form — where the children and history panes go. */
   readonly panes: HTMLElement;
-  /** The entity page above the form — what an app shows about the record before its fields: a
-   * parent card, a summary. Empty, and taking no space, until an app puts something there; the app
-   * owns what it holds. */
+  /** The entity page above the form, for the app to fill: a parent card, a summary. */
   readonly header: HTMLElement;
   /** `base?q=…&search=…` on the list page; on the entity page `base/<key>` where the app
    * addresses a row by a path segment ({@link entityPath}), else `base?entity=<id>`. */
@@ -157,8 +153,7 @@ export class DomainApp extends Control {
   readonly trash: ReadonlySignal<boolean>;
   /** See {@link DomainAppOptions.shortcuts}; a subclass may declare its own. */
   shortcuts: Record<string, string>;
-  /** The view is too narrow for the whole ribbon: the presets fold into the Actions menu, so a
-   * laptop screen loses no control without a trace. Follows the app's width. */
+  /** The view is too narrow for the whole ribbon: the presets fold into the Actions menu. */
   readonly compact = signal(false);
 
   private readonly _mode = signal<DomainAppMode>('live');
@@ -173,9 +168,8 @@ export class DomainApp extends Control {
   private _panes: Control[] = [];
   private _ribbon: DomainRibbon | undefined;
   private _unloadGuard: ((e: BeforeUnloadEvent) => void) | undefined;
-  /** The entity page's source whose row the Actions menu deleted. */
   private _deleting: DomainSource | null = null;
-  /** The presets as menu items, for the Actions menu of a {@link compact} ribbon. */
+  /** The presets as menu items, for a {@link compact} ribbon. */
   private readonly _presets: Action[] = [];
   private readonly _sync: ViewSync;
 
@@ -245,7 +239,6 @@ export class DomainApp extends Control {
       this._filterProblem.value = problem;
       this.list.stale.value = problem !== null;
     });
-    // the trash is a mode of the list, said in a line of its own with the way back out of it
     const plural = DomainTable.noun(table.info);
     const banner = this.runInScope(() => divH([icon('info-circle'),
       span(`Deleted ${plural}. Restore what you need, then Save.`),
@@ -307,7 +300,7 @@ export class DomainApp extends Control {
       had = rows > 0;
     });
 
-    // and a row deleted from its own page: once the save has taken it, the page has nothing to show
+    // a row deleted from its own page: once the save has taken it, back to the list
     this.effect(() => {
       const source = this._entitySource.value;
       const empty = source !== null && source.state.value === 'ready' && source.rows.items.value.length === 0;
@@ -332,8 +325,7 @@ export class DomainApp extends Control {
       let path = this._withTrash(Filters.queryPath(this.base, typeof q === 'string' ? q : Filters.format(q)));
       if (search !== '')
         path = `${path}${path.includes('?') ? '&' : '?'}search=${encodeURIComponent(search)}`;
-      // the order the user picked; the app's own and the trash's are the page's defaults (the trash's
-      // is read here too, as the mode flips a moment before the order it gives back)
+      // only an order the user picked; the trash's is checked too, as the mode flips before the sort
       if (!this.trash.value && sort !== TRASH_SORT && sort !== (this._options.sort ?? ''))
         path = `${path}${path.includes('?') ? '&' : '?'}sort=${encodeURIComponent(sort)}`;
       return path;
@@ -367,7 +359,7 @@ export class DomainApp extends Control {
       else if (source.state.value === 'error' || entity && !source.isDraft && source.state.value === 'ready')
         this._count.value = '';
       else if (source.error.value === undefined && source.changeCount.value === 0) {
-        // paging, the source says "50 of 119": the status bar keeps the noun it has once all are in
+        // paging, the source says "50 of 119": the noun is kept
         const summary = source.summary.value;
         this._count.value = /^\S+ of \S+$/.test(summary) ? `${summary} ${DomainTable.noun(source.schema.info)}` :
           summary;
@@ -457,12 +449,11 @@ export class DomainApp extends Control {
   ribbon(): DomainRibbon {
     if (this._ribbon !== undefined)
       return this._ribbon;
-    // New is an icon, as the platform's ribbons are; SAVE is the one raised button
     const singular = DomainTable.noun(this.table.info, true);
     const add = new Control(this.runInScope(() =>
       iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`})));
     add.root.dataset.u2 = 'new-button';
-    // the trash narrows the access, but the slot stays: SAVE and DISCARD must not jump on the way in
+    // in the trash the slot stays, so SAVE and DISCARD do not move
     add.effect(() => {
       const trash = this.trash.value;
       add.root.hidden = !trash && !this.listSource.access.value.can('insert');
@@ -470,7 +461,7 @@ export class DomainApp extends Control {
     });
     const save = domains.saveButton(this.session);
     const discard = domains.discardButton(this.session);
-    // a create page nothing was typed into has nothing to discard but itself: Discard leaves it
+    // Discard on an untouched create page leaves it
     const pristine = () => !this.session.isDirty.value && this._page.value === 'entity' &&
       DomainApp._isDraft(this._entitySource.value, this._entitySource.value?.currentRow.value ?? null);
     discard.effect(() => discard.button.disabled = this.session.isSaving.value || !this.session.isDirty.value &&
@@ -489,7 +480,6 @@ export class DomainApp extends Control {
     for (const control of [add, save, discard, more, reload, search, sort])
       this.own(() => control.dispose());
     this._listOnly(search);
-    // the trash keeps its own newest-deleted order
     this._listOnly(sort, () => this.trash.value);
     return this._ribbon = {main: [add, save, discard, more, reload], tools: [search, sort], presets: []};
   }
@@ -501,11 +491,9 @@ export class DomainApp extends Control {
     return [main, tools, presets].filter((group) => group.length > 0);
   }
 
-  /** The Actions menu, in sections: the presets while a {@link compact} ribbon has no room for
-   * them; on the entity page the row's own actions first (the table's row actions, then Delete);
-   * then the table-wide ones — the import wizard and the bulk edit over
-   * what the list holds — and last the switch to the deleted rows. Nothing writes in the trash, so
-   * only the way out of it is offered there. */
+  /** The Actions menu, in sections: the presets on a {@link compact} ribbon, the entity page's row
+   * actions, the table-wide ones (import, bulk edit), and the switch to the deleted rows. Nothing
+   * writes in the trash, so only the way out of it is offered there. */
   menuActions(): Action[] {
     const trash = this.trash.peek();
     // what the caller may do (`requires`) and what the table can do at all are different
@@ -522,7 +510,6 @@ export class DomainApp extends Control {
         run: () => void domains.bulkEdit(this.listSource)});
     }
     const plural = DomainTable.noun(this.table.info);
-    // a mode, not a verb: named for what the list shows, never "Trash" beside the actions
     const mode: Action[] = menu.trash === false || !support.deleted || !support.restore ? [] : [{
       name: trash ? `Back to ${plural}` : 'Show deleted', icon: trash ? 'arrow-left' : 'history',
       requires: 'delete', run: () => void this.setTrash(!trash)}];
@@ -581,12 +568,10 @@ export class DomainApp extends Control {
     };
     const press = (at: number) =>
       void confirmDiscard(this.session, {action: 'change the filter'}).then((ok) => ok && apply(at));
-    // framed, as toggles read, and led by what they do: two bare words are not a switch
     const group = this.runInScope(() => new ButtonGroup({toggle: 'single',
       items: entries.map(([label], at) => ({id: String(at), label, onClick: () => press(at)}))}));
     group.root.dataset.u2 = 'domain-presets';
     group.root.setAttribute('aria-label', 'Show');
-    // what the Actions menu offers in their place while the ribbon is too narrow for them
     this._presets.push(...entries.map(([label], at): Action => ({name: label, run: () => press(at),
       get icon() {
         return group.selected.peek().includes(String(at)) ? 'check' : undefined;
@@ -632,8 +617,7 @@ export class DomainApp extends Control {
         const text = reads[at](status);
         el.textContent = text;
         el.hidden = text === '';
-        // the shell places the slots as separate panels: a slot leads with a separator only when a
-        // slot before it says something, so an empty count lends nothing to the problem
+        // a separator only after a slot that says something
         el.classList.toggle('u2-domain-status-after', reads.slice(0, at).some((read) => read(status) !== ''));
         el.title = name === 'problem' && text !== (status.problem ?? '') ? status.problem ?? '' : '';
       });
@@ -641,11 +625,15 @@ export class DomainApp extends Control {
     });
   }
 
-  /** The problem as the status bar says it: a load the list page already shows in full, inside its
-   * frame, is named in a few words there — the reason is the slot's tooltip. */
+  /** The problem as the status bar says it: one the list page already shows in full is named in
+   * a few words there, or not at all where the filter box shows it; the reason is the tooltip. */
   private _shortProblem(status: DomainAppStatus): string {
     const problem = status.problem ?? '';
-    if (problem === '' || this._page.value !== 'list' || this.listSource.state.value !== 'error')
+    if (problem === '' || this._page.value !== 'list')
+      return problem;
+    if (problem === this._filterProblem.value)
+      return '';
+    if (this.listSource.state.value !== 'error')
       return problem;
     const q = this.listSource.query.value;
     return (typeof q === 'string' ? q.trim() !== '' : q.nodes.length > 0) ? 'Filter refused' : 'Rows not loaded';
@@ -740,9 +728,8 @@ export class DomainApp extends Control {
     return control;
   }
 
-  /** The list's order, chosen by the user: a column and a direction, written to the source's
-   * sort (the server orders the pages) and carried in the path as `?sort=`. Through the gate, as a
-   * reload drops what is pending. */
+  /** The list's order: a column and a direction, written to the source's sort and the path's
+   * `?sort=`, through the gate as a reload drops what is pending. */
   private _sortMenu(): Control {
     const source = this.listSource;
     const write = (sort: string) => void confirmDiscard(this.session, {action: 'change the order'})
@@ -768,7 +755,7 @@ export class DomainApp extends Control {
     return control;
   }
 
-  /** A ribbon icon whose menu is built on every open; pressed again, it closes the menu it opened. */
+  /** A ribbon icon whose menu is built on every open; pressed again, it closes it. */
   private static _menuButton(name: string, tooltip: string, build: () => Menu): HTMLButtonElement {
     let menu: Menu | undefined;
     const el = iconButton(name, () => {
@@ -783,8 +770,7 @@ export class DomainApp extends Control {
     return el;
   }
 
-  /** The entity page's row, as the Actions menu acts on it: the table's row actions, and Delete —
-   * staged like a list row's, the page going back to the list once the save has taken the row. */
+  /** The entity page row's actions: the table's, and Delete, staged like a list row's. */
   private _rowActions(): Action[] {
     const source = this._page.peek() === 'entity' ? this._entitySource.peek() : null;
     const row = source?.currentRow.peek() ?? null;
@@ -821,8 +807,7 @@ export class DomainApp extends Control {
     return this.trash.value ? `${path}${path.includes('?') ? '&' : '?'}trash=1` : path;
   }
 
-  /** Shown on the list page only — and the ribbon panel it sits in goes once nothing in it shows,
-   * or its divider would stay behind with nothing after it. */
+  /** Shown on the list page only; the ribbon panel goes, with its divider, once nothing in it shows. */
   private _listOnly(control: Control, folded: () => boolean = () => false): void {
     this.effect(() => {
       const shown = this._page.value === 'list' && !folded();
@@ -870,7 +855,7 @@ export class DomainApp extends Control {
   }
 
   /** The base path of the app open over a table address — the one the shell shows, else the one
-   * opened last. Read off the apps alive, so a closed app never answers for the table. */
+   * opened last. */
   static baseOf(address: string): string | undefined {
     return DomainApp._pick((app) => app.table.address === address)?.base;
   }
@@ -911,8 +896,7 @@ export class DomainApp extends Control {
     return DomainApp._views.get(app);
   }
 
-  /** The app at a base — several share one where an app opens a view per parent (Stockroom's
-   * locations): the one the shell shows, else the one opened last. */
+  /** The app at a base — several may share one: the one the shell shows, else the one opened last. */
   private static _at(base: string | undefined): DomainApp | undefined {
     return base === undefined ? undefined : DomainApp._pick((app) => app.base === base);
   }

@@ -26,8 +26,7 @@ export interface DomainListOptions {
   renderer?: ObjectRenderer<RowView>;
   /** What an empty result says (default: "No <rows> yet"). */
   empty?: string;
-  /** Makes the first row: what an empty list offers as its primary action, where the caller may
-   * insert and nothing hides the rows. */
+  /** What an empty, unfiltered list offers as its primary action. */
   create?: () => void;
 }
 
@@ -60,9 +59,7 @@ export class DomainList extends Control {
       // a row is a live proxy over the frame: an edit changes it without a new object
       liveItems: true,
       render: (row, _index, el) => this._row(row, el),
-      // with several rows picked, what the selection offers comes first and flat, each item naming
-      // its target ("Close · 2 issues"); the clicked row's own actions follow in a submenu under its
-      // name — either target named, neither of them implied
+      // with several rows picked, the selection's actions come flat, the clicked row's in a submenu
       contextActions: (row) => {
         const selected = this._selected();
         return selected.length < 2 ? this.actionsFor(row) : this.selectionActions(selected);
@@ -76,9 +73,8 @@ export class DomainList extends Control {
     this.list.setItems(source.rows.items as ReadonlySignal<RowView[]>);
 
     collectionSelection(this, source, this.list);
-    // a list over a table starts on its first row, so the keys and the context have a row to act on;
-    // a draft source is a form's, not a list's. That row is no pick of the user's: it is drawn as
-    // current only once a click, a navigation key or Enter picks it, and the first Down lands on it
+    // a list over a table starts on its first row; a draft source is a form's, not a list's. The
+    // seeded row is drawn current only once the user picks it, and the first Down lands on it
     let seeded = source.isDraft;
     this.effect(() => {
       const items = source.rows.items.value;
@@ -111,7 +107,7 @@ export class DomainList extends Control {
     });
 
     pageOnScroll(this, this.list, source);
-    // a line the row's width cuts reads in full on hover — whatever renderer drew it
+    // a line the row cuts reads in full on hover
     const onOver = (e: Event) => {
       const el = e.target as HTMLElement;
       if (el.closest('.u2-domain-list-content') !== null && el.title === '' && el.scrollWidth > el.clientWidth)
@@ -131,20 +127,19 @@ export class DomainList extends Control {
       if (state === 'loading' && count === 0)
         status.replaceChildren(loader('Loading…'));
       else if (state === 'error') {
-        // a filter the server refuses is a dead end without the way out of it: Retry runs it again
+        // a refused filter fails again on Retry: clearing it is the way out
         const failed = emptyState(DomainErrors.message(source.error.value, source), {icon: 'exclamation-circle',
-          error: true, actions: [...filtered ? [clearFilter()] : [], button('Retry', () => void source.refresh())]});
+          error: true, actions: [filtered ? clearFilter() : button('Retry', () => void source.refresh())]});
         failed.classList.add('u2-domain-list-error');
         status.replaceChildren(failed);
       } else if (state === 'ready' && count === 0)
         status.replaceChildren(this._empty(filtered, clearFilter));
       else
         status.replaceChildren();
-      // the rows have nothing to scroll: the message takes their place, inside the same frame
+      // the rows have nothing to scroll: the message takes their place
       this.root.classList.toggle('u2-domain-list-blank', count === 0 && (state === 'ready' || state === 'error'));
     });
-    // a refusal names one row: marked where it is drawn, brought into view, and unmarked with the
-    // refusal
+    // a refusal names one row: marked where it is drawn, brought into view, and unmarked with the refusal
     this.effect(() => {
       const problem = source.problemRow.value;
       source.error.value;
@@ -193,10 +188,9 @@ export class DomainList extends Control {
   }
 
   /** The context menu of a row that is part of a multi-selection: every action that applies to ALL
-   * of the selected rows, marked `<N> <plural>` and run over the whole selection (Jane closed two
-   * issues and only one closed). An action is offered there when every selected row offers it and
-   * none of them has it disabled; it runs row by row in selection order, and the edits land in the
-   * session's next Save exactly as one row's do. */
+   * of the selected rows, marked `<N> <plural>` and run over the whole selection. An action is
+   * offered there when every selected row offers it and none of them has it disabled; it runs row
+   * by row in selection order, and the edits land in the session's next Save as one row's do. */
   selectionActions(rows: readonly RowView[]): Action[] {
     if (rows.length === 0)
       return [];
@@ -214,8 +208,7 @@ export class DomainList extends Control {
       }}));
   }
 
-  /** An empty result says what it is empty of, and offers the way back out of it: the search, the
-   * filter, or the first row where nothing hides any. */
+  /** An empty result says what it is empty of, and offers the way out of it. */
   private _empty(filtered: boolean, clearFilter: () => HTMLElement): HTMLElement {
     const source = this.source;
     const search = source.search.value;
@@ -251,7 +244,6 @@ export class DomainList extends Control {
     const content = render ? render(row) : this._content(row);
     content.classList.add('u2-domain-list-content');
     const actions = this.actionsFor(row);
-    // a delete waiting for the save is undone in reach without hovering
     const undo = state === 'deleted' ? actions.find((a) => a.name === 'Restore') : undefined;
     const tail = undo === undefined ? rowActions(actions) :
       div([iconButton('undo', () => undo.run(), {tooltip: 'Undo delete'})], 'u2-domain-list-undo');
@@ -279,8 +271,7 @@ export class DomainList extends Control {
       return renderer.card?.(row) ?? brief();
     const details = this._details(row);
     const line = [brief(), ...details === '' ? [] : [span(details, 'u2-domain-list-details')]];
-    // the trash keeps the line a row is told apart by, and says WHEN it went, read in the reader's
-    // own zone with the full moment as its title
+    // the trash says WHEN, in the reader's own zone with the full moment as its title
     if (Rows.isDeleted(row) && this.source.readOnly.peek()) {
       const when = timestamp(row.updated_on as string, 'u2-domain-list-when');
       when.textContent = `Deleted ${when.textContent}`;
@@ -301,8 +292,7 @@ export class DomainList extends Control {
   }
 }
 
-/** The source's next page, loaded as `rows` scrolls within a few rows of its bottom — for as long
- * as `owner` lives. */
+/** Loads the source's next page as `rows` scrolls near its bottom, while `owner` lives. */
 export function pageOnScroll(owner: Control, rows: {root: HTMLElement, itemHeight: number},
   source: DomainSource): void {
   const scroller = rows.root;
