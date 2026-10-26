@@ -94,13 +94,17 @@ smoke('renders one row per condition, addressed by node id and part', () => {
   assert.equal(fb.root.querySelector('.u2-fb-none'), null);
 });
 
-smoke('empty tree shows the empty hint (a link that adds); + adds a row on the first property, − removes it', () => {
+smoke('empty tree says so beside an Add condition link; + adds a row on the first property, − removes it', () => {
   const fb = mount(new FilterBuilder({schema: SCHEMA}));
   assert.equal(rows(fb).length, 0);
   const none = fb.root.querySelector('.u2-fb-none');
-  assert.equal(none.tagName, 'A');
   assert.equal(none.dataset.u2Part, 'none');
-  fire(none, 'click');
+  assert.equal(none.firstChild.tagName, 'SPAN');
+  assert.equal(none.firstChild.textContent, 'No conditions');
+  const addLink = none.querySelector('[data-u2-part="none-add"]');
+  assert.equal(addLink.tagName, 'A');
+  assert.equal(addLink.textContent, 'Add condition');
+  fire(addLink, 'click');
   assert.equal(rows(fb).length, 1, 'the empty hint adds a condition');
   fb.removeNode(fb.value.peek().nodes[0].id);
   assert.equal(rows(fb).length, 0);
@@ -140,8 +144,8 @@ smoke('allowAdd: false keeps the empty hint plain text', () => {
   const template = {root: Filters.group('and', []), allowAdd: false};
   const fb = mount(new FilterBuilder({schema: SCHEMA, template, value: Filters.applyTemplate(template)}));
   const none = fb.root.querySelector('.u2-fb-none');
-  assert.equal(none.tagName, 'SPAN');
-  fire(none, 'click');
+  assert.equal(none.querySelector('a'), null);
+  fire(none.firstChild, 'click');
   assert.equal(rows(fb).length, 0);
 });
 

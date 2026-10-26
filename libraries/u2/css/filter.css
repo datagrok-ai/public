@@ -38,7 +38,8 @@
 
 /* disabled, what edits the tree reads as unavailable too */
 .u2-input-disabled .u2-fb .u2-btn.u2-icon-btn,
-.u2-input-disabled .u2-fb .u2-fb-mode {
+.u2-input-disabled .u2-fb .u2-fb-mode,
+.u2-input-disabled .u2-fb .u2-fb-none-add {
   color: var(--dg-text-color-light);
 }
 
@@ -48,7 +49,8 @@
 .u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-add-group,
 .u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-remove,
 .u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-handle,
-.u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-mode {
+.u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-mode,
+.u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-none-add {
   display: none;
 }
 
@@ -311,6 +313,7 @@
 }
 
 .u2-fb-none {
+  gap: var(--dg-space-m);
   padding: 0 var(--dg-space-s);
   font-size: var(--dg-font-size-small);
   line-height: var(--dg-control-height);

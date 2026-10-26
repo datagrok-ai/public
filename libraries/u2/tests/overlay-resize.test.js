@@ -263,7 +263,7 @@ test('accordion / table / tree / tabs / filter css: the platform\'s metrics and 
   const filter = css('filter');
   assert.match(block(filter, '.u2-input-root[data-u2=\'filter-builder\'].u2-fb-blank > .u2-input-error:not(:empty) {'),
     /display: -webkit-box;/, 'a blank builder shows its verdict, whatever an older copy of the sheet says');
-  assert.match(block(filter, '.u2-input-disabled .u2-fb .u2-fb-mode {'), /color: var\(--dg-text-color-light\);/);
-  assert.match(block(filter, '.u2-input-root[data-u2=\'filter-builder\'].u2-input-readonly .u2-fb-mode {'),
+  assert.match(block(filter, '.u2-input-disabled .u2-fb .u2-fb-none-add {'), /color: var\(--dg-text-color-light\);/);
+  assert.match(block(filter, '.u2-input-root[data-u2=\'filter-builder\'].u2-input-readonly .u2-fb-none-add {'),
     /display: none;/, 'read-only hides what edits the tree');
 });
