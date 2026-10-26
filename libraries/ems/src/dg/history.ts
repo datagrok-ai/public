@@ -2,13 +2,13 @@
    one line per changed column, `<caption>  <before> → <after>`. Reads `table.audit(id)` through
    the seam a page at a time, so the memory backend's history shows the same way; "Show older"
    under the list loads the next page, and the pane is refreshed when the row's session saves. A
-   draft has no history yet, and says so. The pane is a folded section whose header sums up the
-   latest entry. */
+   draft has no history yet, and says so. The pane is a folded accordion pane whose header sums up
+   the latest entry. */
 import {emsBackends} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
 import {Component, Control, signal, AsyncSource, div, divH, divV, span, timestamp, text, badge, button, AsyncView,
-  Section, Rows, Scope, isEmpty} from '@datagrok-libraries/u2';
-import type {ReadonlySignal, BadgeVariant, IProperty, RowView} from '@datagrok-libraries/u2';
+  Accordion, Rows, Scope, isEmpty} from '@datagrok-libraries/u2';
+import type {AccordionPane, ReadonlySignal, BadgeVariant, IProperty, RowView} from '@datagrok-libraries/u2';
 import type {AuditEntryLike} from '../core/domain-backend.js';
 import type {DomainSource} from '../core/domain-source.js';
 import {SYSTEM_COLUMNS} from './backend.js';
@@ -38,7 +38,7 @@ const NO_VALUE = '(empty)';
 export class DomainHistory extends Control {
   readonly row: ReadonlySignal<RowView | null>;
   readonly view: AsyncView<AuditEntryLike>;
-  readonly section: Section;
+  readonly pane: AccordionPane;
 
   private readonly _hint: HTMLElement;
   /** Whether the table keeps no history at all — its handle declares it, so the pane says so
@@ -69,12 +69,11 @@ export class DomainHistory extends Control {
       if (failed)
         this._summary.value = 'unavailable';
     });
-    // folded by default, as the platform's own History pane; the user's choice is kept. The chevron
-    // follows the title: the pane has no left gutter for it to sit in
-    this.section = this.runInScope(() => new Section({title: 'History', hint: this._summary, expanded: false,
-      persistKey: 'u2-domain-history', chevron: 'end'}));
-    this.section.add(this._hint, this.view.root);
-    this.root.append(this.section.root);
+    // folded by default, as the platform's own History pane; the user's choice is kept
+    const accordion = this.runInScope(() => new Accordion());
+    this.pane = accordion.addPane('History', div([this._hint, this.view.root]),
+      {hint: this._summary, expanded: false, persistKey: 'u2-domain-history'});
+    this.root.append(accordion.root);
     this.effect(() => {
       const row = this.row.value;
       // a draft id, and any other key the frame stood in for a row it has no id for, names

@@ -212,7 +212,7 @@ scoped('a reference cell shows the name it points at, not the uuid; the pane car
   src.currentRow.value = src.rows.byKey('i1');
   const history = domains.history(src);
   await settle();
-  assert.equal(history.root.querySelector('.u2-section-title').textContent, 'History');
+  assert.equal(history.root.querySelector('.u2-accordion-title').textContent, 'History');
 
   src.rows.byKey('i1').project_id = 'p2';
   assert.equal(await src.save(), true);
@@ -235,8 +235,8 @@ scoped('HI-1: "(empty)" for a missing value, dates as dates, derived columns by 
   src.currentRow.value = src.rows.byKey('i1');
   const history = domains.history(src, undefined, {include: ['title', 'description', 'due', 'weight', 'done', 'number']});
   await settle();
-  assert.equal(history.section.expanded.value, false, 'folded by default');
-  assert.equal(history.root.querySelector('.u2-section-hint').textContent.startsWith('updated '), true,
+  assert.equal(history.pane.expanded.value, false, 'folded by default');
+  assert.equal(history.root.querySelector('.u2-accordion-hint').textContent.startsWith('updated '), true,
     'the folded header sums up the newest entry');
   const [line] = lines(history);
   const all = changes(line);
