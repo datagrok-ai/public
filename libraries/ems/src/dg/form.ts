@@ -227,19 +227,15 @@ export class DomainForm extends Control {
    * change (a saved draft under its new key) may be running. */
   focus(): void {
     queueMicrotask(() => {
-      const back = this._returnTo;
-      this._returnTo = undefined;
       const form = this._form.peek();
-      const input = back === undefined ? undefined : form?.input(back);
+      const input = this._returnTo === undefined ? undefined : form?.input(this._returnTo);
+      this._returnTo = undefined;
       this._focusing = true;
-      try {
-        if (input !== undefined)
-          input.focus();
-        else
-          form?.focusFirst(DomainForm.needsValue);
-      } finally {
-        this._focusing = false;
-      }
+      if (input !== undefined)
+        input.focus();
+      else
+        form?.focusFirst(DomainForm.needsValue);
+      this._focusing = false;
       // a Ctrl+S from inside a picker leaves its popup over the form, and the re-focus would open
       // one anyway (`openOnFocus`): the form comes back with nothing covering it
       for (const input of this._form.peek()?.inputs ?? []) {
@@ -392,10 +388,13 @@ export class DomainForm extends Control {
   private _footer(row: RowView): HTMLElement {
     const block = div([], 'u2-domain-form-system');
     block.dataset.u2Part = 'system';
+    block.hidden = Rows.isDraft(row);
+    if (block.hidden)
+      return block;
     const names = new Set(DomainForm.systemProps(this.source).map((p) => p.name!));
     const value = (name: string): HTMLElement | null => {
       const raw = row[name];
-      if (!names.has(name) || raw === null || raw === undefined || raw === '')
+      if (!names.has(name) || isEmpty(raw))
         return null;
       const el = span('', 'u2-domain-form-system-value');
       el.dataset.u2Part = 'readonly-value';
@@ -406,31 +405,25 @@ export class DomainForm extends Control {
       part.append(el);
       return part;
     };
-    if (Rows.isDraft(row)) {
-      block.hidden = true;
-      return block;
-    }
-    const parts: HTMLElement[] = [];
     const created = value('created_on');
     const author = value('author_id');
     if (created !== null || author !== null) {
-      parts.push(div([...created === null ? [] : ['Created ', created], ...author === null ? [] :
+      block.append(div([...created === null ? [] : ['Created ', created], ...author === null ? [] :
         [created === null ? 'By ' : ' by ', author]], 'u2-domain-form-system-item'));
     }
     const updated = value('updated_on');
     if (updated !== null)
-      parts.push(div(['Updated ', updated], 'u2-domain-form-system-item'));
+      block.append(div(['Updated ', updated], 'u2-domain-form-system-item'));
     const version = value('version');
     if (version !== null)
-      parts.push(div(['v', version], 'u2-domain-form-system-item'));
+      block.append(div(['v', version], 'u2-domain-form-system-item'));
     if (names.has('id')) {
       const id = String(row.id);
       const copy = iconButton('copy', () => void navigator.clipboard?.writeText(id)
         .then(() => notify.info('Id copied to clipboard')), {tooltip: `Copy id ${id}`});
       copy.classList.add('u2-domain-form-system-copy');
-      parts.push(div([copy, 'Id'], 'u2-domain-form-system-item'));
+      block.append(div([copy, 'Id'], 'u2-domain-form-system-item'));
     }
-    block.append(...parts);
     return block;
   }
 

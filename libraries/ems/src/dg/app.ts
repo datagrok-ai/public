@@ -84,7 +84,7 @@ export interface DomainAppOptions {
   /** The list's row height. */
   itemHeight?: number;
   /** Switches off a built-in item of the Actions menu, `{bulkEdit: false}`. */
-  menu?: {import?: boolean, bulkEdit?: boolean, trash?: boolean};
+  menu?: {bulkEdit?: boolean};
   /** What every draft the app creates starts with — the preset a view that opened the app carries
    * (a location's id on a containers app). Threaded into the entity page's draft source. */
   defaults?: Record<string, unknown>;
@@ -127,8 +127,6 @@ export class DomainApp extends Control {
   readonly breadcrumbs: Breadcrumbs;
   /** The entity page below the form — where the children and history panes go. */
   readonly panes: HTMLElement;
-  /** The entity page above the form, for the app to fill: a parent card, a summary. */
-  readonly header: HTMLElement;
   /** `base?q=…&search=…` on the list page; on the entity page `base/<key>` where the app
    * addresses a row by a path segment ({@link entityPath}), else `base?entity=<id>`. */
   readonly path: ReadonlySignal<string>;
@@ -229,8 +227,6 @@ export class DomainApp extends Control {
     this._formHost = div([], 'u2-domain-app-form');
     this.panes = div([], 'u2-domain-app-panes');
     this.panes.dataset.u2Part = 'panes';
-    this.header = div([], 'u2-domain-app-header');
-    this.header.dataset.u2Part = 'header';
     this.filters = this.runInScope(() => domains.filters(this.listSource, _options.filters));
     // the rows answer the filter that was applied, not the one being written: while the box is
     // invalid they are shown as stale and the count stands down
@@ -247,7 +243,7 @@ export class DomainApp extends Control {
     const listPage = divV([banner, ...(_options.filters?.placement === 'left' ? [this.filters.pane(this.list.root)] :
       [this.filters.root, this.list.root])], 'u2-domain-app-list');
     listPage.dataset.u2Part = 'list-page';
-    const entityPage = divV([this.header, this._formHost, this.panes], 'u2-domain-app-entity');
+    const entityPage = divV([this._formHost, this.panes], 'u2-domain-app-entity');
     entityPage.dataset.u2Part = 'entity-page';
     // above both pages: the entity page always says which row, the list page only in the trash —
     // on a plain list the table's name is the view title already
@@ -495,7 +491,7 @@ export class DomainApp extends Control {
     const support = this.table.table.support;
     const menu = this._options.menu ?? {};
     const table: Action[] = [];
-    if (!trash && menu.import !== false && support.writes && !this.listSource.readOnly.value) {
+    if (!trash && support.writes && !this.listSource.readOnly.value) {
       table.push({name: 'Import…', icon: 'upload', requires: 'insert', run: () =>
         void domains.import(this.table).then((report) => report === null ? null : this.listSource.refresh())});
     }
@@ -503,7 +499,7 @@ export class DomainApp extends Control {
       table.push({name: 'Bulk edit…', icon: 'edit', requires: 'edit',
         run: () => void domains.bulkEdit(this.listSource)});
     }
-    const mode: Action[] = trash || menu.trash === false || !support.deleted || !support.restore ? [] : [{
+    const mode: Action[] = trash || !support.deleted || !support.restore ? [] : [{
       name: 'Show deleted', icon: 'history', requires: 'delete', run: () => void this.setTrash(true)}];
     const presets = this.compact.peek() && this._page.peek() === 'list' && !trash ? this._presets : [];
     return [presets, this._rowActions(), table, mode].filter((section) => section.length > 0)

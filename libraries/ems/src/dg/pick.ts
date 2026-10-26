@@ -45,7 +45,6 @@ export interface DomainPickOptions extends InputOptions<string | null> {
 
 export class DomainPick extends PickInput<PickItem> {
   static host: PickHost | undefined;
-  static readonly SHORT = 10;
   private static readonly _short = new WeakMap<DomainTable, Promise<boolean>>();
   /** The target's plural name once a search has seen its table — the empty row's wording. */
   private static readonly _plural = new Map<string, string>();
@@ -104,14 +103,14 @@ export class DomainPick extends PickInput<PickItem> {
     }, () => undefined);
   }
 
-  /** Whether the whole table fits one popup; counted once per table and backend. */
-  static async isShort(table: string): Promise<boolean> {
+  /** Whether the whole table fits one popup of ten; counted once per table and backend. */
+  private static async isShort(table: string): Promise<boolean> {
     if (DomainPick.host === undefined)
       return false;
     const handle = await DomainPick.host.handle(table);
     let short = DomainPick._short.get(handle);
     if (short === undefined)
-      DomainPick._short.set(handle, short = handle.table.count().then((n) => n <= DomainPick.SHORT));
+      DomainPick._short.set(handle, short = handle.table.count().then((n) => n <= 10));
     return short;
   }
 
@@ -123,7 +122,7 @@ export class DomainPick extends PickInput<PickItem> {
 
   /** One popup's worth, by the table's own search, sorted by caption — a row whose key is typed
    * (`482`, `DG-000482`) first — and how many rows match in all. */
-  static async page(table: string, query: string,
+  private static async page(table: string, query: string,
     options: {filter?: DomainPickOptions['filter'], limit?: number} = {}): Promise<{items: PickItem[], total: number}> {
     const t = await DomainPick.table(table);
     DomainPick._plural.set(table, t.info.pluralName);
@@ -133,7 +132,8 @@ export class DomainPick extends PickInput<PickItem> {
     const extra = DomainPick.filter(undefined, '', options.filter);
     const scope = q !== '' && t.info.searchableColumns.length > 0 ? {search: q, filter: extra} :
       {filter: DomainPick.filter(DomainPick.nameColumn(t.info), q, options.filter)};
-    const rows = await t.query({...scope, sort: DomainPick.sortColumn(t.info), limit: limit + 1});
+    const sort = t.info.nameColumn ?? (t.info.businessKey.length === 1 ? t.info.businessKey[0] : undefined);
+    const rows = await t.query({...scope, sort, limit: limit + 1});
     const total = rows.length > limit ? await t.count(scope) : rows.length;
     const items = rows.slice(0, limit).map((row) => DomainPick.item(row, t.info, caption))
       .sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
@@ -147,8 +147,7 @@ export class DomainPick extends PickInput<PickItem> {
 
   /** The item behind an id; a draft id is the draft's caption from the live source holding it,
    * no query issued; an id the table does not answer is shown as itself. A table with an app caption
-   * reads the row; otherwise a backend that declares
-   * `resolveNames` answers it there — over the platform that is the registry's resolver, batched
+   * reads the row; otherwise a backend that declares `resolveNames` answers it there — over the platform that is the registry's resolver, batched
    * and cached, so a formful of refs is one call; every other backend reads the row. */
   static async resolve(table: string, id: string): Promise<PickItem> {
     const draft = Rows.isDraft(id) ? DomainSource.draftOf(id) : undefined;
@@ -168,7 +167,7 @@ export class DomainPick extends PickInput<PickItem> {
     return row === undefined ? {id, name: id} : DomainPick.item(row, t.info, caption);
   }
 
-  static renderItem(item: PickItem): HTMLElement {
+  private static renderItem(item: PickItem): HTMLElement {
     const name = span(item.name, 'u2-typeahead-text');
     name.dataset.u2Part = 'item-label';
     return item.detail === undefined ? name :
@@ -232,13 +231,8 @@ export class DomainPick extends PickInput<PickItem> {
     return detail === undefined ? {id: String(row.id), name} : {id: String(row.id), name, detail};
   }
 
-  /** The column the server orders candidates by: the name column, else a one-column key. */
-  static sortColumn(info: DomainTableInfoLike): string | undefined {
-    return info.nameColumn ?? (info.businessKey.length === 1 ? info.businessKey[0] : undefined);
-  }
-
   /** A query that is the table's single numeric key, bare or in its format (`DG-000482`), as a condition. */
-  static keyCondition(t: DomainTableLike, query: string): DomainCondition | undefined {
+  private static keyCondition(t: DomainTableLike, query: string): DomainCondition | undefined {
     const key = t.info.businessKey.length === 1 ? t.info.businessKey[0] : undefined;
     const prop = t.properties.find((p) => p.name === key);
     const type = prop?.propertyType ?? prop?.type;

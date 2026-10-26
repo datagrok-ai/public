@@ -60,7 +60,7 @@ app per tier):
 | `history` | `true` | the history pane, where the table keeps an audit; `domains.history(source, row?, {include})` shows only the `include` columns' changes |
 | `filters` | the query box on top | `DomainFiltersOptions` (`mode: 'query' \| 'builder'`) plus `placement: 'left'` for the builder in a pane beside the list |
 | `shortcuts` | `{}` | key → action name, see below |
-| `menu` | every item on | `{import?, bulkEdit?, trash?}`: `false` drops that built-in Actions item |
+| `menu` | every item on | `{bulkEdit: false}` drops Bulk edit from the Actions menu |
 
 What the app does (`app.ts`): `page` (`'list' \| 'entity'`) and `entity` (the row id, `'new'` for a
 draft) are read-only signals — `goTo(page, id?)` is their only writer and `open(path?)` the way in
@@ -68,11 +68,10 @@ from the address bar (`?entity=<id>`, `?q=<query>`, `?search=`, `?sort=`, `?tras
 none reads `location.search`, which is how a cold deep link lands); `path` mirrors them for `appView` and
 `summary` is the session's while dirty, else the page's source's. The list page is a `DomainList`
 over `listSource` (Enter → the entity page); the entity page a source of one under the same
-session: `header`, `DomainForm` with `system: 'footer'`, then `panes`; `DomainTable.open(row)`
+session: `DomainForm` with `system: 'footer'`, then `panes`; `DomainTable.open(row)`
 activates a live app (`DomainApp.activate(base, id)`) instead of the platform's row view.
 
-The entity page's two slots for a subclass: `header`, above the form (a parent card, a summary;
-empty until the app fills it), and `panes`, below it, beside the children and history.
+The entity page's slot for a subclass is `panes`, below the form, beside the children and history.
 
 Override points for a subclass (`class IssuesApp extends DomainApp`):
 
@@ -85,7 +84,7 @@ Override points for a subclass (`class IssuesApp extends DomainApp`):
 - `menuActions(): Action[]` — the Actions menu, in sections: the presets while the ribbon is
   `compact`; on the entity page the row's own actions (the table's row actions, then Delete, staged
   until the Save); Import… and Bulk edit…; then "Show deleted" (nothing in the
-  trash). `menu: {import, bulkEdit, trash}` switches a built-in item off; an override should
+  trash). `menu: {bulkEdit: false}` drops Bulk edit; an override should
   extend the result rather than replace it.
 - `compact: Signal<boolean>` — set while the app is narrower than 700px: the presets fold into the
   Actions menu.
