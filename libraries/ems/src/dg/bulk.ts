@@ -13,6 +13,7 @@ import {signal, computed, Filters, div, span, Dialog, Input, MultiSelect, RadioI
 import type {IProperty, ReadonlySignal, RowView} from '@datagrok-libraries/u2';
 import {confirmDiscard} from '../core/session.js';
 import type {DomainSource} from '../core/domain-source.js';
+import {nounOf} from '../core/domain-backend.js';
 import type {DomainQueryLike} from '../core/domain-backend.js';
 import {ObjectForm, propertyForm} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainTable, firstProblem} from './facade.js';
@@ -66,7 +67,7 @@ export async function bulkEdit(source: DomainSource, options: DomainBulkEditOpti
   const targets = _targets(source);
   if (targets.length === 0) {
     notify.warning(source.search.peek() === '' ?
-      `Select the ${DomainTable.noun(source.schema.info)} to write, or filter the list — a bulk edit needs a target.` :
+      `Select the ${nounOf(source.schema.info)} to write, or filter the list — a bulk edit needs a target.` :
       'A bulk edit matches on the filter alone — clear the search box, or select the rows to write.',
     {singleKey: 'u2-domain-bulk-target'});
     return null;
@@ -84,12 +85,12 @@ function _targets(source: DomainSource): BulkTarget[] {
   const matching = source.search.peek() === '' && _filterOf(source) !== undefined;
   const targets: BulkTarget[] = [];
   if (selected > 0) {
-    const words = DomainTable.noun(source.schema.info, selected === 1);
+    const words = nounOf(source.schema.info, selected === 1);
     targets.push({kind: SELECTED, label: `${selected.toLocaleString()} selected ${words}`, count: selected});
   }
   if (matching)
     targets.push({kind: MATCHING, count: total,
-      label: `All ${total.toLocaleString()} ${DomainTable.noun(source.schema.info, total === 1)} matching the filter`});
+      label: `All ${total.toLocaleString()} ${nounOf(source.schema.info, total === 1)} matching the filter`});
   return targets;
 }
 
@@ -103,7 +104,7 @@ function _preferred(source: DomainSource, targets: BulkTarget[]): BulkTarget {
 function _open(source: DomainSource, props: IProperty[], required: Set<string>, targets: BulkTarget[],
   resolve: (n: number | null) => void): void {
   const handle = DomainTable.of(source)!;
-  const dialog = Dialog.create(`Bulk edit ${DomainTable.noun(source.schema.info)}`, {name: 'bulk-edit'});
+  const dialog = Dialog.create(`Bulk edit ${nounOf(source.schema.info)}`, {name: 'bulk-edit'});
   dialog.root.classList.add('u2-domain-bulk');
   const form = dialog.runInScope(() =>
     propertyForm(props, {}, {access: source.access.peek().columnPolicy(), layout: 'normal'}));
@@ -146,7 +147,7 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
     if (cleared !== undefined)
       return `${DomainTable.captionOf(cleared)} is required: enter a value, or take it out of the change`;
     if (kind === SELECTED && count > MAX_ROWS) {
-      return `A bulk edit writes at most ${MAX_ROWS} ${DomainTable.noun(source.schema.info)} at a time; ${count} are ` +
+      return `A bulk edit writes at most ${MAX_ROWS} ${nounOf(source.schema.info)} at a time; ${count} are ` +
         'selected. Narrow the selection, or filter the list and apply to everything it matches.';
     }
     if (kind === MATCHING && count > MAX_ROWS && handle.validators.columns.length > 0)
@@ -155,7 +156,7 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
   });
   const caption = computed(() => {
     const {count} = target.value;
-    const rows = `${count.toLocaleString()} ${DomainTable.noun(source.schema.info, count === 1)}`;
+    const rows = `${count.toLocaleString()} ${nounOf(source.schema.info, count === 1)}`;
     return count > MAX_ROWS ? `Update ${MAX_ROWS} of ${rows}` : `Update ${rows}`;
   });
 
@@ -196,7 +197,7 @@ function _current(rows: readonly RowView[], column: string): string {
 }
 
 function _tooMany(source: DomainSource): string {
-  return `The filter matches more than ${MAX_ROWS} ${DomainTable.noun(source.schema.info)}, and a bulk edit checks the ` +
+  return `The filter matches more than ${MAX_ROWS} ${nounOf(source.schema.info)}, and a bulk edit checks the ` +
     `table's rules on at most ${MAX_ROWS}. Narrow the filter.`;
 }
 
@@ -224,7 +225,7 @@ async function _run(source: DomainSource, form: ObjectForm, columns: string[], s
   const report = await handle.table.updateWhere!(filter, written, {limit: MAX_ROWS}).catch((e) => {
     throw new Error(DomainErrors.message(e));
   });
-  const what = DomainTable.noun(source.schema.info, report.updated === 1);
+  const what = nounOf(source.schema.info, report.updated === 1);
   notify.info(`Updated ${report.updated} ${what}${report.hasMore ?
     ` — more match than one edit writes (${MAX_ROWS}); run it again.` : '.'}`);
   await source.refresh();

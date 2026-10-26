@@ -3,7 +3,7 @@
    the seam a page at a time, so the memory backend's history shows the same way; "Show older"
    under the list loads the next page, and the pane is refreshed when the row's session saves. A
    draft has no history yet, and says so. */
-import {emsBackends} from '../core/domain-backend.js';
+import {emsBackends, nounOf} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
 import {Component, Control, signal, AsyncSource, div, divH, divV, span, timestamp, text, badge, button, AsyncView,
   Accordion, Rows, Scope, isEmpty} from '@datagrok-libraries/u2';
@@ -73,7 +73,7 @@ export class DomainHistory extends Control {
       // a draft id, and any other key the frame stood in for a row it has no id for, names
       // nothing the server could be asked about
       const hint = this._noHistory.value ? 'This table keeps no history.' :
-        row === null ? `Select a ${DomainTable.noun(source.schema.info, true)} to see its history.` :
+        row === null ? `Select a ${nounOf(source.schema.info, true)} to see its history.` :
           Rows.isService(row.id) ? 'Not saved yet' : null;
       this._hint.textContent = hint ?? '';
       this._hint.hidden = hint === null;

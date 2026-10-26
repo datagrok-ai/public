@@ -8,6 +8,7 @@ import {Control, signal, button, iconButton, div, divH, span, timestamp, text, V
   loader, emptyState, Rows} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, Signal, ObjectRenderer, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
+import {nounOf} from '../core/domain-backend.js';
 import {ActionRegistry, DomainTable} from './facade.js';
 import type {DomainAction} from './facade.js';
 import {DomainErrors} from './errors.js';
@@ -168,7 +169,7 @@ export class DomainList extends Control {
       const same = actions.find((a) => a.name === action.name);
       return same !== undefined && same.enabled !== false;
     }));
-    const detail = `${rows.length} ${DomainTable.noun(this.source.schema.info)}`;
+    const detail = `${rows.length} ${nounOf(this.source.schema.info)}`;
     return shared.map((action) => ({name: action.name, icon: action.icon, detail, destructive: action.destructive,
       run: () => {
         for (const actions of per)
@@ -181,13 +182,13 @@ export class DomainList extends Control {
     const source = this.source;
     const search = source.search.value;
     const info = source.schema.info;
-    const what = DomainTable.noun(info);
+    const what = nounOf(info);
     const trash = source.deleted.value === 'only';
     const create = this._options.create;
     const actions = search !== '' ? [button('Clear search', () => source.search.value = '')] :
       filtered ? [clearFilter()] :
         create !== undefined && !trash && source.access.value.can('insert') ?
-          [button(`New ${DomainTable.noun(info, true)}`, () => create(), {primary: true})] : [];
+          [button(`New ${nounOf(info, true)}`, () => create(), {primary: true})] : [];
     const said = this._options.empty ?? (search !== '' ? `No ${what} match "${search}"` :
       filtered ? `No ${what} match the filter` : trash ? 'Trash is empty' : `No ${what} yet`);
     const state = emptyState(said, {icon: search !== '' ? 'search' : trash ? 'trash-alt' : 'inbox', actions});

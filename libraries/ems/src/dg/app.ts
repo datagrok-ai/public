@@ -12,6 +12,7 @@ import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, d
   from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
+import {capital, nounOf} from '../core/domain-backend.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
 import {SharedSession, confirmDiscard} from '../core/session.js';
 import {domains, DomainTable} from './facade.js';
@@ -238,7 +239,7 @@ export class DomainApp extends Control {
       this._filterProblem.value = problem;
       this.list.stale.value = problem !== null;
     });
-    const plural = DomainTable.noun(table.info);
+    const plural = nounOf(table.info);
     const banner = this.runInScope(() => divH([icon('info-circle'),
       span(`Deleted ${plural}. Restore what you need, then Save.`)], 'u2-domain-app-trash-banner'));
     banner.dataset.u2Part = 'trash-banner';
@@ -449,7 +450,7 @@ export class DomainApp extends Control {
   ribbon(): DomainRibbon {
     if (this._ribbon !== undefined)
       return this._ribbon;
-    const singular = DomainTable.noun(this.table.info, true);
+    const singular = nounOf(this.table.info, true);
     const add = new Control(this.runInScope(() =>
       iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`})));
     add.root.dataset.u2 = 'new-button';
@@ -642,7 +643,7 @@ export class DomainApp extends Control {
   /** How a table is named in a view title, a breadcrumb root or a child tab: the display name
    * the schema declares, else its plural name made presentable ('order_line' → 'Order lines'). */
   static titleOf(info: Pick<DomainTableInfoLike, 'pluralName' | 'friendlyName'>): string {
-    return info.friendlyName ?? DomainTable.capital((info.pluralName || 'rows').replace(/_/g, ' '));
+    return info.friendlyName ?? capital((info.pluralName || 'rows').replace(/_/g, ' '));
   }
 
   /** Plain-key shortcuts stay out of text entry; chords with Ctrl/Alt still fire there. */
@@ -971,7 +972,7 @@ export class DomainApp extends Control {
       });
       const {children, history, include} = this._options;
       const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include,
-        empty: `${DomainTable.capital(DomainTable.noun(this.table.info, true))} "${entity}" was not found.`}));
+        empty: `${capital(nounOf(this.table.info, true))} "${entity}" was not found.`}));
       this._panes = this.runInScope(() => [
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
         ...(history === false || !this.table.table.support.audit ? [] :

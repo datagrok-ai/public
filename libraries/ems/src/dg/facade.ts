@@ -163,14 +163,12 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     const backend = emsBackends.domain;
     if (backend === undefined)
       return domains.table<TRow>(address);
-    let handles = DomainTable._shared.get(backend);
-    if (handles === undefined)
-      DomainTable._shared.set(backend, handles = new Map());
+    const handles = DomainTable._shared.get(backend) ?? new Map<string, Promise<DomainTable<any>>>();
+    DomainTable._shared.set(backend, handles);
     let handle = handles.get(address);
     if (handle === undefined) {
-      handle = domains.table<TRow>(address);
-      handle.catch(() => handles!.delete(address));
-      handles.set(address, handle);
+      handles.set(address, handle = domains.table<TRow>(address));
+      handle.catch(() => handles.delete(address));
     }
     return handle as Promise<DomainTable<TRow>>;
   }
@@ -199,16 +197,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 
   /** A column as a form labels it: the declared caption, else the name made presentable. */
   static captionOf(prop: IProperty): string {
-    return DomainTable.capital(prop.friendlyName ?? (prop.name ?? '').replace(/_/g, ' '));
-  }
-
-  static capital(text: string): string {
-    return capital(text);
-  }
-
-  /** The table's noun in lower case, singular for one row. */
-  static noun(info: DomainTableInfoLike, one = false): string {
-    return nounOf(info, one);
+    return capital(prop.friendlyName ?? (prop.name ?? '').replace(/_/g, ' '));
   }
 
   /** The handle a source was made through, for the controls over it. */
@@ -349,10 +338,10 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       const name = column === undefined ? undefined : row[column];
       // a bare number names nothing on its own: "Purchase order 9", not "9"
       if (typeof name === 'number' || typeof name === 'bigint')
-        return {text: `${DomainTable.capital(DomainTable.noun(info, true))} ${name}`, draft: false};
+        return {text: `${capital(nounOf(info, true))} ${name}`, draft: false};
       if (name !== null && name !== undefined && name !== '')
         return {text: String(name), draft: false};
-      return Rows.isDraft(row) ? {text: `New ${DomainTable.noun(info, true)}`, draft: true} :
+      return Rows.isDraft(row) ? {text: `New ${nounOf(info, true)}`, draft: true} :
         {text: row.id, draft: false};
     };
     const titleOf = (row: RowView): HTMLElement => {
@@ -481,9 +470,7 @@ function rowName<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowV
   const caption = table.renderer.caption(row);
   const at = caption !== row.id || source === undefined ? -1 :
     source.rows.items.peek().findIndex((r) => r.id === row.id);
-  if (at < 0)
-    return caption;
-  return `${DomainTable.capital(DomainTable.noun(table.info, true))} ${at + 1}`;
+  return at < 0 ? caption : `${capital(nounOf(table.info, true))} ${at + 1}`;
 }
 
 export const domains = {

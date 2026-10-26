@@ -15,7 +15,7 @@ import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
 import {propertyForm, ObjectForm, Editors, userPick, groupPick} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {ObjectFormOptions} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainSource} from '../core/domain-source.js';
-import {emsBackends} from '../core/domain-backend.js';
+import {emsBackends, capital, nounOf} from '../core/domain-backend.js';
 import {DomainTable, domains} from './facade.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {DomainErrors} from './errors.js';
@@ -100,7 +100,7 @@ export class DomainForm extends Control {
       for (const input of this._form.value?.inputs ?? []) {
         const message = input.validity.value;
         if (message !== null) {
-          const caption = DomainTable.capital(input.label);
+          const caption = capital(input.label);
           return message === EMPTY ? `${caption} is required` : `${caption}: ${message}`;
         }
       }
@@ -615,7 +615,7 @@ export class DomainForm extends Control {
   }
 
   static emptyHint(source: DomainSource): string {
-    const name = DomainTable.noun(source.schema.info, true);
+    const name = nounOf(source.schema.info, true);
     return `Select ${/^[aeiou]/.test(name) ? 'an' : 'a'} ${name} to edit.`;
   }
 }

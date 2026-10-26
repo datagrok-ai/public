@@ -6,6 +6,7 @@
    and refuses while a batch is being written back; cancel puts the previous text back. */
 import {computed, TextInput} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
+import {nounOf} from '../core/domain-backend.js';
 import {confirmDiscard} from '../core/session.js';
 import {DomainTable} from './facade.js';
 
@@ -27,7 +28,7 @@ export class DomainSearch extends TextInput {
         source.state.value;
         const columns = DomainSearch.columns(source).join(', ');
         // a list too long for the box is left to the tooltip
-        return columns === '' || columns.length > PLACEHOLDER_CHARS ? `Search ${DomainTable.noun(source.schema.info)}…` :
+        return columns === '' || columns.length > PLACEHOLDER_CHARS ? `Search ${nounOf(source.schema.info)}…` :
           `Search ${columns}…`;
       })});
     this.root.classList.add('u2-domain-search');
@@ -36,7 +37,7 @@ export class DomainSearch extends TextInput {
     this.effect(() => {
       source.state.value;
       const columns = DomainSearch.columns(source);
-      box.title = columns.length === 0 ? '' : `Finds the ${DomainTable.noun(source.schema.info)} whose ` +
+      box.title = columns.length === 0 ? '' : `Finds the ${nounOf(source.schema.info)} whose ` +
         `${columns.join(', ')} contain the text — within what the filter shows`;
     });
     const wait = options.debounceMs ?? 300;

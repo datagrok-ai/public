@@ -16,6 +16,7 @@ import type * as DG from 'datagrok-api/dg';
 import {signal, computed, Control, div, divV, span, plural, text, link, Wizard, DataTable, ChoiceInput,
   BoolInput, badge, dot, statusLine, Form, notify} from '@datagrok-libraries/u2';
 import type {IProperty, ChoiceItem, BadgeVariant, RowView} from '@datagrok-libraries/u2';
+import {capital, nounOf} from '../core/domain-backend.js';
 import type {DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike} from '../core/domain-backend.js';
 import {fromDartInput} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainTable} from './facade.js';
@@ -57,8 +58,7 @@ export type DomainImportStep = 'preview' | 'report';
 
 /** What becomes of one row: it is sent with `values` added, or kept out as the row the table
  * already has (`existing`, its id), as a repeat of an earlier row of the same file (`sameAs`, its
- * index) or as an `error`. The badge says the verb the counts use; `label` names the verdict
- * where the row has no verb of its own, `note` says why. */
+ * index) or as an `error`. `label` names it on the row's badge where it has no verb, `note` says why. */
 export interface DomainImportVerdict {
   values?: Record<string, unknown>;
   existing?: string;
@@ -132,7 +132,6 @@ const OUTCOMES: Record<string, {label: string, variant: BadgeVariant}> = {
   error: {label: 'Error', variant: 'error'},
   aborted: {label: 'Not imported', variant: 'default'},
 };
-const ABORTED = 'Another row has errors';
 /** Rows of the report's key lookup per query. */
 const KEY_CHUNK = 500;
 
@@ -213,7 +212,7 @@ class ImportFlow {
       onCancel: () => this._settle(null),
     });
     this._wizard.root.classList.add('u2-domain-import');
-    this._wizard.openInDialog(`Import ${DomainTable.noun(this._table.info)}`, {width: 720, height: 560});
+    this._wizard.openInDialog(`Import ${nounOf(this._table.info)}`, {width: 720, height: 560});
   }
 
   /** The first blocking problem, which is what the NEXT button shows and gates on. */
@@ -252,14 +251,12 @@ class ImportFlow {
     }
     const duplicates = `A row whose ${this._keyHeader()} the table already has is an error instead of a skip`;
     if (batch.skipDuplicates) {
-      this._errorOnDuplicate = new BoolInput({label: `Refuse ${DomainTable.noun(this._table.info)} that exist`,
+      this._errorOnDuplicate = new BoolInput({label: `Refuse ${nounOf(this._table.info)} that exist`,
         value: false, name: 'errorOnDuplicate', tooltipText: duplicates});
     }
     const column = this._keyColumn();
-    if (column !== null) {
-      this._writeBack = new BoolInput({label: '', value: true, name: 'writeBack',
-        tooltipText: `Adds a "${column}" column with each row's ${this._keyHeader()}, as imported or as found`});
-    }
+    if (column !== null)
+      this._writeBack = new BoolInput({label: `Write ${this._keyHeader()} back`, value: true, name: 'writeBack'});
     const form = new Form().addAll([picker, this._mode, this._allOrNothing, this._errorOnDuplicate, this._writeBack]
       .filter((input) => input !== undefined));
     picker.root.parentElement!.insertBefore(summary, picker.root.nextSibling);
@@ -269,7 +266,6 @@ class ImportFlow {
         `${plural(frame.rowCount, 'row', 'rows')}, ${plural(frame.columns.names().length, 'column', 'columns')}`;
       if (this._writeBack !== undefined) {
         this._writeBack.visible = frame !== null;
-        this._writeBack.label = `Write ${this._keyHeader()} back`;
         this._writeBack.tooltipText = frame === null ? '' :
           `Adds a "${column}" column to ${frame.name} with each row's ${this._keyHeader()}, as imported or as found`;
       }
@@ -306,28 +302,25 @@ class ImportFlow {
   }
 
   private _sample(name: string): HTMLElement {
-    const frame = this._frame.peek();
-    const column = frame?.columns.byName(name);
+    const column = this._frame.peek()?.columns.byName(name);
     const values: string[] = [];
-    for (let i = 0; frame && column && i < frame.rowCount && values.length < 3; i++) {
+    for (let i = 0; column && i < column.length && values.length < 3; i++) {
       if (!column.isNone(i))
         values.push(text(column.get(i)));
     }
-    const sample = span(values.join(', '), 'u2-domain-import-text');
-    sample.title = sample.textContent ?? '';
-    return sample;
+    return span(values.join(', '), 'u2-domain-import-text');
   }
 
   private _mappingStatus(): string {
     this._recheck.value;
     const mapped = this._mapping();
-    const targets = [...this._choices.values()].map((c) => c.value.peek()).filter((t): t is string => t !== null && t !== SKIP);
-    const twice = [...new Set(targets.filter((t, i) => targets.indexOf(t) !== i))];
+    const imported = [...this._choices.values()].filter((c) => this._claimants(c.value.peek()).length > 0).length;
     const required = this._required()
       .map((name) => `${ImportFlow._caption(this, name)} ${mapped.has(name) ? '✓' : '✗'}`);
     return [...(required.length > 0 ? [`Required: ${required.join(', ')}`] : []),
-      ...twice.map((name) => `${ImportFlow._caption(this, name)} is mapped twice`),
-      `${targets.length} of ${plural(this._choices.size, 'column', 'columns')} imported`].join(' · ');
+      ...[...mapped.keys()].filter((t) => this._claimants(t).length > 1)
+        .map((name) => `${ImportFlow._caption(this, name)} is mapped twice`),
+      `${imported} of ${plural(this._choices.size, 'column', 'columns')} imported`].join(' · ');
   }
 
   /** The table importer's verdicts over every row, then the server's own over the first
@@ -379,8 +372,8 @@ class ImportFlow {
     } catch (e) {
       if (gen !== this._previewGen)
         return;
-      // the commit is the authority: a preview that cannot reach the server says so and lets the
-      // import through
+      // the commit is the authority: a preview that cannot reach the server says so and lets NEXT
+      // through
       this._checked = undefined;
       this._previewBlock.value = null;
       host.replaceChildren(span(DomainErrors.message(e), 'u2-domain-import-problem'));
@@ -415,7 +408,7 @@ class ImportFlow {
     if (showing !== '')
       host.append(span(`${showing}.`, 'u2-domain-import-summary'));
     const valid = sent.length > PREVIEW_ROWS ? null : report.willInsert + report.willUpdate;
-    const noun = (n: number) => plural(n, DomainTable.noun(this._table.info, true), DomainTable.noun(this._table.info));
+    const noun = (n: number) => plural(n, nounOf(this._table.info, true), nounOf(this._table.info));
     this._importText.value = `Import ${noun(valid ?? sent.length)}`;
     // the counts are what the batch WOULD do row by row; all-or-nothing makes one bad row the
     // verdict on all of them
@@ -528,12 +521,11 @@ class ImportFlow {
   private static _resultColumn(kinds: Record<string, {label: string, variant: BadgeVariant}>): DomainImportColumn {
     return {name: '~result', header: 'Result', width: '88px', render: (row) => {
       const kind = kinds[row.kind];
-      const label = kind?.label ?? (row.label || undefined);
-      if (label === undefined)
+      const label = kind?.label ?? row.label;
+      if (!label)
         return '';
-      const variant = kind?.variant ?? 'default';
-      const pill = badge(label, {variant});
-      return variant === 'error' ? div([dot('error'), pill], 'u2-domain-import-result') : pill;
+      const pill = badge(label, {variant: kind?.variant ?? 'default'});
+      return kind?.variant === 'error' ? div([dot('error'), pill], 'u2-domain-import-result') : pill;
     }};
   }
 
@@ -702,9 +694,8 @@ class ImportFlow {
   /** What the report's key column is headed: the business key's caption, else the table's noun. */
   private _keyHeader(): string {
     const key = this._table.info.businessKey;
-    if (key.length === 1)
-      return ImportFlow._caption(this, key[0]);
-    return DomainTable.capital(DomainTable.noun(this._table.info, true));
+    return key.length === 1 ? ImportFlow._caption(this, key[0]) :
+      capital(nounOf(this._table.info, true));
   }
 
   /** Where a source column goes: the importer's match, else the name the way a person reads it —
@@ -767,11 +758,8 @@ class ImportFlow {
 
   /** Upsert matches on the business key; insert needs every required column without a default. */
   private _required(): string[] {
-    if (this._mode?.value.peek() === 'upsert')
-      return this._table.info.businessKey;
-    return this._targets
-      .filter((p) => p.nullable === false && (p.defaultValue === undefined || p.defaultValue === null))
-      .map((p) => p.name!);
+    return this._mode?.value.peek() === 'upsert' ? this._table.info.businessKey : this._targets
+      .filter((p) => p.nullable === false && (p.defaultValue ?? null) === null).map((p) => p.name!);
   }
 
   private async _commit(): Promise<void> {
@@ -874,7 +862,7 @@ class ImportFlow {
       if (p.payload === null)
         return this._kept(i, p);
       if (failed || row === undefined)
-        return this._row(i, p, failed ? 'aborted' : '', failed ? ABORTED : '', errors);
+        return this._row(i, p, failed ? 'aborted' : '', failed ? 'Another row has errors' : '', errors);
       return {...this._row(i, p, row.status === 'inserted' ? 'insert' : 'update', p.verdict.note ?? '', errors),
         id: row.id};
     });
