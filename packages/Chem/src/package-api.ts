@@ -1514,9 +1514,10 @@ export namespace funcs {
    * @param {string} profileName - Name of the resulting score column, e.g. "MPO <profile name>". The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name
    * @param {string} aggregation
    *   choices: ["Average","Sum","Product","Geomean","Min","Max"]
+   * @param {boolean} createCoverageColumn - Add a column counting non-empty properties per row
    */
-  export async function mpoCalculate(df: DG.DataFrame , columns: string[] , profileName: string , aggregation: string , createDesirabilityColumns: boolean ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:MpoCalculate', { df, columns, profileName, aggregation, createDesirabilityColumns });
+  export async function mpoCalculate(df: DG.DataFrame , columns: string[] , profileName: string , aggregation: string , createDesirabilityColumns: boolean , createCoverageColumn: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:MpoCalculate', { df, columns, profileName, aggregation, createDesirabilityColumns, createCoverageColumn });
   }
 
   /**

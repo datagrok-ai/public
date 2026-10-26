@@ -2,8 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
 import {mpo} from '@datagrok-libraries/statistics/src/mpo/mpo';
-import {NumericalDesirability, QualifierPolicy, MpoScale, MissingValueConfig, DesirabilityLine}
-  from '@datagrok-libraries/statistics/src/mpo/mpo-types';
+import {NumericalDesirability, QualifierPolicy, MpoScale, MissingValueConfig, DesirabilityLine,
+  CategoricalDesirability, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo-types';
 
 /* Computation tests for MPO desirability scoring — what the BDD features (Chem/bdd/features/mpo) must not
    assert, since it is the numbers an analysis computes (the lead's ruling; MPO MISSING.md item 6). The
@@ -130,5 +130,28 @@ category('MPO: profile handler', () => {
     await grok.functions.call('Chem:init', {});
     expect(handlers(), before);
     expect(before > 0, true, 'no profile handler registered');
+  });
+});
+
+category('MPO: coverage', () => {
+  const tagged = (col: DG.Column, t: PropertyDesirability): DG.Column => {
+    col.setTag('desirabilityTemplate', JSON.stringify(t));
+    return col;
+  };
+  const numerical: NumericalDesirability = {functionType: 'numerical', weight: 1, line: [[0, 0], [10, 1]]};
+  const categorical: CategoricalDesirability = {functionType: 'categorical', weight: 1,
+    categories: [{name: 'x', desirability: 1}, {name: 'y', desirability: 0.5}]};
+
+  test('Counts the scored properties that have a value in each row, scored or not', async () => {
+    const f = tagged(DG.Column.fromFloat32Array('f', new Float32Array([1, DG.FLOAT_NULL, 3, DG.FLOAT_NULL])),
+      numerical);
+    const c = tagged(DG.Column.fromStrings('c', ['x', 'y', '', '']), categorical);
+    const q = tagged(DG.Column.qnum('q', 4, [DG.Qnum.exact(5), DG.Qnum.less(2), null, null] as number[], false),
+      numerical);
+    const result = mpo(DG.DataFrame.fromColumns([f, c, q]), [f, c, q], 'MPO P', 'Average', false, false, true);
+    expect(result.coverageColumn!.name, 'MPO P coverage');
+    expect(result.coverageColumn!.toList().join(','), '3,2,1,0');
+    expect(result.scoreColumn.isNone(0), false, 'the complete row is scored');
+    expect([1, 2, 3].every((i) => result.scoreColumn.isNone(i)), true, 'rows with gaps are excluded');
   });
 });
