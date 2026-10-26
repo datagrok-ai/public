@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import type {DomainImportColumn, DomainImporter, DomainImportRow, DomainImportVerdict, DomainTable}
   from '@datagrok-libraries/ems/src/dg';
 import {isEmpty, span} from '@datagrok-libraries/u2';
-import type {CompoundRow} from '../generated/db';
+import type {CompoundInsert, CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
 import {Chemistry, HASH_COLUMNS, IDENTITY_COLUMNS} from './chemistry';
 import type {CompoundIdentity, MatchRule} from './chemistry';
@@ -64,6 +64,37 @@ export class BulkRegistration {
       first.set(identity.hash_mol, i);
       return {values: Object.fromEntries(IDENTITY_COLUMNS.map((column) => [column, identity[column]]))};
     });
+  }
+
+  /** Registers every structure not registered yet; per input row, its compound's Grok ID and what happened. */
+  static async register(structures: string[]): Promise<DG.DataFrame> {
+    const compounds = await MolTrackTables.compounds();
+    const verdicts = await BulkRegistration.prepare(structures.map((s) => ({original_structure: s})), compounds);
+    const fresh = verdicts.flatMap((v, i) => v.values === undefined ? [] : [i]);
+    const report = fresh.length === 0 ? null : await moltrackEmsDb.compounds.batch(fresh.map((i): CompoundInsert =>
+      ({...verdicts[i].values as Omit<CompoundInsert, 'original_structure'>, original_structure: structures[i]})));
+    const ids: (string | null)[] = verdicts.map((v) => v.existing ?? null);
+    const problems: (string | null)[] = verdicts.map((v) => v.error ?? null);
+    for (const row of report?.rows ?? []) {
+      ids[fresh[row.index]] = row.id;
+      if (row.status === 'error')
+        problems[fresh[row.index]] = row.errors?.map((e) => e.message).join('; ') ?? 'Not registered';
+    }
+    for (const [i, v] of verdicts.entries()) {
+      if (v.sameAs !== undefined)
+        ids[i] = ids[v.sameAs];
+    }
+    const known = [...new Set(ids.filter((id): id is string => id !== null))];
+    const regnos = new Map((known.length === 0 ? [] : await moltrackEmsDb.compounds.query(
+      {filter: DG.cond('id', '=', known), columns: ['molregno'], limit: known.length}))
+      .map((r) => [r.id, MolTrackTables.corporateId(compounds, 'molregno', r.molregno)]));
+    const status = verdicts.map((v, i) => problems[i] ?? (v.existing !== undefined ? 'Already registered' :
+      v.sameAs !== undefined ? `Same compound as row ${v.sameAs + 1}` : 'Registered'));
+    return DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('structure', structures),
+      DG.Column.fromStrings('grok_id', ids.map((id) => id === null ? '' : regnos.get(id) ?? '')),
+      DG.Column.fromStrings('status', status),
+    ]);
   }
 
   // under the matching rule in force: a compound registered under another rule is not "the same" here

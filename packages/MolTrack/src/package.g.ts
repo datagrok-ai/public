@@ -6,6 +6,12 @@ export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
+//meta.autostartImmediate: true
+//meta.role: autostart
+export function emsAutostart() : void {
+  PackageFunctions.emsAutostart();
+}
+
 //name: initDB
 export async function initDB() : Promise<void> {
   await PackageFunctions.initDB();
@@ -93,6 +99,37 @@ export async function getBatchByCorporateId(corporateValue: string) {
   return await PackageFunctions.getBatchByCorporateId(corporateValue);
 }
 
+//description: The MolTrack EMS compound with this Grok ID, or null where none is registered
+//input: string grokId { description: Grok ID of the compound, such as DG-000060. }
+//output: object compound
+export async function getEmsCompound(grokId: string) {
+  return await PackageFunctions.getEmsCompound(grokId);
+}
+
+//description: The MolTrack EMS batch with this Grok ID, or null where none is registered
+//input: string grokId { description: Grok ID of the batch, such as DGB-000365. }
+//output: object batch
+export async function getEmsBatch(grokId: string) {
+  return await PackageFunctions.getEmsBatch(grokId);
+}
+
+//description: The rows of a MolTrack EMS table that match a filter and, for compounds, a structure condition
+//input: string table = 'compound' { choices: ["compound","compound_batch","addition","batch_addition","assay","assay_run","assay_result"]; description: Table to search. }
+//input: string filter { optional: true; description: Filter in the list filter grammar, such as: common_name contains "acid" and mol_logp > 2. }
+//input: string structure { optional: true; description: SMILES or molfile the compounds are matched against; compound table only. }
+//input: string structureOperator = 'has substructure' { optional: true; choices: ["has substructure","is substructure of","is similar to","is exactly"]; description: How the structure is matched. }
+//output: dataframe result
+export async function searchEms(table: string, filter?: string, structure?: string, structureOperator?: string) : Promise<any> {
+  return await PackageFunctions.searchEms(table, filter, structure, structureOperator);
+}
+
+//description: Registers the structures of a column as MolTrack EMS compounds, skipping the ones already registered; per row, the Grok ID and what happened
+//input: column structures { semType: Molecule; description: Structures to register. }
+//output: dataframe result
+export async function registerEmsCompounds(structures: DG.Column) : Promise<any> {
+  return await PackageFunctions.registerEmsCompounds(structures);
+}
+
 //description: Registers compound properties in the MolTrack service using the provided JSON payload
 //input: string jsonPayload { description: JSON schema defining entity properties to register (name, value_type, entity_type, nullable, etc.). }
 //output: string result
@@ -144,10 +181,10 @@ export async function molTrackEmsPanel(id: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.molTrackEmsPanel(id);
 }
 
-//name: Databases | MolTrack
-//input: semantic_value id { semType: Grok ID }
+//name: Databases | MolTrack EMS Batch
+//input: semantic_value id { semType: Grok Batch ID }
 //output: widget res
 //meta.role: panel
-export async function getMoltrackPropPanelById(id: DG.SemanticValue) : Promise<any> {
-  return await PackageFunctions.getMoltrackPropPanelById(id);
+export async function molTrackEmsBatchPanel(id: DG.SemanticValue) : Promise<any> {
+  return await PackageFunctions.molTrackEmsBatchPanel(id);
 }
