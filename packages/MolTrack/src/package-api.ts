@@ -123,44 +123,6 @@ export namespace funcs {
   }
 
   /**
-   * The MolTrack EMS compound with this Grok ID, or null where none is registered
-   * @param {string} grokId - Grok ID of the compound, such as DG-000060.
-   */
-  export async function getEmsCompound(grokId: string ): Promise<any> {
-    return await grok.functions.call('MolTrack:GetEmsCompound', { grokId });
-  }
-
-  /**
-   * The MolTrack EMS batch with this Grok ID, or null where none is registered
-   * @param {string} grokId - Grok ID of the batch, such as DGB-000365.
-   */
-  export async function getEmsBatch(grokId: string ): Promise<any> {
-    return await grok.functions.call('MolTrack:GetEmsBatch', { grokId });
-  }
-
-  /**
-   * The rows of a MolTrack EMS table that match a filter and, for compounds, a structure condition
-   * @param {string} table - Table to search.
-   *   choices: ["compound","compound_batch","addition","batch_addition","assay","assay_run","assay_result"]
-   * @param {string} filter - Filter in the list filter grammar, such as: common_name contains "acid" and mol_logp > 2.
-   * @param {string} structure - SMILES or molfile the compounds are matched against (compounds only)
-   * @param {string} structureOperator - How the structure is matched.
-   *   choices: ["has substructure","is substructure of","is similar to","is exactly"]
-   */
-  export async function searchEms(table: string , filter?: string , structure?: string , structureOperator?: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('MolTrack:SearchEms', { table, filter, structure, structureOperator });
-  }
-
-  /**
-   * Registers the structures of a column as MolTrack EMS compounds, skipping the ones already registered; per row, the Grok ID and what happened
-   * @param {DG.Column} structures - Structures to register.
-   *   semType: Molecule
-   */
-  export async function registerEmsCompounds(structures: DG.Column ): Promise<DG.DataFrame> {
-    return await grok.functions.call('MolTrack:RegisterEmsCompounds', { structures });
-  }
-
-  /**
    * Registers compound properties in the MolTrack service using the provided JSON payload
    * @param {string} jsonPayload - JSON schema defining entity properties to register (name, value_type, entity_type, nullable, etc.).
    */

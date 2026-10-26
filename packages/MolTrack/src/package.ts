@@ -13,7 +13,6 @@ import {flattened} from './utils/utils';
 import {registerSemanticTypes} from './utils/detectors';
 import {MolTrackEms} from './ems/app';
 import {DemoData} from './ems/demo-data';
-import {BulkRegistration} from './ems/registration';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -245,53 +244,6 @@ export class PackageFunctions {
     @grok.decorators.param({options: {description: 'Corporate batch ID to look up.'}}) corporateValue: string,
   ) {
     return await MolTrackDockerService.getBatchByCorporateId(corporateValue);
-  }
-
-  @grok.decorators.func({
-    name: 'getEmsCompound',
-    description: 'The MolTrack EMS compound with this Grok ID, or null where none is registered',
-    outputs: [{type: 'object', name: 'compound'}],
-  })
-  static async getEmsCompound(
-    @grok.decorators.param({options: {description: 'Grok ID of the compound, such as DG-000060.'}}) grokId: string,
-  ) {
-    return await MolTrackEms.compoundByGrokId(grokId);
-  }
-
-  @grok.decorators.func({
-    name: 'getEmsBatch',
-    description: 'The MolTrack EMS batch with this Grok ID, or null where none is registered',
-    outputs: [{type: 'object', name: 'batch'}],
-  })
-  static async getEmsBatch(
-    @grok.decorators.param({options: {description: 'Grok ID of the batch, such as DGB-000365.'}}) grokId: string,
-  ) {
-    return await MolTrackEms.batchByGrokId(grokId);
-  }
-
-  @grok.decorators.func({
-    name: 'searchEms',
-    description: 'The rows of a MolTrack EMS table that match a filter and, for compounds, a structure condition',
-    outputs: [{type: 'dataframe', name: 'result'}],
-  })
-  static async searchEms(
-    @grok.decorators.param({options: {initialValue: 'compound', choices: ['compound', 'compound_batch', 'addition', 'batch_addition', 'assay', 'assay_run', 'assay_result'], description: 'Table to search.'}}) table: string,
-    @grok.decorators.param({options: {optional: true, description: 'Filter in the list filter grammar, such as: common_name contains "acid" and mol_logp > 2.'}}) filter?: string,
-    @grok.decorators.param({options: {optional: true, description: 'SMILES or molfile the compounds are matched against (compounds only)'}}) structure?: string,
-    @grok.decorators.param({options: {optional: true, initialValue: 'has substructure', choices: ['has substructure', 'is substructure of', 'is similar to', 'is exactly'], description: 'How the structure is matched.'}}) structureOperator?: string,
-  ): Promise<DG.DataFrame> {
-    return await MolTrackEms.search(table, filter ?? '', structure ?? '', structureOperator ?? 'has substructure');
-  }
-
-  @grok.decorators.func({
-    name: 'registerEmsCompounds',
-    description: 'Registers the structures of a column as MolTrack EMS compounds, skipping the ones already registered; per row, the Grok ID and what happened',
-    outputs: [{type: 'dataframe', name: 'result'}],
-  })
-  static async registerEmsCompounds(
-    @grok.decorators.param({type: 'column', options: {semType: 'Molecule', description: 'Structures to register.'}}) structures: DG.Column,
-  ): Promise<DG.DataFrame> {
-    return await BulkRegistration.register(structures.toList().map((s) => String(s ?? '')));
   }
 
   @grok.decorators.func({

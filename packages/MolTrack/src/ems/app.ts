@@ -2,11 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {domains, DomainApp} from '@datagrok-libraries/ems/src/dg';
-import {Filters, span} from '@datagrok-libraries/u2';
+import {span} from '@datagrok-libraries/u2';
 import type {CompoundBatchRow, CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
 import {CompoundsApp} from './compounds';
-import {StructureSearch} from './structure-search';
 import {MolTrackTables, SCHEMA} from './tables';
 
 import '@datagrok-libraries/ems/src/dg/styles.js';
@@ -61,17 +60,6 @@ export class MolTrackEms {
     const key = KEYS[table];
     if (key !== undefined)
       MolTrackEms._keySearch(app, key);
-  }
-
-  static async search(table: string, filter: string, structure: string, operator: string): Promise<DG.DataFrame> {
-    const parsed = Filters.parse(filter);
-    if (parsed.problems.length > 0)
-      throw new Error(`${filter}: ${parsed.problems[0].message}`);
-    if (structure !== '' && (table !== 'compound' || !StructureSearch.OPERATORS.includes(operator)))
-      throw new Error(`"${operator}" does not search ${table}`);
-    const root = structure === '' ? parsed.root :
-      Filters.group('and', [parsed.root, Filters.cond('structure', operator, structure)]);
-    return MolTrackTables.frame(table, root);
   }
 
   static async compoundByGrokId(corporateId: string): Promise<CompoundRow | null> {
