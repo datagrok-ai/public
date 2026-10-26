@@ -439,6 +439,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.navCoreObserver = null;
     this.navPendingCores.clear();
     this.resetFilters();
+    clearDepictionCaches(); // the cells' rasters: up to the screen's worth of pixels
     super.detach();
   }
 

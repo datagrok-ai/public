@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {awaitCheck, category, test, expect, expectFloat, before} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package-test';
+import {readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc';
 import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/build/sar-matrix-clustering';
@@ -14,7 +15,8 @@ import {checkAgainstMolecules, cutWarning, decomposeByColumns, defaultAxis, hold
   from '../analysis/sar-matrix/build/sar-matrix-columns';
 import {cellPossible, LinkStages, planLink} from '../analysis/sar-matrix/build/sar-matrix-link';
 import {computeMatrixConfidence} from '../analysis/sar-matrix/build/sar-matrix-confidence';
-import {alignToTemplate, buildAlignmentTemplate, matrixCore} from '../analysis/sar-matrix/render/sar-matrix-depict';
+import {alignToTemplate, buildAlignmentTemplate, drawDepiction, matrixCore}
+  from '../analysis/sar-matrix/render/sar-matrix-depict';
 import {rankMatrices, SarRankScheme} from '../analysis/sar-matrix/build/sar-matrix-ranking';
 import {fitRoleEffects, RoleDesign, RoleFit, RoleSummary, ROLE_FIT_MAX_SWEEPS}
   from '../analysis/sar-matrix/summary/sar-matrix-role-fit';
@@ -1554,6 +1556,30 @@ category('SAR Matrix: viewer', () => {
     const ri = matrix.cells.findIndex((row) => row.some(pick));
     return [ri, matrix.cells[ri].findIndex(pick)];
   };
+
+  test('every visible cell is drawn when they outnumber the molecule renderer\'s cache', async () => {
+    // A zoomed-out matrix shows hundreds of cells, more than the shared renderer keeps images of (100). The
+    // depiction budget defers what one paint can't draw to the next; the paints must converge on every cell
+    // drawn, not leave the cells painted last deferred for good.
+    // The reported case: 18 rows of 20 cells, each 104x76 at a device pixel ratio of 2, far more rasterizing than
+    // the budget's 50 ms
+    const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList().slice(0, 18 * 20);
+    const canvas = document.createElement('canvas');
+    canvas.width = 208;
+    canvas.height = 152;
+    const g = canvas.getContext('2d')!;
+    let deferred = -1;
+    let paints = 0;
+    for (; paints < 60 && deferred !== 0; paints++) {
+      deferred = 0;
+      for (const s of smiles)
+        drawDepiction(g, 0, 0, 208, 152, s, null, 0xFFFFFFFF, () => deferred++);
+      await new Promise((resolve) => setTimeout(resolve)); // the next paint is a new task, with its own budget
+    }
+    expect(deferred, 0, `${deferred} of ${smiles.length} cells still deferred after ${paints} paints`);
+    const pixels = g.getImageData(0, 0, 208, 152).data;
+    expect(pixels.some((v, i) => i % 4 === 0 && v < 128), true, 'a molecule was drawn (its bonds are dark)');
+  });
 
   test('a swap selects every row whose R-group reads as its value', async () => {
     const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('Core', new Array(5).fill('[*:1]c1ccc([*:2])cc1')),

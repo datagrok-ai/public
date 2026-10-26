@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
 import {mpo} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {NumericalDesirability, QualifierPolicy, MpoScale, MissingValueConfig, DesirabilityLine}
@@ -116,5 +117,18 @@ category('MPO: qnum scoring', () => {
     expectFloat(s.get(0), 0.5, 1e-4, 'smallest exact on the edge');
     expectFloat(s.get(1), 0.5, 1e-4);
     expectFloat(s.get(3), 0.5, 1e-4);
+  });
+});
+
+category('MPO: profile handler', () => {
+  // other packages call Chem:init as well (HitTriage does), and each call used to register another handler
+  test('Calling Chem:init again does not register another profile handler', async () => {
+    const handlers = () => DG.ObjectHandler.list().filter((h) => h.type === 'mpo-profile').length;
+    await grok.functions.call('Chem:init', {});
+    const before = handlers();
+    await grok.functions.call('Chem:init', {});
+    await grok.functions.call('Chem:init', {});
+    expect(handlers(), before);
+    expect(before > 0, true, 'no profile handler registered');
   });
 });

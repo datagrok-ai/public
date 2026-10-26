@@ -239,6 +239,8 @@ async function initChemInt(): Promise<void> {
 
     DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
   }
+  // here, not in init: other packages call Chem:init too (HitTriage), and each call would add another handler
+  DG.ObjectHandler.register(new MpoProfileHandler());
 }
 
 export class PackageFunctions {
@@ -264,7 +266,6 @@ export class PackageFunctions {
     if (!_initChemPromise)
       _initChemPromise = initChemInt();
     await _initChemPromise;
-    DG.ObjectHandler.register(new MpoProfileHandler());
   }
 
   @grok.decorators.autostart()
