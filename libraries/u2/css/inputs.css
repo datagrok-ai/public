@@ -205,6 +205,12 @@ textarea.u2-input-editor {
   padding: 0;
 }
 
+/* the bridged box is as wide as the platform input in it: at a zero basis it shared its line with
+   the verdict, which then sat clipped beside the canvas instead of wrapping under it */
+.u2-input-root[data-u2='dart-input'] > .u2-input-box {
+  flex: 0 1 auto;
+}
+
 /* a bridged platform input brings its own caption: a required one carries the asterisk there,
    hanging past a right-aligned caption as u2's own does */
 .u2-input-required[data-u2='dart-input'] .ui-input-label::after {
