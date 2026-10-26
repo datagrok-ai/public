@@ -458,8 +458,10 @@ export function firstProblem<TRow extends DomainRowLike>(table: DomainTable<TRow
  * them — the writer's own "Value can't be empty" says nothing about which field. */
 function nameCell<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>, column: string,
   problem: string, source?: DomainSource<TRow>): string {
-  const prop = table.properties.find((p) => p.name === column) ?? {name: column};
-  return `${rowName(table, row, source)}: ${DomainTable.captionOf(prop)}: ${problem}`;
+  const caption = DomainTable.captionOf(table.properties.find((p) => p.name === column) ?? {name: column});
+  // "CAS must look like 50-78-2" names its field already
+  const field = problem.toLowerCase().startsWith(caption.toLowerCase()) ? '' : `${caption}: `;
+  return `${rowName(table, row, source)}: ${field}${problem}`;
 }
 
 /** The row as a refusal names it: its caption — or, where all the table can caption it by is its
