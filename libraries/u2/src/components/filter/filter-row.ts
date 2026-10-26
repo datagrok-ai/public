@@ -72,7 +72,7 @@ function valueEditor(input: Input<any>, toInput: (v: FilterValue | undefined) =>
 }
 
 function removeButton(onRemove: () => void, what: string = 'condition'): HTMLButtonElement {
-  const el = iconButton('minus', onRemove, {tooltip: `Remove ${what}`});
+  const el = iconButton('times', onRemove, {tooltip: `Remove ${what}`});
   el.classList.add('u2-fb-remove');
   el.dataset.u2Part = 'remove';
   return el;
