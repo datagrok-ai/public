@@ -58,17 +58,21 @@
   cursor: pointer;
 }
 
-/* the platform grid's row colours, layered; --u2-row-bg (no stripe) paints the hover actions over the row's end */
+/* the platform grid's row colours, layered; --u2-row-bg (no stripe) paints the hover actions over the row's end;
+   a row state (--u2-list-row-state, a pending delete) is drawn over the current, selected and hover fills */
 .u2-list-row {
   --u2-list-row-base: var(--dg-bg);
+  --u2-list-row-state: transparent;
   --u2-list-row-current: transparent;
   --u2-list-row-over: transparent;
   --u2-list-row-stripe: transparent;
   --u2-list-row-selected: transparent;
-  --u2-row-bg: linear-gradient(var(--u2-list-row-selected), var(--u2-list-row-selected)),
+  --u2-row-bg: linear-gradient(var(--u2-list-row-state), var(--u2-list-row-state)),
+    linear-gradient(var(--u2-list-row-selected), var(--u2-list-row-selected)),
     linear-gradient(var(--u2-list-row-over), var(--u2-list-row-over)),
     linear-gradient(var(--u2-list-row-current), var(--u2-list-row-current)), var(--u2-list-row-base);
-  background: linear-gradient(var(--u2-list-row-selected), var(--u2-list-row-selected)),
+  background: linear-gradient(var(--u2-list-row-state), var(--u2-list-row-state)),
+    linear-gradient(var(--u2-list-row-selected), var(--u2-list-row-selected)),
     linear-gradient(to right, var(--u2-list-row-stripe) 4px, transparent 4px),
     linear-gradient(var(--u2-list-row-over), var(--u2-list-row-over)),
     linear-gradient(var(--u2-list-row-current), var(--u2-list-row-current)), var(--u2-list-row-base);

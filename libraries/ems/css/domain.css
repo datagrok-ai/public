@@ -186,7 +186,7 @@
 }
 
 .u2-list-row.u2-domain-list-deleted.u2-domain-list-pending {
-  --u2-list-row-base: var(--dg-red-1);
+  --u2-list-row-state: var(--dg-red-1);
 }
 
 .u2-domain-list-deleted.u2-domain-list-pending .u2-domain-list-content {
