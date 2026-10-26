@@ -125,11 +125,14 @@ export class CompoundsApp extends DomainApp {
 
   private _showIdentity(identity: Partial<CompoundIdentity> | null, problem: string | null): void {
     const shown = (column: keyof CompoundIdentity) => isEmpty(identity?.[column]) ? '—' : identity![column]!;
+    const rule = shown('match_rule');
+    // the parent is drawn, not spelled out; the rows stack under it so they form no third caption column
     this._identity.replaceChildren(ui.h3('Identity'),
       ...(problem === null ? [] : [ui.divText(problem, 'moltrack-ems-problem')]),
-      identity === null ? ui.divText(problem === null ? 'Draw a structure to see its identity' : '') :
-        ui.divH([...(isEmpty(identity.structure) ? [] : [grok.chem.drawMolecule(identity.structure!, 160, 120)]),
-          ui.tableFromMap({'Parent': shown('structure'), 'Formula': shown('formula'), 'InChIKey': shown('inchikey'),
-            'Matching rule': shown('match_rule')})]));
+      identity === null ? ui.divText(problem === null ? 'Draw a structure to see its identity' : '',
+        'moltrack-ems-hint') :
+        ui.divV([...(isEmpty(identity.structure) ? [] : [grok.chem.drawMolecule(identity.structure!, 160, 120)]),
+          ui.tableFromMap({'Formula': shown('formula'), 'InChIKey': shown('inchikey'),
+            'Matching rule': `${rule.charAt(0)}${rule.slice(1).toLowerCase().replace(/_/g, ' ')}`})]));
   }
 }

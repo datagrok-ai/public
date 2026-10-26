@@ -31,6 +31,10 @@
   color: var(--failure);
 }
 
+.moltrack-ems-hint {
+  color: var(--dg-text-color-light);
+}
+
 .moltrack-ems-identity,
 .moltrack-ems-parent {
   gap: 8px;
