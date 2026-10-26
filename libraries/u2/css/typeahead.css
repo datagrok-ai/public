@@ -167,17 +167,12 @@
   min-width: 16px;
   height: 16px;
   font-size: var(--dg-font-size-xs);
-  color: var(--dg-text-color-light);
   visibility: hidden;
 }
 
 .u2-input-root:not(.u2-input-disabled):hover .u2-pick-open,
 .u2-pick-box:focus-within .u2-pick-open {
   visibility: visible;
-}
-
-.u2-btn.u2-icon-btn.u2-pick-open:hover {
-  color: var(--dg-text-color);
 }
 
 .u2-pick-open[hidden] {

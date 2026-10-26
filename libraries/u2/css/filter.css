@@ -286,16 +286,6 @@
   color: var(--dg-text-color-light);
 }
 
-.u2-fb-remove,
-.u2-fb-add {
-  color: var(--dg-text-color-light);
-}
-
-.u2-fb-remove:hover:not(:disabled),
-.u2-fb-add:hover:not(:disabled) {
-  color: var(--dg-text-color);
-}
-
 /* a problem on the row: a left rule beside the message */
 .u2-fb-invalid {
   box-shadow: inset 2px 0 0 var(--dg-error);

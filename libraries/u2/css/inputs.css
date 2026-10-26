@@ -439,7 +439,7 @@ textarea.u2-input-editor {
   padding: 0;
   font-size: var(--dg-font-size-xs);
   line-height: 1;
-  color: var(--dg-text-color-light);
+  color: var(--dg-accent);
   visibility: hidden;
   background: none;
   border: none;
@@ -453,8 +453,7 @@ textarea.u2-input-editor {
 }
 
 .u2-input-clear:hover {
-  color: var(--dg-text-color);
-  background: var(--dg-hover-subtle);
+  filter: contrast(80%) brightness(120%);
 }
 
 .u2-input-clear[hidden] {

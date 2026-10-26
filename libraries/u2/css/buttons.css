@@ -18,20 +18,28 @@
 }
 
 /* a square at the button metric; `.u2-btn` itself is control-high */
+/* the platform's action icon (`i.grok-icon` in a blue context, `.grok-icon-blue`): a bare blue glyph,
+   no box behind it; hover brightens it as icons.css `i.grok-icon:hover` does; disabled is grey */
 .u2-btn.u2-icon-btn {
   width: var(--dg-button-height);
   min-width: var(--dg-button-height);
   height: var(--dg-button-height);
   padding: 0;
-  color: var(--dg-text-color);
+  color: var(--dg-accent);
+  background: none;
   border: var(--dg-border-width) solid transparent;
 }
 
-.u2-btn.u2-icon-btn:hover:not(:disabled) {
-  background: var(--dg-hover-subtle);
+.u2-btn.u2-icon-btn:hover:not(:disabled),
+.u2-btn.u2-icon-btn:active:not(:disabled) {
+  background: none;
+  filter: contrast(80%) brightness(120%);
 }
 
-.u2-btn.u2-icon-btn:active:not(:disabled),
+.u2-btn.u2-icon-btn:disabled {
+  color: var(--dg-text-color-disabled);
+}
+
 .u2-btn.u2-icon-btn-pressed {
   color: var(--dg-accent);
   background: var(--dg-steel-1);

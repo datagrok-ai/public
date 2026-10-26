@@ -81,7 +81,6 @@
   min-width: 18px;
   height: 18px;
   font-size: var(--dg-font-size-xs);
-  color: var(--dg-text-color-light);
 }
 
 /* a key the server assigns, on a form that has not saved yet */
@@ -295,15 +294,6 @@
 .u2-domain-list-undo {
   flex: none;
   padding-left: var(--dg-space-m);
-}
-
-/* on the red tint the button stays see-through: hover darkens what is under it, not a grey square */
-.u2-domain-list-undo .u2-btn.u2-icon-btn {
-  background: transparent;
-}
-
-.u2-domain-list-undo .u2-btn.u2-icon-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--dg-text-color) 8%, transparent);
 }
 
 .u2-domain-list-when {
