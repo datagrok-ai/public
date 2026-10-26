@@ -11,6 +11,9 @@
   line-height: var(--dg-line-height);
   color: var(--dg-text-color);
   outline: none;
+  /* a scroll comes to rest on a row's top edge under the header, never on a sliver of a row */
+  scroll-snap-type: y proximity;
+  scroll-padding-top: var(--u2-data-table-header-height, 0px);
 }
 
 /* Keyboard focus only: on the scroller, so a table with nothing selected still shows where the
@@ -89,6 +92,7 @@
 }
 
 .u2-data-table-row {
+  scroll-snap-align: start;
   position: absolute;
   left: 0;
   right: 0;
@@ -138,6 +142,11 @@
 .u2-data-table-row .u2-cell-error {
   background: var(--dg-red-1);
   color: var(--dg-error);
+}
+
+/* a date in a column is the row's data, not a muted timestamp */
+.u2-data-table-row .u2-timestamp {
+  color: inherit;
 }
 
 .u2-data-table-row .u2-cell-readonly {

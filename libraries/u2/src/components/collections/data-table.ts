@@ -305,6 +305,7 @@ export class DataTable<T> extends VirtualRows<T> {
     header.setAttribute('role', 'row');
     header.style.gridTemplateColumns = this._template;
     header.style.height = `${this._headerHeight}px`;
+    this.root.style.setProperty('--u2-data-table-header-height', `${this._headerHeight}px`);
     header.classList.toggle('u2-data-table-sortable', this._sort !== undefined);
     for (const column of this._columns) {
       const cell = document.createElement('div');
