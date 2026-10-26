@@ -23,9 +23,10 @@ export class DomainSearch extends TextInput {
     super({search: true, inline: true, name: 'search', value: source.search.peek(),
       placeholder: options.placeholder ?? computed(() => {
         source.state.value;
-        const columns = DomainSearch.columns(source);
-        return columns.length === 0 || columns.length > 3 ? `Search ${DomainTable.noun(source.schema.info)}…` :
-          `Search ${columns.join(', ')}…`;
+        const columns = DomainSearch.columns(source).join(', ');
+        // a list the box can't show whole reads as cut: the tooltip names the columns instead
+        return columns === '' || columns.length > 20 ? `Search ${DomainTable.noun(source.schema.info)}…` :
+          `Search ${columns}…`;
       })});
     this.root.classList.add('u2-domain-search');
     this.root.dataset.u2 = 'domain-search';
