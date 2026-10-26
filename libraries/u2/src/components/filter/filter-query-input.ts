@@ -7,6 +7,7 @@ import {signal, computed, untracked, Signal, ReadonlySignal} from '../../core/si
 import {Input, InputOptions} from '../../core/input-base.js';
 import {bindValue} from '../../core/bind.js';
 import {div, span} from '../../core/elements.js';
+import {textWidth} from '../../core/text.js';
 import {SuggestionList} from '../../core/suggestion-list.js';
 import type {AsyncState} from '../../core/async-source.js';
 import type {IWidgetStatus} from '../../core/widget-like.js';
@@ -72,7 +73,6 @@ function row(main: HTMLElement | string, secondary?: string, glyph?: HTMLElement
 }
 
 export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions> {
-  private static _measure: CanvasRenderingContext2D | null | undefined;
 
   /** The raw text; committed to `value` on Enter or blur. */
   readonly text: Signal<string>;
@@ -357,12 +357,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
 
   /** Where the token at `at` starts in the box, clamped so the widest popup still fits under it. */
   private _caretOffset(at: number): number {
-    FilterQueryInput._measure ??= document.createElement('canvas').getContext?.('2d') ?? null;
-    const measure = FilterQueryInput._measure;
-    if (measure === null)
-      return 0;
-    measure.font = getComputedStyle(this._input).font;
-    const x = measure.measureText(this._text.peek().slice(0, at)).width - this._input.scrollLeft;
+    const x = textWidth(this._text.peek().slice(0, at), getComputedStyle(this._input).font) - this._input.scrollLeft;
     return Math.max(0, Math.min(x, this._input.clientWidth - POPUP_MAX_WIDTH));
   }
 

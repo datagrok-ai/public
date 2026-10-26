@@ -1,5 +1,6 @@
 import {batch, computed, signal, untracked, ReadonlySignal, Signal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
+import {textWidth} from '../../core/text.js';
 import {Input, LiveOption} from '../../core/input-base.js';
 import type {IItemsState} from '../../core/widget-like.js';
 
@@ -76,7 +77,6 @@ export class LabelColumn {
 const LABELS = '.u2-input-label, .ui-input-label';
 
 const _warnedUnkeyed = new Set<string>();
-let _measure: CanvasRenderingContext2D | null | undefined;
 
 /** Vertical input layout with an aligned label column and aggregated validity. The form does not
  * own the inputs it lays out: each one is already adopted by the scope that created it. */
@@ -475,15 +475,14 @@ export class Form extends Control {
     const text = label.textContent ?? '';
     if (text === '' || !label.isConnected)
       return 0;
-    _measure ??= document.createElement('canvas').getContext?.('2d') ?? null;
-    if (_measure === null)
-      return 0;
     const style = getComputedStyle(label);
-    _measure.font = style.font || `${style.fontSize} ${style.fontFamily}`;
-    let width = _measure.measureText(text).width + (parseFloat(style.paddingLeft) || 0) +
-      (parseFloat(style.paddingRight) || 0);
+    const font = style.font || `${style.fontSize} ${style.fontFamily}`;
+    const measured = textWidth(text, font);
+    if (measured === 0)
+      return 0;
+    let width = measured + (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
     if (label.parentElement?.classList.contains('u2-input-required'))
-      width += _measure.measureText('*').width + (parseFloat(getComputedStyle(label, '::after').marginLeft) || 0);
+      width += textWidth('*', font) + (parseFloat(getComputedStyle(label, '::after').marginLeft) || 0);
     return Math.ceil(width);
   }
 
