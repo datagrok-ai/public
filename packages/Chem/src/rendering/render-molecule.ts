@@ -25,6 +25,7 @@ export function renderMolecule(
   moleculeHost.style.width = (options.width).toString() + 'px';
   moleculeHost.style.height = (options.height).toString() + 'px';
 
+  // 'RDKit' names the Molecule cell renderer, which draws by the engine in effect
   const renderFunctions = DG.Func.find({meta: {chemRendererName: options.renderer}});
   if (renderFunctions.length > 0) {
     renderFunctions[0].apply().then((rendndererObj) => {
@@ -65,10 +66,12 @@ export function renderMolecule(
   return div;
 }
 
-export function _svgDiv(mol: any): HTMLDivElement {
-  const root = ui.div();
-  root.innerHTML = mol.get_svg();
-  return root;
+/** The molecule drawn again to fill most of the window, in a full-screen dialog: a small depiction (a context
+ *  panel's, a SAR matrix cell's) scaled up would only be blurred. */
+export function showEnlargedMolecule(molStr: string): DG.Dialog {
+  const width = Math.max(200, window.innerWidth - 200);
+  const height = Math.max(100, window.innerHeight - 200);
+  return ui.dialog({title: 'Molecule'}).add(renderMolecule(molStr, {width, height, popupMenu: false})).showModal(true);
 }
 
 function showMoleculeMenu(molStr: string) {
@@ -84,6 +87,7 @@ function showMoleculeMenu(molStr: string) {
     navigator.clipboard.writeText(molFile);
     grok.shell.info('Molfile copied to clipboard');
   });
+  menu.item('Enlarge', () => showEnlargedMolecule(molStr));
   menu.item('Sketch', () => {
     const sketcher = new DG.chem.Sketcher();
     DG.chem.isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);

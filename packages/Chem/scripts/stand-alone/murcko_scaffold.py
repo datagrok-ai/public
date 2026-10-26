@@ -1,5 +1,5 @@
-#name: Murcko Scaffolds
-#description: Generation of Murcko scaffolds from a molecule
+#name: MurckoScaffoldsPython
+#description: Generation of Murcko scaffolds from a molecule (Murcko Scaffolds' RDKit side: Chem:MurckoScaffolds calls this script, or Crux in Crux mode)
 #help-url: https://datagrok.ai/help/domains/chem/functions/murcko-scaffolds
 #language: python
 #sample: chem/smiles.csv

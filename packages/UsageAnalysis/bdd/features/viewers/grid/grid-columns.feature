@@ -201,7 +201,7 @@ Feature: Grid column geometry
     When user hovers over the "view" area of histogram viewer in column popup
     And user drags the "range min handle" area of histogram viewer in column popup to the "bin 10" area
     Then the "range min" reading of histogram viewer in column popup should be higher than before
-    And fewer than 1000 rows should pass the filter
+    And 326 rows should pass the filter
     When user remembers how many rows pass the filter
     And user remembers the "range min" reading of histogram viewer in column popup
     And user clicks on "Add filter" action in column popup

@@ -5,7 +5,7 @@
    quantity), rows prefixed per run and deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {Rows, Scope} from '@datagrok-libraries/u2';
 import type {IFieldStatus} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
@@ -22,8 +22,8 @@ category('U2: domain source', () => {
 
   /** The first load settled, or the reason it did not. */
   async function ready(src: DomainSource): Promise<void> {
-    for (let i = 0; i < 200 && (src.state.value === 'idle' || src.state.value === 'loading'); i++)
-      await delay(50);
+    await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading',
+      () => `source is ${src.state.value}: ${String(src.error.value)}`);
     if (src.state.value !== 'ready')
       throw new Error(`source is ${src.state.value}: ${String(src.error.value)}`);
   }
@@ -155,11 +155,11 @@ category('U2: domain source', () => {
       expect(status.find((f) => f.name === 'id') === undefined, true);
       expect(status.find((f) => f.name === 'name')?.access, 'editable');
       form.input('name')!.value.value = 'Alpha 3';
-      await delay(10);
+      await waitUntil(() => src.isDirty.value, 'the input to write through', 5000);
       expect(src.isDirty.value, true);
       expect(src.rows.byKey(ids[0])!.name, 'Alpha 3');
       src.discard();
-      await delay(10);
+      await waitUntil(() => form.input('name')!.value.value === 'Alpha', 'the form to re-read the row', 5000);
       expect(form.input('name')!.value.value, 'Alpha', 'the form re-read the row');
       expect(src.isDirty.value, false);
     } finally {
@@ -175,18 +175,18 @@ category('U2: domain source', () => {
       const names = list.actionsFor(src.rows.byKey(ids[0])!).map((a) => a.name);
       expect(names.includes('Open') && names.includes('Delete'), true, names.join(', '));
       list.list.selectedIndex.value = 1;
-      await delay(10);
+      await waitUntil(() => src.currentRow.value?.id === src.rows.items.value[1].id, 'the current row', 5000);
       expect(src.currentRow.value?.id, src.rows.items.value[1].id);
       src.currentRow.value = null;
-      await delay(10);
+      await waitUntil(() => list.list.selectedIndex.value === -1, 'the selection to clear', 5000);
       expect(list.list.selectedIndex.value, -1);
       list.actionsFor(src.rows.byKey(ids[1])!).find((a) => a.name === 'Delete')!.run();
-      await delay(10);
+      await waitUntil(() => src.isDirty.value, 'the delete to be staged', 5000);
       expect(src.rows.byKey(ids[1])!['~state'], 'deleted', 'marked deleted: kept in the rows, struck through');
       expect(src.summary.value, '1 deletion pending');
       expect(list.actionsFor(src.rows.byKey(ids[1])!).map((a) => a.name).join(), 'Restore');
       src.discard();
-      await delay(10);
+      await waitUntil(() => !src.isDirty.value, 'the discard to land', 5000);
       expect(src.rows.byKey(ids[1])!['~state'] ?? '', '', 'discard restores it (an empty state cell reads null)');
     } finally {
       list.dispose();
@@ -211,11 +211,11 @@ category('U2: domain source', () => {
       expect(save.session === src.session, true, 'the source\'s own session');
       expect(save.button.disabled, true);
       src.rows.byKey(ids[1])!.quantity = 5;
-      await delay(10);
+      await waitUntil(() => !save.button.disabled, 'Save to enable', 5000);
       expect(save.button.disabled, false);
       expect(discard.button.disabled, false);
       discard.button.click();
-      await delay(10);
+      await waitUntil(() => !src.isDirty.value, 'the discard to land', 5000);
       expect(src.isDirty.value, false);
       expect(save.button.disabled, true);
     } finally {

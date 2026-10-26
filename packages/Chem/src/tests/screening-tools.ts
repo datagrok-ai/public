@@ -51,7 +51,10 @@ category('screening tools', () => {
     const df = approvedDrugs100.clone();
     const tv = grok.shell.addTableView(df);
     await PackageFunctions.elementalAnalysis(df, df.getCol('molecule'), false, false);
-    expect(df.columns.length, 42);
+    // 32 + 10 elements + Molecule Charge: RDKit writes 64 of these molecules (enhanced stereo) as V3000 MOL blocks,
+    // whose atoms were counted as none (42 columns then: no Na)
+    expect(df.columns.length, 43);
+    expect(df.col('C')!.toList().filter((n) => !n).length, 0, 'every molecule\'s carbons counted');
     tv.close();
   });
 

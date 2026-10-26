@@ -1,22 +1,22 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {after, before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {PackageFunctions} from '../package';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {readDataframe} from './utils';
-import {ChemicalEngine, cruxReady, setChemicalEngine} from '../engine/chem-engine';
+import {CruxAlone, inBothEngines, inEngine, withCruxUnreadable} from './engine-utils';
+import {ChemicalEngine} from '../engine/chem-engine';
 import {cruxFallbackCount} from '../engine/fallback';
-import {setCruxUnreadableForTests} from '../engine/worker-jobs';
 import {getCruxService} from '../crux/crux-searches';
 import {getMmpFrags} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-fragments';
 import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc';
 import {rGroupsMinilib} from '../analysis/r-group-analysis';
 import {getMCS} from '../utils/most-common-subs';
-import {decomposeClusters} from '../analysis/sar-matrix/sar-matrix-decompose';
-import {linkStaged} from '../analysis/sar-matrix/sar-matrix-assemble';
-import {LinkStages} from '../analysis/sar-matrix/sar-matrix-link';
+import {decomposeClusters} from '../analysis/sar-matrix/build/sar-matrix-decompose';
+import {linkStaged} from '../analysis/sar-matrix/build/sar-matrix-assemble';
+import {LinkStages} from '../analysis/sar-matrix/build/sar-matrix-link';
 
 /**
  * MMPA fragmentation, R-group decomposition and FMCS in Crux mode ("Chemical engine"): engine/analysis-jobs.ts. Each
@@ -26,27 +26,8 @@ import {LinkStages} from '../analysis/sar-matrix/sar-matrix-link';
  * molzip's expected values are the pinned RDKit 2026.03.6's (Python `Chem.molzip`, the SMILES read again).
  */
 
-/** How many times the RDKit pool was asked for (each `getRdKitService()` counts). */
-const rdkitPoolAsks = () => chemCommonRdKit._rdKitService?.timesInitialized ?? 0;
-
-/** `run()` in RDKit mode, then in Crux mode: both results; in Crux mode no RDKit worker asked and no fallback to
- * RDKit for `calls`. */
-async function inBothEngines<T>(run: () => Promise<T>, calls: string[]): Promise<{rdkit: T, crux: T}> {
-  try {
-    setChemicalEngine(ChemicalEngine.RDKit);
-    const rdkit = await run();
-    setChemicalEngine(ChemicalEngine.Crux);
-    expect(await cruxReady(), true, 'the Crux module loads');
-    await getCruxService();
-    const [asks, fallbacks] = [rdkitPoolAsks(), calls.map((c) => cruxFallbackCount(c))];
-    const crux = await run();
-    expect(calls.map((c) => cruxFallbackCount(c)).join(','), fallbacks.join(','), `RDKit did ${calls} for Crux`);
-    expect(rdkitPoolAsks(), asks, 'the RDKit workers were asked for');
-    return {rdkit, crux};
-  } finally {
-    setChemicalEngine(null);
-  }
-}
+/** The Crux workers alone did `calls`: no RDKit worker asked for, no fallback to RDKit. */
+const onCruxAlone = (...calls: string[]): CruxAlone => ({noFallback: calls, noRdkitPool: true});
 
 /** Each molecule's fragment pairs by name. */
 function fragmentNames(frags: MmpFragments): string[][][] {
@@ -82,17 +63,12 @@ category('crux analyses', () => {
     }
   });
 
-  after(async () => {
-    setCruxUnreadableForTests(null);
-    setChemicalEngine(null);
-  });
-
   test('MMPA fragments: Crux mode on the Crux workers, as RDKit mode', async () => {
     // the MMP test table: the same fragments and SMILES in both engines; and two molecules fragmentMol does not cut
     // (no cuttable bond; 24 of them, over its 20), which RDKit's code gives no SMILES on both engines: no RDKit asked
     const molecules = [...(await readDataframe('demo_files/matched_molecular_pairs.csv')).col('smiles')!.toList(), '',
       'c1ccccc1', 'C'.repeat(25)].map((m) => m ?? '') as string[];
-    const {rdkit, crux} = await inBothEngines(() => getMmpFrags(molecules), ['MMPA fragments']);
+    const {rdkit, crux} = await inBothEngines(() => getMmpFrags(molecules), onCruxAlone('MMPA fragments'));
     expect(JSON.stringify(crux[1]), JSON.stringify(rdkit[1]), 'the canonical SMILES');
     const [a, b] = [fragmentNames(rdkit[0]), fragmentNames(crux[0])];
     const differ = a.flatMap((pairs, i) => JSON.stringify(pairs) === JSON.stringify(b[i]) ? [] : [molecules[i]]);
@@ -108,32 +84,21 @@ category('crux analyses', () => {
       [['COC(=O)[C@@H](N)[*:1]', 'C[*:1]'], ['COC(=O)[C@H](C)[*:1]', 'N[*:1]'], ['C[C@H](N)[*:1]', 'COC(=O)[*:1]'],
         ['C[C@H](N)C(=O)O[*:1]', 'C[*:1]']],
       [['C(=C\\[*:1])/c1ccccc1', 'F[*:1]'], ['c1ccc([*:1])cc1', 'F/C=C/[*:1]']]];
-    setChemicalEngine(ChemicalEngine.Crux);
-    try {
-      expect(await cruxReady(), true);
+    await inEngine(ChemicalEngine.Crux, async () => {
       const [frags] = await getMmpFrags(['C[C@H](N)C(=O)OC', 'F/C=C/c1ccccc1']);
       expect(JSON.stringify(fragmentNames(frags)), JSON.stringify(expected));
-    } finally {
-      setChemicalEngine(null);
-    }
+    });
   });
 
   test('MMPA fragments: RDKit fragments a molecule Crux cannot read', async () => {
     const molecules = ['c12ccc(Cl)cc2nccc1CC', 'CC(=O)Oc1ccccc1C(=O)O', 'CCN(CC)C(=O)c1ccccc1'];
-    setChemicalEngine(ChemicalEngine.RDKit);
-    const [rdkit] = await getMmpFrags(molecules);
-    setChemicalEngine(ChemicalEngine.Crux);
-    setCruxUnreadableForTests([molecules[1]]);
-    try {
-      expect(await cruxReady(), true);
+    const [rdkit] = await inEngine(ChemicalEngine.RDKit, () => getMmpFrags(molecules));
+    await inEngine(ChemicalEngine.Crux, () => withCruxUnreadable([molecules[1]], async () => {
       const fallbacks = cruxFallbackCount('MMPA fragments');
       const [crux] = await getMmpFrags(molecules);
       expect(JSON.stringify(fragmentNames(crux)), JSON.stringify(fragmentNames(rdkit)));
       expect(cruxFallbackCount('MMPA fragments'), fallbacks + 1, 'one fallback: the molecule RDKit fragmented');
-    } finally {
-      setCruxUnreadableForTests(null);
-      setChemicalEngine(null);
-    }
+    }));
   });
 
   test('R-group decomposition: Crux mode on a Crux worker, as RDKit mode', async () => {
@@ -154,7 +119,7 @@ category('crux analyses', () => {
         const {rGroups, highlightCol} = await rGroupsMinilib(table.col('smiles')!, core, coreIsQMol, 0, options);
         return JSON.stringify([rGroups.map((c) => [c.name, c.toList()]), highlightCol?.toList()]);
       };
-      const {rdkit, crux} = await inBothEngines(decompose, ['R-group decomposition']);
+      const {rdkit, crux} = await inBothEngines(decompose, onCruxAlone('R-group decomposition'));
       expect(crux, rdkit, `${name}, ${matchingStrategy}: columns, R groups and highlights`);
       expect(rdkit.includes('R2'), true, `${name}: decomposed`);
     }
@@ -175,7 +140,7 @@ category('crux analyses', () => {
     };
     for (const [name, cluster] of clusters) {
       for (const [k, [exactAtoms, exactBonds]] of MCS_COMPARISONS.entries()) {
-        const mcs = await inBothEngines(() => getMCS(cluster, exactAtoms, exactBonds), ['MCS']);
+        const mcs = await inBothEngines(() => getMCS(cluster, exactAtoms, exactBonds), onCruxAlone('MCS'));
         const what = `${name}, atoms ${exactAtoms ? 'exact' : 'any'}, bonds ${exactBonds ? 'exact' : 'any'}`;
         expect(mcs.crux, MCS_R26[name][k], what);
         expect(graph(mcs.rdkit), graph(mcs.crux), `${what}: RDKit mode's MCS`);
@@ -195,24 +160,19 @@ category('crux analyses', () => {
     molCol.semType = DG.SEMTYPE.MOLECULE;
     const clusterCol = column('cluster', clustered.map(([, c]) => c));
     const mcsOf = async () => (await PackageFunctions.performClusterMCS(molCol, clusterCol)).toList();
-    const {rdkit, crux} = await inBothEngines(mcsOf, ['cluster MCS']);
+    const {rdkit, crux} = await inBothEngines(mcsOf, onCruxAlone('cluster MCS'));
     expect(JSON.stringify(crux), JSON.stringify(rdkit), 'each row\'s cluster MCS');
     const clusterMcs = ['CCNC(C)=O', 'CCN(C)C', 'CCN(C)C1:N:N:C(C):N:1CC', 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1',
       'CCOc1ccccc1', null, 'CC(=O)Nc1ccc(O)cc1'];
     expect(JSON.stringify([...new Set(rdkit)]), JSON.stringify(clusterMcs),
       'the clusters\' MCS (as RDKit.js 2026.03.6 writes them too)');
-    setChemicalEngine(ChemicalEngine.Crux);
     // a molecule of the third SPGI series (the RDKit pool's MCS of it) and the one-molecule cluster's (its SMILES
     // written by RDKit's module)
-    setCruxUnreadableForTests([spgi[25], 'CC(=O)Nc1ccc(O)cc1']);
-    try {
+    await inEngine(ChemicalEngine.Crux, () => withCruxUnreadable([spgi[25], 'CC(=O)Nc1ccc(O)cc1'], async () => {
       const fallbacks = cruxFallbackCount('cluster MCS');
       expect(JSON.stringify(await mcsOf()), JSON.stringify(rdkit), 'RDKit\'s MCS for the clusters Crux cannot read');
       expect(cruxFallbackCount('cluster MCS'), fallbacks + 2, 'two fallbacks: the SPGI series, the one molecule');
-    } finally {
-      setCruxUnreadableForTests(null);
-      setChemicalEngine(null);
-    }
+    }));
   }, {timeout: 60000});
 
   test('SAR matrix: clusters anchored and decomposed on Crux, as on RDKit', async () => {
@@ -228,7 +188,7 @@ category('crux analyses', () => {
     const members = [[0, 1, 2, 3, 4, 5, 6, 7], [8, 9, 10, 11, 12, 13, 14, 15, 16],
       [17, 18, 19, 20, 21, 22, 23, 24], [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]];
     const decompose = async () => JSON.stringify(await decomposeClusters(members, smiles, true));
-    const {rdkit, crux} = await inBothEngines(decompose, ['cluster MCS', 'cluster R-groups']);
+    const {rdkit, crux} = await inBothEngines(decompose, onCruxAlone('cluster MCS', 'cluster R-groups'));
     expect(crux, rdkit, 'every cluster\'s records and positions');
     expect(rdkit.includes('records'), true, 'some cluster decomposed');
   }, {timeout: 60000});
@@ -248,7 +208,7 @@ category('crux analyses', () => {
     ];
     const link = () => linkStaged(cases.map(([core]) => core), cases.map(([, plan]) => plan),
       (i, position) => cases[i][2][position] ?? '');
-    const {rdkit, crux} = await inBothEngines(link, ['fragment linking']);
+    const {rdkit, crux} = await inBothEngines(link, onCruxAlone('fragment linking'));
     expect(JSON.stringify(crux), JSON.stringify(rdkit), 'each joined molecule');
     expect(rdkit.every((s) => !!s), true, 'every case joined');
   });
@@ -279,27 +239,19 @@ category('crux analyses', () => {
       mol.delete();
       return block;
     })();
+    // the registered function, as other packages call it: Crux in either engine (the stand's)
     const molzip = async (molecules: string[], params?: object): Promise<string> =>
       JSON.stringify(await grok.functions.call('Chem:molzip', {molecules, params}));
-    for (const engine of [ChemicalEngine.RDKit, ChemicalEngine.Crux]) {
-      setChemicalEngine(engine);
-      try {
-        for (const [molecule, params, expected] of cases)
-          expect(await molzip([molecule], params), JSON.stringify([expected]), `${engine}: ${molecule}`);
-        expect(await molzip([molblock, 'C[*:1].Cl[*:1]']), JSON.stringify(['CN', 'CCl']),
-          `${engine}: a MOL block of two pieces, and a second molecule`);
-      } finally {
-        setChemicalEngine(null);
-      }
-    }
+    for (const [molecule, params, expected] of cases)
+      expect(await molzip([molecule], params), JSON.stringify([expected]), molecule);
+    expect(await molzip([molblock, 'C[*:1].Cl[*:1]']), JSON.stringify(['CN', 'CCl']),
+      'a MOL block of two pieces, and a second molecule');
   });
 
   test('a replaced worker: the index a search was using is freed on the other workers', async () => {
     // CruxService.restartWorker drops the column indexes with a segment on the worker it replaces; one a search is
     // using is released (its segments on the other workers freed) when the search ends
-    setChemicalEngine(ChemicalEngine.Crux);
-    try {
-      expect(await cruxReady(), true);
+    await inEngine(ChemicalEngine.Crux, async () => {
       const service = await getCruxService();
       const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList() as string[];
       const index = await service.getIndex(column('molecules', [...smiles, ...smiles, ...smiles]));
@@ -310,41 +262,36 @@ category('crux analyses', () => {
       await search.catch(() => {});
       expect(index.lost, true, 'the index is dropped');
       expect(index.released.length, 0, 'its segments on the other workers are freed');
-    } finally {
-      setChemicalEngine(null);
-    }
+    });
   });
 
   test('Cluster MCS: a cluster waits for an idle worker, not behind a busy one', async () => {
     // a long call on worker 0 (an FMCS, say): the clusters go to the idle workers, none past its time limit (1.5 s
     // here), and the pool is not restarted
-    setChemicalEngine(ChemicalEngine.Crux);
-    expect(await cruxReady(), true);
-    const service = await getCruxService();
-    const sar = (await readDataframe('tests/sar-small_test.csv')).col('smiles')!.toList() as string[];
-    service.clusterLimitForTests = 1500;
-    try {
-      const generation = service.generation;
-      const busy = service.busyWorkerForTests(0, 4000);
-      await new Promise((resolve) => setTimeout(resolve, 200)); // the busy call posted
-      const {results, timedOut} = await service.clusterMCS([sar.slice(0, 6), sar.slice(6, 12), sar.slice(12)],
-        true, true);
-      expect(JSON.stringify(timedOut), '[]', 'clusters past their time limit');
-      expect(results.every((mcs) => !!mcs), true, 'every cluster has an MCS');
-      await busy;
-      expect(service.generation, generation, 'the pool was restarted');
-    } finally {
-      service.clusterLimitForTests = null;
-      setChemicalEngine(null);
-    }
+    await inEngine(ChemicalEngine.Crux, async () => {
+      const service = await getCruxService();
+      const sar = (await readDataframe('tests/sar-small_test.csv')).col('smiles')!.toList() as string[];
+      service.clusterLimitForTests = 1500;
+      try {
+        const generation = service.generation;
+        const busy = service.busyWorkerForTests(0, 4000);
+        await new Promise((resolve) => setTimeout(resolve, 200)); // the busy call posted
+        const {results, timedOut} = await service.clusterMCS([sar.slice(0, 6), sar.slice(6, 12), sar.slice(12)],
+          true, true);
+        expect(JSON.stringify(timedOut), '[]', 'clusters past their time limit');
+        expect(results.every((mcs) => !!mcs), true, 'every cluster has an MCS');
+        await busy;
+        expect(service.generation, generation, 'the pool was restarted');
+      } finally {
+        service.clusterLimitForTests = null;
+      }
+    });
   }, {timeout: 60000});
 
   test('a replaced worker\'s calls fail without restarting the pool', async () => {
     // the jobs of a worker CruxService.restartWorker replaces fail (their callers fall back to RDKit); the other
     // workers and their indexes stay
-    setChemicalEngine(ChemicalEngine.Crux);
-    try {
-      expect(await cruxReady(), true);
+    await inEngine(ChemicalEngine.Crux, async () => {
       const service = await getCruxService();
       const generation = service.generation;
       const busy = service.busyWorkerForTests(1, 3000);
@@ -355,9 +302,7 @@ category('crux analyses', () => {
       expect(service.generation, generation, 'the pool was restarted');
       // the new worker answers (a new client: the old one's terminate reason is not carried over)
       expect(typeof await service.busyWorkerForTests(1, 10), 'number', 'the replacement answers');
-    } finally {
-      setChemicalEngine(null);
-    }
+    });
   }, {timeout: 60000});
 
   test('timing: RDKit and Crux', async () => {
@@ -380,22 +325,16 @@ category('crux analyses', () => {
     const report: string[] = [];
     for (const [name, job] of jobs) {
       const medians: string[] = [];
-      for (const engine of [ChemicalEngine.RDKit, ChemicalEngine.Crux]) {
-        setChemicalEngine(engine);
-        try {
-          await cruxReady();
-          await job(); // warm: the pools up, the molecules read once
-          const times: number[] = [];
-          for (let k = 0; k < 3; k++) {
-            const started = performance.now();
-            await job();
-            times.push(performance.now() - started);
-          }
-          medians.push(`${engine} ${times.sort((a, b) => a - b)[1].toFixed(0)} ms`);
-        } finally {
-          setChemicalEngine(null);
+      await inBothEngines(async (engine) => {
+        await job(); // warm: the pools up, the molecules read once
+        const times: number[] = [];
+        for (let k = 0; k < 3; k++) {
+          const started = performance.now();
+          await job();
+          times.push(performance.now() - started);
         }
-      }
+        medians.push(`${engine} ${times.sort((a, b) => a - b)[1].toFixed(0)} ms`);
+      });
       report.push(`${name}: ${medians.join(', ')}`);
     }
     console.log(`crux analyses | timing (median of 3): ${report.join('; ')}`);

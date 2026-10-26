@@ -10,8 +10,8 @@ import {cliffMcs, createPropPanelElement, createTooltipElement} from '../analysi
 import {MALFORMED_DATA_WARNING_CLASS} from '../constants';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import { PackageFunctions } from '../package';
-import {ChemicalEngine, cruxReady, setChemicalEngine} from '../engine/chem-engine';
-import {cruxFallbackCount} from '../engine/fallback';
+import {ChemicalEngine} from '../engine/chem-engine';
+import {expectNoFallback, inEngine, rdkitPoolAsks} from './engine-utils';
 import {getCruxService} from '../crux/crux-searches';
 import {getMCS} from '../utils/most-common-subs';
 import {getUncommonAtomsAndBonds} from '../utils/chem-common';
@@ -74,8 +74,6 @@ function similarPairs(molecules: string[], cutoff: number): [number, number][] {
   }
   return pairs;
 }
-
-const rdkitPoolAsks = () => chemCommonRdKit._rdKitService?.timesInitialized ?? 0;
 
 /** Median, 95th percentile and maximum of `ms`. */
 function timings(ms: number[]): string {
@@ -165,27 +163,23 @@ category('top menu activity cliffs', async () => {
 
   test('cliffMcs.crux', async () => {
     // Crux mode: what the tooltip highlights is what Rascal's MCES (the Crux workers) leaves out; no RDKit worker asked
-    setChemicalEngine(ChemicalEngine.Crux);
-    try {
-      expect(await cruxReady(), true, 'the Crux module loads');
+    await inEngine(ChemicalEngine.Crux, async () => {
       await getCruxService();
-      const [asks, fallbacks] = [rdkitPoolAsks(), cruxFallbackCount('activity cliffs MCS')];
-      for (const [file, column, i, j, uncommon] of [...RASCAL_PAIRS, PEPTIDE_PAIR]) {
-        const mcs = await cliffMcs(await pairOf(file, column, i, j));
-        const got = Array.isArray(mcs) ? mcs.map((s) => [s.atoms, s.bonds]) : mcs;
-        expect(JSON.stringify(got), JSON.stringify(uncommon), `${file} rows ${i}, ${j}`);
-      }
-      expect(cruxFallbackCount('activity cliffs MCS'), fallbacks, 'RDKit found an MCS for Crux');
+      const asks = rdkitPoolAsks();
+      await expectNoFallback(['activity cliffs MCS'], async () => {
+        for (const [file, column, i, j, uncommon] of [...RASCAL_PAIRS, PEPTIDE_PAIR]) {
+          const mcs = await cliffMcs(await pairOf(file, column, i, j));
+          const got = Array.isArray(mcs) ? mcs.map((s) => [s.atoms, s.bonds]) : mcs;
+          expect(JSON.stringify(got), JSON.stringify(uncommon), `${file} rows ${i}, ${j}`);
+        }
+      });
       expect(rdkitPoolAsks(), asks, 'the RDKit workers were asked for');
-    } finally {
-      setChemicalEngine(null);
-    }
+    });
   }, {timeout: 60000});
 
   test('cliffMcs.rdkit', async () => {
     // RDKit mode: FMCS's SMARTS from the RDKit workers, as before; its highlight is not Rascal's on the last pair
-    setChemicalEngine(ChemicalEngine.RDKit);
-    try {
+    await inEngine(ChemicalEngine.RDKit, async () => {
       for (const [file, column, i, j] of RASCAL_PAIRS) {
         const pair = await pairOf(file, column, i, j);
         expect(await cliffMcs(pair), await getMCS(DG.Column.fromStrings('smiles', pair), true, true),
@@ -201,9 +195,7 @@ category('top menu activity cliffs', async () => {
       } finally {
         fmcs.delete();
       }
-    } finally {
-      setChemicalEngine(null);
-    }
+    });
   });
 
   test('cliffMcs.everyPair', async () => {

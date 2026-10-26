@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {category, test, before, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, before, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {useViewersHook} from '../composables/use-viewers-hook';
 import {BehaviorSubject} from 'rxjs';
 import * as Vue from 'vue';
@@ -34,14 +34,14 @@ category('Composables: Viewers hook', async () => {
     const {setViewerRef} = useViewersHook(Vue.ref(hook), mockStates, mockCall as any);
     const grid = mockData.plot.grid();
     setViewerRef(grid, 'simulation', 'Grid');
-    await awaitCheck(() => runCount > 0);
+    await waitUntil(() => runCount > 0, 'timed out waiting for runCount > 0');
     expect(lastIoName, 'simulation');
     expect(lastType, 'Grid');
     expect(lastViewer, grid);
 
     const line = mockData.plot.line();
     setViewerRef(line, 'simulation', 'Line chart');
-    await awaitCheck(() => runCount > 1);
+    await waitUntil(() => runCount > 1, 'timed out waiting for runCount > 1');
     expect(lastIoName, 'simulation');
     expect(lastType, 'Line chart');
     expect(lastViewer, line);
@@ -65,10 +65,10 @@ category('Composables: Viewers hook', async () => {
     const {setViewerRef} = useViewersHook(Vue.ref(hook), mockStates, mockCall as any);
     const grid = mockData.plot.grid();
     setViewerRef(grid, 'simulation', 'Grid');
-    await awaitCheck(() => runCount > 0);
+    await waitUntil(() => runCount > 0, 'timed out waiting for runCount > 0');
 
     mockStates.value!.simulation.next({x: 1});
-    await awaitCheck(() => runCount > 1);
+    await waitUntil(() => runCount > 1, 'timed out waiting for runCount > 1');
     expect(lastIoName, 'simulation');
     expect(lastType, 'Grid');
     expect(lastViewer, grid);

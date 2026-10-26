@@ -1,10 +1,11 @@
-import {category, test, expect, expectArray, before} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, before, awaitCheck} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {readDataframe} from './utils';
 import {scrollTable} from '../utils/demo-utils';
 import * as DG from 'datagrok-api/dg';
 import {RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
+import {showEnlargedMolecule} from '../rendering/render-molecule';
 import {FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG, SCAFFOLD_TREE_HIGHLIGHT} from '../constants';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 
@@ -147,5 +148,19 @@ category('rendering', () => {
     const res = smiles.map((s) => rdKitCellRenderer
       ._fetchMol(s, [], false, false, {}, true).molCtx.useMolBlockWedging);
     expectArray(res, new Array(5).fill(false));
+  });
+
+  test('Enlarge draws the molecule again at the window\'s size', async () => {
+    const dialog = showEnlargedMolecule('O=C(O)c1ccccc1');
+    try {
+      const canvas = dialog.root.querySelector('canvas')!;
+      expect(canvas.style.width, `${Math.max(200, window.innerWidth - 200)}px`);
+      await awaitCheck(() => {
+        const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+        return data.some((v, i) => i % 4 === 0 && v < 100 && data[i + 3] > 200); // a bond: dark and opaque
+      }, 'nothing drawn', 5000);
+    } finally {
+      dialog.close();
+    }
   });
 });

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {category, test, expect} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, settled} from '@datagrok-libraries/test/src/test';
 
 // Pins the Dart behavior the dg-viewer webcomponent relies on: a frame swap followed
 // synchronously by consistent options never evaluates a torn look/frame pair, because
@@ -18,7 +18,7 @@ const makeDf = (withSpecies: boolean) => {
   return DG.DataFrame.fromColumns(columns);
 };
 
-const captureNullErrors = async (action: () => void): Promise<string[]> => {
+const captureNullErrors = async (viewer: DG.Viewer, action: () => void): Promise<string[]> => {
   const errors: string[] = [];
   const original = console.error;
   console.error = (...args: any[]) => {
@@ -30,7 +30,8 @@ const captureNullErrors = async (action: () => void): Promise<string[]> => {
   };
   try {
     action();
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    // the deferred look refresh lands with the render the swap asks for
+    await settled(viewer);
   } finally {
     console.error = original;
   }
@@ -44,8 +45,8 @@ category('Viewers: frame swap contract', () => {
       const viewer = await makeDf(true).plot.fromType(DG.VIEWER.LINE_CHART) as DG.Viewer;
       viewer.setOptions({xColumnName: 'time', yColumnNames: ['value'], splitColumnNames: ['species']});
       view.append(viewer.root);
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      const errors = await captureNullErrors(() => {
+      await settled(viewer);
+      const errors = await captureNullErrors(viewer, () => {
         viewer.dataFrame = makeDf(false);
         viewer.setOptions({xColumnName: 'time', yColumnNames: ['value']});
       });
@@ -61,8 +62,8 @@ category('Viewers: frame swap contract', () => {
       const viewer = await makeDf(false).plot.fromType(DG.VIEWER.LINE_CHART) as DG.Viewer;
       viewer.setOptions({xColumnName: 'time', yColumnNames: ['value']});
       view.append(viewer.root);
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      const errors = await captureNullErrors(() => {
+      await settled(viewer);
+      const errors = await captureNullErrors(viewer, () => {
         viewer.dataFrame = makeDf(true);
         viewer.setOptions({xColumnName: 'time', yColumnNames: ['value'], splitColumnNames: ['species']});
       });

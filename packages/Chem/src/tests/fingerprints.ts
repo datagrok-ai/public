@@ -11,7 +11,8 @@ import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import { readDataframe } from './utils';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {ChemicalEngine, cruxReady, isCruxRequested, setChemicalEngine} from '../engine/chem-engine';
+import {ChemicalEngine, isCruxRequested} from '../engine/chem-engine';
+import {inBothEngines, inEngine} from './engine-utils';
 import {fingerprintsKey} from '../engine/worker-jobs';
 import {FingerprintOptions} from '../utils/fingerprint-options';
 
@@ -64,20 +65,6 @@ async function freshBits(smiles: string[], type: Fingerprint, options?: Fingerpr
 /** The cache key suffix of the engine in effect. */
 function engineKey(): string {
   return fingerprintsKey(isCruxRequested() ? ChemicalEngine.Crux : ChemicalEngine.RDKit);
-}
-
-/** `check` with the engine pinned to each engine in turn (the stand's setting after). */
-async function inBothEngines(check: (engine: ChemicalEngine) => Promise<void>): Promise<void> {
-  try {
-    for (const engine of [ChemicalEngine.RDKit, ChemicalEngine.Crux]) {
-      setChemicalEngine(engine);
-      if (engine === ChemicalEngine.Crux)
-        expect(await cruxReady(), true, 'the Crux module loads');
-      await check(engine);
-    }
-  } finally {
-    setChemicalEngine(null);
-  }
 }
 
 category('fingerprints', async () => {
@@ -206,17 +193,14 @@ category('fingerprints', async () => {
       [Fingerprint.AtomPair]: [68, '16,32,56,57,68,192,220,221,222,224'],
       [Fingerprint.TopologicalTorsion]: [17, '12,28,48,49,148,376,377,408,576,612'],
     };
-    setChemicalEngine(ChemicalEngine.RDKit);
-    try {
+    await inEngine(ChemicalEngine.RDKit, async () => {
       for (const [type, [count, first]] of Object.entries(expected)) {
         const [fp] = await chemGetFingerprints(molTable([ASPIRIN]), type as Fingerprint, false, {size: 1024});
         expect(fp?.length, 1024, `${type}: the size`);
         const bits = onBits(fp).split(',');
         expect(`${bits.length}: ${bits.slice(0, 10).join(',')}`, `${count}: ${first}`, `${type}: aspirin's bits`);
       }
-    } finally {
-      setChemicalEngine(null);
-    }
+    });
   });
 
   test('options: each option set has its own cached column', async () => {

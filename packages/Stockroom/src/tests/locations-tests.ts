@@ -4,7 +4,7 @@
    discarded with the view. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {domains, DomainApp} from '@datagrok-libraries/ems/src/dg';
 import {newContainerAt, stockroomLocations} from '../package';
 
@@ -20,9 +20,10 @@ category('Stockroom: locations', () => {
     grok.shell.addView(view);
     view.temp['ignoreCloseAll'] = true;
     try {
-      await delay(500);
-      const add = document.querySelector<HTMLButtonElement>('[data-u2="new-container-button"] button, ' +
+      const button = () => document.querySelector<HTMLButtonElement>('[data-u2="new-container-button"] button, ' +
         'button[data-u2="new-container-button"]');
+      await waitUntil(() => button() !== null, 'the New container button is not in the view ribbon');
+      const add = button();
       expect(add !== null, true, 'the button is in the view ribbon');
       expect(add!.disabled, true, 'and disabled while the tree has no node selected');
       expect(add!.title, 'Select a location first', 'which says what to do first');
@@ -43,8 +44,8 @@ category('Stockroom: locations', () => {
       expect(view.name, 'Containers in Main campus', 'the view says which location, not the uuid');
       // the entity source is assigned synchronously; the pristine draft row only lands when
       // its refresh resolves, so the row is what the wait is for
-      for (let i = 0; i < 100 && (app.entitySource.value?.currentRow.value ?? null) === null; i++)
-        await delay(50);
+      await waitUntil(() => (app.entitySource.value?.currentRow.value ?? null) !== null,
+        'the draft row did not land', 5000);
       expect(app.page.value, 'entity');
       expect(app.entity.value, DomainApp.NEW);
       const draft = app.entitySource.value!.currentRow.value!;

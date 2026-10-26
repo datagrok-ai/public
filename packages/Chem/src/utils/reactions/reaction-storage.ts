@@ -99,7 +99,8 @@ export async function deleteUserReaction(reactionId: string): Promise<boolean> {
   return true;
 }
 
-/** Validate a reaction SMARTS/SMIRKS string using RDKit. */
+/** Validate a reaction SMARTS/SMIRKS string using RDKit, in both modes: with the drawing it gates (reaction-drawing.ts
+ * `drawReactionByRdKit`); a run reads the reaction on Crux in Crux mode, with RDKit behind it. */
 export function validateReactionSmarts(
   rdkit: RDModule, smarts: string,
 ): {valid: boolean; error?: string; numReactants?: number; numProducts?: number} {

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, expect} from '@datagrok-libraries/test/src/test';
+import {waitUntil, expect} from '@datagrok-libraries/test/src/test';
 
 /** Saves the layout of [view] to the server, applies what the server stored to a new view of [table]
  * that has a histogram in its place, and hands that view to [check]; the layout is deleted afterwards. */
@@ -40,7 +40,7 @@ export async function projectRoundTrip(view: DG.TableView,
     await grok.dapi.projects.save(project);
     grok.shell.closeAll();
     await (await grok.dapi.projects.find(project.id)).open();
-    await awaitCheck(() => (grok.shell.tv?.dataFrame?.rowCount ?? 0) > 0, 'the project opened no table', 15000);
+    await waitUntil(() => (grok.shell.tv?.dataFrame?.rowCount ?? 0) > 0, 'the project opened no table', 15000);
     await check(grok.shell.tv);
   }
   finally {

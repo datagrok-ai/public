@@ -22,9 +22,8 @@ MolNotation.CxSmiles = 'cxsmiles';
 // datagrok libraries dependencies
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {getMolSafe, isSmilesSyntax} from './mol-creation_rdkit';
-import {ChemicalEngine, engineInEffect} from '../engine/chem-engine';
-import {cruxModuleSync, noteCruxError} from '../engine/crux-module';
-import {cruxOrRdKit, warnCruxFallback} from '../engine/fallback';
+import {byEngineModule} from '../engine/chem-engine';
+import {noteCruxError} from '../engine/crux-module';
 import {convertMolNotationByEngine} from '../engine/worker-jobs';
 import {cruxReadsCxExtension} from '../crux/crux-service';
 
@@ -66,21 +65,13 @@ export function _convertMolNotation(
 ): string {
   if (sourceNotation === targetNotation)
     throw new Error(`Convert molecule notation: source and target notations must differ: "${sourceNotation}"`);
-  if (engineInEffect() === ChemicalEngine.Crux && cruxReadsCxExtension(moleculeString)) {
-    let threw = false;
-    const crux = cruxOrRdKit('convertMolNotation', () =>
-      convertWith(moleculeString, sourceNotation, targetNotation, cruxModuleSync()!, addHs, true), () => {
-      threw = true;
-      return null;
-    });
-    if (crux !== null)
-      return crux;
-    const rdkit = _convertMolNotationByRdKit(moleculeString, sourceNotation, targetNotation, rdKitModule, addHs);
-    if (!threw && rdkit !== notConverted(targetNotation))
-      warnCruxFallback('convertMolNotation', `RDKit converted a molecule Crux cannot read: ${moleculeString}`);
-    return rdkit;
-  }
-  return _convertMolNotationByRdKit(moleculeString, sourceNotation, targetNotation, rdKitModule, addHs);
+  if (!cruxReadsCxExtension(moleculeString)) // query features Crux's reader skips: RDKit's in both modes
+    return _convertMolNotationByRdKit(moleculeString, sourceNotation, targetNotation, rdKitModule, addHs);
+  const none = notConverted(targetNotation);
+  return byEngineModule('convertMolNotation', rdKitModule, (module, crux) => {
+    const converted = convertWith(moleculeString, sourceNotation, targetNotation, module, addHs, crux);
+    return crux || converted !== none ? converted : null; // (RDKit's `none` is no result: no fallback is logged)
+  }, `RDKit converted a molecule Crux cannot read: ${moleculeString}`) ?? none;
 }
 
 /** What a conversion gives a molecule it cannot read or write in `targetNotation`. */
@@ -90,7 +81,7 @@ function notConverted(targetNotation: DG.chem.Notation): string {
 }
 
 /** {@link _convertMolNotation} by RDKit in both modes: for code whose next step is RDKit's (reaction drawing, the
- * substructure filter's query names, an R-group core's checks). */
+ * substructure filter's query names). */
 export function _convertMolNotationByRdKit(moleculeString: string, sourceNotation: DG.chem.Notation,
   targetNotation: DG.chem.Notation, rdKitModule: RDModule, addHs: boolean = false): string {
   if (sourceNotation === targetNotation)
@@ -101,11 +92,11 @@ export function _convertMolNotationByRdKit(moleculeString: string, sourceNotatio
 /** {@link _convertMolNotation} by one module. Under Crux (`crux`): null for a molecule it cannot read, and what it
  * throws thrown, so that RDKit converts the molecule. */
 function convertWith(moleculeString: string, sourceNotation: DG.chem.Notation, targetNotation: DG.chem.Notation,
-  rdKitModule: RDModule, addHs: boolean, crux: boolean): string | null {
+  module: RDModule, addHs: boolean, crux: boolean): string | null {
   let result = notConverted(targetNotation);
   let mol: RDMol | null = null;
   try {
-    mol = getMolSafe(moleculeString, {}, rdKitModule, true, crux ? noteCruxError : undefined).mol;
+    mol = getMolSafe(moleculeString, {}, module, true, crux ? noteCruxError : undefined).mol;
     if (!mol && crux)
       return null;
     if (mol) {

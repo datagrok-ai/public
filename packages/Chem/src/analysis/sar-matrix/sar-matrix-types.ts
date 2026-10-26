@@ -42,13 +42,17 @@ export interface CoreCluster {
 
 /** `unmeasured` is a compound the dataset already holds whose activity is missing. It is kept apart
  *  from `empty` so the Free-Wilson fill cannot propose synthesizing something that already exists.
+ *  `excluded` is a compound the dataset holds that this matrix neither measures nor offers: one assayed
+ *  with a value the scaling cannot represent, or one a combination here only rebuilds while it is
+ *  measured in its own cell or filed under another series (`molIdx` null). It is never predicted.
  *  `impossible` is a combination the R-groups cannot form (no attachment point for the substituent);
  *  it is never predicted. */
-export type SarMatrixCellKind = 'real' | 'virtual' | 'empty' | 'unmeasured' | 'impossible';
+export type SarMatrixCellKind = 'real' | 'virtual' | 'empty' | 'unmeasured' | 'excluded' | 'impossible';
 
 export interface SarMatrixCell {
   kind: SarMatrixCellKind;
-  /** Observed (real) or predicted (virtual) scaled activity; null when empty or unmeasured. */
+  /** Observed (real) or predicted (virtual, or unmeasured when untested prediction is on) scaled
+   *  activity; null when empty or excluded, and when an unmeasured cell was not predicted. */
   value: number | null;
   molIdx: number | null;
   smiles: string | null;
@@ -87,10 +91,12 @@ export interface SarMatrix {
   cells: SarMatrixCell[][];
   minActivity: number;
   maxActivity: number;
+  /** Distinct measured compounds the finished grid holds; `minActivity`/`maxActivity` are their range. */
   realCount: number;
   virtualCount: number;
   scores: {[scheme: string]: number};
-  /** Active R-group positions, richest first. Length 1 means a single-position (fallback) view. */
+  /** The one R-group position this matrix varies — always exactly one entry, and every column carries
+   *  it. The other positions are folded into the row identity. */
   positions: string[];
   /** Reference (most-frequent-observed) substituent per position — pinned while one position varies. */
   refValues: {[position: string]: string};
@@ -101,15 +107,17 @@ export interface SarMatrix {
   parentId?: string;
   /** LOO cross-validated quality of the Free-Wilson fit; null when too few observations to
    *  cross-validate. `n` cross-validatable observed cells out of `total`. */
-  confidence?: {r2: number, rmse: number, n: number, total: number} | null;
+  confidence?: Confidence | null;
 }
+
+export type Confidence = {r2: number, rmse: number, n: number, total: number};
 
 /** Close a grid, tolerating one that cannot: a view-less grid may not support close, and dropping
  *  the reference is enough. */
 export function closeGridQuietly(grid: DG.Grid | null | undefined): void {
   try {
     grid?.close?.();
-  } catch (e) {
+  } catch {
     // Nothing to do; the caller drops its reference either way.
   }
 }

@@ -522,7 +522,8 @@ export async function pickTableFromFiles(): Promise<DataFrame | null> {
 }
 
 /** Opens the platform's 'Select a database query' dialog; running a query that
- * produces a dataframe resolves with it, closing without one resolves with null. */
+ * produces a dataframe resolves with it once all its rows have arrived, closing
+ * without one resolves with null. */
 export async function pickTableFromQuery(): Promise<DataFrame | null> {
   return toJs(await api.grok_UI_PickTableFromQuery()) ?? null;
 }

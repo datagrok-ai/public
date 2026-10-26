@@ -4,10 +4,12 @@ Feature: Sequence Space
   scatter plot over them; run with the defaults, then again with another method and metric — the
   second run must be a second result, computed with what was edited, clustered again.
 
-  The HELM and MSA runs of the manual cases are tested in Bio src/tests/sequence-space-test.ts
-  ('sequenceSpaceHelm', 'sequenceSpaceMsa'), the project save and reopen of the result
-  (bio-lifecycle-macromolecule-column S3, GROK-19928) in src/tests/projects-tests.ts
-  ('sequence_space').
+  The last scenario translates TestTrack Bio/bio-lifecycle-macromolecule-column.md scenario 3
+  (GROK-19928): the table with both results is saved through the ribbon's Save project dialog and
+  reopened, and the embedding columns, both scatter plots and the sequence column's type and units
+  come back. The table opened by the feature has no creation script, so the dialog saves it as a
+  snapshot; the md's Data sync switch is not claimed. The HELM and MSA runs of the manual cases are
+  tested in Bio src/tests/sequence-space-test.ts ('sequenceSpaceHelm', 'sequenceSpaceMsa').
 
   Background:
     Given user is logged in
@@ -59,6 +61,31 @@ Feature: Sequence Space
     And "X" property of second scatter plot viewer should be "Embed_X_2"
     And "Description" property of second scatter plot viewer should contain "method: t-SNE"
     And "Description" property of second scatter plot viewer should contain "similarity: Levenshtein"
+    And second scatter plot viewer should be painted
+    And no error or warning balloon should have been shown
+    And no errors should have been logged
+
+  Scenario: Both results come back from a saved project (GROK-19928)
+    Given no project named "bdd-bio-seqspace-{run}" is on the server
+    When user opens the Save project dialog from the ribbon
+    And user types "bdd-bio-seqspace-{run}" into text input in "Save project" dialog
+    And user clicks on OK in the Save project dialog and the project uploads
+    Then the "Save project" dialog should close
+    When user presses Escape
+    Then 1 project named "bdd-bio-seqspace-{run}" should be on the server
+    And the "filter_FASTA" table of the "bdd-bio-seqspace-{run}" project should be saved as a snapshot
+    When user closes all views
+    And user opens the "bdd-bio-seqspace-{run}" project and waits for its table
+    Then "fasta" column should have semantic type "Macromolecule"
+    And "fasta" column should have units "fasta"
+    And the table should have a column "Embed_X_1"
+    And the table should have a column "Embed_Y_2"
+    And scatter plot viewer should be visible
+    And "X" property of scatter plot viewer should be "Embed_X_1"
+    And "Y" property of scatter plot viewer should be "Embed_Y_1"
+    And "X" property of second scatter plot viewer should be "Embed_X_2"
+    And "Description" property of second scatter plot viewer should contain "method: t-SNE"
+    And scatter plot viewer should be painted
     And second scatter plot viewer should be painted
     And no error or warning balloon should have been shown
     And no errors should have been logged

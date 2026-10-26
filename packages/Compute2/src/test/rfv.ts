@@ -1,11 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {closeViewsAfter, awaitWebComponents, deleteSavedWorkflow} from './utils';
 
 /** Find and click a button by exact label text. */
 async function clickBigButton(root: HTMLElement, label: string, timeout = 10000): Promise<void> {
-  await awaitCheck(() => {
+  await waitUntil(() => {
     return Array.from(root.querySelectorAll('button')).some(
       (b) => b.textContent?.trim() === label,
     );
@@ -18,7 +18,7 @@ async function clickBigButton(root: HTMLElement, label: string, timeout = 10000)
 
 /** Wait for Run button to disappear (signals run completion in RFV). */
 async function awaitRunComplete(root: HTMLElement, timeout = 30000): Promise<void> {
-  await awaitCheck(() => {
+  await waitUntil(() => {
     return !Array.from(root.querySelectorAll('button')).some(
       (b) => b.textContent?.trim() === 'Run',
     );
@@ -38,23 +38,16 @@ category('Editors: RFV smoke', () => {
       'Compute2:RichFunctionViewEditor', {call},
     ) as unknown as DG.ViewBase);
 
-    await awaitCheck(
-      () => view.root.querySelector('dg-input-form') !== null,
-      'RFV should contain dg-input-form', 15000,
-    );
-    await awaitCheck(
-      () => view.root.querySelectorAll('dg-input-form input').length >= 3,
-      'SimpleInputs2 has 3 params — form should have at least 3 inputs', 5000,
-    );
-    await awaitCheck(() => {
+    await waitUntil(() => view.root.querySelector('dg-input-form') !== null, 'RFV should contain dg-input-form', 15000);
+    await waitUntil(() => view.root.querySelectorAll('dg-input-form input').length >= 3,
+      'SimpleInputs2 has 3 params — form should have at least 3 inputs', 5000);
+    await waitUntil(() => {
       return Array.from(view.root.querySelectorAll('button')).some(
         (b) => b.textContent?.trim() === 'Run',
       );
     }, 'Run button should be visible initially', 5000);
-    await awaitCheck(
-      () => view.root.querySelector('[dock-spawn-title="Inputs"]') !== null,
-      'Inputs dock panel not rendered', 5000,
-    );
+    await waitUntil(() => view.root.querySelector('[dock-spawn-title="Inputs"]') !== null,
+      'Inputs dock panel not rendered', 5000);
   });
 
   test('Opens for ObjectCooling2 with grouped inputs', async () => {
@@ -65,11 +58,9 @@ category('Editors: RFV smoke', () => {
       'Compute2:RichFunctionViewEditor', {call},
     ) as unknown as DG.ViewBase);
 
-    await awaitCheck(
-      () => view.root.querySelectorAll('dg-input-form input').length >= 5,
-      'ObjectCooling2 form should have at least 5 input fields', 15000,
-    );
-    await awaitCheck(() => {
+    await waitUntil(() => view.root.querySelectorAll('dg-input-form input').length >= 5,
+      'ObjectCooling2 form should have at least 5 input fields', 15000);
+    await waitUntil(() => {
       const text = view.root.textContent ?? '';
       return text.includes('Ambient') || text.includes('Initial') || text.includes('Surface');
     }, 'ObjectCooling2 form should show input labels', 5000);
@@ -91,11 +82,8 @@ category('RFV: run SimpleInputs2', () => {
       'Compute2:RichFunctionViewEditor', {call},
     ) as unknown as DG.ViewBase);
 
-    await awaitCheck(
-      () => view.root.querySelectorAll('input').length >= 3,
-      'Form inputs not rendered', 15000,
-    );
-    await awaitCheck(() => ribbonIcons(view, 'exchange').length === 1, 'Expected one compare icon', 5000);
+    await waitUntil(() => view.root.querySelectorAll('input').length >= 3, 'Form inputs not rendered', 15000);
+    await waitUntil(() => ribbonIcons(view, 'exchange').length === 1, 'Expected one compare icon', 5000);
 
     await clickBigButton(view.root, 'Run');
     await awaitRunComplete(view.root);
@@ -104,7 +92,7 @@ category('RFV: run SimpleInputs2', () => {
     expect(call.outputs.get('bout'), 3.14, 'bout should be 3.14');
     expect(call.outputs.get('cout'), 'test-value', 'cout should be test-value');
 
-    await awaitCheck(() => {
+    await waitUntil(() => {
       const text = view.root.textContent ?? '';
       return text.includes('42') && text.includes('3.14') && text.includes('test-value');
     }, 'Scalar outputs not rendered in DOM', 10000);
@@ -127,10 +115,7 @@ category('RFV: run ObjectCooling2', () => {
       'Compute2:RichFunctionViewEditor', {call},
     ) as unknown as DG.ViewBase);
 
-    await awaitCheck(
-      () => view.root.querySelectorAll('input').length >= 3,
-      'Form inputs not rendered', 15000,
-    );
+    await waitUntil(() => view.root.querySelectorAll('input').length >= 3, 'Form inputs not rendered', 15000);
 
     await clickBigButton(view.root, 'Run');
     await awaitRunComplete(view.root);
@@ -152,7 +137,7 @@ category('RFV: run ObjectCooling2', () => {
         `First temperature should be ~80, got ${firstTemp}`);
     }
 
-    await awaitCheck(() => {
+    await waitUntil(() => {
       const text = view.root.textContent ?? '';
       return text.includes('60');
     }, 'Scalar output (tempDiff=60) not rendered in DOM', 10000);
@@ -172,21 +157,18 @@ category('Pipeline: MockPipeline1 static', () => {
       'Compute2:TreeWizardEditor', {call},
     ) as unknown as DG.ViewBase);
 
-    await awaitCheck(
-      () => view.root.querySelector('.mtl-tree') !== null,
-      'Tree not rendered', 15000,
-    );
+    await waitUntil(() => view.root.querySelector('.mtl-tree') !== null, 'Tree not rendered', 15000);
 
     // Verify tree nodes
-    await awaitCheck(() => {
+    await waitUntil(() => {
       const labels = view.root.querySelectorAll('.mtl-tree .mtl-ml');
       const texts = Array.from(labels).map((l) => l.textContent?.trim());
       return texts.includes('step1') && texts.includes('step2');
     }, 'Tree should show step1 and step2', 10000);
-    await awaitCheck(() => ribbonIcons(view, 'exchange').length === 1, 'Expected one compare icon', 5000);
+    await waitUntil(() => ribbonIcons(view, 'exchange').length === 1, 'Expected one compare icon', 5000);
 
     // Pipeline view's bottom bar shows the unified Next button (same as RFV).
-    await awaitCheck(() => {
+    await waitUntil(() => {
       return Array.from(view.root.querySelectorAll('button')).some(
         (b) => b.textContent?.trim() === 'Next',
       );
@@ -205,13 +187,10 @@ category('Pipeline: MockPipeline2 sequential', () => {
       'Compute2:TreeWizardEditor', {call},
     ) as unknown as DG.ViewBase);
 
-    await awaitCheck(
-      () => view.root.querySelector('.mtl-tree') !== null,
-      'Tree not rendered', 15000,
-    );
+    await waitUntil(() => view.root.querySelector('.mtl-tree') !== null, 'Tree not rendered', 15000);
 
     // Verify tree shows initial steps (add, mul, cooling)
-    await awaitCheck(() => {
+    await waitUntil(() => {
       const labels = view.root.querySelectorAll('.mtl-tree .mtl-ml');
       const texts = Array.from(labels).map((l) => l.textContent?.trim());
       const count = (texts.some((t) => t === 'add') ? 1 : 0)
@@ -221,7 +200,7 @@ category('Pipeline: MockPipeline2 sequential', () => {
     }, 'Tree should show at least 2 of: add, mul, cooling', 10000);
 
     // Pipeline view's bottom bar shows the unified Next button (same as RFV).
-    await awaitCheck(() => {
+    await waitUntil(() => {
       return Array.from(view.root.querySelectorAll('button')).some(
         (b) => b.textContent?.trim() === 'Next',
       );
@@ -245,8 +224,8 @@ async function openCompact(nqName: string): Promise<DG.ViewBase> {
   await awaitWebComponents();
   const call = DG.Func.byName(nqName).prepare();
   const view = await grok.functions.call('Compute2:TreeWizardEditor', {call}) as unknown as DG.ViewBase;
-  await awaitCheck(() => view.root.querySelector('dg-input-form') !== null, 'Step form not rendered', 20000);
-  await awaitCheck(() => hasButton(view.root, 'Run'), 'Run button not rendered', 10000);
+  await waitUntil(() => view.root.querySelector('dg-input-form') !== null, 'Step form not rendered', 20000);
+  await waitUntil(() => hasButton(view.root, 'Run'), 'Run button not rendered', 10000);
   return view;
 }
 
@@ -273,14 +252,14 @@ for (const nqName of ['Compute2:MockSingleStepPipeline', 'Compute2:MockSingleSte
 
       await clickBigButton(view.root, 'Run');
       await awaitRunComplete(view.root);
-      await awaitCheck(() => (view.root.textContent ?? '').includes('80'), 'tempDiff (100 - 20) not rendered', 10000);
+      await waitUntil(() => (view.root.textContent ?? '').includes('80'), 'tempDiff (100 - 20) not rendered', 10000);
 
       (ribbonIcons(view, 'save')[0] as HTMLElement).click();
-      await awaitCheck(() => document.querySelector('.d4-dialog') !== null, 'Save dialog not shown', 5000);
+      await waitUntil(() => document.querySelector('.d4-dialog') !== null, 'Save dialog not shown', 5000);
       const saveBtn = Array.from(document.querySelectorAll('.d4-dialog button'))
         .find((b) => b.textContent?.trim() === 'Save') as HTMLElement;
       saveBtn.click();
-      await awaitCheck(() => savedRunId(view) != null, 'URL should carry the saved run id', 20000);
+      await waitUntil(() => savedRunId(view) != null, 'URL should carry the saved run id', 20000);
       try {
         expect((view.path ?? '').includes('currentStep='), false, 'currentStep must not be written in compact mode');
       } finally {

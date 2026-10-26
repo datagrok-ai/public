@@ -17,6 +17,8 @@
  */
 
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {byEngineModule} from '../engine/chem-engine';
+import {MAX_SMILES_LENGTH} from './chem-constants';
 
 // -- PDB/PDBQT → Molblock converter -----------------------------------------
 
@@ -324,6 +326,17 @@ export function mapAtomIndices2Dto3D(
     mol2D?.delete();
     mol3D?.delete();
   }
+}
+
+/** {@link mapAtomIndices2Dto3D} by the "Chemical engine": in Crux mode on the main thread's Crux module (which draws
+ * the 2D molecule the atoms are picked in), on `rdkit` where it maps nothing (a molecule Crux does not read) or
+ * throws. */
+export function mapAtomIndices2Dto3DByEngine(rdkit: RDModule, smiles2D: string, mol3DStr: string):
+  AtomIndexMapping | null {
+  return byEngineModule('atom index mapping', rdkit, (module, crux) =>
+    // (a SMILES over Chem's length limit could run Crux's wasm out of memory): RDKit's, as before
+    crux && !smiles2D.includes('\n') && smiles2D.length > MAX_SMILES_LENGTH ? null :
+      mapAtomIndices2Dto3D(module, smiles2D, mol3DStr));
 }
 
 /**

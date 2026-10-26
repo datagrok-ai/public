@@ -14,12 +14,12 @@ Feature: A query's molecule parameter, sketched in Crux
     And the "Chem" package is installed
     And the molecule sketcher is "Crux"
     And the package autostarts have completed
+    And the browse panel is open
     And a query "BddCruxPattern" on "System:Datagrok" is on the server:
       """
       --input: string pattern {semType: Molecule}
       select @pattern as pattern
       """
-    And the browse panel is open
 
   # HOST-066
   Scenario: A pattern drawn in Crux for the query's Molecule parameter reaches the query as SMILES

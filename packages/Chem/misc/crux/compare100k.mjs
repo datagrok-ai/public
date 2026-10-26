@@ -4,8 +4,8 @@
 //   node compare100k.mjs [rows=100000] [only=<name,...>] [--compare-only]
 //
 // (--compare-only: the comparison and the report again from the outputs in OUT/raw, nothing run)
-// names: parse, drawing, fingerprints, alerts, pharmacophore, search, descriptors, scaffoldtree, properties, reactions,
-//        mmpa, rgroups, fmcs, mces, molzip
+// names: parse, drawing, fingerprints, alerts, pharmacophore, search, searchtypes, searchtypesfiles, descriptors,
+//        scaffoldtree, properties, reactions, mmpa, rgroups, fmcs, mces, molzip
 // Engines: `rdkit` Chem's RDKit.js 2024.09 (RDKit mode), `crux` Chem's Crux file (vendor/chem-wasm) as Crux mode runs it
 // (with the RDKit fallback Chem has behind it, counted), `rdkit2026` RDKit.js 2026.03.6 (the RDKit Crux reproduces),
 // `py` Python RDKit 2026.3.6, `chempy` the chem-chem container's chem.py in that Python, `ocl` OpenChemLib (Chem's
@@ -61,11 +61,32 @@ const STUB_FILES = {
   'engine/chem-engine.ts': `
     export var ChemicalEngine; (function (e) { e.RDKit = 'RDKit'; e.Crux = 'Crux'; })(ChemicalEngine || (ChemicalEngine = {}));
     export const engineInEffect = () => globalThis.__engine.mode;
-    export const isCruxRequested = () => globalThis.__engine.mode === 'Crux';`,
+    export const isCruxRequested = () => globalThis.__engine.mode === 'Crux';
+    export const engineGeneration = () => 0;
+    const warn = (call, e) => globalThis.__engine.fallbacks.push([call, String(e?.message ?? e)]);
+    export async function byEngineAsync(call, crux, rdkit) {
+      if (globalThis.__engine.mode !== 'Crux') return rdkit();
+      try { return await crux(); } catch (e) { warn(call, e); return rdkit(); } }
+    export const renderingModule = (rdkit) => globalThis.__engine.mode === 'Crux' ?
+      {module: globalThis.__engine.crux, engine: 'Crux'} : {module: rdkit, engine: 'RDKit'};
+    export function byEngineModule(call, rdkit, job, fallback) {
+      if (globalThis.__engine.mode !== 'Crux') return job(rdkit, false);
+      let threw = false, crux = null;
+      try { crux = job(globalThis.__engine.crux, true); } catch (e) { warn(call, e); threw = true; }
+      if (crux !== null) return crux;
+      const r = job(rdkit, false);
+      if (!threw && r !== null) warn(call, fallback ?? 'Crux read no molecule, RDKit was asked');
+      return r; }
+    export function withMol(module, crux, molecule, read, asQuery = false) {
+      let mol = null;
+      try { mol = asQuery ? module.get_qmol(molecule) : module.get_mol(molecule); return mol ? read(mol) : null; }
+      catch (e) { if (crux) throw e; return null; } finally { mol?.delete(); } }`,
   'engine/crux-module.ts': `
     export const cruxModuleSync = () => globalThis.__engine.mode === 'Crux' ? globalThis.__engine.crux : null;
     export const cruxLoadFailed = () => false;
-    export const noteCruxError = () => {};`,
+    export const noteCruxError = () => {};
+    export const compileCrux = async () => null;
+    export const loadCrux = async () => globalThis.__engine.crux;`,
   'engine/fallback.ts': `
     export function warnCruxFallback(call, e) { globalThis.__engine.fallbacks.push([call, String(e?.message ?? e)]); }
     export function cruxOrRdKit(call, crux, rdkit) {
@@ -77,12 +98,17 @@ const STUB_FILES = {
     export const getRdKitModule = () => globalThis.__engine.rdkit;
     export const RDKIT_COMMON_RENDER_OPTS = ${readFileSync(join(SRC, 'utils', 'chem-common-rdkit.ts'), 'utf8')
     .match(/export const RDKIT_COMMON_RENDER_OPTS[^=]*= (\{[\s\S]*?\n\});/)[1]};`,
+  // reactions.ts canonicalizes its inputs by engine (the Crux workers in Crux mode); the harness gives every engine the
+  // canonical SMILES it computed beforehand, outside the timings, as the RDKit pool's answer
+  'engine/worker-jobs.ts': `
+    export const convertMolNotationByEngine = (molecules, notation, kekulize) =>
+      globalThis.__engine.rdkitService.convertMolNotation(molecules, notation, kekulize);`,
   'rendering/rdkit-reaction-renderer.ts': `export const BRANCH_DELIMITER = '--**--';`,
   'rendering/rdkit-cell-renderer.ts': `export const _addColorsToBondsAndAtoms = () => {};`,
 };
 /** Exports added to modules that keep the functions measured here to themselves. */
 const EXTRA_EXPORTS = {
-  'crux/crux.worker.ts': 'export {structuralAlerts, unread, rdkitShapedWorker, pairUncommonAtomsAndBonds};',
+  'crux/crux.worker.ts': 'export {rdkitShapedWorker};',
   'analysis/deprotect.ts': 'export {deprotectOne};',
 };
 const STUB_ANY = `
@@ -688,8 +714,8 @@ function sameLayout(a, b) {
 }
 
 // fingerprints: the RDKit worker's getFingerprints (rdkit-service-worker-similarity.ts) on each module; Crux mode as
-// crux.worker.ts + engine/worker-jobs.ts run it (the RDKit pool for the molecules Crux cannot read, but for FCFP and
-// chirality, which are Crux's in both modes)
+// crux.worker.ts (crux/jobs/batch.ts: the whole chunk in one call) + engine/worker-jobs.ts run it (the RDKit pool for
+// the molecules Crux cannot read, but for FCFP and chirality, which are Crux's in both modes)
 const FP_VARIANTS = [
   ['Morgan', 'Morgan', null], ['Pattern', 'Pattern', null], ['RDKit', 'RDKit', null], ['MACCS', 'MACCS', null],
   ['AtomPair', 'AtomPair', null], ['TopologicalTorsion', 'TopologicalTorsion', null],
@@ -702,14 +728,13 @@ ONE.fingerprints = async (engine) => {
   const {module, rdkit, crux} = await engineModules(engine);
   const {RdKitServiceWorker} = await chem('rdkit-service/rdkit-service-worker.ts');
   const fo = await chem('utils/fingerprint-options.ts');
-  const cw = engine === 'crux' ? await chem('crux/crux.worker.ts') : null;
+  const batch = engine === 'crux' ? await chem('crux/jobs/batch.ts') : null;
   return async (type, options, mols) => {
     const opts = fo.fingerprintOptions(type, options);
     if (engine !== 'crux')
       return {fps: (await new RdKitServiceWorker(module, '').getFingerprints(type, mols, false, opts)).fps, fallback: []};
     fo.assertFingerprintOptions(crux, type, opts);
-    const fps = (await cw.rdkitShapedWorker().getFingerprints(type, mols, false, opts)).fps;
-    const unread = cw.unread(mols, (i) => fps[i] !== null);
+    const {fps, unread} = batch.fingerprints(crux, type, mols, false, opts);
     const fallback = [];
     if (unread.length && !fo.needsCrux(opts)) {
       const patch = await new RdKitServiceWorker(rdkit, '').getFingerprints(type, unread.map((i) => mols[i]), false, opts);
@@ -731,18 +756,21 @@ RUN.fingerprints = async (engine, rows) => {
       continue; // Crux's in both modes
     await compute(type, options, mols.slice(0, WARMUP));
     const t0 = performance.now();
+    const c0 = process.cpuUsage();
     const before = panicCount();
     const {fps, fallback} = await compute(type, options, mols);
     const ms = performance.now() - t0;
+    const cpu = process.cpuUsage(c0);
+    const cpuMs = (cpu.user + cpu.system) / 1000; // the process's CPU time: less moved by a busy machine than ms
     const traps = panicCount() > before ? await trapsIn(mols, 0, (one) => compute(type, options, one)) : [];
-    variants[name] = {ms, counts: tally(fps.map((f) => f ? 'computed' : 'none')), fallbacks: fallback, traps,
+    variants[name] = {ms, cpuMs, counts: tally(fps.map((f) => f ? 'computed' : 'none')), fallbacks: fallback, traps,
       items: fps.map((f) => f ? hash(f) : '')};
   }
   return {n: mols.length, variants};
 };
 
-// structural alerts and pharmacophore features: the RDKit worker's getStructuralAlerts, Crux mode crux.worker.ts's
-// structuralAlerts (+ the RDKit pool's for what Crux cannot read, engine/worker-jobs.ts)
+// structural alerts and pharmacophore features: the RDKit worker's getStructuralAlerts, Crux mode crux/jobs/batch.ts's
+// structuralAlerts (the whole chunk in one call; + the RDKit pool's for what Crux cannot read, engine/worker-jobs.ts)
 function alertRules() {
   const rules = {};
   for (const r of chemFile('alert-collection.csv'))
@@ -760,13 +788,13 @@ function pharmacophoreRules() {
   return rules;
 }
 async function alertsRunner(engine) {
-  const {module, rdkit} = await engineModules(engine);
+  const {module, rdkit, crux} = await engineModules(engine);
   const {RdKitServiceWorker} = await chem('rdkit-service/rdkit-service-worker.ts');
-  const cw = engine === 'crux' ? await chem('crux/crux.worker.ts') : null;
+  const batch = engine === 'crux' ? await chem('crux/jobs/batch.ts') : null;
   return (rules, mols) => {
     if (engine !== 'crux')
       return {found: new RdKitServiceWorker(module, '').getStructuralAlerts(rules, mols), fallback: []};
-    const {alerts: found, unread} = cw.structuralAlerts(rules, mols);
+    const {alerts: found, unread} = batch.structuralAlerts(crux, rules, mols);
     const fallback = [];
     if (unread.length) {
       const patch = new RdKitServiceWorker(rdkit, '').getStructuralAlerts(rules, unread.map((i) => mols[i]));
@@ -793,12 +821,15 @@ for (const [fn, rulesOf] of [['alerts', alertRules], ['pharmacophore', pharmacop
     const mols = molecules(rows);
     run(rules, mols.slice(0, WARMUP));
     const t0 = performance.now();
+    const c0 = process.cpuUsage();
     const before = panicCount();
     const {found, fallback} = run(rules, mols);
     const ms = performance.now() - t0;
+    const cpu = process.cpuUsage(c0);
+    const cpuMs = (cpu.user + cpu.system) / 1000; // the process's CPU time: less moved by a busy machine than ms
     const traps = panicCount() > before ? await trapsIn(mols, 0, (one) => run(rules, one)) : [];
     const items = mols.map((_, i) => flagsOf(found, i));
-    return {n: mols.length, ms, rules: Object.fromEntries(Object.entries(rules).map(([r, s]) => [r, s.length])),
+    return {n: mols.length, ms, cpuMs, rules: Object.fromEntries(Object.entries(rules).map(([r, s]) => [r, s.length])),
       perRule: Object.fromEntries(Object.keys(found).map((r) => [r, found[r].filter((x) => x).length])),
       fallbacks: fallback, traps, counts: {'molecules with a match': items.filter((x) => x).length}, items};
   };
@@ -1275,6 +1306,228 @@ RUN.search = async (engine, rows) => {
   return {n: diffs.length, prepareMs, items};
 };
 
+// the search types beside Contains (Exact, Stereo agnostic, Included in, Not included in, Similar), one hit set per
+// query and type. RDKit mode: Chem's RDKit search as its pool runs it on a column whose rows each worker caches (a
+// worker caches its first 10,000 molecules, as getFingerprints reads them: a 100K column over 16 workers, an 18-thread machine's):
+// RdKitServiceWorker.getFingerprints (pattern fingerprints, canonical SMILES) per 10,000 rows, RdKitService's pattern
+// screen (filterByPatternFps), RdKitServiceWorker.searchSubstructure on the rows it passes; Similar: getFingerprints of
+// the type and Chem's Tanimoto. Crux mode: crux/jobs/search-types.ts over the column (one segment), RDKit's answer for
+// the rows Crux does not read (the same code on Chem's RDKit), a query Crux does not read on RDKit (counted); Similar:
+// the RDKit worker's getFingerprints on the Crux module (engine/worker-jobs.ts), the same Tanimoto.
+// The queries: SMILES_QUERIES (parity.mjs) as SMILES and as Chem's MOL blocks (the sketcher's), 200 of the column's
+// rows as given and as MOL blocks (with their wedges), 20 SMARTS of crux-bench's bdb-1k; Not included in on a fifth of
+// them, Stereo agnostic on the rows and a fifth of the others (RDKit's search scans (nearly) every row for them); Similar for 100 rows (Morgan at 0.8, 0.5, 0.3; the other types at 0.5
+// for 40).
+const SEARCH_FILES = ['smiles.csv', 'sar-small.csv', 'mol1K.csv', 'molblocks.csv', 'stereo-agnostic-test.csv',
+  'v3000_sample.csv', 'wedging.csv', 'chem_standards.csv', 'test.csv', 'activity_cliffs.csv', 'r-groups.csv'];
+/** The molecules of Chem's test datasets, each file's molecule column (searchtypesfiles). */
+function chemFileMolecules() {
+  return SEARCH_FILES.flatMap((f) => {
+    const table = chemFile(f);
+    const col = ['smiles', 'canonical_smiles', 'molecule'].find((c) => c in (table[0] ?? {}));
+    return table.map((r) => r[col] ?? '');
+  });
+}
+async function searchTypeQueries(rdkit, mols) {
+  const parityText = readFileSync(join(HERE, 'parity.mjs'), 'utf8');
+  const smilesQueries = eval(parityText.match(/const SMILES_QUERIES = (\[[\s\S]*?\]);/)[1]);
+  const molblock = (s) => {
+    const mol = s ? rdkit.get_mol(s) : null;
+    try {
+      return mol ? mol.get_molblock() : null;
+    } finally {
+      mol?.delete();
+    }
+  };
+  const queries = smilesQueries.map((q) => ({set: 'smiles', label: q, q}));
+  queries.push(...smilesQueries.map((q) => ({set: 'molblock', label: q, q: molblock(q)})).filter((q) => q.q));
+  const self = [];
+  for (let k = 0; k < 200 && mols.length; k++) {
+    const i = Math.floor((k + 0.5) * mols.length / Math.min(200, mols.length));
+    if (mols[i] && !self.includes(i))
+      self.push(i);
+  }
+  queries.push(...self.map((i) => ({set: 'self', label: `row ${i}`, q: mols[i]})));
+  queries.push(...self.map((i) => ({set: 'selfmol', label: `row ${i}`, q: mols[i].includes('M  END') ? mols[i] :
+    molblock(mols[i])})).filter((q) => q.q));
+  const smartsFile = join(CRUX_BENCH, 'queries', 'bdb-1k', 'queries.txt');
+  if (existsSync(smartsFile)) {
+    queries.push(...readFileSync(smartsFile, 'utf8').split(/\r?\n/).map((l) => l.split(/[\t ]/)[0]).filter((q) => q)
+      .slice(0, 20).map((q) => ({set: 'smarts', label: q, q})));
+  }
+  return queries;
+}
+/** A hit set as compared: its size and hash; the rows themselves (or the rows of a Not type outside it) when few. */
+function hitSetItem(hits, n, not) {
+  const sorted = Int32Array.from(hits).sort();
+  const key = `${sorted.length}:${hash(Array.from(sorted).join(','))}`;
+  const outside = not ? (() => {
+    const inSet = new Uint8Array(n);
+    for (const h of sorted)
+      inSet[h] = 1;
+    const rest = [];
+    for (let i = 0; i < n && rest.length <= 3000; i++) {
+      if (!inSet[i])
+        rest.push(i);
+    }
+    return rest;
+  })() : null;
+  return {key, rows: !not && sorted.length <= 3000 ? Array.from(sorted) : null, outside};
+}
+RUN.searchtypes = async (engine, rows, source = 'dataset') => {
+  const {module, rdkit} = await engineModules(engine);
+  const {getMolSafe, getQueryMolSafe} = await chem('utils/mol-creation_rdkit.ts');
+  const {SubstructureSearchType: T, AVAILABLE_FPS} = await chem('constants.ts');
+  const {RdKitServiceWorker} = await chem('rdkit-service/rdkit-service-worker.ts');
+  const {rdKitFingerprintToBitArray} = await chem('utils/chem-common.ts');
+  const {tanimotoSimilarity} = await import('@datagrok-libraries/ml/src/distance-metrics-methods');
+  const mols = source === 'files' ? chemFileMolecules() : molecules(rows);
+  const n = mols.length;
+  const queries = await searchTypeQueries(rdkit, mols);
+  const types = [T.EXACT_MATCH, T.STEREO_AGNOSTIC, T.INCLUDED_IN, T.NOT_INCLUDED_IN];
+  const t0 = performance.now();
+  let search;
+  const counts = {queries: queries.length, rowsCruxDoesNotRead: 0, queriesOnRdkit: 0};
+  if (engine === 'crux') {
+    const {SearchTypeKeys, searchTypeHits} = await chem('crux/jobs/search-types.ts');
+    const {cruxReadsCxExtension} = await chem('crux/crux-service.ts');
+    const sent = mols.map((m) => cruxReadsCxExtension(m) ? m : '');
+    const keys = new SearchTypeKeys(sent);
+    keys.patternFps(module);
+    const unread = [...keys.unread(module), ...sent.flatMap((m, i) => !m && mols[i] ? [i] : [])].sort((a, b) => a - b);
+    counts.rowsCruxDoesNotRead = unread.length;
+    const rdkitKeys = new SearchTypeKeys(unread.map((i) => mols[i]));
+    search = (q, type) => {
+      let cruxQuery = null;
+      try {
+        cruxQuery = cruxReadsCxExtension(q) ? getQueryMolSafe(q, '', module) : null;
+      } catch (e) {}
+      if (!cruxQuery)
+        return null; // RDKit's search (RDKit mode's hits)
+      cruxQuery.delete();
+      return [...searchTypeHits(module, keys, q, '', type),
+        ...searchTypeHits(rdkit, rdkitKeys, q, '', type).map((k) => unread[k])];
+    };
+  } else {
+    // the pool's workers, each with the rows it caches (at most MAX_MOL_CACHE_SIZE)
+    const per = 10000;
+    const workers = [];
+    for (let start = 0; start < n; start += per) {
+      const worker = new RdKitServiceWorker(module, '');
+      const fps = await worker.getFingerprints('Pattern', mols.slice(start, start + per), true);
+      workers.push({worker, start, fps});
+    }
+    search = async (q, type) => {
+      const qmol = getQueryMolSafe(q, '', module);
+      if (!qmol)
+        return null;
+      const qfp = qmol.get_pattern_fp_as_uint8array();
+      qmol.delete();
+      const hits = [];
+      for (const {worker, start, fps} of workers) {
+        // RdKitService.searchSubstructureWithFps: the screen (filterByPatternFps), then the worker's search
+        const not = type === T.NOT_INCLUDED_IN;
+        const passed = [];
+        for (let i = 0; i < fps.fps.length; i++) {
+          if (not) {
+            passed.push(i);
+            continue;
+          }
+          const fp = fps.fps[i];
+          if (!fp)
+            continue;
+          let ok = true;
+          for (let j = 0; j < 256 && ok; j++)
+            ok = (fp[j] & qfp[j]) === (type === T.INCLUDED_IN ? fp[j] : qfp[j]);
+          if (ok)
+            passed.push(i);
+        }
+        const buf = await worker.searchSubstructure(q, '', passed.map((i) => fps.smiles[i]), type);
+        const bits = new Uint32Array(buf);
+        passed.forEach((i, k) => {
+          if (bits[k >>> 5] & (1 << (k & 31)))
+            hits.push(start + i);
+        });
+      }
+      return hits;
+    };
+  }
+  const prepareMs = performance.now() - t0;
+  const items = [];
+  const searchStart = performance.now();
+  for (const type of types) {
+    for (const [k, {set, label, q}] of queries.entries()) {
+      // Not included in on a fifth of the queries, Stereo agnostic on the rows and a fifth of the others: RDKit's search
+      // scans (nearly) every row for them
+      if ((type === T.NOT_INCLUDED_IN || (type === T.STEREO_AGNOSTIC && !set.startsWith('self'))) && k % 5 !== 0)
+        continue;
+      const t = performance.now();
+      const hits = await search(q, type);
+      if (hits === null)
+        counts.queriesOnRdkit++;
+      items.push({type, set, label, ms: performance.now() - t, onRdkit: hits === null,
+        ...(hits === null ? {key: null} : hitSetItem(hits, n, type === T.NOT_INCLUDED_IN))});
+    }
+  }
+  const searchMs = performance.now() - searchStart;
+  // Similar: the column's fingerprints (the RDKit pool's getFingerprints; Crux mode the same code on Crux, RDKit's for
+  // the rows Crux does not read), the query's as chemGetFingerprint computes it, Chem's Tanimoto
+  const simStart = performance.now();
+  const fpWorker = new RdKitServiceWorker(module, '');
+  fpWorker._cacheCounter = 10000; // no cache (crux.worker.ts rdkitShapedWorker; the RDKit pool's cache adds nothing)
+  const rdkitFpWorker = new RdKitServiceWorker(rdkit, '');
+  rdkitFpWorker._cacheCounter = 10000;
+  const selfRows = queries.filter((q) => q.set === 'self');
+  // chem-searches.ts getRDKitFpAsUint8Array (that module imports the package): the query's fingerprint
+  const getRDKitFpAsUint8Array = (mol, type) => {
+    if (type === 'Morgan') {
+      mol.remove_hs_in_place();
+      return mol.get_morgan_fp_as_uint8array(JSON.stringify({radius: 2, nBits: 2048}));
+    }
+    return {Pattern: () => mol.get_pattern_fp_as_uint8array(), AtomPair: () => mol.get_atom_pair_fp_as_uint8array(),
+      MACCS: () => mol.get_maccs_fp_as_uint8array(), RDKit: () => mol.get_rdkit_fp_as_uint8array(),
+      TopologicalTorsion: () => mol.get_topological_torsion_fp_as_uint8array()}[type]();
+  };
+  for (const fp of AVAILABLE_FPS) {
+    const cutoffs = fp === 'Morgan' ? [0.8, 0.5, 0.3] : [0.5];
+    const qs = fp === 'Morgan' ? selfRows.slice(0, 100) : selfRows.slice(0, 40);
+    const res = await fpWorker.getFingerprints(fp, mols, false);
+    if (engine === 'crux') { // the molecules Crux cannot read: the RDKit pool's fingerprints (engine/worker-jobs.ts)
+      const unreadRows = mols.flatMap((m, i) => {
+        if (!m || res.fps[i])
+          return [];
+        const mol = getMolSafe(m, {}, module).mol;
+        mol?.delete();
+        return mol ? [] : [i];
+      });
+      const patch = await rdkitFpWorker.getFingerprints(fp, unreadRows.map((i) => mols[i]), false);
+      unreadRows.forEach((row, k) => res.fps[row] = patch.fps[k]);
+    }
+    const bits = res.fps.map((f) => f ? rdKitFingerprintToBitArray(f) : null);
+    for (const {label, q} of qs) {
+      // chemGetFingerprint: the engine's, RDKit's where it reads none
+      const queryFp = (m) => {
+        const mol = getMolSafe(q, {}, m).mol;
+        try {
+          return mol ? getRDKitFpAsUint8Array(mol, fp) : null;
+        } finally {
+          mol?.delete();
+        }
+      };
+      const qfp = queryFp(module) ?? queryFp(rdkit);
+      const qbits = rdKitFingerprintToBitArray(qfp);
+      const sims = bits.map((b) => b ? tanimotoSimilarity(b, qbits) : -1);
+      for (const cutoff of cutoffs) {
+        const hits = sims.flatMap((x, i) => x >= cutoff ? [i] : []);
+        items.push({type: `${T.IS_SIMILAR} ${fp} ${cutoff}`, set: 'self', label, ...hitSetItem(hits, n, false)});
+      }
+    }
+  }
+  return {n: items.length, rows: n, prepareMs, searchMs, similarMs: performance.now() - simStart, counts,
+    fallbacks: [], items};
+};
+RUN.searchtypesfiles = (engine, rows) => RUN.searchtypes(engine, rows, 'files');
+
 // MMPA fragmentation: RdKitServiceWorker.mmpGetFragments; Crux mode crux-analysis-jobs.ts's mmpGetFragments (+ the RDKit
 // pool for its `unread` rows, engine/analysis-jobs.ts), in chunks of 1000
 async function analysisSetup(engine) {
@@ -1284,14 +1537,16 @@ async function analysisSetup(engine) {
   const cw = engine === 'crux' ? await chem('crux/crux.worker.ts') : null;
   const rdkitWorker = new RdKitServiceWorker(rdkit, '');
   const worker = engine === 'crux' ? cw.rdkitShapedWorker() : new RdKitServiceWorker(module, '');
-  return {module, rdkit, crux, ANALYSIS_JOBS, cw, rdkitWorker, worker};
+  // a Crux worker job's context (crux-api.ts WorkerJobContext)
+  const ctx = {crux: module, module, rdkitWorker: () => worker, transfer: []};
+  return {module, rdkit, crux, ANALYSIS_JOBS, cw, rdkitWorker, worker, ctx};
 }
 ONE.mmpa = async (engine) => {
-  const {crux, ANALYSIS_JOBS, rdkitWorker, worker} = await analysisSetup(engine);
+  const {ANALYSIS_JOBS, rdkitWorker, worker, ctx} = await analysisSetup(engine);
   return (chunk) => {
     if (engine !== 'crux')
       return {...worker.mmpGetFragments(chunk), fallback: []};
-    const {frags, smiles, unread} = ANALYSIS_JOBS.mmpGetFragments(worker, crux, chunk);
+    const {frags, smiles, unread} = ANALYSIS_JOBS.mmpGetFragments(ctx, chunk);
     if (unread.length) {
       const patch = rdkitWorker.mmpGetFragments(unread.map((i) => chunk[i]));
       unread.forEach((row, k) => {
@@ -1338,12 +1593,12 @@ const rgdText = (r) => r === null ? 'null' : JSON.stringify({colNames: r.colName
   atoms: r.atomsToHighLight.map((c) => Array.from(c, (a) => a ? Array.from(a) : null)),
   bonds: r.bondsToHighLight.map((c) => Array.from(c, (b) => b ? Array.from(b) : null))});
 ONE.rgroups = async (engine) => {
-  const {crux, ANALYSIS_JOBS, rdkitWorker, worker} = await analysisSetup(engine);
+  const {ANALYSIS_JOBS, rdkitWorker, worker, ctx} = await analysisSetup(engine);
   return async (mols, core, coreIsQMol) => {
     if (engine !== 'crux')
       return {result: await worker.rGroupAnalysis(mols, core, coreIsQMol, RGD_OPTIONS), fallback: false};
     try {
-      const result = await ANALYSIS_JOBS.rGroupAnalysis(worker, crux, mols, core, coreIsQMol, RGD_OPTIONS);
+      const result = await ANALYSIS_JOBS.rGroupAnalysis(ctx, mols, core, coreIsQMol, RGD_OPTIONS);
       if (result)
         return {result, fallback: false};
     } catch (e) {}
@@ -1383,23 +1638,10 @@ RUN.rgroups = async (engine, rows) => {
 };
 
 // FMCS: Cluster MCS (performClusterMCS: exact atoms and bonds; the RDKit pool gives '' for a cluster past 45 s, the
-// Crux pool FMCS's Timeout of 45 s) and its SMILES (rdkit-service.ts clusterMcsSmiles, copied below)
-function clusterMcsSmiles(mcs, clusteredMolecules, module, getMolSafe, getQueryMolSafe) {
-  return mcs.map((it, i) => {
-    if (!it)
-      return '';
-    try {
-      const mol = clusteredMolecules[i].length === 1 ? getMolSafe(it, {}, module).mol : getQueryMolSafe(it, '', module);
-      const smiles = mol?.get_smiles();
-      mol?.delete();
-      return smiles ?? '';
-    } catch (_) {}
-    return '';
-  });
-}
+// Crux pool FMCS's Timeout of 45 s) and its SMILES (utils/mol-creation_rdkit.ts clusterMcsSmiles)
 ONE.fmcs = async (engine) => {
-  const {module, rdkit, crux, ANALYSIS_JOBS, rdkitWorker, worker} = await analysisSetup(engine);
-  const {getMolSafe, getQueryMolSafe} = await chem('utils/mol-creation_rdkit.ts');
+  const {module, rdkit, ANALYSIS_JOBS, rdkitWorker, worker, ctx} = await analysisSetup(engine);
+  const {clusterMcsSmiles} = await chem('utils/mol-creation_rdkit.ts');
   const {CLUSTER_MCS_TIMEOUT_S} = await chem('crux/crux-api.ts');
   return async (mols) => {
     let smarts;
@@ -1407,15 +1649,15 @@ ONE.fmcs = async (engine) => {
     if (engine !== 'crux')
       smarts = worker.mostCommonStructure(mols, true, true, CLUSTER_MCS_TIMEOUT_S);
     else {
-      [smarts] = await ANALYSIS_JOBS.clusterMCS(worker, crux, [mols], true, true);
+      [smarts] = await ANALYSIS_JOBS.clusterMCS(ctx, [mols], true, true);
       if (smarts === null) {
         smarts = rdkitWorker.mostCommonStructure(mols, true, true, CLUSTER_MCS_TIMEOUT_S);
         fallback = true;
       }
     }
-    let [smiles] = clusterMcsSmiles([smarts], [mols], module, getMolSafe, getQueryMolSafe);
+    let [smiles] = clusterMcsSmiles([smarts], [mols], module);
     if (engine === 'crux' && smarts && !smiles) // analysis-jobs.ts: an MCS the Crux module does not write: RDKit's
-      [smiles] = clusterMcsSmiles([smarts], [mols], rdkit, getMolSafe, getQueryMolSafe);
+      [smiles] = clusterMcsSmiles([smarts], [mols], rdkit);
     return {smarts, smiles, fallback};
   };
 };
@@ -1462,7 +1704,7 @@ const floatBits = (x) => {
 RUN.mces = async (engine, rows) => {
   const {crux} = await engineModules('crux');
   const {getMolSafe} = await chem('utils/mol-creation_rdkit.ts');
-  const cw = await chem('crux/crux.worker.ts');
+  const {ANALYSIS_JOBS} = await chem('crux/crux-analysis-jobs.ts');
   const pairs = readJson(inputs(`mces-pairs-${rows}.json`));
   const details = JSON.stringify(mcesOptions());
   const parity = (p) => {
@@ -1488,7 +1730,7 @@ RUN.mces = async (engine, rows) => {
   const {ms, out, traps} = timeSync(pairs, parity, 5);
   const job = timeSync(pairs, (p) => {
     try {
-      return cw.pairUncommonAtomsAndBonds(p.smiles1, p.smiles2, details) === null ? 'below threshold' : 'MCES';
+      return ANALYSIS_JOBS.pairUncommonAtomsAndBonds({module: crux}, p.smiles1, p.smiles2, details) === null ? 'below threshold' : 'MCES';
     } catch (e) {
       return 'threw';
     }
@@ -1561,11 +1803,11 @@ RUN['mces-fmcs'] = async (engine, rows) => {
 // molzip (Chem:molzip, in both modes on Crux: crux-analysis-jobs.ts molzip, details {} = RDKit's defaults) vs RDKit.js
 // 2026.03.6's molzip(a, b) of the same pieces and Python's Chem.molzip
 ONE.molzip = async (engine) => {
-  const {module, ANALYSIS_JOBS} = await analysisSetup(engine);
+  const {module, ANALYSIS_JOBS, ctx} = await analysisSetup(engine);
   const {zippedSmiles} = await chem('rdkit-service/rdkit-service-worker-substructure.ts');
   const {getMolSafe} = await chem('utils/mol-creation_rdkit.ts');
   if (engine === 'crux')
-    return (chunk) => ANALYSIS_JOBS.molzip(null, module, chunk, '{}').smiles;
+    return (chunk) => ANALYSIS_JOBS.molzip(ctx, chunk, '{}').smiles;
   return (chunk) => chunk.map((s) => {
     const [first, ...rest] = s.split('.');
     const a = getMolSafe(first, {}, module).mol;
@@ -2078,6 +2320,52 @@ FUNCTIONS.search = {engines: ['rdkit+crux (parity.mjs, one process)'], async run
       'does not read); one process runs both engines (parity.mjs\'s design), one thread. Time: the searches\' sum ' +
       '(per query); "prepare": RDKit\'s fingerprints/targets, Crux\'s index build.']});
 }};
+
+/** The search types' comparison (searchtypes: the dataset; searchtypesfiles: Chem's test datasets). */
+function compareSearchTypes(fn, source) {
+  return async (rows) => {
+    const raw = Object.fromEntries(['rdkit', 'crux', 'rdkit2026'].map((e) => [e, loadRaw(fn, e)]));
+    const items = raw.crux.items;
+    const molsAll = source === 'files' ? chemFileMolecules() : molecules(rows);
+    const byType = new Map();
+    items.forEach((it, i) => {
+      const type = it.type.startsWith('Similar') ? it.type.split(' ').slice(0, 2).join(' ') : it.type;
+      byType.set(type, [...byType.get(type) ?? [], i]);
+    });
+    for (const [type, idx] of byType) {
+      // a query Crux does not read is searched by RDKit in Crux mode: RDKit mode's hits
+      const key = (e) => idx.map((i) => raw[e].items[i].key ?? raw.rdkit.items[i].key);
+      const onRdkit = idx.filter((i) => items[i].onRdkit).length;
+      const cmp = compareItems({crux: key('crux'), base: key('rdkit'), refs: {rdkit2026: key('rdkit2026')}, n: idx.length,
+        classify: (k) => items[idx[k]].set});
+      const show = (k) => {
+        const i = idx[k];
+        const it = items[i];
+        const rowsOf = (e) => new Set(raw[e].items[i].rows ?? raw[e].items[i].outside ?? []);
+        const [cx, rd, r6] = ['crux', 'rdkit', 'rdkit2026'].map(rowsOf);
+        const not = !!it.outside;
+        const only = (a, b) => [...a].filter((x) => !b.has(x)).slice(0, 3).map((r) => `${r} ${clip(molsAll[r], 80)}`);
+        return `${it.type} [${it.set}] ${clip(it.label, 70)}: hits Crux ${it.key}, RDKit 2024.09 ${raw.rdkit.items[i].key}, ` +
+          `2026.03.6 ${raw.rdkit2026.items[i].key}; ${not ? 'outside the hits' : 'hits'} only in Crux: ` +
+          `${JSON.stringify(only(cx, rd))}, only in RDKit 2024.09: ${JSON.stringify(only(rd, cx))}`;
+      };
+      const ms = (e) => idx.reduce((t, i) => t + (raw[e].items[i].ms ?? 0), 0);
+      pushRow(baseRow(fn, `${type}${source === 'files' ? ' (Chem\'s test datasets)' : ''}`, idx.length,
+        `query over ${raw.crux.rows} molecules`, ['rdkit', 'crux', 'rdkit2026'].map((e) => engineStats(e,
+          {ms: ms(e) || null, counts: e === 'crux' ? {...raw.crux.counts, 'queries on RDKit here': onRdkit} : null},
+          idx.length, {prepareMs: raw[e].prepareMs, prepareUsPerMolecule: us(raw[e].prepareMs, raw[e].rows)})), cmp,
+        {causes: await withExamples(cmp.causes, show), refCauses: await withExamples(cmp.refCauses, show),
+          notes: ['Output per query: the hit set (its size and hash). RDKit mode: Chem\'s RDKit search as its pool ' +
+            'runs it on a column whose rows its workers cache (getMolSafe\'s sanitized molecules; ≤10,000 per worker), ' +
+            'its pattern screen; Crux mode: crux/jobs/search-types.ts, RDKit for the rows Crux does not read and a ' +
+            'query Crux does not read. One thread each; "prepare": the pattern fingerprints and canonical SMILES ' +
+            '(RDKit: getFingerprints; Crux: the segment keys). Similar times: the Tanimoto only.']}));
+    }
+  };
+}
+FUNCTIONS.searchtypes = {engines: ['rdkit', 'crux', 'rdkit2026'], compare: compareSearchTypes('searchtypes', 'dataset')};
+FUNCTIONS.searchtypesfiles = {engines: ['rdkit', 'crux', 'rdkit2026'],
+  compare: compareSearchTypes('searchtypesfiles', 'files')};
 
 FUNCTIONS.descriptors = {engines: ['crux', 'chempy', 'container'], async run(rows) {
   child('descriptors', 'crux', rows);
@@ -2949,7 +3237,8 @@ if (!isMain) {
   const only = args.find((a) => a.startsWith('only='))?.slice(5).split(',') ?? Object.keys(FUNCTIONS);
   const compareOnly = args.includes('--compare-only');
   mkdirSync(RAW, {recursive: true});
-  await prepareInputs(rows);
+  if (only.some((fn) => !fn.startsWith('searchtypes'))) // the search types make their inputs themselves
+    await prepareInputs(rows);
   const resultsFile = join(OUT, 'results.json');
   const previous = existsSync(resultsFile) ? readJson(resultsFile) : {rows: []};
   const failed = new Set();
