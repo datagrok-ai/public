@@ -275,11 +275,9 @@
 }
 
 /* the status bar's slots are four panels the shell places side by side with nothing between
-   them: each one after the count leads with a separator, or "1,006" and "1 unsaved change" read
-   as one number */
-.u2-domain-status-selected::before,
-.u2-domain-status-notice::before,
-.u2-domain-status-problem::before {
+   them: a slot after one that says something leads with a separator, or "1,006" and "1 unsaved
+   change" read as one number */
+.u2-domain-status-after::before {
   content: '·';
   margin: 0 var(--dg-space-m);
   color: var(--dg-text-color-light);

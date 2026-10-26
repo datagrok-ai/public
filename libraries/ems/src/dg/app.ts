@@ -609,22 +609,37 @@ export class DomainApp extends Control {
   /** One status-bar panel per slot (`appView` places them side by side): the count, the selection,
    * the notice, the problem — so a refusal never takes the count off the line. */
   static statusPanels(app: DomainApp): HTMLElement[] {
-    const slot = (name: string, read: (status: DomainAppStatus) => string): HTMLElement => {
+    const reads: ((status: DomainAppStatus) => string)[] = [
+      (status) => status.count,
+      (status) => status.selected === 0 ? '' : `${status.selected} selected`,
+      (status) => status.notice ?? '',
+      (status) => app._shortProblem(status),
+    ];
+    return ['count', 'selected', 'notice', 'problem'].map((name, at) => {
       const el = span('', `u2-domain-status-${name}`);
       el.dataset.u2Part = name;
       app.effect(() => {
-        const text = read(app.status.value);
+        const status = app.status.value;
+        const text = reads[at](status);
         el.textContent = text;
         el.hidden = text === '';
+        // the shell places the slots as separate panels: a slot leads with a separator only when a
+        // slot before it says something, so an empty count lends nothing to the problem
+        el.classList.toggle('u2-domain-status-after', reads.slice(0, at).some((read) => read(status) !== ''));
+        el.title = name === 'problem' && text !== (status.problem ?? '') ? status.problem ?? '' : '';
       });
       return el;
-    };
-    return [
-      slot('count', (status) => status.count),
-      slot('selected', (status) => status.selected === 0 ? '' : `${status.selected} selected`),
-      slot('notice', (status) => status.notice ?? ''),
-      slot('problem', (status) => status.problem ?? ''),
-    ];
+    });
+  }
+
+  /** The problem as the status bar says it: a load the list page already shows in full, inside its
+   * frame, is named in a few words there — the reason is the slot's tooltip. */
+  private _shortProblem(status: DomainAppStatus): string {
+    const problem = status.problem ?? '';
+    if (problem === '' || this._page.value !== 'list' || this.listSource.state.value !== 'error')
+      return problem;
+    const q = this.listSource.query.value;
+    return (typeof q === 'string' ? q.trim() !== '' : q.nodes.length > 0) ? 'Filter refused' : 'Rows not loaded';
   }
 
   /** What the pending changes are called: one dirty source words them in its own terms ("1

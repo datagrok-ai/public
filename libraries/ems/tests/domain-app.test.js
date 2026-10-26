@@ -1231,7 +1231,7 @@ scoped('the status bar is four slots, and a refusal never takes the count off th
   const panels = DomainApp.statusPanels(a);
   await flush();
   assert.deepEqual(panels.map((el) => el.dataset.u2Part), ['count', 'selected', 'notice', 'problem']);
-  assert.deepEqual(panels.map((el) => el.className),
+  assert.deepEqual(panels.map((el) => el.className.split(' ')[0]),
     ['u2-domain-status-count', 'u2-domain-status-selected', 'u2-domain-status-notice',
       'u2-domain-status-problem']);
   assert.equal(panels[0].textContent, '3 issues');
@@ -1243,7 +1243,19 @@ scoped('the status bar is four slots, and a refusal never takes the count off th
   assert.equal(a.status.value.selected, 2);
   assert.equal(panels[1].textContent, '2 selected');
   assert.equal(panels[1].hidden, false);
+  assert.equal(panels[1].classList.contains('u2-domain-status-after'), true, 'a separator after the count');
   assert.equal(a.summary.value, '3 issues · 2 selected');
+
+  // a load the server refuses: the list frame says why in full, the status bar in two words, and
+  // the empty count lends the problem no separator
+  fire(a.list.list.root, 'keydown', {key: 'Escape'});
+  assert.equal(await a.open('?q=validator'), true);
+  await flush();
+  assert.equal(a.listSource.state.value, 'error');
+  assert.deepEqual(panels.map((el) => el.hidden), [true, true, true, false]);
+  assert.equal(panels[3].textContent, 'Filter refused');
+  assert.equal(panels[3].title, 'Expected an operator');
+  assert.equal(panels[3].classList.contains('u2-domain-status-after'), false, 'no dangling dot');
   a.dispose();
 });
 
