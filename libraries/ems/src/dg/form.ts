@@ -10,7 +10,7 @@ import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Rows, Access, Filters, div, span,
   timestamp, EMPTY, isEmpty, text, loader, link, iconButton} from '@datagrok-libraries/u2';
-import type {Input, InputOptions, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
+import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
 import {propertyForm, ObjectForm, Editors, userPick, groupPick} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {ObjectFormOptions} from '@datagrok-libraries/u2/src/dg/index.js';
@@ -243,8 +243,7 @@ export class DomainForm extends Control {
           input.focus();
         else
           form?.focusFirst(DomainForm.needsValue);
-      }
-      finally {
+      } finally {
         this._focusing = false;
       }
       // a Ctrl+S from inside a picker leaves its popup over the form, and the re-focus would open
@@ -526,8 +525,8 @@ export class DomainForm extends Control {
       this._captions.set(name, {id: String(id), caption: typeof caption === 'string' ? caption : '', address});
       projected = true;
       // the server captions a row by its name column; an app that dresses the table captions it its own way
-      if (address !== undefined && caption !== null)
-        void DomainPick.host?.caption(address).then((dressed) => dressed === null ? undefined : resolve(), () => undefined);
+      const dressed = address === undefined || caption === null ? undefined : DomainPick.host?.caption(address);
+      void dressed?.then((app) => app === null ? undefined : resolve(), () => undefined);
     }
     if (projected)
       this._applyCaptions(row);

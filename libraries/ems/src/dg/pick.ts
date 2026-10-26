@@ -184,7 +184,8 @@ export class DomainPick extends PickInput<PickItem> {
   static renderItem(item: PickItem): HTMLElement {
     const name = span(item.name, 'u2-typeahead-text');
     name.dataset.u2Part = 'item-label';
-    return item.detail === undefined ? name : div([name, span(item.detail, 'u2-domain-pick-detail')], 'u2-domain-pick-item');
+    return item.detail === undefined ? name :
+      div([name, span(item.detail, 'u2-domain-pick-detail')], 'u2-domain-pick-item');
   }
 
   /** The declared name column, else the first business-key column, else the id. */
