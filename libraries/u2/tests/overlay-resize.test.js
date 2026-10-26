@@ -225,16 +225,16 @@ smoke('a new filter row says its value is missing only once it was left, or the 
     'touch shows every row');
 });
 
-smoke('a tree row reads as the platform tree\'s: 20px tall, a caret icon for a twistie, 20px per level', () => {
+smoke('a tree row reads as the platform tree\'s: 20px tall, a chevron for a twistie, 20px per level', () => {
   const tree = mount(new VirtualTree());
   tree.root.querySelector('.u2-list').clientHeight = 200;
   tree.setRoots([{id: 'a', label: 'Alpha', children: [{id: 'a1', label: 'Alpha one'}]}]);
   const row = (i) => tree.root.querySelector(`.u2-list-row[data-index="${i}"]`);
   const twistie = (i) => row(i).querySelector('.u2-tree-twistie');
-  assert.equal(twistie(0).classList.contains('fa-caret-right'), true, 'a closed branch shows a caret');
+  assert.equal(twistie(0).classList.contains('fa-chevron-right'), true, 'a closed branch shows a chevron');
   assert.equal(twistie(0).textContent, '', 'not a text glyph');
   fire(twistie(0), 'click');
-  assert.equal(twistie(0).classList.contains('fa-caret-down'), true, 'an open one points down');
+  assert.equal(twistie(0).classList.contains('fa-chevron-down'), true, 'an open one points down');
   assert.equal(row(1).style.height, '20px');
   assert.equal(row(1).querySelector('.u2-tree-row').style.getPropertyValue('--u2-tree-indent'), '20px');
   assert.equal(twistie(1).classList.contains('u2-tree-twistie-hidden'), true, 'a leaf keeps the box, hidden');
