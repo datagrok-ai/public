@@ -125,9 +125,9 @@ export class DomainHistory extends Control {
     if (raw !== null && typeof raw === 'object' && raw.constructor === Object)
       return JSON.stringify(raw);
     switch (prop?.propertyType ?? prop?.type) {
-      case 'datetime': return timestamp(raw as string, undefined, {utcDates: true}).textContent || text(raw);
-      case 'double': case 'float': case 'num': return DomainDataTable.number(raw as number, prop!.format);
-      default: return text(raw);
+    case 'datetime': return timestamp(raw as string, undefined, {utcDates: true}).textContent || text(raw);
+    case 'double': case 'float': case 'num': return DomainDataTable.number(raw as number, prop!.format);
+    default: return text(raw);
     }
   }
 
@@ -140,8 +140,7 @@ export class DomainHistory extends Control {
     try {
       const entries = await table.audit(id, {limit: PAGE_SIZE});
       return entries.slice().reverse();
-    }
-    catch (e) {
+    } catch (e) {
       // the pane says it plainly beside its Retry; what the server said is the tooltip
       this._failure = DomainErrors.message(e, this.source);
       throw new Error('History is unavailable');
@@ -166,12 +165,10 @@ export class DomainHistory extends Control {
         Scope.runWith(scope, () => list.append(...older.map((entry) => this._line(entry))));
         oldest = older.at(-1) ?? oldest;
         more.hidden = page.length < PAGE_SIZE;
-      }
-      catch (e) {
+      } catch (e) {
         if (!scope.isDisposed)
           DomainErrors.report(e, this.source);
-      }
-      finally {
+      } finally {
         more.disabled = false;
       }
     });

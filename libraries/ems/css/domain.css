@@ -399,7 +399,23 @@
 .u2-domain-children-toolbar {
   flex: none;
   gap: var(--dg-space-s);
-  padding: var(--dg-space-xs) var(--dg-space-s);
+  padding: var(--dg-space-xs) 0;
+}
+
+/* the first button's text on the pane's edge, where the grid and the form start */
+.u2-domain-children-toolbar > .u2-btn:first-child {
+  margin-left: calc(-1 * var(--dg-space-m));
+}
+
+/* one child table: a heading over its pane, as History has, instead of a strip of one tab */
+.u2-domain-children-heading {
+  padding: var(--dg-space-s) 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+}
+
+.u2-domain-children-single > .u2-domain-children-tabs > .u2-tabs-header {
+  display: none;
 }
 
 .u2-domain-children-split {
@@ -435,6 +451,12 @@
   flex: 0 0 260px;
   height: 0;
   min-height: 100%;
+}
+
+/* the list beside the form is a column of rows, not a box that reads as an editor */
+.u2-domain-children-split > .u2-domain-list > .u2-domain-list-rows {
+  border: none;
+  border-right: var(--dg-border-width) solid var(--dg-border);
 }
 
 .u2-domain-children-error {
@@ -540,6 +562,7 @@
   flex: 1 0 auto;
   flex-direction: column;
   gap: var(--dg-space-s);
+  padding: 0 var(--dg-space-m);
 }
 
 /* under the form the children keep a tab strip, a toolbar, a two-line header and about 8 rows,
@@ -554,6 +577,17 @@
 }
 
 .u2-domain-app-panes > .u2-domain-history {
+  flex: none;
+}
+
+/* nothing in the shown tab but its empty message: the children take their own height, and History
+   follows right under them */
+.u2-domain-app-panes > .u2-domain-children.u2-domain-children-blank {
+  flex: none;
+  min-height: 0;
+}
+
+.u2-domain-children-blank > .u2-domain-children-tabs {
   flex: none;
 }
 

@@ -3,9 +3,10 @@
    parent's session — so a draft parent and its child drafts save as one transaction (the child's
    FK is the parent's draft id; the server orders the inserts). Once the parent is saved, the
    current row re-points to its real id and the tab re-queries by it. */
-import {Control, Scope, signal, untracked, ReadonlySignal, div, divH, span, TabStrip, loader,
-  Rows} from '@datagrok-libraries/u2';
-import type {DomainSource} from '../core/domain-source.js';
+import {Control, Scope, signal, computed, untracked, ReadonlySignal, Signal, div, divH, span, TabStrip, loader,
+  Rows, Section} from '@datagrok-libraries/u2';
+import type {RowView} from '@datagrok-libraries/u2';
+import {DomainSource} from '../core/domain-source.js';
 import {toPlural} from '../core/domain-backend.js';
 import {domains, DomainTable} from './facade.js';
 import {DomainApp} from './app.js';
@@ -28,6 +29,14 @@ export interface ChildEntry {
   label: string;
 }
 
+/** What a tab follows: its rows' count, the child source while the tab is shown, and whether the
+ * pane holds nothing but its empty message. */
+interface TabState {
+  count: Signal<number | null>;
+  current: Signal<DomainSource | undefined>;
+  blank: Signal<boolean>;
+}
+
 export class DomainChildren extends Control {
   readonly tabs: TabStrip;
   readonly mode: DomainChildrenMode;
@@ -38,6 +47,7 @@ export class DomainChildren extends Control {
   private readonly _entries = signal<readonly ChildEntry[]>([]);
   private readonly _status: HTMLElement;
   private readonly _sources = new Map<string, DomainSource>();
+  private readonly _tabStates = new Map<string, TabState>();
 
   constructor(readonly parent: DomainSource, options: DomainChildrenOptions = {}) {
     super();
@@ -80,6 +90,9 @@ export class DomainChildren extends Control {
       return;
     this._status.replaceChildren();
     const entries: ChildEntry[] = [];
+    // one child table is a heading over its pane, not a strip of one tab
+    const single = refs.length === 1;
+    this.root.classList.toggle('u2-domain-children-single', single);
     for (const [i, c] of refs.entries()) {
       const address = `${c.schema}.${c.table}`;
       const id = `${address}.${c.fkColumn}`;
@@ -95,32 +108,87 @@ export class DomainChildren extends Control {
       if (handle.status === 'rejected') {
         pane.append(span(DomainErrors.message(handle.reason), 'u2-domain-children-error'));
         this.tabs.addTab({id, label, content: () => pane});
+        if (single)
+          this._heading(label);
         continue;
       }
       const entry: ChildEntry = {id, table: handle.value, fk: c.fkColumn, label};
       entries.push(entry);
-      this.tabs.addTab({id, label, content: () => {
+      const state: TabState = {count: signal(null), current: signal(undefined), blank: signal(false)};
+      this._tabStates.set(id, state);
+      const validity = computed(() => DomainChildren._problem(state.current.value));
+      this.tabs.addTab({id, label, validity, content: () => {
         this._watch(entry, pane);
         return pane;
       }});
+      const counted = computed(() => state.count.value === null ? label : `${label} (${state.count.value})`);
+      this.effect(() => {
+        const text = counted.value;
+        untracked(() => this.tabs.setTabLabel(id, text));
+      });
+      this.effect(() => {
+        const dirty = state.current.value?.isDirty.value ?? false;
+        untracked(() => this.tabs.setDirty(id, dirty));
+      });
+      if (single)
+        this._heading(counted, validity);
     }
+    this.effect(() => {
+      const shown = this.tabs.activeTab.value;
+      const blank = shown !== null && this._tabStates.get(shown)?.blank.value === true;
+      this.root.classList.toggle('u2-domain-children-blank', blank);
+    });
     this._entries.value = entries;
-    void this._openFirstFilled(entries);
+    let picked = false;
+    let countedFor: string | null | undefined;
+    this.effect(() => {
+      const row = this.parent.currentRow.value;
+      // a saved draft re-points the row mid-save: the counts follow once it has landed
+      if ((row?.id ?? null) === countedFor || this.parent.session.isSaving.value)
+        return;
+      countedFor = row?.id ?? null;
+      untracked(() => void this._count(entries, row, !picked));
+      picked = true;
+    });
   }
 
-  /** A row opens on a tab that has something in it: the first child table with rows, the first
-   * tab when none has or the counts do not answer. A tab shown meanwhile is the user's. */
-  private async _openFirstFilled(entries: readonly ChildEntry[]): Promise<void> {
-    const row = this.parent.currentRow.peek();
-    const opened = this.tabs.activeTab.peek();
-    // the tab already shown may be one whose table did not open: it has no entry and no rows
-    if (row === null || Rows.isDraft(row) || entries.every((e) => e.id === opened))
+  /** The heading of a single child table, in the section look the history pane has. */
+  private _heading(title: string | ReadonlySignal<string>, validity?: ReadonlySignal<string | null>): void {
+    const heading = this.runInScope(() => new Section({title, collapsible: false, validity}));
+    heading.header.classList.add('u2-domain-children-heading');
+    this.root.insertBefore(heading.header, this.tabs.root);
+  }
+
+  /** What a tab is marked invalid with: the refusal its child source carries, never a failed load,
+   * which the pane shows itself. */
+  private static _problem(source: DomainSource | undefined): string | null {
+    const error = source?.error.value;
+    const code = DomainErrors.codeOf(error);
+    return error === undefined || source!.state.value === 'error' ||
+      (code !== 'validation' && code !== DomainSource.REFUSED) ? null : DomainErrors.message(error, source);
+  }
+
+  /** Every tab's rows counted for the parent row — its label says how many. A row opens on a tab
+   * that has something in it (`pick`): the first child table with rows, the first tab when none has
+   * or the counts do not answer. A tab shown meanwhile is the user's. */
+  private async _count(entries: readonly ChildEntry[], row: RowView | null, pick: boolean): Promise<void> {
+    for (const e of entries)
+      this._tabStates.get(e.id)!.count.value = null;
+    if (row === null || Rows.isDraft(row))
       return;
-    // a count nobody asked for: a table that refuses it just does not win the first tab
+    const opened = this.tabs.activeTab.peek();
+    // a count nobody asked for: a table that refuses it just goes without, and does not win the first tab
     const counts = await Promise.all(entries.map((e) =>
-      e.table.table.count({filter: `${e.fk} = "${row.id}"`}).catch(() => 0)));
-    const at = counts.findIndex((n) => n > 0);
-    if (at >= 0 && entries[at].id !== opened && !this.scope.isDisposed && this.tabs.activeTab.peek() === opened)
+      e.table.table.count({filter: `${e.fk} = "${row.id}"`}).catch(() => null)));
+    if (this.scope.isDisposed || this.parent.currentRow.peek()?.id !== row.id)
+      return;
+    for (const [i, e] of entries.entries())
+      this._tabStates.get(e.id)!.count.value ??= counts[i];
+    // the tab already shown may be one whose table did not open: it has no entry and no rows
+    if (!pick || entries.every((e) => e.id === opened))
+      return;
+    const at = counts.findIndex((n) => n !== null && n > 0);
+    if (at >= 0 && entries[at].id !== opened && this.tabs.activeTab.peek() === opened)
       this.tabs.activeTab.value = entries[at].id;
   }
 
@@ -139,9 +207,12 @@ export class DomainChildren extends Control {
       scope?.dispose();
       scope = undefined;
       this._sources.delete(entry.id);
+      const state = this._tabStates.get(entry.id)!;
+      state.current.value = undefined;
       if (row === null) {
         pane.replaceChildren(span(`Select a ${DomainTable.noun(this.parent.schema.info, true)}.`,
           'u2-domain-children-hint'));
+        state.blank.value = true;
         return;
       }
       // everything built here — the source, the controls — is adopted by the pane's scope
@@ -151,15 +222,26 @@ export class DomainChildren extends Control {
         const child = entry.table.source({query: draft ? '' : `${entry.fk} = "${row.id}"`,
           defaults: {[entry.fk]: row.id}, session: this.parent.session, empty: draft});
         this._sources.set(entry.id, child);
-        // the parent's id is the same on every row here, and the column is not the user's to edit
-        const body = this.mode === 'grid' ? domains.grid(child, {hiddenColumns: [entry.fk]}).root :
-          divH([domains.list(child).root, domains.form(child).root], 'u2-domain-children-split');
+        state.current.value = child;
+        // the parent's id is the same on every row here, and the column is not the user's to edit;
+        // a list-mode form sits in half the pane, its captions over the editors
+        const grid = this.mode === 'grid' ? domains.grid(child, {hiddenColumns: [entry.fk]}) : null;
+        const body = grid?.root ??
+          divH([domains.list(child).root, domains.form(child, {layout: 'tall'}).root], 'u2-domain-children-split');
         const empty = span(`No ${entry.label.toLowerCase()}.`, 'u2-domain-children-empty');
-        pane.replaceChildren(divH([domains.newButton(child).root], 'u2-domain-children-toolbar'), body, empty);
+        const add = domains.newButton(child, {}, {text: `Add ${DomainTable.noun(entry.table.info, true)}`});
+        // the press leaves the focus where the new row is typed: the grid's row; a list's form takes it itself
+        if (grid !== null)
+          add.root.addEventListener('click', () => queueMicrotask(() => grid.grid.root.focus()));
+        pane.replaceChildren(divH([add.root], 'u2-domain-children-toolbar'), body, empty);
         pending.effect(() => {
-          const none = child.state.value === 'ready' && child.rows.items.value.length === 0;
+          const ready = child.state.value === 'ready';
+          const none = ready && child.rows.items.value.length === 0;
           empty.hidden = !none;
           body.hidden = none;
+          state.blank.value = none;
+          if (ready && !draft)
+            state.count.value = child.total.value;
         });
       }));
     });

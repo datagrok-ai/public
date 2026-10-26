@@ -370,3 +370,44 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   children.dispose();
   parent.dispose();
 });
+
+scoped('VR-35/36, VS-10: counts in the labels, a heading for one table, "Add <singular>", dirty and refused tabs marked', async () => {
+  emsBackends.domain = crm();
+  const companies = await domains.table('crm.company');
+  const parent = companies.source({pageSize: 10});
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = domains.children(parent, {mode: 'list'});
+  await settle();
+  await flush();
+  const labels = () => [...children.root.querySelectorAll('.u2-tabs-tab .u2-tabs-label')].map((t) => t.textContent);
+  assert.deepEqual(labels(), ['Contacts (1)', 'Deals (Seller) (1)', 'Deals (Buyer) (0)'], 'every tab says how many');
+  assert.equal(children.root.classList.contains('u2-domain-children-single'), false);
+  const add = children.root.querySelector('button[data-u2="new-button"]');
+  assert.equal(add.textContent, 'Add contact', 'the child button says what it adds');
+  const tab = children.root.querySelector(`.u2-tabs-tab[data-id="${CONTACTS}"]`);
+  add.click();
+  await flush();
+  assert.equal(tab.querySelector('.u2-tabs-mark').classList.contains('u2-tabs-dirty'), true, 'a pending child marks its tab');
+  assert.equal(await parent.session.save(), false, 'the draft contact has no name');
+  await flush();
+  assert.equal(tab.classList.contains('u2-tabs-invalid'), true, 'the refused child marks its tab');
+  parent.session.discard();
+  await flush();
+  assert.equal(tab.classList.contains('u2-tabs-invalid') || tab.querySelector('.u2-tabs-mark').classList.contains('u2-tabs-dirty'),
+    false, 'and the marks go with the changes');
+
+  children.tabs.activeTab.value = 'crm.deal.buyer_id';
+  await settle();
+  assert.equal(children.root.classList.contains('u2-domain-children-blank'), true, 'an empty tab takes only its own height');
+  children.dispose();
+
+  const one = domains.children(parent, {tables: ['contact'], mode: 'grid'});
+  await settle();
+  await flush();
+  assert.equal(one.root.classList.contains('u2-domain-children-single'), true);
+  assert.equal(one.root.querySelector('.u2-domain-children-heading .u2-section-title').textContent, 'Contacts (1)',
+    'one child table is a heading with its count');
+  one.dispose();
+  parent.dispose();
+});
