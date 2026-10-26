@@ -170,20 +170,4 @@ export namespace funcs {
   export async function retrieveEntity(scope: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('MolTrack:RetrieveEntity', { scope });
   }
-
-  /**
-   * @param {any} id
-   *   semType: Grok ID
-   */
-  export async function molTrackEmsPanel(id: any ): Promise<any> {
-    return await grok.functions.call('MolTrack:MolTrackEmsPanel', { id });
-  }
-
-  /**
-   * @param {any} id
-   *   semType: Grok Batch ID
-   */
-  export async function molTrackEmsBatchPanel(id: any ): Promise<any> {
-    return await grok.functions.call('MolTrack:MolTrackEmsBatchPanel', { id });
-  }
 }

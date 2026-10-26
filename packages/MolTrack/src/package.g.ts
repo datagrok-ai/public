@@ -141,19 +141,3 @@ export async function advancedSearch(outputFields: string[], filter: any) : Prom
 export async function retrieveEntity(scope: string) : Promise<any> {
   return await PackageFunctions.retrieveEntity(scope);
 }
-
-//name: Databases | MolTrack EMS
-//input: semantic_value id { semType: Grok ID }
-//output: widget res
-//meta.role: panel
-export async function molTrackEmsPanel(id: DG.SemanticValue) : Promise<any> {
-  return await PackageFunctions.molTrackEmsPanel(id);
-}
-
-//name: Databases | MolTrack EMS Batch
-//input: semantic_value id { semType: Grok Batch ID }
-//output: widget res
-//meta.role: panel
-export async function molTrackEmsBatchPanel(id: DG.SemanticValue) : Promise<any> {
-  return await PackageFunctions.molTrackEmsBatchPanel(id);
-}

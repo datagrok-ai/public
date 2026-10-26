@@ -1,8 +1,5 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {domains, DomainApp} from '@datagrok-libraries/ems/src/dg';
-import {span} from '@datagrok-libraries/u2';
 import type {CompoundBatchRow, CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
 import {CompoundsApp} from './compounds';
@@ -70,40 +67,6 @@ export class MolTrackEms {
   static async batchByGrokId(corporateId: string): Promise<CompoundBatchRow | null> {
     const regno = MolTrackTables.keyNumber(await MolTrackTables.table('compound_batch'), 'batch_regno', corporateId);
     return regno === null ? null : moltrackEmsDb.compoundBatches.first({filter: DG.cond('batch_regno', '=', regno)});
-  }
-
-  static async compoundPanel(corporateId: string): Promise<DG.Widget> {
-    const compound = await MolTrackEms.compoundByGrokId(corporateId);
-    return DG.Widget.fromRoot(compound === null ? ui.divText(`${corporateId} is not registered`) :
-      await MolTrackEms.compoundCard(compound));
-  }
-
-  static async batchPanel(corporateId: string): Promise<DG.Widget> {
-    const batch = await MolTrackEms.batchByGrokId(corporateId);
-    if (batch === null)
-      return DG.Widget.fromRoot(ui.divText(`${corporateId} is not registered`));
-    const batches = await MolTrackTables.table('compound_batch');
-    const id = MolTrackTables.corporateId(batches, 'batch_regno', batch.batch_regno);
-    const compound = await moltrackEmsDb.compounds.first({filter: DG.cond('id', '=', batch.compound_id)});
-    return DG.Widget.fromRoot(ui.divV([
-      ui.tableFromMap({'Batch': ui.link(id, () => void MolTrackEms.show(`Batches?entity=${batch.id}`)),
-        'Project': batch.project ?? '', 'Source batch code': batch.source_batch_code ?? '',
-        'Responsible party': batch.responsible_party ?? ''}),
-      ...(compound === null ? [] : [ui.h3('Compound'), await MolTrackEms.compoundCard(compound)]),
-    ]));
-  }
-
-  static async compoundCard(compound: CompoundRow): Promise<HTMLElement> {
-    const id = MolTrackTables.corporateId(await MolTrackTables.compounds(), 'molregno', compound.molregno);
-    const batches = span('');
-    void moltrackEmsDb.compoundBatches.count({filter: DG.cond('compound_id', '=', compound.id)})
-      .then((count) => batches.textContent = String(count), () => batches.textContent = '?');
-    return ui.divV([
-      grok.chem.drawMolecule(compound.structure, 200, 150),
-      ui.tableFromMap({'Grok ID': ui.link(id, () => void MolTrackEms.show(`Compounds?entity=${compound.id}`)),
-        'Name': compound.common_name ?? '', 'CAS': compound.cas ?? '', 'Formula': compound.formula ?? '',
-        'InChIKey': compound.inchikey ?? '', 'Batches': batches}),
-    ]);
   }
 
   // the server cannot search a formatted key: a typed `DG-000060` becomes `molregno = 60`, only once the key is whole

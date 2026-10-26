@@ -329,24 +329,4 @@ export class PackageFunctions {
       resultJson;
     return DG.DataFrame.fromObjects(processedRes);
   }
-
-  @grok.decorators.panel({
-    name: 'Databases | MolTrack EMS',
-    outputs: [{type: 'widget', name: 'res'}],
-  })
-  static async molTrackEmsPanel(
-    @grok.decorators.param({type: 'semantic_value', options: {semType: 'Grok ID'}}) id: DG.SemanticValue,
-  ): Promise<DG.Widget> {
-    return await MolTrackEms.compoundPanel(id.value);
-  }
-
-  @grok.decorators.panel({
-    name: 'Databases | MolTrack EMS Batch',
-    outputs: [{type: 'widget', name: 'res'}],
-  })
-  static async molTrackEmsBatchPanel(
-    @grok.decorators.param({type: 'semantic_value', options: {semType: 'Grok Batch ID'}}) id: DG.SemanticValue,
-  ): Promise<DG.Widget> {
-    return await MolTrackEms.batchPanel(id.value);
-  }
 }

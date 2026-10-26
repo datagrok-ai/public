@@ -24,23 +24,6 @@ export async function getCorporateCompoundIdByExactStructure(structure: string):
   }
 }
 
-export async function getBatchInfoBySynonym(
-  synonymName: string, synonymValues: string[], outputFields: string[],
-): Promise<any[]> {
-  const query = {
-    'level': 'compounds',
-    'output': outputFields,
-    'filter': {
-      'field': synonymName,
-      'operator': 'IN',
-      'value': synonymValues,
-    },
-    'output_format': ResultOutput.JSON,
-  };
-  const {data} = await MolTrackDockerService.search(query, 'compounds');
-  return data;
-}
-
 export function buildPropertyOptions(
   p: MolTrackProp,
   opts?: { reserved?: string[], skipReservedCheck?: boolean },
