@@ -7,7 +7,7 @@
    deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {Rows} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {domains, DomainApp, DomainTable} from '@datagrok-libraries/ems/src/dg';
@@ -28,17 +28,14 @@ category('U2: domain app', () => {
   let alphaId: string;
 
   async function ready(src: DomainSource): Promise<void> {
-    for (let i = 0; i < 200 && (src.state.value === 'idle' || src.state.value === 'loading'); i++)
-      await delay(50);
+    await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading',
+      () => `source is ${src.state.value}: ${String(src.error.value)}`);
     if (src.state.value !== 'ready')
       throw new Error(`source is ${src.state.value}: ${String(src.error.value)}`);
   }
 
   async function until(check: () => boolean, what: string): Promise<void> {
-    for (let i = 0; i < 100 && !check(); i++)
-      await delay(50);
-    if (!check())
-      throw new Error(`timed out waiting for ${what}`);
+    await waitUntil(check, `timed out waiting for ${what}`, 5000);
   }
 
   const dialog = () => document.querySelector('.u2-dialog');
@@ -78,20 +75,16 @@ category('U2: domain app', () => {
     expect(app.list.root.querySelectorAll('.u2-list-row').length >= 2, true, 'rows rendered');
     expect(view.path, `${BASE}?q=${encodeURIComponent(query)}`);
     app.listSource.search.value = 'Beta';
-    await delay(100);
     await ready(app.listSource);
     expect(app.listSource.rows.items.value.map((r) => r.name).join(), 'Beta');
     app.listSource.search.value = '';
-    await delay(100);
     await ready(app.listSource);
     app.listSource.query.value = `${query} and quantity > 1`;
     expect(view.path.includes('?q='), true);
     expect(decodeURIComponent(view.path).endsWith('quantity > 1'), true);
-    await delay(100);
     await ready(app.listSource);
     expect(app.listSource.rows.items.value.map((r) => r.name).join(), 'Beta');
     app.listSource.query.value = query;
-    await delay(100);
     await ready(app.listSource);
   });
 
@@ -154,7 +147,7 @@ category('U2: domain app', () => {
     expect(view.path, `${BASE}?entity=${alphaId}`);
     await app.goTo('list');
     expect(DomainApp.activate(BASE, alphaId), true);
-    await delay(50);
+    await until(() => app.page.value === 'entity', 'the entity page');
     expect(grok.shell.v.dart === view.dart, true, 'the view comes to the front');
     expect(app.entity.value, alphaId);
     expect([...grok.shell.views].some((v) => v.dart === view.dart), true);
@@ -167,7 +160,7 @@ category('U2: domain app', () => {
     view.close();
     await until(() => dialog() !== null, 'the unsaved-changes dialog on close');
     dialogButton('CANCEL')!.click();
-    await delay(50);
+    await until(() => dialog() === null, 'the unsaved-changes dialog to close');
     expect([...grok.shell.views].some((v) => v.dart === view.dart), true, 'the view stays');
     expect(app.session.isDirty.value, true);
     app.session.discard();

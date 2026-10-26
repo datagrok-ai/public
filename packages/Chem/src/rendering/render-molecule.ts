@@ -66,6 +66,14 @@ export function renderMolecule(
   return div;
 }
 
+/** The molecule drawn again to fill most of the window, in a full-screen dialog: a small depiction (a context
+ *  panel's, a SAR matrix cell's) scaled up would only be blurred. */
+export function showEnlargedMolecule(molStr: string): DG.Dialog {
+  const width = Math.max(200, window.innerWidth - 200);
+  const height = Math.max(100, window.innerHeight - 200);
+  return ui.dialog({title: 'Molecule'}).add(renderMolecule(molStr, {width, height, popupMenu: false})).showModal(true);
+}
+
 function showMoleculeMenu(molStr: string) {
   const menu = DG.Menu.popup();
   menu.item('Copy SMILES', () => {
@@ -79,6 +87,7 @@ function showMoleculeMenu(molStr: string) {
     navigator.clipboard.writeText(molFile);
     grok.shell.info('Molfile copied to clipboard');
   });
+  menu.item('Enlarge', () => showEnlargedMolecule(molStr));
   menu.item('Sketch', () => {
     const sketcher = new DG.chem.Sketcher();
     DG.chem.isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);

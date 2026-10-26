@@ -7,7 +7,7 @@
    Fixture: `apitests.item`, rows prefixed per run and deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {Rows} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {domains, DomainApp, DomainTable} from '@datagrok-libraries/ems/src/dg';
@@ -25,14 +25,13 @@ category('U2: domain trash', () => {
   let goneId: string;
 
   async function ready(src: DomainSource): Promise<void> {
-    for (let i = 0; i < 200 && (src.state.value === 'idle' || src.state.value === 'loading'); i++)
-      await delay(50);
+    await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading',
+      () => `source is ${src.state.value}: ${String(src.error.value)}`);
     if (src.state.value !== 'ready')
       throw new Error(`source is ${src.state.value}: ${String(src.error.value)}`);
   }
 
   async function reloaded(): Promise<void> {
-    await delay(100);
     await ready(app.listSource);
   }
 
@@ -104,7 +103,7 @@ category('U2: domain trash', () => {
       .classList.contains('u2-domain-list-restored'), true);
     expect((await items().get(goneId, {deleted: 'only'}))['~is_deleted'], true, 'nothing was written');
     app.session.discard();
-    await delay(200);
+    await waitUntil(() => !app.session.isDirty.value, 'the discard to land', 5000);
     expect(app.session.isDirty.value, false);
     expect(names(), 'Alpha', 'the row is still in the trash');
   });

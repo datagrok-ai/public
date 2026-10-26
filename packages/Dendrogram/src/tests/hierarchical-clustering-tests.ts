@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {category, test, expect, expectObject, expectArray, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectObject, expectArray, waitUntil} from '@datagrok-libraries/test/src/test';
 import {DistanceMetric, LinkageMethod} from '@datagrok-libraries/bio/src/trees';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
@@ -101,9 +101,9 @@ category('hierarchicalClustering', () => {
     dataDf.name = 'testDemogShort';
 
     const tv: DG.TableView = grok.shell.addTableView(dataDf);
-    await awaitCheck(() => {
+    await waitUntil(() => {
       return $(tv.root).find('.d4-grid canvas').length > 0;
-    }, 'The view grid canvas not found', 100);
+    }, 'The view grid canvas not found');
 
     await hierarchicalClusteringUI(dataDf, ['HEIGHT'], DistanceMetric.Euclidean, 'average');
   });
@@ -231,11 +231,12 @@ category('hierarchicalClustering', () => {
     try {
       expect(features()?.includes('p'), true);
       grok.shell.closeTable(dfB);
-      await awaitCheck(() => features()?.includes('x') ?? false, 'Features still lists the closed table columns', 2000);
+      await waitUntil(() => features()?.includes('x') ?? false, 'Features still lists the closed table columns', 2000);
       grok.shell.closeTable(dfA);
-      await awaitCheck(() => features() == null, 'Features of the closed last table is still shown', 2000);
+      await waitUntil(() => features() == null, 'Features of the closed last table is still shown', 2000);
       grok.shell.addTableView(DG.DataFrame.fromCsv('m,n\n1,2\n2,3\n3,4'));
-      await awaitCheck(() => features()?.includes('m') ?? false, 'Features does not list the newly opened table columns', 2000);
+      await waitUntil(() => features()?.includes('m') ?? false,
+        'Features does not list the newly opened table columns', 2000);
     } finally {
       dialog.close();
       grok.shell.closeAll();

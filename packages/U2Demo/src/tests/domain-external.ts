@@ -6,7 +6,7 @@
    schema of the NorthwindBinding scratch package (later ApiSamples), read-only and never written;
    the category skips itself when it is not registered. */
 import * as grok from 'datagrok-api/grok';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {Filters, Rows} from '@datagrok-libraries/u2';
 import type {FilterSchema, FilterValue} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
@@ -23,8 +23,8 @@ category('U2: domain external', () => {
   let app: DomainApp;
 
   async function settled(src: DomainSource): Promise<void> {
-    for (let i = 0; i < 200 && (src.state.value === 'idle' || src.state.value === 'loading'); i++)
-      await delay(50);
+    await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading',
+      () => `source is ${src.state.value}: ${String(src.error.value)}`);
   }
 
   async function ready(src: DomainSource): Promise<void> {
@@ -34,10 +34,7 @@ category('U2: domain external', () => {
   }
 
   async function until(check: () => boolean, what: string): Promise<void> {
-    for (let i = 0; i < 100 && !check(); i++)
-      await delay(50);
-    if (!check())
-      throw new Error(`timed out waiting for ${what}`);
+    await waitUntil(check, `timed out waiting for ${what}`, 5000);
   }
 
   const skipped = (): boolean => {
@@ -101,7 +98,6 @@ category('U2: domain external', () => {
       const item = ribbon[at];
       return item instanceof HTMLElement ? item : item.root;
     };
-    await delay(50);
     expect(el(0).hidden, true, 'no New');
     expect(app.menuActions().map((a) => a.name).join(), '', 'no Import, no Bulk edit, no Trash');
     expect(el(3).hidden, true, 'and no ⋯ button');
@@ -200,9 +196,17 @@ category('U2: domain external', () => {
     for (const name of spied)
       proto[name] = function(...args: unknown[]) { calls.push(name); return originals[name].apply(this, args); };
     const src = orders.source({pageSize: 5, live: true, liveMs: 100});
+    const poll = src as unknown as {_probe(): Promise<void>};
+    const probe = poll._probe;
+    let polls = 0;
+    poll._probe = function() {
+      polls++;
+      return probe.call(this);
+    };
     try {
       await ready(src);
-      await delay(350);
+      // the 4th tick: the earlier ones had a full interval to ask anything
+      await waitUntil(() => polls >= 4, 'the live timer to tick');
       expect(calls.join(), '', 'nothing was asked');
       expect(src.state.value, 'ready');
       expect(src.error.value === undefined, true);
@@ -239,14 +243,12 @@ category('U2: domain external', () => {
     expect(offered.includes('='), true);
     expect(offered.includes('like'), true);
     app.listSource.query.value = 'ship_country = "France"';
-    await delay(100);
     await ready(app.listSource);
     const rows = app.listSource.rows.items.value;
     expect(rows.length > 0, true);
     expect(rows.every((r) => r.ship_country === 'France'), true);
     expect(app.status.value.problem, null);
     app.listSource.query.value = '';
-    await delay(100);
     await ready(app.listSource);
   });
 
@@ -271,7 +273,6 @@ category('U2: domain external', () => {
       const offered = schema.operators!(prop, Filters.operators.for(prop)).map((o) => o.id);
       for (const op of offered) {
         app.listSource.query.value = Filters.group('and', [Filters.cond(column, op, valueFor(column, op))]);
-        await delay(100);
         await settled(app.listSource);
         if (app.listSource.state.value !== 'ready' || app.status.value.problem !== null)
           failed.push(`${column} ${op}: ${String(app.listSource.error.value ?? app.status.value.problem)}`);
@@ -280,7 +281,6 @@ category('U2: domain external', () => {
     }
     expect(failed.join('; '), '', 'every offered operator runs');
     app.listSource.query.value = '';
-    await delay(100);
     await ready(app.listSource);
   });
 });

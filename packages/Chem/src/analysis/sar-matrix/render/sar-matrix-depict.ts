@@ -1,7 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 
 import {withEngineMol} from '../sar-matrix-engine';
+import {engineGeneration} from '../../../engine/chem-engine';
 import {getMoleculeRenderer} from '../../../package';
+import {RDKitCellRenderer} from '../../../rendering/rdkit-cell-renderer';
+import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {SarMatrix} from '../sar-matrix-types';
 import {attachmentNumbers} from '../build/sar-matrix-link';
 import {MatrixGridState} from '../sar-matrix-ui-common';
@@ -69,6 +72,8 @@ export function alignToTemplate(molStr: string, templateMolblock: string): strin
 /** Drop the per-dataset core-alignment layouts on rebuild; the shared renderer's raster cache is LRU. */
 export function clearDepictionCaches(): void {
   alignCache.clear();
+  images.clear();
+  imageBytes = 0;
 }
 
 const coreBlockCache = new DG.LruCache<string, string>(TEMPLATE_CACHE_MAX);
@@ -154,8 +159,36 @@ export function rowTemplate(state: MatrixGridState, rowIdx: number): string | nu
 const PAINT_BUDGET_MS = 50;
 let spent = 0;
 let resetQueued = false;
-/** The sizes each molecule was rasterized at: those come out of the renderer's cache and cost no budget. */
-const rasterized = new DG.LruCache<string, Set<string>>(ALIGN_CACHE_MAX);
+/** The cells' rasters (`null`: one the renderer cannot draw), by engine, size, template and molecule: a paint
+ *  blits these without spending its budget. Kept here because the shared renderer keeps 100 images and a zoomed-out
+ *  matrix shows hundreds of cells: with only its cache behind them, every paint redrew the evicted cells, spent its
+ *  budget on them and deferred the cells painted last for good. Bounded by bytes, not by count (so a Map, not a
+ *  DG.LruCache): a raster is its cell in device pixels, 126 KB for a 104x76 cell on a Retina screen and a few KB
+ *  zoomed far out, while the visible cells' rasters add up to at most the screen's device pixels at any zoom. */
+const images = new Map<string, ImageData | null>();
+/** A 5K screen covered in cells (5120 x 2880 x 4 bytes, 59 MB), and some to scroll back to. */
+const IMAGES_MAX_BYTES = 64 * 2 ** 20;
+let imageBytes = 0;
+
+function cachedImage(key: string): ImageData | null | undefined {
+  const image = images.get(key);
+  if (image !== undefined) { // most recently used last, as the eviction below reads them oldest first
+    images.delete(key);
+    images.set(key, image);
+  }
+  return image;
+}
+
+function cacheImage(key: string, image: ImageData | null): void {
+  images.set(key, image);
+  imageBytes += image?.data.byteLength ?? 0;
+  for (const [oldKey, old] of images) {
+    if (imageBytes <= IMAGES_MAX_BYTES)
+      break;
+    images.delete(oldKey);
+    imageBytes -= old?.data.byteLength ?? 0;
+  }
+}
 
 function charge(ms: number): void {
   spent += ms;
@@ -183,6 +216,13 @@ export function charged<T>(work: () => T): T {
   }
 }
 
+/** The package's molecule renderer, or one of this module's own where the package's init has not run (the test
+ *  bundle), so the grid draws either way. */
+let ownRenderer: RDKitCellRenderer | null = null;
+function moleculeRenderer(): RDKitCellRenderer | null {
+  return getMoleculeRenderer() ?? (ownRenderer ??= new RDKitCellRenderer(getRdKitModule()));
+}
+
 /** Scratch canvas the cached `ImageData` is blitted through so the grid's clip is respected
  *  (`putImageData` ignores the clip and would paint over the pinned core column or past the edge). */
 let blitCanvas: OffscreenCanvas | null = null;
@@ -192,7 +232,7 @@ function ensureBlitCanvas(w: number, h: number): OffscreenCanvas {
   return blitCanvas;
 }
 
-/** Draw a depiction onto the grid canvas in device pixels, reusing the shared renderer's LRU caches.
+/** Draw a depiction onto the grid canvas in device pixels, from this module's image cache or the shared renderer.
  *  The bitmap is produced at device size and blitted 1:1 at a whole-pixel offset so bond lines stay
  *  crisp (drawing through the grid's scaled transform bilinear-filters every bond). The device rect
  *  comes from the context transform, not `devicePixelRatio`, so a grid translate can't displace cells.
@@ -202,11 +242,11 @@ function ensureBlitCanvas(w: number, h: number): OffscreenCanvas {
  *  it, which blends the anti-aliased bonds into the tint with no pale fringe. Both the fill and the
  *  blit run at device pixels through the scratch canvas, so the grid's clip is respected.
  *
- *  Past this task's budget, a depiction not drawn before is left out and `deferred` called instead, to
+ *  Past this task's budget, a depiction not in the cache is left out and `deferred` called instead, to
  *  paint it on a later pass. The map-stripped string is drawn, aligned to `template` when given. */
 export function drawDepiction(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
   molStr: string, template: string | null, argb: number, deferred: () => void): void {
-  const renderer = getMoleculeRenderer();
+  const renderer = moleculeRenderer();
   if (!renderer || !molStr)
     return;
   const m = g.getTransform();
@@ -215,29 +255,25 @@ export function drawDepiction(g: CanvasRenderingContext2D, x: number, y: number,
   if (dw < 1 || dh < 1)
     return;
   const plain = molStr.replace(/\[\*:\d+\]/g, '[*]');
-  const ready = template ? alignCache.get(`${template}${plain}`) : plain;
-  const size = `${dw}x${dh}`;
-  if (depictionBudgetSpent() && (ready === undefined || !rasterized.get(ready)?.has(size))) {
-    deferred();
-    return;
+  const key = `${engineGeneration()}|${dw}x${dh}|${template ?? ''}|${plain}`;
+  let image = cachedImage(key);
+  if (image === undefined) {
+    if (depictionBudgetSpent()) {
+      deferred();
+      return;
+    }
+    const t0 = performance.now();
+    try {
+      image = renderer.getCachedMolImageData(template ? alignToTemplate(plain, template) : plain, dw, dh);
+    } catch {
+      image = null; // malformed: cached too, or the grid would be repainted for it as long as it shows
+    } finally {
+      charge(performance.now() - t0);
+    }
+    cacheImage(key, image);
   }
-  const t0 = performance.now();
-  // Only an aligned depiction can be missing from the cache, so `template` is set here.
-  const molblock = ready ?? alignToTemplate(plain, template!);
-  // Marked whether or not it draws: one the renderer cannot read would otherwise be deferred, and its grid
-  // repainted, for as long as the grid is on screen.
-  let sizes = rasterized.get(molblock);
-  if (sizes === undefined)
-    rasterized.set(molblock, sizes = new Set());
-  sizes.add(size);
-  let image: ImageData;
-  try {
-    image = renderer.getCachedMolImageData(molblock, dw, dh);
-  } catch {
-    return; // malformed structure — leave the cell to its background
-  } finally {
-    charge(performance.now() - t0);
-  }
+  if (image === null)
+    return; // left to its background
   const scratch = ensureBlitCanvas(dw, dh);
   scratch.getContext('2d')!.putImageData(image, 0, 0);
   g.save();

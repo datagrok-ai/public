@@ -61,7 +61,9 @@ category('Flow: output strip', () => {
 
       const unrelated = e.flow.getConnections().find((c) => c.target === toStr.id)!;
       await e.flow.editor.removeConnection(unrelated.id);
-      await new Promise((r) => setTimeout(r, 50)); // let the deferred check run
+      expect(await until(() =>
+        (e.flow as unknown as {pendingOrphanOutputIds: Set<string>}).pendingOrphanOutputIds.size === 0), true,
+      'the deferred orphan check ran');
       expect(e.flow.getNodes().some((n) => n.id === out.id), true,
         'the connected output stays when an unrelated wire goes');
     } finally {
@@ -128,7 +130,8 @@ category('Flow: output strip', () => {
       const before = chipEl(e.container, a.id)!.getBoundingClientRect();
       await e.flow.area.area.translate(-380, 240);
       await e.flow.area.area.zoom(2.2);
-      await new Promise((r) => setTimeout(r, 50));
+      expect(await until(() => !(e.flow as unknown as {stripSyncScheduled: boolean}).stripSyncScheduled), true,
+        'the strip re-synced after pan/zoom');
       const after = chipEl(e.container, a.id)!.getBoundingClientRect();
       expect(Math.abs(after.left - before.left) < 1 && Math.abs(after.top - before.top) < 1, true,
         'position unchanged by pan/zoom');

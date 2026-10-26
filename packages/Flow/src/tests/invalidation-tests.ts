@@ -455,7 +455,8 @@ category('Flow: in-place isolation', () => {
 
 category('Flow: autorun', () => {
   const edit = (nodeId: string): GraphEdit => ({kind: 'params-changed', nodeId});
-  const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+  // A run only ever fires from the debounce timer, so no pending timer means no run is coming.
+  const scheduled = (s: AutorunScheduler): boolean => (s as unknown as {timer: unknown}).timer != null;
 
   test('debounce coalesces a burst of edits into one run with the union', async () => {
     const runs: Set<string>[] = [];
@@ -467,7 +468,8 @@ category('Flow: autorun', () => {
     s.onEdit(edit('a'), new Set(['a', 'b']));
     s.onEdit(edit('b'), new Set(['b']));
     s.onEdit(edit('c'), new Set(['c']));
-    await sleep(80);
+    expect(await until(() => runs.length > 0), true, 'the burst ran');
+    expect(scheduled(s), false, 'nothing else is pending');
     expect(runs.length, 1, 'one run for the whole burst');
     expect([...runs[0]].sort().join(), 'a,b,c', 'dirty sets are unioned');
   });
@@ -481,7 +483,7 @@ category('Flow: autorun', () => {
     s.onEdit(edit('a'), new Set(['a'])); // disabled
     s.toggle();
     s.onEdit({kind: 'node-added', nodeId: 'x'}, new Set()); // not ready as dropped
-    await sleep(60);
+    expect(scheduled(s), false, 'nothing scheduled');
     expect(runs, 0);
   });
 
@@ -493,7 +495,8 @@ category('Flow: autorun', () => {
     }, 20);
     s.toggle();
     s.onEdit({kind: 'node-added', nodeId: 'ready'}, new Set(['ready']));
-    await sleep(60);
+    expect(await until(() => runs.length > 0), true, 'the drop alone schedules');
+    expect(scheduled(s), false, 'nothing else is pending');
     expect(runs.length, 1, 'the drop alone schedules');
     expect(runs[0].dirty.join(), 'ready');
     expect(runs[0].liveOnly, false, 'flagged as a normal autorun');
@@ -506,16 +509,16 @@ category('Flow: autorun', () => {
       return 'started';
     }, 20, (id) => id === 'viewer');
     s.onEdit(edit('a'), new Set(['a']));
-    await sleep(60);
+    expect(scheduled(s), false, 'non-live edit schedules nothing while off');
     expect(runs.length, 0, 'non-live edit ignored while off');
     s.onEdit(edit('a'), new Set(['a', 'viewer']));
-    await sleep(60);
+    expect(await until(() => runs.length > 0), true, 'a live node admitted the run');
     expect(runs.length, 1, 'a live node admitted the run');
     expect(runs[0].dirty.join(), 'viewer', 'only the live node is handed over');
     expect(runs[0].liveOnly, true, 'flagged as a live-only run');
     s.toggle();
     s.onEdit(edit('a'), new Set(['a', 'b']));
-    await sleep(60);
+    expect(await until(() => runs.length > 1), true, 'toggle on → the edit runs');
     expect(runs[1].dirty.join(), 'a,b', 'toggle on → full affected slice');
     expect(runs[1].liveOnly, false, 'flagged as a normal autorun');
   });
@@ -527,20 +530,20 @@ category('Flow: autorun', () => {
       return 'started';
     }, 20, (id) => id.startsWith('live'));
     s.onEdit({kind: 'node-added', nodeId: 'plain'}, new Set());
-    await sleep(60);
+    expect(scheduled(s), false, 'plain node-added schedules nothing');
     expect(runs.length, 0, 'plain node-added ignored');
     s.onEdit({kind: 'node-added', nodeId: 'live1'}, new Set());
-    await sleep(60);
+    expect(await until(() => runs.length > 0), true, 'live node-added schedules');
     expect(runs.length, 1, 'live node-added schedules');
     expect(runs[0].dirty.join(), 'live1');
     expect(runs[0].liveOnly, true);
     s.kickLive(['a', 'live2', 'b']);
-    await sleep(60);
+    expect(await until(() => runs.length > 1), true, 'kickLive schedules');
     expect(runs.length, 2, 'kickLive schedules');
     expect(runs[1].dirty.join(), 'live2', 'only live nodes enter the set');
     s.toggle();
     s.onEdit({kind: 'node-added', nodeId: 'live3'}, new Set());
-    await sleep(60);
+    expect(scheduled(s), false, 'toggle on → a live node not ready as dropped schedules nothing');
     expect(runs.length, 2, 'toggle on → a live node not ready as dropped does not schedule');
   });
 
@@ -661,20 +664,22 @@ category('Flow: autorun', () => {
     }, 20);
     s.toggle();
     s.onEdit(edit('a'), new Set(['a']));
-    await sleep(30); // fires → busy → rescheduled
+    expect(await until(() => runs.length > 0), true, 'the edit fired');
+    expect(scheduled(s), true, 'busy → rescheduled');
     outcome = 'started';
-    await sleep(40); // retry succeeds with the same set
+    expect(await until(() => runs[runs.length - 1].outcome === 'started'), true, 'the retry ran');
     expect(runs.length >= 2, true, 'busy outcome retried');
     expect(runs[runs.length - 1].dirty.join(), 'a', 'the set survived the busy attempt');
 
     outcome = 'skipped';
     s.onEdit(edit('b'), new Set(['b']));
     const afterSkip = runs.length + 1;
-    await sleep(70);
+    expect(await until(() => runs.length === afterSkip), true, 'the skipped attempt ran');
+    expect(scheduled(s), false, 'skipped is not retried on a timer');
     expect(runs.length, afterSkip, 'skipped is not retried on a timer');
     outcome = 'started';
     s.onEdit(edit('c'), new Set(['c']));
-    await sleep(40);
+    expect(await until(() => runs.length > afterSkip), true, 'the next edit ran');
     expect(runs[runs.length - 1].dirty.join(), 'b,c', 'the next edit re-schedules with the kept set');
   });
 
@@ -685,11 +690,12 @@ category('Flow: autorun', () => {
       return 'started';
     }, 20);
     s.kick(new Set(['x']));
-    await sleep(50);
+    expect(scheduled(s), false, 'kick schedules nothing while disabled');
     expect(runs.length, 0, 'kick is a no-op while disabled');
     s.toggle();
     s.kick(new Set(['a', 'b']));
-    await sleep(60);
+    expect(await until(() => runs.length > 0), true, 'the pending set runs after the debounce');
+    expect(scheduled(s), false, 'nothing else is pending');
     expect(runs.length, 1, 'the pending set runs after the debounce');
     expect([...runs[0]].sort().join(), 'a,b', 'exactly the kicked set');
   });
@@ -745,23 +751,23 @@ category('Flow: autorun', () => {
     s.toggle();
     s.hold();
     s.onEdit(edit('a'), new Set(['a']));
-    await sleep(60);
+    expect(scheduled(s), false, 'held — nothing scheduled');
     expect(runs.length, 0, 'held — nothing fires');
     s.hold(); // re-entrant: a second holder
     s.release();
-    await sleep(60);
+    expect(scheduled(s), false, 'still one hold outstanding — nothing scheduled');
     expect(runs.length, 0, 'still one hold outstanding');
     s.release();
-    await sleep(60);
+    expect(await until(() => runs.length > 0), true, 'the backlog fired after the last release');
     expect(runs.length, 1, 'the backlog fired after the last release');
     expect([...runs[0]].join(), 'a', 'with the accumulated set');
 
     s.onEdit(edit('b'), new Set(['b']));
     s.hold();
-    await sleep(60);
+    expect(scheduled(s), false, 'pending timer canceled by hold');
     expect(runs.length, 1, 'pending timer canceled by hold');
     s.release();
-    await sleep(60);
+    expect(await until(() => runs.length > 1), true, 'released — the kept set ran');
     expect(runs.length, 2, 'released — the kept set ran');
     expect([...runs[1]].join(), 'b');
   });
@@ -775,7 +781,7 @@ category('Flow: autorun', () => {
     s.toggle();
     s.onEdit(edit('a'), new Set(['a']));
     s.toggle(); // off before the debounce fires
-    await sleep(60);
+    expect(scheduled(s), false, 'the pending run was canceled');
     expect(runs, 0);
   });
 });
