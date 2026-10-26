@@ -38,8 +38,7 @@ Feature: MolTrack EMS: register a compound
     # caption: Refused: the salt is the compound registered a moment ago
     Then compound identity should contain text "Already registered as DG-"
     And compound identity should name the remembered compound
-    When user clicks on "Save" button in app ribbon
-    # caption: Save is refused, and says why
-    Then save problem should contain text "Already registered as DG-"
+    # caption: Save stays off while the refusal stands
+    And "Save" button in app ribbon should be disabled
     When user clicks on "Discard" button in app ribbon
     Then 1 compound with the structure "CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O" should be registered on the server

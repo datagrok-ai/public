@@ -36,8 +36,7 @@ Feature: MolTrack EMS: registering a compound
     And user clicks on OK button in sketcher dialog
     Then compound identity should contain text "Already registered as DG-"
     And compound identity should name the remembered compound
-    When user clicks on "Save" button in app ribbon
-    Then save problem should contain text "Already registered as DG-"
+    And "Save" button in app ribbon should be disabled
     When user clicks on "Discard" button in app ribbon
     Then domain list should be visible
     And 1 compound with the structure "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O" should be registered on the server

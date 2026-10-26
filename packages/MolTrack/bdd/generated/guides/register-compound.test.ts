@@ -14,7 +14,7 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {compoundCount, namesRemembered, noCompound, openEmsView, rememberCompound} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, pressKeyIn, shouldContainText, shouldNotContainText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, pressKeyIn, shouldBe, shouldContainText, shouldNotContainText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -46,9 +46,8 @@ test.describe("MolTrack EMS: register a compound", () => {
     await session.step(37, "And user clicks on OK button in sketcher dialog", () => clickOn(page, el("OK button in sketcher dialog")));
     await session.step(39, "Then compound identity should contain text \"Already registered as DG-\"", () => shouldContainText(page, el("compound identity"), "Already registered as DG-"), undefined, "Refused: the salt is the compound registered a moment ago");
     await session.step(40, "And compound identity should name the remembered compound", () => namesRemembered(page, el("compound identity")));
-    await session.step(41, "When user clicks on \"Save\" button in app ribbon", () => clickOn(page, el("\"Save\" button in app ribbon")));
-    await session.step(43, "Then save problem should contain text \"Already registered as DG-\"", () => shouldContainText(page, el("save problem"), "Already registered as DG-"), undefined, "Save is refused, and says why");
-    await session.step(44, "When user clicks on \"Discard\" button in app ribbon", () => clickOn(page, el("\"Discard\" button in app ribbon")));
-    await session.step(45, "Then 1 compound with the structure \"CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O\" should be registered on the server", () => compoundCount(page, 1, "CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O"));
+    await session.step(42, "And \"Save\" button in app ribbon should be disabled", () => shouldBe(page, el("\"Save\" button in app ribbon"), "disabled"), undefined, "Save stays off while the refusal stands");
+    await session.step(43, "When user clicks on \"Discard\" button in app ribbon", () => clickOn(page, el("\"Discard\" button in app ribbon")));
+    await session.step(44, "Then 1 compound with the structure \"CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O\" should be registered on the server", () => compoundCount(page, 1, "CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O"));
   });
 });
