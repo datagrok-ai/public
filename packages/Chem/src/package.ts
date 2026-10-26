@@ -3294,7 +3294,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Score column', description: 'Name of the resulting score column, e.g. "MPO <profile name>". The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name'}}) profileName: string,
     @grok.decorators.param({type: 'string', options: {initialValue: 'Average', choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
     createDesirabilityColumns: boolean = false,
-    createCoverageColumn: boolean = false,
+    @grok.decorators.param({options: {description: 'Add a column counting non-empty properties per row'}}) createCoverageColumn: boolean = false,
   ): DG.DataFrame | null {
     if (columns.length === 0)
       return null;
