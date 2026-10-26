@@ -36,6 +36,10 @@ export class PackageFunctions {
       await (query.prepare()).call();
   }
 
+  // loading the bundle registers MolTrack's table configuration, so a cold /domains link opens dressed
+  @grok.decorators.autostart({meta: {autostartImmediate: 'true'}})
+  static emsAutostart(): void {}
+
   @grok.decorators.func({name: 'initDB'})
   static async initDB() {
     await updateAllMolTrackSchemas();
