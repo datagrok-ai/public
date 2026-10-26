@@ -8,12 +8,14 @@
    it touched.
 
    Only targets that can actually be written are offered. Whatever blocks the button is its
-   tooltip, and a refusal — the table's validators over the rows as they would land, or the
-   server's — is the dialog's error line, never a balloon: a balloon says what landed, nothing else.
+   tooltip and the footer's warning, and a refusal — the table's validators over the rows as they
+   would land, or the server's — is the dialog's error line, never a balloon: a balloon says what
+   landed, nothing else.
 
    A bulk edit is NOT part of the unit of work — it lands the moment the button is pressed — so the
    session's pending changes are settled through `confirmDiscard` first. */
-import {signal, computed, Filters, span, Dialog, Input, MultiSelect, RadioInput, Rows, notify, plural, text}
+import {signal, computed, Filters, span, Dialog, Input, MultiSelect, RadioInput, Rows, notify, plural, statusLine,
+  text}
   from '@datagrok-libraries/u2';
 import type {IProperty, ReadonlySignal, RowView} from '@datagrok-libraries/u2';
 import {confirmDiscard} from '../core/session.js';
@@ -190,6 +192,9 @@ function _open(source: DomainSource, props: IProperty[], required: Set<string>, 
   dialog.effect(() => {
     dialog.onOK(run, {text: caption.value, primary: true});
   });
+  const reason = dialog.runInScope(() => statusLine(problem));
+  reason.classList.add('u2-status-line-warning', 'u2-domain-bulk-reason');
+  dialog.root.querySelector('[data-u2-part="footer"]')!.prepend(reason);
   dialog.add(form).okDisabled(problem).onCancel(() => finish(null)).show({modal: true, width: 480});
 }
 

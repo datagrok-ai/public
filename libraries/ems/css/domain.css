@@ -857,6 +857,17 @@
   display: none;
 }
 
+/* why Update is off leads up to the buttons, as a wizard's gate reason does */
+.u2-domain-bulk-reason {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.u2-domain-bulk-reason:not(.u2-status-line-problem) {
+  display: none;
+}
+
 /* import: each step fills the fixed dialog, and its table takes the room the rest leaves and
    scrolls itself */
 .u2-domain-import .u2-wizard-content {

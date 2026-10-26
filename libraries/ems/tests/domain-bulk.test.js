@@ -122,13 +122,17 @@ scoped('the chosen columns are written to the selection; one not chosen is left 
   assert.equal(okDisabled(), true);
   assert.equal(await okReason(), 'Choose the fields to change');
   assert.equal(refusal(), '', 'nothing red before the user did anything');
-  assert.equal(document.querySelector('.u2-domain-bulk-include, .u2-domain-bulk-reason'), null);
+  assert.equal(document.querySelector('.u2-domain-bulk-include') === null, true);
+  const reason = document.querySelector('.u2-dialog [data-u2-part="footer"] .u2-domain-bulk-reason');
+  assert.equal(reason.textContent, 'Choose the fields to change', 'the footer says why, beside the button');
+  assert.equal(reason.classList.contains('u2-status-line-warning'), true, 'a warning, not an error');
 
   choose('done');
   await flush();
   assert.equal(shown('done'), true, 'a chosen field shows its editor');
   assert.equal(shown('title'), false);
   assert.equal(okDisabled(), false);
+  assert.equal(reason.classList.contains('u2-status-line-problem'), false, 'nothing to say once it can run');
   assert.equal(hint('done'), '2 different values', 'what the write overwrites');
   field('done').value.value = true;
   field('title').value.value = 'NOT WRITTEN';

@@ -9,6 +9,7 @@ import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {button} from '../../core/elements.js';
 import {Dialog} from './dialog.js';
+import {statusLine} from '../display/badge.js';
 import type {IItemsState} from '../../core/widget-like.js';
 
 /** What a step's commit, an action and the finish get: `signal` aborts when the user presses Esc
@@ -101,7 +102,7 @@ export class Wizard extends Control {
   private readonly _rail = document.createElement('ol');
   private readonly _content = document.createElement('div');
   private readonly _footer = document.createElement('div');
-  private readonly _reason = document.createElement('span');
+  private readonly _reason: HTMLElement;
   private readonly _errorRow = document.createElement('span');
   private readonly _back: HTMLButtonElement;
   private readonly _next: HTMLButtonElement;
@@ -140,8 +141,6 @@ export class Wizard extends Control {
     this._content.dataset.u2Part = 'body';
     this._footer.className = 'u2-wizard-buttons';
     this._footer.dataset.u2Part = 'footer';
-    this._reason.className = 'u2-wizard-reason';
-    this._reason.dataset.u2Part = 'reason';
     this._errorRow.className = 'u2-wizard-error';
     this._errorRow.dataset.u2Part = 'error-row';
     this._errorRow.setAttribute('role', 'alert');
@@ -150,7 +149,7 @@ export class Wizard extends Control {
     this.status.dataset.u2Part = 'status';
     const left = document.createElement('span');
     left.className = 'u2-wizard-left';
-    left.append(this.status, this._reason, this._errorRow);
+    left.append(this.status, this._errorRow);
 
     this._back = this._button('BACK', () => this.back());
     this._next = this._button('NEXT', () => this.next());
@@ -170,6 +169,10 @@ export class Wizard extends Control {
     for (const step of options.steps.slice(0, start))
       this._visited.add(step.id);
     this._index.value = start;
+    this._reason = this.runInScope(() => statusLine(computed(() => this._blockReason.value || null)));
+    this._reason.classList.add('u2-wizard-reason', 'u2-status-line-warning');
+    this._reason.dataset.u2Part = 'reason';
+    this._errorRow.parentElement!.insertBefore(this._reason, this._errorRow);
 
     this.effect(() => this._applyStep());
     this.effect(() => this._applyNextText());
@@ -465,7 +468,6 @@ export class Wizard extends Control {
     this.root.classList.toggle('u2-wizard-busy', busy);
     this.root.setAttribute('aria-busy', String(busy));
     current.actions.forEach((b, i) => b.disabled = busy || current.options.actions![i].enabled?.value === false);
-    this._reason.textContent = reason ?? '';
   }
 
   private _finish(): void {

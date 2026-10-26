@@ -171,7 +171,7 @@
   color: var(--dg-error);
 }
 
-.u2-wizard-reason:empty,
+.u2-wizard-reason:not(.u2-status-line-problem),
 .u2-wizard-status:empty {
   display: none;
 }
