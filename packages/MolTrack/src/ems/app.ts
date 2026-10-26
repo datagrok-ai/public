@@ -2,9 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {domains, DomainApp} from '@datagrok-libraries/ems/src/dg';
-import type {DomainAppOptions} from '@datagrok-libraries/ems/src/dg';
-import {Filters, isEmpty, signal, span} from '@datagrok-libraries/u2';
-import type {RowView} from '@datagrok-libraries/u2';
+import {Filters, span} from '@datagrok-libraries/u2';
 import type {CompoundBatchRow, CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
 import {CompoundsApp} from './compounds';
@@ -24,48 +22,6 @@ const BATCH_GRID = {open: 'batch_regno', columns: ['batch_regno', 'source', 'sou
 
 const KEYS: Record<string, string> = {[`${SCHEMA}.compound`]: 'molregno', [`${SCHEMA}.compound_batch`]: 'batch_regno'};
 
-// a batch page shows the compound it is a lot of, above its fields; the picker stays the way to set it
-class BatchesApp extends DomainApp {
-  private readonly _compound = ui.divV([], 'moltrack-ems-parent');
-  /** The batch's compound, re-read on every edit; the card redraws only when it changes. */
-  private readonly _compoundId = signal<string | null>(null);
-
-  constructor(options: DomainAppOptions) {
-    super(options);
-    this.effect(() => {
-      const source = this.entitySource.value;
-      const edit = source?.edit.value;
-      this._compoundId.value = BatchesApp._compoundOf(source?.currentRow.value ?? null);
-      if (source === null || edit === undefined)
-        return;
-      const changes = edit.onChanged.subscribe(() =>
-        this._compoundId.value = BatchesApp._compoundOf(source.currentRow.peek()));
-      return () => changes.unsubscribe();
-    });
-    this.effect(() => {
-      const id = this._compoundId.value;
-      this._compound.remove();
-      // a compound that does not load leaves the header without its card
-      if (id !== null)
-        this._showCompound(id).catch(() => {});
-    });
-  }
-
-  private static _compoundOf(row: RowView | null): string | null {
-    const id = (row as RowView<CompoundBatchRow> | null)?.compound_id;
-    return isEmpty(id) ? null : id!;
-  }
-
-  private async _showCompound(id: string): Promise<void> {
-    const compound = await moltrackEmsDb.compounds.first({filter: DG.cond('id', '=', id)});
-    const card = compound === null ? null : await MolTrackEms.compoundCard(compound);
-    if (this._compoundId.peek() !== id)
-      return;
-    this._compound.replaceChildren(ui.h3('Compound'), card ?? ui.divText('The compound was not found'));
-    this.header.append(this._compound);
-  }
-}
-
 const VIEWS = domains.views({
   path: APP_PATH,
   handle: (address) => MolTrackTables.table(address.slice(SCHEMA.length + 1)),
@@ -76,7 +32,7 @@ const VIEWS = domains.views({
       children: {tables: ['compound_batch'], grids: {compound_batch: BATCH_GRID}},
       // no Bulk edit: it would write past the identity a structure derives
       menu: {bulkEdit: false}}},
-    {table: `${SCHEMA}.compound_batch`, name: 'Batches', options: {...FILTERS, sort: '!batch_regno', app: BatchesApp,
+    {table: `${SCHEMA}.compound_batch`, name: 'Batches', options: {...FILTERS, sort: '!batch_regno',
       children: {tables: ['batch_addition', 'assay_result']}}},
     {table: `${SCHEMA}.assay`, name: 'Assays', options: {...FILTERS, sort: 'name', children: {tables: ['assay_run']}}},
     {table: `${SCHEMA}.assay_run`, name: 'Assay Runs', options: {...FILTERS, sort: '!run_date,name',
