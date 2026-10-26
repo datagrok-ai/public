@@ -3,7 +3,7 @@
    summary following the page, the entity source sharing the session (one transaction for an
    edit on each page), find-or-activate through `DomainTable.open`, and New as a draft page. */
 
-import {emsBackends} from '../src/core/domain-backend.js';
+import {emsBackends, DomainBackendError} from '../src/core/domain-backend.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
@@ -1251,12 +1251,16 @@ scoped('the status bar is four slots, and a refusal never takes the count off th
   // a load the server refuses: the list frame says why in full, the status bar in two words, and
   // the empty count lends the problem no separator
   fire(a.list.list.root, 'keydown', {key: 'Escape'});
-  assert.equal(await a.open('?q=validator'), true);
+  const issues = emsBackends.domain.tableSync('grit.issue');
+  const where = issues._where.bind(issues);
+  issues._where = (scope) => scope.filter ?
+    Promise.reject(new DomainBackendError('filter', 'Column "done" is not filterable')) : where(scope);
+  assert.equal(await a.open('?q=done%20%3D%20true'), true);
   await flush();
   assert.equal(a.listSource.state.value, 'error');
   assert.deepEqual(panels.map((el) => el.hidden), [true, true, true, false]);
   assert.equal(panels[3].textContent, 'Filter refused');
-  assert.equal(panels[3].title, 'Expected an operator');
+  assert.equal(panels[3].title, 'Column "done" is not filterable');
   assert.equal(panels[3].classList.contains('u2-domain-status-after'), false, 'no dangling dot');
   a.dispose();
 });
