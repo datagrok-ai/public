@@ -143,7 +143,7 @@ export namespace funcs {
    * @param {string} table - Table to search.
    *   choices: ["compound","compound_batch","addition","batch_addition","assay","assay_run","assay_result"]
    * @param {string} filter - Filter in the list filter grammar, such as: common_name contains "acid" and mol_logp > 2.
-   * @param {string} structure - SMILES or molfile the compounds are matched against
+   * @param {string} structure - SMILES or molfile the compounds are matched against (compounds only)
    * @param {string} structureOperator - How the structure is matched.
    *   choices: ["has substructure","is substructure of","is similar to","is exactly"]
    */
