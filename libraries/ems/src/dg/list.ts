@@ -148,7 +148,7 @@ export class DomainList extends Control {
     }
     const extra = this._options.actions ?? [];
     const actions = table === undefined ? ActionRegistry.bind(extra, row) :
-      table.rowActions(row, extra).map((a) => a.name === 'Open' ? {...a, shortcut: 'Enter'} : a);
+      table.rowActions(row, extra, 'Enter');
     return allowedActions([...actions, DomainList.deleteAction(() => source.edit.peek()?.markDeleted(row.id))],
       {access: source.access.peek(), row});
   }

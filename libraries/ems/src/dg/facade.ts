@@ -247,8 +247,9 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   }
 
   /** What a read-only row offers — a tree node, a data table row: Open, the table's actions and the caller's. */
-  rowActions(row: RowView<TRow>, extra: readonly DomainAction<TRow>[] = []): Action[] {
-    const open: Action[] = Rows.isDraft(row) ? [] : [{name: 'Open', icon: 'external-link', run: () => this.open(row)}];
+  rowActions(row: RowView<TRow>, extra: readonly DomainAction<TRow>[] = [], openShortcut?: string): Action[] {
+    const open: Action[] = Rows.isDraft(row) ? [] :
+      [{name: 'Open', icon: 'external-link', shortcut: openShortcut, run: () => this.open(row)}];
     return allowedActions([...open, ...this.actions.for(row), ...ActionRegistry.bind(extra, row)],
       {access: this.access, row});
   }
