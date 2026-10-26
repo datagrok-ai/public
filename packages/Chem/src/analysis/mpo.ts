@@ -74,9 +74,7 @@ export class MpoProfileDialog {
     });
 
     this.addParetoFront = ui.input.bool('Pareto front');
-    this.addCoverageScore = ui.input.bool('Coverage Score', {
-      tooltipText: 'Add a column with the number of profile parameters that have a value in each row',
-    });
+    this.addCoverageScore = ui.input.bool('Coverage Score', {tooltipText: 'Number of measured parameters per row'});
     this.addRadarInCell = ui.input.bool('Add radar');
 
     this.manageButton = ui.button('Manage...', async () => {

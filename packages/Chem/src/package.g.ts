@@ -1505,7 +1505,7 @@ export async function _mpo() : Promise<void> {
 //input: string profileName { caption: Score column; description: Name of the resulting score column, e.g. "MPO <profile name>". The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name }
 //input: string aggregation = 'Average' { choices: ["Average","Sum","Product","Geomean","Min","Max"] }
 //input: bool createDesirabilityColumns 
-//input: bool createCoverageColumn { description: Also add a column with the number of scored properties that have a value in each row }
+//input: bool createCoverageColumn 
 //output: dataframe result { action: join(df) }
 //meta.vectorFunc: true
 export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileName: string, aggregation: any, createDesirabilityColumns: boolean, createCoverageColumn: boolean) : any {
