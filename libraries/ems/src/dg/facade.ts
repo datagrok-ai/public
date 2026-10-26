@@ -264,7 +264,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       ribbon: app.ribbonGroups(), status: DomainApp.statusPanels(app), path: app.path});
     mountView({view, base, pinned: path !== undefined, session,
       confirmLeave: () => confirmDiscard(session, {action: 'close the view'}),
-      params: ['entity', 'q', 'search', 'trash'],
+      params: ['entity', 'q', 'search', 'sort', 'trash'],
       baseOf: () => app.base, rebase: (prefix) => app.rebase(prefix), open: (address) => app.open(address),
       own: (dispose) => app.own(dispose)});
     app.own(DomainApp.register(app, view));
