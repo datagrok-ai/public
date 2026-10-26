@@ -655,3 +655,13 @@
 .u2-domain-tree-error {
   color: var(--dg-error);
 }
+
+/* the all row stands for the whole table, not for a row of it: muted, a rule under it */
+.u2-domain-tree-all {
+  font-style: italic;
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-tree .u2-list-row:has(.u2-domain-tree-all) {
+  border-bottom: var(--dg-border-width) solid var(--dg-border);
+}

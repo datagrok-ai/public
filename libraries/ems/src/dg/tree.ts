@@ -22,10 +22,12 @@ export interface DomainTreeOptions<TRow extends DomainRowLike = DomainRowLike> {
   /** Actions on top of Open and the table's own registry, per node. */
   actions?: DomainAction<TRow>[];
   /** A first row standing for the whole table ('All locations'): selecting it is `selected`
-   * null, which is what a collection bound to the tree reads as "no subtree filter". Without it
-   * the only way back to everything is clicking the selected node again. */
+   * null, which is what a collection bound to the tree reads as "no subtree filter". It is the
+   * tree's selection whenever no node is, so "everything" has one look. Without it the only way
+   * back to everything is clicking the selected node again. */
   allNode?: string;
-  /** How many children one level loads (default 500). */
+  /** How many children one request reads; a level larger than that is read in several
+   * (default 500). */
   pageSize?: number;
 }
 
@@ -66,7 +68,9 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     const render = _options.render;
     this.tree = this.runInScope(() => new VirtualTree<RowView<TRow>>({
       contextActions: (node) => node.data === undefined ? [] : this.actionsFor(node.data),
-      render: render === undefined ? undefined : (node) => render(node.data!),
+      // the all row is no location: muted, set off from the rows under it
+      render: (node) => node.id === ALL ? span(node.label, 'u2-domain-tree-all') :
+        render === undefined ? span(node.label) : render(node.data!),
     }));
     // a node with no row behind it (the "all" row) reads as no selection, which is what makes
     // selecting it clear a collection's subtree filter
@@ -83,13 +87,13 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       if (node === null || node.id !== this.tree.selectedNode.peek()?.id)
         return;
       e.stopPropagation();
-      this.tree.clearSelection();
+      this._clear();
     }, {capture: true});
     this.scope.listen(this.root, 'keydown', (e) => {
       if ((e as KeyboardEvent).key !== 'Escape' || this.tree.selectedNode.peek() === null)
         return;
       e.stopPropagation();
-      this.tree.clearSelection();
+      this._clear();
     }, {capture: true});
     this.effect(() => {
       const problem = this._error.value;
@@ -125,6 +129,8 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       const reveal = this._options.expandTo;
       if (reveal !== undefined)
         await this.expandTo(reveal);
+      else if (this.tree.selectedNode.peek() === null)
+        this._clear();
     } catch (e) {
       this._error.value = DomainErrors.message(e);
     } finally {
@@ -171,16 +177,31 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     }
   }
 
-  /** One level: the rows whose parent column is `id` — null for the roots, which is what the
-   * `is empty` operator compiles to. */
+  /** No node: the all row where there is one, else nothing selected — the same "everything". */
+  private _clear(): void {
+    if (this._options.allNode === undefined)
+      this.tree.clearSelection();
+    else
+      void this.tree.expandPath([ALL]);
+  }
+
+  /** One level, every row of it a page at a time: the rows whose parent column is `id` — null for
+   * the roots, which is what the `is empty` operator compiles to. */
   private async _children(id: string | null): Promise<TreeNode<RowView<TRow>>[]> {
     const table = this._table!;
+    const limit = this._options.pageSize ?? PAGE_SIZE;
     const spec: DomainQueryLike = {filter: {property: table.info.parentColumn!, operator: '=', value: id},
-      limit: this._options.pageSize ?? PAGE_SIZE, withAccess: true};
+      limit, withAccess: true};
     const name = table.info.nameColumn;
     if (name !== null)
       spec.sort = name;
-    const rows = await table.table.query(spec);
+    const rows: Record<string, unknown>[] = [];
+    for (;;) {
+      const page = await table.table.query({...spec, offset: rows.length});
+      rows.push(...page);
+      if (page.length < limit)
+        break;
+    }
     const nodes = rows.map((row) => this._node(row as unknown as RowView<TRow>));
     const all = this._options.allNode;
     return id === null && all !== undefined ? [{id: ALL, label: all, tooltip: all}, ...nodes] : nodes;
