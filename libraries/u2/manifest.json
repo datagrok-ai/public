@@ -4525,6 +4525,45 @@
       ]
     },
     {
+      "kind": "pick-input",
+      "noun": "pick input",
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "open",
+        "placeholder"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "type",
+        "open",
+        "pick"
+      ]
+    },
+    {
       "kind": "suggest-input",
       "noun": "suggest input",
       "family": "input",
@@ -6259,6 +6298,21 @@
     {
       "kind": "status-line",
       "noun": "status line",
+      "family": "display",
+      "role": "status",
+      "nameFrom": [
+        "text"
+      ],
+      "parts": {},
+      "state": [
+        "text"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
+      "kind": "empty-state",
+      "noun": "empty state",
       "family": "display",
       "role": "status",
       "nameFrom": [

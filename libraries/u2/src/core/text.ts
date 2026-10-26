@@ -32,3 +32,14 @@ export function camelCaseToWords(name: string): string {
     })
     .join(' ');
 }
+
+let measure: CanvasRenderingContext2D | null | undefined;
+
+/** The width `value` takes in the CSS `font`; 0 without a canvas. */
+export function textWidth(value: string, font: string): number {
+  measure ??= document.createElement('canvas').getContext?.('2d') ?? null;
+  if (measure === null)
+    return 0;
+  measure.font = font;
+  return measure.measureText(value).width;
+}

@@ -98,9 +98,8 @@ smoke('empty tree shows the empty hint (a link that adds); + adds a row on the f
   const fb = mount(new FilterBuilder({schema: SCHEMA}));
   assert.equal(rows(fb).length, 0);
   const none = fb.root.querySelector('.u2-fb-none');
-  assert.equal(none.tagName, 'A');
   assert.equal(none.dataset.u2Part, 'none');
-  fire(none, 'click');
+  fire(none.querySelector('a'), 'click');
   assert.equal(rows(fb).length, 1, 'the empty hint adds a condition');
   fb.removeNode(fb.value.peek().nodes[0].id);
   assert.equal(rows(fb).length, 0);
@@ -116,7 +115,7 @@ smoke('empty tree shows the empty hint (a link that adds); + adds a row on the f
   assert.equal(fb.validity.peek(), fb.problems.peek()[0].message, 'validity is the first problem');
   assert.equal(rows(fb)[0].classList.contains('u2-fb-invalid'), false, 'a fresh row is quiet until touched');
   fb.touch();
-  assert.equal(rows(fb)[0].classList.contains('u2-fb-invalid'), true);
+  assert.equal(rows(fb)[0].classList.contains('u2-fb-missing'), true);
   assert.equal(rows(fb)[0].title, fb.problems.peek()[0].message);
   const problem = part(rows(fb)[0], 'problem');
   assert.equal(problem.hidden, false, 'the row tells its problem on a line of its own');
@@ -138,8 +137,8 @@ smoke('allowAdd: false keeps the empty hint plain text', () => {
   const template = {root: Filters.group('and', []), allowAdd: false};
   const fb = mount(new FilterBuilder({schema: SCHEMA, template, value: Filters.applyTemplate(template)}));
   const none = fb.root.querySelector('.u2-fb-none');
-  assert.equal(none.tagName, 'SPAN');
-  fire(none, 'click');
+  assert.equal(none.querySelector('a'), null);
+  fire(none.firstChild, 'click');
   assert.equal(rows(fb).length, 0);
 });
 

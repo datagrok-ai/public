@@ -8,7 +8,7 @@ import {uuid4} from 'datagrok-api/u2core';
 import {Filters, notify, Access, MemoryFrame, Rows, isEmpty, Component} from '@datagrok-libraries/u2';
 import type {FilterCondition, FilterGroup, IProperty, AccessData, FieldAccess,
   MemoryColumn} from '@datagrok-libraries/u2';
-import {DomainBackendError, isUnscoped} from './domain-backend.js';
+import {DomainBackendError, isUnscoped, toPlural, toSingular} from './domain-backend.js';
 import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike,
   DomainBatchValidationLike, DomainBatchValidationRowLike, DomainFrameLike, DomainProbeLike,
   DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike, DomainTableLike,
@@ -382,12 +382,12 @@ export class MemoryTable implements DomainTableLike {
       .map(([column, c]) => [column, MemoryTable._address(schema, c.ref!)]));
     const named = columns.find(([, c]) => c.isName)?.[0] ??
       columns.find(([n, c]) => n === 'name' && c.type === 'string')?.[0];
-    const singular = json.singularName ?? MemoryTable._singular(name);
+    const singular = json.singularName ?? toSingular(name);
     const searchable = columns.filter(([, c]) => c.searchable === true).map(([n]) => n);
     const permissions = Array.isArray(json.permissions) ? json.permissions : Object.keys(json.permissions ?? {});
     this.info = {
       nameColumn: named ?? null, businessKey: json.businessKey ?? [], rowAddress: 'businessKey',
-      singularName: singular, pluralName: json.pluralName ?? MemoryTable._plural(singular),
+      singularName: singular, pluralName: json.pluralName ?? toPlural(singular),
       ...(json.friendlyName === undefined ? {} : {friendlyName: json.friendlyName}),
       searchableColumns: searchable.length > 0 ? searchable : named === undefined ? [] : [named],
       constraints: Object.entries(json.constraints ?? {}).filter(([, c]) => typeof c.expr === 'string')
@@ -838,27 +838,6 @@ export class MemoryTable implements DomainTableLike {
       }
       return 0;
     });
-  }
-
-  /** The platform's `StringUtils.toSingular` (ddt utils.dart): regular forms only; a noun already
-   * singular in `-is`/`-us`/`-ss` passes through. */
-  private static _singular(s: string): string {
-    if (s.length <= 2 || !s.endsWith('s') || s.endsWith('ss') || s.endsWith('is') || s.endsWith('us'))
-      return s;
-    if (s.endsWith('ies') && s.length > 3)
-      return s.slice(0, -3) + 'y';
-    return /(xes|zzes|ches|shes|sses|tuses)$/.test(s) ? s.slice(0, -2) : s.slice(0, -1);
-  }
-
-  /** The platform's `StringUtils.toPlural` (ddt utils.dart). */
-  private static _plural(s: string): string {
-    if (s.length === 0)
-      return s;
-    if (s.endsWith('is'))
-      return s.slice(0, -2) + 'es';
-    if (/(s|x|z|ch|sh)$/.test(s))
-      return s + 'es';
-    return s.length > 1 && s.endsWith('y') && !'aeiou'.includes(s[s.length - 2]) ? s.slice(0, -1) + 'ies' : s + 's';
   }
 
   /** The manifest's `invalid-hierarchy` refusal: a hierarchy table declares exactly one ref

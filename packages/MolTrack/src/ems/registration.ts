@@ -23,7 +23,7 @@ export class BulkRegistration {
       derives: IDENTITY_COLUMNS,
       match: (column) => NOTATIONS.includes(column.name.toLowerCase().replace(/[^a-z]/g, '')) ? STRUCTURE : undefined,
       prepare: (rows, progress) => BulkRegistration.prepare(rows, compounds, progress),
-      rowHeight: 52,
+      rowHeight: 64,
       columns: (defaults, step) => step === 'preview' ?
         defaults.map((c) => c.name === STRUCTURE ? BulkRegistration._structure(c.header) : c) :
         defaults.flatMap((c) => c.name === '~key' ? [c, BulkRegistration._structure('Structure')] : [c]),
@@ -31,10 +31,11 @@ export class BulkRegistration {
   }
 
   private static _structure(header: string): DomainImportColumn {
-    return {name: STRUCTURE, header, width: '140px', render: (row: DomainImportRow) => {
+    return {name: STRUCTURE, header, width: '180px', render: (row: DomainImportRow) => {
       const input = row.values[STRUCTURE];
-      return isEmpty(input) || row.kind === 'error' ? span(String(input ?? '')) :
-        grok.chem.drawMolecule(String(input), 120, 44);
+      return isEmpty(input) || row.kind === 'error' ?
+        span(String(input ?? ''), row.kind === 'error' ? 'u2-cell-error' : undefined) :
+        grok.chem.drawMolecule(String(input), 160, 60);
     }};
   }
 

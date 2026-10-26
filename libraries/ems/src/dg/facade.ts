@@ -6,9 +6,10 @@
    (`domains.form(src)`, `domains.list(src)`, …): one object, each member constructing at call
    time, so the modules behind it may import this one back. `TRow` (an app's own row type) types
    the rows every registry and source hands out; the default reads any column as unknown. */
-import {emsBackends} from '../core/domain-backend.js';
+import {emsBackends, capital, nounOf} from '../core/domain-backend.js';
 import * as DG from 'datagrok-api/dg';
-import {Access, Rows, divV, span, timestamp, text} from '@datagrok-libraries/u2';
+import {Access, Rows, allowedActions, divV, span, timestamp, text, notify, plural, untracked}
+  from '@datagrok-libraries/u2';
 import type {Capability, IProperty, ObjectRenderer, Action, ColumnOf, DomainRowLike, RowValues, RowView,
   ReadonlySignal, NotifyHandle} from '@datagrok-libraries/u2';
 import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
@@ -39,7 +40,7 @@ import type {DomainChildrenOptions} from './children.js';
 import type {DomainFiltersOptions} from './filters.js';
 import type {DomainFormOptions, DomainFormTarget} from './form.js';
 import type {DomainGridOptions, DomainDataTableOptions} from './grid.js';
-import type {DomainHistoryTarget} from './history.js';
+import type {DomainHistoryTarget, DomainHistoryOptions} from './history.js';
 import {DomainList} from './list.js';
 import type {DomainListOptions} from './list.js';
 import {DomainPick} from './pick.js';
@@ -66,6 +67,10 @@ export interface DomainAction<TRow extends DomainRowLike = DomainRowLike> {
 
 export type RowValidator<TRow extends DomainRowLike = DomainRowLike> =
   (value: unknown, row: RowView<TRow>) => string | null;
+
+/** An app's setup of a table — validators, renderer, actions, importer. */
+export type DomainConfigure<TRow extends DomainRowLike = DomainRowLike> =
+  (table: DomainTable<TRow>) => void | Promise<void>;
 
 /** What `DomainTable.app()` takes: the app's options without the table, plus the view's name
  * (the plural name by default), its base path (`/domains/<schema>/<table>` by default) and the
@@ -146,10 +151,26 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 
   private static readonly _bySource = new WeakMap<DomainSource, DomainTable>();
   private static readonly _byRow = new WeakMap<ReadonlySignal<RowView | null>, DomainSource>();
+  private static readonly _shared = new WeakMap<object, Map<string, Promise<DomainTable<any>>>>();
 
   constructor(readonly address: string, readonly table: DomainTableLike, readonly access: Access) {
     this.handler = new DG.DomainObjectHandler(address);
     this.renderer = this.defaultRenderer = DomainTable.handlerRenderer(this);
+  }
+
+  /** One configured handle over `address` per backend, for whoever only reads it. */
+  static shared<TRow extends DomainRowLike = DomainRowLike>(address: string): Promise<DomainTable<TRow>> {
+    const backend = emsBackends.domain;
+    if (backend === undefined)
+      return domains.table<TRow>(address);
+    const handles = DomainTable._shared.get(backend) ?? new Map<string, Promise<DomainTable<any>>>();
+    DomainTable._shared.set(backend, handles);
+    let handle = handles.get(address);
+    if (handle === undefined) {
+      handles.set(address, handle = domains.table<TRow>(address));
+      handle.catch(() => handles.delete(address));
+    }
+    return handle as Promise<DomainTable<TRow>>;
   }
 
   get info(): DomainTableInfoLike {
@@ -158,6 +179,25 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 
   get properties(): IProperty[] {
     return this.table.properties;
+  }
+
+  /** Registers `fn` for every handle over `address` made from now on; the same `id` again replaces
+   * it, so a bundle evaluated twice does not add a second. `fn` may be async; a throw rejects the
+   * handle. Returns the unregister function. */
+  static configure<TRow extends DomainRowLike = DomainRowLike>(address: string, fn: DomainConfigure<TRow>,
+    {id}: {id: string}): () => void {
+    const entries = CONFIGURE.get(address) ?? new Map<string, DomainConfigure<any>>();
+    CONFIGURE.set(address, entries);
+    entries.set(id, fn);
+    return () => {
+      if (entries.get(id) === fn)
+        entries.delete(id);
+    };
+  }
+
+  /** A column as a form labels it: the declared caption, else the name made presentable. */
+  static captionOf(prop: IProperty): string {
+    return capital(prop.friendlyName ?? (prop.name ?? '').replace(/_/g, ' '));
   }
 
   /** The handle a source was made through, for the controls over it. */
@@ -206,13 +246,23 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return this.handler.rowFrom(values);
   }
 
+  /** What a read-only row offers — a tree node, a data table row: Open, the table's actions and the caller's. */
+  rowActions(row: RowView<TRow>, extra: readonly DomainAction<TRow>[] = [], openShortcut?: string): Action[] {
+    const open: Action[] = Rows.isDraft(row) ? [] :
+      [{name: 'Open', icon: 'external-link', shortcut: openShortcut, run: () => this.open(row)}];
+    return allowedActions([...open, ...this.actions.for(row), ...ActionRegistry.bind(extra, row)],
+      {access: this.access, row});
+  }
+
   /** Opens a saved row: the entity page of the app open over this table (find-or-activate), else
-   * the platform's entity view. */
+   * the platform's entity view. Deferred: the platform brings a clicked view back to the front after the click. */
   open(row: RowView<TRow>): void {
-    if (Rows.isDraft(row) || DomainApp.activate(DomainApp.baseOf(this.address), row.id) ||
-        DomainViews.openRow(this.address, row.id))
+    if (Rows.isDraft(row))
       return;
-    this.handler.openRow(this.row(row));
+    setTimeout(() => {
+      if (!DomainApp.activate(DomainApp.baseOf(this.address), row.id) && !DomainViews.openRow(this.address, row.id))
+        this.handler.openRow(this.row(row));
+    });
   }
 
   /** The table as a platform view (GOAL "What it looks like": `grok.shell.addView(issues.app())`):
@@ -227,7 +277,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       ribbon: app.ribbonGroups(), status: DomainApp.statusPanels(app), path: app.path});
     mountView({view, base, pinned: path !== undefined, session,
       confirmLeave: () => confirmDiscard(session, {action: 'close the view'}),
-      params: ['entity', 'q', 'search', 'trash'],
+      params: ['entity', 'q', 'search', 'sort', 'trash'],
       baseOf: () => app.base, rebase: (prefix) => app.rebase(prefix), open: (address) => app.open(address),
       own: (dispose) => app.own(dispose)});
     app.own(DomainApp.register(app, view));
@@ -290,9 +340,12 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       const info = schema().info;
       const column = info.nameColumn ?? info.businessKey[0];
       const name = column === undefined ? undefined : row[column];
+      // a bare number names nothing on its own: "Purchase order 9", not "9"
+      if (typeof name === 'number' || typeof name === 'bigint')
+        return {text: `${capital(nounOf(info, true))} ${name}`, draft: false};
       if (name !== null && name !== undefined && name !== '')
         return {text: String(name), draft: false};
-      return Rows.isDraft(row) ? {text: `New ${info.singularName.toLowerCase() || 'row'}`, draft: true} :
+      return Rows.isDraft(row) ? {text: `New ${nounOf(info, true)}`, draft: true} :
         {text: row.id, draft: false};
     };
     const titleOf = (row: RowView): HTMLElement => {
@@ -330,63 +383,111 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     DomainTable._byRow.set(source.currentRow, source);
     source.guard(() => this._validate(source));
     // last resort, after every guard: the writer refused over a cell and named neither
-    source.nameCell = (row, column, problem) => this._nameCell(row as RowView<TRow>, column, problem);
-    // every refused save is one balloon, form or not, closed once the refusal is settled; a load
-    // failure is the list's and the hint's to show
-    let balloon: NotifyHandle | null = null;
+    source.nameCell = (row, column, problem) => nameCell(this, row as RowView<TRow>, column, problem, source);
+    source.caption = (row) => this.renderer.caption(row as RowView<TRow>);
+    // one refusal balloon per session, closed once the refusal is settled; a load failure is the
+    // list's to show
     source.effect(() => {
       const error = source.error.value;
-      balloon?.close();
-      balloon = error !== undefined && source.state.peek() !== 'error' &&
-        DomainErrors.codeOf(error) !== DomainSource.REFUSED ? DomainErrors.report(error, source) : null;
+      const shown = BALLOONS.get(source.session);
+      if (shown?.source === source) {
+        shown.balloon?.close();
+        BALLOONS.delete(source.session);
+      }
+      if (error === undefined || source.state.peek() === 'error' || DomainErrors.codeOf(error) === DomainSource.REFUSED)
+        return;
+      BALLOONS.get(source.session)?.balloon?.close();
+      const fix = untracked(() => this._fieldsToFix(source, error));
+      BALLOONS.set(source.session, {source, balloon: fix.length === 0 ? DomainErrors.report(error, source) :
+        notify.error(`Fix ${fix.join(', ')} to save`)});
     });
     source.start();
     return source;
   }
 
+  /** The captions of the current row's fields in error, for a refusal about that row. */
+  private _fieldsToFix(source: DomainSource<TRow>, error: unknown): string[] {
+    const row = source.currentRow.peek();
+    const about = source.problemRow.peek();
+    if (DomainErrors.codeOf(error) !== 'validation' || row === null || (about !== null && about !== row.id))
+      return [];
+    const edit = source.edit.peek();
+    return this.properties.filter(({name}) => name !== undefined &&
+      ((edit?.errorOf(row.id, name) ?? null) !== null || this.validators.check(name, row[name], row) !== null))
+      .map((p) => DomainTable.captionOf(p));
+  }
+
   /** The validators over every row the batch will send — a form wires them into its inputs, but a
    * row action or a plain `row.column = …` never goes near a form, and the rule still holds. */
   private _validate(source: DomainSource<TRow>): string | null {
-    const columns = this.validators.columns;
-    if (columns.length === 0)
+    const found = firstProblem(this, source.pending().filter((row) =>
+      row[Rows.STATE] !== 'deleted' && row[Rows.STATE] !== 'restored'), source);
+    if (found === null)
       return null;
-    for (const row of source.pending()) {
-      if (row[Rows.STATE] === 'deleted' || row[Rows.STATE] === 'restored')
-        continue;
-      for (const column of columns) {
-        const problem = this.validators.check(column, row[column], row as RowView<TRow>);
-        if (problem === null)
-          continue;
-        // the refusal names the row it is about: from a list, "Status: …" alone names nothing
-        source.markProblem(row.id);
-        return this._nameCell(row, column, problem);
-      }
-    }
-    return null;
-  }
-
-  /** A refusal about one cell, named: the row's caption and the column's, as a list or a grid
-   * needs them — the writer's own "Value can't be empty" says nothing about which field. */
-  private _nameCell(row: RowView<TRow>, column: string, problem: string): string {
-    return `${this.renderer.caption(row)}: ${DomainTable._caption(this.properties, column)}: ${problem}`;
-  }
-
-  private static _caption(properties: IProperty[], column: string): string {
-    const name = properties.find((p) => p.name === column)?.friendlyName ?? column;
-    return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+    source.markProblem(found.row.id);
+    return found.message;
   }
 }
 
+const BALLOONS = new WeakMap<object, {source: DomainSource<any>, balloon: NotifyHandle | null}>();
+
+// one registry per page, not per bundle: the `/domains` route runs in PowerPack's copy of this
+// library; bump the version when the `DomainTable` contract changes
+const CONFIGURE: Map<string, Map<string, DomainConfigure<any>>> =
+  (globalThis as Record<PropertyKey, any>)[Symbol.for('ems.configure.v1')] ??= new Map();
+
+async function configured<TRow extends DomainRowLike>(table: DomainTable<TRow>): Promise<DomainTable<TRow>> {
+  for (const fn of [...CONFIGURE.get(table.address)?.values() ?? []])
+    await fn(table);
+  return table;
+}
+
+/** The first problem the table's validators find over `rows`, named by row and column. */
+export function firstProblem<TRow extends DomainRowLike>(table: DomainTable<TRow>, rows: Iterable<RowView<TRow>>,
+  source?: DomainSource<TRow>): {row: RowView<TRow>, message: string} | null {
+  const columns = table.validators.columns;
+  for (const row of rows) {
+    for (const column of columns) {
+      const problem = table.validators.check(column, row[column], row);
+      // the refusal names the row it is about: from a list, "Status: …" alone names nothing
+      if (problem !== null)
+        return {row, message: nameCell(table, row, column, problem, source)};
+    }
+  }
+  return null;
+}
+
+/** A refusal about one cell, named: the row's caption and the column's, as a list or a grid needs
+ * them — the writer's own "Value can't be empty" says nothing about which field. */
+function nameCell<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>, column: string,
+  problem: string, source?: DomainSource<TRow>): string {
+  const caption = DomainTable.captionOf(table.properties.find((p) => p.name === column) ?? {name: column});
+  // "CAS must look like 50-78-2" names its field already
+  const field = problem.toLowerCase().startsWith(caption.toLowerCase()) ? '' : `${caption}: `;
+  return `${rowName(table, row, source)}: ${field}${problem}`;
+}
+
+/** The row's caption — or, where that is only its id, its place among the source's rows: "Order line 2". */
+function rowName<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>,
+  source?: DomainSource<TRow>): string {
+  const caption = table.renderer.caption(row);
+  const at = caption !== row.id || source === undefined ? -1 :
+    source.rows.items.peek().findIndex((r) => r.id === row.id);
+  return at < 0 ? caption : `${capital(nounOf(table.info, true))} ${at + 1}`;
+}
+
 export const domains = {
-  /** The table's shape and the caller's access in one round of requests; a handle per call, so
-   * the access is re-acquired by acquiring again. */
+  /** The table's shape and the caller's access in one round of requests, with everything
+   * {@link configure}d for the address applied; a handle per call, so the access is re-acquired by
+   * acquiring again. */
   async table<TRow extends DomainRowLike = DomainRowLike>(address: string): Promise<DomainTable<TRow>> {
     const backend = emsBackends.domain;
     if (backend === undefined)
       throw new Error('no platform backend for domain tables');
     const table = await backend.table(address);
-    return new DomainTable<TRow>(address, table, Access.from(await table.access()));
+    return configured(new DomainTable<TRow>(address, table, Access.from(await table.access())));
   },
+  configure: DomainTable.configure,
   form: (target: DomainFormTarget, options?: DomainFormOptions): DomainForm => new DomainForm(target, options),
   list: (source: DomainSource, options?: DomainListOptions): DomainList => new DomainList(source, options),
   pick: (table: string, options?: DomainPickOptions): DomainPick => new DomainPick(table, options),
@@ -399,7 +500,8 @@ export const domains = {
     options?: DomainTreeOptions<TRow>): DomainTree<TRow> => new DomainTree(table, options),
   search: (source: DomainSource, options?: DomainSearchOptions): DomainSearch => new DomainSearch(source, options),
   filters: (source: DomainSource, options?: DomainFiltersOptions): DomainFilters => new DomainFilters(source, options),
-  history: (source: DomainSource, row?: DomainHistoryTarget): DomainHistory => new DomainHistory(source, row),
+  history: (source: DomainSource, row?: DomainHistoryTarget, options?: DomainHistoryOptions): DomainHistory =>
+    new DomainHistory(source, row, options),
   children: (parent: DomainSource, options?: DomainChildrenOptions): DomainChildren =>
     new DomainChildren(parent, options),
   app: (options: DomainAppOptions): DomainApp => new DomainApp(options),

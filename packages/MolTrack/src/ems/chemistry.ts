@@ -97,6 +97,18 @@ export class Chemistry {
     return scores;
   }
 
+  /** Whether two structures are one molecule as RDKit writes it; false where either cannot be read. */
+  static async same(a: string, b: string): Promise<boolean> {
+    await Chemistry.load();
+    const [x, y] = [Chemistry._parse(a), Chemistry._parse(b)];
+    try {
+      return x !== null && y !== null && x.get_smiles() === y.get_smiles();
+    } finally {
+      x?.delete();
+      y?.delete();
+    }
+  }
+
   static tanimoto(a: Uint8Array, b: Uint8Array): number {
     let both = 0;
     let either = 0;

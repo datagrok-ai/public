@@ -104,8 +104,9 @@ function checkCondition(c: FilterCondition, schema: FilterSchema, target: Filter
   const empty = v === undefined || v === null || v === '';
   if (op.arity === 1 && empty || op.arity === 2 && !(Array.isArray(v) && v.length === 2) ||
     op.arity === 'n' && !(Array.isArray(v) && v.length > 0)) {
-    problem('missing-value', op.arity === 2 ? `"${c.property}" needs two bounds` :
-      op.arity === 'n' ? `"${c.property}" needs at least one value` : `"${c.property}" needs a value`);
+    const name = prop.friendlyName ?? c.property;
+    problem('missing-value', op.arity === 2 ? `"${name}" needs two bounds` :
+      op.arity === 'n' ? `"${name}" needs at least one value` : `"${name}" needs a value`);
     return;
   }
   if (op.arity !== 0) {

@@ -74,7 +74,7 @@ function valueEditor(input: Input<any>, toInput: (v: FilterValue | undefined) =>
 }
 
 function removeButton(onRemove: () => void, what: string = 'condition'): HTMLButtonElement {
-  const el = iconButton('minus', onRemove, {tooltip: `Remove ${what}`});
+  const el = iconButton('times', onRemove, {tooltip: `Remove ${what}`});
   el.classList.add('u2-fb-remove');
   el.dataset.u2Part = 'remove';
   return el;
@@ -98,8 +98,9 @@ function textPart(cls: string, part: string): HTMLElement {
   return el;
 }
 
-function markProblem(root: HTMLElement, line: HTMLElement, message: string | null): void {
-  root.classList.toggle('u2-fb-invalid', message !== null);
+function markProblem(root: HTMLElement, line: HTMLElement, message: string | null, missing = false): void {
+  root.classList.toggle('u2-fb-invalid', message !== null && !missing);
+  root.classList.toggle('u2-fb-missing', message !== null && missing);
   line.textContent = message ?? '';
   line.hidden = message === null;
   if (message === null)
@@ -160,8 +161,8 @@ export class FilterRow extends Control {
     this.applyLock();
   }
 
-  setProblem(message: string | null): void {
-    markProblem(this.root, this._problem, message);
+  setProblem(message: string | null, missing = false): void {
+    markProblem(this.root, this._problem, message, missing);
   }
 
   focus(): void {

@@ -120,3 +120,21 @@
   display: flex;
   flex-direction: column;
 }
+
+/* a section in a splitter panel fills it, so its body scrolls inside the pane */
+.u2-splitter-panel:has(> .u2-section) {
+  display: flex;
+  flex-direction: column;
+}
+
+.u2-splitter-panel > .u2-section {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.u2-splitter-panel > .u2-section > .u2-section-body {
+  flex: 1;
+  min-height: 0;
+}

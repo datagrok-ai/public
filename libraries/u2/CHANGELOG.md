@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Tabs: Fixed a tab made active in code scrolling the page around the strip
+* DateTimeInput: Fixed typing a time in a form turning "09:3" into "09:03"
+* TypeAhead: Fixed Enter on a look-up opened over a held value replacing it with the first row
 * Viewers: An option bound to a signal now reaches a package (JS) viewer: its properties appear a tick after it is made, and the link waits for the property (it bound nothing, silently)
 * funcForm: An override's `visible: false` hides its field (the param's `visible:` expression alone decided it)
 * funcForm: Added `collapsedCategories` — categories that open folded, their headers still shown (`['Advanced']`)

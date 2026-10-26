@@ -10,7 +10,7 @@ import type {IItemsState} from '../../core/widget-like.js';
 
 export interface ToolbarButtonOptions {
   tooltip?: string;
-  /** A Font Awesome name, as for a menu item: the » menu shows the same icon when the item folds. */
+  /** A Font Awesome name. */
   icon?: string;
 }
 
@@ -21,7 +21,6 @@ interface Item {
   el: HTMLElement;
   label: string;
   hidden: boolean;
-  icon?: string;
   onClick?: () => void;
   bind?: Signal<boolean>;
   build?: (menu: Menu) => void;
@@ -70,7 +69,7 @@ export class Toolbar extends Control {
   addButton(label: string, onClick: () => void, options?: ToolbarButtonOptions): Toolbar {
     const el = this._button(label, options);
     this.scope.listen(el, 'click', () => onClick());
-    return this._add({kind: 'button', el, label, hidden: false, onClick, icon: options ? options.icon : undefined});
+    return this._add({kind: 'button', el, label, hidden: false, onClick});
   }
 
   addToggle(label: string, bind: Signal<boolean>, options?: {tooltip?: string}): Toolbar {
@@ -282,7 +281,7 @@ export class Toolbar extends Control {
       if (item.kind === 'separator')
         menu.separator();
       else if (item.kind === 'button')
-        menu.item(item.label, item.onClick!, {icon: item.icon});
+        menu.item(item.label, item.onClick!);
       else if (item.kind === 'toggle')
         menu.item(item.label, () => item.bind!.value = !item.bind!.peek(), {check: item.bind!.peek()});
       else {

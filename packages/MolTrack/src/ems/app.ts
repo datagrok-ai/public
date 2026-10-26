@@ -3,8 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {domains} from '@datagrok-libraries/ems/src/dg';
 import type {DomainApp, DomainViewEntry} from '@datagrok-libraries/ems/src/dg';
-import {span} from '@datagrok-libraries/u2';
-import type {CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
 import {CompoundsApp} from './compounds';
 import {MolTrackTables, SCHEMA} from './tables';
@@ -17,11 +15,15 @@ export const APP_PATH = '/apps/Moltrack/MolTrackEMS';
 
 const FILTERS = {filters: {mode: 'builder' as const, placement: 'left' as const}};
 
+const BATCH_GRID = {open: 'batch_regno', columns: ['batch_regno', 'source', 'source_batch_code', 'acquired_date',
+  'synthesized_date', 'purity', 'project']};
+
 const KEYS: Record<string, string> = {[`${SCHEMA}.compound`]: 'molregno', [`${SCHEMA}.compound_batch`]: 'batch_regno'};
 
 const ENTRIES: DomainViewEntry[] = [
   {table: `${SCHEMA}.compound`, name: 'Compounds', options: {...FILTERS, sort: '!molregno', app: CompoundsApp,
-    mode: 'cards', include: CompoundsApp.FIELDS, children: {tables: ['compound_batch'], mode: 'list'}}},
+    mode: 'cards', itemHeight: 88, include: CompoundsApp.FIELDS,
+    children: {tables: ['compound_batch'], grids: {compound_batch: BATCH_GRID}}}},
   {table: `${SCHEMA}.compound_batch`, name: 'Batches', options: {...FILTERS, sort: '!batch_regno',
     children: {tables: ['batch_addition', 'assay_result']}}},
   {table: `${SCHEMA}.assay`, name: 'Assays', options: {...FILTERS, sort: 'name', children: {tables: ['assay_run']}}},
@@ -84,33 +86,13 @@ export class MolTrackEms {
       MolTrackEms._keySearch(app, key);
   }
 
-  static async compoundPanel(corporateId: string): Promise<DG.Widget> {
-    const molregno = MolTrackTables.keyNumber(await MolTrackTables.compounds(), 'molregno', corporateId);
-    const compound = molregno === null ? null :
-      await moltrackEmsDb.compounds.first({filter: DG.cond('molregno', '=', molregno)});
-    return DG.Widget.fromRoot(compound === null ? ui.divText(`${corporateId} is not registered`) :
-      await MolTrackEms.compoundCard(compound));
-  }
-
-  static async compoundCard(compound: CompoundRow): Promise<HTMLElement> {
-    const id = MolTrackTables.corporateId(await MolTrackTables.compounds(), 'molregno', compound.molregno);
-    const batches = span('');
-    void moltrackEmsDb.compoundBatches.count({filter: DG.cond('compound_id', '=', compound.id)})
-      .then((count) => batches.textContent = String(count), () => batches.textContent = '?');
-    return ui.divV([
-      grok.chem.drawMolecule(compound.structure, 200, 150),
-      ui.tableFromMap({'Grok ID': ui.link(id, () => void MolTrackEms.show(`Compounds?entity=${compound.id}`)),
-        'Name': compound.common_name ?? '', 'CAS': compound.cas ?? '', 'Formula': compound.formula ?? '',
-        'InChIKey': compound.inchikey ?? '', 'Batches': batches}),
-    ]);
-  }
-
-  // the server cannot search a formatted key: a typed `DG-000060` becomes `molregno = 60`
+  // the server cannot search a formatted key: a typed `DG-000060` becomes `molregno = 60`, only once the key is whole
   private static _keySearch(app: DomainApp, column: string): void {
-    const {prefix} = MolTrackTables.keyFormat(app.table, column);
+    const {prefix, width} = MolTrackTables.keyFormat(app.table, column);
     app.effect(() => {
       const typed = app.listSource.search.value;
-      const n = typed.trim().toUpperCase().startsWith(prefix) ?
+      const key = typed.trim().toUpperCase();
+      const n = key.startsWith(prefix) && key.length >= prefix.length + width ?
         MolTrackTables.keyNumber(app.table, column, typed) : null;
       if (n === null)
         return;

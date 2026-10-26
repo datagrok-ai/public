@@ -10,7 +10,6 @@ import {createSavedSearchesSatistics, createSearchExpandableNode, createSearchNo
 import {registerAllData, registerAssayData, updateAllMolTrackSchemas} from './utils/registration-utils';
 import {batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initAssayRegisterView, initBulkRegisterView, initRegisterView, initSchemaView} from './utils/view-utils';
 import {flattened} from './utils/utils';
-import {molTrackPropPanel} from './widgets/moltrack-property-panel';
 import {registerSemanticTypes} from './utils/detectors';
 import {MolTrackEms} from './ems/app';
 import {DemoData} from './ems/demo-data';
@@ -35,6 +34,10 @@ export class PackageFunctions {
     for (const query of queries)
       await (query.prepare()).call();
   }
+
+  // loading the bundle registers MolTrack's table configuration, so a cold /domains link opens dressed
+  @grok.decorators.autostart({meta: {autostartImmediate: 'true'}})
+  static emsAutostart(): void {}
 
   @grok.decorators.func({name: 'initDB'})
   static async initDB() {
@@ -325,27 +328,5 @@ export class PackageFunctions {
       resultJson.map((item: any) => flattened(item, dynamicProps)) :
       resultJson;
     return DG.DataFrame.fromObjects(processedRes);
-  }
-
-  @grok.decorators.panel({
-    name: 'Databases | MolTrack EMS',
-    outputs: [{type: 'widget', name: 'res'}],
-  })
-  static async molTrackEmsPanel(
-    @grok.decorators.param({type: 'semantic_value', options: {semType: 'Grok ID'}}) id: DG.SemanticValue,
-  ): Promise<DG.Widget> {
-    return await MolTrackEms.compoundPanel(id.value);
-  }
-
-  @grok.decorators.panel({
-    name: 'Databases | MolTrack',
-    outputs: [{type: 'widget', name: 'res'}],
-  })
-  static async getMoltrackPropPanelById(
-    @grok.decorators.param({type: 'semantic_value', options: {semType: 'Grok ID'}}) id: DG.SemanticValue,
-  ): Promise<DG.Widget> {
-    const {value: idValue} = id;
-    const compound = await MolTrackDockerService.getCompoundByCorporateId(idValue);
-    return molTrackPropPanel(compound, id.cell.column);
   }
 }

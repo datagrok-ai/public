@@ -11,7 +11,7 @@ import {signal, computed, Signal, ReadonlySignal} from '../../core/signals.js';
 import {Scope} from '../../core/scope.js';
 import {Tooltip} from '../../core/tooltip.js';
 import {Input, InputOptions} from '../../core/input-base.js';
-import {div, span, link, button} from '../../core/elements.js';
+import {div, divH, span, link, button} from '../../core/elements.js';
 import type {IWidgetStatus} from '../../core/widget-like.js';
 import {Filters} from '../../core/filter/index.js';
 import type {FilterCondition, FilterGroup, FilterNode, FilterProblem, FilterProperty, FilterSchema, FilterTarget,
@@ -56,6 +56,8 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
   readonly query: ReadonlySignal<string>;
   readonly problems: ReadonlySignal<FilterProblem[]>;
   readonly mode: Signal<FilterMode>;
+  /** The Simple/Advanced link, for a host to move into its own title row. */
+  readonly modeSwitch: HTMLElement;
 
   // every field below is built by createEditor(), which the base constructor calls before
   // subclass initializers would run — none of them may carry an inline initializer
@@ -88,6 +90,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     this.query = this._query;
     this.problems = this._problems;
     this.mode = this._mode;
+    this.modeSwitch = this._modeLink;
     this.root.classList.add('u2-filter-builder');
     this.root.dataset.u2 = 'filter-builder';
   }
@@ -219,9 +222,14 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
     this._modeLink.dataset.u2Part = 'mode';
     this._modeLink.hidden = o.template?.allowAdvanced === false;
     this._rootRow.header.append(this._modeLink);
-    this._none = this._host.allowAdd ? link('No conditions — add one', () => this.addCondition()) :
-      span('No conditions');
-    this._none.classList.add('u2-fb-none');
+    const none: HTMLElement[] = [span('No conditions')];
+    if (this._host.allowAdd) {
+      const add = link('Add condition', () => this.addCondition());
+      add.classList.add('u2-fb-none-add');
+      add.dataset.u2Part = 'none-add';
+      none.push(add);
+    }
+    this._none = divH(none, 'u2-fb-none');
     this._none.dataset.u2Part = 'none';
     this._hintText = span('', 'u2-fb-hint-text');
     this._flatten = link('Flatten', () => {
@@ -399,7 +407,8 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
         row.update(node as FilterCondition);
       else
         row.update(node as FilterGroup);
-      row.setProblem(problems.find((p) => p.nodeId === node.id)?.message ?? null);
+      const problem = problems.find((p) => p.nodeId === node.id);
+      row.setProblem(problem?.message ?? null, problem?.code === 'missing-value');
       seen.add(node.id);
       if (horizontal && order.length > 0)
         order.push(this._join(node.id));

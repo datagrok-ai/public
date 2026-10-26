@@ -49,7 +49,7 @@ function mount(pick) {
   return pick.root.querySelector('input');
 }
 
-scoped('candidates come from the target\'s name column; a pick writes the id, typing clears it', async () => {
+scoped('candidates come from the target\'s name column; a pick writes the id, only ✕ clears it', async () => {
   emsBackends.domain = backend();
   const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0});
   const input = mount(pick);
@@ -72,7 +72,13 @@ scoped('candidates come from the target\'s name column; a pick writes the id, ty
   assert.equal(input.value, 'Grit', 'and its name comes back on blur');
   type(input, '');
   await flush();
-  assert.equal(pick.value.value, null, 'clearing the text clears the value');
+  assert.equal(pick.value.value, 'p1', 'clearing the text is not a clear: the box only looks empty while focused');
+  fire(input, 'blur');
+  await flush();
+  assert.equal(input.value, 'Grit', 'and the held name comes back on blur, with nothing to say');
+  fire(pick.root.querySelector('.u2-input-clear'), 'click');
+  await flush();
+  assert.equal(pick.value.value, null, '✕ clears');
   pick.dispose();
 });
 
@@ -125,7 +131,7 @@ scoped('an extra filter narrows the candidates; an empty query lists them all', 
   fire(box, 'keydown', {key: 'ArrowDown'});
   await flush();
   await flush();
-  assert.deepEqual(options(), ['Grit', 'Datagrok'], 'in the table\'s own order, not by name');
+  assert.deepEqual(options(), ['Datagrok', 'Grit'], 'sorted by what they show');
   all.dispose();
 });
 
@@ -170,20 +176,20 @@ scoped('without a backend the search reports the failure in the popup', async ()
   pick.dispose();
 });
 
-scoped('ergonomics: the candidates open on focus in the table\'s order with the first highlighted, the placeholder ' +
-  'is the caption, ✕ clears', async () => {
+scoped('ergonomics: the candidates open on focus sorted by name with nothing highlighted, no placeholder, ' +
+  '✕ clears', async () => {
     emsBackends.domain = backend();
-    const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p1'});
+    const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p2'});
     const input = mount(pick);
     await flush();
-    assert.equal(input.placeholder, 'Project…');
-    assert.equal(input.value, 'Grit');
+    assert.equal(input.placeholder, '', 'no placeholder repeating the caption');
+    assert.equal(input.value, 'Datagrok');
     input.focus();
     await flush();
     await flush();
     assert.equal(pick.typeAhead.isOpen.value, true, 'open on focus');
-    assert.deepEqual(options(), ['Grit', 'Datagrok'], 'the empty query lists the first candidates as the table orders them');
-    assert.equal(document.body.querySelector('.u2-typeahead-option-active')?.textContent, 'Grit', 'the first is highlighted');
+    assert.deepEqual(options(), ['Datagrok', 'Grit'], 'the empty query lists the first candidates by name');
+    assert.equal(document.body.querySelector('.u2-typeahead-option-active'), null, 'nothing highlighted over a held value');
     const clear = pick.root.querySelector('.u2-input-clear');
     assert.equal(clear.hidden, false);
     fire(clear, 'click');
@@ -243,8 +249,8 @@ scoped('opened on focus, Enter alone commits the highlighted first candidate', a
   await flush();
   fire(input, 'keydown', {key: 'Enter'});
   await flush();
-  assert.equal(pick.value.value, 'p1', 'Grit, the first in the table\'s order');
-  assert.equal(input.value, 'Grit');
+  assert.equal(pick.value.value, 'p2', 'Datagrok, the first by name');
+  assert.equal(input.value, 'Datagrok');
   pick.dispose();
 });
 
@@ -284,8 +290,8 @@ scoped('a fast Enter: the pick is made when the candidates land — the name typ
   assert.equal(pick.value.value, null);
   await flush();
   await flush();
-  assert.equal(pick.value.value, 'p1', 'the first candidate: Grit, in the table\'s order');
-  assert.equal(input.value, 'Grit');
+  assert.equal(pick.value.value, 'p2', 'the first candidate: Datagrok, by name');
+  assert.equal(input.value, 'Datagrok');
   assert.equal(pick.typeAhead.isPickPending, false);
 
   type(input, 'grit');

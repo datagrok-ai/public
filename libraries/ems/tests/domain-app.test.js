@@ -212,10 +212,11 @@ scoped('New: the entity page over a pristine draft; once saved the page is the r
   assert.equal(ribbon.length, 2, 'the empty presets slot is not a group');
   // only the search box rides the ribbon: the shell's is one fixed 32px line with `overflow:
   // hidden`, and the query box is a row of the LIST PAGE instead
-  assert.deepEqual(ribbon[1].map((c) => c.root.dataset.u2), ['domain-search']);
+  assert.deepEqual(ribbon[1].map((c) => c.root.dataset.u2), ['domain-search', 'sort-menu']);
   assert.equal(ribbon[1][0].root.hidden, false);
   const listPage = a.root.querySelector('[data-u2-part="list-page"]');
-  assert.equal(listPage.children[0] === a.filters.root, true, 'the query box is the list page first row');
+  assert.equal([...listPage.children].find((el) => !el.hidden) === a.filters.root, true,
+    'the query box is the list page first row');
   fire(slots.main[0].root, 'click');
   await flush();
   assert.equal(a.page.value, 'entity');
@@ -531,42 +532,51 @@ scoped('a refused save says why in the status bar and balloons once, with no for
   a.dispose();
 });
 
-scoped('a query the backend refuses is the list\'s error, in the status bar and over the rows', async () => {
+scoped('a ?q= the grammar refuses never loads: the text stays red in the box, the rows answer no filter', async () => {
   const {app: a} = await app();
+  const [add] = a.ribbon().main;
+  const filters = a.filters;
+  document.body.append(add.root, filters.root);
+  await flush();
   assert.equal(await a.open('?q=validator'), true);
   await flush();
-  assert.equal(a.listSource.state.value, 'error');
-  assert.equal(a.summary.value, 'Expected an operator', 'the backend\'s refusal, in the status bar');
-  assert.match(a.root.querySelector('.u2-domain-list-error').textContent, /Expected an operator/);
-  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'a load failure is not a balloon');
+  const box = filters.input.value;
+  assert.equal(a.listSource.state.value, 'ready', 'no load error, no Retry');
+  assert.equal(a.listSource.query.value, '');
+  assert.equal(a.listSource.rows.items.value.length, 3);
+  assert.equal(box.text.value, 'validator', 'the offending text is in the box, to be fixed in place');
+  assert.equal(box.validity.value !== null, true, 'red, with the reason on the editor');
+  assert.equal(filters.problem.value, 'Expected an operator', 'told the way a typed mistake is');
+  assert.equal(a.summary.value, '3 issues — Expected an operator');
+  assert.equal(filters.root.querySelector('.u2-domain-filters-note').hidden, false,
+    'the rows are said to answer the last valid filter');
+  assert.equal(add.root.hidden, false, 'New follows the access');
+  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'not a balloon');
+  box.text.value = '';
+  assert.equal(box.commit(), true);
+  await flush();
+  assert.equal(filters.problem.value, null);
+  assert.equal(filters.root.querySelector('.u2-domain-filters-note').hidden, true);
   a.dispose();
 });
 
-scoped('a ?q= the backend refuses is not a dead end: the text stays in the box, New stands, Clear filter brings the rows back',
-  async () => {
-    const {app: a} = await app();
-    const [add] = a.ribbon().main;
-    const filters = a.filters;
-    document.body.append(add.root, filters.root);
-    await flush();
-    assert.equal(await a.open('?q=validator'), true);
-    await flush();
-    const box = filters.input.value;
-    assert.equal(a.listSource.state.value, 'error');
-    assert.equal(box.text.value, 'validator', 'the offending text is in the box, to be fixed in place');
-    assert.equal(box.validity.value !== null, true, 'red, with the reason on the editor');
-    assert.equal(add.root.hidden, false, 'New follows the access, never a query the server refused');
-    assert.match(a.summary.value, /Expected an operator/, 'the refusal of the query in force is the news');
-    const clear = [...a.root.querySelectorAll('.u2-domain-list-error button')]
-      .find((b) => b.textContent === 'Clear filter');
-    assert.notEqual(clear, undefined, 'Retry alone would only run it again');
-    fire(clear, 'click');
-    await flush();
-    assert.equal(a.listSource.query.value, '');
-    assert.equal(box.text.value, '', 'the box is cleared with the query');
-    assert.equal(a.listSource.rows.items.value.length, 3);
-    a.dispose();
-  });
+scoped('a query the backend refuses is the list\'s error, in the status bar and over the rows', async () => {
+  const {app: a} = await app();
+  assert.equal(await a.open('?q=project_id%20under%20%22p1%22'), true);
+  await flush();
+  assert.equal(a.listSource.state.value, 'error');
+  assert.equal(a.summary.value, 'Unknown or inaccessible column "project_id"',
+    'the backend\'s refusal, in the status bar');
+  assert.match(a.root.querySelector('.u2-domain-list-error').textContent, /Unknown or inaccessible column/);
+  const clear = [...a.root.querySelectorAll('.u2-domain-list-error button')].find((b) => b.textContent === 'Clear filter');
+  assert.notEqual(clear, undefined, 'Retry alone would only run it again');
+  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'a load failure is not a balloon');
+  fire(clear, 'click');
+  await flush();
+  assert.equal(a.listSource.query.value, '');
+  assert.equal(a.listSource.rows.items.value.length, 3);
+  a.dispose();
+});
 
 scoped('an emptied box applies the empty query even when the refused one left no tree behind', async () => {
   const {app: a} = await app();
@@ -601,7 +611,8 @@ scoped('a refused filter leaves the rows as they were: shown stale, the count st
   // and what it says is the box's own refusal, not a placeholder: a tooltip on a red box is not read
   assert.equal(a.filterProblem.value, box.problems.value[0].message);
   assert.equal(a.summary.value, `3 issues — ${a.filterProblem.value}`);
-  assert.equal(a.status.value.notice, a.filterProblem.value);
+  assert.equal(a.status.value.problem, a.filterProblem.value, 'in the error colour, beside the count');
+  assert.equal(a.status.value.notice, null);
   box.text.value = 'done = true';
   assert.equal(box.commit(), true);
   await flush();
@@ -759,7 +770,7 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   fire(more.root, 'click');
   await flush();
   const items = [...document.querySelectorAll('[role="menuitem"] .u2-menu-label')].map((el) => el.textContent);
-  assert.deepEqual(items, ['Import…', 'Bulk edit…', 'Trash']);
+  assert.deepEqual(items, ['Import…', 'Bulk edit…', 'Show deleted']);
   assert.equal(a.breadcrumbs.root.hidden, true, 'a plain list has no breadcrumb: the view title names the table');
 
   a.listSource.edit.value.markDeleted('i2');
@@ -782,7 +793,7 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   await flush();
   assert.equal(save.root.hidden, true, 'nothing in the trash is edited: no Save while nothing is staged');
   assert.equal(discard.root.hidden, true);
-  assert.equal(add.root.hidden, true, 'and nothing to insert: the access is narrowed');
+  assert.equal(add.root.classList.contains('u2-domain-app-invisible'), true, 'and nothing to insert: the slot stays');
 
   const row = a.listSource.rows.byKey('i2');
   assert.deepEqual(a.list.actionsFor(row).map((x) => x.name), ['Restore'], 'the row action Delete became Restore');
@@ -1216,8 +1227,8 @@ scoped('the status bar is four slots, and a refusal never takes the count off th
   await flush();
   assert.deepEqual(panels.map((el) => el.dataset.u2Part), ['count', 'selected', 'notice', 'problem']);
   assert.deepEqual(panels.map((el) => el.className),
-    ['u2-domain-status-count', 'u2-domain-status-selected', 'u2-domain-status-notice',
-      'u2-domain-status-problem']);
+    ['u2-domain-status-count', 'u2-domain-status-selected u2-domain-status-after',
+      'u2-domain-status-notice u2-domain-status-after', 'u2-domain-status-problem u2-domain-status-after']);
   assert.equal(panels[0].textContent, '3 issues');
   assert.deepEqual(panels.map((el) => el.hidden), [false, true, true, true], 'an empty slot is away');
 
@@ -1411,7 +1422,8 @@ scoped('support ⇒ absent: Bulk edit goes with updateWhere, the History pane wi
   const a = domains.app({table: await domains.table('grit.issue'), base: BASE, pageSize: 10});
   document.body.append(a.root);
   await flush();
-  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Trash'], 'no Bulk edit without updateWhere');
+  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Show deleted'],
+    'no Bulk edit without updateWhere');
   await a.goTo('entity', 'i1');
   await flush();
   assert.deepEqual([...a.panes.children].map((el) => el.dataset.u2), ['domain-children'],

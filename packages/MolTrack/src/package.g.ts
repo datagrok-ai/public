@@ -6,6 +6,12 @@ export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
+//meta.autostartImmediate: true
+//meta.role: autostart
+export function emsAutostart() : void {
+  PackageFunctions.emsAutostart();
+}
+
 //name: initDB
 export async function initDB() : Promise<void> {
   await PackageFunctions.initDB();
@@ -134,20 +140,4 @@ export async function advancedSearch(outputFields: string[], filter: any) : Prom
 //output: dataframe result
 export async function retrieveEntity(scope: string) : Promise<any> {
   return await PackageFunctions.retrieveEntity(scope);
-}
-
-//name: Databases | MolTrack EMS
-//input: semantic_value id { semType: Grok ID }
-//output: widget res
-//meta.role: panel
-export async function molTrackEmsPanel(id: DG.SemanticValue) : Promise<any> {
-  return await PackageFunctions.molTrackEmsPanel(id);
-}
-
-//name: Databases | MolTrack
-//input: semantic_value id { semType: Grok ID }
-//output: widget res
-//meta.role: panel
-export async function getMoltrackPropPanelById(id: DG.SemanticValue) : Promise<any> {
-  return await PackageFunctions.getMoltrackPropPanelById(id);
 }

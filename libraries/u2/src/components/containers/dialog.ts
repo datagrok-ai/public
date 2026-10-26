@@ -12,6 +12,7 @@ import {Tooltip} from '../../core/tooltip.js';
 import {button, describeDisabled} from '../../core/elements.js';
 import {icon} from '../display/icon.js';
 import {Form} from '../forms/form.js';
+import {statusLine} from '../display/badge.js';
 
 export interface DialogOptions {
   /** The automation id (`data-u2-name`). */
@@ -71,6 +72,7 @@ export class Dialog extends Control implements OverlayDialog {
   private readonly _onClose: ((reason: DialogCloseReason) => void)[] = [];
   private _okBtn: HTMLButtonElement | undefined;
   private _cancelBtn: HTMLButtonElement | undefined;
+  private _reasonLine: HTMLElement | undefined;
   private readonly _okOn = signal<ReadonlySignal<boolean> | undefined>(undefined);
   private readonly _okOff = signal<ReadonlySignal<boolean | string | null> | undefined>(undefined);
   /** The form in the body, found on show: OK waits for its verdict, as the platform's does. */
@@ -223,10 +225,13 @@ export class Dialog extends Control implements OverlayDialog {
   /** The OK action — the button and Enter alike. Answering `false` keeps the dialog open (a pick
    * that is not one yet). A promise keeps it open and busy until it settles: it closes unless the
    * promise answers `false`; a rejection, like a throw, stays open with the message in the error
-   * row. Escape or ✕ while busy aborts `signal`. `text` is the button's caption. */
-  onOK(fn: (ctx: DialogOkContext) => unknown, options?: {text?: string}): this {
+   * row. Escape or ✕ while busy aborts `signal`. `text` is the button's caption; `primary` raises
+   * it, for an OK that commits something. */
+  onOK(fn: (ctx: DialogOkContext) => unknown, options?: {text?: string, primary?: boolean}): this {
     this._onOK = Dialog._owned(fn);
-    this._okButton(options?.text);
+    const ok = this._okButton(options?.text);
+    if (options?.primary !== undefined)
+      ok.classList.toggle('u2-btn-primary', options.primary);
     return this;
   }
 
@@ -240,10 +245,17 @@ export class Dialog extends Control implements OverlayDialog {
 
   /** OK is off while `reason` says why — a string becomes the button's tooltip, so the user learns
    * what is missing (`'Select at least one monomer'`); `true` turns it off without a reason, `null`
-   * or `false` leave it on. A form in the body adds its own: "Name: Value can't be empty". */
-  okDisabled(reason: ReadonlySignal<boolean | string | null>): this {
+   * or `false` leave it on. A form in the body adds its own: "Name: Value can't be empty". `footer`
+   * also shows the reason as a warning beside the buttons. */
+  okDisabled(reason: ReadonlySignal<boolean | string | null>, options?: {footer?: boolean}): this {
     this._okButton();
     this._okOff.value = reason;
+    if (options?.footer === true && this._reasonLine === undefined) {
+      const line = this._reasonLine = this.runInScope(() => statusLine(computed(() => this._okReason.value || null)));
+      line.classList.add('u2-dialog-reason', 'u2-status-line-warning');
+      line.dataset.u2Part = 'reason';
+      this._buttons.prepend(line);
+    }
     return this;
   }
 

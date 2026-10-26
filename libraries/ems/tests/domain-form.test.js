@@ -485,7 +485,7 @@ scoped('a readonly reference shows the target\'s name, not its uuid — off the 
   });
 });
 
-scoped('system columns: out by default, a muted footer on request — captions, local times, never a draft\'s key', async () => {
+scoped('system columns: out by default, one muted line on request — local times, the author, never a draft\'s key', async () => {
   const {table, src} = await issues();
   src.currentRow.value = src.rows.byKey('i1');
   const plain = domains.form(src);
@@ -497,9 +497,11 @@ scoped('system columns: out by default, a muted footer on request — captions, 
   await flush();
   const footer = form.root.querySelector('[data-u2-part="system"]');
   const row = (name) => footer.querySelector(`[data-u2-name="${name}"]`);
-  assert.deepEqual([...footer.querySelectorAll('.u2-input-label')].map((el) => el.textContent),
-    ['Id', 'Version', 'Created', 'Updated', 'Author']);
-  assert.equal(row('id').querySelector('[data-u2-part="readonly-value"]').textContent, 'i1');
+  assert.deepEqual([...footer.querySelectorAll('.u2-domain-form-system-item')].map((el) => el.textContent.split(' ')[0]),
+    ['Created', 'Updated', 'v1', 'Id']);
+  assert.deepEqual([...footer.querySelectorAll('[data-u2-name]')].map((el) => el.dataset.u2Name),
+    ['created_on', 'author_id', 'updated_on', 'version']);
+  assert.equal(footer.querySelector('.u2-domain-form-system-copy').getAttribute('aria-label'), 'Copy id i1');
   assert.equal(row('version').querySelector('[data-u2-part="readonly-value"]').textContent, '1');
   assert.equal(row('created_on').querySelector('.u2-timestamp') !== null, true, 'a local short date, the full one on hover');
   src.currentRow.value = null;
@@ -508,10 +510,8 @@ scoped('system columns: out by default, a muted footer on request — captions, 
   await flush();
   const create = domains.form(draft, {system: 'footer'});
   await flush();
-  assert.equal(create.root.querySelector('[data-u2-part="system"] [data-u2-name="id"] [data-u2-part="readonly-value"]').textContent,
-    'assigned on save');
-  assert.deepEqual([...create.root.querySelectorAll('[data-u2-part="system"] .u2-input-label')]
-    .map((el) => el.textContent), ['Id'], 'a draft has no version, times or author yet');
+  assert.equal(create.root.querySelector('[data-u2-part="system"]').hidden, true,
+    'a draft has no id, version, times or author yet');
   assert.equal(create.input('title').root.classList.contains('u2-input-required'), true,
     'a column that must hold a value is marked on its caption');
   assert.equal(create.input('description').root.classList.contains('u2-input-required'), false);
@@ -865,7 +865,8 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   fire(form.root, 'keydown', {key: 's', ctrlKey: true});
   await flush();
   await flush();
-  assert.match(document.body.querySelector('.u2-notify-error')?.textContent ?? '', /Cannot save: Title is required/);
+  assert.equal(document.body.querySelector('.u2-notify-error')?.textContent, 'Fix Title to save',
+    'the field says what is wrong; the balloon does not say it again');
   assert.equal(draft.summary.value, 'Cannot save: Title is required', 'the guard\'s refusal is the source\'s error');
   assert.equal(form.input('title').root.querySelector('[data-u2-part="error"]').textContent, 'Value can\'t be empty',
     'the verdict is shown');
@@ -1027,20 +1028,21 @@ scoped('the system footer follows the row: a saved draft shows the number, versi
     await flush();
     const form = domains.form(draft, {system: 'footer'});
     await flush();
-    const labels = () => [...form.root.querySelectorAll('[data-u2-part="system"] .u2-input-label')]
-      .map((el) => el.textContent);
-    assert.deepEqual(labels(), ['Id'], 'a draft has none of them yet');
+    const labels = () => [...form.root.querySelectorAll('[data-u2-part="system"] [data-u2-name]')]
+      .map((el) => el.dataset.u2Name);
+    assert.deepEqual(labels(), [], 'a draft has none of them yet');
     form.input('title').value.value = 'Fresh issue';
     await flush();
     assert.equal(await draft.save(), true);
     await flush();
     await flush();
     assert.equal(Rows.isDraft(draft.currentRow.value), false, 'the draft is a saved row now');
-    assert.deepEqual(labels(), ['Id', 'Version', 'Created', 'Updated', 'Author'],
+    assert.deepEqual(labels(), ['created_on', 'author_id', 'updated_on', 'version'],
       'and the footer says so without the form being rebuilt');
+    assert.equal(form.root.querySelector('.u2-domain-form-system-copy').getAttribute('aria-label'),
+      `Copy id ${draft.currentRow.value.id}`);
     const value = (name) => form.root
       .querySelector(`[data-u2-part="system"] [data-u2-name="${name}"] [data-u2-part="readonly-value"]`).textContent;
-    assert.notEqual(value('id'), 'assigned on save');
     // the insert answers `{id, version}` alone: the rest is the writer's post-save re-read, and it
     // has to be in the frame before the footer is built
     const row = draft.currentRow.value;

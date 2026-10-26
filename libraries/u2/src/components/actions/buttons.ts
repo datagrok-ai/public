@@ -15,6 +15,8 @@ export interface IconButtonOptions {
   /** Pressed state: the click writes it and an effect mirrors it into `aria-pressed`, so a
    * toggling button needs an ambient Scope. */
   toggle?: Signal<boolean>;
+  /** A menu built on every press and shown under the button; pressed again, it closes. */
+  menu?: () => Menu;
   /** As {@link button}'s: `true`, or why it is disabled (shown as its tooltip); a signal is followed. */
   disabled?: ButtonOptions['disabled'];
 }
@@ -50,11 +52,18 @@ function tip(el: HTMLElement, text: string): void {
 export function iconButton(name: string, onClick: (e: MouseEvent) => void,
   options?: IconButtonOptions): HTMLButtonElement {
   const toggle = options?.toggle;
+  let menu: Menu | undefined;
   const disabled = options?.disabled;
   // with `disabled`, button() owns the tooltip (the reason while disabled, the tooltip otherwise)
   const el = button(icon(name, {variant: options?.variant}), (e) => {
     if (toggle)
       toggle.value = !toggle.peek();
+    if (options?.menu !== undefined) {
+      const open = menu?.isOpen.peek() === true;
+      menu?.close();
+      menu = open ? undefined : options.menu();
+      menu?.show({anchor: el});
+    }
     onClick(e);
   }, disabled === undefined ? undefined : {disabled, tooltip: options?.tooltip});
   el.classList.add('u2-icon-btn');

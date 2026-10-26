@@ -42,6 +42,10 @@ export namespace funcs {
     return await grok.functions.call('MolTrack:Init', {});
   }
 
+  export async function emsAutostart(): Promise<void> {
+    return await grok.functions.call('MolTrack:EmsAutostart', {});
+  }
+
   export async function initDB(): Promise<void> {
     return await grok.functions.call('MolTrack:InitDB', {});
   }
@@ -165,21 +169,5 @@ export namespace funcs {
    */
   export async function retrieveEntity(scope: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('MolTrack:RetrieveEntity', { scope });
-  }
-
-  /**
-   * @param {any} id
-   *   semType: Grok ID
-   */
-  export async function molTrackEmsPanel(id: any ): Promise<any> {
-    return await grok.functions.call('MolTrack:MolTrackEmsPanel', { id });
-  }
-
-  /**
-   * @param {any} id
-   *   semType: Grok ID
-   */
-  export async function getMoltrackPropPanelById(id: any ): Promise<any> {
-    return await grok.functions.call('MolTrack:GetMoltrackPropPanelById', { id });
   }
 }

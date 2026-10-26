@@ -1,5 +1,5 @@
 /* The import wizard against a real domain table (WO 3-9): a frame picked, its columns auto-mapped
-   against `apitests.item`, the blocking problems, and FINISH posting the mapped columns only
+   against `apitests.item`, the blocking problems, and Import posting the mapped columns only
    through `DomainTableClient.batch`. Fixture rows are prefixed per run and deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -20,13 +20,14 @@ category('U2: domain import', () => {
       {value: {value: string | null}} | undefined;
   const buttonNamed = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.u2-dialog button')]
     .find((b) => b.textContent === text)!;
+  /** Preview's commit button: "Import N …", plain "Import" where the dry run gives no count. */
+  const importButton = () => [...document.querySelectorAll<HTMLButtonElement>('.u2-dialog button')]
+    .find((b) => /^Import( |$)/.test(b.textContent ?? ''))!;
   const reason = () => document.querySelector('.u2-wizard-reason')?.textContent ?? '';
   const report = () => document.querySelector('.u2-domain-import-report')?.textContent ?? '';
-  /** The preview's leading cell per row — what the server's dry run predicts for it. */
+  /** The preview's result badge per row — what the server's dry run predicts for it. */
   const verdicts = () => [...document.querySelectorAll('.u2-domain-import-rows .u2-data-table-row')]
-    .map((row) => row.firstElementChild?.textContent ?? '');
-  const previewed = () => document.querySelector(
-    '.u2-domain-import-preview .u2-domain-import-rows, .u2-domain-import-preview .u2-domain-import-problem') !== null;
+    .map((row) => row.querySelector('.u2-badge')?.textContent ?? '');
 
   /** The source frame: every value a string, the way a CSV arrives. `strayColumn` matches no column. */
   function frame(rows: {sku: string, name: string, quantity: string, strayColumn: string}[]): DG.DataFrame {
@@ -39,11 +40,8 @@ category('U2: domain import', () => {
   async function open(source: DG.DataFrame): Promise<{running: Promise<unknown>}> {
     const running = domains.import(table, {source});
     await waitUntil(() => named('source') !== undefined, 'the wizard is up', 5000);
-    expect(named('source') !== undefined, true, 'the wizard is up');
     buttonNamed('NEXT').click();
-    // the mapping table renders its rows once it is laid out
-    await waitUntil(() => source.columns.names().every((column) => named(column) !== undefined),
-      'the mapping rows', 5000);
+    await waitUntil(() => named('sku') !== undefined, 'the mapping step is up');
     return {running};
   }
 
@@ -63,19 +61,19 @@ category('U2: domain import', () => {
     expect(named('strayColumn')!.value.value, '(skip)');
     named('sku')!.value.value = '(skip)';
     buttonNamed('NEXT').click();
-    expect(reason().includes('Required column "Sku" is not mapped'), true, reason());
+    await waitUntil(() => reason().includes('Required column "Sku" is not mapped'), reason);
     buttonNamed('CANCEL').click();
     expect(await running, null);
   });
 
-  test('FINISH posts the mapped columns and the server\'s report comes back', async () => {
+  test('Import posts the mapped columns and the server\'s report comes back', async () => {
     const rows = [1, 2, 3].map((i) => ({sku: `${prefix}-${i}`, name: `Row ${i}`, quantity: String(i), strayColumn: 'x'}));
     const {running} = await open(frame(rows));
     buttonNamed('NEXT').click();
-    await waitUntil(previewed, 'the preview', 5000);
-    buttonNamed('NEXT').click();
-    await waitUntil(() => report().includes('inserted'), () => `the report: "${report()}"`, 5000);
-    expect(report().includes('3 inserted, 0 updated'), true, report());
+    await waitUntil(() => verdicts().length === 3 && importButton()?.disabled === false, 'the preview is ready');
+    importButton().click();
+    await waitUntil(() => report().includes('added'), report);
+    expect(report().includes('3 added'), true, report());
     buttonNamed('CLOSE').click();
     const result = await running as {inserted: number};
     expect(result.inserted, 3);
@@ -92,12 +90,12 @@ category('U2: domain import', () => {
       ({sku: `${prefix}-p${i}`, name: `Preview ${i}`, quantity: String(i), strayColumn: 'x'}));
     const {running} = await open(frame(rows));
     buttonNamed('NEXT').click();
-    await waitUntil(() => verdicts().length > 0, 'the preview verdicts', 5000);
-    expect(verdicts().join(), 'Add,Add', 'the leading column is what the dry run predicts, as a verb');
+    await waitUntil(() => verdicts().length > 0, 'the preview shows its verdicts');
+    expect(verdicts().join(), 'Add,Add', 'the result column is what the dry run predicts, as a verb');
     const predicted = verdicts().filter((v) => v === 'Add').length;
-    buttonNamed('NEXT').click();
-    await waitUntil(() => report().includes('inserted'), () => `the report: "${report()}"`, 5000);
-    expect(report().includes(`${predicted} inserted, 0 updated`), true, report());
+    importButton().click();
+    await waitUntil(() => report().includes('added'), report);
+    expect(report().includes(`${predicted} added`), true, report());
     buttonNamed('CLOSE').click();
     await running;
   });

@@ -117,7 +117,8 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
       const value = this.value.value;
       if (echo)
         echo = false;
-      else
+      // a float32 column echoes the typed value rounded: the typed text already says it
+      else if (!NumberInput._sameFloat32(this._parse(input.value), value))
         input.value = this._format(value);
       this._syncSlider();
     });
@@ -298,11 +299,28 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
       return format(value);
     if (this._int)
       return String(value);
+    value = NumberInput._shortest(value);
     const decimals = this._decimals(value);
     if (decimals > 0)
       return value.toFixed(decimals);
     const rounded = Number(value.toFixed(6));
     return String(rounded === 0 && value !== 0 ? value : rounded);
+  }
+
+  /** A float32 read back as a double (3.200000047683716) as the shortest decimal for it (3.2). */
+  private static _shortest(value: number): number {
+    if (Math.fround(value) !== value)
+      return value;
+    for (let digits = 1; digits <= 9; digits++) {
+      const short = Number(value.toPrecision(digits));
+      if (Math.fround(short) === value)
+        return short;
+    }
+    return value;
+  }
+
+  private static _sameFloat32(a: number | null | undefined, b: number | null): boolean {
+    return a != null && b != null && Math.fround(a) === Math.fround(b);
   }
 
   /** Dart's dynamic precision: as many decimals as the most precise of value/min/max/step carries

@@ -1,6 +1,7 @@
 .moltrack-ems-card {
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+  padding-top: var(--dg-space-s);
   overflow: hidden;
 }
 
@@ -9,15 +10,29 @@
   overflow: hidden;
 }
 
-.moltrack-ems-line {
-  align-items: baseline;
-  gap: 12px;
+/* an empty name keeps its line, so every card's lines sit at the same height */
+.moltrack-ems-card-text > .u2-domain-card-description {
+  min-height: 1lh;
+}
+
+/* assay results line up: the batch, the run, then the values */
+.moltrack-ems-result > .u2-domain-list-name {
+  flex: 0 0 96px;
+}
+
+.moltrack-ems-run {
+  flex: 0 0 280px;
   overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .moltrack-ems-problem {
   color: var(--failure);
+}
+
+.moltrack-ems-hint {
+  color: var(--dg-text-color-light);
 }
 
 .moltrack-ems-identity {

@@ -280,8 +280,16 @@ export class TabStrip extends Control {
             this._watchContent(tab, built);
         }));
       }
-      tab.header.scrollIntoView({block: 'nearest', inline: 'nearest'});
+      this._reveal(tab);
     }
+  }
+
+  /** Scrolls the strip to the tab without `scrollIntoView`, which also scrolls the page around it. */
+  private _reveal(tab: Tab): void {
+    const strip = this._scroller.getBoundingClientRect();
+    const at = tab.header.getBoundingClientRect();
+    this._scroller.scrollLeft += Math.min(0, at.left - strip.left) + Math.max(0, at.right - strip.right);
+    this._scroller.scrollTop += Math.min(0, at.top - strip.top) + Math.max(0, at.bottom - strip.bottom);
   }
 
   private _focus(tab: Tab): void {

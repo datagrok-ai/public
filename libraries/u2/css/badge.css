@@ -148,6 +148,11 @@
   color: var(--dg-error);
 }
 
+/* why an action is off: amber, as the platform's dialog footers say it */
+.u2-status-line-warning.u2-status-line-problem {
+  color: var(--dg-orange-3);
+}
+
 .u2-status-line-mark {
   flex: none;
 }

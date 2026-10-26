@@ -10,14 +10,17 @@
    the ones `support.batch` declares: an option the storage refuses is not on the form and not sent.
    An app makes the import its own through `table.importer`: the rows it derives or keeps out, the
    columns of the preview and the report, how a refusal reads. */
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import type * as DG from 'datagrok-api/dg';
-import {signal, Control, button, div, divV, span, plural, text, link, Wizard, DataTable, ChoiceInput,
-  BoolInput, badge, Form, notify} from '@datagrok-libraries/u2';
+import {signal, computed, Control, div, divV, span, plural, text, link, Wizard, DataTable, ChoiceInput,
+  BoolInput, badge, dot, statusLine, Form, notify} from '@datagrok-libraries/u2';
 import type {IProperty, ChoiceItem, BadgeVariant, RowView} from '@datagrok-libraries/u2';
+import {capital, nounOf} from '../core/domain-backend.js';
 import type {DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike} from '../core/domain-backend.js';
 import {fromDartInput} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainTable} from './facade.js';
+import {DomainDataTable} from './grid.js';
 import {DomainErrors} from './errors.js';
 
 export interface DomainImportOptions {
@@ -55,7 +58,7 @@ export type DomainImportStep = 'preview' | 'report';
 
 /** What becomes of one row: it is sent with `values` added, or kept out as the row the table
  * already has (`existing`, its id), as a repeat of an earlier row of the same file (`sameAs`, its
- * index) or as an `error`. `label` names it on the row's badge, `note` says why. */
+ * index) or as an `error`. `label` names it on the row's badge where it has no verb, `note` says why. */
 export interface DomainImportVerdict {
   values?: Record<string, unknown>;
   existing?: string;
@@ -108,6 +111,7 @@ interface Planned {
 
 /** What a source column maps to when it maps to nothing. */
 const SKIP = '(skip)';
+const SKIP_LABEL = 'Don\'t import';
 /** The preview scans at most this many rows — it is advisory, and the server re-validates every
  * row it is sent; the commit itself is unbounded. */
 const PREVIEW_ROWS = 1000;
@@ -115,15 +119,15 @@ const PREVIEW_ROWS = 1000;
 const PREVIEW_SHOWN = 20;
 /** A row's kind as the preview shows it: the verb, not the wire's op name. */
 const VERDICTS: Record<string, {label: string, variant: BadgeVariant}> = {
-  insert: {label: 'Add', variant: 'accent'},
-  update: {label: 'Update', variant: 'accent'},
+  insert: {label: 'Add', variant: 'success'},
+  update: {label: 'Update', variant: 'success'},
   skip: {label: 'Skip', variant: 'default'},
   error: {label: 'Error', variant: 'error'},
 };
 /** A row's kind as the report shows it, once the batch has run. */
 const OUTCOMES: Record<string, {label: string, variant: BadgeVariant}> = {
-  insert: {label: 'Added', variant: 'accent'},
-  update: {label: 'Updated', variant: 'accent'},
+  insert: {label: 'Added', variant: 'success'},
+  update: {label: 'Updated', variant: 'success'},
   skip: {label: 'Skipped', variant: 'default'},
   error: {label: 'Error', variant: 'error'},
   aborted: {label: 'Not imported', variant: 'default'},
@@ -182,6 +186,10 @@ class ImportFlow {
   private _planned: {frame: DG.DataFrame, key: string, plan: Promise<Planned[]>} | undefined;
   /** Bumped by every post: an older dry run answering last must not paint over a newer one. */
   private _previewGen = 0;
+  /** '' while the dry run runs, a reason where all-or-nothing would abort. */
+  private readonly _previewBlock = signal<string | null>(null);
+  private readonly _importText = signal('Import');
+  private readonly _aborted = signal(false);
 
   constructor(private readonly _table: DomainTable, private readonly _targets: IProperty[],
     private readonly _options: DomainImportOptions,
@@ -194,15 +202,17 @@ class ImportFlow {
         {id: 'source', title: 'Source', content: () => this._sourceStep(),
           canProceed: () => this._frame.value === null ? 'Choose an open table or a file' : null},
         {id: 'mapping', title: 'Mapping', content: () => this._mappingStep(), canProceed: () => this._gate()},
-        {id: 'preview', title: 'Preview', content: () => this._previewStep(), canProceed: () => this._gate()},
+        {id: 'preview', title: 'Preview', content: () => this._previewStep(), nextText: this._importText,
+          canProceed: () => this._gate() ?? this._previewBlock.value},
         {id: 'report', title: 'Report', content: () => this._report, done: true,
-          onActivate: () => void this._commit()},
+          onActivate: () => void this._commit(),
+          actions: [{text: 'BACK', run: () => this._again(), visible: this._aborted}]},
       ],
       onFinish: () => this._settle(this._result),
       onCancel: () => this._settle(null),
     });
     this._wizard.root.classList.add('u2-domain-import');
-    this._wizard.openInDialog(`Import ${ImportFlow._plural(this._table)}`, {width: 720, height: 560});
+    this._wizard.openInDialog(`Import ${nounOf(this._table.info)}`, {width: 720, height: 560});
   }
 
   /** The first blocking problem, which is what the NEXT button shows and gates on. */
@@ -224,9 +234,12 @@ class ImportFlow {
   private _sourceStep(): HTMLElement {
     const picker = fromDartInput<DG.DataFrame | null>(ui.input.table('Data'), 'source');
     picker.root.title = 'Choose an open table or a file';
+    const open = grok.shell.tables;
     if (this._options.source !== undefined)
       picker.value.value = this._options.source;
-    const summary = span('', 'u2-domain-import-summary');
+    else if (open.length === 1)
+      picker.value.value = open[0];
+    const summary = span('', 'u2-domain-import-picked u2-form-note');
     const batch = this._table.table.support.batch;
     if (batch.upsert) {
       this._mode = new ChoiceInput({label: 'Mode', name: 'mode', value: 'insert', nullable: false,
@@ -236,46 +249,78 @@ class ImportFlow {
       this._allOrNothing = new BoolInput({label: 'All or nothing', value: true, name: 'allOrNothing',
         tooltipText: 'Any invalid row aborts the whole import'});
     }
+    const duplicates = `A row whose ${this._keyHeader()} the table already has is an error instead of a skip`;
     if (batch.skipDuplicates) {
-      this._errorOnDuplicate = new BoolInput({label: 'Error on duplicate', value: false, name: 'errorOnDuplicate',
-        tooltipText: 'Treat business-key duplicates as errors instead of skips (insert mode)'});
+      this._errorOnDuplicate = new BoolInput({label: `Refuse ${nounOf(this._table.info)} that exist`,
+        value: false, name: 'errorOnDuplicate', tooltipText: duplicates});
     }
     const column = this._keyColumn();
-    if (column !== null) {
-      this._writeBack = new BoolInput({label: `Add a "${column}" column`, value: true, name: 'writeBack',
-        tooltipText: `Each row of the source table gets the ${this._keyHeader()} it was imported as, or found as`});
-    }
+    if (column !== null)
+      this._writeBack = new BoolInput({label: `Write ${this._keyHeader()} back`, value: true, name: 'writeBack'});
     const form = new Form().addAll([picker, this._mode, this._allOrNothing, this._errorOnDuplicate, this._writeBack]
       .filter((input) => input !== undefined));
+    picker.root.parentElement!.insertBefore(summary, picker.root.nextSibling);
     form.effect(() => {
       const frame = picker.value.value;
       summary.textContent = frame === null ? '' :
-        `${frame.name}: ${frame.rowCount} rows, ${frame.columns.names().length} columns`;
+        `${plural(frame.rowCount, 'row', 'rows')}, ${plural(frame.columns.names().length, 'column', 'columns')}`;
+      if (this._writeBack !== undefined) {
+        this._writeBack.visible = frame !== null;
+        this._writeBack.tooltipText = frame === null ? '' :
+          `Adds a "${column}" column to ${frame.name} with each row's ${this._keyHeader()}, as imported or as found`;
+      }
       this._frame.value = frame;
       this._remap(frame);
       this._touch();
     });
     form.effect(() => {
       const insert = this._mode?.value.value !== 'upsert';
-      if (this._errorOnDuplicate !== undefined)
+      if (this._errorOnDuplicate !== undefined) {
         this._errorOnDuplicate.enabled = insert;
+        this._errorOnDuplicate.tooltipText = insert ? duplicates : 'Only when adding new rows';
+      }
       this._touch();
     });
-    return divV([form.root, summary], 'u2-domain-import-source');
+    return divV([form.root], 'u2-domain-import-source');
   }
 
   private _mappingStep(): HTMLElement {
     const table = new DataTable<Mapping>({
       columns: [
-        {name: 'column', header: 'Source column'},
-        {name: 'target', header: 'Target column', render: (item) => this._choices.get(item.column)!.root},
+        {name: 'column', header: 'Source column', width: 'minmax(120px, 1fr)'},
+        {name: 'sample', header: 'Sample', render: (item) => this._sample(item.column)},
+        {name: 'target', header: 'Import as', width: 'minmax(200px, 1fr)',
+          render: (item) => this._choices.get(item.column)!.root},
       ],
       keyOf: (item) => item.column,
       rowHeight: 32,
       items: this._rows,
     });
     table.root.classList.add('u2-domain-import-mapping');
-    return table.root;
+    return divV([table.root, statusLine(signal(null), computed(() => this._mappingStatus()))],
+      'u2-domain-import-mapping-step');
+  }
+
+  private _sample(name: string): HTMLElement {
+    const column = this._frame.peek()?.columns.byName(name);
+    const values: string[] = [];
+    for (let i = 0; column && i < column.length && values.length < 3; i++) {
+      if (!column.isNone(i))
+        values.push(text(column.get(i)));
+    }
+    return span(values.join(', '), 'u2-domain-import-text');
+  }
+
+  private _mappingStatus(): string {
+    this._recheck.value;
+    const mapped = this._mapping();
+    const imported = [...this._choices.values()].filter((c) => this._claimants(c.value.peek()).length > 0).length;
+    const required = this._required()
+      .map((name) => `${ImportFlow._caption(this, name)} ${mapped.has(name) ? '✓' : '✗'}`);
+    return [...(required.length > 0 ? [`Required: ${required.join(', ')}`] : []),
+      ...[...mapped.keys()].filter((t) => this._claimants(t).length > 1)
+        .map((name) => `${ImportFlow._caption(this, name)} is mapped twice`),
+      `${imported} of ${plural(this._choices.size, 'column', 'columns')} imported`].join(' · ');
   }
 
   /** The table importer's verdicts over every row, then the server's own over the first
@@ -304,6 +349,8 @@ class ImportFlow {
     const mapping = [...this._mapping()];
     const options = this._batchOptions();
     const gen = ++this._previewGen;
+    this._previewBlock.value = '';
+    this._importText.value = 'Import';
     const status = span(`Checking ${plural(frame.rowCount, 'row', 'rows')}…`, 'u2-domain-import-summary');
     host.replaceChildren(status);
     let plan: Planned[];
@@ -328,38 +375,64 @@ class ImportFlow {
       // the commit is the authority: a preview that cannot reach the server says so and lets NEXT
       // through
       this._checked = undefined;
+      this._previewBlock.value = null;
       host.replaceChildren(span(DomainErrors.message(e), 'u2-domain-import-problem'));
       return;
     }
     if (owner.scope.isDisposed)
       return;
     const sent = ImportFlow._sent(plan);
+    if (report === null)
+      this._previewBlock.value = null;
     const judged = report !== null || this._table.importer?.prepare !== undefined;
     const rows = this._previewRows(plan, sent, report).slice(0, PREVIEW_SHOWN);
     host.replaceChildren(this._rowsTable(owner, 'preview', rows, judged ? this._previewColumns(mapping) :
       mapping.map(([target]) => this._valueColumn(target))));
+    const showing = rows.length < plan.length ?
+      `Showing the first ${rows.length.toLocaleString()} of ${plan.length.toLocaleString()} rows` : '';
     if (report === null) {
-      const lead = rows.length < frame.rowCount ? `Showing the first ${rows.length.toLocaleString()} of ` +
-        `${frame.rowCount.toLocaleString()} rows — rows` : 'Rows';
-      host.append(span(`${lead} are checked when imported.`, 'u2-domain-import-summary'));
+      host.append(span(`${showing === '' ? 'Rows' : `${showing} — rows`} are checked when imported.`,
+        'u2-domain-import-summary'));
       return;
     }
     const kept = plan.filter((p) => p.payload === null);
     const keptErrors = kept.filter((p) => p.verdict.error !== undefined).length;
     const errors = report.errorCount + keptErrors;
-    host.append(span(`${report.willInsert} will be added, ${report.willUpdate} updated, ` +
-      `${report.willSkip + kept.length - keptErrors} skipped, ${plural(errors, 'row has errors', 'rows have errors')}.`,
-    'u2-domain-import-summary'));
+    const checked = sent.length > PREVIEW_ROWS ? `Checked the first ${PREVIEW_ROWS.toLocaleString()} of ` +
+      `${sent.length.toLocaleString()} rows — the rest are checked on import:` : '';
+    host.prepend(ImportFlow._headline(ImportFlow._counts([[report.willInsert, 'to add', 'success'],
+      [report.willUpdate, 'to update', 'success'], [report.willSkip + kept.length - keptErrors, 'to skip', 'default'],
+      [errors, errors === 1 ? 'error' : 'errors', 'error']]), 'Nothing to import'));
+    if (checked !== '')
+      host.prepend(span(checked, 'u2-domain-import-summary'));
+    if (showing !== '')
+      host.append(span(`${showing}.`, 'u2-domain-import-summary'));
+    const valid = sent.length > PREVIEW_ROWS ? null : report.willInsert + report.willUpdate;
+    const noun = (n: number) => plural(n, nounOf(this._table.info, true), nounOf(this._table.info));
+    this._importText.value = `Import ${noun(valid ?? sent.length)}`;
     // the counts are what the batch WOULD do row by row; all-or-nothing makes one bad row the
-    // verdict on all of them, and the report would otherwise contradict this line
-    if (options.allOrNothing !== false && errors > 0)
-      host.append(span(this._allOrNothing === undefined ? 'This import is all or nothing — nothing will be imported.' :
-        'Nothing will be imported while "All or nothing" is on.', 'u2-domain-import-problem'));
-    if (sent.length > PREVIEW_ROWS) {
-      host.append(span(`Checked the first ${PREVIEW_ROWS.toLocaleString()} of ` +
-        `${sent.length.toLocaleString()} rows — the rest are checked on import.`,
-      'u2-domain-import-summary'));
-    }
+    // verdict on all of them
+    this._previewBlock.value = options.allOrNothing !== false && errors > 0 ? this._abortReason(errors, valid) : null;
+  }
+
+  private static _headline(items: [string, BadgeVariant][], none: string): HTMLElement {
+    return div(items.length === 0 ? [span(none, 'u2-domain-import-count')] : items.map(([words, variant]) =>
+      div([dot(variant), span(words)], 'u2-domain-import-count')), 'u2-domain-import-outcome');
+  }
+
+  private static _counts(counts: [number, string, BadgeVariant][]): [string, BadgeVariant][] {
+    return counts.filter(([n]) => n > 0).map(([n, words, variant]) => [`${n.toLocaleString()} ${words}`, variant]);
+  }
+
+  /** `valid` is null where the dry run did not see every row. */
+  private _abortReason(errors: number, valid: number | null): string {
+    const lead = plural(errors, 'row has errors', 'rows have errors');
+    if (this._allOrNothing === undefined)
+      return `${lead}, and this import is all or nothing.`;
+    if (valid === 0)
+      return `${lead}, and no row is valid.`;
+    return `${lead}. Uncheck "All or nothing" on Source to import the ` +
+      `${valid === null ? 'valid rows' : plural(valid, 'valid row', 'valid rows')} and skip the rest.`;
   }
 
   /** Every source row as the preview shows it: the importer's verdict where it keeps the row out,
@@ -371,7 +444,7 @@ class ImportFlow {
       const at = sent[dry.index];
       const errors = dry.errors ?? [];
       rows[at] = this._row(at, plan[at], dry.predicted, errors.length > 0 ? this._describe(errors) :
-        plan[at].verdict.note ?? '', errors);
+        plan[at].verdict.note ?? (dry.predicted === 'skip' ? this._duplicate() : ''), errors);
     }
     return rows;
   }
@@ -392,12 +465,18 @@ class ImportFlow {
   /** The rows as a table, its columns the importer's choice; the cells a refusal names are marked. */
   private _rowsTable(owner: Control, step: DomainImportStep, rows: DomainImportRow[],
     defaults: DomainImportColumn[]): HTMLElement {
-    const columns = this._table.importer?.columns?.(defaults, step) ?? defaults;
+    const keyless = rows.every((row) => row.key === '');
+    const columns = (this._table.importer?.columns?.(defaults, step) ?? defaults)
+      .filter((c) => c.name !== '~key' || !keyless);
     const byIndex = new Map(rows.map((row) => [row.index, row]));
     const table = owner.runInScope(() => new DataTable<DomainImportRow>({
       rowHeight: this._table.importer?.rowHeight ?? 24,
       keyOf: (row) => String(row.index),
-      columns: columns.map((c) => ({name: c.name, header: c.header, width: c.width, render: (row) => c.render(row)})),
+      fitColumns: true,
+      columns: columns.map((c) => ({name: c.name, header: c.header, width: c.width, render: (row) => {
+        const content = c.render(row);
+        return typeof content === 'string' ? span(content, 'u2-domain-import-text') : content;
+      }})),
       cellState: {
         isChanged: () => false,
         errorOf: (key, column) => {
@@ -413,31 +492,41 @@ class ImportFlow {
 
   /** What the preview shows by default: the row's number and verdict, its mapped cells, the note. */
   private _previewColumns(mapping: [string, string][]): DomainImportColumn[] {
-    return [ImportFlow._numberColumn('#', '44px'), ImportFlow._resultColumn(VERDICTS),
-      ...mapping.map(([target]) => this._valueColumn(target)),
-      {name: '~note', header: 'Note', render: (row) => row.note}];
+    return [ImportFlow._numberColumn(), ImportFlow._resultColumn(VERDICTS),
+      ...mapping.map(([target]) => this._valueColumn(target)), ImportFlow._noteColumn()];
   }
 
   /** What the report shows by default: the row's number and outcome, the row it is now, why. */
   private _reportColumns(saved: Map<string, RowView>): DomainImportColumn[] {
-    return [ImportFlow._numberColumn('Source row', '84px'), ImportFlow._resultColumn(OUTCOMES),
-      {name: '~key', header: this._keyHeader(), width: '120px', render: (row) => this._keyLink(row, saved)},
-      {name: '~note', header: 'Message', render: (row) => row.note}];
+    return [ImportFlow._numberColumn(), ImportFlow._resultColumn(OUTCOMES),
+      {name: '~key', header: this._keyHeader(), width: 'minmax(120px, auto)',
+        render: (row) => this._keyLink(row, saved)},
+      ImportFlow._noteColumn()];
   }
 
   private _valueColumn(target: string): DomainImportColumn {
-    return {name: target, header: ImportFlow._caption(this, target), render: (row) => text(row.values[target])};
+    const prop = this._table.properties.find((p) => p.name === target);
+    return {name: target, header: ImportFlow._caption(this, target),
+      width: DomainDataTable.width(prop, target === this._table.info.nameColumn),
+      render: (row) => text(row.values[target])};
   }
 
-  private static _numberColumn(header: string, width: string): DomainImportColumn {
-    return {name: '~row', header, width, render: (row) => String(row.index + 1)};
+  private static _numberColumn(): DomainImportColumn {
+    return {name: '~row', header: '#', width: '44px', render: (row) => String(row.index + 1)};
+  }
+
+  private static _noteColumn(): DomainImportColumn {
+    return {name: '~note', header: 'Note', width: 'minmax(160px, 2fr)', render: (row) => row.note};
   }
 
   private static _resultColumn(kinds: Record<string, {label: string, variant: BadgeVariant}>): DomainImportColumn {
-    return {name: '~result', header: 'Result', width: '110px', render: (row) => {
+    return {name: '~result', header: 'Result', width: '88px', render: (row) => {
       const kind = kinds[row.kind];
-      const label = row.label || kind?.label;
-      return label === undefined ? '' : badge(label, {variant: kind?.variant ?? 'default'});
+      const label = kind?.label ?? row.label;
+      if (!label)
+        return '';
+      const pill = badge(label, {variant: kind?.variant ?? 'default'});
+      return kind?.variant === 'error' ? div([dot('error'), pill], 'u2-domain-import-result') : pill;
     }};
   }
 
@@ -550,8 +639,8 @@ class ImportFlow {
       return;
     }
     // the asterisk the forms use, in the option itself: a picker's own list is all the user sees
-    const items: ChoiceItem[] = [SKIP, ...this._targets.map((p) =>
-      ({value: p.name!, label: `${ImportFlow.captionOf(p)}${p.nullable === false ? ' *' : ''}`}))];
+    const items: ChoiceItem[] = [{value: SKIP, label: SKIP_LABEL}, ...this._targets.map((p) =>
+      ({value: p.name!, label: `${DomainTable.captionOf(p)}${p.nullable === false ? ' *' : ''}`}))];
     const columns = frame.columns.names();
     for (const column of columns) {
       // owned by hand, not by a scope: the first remap runs inside the wizard's own constructor
@@ -559,24 +648,36 @@ class ImportFlow {
       const choice = new ChoiceInput({items, value: this._match(frame.columns.byName(column)), inline: true,
         name: column, nullable: false});
       // the asterisk the forms use: a target the table will not take empty
-      choice.effect(() => choice.root.classList.toggle('u2-input-required',
-        this._targets.some((p) => p.name === choice.value.value && p.nullable === false)));
-      choice.value.subscribe(() => this._touch());
+      choice.effect(() => {
+        const target = choice.value.value;
+        choice.root.classList.toggle('u2-input-required',
+          this._targets.some((p) => p.name === target && p.nullable === false));
+        choice.root.classList.toggle('u2-domain-import-skipped', target === SKIP);
+      });
+      choice.addValidator((target) => {
+        const other = this._claimants(target).find((c) => c !== column);
+        return other === undefined ? null : `Also mapped from "${other}"`;
+      });
+      choice.value.subscribe(() => {
+        this._touch();
+        for (const each of this._choices.values())
+          each.revalidate();
+      });
       this._choices.set(column, choice);
     }
     this._rows.value = columns.map((column) => ({column}));
   }
 
-  /** A target as a form labels it: the declared caption, else the column name made presentable. */
-  static captionOf(prop: IProperty): string {
-    const name = prop.friendlyName ?? (prop.name ?? '').replace(/_/g, ' ');
-    return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+  private _claimants(target: string | null): string[] {
+    if (target === null || target === SKIP)
+      return [];
+    return [...this._choices].filter(([, choice]) => choice.value.peek() === target).map(([column]) => column);
   }
 
-  /** The same, by column name. */
+  /** A target as a form labels it, by column name. */
   private static _caption(flow: ImportFlow, column: string): string {
     const prop = flow._table.properties.find((p) => p.name === column);
-    return prop === undefined ? column : ImportFlow.captionOf(prop);
+    return prop === undefined ? column : DomainTable.captionOf(prop);
   }
 
   /** The source column the keys are written back to: the importer's choice, else the business
@@ -587,18 +688,15 @@ class ImportFlow {
     return chosen === false ? null : chosen ?? (key.length === 1 ? ImportFlow._caption(this, key[0]) : null);
   }
 
+  private _duplicate(): string {
+    return `${this._keyHeader()} already exists`;
+  }
+
   /** What the report's key column is headed: the business key's caption, else the table's noun. */
   private _keyHeader(): string {
     const key = this._table.info.businessKey;
-    if (key.length === 1)
-      return ImportFlow._caption(this, key[0]);
-    const name = (this._table.info.singularName || 'row').replace(/_/g, ' ');
-    return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
-  }
-
-  /** The table's plural name, as the user reads it. */
-  private static _plural(table: DomainTable): string {
-    return (table.info.pluralName || 'rows').replace(/_/g, ' ').toLowerCase();
+    return key.length === 1 ? ImportFlow._caption(this, key[0]) :
+      capital(nounOf(this._table.info, true));
   }
 
   /** Where a source column goes: the importer's match, else the name the way a person reads it —
@@ -637,31 +735,32 @@ class ImportFlow {
     if (this._frame.value === null)
       return ['Choose an open table or a file'];
     const problems: string[] = [];
-    const seen = new Set<string>();
-    for (const choice of this._choices.values()) {
-      const target = choice.value.peek();
-      if (target === null || target === SKIP)
-        continue;
-      if (seen.has(target))
-        problems.push(`Two source columns are mapped to "${target}" — keep one and skip the other.`);
-      seen.add(target);
+    const seen = this._mapping();
+    for (const target of seen.keys()) {
+      const columns = this._claimants(target).map((c) => `"${c}"`);
+      if (columns.length > 1) {
+        problems.push(`Columns ${columns.slice(0, -1).join(', ')} and ${columns.at(-1)} are ` +
+          `${columns.length === 2 ? 'both' : 'all'} mapped to "${ImportFlow._caption(this, target)}" — ` +
+          `keep one, and set the rest to "${SKIP_LABEL}".`);
+      }
     }
     if (seen.size === 0)
       problems.push('Map at least one column.');
-    if (this._mode?.value.peek() === 'upsert') {
-      for (const key of this._table.info.businessKey) {
-        if (!seen.has(key))
-          problems.push(`Upsert merges by the business key — map a column to "${ImportFlow._caption(this, key)}".`);
-      }
-    } else {
-      for (const p of this._targets) {
-        if (p.nullable === false && (p.defaultValue === undefined || p.defaultValue === null) && !seen.has(p.name!)) {
-          problems.push(`Required column "${ImportFlow.captionOf(p)}" is not mapped — ` +
-            'rows without a value will fail.');
-        }
-      }
+    const upsert = this._mode?.value.peek() === 'upsert';
+    for (const name of this._required()) {
+      if (seen.has(name))
+        continue;
+      const caption = ImportFlow._caption(this, name);
+      problems.push(upsert ? `Add or update matches rows by ${caption} — map a column to "${caption}".` :
+        `Required column "${caption}" is not mapped — rows without a value will fail.`);
     }
     return problems;
+  }
+
+  /** Upsert matches on the business key; insert needs every required column without a default. */
+  private _required(): string[] {
+    return this._mode?.value.peek() === 'upsert' ? this._table.info.businessKey : this._targets
+      .filter((p) => p.nullable === false && (p.defaultValue ?? null) === null).map((p) => p.name!);
   }
 
   private async _commit(): Promise<void> {
@@ -685,7 +784,10 @@ class ImportFlow {
       this._result = ImportFlow._merged(report, sent, plan);
     } catch (e) {
       this._report.replaceChildren(span(DomainErrors.message(e), 'u2-domain-import-problem'));
-      notify.error(DomainErrors.message(e));
+      this._wizard.setStepFailed('report', true);
+      // a balloon only for a dialog closed before the end
+      if (this._settled)
+        notify.error(DomainErrors.message(e));
       return;
     }
     await this._render(this._result, plan, frame);
@@ -707,11 +809,12 @@ class ImportFlow {
     const failed = report.error !== undefined;
     // a warehouse refusal carries the failing rows and no totals
     const errorCount = report.errorCount ?? report.rows.filter((row) => row.errors?.length).length;
-    this._report.replaceChildren(span(failed ?
-      `Import aborted — ${plural(errorCount, 'row has errors', 'rows have errors')}; ` +
-      'nothing was committed.' :
-      `${ImportFlow._landed(report)}, ${report.skipped ?? 0} skipped, ${errorCount} failed.`,
-    failed ? 'u2-domain-import-problem' : 'u2-domain-import-summary'));
+    const counts = ImportFlow._counts(ImportFlow._landed(report, errorCount));
+    const aborted = `Import aborted — ${plural(errorCount, 'row has errors', 'rows have errors')}; ` +
+      'nothing was committed.';
+    this._report.replaceChildren(ImportFlow._headline(failed ? [[aborted, 'error']] : counts, 'Nothing was imported'));
+    this._report.classList.toggle('u2-domain-import-aborted', failed);
+    this._wizard.setStepFailed('report', failed || errorCount > 0);
     const outcomes = this._outcomes(report, plan, failed);
     let saved = new Map<string, RowView>();
     try {
@@ -727,16 +830,24 @@ class ImportFlow {
       if (frame.columns.names().includes(column))
         frame.columns.remove(column);
       frame.columns.addNewString(column).init((i) => outcomes[i].key);
-      this._report.append(span(`Each row's ${this._keyHeader()} is in the "${column}" column of ${frame.name}.`,
+      this._report.append(span(`Added a "${column}" column to ${frame.name} with each row's ${this._keyHeader()}.`,
         'u2-domain-import-summary'));
     }
     if (failed) {
       const refused = report.rows.filter((r) => r.status === 'error' && plan[r.index].payload !== null).length;
-      this._report.append(...this._wayBack(ImportFlow._sent(plan).length - refused));
-      notify.error('Import failed — nothing was committed. See the report.');
+      const valid = ImportFlow._sent(plan).length - refused;
+      if (this._allOrNothing?.value.peek() && valid > 0) {
+        this._report.append(span(`Uncheck "All or nothing" to import the ${plural(valid, 'valid row', 'valid rows')} ` +
+          'and skip the rest.', 'u2-domain-import-summary'));
+      }
+      this._aborted.value = true;
     }
+    if (!this._settled)
+      return;
+    if (failed)
+      notify.error(aborted);
     else
-      notify.info(`Imported: ${ImportFlow._landed(report)}`);
+      notify.info(`Imported: ${counts.map(([words]) => words).join(', ')}`);
   }
 
   /** Every source row's outcome: the batch's, else the plan's; a repeat takes its first row's id. */
@@ -748,11 +859,11 @@ class ImportFlow {
       if (row?.status === 'error')
         return this._row(i, p, 'error', p.payload === null ? p.verdict.error ?? '' : this._describe(errors), errors);
       if (row?.status === 'duplicate')
-        return {...this._row(i, p, 'skip', 'Duplicate business key', errors), id: row.existingId ?? null};
+        return {...this._row(i, p, 'skip', this._duplicate(), errors), id: row.existingId ?? null};
       if (p.payload === null)
         return this._kept(i, p);
       if (failed || row === undefined)
-        return this._row(i, p, failed ? 'aborted' : '', '', errors);
+        return this._row(i, p, failed ? 'aborted' : '', failed ? 'Another row has errors' : '', errors);
       return {...this._row(i, p, row.status === 'inserted' ? 'insert' : 'update', p.verdict.note ?? '', errors),
         id: row.id};
     });
@@ -774,32 +885,20 @@ class ImportFlow {
     return rows;
   }
 
-  /** What landed; `merged` stands in for `updated` where the storage cannot tell the two apart. */
-  private static _landed(report: DomainBatchReportLike): string {
-    const merged = report.merged ?? 0;
-    const updated = report.updated ?? 0;
-    const counts = [`${report.inserted ?? 0} inserted`];
-    if (merged === 0 || updated > 0)
-      counts.push(`${updated} updated`);
-    if (merged > 0)
-      counts.push(`${merged} merged`);
-    return counts.join(', ');
+  /** `merged` stands in for `updated` where the storage cannot tell the two apart. */
+  private static _landed(report: DomainBatchReportLike, errors: number): [number, string, BadgeVariant][] {
+    return [[report.inserted ?? 0, 'added', 'success'], [report.updated ?? 0, 'updated', 'success'],
+      [report.merged ?? 0, 'merged', 'success'], [report.skipped ?? 0, 'skipped', 'default'],
+      [errors, errors === 1 ? 'error' : 'errors', 'error']];
   }
 
-  /** The way out of an aborted all-or-nothing run: what to change, and the BACK the report step
-   * has none of — the mapping and the source stand, so only the flag has to be turned off. */
-  private _wayBack(valid: number): HTMLElement[] {
-    const out: HTMLElement[] = [];
-    if (this._allOrNothing?.value.peek() && valid > 0) {
-      out.push(span(`Uncheck "All or nothing" to import the ${plural(valid, 'valid row', 'valid rows')} ` +
-        'and skip the rest.', 'u2-domain-import-summary'));
-    }
-    out.push(div([button('BACK', () => {
-      this._committed = false;
-      this._result = null;
-      this._checked = undefined;
-      this._wizard.goTo('source');
-    })], 'u2-domain-import-actions'));
-    return out;
+  /** The report's BACK after an aborted run: the mapping and the source stand. */
+  private _again(): void {
+    this._committed = false;
+    this._result = null;
+    this._checked = undefined;
+    this._aborted.value = false;
+    this._wizard.setStepFailed('report', false);
+    this._wizard.goTo('source');
   }
 }

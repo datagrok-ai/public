@@ -54,9 +54,14 @@ export function saveButton(target: SessionTarget, options: SessionButtonOptions 
   return control;
 }
 
-export function discardButton(target: SessionTarget, options: SessionButtonOptions = {}): SessionButton {
+/** `leave`: while `when` holds, Discard is on over a clean session and runs `leave.run` instead — off an
+ * untouched create page. */
+export function discardButton(target: SessionTarget,
+  options: SessionButtonOptions & {leave?: {when: () => boolean, run: () => void}} = {}): SessionButton {
+  const leave = options.leave;
   const control = new SessionButton(target, options.text ?? 'Discard', {tooltip: 'Discard changes',
-    run: (session) => session.discard(), disabled: (session) => !session.isDirty.value || session.isSaving.value});
+    run: (session) => leave?.when() ? leave.run() : session.discard(),
+    disabled: (session) => session.isSaving.value || !(session.isDirty.value || (leave?.when() ?? false))});
   control.root.dataset.u2 = 'discard-button';
   return control;
 }

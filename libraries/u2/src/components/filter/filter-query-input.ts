@@ -7,6 +7,7 @@ import {signal, computed, untracked, Signal, ReadonlySignal} from '../../core/si
 import {Input, InputOptions} from '../../core/input-base.js';
 import {bindValue} from '../../core/bind.js';
 import {div, span} from '../../core/elements.js';
+import {textWidth} from '../../core/text.js';
 import {SuggestionList} from '../../core/suggestion-list.js';
 import type {AsyncState} from '../../core/async-source.js';
 import type {IWidgetStatus} from '../../core/widget-like.js';
@@ -51,6 +52,8 @@ const KIND_HINTS: Partial<Record<FilterKind, string[]>> = {
 const SPELLED: Record<string, string> = {'is null': '= null', 'is not null': '!= null'};
 /** Their value is a pattern: a picked literal is escaped the way the formatter spells it. */
 const LIKE_FAMILY = new Set(['like', '!like', 'starts', 'ends']);
+/** The popup's `max-width` in css/filter-query.css. */
+const POPUP_MAX_WIDTH = 320;
 /** `<column> under <bare word…>` at the end of the text — the shape the grammar refuses. */
 const UNDER_BARE = /([A-Za-z_]\w*)\s+under\s+[^"'\s]\S*(\s+\S+)*\s*$/i;
 
@@ -70,6 +73,7 @@ function row(main: HTMLElement | string, secondary?: string, glyph?: HTMLElement
 }
 
 export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions> {
+
   /** The raw text; committed to `value` on Enter or blur. */
   readonly text: Signal<string>;
   /** The same text, for read-only bindings. */
@@ -225,6 +229,8 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
       autoHighlight: true,
       // a query's options are many and the rows under the box are what the user is filtering
       maxHeight: 'calc(var(--dg-control-height) * 6)',
+      // sized by its rows and hung at the caret
+      matchWidth: false,
       onPick: (index) => {
         this._moved = true;
         return this._insert(index);
@@ -270,7 +276,22 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     this.effect(() => input.setAttribute('aria-expanded', String(this._list.isOpen.value)));
     this.addValidator(() => this._problems.value[0]?.message ?? null);
     this.effect(() => this._syncText());
-    return input;
+    return this._searchSkin(input);
+  }
+
+  /** The search box's look, with a funnel for its magnifier; ✕ applies the empty filter at once. */
+  private _searchSkin(input: HTMLInputElement): HTMLElement {
+    const editor = document.createElement('div');
+    editor.className = 'u2-input-search u2-fq-search';
+    const clear = this.createClearButton(() => {
+      this._list.dismiss();
+      this._text.value = '';
+      this.commit();
+      input.focus();
+    }, 'Clear filter');
+    this.effect(() => clear.hidden = this._text.value === '');
+    editor.append(input, clear);
+    return editor;
   }
 
   /** The bound tree re-formats the text — except under the user's feet, or over text {@link
@@ -316,6 +337,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
       ctx.prefix = this._text.peek().slice(ctx.valueSpan!.start, ctx.valueSpan!.end);
     }
     this._prefix.value = ctx.prefix;
+    this._list.popup.style.marginLeft = `${this._caretOffset(ctx.replace.start)}px`;
     this._abort?.abort();
     this._abort = undefined;
     const q = ctx.prefix.toLowerCase();
@@ -336,6 +358,12 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
         return this._values(ctx, starts);
     }
     return true;
+  }
+
+  /** Where the token at `at` starts in the box, clamped so the widest popup still fits under it. */
+  private _caretOffset(at: number): number {
+    const x = textWidth(this._text.peek().slice(0, at), getComputedStyle(this._input).font) - this._input.scrollLeft;
+    return Math.max(0, Math.min(x, this._input.clientWidth - POPUP_MAX_WIDTH));
   }
 
   private _ready(items: Option[]): boolean {

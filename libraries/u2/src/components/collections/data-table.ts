@@ -5,6 +5,8 @@
 
 import {Signal} from '../../core/signals.js';
 import type {ReadonlySignal} from '../../core/signals.js';
+import {icon} from '../display/icon.js';
+import {textWidth} from '../../core/text.js';
 import {VirtualRows} from './list.js';
 import type {VirtualRowsOptions} from './list.js';
 import type {RowsLike} from '../../sources/rows-like.js';
@@ -38,8 +40,11 @@ export interface CellStateLike {
 export interface DataTableOptions<T> extends Omit<VirtualRowsOptions<T>, 'itemHeight'> {
   columns: DataTableColumn<T>[];
   items?: RowsLike<T> | ReadonlySignal<T[]>;
-  /** Row and header height in pixels; 24 by default. */
+  /** Row height in pixels; 24 by default. */
   rowHeight?: number;
+  /** The order (`'name'`, `'!name'` descending, `''` none) the headers show and set by click;
+   * absent, the headers do not sort. */
+  sort?: Signal<string>;
   cellState?: CellStateLike;
   /** Enter on the selected row, or a double-click on it. */
   onActivate?(item: T, index: number): void;
@@ -51,7 +56,14 @@ export interface DataTableOptions<T> extends Omit<VirtualRowsOptions<T>, 'itemHe
   /** The text a row is found by (`revealItem`, the state block): the first column's value by
    * default. */
   labelOf?: (item: T) => string;
+  /** A `minmax(<px>, <n>fr)` column takes its share by what its header and first rows hold, never
+   * narrower than its header — fitted once, at the first rows. */
+  fitColumns?: boolean;
 }
+
+const MAX_HEADER_HEIGHT = 28;
+const MIN_COLUMN_WIDTH = 32;
+const FIT = {rows: 100, padding: 16, sort: 20, max: 400};
 
 export class DataTable<T> extends VirtualRows<T> {
   private _columns: DataTableColumn<T>[];
@@ -61,6 +73,9 @@ export class DataTable<T> extends VirtualRows<T> {
   private readonly _liveOption: boolean | undefined;
   private _template: string;
   private _head: HTMLElement;
+  private readonly _headerHeight: number;
+  private readonly _sort: Signal<string> | undefined;
+  private _endResize: (() => void) | undefined;
   private readonly _cellBaseline = new Map<string, string>();
   /** Bumped by a {@link columns} change: a row whose cells are older is given new ones on its next fill. */
   private _shape = 0;
@@ -68,6 +83,7 @@ export class DataTable<T> extends VirtualRows<T> {
   /** Whether the current items are live — decided per {@link setItems}, so the base keeps every
    * row whose item is unchanged and {@link placeRow} asks for a render where they are live. */
   private _liveNow = false;
+  private _fit: boolean;
 
   constructor(options: DataTableOptions<T>) {
     const first = options.columns[0];
@@ -79,9 +95,16 @@ export class DataTable<T> extends VirtualRows<T> {
     this._onActivate = options.onActivate;
     this._optionKeyOf = options.keyOf;
     this._liveOption = options.liveItems;
+    this._headerHeight = Math.min(this.itemHeight, MAX_HEADER_HEIGHT);
+    this._sort = options.sort;
+    this._fit = options.fitColumns ?? false;
     this._template = DataTable._templateOf(options.columns);
     this._head = this._header();
     this.root.prepend(this._head);
+    this._listen();
+    const sort = this._sort;
+    if (sort !== undefined)
+      this.effect(() => this._showSort(sort.value));
     if (options.items)
       this.setItems(options.items);
   }
@@ -124,7 +147,72 @@ export class DataTable<T> extends VirtualRows<T> {
 
   /** The rows sit under the sticky header, so the header's height is not theirs. */
   protected get viewport(): number {
-    return Math.max(0, this.root.clientHeight - this.itemHeight);
+    return Math.max(0, this.root.clientHeight - this._headerHeight);
+  }
+
+  private _resizeColumn(index: number, px: number): void {
+    const width = `${Math.max(MIN_COLUMN_WIDTH, Math.round(px))}px`;
+    this._columns = this._columns.map((c, i) => i === index ? {...c, width} : c);
+    this._template = DataTable._templateOf(this._columns);
+    this._head.style.gridTemplateColumns = this._template;
+    for (const row of this.content.querySelectorAll('.u2-data-table-row'))
+      (row as HTMLElement).style.gridTemplateColumns = this._template;
+  }
+
+  /** Header sorting and column resizing. */
+  private _listen(): void {
+    const scope = this.scope;
+    scope.listen(this.root, 'click', (e) => {
+      const target = e.target as Element;
+      const head = target.closest('.u2-data-table-head') as HTMLElement | null;
+      if (head !== null && this._sort !== undefined && target.closest('.u2-data-table-resize') === null)
+        this._sort.value = DataTable._nextSort(this._sort.peek(), head.dataset.column!);
+    });
+    scope.listen(this.root, 'pointerdown', (e) => {
+      const handle = (e.target as Element).closest('.u2-data-table-resize');
+      if (handle !== null)
+        this._startResize(e as PointerEvent, handle.parentElement!);
+    });
+    this.own(() => this._endResize?.());
+  }
+
+  private _startResize(e: PointerEvent, head: HTMLElement): void {
+    e.preventDefault();
+    this._endResize?.();
+    const index = Array.prototype.indexOf.call(this._head.children, head);
+    const from = e.clientX;
+    const width = head.getBoundingClientRect().width;
+    const move = (m: Event) => this._resizeColumn(index, width + (m as PointerEvent).clientX - from);
+    const end = () => {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', end);
+      this._endResize = undefined;
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', end);
+    this._endResize = end;
+  }
+
+  /** Ascending, then descending, then none. */
+  private static _nextSort(sort: string, column: string): string {
+    const first = sort.split(',')[0];
+    return first === column ? `!${column}` : first === `!${column}` ? '' : column;
+  }
+
+  private _showSort(sort: string, header = this._head): void {
+    const first = sort.split(',')[0];
+    const descending = first.startsWith('!');
+    const column = descending ? first.slice(1) : first;
+    for (const head of header.children) {
+      const cell = head as HTMLElement;
+      const sorted = cell.dataset.column === column;
+      cell.setAttribute('aria-sort', !sorted ? 'none' : descending ? 'descending' : 'ascending');
+      cell.querySelector('.u2-data-table-sort')?.remove();
+      if (sorted) {
+        cell.insertBefore(icon(descending ? 'arrow-down' : 'arrow-up', {cls: 'u2-data-table-sort'}),
+          cell.querySelector('.u2-data-table-resize'));
+      }
+    }
   }
 
   protected createRow(): HTMLElement {
@@ -159,9 +247,11 @@ export class DataTable<T> extends VirtualRows<T> {
   /** The row's cells rendered in place — each restored to a fresh cell's attributes first, so a
    * `render` that set a title, a dataset key or an aria flag does not follow the pool. */
   protected fillRow(row: HTMLElement, index: number): void {
+    if (this._fit)
+      this._fitColumns();
     if (this._rowShape.get(row) !== this._shape)
       this._cells(row);
-    else if (this._shape > 0)
+    else
       row.style.gridTemplateColumns = this._template;
     this.placeRow(row, index);
     const item = this.items[index];
@@ -195,6 +285,34 @@ export class DataTable<T> extends VirtualRows<T> {
     }
   }
 
+  private _fitColumns(): void {
+    this._fit = false;
+    const style = getComputedStyle(document.body);
+    const font = `${style.fontSize} ${style.fontFamily}`;
+    // nothing measures without a canvas: the declared tracks stand
+    if (textWidth('M', font) === 0)
+      return;
+    const scratch = document.createElement('div');
+    const items = this.items.slice(0, FIT.rows);
+    this._columns = this._columns.map((c) => {
+      const track = /^minmax\((\d+)px, [\d.]+fr\)$/.exec(c.width ?? '');
+      if (track === null)
+        return c;
+      const head = Math.ceil(textWidth(c.header ?? c.name, `bold ${font}`)) + FIT.padding +
+        (this._sort === undefined ? 0 : FIT.sort);
+      let widest = head;
+      for (const [i, item] of items.entries()) {
+        const content = c.render === undefined ? DataTable._text(item, c.name) : c.render(item, i, scratch);
+        const label = typeof content === 'string' ? content : content.textContent ?? '';
+        widest = Math.max(widest, Math.ceil(textWidth(label, font)) + FIT.padding);
+      }
+      const width = Math.min(widest, FIT.max);
+      return {...c, width: `minmax(${Math.max(head, Math.min(Number(track[1]), width))}px, ${width}fr)`};
+    });
+    this._template = DataTable._templateOf(this._columns);
+    this._head.style.gridTemplateColumns = this._template;
+  }
+
   protected rowKey(e: KeyboardEvent, index: number): boolean {
     if (e.key !== 'Enter')
       return false;
@@ -213,14 +331,24 @@ export class DataTable<T> extends VirtualRows<T> {
     header.className = 'u2-data-table-header';
     header.setAttribute('role', 'row');
     header.style.gridTemplateColumns = this._template;
-    header.style.height = `${this.itemHeight}px`;
+    header.style.height = `${this._headerHeight}px`;
+    this.root.style.setProperty('--u2-data-table-header-height', `${this._headerHeight}px`);
+    header.classList.toggle('u2-data-table-sortable', this._sort !== undefined);
     for (const column of this._columns) {
       const cell = document.createElement('div');
       cell.className = `${DataTable._cellClass(column)} u2-data-table-head`;
       cell.setAttribute('role', 'columnheader');
-      cell.textContent = cell.title = column.header ?? column.name;
+      cell.dataset.column = column.name;
+      const label = document.createElement('span');
+      label.className = 'u2-data-table-head-label';
+      label.textContent = cell.title = column.header ?? column.name;
+      const resize = document.createElement('div');
+      resize.className = 'u2-data-table-resize';
+      cell.append(label, resize);
       header.append(cell);
     }
+    if (this._sort !== undefined)
+      this._showSort(this._sort.peek(), header);
     return header;
   }
 

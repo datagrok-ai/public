@@ -1,15 +1,11 @@
-/* `domains.bulkEdit` (WO 3-8) on the memory backend: only targets that can be written are offered
-   (never "all N matching" while a search the server cannot take is set), whatever blocks OK is OK's
-   tooltip from the start and a line above the buttons once the user acted, the include checkbox — outside the input it enables —
-   decides what is sent, nothing in the dialog is "required" (a checked field left empty CLEARS
-   the column), the unsaved gate runs before it opens, and the report speaks the table's words. */
+/* `domains.bulkEdit` on the memory backend. */
 
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test, mock} from 'node:test';
+import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, Control, Tooltip, notify} from '@datagrok-libraries/u2';
+import {backends, Scope, Control, notify} from '@datagrok-libraries/u2';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {SCHEMA, backend} from './domain-fixtures.mjs';
 
@@ -40,36 +36,28 @@ function scoped(name, body) {
 
 const buttonNamed = (text) => [...document.body.querySelectorAll('.u2-dialog button')]
   .find((b) => b.textContent === text);
-const includeBox = (name) => document.querySelector(`[data-u2-include="${name}"]`);
-const field = (name) => Control.forElement(includeBox(name).parentElement.querySelector('.u2-input-root'));
+const control = (name) => Control.forElement(document.querySelector(`.u2-dialog [data-u2-name="${name}"]`));
+const field = (name) => control(name);
+const shown = (name) => document.querySelector(`.u2-dialog [data-u2-name="${name}"]`)?.closest('[hidden]') === null;
 const balloon = (kind) => document.body.querySelector(`.u2-notify-${kind}`)?.textContent ?? '';
 const issues = (memory) => memory.tableSync('grit.issue').rows;
 
-/** A real click, as a user's is: the box activates itself and the input follows. */
-function check(name) {
-  includeBox(name).click();
+/** The field picker: what the edit changes, by column name. */
+const picker = () => control('fields');
+const offered = () => picker().getItems({all: true}).list.map((i) => i.key);
+function choose(...names) {
+  picker().value.value = names;
 }
 
-/** The target picker: its value is `selected` or `matching`. */
-const target = () => Control.forElement(document.querySelector('[data-u2-name="target"]'));
-const targets = () => [...target().root.querySelectorAll('option')].map((o) => o.textContent);
-/** What blocks OK, said in the dialog rather than across the screen — once the user has acted. */
-const reason = () => document.body.querySelector('.u2-domain-bulk-reason')?.textContent ?? '';
-const okDisabled = () => buttonNamed('OK').disabled === true;
-
-/** What OK's tooltip says: why it is off, from the start — its hover delay run on fake timers. */
-function okTooltip() {
-  const ok = buttonNamed('OK');
-  mock.timers.enable({apis: ['setTimeout']});
-  try {
-    fire(ok, 'pointerenter');
-    mock.timers.tick(300);
-    return Tooltip.root.textContent;
-  } finally {
-    fire(ok, 'pointerleave');
-    mock.timers.reset();
-  }
-}
+/** "Apply to": a choice where there are two targets, plain text where there is one. */
+const target = () => control('target');
+const targets = () => target().items;
+const targetText = () => document.querySelector('.u2-dialog [data-u2-name="target"]').textContent;
+/** The primary button — its caption follows the target. */
+const ok = () => [...document.querySelectorAll('.u2-dialog [data-u2-part="footer"] button')].at(-1);
+const okDisabled = () => ok().disabled === true;
+/** What blocks the button, said in the footer beside it. */
+const reason = () => document.querySelector('.u2-dialog [data-u2-part="footer"] [data-u2-part="reason"]');
 
 /** The dialog up and rendered; the promise is handed back WRAPPED — an async function
  * returning it would chain on it and never come back until the dialog is answered. */
@@ -109,25 +97,24 @@ scoped('the checked columns are written to the selection; an unchecked one is le
   assert.deepEqual(source.selection.value.map((r) => r.id), ['i1', 'i3']);
 
   const {running} = await opened(source);
-  assert.equal(target().value.value, 'selected', 'a selection is the default target');
-  assert.deepEqual(targets(), ['2 selected', 'all 3 matching'], 'no empty option in front of the targets');
-  assert.equal(includeBox('id'), null, 'a system column is not offered');
-  // the box is OUTSIDE the input's root: inside a disabled one it would be dead (BULK-CHECKBOX)
-  assert.equal(includeBox('done').parentElement.classList.contains('u2-domain-bulk-row'), true);
-  assert.equal(field('done').enabled, false, 'an unchecked column has no editor');
+  assert.equal(target().value.value, '2 selected issues', 'a selection is the default target');
+  assert.deepEqual(targets(), ['2 selected issues', 'All 3 issues matching the filter'],
+    'no empty option in front of the targets');
+  assert.equal(offered().includes('id'), false, 'a system column is not offered');
+  assert.equal(shown('done'), false, 'an unchecked column has no editor');
   assert.equal(okDisabled(), true);
-  assert.equal(reason(), '', 'nothing is wrong before the user did anything');
-  assert.match(await okTooltip(), /Check the fields to write/, 'OK says why it is off');
+  assert.equal(reason().textContent, 'Choose the fields to change');
   assert.equal(field('title').root.querySelector('.u2-input-error')?.textContent ?? '', '',
-    'nothing in a bulk dialog is required: an empty checked field CLEARS the column');
-  check('done');
+    'nothing is red before the user did anything');
+  choose('done');
   await flush();
-  assert.equal(field('done').enabled, true, 'a real click on the box enables the input');
+  assert.equal(shown('done'), true, 'choosing the column shows its editor');
+  assert.equal(field('done').enabled, true);
   assert.equal(okDisabled(), false);
-  assert.equal(reason(), '');
+  assert.equal(reason().textContent, '');
   field('done').value.value = true;
   field('title').value.value = 'NOT WRITTEN';
-  fire(buttonNamed('OK'), 'click');
+  fire(ok(), 'click');
   assert.equal(await running, 1, 'Aspirin is already done: only the row the values change is written');
   assert.match(balloon('info'), /Updated 1 issue\./, 'the table\'s words, never "rows"');
 
@@ -144,12 +131,7 @@ scoped('nothing checked keeps OK disabled and says so inline; CANCEL resolves nu
   select(source, () => true);
   const {running} = await opened(source);
   assert.equal(okDisabled(), true);
-  assert.equal(reason(), '', 'a dialog just opened is not wrong yet');
-  assert.match(await okTooltip(), /Check the fields to write/);
-  check('done');
-  check('done');
-  await flush();
-  assert.match(reason(), /Check the fields to write/, 'once the user acted, the line says it');
+  assert.match(reason().textContent, /Choose the fields to change/);
   assert.equal(balloon('warning'), '', 'a refusal is not a balloon on the far edge of the screen');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
@@ -163,11 +145,11 @@ scoped('a selection past the cap disables OK and says how many are selected', as
   select(source, () => true);
   assert.equal(source.selection.value.length, 1001);
   const {running} = await opened(source);
-  check('done');
+  choose('done');
   await flush();
   field('done').value.value = true;
   assert.equal(okDisabled(), true);
-  assert.match(reason(), /at most 1000 issues at a time; 1001 are selected/);
+  assert.match(reason().textContent, /at most 1000 issues at a time; 1001 are selected/);
   assert.equal(issues(memory).filter((r) => r.done === true).length, 0, 'nothing was written');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
@@ -178,11 +160,11 @@ scoped('"all matching" writes the list\'s filter, capped, and reports that more 
   const memory = many(1001);
   const {source} = await table(memory, {query: 'done = false'});
   const {running} = await opened(source);
-  assert.deepEqual(targets(), ['all 1001 matching'], 'nothing selected: the filter is the only target');
-  check('done');
+  assert.equal(targetText(), 'Apply toAll 1,001 issues matching the filter', 'nothing selected: the filter is the only target');
+  choose('done');
   await flush();
   field('done').value.value = true;
-  fire(buttonNamed('OK'), 'click');
+  fire(ok(), 'click');
   assert.equal(await running, 1000);
   assert.match(balloon('info'), /Updated 1000 issues — more match/);
   assert.equal(issues(memory).filter((r) => r.done === true).length, 1000);
@@ -194,7 +176,7 @@ scoped('no target the server would take: the dialog never opens, and says the wa
   const {source} = await table(memory);
   assert.equal(await domains.bulkEdit(source), null, 'nothing selected and nothing filtered');
   assert.match(balloon('warning'), /Select the issues to write, or filter the list/);
-  assert.equal(includeBox('done'), null, 'no dialog promising a target it would then refuse');
+  assert.equal(picker(), undefined, 'no dialog promising a target it would then refuse');
 
   notify.closeAll();
   source.query.value = 'done = false';
@@ -213,7 +195,7 @@ scoped('a search with a selection still offers the selection alone', async () =>
   await flush();
   select(source, () => true);
   const {running} = await opened(source);
-  assert.deepEqual(targets(), ['1 selected'], 'the filter target is not offered under a search');
+  assert.equal(targetText(), 'Apply to1 selected issue', 'the filter target is not offered under a search');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
   source.dispose();
@@ -226,7 +208,7 @@ scoped('the unsaved gate runs before the dialog opens', async () => {
   assert.equal(source.isDirty.value, true);
   const running = domains.bulkEdit(source);
   await flush();
-  assert.equal(includeBox('done'), null, 'the bulk dialog is not up yet');
+  assert.equal(picker(), undefined, 'the bulk dialog is not up yet');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null, 'a cancelled gate cancels the whole thing');
 
@@ -235,7 +217,7 @@ scoped('the unsaved gate runs before the dialog opens', async () => {
   fire(buttonNamed('DISCARD'), 'click');
   await flush();
   assert.equal(source.isDirty.value, false);
-  assert.notEqual(includeBox('done'), null, 'and a discard lets it through');
+  assert.notEqual(picker(), undefined, 'and a discard lets it through');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await second, null);
   source.dispose();
@@ -262,11 +244,11 @@ scoped('the list\'s own selection is the collection\'s, and only a user makes on
   assert.deepEqual(source.selection.value.map((r) => r.id), ['i1', 'i3']);
 
   const {running} = await opened(source);
-  assert.deepEqual(targets(), ['2 selected']);
-  check('done');
+  assert.equal(targetText(), 'Apply to2 selected issues');
+  choose('done');
   await flush();
   field('done').value.value = true;
-  fire(buttonNamed('OK'), 'click');
+  fire(ok(), 'click');
   assert.equal(await running, 1, 'Aspirin is already done');
   assert.deepEqual(issues(memory).map((r) => r.done), [true, false, true]);
 
@@ -300,7 +282,7 @@ scoped('a trash source is refused: deleted rows are read-only until they are res
   assert.deepEqual(source.rows.items.value.map((r) => r.title), ['Ibuprofen']);
   assert.equal(await domains.bulkEdit(source), null);
   assert.match(balloon('warning'), /deleted rows are read-only/);
-  assert.equal(includeBox('done'), null, 'no dialog, and nothing posted');
+  assert.equal(picker(), undefined, 'no dialog, and nothing posted');
   assert.deepEqual(issues(memory).map((r) => r.version), [1, 2, 1]);
   source.dispose();
 });

@@ -692,6 +692,17 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
 
   protected abstract createEditor(): HTMLElement;
 
+  /** The ✕ at the end of a box. */
+  protected createClearButton(onClear: () => void, label = 'Clear'): HTMLButtonElement {
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'u2-input-clear';
+    clear.textContent = '✕';
+    clear.setAttribute('aria-label', label);
+    this.scope.listen(clear, 'click', onClear);
+    return clear;
+  }
+
   /** What `required` refuses: {@link isEmpty}, unless the value has its own nothing — a filter
    * without conditions. */
   protected isEmptyValue(value: T): boolean {

@@ -10,7 +10,7 @@ import type {FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterSca
   RowsLike, RowValues, RowView, DataFrameLike, BindProp, BindSource, ComponentEnv,
   ComponentStart} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
-import {emsBackends, DomainBackendError} from './domain-backend.js';
+import {emsBackends, DomainBackendError, capital, nounOf} from './domain-backend.js';
 import type {DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike, DomainReadScope,
   DomainTableInfoLike, DomainTableLike} from './domain-backend.js';
 import {SharedSession} from './session.js';
@@ -126,6 +126,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** How a refusal the writer raised over one cell is worded; the table's registry sets it (the
    * row's caption and the column's), and without it the writer's own message stands. */
   nameCell: ((row: RowView, column: string, problem: string) => string) | undefined;
+  /** The row's caption as the table's renderer gives it; the registry sets it. */
+  caption: ((row: RowView) => string) | undefined;
   /** The ids of the rows one host condition (`FilterOperator.host`) matches — the app's answer, put in place
    * of the condition before every read. */
   hosted: ((condition: FilterCondition, signal?: AbortSignal) => Promise<string[]>) | undefined;
@@ -137,6 +139,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly isDirty: ReadonlySignal<boolean>;
   readonly changeCount: ReadonlySignal<number>;
   readonly validity: ReadonlySignal<string | null>;
+  /** Why Save stays off: an unanswered refusal, then {@link validity}. */
+  readonly blocked: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   /** "50 of 2,077", "12 issues", "3 unsaved changes" — what a status bar shows. */
   readonly summary: ReadonlySignal<string>;
@@ -241,6 +245,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
           return problem.value;
       }
       return this._edit.value?.validity.value ?? null;
+    });
+    this.blocked = computed(() => {
+      const error = this._error.value;
+      const code = (error as {code?: unknown} | undefined)?.code;
+      if ((code === 'validation' || code === DomainSource.REFUSED) && this._state.value !== 'error')
+        return DomainSource._message(error);
+      return this.validity.value;
     });
     this.isSaving = computed(() => this._edit.value?.isSaving.value ?? false);
     this.summary = computed(() => this._summary());
@@ -1019,22 +1030,22 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return plural(changes, 'unsaved change', 'unsaved changes');
     }
     const state = this.state.value;
-    const singular = this._schema.info.singularName.toLowerCase() || 'row';
+    const singular = nounOf(this._schema.info, true);
     // a draft is a row, not a row of the table yet; a draft source is a create form until the
     // draft is saved — then it holds the row it made, and says so, until the next New
     const loaded = items.filter((r) => !Rows.isDraft(r)).length;
     if (this.isDraft && (loaded === 0 || (this.currentRow.value !== null && Rows.isDraft(this.currentRow.value))))
       return state === 'ready' ? `New ${singular}` : state === 'loading' ? 'Loading…' : '';
     if (this.isDraft)
-      return `${singular.charAt(0).toUpperCase()}${singular.slice(1)} saved`;
+      return `${capital(singular)} saved`;
     if (state !== 'ready' && loaded === 0)
       return state === 'loading' ? 'Loading…' : '';
     const total = this.total.value;
-    const many = this._schema.info.pluralName.toLowerCase() || 'rows';
+    const many = nounOf(this._schema.info);
     if (this.deleted.value === 'only')
       return plural(total ?? loaded, `deleted ${singular}`, `deleted ${many}`);
     return !this.isDraft && total !== null && loaded < total ?
-      `${loaded.toLocaleString()} of ${total.toLocaleString()}` :
+      `${loaded.toLocaleString()} of ${total.toLocaleString()} ${many}` :
       plural(loaded, singular, many);
   }
 

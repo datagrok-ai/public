@@ -86,7 +86,7 @@ source('load: rows by id, total, access, schema and the summary', async () => {
   assert.equal(src.state.value, 'ready');
   assert.deepEqual(titles(src), ['Aspirin', 'Ibuprofen']);
   assert.equal(src.total.value, 3);
-  assert.equal(src.summary.value, '2 of 3');
+  assert.equal(src.summary.value, '2 of 3 issues');
   assert.equal(src.rows.byKey('i2').title, 'Ibuprofen');
   assert.equal(src.rows.keyOf(src.rows.items.value[0]), 'i1');
   assert.equal(src.access.value.field('title'), 'editable');

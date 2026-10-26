@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Locations: Added New container to a location's context menu
+* Locations: Showed the container count in the Containers header
+* Locations: Fixed the containers table not scrolling to every container
+* Containers: Site suggests the sites already in use
 * Locations: New container says "Select a location first" as a u2 tooltip, on hover and on keyboard focus, and stays reachable by Tab while disabled
 * u2: Took u2's stylesheet from u2 itself (installed once per page, the newest copy any package carries) instead of the EMS sheet bundle; republish with the other u2 packages
 * Fixed `app.spec.json`: `u2-domain-source` moved to the components tray, so the spec renders
