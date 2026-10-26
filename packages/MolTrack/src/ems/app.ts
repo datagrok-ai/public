@@ -8,6 +8,7 @@ import type {CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
 import {CompoundsApp} from './compounds';
 import {MolTrackTables, SCHEMA} from './tables';
+import {getAppHeader, quickActionsWidget} from '../utils/view-utils';
 
 import '@datagrok-libraries/ems/src/dg/styles.js';
 import '../../css/moltrack-ems.css';
@@ -51,12 +52,20 @@ export class MolTrackEms {
         .then((n) => count.textContent = String(n), () => count.textContent = '?');
       return [entry.name, count];
     });
-    const view = DG.View.create();
+    const counts = ui.table(rows, (row) => row);
+    counts.classList.add('moltrack-ems-home-counts');
+    const actions = quickActionsWidget([
+      {label: 'Register compound', run: () => void VIEWS.create(`${SCHEMA}.compound`)},
+      {label: 'Register batch', run: () => void VIEWS.create(`${SCHEMA}.compound_batch`)},
+      {label: 'Register assay', run: () => void VIEWS.create(`${SCHEMA}.assay`)},
+      {label: 'Register bulk', run: async () => void await domains.import(await MolTrackTables.compounds())},
+      {label: 'Search', run: () => void MolTrackEms.show('Compounds')},
+    ]);
+    const content = ui.divH([counts, actions]);
+    content.classList.add('moltrack-ems-home');
+    const view = DG.View.fromRoot(ui.divV([getAppHeader(), content]));
     view.name = 'MolTrack EMS';
     view.path = APP_PATH;
-    const table = ui.table(rows, (row) => row);
-    table.classList.add('moltrack-ems-home');
-    view.append(table);
     return view;
   }
 

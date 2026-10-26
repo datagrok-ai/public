@@ -32,9 +32,10 @@
 }
 
 .moltrack-ems-home {
-  align-self: flex-start;
+  gap: 50px;
+  margin-top: 20px;
 }
 
-.moltrack-ems-home td:first-child {
+.moltrack-ems-home-counts td:first-child {
   padding-right: 24px;
 }
