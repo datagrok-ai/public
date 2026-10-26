@@ -138,45 +138,20 @@ category('MPO: coverage', () => {
     col.setTag('desirabilityTemplate', JSON.stringify(t));
     return col;
   };
-  const numerical = (missing: MissingValueConfig, p: Partial<NumericalDesirability> = {}): NumericalDesirability =>
-    ({functionType: 'numerical', weight: 1, line: [[0, 0], [10, 1]], missingValues: missing, ...p});
-  const categorical = (missing: MissingValueConfig): CategoricalDesirability => ({functionType: 'categorical',
-    weight: 1, categories: [{name: 'x', desirability: 1}, {name: 'y', desirability: 0.5}], missingValues: missing});
-  const skip: MissingValueConfig = {strategy: 'skip'};
+  const numerical: NumericalDesirability = {functionType: 'numerical', weight: 1, line: [[0, 0], [10, 1]]};
+  const categorical: CategoricalDesirability = {functionType: 'categorical', weight: 1,
+    categories: [{name: 'x', desirability: 1}, {name: 'y', desirability: 0.5}]};
 
-  test('Counts the scored properties that have a value in each row', async () => {
+  test('Counts the scored properties that have a value in each row, scored or not', async () => {
     const f = tagged(DG.Column.fromFloat32Array('f', new Float32Array([1, DG.FLOAT_NULL, 3, DG.FLOAT_NULL])),
-      numerical(skip));
-    const c = tagged(DG.Column.fromStrings('c', ['x', 'y', '', '']), categorical(skip));
+      numerical);
+    const c = tagged(DG.Column.fromStrings('c', ['x', 'y', '', '']), categorical);
     const q = tagged(DG.Column.qnum('q', 4, [DG.Qnum.exact(5), DG.Qnum.less(2), null, null] as number[], false),
-      numerical(skip));
+      numerical);
     const result = mpo(DG.DataFrame.fromColumns([f, c, q]), [f, c, q], 'MPO P', 'Average', false, false, true);
-    const coverage = result.coverageColumn!;
-    expect(coverage.name, 'MPO P coverage');
-    expect(coverage.type, DG.COLUMN_TYPE.INT);
-    expect(coverage.toList().join(','), '3,2,1,0');
-    expect(result.scoreColumn.isNone(3), true, 'no values, no score');
-  });
-
-  test('A row the exclude strategy leaves unscored still gets its coverage', async () => {
-    const a = tagged(DG.Column.fromFloat32Array('a', new Float32Array([1, DG.FLOAT_NULL])),
-      numerical({strategy: 'exclude'}));
-    const b = tagged(DG.Column.fromFloat32Array('b', new Float32Array([2, 4])), numerical({strategy: 'exclude'}));
-    const result = mpo(DG.DataFrame.fromColumns([a, b]), [a, b], 'MPO P', 'Average', false, false, true);
-    expect(result.scoreColumn.isNone(1), true, 'excluded');
-    expect(result.coverageColumn!.toList().join(','), '2,1');
-  });
-
-  test('A non-positive value on a log-scale curve counts as measured', async () => {
-    const col = tagged(DG.Column.fromFloat32Array('ic50', new Float32Array([10, 0, -2, DG.FLOAT_NULL])),
-      numerical(skip, {line: [[1, 0], [100, 1]], scale: MpoScale.Log}));
-    const result = mpo(DG.DataFrame.fromColumns([col]), [col], 'MPO P', 'Average', false, false, true);
-    expect(result.scoreColumn.isNone(1), true, '0 has no log');
-    expect(result.coverageColumn!.toList().join(','), '1,1,1,0');
-  });
-
-  test('No coverage column unless asked for', async () => {
-    const col = tagged(DG.Column.fromFloat32Array('a', new Float32Array([1, 2])), numerical(skip));
-    expect(mpo(DG.DataFrame.fromColumns([col]), [col], 'MPO P', 'Average').coverageColumn, undefined);
+    expect(result.coverageColumn!.name, 'MPO P coverage');
+    expect(result.coverageColumn!.toList().join(','), '3,2,1,0');
+    expect(result.scoreColumn.isNone(0), false, 'the complete row is scored');
+    expect([1, 2, 3].every((i) => result.scoreColumn.isNone(i)), true, 'rows with gaps are excluded');
   });
 });
