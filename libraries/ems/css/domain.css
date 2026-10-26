@@ -802,6 +802,16 @@
   padding: var(--dg-space-s) var(--dg-space-m) 0;
 }
 
+/* the crumb row is the page's title: the record it names reads as a heading, not as a value */
+.u2-domain-app > .u2-breadcrumbs .u2-breadcrumbs-current {
+  font-size: var(--dg-font-size-h1);
+  font-weight: var(--dg-font-weight-medium);
+}
+
+.u2-domain-app > .u2-breadcrumbs > :first-child {
+  padding-left: 0;
+}
+
 .u2-domain-app-header {
   flex: none;
   padding: 0 var(--dg-space-m);
