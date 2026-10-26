@@ -8,7 +8,8 @@
    the rows every registry and source hands out; the default reads any column as unknown. */
 import {emsBackends} from '../core/domain-backend.js';
 import * as DG from 'datagrok-api/dg';
-import {Access, Rows, allowedActions, divV, span, timestamp, text, notify, plural, untracked} from '@datagrok-libraries/u2';
+import {Access, Rows, allowedActions, divV, span, timestamp, text, notify, plural, untracked}
+  from '@datagrok-libraries/u2';
 import type {Capability, IProperty, ObjectRenderer, Action, ColumnOf, DomainRowLike, RowValues, RowView,
   ReadonlySignal, NotifyHandle} from '@datagrok-libraries/u2';
 import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
