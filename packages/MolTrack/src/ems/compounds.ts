@@ -41,7 +41,7 @@ export class CompoundsApp extends DomainApp {
       const row = source.currentRow.value as RowView<CompoundRow> | null;
       if (row === null)
         return;
-      this._showIdentity(row, null);
+      this._showIdentity(row, null, row.original_structure);
       this.header.append(this._identity);
       return () => this._identity.remove();
     });
@@ -120,18 +120,28 @@ export class CompoundsApp extends DomainApp {
         (row as Record<string, unknown>)[column] = value;
     }
     this.form.peek()?.input('original_structure')?.revalidate();
-    this._showIdentity(identity, verdict.problem);
+    this._showIdentity(identity, verdict.problem, input);
   }
 
-  private _showIdentity(identity: Partial<CompoundIdentity> | null, problem: string | null): void {
+  private _showIdentity(identity: Partial<CompoundIdentity> | null, problem: string | null,
+    original: string | null = null): void {
     const shown = (column: keyof CompoundIdentity) => isEmpty(identity?.[column]) ? '—' : identity![column]!;
     const rule = shown('match_rule');
-    // the parent is drawn, not spelled out; the rows stack under it so they form no third caption column
+    // the parent is drawn, not spelled out — only where it is not the Structure the form draws
+    // already (a salt or a charge taken off); the rows stack under it so they form no third caption column
+    const parent = ui.div([]);
+    const structure = identity?.structure;
+    if (!isEmpty(structure)) {
+      void Chemistry.same(original ?? '', structure!).catch(() => false).then((same) => {
+        if (!same)
+          parent.append(grok.chem.drawMolecule(structure!, 160, 120));
+      });
+    }
     this._identity.replaceChildren(this._identityHeading,
       ...(problem === null ? [] : [ui.divText(problem, 'moltrack-ems-problem')]),
       identity === null ? ui.divText(problem === null ? 'Draw a structure to see its identity' : '',
         'moltrack-ems-hint') :
-        ui.divV([...(isEmpty(identity.structure) ? [] : [grok.chem.drawMolecule(identity.structure!, 160, 120)]),
+        ui.divV([parent,
           ui.tableFromMap({'Formula': shown('formula'), 'InChIKey': shown('inchikey'),
             'Matching rule': `${rule.charAt(0)}${rule.slice(1).toLowerCase().replace(/_/g, ' ')}`})]));
   }
