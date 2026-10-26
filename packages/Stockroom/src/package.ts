@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {button, computed, Control, Section, Splitter} from '@datagrok-libraries/u2';
+import type {RowView, Text} from '@datagrok-libraries/u2';
 import {SharedSession} from '@datagrok-libraries/ems';
 import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
 import {domains, DomainApp} from '@datagrok-libraries/ems/src/dg';
@@ -88,7 +89,7 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
     const node = tree.selected.value;
     source.query.value = node === null ? '' : `location_id under "${node.id}"`;
   });
-  // the two panes say what they are, and the status says what the tree did to the collection
+  // the two panes say what they are, and the containers' header says what the tree did to the collection
   const where = computed(() => {
     const node = tree.selected.value;
     return node === null ? source.summary.value :
@@ -109,17 +110,16 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
     // a disabled button takes no pointer events, so the hover that shows the hint lands on the host
     add.root.title = addButton.title = none ? 'Select a location first' : '';
   });
-  const section = (title: string, content: Control): Section => new Section({title, collapsible: false})
-    .add(content);
-  const panes = new Splitter([section('Locations', tree), section('Containers', table)],
-    {direction: 'horizontal', sizes: [0.35, 0.65]});
+  const section = (title: string, content: Control, hint?: Text): Section =>
+    new Section({title, collapsible: false, hint}).add(content);
+  const panes = new Splitter([section('Locations', tree), section('Containers', table, where)],
+    {direction: 'horizontal', sizes: [0.22, 0.78]});
   panes.root.classList.add('stockroom-locations');
   return appView({
     name: 'Locations',
     content: panes,
     own: [source],
     ribbon: [[add]],
-    status: where,
     path: '/apps/Stockroom/Locations',
   });
 }

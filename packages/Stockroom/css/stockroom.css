@@ -10,6 +10,7 @@
   flex: 1;
   flex-direction: column;
   min-height: 0;
+  padding: 0 var(--dg-space-m);
 }
 
 .stockroom-locations > .u2-splitter-panel > .u2-section > .u2-section-body {
