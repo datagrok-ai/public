@@ -97,6 +97,14 @@ export class DomainList extends Control {
     });
 
     pageOnScroll(this, this.list, source);
+    // a line the row's width cuts reads in full on hover — whatever renderer drew it
+    const onOver = (e: Event) => {
+      const el = e.target as HTMLElement;
+      if (el.closest('.u2-domain-list-content') !== null && el.title === '' && el.scrollWidth > el.clientWidth)
+        el.title = el.textContent ?? '';
+    };
+    this.list.root.addEventListener('mouseover', onOver);
+    this.own(() => this.list.root.removeEventListener('mouseover', onOver));
 
     const status = div([], 'u2-domain-list-status');
     status.dataset.u2Part = 'status';

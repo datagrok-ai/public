@@ -612,6 +612,12 @@ scoped('a seeded row is current but no pick; a pending delete reads with an Undo
   assert.equal(row(1).classList.contains('u2-list-row-current'), true);
   assert.equal(row(0).classList.contains('u2-list-row-current'), false);
 
+  const name = row(0).querySelector('.u2-domain-list-content');
+  Object.defineProperty(name, 'scrollWidth', {value: 300, configurable: true});
+  Object.defineProperty(name, 'clientWidth', {value: 100, configurable: true});
+  fire(name, 'mouseover');
+  assert.equal(name.title, name.textContent, 'a cut line reads in full on hover');
+
   src.edit.value.markDeleted('i2');
   await flush();
   const deleted = list.list.root.querySelector('[data-u2-row="i2"]');
