@@ -60,7 +60,7 @@ Every scaffold there is sketched by hand, so none of them runs the Python tree g
 
 4. **The filter card variant of public#2135**: `filters/MISSING.md`, item 1.
 
-## Seen while writing (not a closed issue, proposed for a check by hand)
+## Seen while writing (not a closed issue; not reproduced by hand)
 
 - **A node checked right after it is added filters out every row, and stays so.** On spgi-100 with OpenChemLib:
   Chem | Analyze | Scaffold Tree, Sketch scaffolds manually, `c1ccncc1`, Enter, Add, and the node's checkbox
@@ -70,3 +70,5 @@ Every scaffold there is sketched by hand, so none of them runs the Python tree g
   node afterwards recomputes the filter (32 rows for a checked benzene). The regression scenarios wait for the
   hits before checking, as `scaffold-tree.feature` does. A person needs to click within the node's search time
   to meet it; the suspect is the filter applied from the node's bitset before its search has set it.
+  Not reproduced by hand on dev (Olesia Pavlenko, 26 Oct 2026): seen only at automation speed on localhost, so
+  no issue was filed.
