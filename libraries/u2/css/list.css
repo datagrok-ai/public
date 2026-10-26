@@ -74,14 +74,14 @@
 }
 
 /* on a list row the block floats over the row's end instead of reserving it: the text runs to the
-   edge and the actions cover its tail on hover */
+   edge and the actions cover its tail on hover, in the row's own colour when a list sets --u2-row-bg */
 .u2-list-row .u2-row-actions {
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
   padding: 0 var(--dg-space-m) 0 var(--dg-space-s);
-  background: var(--dg-hover-subtle);
+  background: var(--u2-row-bg, var(--dg-hover-subtle));
 }
 
 /* the platform's hover icons (Chem's scaffold tree): actions in blue, a destructive one in red */
