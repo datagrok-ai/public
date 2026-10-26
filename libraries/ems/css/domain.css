@@ -560,17 +560,64 @@
   display: none;
 }
 
-/* import: the wizard's steps stack, and only the mapping table scrolls */
-.u2-domain-import-mapping {
-  height: 260px;
+/* import: each step fills the fixed dialog, and its table takes the room the rest leaves and
+   scrolls itself */
+.u2-domain-import .u2-wizard-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.u2-domain-import .u2-wizard-panel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.u2-domain-import-mapping-step {
+  flex: 1 1 auto;
+  gap: var(--dg-space-s);
+  min-height: 0;
+}
+
+.u2-domain-import-mapping,
+.u2-domain-import-rows {
+  flex: 1 1 auto;
+  min-height: 120px;
   overflow: auto;
 }
 
-/* the preview draws the first rows as they would land, the report every row's outcome: a fixed
-   window, its own scroller, as tall as the dialog leaves room for */
-.u2-domain-import-rows {
-  height: 300px;
-  overflow: auto;
+/* what was picked, under the picker and past its label column */
+.u2-domain-import-picked {
+  padding-left: calc(var(--u2-form-label-width, 100px) + var(--dg-space-m));
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-domain-import-picked:empty {
+  display: none;
+}
+
+/* the target choice fills its cell */
+.u2-domain-import-mapping .u2-data-table-cell > .u2-input-root {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.u2-domain-import-mapping .u2-data-table-cell > .u2-input-root .u2-input-editor {
+  width: 100%;
+}
+
+/* the reason is in the footer; the row only turns red */
+.u2-domain-import-mapping .u2-input-error {
+  display: none;
+}
+
+/* a column left out reads as left out */
+.u2-domain-import-mapping .u2-data-table-row:has(.u2-domain-import-skipped),
+.u2-domain-import-skipped .u2-input-editor {
+  color: var(--dg-text-color-light);
 }
 
 /* each cell fills the row's height, so a refused empty cell still shows its tint */
@@ -593,9 +640,34 @@
 .u2-domain-import-preview,
 .u2-domain-import-report {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: var(--dg-space-s);
   min-height: 0;
+}
+
+/* the outcome a step leads with: the counts, each after its dot */
+.u2-domain-import-outcome {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dg-space-l);
+  font-size: var(--dg-font-size-h1);
+}
+
+.u2-domain-import-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+}
+
+.u2-domain-import-aborted .u2-domain-import-outcome {
+  color: var(--dg-error);
+}
+
+.u2-domain-import-result {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
 }
 
 .u2-domain-import-problem {
@@ -604,12 +676,6 @@
 
 .u2-domain-import-summary {
   color: var(--dg-text-color-light);
-}
-
-.u2-domain-import-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: var(--dg-space-m);
 }
 
 .u2-domain-import-issues {

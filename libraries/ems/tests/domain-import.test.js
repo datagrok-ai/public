@@ -47,6 +47,12 @@ const named = (name) => Control.forElement(document.querySelector(`[data-u2-name
 const reason = () => document.body.querySelector('.u2-wizard-reason')?.textContent ?? '';
 const mapping = () => document.body.querySelector('.u2-domain-import-mapping');
 const issues = (memory) => memory.tableSync('grit.issue').rows;
+/** The outcome a step leads with, one entry per count. */
+const counts = (step) => [...document.body.querySelectorAll(`.u2-domain-import-${step} .u2-domain-import-count`)]
+  .map((c) => c.textContent);
+/** The report's BACK, in the wizard's footer — shown only after an aborted run. */
+const reportBack = () => [...document.body.querySelectorAll('.u2-dialog .u2-wizard-buttons button')]
+  .find((b) => b.textContent === 'BACK' && b.style.display !== 'none');
 
 /** A source frame of the given columns: every value a string, as a CSV import delivers them. */
 function frame(columns, rows, name = 'import.csv') {
@@ -99,6 +105,8 @@ scoped('the mapping is auto-matched by name and caption; a system column is neve
   const labels = named('title').items.map((x) => typeof x === 'string' ? x : x.label);
   assert.equal(labels.some((l) => l === 'Id' || l === 'Version'), false, 'the system columns are not offered');
   assert.equal(labels.includes('Title *'), true, 'a target the table will not take empty carries the asterisk');
+  assert.equal(labels.includes('Don\'t import'), true, 'leaving a column out reads as that, not as a target');
+  assert.equal(named('nonesuch').root.classList.contains('u2-domain-import-skipped'), true, 'and its row is muted');
   assert.equal(labels.includes('Description'), true, 'and one it will takes none');
   assert.equal(named('title').root.classList.contains('u2-input-required'), true,
     'the choice standing on a required target wears the form convention');
@@ -144,7 +152,12 @@ scoped('every blocking problem the wizard gates on', async () => {
   };
   named('name2').value.value = 'title';
   await flush();
-  assert.match(await proceed(), /Two source columns are mapped to "title"/);
+  assert.match(await proceed(), /Columns "title" and "name2" are both mapped to "Title"/,
+    'the target by its caption, both columns by name');
+  assert.equal(named('title').root.querySelector('.u2-invalid') !== null, true, 'both choices are marked');
+  assert.equal(named('name2').root.querySelector('.u2-invalid') !== null, true);
+  assert.match(document.body.querySelector('.u2-domain-import-mapping-step [data-u2="status-line"]').textContent,
+    /Required: Project id ✓, Title ✓ · 3 of 3 columns imported/);
 
   for (const column of ['project_id', 'title', 'name2'])
     named(column).value.value = '(skip)';
@@ -163,7 +176,7 @@ scoped('every blocking problem the wizard gates on', async () => {
   named('title').value.value = 'title';
   named('mode').value.value = 'upsert';
   await flush();
-  assert.match(await proceed(), /Upsert merges by the business key — map a column to "Number"/);
+  assert.match(await proceed(), /Add or update matches rows by Number — map a column to "Number"/);
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
 });
@@ -177,7 +190,7 @@ scoped('the preview is the backend\'s dry run: its verdicts, its counts, its iss
   await toMapping();
   await toPreview();
   const preview = document.body.querySelector('.u2-domain-import-preview');
-  assert.match(preview.textContent, /1 will be added, 0 updated, 0 skipped, 1 row has errors\./);
+  assert.deepEqual(counts('preview'), ['1 to add', '1 error'], 'one vocabulary, zeros left out');
   assert.match(reason(), /1 row has errors\. Uncheck "All or nothing" on Source to import the 1 valid row/,
     'the counts are per row; all-or-nothing makes one bad row the verdict on all of them');
   assert.match(preview.textContent, /Must be one of: low, high/,
@@ -236,8 +249,7 @@ scoped('a dry run that cannot reach the backend shows why and never blocks the i
   assert.equal(reason(), '', 'the commit is the authority: NEXT is not gated on the preview');
   fire(importButton(), 'click');
   await flush();
-  assert.match(document.body.querySelector('.u2-domain-import-report').textContent,
-    /1 inserted, 0 updated, 0 skipped, 0 failed/);
+  assert.deepEqual(counts('report'), ['1 added']);
   fire(buttonNamed('CLOSE'), 'click');
   assert.equal((await running).inserted, 1);
 });
@@ -263,8 +275,7 @@ scoped('a storage with no dry run previews the mapped rows without verdicts, and
   assert.equal(importButton().textContent, 'Import', 'nothing counted the rows that would land');
   fire(importButton(), 'click');
   await flush();
-  assert.match(document.body.querySelector('.u2-domain-import-report').textContent,
-    /1 inserted, 0 updated, 0 skipped, 0 failed/);
+  assert.deepEqual(counts('report'), ['1 added']);
   fire(buttonNamed('CLOSE'), 'click');
   const report = await running;
   assert.equal(report.inserted, 1);
@@ -284,8 +295,7 @@ scoped('only the mapped columns are posted, under their target names', async () 
   const landed = issues(memory).find((r) => r.title === 'Imported');
   assert.notEqual(landed, undefined, 'the row was inserted');
   assert.equal('note' in landed, false, 'a skipped source column never reached the backend');
-  assert.match(document.body.querySelector('.u2-domain-import-report').textContent,
-    /1 inserted, 0 updated, 0 skipped, 0 failed/);
+  assert.deepEqual(counts('report'), ['1 added']);
   fire(buttonNamed('CLOSE'), 'click');
   const result = await running;
   assert.equal(result.inserted, 1);
@@ -327,12 +337,17 @@ scoped('a refused row leaves nothing behind and the report says so', async () =>
   assert.match(shown, /Uncheck "All or nothing" to import the 1 valid row and skip the rest\./,
     'an aborted all-or-nothing run says what to change');
   assert.match(shown, /Title: Value can't be empty/, 'the per-row report names the field the row was refused on');
-  assert.match(shown, /Source row/, 'the issue lines are headed by the source row they are about');
+  const report = document.body.querySelector('.u2-domain-import-report .u2-domain-import-rows');
+  assert.deepEqual([...report.querySelectorAll('.u2-data-table-head')].map((c) => c.textContent), ['#', 'Result', 'Note'],
+    'the preview\'s headers, and no key column where no row has a key');
+  assert.equal(document.body.querySelector('.u2-wizard-step[data-id="report"]').classList.contains('u2-wizard-step-failed'),
+    true, 'the rail says the import failed');
+  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'no balloon repeats the open report');
   fire(buttonNamed('CLOSE'), 'click');
-  const report = await running;
-  assert.equal(report.error, 'validation', 'an allOrNothing abort answers the report, not a throw');
-  assert.equal(report.errorCount, 1);
-  assert.deepEqual(report.rows.map((r) => [r.index, r.status]), [[1, 'error']]);
+  const result = await running;
+  assert.equal(result.error, 'validation', 'an allOrNothing abort answers the report, not a throw');
+  assert.equal(result.errorCount, 1);
+  assert.deepEqual(result.rows.map((r) => [r.index, r.status]), [[1, 'error']]);
 });
 
 scoped('a table-level insert denial still opens the wizard; no visible column refuses it', async () => {
@@ -423,9 +438,8 @@ scoped('an aborted all-or-nothing run is not a dead end: BACK, the flag off, and
   await flush();
   fire(importButton(), 'click');
   await flush();
-  const back = [...document.body.querySelectorAll('.u2-domain-import-report button')]
-    .find((b) => b.textContent === 'BACK');
-  assert.notEqual(back, undefined, 'the report step offers the way back');
+  const back = reportBack();
+  assert.notEqual(back, undefined, 'the report step offers the way back, in its footer');
   fire(back, 'click');
   await flush();
   assert.notEqual(named('allOrNothing'), null, 'the source step is back');
@@ -485,8 +499,7 @@ scoped('an aborted run on a storage without partial imports never recommends the
   const shown = document.body.querySelector('.u2-domain-import-report').textContent;
   assert.match(shown, /Import aborted — 1 row has errors/);
   assert.doesNotMatch(shown, /Uncheck "All or nothing"/);
-  assert.notEqual([...document.body.querySelectorAll('.u2-domain-import-report button')]
-    .find((b) => b.textContent === 'BACK'), undefined, 'the way back is still the mapping');
+  assert.notEqual(reportBack(), undefined, 'the way back is still the mapping');
   fire(buttonNamed('CLOSE'), 'click');
   assert.equal((await running).error, 'validation');
 });
@@ -505,9 +518,8 @@ scoped('an upsert on a storage that cannot tell insert from update reports merge
   await toPreview();
   fire(importButton(), 'click');
   await flush();
-  assert.match(document.body.querySelector('.u2-domain-import-report').textContent,
-    /0 inserted, 2 merged, 0 skipped, 0 failed/);
-  assert.match(document.body.querySelector('.u2-notify-info').textContent, /0 inserted, 2 merged/);
+  assert.deepEqual(counts('report'), ['2 merged']);
+  assert.equal(document.body.querySelector('.u2-notify-info'), null, 'the open report is the answer, not a balloon');
   fire(buttonNamed('CLOSE'), 'click');
   const report = await running;
   assert.equal(report.merged, 2);
@@ -528,8 +540,7 @@ scoped('a warehouse refusal — the failing rows and no totals — still renders
   const shown = document.body.querySelector('.u2-domain-import-report').textContent;
   assert.match(shown, /Import aborted — 1 row has errors; nothing was committed\./);
   assert.match(shown, /Title is already used/, 'the row error is listed, a unique refusal in words');
-  assert.notEqual([...document.body.querySelectorAll('.u2-domain-import-report button')]
-    .find((b) => b.textContent === 'BACK'), undefined, 'the way back stands');
+  assert.notEqual(reportBack(), undefined, 'the way back stands');
   fire(buttonNamed('CLOSE'), 'click');
   assert.equal((await running).error, 'validation');
 });
@@ -558,13 +569,13 @@ scoped('an importer maps, derives and keeps rows out, and makes the preview its 
   fire(rows, 'scroll');
   await flush();
   const preview = document.body.querySelector('.u2-domain-import-preview').textContent;
-  assert.match(preview, /1 will be added, 0 updated, 2 skipped, 1 row has errors\./);
+  assert.deepEqual(counts('preview'), ['1 to add', '2 to skip', '1 error']);
   assert.match(preview, /Exists.*Already there.*Same as row 1.*Cannot read it/, 'the verdict\'s label on the badge');
   assert.match(preview, /Loud.*NEW.*GRIT/, 'and the importer\'s own column');
   fire(importButton(), 'click');
   await flush();
   await flush();
-  assert.match(document.body.querySelector('.u2-domain-import-report').textContent, /1 inserted, 0 updated, 2 skipped, 1 failed\./);
+  assert.deepEqual(counts('report'), ['1 added', '2 skipped', '1 error']);
   fire(buttonNamed('CLOSE'), 'click');
   const report = await running;
   assert.deepEqual(report.rows.map((r) => [r.index, r.status]), [[0, 'inserted'], [1, 'skipped'], [2, 'skipped'], [3, 'error']]);
@@ -600,7 +611,7 @@ scoped('the preview\'s button names what lands, and is held with the reason whil
   assert.equal(reason(), '');
   fire(importButton(), 'click');
   await flush();
-  assert.match(document.body.querySelector('.u2-domain-import-report').textContent, /2 inserted, 0 updated, 0 skipped, 1 failed/);
+  assert.deepEqual(counts('report'), ['2 added', '1 error']);
   fire(buttonNamed('CLOSE'), 'click');
   assert.equal((await running).inserted, 2);
 });
@@ -658,6 +669,44 @@ scoped('a row the dry run skips says why in the preview', async () => {
   assert.equal([...second.children].at(-1).textContent, 'Duplicate business key');
   assert.equal(first.children[4].title, 'New', 'a cell a narrow column cuts reads in full on hover');
   assert.equal(importButton().textContent, 'Import 1 issue');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
+scoped('the source step speaks the task: what was picked, where the keys go, and what a duplicate is', async () => {
+  const grok = await import('datagrok-api/grok');
+  const memory = backend();
+  emsBackends.domain = memory;
+  const handle = await domains.table('grit.project');
+  const only = frame(['key', 'name'], [{key: 'A', name: 'A'}, {key: 'B', name: 'B'}], 'projects.csv');
+  grok.shell.addTable(only);
+  try {
+    const running = domains.import(handle);
+    await flush();
+    assert.equal(named('source').value.value, only, 'the one open table is picked');
+    assert.equal(document.body.querySelector('.u2-domain-import-picked').textContent, '2 rows, 2 columns');
+    assert.equal(named('writeBack').label, 'Write Key back to projects.csv', 'the key, back into the picked table');
+    assert.equal(named('errorOnDuplicate').label, 'Existing projects are errors');
+    named('mode').value.value = 'upsert';
+    await flush();
+    assert.equal(named('errorOnDuplicate').enabled, false);
+    assert.equal(named('errorOnDuplicate').tooltipText, 'Only when adding new rows', 'why it is off');
+    fire(buttonNamed('CANCEL'), 'click');
+    assert.equal(await running, null);
+  }
+  finally {
+    grok.shell.closeTable(only);
+  }
+});
+
+scoped('the preview says it shows only the first rows, after a dry run too', async () => {
+  const memory = backend();
+  const rows = Array.from({length: 25}, (_, i) => ({project_id: 'p1', title: `T${i}`}));
+  const {running} = await opened(memory, frame(['project_id', 'title'], rows));
+  await toMapping();
+  await toPreview();
+  assert.match(document.body.querySelector('.u2-domain-import-preview').textContent,
+    /Showing the first 20 of 25 rows\./);
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
 });
