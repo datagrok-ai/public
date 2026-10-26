@@ -521,3 +521,12 @@ smoke('okDisabled: OK is off while the reason speaks, and says why in its toolti
   dialog.close();
   name.dispose();
 });
+
+smoke('VB-20: onOK raises its button with `primary`, and only then', () => {
+  const plain = Dialog.create('Pick').onOK(() => {}).show();
+  assert.equal(plain.getButton('OK').classList.contains('u2-btn-primary'), false);
+  plain.close();
+  const commit = Dialog.create('Bulk edit').onOK(() => {}, {text: 'UPDATE 2 VENDORS', primary: true}).show();
+  assert.equal(commit.getButton('UPDATE 2 VENDORS').classList.contains('u2-btn-primary'), true);
+  commit.close();
+});
