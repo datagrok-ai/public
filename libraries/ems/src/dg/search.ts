@@ -1,7 +1,7 @@
 /* `domains.search` — the ribbon search box over a source: the search variant of `TextInput`
    (magnifier, ✕), writing `source.search` after a quiet spell, on Enter at once, cleared by
    Escape; two-way, so a search set in code shows in the box. The server runs it over the
-   table's `searchable` columns, AND-ed with the query. A search the USER makes goes through the
+   table's `searchable` columns, AND-ed with the query — what the placeholder and the tooltip say. A search the USER makes goes through the
    gate (STATE-CONTRACT H6), as the filters do — it answers at once while there is nothing to lose
    and refuses while a batch is being written back; cancel puts the previous text back. */
 import {computed, TextInput} from '@datagrok-libraries/u2';
@@ -19,13 +19,23 @@ export class DomainSearch extends TextInput {
   private _timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(readonly source: DomainSource, options: DomainSearchOptions = {}) {
+    // the box says what it searches, so it is not read as a second filter
     super({search: true, inline: true, name: 'search', value: source.search.peek(),
       placeholder: options.placeholder ?? computed(() => {
         source.state.value;
-        return `Search ${DomainTable.noun(source.schema.info)}…`;
+        const columns = DomainSearch.columns(source);
+        return columns.length === 0 || columns.length > 3 ? `Search ${DomainTable.noun(source.schema.info)}…` :
+          `Search ${columns.join(', ')}…`;
       })});
     this.root.classList.add('u2-domain-search');
     this.root.dataset.u2 = 'domain-search';
+    const box = this.root.querySelector('input')!;
+    this.effect(() => {
+      source.state.value;
+      const columns = DomainSearch.columns(source);
+      box.title = columns.length === 0 ? '' : `Finds the ${DomainTable.noun(source.schema.info)} whose ` +
+        `${columns.join(', ')} contain the text — within what the filter shows`;
+    });
     const wait = options.debounceMs ?? 300;
     const write = () => {
       this._cancel();
@@ -67,6 +77,15 @@ export class DomainSearch extends TextInput {
     this.own(() => {
       input.removeEventListener('keydown', onKeyDown);
       this._cancel();
+    });
+  }
+
+  /** The searched columns as the form captions them, in lower case. */
+  static columns(source: DomainSource): string[] {
+    const props = source.schema.properties;
+    return source.schema.info.searchableColumns.map((name) => {
+      const prop = props.find((p) => p.name === name);
+      return (prop?.friendlyName ?? prop?.caption ?? name.replace(/_/g, ' ')).toLowerCase();
     });
   }
 

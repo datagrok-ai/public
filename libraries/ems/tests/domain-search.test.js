@@ -56,7 +56,8 @@ scoped('typing searches after the pause; Enter at once; Escape clears; the total
   const search = domains.search(src, {debounceMs: 20});
   const input = search.root.querySelector('input');
   assert.equal(search.root.dataset.u2, 'domain-search');
-  assert.equal(input.placeholder, 'Search issues…');
+  assert.equal(input.placeholder, 'Search title, description…', 'names what it searches');
+  assert.match(input.title, /^Finds the issues whose title, description contain the text/);
   type(input, 'asp');
   assert.equal(src.search.value, '', 'not yet');
   await wait(30);
