@@ -78,8 +78,11 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
   // container another session moves in shows up here only because this asks for it
   const source = SharedSession.runWith(session, () =>
     containers.source({session, live: true, pageSize: 100, sort: 'label'}));
+  const addAt = (node: RowView) => newContainerAt(containers, node.id,
+    {site: typeof node.site === 'string' ? node.site : undefined, caption: locations.renderer.caption(node)});
   // the "all" row is the way back to every container once a node has been picked
-  const tree = domains.tree(locations, {allNode: 'All locations'});
+  const tree = domains.tree(locations, {allNode: 'All locations',
+    actions: [{name: 'New container', icon: 'plus', run: addAt}]});
   const table = domains.dataTable(source,
     {columns: ['label', 'substance_id', 'location_id', 'lot', 'quantity', 'unit', 'expires'],
       onActivate: (row) => containers.open(row)});
@@ -97,10 +100,8 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
   });
   const addButton = button('New container', () => {
     const node = tree.selected.value;
-    if (node !== null) {
-      newContainerAt(containers, node.id, {site: typeof node.site === 'string' ? node.site : undefined,
-        caption: locations.renderer.caption(node)});
-    }
+    if (node !== null)
+      addAt(node);
   });
   const add = new Control(addButton);
   add.root.dataset.u2 = 'new-container-button';
