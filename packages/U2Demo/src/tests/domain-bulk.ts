@@ -4,7 +4,7 @@
    prefixed per run and deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {Control, Tooltip} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {domains, DomainApp, DomainTable} from '@datagrok-libraries/ems/src/dg';
@@ -22,14 +22,13 @@ category('U2: domain bulk', () => {
   let ids: string[];
 
   async function ready(src: DomainSource): Promise<void> {
-    for (let i = 0; i < 200 && (src.state.value === 'idle' || src.state.value === 'loading'); i++)
-      await delay(50);
+    await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading',
+      () => `source is ${src.state.value}: ${String(src.error.value)}`);
     if (src.state.value !== 'ready')
       throw new Error(`source is ${src.state.value}: ${String(src.error.value)}`);
   }
 
   async function reloaded(): Promise<void> {
-    await delay(100);
     await ready(app.listSource);
   }
 
@@ -65,8 +64,7 @@ category('U2: domain bulk', () => {
    * that returns it would chain on it and only come back once the dialog is answered. */
   async function open(): Promise<{running: Promise<number | null>}> {
     const running = domains.bulkEdit(app.listSource);
-    for (let i = 0; i < 100 && control('fields') === undefined; i++)
-      await delay(50);
+    await waitUntil(() => control('fields') !== undefined, 'the bulk dialog is up', 5000);
     expect(control('fields') !== undefined, true, 'the bulk dialog is up');
     return {running};
   }
@@ -83,9 +81,15 @@ category('U2: domain bulk', () => {
   async function selectRows(keep: (id: string) => boolean): Promise<void> {
     const df = app.listSource.df.value as unknown as DG.DataFrame;
     const idColumn = df.columns.byName('id')!;
-    for (let i = 0; i < df.rowCount; i++)
-      df.selection.set(i, keep(idColumn.get(i)));
-    await delay(100);
+    let kept = 0;
+    for (let i = 0; i < df.rowCount; i++) {
+      const on = keep(idColumn.get(i));
+      df.selection.set(i, on);
+      kept += on ? 1 : 0;
+    }
+    const selected = () => app.listSource.selection.value;
+    await waitUntil(() => selected().length === kept && selected().every((r) => keep(r.id)),
+      'the selection to reach the source');
   }
 
   before(async () => {

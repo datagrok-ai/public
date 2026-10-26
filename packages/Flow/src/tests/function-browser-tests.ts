@@ -14,6 +14,7 @@ import {
 import type {FuncInfo} from '../rete/node-factory';
 import {statusLabel} from '../execution/execution-visualizer';
 import {NodeExecStatus} from '../execution/execution-state';
+import {until} from './test-utils';
 
 category('Flow: function browser', () => {
   before(async () => {
@@ -232,8 +233,8 @@ category('Flow: function browser', () => {
     try {
       browser.render();
       // the tab renders async off the (already-resolved) catalog promise
-      await loadQueryFuncs();
-      await new Promise((r) => setTimeout(r, 50));
+      expect(await until(() => (browser as unknown as {queryFuncs: unknown[] | null}).queryFuncs !== null), true,
+        'the Queries tab rendered the loaded catalog');
 
       // activate the tab and expand the panes so lazy content materializes in the DOM
       browser.showTab('Queries');

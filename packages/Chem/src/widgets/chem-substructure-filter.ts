@@ -1,8 +1,11 @@
 /* eslint-disable max-len */
 /**
- * RDKit-based substructure filters that uses Datagrok's collaborative filtering.
+ * The substructure filter, using Datagrok's collaborative filtering:
  * 1. On onRowsFiltering event, only FILTER OUT rows that do not satisfy this filter's criteria
  * 2. Call dataFrame.rows.requestFilter when filtering criteria changes.
+ * It searches by the "Chemical engine" (`chemSubstructureSearchLibrary`: Crux's workers in Crux mode, the RDKit pool in
+ * RDKit mode) and names its query by the same engine's module ({@link SubstructureFilter.moleculeToSmarts}); the RDKit-only
+ * parts are the RDKit pool's start in the constructor and `_convertMolNotationByRdKit`, the query name's last resort.
  * */
 
 import * as ui from 'datagrok-api/ui';
@@ -11,12 +14,15 @@ import * as grok from 'datagrok-api/grok';
 import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
 import {initRdKitService} from '../utils/chem-common-rdkit';
 import {SubstructureSearchEngine, getSubstructureSearchEngine} from '../crux/crux-searches';
+import {ChemicalEngine, byEngineModule, renderingModule} from '../engine/chem-engine';
+import {cruxOrRdKit} from '../engine/fallback';
 import {Subject, Subscription, timer} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import wu from 'wu';
 import {TaskBarProgressIndicator, chem} from 'datagrok-api/dg';
-import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {_convertMolNotation, _convertMolNotationByRdKit} from '../utils/convert-notation-utils';
 import {getMolSafe, querySmarts} from '../utils/mol-creation_rdkit';
+import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {translateQueryAliasesV2000} from '../utils/query-alias-translator';
 import {_package, PackageFunctions} from '../package';
 import {AVAILABLE_FPS, CHEM_APPLY_FILTER_SYNC, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT,
@@ -157,17 +163,17 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   /**
-   * The SMARTS that names a query in the filter (its summary, its searches' keys): the query the search builds, as RDKit
-   * writes it. Two drawings share it only when the search reads them as one query. RDKit's sanitized reading, the name
-   * until 2026-10, read an aromatic bond outside an aromatic ring single, so toluene with its methyl bond marked aromatic
-   * was named as toluene, and the filter took its search for one already done (crux-sketch spike query-roundtrip).
+   * The SMARTS that names a query in the filter (its summary, its searches' keys): the query the search builds
+   * (`querySmarts`), by the engine's module (Crux's in Crux mode, which searches it; RDKit's where Crux reads none). Two
+   * drawings share it only when the search reads them as one query: a sanitized reading would make an aromatic bond
+   * outside an aromatic ring single, and toluene with its methyl bond marked aromatic would pass for toluene.
    */
   moleculeToSmarts(molecule: string): string {
     if (!DG.chem.isMolBlock(molecule))
       return molecule;
     const rdkit = PackageFunctions.getRdKitModule();
-    return querySmarts(molecule, rdkit) ??
-      _convertMolNotation(molecule, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, rdkit);
+    return byEngineModule('querySmarts', rdkit, (module) => querySmarts(molecule, module)) ??
+      _convertMolNotationByRdKit(molecule, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, rdkit);
   }
 
   get isFiltering(): boolean {
@@ -293,8 +299,7 @@ export class SubstructureFilter extends DG.Filter {
         if (this.batchResultObservable && !this.batchResultObservable?.closed) {
           this.searchNotCompleted = true; //need this variable to allow continue search when enabling filter again
           this.terminatePreviousSearch();
-          const smarts = this.moleculeToSmarts(this.currentMolecule);
-          this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
+          this.finishSearch(this.searchKey(this.moleculeToSmarts(this.currentMolecule)));
         }
       }));
 
@@ -430,20 +435,14 @@ export class SubstructureFilter extends DG.Filter {
     //in case detaching active filter -> send sync event to other filters and reset active filter id
     if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] && this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
       this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: -1};
-      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
-        bitset: this.bitset,
-        molblock: this.currentMolecule, colName: this.columnName, filterId: this.filterId,
-        tableName: this.tableName, searchType: this.searchType,
-        simCutOff: this.similarityCutOff, fp: this.fp,
-      });
+      this.fireFilterSync();
     };
     //terminating search (in case the search was active at the moment of detach)
     _package.logger.debug(`************finish search in detach ${this.filterId}`);
     // every search this filter started, not just the first: one left running keeps its progress in the task bar
     for (const query of Array.from(this.currentSearches))
       grok.events.fireCustomEvent(this.terminateEventName, query);
-    const smarts = this.moleculeToSmarts(this.currentMolecule);
-    this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
+    this.finishSearch(this.searchKey(this.moleculeToSmarts(this.currentMolecule)));
     this.currentSearches.clear();
     this.calculating = false;
     this.progressBar?.close();
@@ -646,7 +645,7 @@ export class SubstructureFilter extends DG.Filter {
    */
   async _onSketchChanged(): Promise<void> {
     // See resolveColumn()'s comment — this is the entry point for every user-driven sketch edit, and
-    // the rest of this method (both branches below) dereferences `this.column!` repeatedly.
+    // the rest of this method (and the two it calls) dereferences `this.column!` repeatedly.
     this.resolveColumn();
     let newMolecule = this.getSketcherMolecule();
     // a sketcher hands a SMILES or SMARTS the card holds back as a molblock: an unchanged molecule keeps its notation
@@ -660,27 +659,9 @@ export class SubstructureFilter extends DG.Filter {
       this.updateFilterUiOnSketcherChanged(newMolecule);
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
       filterId: this.filterId, tableName: this.tableName});
-    if (!this.isFiltering) {
-      _package.logger.debug(`not filtering ${newSmarts}, ${this.filterId}`);
-      this.currentMolecule = newMolecule;
-      if (!this.active)
-        this.recalculateFilter = true; //in case applyState was called on disabled filter -> need to recalculate results
-      else
-        this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, summary: this.getFilterSummary('')}; //sketcher was cleared -> current sketcher becomes the active one
-      this.bitset = !this.active ? DG.BitSet.create(this.column!.length) : null;
-      if (this.column?.temp[FILTER_SCAFFOLD_TAG])
-        delete this.column.temp[FILTER_SCAFFOLD_TAG];
-      this.terminatePreviousSearch();
-      this.finishSearch(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));
-      if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] &&
-        this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
-        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
-          molblock: this.currentMolecule, colName: this.columnName, filterId: this.filterId,
-          tableName: this.tableName, searchType: this.searchType,
-          simCutOff: this.similarityCutOff, fp: this.fp});
-      }
-      this.requestFilter();
-    } else if ((wu(this.dataFrame!.rows.filters)
+    if (!this.isFiltering)
+      this.stopFiltering(newMolecule, newSmarts);
+    else if ((wu(this.dataFrame!.rows.filters)
       .has(`${this.columnName}: ${this.getFilterSummary(newMolecule)}`) || this.isFilteringBySameStructure(newMolecule)) &&
       !this.recalculateFilter && !this.searchNotCompleted) {
       //check if the coordinates have changed and in case align is true - reset the tag on column
@@ -691,41 +672,62 @@ export class SubstructureFilter extends DG.Filter {
       // some other filter is already filtering for the exact same thing
       // value to pass into has() is created similarly to filterSummary property
       _package.logger.debug(`already filter by the same structure ${this.getFilterSummary(newMolecule)} , ${this.filterId}`);
-      return;
-    } else {
-      this.recalculateFilter = false;
-      this.modifiedRows.clear(); // full search covers all rows including any modified ones
-      this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, summary: this.getFilterSummary(newMolecule)};
-      this.searchNotCompleted = false;
-      this.terminatePreviousSearch();
-      this.currentMolecule = newMolecule;
-      this.currentSearches.add(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));
-      this.calculating = true;
-      this.progressBar ??= DG.TaskBarProgressIndicator.create(`Starting substructure search...`);
-      _package.logger.debug(`starting filter by ${this.currentMolecule}, ${this.filterId}`);
-      try {
-        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
-          molblock: this.currentMolecule, colName: this.columnName, filterId: this.filterId,
-          tableName: this.tableName, searchType: this.searchType,
-          simCutOff: this.similarityCutOff, fp: this.fp});
-        const bitArray = await this.getFilterBitset();
+    } else
+      await this.startSearch(newMolecule, newSmarts);
+  }
+
+  /** {@link _onSketchChanged} for a filter that does not filter (an empty sketcher, the filter off): the bitset dropped
+   * (an empty one for a filter switched off), the search stopped, the peers told. */
+  private stopFiltering(newMolecule: string, newSmarts: string): void {
+    _package.logger.debug(`not filtering ${newSmarts}, ${this.filterId}`);
+    this.currentMolecule = newMolecule;
+    if (!this.active)
+      this.recalculateFilter = true; //in case applyState was called on disabled filter -> need to recalculate results
+    else
+      this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, summary: this.getFilterSummary('')}; //sketcher was cleared -> current sketcher becomes the active one
+    this.bitset = !this.active ? DG.BitSet.create(this.column!.length) : null;
+    if (this.column?.temp[FILTER_SCAFFOLD_TAG])
+      delete this.column.temp[FILTER_SCAFFOLD_TAG];
+    this.terminatePreviousSearch();
+    this.finishSearch(this.searchKey(newSmarts));
+    if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] &&
+      this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId)
+      this.fireFilterSync();
+    this.requestFilter();
+  }
+
+  /** {@link _onSketchChanged} for a new query: this filter becomes the column's active one and searches; the bitset is
+   * applied as the search's batches come in (its progress event). */
+  private async startSearch(newMolecule: string, newSmarts: string): Promise<void> {
+    this.recalculateFilter = false;
+    this.modifiedRows.clear(); // full search covers all rows including any modified ones
+    this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, summary: this.getFilterSummary(newMolecule)};
+    this.searchNotCompleted = false;
+    this.terminatePreviousSearch();
+    this.currentMolecule = newMolecule;
+    this.currentSearches.add(this.searchKey(newSmarts));
+    this.calculating = true;
+    this.progressBar ??= DG.TaskBarProgressIndicator.create(`Starting substructure search...`);
+    _package.logger.debug(`starting filter by ${this.currentMolecule}, ${this.filterId}`);
+    try {
+      this.fireFilterSync();
+      const bitArray = await this.getFilterBitset();
+      this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
+      this.batchResultObservable?.unsubscribe();
+      this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe((progress: number) => {
+        _package.logger.debug(`progress: ${progress}, molfile: ${this.currentMolecule}, ${this.filterId}`);
         this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
-        this.batchResultObservable?.unsubscribe();
-        this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe((progress: number) => {
-          _package.logger.debug(`progress: ${progress}, molfile: ${this.currentMolecule}, ${this.filterId}`);
-          this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
-          this.requestFilter();
-          this.progressBar?.update(progress, `${progress?.toFixed(2)}% of search completed`);
-          // the search reports its end as 100%: the task bar entry goes then, even for a filter that is
-          // never finished or detached (the popup's filter a column header opened)
-          if (progress >= 100) {
-            this.progressBar?.close();
-            this.progressBar = null;
-          }
-        });
-      } catch {
-        this.finishSearch(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));
-      }
+        this.requestFilter();
+        this.progressBar?.update(progress, `${progress?.toFixed(2)}% of search completed`);
+        // the search reports its end as 100%: the task bar entry goes then, even for a filter that is
+        // never finished or detached (the popup's filter a column header opened)
+        if (progress >= 100) {
+          this.progressBar?.close();
+          this.progressBar = null;
+        }
+      });
+    } catch {
+      this.finishSearch(this.searchKey(newSmarts));
     }
   }
 
@@ -746,14 +748,8 @@ export class SubstructureFilter extends DG.Filter {
       this.bitset.set(i, partialResult.getBit(i));
     // synchronize the updated bitset with peer filters on the same column (e.g. cloned views),
     // mirroring finishSearch — only the active filter does this
-    if (this.column!.temp[CHEM_APPLY_FILTER_SYNC]?.filterId === this.filterId) {
-      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
-        bitset: this.bitset,
-        molblock: this.currentMolecule, colName: this.columnName, filterId: this.filterId,
-        tableName: this.tableName, searchType: this.searchType,
-        simCutOff: this.similarityCutOff, fp: this.fp,
-      });
-    }
+    if (this.column!.temp[CHEM_APPLY_FILTER_SYNC]?.filterId === this.filterId)
+      this.fireFilterSync();
     this.requestFilter();
   }
 
@@ -791,15 +787,29 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   /** Whether a sketcher's molblock is the molecule the card holds, with no query feature drawn on it: an atom list or a
-   * ring bond count leaves the SMILES as it was. */
+   * ring bond count leaves the SMILES as it was. Both read by the engine's module (Crux's in Crux mode, RDKit's where
+   * it throws). */
   isUnchanged(molblock: string, molecule: string): boolean {
     const rdkit = PackageFunctions.getRdKitModule();
+    const {module, engine} = renderingModule(rdkit);
+    if (engine !== ChemicalEngine.Crux)
+      return this.isUnchangedBy(rdkit, false, molblock, molecule);
+    return cruxOrRdKit('isUnchanged', () => this.isUnchangedBy(module, true, molblock, molecule),
+      () => this.isUnchangedBy(rdkit, false, molblock, molecule));
+  }
+
+  private isUnchangedBy(module: RDModule, crux: boolean, molblock: string, molecule: string): boolean {
+    const trap = (e: unknown): void => {
+      if (crux && e instanceof WebAssembly.RuntimeError) // a trap: RDKit answers
+        throw e;
+    };
     const smiles = (m: string, plain: boolean): string | null => {
-      const mol = getMolSafe(m, {}, rdkit).mol;
+      const mol = getMolSafe(m, {}, module, true, trap).mol;
       try {
         return !mol || (plain && /"(atom|bond)Queries"/.test(mol.get_json())) ? null : mol.get_smiles();
-      } catch {
-        // a molecule RDKit reads only partly (a malformed one) throws here: it is no molecule to keep
+      } catch (e) {
+        trap(e);
+        // a molecule the module reads only partly (a malformed one) throws here: it is no molecule to keep
         return null;
       } finally {
         mol?.delete();
@@ -892,15 +902,8 @@ export class SubstructureFilter extends DG.Filter {
       if (this.currentSearches.size === 0) {
         const col = this.resolveColumn();
         if (col && col.temp[CHEM_APPLY_FILTER_SYNC] &&
-          col.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
-          //synchronize the results with other substructure filters on the same column
-          grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
-            bitset: this.bitset,
-            molblock: this.currentMolecule, colName: this.columnName, filterId: this.filterId,
-            tableName: this.tableName, searchType: this.searchType,
-            simCutOff: this.similarityCutOff, fp: this.fp,
-          });
-        }
+          col.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId)
+          this.fireFilterSync(); //synchronize the results with other substructure filters on the same column
         this.calculating = false;
         this.progressBar?.close();
         this.progressBar = null;
@@ -929,5 +932,20 @@ export class SubstructureFilter extends DG.Filter {
     return this.searchType === SubstructureSearchType.IS_SIMILAR ?
       `${smarts}_${this.searchType}_${this.similarityCutOff}_${this.fp}` :
       `${smarts}_${this.searchType}`;
+  }
+
+  /** A search's key (`currentSearches`, the terminate event's argument): the query's SMARTS with the search options. */
+  private searchKey(smarts: string): string {
+    return getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff);
+  }
+
+  /** Hands this filter's query, options and result to the other substructure filters on its column. */
+  private fireFilterSync(): void {
+    grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
+      bitset: this.bitset,
+      molblock: this.currentMolecule, colName: this.columnName, filterId: this.filterId,
+      tableName: this.tableName, searchType: this.searchType,
+      simCutOff: this.similarityCutOff, fp: this.fp,
+    });
   }
 }

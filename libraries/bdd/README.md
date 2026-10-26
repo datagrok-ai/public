@@ -154,8 +154,9 @@ Server fixtures can use `{run}` in their names, for example `BDD-Share-Model-{ru
 unique per feature instance (including each worker and repeat) and stays the same across its
 scenarios. `{time}` is the feature instance's start in epoch milliseconds, for a name a login must
 accept (`[a-z0-9._-]`) and a reader can sort: the users a creation feature makes cannot be deleted,
-so they are named by it. String arguments, element phrases, data tables and doc strings resolve both
-at runtime;
+so they are named by it. `{login}` is the login of the account the run started as, for a name the product
+makes per user (the Sticky Meta tutorial's `molecule-tutorial-{login}`). String arguments, element phrases,
+data tables and doc strings resolve them at runtime;
 generated specs stay deterministic. Cleanup registered with `atFeatureEnd` attempts every callback
 and fails the run if any callback fails; a run that was killed never gets there, so the server
 steps that make or clear a `{run}`- or `{time}`-named fixture, the project save included, also

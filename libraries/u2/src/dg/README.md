@@ -272,10 +272,16 @@ form.addButtons((row) => row.append(ui.bigButton('Save', async () => {
 grok.shell.newView('Script', [form.root]);
 ```
 
-**The form never saves anything.** `prop.set` mutates the object; persisting it is the caller's
-call (`grok.dapi.*.save`, a domain `insert`), which keeps the platform's dapi flows — permissions,
-validation, audit — exactly where they are. `refresh()` re-reads every field off the object
-(echo-suppressed: no write-back, no `onChanged`) after a save or an external edit.
+**The form never saves anything.** `prop.set` mutates the object, with valid values only: an
+invalid edit stays in its field, which says why, the object keeps its last valid value, and the
+edit is written once it turns valid; `form.unwritten` counts the fields holding such an edit. The
+exception is a platform editor under `editors: 'auto'`, bound by the platform, which writes the
+property itself whatever its verdict. Persisting it is the caller's call (`grok.dapi.*.save`, a
+domain `insert`), which keeps the platform's dapi flows — permissions, validation, audit — exactly
+where they are. `refresh()` re-reads every field off the object (echo-suppressed: no write-back, no
+`onChanged`) after a save or an external edit, leaving an invalid edit in place while the object
+still holds what the field last saw; `reset()` re-reads everything as a fresh start — what a
+discard comes back to.
 
 The generated form is inspectable: `form.properties` lists the rendered properties in layout
 order, and `form.input(name)` returns the input editing a property — generated,

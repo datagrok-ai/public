@@ -604,7 +604,7 @@ ui('addButtons: the row goes where `host` says, at the start when asked, and kee
   assert.equal(row.contains(save), true);
   assert.equal(f.root.contains(row), false, 'placed in the host, not under the rows');
   const sheet = readFileSync(new URL('../css/form.css', import.meta.url), 'utf8');
-  assert.match(sheet, /\.u2-form-buttons \.u2-btn-primary:not\(:disabled\)[^{]*\{\s+background: var\(--dg-blue-2\);/,
+  assert.match(sheet, /\.u2-form-buttons \.u2-btn-primary:not\(:disabled, \[aria-disabled='true'\]\)[^{]*\{\s+background: var\(--dg-blue-2\);/,
     'a primary button in the row is the platform form button outside the form too');
   f.dispose();
 });
@@ -621,7 +621,7 @@ test('stylesheet: dates keep their own width in a form; required marks hang past
   const wizard = readFileSync(new URL('../css/wizard.css', import.meta.url), 'utf8');
   assert.match(wizard, /\.u2-dialog-content > \.u2-wizard \{\s*height: 100%;/, 'the wizard footer sits at the dialog bottom');
   const buttons = readFileSync(new URL('../css/buttons.css', import.meta.url), 'utf8');
-  assert.match(buttons, /\.d4-ribbon-item \.u2-btn\.u2-btn-primary:not\(:disabled\) \{\s*background/,
+  assert.match(buttons, /\.d4-ribbon-item \.u2-btn\.u2-btn-primary:not\(:disabled, \[aria-disabled='true'\]\) \{\s*background/,
     'a disabled ribbon primary keeps the disabled skin');
   assert.doesNotMatch(buttons, /\.d4-ribbon-item \.u2-btn\.u2-btn-primary \{[^}]*background/);
   const radio = readFileSync(new URL('../css/radio.css', import.meta.url), 'utf8');

@@ -5,7 +5,7 @@
    `apitests.item_event` (item_id → item), rows prefixed per run and deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {Rows} from '@datagrok-libraries/u2';
 import {SharedSession, confirmDiscard} from '@datagrok-libraries/ems';
 import type {DomainSource} from '@datagrok-libraries/ems';
@@ -23,8 +23,8 @@ category('U2: domain session', () => {
   let eventTable: DomainTable;
 
   async function ready(src: DomainSource): Promise<void> {
-    for (let i = 0; i < 200 && (src.state.value === 'idle' || src.state.value === 'loading'); i++)
-      await delay(50);
+    await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading',
+      () => `source is ${src.state.value}: ${String(src.error.value)}`);
     if (src.state.value !== 'ready')
       throw new Error(`source is ${src.state.value}: ${String(src.error.value)}`);
   }
@@ -101,7 +101,7 @@ category('U2: domain session', () => {
       const at = df.col('name')!.toList().indexOf('Alpha');
       expect(at >= 0, true);
       g.cell('name', at).setValue('Alpha G');
-      await delay(50);
+      await waitUntil(() => src.isDirty.value, 'the in-cell edit to reach the source', 5000);
       expect(src.isDirty.value, true, 'the in-cell edit reached the source');
       const id = df.get('id', at) as string;
       expect(src.edit.value!.isChanged(id, 'name'), true);
@@ -124,12 +124,10 @@ category('U2: domain session', () => {
       expect(all >= 2, true);
       expect(src.total.value, all);
       src.search.value = 'Beta';
-      await delay(100);
       await ready(src);
       expect(src.rows.items.value.map((r) => r.name).join(), 'Beta');
       expect(src.total.value, 1, 'the count agrees with the rows');
       src.search.value = '';
-      await delay(100);
       await ready(src);
       expect(src.rows.items.value.length, all);
     } finally {

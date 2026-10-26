@@ -2,9 +2,10 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
+import {_package} from './package';
+import './tests/campaigns';
 
-export const _package = new DG.Package();
-export {tests};
+export {_package, tests};
 
 //name: test
 //input: string category {optional: true}

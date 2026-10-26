@@ -25,8 +25,6 @@ export class MmpPairedGrids {
   //fp for fragment pairs
   fpGrid: DG.Grid; //transformations tab specific to molecules and fragments tab the whole
   fpGridMessage: HTMLElement = ui.div('', 'chem-mmp-grid-info-message');
-  fpCatsFrom: string [];
-  fpCatsTo: string [];
   fpMaskByMolecule: DG.BitSet; //mask for a single molecule
   //mmp for matched molecula  pairs
   mmpGridTrans: DG.Grid;
@@ -46,13 +44,13 @@ export class MmpPairedGrids {
   pairsGridCliffsTabMessage: HTMLElement = ui.div('', 'chem-mmp-grid-info-message');
   pairsMaskCliffsTab: DG.BitSet;
 
+  /** RDKit's module: the pairs' highlights and the pair panel run by engine, with it behind Crux's. */
   rdkit: RDModule;
 
   showErrorEvent: Subject<boolean> = new Subject();
   showEmptyPairsWarningEvent: Subject<boolean> = new Subject();
   filters: DG.FilterGroup | null = null;
   lastPairIdx: number | null = null;
-  lastFragmentIdx: number | null = null;
   currentTab = MMP_NAMES.TAB_TRANSFORMATIONS;
   fragsShowAllMode = true;
   currentRowChanged = false;
@@ -71,8 +69,6 @@ export class MmpPairedGrids {
     this.molColName = mmpInput.molecules.name;
     this.fpGrid = getFragmetsPairsGrid(activityMeanNames, mmpa, this.activityColors, subs);
     this.mmpGridTrans = getMatchedPairsGrid(mmpa, this.rdkit);
-    this.fpCatsFrom = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.FROM).categories;
-    this.fpCatsTo = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.TO).categories;
     this.mmpMaskTransSelection = DG.BitSet.create(this.mmpGridTrans.dataFrame.rowCount);
     this.parentTableFragSelection = DG.BitSet.create(this.parentTable.rowCount);
     this.parentTableTransSelection = DG.BitSet.create(this.parentTable.rowCount);
@@ -227,10 +223,6 @@ export class MmpPairedGrids {
       const num = grid.dataFrame.filter.trueCount;
       div.append(ui.divText(`Showing ${num} ${compName}${num === 1 ? '' : 's'} of ${grid.dataFrame.rowCount}`));
     });
-    const gridSub = grid.onAfterDrawContent.subscribe(() => {
-      resizeGridColsSize(grid, [MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
-      gridSub.unsubscribe();
-    });
   }
 
   setupGrids(): void {
@@ -327,7 +319,6 @@ export class MmpPairedGrids {
   };
 
   refilterFragmentPairsByMolecule() : void {
-    let idxTrue = -1;
     const idx = this.parentTable!.currentRowIdx;
     this.fpMaskByMolecule!.setAll(false);
     if (idx !== -1) {
@@ -335,8 +326,6 @@ export class MmpPairedGrids {
         for (let j = 0; j < this.mmpa!.rules.rules[i].pairs.length; j++) {
           const fs = this.mmpa!.rules.rules[i].pairs[j].fs;
           if (idx == fs) {
-            if (idxTrue == -1)
-              idxTrue = i;
             this.fpMaskByMolecule!.set(i, true, false);
             break;
           }
@@ -426,29 +415,30 @@ export class MmpPairedGrids {
     if (idxParent !== -1 || showAllFragsMode) {
       for (const idx of idxs) {
         if (idx !== -1) {
-          const ruleSmiNum1 = this.mmpa.rules.rules[idx].sr1;
-          const ruleSmiNum2 = this.mmpa.rules.rules[idx].sr2;
-
-          let counter = 0;
-
-          for (let i = 0; i < this.mmpa.rules.rules.length; i++) {
-            const first = this.mmpa.rules.rules[i].sr1;
-            const second = this.mmpa.rules.rules[i].sr2;
-            for (let j = 0; j < this.mmpa.rules.rules[i].pairs.length; j++) {
-              if (ruleSmiNum1 == first && ruleSmiNum2 == second) {
-                maskToModify.set(counter, true, false);
-                if (!selectionIdxs) {
-                  if (!showAllFragsMode && this.mmpa.rules.rules[i].pairs[j].fs == idxParent)
-                    idxPairs = counter;
-                }
-              }
-              counter++;
-            }
-          }
+          this.forEachPairOfRule(idx, (pairIdx, fs) => {
+            maskToModify.set(pairIdx, true, false);
+            if (!selectionIdxs && !showAllFragsMode && fs == idxParent)
+              idxPairs = pairIdx;
+          });
         }
       }
     }
     return [idxPairs];
+  }
+
+  /** `onPair(pairIdx, fs)` for each molecule pair (its row in the pairs grid, its first molecule's row in the parent
+   * table) of the rules with the fragments of rule `ruleIdx`. */
+  forEachPairOfRule(ruleIdx: number, onPair: (pairIdx: number, fs: number) => void): void {
+    const rules = this.mmpa.rules.rules;
+    const {sr1, sr2} = rules[ruleIdx];
+    let counter = 0;
+    for (let i = 0; i < rules.length; i++) {
+      for (let j = 0; j < rules[i].pairs.length; j++) {
+        if (rules[i].sr1 == sr1 && rules[i].sr2 == sr2)
+          onPair(counter, rules[i].pairs[j].fs);
+        counter++;
+      }
+    }
   }
 
   refilterMatchedPairsByFragments(fFrom: string, fTo: string): void {
@@ -465,22 +455,8 @@ export class MmpPairedGrids {
       }
     }
 
-    if (idx !== -1) {
-      const ruleSmiNum1 = this.mmpa.rules.rules[idx].sr1;
-      const ruleSmiNum2 = this.mmpa.rules.rules[idx].sr2;
-
-      let counter = 0;
-
-      for (let i = 0; i < this.mmpa.rules.rules.length; i++) {
-        const first = this.mmpa.rules.rules[i].sr1;
-        const second = this.mmpa.rules.rules[i].sr2;
-        for (let j = 0; j < this.mmpa.rules.rules[i].pairs.length; j++) {
-          if (ruleSmiNum1 == first && ruleSmiNum2 == second)
-            this.mmpMaskFrag.set(counter, true, false);
-          counter++;
-        }
-      }
-    }
+    if (idx !== -1)
+      this.forEachPairOfRule(idx, (pairIdx) => this.mmpMaskFrag.set(pairIdx, true, false));
   }
 
   updateParentFilterMasks(isCliffsTab?: boolean): void {
@@ -548,11 +524,7 @@ function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA, activityC
 
   fpCols.push(occasionsCol);
 
-  const colorsPal = new Int32Array(fromCol.length);
-  for (let i = 0; i < fromCol.length; i++)
-    colorsPal[i] = i < fromCol.length ? 0 : 1;
-
-  const colorCol = DG.Column.fromInt32Array(MMP_NAMES.COLOR, colorsPal);
+  const colorCol = DG.Column.fromInt32Array(MMP_NAMES.COLOR, new Int32Array(fromCol.length));
   fpCols.push(colorCol);
 
   const fpDf = DG.DataFrame.fromColumns(fpCols);
@@ -638,7 +610,7 @@ async function withTimedProgressIndicator(pgName: string, time: number, func: ()
   let pg: DG.TaskBarProgressIndicator | null = null;
   const timer = setTimeout(() => {
     pg = DG.TaskBarProgressIndicator.create(pgName);
-  });
+  }, time);
   try {
     await func();
   } catch (e) {

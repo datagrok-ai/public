@@ -278,6 +278,40 @@ smoke('locks: value keeps the editor and hides remove, all disables everything, 
   assert.deepEqual(Filters.validate(fb.value.peek(), SCHEMA, undefined, template), [], 'a value edit is allowed');
 });
 
+smoke('a pick in a row, `input` then `change` as a browser fires them, lands; one edit reveals no other row\'s problem', () => {
+  const fb = mount(new FilterBuilder({schema: SCHEMA, value: Filters.group('and', [Filters.cond('age', '>')])}));
+  fb.addCondition();
+  const [first, added] = rows(fb);
+  const prop = select(added, 'prop');
+  prop.value = 'sex';
+  fire(prop, 'input');
+  fire(prop, 'change');
+  assert.equal(fb.value.peek().nodes[1].property, 'sex', 'the row is on the property picked');
+  assert.equal(part(first, 'problem').hidden, true, 'the untouched row says nothing yet');
+});
+
+smoke('disabled: every editor in every row reads and acts disabled, a row added meanwhile too; a lock survives enabling', () => {
+  const fb = mount(new FilterBuilder({schema: SCHEMA, enabled: false, value: Filters.group('and', [
+    Filters.cond('age', '>', 30), Filters.cond('created', '>', {span: '-30d'}, {lock: 'all'})])}));
+  const editors = () => [...fb.root.querySelectorAll('[data-u2-node] .u2-input-root')];
+  const live = () => [...fb.root.querySelectorAll('input, select, textarea, button')].filter((c) => !c.disabled);
+  assert.equal(editors().every((e) => e.classList.contains('u2-input-disabled') &&
+    e.getAttribute('aria-disabled') === 'true'), true, 'the value editors look disabled, not only the builder');
+  assert.deepEqual(live(), []);
+
+  fb.addCondition();
+  assert.equal(rows(fb).length, 3);
+  assert.equal(editors().every((e) => e.classList.contains('u2-input-disabled')), true, 'the new row too');
+  assert.deepEqual(live(), [], 'its controls are no live ones');
+
+  fb.enabled = true;
+  const [free, locked] = rows(fb);
+  assert.equal(part(free, 'value').classList.contains('u2-input-disabled'), false);
+  assert.equal(select(free, 'prop').disabled, false);
+  assert.equal(part(locked, 'value').classList.contains('u2-input-disabled'), true, 'a locked row keeps its lock');
+  assert.equal(part(locked, 'value').querySelectorAll('input').every((i) => i.disabled), true);
+});
+
 smoke('editors per kind: string, suggestions, int, float, bigint, choices, bool round-trip their values', () => {
   const fb = mount(new FilterBuilder({schema: SCHEMA, value: tree(
     Filters.cond('name', '=', 'x'), Filters.cond('age', '=', 1), Filters.cond('mw', '=', 1.5),

@@ -2,6 +2,78 @@
 /* eslint-disable */
 
 /**
+ * Groups of SMARTS compiled once (Chem's structural alert rule sets, its pharmacophore families), matched against
+ * many molecules (`match`; chem-wasm's chem_batch.rs docs).
+ */
+export class ChemSmartsSet {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * `lastWork()`: the last match's molecule × SMARTS pairs, those skipped by what the SMARTS needs, those run
+     * (measurements).
+     */
+    lastWork(): Float64Array;
+    /**
+     * `match(molecules)`: `{flags, unread}`: `flags[i * groups + g]` 1 where some SMARTS of group `g` matches molecule
+     * `i` (each read as Chem's getMolSafe reads it), `unread` the molecules none of its readings reads.
+     */
+    match(molecules: (string | null)[]): {flags: Uint8Array, unread: Uint32Array};
+    /**
+     * `new ChemSmartsSet(smarts, groupSizes, options?)`: group `g` is the next `groupSizes[g]` SMARTS, each read as
+     * `get_qmol` reads it; `options`: JSON `{"prefilter": true | false | "and", "searchOrder": bool}` (on by default:
+     * both shortcuts change no result; chem_batch.rs docs). Throws when the sizes do not add up to the SMARTS.
+     */
+    constructor(smarts: string[], group_sizes: Uint32Array, options?: string | null);
+    /**
+     * `unreadSmarts()`: the SMARTS (indices into the list) `get_qmol` reads nothing from.
+     */
+    unreadSmarts(): Uint32Array;
+    /**
+     * The number of groups.
+     */
+    readonly groups: number;
+}
+
+/**
+ * A synthon library read for searching (`SynthonSpace.ReadTextFile`); the similarity
+ * fingerprints are built at its first similarity search.
+ */
+export class ChemSynthonSpace {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Part `part` of `parts` of the fingerprint build (`BuildSynthonFingerprints`), as bytes, for
+     * the copy of this library on another worker to install: the parts add up to the whole build.
+     */
+    fingerprintPart(part: number, parts: number): Uint8Array;
+    /**
+     * Whether the similarity fingerprints are built (at the first similarity search, or by
+     * [`Self::install_fingerprints`]).
+     */
+    hasFingerprints(): boolean;
+    /**
+     * Installs the fingerprints from every part of [`Self::fingerprint_part`], given as one buffer:
+     * each part's bytes after its length (u32, little-endian).
+     */
+    installFingerprints(parts: Uint8Array): void;
+    /**
+     * The library from its text (RDKit's synthon text format: the Enamine / ChemSpace CSV);
+     * throws on a file RDKit cannot read.
+     */
+    constructor(text: string);
+    /**
+     * The number of products the library describes.
+     */
+    numProducts(): number;
+    numReactions(): number;
+    numSynthons(): number;
+    /**
+     * The script on `molecule` (module docs): its dataframe as JSON.
+     */
+    search(molecule: string, search_type: string, max_hits: number, similarity_cutoff: number, include_synthons: boolean): string;
+}
+
+/**
  * A finalised, queryable collection of molecules.
  *
  * `indexed` collections carry fingerprint sidecars and answer queries via the
@@ -249,7 +321,8 @@ export class JSMol {
     get_avalon_fp(details?: string | null): string;
     /**
      * PORT(SmartsWrite.cpp `MolToCXSmarts`): `get_cxsmarts(details)`: the SMARTS, then
-     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order.
+     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order: with a
+     * conformer its coordinates and their wedges, and the link nodes, as `get_cxsmiles` writes them.
      */
     get_cxsmarts(details?: string | null): string;
     /**
@@ -277,6 +350,11 @@ export class JSMol {
      */
     get_inchi(_options?: string | null): string;
     /**
+     * [`mol_inchi_input`]: InChI's input for crux-sketch's `inchiFromInput`; `undefined` where RDKit-js's `get_inchi`
+     * gives `""` without the library, a throw where it throws.
+     */
+    get_inchi_input(options?: string | null): Uint8Array | undefined;
+    /**
      * PORT(minilib.cpp:158-160): `get_json()`: `MolInterchange::MolToJSONData(mol)`, RDKit's
      * commonchem writer with its extensions (`molfile::mol_interchange`, decision `chem-wasm`).
      */
@@ -291,9 +369,10 @@ export class JSMol {
      */
     get_maccs_fp(): string;
     /**
-     * PORT(minilib.cpp `get_mmpa_frags`): `{cores, sidechains}`, two `MolList`s of RDKit's
-     * `MMPA::fragmentMol(mol, minCuts, maxCuts, maxCutBonds)` (its default pattern) results;
-     * a single cut's core is empty (`undefined` from `at` / `next`, RDKit-js's `null`).
+     * PORT(minilib.cpp:592-603, jswrapper.cpp:449-458 `get_mmpa_frags`): `{cores, sidechains}`, two `MolList`s
+     * of RDKit's `MMPA::fragmentMol(mol, minCuts, maxCuts, maxCutBonds)` (its default pattern) results, empty when
+     * no cut has `minCuts` bonds; both `null` where `fragmentMol` returns false (no cuttable bond, or more than
+     * `maxCutBonds`). A single cut's core is empty (`null` from `at` / `next`).
      */
     get_mmpa_frags(min_cuts: number, max_cuts: number, max_cut_bonds: number): any;
     /**
@@ -768,8 +847,87 @@ export class SimilarityResult {
 export function calcDescriptors(molecules: (string | null)[], names: string[]): string;
 
 /**
+ * `chemAlerts(molecules, catalogs, atoms)`: the JSON of each catalog's hits per molecule (module docs); throws on a
+ * catalog other than Brenk and NIH.
+ */
+export function chemAlerts(molecules: (string | null)[], catalogs: string[], atoms: boolean): string;
+
+/**
+ * `chemCanonicalSmiles(molecules)`: the JSON list of `molecules_to_canonical`'s SMILES (module docs).
+ */
+export function chemCanonicalSmiles(molecules: (string | null)[]): string;
+
+/**
+ * `chemConformers(molecule, options?)`: the JSON of the script's table (module docs).
+ */
+export function chemConformers(molecule: string, options?: string | null): string;
+
+/**
+ * `chemCurate(molecules, options?)`: the JSON list of the script's `curated_molecule` per molecule (module docs).
+ */
+export function chemCurate(molecules: (string | null)[], options?: string | null): string;
+
+/**
+ * `chemEmbed3d(molecule, options)`: the MOL block of `molecule` (a SMILES, or a MOL block when it holds `M  END`)
+ * with its RDKit ETKDG coordinates, or `undefined`; throws on bad options and on a timeout (module docs).
+ */
+export function chemEmbed3d(molecule: string, options?: string | null): string | undefined;
+
+/**
+ * `chemEmbed3dRecommendedOptions()`: [`RECOMMENDED_OPTIONS`], the options Chem passes.
+ */
+export function chemEmbed3dRecommendedOptions(): string;
+
+/**
+ * `chemFilterCatalog(molecules, catalog)`: per molecule 1 where the catalog matches, else 0 (module docs).
+ */
+export function chemFilterCatalog(molecules: (string | null)[], catalog: string): Uint8Array;
+
+/**
+ * `chemFingerprints(kind, details, molecules, smiles)`: the fingerprints Chem's RDKit worker code computes with
+ * `get_<kind>_fp_as_uint8array(details)` (`kind`: morgan, pattern, rdkit, maccs, atom_pair, topological_torsion),
+ * molecule `i`'s at `bytes[offsets[i] .. offsets[i + 1]]` where `present[i]`; `unread` the molecules Chem's getMolSafe
+ * reading reads none from; `smiles` the canonical SMILES when asked (chem_batch.rs docs).
+ */
+export function chemFingerprints(kind: string, details: string | null | undefined, molecules: (string | null)[], smiles: boolean): {bytes: Uint8Array, offsets: Uint32Array, present: Uint8Array, unread: Uint32Array, smiles: (string | null)[] | null};
+
+/**
+ * `chemGasteigerMap(molecule, contours, width?, height?)`: the JSON of the panel's picture and the charges, or
+ * `null` (module docs).
+ */
+export function chemGasteigerMap(molecule: string, contours: number, width?: number | null, height?: number | null): string;
+
+/**
+ * `chemInchiInputs(molecules)`: per molecule `molecules_to_inchi`'s input for the InChI library, or `null` (module
+ * docs).
+ */
+export function chemInchiInputs(molecules: (string | null)[]): (Uint8Array | null)[];
+
+/**
+ * `chemMurckoScaffolds(molecules)`: the JSON list of the script's `scaffolds` per molecule (module docs).
+ */
+export function chemMurckoScaffolds(molecules: (string | null)[]): string;
+
+/**
+ * `chemMutate(molecule, options?)`: the JSON list of the script's `mutations` (module docs).
+ */
+export function chemMutate(molecule: string, options?: string | null): string;
+
+/**
+ * `chemProperties(molecules, names)`: the JSON of Chem's property columns (module docs); throws on a name not in
+ * its table.
+ */
+export function chemProperties(molecules: (string | null)[], names: string[]): string;
+
+/**
+ * `chemQed(molecules)`: the JSON of QED and its eight properties per molecule (module docs).
+ */
+export function chemQed(molecules: (string | null)[]): string;
+
+/**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
- * is `"core,heavy,search,descriptors,scaffold-tree"`.
+ * is `"core,heavy,search,descriptors,scaffold-tree,inchi-input,chem-scripts,chem-conformers,chem-identifiers,chem-murcko,
+ * chem-filter-catalogs,synthon-search"`.
  */
 export function chemWasmModules(): string;
 
@@ -881,6 +1039,18 @@ export function get_rgd_text(cores: string[], details?: string | null): RGroupDe
 export function get_rxn(input: string, details?: string | null): Reaction | undefined;
 
 /**
+ * PORT(jswrapper.cpp:156-212, 921-928): RDKit-js `molzip`, its three forms and Crux's one-molecule form (module
+ * docs): `molzip(a, b, details?)`, `molzip(row, details?)`, `molzip(mol, details?)`. A `JSMol`, or `null`.
+ */
+export function molzip(first: JSMol | Record<string, JSMol>, second?: JSMol | string, details?: string): JSMol | null;
+
+/**
+ * Python's `Chem.molzipFragments(mols, params)` (RDKit's `molzip(decomposition, params)`, which RDKit-js does not
+ * bind): the list's molecules, the core first. A `JSMol`, or `null` for an empty list.
+ */
+export function molzipFragments(mols: MolList, details?: string | null): JSMol | null;
+
+/**
  * PORT(minilib.cpp:864-868): RDKit-js `prefer_coordgen(prefer)`: `RDDepict::preferCoordGen`,
  * process-wide (CoordGen, crate `coordgen`, decision `coordgen`); `true` throws in a build without
  * CoordGen.
@@ -925,7 +1095,9 @@ export function similarityMapWeights(reference: JSMol, probe: JSMol, options?: s
 export function standardize_smiles(smiles: string): string;
 
 /**
- * Panics as `Error`s with their message in the console (not a bare `unreachable`).
+ * Panics as `Error`s with their message in the console (not a bare `unreachable`); `std::sort`'s ties as
+ * RDKit-js's (Emscripten's libc++: `smi_compiler::cxx_sort::StdSort::Libcxx`, spike chem-rdkit-gaps-2), the
+ * calls that mirror a Python RDKit service excepted ([`PythonDefaults`]).
  */
 export function start(): void;
 
@@ -949,6 +1121,8 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
+    readonly __wbg_chemsmartsset_free: (a: number, b: number) => void;
+    readonly __wbg_chemsynthonspace_free: (a: number, b: number) => void;
     readonly __wbg_collection_free: (a: number, b: number) => void;
     readonly __wbg_collectionbuilder_free: (a: number, b: number) => void;
     readonly __wbg_jsmol_free: (a: number, b: number) => void;
@@ -959,7 +1133,34 @@ export interface InitOutput {
     readonly __wbg_rgroupdecomposition_free: (a: number, b: number) => void;
     readonly __wbg_similarityresult_free: (a: number, b: number) => void;
     readonly calcDescriptors: (a: any, b: number, c: number) => [number, number];
+    readonly chemAlerts: (a: any, b: number, c: number, d: number) => [number, number, number, number];
+    readonly chemCanonicalSmiles: (a: any) => [number, number, number, number];
+    readonly chemConformers: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly chemCurate: (a: any, b: number, c: number) => [number, number, number, number];
+    readonly chemEmbed3d: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly chemEmbed3dRecommendedOptions: () => [number, number];
+    readonly chemFilterCatalog: (a: any, b: number, c: number) => [number, number, number, number];
+    readonly chemFingerprints: (a: number, b: number, c: number, d: number, e: any, f: number) => [number, number, number];
+    readonly chemGasteigerMap: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
+    readonly chemInchiInputs: (a: any) => [number, number, number];
+    readonly chemMurckoScaffolds: (a: any) => [number, number, number, number];
+    readonly chemMutate: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly chemProperties: (a: any, b: number, c: number) => [number, number, number, number];
+    readonly chemQed: (a: any) => [number, number];
     readonly chemWasmModules: () => [number, number];
+    readonly chemsmartsset_groups: (a: number) => number;
+    readonly chemsmartsset_lastWork: (a: number) => [number, number];
+    readonly chemsmartsset_match: (a: number, b: any) => [number, number, number];
+    readonly chemsmartsset_new: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
+    readonly chemsmartsset_unreadSmarts: (a: number) => [number, number];
+    readonly chemsynthonspace_fingerprintPart: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly chemsynthonspace_hasFingerprints: (a: number) => number;
+    readonly chemsynthonspace_installFingerprints: (a: number, b: number, c: number) => [number, number];
+    readonly chemsynthonspace_new: (a: number, b: number) => [number, number, number];
+    readonly chemsynthonspace_numProducts: (a: number) => number;
+    readonly chemsynthonspace_numReactions: (a: number) => number;
+    readonly chemsynthonspace_numSynthons: (a: number) => number;
+    readonly chemsynthonspace_search: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
     readonly collection_engineRev: () => [number, number];
     readonly collection_fromBytes: (a: number, b: number) => [number, number, number];
     readonly collection_fromSmiles: (a: number, b: number) => number;
@@ -1023,6 +1224,7 @@ export interface InitOutput {
     readonly jsmol_get_fp_json: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly jsmol_get_frags: (a: number, b: number, c: number) => [number, number, number];
     readonly jsmol_get_inchi: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly jsmol_get_inchi_input: (a: number, b: number, c: number) => [number, number, number, number];
     readonly jsmol_get_json: (a: number) => [number, number, number, number];
     readonly jsmol_get_kekule_form: (a: number) => [number, number, number, number];
     readonly jsmol_get_maccs_fp: (a: number) => [number, number, number, number];
@@ -1086,6 +1288,8 @@ export interface InitOutput {
     readonly mollist_pop: (a: number, b: number) => any;
     readonly mollist_reset: (a: number) => void;
     readonly mollist_size: (a: number) => number;
+    readonly molzip: (a: any, b: number, c: number, d: number) => [number, number, number];
+    readonly molzipFragments: (a: number, b: number, c: number) => [number, number, number];
     readonly prefer_coordgen: (a: number) => [number, number];
     readonly reaction_delete: (a: number) => void;
     readonly reaction_draw_to_canvas: (a: number, b: any, c: number, d: number) => [number, number, number, number];

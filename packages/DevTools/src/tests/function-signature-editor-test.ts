@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
-import { category, before, test, expect, awaitCheck, after, delay } from '@datagrok-libraries/test/src/test';
+import { category, before, test, expect, waitUntil, after } from '@datagrok-libraries/test/src/test';
 
 category('FSE', () => {
   const script: DG.Script = DG.Script.create(`#name: Template
@@ -14,8 +14,7 @@ category('FSE', () => {
 count = table.shape[0] * table.shape[1]`);
 
   before(async () => {
-    grok.shell.windows.simpleMode = false; 
-    await delay(1000) 
+    grok.shell.windows.simpleMode = false;
   });
 
   test('exist', async () => { 
@@ -25,8 +24,8 @@ count = table.shape[0] * table.shape[1]`);
       try {
         const v = DG.ScriptView.create(script);
         grok.shell.addView(v);
-        await awaitCheck(() => grok.shell.v != null, '', 1000);
-        await awaitCheck(() => {
+        await waitUntil(() => grok.shell.v != null, '', 1000);
+        await waitUntil(() => {
           return !!(grok.shell.v.getRibbonPanels().flat().find(
             (elem) => !!elem.querySelector('.fa-magic'),
           )?.lastChild as HTMLElement);
@@ -42,16 +41,16 @@ count = table.shape[0] * table.shape[1]`);
   test('open', async () => {
     const v = DG.ScriptView.create(script);
     grok.shell.addView(v);
-    await awaitCheck(() => grok.shell.v != null, '', 2000);
+    await waitUntil(() => grok.shell.v != null, '', 2000);
     let fseButton: HTMLElement;
-    await awaitCheck(() => {
+    await waitUntil(() => {
       fseButton = grok.shell.v.getRibbonPanels().flat().find(
         (elem) => !!elem.querySelector('.fa-magic'),
       )?.lastChild as HTMLElement;
       return !!fseButton;
     }, 'Failed: FSE button does not exist', 2000);
     fseButton.click();
-    await awaitCheck(() => !!grok.shell.v.root.querySelector('[name="PARAMETERS"]'),
+    await waitUntil(() => !!grok.shell.v.root.querySelector('[name="PARAMETERS"]'),
       'FSE button did not open view', 2000);
     const currentView = grok.shell.v;
     const allTabsExist =
@@ -65,27 +64,27 @@ count = table.shape[0] * table.shape[1]`);
   test('close', async () => {
     const v = DG.ScriptView.create(script);
     grok.shell.addView(v);
-    await awaitCheck(() => grok.shell.v != null, '', 2000);
+    await waitUntil(() => grok.shell.v != null, '', 2000);
     let fseButton: HTMLElement;
-    await awaitCheck(() => {
+    await waitUntil(() => {
       fseButton = grok.shell.v.getRibbonPanels().flat().find(
         (elem) => !!elem.querySelector('.fa-magic'),
       )?.lastChild as HTMLElement;
       return !!fseButton;
     }, 'Failed: FSE button does not exist', 2000);
     fseButton.click();
-    await awaitCheck(() => !!grok.shell.v.root.querySelector('[name="PARAMETERS"]'),
+    await waitUntil(() => !!grok.shell.v.root.querySelector('[name="PARAMETERS"]'),
       'FSE button did not open view', 2000);
     const currentView = grok.shell.v;
     let editorButton: HTMLElement;
-    await awaitCheck(() => {
+    await waitUntil(() => {
       editorButton = grok.shell.v.getRibbonPanels().flat().find(
         (elem) => !!elem.querySelector('.fa-code'),
       )?.lastChild as HTMLElement;
       return !!editorButton;
     }, 'Failed: FSE button does not exist', 2000);
     editorButton.click();
-    await awaitCheck(() => !!currentView.root.querySelector('.CodeMirror.cm-s-default'),
+    await waitUntil(() => !!currentView.root.querySelector('.CodeMirror.cm-s-default'),
       'Code button did not open view', 2000);
   }, {owner:'oserhiienko@datagrok.ai'});
 });

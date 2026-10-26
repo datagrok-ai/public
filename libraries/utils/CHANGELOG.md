@@ -2,6 +2,7 @@
 
 ## v.next
 
+* string-utils: Added `StringUtils.escapeRegExp`
 * string-utils: `tryParseJson` takes an optional `warning` to log on malformed JSON, and a `reviver`
 * validation-utils: Added `isLinkedRestriction` and `hasValidationIssue`
 * Forms viewer: Fixed the mouse-over row staying set after the pointer left the viewer when the card under it had been re-rendered

@@ -1,9 +1,12 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {domains} from '@datagrok-libraries/ems/src/dg';
-import type {DomainApp} from '@datagrok-libraries/ems/src/dg';
+import type {DomainApp, DomainViewEntry} from '@datagrok-libraries/ems/src/dg';
 import {moltrackEmsDb} from '../generated/db';
 import {CompoundsApp} from './compounds';
 import {MolTrackTables, SCHEMA} from './tables';
+import {getAppHeader, quickActionsWidget} from '../utils/view-utils';
 
 import '@datagrok-libraries/ems/src/dg/styles.js';
 import '../../css/moltrack-ems.css';
@@ -17,28 +20,55 @@ const BATCH_GRID = {open: 'batch_regno', columns: ['batch_regno', 'source', 'sou
 
 const KEYS: Record<string, string> = {[`${SCHEMA}.compound`]: 'molregno', [`${SCHEMA}.compound_batch`]: 'batch_regno'};
 
+const ENTRIES: DomainViewEntry[] = [
+  {table: `${SCHEMA}.compound`, name: 'Compounds', options: {...FILTERS, sort: '!molregno', app: CompoundsApp,
+    mode: 'cards', itemHeight: 88, include: CompoundsApp.FIELDS,
+    children: {tables: ['compound_batch'], grids: {compound_batch: BATCH_GRID}}}},
+  {table: `${SCHEMA}.compound_batch`, name: 'Batches', options: {...FILTERS, sort: '!batch_regno',
+    children: {tables: ['batch_addition', 'assay_result']}}},
+  {table: `${SCHEMA}.assay`, name: 'Assays', options: {...FILTERS, sort: 'name', children: {tables: ['assay_run']}}},
+  {table: `${SCHEMA}.assay_run`, name: 'Assay Runs', options: {...FILTERS, sort: '!run_date,name',
+    children: {tables: ['assay_result']}}},
+  {table: `${SCHEMA}.assay_result`, name: 'Assay Results',
+    options: {...FILTERS, sort: '!created_on', children: false}},
+  {table: `${SCHEMA}.addition`, name: 'Additions', options: {...FILTERS, sort: 'name'}},
+];
+
 const VIEWS = domains.views({
   path: APP_PATH,
   handle: (address) => MolTrackTables.table(address.slice(SCHEMA.length + 1)),
   ready: (app, table) => MolTrackEms.ready(app, table),
-  views: [
-    {table: `${SCHEMA}.compound`, name: 'Compounds', options: {...FILTERS, sort: '!molregno', app: CompoundsApp,
-      mode: 'cards', itemHeight: 88, include: CompoundsApp.FIELDS,
-      children: {tables: ['compound_batch'], grids: {compound_batch: BATCH_GRID}}}},
-    {table: `${SCHEMA}.compound_batch`, name: 'Batches', options: {...FILTERS, sort: '!batch_regno',
-      children: {tables: ['batch_addition', 'assay_result']}}},
-    {table: `${SCHEMA}.assay`, name: 'Assays', options: {...FILTERS, sort: 'name', children: {tables: ['assay_run']}}},
-    {table: `${SCHEMA}.assay_run`, name: 'Assay Runs', options: {...FILTERS, sort: '!run_date,name',
-      children: {tables: ['assay_result']}}},
-    {table: `${SCHEMA}.assay_result`, name: 'Assay Results',
-      options: {...FILTERS, sort: '!created_on', children: false}},
-    {table: `${SCHEMA}.addition`, name: 'Additions', options: {...FILTERS, sort: 'name'}},
-  ],
+  views: ENTRIES,
 });
 
 export class MolTrackEms {
   static async open(address = ''): Promise<DG.ViewBase> {
-    return VIEWS.open(await MolTrackEms._corporateLink(address) ?? address);
+    const target = await MolTrackEms._corporateLink(address) ?? address;
+    return target.replace(/^\//, '') === '' ? MolTrackEms.home() : VIEWS.open(target);
+  }
+
+  static home(): DG.View {
+    const rows = ENTRIES.map((entry) => {
+      const count = ui.link('', () => void MolTrackEms.show(entry.name.replace(/ /g, '')));
+      void grok.dapi.domains.table(entry.table).count()
+        .then((n) => count.textContent = String(n), () => count.textContent = '?');
+      return [entry.name, count];
+    });
+    const counts = ui.table(rows, (row) => row);
+    counts.classList.add('moltrack-ems-home-counts');
+    const actions = quickActionsWidget([
+      {label: 'Register compound', run: () => void VIEWS.create(`${SCHEMA}.compound`)},
+      {label: 'Register batch', run: () => void VIEWS.create(`${SCHEMA}.compound_batch`)},
+      {label: 'Register assay', run: () => void VIEWS.create(`${SCHEMA}.assay`)},
+      {label: 'Register bulk', run: async () => void await domains.import(await MolTrackTables.compounds())},
+      {label: 'Search', run: () => void MolTrackEms.show('Compounds')},
+    ]);
+    const content = ui.divH([counts, actions]);
+    content.classList.add('moltrack-ems-home');
+    const view = DG.View.fromRoot(ui.divV([getAppHeader(), content]));
+    view.name = 'MolTrack EMS';
+    view.path = APP_PATH;
+    return view;
   }
 
   static show(address: string): Promise<DG.ViewBase> {

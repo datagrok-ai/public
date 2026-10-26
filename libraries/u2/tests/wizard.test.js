@@ -1,10 +1,10 @@
 /* Wizard: gating, navigation, lazy steps and dialog mode on the node DOM shim. Same contract as
    smoke.test.js — every test leaves the live-scope count where it found it. */
 
-import {test} from 'node:test';
+import {test, mock} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
-import {signal, Scope} from '../src/index.js';
+import {signal, Scope, notify} from '../src/index.js';
 import {Wizard} from '../src/components/containers/wizard.js';
 import {Dialog} from '../src/components/containers/dialog.js';
 import {Overlay} from '../src/core/overlay.js';
@@ -321,23 +321,28 @@ wizard('an async finish answering false keeps the dialog open; true closes it', 
 wizard('while a finish runs, the rail, CANCEL, the close button and Esc are blocked', async () => {
   const scope = new Scope();
   let release;
+  let signal;
   const outcome = [];
   const w = Scope.runWith(scope, () => new Wizard({
     steps: steps(undefined),
-    onFinish: () => new Promise((r) => release = () => r(true)),
+    onFinish: (ctx) => {
+      signal = ctx.signal;
+      return new Promise((r) => release = () => r(true));
+    },
     onCancel: () => outcome.push('cancel'),
   }));
   const dialog = w.openInDialog('Create');
   w.next();
   w.next();
   footer(w, 'FINISH').click();
-  assert.equal(footer(w, 'CANCEL').disabled, true);
+  assert.equal(footer(w, 'CANCEL').disabled, false, 'CANCEL is how the run is stopped');
   assert.equal(w.root.classList.contains('u2-wizard-busy'), true);
   fire(markers(w)[0], 'click');
   assert.equal(w.currentStep.value, 'three', 'the rail does not move');
   w.back();
   assert.equal(w.currentStep.value, 'three');
   footer(w, 'CANCEL').click();
+  assert.equal(signal.aborted, true, 'CANCEL aborts the run');
   dialog.root.querySelector('.u2-dialog-close').click();
   fire(dialog.root, 'keydown', {key: 'Escape'});
   assert.equal(dialog.isOpen.value, true, 'nothing closes a wizard mid-finish');
@@ -346,6 +351,65 @@ wizard('while a finish runs, the rail, CANCEL, the close button and Esc are bloc
   assert.equal(w.completed.value, true);
   assert.equal(dialog.isOpen.value, false);
   assert.deepEqual(outcome, [], 'a committed finish is never a cancel');
+  scope.dispose();
+});
+
+wizard('a commit that never settles is abandoned 2 s after Esc: the dialog closes as a cancel and says so', async () => {
+  const scope = new Scope();
+  const outcome = [];
+  let aborted = false;
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: [
+      {id: 'upload', title: 'Upload', content: content('Upload', 'stuck'), commit: (ctx) => {
+        ctx.signal.addEventListener('abort', () => aborted = true);
+        return new Promise(() => {});
+      }},
+      {id: 'done', title: 'Done', content: content('Done', 'never')},
+    ],
+    onCancel: () => outcome.push('cancel'),
+  }));
+  const dialog = w.openInDialog('Import');
+  mock.timers.enable({apis: ['setTimeout']});
+  try {
+    footer(w, 'NEXT').click();
+    assert.equal(w.busy.value, true);
+    fire(dialog.root, 'keydown', {key: 'Escape'});
+    assert.equal(aborted, true, 'Esc aborts the run');
+    assert.equal(dialog.isOpen.value, true, 'and the dialog waits for it to settle');
+    mock.timers.tick(1999);
+    assert.equal(dialog.isOpen.value, true);
+    mock.timers.tick(1);
+    assert.equal(dialog.isOpen.value, false, 'a run still in flight 2 s later is abandoned');
+    assert.equal(w.busy.value, false);
+    assert.deepEqual(outcome, ['cancel']);
+    assert.match(document.querySelector('.u2-notify-warning')?.textContent ?? '', /Upload: the step did not stop/);
+  } finally {
+    mock.timers.reset();
+    notify.closeAll();
+    scope.dispose();
+  }
+});
+
+wizard('a run that settles after its abort is not abandoned: the wizard stays, CANCEL then closes it', async () => {
+  const scope = new Scope();
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: [
+      {id: 'upload', title: 'Upload', content: content('Upload', 'stoppable'), commit: (ctx) =>
+        new Promise((resolve, reject) => ctx.signal.addEventListener('abort',
+          () => reject(Object.assign(new Error('aborted'), {name: 'AbortError'}))))},
+      {id: 'done', title: 'Done', content: content('Done', 'never')},
+    ],
+  }));
+  const dialog = w.openInDialog('Import');
+  footer(w, 'NEXT').click();
+  footer(w, 'CANCEL').click();
+  await flush();
+  assert.equal(w.busy.value, false, 'the run stopped');
+  assert.equal(dialog.isOpen.value, true, 'an abort that lands keeps the step');
+  assert.equal(w.error.value, null, 'and says nothing');
+  footer(w, 'CANCEL').click();
+  assert.equal(dialog.isOpen.value, false);
+  assert.equal(document.querySelector('.u2-notify-warning'), null, 'nothing was abandoned');
   scope.dispose();
 });
 

@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil} from '@datagrok-libraries/test/src/test';
 import {loadInstanceState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {
   isFuncCallSerializedState, PipelineSerializedState,
@@ -10,10 +10,7 @@ import {
 export async function awaitElement(
   root: HTMLElement, selector: string, msg: string, timeout = 5000,
 ): Promise<HTMLElement> {
-  await awaitCheck(
-    () => root.querySelector(selector) !== null,
-    `${msg}: selector "${selector}" not found`, timeout,
-  );
+  await waitUntil(() => root.querySelector(selector) !== null, `${msg}: selector "${selector}" not found`, timeout);
   return root.querySelector(selector) as HTMLElement;
 }
 
@@ -21,7 +18,7 @@ export async function awaitElement(
 export async function launchApp(name: string, timeout = 10000): Promise<DG.ViewBase> {
   await grok.functions.call(`Compute2:${name}`);
   let view: DG.ViewBase | undefined;
-  await awaitCheck(() => {
+  await waitUntil(() => {
     const v = grok.shell.v;
     if (v && v.name === name) {
       view = v;
@@ -70,10 +67,7 @@ export async function deleteSavedWorkflow(id: string) {
 
 /** Wait for WebComponents custom elements to be registered. */
 export async function awaitWebComponents(timeout = 10000): Promise<void> {
-  await awaitCheck(
-    () => customElements.get('dg-viewer') !== undefined,
-    'WebComponents not initialized', timeout,
-  );
+  await waitUntil(() => customElements.get('dg-viewer') !== undefined, 'WebComponents not initialized', timeout);
 }
 
 /** Find a button inside a root element by partial text content (case-insensitive). */
@@ -88,13 +82,13 @@ export function findButton(root: HTMLElement, text: string): HTMLButtonElement {
 
 /**
  * Click a button and poll until a condition becomes true.
- * Use this instead of delay() + awaitCheck() after interactions.
+ * Use this instead of a fixed delay and a poll after interactions.
  */
 export async function clickAndAwait(
   btn: HTMLElement, check: () => boolean, msg: string, timeout = 5000,
 ): Promise<void> {
   btn.click();
-  await awaitCheck(check, msg, timeout);
+  await waitUntil(check, msg, timeout);
 }
 
 /**
@@ -106,8 +100,5 @@ export async function clickAndAwaitChange(
 ): Promise<void> {
   const before = root.innerHTML;
   btn.click();
-  await awaitCheck(
-    () => root.innerHTML !== before,
-    msg, timeout,
-  );
+  await waitUntil(() => root.innerHTML !== before, msg, timeout);
 }

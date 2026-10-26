@@ -29,13 +29,13 @@
   border: var(--dg-border-width) solid transparent;
 }
 
-.u2-btn.u2-icon-btn:hover:not(:disabled),
-.u2-btn.u2-icon-btn:active:not(:disabled) {
+.u2-btn.u2-icon-btn:hover:not(:disabled, [aria-disabled='true']),
+.u2-btn.u2-icon-btn:active:not(:disabled, [aria-disabled='true']) {
   background: none;
   filter: contrast(80%) brightness(120%);
 }
 
-.u2-btn.u2-icon-btn:disabled {
+.u2-btn.u2-icon-btn:is(:disabled, [aria-disabled='true']) {
   color: var(--dg-text-color-disabled);
 }
 
@@ -71,18 +71,18 @@
 }
 
 /* a disabled one keeps the disabled skin: white on this fill was unreadable */
-.d4-ribbon-item .u2-btn.u2-btn-primary:not(:disabled) {
+.d4-ribbon-item .u2-btn.u2-btn-primary:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-accent-secondary);
 }
 
 /* a disabled one takes none of the ribbon item's hover (d4 `.d4-ribbon-item > :hover`) */
-.d4-ribbon-item > .u2-btn:disabled:hover {
+.d4-ribbon-item > .u2-btn:is(:disabled, [aria-disabled='true']):hover {
   cursor: default;
   color: var(--dg-text-color-disabled);
   background-color: transparent;
 }
 
-.d4-ribbon-item > .u2-btn.u2-btn-primary:disabled:hover {
+.d4-ribbon-item > .u2-btn.u2-btn-primary:is(:disabled, [aria-disabled='true']):hover {
   color: var(--dg-grey-4);
   background-color: var(--dg-steel-2);
 }
@@ -99,7 +99,7 @@
   font-weight: var(--dg-font-weight-regular);
 }
 
-.d4-toolbox .u2-btn.u2-btn-primary:not(:disabled) {
+.d4-toolbox .u2-btn.u2-btn-primary:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-accent-secondary);
 }
 
@@ -156,11 +156,11 @@
   border-bottom-right-radius: var(--dg-radius);
 }
 
-.u2-btn-group-item:hover:not(:disabled) {
+.u2-btn-group-item:hover:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-hover-subtle);
 }
 
-.u2-btn-group-item:active:not(:disabled) {
+.u2-btn-group-item:active:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-steel-1);
 }
 
@@ -179,7 +179,7 @@
   border-color: var(--dg-focus);
 }
 
-.u2-btn-group-item:disabled {
+.u2-btn-group-item:is(:disabled, [aria-disabled='true']) {
   color: var(--dg-text-color-disabled);
   background: var(--dg-bg);
   cursor: default;

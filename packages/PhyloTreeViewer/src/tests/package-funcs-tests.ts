@@ -11,7 +11,7 @@ import {
   expect,
   expectArray,
   expectObject,
-  awaitCheck
+  waitUntil
 } from '@datagrok-libraries/test/src/test';
 
 import {PhylocanvasGlService} from '../utils/phylocanvas-gl-service';
@@ -24,7 +24,7 @@ import {_package} from '../package-test';
 category('packageFuncs', () => {
   test('phylocanvasGlViewerApp', async () => {
     await grok.functions.call(`${_package.name}:phylocanvasGlViewerApp`, {});
-    await awaitCheck(() => true, 'Error', 200);
+    await waitUntil(() => true, 'Error');
   });
 
   test('injectTreeToGrid', async () => {
@@ -45,16 +45,16 @@ category('packageFuncs', () => {
 
   test('treeCutAsTreeApp', async () => {
     await grok.functions.call(`${_package.name}:treeCutAsTreeApp`, {});
-    await awaitCheck(() => true, 'Error', 200);
+    await waitUntil(() => true, 'Error');
   });
 
   test('treeInGridCellApp', async () => {
     await grok.functions.call(`${_package.name}:treeInGridCellApp`, {});
-    await awaitCheck(() => true, 'Error', 200);
+    await waitUntil(() => true, 'Error');
   });
 
   test('getPhylocanvasGlService', async () => {
     const pglSvc: PhylocanvasGlService = await grok.functions.call(`${_package.name}:getPhylocanvasGlService`, {});
-    await awaitCheck(() => true, 'Error', 200);
+    await waitUntil(() => true, 'Error');
   });
 });

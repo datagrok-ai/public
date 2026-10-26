@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, before, category, delay, expect, test, TestOptions} from '@datagrok-libraries/test/src/test';
+import {before, category, delay, expect, settled, test, TestOptions, waitUntil}
+  from '@datagrok-libraries/test/src/test';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {isWebGLAvailable, scWebGLPointHitTest, scWebGLRender} from '../webgl/scatterplot';
 import {scWebGPUPointHitTest, scWebGPURender} from '../webgpu/scatterplot';
@@ -56,8 +57,8 @@ async function scatterPlot(rows: number, options: object = {}): Promise<DG.Scatt
 }
 
 async function rendered(sp: DG.ScatterPlotViewer): Promise<void> {
-  await delay(100);
-  await awaitCheck(() => sp.viewBox.width > 100 && !sp.isRenderPending, 'the scatter plot did not render', 5000);
+  await waitUntil(() => sp.viewBox.width > 100, 'the scatter plot was not laid out', 5000);
+  await settled(sp);
 }
 
 /** Renders [sp] and reads the canvas back in the same task, before the drawing is presented. */
@@ -174,7 +175,7 @@ for (const backend of backends) {
       const canvas = backend.render(sp);
       expect(canvas.isConnected, true);
       grok.shell.closeAll();
-      await awaitCheck(() => !canvas.isConnected, 'the canvas outlived its viewer', 3000);
+      await waitUntil(() => !canvas.isConnected, 'the canvas outlived its viewer', 3000);
     });
   });
 }

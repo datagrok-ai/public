@@ -529,6 +529,11 @@
           "description": "Hover spinner inside the field."
         },
         {
+          "name": "placeholder",
+          "type": "string",
+          "bindable": true
+        },
+        {
           "name": "visible",
           "type": "bool",
           "description": "false hides the node; true by default."
@@ -3586,6 +3591,7 @@
         "min",
         "max",
         "step",
+        "placeholder",
         "visible"
       ],
       "gestures": [

@@ -6,7 +6,7 @@
    a run; the category skips itself while it is not registered. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {Control} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {domains, DomainApp, DomainTable} from '@datagrok-libraries/ems/src/dg';
@@ -25,17 +25,14 @@ category('U2: domain external write', () => {
   let app: DomainApp;
 
   async function ready(src: DomainSource): Promise<void> {
-    for (let i = 0; i < 200 && (src.state.value === 'idle' || src.state.value === 'loading'); i++)
-      await delay(50);
+    await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading',
+      () => `source is ${src.state.value}: ${String(src.error.value)}`);
     if (src.state.value !== 'ready')
       throw new Error(`source is ${src.state.value}: ${String(src.error.value)}`);
   }
 
   async function until(check: () => boolean, what: string): Promise<void> {
-    for (let i = 0; i < 100 && !check(); i++)
-      await delay(50);
-    if (!check())
-      throw new Error(`timed out waiting for ${what}`);
+    await waitUntil(check, `timed out waiting for ${what}`, 5000);
   }
 
   const skipped = (): boolean => {
@@ -154,7 +151,6 @@ category('U2: domain external write', () => {
     expect(await app.goTo('list'), true);
     await ready(app.listSource);
     app.listSource.query.value = `tid = ${tid}`;
-    await delay(100);
     await ready(app.listSource);
     const row = app.listSource.rows.byKey(id)!;
     expect(row !== undefined, true, 'the row is listed');
@@ -174,6 +170,8 @@ category('U2: domain external write', () => {
       .find((b) => b.textContent === text)!;
     const named = (name: string) => document.querySelector(`[data-u2-name="${name}"]`);
     const report = () => document.querySelector('.u2-domain-import-report')?.textContent ?? '';
+    const previewed = () => document.querySelector(
+      '.u2-domain-import-preview .u2-domain-import-rows, .u2-domain-import-preview .u2-domain-import-problem') !== null;
     let running: Promise<unknown> | undefined;
     try {
       running = domains.import(table, {source});
@@ -181,11 +179,9 @@ category('U2: domain external write', () => {
       expect(named('allOrNothing') === null, true, 'no partial import on an external binding');
       expect(named('errorOnDuplicate') === null, true, 'a duplicate is always an error there');
       (Control.forElement(named('mode')!) as unknown as {value: {value: string}}).value.value = 'upsert';
-      await delay(100);
       buttonNamed('NEXT').click();
-      await delay(200);
       buttonNamed('NEXT').click();
-      await delay(200);
+      await until(previewed, 'the preview');
       const preview = document.querySelector('.u2-domain-import-preview')?.textContent ?? '';
       expect(preview.includes('Rows are checked when imported'), true, preview);
       buttonNamed('Import').click();

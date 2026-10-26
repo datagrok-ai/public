@@ -5,7 +5,7 @@ import {_package} from '../package-test';
 
 // tests for dimensionality reduction
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, uiSettled} from '@datagrok-libraries/test/src/test';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {KnownMetrics, NumberMetricsNames, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {multiColReduceDimensionality}
@@ -95,5 +95,5 @@ async function testDimensionalityReductionUI(
     expect(new Array(c.length).fill(null).every((_, i) => !c.isNone(i) && !isNaN(c.get(i))), true,
       'Embedding column has null-ish values');
   }
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await uiSettled(`${methodName} of ${columns}`);
 }

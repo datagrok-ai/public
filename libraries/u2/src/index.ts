@@ -91,7 +91,7 @@ export type {SliderInputOptions} from './components/inputs/slider-input.js';
 export {RangeSlider} from './components/inputs/range-slider.js';
 export type {RangeSliderOptions} from './components/inputs/range-slider.js';
 export {notify} from './components/display/notify.js';
-export type {NotifyType, NotifyOptions, NotifyHandle} from './components/display/notify.js';
+export type {NotifyType, NotifyOptions, NotifyHandle, NotifyPresenter} from './components/display/notify.js';
 export {RadioInput} from './components/inputs/radio-input.js';
 export type {RadioInputOptions} from './components/inputs/radio-input.js';
 export {ColorInput} from './components/inputs/color-input.js';

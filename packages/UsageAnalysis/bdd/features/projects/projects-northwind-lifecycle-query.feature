@@ -2,7 +2,9 @@
 Feature: A project of the user's own NorthwindTest query survives renaming the query
   NorthwindTest is the Postgres connection PostgresTest of the DbTests package, listed as
   NorthwindTest under Browse > Databases > Postgres; a stand without it, or where it cannot reach its
-  database, skips the feature (the gate in the Background).
+  database, skips the feature (the gate in the Background). DbTests has to be a released version: a
+  debug build (`grok publish` without `--release`) is visible to its publisher only, and the second
+  account then never sees the connection, whatever is shared.
 
   As written in the md: a query is made in the Browse tree with New SQL Query... on NorthwindTest >
   Schemas > public > orders (select * from public.orders), saved under its own name, run from the
@@ -20,10 +22,8 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
   the Data loading error dialog when it opens the project (core#755; the dialog's message, which does
   not name the connection, is enough — operator 2026-10-12), set up by the scenario before it. Then
   the NorthwindTest connection is shared from its Browse tree node, and the second account opens the
-  project before the rename, and after the rename and the SQL change. On core master of 2026-10-19
-  both of those opens stop on "Insufficient privileges to delete ViewInfo: <the query's name>", known
-  failures. The connection's grant is taken back through its Share dialog after the second open, and
-  swept when the feature starts and ends, since a run that failed before that point leaves it. The
+  project before the rename, and after the rename and the SQL change. The connection's grant is
+  taken back through its Share dialog after the second open, and swept when the feature starts and ends, since a run that failed before that point leaves it. The
   System:Datagrok version for other stands is parked (row counts differ per server).
 
   The query and the project are named with the run's time (letters and digits only) and removed,
@@ -136,9 +136,6 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     When user clicks on Databases---Postgres---NorthwindTest tree node inside browse tree
     Then the sharing pane should list the sharing user
 
-  # with the connection shared, the open stops on "Insufficient privileges to delete ViewInfo: <the query's
-  # name>" on core master of 2026-10-19 (no ticket yet)
-  @known-failure:150
   Scenario: The second account opens the shared project
     When user closes all views
     When user signs in as the sharing user
@@ -220,8 +217,6 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     And "Data loading error" dialog should be absent
     And no error or warning balloon should have been shown
 
-  # the open that stops on deleting the query's view, as before the rename
-  @known-failure:233
   Scenario: The second account opens the project after the rename and the SQL change (github-3550)
     When user closes all views
     When user signs in as the sharing user

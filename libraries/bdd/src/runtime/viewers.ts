@@ -63,10 +63,17 @@ async function awaitArea(page: Page, target: ElementRef, name: string, negate: b
 export async function hitArea(page: Page, target: ElementRef, name: string, beforeChange = false): Promise<Box> {
   if (beforeChange)
     await onViewer(page, target, (el) => (window as any).__bdd.settle(el, 300), undefined).catch(() => undefined);
-  const box = (await awaitArea(page, target, name, false, beforeChange))!;
-  // a gesture follows: a guide lights the area it aims at, not the viewer round it
-  if (beforeChange)
+  let box = (await awaitArea(page, target, name, false, beforeChange))!;
+  if (beforeChange) {
+    const c = centerOf(box);
+    // an area outside the visible part of a scrolling panel is scrolled into it first, and read again there
+    if (await onViewer(page, target, (el, [x, y]) => (window as any).__bdd.revealArea(el, x, y), [c.x, c.y] as [number, number])) {
+      await onViewer(page, target, (el) => (window as any).__bdd.settle(el, 300), undefined).catch(() => undefined);
+      box = (await awaitArea(page, target, name, false, beforeChange))!;
+    }
+    // a gesture follows: a guide lights the area it aims at, not the viewer round it
     guide.locatedArea(page, box);
+  }
   return box;
 }
 

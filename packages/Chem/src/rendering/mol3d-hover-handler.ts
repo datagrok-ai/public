@@ -1,6 +1,6 @@
 /**
- * Reverse 3D→2D hover handler for the interactive atom-highlighting bridge.
- * Extracted from `rdkit-cell-renderer.ts` to keep the renderer file focused.
+ * Reverse 3D→2D hover handler for the interactive atom-highlighting bridge (the 2D→3D mapping by the engine in effect,
+ * RDKit's module behind it).
  */
 
 import * as grok from 'datagrok-api/grok';
@@ -9,7 +9,7 @@ import * as DG from 'datagrok-api/dg';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {Mol3DHoverEventArgs} from '@datagrok-libraries/chem-meta/src/types';
 
-import {mapAtomIndices2Dto3D, AtomIndexMapping} from '../utils/atom-index-mapper';
+import {mapAtomIndices2Dto3DByEngine, AtomIndexMapping} from '../utils/atom-index-mapper';
 
 interface CellTopology {
   bondAtoms: Map<number, [number, number]>;
@@ -94,7 +94,7 @@ export function handleMol3DHoverEvent(
 
   let mapping: AtomIndexMapping | null;
   try {
-    mapping = mapAtomIndices2Dto3D(renderer.rdKitModule, smiles2D, pose3D);
+    mapping = mapAtomIndices2Dto3DByEngine(renderer.rdKitModule, smiles2D, pose3D);
   } catch {
     return;
   }

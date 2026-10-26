@@ -2,29 +2,29 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: d4f394484f7f3609ae919e583c6d276701cc86a8
+crux_core_rev: bfe8367a22a68854e6455974f579a939cf1b4411
 crux_core_dirty: False
-built_utc: 2026-10-21T01:48:07.149Z
+built_utc: 2026-10-26T00:04:00.858Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
 cargo.rustflags: -C target-feature=+simd128
 wasm_bindgen.version: 0.2.129
 wasm_bindgen.flags: --target web --remove-name-section
-wasm_opt.version: wasm-opt version 117 (version_117)
-wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 4984008
-files.chem_wasm_bg.wasm.gzip9: 1888161
-files.chem_wasm_bg.wasm.brotli11: 1397694
-files.chem_wasm.js.raw: 134236
-files.chem_wasm.js.gzip9: 20581
-files.chem_wasm.js.brotli11: 17300
-cargo_artifact.raw: 7180293
-cargo_artifact.gzip9: 2346126
-cargo_artifact.brotli11: 1672384
+wasm_opt.version: wasm-opt version 133 (version_133)
+wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-bulk-memory-opt --enable-call-indirect-overlong --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
+files.chem_wasm_bg.wasm.raw: 5969078
+files.chem_wasm_bg.wasm.gzip9: 2309798
+files.chem_wasm_bg.wasm.brotli11: 1691693
+files.chem_wasm.js.raw: 158029
+files.chem_wasm.js.gzip9: 24084
+files.chem_wasm.js.brotli11: 20140
+cargo_artifact.raw: 7562511
+cargo_artifact.gzip9: 2693392
+cargo_artifact.brotli11: 1907426
 
-vendored from: chem-wasm-d4f/ (crux-core main d4f394484, built clean by the orchestrator, 2026-10-21)
-chem_wasm_bg.wasm: 4,984,008 B raw, sha256 a3c80c7548ba82d9
+vendored from: a clean build of crux-core main bfe8367a2 (build-ship.sh chem)
+chem_wasm_bg.wasm: 5,969,078 B raw, sha256 bae24757c3780916
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes crux-core bae017db8 (rascal-mces: get_mces, RDKit's Rascal MCES of two molecules, a capability Chem does not call yet), d4f394484 (chem-wasm-size: one shared sort for the engine crates and out-of-line clones, 88 KB gzip smaller than 6a6587ae7's file with every result the same; get_mol of a MOL block with {kekulize:false} leaves the atoms of an already-aromatic bond as RDKit does), on top of 6a6587ae7's (fast-search-rdkit, the empty query, the descriptor speed-ups)
+includes: the run of 25-26 October: chem-batch-calls (ChemSmartsSet, chemFingerprints), chem-python-free and -2 (Curate, Gasteiger map, Mutate, Conformers with MMFF94, Murcko, filter catalogs, identifiers), chem-synthon-search (RDKit 2025.09.3's SynthonSpaceSearch exactly), chem-core-speed rounds 1-4 (allocator with capped pools, matcher prefilters and ring screens, CoordGen 2.1x, drawing, MACCS 1.9x, FMCS 1.41x), chem-rdkit-gaps 1-2 (S-group Hs, query-molecule fingerprints, InChI >20 H, Si valence, bracket H counts, libc++ ring order); outputs byte-identical to 9be674718's where the calls existed and the gaps' fixes do not apply
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)

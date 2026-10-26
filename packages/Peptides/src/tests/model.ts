@@ -3,13 +3,13 @@ import * as DG
 
 import {
   after,
-  awaitCheck,
   before,
   category,
-  delay,
   expect,
   expectFloat,
   test,
+  uiSettled,
+  waitUntil,
 } from '@datagrok-libraries/test/src/test';
 import {
   _package,
@@ -84,10 +84,10 @@ category('Model: Settings', () => {
 
     model = tempModel;
 
-    await delay(500);
+    await uiSettled('Peptides analysis');
   });
 
-  after(async () => await delay(3000));
+  after(async () => await uiSettled('Peptides analysis'));
 
   test('Activity scaling', async () => {
     const getError = (row: number, method: SCALING_METHODS): string =>
@@ -166,7 +166,7 @@ category('Model: Settings', () => {
     model.settings = {showDendrogram: true};
     expect(model.settings?.showDendrogram, true, 'Dendrogram is disabled after enabling');
 
-    await awaitCheck(() => model.dendrogramCloseButton !== null,
+    await waitUntil(() => model.dendrogramCloseButton !== null,
       'Dendrogram is not present in the view after 5s delay', 5000);
 
     // Disable dendrogram

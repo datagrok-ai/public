@@ -78,7 +78,7 @@ function badScalar(v: FilterScalar, kind: FilterKind, prop: FilterProperty, op: 
   }
   if (prop.choices && (op.id === '=' || op.id === 'in') && !prop.choices.includes(String(v)))
     return `"${v}" is not one of the choices of "${prop.name}"`;
-  return null;
+  return op.check?.(v) ?? null;
 }
 
 function checkCondition(c: FilterCondition, schema: FilterSchema, target: FilterTarget | undefined,

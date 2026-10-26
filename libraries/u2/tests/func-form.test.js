@@ -1552,3 +1552,27 @@ w2('clearing a bounded number writes null into the call, never NaN or the empty 
   assert.equal(f.isValid, true, 'an empty nullable number is not invalid');
   f.dispose();
 });
+
+form('an override\'s visible: false hides its field, whatever the param says', () => {
+  const f = mount(funcForm(callOf(fp('a', 'string'), fp('b', 'int')), {overrides: {b: {visible: false}}}));
+  assert.equal(f.getInput('a').root.hidden, false);
+  assert.equal(f.getInput('b').root.hidden, true);
+  f.dispose();
+});
+
+form('collapsedCategories: a category opens folded, its header still shown', () => {
+  const f = mount(funcForm(callOf(fp('a', 'string', {category: 'Main'}), fp('b', 'int', {category: 'Advanced'})),
+    {collapsedCategories: ['Advanced']}));
+  const [main, advanced] = [...f.root.querySelectorAll('.u2-form-category')];
+  assert.deepEqual(headers(f), ['Main', 'Advanced']);
+  assert.equal(main.getAttribute('aria-expanded'), 'true');
+  assert.equal(advanced.getAttribute('aria-expanded'), 'false');
+  f.dispose();
+});
+
+form('a file param gets a field, no longer unsupported', () => {
+  const f = mount(funcForm(callOf(fp('plan', 'file'), fp('name', 'string'))));
+  assert.deepEqual([...f.unsupported], []);
+  assert.deepEqual(f.inputs.map((i) => i.name), ['plan', 'name']);
+  f.dispose();
+});

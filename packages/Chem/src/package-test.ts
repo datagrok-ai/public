@@ -14,7 +14,9 @@ import './tests/cell-panel-tests';
 
 import './tests/substructure-search-tests';
 import './tests/crux-substructure-search-tests';
+import './tests/crux-search-types-tests';
 import './tests/chemical-engine-tests';
+import './tests/crux-column-jobs-tests';
 import './tests/crux-sketcher-tests';
 import './tests/rendering-tests';
 import './tests/rendering-scatter-plot-tooltip-tests';
@@ -42,6 +44,8 @@ import './tests/projects-tests';
 import './tests/clone-layout-tests';
 import './tests/mmpa-tests';
 import './tests/sar-matrix-tests';
+import './tests/crux-analyses-tests';
+import './tests/python-free-tests';
 import './tests/editor-loop-tests';
 import './tests/chemprop-tests';
 import './tests/vector-funcs-tests';

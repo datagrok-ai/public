@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {after, awaitCheck, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {first} from 'rxjs/operators';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
@@ -13,6 +14,7 @@ import {SubstructureSearchEngine, cruxReadsQuery, getCruxService, setSubstructur
   from '../crux/crux-searches';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {readDataframe} from './utils';
+import {rdkitPoolAsks} from './engine-utils';
 
 const QUERIES = ['c1ccccc1', 'c1ccncc1', 'C1CC1', 'C(=O)N', 'c1ccc2[nH]ccc2c1', 'C[C@H](N)C(=O)O', 'C/C=C/C',
   '[CX3](=O)[OX2H1]', '[NX3;H2,H1;!$(NC=O)]', '[F,Cl,Br,I]', '[#7;R]', '[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1-,=[#8]'];
@@ -97,51 +99,47 @@ async function expectSameAsRdkit(col: DG.Column, queries: string[], searchType =
   }
 }
 
-/** The RDKit worker pool's asks (its init counts every one). */
-const rdkitPoolAsks = () => chemCommonRdKit._rdKitService.timesInitialized;
-
 /**
- * The rows RDKit matches, Chem's main-thread RDKit.js reading the molecules (getMolSafe) and the query
+ * The rows RDKit matches, Chem's main-thread RDKit.js reading the molecules (getMolSafe: `mols`) and the query
  * (getQueryMolSafe) as Chem does: sanitized molecules, their rings the SSSR (RDKit's definition of R<n> and r<n>). The
  * RDKit worker pool is not asked (its search reads the molecules its cache lacks unsanitized, and sanitized for a query
  * that needs it: `substructure search: ring queries`).
  */
-function rdkitHits(molecules: (string | null)[], query: string, searchType = SubstructureSearchType.CONTAINS):
-  BitArray {
-  const rdkit = chemCommonRdKit.getRdKitModule();
-  const queryMol = getQueryMolSafe(query, '', rdkit);
-  const hits = new BitArray(molecules.length);
+function rdkitHits(mols: (RDMol | null)[], query: string, searchType = SubstructureSearchType.CONTAINS): BitArray {
+  const queryMol = getQueryMolSafe(query, '', chemCommonRdKit.getRdKitModule());
+  const hits = new BitArray(mols.length);
   try {
-    for (let i = 0; i < molecules.length; i++) {
-      const mol = molecules[i] ? getMolSafe(molecules[i]!, {}, rdkit).mol : null;
+    mols.forEach((mol, i) => {
       if (!mol)
-        continue;
-      try {
-        const matches = !!queryMol && mol.get_substruct_match(queryMol) !== '{}';
-        hits.setFast(i, searchType === SubstructureSearchType.CONTAINS ? matches : !matches);
-      } finally {
-        mol.delete();
-      }
-    }
+        return;
+      const matches = !!queryMol && mol.get_substruct_match(queryMol) !== '{}';
+      hits.setFast(i, searchType === SubstructureSearchType.CONTAINS ? matches : !matches);
+    });
   } finally {
     queryMol?.delete();
   }
   return hits;
 }
 
-/** Crux searches each query and gives RDKit's hits ({@link rdkitHits}), asking nothing of the RDKit worker pool. */
+/** Crux searches each query and gives RDKit's hits ({@link rdkitHits}, the column's molecules read once for all the
+ * queries), asking nothing of the RDKit worker pool. */
 async function expectRdkitHitsThroughCrux(col: DG.Column, queries: string[],
   searchType = SubstructureSearchType.CONTAINS): Promise<void> {
-  const molecules = col.toList();
+  const rdkit = chemCommonRdKit.getRdKitModule();
+  const mols = (col.toList() as (string | null)[]).map((m) => m ? getMolSafe(m, {}, rdkit).mol : null);
   const asks = rdkitPoolAsks();
-  for (const query of queries) {
-    const label = query.includes('M  END') ? `a MOL block (${query.split('\n')[1].trim()})` : query;
-    expect(await cruxReadsQuery(query, ''), true, `Crux does not search for ${label}`);
-    const crux = await search(SubstructureSearchEngine.Crux, col, query, searchType);
-    const rdkit = rdkitHits(molecules, query, searchType);
-    expect(crux.equals(rdkit), true, `Crux differs from RDKit: ${col.name} ${searchType} ${label} ` +
-      `(Crux ${crux.trueCount()} rows, RDKit ${rdkit.trueCount()}; the first differing row ` +
-      `${crux.clone().xor(rdkit).findNext(-1, true)})`);
+  try {
+    for (const query of queries) {
+      const label = query.includes('M  END') ? `a MOL block (${query.split('\n')[1].trim()})` : query;
+      expect(await cruxReadsQuery(query, ''), true, `Crux does not search for ${label}`);
+      const crux = await search(SubstructureSearchEngine.Crux, col, query, searchType);
+      const expected = rdkitHits(mols, query, searchType);
+      expect(crux.equals(expected), true, `Crux differs from RDKit: ${col.name} ${searchType} ${label} ` +
+        `(Crux ${crux.trueCount()} rows, RDKit ${expected.trueCount()}; the first differing row ` +
+        `${crux.clone().xor(expected).findNext(-1, true)})`);
+    }
+  } finally {
+    mols.forEach((mol) => mol?.delete());
   }
   expect(rdkitPoolAsks(), asks, `a Crux search on ${col.name} asked for the RDKit workers`);
 }

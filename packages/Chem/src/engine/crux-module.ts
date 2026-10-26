@@ -2,10 +2,10 @@
  * The lazy loader of Chem's one Crux file, `vendor/chem-wasm` (RDKit.js-shaped calls, the search Collection,
  * descriptors, the scaffold tree): fetched and compiled once, on the first use; instantiated on the main thread on the
  * first use there (rendering, the search's query check); the compiled Module is what the Crux workers instantiate.
- * Nothing calls it in RDKit mode but the Crux substructure search. A load not done within a minute of its fetch's start
- * (a stalled fetch) has failed; a failed load is tried once more a minute later (a network hiccup), then it is final
- * for the session; a wasm trap on the main thread (`WebAssembly.RuntimeError`) is final at once. The callers take their
- * RDKit paths meanwhile.
+ * In RDKit mode only what runs on Crux in both modes loads it (molzip; FCFP and chirality fingerprints). A load not
+ * done within a minute of its fetch's start (a stalled fetch) has failed; a failed load is tried once more a minute
+ * later (a network hiccup), then it is final for the session; a wasm trap on the main thread
+ * (`WebAssembly.RuntimeError`) is final at once. The callers take their RDKit paths meanwhile.
  */
 import * as DG from 'datagrok-api/dg';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';

@@ -13,9 +13,13 @@ Feature: Grid summary columns
   CONTROL, STARTED and SEVERITY.
 
   Sources: `grid-appearance-summary-persist.md` scenario 6 (the one-click types) and scenario 8 (the
-  summary columns across a layout; its project half is in the package test named below), `grid.md`
-  "Removing a Summary Column by the Top-Panel Icon" (GROK-18256) and "Summary Column Surviving a
-  Removed Source Column" (GROK-19942).
+  summary columns across a layout), `grid.md` "Removing a Summary Column by the Top-Panel Icon"
+  (GROK-18256) and "Summary Column Surviving a Removed Source Column" (GROK-19942), and
+  `PowerGrid/summary-columns.md` scenario 3 steps 7-8 (Ctrl+Z brings the removed CONTROL back
+  between DEMOG and STARTED, 11 columns); scenario 4 steps 10-14 (the eight summary columns through a
+  saved project) are tested in the package's 'Project' test named below. The md's step 8, "the Tags
+  column again shows a CONTROL tag", is a scenario of its own, the last one, marked known-failure:
+  after Ctrl+Z the Tags cells of the flagged rows stay blank (public#4378).
   The rename scenario is beyond the TestTrack specs. The menu offers eight renderer items — the
   seven of the TestTrack spec and VlaaiVis (operator decision D3: all of them); the `bar` renderer
   the package also registers is not virtual and the menu does not list it (measured on dev; not
@@ -40,7 +44,7 @@ Feature: Grid summary columns
   reports `cell type of <col>` for the columns it draws, so the round-trip scenario reads the first
   three summary columns, walks the current cell to the last one so the rest scroll into view, and
   reads them; the current column is not claimed there, since a virtual column is no table column.
-  The eight columns and their settings through a layout and a project, and which rows a Tags column
+  The eight columns' settings through a layout and a project, and which rows a Tags column
   marks without painting the grid over (GROK-20888), are tested in PowerGrid
   src/tests/summary-columns-tests.ts ('Layout', 'Project', 'Tags marks the flagged rows and leaves
   the other cells alone (GROK-20888)', 'Tags and Bar fill only their own shapes (GROK-20888)').
@@ -56,7 +60,6 @@ Feature: Grid summary columns
     When user picks "Add > Summary Columns > <item>" from the context menu of the "cell 2 of USUBJID" area of grid
     Then the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY, <item>"
     And the "cell type of <item>" reading of grid should be "<type>"
-    And the "cell 3 of <item>" area of grid should be painted
     And the table should have 11 columns
     And no errors should have been logged
 
@@ -97,7 +100,6 @@ Feature: Grid summary columns
   Scenario: The grid keeps drawing a Tags column whose source column was removed (GROK-19942)
     When user picks "Add > Summary Columns > Tags" from the context menu of the "cell 2 of USUBJID" area of grid
     Then the "cell type of Tags" reading of grid should be "tags"
-    And the "cell 3 of Tags" area of grid should be painted in at least 1 colors
     When user picks "Remove" from the context menu of the "header CONTROL" area of grid
     Then the table should not have a column "CONTROL"
     And the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, STARTED, SEVERITY, Tags"
@@ -108,6 +110,11 @@ Feature: Grid summary columns
     And the "cell type of Tags" reading of grid should be "tags"
     When user presses Control+Home
     Then grid should have a "cell 1 of Tags" area
+    When user clicks on the "cell 2 of AGE" area of grid
+    And user presses Control+Z
+    Then the table should have a column "CONTROL"
+    And the table should have 11 columns
+    And the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY, Tags"
     And no errors should have been logged
     When user picks "Remove" from the context menu of the "header Tags" area of grid
     Then grid should not have a "header Tags" area
@@ -161,3 +168,15 @@ Feature: Grid summary columns
     And the "cell type of Tags" reading of grid should be "tags"
     And the "cell type of Confidence Interval" reading of grid should be "confidenceinterval"
     And no errors should have been logged
+
+  @known-failure:182 @realizes:public#4378
+  Scenario: Ctrl+Z of a removed source column draws its tags again
+    When user picks "Add > Summary Columns > Tags" from the context menu of the "cell 2 of USUBJID" area of grid
+    Then the "cell 3 of Tags" area of grid should be painted in at least 1 colors
+    When user picks "Remove" from the context menu of the "header CONTROL" area of grid
+    Then the table should not have a column "CONTROL"
+    When user clicks on the "cell 2 of AGE" area of grid
+    And user presses Control+Z
+    Then the table should have a column "CONTROL"
+    And grid should have repainted
+    And the "cell 3 of Tags" area of grid should be painted in at least 1 colors

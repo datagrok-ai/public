@@ -6,7 +6,8 @@ import {readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {SCAFFOLD_TREE_MAX_MOLECULES, ScaffoldTreeViewer, scaffoldTreeSampleRows, updateVisibleNodes, value}
   from '../widgets/scaffold-tree';
-import {ChemicalEngine, setChemicalEngine} from '../engine/chem-engine';
+import {ChemicalEngine} from '../engine/chem-engine';
+import {inEngine} from './engine-utils';
 import {PackageFunctions} from '../package';
 
 category('scaffold tree', () => {
@@ -176,24 +177,25 @@ category('scaffold tree', () => {
   });
 
   test('the Python script on a 750-molecule sample', async () => {
-    // timing (the stand's Python): the tree the RDKit engine builds from the sample of a 4,950-molecule table
+    // timing (the stand's Python): the tree the RDKit engine builds from the sample of a 4,950-molecule table. A
+    // measurement: with --benchmark only (chemical engine's "scaffold tree: Crux against the Python script" checks
+    // the script's tree node by node)
+    if (!DG.Test.isInBenchmark)
+      return;
     const values = (await largeTable(5)).col('smiles')!.toList() as string[];
     const rows = scaffoldTreeSampleRows(values, SCAFFOLD_TREE_MAX_MOLECULES, (m) => !!m);
     const sample = DG.Column.fromStrings('smiles', rows.map((r) => values[r]));
     sample.semType = DG.SEMTYPE.MOLECULE;
     const df = DG.DataFrame.fromColumns([sample]);
-    setChemicalEngine(ChemicalEngine.RDKit);
-    try {
+    await inEngine(ChemicalEngine.RDKit, async () => {
       const started = performance.now();
       const tree = JSON.parse(await PackageFunctions.getScaffoldTree(df, 10, false));
       const seconds = (performance.now() - started) / 1000;
       console.log(`scaffold tree | the Python script on ${df.rowCount} molecules: ${seconds.toFixed(1)} s, ` +
         `${tree.length} root scaffolds`);
       expect(tree.length > 0, true);
-    } finally {
-      setChemicalEngine(null);
-    }
-  }, {timeout: 900000});
+    });
+  }, {timeout: 900000, benchmark: true});
 
   async function editStructure(scaffoldTree: ScaffoldTreeViewer, group: DG.TreeViewGroup, smiles: string) {
     await scaffoldTree.openEditSketcher(group);

@@ -71,6 +71,8 @@ smoke('validators come from the input base; dispose kills the listeners', async 
   const input = mount(new ImageInput({label: 'Logo'}));
   input.addValidator((v) => v === '' ? 'Pick an image' : null);
   assert.equal(input.validity.value, 'Pick an image');
+  assert.equal(input.root.querySelector('.u2-input-error').textContent, '', 'shown once touched');
+  input.touch();
   assert.equal(input.root.querySelector('.u2-input-error').textContent, 'Pick an image');
 
   input.value.value = LOGO;

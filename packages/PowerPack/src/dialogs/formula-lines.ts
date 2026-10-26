@@ -2230,7 +2230,9 @@ export class FormulaLinesDialog {
         return this.preview.update(itemIdx, isFormulaLine);
       },
       (isValid: boolean): void => {
-        isValid ? this.dialog.getButton('OK').classList.remove('disabled') : this.dialog.getButton('OK').classList.add('disabled');
+        const ok = this.dialog.getButton('OK');
+        ok.classList.toggle('disabled', !isValid);
+        isValid ? ok.removeAttribute('aria-disabled') : ok.setAttribute('aria-disabled', 'true');
       },
       singleAxisColumnNameForHost(src),
       defaultItemZIndexForHost(src),

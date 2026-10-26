@@ -1,7 +1,6 @@
 /* eslint-disable no-throw-literal */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {delay} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 
 
@@ -13,7 +12,6 @@ export async function loadFileAsText(name: string): Promise<string> {
 }
 
 export async function getOptions(viewer: DG.Viewer): Promise<Indexable> {
-  await delay(100);
   const options = (viewer.getOptions(true) as {id: string, type: string, look: Indexable}).look;
   delete options['#type'];
   delete options.table;

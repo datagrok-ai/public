@@ -1,0 +1,17 @@
+id,smiles,pIC50
+PARA-01,Cc1ccc(F)cc1,5.03
+PARA-02,Cc1ccc(Cl)cc1,5.48
+PARA-03,Cc1ccc(Br)cc1,5.81
+PARA-04,Cc1ccc(I)cc1,5.96
+PARA-05,N#Cc1ccc(F)cc1,5.62
+PARA-06,N#Cc1ccc(Cl)cc1,6.1
+PARA-07,N#Cc1ccc(Br)cc1,6.39
+PARA-08,N#Cc1ccc(I)cc1,6.64
+PARA-09,Oc1ccc(F)cc1,6.17
+PARA-10,Oc1ccc(Cl)cc1,
+PARA-11,Oc1ccc(Br)cc1,7.02
+PARA-12,Oc1ccc(I)cc1,7.18
+PARA-13,Nc1ccc(F)cc1,5.3
+PARA-14,Nc1ccc(Cl)cc1,5.83
+PARA-15,Nc1ccc(Br)cc1,6.09
+PARA-16,Nc1ccc(I)cc1,6.32

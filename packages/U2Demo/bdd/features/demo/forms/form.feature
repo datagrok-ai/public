@@ -7,7 +7,7 @@ Feature: Forms
 
   Scenario: Validity aggregates across the form and Submit reports the values
     Then value of "form validity" readout should have text "Required"
-    And error of "Last name" input should have text "Required"
+    And error of "Last name" input should be hidden
     When user types "Lovelace" into "Last name" input
     Then value of "form validity" readout should have text "valid"
     When user clicks on Submit button

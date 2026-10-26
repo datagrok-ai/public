@@ -61,11 +61,9 @@ Packages > Chem > Settings**, as above):
   alerts calculated and the scaffold tree built by Crux, in the browser (descriptors and the scaffold tree otherwise run
   on the server); RDKit does the rest, and whatever Crux cannot handle. Other packages get RDKit objects from Chem in
   both modes (`getRdKitModule`, `getRdKitService`); in Crux mode the pictures and values of the moved functions come
-  from Crux.
-* **Substructure Search Engine** (Crux by default): the engine of Contains / Not contains searches. Crux indexes a
-  column once and searches it many times faster, with the same hits as RDKit (every query feature, as RDKit
-  matches it); a query Crux cannot read runs on RDKit. A server where Chem's settings were saved before keeps the value saved (RDKit, the earlier default): an
-  admin switches it here.
+  from Crux. Contains / Not contains searches follow it too: Crux indexes a column once and searches it many times
+  faster, with the same hits as RDKit (every query feature, as RDKit matches it); a query Crux cannot read runs on
+  RDKit.
 
 ## Favorite and recent structures
 

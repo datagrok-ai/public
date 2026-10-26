@@ -4,7 +4,7 @@
 
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectFloat, waitUntil} from '@datagrok-libraries/test/src/test';
 import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame, compileBody,
   clearCompileCache, _getCompileStats, _setCompileCacheCap, FLOAT_NULL} from
   '@datagrok-libraries/compute-utils/webworkers';
@@ -715,10 +715,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
       // Remove slot 0. Replacement is spawned and re-primed; budget hits 1.
       // Re-prime is async; wait for it to land by polling.
       pool._removeSlotForTest(pool._slotsArrayForTest()[0], 'test forced remove 1', 77);
-      const start = Date.now();
-      while (pool._primedSlotCountForTest(77) < 2 && Date.now() - start < 2000)
-        await new Promise((r) => setTimeout(r, 10));
-      expect(pool._primedSlotCountForTest(77), 2, 'replacement should re-prime within budget');
+      await waitUntil(() => pool._primedSlotCountForTest(77) === 2, 'replacement should re-prime within budget', 2000);
       expect(pool._replacementAttemptsForTest(77), 1, 'budget consumed');
 
       // Remove a second slot. Budget exhausted: replacement spawns but is
@@ -781,11 +778,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
       expect(pool._replacementAttemptsForTest(A), 0);
       expect(pool._replacementAttemptsForTest(B), 0);
 
-      const waitForReprime = async () => {
-        const start = Date.now();
-        while (pool._primedSlotCountForTest(A) < 2 && Date.now() - start < 2000)
-          await new Promise((r) => setTimeout(r, 10));
-      };
+      const waitForReprime = () => waitUntil(() => pool._primedSlotCountForTest(A) === 2, 'A was not re-primed', 2000);
 
       // First B-attributed removal: B charged (→1), A re-primed but not charged.
       pool._removeSlotForTest(pool._slotsArrayForTest()[0], 'B caused remove 1', B);

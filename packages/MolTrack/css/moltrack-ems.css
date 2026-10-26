@@ -45,3 +45,12 @@
   min-width: 680px;
   overflow: auto;
 }
+
+.moltrack-ems-home {
+  gap: 50px;
+  margin-top: 20px;
+}
+
+.moltrack-ems-home-counts td:first-child {
+  padding-right: 24px;
+}

@@ -12,7 +12,7 @@ import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Row
   timestamp, EMPTY, isEmpty, text, loader, link, iconButton, notify, PickInput} from '@datagrok-libraries/u2';
 import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
-import {propertyForm, ObjectForm, Editors, userPick, groupPick} from '@datagrok-libraries/u2/src/dg/index.js';
+import {propertyForm, ObjectForm, Editors, userPick, groupPick, kindOf} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {ObjectFormOptions} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainSource} from '../core/domain-source.js';
 import {capital, nounOf} from '../core/domain-backend.js';
@@ -47,7 +47,6 @@ export interface DomainFormOptions extends Pick<ObjectFormOptions,
   system?: 'hidden' | 'footer';
 }
 
-const UNTOUCHED = 'u2-input-untouched';
 const CHANGED = 'u2-input-changed';
 const REQUIRED = 'u2-input-required';
 
@@ -84,7 +83,6 @@ export class DomainForm extends Control {
   /** Per readonly reference column of the current row: the id shown, its caption and target table. */
   private readonly _captions = new Map<string, {id: string, caption: string, address?: string}>();
   private _returnTo: string | undefined;
-  private _focusing = false;
   private _editSub: {unsubscribe(): void} | undefined;
   private readonly _subs: {unsubscribe(): void}[];
 
@@ -123,12 +121,14 @@ export class DomainForm extends Control {
       this._verdict.hidden = lines.length === 0;
     });
     // the keyboard path to Save: the ribbon is the shell's, outside the form's tab order — Ctrl+S
-    // saves, and Tab past the last field lands on the session's Save button
+    // saves, and Tab past the last field lands on the session's Save button while there is something
+    // to save, a Save the form holds off too: its tooltip says why
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Tab' && !e.shiftKey) {
         const target = source.session.primaryButton as HTMLButtonElement | undefined;
         const last = this._form.peek()?.inputs.at(-1);
-        if (target !== undefined && !target.disabled && last !== undefined && last.root.contains(e.target as Node)) {
+        if (target !== undefined && source.session.isDirty.peek() && !source.session.isSaving.peek() &&
+            last !== undefined && last.root.contains(e.target as Node)) {
           e.preventDefault();
           target.focus();
         }
@@ -154,6 +154,9 @@ export class DomainForm extends Control {
         this.validate();
       return problem;
     }, this.problem);
+    // an invalid edit the form never writes is still the user's unsaved change: the gates ask before
+    // dropping it, and Discard drops it
+    const unhold = source.holdUnwritten(computed(() => this._form.value?.unwritten.value ?? 0));
     // a refusal raised elsewhere (the table's validators run before this guard) shows every verdict too
     this.effect(() => {
       const code = DomainErrors.codeOf(source.error.value);
@@ -163,7 +166,11 @@ export class DomainForm extends Control {
         untracked(() => this.validate());
     });
     this._subs = [source.session.onSaved.subscribe(() => this.focus()),
-      source.session.onDiscarded.subscribe(() => this.focus())];
+      source.session.onDiscarded.subscribe(() => {
+        // an invalid edit never reached the row, so the revert left it standing: it goes too
+        this._form.peek()?.reset();
+        this.focus();
+      })];
     let seen = source.activate.peek();
     this.effect(() => {
       const bumped = source.activate.value;
@@ -174,6 +181,7 @@ export class DomainForm extends Control {
     });
     this.own(() => {
       unguard();
+      unhold();
       for (const s of this._subs)
         s.unsubscribe();
       this._shown?.dispose();
@@ -207,8 +215,6 @@ export class DomainForm extends Control {
     const form = this._form.peek();
     if (form === null)
       return false;
-    for (const input of form.inputs)
-      input.root.classList.remove(UNTOUCHED);
     this._checkConstraints();
     return form.validate();
   }
@@ -230,12 +236,10 @@ export class DomainForm extends Control {
       const form = this._form.peek();
       const input = this._returnTo === undefined ? undefined : form?.input(this._returnTo);
       this._returnTo = undefined;
-      this._focusing = true;
       if (input !== undefined)
         input.focus();
       else
         form?.focusFirst(DomainForm.needsValue);
-      this._focusing = false;
       // a Ctrl+S from inside a picker leaves its popup over the form, and the re-focus would open
       // one anyway (`openOnFocus`): the form comes back with nothing covering it
       for (const input of this._form.peek()?.inputs ?? []) {
@@ -318,10 +322,7 @@ export class DomainForm extends Control {
     const form = propertyForm(source.schema.properties.filter((p) => !system.has(p.name)), row, {
       include: options.include, exclude: options.exclude, layout: options.layout, condensed: options.condensed,
       labelColumn: options.labelColumn, overrides, access: view,
-      onChanged: (name, value) => {
-        options.onChanged?.(name, value);
-        this._checkConstraints();
-      },
+      onChanged: options.onChanged,
     });
     form.root.dataset.u2Row = row.id;
     // the schema constraints, pre-validated here; one naming a column the caller may not see is
@@ -342,32 +343,22 @@ export class DomainForm extends Control {
       if (name === undefined)
         continue;
       input.root.classList.toggle(REQUIRED, !input.nullable);
-      input.addValidator((value) =>
-        source.edit.peek()?.errorOf(row.id, name) ?? table?.validators.check(name, value, row) ?? null);
-      // a pristine draft is not wrong yet: a field's verdict shows once it was edited or left
-      if (draft) {
-        input.root.classList.add(UNTOUCHED);
+      // the writer's verdict is about the value the row holds; an edit the form has not written yet
+      // (it writes only valid ones) is judged by the table's rules alone, or it could never be written
+      const kind = kindOf(source.schema.properties.find((p) => p.name === name)!);
+      input.addValidator((value) => (ObjectForm.same(value, ObjectForm.coerce(kind, row[name])) ?
+        source.edit.peek()?.errorOf(row.id, name) : null) ?? table?.validators.check(name, value, row) ?? null);
+      // and a constraint is judged on what the fields hold, written or not
+      if (this._constraints.some((c) => c.columns.includes(name))) {
         let initial = true;
         input.effect(() => {
           input.value.value;
           if (initial)
             initial = false;
           else
-            input.root.classList.remove(UNTOUCHED);
+            untracked(() => this._checkConstraints());
         });
       }
-    }
-    if (draft) {
-      // the focus the form placed is not the user's: leaving it untyped shows no verdict yet
-      let placed = false;
-      form.scope.listen(form.root, 'focusin', () => placed = this._focusing);
-      form.scope.listen(form.root, 'keydown', () => placed = false);
-      form.scope.listen(form.root, 'pointerdown', () => placed = false);
-      form.scope.listen(form.root, 'focusout', (e) => {
-        if (!placed)
-          (e.target as Element).closest(`.${UNTOUCHED}`)?.classList.remove(UNTOUCHED);
-        placed = false;
-      });
     }
     this._markChanged(form, row);
     return form;

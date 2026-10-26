@@ -34,7 +34,8 @@ function rules(text) {
     else {
       const decls = src.slice(open + 1, close).split(';').map((d) => d.split(':'))
         .filter((d) => d.length > 1).map(([prop, ...value]) => [prop.trim(), value.join(':').trim()]);
-      for (const selector of head.split(','))
+      // a comma inside parentheses (`:not(:disabled, [aria-disabled='true'])`) belongs to its selector
+      for (const selector of head.split(/,(?![^(]*\))/))
         out.push({selector: selector.replace(/\s+/g, ' ').trim(), decls});
     }
     i = close + 1;

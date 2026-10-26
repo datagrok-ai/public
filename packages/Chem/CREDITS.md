@@ -57,8 +57,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ### Crux chemical engine (`chem_wasm_bg.wasm`)
 
-Chem's Crux engine (the Chemical Engine and Substructure Search Engine package
-properties, `src/engine/`, `src/crux/`), compiled to WebAssembly. Files:
+Chem's Crux engine (the Chemical Engine package property, `src/engine/`,
+`src/crux/`), compiled to WebAssembly. Files:
 `vendor/chem-wasm/chem_wasm.js` (bundled) and `vendor/chem-wasm/chem_wasm_bg.wasm`
 (copied into `dist/` at build time), with `NOTICE.chem-wasm` and
 `VERSION.chem-wasm` (copied into `dist/` beside it; `VERSION.chem-wasm` names
@@ -415,7 +415,7 @@ the licence files in crux-core and the pinned RDKit wheel), reproduced below as 
 sketch-wasm: third-party notices
 
 Crux Sketch's engine: reading and writing molecules, laying them out and drawing them.
-This WebAssembly module is Rust code of crux-core (https://github.com/datagrok/crux), ported
+This WebAssembly module is Rust code of crux-core (https://github.com/datagrok-ai/crux-core), ported
 from the software below or embedding it. Each part names what the module holds of it and
 reproduces its licence. Written by crux-core's tools/wasm_notices.py from the licence files in
 the repository and the pinned RDKit wheel.
@@ -708,7 +708,7 @@ MathFunctions.h), which RDKit's MolTransforms::computeCanonicalTransform calls: 
 module's normalizeDepiction (RDKit's normalizeDepiction) runs it. That file only is
 under the MPL-2.0 below (Copyright (C) 2008-2010 Gael Guennebaud, (C) 2010 Jitse Niesen,
 (C) 2006-2010 Benoit Jacob, (C) 2014 Pedro Gonnet). Its Source Code Form is the file
-crates/rk/src/shape_helpers/eigen.rs of crux-core (https://github.com/datagrok/crux);
+crates/rk/src/shape_helpers/eigen.rs of crux-core (https://github.com/datagrok-ai/crux-core);
 Eigen's own source is at the link above, tag 3.3.9.
 
 Mozilla Public License Version 2.0
@@ -1092,7 +1092,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 cdxml-wasm: third-party notices
 
 Crux Sketch's CDXML module: ChemDraw XML read into a MOL block and written from one.
-This WebAssembly module is Rust code of crux-core (https://github.com/datagrok/crux), ported
+This WebAssembly module is Rust code of crux-core (https://github.com/datagrok-ai/crux-core), ported
 from the software below or embedding it. Each part names what the module holds of it and
 reproduces its licence. Written by crux-core's tools/wasm_notices.py from the licence files in
 the repository and the pinned RDKit wheel.
@@ -1154,7 +1154,7 @@ reproduced above for RDKit, with this copyright line.
 inchi-wasm: third-party notices
 
 Crux Sketch's InChI module: InChI and InChIKey of a MOL block, and the molecule of an InChI.
-This WebAssembly module is Rust code of crux-core (https://github.com/datagrok/crux), ported
+This WebAssembly module is Rust code of crux-core (https://github.com/datagrok-ai/crux-core), ported
 from the software below or embedding it. Each part names what the module holds of it and
 reproduces its licence. Written by crux-core's tools/wasm_notices.py from the licence files in
 the repository and the pinned RDKit wheel.

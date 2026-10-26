@@ -19,7 +19,8 @@ Feature: Progress, notifications and the guided tour
     And user clicks on Error button
     Then "Two structures could not be parsed." notification should be visible
     And "Connection refused." notification should be visible
-    When user closes "Connection refused." notification
+    When user hovers over "Connection refused." notification
+    And user closes "Connection refused." notification
     Then "Connection refused." notification should be hidden
     When user clicks on "Close all" button
     Then "Two structures could not be parsed." notification should be hidden

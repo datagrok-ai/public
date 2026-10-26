@@ -29,6 +29,8 @@ export interface FilterRowHost {
   operators(prop: FilterProperty): FilterOperator[];
   /** The strongest lock on the node, its ancestors and their template counterparts. */
   lockOf(id: string): Lock;
+  /** False while the builder is disabled: every editor in a row reads and acts disabled. */
+  enabled(): boolean;
   /** Advanced mode: handles, `not`, `+ group`. */
   advanced(): boolean;
   allowAdd: boolean;
@@ -156,7 +158,7 @@ export class FilterRow extends Control {
       this._buildEditors(cond, prop, op);
     } else
       this._syncEditors(cond);
-    this._applyLock();
+    this.applyLock();
   }
 
   setProblem(message: string | null, missing = false): void {
@@ -218,10 +220,12 @@ export class FilterRow extends Control {
       this._host.change(this.id, {value});
   }
 
-  // a locked property/operator reads as text: a disabled select says "broken", not "fixed"
-  private _applyLock(): void {
+  /** The lock and the builder's enabled state, applied: a locked property/operator reads as text — a
+   * disabled select says "broken", not "fixed" — and a disabled builder disables every editor. */
+  applyLock(): void {
     const lock = this._host.lockOf(this.id);
     const locked = lock !== 'none';
+    const enabled = this._host.enabled();
     this.root.classList.toggle('u2-fb-locked', locked);
     this._remove.hidden = locked;
     this._handle.hidden = locked || !this._host.advanced();
@@ -229,8 +233,12 @@ export class FilterRow extends Control {
     this._op.root.hidden = locked;
     this._propText.hidden = !locked;
     this._opText.hidden = !locked;
+    for (const picker of [this._prop, this._op]) {
+      if (picker.enabled !== enabled)
+        picker.enabled = enabled;
+    }
     for (const editor of this._editors)
-      editor.setEnabled(lock !== 'all');
+      editor.setEnabled(enabled && lock !== 'all');
   }
 
   // the problem line stays the value column's last child: it reads under the value it is about

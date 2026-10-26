@@ -491,6 +491,8 @@ smoke('TextInput: validation flips validity, enabled toggles the editor', () => 
   input.addValidator((v) => v.trim() ? null : 'Name is required');
   assert.equal(input.validity.value, 'Name is required');
   const editor = input.root.querySelector('input');
+  assert.equal(editor.classList.contains('u2-invalid'), false, 'shown once touched');
+  input.touch();
   assert.equal(editor.classList.contains('u2-invalid'), true);
   assert.equal(input.root.querySelector('.u2-input-error').textContent, 'Name is required');
 

@@ -12,7 +12,7 @@ build links (its name section), their licence files and the pinned RDKit wheel.
 RDKit 2026.03.6 (https://github.com/rdkit/rdkit, tag Release_2026_03_6)
 ------------------------------------------------------------------------------
 BSD 3-Clause License. Ported to Rust file for file (each file names its RDKit sources):
-  crux-core crates cip-labeler, depictor, distgeom, fmcs, forcefield, ga, mol-enumerator, moldraw2d, molfile, molstandardize, rascal, rgroup, rk, rxn, smarts-parser, smi-compiler.
+  crux-core crates cip-labeler, depictor, distgeom, fmcs, forcefield, ga, mol-enumerator, moldraw2d, molfile, molstandardize, rascal, rgroup, rk, rxn, smarts-parser, smi-compiler, synthon-space.
 The licence below is the pinned RDKit wheel's (rdkit/license.txt). Files of other
 authors in RDKit keep their own copyright lines in the ported files' headers, under
 the same licence.
@@ -760,7 +760,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ------------------------------------------------------------------------------
 cpython 3.12 (https://github.com/python/cpython, tag v3.12.3)
 ------------------------------------------------------------------------------
-PSF-2.0. Ported in crux-core's pycompat (mt19937).
+PSF-2.0. Ported in crux-core's pycompat (mt19937, py_random).
 The licence below is the upstream's own, kept as crates/singlecell-io/LICENSE-cpython.txt.
 After it, under its own terms: MT19937's reference code (mt19937ar.c, Makoto Matsumoto and Takuji
 Nishimura) as CPython's Modules/_randommodule.c quotes it at v3.12.3
@@ -1465,9 +1465,39 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
   defined by the Mozilla Public License, v. 2.0.
 
 ------------------------------------------------------------------------------
+inchi 1.07.3 (https://github.com/IUPAC-InChI/InChI, tag v1.07.3)
+------------------------------------------------------------------------------
+MIT. Ported in crux-core's inchi.
+LICENSE: MIT, Copyright (c) 2024 InChI Project (file headers: IUPAC and InChI Trust); kept as
+crates/inchi/LICENSE-inchi.txt. sha2.c (Paul Bakker, Christophe Devine) is MIT 'in combination with
+the InChI software package' (notice in crates/inchi/src/sha2.rs). No data files or weights.
+
+MIT License
+
+Copyright (c) 2024 InChI Project
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+------------------------------------------------------------------------------
 numpy 1.26.4 (https://github.com/numpy/numpy)
 ------------------------------------------------------------------------------
-BSD-3-Clause. Ported in crux-core's pycompat (np_sum).
+BSD-3-Clause. Ported in crux-core's pycompat (np_sum, py_random).
 Copyright (c) 2005-2023, NumPy Developers.
 The licence below is the upstream's own, kept as crates/pycompat/licenses/NumPy-BSD-3-Clause.txt.
 
@@ -1501,6 +1531,174 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+------------------------------------------------------------------------------
+numpy2 2.5.3 (https://github.com/numpy/numpy, tag v2.5.3)
+------------------------------------------------------------------------------
+BSD-3-Clause. Ported in crux-core's pycompat (py_random).
+LICENSE.txt (BSD-3-Clause); the tanh loop's tables come from Intel SVML (BSD-3-Clause).
+
+Copyright (c) 2005-2025, NumPy Developers.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above
+       copyright notice, this list of conditions and the following
+       disclaimer in the documentation and/or other materials provided
+       with the distribution.
+
+    * Neither the name of the NumPy Developers nor the names of any
+       contributors may be used to endorse or promote products derived
+       from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+------------------------------------------------------------------------------
+pandas 3.0.6 (https://github.com/pandas-dev/pandas, tag v3.0.6)
+------------------------------------------------------------------------------
+BSD-3-Clause. Ported in crux-core's pycompat (py_random).
+LICENSE (BSD-3-Clause). The v3.0.6 tag is annotated (tag object 619d761f67); commit = the tagged
+commit.
+
+BSD 3-Clause License
+
+Copyright (c) 2008-2011, AQR Capital Management, LLC, Lambda Foundry, Inc. and PyData Development Team
+All rights reserved.
+
+Copyright (c) 2011-2026, Open source contributors.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of the copyright holder nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+------------------------------------------------------------------------------
+pytorch 2.13.0 (https://github.com/pytorch/pytorch, tag v2.13.0)
+------------------------------------------------------------------------------
+BSD-3-Clause. Ported in crux-core's pycompat (py_random).
+LICENSE: BSD-3-Clause (Copyright (c) 2016- Facebook, Inc (Adam Paszke) and the contributors listed
+there).
+
+From PyTorch:
+
+Copyright (c) 2016-     Facebook, Inc            (Adam Paszke)
+Copyright (c) 2014-     Facebook, Inc            (Soumith Chintala)
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
+
+From Caffe2:
+
+Copyright (c) 2016-present, Facebook Inc. All rights reserved.
+
+All contributions by Facebook:
+Copyright (c) 2016 Facebook Inc.
+
+All contributions by Google:
+Copyright (c) 2015 Google Inc.
+All rights reserved.
+
+All contributions by Yangqing Jia:
+Copyright (c) 2015 Yangqing Jia
+All rights reserved.
+
+All contributions by Kakao Brain:
+Copyright 2019-2020 Kakao Brain
+
+All contributions by Cruise LLC:
+Copyright (c) 2022 Cruise LLC.
+All rights reserved.
+
+All contributions by Tri Dao:
+Copyright (c) 2024 Tri Dao.
+All rights reserved.
+
+All contributions by Arm:
+Copyright (c) 2021, 2023-2025 Arm Limited and/or its affiliates
+
+All contributions from Caffe:
+Copyright(c) 2013, 2014, 2015, the respective contributors
+All rights reserved.
+
+All other contributions:
+Copyright(c) 2015, 2016 the respective contributors
+All rights reserved.
+
+Caffe2 uses a copyright model similar to Caffe: each contributor holds
+copyright over their contributions to Caffe2. The project versioning records
+all such contribution and copyright details. If a contributor wants to further
+mark their specific copyright on a particular contribution, they should
+indicate their copyright solely in the commit message of the change when it is
+committed.
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+3. Neither the names of Facebook, Deepmind Technologies, NYU, NEC Laboratories America
+   and IDIAP Research Institute nor the names of its contributors may be
+   used to endorse or promote products derived from this software without
+   specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 scaffoldgraph 1.1.2 (https://github.com/UCLCheminformatics/ScaffoldGraph, tag 1.1.2)
@@ -1573,18 +1771,51 @@ Rust crates from crates.io compiled in
 ------------------------------------------------------------------------------
 Each crate's licence expression, then the licence texts their packages carry (the MIT text where a
 crate offers MIT), one per distinct text:
+  cfg-if 1.0.4: MIT OR Apache-2.0
   console_error_panic_hook 0.1.7: Apache-2.0/MIT
   dlmalloc 0.2.14: MIT/Apache-2.0
+  futures-util 0.3.32: MIT OR Apache-2.0
   itoa 1.0.18: MIT OR Apache-2.0
   js-sys 0.3.106: MIT OR Apache-2.0
   memchr 2.8.3: Unlicense OR MIT
+  once_cell 1.21.4: MIT OR Apache-2.0
   rustc-hash 1.1.0: Apache-2.0/MIT
   rustc-hash 2.1.2: Apache-2.0 OR MIT
+  serde 1.0.228: MIT OR Apache-2.0
   serde-wasm-bindgen 0.6.5: MIT
   serde_core 1.0.228: MIT OR Apache-2.0
   serde_json 1.0.149: MIT OR Apache-2.0
   wasm-bindgen 0.2.129: MIT OR Apache-2.0
+  wasm-bindgen-shared 0.2.129: MIT OR Apache-2.0
   zmij 1.0.21: MIT
+
+[cfg-if 1.0.4, dlmalloc 0.2.14, js-sys 0.3.106, wasm-bindgen 0.2.129, wasm-bindgen-shared 0.2.129]
+
+Copyright (c) 2014 Alex Crichton
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
 
 [console_error_panic_hook 0.1.7]
 
@@ -1614,9 +1845,10 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
-[dlmalloc 0.2.14, js-sys 0.3.106, wasm-bindgen 0.2.129]
+[futures-util 0.3.32]
 
-Copyright (c) 2014 Alex Crichton
+Copyright (c) 2016 Alex Crichton
+Copyright (c) 2017 The Tokio Authors
 
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated
@@ -1642,7 +1874,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
-[itoa 1.0.18, rustc-hash 1.1.0, rustc-hash 2.1.2, serde_core 1.0.228, serde_json 1.0.149, zmij 1.0.21]
+[itoa 1.0.18, once_cell 1.21.4, rustc-hash 1.1.0, rustc-hash 2.1.2, serde 1.0.228, serde_core 1.0.228, serde_json 1.0.149, zmij 1.0.21]
 
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated

@@ -23,7 +23,7 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {rangeInputReads} from '../../../bindings/histogram.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {filterIsExactly, filterPasses, filterPassesAll, filterPassesFewer} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {filterIsExactly, filterPasses, filterPassesAll} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, areasDiffer, doubleClickArea, dragAreaToArea, enterIntoArea, hasArea, hasNoArea, hoverArea, loadLayout, noErrors, propertyShouldBe, readingHigher, readingIs, readingLower, readingReads, repaintedBy, resizeTo, saveLayoutToServer, setProperties, setProperty, showsFewerRows, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
@@ -133,7 +133,7 @@ test.describe("Histogram range filter", () => {
     });
     await run.scenario("Bounds outside the column extent are clamped, the typed text is kept", async () => {
       await session.step(118, "When user enters \"40\" into the \"range min input\" area of histogram viewer", () => enterIntoArea(page, "40", "range min input", el("histogram viewer")));
-      await session.step(119, "Then fewer than 1000 rows should pass the filter", () => filterPassesFewer(page, 1000));
+      await session.step(119, "Then 665 rows should pass the filter", () => filterPasses(page, 665));
       await session.step(120, "And the \"range min\" reading of histogram viewer should be 40", () => readingIs(page, "range min", el("histogram viewer"), 40));
       await session.step(121, "When user enters \"-999\" into the \"range min input\" area of histogram viewer", () => enterIntoArea(page, "-999", "range min input", el("histogram viewer")));
       await session.step(122, "Then all rows should pass the filter", () => filterPassesAll(page));
@@ -157,7 +157,7 @@ test.describe("Histogram range filter", () => {
       await session.step(140, "Then histogram viewer should have a \"range min handle\" area", () => hasArea(page, el("histogram viewer"), "range min handle"));
       await session.step(141, "And histogram viewer should have a \"range max handle\" area", () => hasArea(page, el("histogram viewer"), "range max handle"));
       await session.step(142, "When user drags the \"range max handle\" area of histogram viewer to the \"bin 12\" area", () => dragAreaToArea(page, "range max handle", el("histogram viewer"), "bin 12"));
-      await session.step(143, "Then fewer than 1000 rows should pass the filter", () => filterPassesFewer(page, 1000));
+      await session.step(143, "Then 809 rows should pass the filter", () => filterPasses(page, 809));
       await session.step(144, "And the \"range max\" reading of histogram viewer should be lower than before", () => readingLower(page, "range max", el("histogram viewer")));
       await session.step(145, "And histogram viewer should show fewer rows than before", () => showsFewerRows(page, el("histogram viewer")));
       await session.step(146, "And histogram viewer should have a \"range bar\" area", () => hasArea(page, el("histogram viewer"), "range bar"));

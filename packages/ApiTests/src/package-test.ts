@@ -77,6 +77,7 @@ import './widgets/pickers';
 import './widgets/viewer-rendering';
 import './widgets/widget-status-providers';
 import './widgets/tree-view';
+import './widgets/containers';
 import './utils/color';
 import './utils/string-utils';
 import './db/db-browser-tests';

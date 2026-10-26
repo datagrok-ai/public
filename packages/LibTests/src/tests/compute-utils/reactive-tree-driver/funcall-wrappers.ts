@@ -73,13 +73,11 @@ category('ComputeUtils: Driver mock wrapper', async () => {
   test('Track dataframe mutations', async () => {
     const df1 = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'col1', ['val1', 'val2'])]);
     const adapter = new FuncCallMockAdapter([{id: 'state1'}, {id: 'state2'}], false);
-    setTimeout(() => {
-      adapter.setState('state1', df1);
-    }, 1);
-    setTimeout(() => {
-      df1.set('col1', 1, 'val3');
-    }, 2);
-    const val = await adapter.getStateChanges('state1', true).pipe(map((x?: DG.DataFrame) =>x?.toJson()), take(3), toArray()).toPromise();
+    const changes = adapter.getStateChanges('state1', true)
+      .pipe(map((x?: DG.DataFrame) =>x?.toJson()), take(3), toArray()).toPromise();
+    adapter.setState('state1', df1);
+    df1.set('col1', 1, 'val3');
+    const val = await changes;
     expectDeepEqual(val, [
       null,
       [
@@ -145,13 +143,10 @@ category('ComputeUtils: Driver FuncCall wrapper', async () => {
     const f: DG.Func = await grok.functions.eval('Libtests:TestAdd2');
     const call = f.prepare({});
     const adapter = new FuncCallAdapter(call, false);
-    setTimeout(() => {
-      adapter.setState('a', 1);
-    }, 1);
-    setTimeout(() => {
-      adapter.setState('a', 2);
-    }, 2);
-    const val = await adapter.getStateChanges('a', true).pipe(take(3), toArray()).toPromise();
+    const changes = adapter.getStateChanges('a', true).pipe(take(3), toArray()).toPromise();
+    adapter.setState('a', 1);
+    adapter.setState('a', 2);
+    const val = await changes;
     expectDeepEqual(val, [
       null,
       1,
@@ -163,18 +158,14 @@ category('ComputeUtils: Driver FuncCall wrapper', async () => {
     const f: DG.Func = await grok.functions.eval('Libtests:TestAdd2');
     const call = f.prepare({});
     const adapter = new FuncCallAdapter(call, true);
-    setTimeout(() => {
-      adapter.setState('a', 1);
-    }, 1);
-    setTimeout(() => {
-      adapter.setState('a', 2);
-    }, 2);
     const end$ = new Subject<true>();
-    setTimeout(() => {
-      end$.next(true);
-    }, 10);
-    const val = await adapter.getStateChanges('a', true).pipe(takeUntil(end$), toArray()).toPromise();
-    expectDeepEqual(val, [null]);
+    const changes = adapter.getStateChanges('a', true).pipe(takeUntil(end$), toArray()).toPromise();
+    adapter.setState('a', 1);
+    adapter.setState('a', 2);
+    // changes come only from the call's own input, so the call left alone means none is on its way
+    expectDeepEqual(call.inputs['a'] ?? null, null);
+    end$.next(true);
+    expectDeepEqual(await changes, [null]);
   });
 
   test('Track dataframe mutations', async () => {
@@ -182,13 +173,11 @@ category('ComputeUtils: Driver FuncCall wrapper', async () => {
     const f: DG.Func = await grok.functions.eval('Libtests:TestDF1');
     const call = f.prepare({});
     const adapter = new FuncCallAdapter(call, false);
-    setTimeout(() => {
-      adapter.setState('df', df1);
-    }, 1);
-    setTimeout(() => {
-      df1.set('col1', 1, 'val3');
-    }, 2);
-    const val = await adapter.getStateChanges('df', true).pipe(map((x?: DG.DataFrame) => x?.toJson()), take(3), toArray()).toPromise();
+    const changes = adapter.getStateChanges('df', true).pipe(map((x?: DG.DataFrame) => x?.toJson()), take(3), toArray())
+      .toPromise();
+    adapter.setState('df', df1);
+    df1.set('col1', 1, 'val3');
+    const val = await changes;
     expectDeepEqual(val, [
       null,
       [
@@ -214,19 +203,13 @@ category('ComputeUtils: Driver FuncCall wrapper', async () => {
     const f: DG.Func = await grok.functions.eval('Libtests:TestAdd2');
     const call = f.prepare({});
     const adapter = new FuncCallAdapter(call, false);
-    setTimeout(() => {
-      adapter.setState('a', 1);
-      adapter.setState('b', 2);
-    }, 1);
-    setTimeout(async () => {
-      await adapter.run().toPromise();
-    }, 2);
     const end$ = new Subject<true>();
-    setTimeout(() => {
-      end$.next(true);
-    }, 10);
-    const val = await adapter.getStateChanges('res', true).pipe(takeUntil(end$), toArray()).toPromise();
-    expectDeepEqual(val, [null, 3]);
+    const changes = adapter.getStateChanges('res', true).pipe(takeUntil(end$), toArray()).toPromise();
+    adapter.setState('a', 1);
+    adapter.setState('b', 2);
+    await adapter.run().toPromise();
+    end$.next(true);
+    expectDeepEqual(await changes, [null, 3]);
   });
 });
 

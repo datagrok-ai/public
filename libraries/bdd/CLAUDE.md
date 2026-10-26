@@ -192,7 +192,7 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   analysis a scenario left running reopens its closed table and makes it current in the next feature;
   a menu command's `onAfterRunAction` can come before its work ends — then Escape for dialogs and
   menus, `ui.tooltip.hide`, notices removed, `closeAll`, the context panes' expanded state
-  (`Accordion:*` in `localStorage`) and the galleries' view modes (`card-view-render-mode-*`) cleared, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
+  (`Accordion:*` in `localStorage`) and the galleries' view modes (`card-view-render-mode-*`) cleared, the Browse tree's groups collapsed, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
   Datagrok pages in one browser. The renderer keeps what every feature left (closed views and their
   viewers stay reachable, ~60 MB a feature; a Chem feature starts RDKit's pool of a worker per core
   but two, ~1.2 GB on 32 cores), so after `BDD_PAGE_MAX_FEATURES` features (25) or once the renderer,
@@ -368,7 +368,8 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
 - **Codegen emits names, never selectors**; `\n` endings, no timestamps; orphans removed on
   compile and reported by `--check`.
 
-- **Server fixture names may include `{run}` and `{time}`**: the compiler resolves strings, element
+- **Server fixture names may include `{run}`, `{time}` and `{login}`** (the login of the account the run
+  started as, global-setup's `DATAGROK_RUN_LOGIN`; for names the product makes per user): the compiler resolves strings, element
   phrases, tables and doc strings through the feature session. One UUID and one start time per
   feature instance keep workers and repeated runs independent; never generate either at compile time.
 - **Spaces cleanup verifies IDs against every page of the root listing.** Spaces smart filters

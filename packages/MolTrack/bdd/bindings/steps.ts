@@ -23,9 +23,10 @@ async function openView(page: Page, view: string): Promise<void> {
     .filter({visible: true}).first().waitFor({timeout: 60000});
 }
 
-export const openEms = Given('user opens the MolTrack EMS app', (page: Page) => openView(page, ''),
+export const openEms = Given('user opens the MolTrack EMS app', (page: Page) => openView(page, 'Compounds'),
   {tier: 'api', enters: 'MolTrack EMS',
-    description: 'runs the app function and waits for the compound list to load (its first row, or its empty state); ' +
+    description: 'runs the app function on Compounds and waits for its list to load ' +
+      '(its first row, or its empty state); ' +
       'needs this package published'});
 
 export const openEmsView = Given('user opens the {string} view of MolTrack EMS',

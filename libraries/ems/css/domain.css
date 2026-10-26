@@ -4,20 +4,6 @@
   padding: var(--dg-space-m);
 }
 
-/* a pristine draft is not wrong yet: a field's verdict shows once it was edited or left */
-.u2-input-untouched .u2-input-error {
-  display: none;
-}
-
-.u2-input-untouched .u2-input-editor.u2-invalid,
-.u2-input-untouched .u2-input-editor.u2-invalid:focus {
-  border-bottom-color: var(--dg-border);
-}
-
-.u2-input-untouched .u2-pick-box.u2-invalid .u2-typeahead-input:not(:focus) {
-  border-bottom-color: var(--dg-border);
-}
-
 /* drawn over the editor's left padding, so the value does not move */
 .u2-input-changed > .u2-input-box {
   position: relative;

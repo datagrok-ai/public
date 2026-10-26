@@ -12,12 +12,10 @@ Feature: A function run straight from its URL
   does not open it again. Kept without (see the request document): opening the run link from the
   clipboard — the clipboard is claimed to hold it, and the same address is typed.
 
-  Known failure core#446 (In Progress): a run link without the required value
-  (/func/Admin.<script>?label=%22y%22&run=true — a string value in the address is quoted, as the
-  copy icon writes it) should fall back to the form with an "Unable to run" warning naming rows; on
-  localhost the script runs with rows empty (a table of 100,000 rows) and no warning comes. The
-  address is opened in a plain scenario that waits for the script's view; the known failure only
-  claims the warning, the form and a run with the value then typed.
+  A run link without the required value (/func/Admin.<script>?label=%22y%22&run=true — a string
+  value in the address is quoted, as the copy icon writes it) falls back to the form with an
+  "Unable to run" warning naming rows (core#446). The warning is claimed in the scenario that opens
+  the address, and once: a scenario starts with the balloons cleared, and a matched balloon is taken.
 
   The scripts are named with the run's time (letters and digits only) and removed when the feature
   starts and ends.
@@ -103,16 +101,13 @@ Feature: A function run straight from its URL
     And RUN button should be visible
     And status bar should contain text "Rows: 0"
 
-  Scenario: A run link without the required value is opened
+  @realizes:core#446
+  Scenario: The run link without a required value falls back to the form and names it (core#446)
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
     When user opens the address "/func/Admin.BDDUrlRunRequired{time}?label=%22y%22&run=true"
     Then the "BDDUrlRunRequired{time}" view should be current
-
-  @known-failure:114 @realizes:core#446
-  Scenario: The run link without a required value falls back to the form and names it (core#446)
-    Then a warning balloon containing 'Unable to run "BDDUrlRunRequired{time}"' should have been shown
-    And a warning balloon containing "rows" should have been shown
+    And a warning balloon containing 'Unable to run "BDDUrlRunRequired{time}": rows' should have been shown
     And "Label" input should have value "y"
     And RUN button should be visible
     And status bar should contain text "Rows: 0"

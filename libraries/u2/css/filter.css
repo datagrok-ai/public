@@ -378,7 +378,7 @@
   border-radius: 999px;
 }
 
-.u2-btn.u2-fb-join:hover:not(:disabled) {
+.u2-btn.u2-fb-join:hover:not(:disabled, [aria-disabled='true']) {
   background: var(--dg-hover);
 }
 

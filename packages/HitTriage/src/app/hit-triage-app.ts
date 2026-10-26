@@ -331,7 +331,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       view._onAdded();
       await new Promise((r) => setTimeout(r, 1000));
 
-      const f = view.filters(this._campaignFilters ? {filters: this._campaignFilters} : undefined);
+      const f = view.filters(this._campaignFilters?.length ? {filters: this._campaignFilters} : undefined);
       const layoutViewState = this._campaign?.layout ?? this.template?.layoutViewState;
       if (layoutViewState) {
         try {
@@ -396,7 +396,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       name: campaignName,
       friendlyName: this._friendlyName ?? this.campaign?.friendlyName,
       templateName,
-      filters: filters ?? {},
+      filters: filters ?? [],
       ingest: {
         type: 'File',
         query: `${campaignPrefix}${CampaignTableName}`,

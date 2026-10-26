@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, delay} from '@datagrok-libraries/test/src/test';
+import {category, test, before, expect, uiSettled} from '@datagrok-libraries/test/src/test';
 import {previewMolstarUI} from '../viewers/molstar-viewer/utils';
 
 import {_package} from '../package-test';
@@ -97,7 +97,7 @@ category('MolstarPreview', () => {
         grok.shell.newView(`Molstar Preview: `, [view]);
         // grok.shell.addView(view); // ???
         await loadingPromise;
-        await delay(100);
+        await uiSettled(`Molstar preview of ${fn}`);
       }, {timeout: 15000 /* loading file */});
     }
   });

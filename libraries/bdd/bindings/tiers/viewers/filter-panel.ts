@@ -1,8 +1,9 @@
 /* The `viewers` tier, the filter panel's entry points that have no element to click: the header's
    column picker clears its own label, so the base `select` cannot wait for one, and the panel's own
    context menu has to be opened on blank space, since a right-click in the middle of a card belongs
-   to that card's grid. Everything the panel reports — cards, criteria, the header counter — is the
-   `filter panel` element and the `filter card` kind. */
+   to that card's grid (or from the docked title bar's menu icon once the cards fill the panel).
+   Everything the panel reports — cards, criteria, the header counter — is the `filter panel` element
+   and the `filter card` kind. */
 import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Given, Then, When} from '../../../src/registry.js';
@@ -186,11 +187,18 @@ export const pickPanelMenu = When('user picks {string} from the filter panel men
     throw new Error('the filter panel reports no "view" area');
   const bottom = Object.keys(areas).filter((k) => k.startsWith('card '))
     .reduce((y, k) => Math.max(y, areas[k].y + areas[k].height), view.y);
-  if (bottom > view.y + view.height - 8)
-    throw new Error('the cards fill the filter panel: no blank space left to open the panel\'s own menu on');
-  await v.openContextMenuAt(page, view.x + view.width / 2, (bottom + view.y + view.height) / 2);
+  if (bottom <= view.y + view.height - 8)
+    await v.openContextMenuAt(page, view.x + view.width / 2, (bottom + view.y + view.height) / 2);
+  else {
+    const dock = panel(page).locator('xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " panel-base ")][1]');
+    const icon = dock.locator('.panel-titlebar [name="icon-font-icon-menu"]').first();
+    if (await icon.count() === 0)
+      throw new Error('the cards fill the filter panel and its title bar shows no menu icon (not docked, or the dockShowMenuLink setting off): nowhere to open the panel\'s own menu from');
+    await g.hover(page, el('filter panel'));
+    await icon.click();
+  }
   await v.pickMenuPath(page, path);
-}, {tier: 'ui', description: 'a right-click on the panel below its last card — the cards own the rest of it — then the menu path ("Add Filter | Hierarchical")'});
+}, {tier: 'ui', description: 'a right-click on the panel below its last card — the cards own the rest of it — or, when the cards fill it, the menu icon of its docked title bar (the same menu); then the menu path ("Add Filter | Hierarchical")'});
 
 export const panelHasNoCardOfType = Then('the filter panel should have no {string} filter card', async (page: Page, type: string) => {
   let cards: string[] = [];

@@ -4,7 +4,9 @@ Feature: The substructure card with the sketcher, other cards and a reopened pan
   adds an empty substructure card on top and filters nothing. With Filter as you draw cleared, a
   molecule typed into the card's sketcher reaches the card only on OK: pyridine keeps 17 rows, and
   piperidine typed over it keeps them until OK brings 15. With the option checked, pyridine reaches
-  the grid while the sketcher is still open. Pyridine and the Pyrrolidines category together keep the
+  the grid while the sketcher is still open. With pyridine applied, Align and Highlight cleared in the
+  sketcher and the grid still, checking both repaints the grid while the sketcher is open, and the
+  same 17 rows pass (TestTrack Chem/chem-filters.md, step 9, claim 1). Pyridine and the Pyrrolidines category together keep the
   5 rows that satisfy both; switching the substructure card off leaves the 21 Pyrrolidines rows and
   switching it on brings the 5 back. A switched-off card survives closing and reopening the panel:
   still off, still holding pyridine, and on again it keeps the 5 rows.
@@ -66,6 +68,25 @@ Feature: The substructure card with the sketcher, other cards and a reopened pan
     And user presses Enter in molecule input of sketcher dialog
     Then 17 rows should pass the filter
     And sketcher dialog should be visible
+    When user clicks on OK button in sketcher dialog
+    Then 17 rows should pass the filter
+    And no errors should have been logged
+
+  Scenario: Align and Highlight turned on with the sketcher open repaint the grid and keep the rows
+    When user clicks on the "card Structure" area of filter panel
+    Then sketcher dialog should be visible
+    When user unchecks "Align" input in sketcher dialog
+    And user unchecks "Highlight" input in sketcher dialog
+    Then "Align" input in sketcher dialog should not be checked
+    And "Highlight" input in sketcher dialog should not be checked
+    And 17 rows should pass the filter
+    When user takes a snapshot of grid
+    Then grid should not have repainted
+    When user checks "Align" input in sketcher dialog
+    And user checks "Highlight" input in sketcher dialog
+    Then grid should have repainted
+    And sketcher dialog should be visible
+    And 17 rows should pass the filter
     When user clicks on OK button in sketcher dialog
     Then 17 rows should pass the filter
     And no errors should have been logged

@@ -32,8 +32,9 @@ category('Flow: guide', () => {
   test('poll resolves when the predicate becomes true', async () => {
     const ac = new AbortController();
     let flag = false;
-    setTimeout(() => {flag = true;}, 40);
-    await poll(() => flag, ac.signal, 15);
+    const p = poll(() => flag, ac.signal, 15);
+    flag = true;
+    await p;
     expect(flag, true);
   });
 
@@ -57,7 +58,7 @@ category('Flow: guide', () => {
     document.body.appendChild(div);
     try {
       const p = waitForClick(() => div, ctx);
-      setTimeout(() => div.click(), 30);
+      div.click();
       await p;
       expect(true, true);
     } finally {
@@ -73,7 +74,7 @@ category('Flow: guide', () => {
     document.body.appendChild(input);
     try {
       const p = untilValueMatches('[data-testid="tmp-search"]', 'openfile')(ctx);
-      setTimeout(() => {input.value = 'Open File';}, 30);
+      input.value = 'Open File';
       await p;
       expect(true, true, 'resolved on "Open File" for needle "openfile"');
     } finally {
@@ -91,7 +92,7 @@ category('Flow: guide', () => {
     try {
       const p = untilColumnCountAtLeast('input[data-param="values1"]', 3)(ctx);
       input.value = 'a, b';
-      setTimeout(() => {input.value = 'a, b, c';}, 30);
+      input.value = 'a, b, c';
       await p;
       expect(true, true, 'resolved at 3 columns');
     } finally {
@@ -149,9 +150,8 @@ category('Flow: guide', () => {
     };
     try {
       await runner.run(guide, fakeHost());
-      // let any queued frame / interval fire
+      // let the step's queued re-anchor frame fire
       await new Promise((r) => requestAnimationFrame(() => r(null)));
-      await new Promise((r) => setTimeout(r, 30));
       expect(document.querySelectorAll('.ff-guide-target').length, 0, 'no lingering target highlight');
       expect(document.querySelectorAll('.ff-guide-blob').length, 0, 'no lingering pulse dots');
     } finally {
@@ -172,9 +172,9 @@ category('Flow: guide', () => {
     };
     try {
       const p = runner.run(guide, fakeHost());
-      await new Promise((r) => setTimeout(r, 60));
+      expect(await until(() => !!document.querySelector('[data-testid="ff-guide-next"]')), true,
+        'reached the manual answer step — prereq was skipped, not stuck');
       const next = document.querySelector('[data-testid="ff-guide-next"]') as HTMLElement | null;
-      expect(!!next, true, 'reached the manual answer step — prereq was skipped, not stuck');
       next?.click();
       await p;
     } finally {
@@ -192,7 +192,7 @@ category('Flow: guide', () => {
     document.body.appendChild(header);
     try {
       const p = untilSectionExpanded('Inputs')(ctx);
-      setTimeout(() => header.classList.add('expanded'), 30);
+      header.classList.add('expanded');
       await p;
       expect(header.classList.contains('expanded'), true);
     } finally {

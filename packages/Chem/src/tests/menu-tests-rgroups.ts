@@ -200,6 +200,18 @@ M  END
       .every((it) => sampleTable.columns.names().includes(it)), true);
   });
 
+  test('rgroups.prefixWithRegexCharacters', async () => {
+    const df = DG.DataFrame.fromColumns([sampleTable.col('smiles')!.clone()]);
+    for (let run = 0; run < 2; run++) {
+      await DG.Func.find({name: 'rGroupDecomposition'})[0].prepare({
+        df, molColName: 'smiles', core: 'c1ccccc1', rGroupName: 'R(', rGroupMatchingStrategy: 'Greedy',
+        onlyMatchAtRGroups: false,
+      }).call(undefined, undefined, {processed: false});
+    }
+    expect(df.col('R(1') != null, true, 'the R-group columns take the prefix as typed');
+    expect(df.col('R(1_1') != null, true, 'a second run numbers its columns after the first');
+  });
+
   test('rgroups.noRGroups.sameMolecules', async () => {
     const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', new Array(5).fill('c1ccccc1'))]);
     await grok.data.detectSemanticTypes(df);

@@ -403,6 +403,17 @@ test('a run suffix is stable within a feature and distinct across feature instan
   assert.equal(a.text('u{time}.{time}').split('.')[0], `u${a.text('{time}')}`);
   assert.match(a.text('{time}'), /^\d{13,}$/);
   assert.notEqual(a.text('{time}'), b.text('{time}'));
+  const was = process.env.DATAGROK_RUN_LOGIN;
+  process.env.DATAGROK_RUN_LOGIN = 'someone';
+  try {
+    assert.equal(a.text('type-{login}'), 'type-someone');
+  }
+  finally {
+    if (was === undefined)
+      delete process.env.DATAGROK_RUN_LOGIN;
+    else
+      process.env.DATAGROK_RUN_LOGIN = was;
+  }
 });
 
 test('the translated stack trace of a logged error is not a second error', () => {

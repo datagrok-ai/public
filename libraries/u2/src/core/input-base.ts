@@ -1,4 +1,4 @@
-import {signal, batch, computed, Signal, ReadonlySignal, untracked} from './signals.js';
+import {signal, computed, Signal, ReadonlySignal, untracked} from './signals.js';
 import {Scope} from './scope.js';
 import {bindTypeOf, ITEMS_CAP} from './widget-like.js';
 import type {BindProp, BindSource, ObservableLike, IItemState, IItemsState} from './widget-like.js';
@@ -86,10 +86,11 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   /** The verdict on the value: a validator's message, or "Value can't be empty" for an empty
    * required one — from the start, touched or not. What Save and the form's validity go by. */
   readonly validity: ReadonlySignal<string | null>;
-  /** The message the input shows: {@link validity}, except that the required verdict waits until
-   * the input is {@link touched}. What a tab marker or a status line goes by — a fresh form shows none. */
+  /** The message the input shows: {@link validity} once the input is {@link touched}, none before.
+   * What a tab marker or a status line goes by — a fresh form shows none. */
   readonly error: ReadonlySignal<string | null>;
-  /** Edited or left by the user, or validated by its form ({@link touch}); {@link reset} clears it. */
+  /** Edited by the user, or left after the user was in it (a field focused from code and left
+   * untouched is not), or validated by its form ({@link touch}); {@link reset} clears it. */
   readonly touched: ReadonlySignal<boolean>;
 
   protected readonly options: O;
@@ -108,12 +109,12 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   private readonly _enabled = signal(true);
   private readonly _shown = signal(true);
   private readonly _required = signal(false);
-  /** The verdict is the required check's: it waits for {@link touch}. */
-  private readonly _missing = signal(false);
   private readonly _touched = signal(false);
   private _readOnly = false;
   private _guarded = false;
   private _touchWired = false;
+  /** The user pressed a key or the pointer in the input: leaving it now touches it. */
+  private _engaged = false;
   private _onChanged: ((value: T, input: Input<T>) => void) | undefined;
   private _onUserInput: ((value: T, input: Input<T>) => void) | undefined;
   private _watching = false;
@@ -128,7 +129,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     this.value = options.bind ?? signal(options.value ?? defaultValue);
     this.validity = this._validity;
     this.touched = this._touched;
-    this.error = computed(() => this._missing.value && !this._touched.value ? null : this._validity.value);
+    this.error = computed(() => this._touched.value ? this._validity.value : null);
     // an explicit name is a deliberate identity and stamps data-u2-name; the label fallback is a
     // form key only — captions get reworded, so they never become automation ids
     if (options.name !== undefined)
@@ -381,8 +382,8 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   }
 
   /** The base state plus the value, raw (JSON-projected) and as displayed, the validity — `error` is
-   * the message shown, so a required verdict waiting for {@link touch} reads `valid: false` with
-   * `error: null` — and the read-only and required flags. */
+   * the message shown, so a verdict waiting for {@link touch} reads `valid: false` with `error: null`
+   * — and the read-only and required flags. */
   getState(): ReturnType<Control['getState']> {
     const error = this._validity.peek();
     const placeholder = this._placeholder();
@@ -437,20 +438,43 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     return this._required.peek();
   }
 
-  /** `aria-required` on the {@link focusTarget}, and an empty value fails the input once it is
-   * {@link touch}ed. */
+  /** `aria-required` on the {@link focusTarget}, and an empty value fails the input — shown once it
+   * is {@link touch}ed. */
   set required(x: boolean) {
     this._required.value = x;
     if (x)
       this.focusTarget.setAttribute('aria-required', 'true');
     else
       this.focusTarget.removeAttribute('aria-required');
-    if (x && !this._touchWired) {
-      this._touchWired = true;
-      for (const type of ['input', 'change'])
-        this.scope.listen(this.root, type, () => this.touch());
-      this.scope.listen(this.root, 'focusout', (e) => this._touchLeavingFor((e as FocusEvent).relatedTarget));
-    }
+    if (x)
+      this._wireTouch();
+  }
+
+  /** What touches the input, wired once it has a verdict to show: an edit, and leaving it after a key
+   * or a press in it — focus put there from code (a form starting on its first empty field) and taken
+   * away is no touch. The user's own touch marks this input only, never what an override of
+   * {@link touch} adds for a validate (a filter builder revealing every row). */
+  private _wireTouch(): void {
+    if (this._touchWired)
+      return;
+    this._touchWired = true;
+    for (const type of ['input', 'change'])
+      this.scope.listen(this.root, type, () => this._touched.value = true);
+    // a pick in a popup the input opened (a combobox list, a type-ahead) fires nothing at the root
+    let initial = true;
+    this.effect(() => {
+      this.value.value;
+      if (initial)
+        initial = false;
+      else if (this._byUser())
+        this._touched.value = true;
+    });
+    for (const type of ['keydown', 'pointerdown'])
+      this.scope.listen(this.root, type, () => this._engaged = true, {capture: true});
+    this.scope.listen(this.root, 'focusout', (e) => {
+      if (this._engaged)
+        this._touchLeavingFor((e as FocusEvent).relatedTarget);
+    });
   }
 
   /** Left for a button, the verdict waits until that press is over: the line it adds would move the
@@ -459,13 +483,13 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   private _touchLeavingFor(next: EventTarget | null): void {
     const target = next instanceof Element ? next.closest('button') : null;
     if (target === null) {
-      this.touch();
+      this._touched.value = true;
       return;
     }
     const done = () => {
       target.removeEventListener('click', done);
       target.removeEventListener('blur', done);
-      this.touch();
+      this._touched.value = true;
     };
     target.addEventListener('click', done);
     target.addEventListener('blur', done);
@@ -476,6 +500,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
    * value itself does not change. Not an edit: `onChanged` does not fire. */
   reset(value: T): void {
     this._touched.value = false;
+    this._engaged = false;
     if (!Object.is(value, this.value.peek())) {
       this._followed = {value};
       Input.system(() => this.value.value = value);
@@ -487,8 +512,8 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
    * text overrides it. */
   protected resetEditor(): void {}
 
-  /** Shows the verdicts that wait for the user — a required field left empty. The input touches
-   * itself when edited or left; {@link Form.validate} touches every input it counts. */
+  /** Shows the verdict, which waits for the user. The input touches itself when edited or left;
+   * {@link Form.validate} touches every input it counts. */
   touch(): void {
     this._touched.value = true;
   }
@@ -605,13 +630,19 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
       this.root.removeAttribute('aria-disabled');
     else
       this.root.setAttribute('aria-disabled', 'true');
+    // the native attribute, a u2 button's too: inside a disabled input nothing is a tab stop
     const controls = this.root.querySelectorAll('input, textarea, button, select');
-    for (let i = 0; i < controls.length; i++)
-      (controls[i] as HTMLInputElement).disabled = !x;
+    for (let i = 0; i < controls.length; i++) {
+      if (x)
+        controls[i].removeAttribute('disabled');
+      else
+        controls[i].setAttribute('disabled', '');
+    }
   }
 
   addValidator(v: Validator<T>): void {
     this._validators.push(v);
+    this._wireTouch();
     this._validate(this.value.peek());
   }
 
@@ -707,11 +738,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     const empty = this.isEmptyValue(value);
     // a quiet host keeps an empty editor's underline: there has to be something to type into
     this.root.classList.toggle('u2-input-empty', empty);
-    const missing = !message && this._required.value && empty;
-    batch(() => {
-      this._missing.value = missing;
-      this._validity.value = missing ? EMPTY : message || null;
-    });
+    this._validity.value = !message && this._required.value && empty ? EMPTY : message || null;
   }
 
   private _showValidity(message: string | null): void {

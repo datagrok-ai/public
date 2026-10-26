@@ -2,7 +2,7 @@
    per-field overrides. Everything the generator reads off a property is declared by IProperty,
    which DG.Property satisfies structurally; the platform itself is only reached by `editors:
    'auto'`, through the global the bundler binds `datagrok-api/dg` to. */
-import {batch} from '../../core/signals.js';
+import {batch, computed, signal, ReadonlySignal} from '../../core/signals.js';
 import type {IProperty} from '../../core/property-like.js';
 import {Input, InputOptions, labelText} from '../../core/input-base.js';
 import {EMPTY, isEmpty, text} from '../../core/text.js';
@@ -86,6 +86,8 @@ interface Field {
   access: FieldAccess;
   text?: HTMLElement;
   emptyText?: string;
+  /** What the target held when the field last read or wrote it. */
+  synced?: unknown;
 }
 
 export type InputFactory = (prop: IProperty, options: InputOptions<any>) => Input<any>;
@@ -317,20 +319,31 @@ export function inputForProperty(prop: IProperty | null,
 }
 
 /** A {@link Form} generated from property metadata and kept in sync with {@link target} both ways:
- * an edit runs `prop.set`, {@link refresh} re-reads `prop.get`. It mutates the object and nothing
+ * a valid edit runs `prop.set` (an invalid one stays in its field, the object keeping its last valid
+ * value), {@link refresh} re-reads `prop.get`. It mutates the object and nothing
  * else — persisting it (`grok.dapi.*.save`, a domain insert) stays with the caller. */
 export class ObjectForm extends Form {
   readonly target: object;
+  /** How many fields hold an edit the target has not taken — an invalid one, which is never written:
+   * what a caller counts as unsaved, and drops with {@link reset}. */
+  readonly unwritten: ReadonlySignal<number>;
 
   private readonly _fields: Field[] = [];
   private readonly _onChanged: ((name: string, value: unknown) => void) | undefined;
   private readonly _auto: boolean;
   private readonly _access: Access;
   private _refreshing = false;
+  /** Bumped whenever a field's `synced` moves, so {@link unwritten} re-reads it. */
+  private readonly _synced = signal(0);
 
   constructor(props: IProperty[], target: object, options: ObjectFormOptions = {}) {
     super({layout: options.layout ?? (options.condensed ? 'tall' : undefined), labelColumn: options.labelColumn});
     this.target = target;
+    this.unwritten = computed(() => {
+      this._synced.value;
+      return this._fields.filter((f) => f.input !== null && f.kind !== null &&
+        !ObjectForm.same(f.input.value.value, f.synced)).length;
+    });
     this._onChanged = options.onChanged;
     this._auto = options.editors === 'auto';
     this._access = options.access ?? Access.full;
@@ -352,19 +365,40 @@ export class ObjectForm extends Form {
   }
 
   /** Re-reads every field off {@link target} — after a save, an external edit, a server refresh.
-   * Echo-suppressed: nothing is written back and `onChanged` does not fire. */
+   * Echo-suppressed: nothing is written back and `onChanged` does not fire. An invalid edit, which
+   * never reached the target, stays in its field while the target still holds what the field last saw. */
   refresh(): void {
+    this._reread(false);
+  }
+
+  /** {@link refresh} as a fresh start: an invalid edit goes too, and no field shows a verdict until it
+   * is touched again (`Input.reset`) — what a discard comes back to. */
+  reset(): void {
+    this._reread(true);
+  }
+
+  private _reread(fresh: boolean): void {
     // a plain call, so this flag still holds when the batch flushes the effects it triggered —
     // unlike a write made inside an effect, which is flushed only after that effect returns
     this._refreshing = true;
     try {
       batch(() => {
         for (const field of this._fields) {
-          if (field.input !== null)
-            field.input.value.value = this._read(field.prop, field.kind);
-          else
+          if (field.input === null) {
             this._showText(field);
+            continue;
+          }
+          const value = this._read(field.prop, field.kind);
+          if (!fresh && field.kind !== null && field.input.validity.peek() !== null &&
+              ObjectForm.same(value, field.synced))
+            continue;
+          if (fresh)
+            field.input.reset(value);
+          else
+            field.input.value.value = value;
+          field.synced = value;
         }
+        this._synced.value = this._synced.peek() + 1;
       });
     } finally {
       this._refreshing = false;
@@ -423,13 +457,14 @@ export class ObjectForm extends Form {
     const input = custom ?? registered ?? platform ??
       this.runInScope(() => inputForProperty(prop, options));
     const native = input === platform;
+    const field: Field = {prop, kind: native ? null : kind, input, access};
     if (!native) {
-      input.value.value = this._read(prop, kind);
+      input.value.value = field.synced = this._read(prop, kind);
       if (prop.nullable === false)
         input.addValidator((value) => isEmpty(value) ? EMPTY : null);
     }
     this.add(input);
-    this._fields.push({prop, kind: native ? null : kind, input, access});
+    this._fields.push(field);
 
     // a platform editor is bound to the target by `forProperty` and writes the property itself
     if (native) {
@@ -447,13 +482,17 @@ export class ObjectForm extends Form {
     const set = prop.set;
     if (kind === 'readonly' || !set)
       return;
-    // echo suppression by comparison, not by a flag: a write made inside an effect is flushed
-    // after that effect returns, so a transient flag would already be down (as in PropertyGrid)
+    // only a valid value reaches the target: an invalid one stays in the field, which says why, and
+    // is written once it turns valid. Echo suppression by comparison, not by a flag: a write made
+    // inside an effect is flushed after that effect returns, so a transient flag would already be
+    // down (as in PropertyGrid)
     this.effect(() => {
       const value = input.value.value;
-      if (ObjectForm.same(value, this._read(prop, kind)))
+      if (input.validity.value !== null || ObjectForm.same(value, this._read(prop, kind)))
         return;
       set(this.target, value);
+      field.synced = this._read(prop, kind);
+      this._synced.value = this._synced.peek() + 1;
       this._onChanged?.(prop.name!, value);
     });
   }

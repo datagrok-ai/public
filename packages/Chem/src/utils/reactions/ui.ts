@@ -4,12 +4,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {renderReactionToCanvas} from '../../rendering/rdkit-reaction-renderer';
 import {getRdKitModule} from '../chem-common-rdkit';
+import {drawReactionByRdKit} from './reaction-drawing';
 import {resolveReactionVariables, runTransformationReaction, runTwoComponentReaction} from './reactions';
 import {ReactionBrowser} from './reaction-browser';
 import {openReactionEditor} from './reaction-editor';
-import {NamedReaction} from './types';
+import {NamedReaction, TwoComponentReactionResult} from './types';
 
 // ==========================================
 //  Shared component types
@@ -67,6 +67,95 @@ function createColumnInput(
   return inp;
 }
 
+/** On a table picked in `tableInput`, a new column input on it (its molecule column) replaces `container`'s. */
+function followTable(tableInput: DG.InputBase<DG.DataFrame | null>, container: HTMLElement, label: string,
+  tooltip: string, setInput: (input: DG.InputBase<DG.Column | null>) => void): void {
+  tableInput.onChanged.subscribe(async () => {
+    const t = tableInput.value;
+    await t?.meta?.detectSemanticTypes();
+    await DG.delay(100); // wait for semantic type detection to finish and UI to update
+    const molCol = t?.columns?.bySemType(DG.SEMTYPE.MOLECULE) ?? null;
+    const input = createColumnInput(label, t, molCol, tooltip);
+    setInput(input);
+    container.replaceChildren(input.root);
+  });
+}
+
+/** The reaction preview's canvas (400 px wide); a click shows `selected()` full-screen. */
+function createPreviewCanvas(height: number, selected: () => NamedReaction | null): HTMLCanvasElement {
+  const r = window.devicePixelRatio;
+  const previewCanvas = ui.canvas(400 * r, height * r);
+  previewCanvas.style.width = '400px';
+  previewCanvas.style.maxWidth = '100%';
+  previewCanvas.style.height = `${height}px`;
+  previewCanvas.style.border = '1px solid var(--grey-2)';
+  previewCanvas.style.borderRadius = '4px';
+  previewCanvas.style.cursor = 'pointer';
+  previewCanvas.addEventListener('click', () => openFullscreenPreview(selected()));
+  return previewCanvas;
+}
+
+/** The inputs of the reaction's variables, in `div` (emptied first); `onChange` after each edit. */
+function createVariableInputs(reaction: NamedReaction | null, div: HTMLElement, onChange: () => void): DG.InputBase[] {
+  div.innerHTML = '';
+  const inputs: DG.InputBase[] = [];
+  for (const varDef of Object.values(reaction?.variables ?? {})) {
+    const inputCtor = varDef.type === 'string' ? ui.input.string :
+      varDef.type === 'int' ? ui.input.int : ui.input.float;
+    const inp = inputCtor(varDef.name, {
+      value: varDef.defaultValue,
+      nullable: false,
+      onValueChanged: () => onChange(),
+    });
+    if (varDef.description)
+      ui.tooltip.bind(inp.input, varDef.description);
+    inputs.push(inp);
+    div.append(inp.root);
+  }
+  return inputs;
+}
+
+/** The reaction's SMARTS with its variables' values from `inputs` (in the variables' order); null for none. */
+function resolvedSmarts(reaction: NamedReaction | null, inputs: DG.InputBase[]): string | null {
+  if (!reaction) return null;
+  if (!reaction.variables) return reaction.reactionSmarts;
+  const vars: Record<string, any> = {};
+  Object.keys(reaction.variables).forEach((key, i) => {
+    if (inputs[i])
+      vars[key] = inputs[i].value;
+  });
+  return resolveReactionVariables(reaction.reactionSmarts, vars);
+}
+
+/** The reaction's SMARTS with its variables' default values. */
+function smartsWithDefaults(reaction: NamedReaction): string {
+  if (!reaction.variables) return reaction.reactionSmarts;
+  const defaults: Record<string, any> = {};
+  for (const [key, varDef] of Object.entries(reaction.variables))
+    defaults[key] = varDef.defaultValue;
+  return resolveReactionVariables(reaction.reactionSmarts, defaults);
+}
+
+/** Adds a molecule column `name` to `df`, with `value(i)` in row i (none: empty). */
+function addMoleculeColumn(df: DG.DataFrame, name: string, value?: (i: number) => string): DG.Column<string> {
+  const col = df.columns.addNewString(name);
+  col.semType = DG.SEMTYPE.MOLECULE;
+  col.setTag('cell.renderer', 'Molecule');
+  if (value)
+    col.init(value);
+  return col;
+}
+
+/** The two-component run as a table: the reactants and the product of each combination. */
+function twoComponentProductsTable(reactionName: string, result: TwoComponentReactionResult): DG.DataFrame {
+  const df = DG.DataFrame.create(result.products.length);
+  df.name = `${reactionName} Products`;
+  addMoleculeColumn(df, 'Reactant 1', (i) => result.reactants1[i] ?? '');
+  addMoleculeColumn(df, 'Reactant 2', (i) => result.reactants2[i] ?? '');
+  addMoleculeColumn(df, 'Product', (i) => result.products[i] ?? '');
+  return df;
+}
+
 // ==========================================
 //  Builder: transformation (single column)
 // ==========================================
@@ -98,15 +187,8 @@ function buildTransformationComponents(
   outputNameInput.root.style.minWidth = '0';
   outputNameInput.root.style.maxWidth = '399px';
 
-  tableInput.onChanged.subscribe(async () => {
-    const t = tableInput.value;
-    await t?.meta?.detectSemanticTypes();
-    await DG.delay(100); // wait for semantic type detection to finish and UI to update
-    const molCol = t?.columns?.bySemType(DG.SEMTYPE.MOLECULE) ?? null;
-    columnInput = createColumnInput('Molecules', t, molCol,
-      'Column with molecules to run the reaction on');
-    columnContainer.replaceChildren(columnInput.root);
-  });
+  followTable(tableInput, columnContainer, 'Molecules', 'Column with molecules to run the reaction on',
+    (input) => columnInput = input);
 
   // ---- Browser ----
   const browser = new ReactionBrowser(rdkit, {
@@ -121,38 +203,11 @@ function buildTransformationComponents(
   let currentVariableInputs: DG.InputBase[] = [];
 
   // ---- Preview ----
-  const r = window.devicePixelRatio;
-  const previewCanvas = ui.canvas(400 * r, 100 * r);
-  previewCanvas.style.width = '400px';
-  previewCanvas.style.maxWidth = '100%';
-  previewCanvas.style.height = '100px';
-  previewCanvas.style.border = '1px solid var(--grey-2)';
-  previewCanvas.style.borderRadius = '4px';
-  previewCanvas.style.cursor = 'pointer';
-  previewCanvas.addEventListener('click', () => openFullscreenPreview(rdkit, browser.selected));
+  const previewCanvas = createPreviewCanvas(100, () => browser.selected);
 
-  const exampleGrid = createExampleGrid();
+  const exampleGrid = createExampleGrid(['Input', 'Product']);
 
-  function getResolvedVariables(): Record<string, any> {
-    const reaction = browser.selected;
-    const vars: Record<string, any> = {};
-    if (reaction?.variables) {
-      Object.keys(reaction.variables).forEach((key, i) => {
-        if (currentVariableInputs[i])
-          vars[key] = currentVariableInputs[i].value;
-      });
-    }
-    return vars;
-  }
-
-  function getResolvedSmarts(): string | null {
-    const reaction = browser.selected;
-    if (!reaction) return null;
-    const vars = getResolvedVariables();
-    return reaction.variables ?
-      resolveReactionVariables(reaction.reactionSmarts, vars) :
-      reaction.reactionSmarts;
-  }
+  const getResolvedSmarts = (): string | null => resolvedSmarts(browser.selected, currentVariableInputs);
 
   function updatePreview() {
     const reaction = browser.selected;
@@ -163,7 +218,7 @@ function buildTransformationComponents(
     const ctx = previewCanvas.getContext('2d')!;
     ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
     try {
-      renderReactionToCanvas(rdkit, previewCanvas, smarts, previewCanvas.width, previewCanvas.height);
+      drawReactionByRdKit(previewCanvas, smarts, previewCanvas.width, previewCanvas.height);
     } catch {/* preview error */}
 
     const col = columnInput.value;
@@ -171,7 +226,7 @@ function buildTransformationComponents(
       const examples = col.categories.slice(0, 10).filter((s: string) => !!s);
       if (examples.length > 0) {
         runTransformationReaction(rdkit, smarts, examples, {removeSaltsAndWater: saltsInput.value}).then((result) => {
-          updateExampleGrid(exampleGrid, examples, result.products);
+          updateExampleGrid(exampleGrid, [['Input', examples], ['Product', result.products]], 230);
         }).catch(() => {/* silently fail preview */});
       }
     }
@@ -179,26 +234,9 @@ function buildTransformationComponents(
 
   // Wire browser selection → variables + preview
   browser.onSelectionChanged.subscribe((reaction) => {
-    variablesDiv.innerHTML = '';
-    currentVariableInputs = [];
-    if (!reaction) return;
-
-    if (reaction.variables) {
-      for (const [_key, varDef] of Object.entries(reaction.variables)) {
-        const inputCtor = varDef.type === 'string' ? ui.input.string :
-          varDef.type === 'int' ? ui.input.int : ui.input.float;
-        const inp = inputCtor(varDef.name, {
-          value: varDef.defaultValue,
-          nullable: false,
-          onValueChanged: () => updatePreview(),
-        });
-        if (varDef.description)
-          ui.tooltip.bind(inp.input, varDef.description);
-        currentVariableInputs.push(inp);
-        variablesDiv.append(inp.root);
-      }
-    }
-    updatePreview();
+    currentVariableInputs = createVariableInputs(reaction, variablesDiv, () => updatePreview());
+    if (reaction)
+      updatePreview();
   });
 
   const newReactionButton = ui.button('+ New Reaction', () => {
@@ -222,10 +260,8 @@ function buildTransformationComponents(
         removeSaltsAndWater: saltsInput.value,
         showInfo: true,
       });
-      const newCol = t.columns.addNewString(t.columns.getUnusedName(outputNameInput.value || `Reacted(${col.name})`));
-      newCol.semType = DG.SEMTYPE.MOLECULE;
-      newCol.setTag('cell.renderer', 'Molecule');
-      newCol.init((i) => result.products[i]);
+      addMoleculeColumn(t, t.columns.getUnusedName(outputNameInput.value || `Reacted(${col.name})`),
+        (i) => result.products[i]);
     } catch (e: any) {
       grok.shell.error(`Reaction failed: ${e?.message ?? e}`);
     } finally {
@@ -250,14 +286,8 @@ function buildTransformationComponents(
       });
       const df = DG.DataFrame.create(inputs.length);
       df.name = `${reaction.name} Products`;
-      const inputCol = df.columns.addNewString('Input');
-      inputCol.semType = DG.SEMTYPE.MOLECULE;
-      inputCol.setTag('cell.renderer', 'Molecule');
-      inputCol.init((i) => inputs[i] ?? '');
-      const prodCol = df.columns.addNewString('Product');
-      prodCol.semType = DG.SEMTYPE.MOLECULE;
-      prodCol.setTag('cell.renderer', 'Molecule');
-      prodCol.init((i) => result.products[i] ?? '');
+      addMoleculeColumn(df, 'Input', (i) => inputs[i] ?? '');
+      addMoleculeColumn(df, 'Product', (i) => result.products[i] ?? '');
       return df;
     } catch (e: any) {
       grok.shell.error(`Reaction failed: ${e?.message ?? e}`);
@@ -303,24 +333,10 @@ function buildTwoComponentComponents(
     'Second reactant molecule column');
   col2Container.append(column2Input.root);
 
-  table1Input.onChanged.subscribe(async () => {
-    const t = table1Input.value;
-    await t?.meta?.detectSemanticTypes();
-    await DG.delay(100); // wait for semantic type detection to finish and UI to update
-    const molCol = t?.columns?.bySemType(DG.SEMTYPE.MOLECULE) ?? null;
-    column1Input = createColumnInput('Reactant 1', t, molCol,
-      'First reactant molecule column');
-    col1Container.replaceChildren(column1Input.root);
-  });
-  table2Input.onChanged.subscribe(async () => {
-    const t = table2Input.value;
-    await t?.meta?.detectSemanticTypes();
-    await DG.delay(100); // wait for semantic type detection to finish and UI to update
-    const molCol = t?.columns?.bySemType(DG.SEMTYPE.MOLECULE) ?? null;
-    column2Input = createColumnInput('Reactant 2', t, molCol,
-      'Second reactant molecule column');
-    col2Container.replaceChildren(column2Input.root);
-  });
+  followTable(table1Input, col1Container, 'Reactant 1', 'First reactant molecule column',
+    (input) => column1Input = input);
+  followTable(table2Input, col2Container, 'Reactant 2', 'Second reactant molecule column',
+    (input) => column2Input = input);
 
   const modeInput = ui.input.choice('Combination Mode', {
     value: 'pairwise',
@@ -345,54 +361,21 @@ function buildTwoComponentComponents(
   let currentVariableInputs: DG.InputBase[] = [];
 
   // ---- Preview ----
-  const r = window.devicePixelRatio;
-  const previewCanvas = ui.canvas(400 * r, 120 * r);
-  previewCanvas.style.width = '400px';
-  previewCanvas.style.maxWidth = '100%';
-  previewCanvas.style.height = '120px';
-  previewCanvas.style.border = '1px solid var(--grey-2)';
-  previewCanvas.style.borderRadius = '4px';
-  previewCanvas.style.cursor = 'pointer';
-  previewCanvas.addEventListener('click', () => openFullscreenPreview(rdkit, browser.selected));
+  const previewCanvas = createPreviewCanvas(120, () => browser.selected);
 
-  const exampleGrid = createTwoCompExampleGrid();
+  const exampleGrid = createExampleGrid(['Reactant 1', 'Reactant 2', 'Product']);
 
-  function getResolvedVariables(): Record<string, any> {
-    const reaction = browser.selected;
-    const vars: Record<string, any> = {};
-    if (reaction?.variables) {
-      Object.keys(reaction.variables).forEach((key, i) => {
-        if (currentVariableInputs[i])
-          vars[key] = currentVariableInputs[i].value;
-      });
-    }
-    return vars;
-  }
-
-  function getResolvedSmarts(): string | null {
-    const reaction = browser.selected;
-    if (!reaction) return null;
-    const vars = getResolvedVariables();
-    return reaction.variables ?
-      resolveReactionVariables(reaction.reactionSmarts, vars) :
-      reaction.reactionSmarts;
-  }
+  const getResolvedSmarts = (): string | null => resolvedSmarts(browser.selected, currentVariableInputs);
 
   function updatePreview(reaction: NamedReaction | null) {
     const ctx = previewCanvas.getContext('2d')!;
     ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
     if (!reaction) return;
 
-    let smarts = reaction.reactionSmarts;
-    if (reaction.variables) {
-      const defaults: Record<string, any> = {};
-      for (const [key, varDef] of Object.entries(reaction.variables))
-        defaults[key] = varDef.defaultValue;
-      smarts = resolveReactionVariables(smarts, defaults);
-    }
+    const smarts = smartsWithDefaults(reaction);
 
     try {
-      renderReactionToCanvas(rdkit, previewCanvas, smarts, previewCanvas.width, previewCanvas.height);
+      drawReactionByRdKit(previewCanvas, smarts, previewCanvas.width, previewCanvas.height);
     } catch {/* preview error */}
 
     const col1 = column1Input.value;
@@ -406,7 +389,8 @@ function buildTwoComponentComponents(
           mode: 'pairwise',
           removeSaltsAndWater: saltsInput.value,
         }).then((result) => {
-          updateTwoCompExampleGrid(exampleGrid, examples1.slice(0, len), examples2.slice(0, len), result.products);
+          updateExampleGrid(exampleGrid, [['Reactant 1', examples1.slice(0, len)],
+            ['Reactant 2', examples2.slice(0, len)], ['Product', result.products]], 160);
         }).catch(() => {/* silently fail preview */});
       }
     }
@@ -414,25 +398,7 @@ function buildTwoComponentComponents(
 
   // Wire browser selection → variables + preview
   browser.onSelectionChanged.subscribe((reaction) => {
-    variablesDiv.innerHTML = '';
-    currentVariableInputs = [];
-    if (!reaction) {updatePreview(null); return;}
-
-    if (reaction.variables) {
-      for (const [_key, varDef] of Object.entries(reaction.variables)) {
-        const inputCtor = varDef.type === 'string' ? ui.input.string :
-          varDef.type === 'int' ? ui.input.int : ui.input.float;
-        const inp = inputCtor(varDef.name, {
-          value: varDef.defaultValue,
-          nullable: false,
-          onValueChanged: () => updatePreview(browser.selected),
-        });
-        if (varDef.description)
-          ui.tooltip.bind(inp.input, varDef.description);
-        currentVariableInputs.push(inp);
-        variablesDiv.append(inp.root);
-      }
-    }
+    currentVariableInputs = createVariableInputs(reaction, variablesDiv, () => updatePreview(browser.selected));
     updatePreview(reaction);
   });
 
@@ -461,27 +427,10 @@ function buildTwoComponentComponents(
       });
 
       if (modeInput.value === 'pairwise') {
-        const newCol = t1.columns.addNewString(t1.columns.getUnusedName(`Product(${col1.name}+${col2.name})`));
-        newCol.semType = DG.SEMTYPE.MOLECULE;
-        newCol.setTag('cell.renderer', 'Molecule');
-        newCol.init((i) => result.products[i] ?? '');
-      } else {
-        const df = DG.DataFrame.create(result.products.length);
-        df.name = `${reaction.name} Products`;
-        const r1Col = df.columns.addNewString('Reactant 1');
-        r1Col.semType = DG.SEMTYPE.MOLECULE;
-        r1Col.setTag('cell.renderer', 'Molecule');
-        r1Col.init((i) => result.reactants1[i] ?? '');
-        const r2Col = df.columns.addNewString('Reactant 2');
-        r2Col.semType = DG.SEMTYPE.MOLECULE;
-        r2Col.setTag('cell.renderer', 'Molecule');
-        r2Col.init((i) => result.reactants2[i] ?? '');
-        const pCol = df.columns.addNewString('Product');
-        pCol.semType = DG.SEMTYPE.MOLECULE;
-        pCol.setTag('cell.renderer', 'Molecule');
-        pCol.init((i) => result.products[i] ?? '');
-        grok.shell.addTableView(df);
-      }
+        addMoleculeColumn(t1, t1.columns.getUnusedName(`Product(${col1.name}+${col2.name})`),
+          (i) => result.products[i] ?? '');
+      } else
+        grok.shell.addTableView(twoComponentProductsTable(reaction.name, result));
     } catch (e: any) {
       grok.shell.error(`Reaction failed: ${e?.message ?? e}`);
     } finally {
@@ -505,21 +454,7 @@ function buildTwoComponentComponents(
         showInfo: true,
       });
 
-      const df = DG.DataFrame.create(result.products.length);
-      df.name = `${reaction.name} Products`;
-      const r1Col = df.columns.addNewString('Reactant 1');
-      r1Col.semType = DG.SEMTYPE.MOLECULE;
-      r1Col.setTag('cell.renderer', 'Molecule');
-      r1Col.init((i) => result.reactants1[i] ?? '');
-      const r2Col = df.columns.addNewString('Reactant 2');
-      r2Col.semType = DG.SEMTYPE.MOLECULE;
-      r2Col.setTag('cell.renderer', 'Molecule');
-      r2Col.init((i) => result.reactants2[i] ?? '');
-      const pCol = df.columns.addNewString('Product');
-      pCol.semType = DG.SEMTYPE.MOLECULE;
-      pCol.setTag('cell.renderer', 'Molecule');
-      pCol.init((i) => result.products[i] ?? '');
-      return df;
+      return twoComponentProductsTable(reaction.name, result);
     } catch (e: any) {
       grok.shell.error(`Reaction failed: ${e?.message ?? e}`);
       return null;
@@ -556,28 +491,10 @@ export async function transformationReactionsUI(table?: DG.DataFrame, column?: D
   }
 
   const c = buildTransformationComponents(rdkit, table, column);
-
-  const previewSection = ui.divV([
-    ui.h3('Reaction Preview'),
-    c.previewCanvas,
-    c.variablesDiv,
-    c.exampleGrid.root,
-  ], {style: {minWidth: '480px', flexShrink: '0'}});
-
-  const leftPanel = ui.divV([
+  showReactionDialog('Run Reaction', c, [
     ui.divH([c.tableInput.root, c.columnContainer], {style: {gap: '8px'}}),
     ui.divH([c.outputNameInput.root, c.saltsInput.root], {style: {gap: '8px'}}),
-    c.browser.root,
-    c.newReactionButton,
-  ], {style: {flex: '1 1 auto', overflow: 'auto', maxWidth: 'min(calc(100vw - 600px), 840px)'}});
-
-  const mainContent = ui.divH([leftPanel, previewSection], {style: {gap: '16px', alignItems: 'stretch'}});
-
-  const dialog = ui.dialog('Run Reaction')
-    .add(mainContent);
-
-  dialog.onOK(async () => {await c.runOnExistingTable();});
-  dialog.show({resizable: true});
+  ]);
 }
 
 // ==========================================
@@ -595,8 +512,18 @@ export async function twoComponentReactionUI(table?: DG.DataFrame): Promise<void
   }
 
   const c = buildTwoComponentComponents(rdkit, table);
+  showReactionDialog('Two-Component Reaction', c, [
+    ui.divH([c.table1Input.root, c.col1Container], {style: {gap: '8px'}}),
+    ui.divH([c.table2Input.root, c.col2Container], {style: {gap: '8px'}}),
+    ui.divH([c.modeInput.root, c.saltsInput.root], {style: {gap: '8px'}}),
+  ]);
+}
 
-  const rightPanel = ui.divV([
+/** A reaction dialog: `inputRows`, the browser and New Reaction on the left, the preview on the right; OK runs the
+ * reaction on the table. */
+function showReactionDialog(title: string, c: Pick<TransformationComponents, 'browser' | 'newReactionButton' |
+  'previewCanvas' | 'variablesDiv' | 'exampleGrid' | 'runOnExistingTable'>, inputRows: HTMLElement[]): void {
+  const previewSection = ui.divV([
     ui.h3('Reaction Preview'),
     c.previewCanvas,
     c.variablesDiv,
@@ -604,16 +531,14 @@ export async function twoComponentReactionUI(table?: DG.DataFrame): Promise<void
   ], {style: {minWidth: '480px', flexShrink: '0'}});
 
   const leftPanel = ui.divV([
-    ui.divH([c.table1Input.root, c.col1Container], {style: {gap: '8px'}}),
-    ui.divH([c.table2Input.root, c.col2Container], {style: {gap: '8px'}}),
-    ui.divH([c.modeInput.root, c.saltsInput.root], {style: {gap: '8px'}}),
+    ...inputRows,
     c.browser.root,
     c.newReactionButton,
   ], {style: {flex: '1 1 auto', overflow: 'auto', maxWidth: 'min(calc(100vw - 600px), 840px)'}});
 
-  const mainContent = ui.divH([leftPanel, rightPanel], {style: {gap: '16px', alignItems: 'stretch'}});
+  const mainContent = ui.divH([leftPanel, previewSection], {style: {gap: '16px', alignItems: 'stretch'}});
 
-  const dialog = ui.dialog('Two-Component Reaction')
+  const dialog = ui.dialog(title)
     .add(mainContent);
 
   dialog.onOK(async () => {await c.runOnExistingTable();});
@@ -634,56 +559,11 @@ export async function transformationReactionsView(
   column ??= table?.columns?.bySemType(DG.SEMTYPE.MOLECULE);
 
   const c = buildTransformationComponents(rdkit, table, column);
-
-  // ---- Left: browser (cards fill available space) ----
-  c.browser.root.style.height = '100%';
-  c.browser.root.style.display = 'flex';
-  c.browser.root.style.flexDirection = 'column';
-  const cardsEl = c.browser.root.children[1] as HTMLElement;
-  if (cardsEl)
-    cardsEl.style.maxHeight = 'none';
-    // cardsEl.style.flex = '1 1 auto';
-
-  const leftSide = ui.divV([c.browser.root], {style: {
-    height: '100%', overflow: 'hidden',
-  }});
-
-  // ---- Right: inputs + preview + grid + run button ----
   c.outputNameInput.input.style.width = '60%';
-  const inputsRow = ui.divV([
+  return reactionsView('Transformation Reactions', c, [
     ui.divH([c.tableInput.root, c.columnContainer], {style: {gap: '8px', flexWrap: 'wrap'}}),
     ui.divH([c.outputNameInput.root, c.saltsInput.root], {style: {gap: '8px', flexWrap: 'wrap'}}),
-  ], {style: {paddingBottom: '8px'}});
-  styleViewInputs(inputsRow);
-
-  const runButton = ui.button('Run Reaction', async () => {
-    const df = await c.runToNewDataFrame();
-    if (df)
-      grok.shell.addTableView(df);
-  });
-  const runRow = ui.divH([runButton], {style: {
-    justifyContent: 'flex-end', marginTop: '8px', paddingTop: '8px',
-    borderTop: '1px solid var(--grey-2)',
-  }});
-
-  const rightSide = ui.divV([
-    inputsRow,
-    ui.h3('Reaction Preview'),
-    c.previewCanvas,
-    c.variablesDiv,
-    c.exampleGrid.root,
-    runRow,
-  ], {style: {height: '100%', overflow: 'auto', padding: '8px'}});
-
-  // ---- View ----
-  const view = DG.View.create();
-  view.name = 'Transformation Reactions';
-  const split = ui.splitH([leftSide, rightSide], null, true);
-  split.style.width = '100%';
-  split.style.height = '100%';
-  view.append(split);
-
-  return view;
+  ]);
 }
 
 // ==========================================
@@ -697,7 +577,17 @@ export async function twoComponentReactionsView(table?: DG.DataFrame): Promise<D
   table ??= grok.shell.t;
 
   const c = buildTwoComponentComponents(rdkit, table);
+  return reactionsView('Two-Component Reactions', c, [
+    ui.divH([c.table1Input.root, c.col1Container], {style: {gap: '8px', flexWrap: 'wrap'}}),
+    ui.divH([c.table2Input.root, c.col2Container], {style: {gap: '8px', flexWrap: 'wrap'}}),
+    ui.divH([c.modeInput.root, c.saltsInput.root], {style: {gap: '8px', flexWrap: 'wrap'}}),
+  ]);
+}
 
+/** A reactions view: the browser on the left (its cards filling the height); `inputRows`, the preview, the examples
+ * and Run Reaction (to a new table) on the right. */
+function reactionsView(name: string, c: Pick<TransformationComponents, 'browser' | 'previewCanvas' | 'variablesDiv' |
+  'exampleGrid' | 'runToNewDataFrame'>, inputRows: HTMLElement[]): DG.ViewBase {
   // ---- Left: browser (cards fill available space) ----
   c.browser.root.style.height = '100%';
   c.browser.root.style.display = 'flex';
@@ -705,18 +595,13 @@ export async function twoComponentReactionsView(table?: DG.DataFrame): Promise<D
   const cardsEl = c.browser.root.children[1] as HTMLElement;
   if (cardsEl)
     cardsEl.style.maxHeight = 'none';
-    // cardsEl.style.flex = '1 1 auto';
 
   const leftSide = ui.divV([c.browser.root], {style: {
     height: '100%', overflow: 'hidden',
   }});
 
   // ---- Right: inputs + preview + grid + run button ----
-  const inputsRow = ui.divV([
-    ui.divH([c.table1Input.root, c.col1Container], {style: {gap: '8px', flexWrap: 'wrap'}}),
-    ui.divH([c.table2Input.root, c.col2Container], {style: {gap: '8px', flexWrap: 'wrap'}}),
-    ui.divH([c.modeInput.root, c.saltsInput.root], {style: {gap: '8px', flexWrap: 'wrap'}}),
-  ], {style: {paddingBottom: '8px'}});
+  const inputsRow = ui.divV(inputRows, {style: {paddingBottom: '8px'}});
   styleViewInputs(inputsRow);
 
   const runButton = ui.button('Run Reaction', async () => {
@@ -740,7 +625,7 @@ export async function twoComponentReactionsView(table?: DG.DataFrame): Promise<D
 
   // ---- View ----
   const view = DG.View.create();
-  view.name = 'Two-Component Reactions';
+  view.name = name;
   const split = ui.splitH([leftSide, rightSide], null, true);
   split.style.width = '100%';
   split.style.height = '100%';
@@ -762,14 +647,11 @@ function styleViewInputs(container: HTMLElement): void {
   });
 }
 
-function createExampleGrid(): ExampleGridInfo {
+/** An empty examples grid of the molecule columns `names`. */
+function createExampleGrid(names: string[]): ExampleGridInfo {
   const df = DG.DataFrame.create(0);
-  const molCol = df.columns.addNew('Input', DG.TYPE.STRING);
-  molCol.semType = DG.SEMTYPE.MOLECULE;
-  molCol.setTag('cell.renderer', 'Molecule');
-  const prodCol = df.columns.addNew('Product', DG.TYPE.STRING);
-  prodCol.semType = DG.SEMTYPE.MOLECULE;
-  prodCol.setTag('cell.renderer', 'Molecule');
+  for (const name of names)
+    addMoleculeColumn(df, name);
   const grid = df.plot.grid();
   grid.root.style.width = '100%';
   grid.root.style.flexGrow = '1';
@@ -777,82 +659,25 @@ function createExampleGrid(): ExampleGridInfo {
   return {root: grid.root, grid, df};
 }
 
-function updateExampleGrid(
-  gridInfo: ExampleGridInfo,
-  inputs: string[], products: string[],
-): void {
-  const len = Math.min(inputs.length, products.length, 10);
+/** Shows up to 10 examples: a molecule column `width` px wide per [name, values] of `columns`. */
+function updateExampleGrid(gridInfo: ExampleGridInfo, columns: [string, string[]][], width: number): void {
+  const len = Math.min(...columns.map(([, values]) => values.length), 10);
   const df = DG.DataFrame.create(len);
-  const molCol = df.columns.addNew('Input', DG.TYPE.STRING);
-  molCol.semType = DG.SEMTYPE.MOLECULE;
-  molCol.setTag('cell.renderer', 'Molecule');
-  molCol.init((i) => inputs[i]);
-  const prodCol = df.columns.addNew('Product', DG.TYPE.STRING);
-  prodCol.semType = DG.SEMTYPE.MOLECULE;
-  prodCol.setTag('cell.renderer', 'Molecule');
-  prodCol.init((i) => products[i]);
+  for (const [name, values] of columns)
+    addMoleculeColumn(df, name, (i) => values[i]);
 
   if (gridInfo.grid) {
     gridInfo.grid.dataFrame = df;
     gridInfo.grid.props.rowHeight = 100;
-    const inpGridCol = gridInfo.grid.col('Input');
-    const prodGridCol = gridInfo.grid.col('Product');
-    if (inpGridCol) inpGridCol.width = 230;
-    if (prodGridCol) prodGridCol.width = 230;
-  }
-}
-
-function createTwoCompExampleGrid(): ExampleGridInfo {
-  const df = DG.DataFrame.create(0);
-  const r1Col = df.columns.addNew('Reactant 1', DG.TYPE.STRING);
-  r1Col.semType = DG.SEMTYPE.MOLECULE;
-  r1Col.setTag('cell.renderer', 'Molecule');
-  const r2Col = df.columns.addNew('Reactant 2', DG.TYPE.STRING);
-  r2Col.semType = DG.SEMTYPE.MOLECULE;
-  r2Col.setTag('cell.renderer', 'Molecule');
-  const prodCol = df.columns.addNew('Product', DG.TYPE.STRING);
-  prodCol.semType = DG.SEMTYPE.MOLECULE;
-  prodCol.setTag('cell.renderer', 'Molecule');
-  const grid = df.plot.grid();
-  grid.root.style.width = '100%';
-  grid.root.style.flexGrow = '1';
-  grid.props.rowHeight = 100;
-  return {root: grid.root, grid, df};
-}
-
-function updateTwoCompExampleGrid(
-  gridInfo: ExampleGridInfo,
-  reactants1: string[], reactants2: string[], products: string[],
-): void {
-  const len = Math.min(reactants1.length, reactants2.length, products.length, 10);
-  const df = DG.DataFrame.create(len);
-  const r1Col = df.columns.addNew('Reactant 1', DG.TYPE.STRING);
-  r1Col.semType = DG.SEMTYPE.MOLECULE;
-  r1Col.setTag('cell.renderer', 'Molecule');
-  r1Col.init((i) => reactants1[i]);
-  const r2Col = df.columns.addNew('Reactant 2', DG.TYPE.STRING);
-  r2Col.semType = DG.SEMTYPE.MOLECULE;
-  r2Col.setTag('cell.renderer', 'Molecule');
-  r2Col.init((i) => reactants2[i]);
-  const prodCol = df.columns.addNew('Product', DG.TYPE.STRING);
-  prodCol.semType = DG.SEMTYPE.MOLECULE;
-  prodCol.setTag('cell.renderer', 'Molecule');
-  prodCol.init((i) => products[i]);
-
-  if (gridInfo.grid) {
-    gridInfo.grid.dataFrame = df;
-    gridInfo.grid.props.rowHeight = 100;
-    const r1GridCol = gridInfo.grid.col('Reactant 1');
-    const r2GridCol = gridInfo.grid.col('Reactant 2');
-    const prodGridCol = gridInfo.grid.col('Product');
-    if (r1GridCol) r1GridCol.width = 160;
-    if (r2GridCol) r2GridCol.width = 160;
-    if (prodGridCol) prodGridCol.width = 160;
+    for (const [name] of columns) {
+      const gridCol = gridInfo.grid.col(name);
+      if (gridCol) gridCol.width = width;
+    }
   }
 }
 
 /** Opens a full-screen dialog showing the selected reaction rendered large. */
-function openFullscreenPreview(rdkit: RDModule, reaction: NamedReaction | null): void {
+function openFullscreenPreview(reaction: NamedReaction | null): void {
   if (!reaction) return;
 
   const r = window.devicePixelRatio;
@@ -864,16 +689,10 @@ function openFullscreenPreview(rdkit: RDModule, reaction: NamedReaction | null):
   canvas.style.backgroundColor = 'white';
   canvas.style.borderRadius = '4px';
 
-  let smarts = reaction.reactionSmarts;
-  if (reaction.variables) {
-    const defaults: Record<string, any> = {};
-    for (const [key, varDef] of Object.entries(reaction.variables))
-      defaults[key] = varDef.defaultValue;
-    smarts = resolveReactionVariables(smarts, defaults);
-  }
+  const smarts = smartsWithDefaults(reaction);
 
   try {
-    renderReactionToCanvas(rdkit, canvas, smarts, canvas.width, canvas.height);
+    drawReactionByRdKit(canvas, smarts, canvas.width, canvas.height);
   } catch {
     const ctx = canvas.getContext('2d')!;
     ctx.save();

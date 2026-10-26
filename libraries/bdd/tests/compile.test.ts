@@ -347,4 +347,6 @@ test('run placeholders resolve at runtime in strings, element phrases, tables an
   assert.ok(code.includes('fillIn(page, [["name",session.text("BDD-{run}")]])'));
   assert.ok(code.includes('fillIn(page, session.text("BDD-{run}"))'));
   assert.equal(code, compile(source).code);
+  const login = compile(`Feature: Per-account names\n  Scenario: A\n    Given entity "type-{login}"\n`).code;
+  assert.ok(login.includes('entity(page, session.text("type-{login}"))'));
 });
