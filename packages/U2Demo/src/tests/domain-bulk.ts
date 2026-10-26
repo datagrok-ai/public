@@ -1,6 +1,6 @@
-/* Bulk edit against a real domain table (WO 3-8): the ⋯ menu's items, the dialog's field picker,
+/* Bulk edit against a real domain table: the ⋯ menu's items, the dialog's field picker,
    "N selected" writing `id in (…)` and "all M matching" writing the list's filter —
-   all of it through the server's `POST …/{table}/update` (WO 3-1). Fixture: `apitests.item`, rows
+   all of it through the server's `POST …/{table}/update`. Fixture: `apitests.item`, rows
    prefixed per run and deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -74,10 +74,10 @@ category('U2: domain bulk', () => {
   /** Picks the fields to change, then fills each of them. */
   async function write(values: Record<string, unknown>): Promise<void> {
     control('fields')!.value.value = Object.keys(values);
-    await delay(100);
+    await waitUntil(() => Object.keys(values).every(shown), 'the chosen fields show');
     for (const [name, value] of Object.entries(values))
       control(name)!.value.value = value;
-    await delay(100);
+    await waitUntil(() => !ok().disabled, 'the button is on');
   }
 
   async function selectRows(keep: (id: string) => boolean): Promise<void> {
@@ -122,7 +122,7 @@ category('U2: domain bulk', () => {
     expect((control('target')?.root.textContent ?? '').includes('All 3'), true,
       'no target the server would refuse: nothing is selected, so the filter is the one target');
     control('fields')!.value.value = ['quantity'];
-    await delay(100);
+    await waitUntil(() => shown('quantity'), 'the chosen field shows');
     expect(shown('quantity'), true, 'a chosen field shows its editor');
     expect(control('quantity')!.root.querySelector('.u2-input-error')?.textContent ?? '', '',
       'nothing here is required: a chosen field left empty CLEARS the column');
@@ -168,9 +168,7 @@ category('U2: domain bulk', () => {
     const {running} = await open();
     await write({origin: 'rewritten', quantity: 7});
     ok().click();
-    for (let i = 0; i < 100 && refusal() === ''; i++)
-      await delay(50);
-    expect(refusal() !== '', true, 'the refusal is the dialog\'s error line');
+    await waitUntil(() => refusal() !== '', 'the refusal is the dialog\'s error line');
     expect(shown('origin'), true, 'the dialog is still up, the fields still chosen');
     expect(await quantities(), '4,4,4', 'the whole call rolled back');
     buttonNamed('CANCEL').click();

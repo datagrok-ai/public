@@ -366,26 +366,3 @@ scoped('DomainPick.bind: a bound filter is a tree, an empty sibling leaves the n
   assert.deepEqual(DomainPick.bind(tree), {filter: tree, unbound: []});
   assert.deepEqual(DomainPick.bind(undefined), {unbound: []});
 });
-
-/** A table an app captions by its formatted key: what MolTrack's compounds look like to a picker. */
-function compounds(opened = []) {
-  const rows = [{id: 'c1', molregno: 62, common_name: 'Caffeine'}, {id: 'c2', molregno: 482, common_name: 'Bisphenol A'},
-    {id: 'c3', molregno: 19, common_name: 'Aspirin'}];
-  const matches = (row, node) => Array.isArray(node) ? node.every((n) => n === 'and' || matches(row, n)) :
-    row[node.property] === node.value;
-  const table = {
-    address: 'mt.compound',
-    properties: [{name: 'molregno', type: 'int', format: 'DG-000000'}, {name: 'common_name', type: 'string'}],
-    info: {nameColumn: null, businessKey: ['molregno'], searchableColumns: ['common_name'], singularName: 'Compound',
-      pluralName: 'Compounds'},
-    query: async (spec) => rows
-      .filter((row) => spec.search === undefined || row.common_name.toLowerCase().includes(spec.search.toLowerCase()))
-      .filter((row) => spec.filter === undefined || matches(row, spec.filter))
-      .sort((a, b) => spec.sort === 'molregno' ? a.molregno - b.molregno : 0)
-      .slice(0, spec.limit),
-    count: async () => rows.length,
-  };
-  emsBackends.domain = {table: async () => table, saveAll: () => Promise.resolve(true)};
-  DomainPick.host = {caption: async () => (row) => `DG-${String(row.molregno).padStart(6, '0')}`,
-    open: (address, id) => opened.push([address, id])};
-}
