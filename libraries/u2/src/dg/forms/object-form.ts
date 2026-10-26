@@ -11,7 +11,7 @@ import type {FieldAccess} from '../../core/access.js';
 import type {IFieldStatus, IWidgetStatus} from '../../core/widget-like.js';
 import {div, span} from '../../core/elements.js';
 import {Form} from '../../components/forms/form.js';
-import type {FormLayout} from '../../components/forms/form.js';
+import type {FormLayout, LabelColumn} from '../../components/forms/form.js';
 import {TextInput} from '../../components/inputs/text-input.js';
 import {NumberInput, NumberInputOptions} from '../../components/inputs/number-input.js';
 import {BigIntInput} from '../../components/inputs/bigint-input.js';
@@ -53,6 +53,8 @@ export interface ObjectFormOptions {
    * color…), generating one only where it has none; `generated` (the default) never asks. */
   editors?: 'auto' | 'generated';
   layout?: FormLayout;
+  /** Shared with other forms, or read (`width`) by content that lines up with this one. */
+  labelColumn?: LabelColumn;
   /** The DG.InputForm-contract flag; in the platform condensed IS the tall view, so it maps to
    * `layout: 'tall'` where {@link layout} is not given. */
   condensed?: boolean;
@@ -327,7 +329,7 @@ export class ObjectForm extends Form {
   private _refreshing = false;
 
   constructor(props: IProperty[], target: object, options: ObjectFormOptions = {}) {
-    super({layout: options.layout ?? (options.condensed ? 'tall' : undefined)});
+    super({layout: options.layout ?? (options.condensed ? 'tall' : undefined), labelColumn: options.labelColumn});
     this.target = target;
     this._onChanged = options.onChanged;
     this._auto = options.editors === 'auto';
