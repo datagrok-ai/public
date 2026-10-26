@@ -1,12 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {domains, DomainTable} from '@datagrok-libraries/ems/src/dg';
-import {Rows, divH, divV, isEmpty, span} from '@datagrok-libraries/u2';
-import type {RowView} from '@datagrok-libraries/u2';
+import {Filters, Rows, divH, divV, isEmpty, span} from '@datagrok-libraries/u2';
+import type {FilterGroup, RowView} from '@datagrok-libraries/u2';
 import type {AssayResultRow, CompoundBatchRow, CompoundRow} from '../generated/db';
 import {moltrackEmsDb} from '../generated/db';
 import {Chemistry, HASH_COLUMNS, MATCH_RULES} from './chemistry';
 import {BulkRegistration} from './registration';
+import {StructureSearch} from './structure-search';
 import type {MatchRule} from './chemistry';
 
 export const SCHEMA = 'moltrack_ems';
@@ -58,6 +59,16 @@ export class MolTrackTables {
 
   static compounds(): Promise<DomainTable<CompoundRow>> {
     return MolTrackTables.table('compound');
+  }
+
+  /** A table's rows as a data frame, structure conditions answered in the browser first. */
+  static async frame(name: string, root: FilterGroup, scope: Omit<DG.DomainQuerySpec, 'filter'> = {}):
+    Promise<DG.DataFrame> {
+    const resolved = await StructureSearch.resolve(root);
+    const df = await grok.dapi.domains.table(`${SCHEMA}.${name}`).queryDf({...scope,
+      ...(resolved.nodes.length === 0 ? {} : {filter: Filters.toDomainTree(resolved) as DG.DomainFilter})});
+    df.name = (await MolTrackTables.table(name)).info.pluralName || name;
+    return df;
   }
 
   static warmUp(): void {

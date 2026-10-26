@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import {DomainApp} from '@datagrok-libraries/ems/src/dg';
 import type {DomainAppOptions, DomainTable} from '@datagrok-libraries/ems/src/dg';
 import type {DomainSource} from '@datagrok-libraries/ems';
-import {Rows, isEmpty} from '@datagrok-libraries/u2';
+import {Filters, Rows, isEmpty} from '@datagrok-libraries/u2';
 import type {Action, RowView} from '@datagrok-libraries/u2';
 import type {CompoundRow} from '../generated/db';
 import {Chemistry, IDENTITY_COLUMNS} from './chemistry';
@@ -66,7 +66,24 @@ export class CompoundsApp extends DomainApp {
 
   // no Bulk edit: it would write past the identity a structure derives
   menuActions(): Action[] {
-    return super.menuActions().filter((action) => action.name !== 'Bulk edit…');
+    return [...super.menuActions().filter((action) => action.name !== 'Bulk edit…'),
+      {name: 'Open as table', icon: 'table', run: () => void this._openAsTable()}];
+  }
+
+  /** The list's rows, structure filters included, in a table view. */
+  private async _openAsTable(): Promise<void> {
+    const source = this.listSource;
+    const query = source.query.peek();
+    const parsed = typeof query === 'string' ? Filters.parse(query) : {root: query, problems: []};
+    if (parsed.problems.length > 0) {
+      grok.shell.warning(parsed.problems[0].message);
+      return;
+    }
+    const search = source.search.peek();
+    const sort = source.sort.peek();
+    const df = await MolTrackTables.frame('compound', parsed.root, {deleted: source.deleted.peek(),
+      ...(search === '' ? {} : {search}), ...(sort === '' ? {} : {sort})});
+    grok.shell.addTableView(df);
   }
 
   private async _derive(source: DomainSource): Promise<void> {

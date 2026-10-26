@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {Filters, KIND} from '@datagrok-libraries/u2';
-import type {FilterCondition} from '@datagrok-libraries/u2';
+import type {FilterCondition, FilterGroup} from '@datagrok-libraries/u2';
 import {moltrackEmsDb} from '../generated/db';
 import {Chemistry, HASH_COLUMNS} from './chemistry';
 import {MolTrackTables} from './tables';
@@ -13,16 +13,24 @@ export class StructureSearch {
   static readonly EXACT = 'is exactly';
   static readonly PAGE = 5000;
 
+  static readonly OPERATORS = [StructureSearch.SUBSTRUCTURE, StructureSearch.SUPERSTRUCTURE, StructureSearch.SIMILAR,
+    StructureSearch.EXACT];
+
   static register(): () => void {
-    const ids = [StructureSearch.SUBSTRUCTURE, StructureSearch.SUPERSTRUCTURE, StructureSearch.SIMILAR,
-      StructureSearch.EXACT];
-    return Filters.operators.register(ids.map((id) => ({id, label: id, arity: 1 as const, kinds: [KIND.STRING],
-      semType: DG.SEMTYPE.MOLECULE, exclusive: true, editor: 'default' as const, host: true})));
+    return Filters.operators.register(StructureSearch.OPERATORS.map((id) => ({id, label: id, arity: 1 as const,
+      kinds: [KIND.STRING], semType: DG.SEMTYPE.MOLECULE, exclusive: true, editor: 'default' as const, host: true})));
   }
 
   static threshold(): number {
     const value = Number(Chemistry.package().settings?.['SimilarityThreshold']);
     return Number.isFinite(value) && value > 0 && value <= 1 ? value : 0.5;
+  }
+
+  /** The query with every structure condition replaced by the ids of the compounds it matches. */
+  static async resolve(root: FilterGroup): Promise<FilterGroup> {
+    return {...root, nodes: await Promise.all(root.nodes.map(async (n) => Filters.isGroup(n) ?
+      StructureSearch.resolve(n) : StructureSearch.OPERATORS.includes(n.operator) ?
+        Filters.cond('id', 'in', await StructureSearch.matching(n)) : n))};
   }
 
   static async matching(condition: FilterCondition, signal?: AbortSignal): Promise<string[]> {
