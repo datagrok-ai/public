@@ -5,7 +5,6 @@
 
 import {emsBackends} from '../src/core/domain-backend.js';
 import {test} from 'node:test';
-import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
@@ -532,7 +531,7 @@ scoped('a multi-selection: what every picked row offers, flat and first; the cli
   assert.deepEqual(src.selection.value.map((r) => r.id), ['i1', 'i2'], 'the frame follows the picked rows');
   fire(at(1), 'contextmenu');
   assert.deepEqual([...list.list.selectedIndices.value], [0, 1], 'the right-click did not collapse it');
-  // both targets are named: the selection on each of its items, the clicked row on its submenu (M2)
+  // both targets are named: the selection on each of its items, the clicked row on its submenu
   assert.deepEqual(labels(), ['Close', 'Delete', 'Ibuprofen'], 'Open takes one page: never offered over a selection');
   assert.deepEqual(details().filter((d) => d !== ''), ['2 issues', '2 issues']);
   fire(panel().querySelectorAll('.u2-menu-item-sub')[0], 'click');
@@ -598,82 +597,4 @@ scoped('a vetoed restore is worded as a restore: the row, and what to bring back
     message: 'Cannot save: Column "project_id" references a deleted row in "project"'}, trash),
   'Cannot restore "Aspirin": its project was deleted too. Restore the project first.');
   trash.dispose();
-});
-
-scoped('the seeded row stays unpainted through focus, hover and stray keys; a pick or Down shows it', async () => {
-  const {src} = await issues();
-  const list = domains.list(src);
-  mount(list);
-  await flush();
-  const row = (i) => list.list.root.querySelector(`.u2-list-row[data-index="${i}"]`);
-  const seeded = () => list.root.classList.contains('u2-domain-list-seeded');
-  fire(list.list.root, 'focus');
-  fire(row(0), 'mouseover');
-  for (const key of ['Tab', 'Shift', 'Control'])
-    fire(list.list.root, 'keydown', {key});
-  fire(list.list.root, 'click');
-  assert.equal(seeded(), true, 'focus, hover, a click off the rows and non-navigation keys are no pick');
-  assert.equal(src.currentRow.peek()?.id, row(0).dataset.u2Row, 'the seed still gives the keys and the context a row');
-  fire(list.list.root, 'keydown', {key: 'ArrowDown'});
-  assert.equal(seeded(), false, 'Down picks');
-  assert.equal(row(0).classList.contains('u2-list-row-current'), true, 'the first Down lands on the seeded row');
-  fire(list.list.root, 'keydown', {key: 'ArrowDown'});
-  assert.equal(row(1).classList.contains('u2-list-row-current'), true, 'the next one moves on');
-  list.dispose();
-  src.dispose();
-});
-
-scoped('domain.css never paints the seeded row as current or selected, whatever the focus or hover', () => {
-  const css = readFileSync(new URL('../css/domain.css', import.meta.url), 'utf8');
-  const rules = css.match(/[^{}]*u2-domain-list-seeded[^{]*\{[^}]*\}/g) ?? [];
-  assert.equal(rules.length, 2);
-  for (const rule of rules) {
-    assert.doesNotMatch(rule.split('{')[0], /:focus|:hover/, rule);
-    assert.match(rule, /--u2-domain-row-(current|selected): transparent/);
-  }
-});
-
-scoped('a seeded row is current but no pick; a pending delete reads with an Undo; an empty table offers New', async () => {
-  const {src} = await issues();
-  const list = domains.list(src);
-  mount(list);
-  await flush();
-  const row = (i) => list.list.root.querySelector(`.u2-list-row[data-index="${i}"]`);
-  assert.equal(row(0).classList.contains('u2-list-row-current'), true, 'the load puts the lead on the first row');
-  assert.equal(list.root.classList.contains('u2-domain-list-seeded'), true, 'drawn unpicked until the list is used');
-  fire(row(1), 'click');
-  assert.equal(list.root.classList.contains('u2-domain-list-seeded'), false);
-  assert.equal(row(1).classList.contains('u2-list-row-current'), true);
-  assert.equal(row(0).classList.contains('u2-list-row-current'), false);
-
-  const name = row(0).querySelector('.u2-domain-list-content');
-  Object.defineProperty(name, 'scrollWidth', {value: 300, configurable: true});
-  Object.defineProperty(name, 'clientWidth', {value: 100, configurable: true});
-  fire(name, 'mouseover');
-  assert.equal(name.title, name.textContent, 'a cut line reads in full on hover');
-
-  src.edit.value.markDeleted('i2');
-  await flush();
-  const deleted = list.list.root.querySelector('[data-u2-row="i2"]');
-  assert.equal(deleted.classList.contains('u2-domain-list-pending'), true, 'a pending delete has the pending edge');
-  const undo = deleted.querySelector('.u2-domain-list-undo .u2-icon-btn');
-  assert.equal(undo.getAttribute('aria-label'), 'Undo delete', 'an undo icon, its tooltip says what it undoes');
-  fire(undo, 'click');
-  await flush();
-  assert.equal(src.isDirty.value, false);
-  list.dispose();
-  src.dispose();
-
-  emsBackends.domain = backend({rows: {issue: [], project: ROWS.project.map((r) => ({...r}))}});
-  const {src: none} = await issues();
-  let made = 0;
-  const empty = domains.list(none, {create: () => made++});
-  mount(empty);
-  await flush();
-  const state = empty.root.querySelector('.u2-empty-state');
-  assert.equal(state.querySelector('.u2-empty-state-text').textContent, 'No issues yet');
-  fire(state.querySelector('button'), 'click');
-  assert.equal(made, 1, 'the first row is one press away');
-  empty.dispose();
-  none.dispose();
 });

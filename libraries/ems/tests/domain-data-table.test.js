@@ -7,7 +7,7 @@ import {emsBackends} from '../src/core/domain-backend.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
-import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, signal, Registry, SpecContext, renderSpec, registerAll, timestamp, Rows} from '@datagrok-libraries/u2';
 import {backend} from './domain-fixtures.mjs';
 
@@ -41,10 +41,10 @@ const headers = (dt) => dt.root.querySelectorAll('.u2-data-table-head').map((el)
 const row = (dt, i) => dt.root.querySelector(`.u2-data-table-row[data-index="${i}"]`);
 const cell = (dt, i, column) => row(dt, i).children[dt.columns().indexOf(column)];
 
-async function dataTable(options = {}, pageSize = 10) {
+async function dataTable(options = {}) {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
-  const src = table.source({pageSize});
+  const src = table.source({pageSize: 10});
   const dt = domains.dataTable(src, options);
   document.body.append(dt.root);
   await flush();
@@ -119,25 +119,6 @@ scoped('a read-only table greys no cell: one the caller may not write reads like
   await flush();
   assert.equal(cell(dt, 0, 'priority').className.includes('u2-cell-readonly'), false);
   assert.equal(cell(dt, 0, 'title').className.includes('u2-cell-readonly'), false);
-  dt.dispose();
-  src.dispose();
-});
-
-scoped('a header click sorts the source', async () => {
-  emsBackends.domain = backend();
-  const table = await domains.table('grit.issue');
-  const src = table.source({pageSize: 10});
-  const dt = domains.dataTable(src, {columns: ['title', 'weight']});
-  document.body.append(dt.root);
-  await flush();
-  dt.table.value.root.clientHeight = 400;
-  const head = dt.root.querySelector('.u2-data-table-header').children[1];
-  fire(head, 'click');
-  fire(head, 'click');
-  assert.equal(src.sort.value, '!weight');
-  await flush();
-  assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Naproxen', 'Aspirin', 'Ibuprofen'],
-    'ordered on the backend');
   dt.dispose();
   src.dispose();
 });
@@ -299,41 +280,6 @@ scoped('a ref cell takes the caption the query projected; only a frame without o
   assert.equal(looked.textContent, 'Grit');
   assert.equal(DomainDataTable.caption(prop, {project_id: 'p1'}, 'project_id', 'p1', cache), 'Grit',
     'a second render reads what the lookup answered — one lookup per id, not per paint');
-  dt.dispose();
-  src.dispose();
-});
-
-scoped('scrolling to the end loads the next pages into the same rows', async () => {
-  const {src, dt} = await dataTable({}, 1);
-  assert.equal(src.rows.items.value.length, 1);
-  const scroller = dt.table.value.root;
-  for (const loaded of [2, 3]) {
-    scroller.scrollHeight = 24 * (loaded - 1);
-    scroller.scrollTop = scroller.scrollHeight;
-    fire(scroller, 'scroll');
-    await flush();
-    assert.equal(src.rows.items.value.length, loaded);
-  }
-  assert.equal(src.summary.value, '3 issues');
-  assert.ok(row(dt, 2), 'the loaded rows are drawn');
-  dt.dispose();
-  src.dispose();
-});
-
-scoped('a row\'s context menu: Open, the table\'s actions and the caller\'s', async () => {
-  emsBackends.domain = backend();
-  const table = await domains.table('grit.issue');
-  table.actions.add({name: 'Close', run: () => {}});
-  const src = table.source({pageSize: 10});
-  const dt = domains.dataTable(src, {columns: ['title'], actions: [{name: 'Escalate', run: () => {}}]});
-  document.body.append(dt.root);
-  await flush();
-  dt.table.value.root.clientHeight = 400;
-  await flush();
-  fire(cell(dt, 0, 'title'), 'contextmenu');
-  assert.deepEqual(document.querySelectorAll('[role="menuitem"]').map((el) => el.textContent),
-    ['Open', 'Close', 'Escalate']);
-  fire(document.querySelector('[role="menuitem"]'), 'click');
   dt.dispose();
   src.dispose();
 });

@@ -331,7 +331,7 @@ scoped('a backend that refuses without throwing still says so in the summary, an
   issues.dispose();
 });
 
-scoped('VS-58: confirmDiscard names the record and the fields at stake; a new record by its noun', async () => {
+scoped('confirmDiscard names the record and the fields at stake; a new record by its noun', async () => {
   emsBackends.domain = backend();
   const session = new SharedSession();
   const {projects, issues} = await pair(session);

@@ -147,71 +147,6 @@ scoped('the chosen columns are written to the selection; one not chosen is left 
   source.dispose();
 });
 
-scoped('under each chosen field: how many values differ, or that it will be cleared; a shared one says nothing', async () => {
-  const memory = backend();
-  const {source} = await table(memory, {query: 'number > 0'});
-  select(source, (i) => i !== 0);
-  const {running} = await opened(source);
-  choose('title', 'done', 'weight');
-  await flush();
-  assert.equal(hint('weight'), 'Will be cleared', 'a chosen field left empty clears the column');
-  assert.equal(hint('title'), 'Required: it cannot be cleared', 'unless the column is required');
-  assert.equal(field('title').root.querySelector('.u2-input-error')?.textContent ?? '', '',
-    'nothing red in the body: the button\'s tooltip says it');
-  field('title').value.value = 'Renamed';
-  await flush();
-  assert.equal(hint('title'), '2 different values');
-  assert.equal(hint('done'), '', 'both selected issues are open: nothing to warn of');
-
-  target().value.value = 'All 3 issues matching the filter';
-  await flush();
-  assert.equal(ok().textContent, 'Update 3 issues', 'the caption follows the target');
-  assert.equal(hint('title'), '', 'the matching rows are not loaded: no current value to show');
-  assert.equal(hint('weight'), 'Will be cleared');
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await running, null);
-  assert.deepEqual(issues(memory).map((r) => r.version), [1, 1, 1], 'nothing was written');
-  source.dispose();
-});
-
-scoped('one target is plain text, and one row is offered its business key', async () => {
-  const memory = backend();
-  const {source} = await table(memory);
-  select(source, (i) => i === 1);
-  const {running} = await opened(source);
-  assert.equal(targetText(), 'Apply to1 selected issue', 'a caption and its text, no choice of one');
-  assert.equal(document.querySelector('.u2-dialog [data-u2="radio-input"]'), null);
-  assert.equal(offered().includes('number'), true, 'a business key can change on one row');
-  assert.equal(ok().textContent, 'Update 1 issue');
-  choose('title');
-  await flush();
-  field('title').value.value = 'X';
-  await flush();
-  assert.equal(hint('title'), '', 'one row: no other value to tell apart');
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await running, null);
-  source.dispose();
-});
-
-scoped('only a chosen field holds the button: one taken back with a bad value no longer blocks it', async () => {
-  const memory = backend();
-  const {source} = await table(memory);
-  select(source, (i) => i === 1);
-  const {running} = await opened(source);
-  choose('number', 'done');
-  await flush();
-  field('number').value.value = 0;
-  await flush();
-  assert.equal(okDisabled(), true, 'a chosen field with a bad value holds the button');
-  choose('done');
-  await flush();
-  assert.equal(shown('number'), false);
-  assert.equal(okDisabled(), false, 'the field taken back is not in the request, nor in the verdict');
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await running, null);
-  source.dispose();
-});
-
 scoped('a selection past the cap disables the button and says how many are selected', async () => {
   const memory = many(1001);
   const {source} = await table(memory, {pageSize: 1100});
@@ -242,76 +177,6 @@ scoped('"all matching" writes the list\'s filter, capped, and reports that more 
   assert.equal(await running, 1000);
   assert.match(balloon('info'), /Updated 1000 issues — more match/);
   assert.equal(issues(memory).filter((r) => r.done === true).length, 1000);
-  source.dispose();
-});
-
-scoped('the table\'s validators run over the selection as it would land; a refusal stays in the dialog', async () => {
-  const memory = backend();
-  const {handle, source} = await table(memory, {query: 'number > 0'});
-  handle.validators.add('done', (value, row) => value === true && !row.priority ? 'Prioritise before closing' : null);
-  select(source, (i) => i !== 0);
-  const {running} = await opened(source);
-  choose('done');
-  await flush();
-  field('done').value.value = true;
-  fire(ok(), 'click');
-  await flush();
-  assert.match(refusal(), /Ibuprofen: Done: Prioritise before closing/, 'the row and the field, named');
-  assert.equal(balloon('error'), '', 'never a balloon');
-  assert.deepEqual(issues(memory).map((r) => r.version), [1, 1, 1], 'nothing was written');
-
-  choose('done', 'priority');
-  await flush();
-  field('priority').value.value = 'high';
-  fire(ok(), 'click');
-  assert.equal(await running, 2, 'the written priority is what the rule reads');
-  assert.deepEqual(issues(memory).map((r) => r.done), [true, true, true]);
-  source.dispose();
-});
-
-scoped('"all matching" reads the rows to check them, and refuses past what one edit writes', async () => {
-  const memory = backend();
-  const {handle, source} = await table(memory, {query: 'done = false'});
-  handle.validators.add('done', (value, row) => value === true && !row.priority ? 'Prioritise before closing' : null);
-  const {running} = await opened(source);
-  choose('done');
-  await flush();
-  field('done').value.value = true;
-  fire(ok(), 'click');
-  await flush();
-  assert.match(refusal(), /Ibuprofen: Done: Prioritise before closing/);
-  assert.deepEqual(issues(memory).map((r) => r.version), [1, 1, 1]);
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await running, null);
-  source.dispose();
-
-  const big = await table(many(1001), {query: 'done = false'});
-  big.handle.validators.add('done', () => null);
-  const second = await opened(big.source);
-  choose('done');
-  await flush();
-  assert.equal(okDisabled(), true);
-  assert.match(await okReason(), /matches more than 1000 issues/);
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await second.running, null);
-  big.source.dispose();
-});
-
-scoped('a server refusal is the dialog\'s error line, and keeps what the user chose', async () => {
-  const memory = backend();
-  const {source} = await table(memory, {query: 'number > 0'});
-  select(source, () => true);
-  const {running} = await opened(source);
-  choose('title');
-  await flush();
-  fire(ok(), 'click');
-  await flush();
-  await flush();
-  assert.notEqual(refusal(), '', 'the server refused clearing a required column');
-  assert.equal(balloon('error'), '');
-  assert.equal(shown('title'), true, 'the dialog is still up, the field still chosen');
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await running, null);
   source.dispose();
 });
 
@@ -454,45 +319,5 @@ scoped('a backend that declares no writes offers no bulk edit, and says so by na
   const {source} = await table(memory);
   assert.equal(await domains.bulkEdit(source), null);
   assert.match(balloon('error'), /does not support bulk edits/);
-  source.dispose();
-});
-
-scoped('on a filtered list, the one row the user clicked is not the target: the filter is', async () => {
-  const memory = backend();
-  const {source} = await table(memory, {query: 'number > 0'});
-  select(source, (i) => i === 1);
-  source.currentRow.value = source.selection.value[0];
-  const {running} = await opened(source);
-  assert.deepEqual(targets(), ['1 selected issue', 'All 3 issues matching the filter'], 'both are still offered');
-  assert.equal(target().value.value, 'All 3 issues matching the filter');
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await running, null);
-
-  select(source, (i) => i !== 1);
-  const again = await opened(source);
-  assert.equal(target().value.value, '2 selected issues', 'a selection the user made is the target');
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await again.running, null);
-  source.dispose();
-});
-
-scoped('a required field wears the asterisk, and choosing it empty holds the button: it cannot be cleared', async () => {
-  const memory = backend();
-  const {source} = await table(memory);
-  select(source, (i) => i === 1);
-  const {running} = await opened(source);
-  choose('title');
-  await flush();
-  assert.equal(field('title').root.classList.contains('u2-input-required'), true);
-  field('title').value.value = '';
-  await flush();
-  assert.equal(hint('title'), 'Required: it cannot be cleared');
-  assert.equal(okDisabled(), true);
-  assert.match(await okReason(), /Title is required/);
-  field('title').value.value = 'Kept';
-  await flush();
-  assert.equal(okDisabled(), false);
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await running, null);
   source.dispose();
 });

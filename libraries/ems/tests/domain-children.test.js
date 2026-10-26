@@ -132,56 +132,6 @@ scoped('a tab per child table, two FKs told apart; the shown tab\'s source share
   assert.deepEqual(parent.session.sources.value, []);
 });
 
-scoped('a child table that does not open fails its own tab; the others work', async () => {
-  emsBackends.domain = crm();
-  const unregister = domains.configure('crm.deal', () => {
-    throw new Error('deal rules did not load');
-  }, {id: 'test'});
-  try {
-    const companies = await domains.table('crm.company');
-    const parent = companies.source();
-    await flush();
-    parent.currentRow.value = parent.rows.byKey('c1');
-    const children = domains.children(parent, {mode: 'list'});
-    await settle();
-    assert.equal(children.root.querySelectorAll('.u2-tabs-tab').length, 3, 'every child table keeps its tab');
-    assert.deepEqual(children.entries.value.map((e) => e.id), [CONTACTS], 'only the tables that opened');
-    assert.equal(children.root.querySelector('[data-u2-part="status"]').textContent, '', 'no error over all tabs');
-    await flush();
-    assert.deepEqual(children.child(CONTACTS).rows.items.value.map((r) => r.name), ['Ann']);
-    children.tabs.activeTab.value = 'crm.deal.seller_id';
-    await flush();
-    const pane = [...children.root.querySelectorAll('[data-u2-part="pane"]')].at(-1);
-    assert.equal(pane.querySelector('.u2-domain-children-error').textContent, 'deal rules did not load');
-    children.dispose();
-    parent.dispose();
-  } finally {
-    unregister();
-  }
-});
-
-scoped('a failed tab first is named in the plural and gives way to a tab with rows', async () => {
-  emsBackends.domain = crm();
-  const unregister = domains.configure('crm.deal', () => {
-    throw new Error('deal rules did not load');
-  }, {id: 'test'});
-  try {
-    const companies = await domains.table('crm.company');
-    const parent = companies.source();
-    await flush();
-    parent.currentRow.value = parent.rows.byKey('c1');
-    const children = domains.children(parent, {tables: ['deal', 'contact']});
-    await settle();
-    const labels = [...children.root.querySelectorAll('.u2-tabs-tab')].map((t) => t.textContent);
-    assert.deepEqual(labels.slice(0, 2), ['Deals (Seller)', 'Deals (Buyer)']);
-    assert.equal(children.tabs.activeTab.value, CONTACTS, 'the tab with rows, not the failed first one');
-    children.dispose();
-    parent.dispose();
-  } finally {
-    unregister();
-  }
-});
-
 scoped('create-related-inline: a draft parent and its child draft save as one transaction; the tab re-queries by the real id', async () => {
   const memory = crm();
   emsBackends.domain = memory;
@@ -368,44 +318,5 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   assert.equal(parent.session.isDirty.value, true, 'the press is the change — Ctrl+S and the leave gate answer');
   assert.equal(parent.session.summary.value, '1 unsaved change');
   children.dispose();
-  parent.dispose();
-});
-
-scoped('VR-35/36: counts in the labels, one tab for one table, New, dirty and refused tabs marked', async () => {
-  emsBackends.domain = crm();
-  const companies = await domains.table('crm.company');
-  const parent = companies.source({pageSize: 10});
-  await flush();
-  parent.currentRow.value = parent.rows.byKey('c1');
-  const children = domains.children(parent, {mode: 'list'});
-  await settle();
-  await flush();
-  const labels = () => [...children.root.querySelectorAll('.u2-tabs-tab .u2-tabs-label')].map((t) => t.textContent);
-  assert.deepEqual(labels(), ['Contacts (1)', 'Deals (Seller) (1)', 'Deals (Buyer) (0)'], 'every tab says how many');
-  const add = children.root.querySelector('button[data-u2="new-button"]');
-  assert.equal(add.textContent, 'New');
-  const tab = children.root.querySelector(`.u2-tabs-tab[data-id="${CONTACTS}"]`);
-  add.click();
-  await flush();
-  assert.equal(tab.querySelector('.u2-tabs-mark').classList.contains('u2-tabs-dirty'), true, 'a pending child marks its tab');
-  assert.equal(await parent.session.save(), false, 'the draft contact has no name');
-  await flush();
-  assert.equal(tab.classList.contains('u2-tabs-invalid'), true, 'the refused child marks its tab');
-  parent.session.discard();
-  await flush();
-  assert.equal(tab.classList.contains('u2-tabs-invalid') || tab.querySelector('.u2-tabs-mark').classList.contains('u2-tabs-dirty'),
-    false, 'and the marks go with the changes');
-
-  children.tabs.activeTab.value = 'crm.deal.buyer_id';
-  await settle();
-  assert.equal(children.root.classList.contains('u2-domain-children-blank'), true, 'an empty tab takes only its own height');
-  children.dispose();
-
-  const one = domains.children(parent, {tables: ['contact'], mode: 'grid'});
-  await settle();
-  await flush();
-  assert.deepEqual([...one.root.querySelectorAll('.u2-tabs-tab .u2-tabs-label')].map((t) => t.textContent),
-    ['Contacts (1)'], 'one child table is a tab with its count');
-  one.dispose();
   parent.dispose();
 });

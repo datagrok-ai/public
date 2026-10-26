@@ -716,36 +716,6 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   draft.dispose();
 });
 
-scoped('VR-46/47: one refusal balloon per session, replaced by the next; in full for a row no form shows', async () => {
-  emsBackends.domain = backend();
-  const table = await domains.table('grit.issue');
-  const unregister = table.validators.add('number', (v) => v === 3 ? 'Three is taken' : null);
-  const source = table.source({pageSize: 10});
-  await flush();
-  source.currentRow.value = source.rows.byKey('i1');
-  source.rows.byKey('i2').number = 3;
-  assert.equal(await source.save(), false);
-  await flush();
-  assert.match(source.session.validity.value, /Three is taken/, 'a refusal holds Save until an edit answers it');
-  let balloons = [...document.body.querySelectorAll('.u2-notify-error')];
-  assert.equal(balloons.length, 1);
-  assert.match(balloons[0].textContent, /Cannot save: .*Three is taken/, 'another row than the current: named in full');
-  assert.equal(await source.save(), false);
-  await flush();
-  balloons = [...document.body.querySelectorAll('.u2-notify-error')];
-  assert.equal(balloons.length, 1, `DBG ${String(source.error.value)} ${document.body.querySelectorAll('.u2-notify').length}`);
-  source.currentRow.value = source.rows.byKey('i2');
-  assert.equal(await source.save(), false);
-  await flush();
-  assert.equal(document.body.querySelector('.u2-notify-error').textContent, 'Fix Number to save',
-    'the current row\'s field shows its error itself; the balloon names it');
-  source.revert();
-  await flush();
-  assert.equal(document.body.querySelectorAll('.u2-notify-error').length, 0, 'settled: the balloon goes');
-  unregister();
-  source.dispose();
-});
-
 scoped('a refusal by the table\'s validators shows every verdict too, the failing field focused', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');

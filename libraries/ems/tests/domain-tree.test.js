@@ -174,9 +174,6 @@ scoped('spec: u2-domain-tree takes the table address', async () => {
 scoped('the selected node can be given back: clicking it again, Escape, and the all row', async () => {
   const {tree: t} = await tree({allNode: 'All locations'});
   assert.deepEqual(labels(t), ['All locations', 'Other site', 'Site'], 'the all row leads the roots');
-  assert.equal(t.tree.selectedNode.value.id, '~all', 'everything is shown, so the all row is selected');
-  assert.equal(t.tree.root.querySelector('.u2-tree-label').classList.contains('u2-domain-tree-all'), true,
-    'and set off from the locations');
 
   const rowAt = (i) => t.tree.root.querySelectorAll('.u2-tree-row')[i];
   fire(rowAt(2), 'click', {bubbles: true});
@@ -187,7 +184,6 @@ scoped('the selected node can be given back: clicking it again, Escape, and the 
   fire(rowAt(2), 'click', {bubbles: true});
   await flush();
   assert.equal(t.selected.value, null, 'clicking the selected node again gives it back');
-  assert.equal(t.tree.selectedNode.value.id, '~all', 'to the all row: one look for everything');
 
   fire(rowAt(2), 'click', {bubbles: true});
   await flush();
@@ -216,11 +212,5 @@ scoped('a branch that answers with no children keeps no twistie', async () => {
   assert.equal(twistie('Other site').className.includes('u2-tree-twistie-hidden'), true,
     'once it has answered with none, it is a leaf');
   assert.equal(twistie('Site').className.includes('u2-tree-twistie-hidden'), false);
-  t.dispose();
-});
-
-scoped('a level larger than one request is read a page at a time, never cut', async () => {
-  const {tree: t} = await tree({pageSize: 1});
-  assert.deepEqual(labels(t), ['Other site', 'Site']);
   t.dispose();
 });

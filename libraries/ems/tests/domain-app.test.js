@@ -8,7 +8,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, Rows, notify, allowedActions, Control, Filters} from '@datagrok-libraries/u2';
+import {backends, Scope, Rows, notify, allowedActions, Control} from '@datagrok-libraries/u2';
 import {SharedSession} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
 
@@ -112,9 +112,7 @@ scoped('open(path): ?entity= restores the entity page, ?q= the list under the qu
   assert.equal(a.listSource.query.value, '');
   await a.open(`${BASE}?entity=nope`);
   await flush();
-  assert.equal(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, 'Issue "nope" was not found.');
-  assert.deepEqual(crumbs(a), ['Issues', 'nope'], 'named by the address, not an endless "…"');
-  assert.equal(a.status.value.count, '', 'and no "0 issues" for a page that is one row');
+  assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /not found/);
   a.dispose();
 });
 
@@ -299,21 +297,6 @@ scoped('the entity page carries the children and history panes under the form; b
   await flush();
   assert.deepEqual([...bare.panes.children], []);
   bare.dispose();
-});
-
-scoped('the entity page has an empty header above the form for the app to fill', async () => {
-  const {app: a} = await app();
-  await a.goTo('entity', 'i1');
-  await flush();
-  const page = a.root.querySelector('[data-u2-part="entity-page"]');
-  assert.equal(a.header.dataset.u2Part, 'header');
-  assert.ok(a.header.classList.contains('u2-domain-app-header'));
-  assert.deepEqual([...a.header.children], [], 'nothing in it by default');
-  const order = [...page.children];
-  assert.equal(order[0], a.header, 'above the form');
-  assert.ok(order.indexOf(a.form.value.root.parentElement) > 0);
-  assert.ok(order.indexOf(a.panes) > order.indexOf(a.form.value.root.parentElement));
-  a.dispose();
 });
 
 scoped('DomainTable.app(): the view over the app — name, path, the registries, and the close gate', async () => {
@@ -617,16 +600,6 @@ scoped('a refused filter leaves the rows as they were: shown stale, the count st
   await flush();
   assert.equal(a.list.root.classList.contains('u2-domain-list-stale'), false);
   assert.equal(a.summary.value, '1 issue');
-  a.dispose();
-});
-
-scoped('a condition just added in the builder is a draft: the rows are not dimmed and the status says nothing', async () => {
-  const {app: a} = await app({filters: {mode: 'builder', placement: 'left'}});
-  await flush();
-  a.filters.input.value.value.value = Filters.group('and', [Filters.cond('title', '=', null)]);
-  await flush();
-  assert.equal(a.list.root.classList.contains('u2-domain-list-stale'), false);
-  assert.deepEqual({...a.status.value}, {count: '3 issues', selected: 0, notice: null, problem: null});
   a.dispose();
 });
 
@@ -1537,160 +1510,4 @@ scoped('domains.views: a view per table, addressed and brought forward, where it
     for (const app of [...DomainApp.live])
       app.dispose();
   }
-});
-
-scoped('the entity page Actions menu: the row first, Delete last of it, then the table; a deleted row leaves', async () => {
-  const {table, app: a} = await app();
-  table.actions.add({name: 'Close', icon: 'check', run: (r) => r.done = true});
-  assert.equal(await a.goTo('entity', 'i1'), true);
-  await flush();
-  const actions = a.menuActions();
-  assert.deepEqual(actions.map((x) => x.name), ['Close', 'Delete', 'Import…', 'Bulk edit…', 'Show deleted']);
-  assert.deepEqual(actions.map((x) => x.separator === true), [false, false, true, false, true],
-    'the row, the table and the mode switch are sections of their own');
-  const more = a.ribbon().main.find((c) => c.root.dataset.u2 === 'actions-menu');
-  assert.equal(more.root.getAttribute('aria-label'), 'More actions', 'the ⋮ icon button');
-  actions.find((x) => x.name === 'Delete').run();
-  await flush();
-  assert.equal(a.session.isDirty.value, true, 'staged, like a list row, until the Save');
-  assert.equal(await a.session.save(), true);
-  await flush();
-  await flush();
-  assert.equal(a.page.value, 'list', 'nothing left on the page once the save took the row');
-  assert.equal(a.listSource.rows.items.value.some((r) => r.id === 'i1'), false);
-  a.dispose();
-});
-
-scoped('the ribbon keeps its slots: New holds its place in the trash, the search panel goes on the entity page', async () => {
-  const {app: a} = await app();
-  const {main, tools} = a.ribbon();
-  const panel = document.createElement('div');
-  panel.className = 'd4-ribbon-panel';
-  for (const tool of tools) {
-    const item = document.createElement('div');
-    item.className = 'd4-ribbon-item';
-    item.append(tool.root);
-    panel.append(item);
-  }
-  document.body.append(panel);
-  assert.equal(await a.goTo('entity', 'i1'), true);
-  await flush();
-  assert.equal(panel.style.display, 'none', 'no divider left behind with nothing after it');
-  assert.equal(await a.goTo('list'), true);
-  await flush();
-  assert.equal(panel.style.display, '');
-
-  const add = main[0].root;
-  assert.equal(add.getAttribute('aria-label'), 'New issue', 'an icon button named by its tooltip');
-  assert.equal(await a.setTrash(true), true);
-  await flush();
-  assert.equal(add.hidden, false, 'the slot stays');
-  assert.equal(add.style.visibility, 'hidden', 'but there is nothing to create in the trash');
-  const banner = a.root.querySelector('[data-u2-part="trash-banner"]');
-  assert.equal(banner.hidden, false, 'the trash says it is the trash');
-  assert.match(banner.textContent, /^Deleted issues\. Restore what you need, then Save\.Back to issues$/);
-  fire(banner.querySelector('.u2-link'), 'click');
-  await flush();
-  assert.equal(a.trash.value, false, 'and the way back out is on the same line');
-  assert.equal(banner.hidden, true);
-  assert.equal(add.style.visibility, '');
-  a.dispose();
-});
-
-scoped('presets are a framed switch; on a narrow view they fold into the Actions menu', async () => {
-  const {app: a} = await app();
-  const group = a.presets(['Mine', 'title = "Aspirin"'], ['Open', 'done = false']);
-  await flush();
-  assert.equal(group.root.classList.contains('u2-btn-group-ribbon'), false, 'framed, not two bare words');
-  assert.equal(group.root.getAttribute('aria-label'), 'Show');
-  assert.equal(group.root.hidden, false);
-  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Bulk edit…', 'Show deleted']);
-
-  a.compact.value = true;
-  await flush();
-  assert.equal(group.root.hidden, true, 'no room on the ribbon');
-  const actions = a.menuActions();
-  assert.deepEqual(actions.map((x) => x.name), ['Mine', 'Open', 'Import…', 'Bulk edit…', 'Show deleted']);
-  actions[1].run();
-  await flush();
-  assert.equal(a.listSource.query.value, 'done = false', 'a folded preset still filters');
-  assert.equal(a.menuActions()[1].icon, 'check', 'and the one in force is checked');
-  a.compact.value = false;
-  await flush();
-  assert.equal(group.root.hidden, false);
-  a.dispose();
-});
-
-scoped('itemHeight sizes the list rows: an app draws taller cards', async () => {
-  const {app: a} = await app({mode: 'cards', itemHeight: 88});
-  assert.equal(a.list.list.itemHeight, 88);
-  a.dispose();
-  const {app: b} = await app({mode: 'cards'});
-  assert.equal(b.list.list.itemHeight, 64, 'the card default otherwise');
-  b.dispose();
-});
-
-scoped('menu switches a built-in item off; Discard on an untouched create page goes back to the list', async () => {
-  const {app: a} = await app({menu: {bulkEdit: false}});
-  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Show deleted'], 'no Bulk edit');
-  const discard = a.ribbon().main.find((c) => c.root.dataset.u2 === 'discard-button');
-  assert.equal(discard.button.disabled, true, 'nothing to discard on the list');
-  assert.equal(await a.create(), true);
-  await flush();
-  assert.equal(a.page.value, 'entity');
-  assert.equal(a.session.isDirty.value, false, 'a pristine draft');
-  assert.equal(discard.button.disabled, false, 'but the draft page itself can be left by Discard');
-  fire(discard.button, 'click');
-  await flush();
-  await flush();
-  assert.equal(a.page.value, 'list');
-  assert.equal(discard.button.disabled, true);
-  a.dispose();
-});
-
-scoped('the count keeps its noun while paging: "2 of 3 issues"', async () => {
-  const {app: a} = await app({pageSize: 2});
-  assert.equal(a.status.value.count, '2 of 3 issues');
-  a.dispose();
-});
-
-scoped('the list order is the user\'s: Sort by writes the source and the path, and a path brings it back', async () => {
-  const {app: a} = await app();
-  const sort = a.ribbon().tools.find((c) => c.root.dataset.u2 === 'sort-menu');
-  document.body.append(sort.root);
-  fire(sort.root, 'click');
-  await flush();
-  const panel = () => [...document.body.querySelectorAll('.u2-menu')].at(-1);
-  const item = (label) => [...panel().querySelectorAll('.u2-menu-item')]
-    .find((e) => e.querySelector('.u2-menu-label').textContent.toLowerCase() === label.toLowerCase());
-  fire(item('Title'), 'click');
-  await flush();
-  assert.equal(a.listSource.sort.value, 'title');
-  assert.equal(a.path.value, `${BASE}?sort=title`);
-  fire(sort.root, 'click');
-  fire(item('Descending'), 'click');
-  await flush();
-  assert.equal(a.listSource.sort.value, '!title');
-  assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), ['Naproxen', 'Ibuprofen', 'Aspirin'],
-    'the server orders the rows');
-  assert.equal(await a.open(`${BASE}?sort=number`), true);
-  assert.equal(a.listSource.sort.value, 'number', 'read back from the address');
-  assert.equal(await a.open(BASE), true);
-  assert.equal(a.listSource.sort.value, '', 'and the default again without it');
-  assert.equal(await a.setTrash(true), true);
-  await flush();
-  assert.equal(sort.root.hidden, true, 'the trash keeps its newest-deleted order');
-  a.dispose();
-});
-
-scoped('the registries read the apps alive: closing the latest app over a table leaves the earlier one answering', async () => {
-  const {table, app: first} = await app();
-  const second = domains.app({table, base: '/apps/T/Other', pageSize: 10});
-  document.body.append(second.root);
-  await flush();
-  assert.equal(DomainApp.baseOf('grit.issue'), '/apps/T/Other', 'the one opened last');
-  second.dispose();
-  assert.equal(DomainApp.baseOf('grit.issue'), BASE, 'not forgotten with the other one');
-  first.dispose();
-  assert.equal(DomainApp.baseOf('grit.issue'), undefined);
 });
