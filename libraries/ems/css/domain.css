@@ -260,6 +260,11 @@
   outline: none;
 }
 
+/* nor around the list once Esc has cleared its rows */
+.u2-domain-list > .u2-list.u2-domain-list-rows:focus-visible {
+  outline: none;
+}
+
 /* the row a load makes current is no pick: unmarked until the list has the focus, and never drawn
    as selected until it is clicked or keyed */
 .u2-domain-list-seeded .u2-list-row.u2-list-row-selected:not(:hover) {
