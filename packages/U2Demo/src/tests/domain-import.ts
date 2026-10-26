@@ -3,7 +3,7 @@
    through `DomainTableClient.batch`. Fixture rows are prefixed per run and deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {Control} from '@datagrok-libraries/u2';
 import {domains, DomainTable} from '@datagrok-libraries/ems/src/dg';
 
@@ -39,11 +39,9 @@ category('U2: domain import', () => {
    * back WRAPPED — awaiting an async function that returned it would chain on it. */
   async function open(source: DG.DataFrame): Promise<{running: Promise<unknown>}> {
     const running = domains.import(table, {source});
-    for (let i = 0; i < 100 && named('source') === undefined; i++)
-      await delay(50);
-    expect(named('source') !== undefined, true, 'the wizard is up');
+    await waitUntil(() => named('source') !== undefined, 'the wizard is up', 5000);
     buttonNamed('NEXT').click();
-    await delay(200);
+    await waitUntil(() => named('sku') !== undefined, 'the mapping step is up');
     return {running};
   }
 
@@ -62,10 +60,8 @@ category('U2: domain import', () => {
     expect(named('quantity')!.value.value, 'quantity');
     expect(named('strayColumn')!.value.value, '(skip)');
     named('sku')!.value.value = '(skip)';
-    await delay(100);
     buttonNamed('NEXT').click();
-    await delay(100);
-    expect(reason().includes('Required column "Sku" is not mapped'), true, reason());
+    await waitUntil(() => reason().includes('Required column "Sku" is not mapped'), reason);
     buttonNamed('CANCEL').click();
     expect(await running, null);
   });
@@ -74,10 +70,9 @@ category('U2: domain import', () => {
     const rows = [1, 2, 3].map((i) => ({sku: `${prefix}-${i}`, name: `Row ${i}`, quantity: String(i), strayColumn: 'x'}));
     const {running} = await open(frame(rows));
     buttonNamed('NEXT').click();
-    await delay(400);
+    await waitUntil(() => verdicts().length === 3 && importButton()?.disabled === false, 'the preview is ready');
     importButton().click();
-    for (let i = 0; i < 100 && !report().includes('added'); i++)
-      await delay(50);
+    await waitUntil(() => report().includes('added'), report);
     expect(report().includes('3 added'), true, report());
     buttonNamed('CLOSE').click();
     const result = await running as {inserted: number};
@@ -95,13 +90,11 @@ category('U2: domain import', () => {
       ({sku: `${prefix}-p${i}`, name: `Preview ${i}`, quantity: String(i), strayColumn: 'x'}));
     const {running} = await open(frame(rows));
     buttonNamed('NEXT').click();
-    for (let i = 0; i < 100 && verdicts().length === 0; i++)
-      await delay(50);
+    await waitUntil(() => verdicts().length > 0, 'the preview shows its verdicts');
     expect(verdicts().join(), 'Add,Add', 'the result column is what the dry run predicts, as a verb');
     const predicted = verdicts().filter((v) => v === 'Add').length;
     importButton().click();
-    for (let i = 0; i < 100 && !report().includes('added'); i++)
-      await delay(50);
+    await waitUntil(() => report().includes('added'), report);
     expect(report().includes(`${predicted} added`), true, report());
     buttonNamed('CLOSE').click();
     await running;
