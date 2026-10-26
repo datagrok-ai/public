@@ -4,6 +4,7 @@
 
 * [public#4393](https://github.com/datagrok-ai/public/issues/4393): Tree: Fixed Shift+click on a branch not filtering, with an error, when On Click is Filter
 * [core#881](https://github.com/datagrok-ai/core/issues/881): Word cloud: Fixed out-of-memory errors and missing words when a column's values are very long
+* Band chart: Added a viewer that shades the area between a lower and an upper column along X (a prediction or confidence band), with an optional line through it, one band per category; axis titles carry the column units, and the table's constant formula lines are drawn as reference lines
 * GROK-21150: Surface plot: Fixed an error when the plot opened on a table with a datetime column on an axis
 * Radar, Timelines, Tree: Added the automation surface — `getWidgetStatus` hit areas and readings, `isRenderPending` / `onRendered` / `renderError`
 * Sankey, Chord: Added the automation surface — node, link, category and chord hit areas and readings, `isRenderPending` / `onRendered` / `renderError`

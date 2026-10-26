@@ -92,6 +92,24 @@ Demo dataset: https://dev.datagrok.ai/f/Demo.Files/beer.csv
 
 ![radar](./img/radar.gif)
 
+## Band chart
+
+The `Band chart` viewer shades the area between a lower and an upper column along X, such as a prediction
+or confidence band, with an optional line through it (a median, a fit). The split column draws one band per
+category, in the column's color coding. Axis titles carry the columns' units, and the table's constant
+formula lines (`${day} = 19`, `${volume} = 1500`) are drawn as reference lines.
+
+```js
+grok.shell.tv.addViewer('Band chart', {
+  xColumnName: 'day',
+  lowerColumnName: 'q05',
+  upperColumnName: 'q95',
+  lineColumnName: 'median',  // optional
+  splitColumnName: 'arm',    // optional: one band per category
+  yAxisType: 'logarithmic',  // 'linear' | 'logarithmic'
+});
+```
+
 ## Chord
 
 The `Chord` viewer is used to visualize weighted relationships between several entities.

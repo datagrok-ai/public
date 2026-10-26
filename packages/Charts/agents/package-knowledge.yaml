@@ -1,5 +1,5 @@
 packageName: Charts
-description: Extra Datagrok viewers (Timelines, Chord, Sankey, Sunburst, Tree, Radar, Globe, Surface, Word Cloud, ...) built on ECharts, D3, and three.js
+description: Extra Datagrok viewers (Timelines, Chord, Sankey, Sunburst, Tree, Radar, Band chart, Globe, Surface, Word Cloud, ...) built on ECharts, D3, and three.js
 keywords:
   - viewer
   - chart
@@ -35,6 +35,7 @@ overview: |
   Time: Timelines — SDTM-aware, auto-picks subject/start/end/term columns
   for SDTM datasets, type-based heuristics otherwise.
   Multivariate: Radar.
+  Ranges: Band chart (a prediction or confidence band along X, one per category).
   Spatial and 3D: Globe, Surface Plot.
   Text: Word Cloud.
   Composite: Multi Plot.

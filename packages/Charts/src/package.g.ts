@@ -8,6 +8,7 @@ import {MultiPlotViewer} from './viewers/multiplot/multiplot';
 import {GroupAnalysisViewer} from './viewers/group-analysis/group-analysis-viewer';
 import {GlobeViewer} from './viewers/globe/globe-viewer';
 import {ChordViewer} from './viewers/chord/chord-viewer';
+import {BandChartViewer} from './viewers/band-chart/band-chart-viewer';
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
@@ -74,6 +75,15 @@ export async function treeViewerDemo() : Promise<void> {
 export async function wordCloudViewerDemo() : Promise<void> {
   await PackageFunctions.wordCloudViewerDemo();
 }
+//name: Band chart
+//description: Shows the area between a lower and an upper value along X (a prediction or confidence band), with an optional line through it, one band per category
+//output: viewer result
+//meta.role: viewer
+//meta.icon: icons/band-chart-viewer.svg
+export function _BandChartViewer() {
+  return new BandChartViewer();
+}
+
 //name: Chord
 //description: Creates a chord viewer
 //output: viewer result

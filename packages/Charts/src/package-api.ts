@@ -76,6 +76,13 @@ export namespace funcs {
   }
 
   /**
+   * Shows the area between a lower and an upper value along X (a prediction or confidence band), with an optional line through it, one band per category
+   */
+  export async function bandChartViewer(): Promise<any> {
+    return await grok.functions.call('Charts:BandChartViewer', {});
+  }
+
+  /**
    * Creates a chord viewer
    */
   export async function chordViewer(): Promise<any> {
