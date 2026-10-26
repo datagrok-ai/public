@@ -556,7 +556,10 @@ export class DomainApp extends Control {
     group.root.dataset.u2 = 'domain-presets';
     group.root.setAttribute('aria-label', 'Show');
     group.root.prepend(span('Show:', 'u2-domain-presets-label'));
-    this._presets.push(...entries.map(([label], at): Action => ({name: label, run: () => press(at)})));
+    this._presets.push(...entries.map(([label], at): Action => ({name: label, run: () => press(at),
+      get check() {
+        return group.selected.peek().includes(String(at));
+      }})));
     group.effect(() => {
       // the schema arrives with the load: read the state so the presets are bound again once it has
       source.state.value;

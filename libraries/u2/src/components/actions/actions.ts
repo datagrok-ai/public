@@ -17,6 +17,8 @@ export interface Action {
   requires?: Capability;
   /** The key shown beside it in menus ("Del"). */
   shortcut?: string;
+  /** A check mark beside it in menus; a toggle shown unchecked when false. */
+  check?: boolean;
   /** Grey text after the name in a menu ("3 issues"). */
   detail?: string;
   /** Throws something away: after a separator in menus, red in the row's icons. */
@@ -59,7 +61,7 @@ function addItems(menu: Menu, actions: Action[]): void {
     if (previous !== undefined && (action.separator || action.destructive && !previous.destructive))
       menu.separator();
     menu.item(action.name, action.run,
-      {enabled: action.enabled, shortcut: action.shortcut, detail: action.detail});
+      {enabled: action.enabled, shortcut: action.shortcut, detail: action.detail, check: action.check});
   }
 }
 
