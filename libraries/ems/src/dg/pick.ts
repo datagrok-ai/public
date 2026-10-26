@@ -50,7 +50,7 @@ export class DomainPick extends PickInput<PickItem> {
     const {filter, params, siblings, placeholder, renderer, limit, debounceMs, ...rest} = options;
     const listItem = renderer?.listItem?.bind(renderer);
     let unbound: string[] = [];
-    let shown: {count: number, total: number} | null = null;
+    let more = false;
     const caption = (name: string) => siblings?.properties.find((p) => p.name === name)?.friendlyName ?? name;
     const host = DomainPick.host;
     super({
@@ -63,7 +63,7 @@ export class DomainPick extends PickInput<PickItem> {
             if (unbound.length > 0)
               return [];
             const page = await DomainPick.page(table, query, {filter: bound.filter, limit});
-            shown = {count: page.items.length, total: page.total};
+            more = page.more;
             // the held value opens the list, so it is never missing from it
             const held = typeAhead.selected.peek();
             return held === null || query.trim() !== '' ? page.items :
@@ -76,8 +76,7 @@ export class DomainPick extends PickInput<PickItem> {
           debounceMs,
           openOnFocus: true,
           matchWidth: false,
-          footer: () => shown === null || shown.total <= shown.count ? null :
-            `${shown.count} of ${shown.total} — type to narrow`,
+          footer: () => more ? 'More match — type to narrow' : null,
           // an empty table is not a dead end: say what there is none of yet
           emptyText: (query) => unbound.length > 0 ? `Pick a ${caption(unbound[0]).toLowerCase()} first` :
             query.trim() === '' ?
@@ -111,35 +110,26 @@ export class DomainPick extends PickInput<PickItem> {
     return short;
   }
 
-  /** The candidates for `query`, sorted by what they show. */
+  /** The candidates for `query`. */
   static async search(table: string, query: string,
     options: {filter?: DomainPickOptions['filter'], limit?: number} = {}): Promise<PickItem[]> {
     return (await DomainPick.page(table, query, options)).items;
   }
 
-  /** One popup's worth, by the table's own search, sorted by caption — a row whose key is typed
-   * (`482`, `DG-000482`) first — and how many rows match in all. */
+  /** One popup's worth, by the table's own search in the server's order, and whether more match. */
   private static async page(table: string, query: string,
-    options: {filter?: DomainPickOptions['filter'], limit?: number} = {}): Promise<{items: PickItem[], total: number}> {
+    options: {filter?: DomainPickOptions['filter'], limit?: number} = {}): Promise<{items: PickItem[], more: boolean}> {
     const t = await DomainPick.table(table);
     DomainPick._plural.set(table, t.info.pluralName);
     const caption = await DomainPick.host?.caption(table) ?? null;
     const limit = options.limit ?? 10;
     const q = query.trim();
-    const extra = DomainPick.filter(undefined, '', options.filter);
-    const scope = q !== '' && t.info.searchableColumns.length > 0 ? {search: q, filter: extra} :
+    const scope = q !== '' && t.info.searchableColumns.length > 0 ?
+      {search: q, filter: DomainPick.filter(undefined, '', options.filter)} :
       {filter: DomainPick.filter(DomainPick.nameColumn(t.info), q, options.filter)};
     const sort = t.info.nameColumn ?? (t.info.businessKey.length === 1 ? t.info.businessKey[0] : undefined);
     const rows = await t.query({...scope, sort, limit: limit + 1});
-    const total = rows.length > limit ? await t.count(scope) : rows.length;
-    const items = rows.slice(0, limit).map((row) => DomainPick.item(row, t.info, caption))
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
-    const key = DomainPick.keyCondition(t, q);
-    if (key === undefined)
-      return {items, total};
-    const [row] = await t.query({filter: extra === undefined ? [key] : [key, 'and', ...extra], limit: 1});
-    return row === undefined ? {items, total} :
-      {items: [DomainPick.item(row, t.info, caption), ...items.filter((item) => item.id !== String(row.id))], total};
+    return {items: rows.slice(0, limit).map((row) => DomainPick.item(row, t.info, caption)), more: rows.length > limit};
   }
 
   /** The item behind an id; a draft id is the draft's caption from the live source holding it,
@@ -226,19 +216,6 @@ export class DomainPick extends PickInput<PickItem> {
     const detail = [info.nameColumn, ...info.searchableColumns].filter((c): c is string => c != null)
       .map((c) => text(row[c])).find((v) => v !== '' && v !== name);
     return detail === undefined ? {id: String(row.id), name} : {id: String(row.id), name, detail};
-  }
-
-  /** A query that is the table's single numeric key, bare or in its format (`DG-000482`), as a condition. */
-  private static keyCondition(t: DomainTableLike, query: string): DomainCondition | undefined {
-    const key = t.info.businessKey.length === 1 ? t.info.businessKey[0] : undefined;
-    const prop = t.properties.find((p) => p.name === key);
-    const type = prop?.propertyType ?? prop?.type;
-    if (prop === undefined || (type !== 'int' && type !== 'bigint') || query === '')
-      return undefined;
-    const prefix = /^[^0#]*/.exec(prop.format ?? '')![0];
-    const digits = prefix !== '' && query.toUpperCase().startsWith(prefix.toUpperCase()) ?
-      query.slice(prefix.length) : query;
-    return /^\d{1,15}$/.test(digits) ? {property: key!, operator: '=', value: Number(digits)} : undefined;
   }
 
   private static table(address: string): Promise<DomainTableLike> {
