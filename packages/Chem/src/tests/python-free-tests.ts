@@ -9,7 +9,7 @@
  */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck, before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {_package} from '../package-test';
 import {PackageFunctions} from '../package';
@@ -131,11 +131,11 @@ category('chemical engine: python scripts', () => {
       df.currentCell = df.cell(0, 'smiles');
       const headers = () => Array.from(document.querySelectorAll('.grok-prop-panel .d4-accordion-pane-header')) as HTMLElement[];
       const chemistry = () => headers().find((h) => h.textContent === 'Chemistry');
-      await awaitCheck(() => !!chemistry(), 'no Chemistry pane', 10000);
+      await waitUntil(() => !!chemistry(), 'no Chemistry pane', 10000);
       if (!chemistry()!.classList.contains('expanded'))
         chemistry()!.click();
       const panes = () => headers().filter((h) => (h.textContent ?? '').startsWith('Gasteiger Partial Charges')).length;
-      await awaitCheck(() => panes() > 0, 'no Gasteiger Partial Charges pane', 10000).catch(() => {
+      await waitUntil(() => panes() > 0, 'no Gasteiger Partial Charges pane', 10000).catch(() => {
         throw new Error(`no Gasteiger Partial Charges pane among ${headers().map((h) => h.textContent).join(', ')}`);
       });
       expect(panes(), 1);

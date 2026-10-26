@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {PackageFunctions} from '../package';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
@@ -35,6 +35,12 @@ function fragmentNames(frags: MmpFragments): string[][][] {
 }
 
 const column = (name: string, values: string[]) => DG.Column.fromStrings(name, values);
+
+/** Waits until worker `w` of the Crux pool has a call sent and not answered: its own measure of a busy worker. */
+async function workerBusy(service: Awaited<ReturnType<typeof getCruxService>>, w: number): Promise<void> {
+  const workers = (service as unknown as {workers: {pendingCalls: number}[]}).workers;
+  await waitUntil(() => workers[w].pendingCalls > 0, `the busy call has not been posted to worker ${w}`);
+}
 
 /** The R-group test molecules (top menu r-groups' sample table, the core benzene). */
 const R_GROUP_SAMPLE = ['O=C1CN=C(c2ccccc2N1)C3CCCCC3', 'CN1C(=O)CN=C(c2ccccc12)C3CCCCC3',
@@ -275,7 +281,7 @@ category('crux analyses', () => {
       try {
         const generation = service.generation;
         const busy = service.busyWorkerForTests(0, 4000);
-        await new Promise((resolve) => setTimeout(resolve, 200)); // the busy call posted
+        await workerBusy(service, 0);
         const {results, timedOut} = await service.clusterMCS([sar.slice(0, 6), sar.slice(6, 12), sar.slice(12)],
           true, true);
         expect(JSON.stringify(timedOut), '[]', 'clusters past their time limit');
@@ -295,7 +301,7 @@ category('crux analyses', () => {
       const service = await getCruxService();
       const generation = service.generation;
       const busy = service.busyWorkerForTests(1, 3000);
-      await new Promise((resolve) => setTimeout(resolve, 200)); // the busy call posted
+      await workerBusy(service, 1);
       service.restartWorkerForTests(1);
       const failure = await busy.then(() => 'no failure', (e: any) => String(e?.message ?? e));
       expect(failure.includes('was replaced'), true, failure);

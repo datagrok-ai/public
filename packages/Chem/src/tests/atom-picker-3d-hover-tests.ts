@@ -19,7 +19,7 @@
  *    listeners (including the CHEM_MOL3D_HOVER_EVENT subscriber) are attached.
  */
 
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
@@ -74,8 +74,6 @@ category('atom picker: 3D hover', () => {
     // Force a render pass so the cell renderer attaches its document-level
     // CHEM_MOL3D_HOVER_EVENT subscriber.
     await awaitGrid(view.grid);
-    view.grid.invalidate();
-    await delay(300);
   });
 
   after(async () => {
@@ -85,20 +83,32 @@ category('atom picker: 3D hover', () => {
   });
 
   /** Fires `CHEM_MOL3D_HOVER_EVENT` with defaults (`mol3DCol.name`, row 0,
-   *  `preview` mode) merged with `overrides`, then waits 100 ms for the
-   *  async handler in `RDKitCellRenderer` to reverse-map and update
-   *  the provider. */
+   *  `preview` mode) merged with `overrides`, then waits until the event
+   *  has reached the handler in `RDKitCellRenderer` (see `delivered`). */
   async function fire3DHover(overrides: {
     mol3DColumnName?: string, rowIdx?: number,
     atom3DSerial?: number | null, mode?: 'preview' | 'paint' | 'erase',
   }): Promise<void> {
+    const done = delivered(1);
     grok.events.fireCustomEvent(CHEM_MOL3D_SELECTION_EVENT, {
       mol3DColumnName: mol3DCol.name,
       rowIdx: 0,
       mode: 'preview',
       ...overrides,
     });
-    await delay(100);
+    await done;
+  }
+
+  /** Resolves once `count` hover events have reached a listener subscribed now: the renderer subscribed before it,
+   *  and its handler is synchronous, so by then it has handled them. */
+  async function delivered(count: number): Promise<void> {
+    let seen = 0;
+    const sub = grok.events.onCustomEvent(CHEM_MOL3D_SELECTION_EVENT).subscribe(() => seen++);
+    try {
+      await waitUntil(() => seen >= count, () => `${seen} of ${count} hover events delivered`);
+    } finally {
+      sub.unsubscribe();
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -164,13 +174,15 @@ category('atom picker: 3D hover', () => {
     await fire3DHover({atom3DSerial: 1, mode: 'paint'});
 
     // Burst of preview events on different serials, ending with cursor-leave.
-    for (const s of [2, 3, 2, 3, 2, null, 3, null]) {
+    const serials = [2, 3, 2, 3, 2, null, 3, null];
+    const done = delivered(serials.length);
+    for (const s of serials) {
       grok.events.fireCustomEvent(CHEM_MOL3D_SELECTION_EVENT, {
         mol3DColumnName: mol3DCol.name, rowIdx: 0,
         atom3DSerial: s, mode: 'preview',
       });
     }
-    await delay(300);
+    await done;
 
     // Re-read provider state via fresh col.temp access.
     const prov = getPickerProvider(smilesCol, 0);

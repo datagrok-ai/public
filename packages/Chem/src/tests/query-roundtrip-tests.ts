@@ -11,7 +11,7 @@
  * sketcher's own SMARTS); and switched to the other sketcher and back, it holds it still. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
@@ -208,12 +208,13 @@ export async function openTable(file: string, column: string): Promise<{df: DG.D
   const fg = tv.getFiltersGroup({createDefaultFilters: false});
   fg.updateOrAdd({type: DG.FILTER_TYPE.SUBSTRUCTURE, column: column, columnName: column}, false);
   let filter: SubstructureFilter | undefined;
-  await awaitCheck(() => {
+  await waitUntil(() => {
     // the panel's filter is the package's own class, not this test bundle's: found by what it has
     filter = fg.filters.find((f: any) => f?.sketcher instanceof DG.chem.Sketcher && f.columnName === column) as unknown as SubstructureFilter;
     return filter !== undefined && filter.laidOut;
   }, `no substructure filter card for ${column}`, 30000);
-  await awaitCheck(() => !filter!.calculating && filter!.currentSearches.size === 0, 'the pre-search did not end', 60000);
+  await waitUntil(() => !filter!.calculating && filter!.currentSearches.size === 0,
+    'the pre-search did not end', 60000);
   return {df, filter: filter!};
 }
 
@@ -222,7 +223,7 @@ export async function openDialog(filter: SubstructureFilter, type: string): Prom
   grok.chem.currentSketcherType = type;
   const s = filter.sketcher;
   (s.extSketcherDiv.querySelector('canvas, .sketch-link') as HTMLElement ?? s.extSketcherDiv).click();
-  await awaitCheck(() => s.sketcherDialogOpened, 'the sketcher dialog did not open', 5000);
+  await waitUntil(() => s.sketcherDialogOpened, 'the sketcher dialog did not open', 5000);
   const impl = await within(s.sketcherReady(), `${type} did not get ready in the dialog`);
   return impl;
 }
@@ -237,10 +238,12 @@ export function pressDialogButton(filter: SubstructureFilter, name: 'OK' | 'CANC
   button!.click();
 }
 
+/** No change on its way in the sketcher (the filter takes one in its change event, at once), and no search under way. */
 export async function settle(filter: SubstructureFilter): Promise<void> {
-  await delay(50);
-  await awaitCheck(() => !filter.calculating && filter.currentSearches.size === 0,
-    `the search did not end (searches ${filter.currentSearches.size}, calculating ${filter.calculating})`, 20000);
+  const pending = (): boolean => filter.sketcher.sketcher?.isRenderPending === true;
+  await waitUntil(() => !pending() && !filter.calculating && filter.currentSearches.size === 0,
+    () => `the search did not end (searches ${filter.currentSearches.size}, calculating ${filter.calculating}, ` +
+      `sketcher pending ${pending()})`, 20000);
 }
 
 // ---------------------------------------------------------------- Crux, by its own controls
@@ -292,14 +295,14 @@ export async function cruxSteps(el: CruxElement, steps: CruxStep[]): Promise<voi
       const [, kind, i, ...items] = step;
       rightClick(el, pointAt(el, kind, i));
       for (const item of items) {
-        await awaitCheck(() => el.shadowRoot!.querySelector(`[data-testid="menu.context.${item}"]`) !== null,
+        await waitUntil(() => el.shadowRoot!.querySelector(`[data-testid="menu.context.${item}"]`) !== null,
           `Crux's canvas menu shows no ${item}`, 3000);
         shadow(el, `menu.context.${item}`).click();
       }
     } else if (step[0] === 'label') {
       rightClick(el, pointAt(el, 'atom', step[1]));
       shadow(el, 'menu.context.edit-label').click();
-      await awaitCheck(() => el.shadowRoot!.querySelector('[data-testid="canvas.label-editor"]') !== null,
+      await waitUntil(() => el.shadowRoot!.querySelector('[data-testid="canvas.label-editor"]') !== null,
         'Crux opened no label editor', 3000);
       const input = shadow(el, 'canvas.label-editor') as HTMLInputElement;
       input.value = step[2];
@@ -310,7 +313,7 @@ export async function cruxSteps(el: CruxElement, steps: CruxStep[]): Promise<voi
       rightClick(el, pointAt(el, atom ? 'atom' : 'bond', step[1]));
       shadow(el, `menu.context.${atom ? 'atom-properties' : 'bond-properties'}`).click();
       const d = atom ? 'dialog.atom-properties' : 'dialog.bond-properties';
-      await awaitCheck(() => el.shadowRoot!.querySelector(`[data-testid="${d}"]`) !== null, `Crux opened no ${d}`, 3000);
+      await waitUntil(() => el.shadowRoot!.querySelector(`[data-testid="${d}"]`) !== null, `Crux opened no ${d}`, 3000);
       const custom = shadow(el, atom ? `${d}.query.custom` : `${d}.custom`) as HTMLInputElement;
       custom.click();
       const smarts = shadow(el, atom ? `${d}.query.smarts` : `${d}.smarts`) as HTMLInputElement;
@@ -318,7 +321,7 @@ export async function cruxSteps(el: CruxElement, steps: CruxStep[]): Promise<voi
       smarts.dispatchEvent(new InputEvent('input', {bubbles: true, composed: true}));
       shadow(el, `${d}.apply`).click();
     }
-    await awaitCheck(() => !el.isPending, 'Crux did not settle', 3000);
+    await waitUntil(() => !el.isPending, 'Crux did not settle', 3000);
   }
 }
 
@@ -326,8 +329,8 @@ export async function cruxSteps(el: CruxElement, steps: CruxStep[]): Promise<voi
  * (`since` given: a change exported after it), and the export's Indigo notations are in; or `ms` passed, the fixed wait
  * this used to be. */
 export async function ketcherExported(impl: any, ms: number, since?: number): Promise<void> {
-  await awaitCheck(() => impl.importedMoleculesCounter === 0 && impl._molV3000 !== null &&
-    (since === undefined || impl._exportId > since), '', ms).catch(() => {});
+  await waitUntil(() => impl.importedMoleculesCounter === 0 && impl._molV3000 !== null &&
+    (since === undefined || impl._exportId > since), 'Ketcher did not export', ms).catch(() => {});
 }
 
 /** The query the dialog's sketcher itself holds, not the host's getters (which give back the string the host set until the
@@ -346,7 +349,7 @@ export async function heldQuery(filter: SubstructureFilter): Promise<{search: st
     // host's string)
     await within(impl._loading ?? Promise.resolve(), 'Ketcher did not load what the host set');
     await ketcherExported(impl, 300);
-    await awaitCheck(() => impl._molV2000 !== null, 'Ketcher exported nothing', 10000);
+    await waitUntil(() => impl._molV2000 !== null, 'Ketcher exported nothing', 10000);
     return {search: searchReads(impl._molV2000), smarts: await impl.getSmarts()};
   }
   return {search: searchReads(impl._sketcher.getMolFile()), smarts: ''};
@@ -511,7 +514,8 @@ export function pasteInField(filter: SubstructureFilter, smiles: string): void {
 const PASTED_LIST_DRAWS: {[type: string]: (filter: SubstructureFilter) => Promise<void>} = {
   Crux: async (filter) => {
     const el = cruxOf(filter);
-    await awaitCheck(() => el.positions.atoms.length === 7 && !el.isPending, 'Crux does not show the toluene pasted', 10000);
+    await waitUntil(() => el.positions.atoms.length === 7 && !el.isPending,
+      'Crux does not show the toluene pasted', 10000);
     await cruxSteps(el, [['label', 4, '[N,O]']]);
   },
   Ketcher: async (filter) => {
