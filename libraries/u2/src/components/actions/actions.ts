@@ -15,6 +15,12 @@ export interface Action {
   /** The capability the action needs (`'delete'`, a custom permission name): denied by the
    * access in force, the action is not rendered at all — permission ⇒ hidden, state ⇒ disabled. */
   requires?: Capability;
+  /** The key that runs it where the action's host handles one ("Del"), shown in menus. */
+  shortcut?: string;
+  /** Grey text after the name in a menu — what the action runs over ("3 issues"). */
+  detail?: string;
+  /** Throws something away: listed last, after a separator in menus, and red on hover. */
+  destructive?: boolean;
   run: () => void;
 }
 
@@ -34,6 +40,20 @@ export function allowedActions(actions: Action[], options?: ActionsOptions): Act
   return actions.filter((action) => action.requires === undefined || access.can(action.requires));
 }
 
+/** The destructive actions after the rest, each part in its own order. */
+function ordered(actions: Action[]): Action[] {
+  return [...actions.filter((a) => !a.destructive), ...actions.filter((a) => a.destructive)];
+}
+
+function addItems(menu: Menu, actions: Action[]): void {
+  for (const [i, action] of actions.entries()) {
+    if (action.destructive && i > 0 && !actions[i - 1].destructive)
+      menu.separator();
+    menu.item(action.name, action.run,
+      {icon: action.icon, enabled: action.enabled, shortcut: action.shortcut, detail: action.detail});
+  }
+}
+
 /** The hover-revealed action block, Slack/Outlook style: an icon button per icon-bearing action,
  * invisible until the enclosing `.u2-list-row` — or any element carrying `.u2-row` — is hovered,
  * or a button in it is tabbed to (css/list.css: opacity, not display, so the buttons keep their
@@ -44,11 +64,13 @@ export function rowActions(actions: Action[], options?: ActionsOptions): HTMLEle
     el.className = 'u2-row-actions';
     el.dataset.u2 = 'row-actions';
     el.setAttribute('role', 'toolbar');
-    for (const action of allowedActions(actions, options)) {
+    for (const action of ordered(allowedActions(actions, options))) {
       if (!action.icon)
         continue;
       const button = iconButton(action.icon, () => action.run(), {tooltip: action.name});
       button.dataset.u2Item = action.name;
+      if (action.destructive)
+        button.classList.add('u2-row-action-destructive');
       if (action.enabled === false)
         button.disabled = true;
       el.append(button);
@@ -71,20 +93,18 @@ export interface ActionsMenuOptions extends ActionsOptions {
 /** A popup menu over the same action list — the right-click superset of {@link rowActions}. */
 export function actionsMenu(actions: Action[], options?: ActionsMenuOptions): Menu {
   const menu = new Menu();
-  const flat = allowedActions(actions, options);
-  for (const action of flat)
-    menu.item(action.name, action.run, {icon: action.icon, enabled: action.enabled});
+  const flat = ordered(allowedActions(actions, options));
+  addItems(menu, flat);
   let anything = flat.length > 0;
   for (const group of options?.groups ?? []) {
-    const allowed = allowedActions(group.actions, options);
+    const allowed = ordered(allowedActions(group.actions, options));
     if (allowed.length === 0)
       continue;
     if (anything)
       menu.separator();
     anything = true;
     menu.group(group.label);
-    for (const action of allowed)
-      menu.item(action.name, action.run, {icon: action.icon, enabled: action.enabled});
+    addItems(menu, allowed);
     menu.endGroup();
   }
   return menu;

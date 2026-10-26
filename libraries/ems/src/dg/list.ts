@@ -56,19 +56,15 @@ export class DomainList extends Control {
       // a row is a live proxy over the frame: an edit changes it without a new object
       liveItems: true,
       render: (row, _index, el) => this._row(row, el),
-      // with several rows picked the menu is two submenus and nothing flat: "Aspirin ▸" is the
-      // clicked row, "2 issues ▸" the selection — either target named, neither of them implied
-      contextActions: (row) => this._selected().length < 2 ? this.actionsFor(row) : [],
-      contextGroups: (row) => {
+      // with several rows picked, what the selection offers comes first and flat, each item naming
+      // its target ("Close · 2 issues"); the clicked row's own actions follow in a submenu under its
+      // name — either target named, neither of them implied
+      contextActions: (row) => {
         const selected = this._selected();
-        if (selected.length < 2)
-          return [];
-        const groups = [{label: this.renderer.caption(row), actions: this.actionsFor(row)}];
-        const actions = this.selectionActions(selected);
-        if (actions.length > 0)
-          groups.push({label: `${selected.length} ${DomainTable.noun(source.schema.info)}`, actions});
-        return groups;
+        return selected.length < 2 ? this.actionsFor(row) : this.selectionActions(selected);
       },
+      contextGroups: (row) => this._selected().length < 2 ? [] :
+        [{label: this.renderer.caption(row), actions: this.actionsFor(row)}],
       onEnter: () => source.activate.value = source.activate.peek() + 1,
       onDelete: (row) => this.actionsFor(row).find((a) => a.name === 'Delete')?.run(),
     }));
@@ -166,20 +162,20 @@ export class DomainList extends Control {
     const draft = Rows.isDraft(row);
     const actions: Action[] = [];
     if (table !== undefined && !draft)
-      actions.push({name: 'Open', icon: 'folder-open', run: () => table.open(row)});
-    actions.push({name: 'Delete', icon: 'trash-alt', requires: 'delete',
-      run: () => source.edit.peek()?.markDeleted(row.id)});
+      actions.push({name: 'Open', icon: 'external-link', shortcut: 'Enter', run: () => table.open(row)});
     if (table !== undefined)
       actions.push(...table.actions.for(row));
     actions.push(...ActionRegistry.bind(this._options.actions ?? [], row));
+    actions.push({name: 'Delete', icon: 'trash-alt', requires: 'delete', shortcut: 'Del', destructive: true,
+      run: () => source.edit.peek()?.markDeleted(row.id)});
     return allowedActions(actions, {access: source.access.peek(), row});
   }
 
-  /** The context menu of a row that is part of a multi-selection: the row's own actions, then a
-   * `<N> <plural>` submenu carrying every action that applies to ALL of the selected rows, run over
-   * the whole selection (Jane closed two issues and only one closed). An action is offered there
-   * when every selected row offers it and none of them has it disabled; it runs row by row in
-   * selection order, and the edits land in the session's next Save exactly as one row's do. */
+  /** The context menu of a row that is part of a multi-selection: every action that applies to ALL
+   * of the selected rows, marked `<N> <plural>` and run over the whole selection (Jane closed two
+   * issues and only one closed). An action is offered there when every selected row offers it and
+   * none of them has it disabled; it runs row by row in selection order, and the edits land in the
+   * session's next Save exactly as one row's do. */
   selectionActions(rows: readonly RowView[]): Action[] {
     if (rows.length === 0)
       return [];
