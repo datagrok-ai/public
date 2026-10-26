@@ -42,7 +42,7 @@ const TRASH_SORT = '!updated_on';
  * spec renders the slots it wants instead of parsing text, and a refusal no longer takes the row
  * count off the line (U37). */
 export interface DomainAppStatus {
-  /** What the page holds: "50 of 2,077", "3 issues", "1 deleted issue", or the row's caption on
+  /** What the page holds: "50 of 2,077 issues", "3 issues", "1 deleted issue", or the row's caption on
    * the entity page. `''` while there is nothing to say yet. */
   count: string;
   /** How many rows a bulk action would act on; 0 on the entity page and with nothing picked. */
@@ -362,8 +362,12 @@ export class DomainApp extends Control {
         this._count.value = this.table.renderer.caption(row);
       else if (source.state.value === 'error')
         this._count.value = '';
-      else if (source.error.value === undefined && source.changeCount.value === 0)
-        this._count.value = source.summary.value;
+      else if (source.error.value === undefined && source.changeCount.value === 0) {
+        // paging, the source says "50 of 119": the status bar keeps the noun it has once all are in
+        const summary = source.summary.value;
+        this._count.value = /^\S+ of \S+$/.test(summary) ? `${summary} ${DomainTable.noun(source.schema.info)}` :
+          summary;
+      }
     });
     this.status = computed(() => {
       const entity = this._page.value === 'entity';
@@ -514,9 +518,9 @@ export class DomainApp extends Control {
     }
     const plural = DomainTable.noun(this.table.info);
     // a mode, not a verb: named for what the list shows, never "Trash" beside the actions
-    const mode: Action[] = menu.trash !== false && support.deleted && support.restore ? [{name: trash ? `Back to ${plural}` :
-      `Show deleted ${plural}`, icon: trash ? 'arrow-left' : 'history', requires: 'delete',
-    run: () => void this.setTrash(!trash)}] : [];
+    const mode: Action[] = menu.trash === false || !support.deleted || !support.restore ? [] : [{
+      name: trash ? `Back to ${plural}` : `Show deleted ${plural}`, icon: trash ? 'arrow-left' : 'history',
+      requires: 'delete', run: () => void this.setTrash(!trash)}];
     const presets = this.compact.peek() && this._page.peek() === 'list' && !trash ? this._presets : [];
     return [presets, this._rowActions(), table, mode].filter((section) => section.length > 0)
       .flatMap((section, i) => i === 0 ? section : [{...section[0], separator: true}, ...section.slice(1)]);

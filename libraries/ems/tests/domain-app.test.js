@@ -1639,3 +1639,9 @@ scoped('menu switches a built-in item off; Discard on an untouched create page g
   assert.equal(discard.button.disabled, true);
   a.dispose();
 });
+
+scoped('the count keeps its noun while paging: "2 of 3 issues"', async () => {
+  const {app: a} = await app({pageSize: 2});
+  assert.equal(a.status.value.count, '2 of 3 issues');
+  a.dispose();
+});
