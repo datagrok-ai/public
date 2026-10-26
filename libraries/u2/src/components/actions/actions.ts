@@ -59,7 +59,7 @@ function addItems(menu: Menu, actions: Action[]): void {
     if (previous !== undefined && (action.separator || action.destructive && !previous.destructive))
       menu.separator();
     menu.item(action.name, action.run,
-      {icon: action.icon, enabled: action.enabled, shortcut: action.shortcut, detail: action.detail});
+      {enabled: action.enabled, shortcut: action.shortcut, detail: action.detail});
   }
 }
 
