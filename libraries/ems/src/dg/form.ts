@@ -12,7 +12,7 @@ import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Row
   timestamp, EMPTY, isEmpty, text, loader} from '@datagrok-libraries/u2';
 import type {Input, InputOptions, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
-import {propertyForm, ObjectForm, Editors, userInput, entityInput} from '@datagrok-libraries/u2/src/dg/index.js';
+import {propertyForm, ObjectForm, Editors, userPick, groupPick} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {ObjectFormOptions} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainSource} from '../core/domain-source.js';
 import {DomainTable} from './facade.js';
@@ -251,17 +251,6 @@ export class DomainForm extends Control {
     if (source === undefined)
       throw new Error('domains.form: pass `source` — the row alone does not name its table');
     return {source, row: signal(target as RowView | null)};
-  }
-
-  /** A `User` column's editor: the value is the user id, the box the user picker. */
-  static userPick(options: InputOptions<string | null>): PickInput<DG.User> {
-    return new PickInput<DG.User>({...options, typeAhead: () => userInput(''), idOf: (user) => user.id,
-      resolve: (id) => grok.dapi.users.find(id)});
-  }
-
-  static groupPick(options: InputOptions<string | null>): PickInput<DG.Group> {
-    return new PickInput<DG.Group>({...options, typeAhead: () => entityInput('', () => grok.dapi.groups),
-      idOf: (group) => group.id, resolve: (id) => grok.dapi.groups.find(id)});
   }
 
   private _show(row: RowView | null, access: Access): void {
@@ -569,9 +558,9 @@ Editors.register({
 });
 Editors.register({
   match: (prop) => prop.semType === 'User',
-  create: (prop, options) => DomainForm.userPick(options),
+  create: (prop, options) => userPick(options),
 });
 Editors.register({
   match: (prop) => prop.semType === 'Group',
-  create: (prop, options) => DomainForm.groupPick(options),
+  create: (prop, options) => groupPick(options),
 });

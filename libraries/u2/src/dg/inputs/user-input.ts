@@ -4,6 +4,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {TypeAhead} from '../../components/inputs/typeahead.js';
+import {PickInput} from '../../components/inputs/pick-input.js';
+import type {InputOptions} from '../../core/input-base.js';
 import {dapiSource} from '../entities/dapi-source.js';
 
 const SEARCH_FIELDS = ['firstName', 'lastName', 'login', 'email'];
@@ -22,6 +24,12 @@ export function userInput(placeholder = 'User…'): TypeAhead<DG.User> {
     openOnFocus: true,
     maxHeight: 320,
   });
+}
+
+/** A `User` reference's editor: the value is the user id, the box the user picker. */
+export function userPick(options: InputOptions<string | null> = {}): PickInput<DG.User> {
+  return new PickInput<DG.User>({...options, typeAhead: () => userInput(''), idOf: (user) => user.id,
+    resolve: (id) => grok.dapi.users.find(id)});
 }
 
 function renderUser(user: DG.User): HTMLElement {

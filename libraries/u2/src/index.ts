@@ -68,6 +68,8 @@ export type {PropDescriptor, PropChange, PropertyGridOptions} from './components
 export {AsyncView, loader, skeleton} from './components/display/async-view.js';
 export {TypeAhead} from './components/inputs/typeahead.js';
 export type {TypeAheadOptions, TypeAheadState} from './components/inputs/typeahead.js';
+export {PickInput} from './components/inputs/pick-input.js';
+export type {PickInputOptions} from './components/inputs/pick-input.js';
 export {Wizard} from './components/containers/wizard.js';
 export type {WizardStep, WizardOptions, WizardAction, WizardRunContext} from './components/containers/wizard.js';
 export {badge, countBadge, dot, tag, statusLine} from './components/display/badge.js';

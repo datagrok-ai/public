@@ -52,7 +52,6 @@ export const EMS_KINDS: readonly U2KindDef[] = [
   composite('domain-tree', 'domain tree', ['busy', 'items', 'selection'],
     {items: {role: 'treeitem', noun: 'tree node', gestures: ['select', 'expand', 'collapse']},
       gestures: ['select', 'expand', 'collapse']}),
-  input('pick-input', 'pick input', 'combobox', ['value', 'text', 'valid', 'error', 'open', 'placeholder'], PICK),
   button('save-button'),
   button('discard-button'),
   button('new-button'),

@@ -159,6 +159,8 @@ export const U2_KINDS: readonly U2KindDef[] = [
     {aliases: ['combo box', 'editable choice'], items: ITEM_PICK}),
   input('typeahead', 'suggest input', 'combobox', [...COMBO_STATE, 'busy', 'items'], ['type', 'open', 'pick'],
     {aliases: ['autocomplete', 'typeahead'], items: ITEM_PICK}),
+  input('pick-input', 'pick input', 'combobox', ['value', 'text', 'valid', 'error', 'open', 'placeholder'],
+    ['type', 'open', 'pick'], {items: ITEM_PICK}),
   input('suggest-input', 'suggest input', 'combobox', [...PICKER_STATE, 'placeholder', 'busy', 'items'],
     ['type', 'open', 'pick'], {items: ITEM_PICK}),
   input('multi-select', 'multi select', 'combobox', [...PICKER_STATE, 'items', 'selection'], ['open', 'toggle'],
