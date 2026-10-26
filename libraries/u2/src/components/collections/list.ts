@@ -78,7 +78,7 @@ export interface VirtualRowsOptions<T> {
 }
 
 /** The chrome a row shape names itself by: `host` is the scroller's class, and `<host>-content`,
- * `<host>-row` and `<host>-row-selected` follow from it. */
+ * `<host>-row`, `<host>-row-selected` and `<host>-row-current` follow from it. */
 interface RowsChrome {
   host: string;
   u2: string;
@@ -219,7 +219,7 @@ export abstract class VirtualRows<T> extends Control {
       else
         this.root.setAttribute('aria-activedescendant', this._idPrefix + index);
       for (const [i, row] of this._rows)
-        this.setSelected(row.el, selected.has(i));
+        this._mark(row.el, i, selected, index);
     });
   }
 
@@ -556,7 +556,7 @@ export abstract class VirtualRows<T> extends Control {
     const kept = this._hook(row, () => this.placeRow(row.el, index)) &&
       (same || !this._live && this._hook(row, () => this.patchRow(row.el, index)));
     if (kept)
-      this.setSelected(row.el, this._selected.peek().has(index));
+      this._mark(row.el, index);
     else
       this._rerender(row, index);
   }
@@ -683,7 +683,15 @@ export abstract class VirtualRows<T> extends Control {
     this._place(row.el, index);
     row.el.dataset.u2Item = row.key;
     untracked(() => row.scope.run(() => this.fillRow(row.el, index)));
-    this.setSelected(row.el, this._selected.peek().has(index));
+    this._mark(row.el, index);
+  }
+
+  /** The selection, and apart from it the lead: inside a multi-selection the row Enter and the
+   * keys act on has to be found. */
+  private _mark(el: HTMLElement, index: number, selected = this._selected.peek(),
+    lead = this.selectedIndex.peek()): void {
+    this.setSelected(el, selected.has(index));
+    el.classList.toggle(`${this._chrome.host}-row-current`, index === lead);
   }
 
   private _place(el: HTMLElement, index: number): void {

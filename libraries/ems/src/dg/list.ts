@@ -4,8 +4,8 @@
    paired through the source, the next page loaded near the bottom, a row marked deleted kept
    struck through with Restore until the save, and the source's loading, empty and error states
    shown under the rows. */
-import {Control, signal, button, div, divH, divV, span, timestamp, text, VirtualList, allowedActions, rowActions,
-  loader, Rows} from '@datagrok-libraries/u2';
+import {Control, signal, button, div, divH, span, link, timestamp, text, VirtualList, allowedActions, rowActions,
+  loader, emptyState, Rows} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, Signal, ObjectRenderer, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {ActionRegistry, DomainTable} from './facade.js';
@@ -76,15 +76,25 @@ export class DomainList extends Control {
     this.list.setItems(source.rows.items as ReadonlySignal<RowView[]>);
 
     collectionSelection(this, source, this.list);
-    // a list over a table starts on its first row; a draft source is a form's, not a list's
+    // a list over a table starts on its first row; a draft source is a form's, not a list's. That
+    // row is no pick of the user's: it is drawn as current once the list has the focus
     let seeded = source.isDraft;
     this.effect(() => {
       const items = source.rows.items.value;
       if (seeded || source.state.value !== 'ready' || items.length === 0)
         return;
       seeded = true;
-      if (source.currentRow.peek() === null)
-        this.list.selectedIndex.value = 0;
+      if (source.currentRow.peek() !== null)
+        return;
+      this.list.selectedIndex.value = 0;
+      this.root.classList.add('u2-domain-list-seeded');
+    });
+    const onPick = () => this.root.classList.remove('u2-domain-list-seeded');
+    this.list.root.addEventListener('click', onPick);
+    this.list.root.addEventListener('keydown', onPick);
+    this.own(() => {
+      this.list.root.removeEventListener('click', onPick);
+      this.list.root.removeEventListener('keydown', onPick);
     });
 
     pageOnScroll(this, this.list, source);
@@ -193,15 +203,19 @@ export class DomainList extends Control {
 
   private _row(row: RowView, el: HTMLElement): HTMLElement {
     el.dataset.u2Row = row.id;
-    el.classList.toggle('u2-domain-list-deleted', row[Rows.STATE] === 'deleted' || Rows.isDeleted(row));
-    el.classList.toggle('u2-domain-list-restored', row[Rows.STATE] === 'restored');
-    el.classList.toggle('u2-domain-list-pending',
-      row[Rows.STATE] === 'modified' || row[Rows.STATE] === 'new');
+    const state = row[Rows.STATE];
+    el.classList.toggle('u2-domain-list-deleted', state === 'deleted' || Rows.isDeleted(row));
+    el.classList.toggle('u2-domain-list-restored', state === 'restored');
+    el.classList.toggle('u2-domain-list-pending', state === 'modified' || state === 'new' || state === 'deleted');
     this._markProblem(el);
     const render = this._options.render;
     const content = render ? render(row) : this._content(row);
     content.classList.add('u2-domain-list-content');
-    return div([content, rowActions(this.actionsFor(row))], 'u2-domain-list-item');
+    const actions = this.actionsFor(row);
+    // a delete waiting for the save is undone in words, in reach without hovering
+    const undo = state === 'deleted' ? actions.find((a) => a.name === 'Restore') : undefined;
+    return div([content, undo === undefined ? rowActions(actions) :
+      div([link('Undo', () => undo.run())], 'u2-domain-list-undo')], 'u2-domain-list-item');
   }
 
   /** The row a refusal names, marked while it stands — the way a pending delete is marked. */
@@ -223,12 +237,16 @@ export class DomainList extends Control {
     const brief = () => renderer.listItem?.(row) ?? span(renderer.caption(row), 'u2-domain-list-name');
     if (this.mode === 'cards')
       return renderer.card?.(row) ?? brief();
-    // the trash says WHEN, read in the reader's own zone with the full moment as its title
-    if (this.source.readOnly.peek())
-      return divH([brief(), timestamp(row.updated_on as string, 'u2-domain-list-details')], 'u2-domain-list-line');
     const details = this._details(row);
-    return details === '' ? brief() :
-      divH([brief(), span(details, 'u2-domain-list-details')], 'u2-domain-list-line');
+    const line = [brief(), ...details === '' ? [] : [span(details, 'u2-domain-list-details')]];
+    // the trash keeps the line a row is told apart by, and says WHEN it went, read in the reader's
+    // own zone with the full moment as its title
+    if (Rows.isDeleted(row) && this.source.readOnly.peek()) {
+      const when = timestamp(row.updated_on as string, 'u2-domain-list-when');
+      when.textContent = `Deleted ${when.textContent}`;
+      line.push(when);
+    }
+    return line.length === 1 ? line[0] : divH(line, 'u2-domain-list-line');
   }
 
   /** What a bare table shows beside the name: the columns a search matches, so a hit says why it

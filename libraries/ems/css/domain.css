@@ -237,22 +237,48 @@
   white-space: nowrap;
 }
 
-/* a row marked deleted stays until the save: struck through, faded, Restore on it */
-.u2-domain-list-deleted .u2-domain-list-content {
-  text-decoration: line-through;
-  opacity: 0.55;
+/* the row a load makes current is no pick: unmarked until the list has the focus, and never drawn
+   as selected until it is clicked or keyed */
+.u2-domain-list-seeded .u2-list-row-selected {
+  box-shadow: none;
 }
 
-/* a staged restore is the other direction: the strike is gone, and the amber edge of a pending
-   change says it has not landed yet */
-.u2-domain-list-restored .u2-domain-list-content {
-  text-decoration: none;
-  opacity: 1;
+.u2-domain-list-seeded .u2-list:not(:focus) .u2-list-row-current:not(:hover) {
+  background: none;
 }
 
-.u2-domain-list-restored,
-.u2-domain-list-pending {
+/* a change waiting for the save, a staged restore among them: the amber edge of a pending change,
+   beside the selection's stripe where the row is selected too */
+.u2-list-row.u2-domain-list-restored,
+.u2-list-row.u2-domain-list-pending {
   box-shadow: inset 3px 0 0 0 var(--dg-orange-2);
+}
+
+.u2-list-row-selected.u2-domain-list-restored,
+.u2-list-row-selected.u2-domain-list-pending {
+  box-shadow: inset 3px 0 0 0 var(--dg-orange-2), inset 6px 0 0 0 var(--dg-accent);
+}
+
+/* a delete waiting for the save stays readable: struck through on a red tint, never faded. A row
+   in the trash is deleted already and reads as any other row */
+.u2-list-row.u2-domain-list-deleted.u2-domain-list-pending {
+  background: var(--dg-red-1);
+}
+
+.u2-domain-list-deleted.u2-domain-list-pending .u2-domain-list-content {
+  text-decoration: line-through;
+  color: var(--dg-grey-5);
+}
+
+.u2-domain-list-undo {
+  flex: none;
+  padding-left: var(--dg-space-m);
+}
+
+.u2-domain-list-when {
+  flex: none;
+  margin-left: auto;
+  color: var(--dg-text-color-light);
 }
 
 /* the status bar's slots are four panels the shell places side by side with nothing between
@@ -281,8 +307,8 @@
 }
 
 /* the row a refusal names, marked while the refusal stands */
-.u2-domain-list-invalid {
-  box-shadow: inset 2px 0 0 0 var(--dg-error);
+.u2-list-row.u2-domain-list-invalid {
+  box-shadow: inset 3px 0 0 0 var(--dg-error);
 }
 
 .u2-domain-list-invalid .u2-domain-list-content {
