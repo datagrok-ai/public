@@ -475,8 +475,10 @@ export class ObjectForm extends Form {
       const date = ObjectForm.coerce('datetime', value) as Date | null;
       if (date !== null) {
         const {year, month, day} = Dates.utcParts(date);
-        const pad = (x: number) => String(x).padStart(2, '0');
-        return prop.format!.replace('yyyy', String(year)).replace('MM', pad(month)).replace('dd', pad(day));
+        const name = (month: 'long' | 'short') => date.toLocaleString('en-US', {month, timeZone: 'UTC'});
+        const parts: Record<string, string> = {yyyy: String(year), MMMM: name('long'), MMM: name('short'),
+          MM: String(month).padStart(2, '0'), M: String(month), dd: String(day).padStart(2, '0'), d: String(day)};
+        return prop.format!.replace(/yyyy|M{1,4}|dd?/g, (token) => parts[token]);
       }
     }
     return text(value);
