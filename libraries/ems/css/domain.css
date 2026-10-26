@@ -482,6 +482,16 @@
   min-height: 0;
 }
 
+/* tab text, toolbar text, grid and form share the pane's left edge: no tab or panel inset */
+.u2-tabs.u2-domain-children-tabs:not(.u2-tabs-vertical) > .u2-tabs-header .u2-tabs-tab:first-child {
+  padding-left: 0;
+}
+
+.u2-domain-children-tabs > .u2-tabs-content {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 /* the panel is shown by an inline `display`, so the pane takes its height instead */
 .u2-domain-children-tabs > .u2-tabs-content > .u2-tabs-panel {
   height: 100%;
