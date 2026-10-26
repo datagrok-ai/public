@@ -546,42 +546,33 @@ scoped('a refused save says why in the status bar and balloons once, with no for
   a.dispose();
 });
 
-scoped('a query the backend refuses is the list\'s error, in the status bar and over the rows', async () => {
+scoped('a ?q= the grammar refuses never loads: the text stays red in the box, the rows answer no filter', async () => {
   const {app: a} = await app();
+  const [add] = a.ribbon().main;
+  const filters = a.filters;
+  document.body.append(add.root, filters.root);
+  await flush();
   assert.equal(await a.open('?q=validator'), true);
   await flush();
-  assert.equal(a.listSource.state.value, 'error');
-  assert.equal(a.summary.value, 'Expected an operator', 'the backend\'s refusal, in the status bar');
-  assert.match(a.root.querySelector('.u2-domain-list-error').textContent, /Expected an operator/);
-  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'a load failure is not a balloon');
+  const box = filters.input.value;
+  assert.equal(a.listSource.state.value, 'ready', 'no load error, no Retry');
+  assert.equal(a.listSource.query.value, '');
+  assert.equal(a.listSource.rows.items.value.length, 3);
+  assert.equal(box.text.value, 'validator', 'the offending text is in the box, to be fixed in place');
+  assert.equal(box.validity.value !== null, true, 'red, with the reason on the editor');
+  assert.equal(filters.problem.value, 'Expected an operator', 'told the way a typed mistake is');
+  assert.match(a.summary.value, /Expected an operator/);
+  assert.equal(filters.root.querySelector('.u2-domain-filters-note').hidden, false,
+    'the rows are said to answer the last valid filter');
+  assert.equal(add.root.hidden, false, 'New follows the access');
+  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'not a balloon');
+  box.text.value = '';
+  assert.equal(box.commit(), true);
+  await flush();
+  assert.equal(filters.problem.value, null);
+  assert.equal(filters.root.querySelector('.u2-domain-filters-note').hidden, true);
   a.dispose();
 });
-
-scoped('a ?q= the backend refuses is not a dead end: the text stays in the box, New stands, Clear filter brings the rows back',
-  async () => {
-    const {app: a} = await app();
-    const [add] = a.ribbon().main;
-    const filters = a.filters;
-    document.body.append(add.root, filters.root);
-    await flush();
-    assert.equal(await a.open('?q=validator'), true);
-    await flush();
-    const box = filters.input.value;
-    assert.equal(a.listSource.state.value, 'error');
-    assert.equal(box.text.value, 'validator', 'the offending text is in the box, to be fixed in place');
-    assert.equal(box.validity.value !== null, true, 'red, with the reason on the editor');
-    assert.equal(add.root.hidden, false, 'New follows the access, never a query the server refused');
-    assert.match(a.summary.value, /Expected an operator/, 'the refusal of the query in force is the news');
-    const clear = [...a.root.querySelectorAll('.u2-domain-list-error button')]
-      .find((b) => b.textContent === 'Clear filter');
-    assert.notEqual(clear, undefined, 'Retry alone would only run it again');
-    fire(clear, 'click');
-    await flush();
-    assert.equal(a.listSource.query.value, '');
-    assert.equal(box.text.value, '', 'the box is cleared with the query');
-    assert.equal(a.listSource.rows.items.value.length, 3);
-    a.dispose();
-  });
 
 scoped('an emptied box applies the empty query even when the refused one left no tree behind', async () => {
   const {app: a} = await app();

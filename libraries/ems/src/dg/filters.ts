@@ -39,9 +39,9 @@ export class DomainFilters extends Control {
   /** The input, once the table's schema is known. */
   readonly input: ReadonlySignal<FilterQueryInput | FilterBuilder | null>;
   /** What is wrong with the filter in the box while it is one the rows do NOT answer — a refused
-   * commit standing over the applied query; null while the two agree, the query in force having
-   * been refused included (the list's error says what happened to that one). A builder row still
-   * waiting for its value is a draft, not a problem: the rows answer the complete conditions. */
+   * commit, or a link's query the grammar refuses, standing over the applied query; null while the
+   * two agree. A builder row still waiting for its value is a draft, not a problem: the rows answer
+   * the complete conditions. */
   readonly problem: ReadonlySignal<string | null>;
 
   /** Per source: how a query a control wrote bound is spelled in the box — `DomainApp.presets`
@@ -67,10 +67,7 @@ export class DomainFilters extends Control {
       const input = this._input.value;
       if (input instanceof FilterBuilder)
         return input.problems.value.find((p) => p.code !== 'missing-value')?.message ?? null;
-      const message = input?.problems.value[0]?.message ?? null;
-      if (message === null || !(input instanceof FilterQueryInput))
-        return message;
-      return input.query.value === input.raw.value ? null : message;
+      return input?.problems.value[0]?.message ?? null;
     });
     this.root.classList.add('u2-domain-filters');
     this.root.dataset.u2 = 'domain-filters';
@@ -179,6 +176,13 @@ export class DomainFilters extends Control {
       // the same wording a typed refusal gets: a `?q=` a link carried fails the same way
       this._rawProblems = parsed === null ? [] :
         FilterQueryInput.worded(q as string, schema, parsed.problems);
+      // nor does it go to the server: the rows answer no filter, and the box tells the mistake the
+      // way it tells a typed one, instead of a load error with a Retry that cannot help
+      if (this._raw !== null && box !== null) {
+        this._accepted = Filters.group('and');
+        this._echo = '';
+        source.query.value = '';
+      }
       this._write(input, this._accepted);
       box?.showText(this._raw, this._rawProblems);
     });
@@ -196,7 +200,9 @@ export class DomainFilters extends Control {
         }
       });
     });
-    this.root.replaceChildren(input.root);
+    const note = div(['Showing results for the last valid filter'], 'u2-domain-filters-note');
+    this.effect(() => note.hidden = this.problem.value === null);
+    this.root.replaceChildren(input.root, note);
     this._input.value = input;
   }
 

@@ -237,11 +237,6 @@
   white-space: nowrap;
 }
 
-/* the rows answer the filter that was applied, not the one being typed: dimmed while the two differ */
-.u2-domain-list-stale .u2-domain-list-rows {
-  opacity: 0.5;
-}
-
 /* a row marked deleted stays until the save: struck through, faded, Restore on it */
 .u2-domain-list-deleted .u2-domain-list-content {
   text-decoration: line-through;
@@ -558,6 +553,17 @@
 }
 
 .u2-domain-filters:empty {
+  display: none;
+}
+
+/* the rows answer the filter that was applied, not the one in the box: said under the box, the rows
+   are not dimmed */
+.u2-domain-filters-note {
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-filters-note[hidden] {
   display: none;
 }
 
