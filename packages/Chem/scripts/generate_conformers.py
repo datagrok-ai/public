@@ -1,9 +1,8 @@
-#name: Generate Conformers
-#description: Generates multiple conformers for a molecule using RDKit
+#name: GenerateConformersPython
+#description: Generates multiple conformers for a molecule using RDKit (Generate Conformers' RDKit side: Chem:GenerateConformers calls this script, or Crux in Crux mode)
 #help-url: https://datagrok.ai/help/domains/chem/functions/conformers
 #language: python
 #meta.domain: chem
-#top-menu: Chem | Calculate | Generate Conformers...
 #input: string molecule = "CCCC" {semType: Molecule}  # Butane - shows anti/gauche conformations
 #input: int num_conformers = 50 {caption: Num conformers} [Number of conformers to generate]
 #input: bool optimize = true [Optimize with MMFF94 force field]

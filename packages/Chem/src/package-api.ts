@@ -18,12 +18,12 @@ export namespace scripts {
   }
 
   /**
-   * Calculates the octanol-water partition coefficient (logP) using RDKit's Crippen method.
+   * Calculates the octanol-water partition coefficient (logP) using RDKit's Crippen method (Calculate logP's RDKit side: Chem:CalculateLogP calls this script, or Crux in Crux mode)
    * @param {DG.Column} molecules
    *   semType: Molecule
    */
-  export async function calculateLogP(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:CalculateLogP', { table, molecules });
+  export async function calculateLogPPython(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CalculateLogPPython', { table, molecules });
   }
 
   /**
@@ -63,12 +63,12 @@ export namespace scripts {
   }
 
   /**
-   * Standardizes the dataset
+   * Standardizes the dataset (Curate's RDKit side: Chem:Curate calls this script, or Crux in Crux mode)
    * @param {DG.Column} molecules
    *   semType: Molecule
    */
-  export async function curate(data: DG.DataFrame , molecules: DG.Column , kekulization: boolean , normalization: boolean , reionization: boolean , neutralization: boolean , tautomerization: boolean , mainFragment: boolean ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:Curate', { data, molecules, kekulization, normalization, reionization, neutralization, tautomerization, mainFragment });
+  export async function curatePython(data: DG.DataFrame , molecules: DG.Column , kekulization: boolean , normalization: boolean , reionization: boolean , neutralization: boolean , tautomerization: boolean , mainFragment: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CuratePython', { data, molecules, kekulization, normalization, reionization, neutralization, tautomerization, mainFragment });
   }
 
   /**
@@ -102,7 +102,7 @@ export namespace scripts {
   }
 
   /**
-   * RDKit-based script.
+   * RDKit-based script. The panel Chemistry | Gasteiger Partial Charges shows its picture in RDKit mode (the script keeps its panel role for Flow, shown for no molecule)
    * @param {string} mol
    *   semType: Molecule
    */
@@ -111,25 +111,28 @@ export namespace scripts {
   }
 
   /**
-   * Generates multiple conformers for a molecule using RDKit
+   * Generates multiple conformers for a molecule using RDKit (Generate Conformers' RDKit side: Chem:GenerateConformers calls this script, or Crux in Crux mode)
    * @param {string} molecule
    *   semType: Molecule
    */
-  export async function generateConformers(molecule: string , num_conformers: number , optimize: boolean , rms_threshold: number , max_attempts: number , random_seed: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:GenerateConformers', { molecule, num_conformers, optimize, rms_threshold, max_attempts, random_seed });
-  }
-
-  export async function inchiToMol(id: string ): Promise<string> {
-    return await grok.functions.call('Chem:InchiToMol', { id });
+  export async function generateConformersPython(molecule: string , num_conformers: number , optimize: boolean , rms_threshold: number , max_attempts: number , random_seed: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:GenerateConformersPython', { molecule, num_conformers, optimize, rms_threshold, max_attempts, random_seed });
   }
 
   /**
-   * Generates the new dataset based on the given structure. Generated table has a column named 'mutations' with mutated structures.
+   * The InChI's molecule (inchiToMol's RDKit side: the converter Chem:InchiToMol calls this script, or Crux in Crux mode)
+   */
+  export async function inchiToMolPython(id: string ): Promise<string> {
+    return await grok.functions.call('Chem:InchiToMolPython', { id });
+  }
+
+  /**
+   * Generates the new dataset based on the given structure. Generated table has a column named 'mutations' with mutated structures. (Mutate's RDKit side: Chem:Mutate calls this script, or Crux in Crux mode)
    * @param {string} molecule
    *   semType: Molecule
    */
-  export async function mutate(molecule: string , steps: number , randomize: boolean , maxRandomResults: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:Mutate', { molecule, steps, randomize, maxRandomResults });
+  export async function mutatePython(molecule: string , steps: number , randomize: boolean , maxRandomResults: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:MutatePython', { molecule, steps, randomize, maxRandomResults });
   }
 
   /**
@@ -155,12 +158,12 @@ export namespace scripts {
   }
 
   /**
-   * Implementation of the clustering algorithm published in: Butina JCICS 39 747-750 (1999)
+   * Implementation of the clustering algorithm published in: Butina JCICS 39 747-750 (1999) (Butina Cluster's RDKit side: Chem:ButinaMoleculesClustering calls this script, or Crux in Crux mode)
    * @param {DG.Column} molecules
    *   semType: Molecule
    */
-  export async function butinaMoleculesClustering(data: DG.DataFrame , molecules: DG.Column , distanceCutoff: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:ButinaMoleculesClustering', { data, molecules, distanceCutoff });
+  export async function butinaMoleculesClusteringPython(data: DG.DataFrame , molecules: DG.Column , distanceCutoff: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:ButinaMoleculesClusteringPython', { data, molecules, distanceCutoff });
   }
 
   /**
@@ -173,23 +176,23 @@ export namespace scripts {
   }
 
   /**
-   * Finds undesireable molecules based on various criteria
+   * Finds undesireable molecules based on various criteria (Filter by Catalogs' RDKit side: Chem:FilterByCatalogs calls this script, or Crux in Crux mode)
    * @param {DG.Column} smiles
    *   semType: Molecule
    * @param {string} catalog
    *   choices: ["BRENK", "NIH", "PAINS_A", "PAINS_B", "PAINS_C", "ZINC"]
    */
-  export async function filterByCatalogs(data: DG.DataFrame , smiles: DG.Column , catalog: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:FilterByCatalogs', { data, smiles, catalog });
+  export async function filterByCatalogsPython(data: DG.DataFrame , smiles: DG.Column , catalog: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:FilterByCatalogsPython', { data, smiles, catalog });
   }
 
   /**
-   * Generation of Murcko scaffolds from a molecule
+   * Generation of Murcko scaffolds from a molecule (Murcko Scaffolds' RDKit side: Chem:MurckoScaffolds calls this script, or Crux in Crux mode)
    * @param {DG.Column} smiles
    *   semType: Molecule
    */
-  export async function murckoScaffolds(data: DG.DataFrame , smiles: DG.Column ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:MurckoScaffolds', { data, smiles });
+  export async function murckoScaffoldsPython(data: DG.DataFrame , smiles: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:MurckoScaffoldsPython', { data, smiles });
   }
 
   /**
@@ -233,14 +236,14 @@ export namespace scripts {
   }
 
   /**
-   * Search in synthon chemical space using RDKit SynthonSpaceSearch
+   * Search in synthon chemical space using RDKit SynthonSpaceSearch (Chem:SynthonSearch runs it; with the Chemical Engine Crux, Crux's port of it)
    * @param {string} molecule
    *   semType: Molecule
    * @param {string} searchType
    *   choices: ["substructure", "similarity", "exact"]
    */
-  export async function synthonSearch(molecule: string , synthonLibrary: DG.FileInfo , libraryName: string , maxHits: number , searchType: string , similarityCutoff: number , includeSynthons: boolean ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:SynthonSearch', { molecule, synthonLibrary, libraryName, maxHits, searchType, similarityCutoff, includeSynthons });
+  export async function synthonSearchPython(molecule: string , synthonLibrary: DG.FileInfo , libraryName: string , maxHits: number , searchType: string , similarityCutoff: number , includeSynthons: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSearchPython', { molecule, synthonLibrary, libraryName, maxHits, searchType, similarityCutoff, includeSynthons });
   }
 
   /**
@@ -944,6 +947,17 @@ export namespace funcs {
    */
   export async function synthonSimilaritySearchWidget(molecule: string ): Promise<any> {
     return await grok.functions.call('Chem:SynthonSimilaritySearchWidget', { molecule });
+  }
+
+  /**
+   * Search in synthon chemical space using RDKit SynthonSpaceSearch (in Crux mode on Crux)
+   * @param {string} molecule
+   *   semType: Molecule
+   * @param {string} searchType
+   *   choices: ["substructure","similarity","exact"]
+   */
+  export async function synthonSearch(molecule: string , synthonLibrary: DG.FileInfo , libraryName: string , maxHits: number , searchType: string , similarityCutoff: number , includeSynthons: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSearch', { molecule, synthonLibrary, libraryName, maxHits, searchType, similarityCutoff, includeSynthons });
   }
 
   /**
@@ -1658,5 +1672,102 @@ export namespace funcs {
    */
   export async function mpoWidget(smiles: any ): Promise<any> {
     return await grok.functions.call('Chem:MpoWidget', { smiles });
+  }
+
+  /**
+   * Standardizes the dataset
+   * @param {DG.DataFrame} data - Input data table
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   * @param {boolean} kekulization - Write the result as a Kekule SMILES instead of an aromatic one
+   * @param {boolean} normalization - Apply RDKit functional-group normalization
+   * @param {boolean} reionization - Move protons to the strongest acidic sites
+   * @param {boolean} neutralization - Neutralize formal charges where possible
+   * @param {boolean} tautomerization - Canonicalize the tautomer — slow, and opinionated
+   * @param {boolean} mainFragment - Keep only the largest fragment, dropping salts and solvents
+   */
+  export async function curate(data: DG.DataFrame , molecules: DG.Column , kekulization: boolean , normalization: boolean , reionization: boolean , neutralization: boolean , tautomerization: boolean , mainFragment: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:Curate', { data, molecules, kekulization, normalization, reionization, neutralization, tautomerization, mainFragment });
+  }
+
+  /**
+   * Generates the new dataset based on the given structure. Generated table has a column named 'mutations' with mutated structures.
+   * @param {string} molecule
+   *   semType: Molecule
+   * @param {number} steps - Number of mutation steps
+   * @param {boolean} randomize - Randomize mutations
+   * @param {number} maxRandomResults - Maximum random results to calculate
+   */
+  export async function mutate(molecule: string , steps: number , randomize: boolean , maxRandomResults: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:Mutate', { molecule, steps, randomize, maxRandomResults });
+  }
+
+  /**
+   * Generates multiple conformers for a molecule using RDKit
+   * @param {string} molecule
+   *   semType: Molecule
+   * @param {number} num_conformers - Number of conformers to generate
+   * @param {boolean} optimize - Optimize with MMFF94 force field
+   * @param {number} rms_threshold - RMS threshold for conformer pruning - LOWER for butane
+   * @param {number} max_attempts - Maximum generation attempts
+   * @param {number} random_seed - Random seed for reproducibility
+   */
+  export async function generateConformers(molecule: string , num_conformers: number , optimize: boolean , rms_threshold: number , max_attempts: number , random_seed: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:GenerateConformers', { molecule, num_conformers, optimize, rms_threshold, max_attempts, random_seed });
+  }
+
+  /**
+   * The Gasteiger partial charges, drawn as a similarity map
+   * @param {string} mol - Molecule, in SMILES format
+   *   semType: Molecule
+   */
+  export async function gasteigerPartialChargesPanel(mol: string ): Promise<any> {
+    return await grok.functions.call('Chem:GasteigerPartialChargesPanel', { mol });
+  }
+
+  /**
+   * Implementation of the clustering algorithm published in: Butina JCICS 39 747-750 (1999)
+   * @param {DG.DataFrame} data - Input data table
+   * @param {DG.Column} molecules - Molecules, in SMILES and MolBlock format
+   *   semType: Molecule
+   * @param {number} distanceCutoff - Tanimoto distance cutoff for clustering (0-1)
+   */
+  export async function butinaMoleculesClustering(data: DG.DataFrame , molecules: DG.Column , distanceCutoff: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:ButinaMoleculesClustering', { data, molecules, distanceCutoff });
+  }
+
+  export async function inchiToMol(id: string ): Promise<string> {
+    return await grok.functions.call('Chem:InchiToMol', { id });
+  }
+
+  /**
+   * Calculates the octanol-water partition coefficient (logP) using RDKit's Crippen method.
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   */
+  export async function calculateLogP(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CalculateLogP', { table, molecules });
+  }
+
+  /**
+   * Generation of Murcko scaffolds from a molecule
+   * @param {DG.DataFrame} data - Input data table
+   * @param {DG.Column} smiles - Molecules, in SMILES format
+   *   semType: Molecule
+   */
+  export async function murckoScaffolds(data: DG.DataFrame , smiles: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:MurckoScaffolds', { data, smiles });
+  }
+
+  /**
+   * Finds undesireable molecules based on various criteria
+   * @param {DG.DataFrame} data - Input data table
+   * @param {DG.Column} smiles - Molecules in SMILES format
+   *   semType: Molecule
+   * @param {string} catalog
+   *   choices: ["BRENK","NIH","PAINS_A","PAINS_B","PAINS_C","ZINC"]
+   */
+  export async function filterByCatalogs(data: DG.DataFrame , smiles: DG.Column , catalog: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:FilterByCatalogs', { data, smiles, catalog });
   }
 }

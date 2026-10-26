@@ -15,6 +15,7 @@ export interface Component {
   comp: MixfileComponent;
 }
 
+/** The Mixture cell renderer: each component drawn by the Molecule renderer, so by the engine in effect. */
 export class MixtureCellRenderer extends RDKitCellRenderer {
   private _componentsCache: DG.LruCache<string, Component[]> = new DG.LruCache<string, Component[]>(100);
   private hoveredRowIdx: number | undefined = undefined;

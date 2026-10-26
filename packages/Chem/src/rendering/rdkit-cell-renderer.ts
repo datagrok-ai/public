@@ -1,6 +1,9 @@
 /* eslint-disable max-len */
 /**
- * RDKit-based molecule cell renderer.
+ * The Molecule cell renderer, for both engines (named "RDKit" for the packages and layouts that know it so: the class,
+ * `rdKitCellRenderer`, its `name`). It draws with the engine in effect (`renderingModule`): in Crux mode Crux's module,
+ * and RDKit's for a molecule Crux cannot read, lay out or draw ({@link RDKitCellRenderer._fetchMolByEngine},
+ * `_rendererGetOrCreate`, `_molToSvg`); its caches hold one engine's molecules and pictures at a time (`_syncEngine`).
  * */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -30,7 +33,8 @@ import {drawErrorCross, drawRdKitMoleculeToOffscreenCanvas,
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {ChemicalEngine, engineGeneration, renderingModule} from '../engine/chem-engine';
 import {cruxModuleSync, noteCruxError} from '../engine/crux-module';
-import {warnCruxFallback} from '../engine/fallback';
+import {cruxOrRdKit, warnCruxFallback} from '../engine/fallback';
+import {cruxReadsCxExtension} from '../crux/crux-service';
 import {getGridCellColTemp} from '../utils/ui-utils';
 import {errInfo} from '../utils/err-info';
 import {extractAtomPositionsFromSvg} from '../utils/chem-atom-picker-utils';
@@ -47,7 +51,6 @@ export type {ChemSelectionEvent, CellInteractiveInfo}
 import {_package} from '../package';
 
 interface IMolRenderingInfo {
-  //mol: RDMol | null; // null when molString is invalid?
   molCtx: IMolContext;
   substruct: ISubstruct;
   molString: string;
@@ -166,8 +169,8 @@ export class RDKitCellRenderer extends DG.GridCellRenderer {
   0  0  0  0  0  0  0  0  0  0999 V2000
 M  END
 `;
+  /** RDKit's module: RDKit mode's, and Crux mode's fallback per molecule. */
   rdKitModule: RDModule;
-  canvasCounter: number;
   molCache: DG.LruCache<String, IMolRenderingInfo> = new DG.LruCache<String, IMolRenderingInfo>();
   rendersCache: DG.LruCache<String, ImageData> = new DG.LruCache<String, ImageData>();
   sortedScaffoldsCache: DG.LruCache<String, IColoredScaffold[]> = new DG.LruCache<String, IColoredScaffold[]>();
@@ -183,7 +186,6 @@ M  END
   constructor(rdKitModule: RDModule) {
     super();
     this.rdKitModule = rdKitModule;
-    this.canvasCounter = 0;
     this.canvasReused = new OffscreenCanvas(this.defaultWidth, this.defaultHeight);
     this.molCache.onItemEvicted = (info: IMolRenderingInfo) => this._freeMol(info);
     this.picker = new AtomPickerController({
@@ -192,7 +194,7 @@ M  END
     });
   }
 
-  /** Frees an evicted molecule (it is at `molCtx.mol`: the eviction used to look for `mol` and freed nothing). */
+  /** Frees a molecule the cache lets go of. */
   private _freeMol(info: IMolRenderingInfo): void {
     this.cachedMols.delete(info);
     try {
@@ -277,7 +279,7 @@ M  END
   /**
    * The molecule of `molString` laid out and matched against `scaffolds`, all by one `engine`. Under Crux, anything
    * Crux cannot read or refuses (the molecule, a scaffold, a layout call) leaves the molecule null, and
-   * {@link _fetchMol} then takes RDKit's for it.
+   * {@link _fetchMolByEngine} then takes RDKit's for it.
    */
   _fetchMolGetOrCreate(molString: string, scaffolds: IColoredScaffold[], molRegenerateCoords: boolean,
     details: object = {}, alignByFirstSubstr: boolean, engine: ChemicalEngine = ChemicalEngine.RDKit,
@@ -329,13 +331,12 @@ M  END
         const alignedByFirstSubstr = scaffoldIsMolBlock && alignByFirstSubstr;
         const {haveReferenceSmarts, parentMolScaffoldMolString} = (details as any);
         if (alignedByFirstSubstr) {
-          const rdKitScaffoldMolCtx = this._fetchMol(scaffolds[0].molecule,
+          const scaffoldMol = this._fetchMol(scaffolds[0].molecule,
             parentMolScaffoldMolString ? [{molecule: parentMolScaffoldMolString}] : [], molRegenerateCoords,
-            false, {mergeQueryHs: true, isSubstructure: !parentMolScaffoldMolString}, false, engine).molCtx;
-          const rdKitScaffoldMol = rdKitScaffoldMolCtx.mol;
-          cruxMissed(rdKitScaffoldMol, scaffolds[0].molecule);
-          if (rdKitScaffoldMol) {
-            rdKitScaffoldMol.normalize_depiction(0);
+            false, {mergeQueryHs: true, isSubstructure: !parentMolScaffoldMolString}, false, engine).molCtx.mol;
+          cruxMissed(scaffoldMol, scaffolds[0].molecule);
+          if (scaffoldMol) {
+            scaffoldMol.normalize_depiction(0);
             if (molHasOwnCoords)
               mol.normalize_depiction(0);
             else if (!haveReferenceSmarts) {
@@ -367,7 +368,7 @@ M  END
 
             try {
               substructString = !scaffolds[0].isSuperstructure ?
-                mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify(alignOpts)) :
+                mol.generate_aligned_coords(scaffoldMol, JSON.stringify(alignOpts)) :
                 mol.get_substruct_match(mol!);
             } catch (e) {
               // exceptions should not be thrown anymore by RDKit, but let's play safe; one from Crux (a refusal) sends
@@ -448,7 +449,6 @@ M  END
 
   _addAtomsOrBonds(fromAtomsOrBonds: number[], toAtomsOrBonds: number[]): void {
     if (!toAtomsOrBonds) return;
-    // Use a Set for O(1) membership checks; the previous .includes() loop was O(n*m).
     const seen = new Set(toAtomsOrBonds);
     for (let j = 0; j < fromAtomsOrBonds.length; j++) {
       const item = fromAtomsOrBonds[j];
@@ -460,26 +460,15 @@ M  END
   }
 
   /**
-   * The cached molecule of `molString` by `engine`; without an engine, by the engine in effect, and in Crux mode by
-   * RDKit when Crux cannot read or lay it out (logged once).
+   * The cached molecule of `molString` by `engine`; without an engine, by the engine in effect
+   * ({@link _fetchMolByEngine}).
    */
   _fetchMol(molString: string, scaffolds: IColoredScaffold[], molRegenerateCoords: boolean,
     scaffoldRegenerateCoords: boolean, details: object = {}, alignByFirstSubstructure: boolean,
     engine?: ChemicalEngine): IMolRenderingInfo {
     if (engine === undefined) {
-      this._syncEngine();
-      engine = renderingModule(this.rdKitModule).engine;
-      if (engine === ChemicalEngine.Crux) {
-        const info = this._fetchMol(molString, scaffolds, molRegenerateCoords, scaffoldRegenerateCoords, details,
-          alignByFirstSubstructure, engine);
-        if (info.molCtx.mol !== null)
-          return info;
-        const rdkit = this._fetchMol(molString, scaffolds, molRegenerateCoords, scaffoldRegenerateCoords, details,
-          alignByFirstSubstructure, ChemicalEngine.RDKit);
-        if (rdkit.molCtx.mol !== null) // (a molecule neither engine reads is no fallback)
-          warnCruxFallback('rendering', `RDKit draws what Crux cannot read or lay out, e.g. ${molString}`);
-        return rdkit;
-      }
+      return this._fetchMolByEngine(molString, scaffolds, molRegenerateCoords, scaffoldRegenerateCoords, details,
+        alignByFirstSubstructure);
     }
     const name = engine + ' || ' + molString + ' || ' + JSON.stringify(scaffolds) + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + ' || ' +
@@ -493,6 +482,29 @@ M  END
     });
   }
 
+  /** {@link _fetchMol} by the engine in effect: in Crux mode by RDKit when Crux cannot read or lay the molecule out
+   * (logged once). */
+  private _fetchMolByEngine(molString: string, scaffolds: IColoredScaffold[], molRegenerateCoords: boolean,
+    scaffoldRegenerateCoords: boolean, details: object, alignByFirstSubstructure: boolean): IMolRenderingInfo {
+    this._syncEngine();
+    const fetch = (engine: ChemicalEngine) => this._fetchMol(molString, scaffolds, molRegenerateCoords,
+      scaffoldRegenerateCoords, details, alignByFirstSubstructure, engine);
+    if (renderingModule(this.rdKitModule).engine !== ChemicalEngine.Crux)
+      return fetch(ChemicalEngine.RDKit);
+    // a CXSMILES whose query features Crux's reader skips (the molecule's, a scaffold's): RDKit draws it
+    if (!(cruxReadsCxExtension(molString) && scaffolds.every((s) => cruxReadsCxExtension(s.molecule ?? '')))) {
+      warnCruxFallback('rendering', `RDKit draws a CXSMILES query Crux's reader skips, e.g. ${molString}`);
+      return fetch(ChemicalEngine.RDKit);
+    }
+    const crux = fetch(ChemicalEngine.Crux);
+    if (crux.molCtx.mol !== null)
+      return crux;
+    const rdkit = fetch(ChemicalEngine.RDKit);
+    if (rdkit.molCtx.mol !== null) // (a molecule neither engine reads is no fallback)
+      warnCruxFallback('rendering', `RDKit draws what Crux cannot read or lay out, e.g. ${molString}`);
+    return rdkit;
+  }
+
   _rendererGetOrCreate(
     width: number, height: number, molString: string, scaffolds: IColoredScaffold[],
     molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean,
@@ -501,8 +513,7 @@ M  END
     const fetchMolObj: IMolRenderingInfo =
       this._fetchMol(molString, scaffolds, molRegenerateCoords,
         scaffoldRegenerateCoords, details, alignByFirstSubstructure, engine);
-    const rdKitMolCtx = fetchMolObj.molCtx;
-    const rdKitMol = rdKitMolCtx.mol;//fetchMolObj.mol;
+    const molCtx = fetchMolObj.molCtx;
     const substruct = fetchMolObj.substruct;
     //merge row highlight data with substruct object from fetchMolObj
     const newSubstruct: ISubstruct = {};
@@ -531,12 +542,11 @@ M  END
       newSubstruct.highlightBondColors = substructureObj.highlightBondColors;
     }
 
-    const canvas = this.ensureCanvasSize(width, height);//new OffscreenCanvas(width, height);
+    const canvas = this.ensureCanvasSize(width, height);
     const ctx = canvas.getContext('2d', {willReadFrequently: true})!;
-    this.canvasCounter++;
-    if (rdKitMol != null) {
+    if (molCtx.mol != null) {
       const crux = fetchMolObj.engine === ChemicalEngine.Crux;
-      const drawn = drawRdKitMoleculeToOffscreenCanvas(rdKitMolCtx, width, height, canvas,
+      const drawn = drawRdKitMoleculeToOffscreenCanvas(molCtx, width, height, canvas,
         scaffolds.length ? substructureObj ? newSubstruct : substruct : substructureObj ?? null, renderingOptions,
         crux);
       if (!drawn && crux) {
@@ -618,10 +628,8 @@ M  END
       f.getContext('2d')?.putImageData(imageData, 0, 0);
       ctx.drawImage(f, 0, 0);
       ctx.restore();
-    } else {
-      //const image = offscreenCanvas.getContext('2d')!.getImageData(0, 0, w, h);
+    } else
       onscreenCanvas.getContext('2d', {willReadFrequently: true})!.putImageData(imageData, x, y);
-    }
   }
 
   _initScaffoldString(col: DG.Column, tagName: string): IColoredScaffold[] {
@@ -915,13 +923,8 @@ M  END
     // Mol is owned by molCache — DO NOT delete it.
     const molRenderingInfo = this._fetchMol(molString, scaffolds, false, false, {}, alignByFirstSubstructure, engine);
     if (molRenderingInfo.engine === ChemicalEngine.Crux) {
-      try {
-        return this._infoToSvg(molRenderingInfo, w, h, scaffolds);
-      } catch (e) {
-        noteCruxError(e);
-        warnCruxFallback('drawing', e);
-        return this._molToSvg(molString, w, h, scaffolds, alignByFirstSubstructure, ChemicalEngine.RDKit);
-      }
+      return cruxOrRdKit('drawing', () => this._infoToSvg(molRenderingInfo, w, h, scaffolds),
+        () => this._molToSvg(molString, w, h, scaffolds, alignByFirstSubstructure, ChemicalEngine.RDKit));
     }
     return this._infoToSvg(molRenderingInfo, w, h, scaffolds);
   }

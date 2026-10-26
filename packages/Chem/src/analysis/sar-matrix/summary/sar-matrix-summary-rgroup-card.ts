@@ -1,5 +1,4 @@
 import * as ui from 'datagrok-api/ui';
-import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {cachedAtomCount} from '../build/sar-matrix-decompose';
 import {RGROUP_THIN_SERIES, RGroupRow, SummaryData, SUM_ROWS} from './sar-matrix-summary-data';
 import {count} from '../sar-matrix-ui-common';
@@ -66,15 +65,14 @@ export class SummaryRGroupCard {
     if (rows.length === 0)
       return undefined;
     const line = ui.divText('', 'chem-sar-cp-hint');
-    const rdkit = getRdKitModule();
     let groups = 0;
     let references = 0;
     let n = 0;
     for (const row of rows) {
       const {matrix, ci} = row.win;
       const reference = matrix.refValues[matrix.columns[ci].position];
-      const atoms = cachedAtomCount(row.subst, rdkit);
-      const refAtoms = reference ? cachedAtomCount(reference, rdkit) : 0;
+      const atoms = cachedAtomCount(row.subst);
+      const refAtoms = reference ? cachedAtomCount(reference) : 0;
       if (atoms > 0 && refAtoms > 0) {
         groups += atoms;
         references += refAtoms;
@@ -98,7 +96,7 @@ export class SummaryRGroupCard {
     const {win} = row;
     const position = win.matrix.columns[win.ci].position;
     const reference = win.matrix.refValues[position] ?? '';
-    const n = cachedAtomCount(row.subst, getRdKitModule());
+    const n = cachedAtomCount(row.subst);
     const atoms = this.kit.badge(n ? `${n} atoms` : '—',
       'Heavy atoms including the attachment point: potency alone favours size.');
     const badges = [this.tallyBadge(row, opts.loser ? 'last' : 'best'), atoms];

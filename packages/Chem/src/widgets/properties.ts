@@ -8,11 +8,11 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {addCopyIcon} from '../utils/ui-utils';
 import {IChemProperty, OCLService, CHEM_PROP_MAP as PROP_MAP} from '../open-chem/ocl-service';
-import {ChemicalEngine, engineInEffect, isCruxRequested} from '../engine/chem-engine';
+import {ChemicalEngine, byEngineAsync, engineInEffect} from '../engine/chem-engine';
 import {ChemWasm, cruxModuleSync} from '../engine/crux-module';
-import {cruxOrRdKit, cruxOrRdKitAsync} from '../engine/fallback';
+import {cruxOrRdKit} from '../engine/fallback';
 import {getCruxService} from '../crux/crux-searches';
-import {withinSmilesLimit} from '../utils/chem-common';
+import {withinCruxReader} from '../crux/crux-service';
 
 const DGTypeMap = {
   'float': DG.TYPE.FLOAT,
@@ -54,7 +54,7 @@ export const CRUX_PROPERTY_METHODS: {[name: string]: string} = {
  * for a molecule Crux cannot read (the caller's OpenChemLib path then gives them).
  */
 function cruxProperties(molecule: string, names: string[]): {[name: string]: any} | null {
-  const m = withinSmilesLimit(molecule);
+  const m = withinCruxReader(molecule);
   if (engineInEffect() !== ChemicalEngine.Crux || m === null)
     return null;
   return cruxOrRdKit('properties', () => {
@@ -177,8 +177,8 @@ export async function getPropertiesAsColumns(smilesCol: DG.Column<string>, props
       oclService.terminate();
     }
   };
-  const props = isCruxRequested() ? await cruxOrRdKitAsync('properties', async () => {
-    return (await getCruxService()).chemProperties(smilesCol.toList().map(withinSmilesLimit), propsMap);
-  }, ocl) : await ocl();
+  const props = await byEngineAsync('properties', async () => {
+    return (await getCruxService()).chemProperties(smilesCol.toList().map(withinCruxReader), propsMap);
+  }, ocl);
   return propsMap.map((p) => DG.Column.fromList(DGTypeMap[PROP_MAP[p].type], p, props[p]));
 }

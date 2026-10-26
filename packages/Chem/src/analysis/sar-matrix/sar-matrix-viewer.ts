@@ -6,7 +6,8 @@ import * as DG from 'datagrok-api/dg';
 import '../../../css/sar-matrix.css';
 import {_package} from '../../package';
 import {getRdKitModule, getRdKitService} from '../../utils/chem-common-rdkit';
-import {isCruxRequested} from '../../engine/chem-engine';
+import {byEngineModule, engineGeneration, isCruxRequested} from '../../engine/chem-engine';
+import {withEngineMol} from './sar-matrix-engine';
 import {getCruxService} from '../../crux/crux-searches';
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {nestByContainment, rankMatrices, SarRankScheme} from './build/sar-matrix-ranking';
@@ -25,7 +26,7 @@ import {MakeListPanel} from './sar-matrix-make-list';
 import {MatrixPainter} from './render/sar-matrix-paint';
 import {SummaryPanel} from './summary/sar-matrix-summary-panel';
 import {TransferPanel} from './transfer/sar-matrix-transfer-panel';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 // Above the filter popup that opened the sketcher, which the platform stacks at 10000.
 const SKETCHER_DIALOG_Z = 10001;
@@ -70,21 +71,11 @@ function substituentMW(smiles: string): number {
   const cached = mwCache.get(smiles);
   if (cached !== undefined)
     return cached;
-  const rdkit = getRdKitModule();
-  let mol = null;
-  let mw = Number.POSITIVE_INFINITY;
-  try {
-    mol = rdkit.get_mol(smiles.replace(/\[\*:\d+\]/g, '[H]'));
-    if (mol && mol.is_valid()) {
-      const amw = JSON.parse(mol.get_descriptors()).amw;
-      if (typeof amw === 'number' && Number.isFinite(amw))
-        mw = amw;
-    }
-  } catch {
-    // leave Infinity — the substituent sorts last
-  } finally {
-    mol?.delete();
-  }
+  // "Chemical engine": the main thread's module (Crux's in Crux mode); Infinity where none reads it
+  const mw = withEngineMol('SAR substituent MW', smiles.replace(/\[\*:\d+\]/g, '[H]'), (mol) => {
+    const amw = JSON.parse(mol.get_descriptors()).amw;
+    return typeof amw === 'number' && Number.isFinite(amw) ? amw : null;
+  }) ?? Number.POSITIVE_INFINITY;
   if (mwCache.size >= MW_CACHE_MAX)
     mwCache.clear();
   mwCache.set(smiles, mw);
@@ -1129,20 +1120,10 @@ export class SarMatrixViewer extends DG.JsViewer {
     const source = matrix.siteKey || matrix.rows[0]?.coreSmiles || '';
     if (!source)
       return '';
-    return this.scaffoldKeys.getOrCreate(source, () => {
+    // "Chemical engine": the engine's canonical SMILES, as the build's own keys (cached per engine in effect)
+    return this.scaffoldKeys.getOrCreate(`${engineGeneration()} ${source}`, () => {
       const bare = source.replace(/\[\d+\*\]|\[\*:\d+\]/g, '[*]');
-      let mol = null;
-      let key = bare;
-      try {
-        mol = getRdKitModule().get_mol(bare);
-        if (mol?.is_valid())
-          key = mol.get_smiles();
-      } catch {
-        key = bare;
-      } finally {
-        mol?.delete();
-      }
-      return key;
+      return withEngineMol('SAR scaffold key', bare, (mol) => mol.get_smiles()) ?? bare;
     });
   }
 
@@ -1153,14 +1134,25 @@ export class SarMatrixViewer extends DG.JsViewer {
    * positions, which prunes the pairwise test and keeps the fold acyclic.
    *
    * Each key is parsed once as both query and molecule: parsing per pair costs tens of thousands of
-   * main-thread RDKit calls on a few hundred scaffolds.
+   * main-thread calls on a few hundred scaffolds.
    */
   private scaffoldRepresentatives(keys: string[]): Map<string, string> {
     const distinct = [...new Set(keys.filter((k) => k))];
     const signature = [...distinct].sort().join('\n');
     if (this.scaffoldRepsFor === signature)
       return this.scaffoldReps;
-    const rdkit = getRdKitModule();
+    // "Chemical engine": the keys parsed by the main thread's module, Crux's in Crux mode; RDKit's for the whole fold
+    // where Crux reads a key none from or throws
+    const reps = byEngineModule('SAR scaffold grouping', getRdKitModule(),
+      (module, crux) => this.foldScaffolds(distinct, module, crux))!;
+    this.scaffoldReps = reps;
+    this.scaffoldRepsFor = signature;
+    return reps;
+  }
+
+  /** {@link scaffoldRepresentatives}' fold of the distinct keys on one module; under Crux (`crux`) a key it reads none
+   *  from, or a match that fails, throws. */
+  private foldScaffolds(distinct: string[], module: RDModule, crux: boolean): Map<string, string> {
     const openness = new Map(distinct.map((key) => [key, (key.match(/\*/g) ?? []).length]));
     const ordered = [...distinct].sort((a, b) =>
       openness.get(b)! - openness.get(a)! || (a < b ? -1 : a > b ? 1 : 0));
@@ -1171,14 +1163,18 @@ export class SarMatrixViewer extends DG.JsViewer {
       if (!cache.has(key)) {
         let mol: RDMol | null = null;
         try {
-          mol = asQuery ? rdkit.get_qmol(key) : rdkit.get_mol(key);
+          mol = asQuery ? module.get_qmol(key) : module.get_mol(key);
           if (!asQuery && !mol?.is_valid()) {
             mol?.delete();
             mol = null;
           }
-        } catch {
+        } catch (e) {
+          if (crux)
+            throw e;
           mol = null;
         }
+        if (crux && mol === null)
+          throw new Error(`Crux reads no scaffold from ${key}`);
         cache.set(key, mol);
       }
       return cache.get(key) ?? null;
@@ -1191,7 +1187,9 @@ export class SarMatrixViewer extends DG.JsViewer {
       try {
         const match = JSON.parse(t.get_substruct_match(q));
         return Array.isArray(match?.atoms) && match.atoms.length > 0;
-      } catch {
+      } catch (e) {
+        if (crux)
+          throw e; // (the fallback notes a trap)
         return false;
       }
     };
@@ -1216,8 +1214,6 @@ export class SarMatrixViewer extends DG.JsViewer {
       for (const mol of [...queries.values(), ...targets.values()])
         mol?.delete();
     }
-    this.scaffoldReps = reps;
-    this.scaffoldRepsFor = signature;
     return reps;
   }
 

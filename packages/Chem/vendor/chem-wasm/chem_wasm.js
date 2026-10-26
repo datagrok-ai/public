@@ -1,6 +1,214 @@
 /* @ts-self-types="./chem_wasm.d.ts" */
 
 /**
+ * Groups of SMARTS compiled once (Chem's structural alert rule sets, its pharmacophore families), matched against
+ * many molecules (`match`; chem-wasm's chem_batch.rs docs).
+ */
+export class ChemSmartsSet {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        ChemSmartsSetFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_chemsmartsset_free(ptr, 0);
+    }
+    /**
+     * The number of groups.
+     * @returns {number}
+     */
+    get groups() {
+        const ret = wasm.chemsmartsset_groups(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * `lastWork()`: the last match's molecule × SMARTS pairs, those skipped by what the SMARTS needs, those run
+     * (measurements).
+     * @returns {Float64Array}
+     */
+    lastWork() {
+        const ret = wasm.chemsmartsset_lastWork(this.__wbg_ptr);
+        var v1 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+        return v1;
+    }
+    /**
+     * `match(molecules)`: `{flags, unread}`: `flags[i * groups + g]` 1 where some SMARTS of group `g` matches molecule
+     * `i` (each read as Chem's getMolSafe reads it), `unread` the molecules none of its readings reads.
+     * @param {(string | null)[]} molecules
+     * @returns {{flags: Uint8Array, unread: Uint32Array}}
+     */
+    match(molecules) {
+        const ret = wasm.chemsmartsset_match(this.__wbg_ptr, molecules);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * `new ChemSmartsSet(smarts, groupSizes, options?)`: group `g` is the next `groupSizes[g]` SMARTS, each read as
+     * `get_qmol` reads it; `options`: JSON `{"prefilter": true | false | "and", "searchOrder": bool}` (on by default:
+     * both shortcuts change no result; chem_batch.rs docs). Throws when the sizes do not add up to the SMARTS.
+     * @param {string[]} smarts
+     * @param {Uint32Array} group_sizes
+     * @param {string | null} [options]
+     */
+    constructor(smarts, group_sizes, options) {
+        const ptr0 = passArrayJsValueToWasm0(smarts, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passArray32ToWasm0(group_sizes, wasm.__wbindgen_malloc);
+        const len1 = WASM_VECTOR_LEN;
+        var ptr2 = isLikeNone(options) ? 0 : passStringToWasm0(options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len2 = WASM_VECTOR_LEN;
+        const ret = wasm.chemsmartsset_new(ptr0, len0, ptr1, len1, ptr2, len2);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        this.__wbg_ptr = ret[0];
+        ChemSmartsSetFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * `unreadSmarts()`: the SMARTS (indices into the list) `get_qmol` reads nothing from.
+     * @returns {Uint32Array}
+     */
+    unreadSmarts() {
+        const ret = wasm.chemsmartsset_unreadSmarts(this.__wbg_ptr);
+        var v1 = getArrayU32FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v1;
+    }
+}
+if (Symbol.dispose) ChemSmartsSet.prototype[Symbol.dispose] = ChemSmartsSet.prototype.free;
+
+/**
+ * A synthon library read for searching (`SynthonSpace.ReadTextFile`); the similarity
+ * fingerprints are built at its first similarity search.
+ */
+export class ChemSynthonSpace {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        ChemSynthonSpaceFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_chemsynthonspace_free(ptr, 0);
+    }
+    /**
+     * Part `part` of `parts` of the fingerprint build (`BuildSynthonFingerprints`), as bytes, for
+     * the copy of this library on another worker to install: the parts add up to the whole build.
+     * @param {number} part
+     * @param {number} parts
+     * @returns {Uint8Array}
+     */
+    fingerprintPart(part, parts) {
+        const ret = wasm.chemsynthonspace_fingerprintPart(this.__wbg_ptr, part, parts);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
+    }
+    /**
+     * Whether the similarity fingerprints are built (at the first similarity search, or by
+     * [`Self::install_fingerprints`]).
+     * @returns {boolean}
+     */
+    hasFingerprints() {
+        const ret = wasm.chemsynthonspace_hasFingerprints(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * Installs the fingerprints from every part of [`Self::fingerprint_part`], given as one buffer:
+     * each part's bytes after its length (u32, little-endian).
+     * @param {Uint8Array} parts
+     */
+    installFingerprints(parts) {
+        const ptr0 = passArray8ToWasm0(parts, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemsynthonspace_installFingerprints(this.__wbg_ptr, ptr0, len0);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
+     * The library from its text (RDKit's synthon text format: the Enamine / ChemSpace CSV);
+     * throws on a file RDKit cannot read.
+     * @param {string} text
+     */
+    constructor(text) {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemsynthonspace_new(ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        this.__wbg_ptr = ret[0];
+        ChemSynthonSpaceFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * The number of products the library describes.
+     * @returns {number}
+     */
+    numProducts() {
+        const ret = wasm.chemsynthonspace_numProducts(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    numReactions() {
+        const ret = wasm.chemsynthonspace_numReactions(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @returns {number}
+     */
+    numSynthons() {
+        const ret = wasm.chemsynthonspace_numSynthons(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * The script on `molecule` (module docs): its dataframe as JSON.
+     * @param {string} molecule
+     * @param {string} search_type
+     * @param {number} max_hits
+     * @param {number} similarity_cutoff
+     * @param {boolean} include_synthons
+     * @returns {string}
+     */
+    search(molecule, search_type, max_hits, similarity_cutoff, include_synthons) {
+        let deferred4_0;
+        let deferred4_1;
+        try {
+            const ptr0 = passStringToWasm0(molecule, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ptr1 = passStringToWasm0(search_type, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len1 = WASM_VECTOR_LEN;
+            const ret = wasm.chemsynthonspace_search(this.__wbg_ptr, ptr0, len0, ptr1, len1, max_hits, similarity_cutoff, include_synthons);
+            var ptr3 = ret[0];
+            var len3 = ret[1];
+            if (ret[3]) {
+                ptr3 = 0; len3 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred4_0 = ptr3;
+            deferred4_1 = len3;
+            return getStringFromWasm0(ptr3, len3);
+        } finally {
+            wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+        }
+    }
+}
+if (Symbol.dispose) ChemSynthonSpace.prototype[Symbol.dispose] = ChemSynthonSpace.prototype.free;
+
+/**
  * A finalised, queryable collection of molecules.
  *
  * `indexed` collections carry fingerprint sidecars and answer queries via the
@@ -2531,6 +2739,86 @@ export function chemAlerts(molecules, catalogs, atoms) {
 }
 
 /**
+ * `chemCanonicalSmiles(molecules)`: the JSON list of `molecules_to_canonical`'s SMILES (module docs).
+ * @param {(string | null)[]} molecules
+ * @returns {string}
+ */
+export function chemCanonicalSmiles(molecules) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ret = wasm.chemCanonicalSmiles(molecules);
+        var ptr1 = ret[0];
+        var len1 = ret[1];
+        if (ret[3]) {
+            ptr1 = 0; len1 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred2_0 = ptr1;
+        deferred2_1 = len1;
+        return getStringFromWasm0(ptr1, len1);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * `chemConformers(molecule, options?)`: the JSON of the script's table (module docs).
+ * @param {string} molecule
+ * @param {string | null} [options]
+ * @returns {string}
+ */
+export function chemConformers(molecule, options) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(molecule, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        var ptr1 = isLikeNone(options) ? 0 : passStringToWasm0(options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len1 = WASM_VECTOR_LEN;
+        const ret = wasm.chemConformers(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
+ * `chemCurate(molecules, options?)`: the JSON list of the script's `curated_molecule` per molecule (module docs).
+ * @param {(string | null)[]} molecules
+ * @param {string | null} [options]
+ * @returns {string}
+ */
+export function chemCurate(molecules, options) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        var ptr0 = isLikeNone(options) ? 0 : passStringToWasm0(options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemCurate(molecules, ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * `chemEmbed3d(molecule, options)`: the MOL block of `molecule` (a SMILES, or a MOL block when it holds `M  END`)
  * with its RDKit ETKDG coordinates, or `undefined`; throws on bad options and on a timeout (module docs).
  * @param {string} molecule
@@ -2568,6 +2856,144 @@ export function chemEmbed3dRecommendedOptions() {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * `chemFilterCatalog(molecules, catalog)`: per molecule 1 where the catalog matches, else 0 (module docs).
+ * @param {(string | null)[]} molecules
+ * @param {string} catalog
+ * @returns {Uint8Array}
+ */
+export function chemFilterCatalog(molecules, catalog) {
+    const ptr0 = passStringToWasm0(catalog, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.chemFilterCatalog(molecules, ptr0, len0);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v2 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v2;
+}
+
+/**
+ * `chemFingerprints(kind, details, molecules, smiles)`: the fingerprints Chem's RDKit worker code computes with
+ * `get_<kind>_fp_as_uint8array(details)` (`kind`: morgan, pattern, rdkit, maccs, atom_pair, topological_torsion),
+ * molecule `i`'s at `bytes[offsets[i] .. offsets[i + 1]]` where `present[i]`; `unread` the molecules Chem's getMolSafe
+ * reading reads none from; `smiles` the canonical SMILES when asked (chem_batch.rs docs).
+ * @param {string} kind
+ * @param {string | null | undefined} details
+ * @param {(string | null)[]} molecules
+ * @param {boolean} smiles
+ * @returns {{bytes: Uint8Array, offsets: Uint32Array, present: Uint8Array, unread: Uint32Array, smiles: (string | null)[] | null}}
+ */
+export function chemFingerprints(kind, details, molecules, smiles) {
+    const ptr0 = passStringToWasm0(kind, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    var ptr1 = isLikeNone(details) ? 0 : passStringToWasm0(details, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len1 = WASM_VECTOR_LEN;
+    const ret = wasm.chemFingerprints(ptr0, len0, ptr1, len1, molecules, smiles);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+}
+
+/**
+ * `chemGasteigerMap(molecule, contours, width?, height?)`: the JSON of the panel's picture and the charges, or
+ * `null` (module docs).
+ * @param {string} molecule
+ * @param {number} contours
+ * @param {number | null} [width]
+ * @param {number | null} [height]
+ * @returns {string}
+ */
+export function chemGasteigerMap(molecule, contours, width, height) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(molecule, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemGasteigerMap(ptr0, len0, contours, isLikeNone(width) ? Number.MAX_SAFE_INTEGER : (width) >> 0, isLikeNone(height) ? Number.MAX_SAFE_INTEGER : (height) >> 0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * `chemInchiInputs(molecules)`: per molecule `molecules_to_inchi`'s input for the InChI library, or `null` (module
+ * docs).
+ * @param {(string | null)[]} molecules
+ * @returns {(Uint8Array | null)[]}
+ */
+export function chemInchiInputs(molecules) {
+    const ret = wasm.chemInchiInputs(molecules);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+}
+
+/**
+ * `chemMurckoScaffolds(molecules)`: the JSON list of the script's `scaffolds` per molecule (module docs).
+ * @param {(string | null)[]} molecules
+ * @returns {string}
+ */
+export function chemMurckoScaffolds(molecules) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ret = wasm.chemMurckoScaffolds(molecules);
+        var ptr1 = ret[0];
+        var len1 = ret[1];
+        if (ret[3]) {
+            ptr1 = 0; len1 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred2_0 = ptr1;
+        deferred2_1 = len1;
+        return getStringFromWasm0(ptr1, len1);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * `chemMutate(molecule, options?)`: the JSON list of the script's `mutations` (module docs).
+ * @param {string} molecule
+ * @param {string | null} [options]
+ * @returns {string}
+ */
+export function chemMutate(molecule, options) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(molecule, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        var ptr1 = isLikeNone(options) ? 0 : passStringToWasm0(options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len1 = WASM_VECTOR_LEN;
+        const ret = wasm.chemMutate(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -2619,7 +3045,8 @@ export function chemQed(molecules) {
 
 /**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
- * is `"core,heavy,search,descriptors,scaffold-tree,inchi-input"`.
+ * is `"core,heavy,search,descriptors,scaffold-tree,inchi-input,chem-scripts,chem-conformers,chem-identifiers,chem-murcko,
+ * chem-filter-catalogs,synthon-search"`.
  * @returns {string}
  */
 export function chemWasmModules() {
@@ -3185,7 +3612,9 @@ export function standardize_smiles(smiles) {
 }
 
 /**
- * Panics as `Error`s with their message in the console (not a bare `unreachable`).
+ * Panics as `Error`s with their message in the console (not a bare `unreachable`); `std::sort`'s ties as
+ * RDKit-js's (Emscripten's libc++: `smi_compiler::cxx_sort::StdSort::Libcxx`, spike chem-rdkit-gaps-2), the
+ * calls that mirror a Python RDKit service excepted ([`PythonDefaults`]).
  */
 export function start() {
     wasm.start();
@@ -3445,6 +3874,10 @@ function __wbg_get_imports() {
             const ret = new Uint32Array(getArrayU32FromWasm0(arg0, arg1));
             return ret;
         },
+        __wbg_new_from_slice_9a868026ffa4208a: function(arg0, arg1) {
+            const ret = new Uint8Array(getArrayU8FromWasm0(arg0, arg1));
+            return ret;
+        },
         __wbg_new_from_slice_f545fd22ddc142b8: function(arg0, arg1) {
             const ret = new Float64Array(getArrayF64FromWasm0(arg0, arg1));
             return ret;
@@ -3529,6 +3962,12 @@ function __wbg_get_imports() {
     };
 }
 
+const ChemSmartsSetFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_chemsmartsset_free(ptr, 1));
+const ChemSynthonSpaceFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_chemsynthonspace_free(ptr, 1));
 const CollectionFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_collection_free(ptr, 1));
@@ -3720,6 +4159,13 @@ function handleError(f, args) {
 
 function isLikeNone(x) {
     return x === undefined || x === null;
+}
+
+function passArray32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getUint32ArrayMemory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
 }
 
 function passArray8ToWasm0(arg, malloc) {

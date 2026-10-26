@@ -1,5 +1,7 @@
-import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {clusterMcsByEngine, clusterRGroupsByEngine} from '../../../engine/analysis-jobs';
+import {atomCountsByEngine} from '../../../engine/molecule-jobs';
+import {engineGeneration, isCruxRequested} from '../../../engine/chem-engine';
+import {withEngineMol} from '../sar-matrix-engine';
 import {IRGroupAnalysisResult} from '../../../rdkit-service/rdkit-service-worker-substructure';
 import {FragmentLinks} from './sar-matrix-link';
 import {logSarTime} from '../sar-matrix-types';
@@ -60,57 +62,72 @@ export function median(values: number[]): number {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-// Each miss is a main-thread RDKit parse and keys recur heavily across clusters. Cleared wholesale
+// Each miss is a main-thread parse and keys recur heavily across clusters. Cleared wholesale
 // past the cap so neither map grows unbounded across a session.
 const heavyAtomCache = new Map<string, number>();
 const anchorAtomCache = new Map<string, number>();
 const canonicalCoreCache = new Map<string, string>();
 const DECOMPOSE_CACHE_MAX = 10000;
+/** Crux mode: a build's heavy-atom counts from the Crux workers ({@link prefetchAtomCounts}), read before the capped
+ *  cache; emptied when the last build using them ends. */
+let prefetchedAtomCounts: Map<string, number> | null = null;
+let prefetchUsers = 0;
+/** Fewer distinct structures than this are counted on the main thread. */
+const PREFETCH_MIN = 500;
 
 /** Heavy atoms of a structure, memoised: keys recur heavily across clusters and each miss is a
- *  main-thread RDKit parse. `asQuery` reads the string as a SMARTS anchor, which carries no validity
- *  flag of its own; anything that will not parse counts zero. */
-export function cachedAtomCount(smiles: string, rdkit: ReturnType<typeof getRdKitModule>,
-  asQuery = false): number {
+ *  main-thread parse ("Chemical engine": Crux's in Crux mode, RDKit's where Crux reads none). `asQuery`
+ *  reads the string as a SMARTS anchor, which carries no validity flag of its own; anything that will
+ *  not parse counts zero. */
+export function cachedAtomCount(smiles: string, asQuery = false): number {
+  const prefetched = asQuery ? undefined : prefetchedAtomCounts?.get(smiles);
+  if (prefetched !== undefined)
+    return prefetched;
   const cache = asQuery ? anchorAtomCache : heavyAtomCache;
   const cached = cache.get(smiles);
   if (cached !== undefined)
     return cached;
-  let mol = null;
-  let count = 0;
-  try {
-    mol = asQuery ? rdkit.get_qmol(smiles) : rdkit.get_mol(smiles);
-    count = asQuery ? mol?.get_num_atoms() ?? 0 : (mol && mol.is_valid() ? mol.get_num_atoms() : 0);
-  } catch {
-    count = 0;
-  } finally {
-    mol?.delete();
-  }
+  const count = withEngineMol('SAR atom count', smiles, (mol) => mol.get_num_atoms(), asQuery) ?? 0;
   if (cache.size >= DECOMPOSE_CACHE_MAX)
     cache.clear();
   cache.set(smiles, count);
   return count;
 }
 
+/** The heavy-atom counts of a build's structures, in Crux mode from the Crux workers in chunks (a column's worth of
+ *  main-thread parses froze the page), for {@link cachedAtomCount} until the returned release. */
+export async function prefetchAtomCounts(structures: string[]): Promise<() => void> {
+  prefetchUsers++;
+  const release = (): void => {
+    if (--prefetchUsers === 0)
+      prefetchedAtomCounts = null;
+  };
+  const distinct = !isCruxRequested() ? [] :
+    [...new Set(structures.filter((s) => s && !heavyAtomCache.has(s) && !prefetchedAtomCounts?.has(s)))];
+  if (distinct.length < PREFETCH_MIN)
+    return release;
+  try {
+    const counts = await atomCountsByEngine(distinct, (s) => cachedAtomCount(s));
+    prefetchedAtomCounts ??= new Map();
+    distinct.forEach((s, i) => prefetchedAtomCounts!.set(s, counts[i]));
+  } catch (e) {
+    release();
+    throw e;
+  }
+  return release;
+}
+
 /** Canonical SMILES of a matched core (the matrix row key), or the raw string when unparseable. */
-function canonicalCore(rdkit: ReturnType<typeof getRdKitModule>, coreRaw: string): string {
-  const cached = canonicalCoreCache.get(coreRaw);
+function canonicalCore(coreRaw: string): string {
+  // "Chemical engine": the engine's canonical SMILES, as the build's other keys (cached per engine in effect)
+  const key = `${engineGeneration()} ${coreRaw}`;
+  const cached = canonicalCoreCache.get(key);
   if (cached !== undefined)
     return cached;
-  let coreSmiles = coreRaw;
-  let coreMol = null;
-  try {
-    coreMol = rdkit.get_mol(coreRaw);
-    if (coreMol?.is_valid())
-      coreSmiles = coreMol.get_smiles();
-  } catch {
-    // keep the raw string
-  } finally {
-    coreMol?.delete();
-  }
+  const coreSmiles = withEngineMol('SAR core SMILES', coreRaw, (mol) => mol.get_smiles()) ?? coreRaw;
   if (canonicalCoreCache.size >= DECOMPOSE_CACHE_MAX)
     canonicalCoreCache.clear();
-  canonicalCoreCache.set(coreRaw, coreSmiles);
+  canonicalCoreCache.set(key, coreSmiles);
   return coreSmiles;
 }
 
@@ -118,12 +135,12 @@ function canonicalCore(rdkit: ReturnType<typeof getRdKitModule>, coreRaw: string
  *  smallest member, so those determine it while larger ones only widen the search. The resulting
  *  anchor still faces `anchorIsUsable` against the whole cluster. Sorting by size then string keeps
  *  the sample identical across runs. */
-function mcsSample(smiles: string[], rdkit: ReturnType<typeof getRdKitModule>): string[] {
+function mcsSample(smiles: string[]): string[] {
   // Unparseable input counts zero atoms, which would otherwise sort it to the front and make it the
   // member the affordability gate measures — letting a molecule nothing can read stand in for a small
   // one and admit an unbounded search.
   const ranked = [...new Set(smiles)]
-    .map((s) => ({s, atoms: cachedAtomCount(s, rdkit)}))
+    .map((s) => ({s, atoms: cachedAtomCount(s)}))
     .filter((r) => r.atoms > 0);
   ranked.sort((a, b) => a.atoms - b.atoms || (a.s < b.s ? -1 : a.s > b.s ? 1 : 0));
   return ranked.slice(0, MCS_SAMPLE_SIZE).map((r) => r.s);
@@ -143,21 +160,13 @@ function siteKeyAnchor(siteKey: string): string | null {
   const bare = siteKey.replace(/\(\[\d*\*(?::\d+)?\]\)/g, '').replace(/\[\d*\*(?::\d+)?\]/g, '');
   if (!bare)
     return null;
-  let mol = null;
-  try {
-    mol = getRdKitModule().get_mol(bare);
-    return mol?.is_valid() ? mol.get_smiles() : null;
-  } catch {
-    return null;
-  } finally {
-    mol?.delete();
-  }
+  return withEngineMol('SAR anchor', bare, (mol) => mol.get_smiles());
 }
 
 /** Whether a sample from {@link mcsSample} is worth attempting: at least two structures to compare,
  *  and a smallest member small enough to bound the search. */
-function mcsIsAffordable(sample: string[], rdkit: ReturnType<typeof getRdKitModule>): boolean {
-  return sample.length >= 2 && cachedAtomCount(sample[0], rdkit) <= MAX_MCS_ANCHOR_ATOMS;
+function mcsIsAffordable(sample: string[]): boolean {
+  return sample.length >= 2 && cachedAtomCount(sample[0]) <= MAX_MCS_ANCHOR_ATOMS;
 }
 
 interface ClusterPrep {
@@ -174,15 +183,14 @@ interface ClusterPrep {
 /** Reject an anchor too small to carry a shared multi-position core, or covering too little of the
  *  molecules — the leftover would become oversized R-groups that decompose badly. Takes the anchor
  *  rather than the prep, so a caller can weigh one without first writing it onto the prep. */
-function anchorIsUsable(anchor: string | null, smiles: string[],
-  rdkit: ReturnType<typeof getRdKitModule>): boolean {
+function anchorIsUsable(anchor: string | null, smiles: string[]): boolean {
   if (!anchor)
     return false;
-  const anchorHeavyAtoms = cachedAtomCount(anchor, rdkit, true);
+  const anchorHeavyAtoms = cachedAtomCount(anchor, true);
   if (anchorHeavyAtoms < MIN_ANCHOR_HEAVY_ATOMS)
     return false;
   const coverages = smiles
-    .map((s) => cachedAtomCount(s, rdkit))
+    .map((s) => cachedAtomCount(s))
     .filter((n) => n > 0)
     .map((n) => anchorHeavyAtoms / n);
   return median(coverages) >= MIN_MCS_COVERAGE;
@@ -191,8 +199,7 @@ function anchorIsUsable(anchor: string | null, smiles: string[],
 /** Build records from one cluster's RGD output, dropping molecules with any malformed substituent
  *  or a multi-component core. Returns null (caller falls back) when the RGD failed, assigned no R
  *  positions, or too few molecules decomposed cleanly. */
-function buildDecomposition(prep: ClusterPrep, res: IRGroupAnalysisResult | null,
-  rdkit: ReturnType<typeof getRdKitModule>): ClusterDecomposition | null {
+function buildDecomposition(prep: ClusterPrep, res: IRGroupAnalysisResult | null): ClusterDecomposition | null {
   // res.smiles[0] is the Core column; the rest are R1, R2, ...
   if (!res || res.colNames.length < 2)
     return null;
@@ -219,7 +226,7 @@ function buildDecomposition(prep: ClusterPrep, res: IRGroupAnalysisResult | null
     if (!clean || coreRaw.includes('.'))
       continue;
 
-    records.push({molIdx: prep.molIdx[i], coreSmiles: canonicalCore(rdkit, coreRaw), values});
+    records.push({molIdx: prep.molIdx[i], coreSmiles: canonicalCore(coreRaw), values});
   }
 
   if (records.length < 2 || records.length < matched * MIN_CLEAN_FRACTION)
@@ -242,8 +249,17 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
   useMcsAnchors: boolean = true,
   siteKeys: string[] = []): Promise<(ClusterDecomposition | null)[]> {
   const results = new Array<ClusterDecomposition | null>(clusterMembers.length).fill(null);
-  const rdkit = getRdKitModule();
+  const release = await prefetchAtomCounts(clusterMembers.flatMap((molIdx) =>
+    molIdx.length < 2 || molIdx.length > MAX_SAR_CLUSTER_SIZE ? [] : molIdx.map((k) => molecules[k])));
+  try {
+    return await decomposeWithAnchors(clusterMembers, molecules, useMcsAnchors, siteKeys, results);
+  } finally {
+    release();
+  }
+}
 
+async function decomposeWithAnchors(clusterMembers: number[][], molecules: string[], useMcsAnchors: boolean,
+  siteKeys: string[], results: (ClusterDecomposition | null)[]): Promise<(ClusterDecomposition | null)[]> {
   // Phase 1 — pick each cluster's anchor source, queueing the ones that need an MCS.
   const preps: ClusterPrep[] = [];
   const wholeMolMcs: {input: string[], prep: ClusterPrep}[] = [];
@@ -259,7 +275,7 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
     // Exact shared scaffold, already derived by the grouping. Measured against the same bar the MCS
     // anchors face and only taken when it clears it: a key can be a small fraction of the molecules
     // it keys, and a cluster the MCS could still anchor should reach the MCS.
-    if (siteAnchor && anchorIsUsable(siteAnchor, prep.smiles, rdkit)) {
+    if (siteAnchor && anchorIsUsable(siteAnchor, prep.smiles)) {
       prep.anchor = siteAnchor;
       continue;
     }
@@ -267,8 +283,8 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
       continue; // no anchor without an MCS; the assembler builds this cluster from a single position
     // Left without an anchor when the cluster is past the ceiling; the assembler then builds it from
     // a single position rather than a shared core.
-    const sample = mcsSample(prep.smiles, rdkit);
-    if (mcsIsAffordable(sample, rdkit)) {
+    const sample = mcsSample(prep.smiles);
+    if (mcsIsAffordable(sample)) {
       prep.anchorIsQuery = true;
       wholeMolMcs.push({input: sample, prep});
     }
@@ -285,7 +301,7 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
   }
 
   // Phase 3 — validate anchors on the main thread, then batch-decompose the survivors.
-  const decomposable = preps.filter((prep) => anchorIsUsable(prep.anchor, prep.smiles, rdkit));
+  const decomposable = preps.filter((prep) => anchorIsUsable(prep.anchor, prep.smiles));
   if (decomposable.length === 0)
     return results;
 
@@ -295,6 +311,6 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
   })));
   logSarTime(`R-group decomposition (${decomposable.length} clusters)`, t);
 
-  decomposable.forEach((prep, j) => results[prep.idx] = buildDecomposition(prep, rgd[j], rdkit));
+  decomposable.forEach((prep, j) => results[prep.idx] = buildDecomposition(prep, rgd[j]));
   return results;
 }

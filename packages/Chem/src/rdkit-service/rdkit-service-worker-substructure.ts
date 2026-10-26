@@ -7,7 +7,6 @@ import {RuleId} from '../panels/structural-alerts';
 import {SubstructureSearchType} from '../constants';
 import {hasNewLines, stringArrayToMolList} from '../utils/chem-common';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
-import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {queryNeedsSanitizedMolecules} from './query-features';
 
 export enum MolNotation {
@@ -30,13 +29,6 @@ export interface IRGroupAnalysisResult {
 export interface IMmpFragmentsResult {
   frags: [string, string][][];
   smiles: string[];
-}
-
-export type InverseSubstructureRes = {
-  inverse1: (ISubstruct | null)[],
-  inverse2: (ISubstruct | null)[],
-  fromAligned: string[],
-  toAligned: string[]
 }
 
 // ── Ring-closure SMILES joining (see linkRGroupFragments) ───────────────────

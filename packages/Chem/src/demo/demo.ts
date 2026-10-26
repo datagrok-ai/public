@@ -719,9 +719,6 @@ export async function _demoMMPA(): Promise<void> {
       grok.shell.windows.showHelp = true;
       grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#matched-molecular-pairs');
     }, 1000);
-
-    // grok.shell.windows.showHelp = true;
-    // grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/#matched-molecular-pairs');
   });
 }
 
@@ -797,7 +794,6 @@ export async function _demoActivityCliffs(): Promise<void> {
       await PackageFunctions.activityCliffs(table, molecules, table.col('In-vivo Activity')!,
         78, DimReductionMethods.T_SNE, BitArrayMetricsNames.Tanimoto,
         preprocessing, {}, true);
-      // tv = (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView;
       awaitCheck(() => {
         for (const v of tv.viewers) {
           if (v.type === DG.VIEWER.SCATTER_PLOT) {

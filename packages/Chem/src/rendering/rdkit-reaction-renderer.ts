@@ -1,3 +1,7 @@
+/**
+ * The reaction cell renderer and reaction drawing: RDKit's in both modes (Crux has no reaction drawing yet; engine/
+ * README.md, "What stays RDKit"). Its `rdKitModule` is RDKit's.
+ */
 import * as DG from 'datagrok-api/dg';
 import {RDModule, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {drawErrorCross, drawRdKitReactionToOffscreenCanvas} from '../utils/chem-common-rdkit';

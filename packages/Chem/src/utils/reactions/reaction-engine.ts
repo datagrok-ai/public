@@ -3,14 +3,13 @@
  * on the main thread, `get_rxn`, `run_reactants` and the molecules they read and write run on it (RDKit.js's calls;
  * the same products as RDKit on Chem's reactions, reaction files and enumeration demo: crux-core's decision
  * chem-wasm-ports), with RDKit behind them; on RDKit's module otherwise. Reaction drawing (the reaction renderer, the
- * dialogs' previews) stays RDKit's in both modes: crux has no `drawReaction` yet.
+ * dialogs' previews: reaction-drawing.ts) stays RDKit's in both modes: crux has no `drawReaction` yet.
  */
 import {RDModule, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ChemicalEngine, engineInEffect} from '../../engine/chem-engine';
 import {cruxLoadFailed, cruxModuleSync, noteCruxError} from '../../engine/crux-module';
-import {cruxOrRdKitAsync, warnCruxFallback} from '../../engine/fallback';
+import {cruxOrRdKit, cruxOrRdKitAsync, warnCruxFallback} from '../../engine/fallback';
 
-/** The engine the last reaction was set up on (tests). */
 let lastEngine: ChemicalEngine | null = null;
 
 /** The engine the last reaction (an EngineReaction, an enumeration) was set up on (tests). */
@@ -84,18 +83,14 @@ export class EngineReaction {
 
   /** `react(module, rxn)` on Crux in Crux mode, on RDKit when it throws there; RDKit's error propagates. */
   run<T>(react: (module: RDModule, rxn: RDReaction) => T): T {
-    if (this.crux && !cruxLoadFailed()) {
-      try {
-        return react(this.crux.module, this.crux.rxn);
-      } catch (e) {
-        noteCruxError(e);
-        warnCruxFallback(this.call, e);
-      }
-    }
-    const rxn = this.rdkitReaction();
-    if (!rxn)
-      throw new Error(`Invalid reaction SMARTS: "${this.smarts}".`);
-    return react(this.rdkit, rxn);
+    const rdkit = (): T => {
+      const rxn = this.rdkitReaction();
+      if (!rxn)
+        throw new Error(`Invalid reaction SMARTS: "${this.smarts}".`);
+      return react(this.rdkit, rxn);
+    };
+    const crux = this.crux;
+    return crux && !cruxLoadFailed() ? cruxOrRdKit(this.call, () => react(crux.module, crux.rxn), rdkit) : rdkit();
   }
 
   delete(): void {

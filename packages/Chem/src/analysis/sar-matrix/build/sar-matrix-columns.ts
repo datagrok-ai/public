@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../../../package';
-import {isMolBlock} from '../../../utils/chem-common';
-import {checkMoleculeValid} from '../../../utils/chem-common-rdkit';
+import {hasNewLines, isMolBlock} from '../../../utils/chem-common';
+import {MAX_SMILES_LENGTH} from '../../../utils/chem-constants';
+import {withEngineMol} from '../sar-matrix-engine';
 import {linkStaged, MAX_MATRIX_CELLS, MAX_MATRIX_COLS, MAX_MATRIX_ROWS, rankByFrequency}
   from './sar-matrix-assemble';
 import {ClusterDecomposition, PositionRecord} from './sar-matrix-decompose';
@@ -50,15 +51,9 @@ function applyCxLabels(text: string): string {
 export function standardizeFragment(text: string): {value: string, structure: boolean} {
   const molblock = isMolBlock(text);
   const written = molblock ? text : text.trim();
-  const mol = checkMoleculeValid(molblock ? text : relabel(applyCxLabels(written)));
-  let smiles: string;
-  try {
-    if (!mol?.is_valid())
-      return {value: written, structure: false};
-    smiles = mol.get_smiles();
-  } finally {
-    mol?.delete();
-  }
+  const smiles = engineSmiles(molblock ? text : relabel(applyCxLabels(written)));
+  if (smiles === null)
+    return {value: written, structure: false};
   const labelled = relabel(smiles);
   // An isotope dummy orders the atoms differently from a numbered one, so the relabelled form is canonicalized again.
   return {value: labelled === smiles ? smiles : standardizeFragment(labelled).value, structure: true};
@@ -316,13 +311,16 @@ export function decomposeByColumns(spec: SarFragmentColumns, series: (string | n
 
 const CHECK_SAMPLE = 300;
 
+/** A structure's canonical SMILES by the "Chemical engine" (Crux's in Crux mode, as the build's other structures;
+ *  RDKit's where Crux reads none), null where none reads it or it is a SMILES over Chem's length limit. */
+function engineSmiles(molecule: string): string | null {
+  if (!hasNewLines(molecule) && molecule?.length > MAX_SMILES_LENGTH)
+    return null;
+  return withEngineMol('SAR canonical SMILES', molecule, (mol) => mol.get_smiles());
+}
+
 export function canonicalSmiles(molecule: string): string {
-  const mol = checkMoleculeValid(molecule);
-  try {
-    return mol?.is_valid() ? mol.get_smiles() : '';
-  } finally {
-    mol?.delete();
-  }
+  return engineSmiles(molecule) ?? '';
 }
 
 /** The largest component without stereo, canonical. */

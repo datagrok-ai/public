@@ -8,13 +8,12 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {IFpResult} from './rdkit-service-worker-similarity';
 import type {FingerprintOptions} from '../utils/fingerprint-options';
 import {LockedEntity} from '../utils/locked-entity';
-import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
+import {clusterMcsSmiles, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {PackageFunctions} from '../package';
 import {SubstructureSearchType} from '../constants';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {getRDKitFpAsUint8Array} from '../chem-searches';
 import {IMmpFragmentsResult, IRGroupAnalysisResult} from './rdkit-service-worker-substructure';
-import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 export interface IParallelBatchesRes {
   getProgress: () => number,
   setTerminateFlag: () => void,
@@ -40,25 +39,7 @@ export type SubstructureSearchBatchResult = {
  */
 const MAX_WORKERS = 16;
 
-/**
- * Each cluster's MCS as SMILES ('' for none) from FMCS's SMARTS (`mcs`, RdKitService.clusterMCS' raw result), written
- * by `module` (RDKit's; Crux's in Crux mode, engine/analysis-jobs.ts).
- */
-export function clusterMcsSmiles(mcs: string[], clusteredMolecules: string[][], module: RDModule): string[] {
-  return mcs.map((it, i) => {
-    if (!it)
-      return '';
-    try {
-      // a one-molecule cluster is its own MCS: read as a query, its implicit hydrogens would be lost
-      const mol = clusteredMolecules[i].length === 1 ? getMolSafe(it, {}, module).mol : getQueryMolSafe(it, '', module);
-      const smiles = mol?.get_smiles();
-      mol?.delete();
-      return smiles ?? '';
-    } catch {}
-    return '';
-  });
-}
-
+/** The RDKit worker pool (rdkit.worker.ts): RDKit mode's column work, and RDKit behind Crux's (engine/README.md). */
 export class RdKitService {
   workerCount: number;
   _initWaiters?: Promise<any>[];

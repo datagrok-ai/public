@@ -5,11 +5,11 @@ import {oclMol, renderDescription} from '../utils/chem-common-ocl';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {PackageFunctions} from '../package';
 import {OCLService} from '../open-chem/ocl-service';
-import {ChemicalEngine, engineInEffect, isCruxRequested} from '../engine/chem-engine';
+import {ChemicalEngine, byEngineAsync, engineInEffect} from '../engine/chem-engine';
 import {ChemWasm, cruxModuleSync} from '../engine/crux-module';
-import {cruxOrRdKit, cruxOrRdKitAsync} from '../engine/fallback';
+import {cruxOrRdKit} from '../engine/fallback';
 import {getCruxService} from '../crux/crux-searches';
-import {withinSmilesLimit} from '../utils/chem-common';
+import {withinCruxReader} from '../crux/crux-service';
 import '../../css/chem.css';
 
 /**
@@ -37,7 +37,7 @@ export const QED_COLUMN = 'QED';
  * `chemQed`; null otherwise, and for a molecule Crux cannot read (OpenChemLib's score then shows).
  */
 export function cruxQed(molecule: string): {[key: string]: number} | null {
-  const m = withinSmilesLimit(molecule);
+  const m = withinCruxReader(molecule);
   if (engineInEffect() !== ChemicalEngine.Crux || m === null)
     return null;
   return cruxOrRdKit('drugLikeness', () => {
@@ -62,10 +62,8 @@ export async function getDrugLikenessColumn(molCol: DG.Column<string>): Promise<
       oclService.terminate();
     }
   };
-  if (!isCruxRequested())
-    return ocl();
-  return cruxOrRdKitAsync('drugLikeness', async () => {
-    const values = await (await getCruxService()).chemQed(molCol.toList().map(withinSmilesLimit));
+  return byEngineAsync('drugLikeness', async () => {
+    const values = await (await getCruxService()).chemQed(molCol.toList().map(withinCruxReader));
     return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, QED_COLUMN, values[QED_COLUMN]);
   }, ocl);
 }

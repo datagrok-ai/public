@@ -397,6 +397,9 @@ category('isSmarts', async () => {
   });
 
   test('benchmark.PackageFunctions.isSmarts.100000', async () => {
+    // a timing: with --benchmark only
+    if (!DG.Test.isInBenchmark)
+      return;
     const strings = await demoMoleculeStrings();
     const t0 = performance.now();
     for (let i = 0; i < 100000; i++)
@@ -417,7 +420,7 @@ category('isSmarts', async () => {
     expect(ms < 3000, true, `100,000 calls took ${ms.toFixed(0)} ms`);
     return `100,000 strings of ${strings.length}: ${ms.toFixed(0)} ms; ` +
       `without the prefilter ~${unfiltered.toFixed(0)} ms (5,000 timed, x 20)`;
-  });
+  }, {benchmark: true});
 
   // js-api: DG.chem.Sketcher.setMolecule, behind the field's Enter, Recent and Favourites, the substructure filter, the
   // similarity viewer, the molecule cell editor and the pinned column's editor

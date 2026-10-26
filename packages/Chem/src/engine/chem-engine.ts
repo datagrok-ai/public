@@ -4,10 +4,10 @@
  * objects from Chem in both modes (`getRdKitModule`, `getRdKitService`).
  */
 import * as DG from 'datagrok-api/dg';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {_package} from '../package';
 import {cruxModuleSync, cruxLoadFailed, loadCrux} from './crux-module';
-import {cruxOrRdKit, warnCruxFallback} from './fallback';
+import {cruxOrRdKit, cruxOrRdKitAsync, warnCruxFallback} from './fallback';
 
 export enum ChemicalEngine {
   RDKit = 'RDKit',
@@ -117,6 +117,15 @@ export function onEngineSwitch(listener: () => void): () => void {
   };
 }
 
+/**
+ * A call by the setting's engine (a worker job, a calculation, a script's replacement): in Crux mode `crux()`, and
+ * `rdkit()` (the RDKit path: the RDKit pool, a script, the container) when it fails, logged as a fallback
+ * ({@link cruxOrRdKitAsync}); in RDKit mode `rdkit()`.
+ */
+export function byEngineAsync<T>(call: string, crux: () => Promise<T>, rdkit: () => Promise<T>): Promise<T> {
+  return isCruxRequested() ? cruxOrRdKitAsync(call, crux, rdkit) : rdkit();
+}
+
 /** The module drawing is done with: Crux's (RDKit.js-shaped) in Crux mode once it is ready, else RDKit's. */
 export function renderingModule(rdKitModule: RDModule): {module: RDModule, engine: ChemicalEngine} {
   if (engineInEffect() === ChemicalEngine.Crux)
@@ -125,13 +134,13 @@ export function renderingModule(rdKitModule: RDModule): {module: RDModule, engin
 }
 
 /**
- * A one-molecule job on the main thread (a context panel's) by the engine in effect: in Crux mode, once Crux is ready,
- * `job(Crux's module, true)`, and `job(rdKitModule, false)` where it gives null (a molecule Crux cannot read) or
- * throws; in RDKit mode on `rdKitModule`. A cache `job` fills holds one map per module: objects of one module never
- * reach the other.
+ * A one-molecule job on the main thread (a context panel's, a drawing) by the engine in effect: in Crux mode, once Crux
+ * is ready, `job(Crux's module, true)`, and `job(rdKitModule, false)` where it gives null (a molecule Crux cannot read)
+ * or throws, logged as a fallback (`fallback`: the log's message, when RDKit gave a result); in RDKit mode on
+ * `rdKitModule`. A cache `job` fills holds one map per module: objects of one module never reach the other.
  */
 export function byEngineModule<T>(call: string, rdKitModule: RDModule,
-  job: (module: RDModule, crux: boolean) => T | null): T | null {
+  job: (module: RDModule, crux: boolean) => T | null, fallback?: string): T | null {
   const {module, engine} = renderingModule(rdKitModule);
   if (engine !== ChemicalEngine.Crux)
     return job(rdKitModule, false);
@@ -144,8 +153,28 @@ export function byEngineModule<T>(call: string, rdKitModule: RDModule,
     return crux;
   const rdkit = job(rdKitModule, false);
   if (!threw && rdkit !== null)
-    warnCruxFallback(call, 'Crux read no molecule, RDKit was asked');
+    warnCruxFallback(call, fallback ?? 'Crux read no molecule, RDKit was asked');
   return rdkit;
+}
+
+/**
+ * `read(mol)` of `molecule` parsed on one engine's `module` (`get_mol`, or `get_qmol` with `asQuery`), deleted after;
+ * null where it reads none. Under Crux (`crux`, as {@link byEngineModule} hands it) what the module throws is thrown,
+ * so that RDKit does the molecule (the fallback notes a trap); on RDKit it is null.
+ */
+export function withMol<T>(module: RDModule, crux: boolean, molecule: string, read: (mol: RDMol) => T | null,
+  asQuery = false): T | null {
+  let mol: RDMol | null = null;
+  try {
+    mol = asQuery ? module.get_qmol(molecule) : module.get_mol(molecule);
+    return mol ? read(mol) : null;
+  } catch (e) {
+    if (crux)
+      throw e;
+    return null;
+  } finally {
+    mol?.delete();
+  }
 }
 
 /** In Crux mode, waits for the Crux module (true when it is ready; false in RDKit mode or when it failed to load). */

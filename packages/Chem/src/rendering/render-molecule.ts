@@ -25,6 +25,7 @@ export function renderMolecule(
   moleculeHost.style.width = (options.width).toString() + 'px';
   moleculeHost.style.height = (options.height).toString() + 'px';
 
+  // 'RDKit' names the Molecule cell renderer, which draws by the engine in effect
   const renderFunctions = DG.Func.find({meta: {chemRendererName: options.renderer}});
   if (renderFunctions.length > 0) {
     renderFunctions[0].apply().then((rendndererObj) => {
@@ -63,12 +64,6 @@ export function renderMolecule(
   div.append(moleculeHost);
 
   return div;
-}
-
-export function _svgDiv(mol: any): HTMLDivElement {
-  const root = ui.div();
-  root.innerHTML = mol.get_svg();
-  return root;
 }
 
 function showMoleculeMenu(molStr: string) {

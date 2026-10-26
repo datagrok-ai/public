@@ -80,11 +80,6 @@ export class MpoContextPanel {
       ...MpoContextPanel.HISTOGRAM_OPTIONS,
       valueColumnName: columnName,
     });
-
-    // Uncomment to disable interactivity
-    // ['mousedown', 'click', 'dblclick'].forEach((ev) =>
-    //   hist.root.addEventListener(ev, (e) => e.stopPropagation(), true),
-    // );
     return hist;
   }
 

@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../../../package';
-import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {MESSAGE_MALFORMED} from '../../../constants';
 import {isCruxRequested} from '../../../engine/chem-engine';
 import {convertMolNotationByEngine} from '../../../engine/worker-jobs';
@@ -13,7 +12,7 @@ import {scaleActivity} from '../../molecular-matched-pairs/mmp-viewer/mmpa-utils
 import {assembleMultiPositionMatrix, linkStaged} from './sar-matrix-assemble';
 import {canonicalSmiles, checkAgainstMolecules, cutWarning, decomposeByColumns, SarFragmentColumns, SeriesCut}
   from './sar-matrix-columns';
-import {cachedAtomCount, ClusterDecomposition, decomposeClusters} from './sar-matrix-decompose';
+import {cachedAtomCount, ClusterDecomposition, decomposeClusters, prefetchAtomCounts} from './sar-matrix-decompose';
 import {computeMatrixConfidence} from './sar-matrix-confidence';
 import {buildMatchedSeries, buildCoarserLevels, clusterRelatedCores, groupSeriesByColumn, groupSeriesBySite,
   poolUngroupedSeries, poolUngroupedMolecules}
@@ -69,12 +68,18 @@ function canonicalByEngine(smiles: string[]): Promise<string[]> {
  *  engine (fragmenting a salt carries the counter-ion on a substituent; counted in atoms, since a counter-ion such
  *  as citrate can be the longer string); '' for a row that cannot be read. */
 async function parentStructures(structures: string[]): Promise<string[]> {
-  const rdkit = getRdKitModule();
-  const size = (component: string): number => cachedAtomCount(component, rdkit);
+  const size = (component: string): number => cachedAtomCount(component);
   const parents = structures.map((s) => s === MESSAGE_MALFORMED ? '' : s);
   const mixtures = parents.flatMap((s, i) => s.includes('.') ? [i] : []);
-  const largest = await canonicalByEngine(mixtures.map((i) => parents[i].split('.')
-    .reduce((a, b) => size(b) > size(a) || (size(b) === size(a) && b > a) ? b : a)));
+  // Crux mode: the components' atom counts from the Crux workers (a table of salts froze the page)
+  const release = await prefetchAtomCounts(mixtures.flatMap((i) => parents[i].split('.')));
+  let largest: string[];
+  try {
+    largest = await canonicalByEngine(mixtures.map((i) => parents[i].split('.')
+      .reduce((a, b) => size(b) > size(a) || (size(b) === size(a) && b > a) ? b : a)));
+  } finally {
+    release();
+  }
   mixtures.forEach((i, k) => parents[i] = largest[k] === MESSAGE_MALFORMED ? '' : largest[k]);
   return parents;
 }

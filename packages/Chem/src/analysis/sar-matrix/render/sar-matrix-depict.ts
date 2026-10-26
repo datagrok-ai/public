@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {getRdKitModule} from '../../../utils/chem-common-rdkit';
+import {withEngineMol} from '../sar-matrix-engine';
 import {getMoleculeRenderer} from '../../../package';
 import {SarMatrix} from '../sar-matrix-types';
 import {attachmentNumbers} from '../build/sar-matrix-link';
@@ -30,20 +30,11 @@ export function buildAlignmentTemplate(coreSmiles: string): string | null {
   const cached = templateCache.get(coreSmiles);
   if (cached !== undefined)
     return cached;
-  const rdkit = getRdKitModule();
-  let mol = null;
-  let template: string | null = null;
-  try {
-    mol = rdkit.get_mol(coreSmiles.replace(/\[\*:\d+\]/g, '[H]'));
-    if (mol && mol.is_valid()) {
-      mol.set_new_coords();
-      template = mol.get_molblock();
-    }
-  } catch {
-    template = null;
-  } finally {
-    mol?.delete();
-  }
+  // "Chemical engine": laid out by the main thread's module (Crux's in Crux mode, which draws the cells)
+  const template = withEngineMol('SAR template', coreSmiles.replace(/\[\*:\d+\]/g, '[H]'), (mol) => {
+    mol.set_new_coords();
+    return mol.get_molblock();
+  });
   if (templateCache.size >= TEMPLATE_CACHE_MAX)
     templateCache.clear();
   templateCache.set(coreSmiles, template);
@@ -56,23 +47,19 @@ export function alignToTemplate(molStr: string, templateMolblock: string): strin
   const cached = alignCache.get(key);
   if (cached !== undefined)
     return cached;
-  const rdkit = getRdKitModule();
-  let template = null;
-  let mol = null;
-  let result = molStr;
-  try {
-    template = rdkit.get_mol(templateMolblock);
-    mol = rdkit.get_mol(molStr);
-    if (template && mol && mol.is_valid()) {
+  // "Chemical engine": aligned by the main thread's module (Crux's in Crux mode, which draws the cells), RDKit's where
+  // Crux reads neither or throws
+  const result = withEngineMol('SAR alignment', molStr, (mol, module) => {
+    const template = module.get_mol(templateMolblock);
+    try {
+      if (!template)
+        return null;
       mol.generate_aligned_coords(template, ALIGN_OPTS);
-      result = mol.get_molblock() || molStr;
+      return mol.get_molblock() || molStr;
+    } finally {
+      template?.delete();
     }
-  } catch {
-    result = molStr;
-  } finally {
-    template?.delete();
-    mol?.delete();
-  }
+  }) ?? molStr;
   if (alignCache.size >= ALIGN_CACHE_MAX)
     alignCache.clear();
   alignCache.set(key, result);
@@ -114,22 +101,12 @@ function starNonColumnSites(molblock: string, columnOrdinal: number): string {
 export function coreDepictionBlock(smiles: string, columnOrdinal: number): string {
   if (!smiles)
     return smiles;
-  return coreBlockCache.getOrCreate(`${columnOrdinal} ${smiles}`, () => {
-    let mol = null;
-    let block = smiles;
-    try {
-      mol = getRdKitModule().get_mol(smiles);
-      if (mol?.is_valid()) {
-        mol.set_new_coords();
-        block = starNonColumnSites(mol.get_molblock() || smiles, columnOrdinal);
-      }
-    } catch {
-      block = smiles;
-    } finally {
-      mol?.delete();
-    }
-    return block;
-  });
+  // "Chemical engine": laid out by the main thread's module (Crux's in Crux mode, which draws it)
+  return coreBlockCache.getOrCreate(`${columnOrdinal} ${smiles}`, () => withEngineMol('SAR core depiction', smiles,
+    (mol) => {
+      mol.set_new_coords();
+      return starNonColumnSites(mol.get_molblock() || smiles, columnOrdinal);
+    }) ?? smiles);
 }
 
 /**
