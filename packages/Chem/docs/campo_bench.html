@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>caMPO weighting — verification bench</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #ffffff; --panel: #f6f7f9; --line: #e2e4e9; --line-strong: #c9ccd3;
+  --text: #2b2e35; --muted: #5d616d; --accent: #1a62a8; --accent-soft: #e8f0fa;
+  --pos: #1f77b4; --neg: #ff7f0e; --pin: #2ca02c; --drop: #8a8f99; --equal: #d62728;
+  --err: #b3261e; --err-bg: #fdecea; --warn: #7a4a00; --warn-bg: #fff4e0; --ok: #1e7a33; --ok-bg: #e7f5ea;
+  --hist: #9cc3e6;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1d22; --panel: #22252b; --line: #33363e; --line-strong: #4a4e59;
+    --text: #e6e7ea; --muted: #a6aab4; --accent: #7ab0ea; --accent-soft: #1f2c3b;
+    --pos: #4c9be0; --neg: #ff9a3c; --pin: #52c152; --drop: #8f949e; --equal: #ff6b6b;
+    --err: #ff8a80; --err-bg: #3a1f1f; --warn: #ffcc80; --warn-bg: #3a2e1a; --ok: #8fd99f; --ok-bg: #1d3323;
+    --hist: #4a78a6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1d22; --panel: #22252b; --line: #33363e; --line-strong: #4a4e59;
+  --text: #e6e7ea; --muted: #a6aab4; --accent: #7ab0ea; --accent-soft: #1f2c3b;
+  --pos: #4c9be0; --neg: #ff9a3c; --pin: #52c152; --drop: #8f949e; --equal: #ff6b6b;
+  --err: #ff8a80; --err-bg: #3a1f1f; --warn: #ffcc80; --warn-bg: #3a2e1a; --ok: #8fd99f; --ok-bg: #1d3323;
+  --hist: #4a78a6;
+  color-scheme: dark;
+}
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 Roboto, "Segoe UI", Arial, sans-serif; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header { padding: 16px 20px 12px; border-bottom: 1px solid var(--line); }
+header h1 { margin: 0; font-size: 18px; font-weight: 500; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 78ch; }
+
+.layout { display: flex; flex-wrap: wrap; align-items: stretch; min-height: calc(100vh - 80px); }
+.form { flex: 1 1 400px; max-width: 520px; padding: 16px 20px 28px; border-right: 1px solid var(--line); }
+.dock { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; }
+
+.field { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: center; column-gap: 10px; margin-bottom: 10px; }
+.field label { color: var(--muted); }
+.field select, .field input[type="number"] { border: 0; border-bottom: 1px solid var(--line-strong); background: transparent; padding: 4px 2px; }
+.check { display: flex; align-items: center; gap: 8px; margin: 2px 0 10px 120px; }
+.hint { color: var(--muted); font-size: 12px; font-style: italic; margin: -4px 0 12px 120px; }
+.group { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px; }
+.group h2 { font-size: 13px; font-weight: 500; margin: 0 0 10px; }
+
+.props { display: grid; grid-template-columns: minmax(70px, 1fr) 72px 120px; column-gap: 12px; }
+.props .head { font-weight: 500; padding: 6px 0; border-bottom: 1px solid var(--line-strong); }
+.props .cell { padding: 6px 0; border-bottom: 1px solid var(--line); min-height: 38px; display: flex; flex-direction: column; justify-content: center; }
+.props .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.props .name.dropped { color: var(--drop); }
+.num-input { width: 64px; border: 0; border-bottom: 1px solid var(--line-strong); background: transparent; padding: 3px 2px; font-family: "Roboto Mono", monospace; }
+.num-input[aria-invalid="true"] { border-bottom: 2px solid var(--err); }
+.num-input:disabled { color: var(--drop); border-bottom-style: dotted; }
+.msg { font-size: 11px; color: var(--err); margin-top: 2px; }
+.note { font-size: 11px; color: var(--warn); margin-top: 2px; }
+.wbox { display: flex; align-items: center; gap: 8px; }
+.wval { font-family: "Roboto Mono", monospace; font-weight: 500; width: 52px; }
+.wval.zero { color: var(--drop); }
+.pin { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; border-radius: 3px; cursor: pointer; color: var(--drop); padding: 0; }
+.pin:hover { background: var(--accent-soft); }
+.pin.on { color: var(--accent); }
+
+.banner { margin-top: 12px; padding: 8px 10px; border-radius: 4px; font-size: 12px; }
+.banner.err { background: var(--err-bg); color: var(--err); }
+.banner.warn { background: var(--warn-bg); color: var(--warn); }
+.stats { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; font-size: 12px; margin-top: 4px; }
+.stats dt { color: var(--muted); }
+.stats dd { margin: 0; font-family: "Roboto Mono", monospace; }
+
+.tabs { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding: 0 12px; position: sticky; top: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 2; }
+.tabs button { border: 0; background: transparent; padding: 10px 14px; color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+.pane { padding: 16px 18px 28px; }
+.pane[hidden] { display: none; }
+.pane-note { color: var(--muted); font-size: 12px; margin: 0 0 12px; max-width: 80ch; }
+
+.scroll { overflow-x: auto; }
+.corr { border-collapse: collapse; font-size: 13px; }
+.corr th { font-weight: 700; font-size: 12px; text-align: left; vertical-align: bottom; padding: 4px; width: 54px; max-width: 54px; word-break: break-all; line-height: 1.2; }
+.corr th.rowh { font-weight: 400; color: var(--muted); text-align: left; white-space: nowrap; border-right: 2px solid var(--line-strong); padding-right: 10px; width: auto; max-width: none; }
+.corr th.rowh .t { color: #c2408f; margin-right: 10px; }
+.corr td { width: 54px; height: 28px; text-align: center; border: 1px solid var(--bg); padding: 0; position: relative; }
+.corr td.editable { cursor: pointer; }
+.corr td.editable:hover { outline: 1px solid var(--accent); outline-offset: -1px; }
+.corr td input { width: 100%; height: 100%; border: 0; text-align: center; font: 13px "Roboto Mono", monospace; background: var(--bg); }
+.hist { position: absolute; left: 3px; right: 5px; top: 3px; bottom: 1px; display: flex; align-items: flex-end; gap: 1px; }
+.hist span { flex: 1 1 0; background: var(--hist); }
+
+.charts { display: flex; flex-wrap: wrap; gap: 16px; }
+.viewer { flex: 1 1 320px; min-width: 0; border: 1px solid var(--line); padding: 8px 10px 6px; }
+.viewer h3 { margin: 0 0 6px; font-size: 13px; font-weight: 400; color: var(--muted); }
+.viewer svg { display: block; width: 100%; height: auto; }
+.viewer.empty { display: flex; align-items: center; justify-content: center; color: var(--muted); min-height: 120px; font-size: 12px; text-align: center; }
+
+table.data { border-collapse: collapse; font-size: 12px; }
+table.data th, table.data td { padding: 5px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+table.data th { font-weight: 500; color: var(--muted); }
+table.data td:first-child, table.data th:first-child { text-align: left; }
+table.data td { font-family: "Roboto Mono", monospace; }
+table.data td:first-child { font-family: inherit; font-weight: 500; }
+
+.tests { display: flex; flex-direction: column; gap: 6px; max-width: 900px; }
+.test { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; }
+.badge { font-size: 11px; font-weight: 500; text-align: center; border-radius: 3px; padding: 2px 0; align-self: start; }
+.badge.pass { background: var(--ok-bg); color: var(--ok); }
+.badge.fail { background: var(--err-bg); color: var(--err); }
+.test .d { color: var(--muted); font-size: 12px; font-family: "Roboto Mono", monospace; overflow-wrap: anywhere; }
+.btn { border: 1px solid var(--line-strong); background: var(--bg); color: var(--accent); border-radius: 3px; padding: 6px 12px; font-weight: 500; cursor: pointer; }
+.btn:hover { background: var(--accent-soft); }
+
+@media (max-width: 760px) {
+  .form { max-width: none; border-right: 0; border-bottom: 1px solid var(--line); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>caMPO weighting — verification bench</h1>
+  <p>Runs the computation from the specification (Cholesky inversion, element-wise weights, clipping, priorities, pins) on preset correlation matrices or on generated data, with the same viewers and validation rules.</p>
+</header>
+
+<main class="layout">
+  <section class="form" aria-label="Profile form">
+    <div class="field">
+      <label for="source">Source</label>
+      <select id="source">
+        <option value="matrix">Correlation matrix</option>
+        <option value="data">Generated data</option>
+      </select>
+    </div>
+    <div class="hint" id="sourceHint">R is used as is. Click a cell in the correlation plot to edit it.</div>
+
+    <div class="field">
+      <label for="preset">Preset</label>
+      <select id="preset"></select>
+    </div>
+
+    <div id="dataOpts" hidden>
+      <div class="field"><label for="nRows">Rows</label><input id="nRows" type="number" min="5" max="200000" step="100" value="2000"></div>
+      <div class="field"><label for="missing">Missing, %</label><input id="missing" type="number" min="0" max="50" step="1" value="0"></div>
+      <div class="field"><label for="seed">Seed</label><input id="seed" type="number" step="1" value="42"></div>
+      <label class="check"><input id="constLast" type="checkbox"> Make last property constant</label>
+      <div class="hint">Rows are drawn from a multivariate normal with the preset R and mapped to [0, 1] with Φ. R is then recomputed (Pearson, complete rows only), as the viewer would.</div>
+    </div>
+
+    <div class="group">
+      <h2>Properties</h2>
+      <div class="props" id="props"></div>
+      <div id="formError"></div>
+    </div>
+
+    <div class="group">
+      <h2>Computation</h2>
+      <dl class="stats" id="stats"></dl>
+    </div>
+  </section>
+
+  <section class="dock" aria-label="Viewers">
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tab-corr" aria-controls="pane-corr" aria-selected="false">Correlation plot</button>
+      <button role="tab" id="tab-weights" aria-controls="pane-weights" aria-selected="true">Weights</button>
+      <button role="tab" id="tab-details" aria-controls="pane-details" aria-selected="false">Details</button>
+      <button role="tab" id="tab-tests" aria-controls="pane-tests" aria-selected="false">Tests</button>
+    </div>
+
+    <div class="pane" id="pane-corr" role="tabpanel" aria-labelledby="tab-corr" hidden>
+      <p class="pane-note" id="corrNote"></p>
+      <div class="scroll"><table class="corr" id="corr"></table></div>
+    </div>
+
+    <div class="pane" id="pane-weights" role="tabpanel" aria-labelledby="tab-weights">
+      <div class="charts" id="charts"></div>
+    </div>
+
+    <div class="pane" id="pane-details" role="tabpanel" aria-labelledby="tab-details" hidden>
+      <p class="pane-note">Intermediate values of both stages. s<sub>i</sub> — row sum of R⁻¹, S — sum of all elements, raw = s<sub>i</sub>/S, base — after clipping, final — after priorities and pins. R²<sub>i</sub> = 1 − 1/R⁻¹<sub>ii</sub>.</p>
+      <div class="scroll"><table class="data" id="details"></table></div>
+      <h3 style="font-size:13px;font-weight:500;margin:20px 0 8px">R⁻¹</h3>
+      <div class="scroll"><table class="data" id="inverse"></table></div>
+    </div>
+
+    <div class="pane" id="pane-tests" role="tabpanel" aria-labelledby="tab-tests" hidden>
+      <p class="pane-note">Test cases from section 9 of the specification, run against the same functions the bench uses.</p>
+      <p><button class="btn" id="runTests">Run tests again</button></p>
+      <div class="tests" id="tests"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+// ===================== MATH (mirrors the specification) =====================
+// MATH-START
+function cholesky(A, m) {
+  const L = new Float64Array(m * m);
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j <= i; j++) {
+      let s = A[i * m + j];
+      for (let k = 0; k < j; k++) s -= L[i * m + k] * L[j * m + k];
+      if (i === j) {
+        if (s <= 1e-12) return null;
+        L[i * m + i] = Math.sqrt(s);
+      } else {
+        L[i * m + j] = s / L[j * m + j];
+      }
+    }
+  }
+  return L;
+}
+
+function choleskySolve(L, m, b) {
+  const y = new Float64Array(m);
+  for (let i = 0; i < m; i++) {
+    let s = b[i];
+    for (let k = 0; k < i; k++) s -= L[i * m + k] * y[k];
+    y[i] = s / L[i * m + i];
+  }
+  const x = new Float64Array(m);
+  for (let i = m - 1; i >= 0; i--) {
+    let s = y[i];
+    for (let k = i + 1; k < m; k++) s -= L[k * m + i] * x[k];
+    x[i] = s / L[i * m + i];
+  }
+  return x;
+}
+
+function choleskyInverse(L, m) {
+  const inv = new Float64Array(m * m);
+  const e = new Float64Array(m);
+  for (let c = 0; c < m; c++) {
+    e.fill(0); e[c] = 1;
+    const col = choleskySolve(L, m, e);
+    for (let r = 0; r < m; r++) inv[r * m + c] = col[r];
+  }
+  return inv;
+}
+
+function regularise(R, m, lambda) {
+  const out = new Float64Array(m * m);
+  for (let i = 0; i < m * m; i++) out[i] = (1 - lambda) * R[i];
+  for (let k = 0; k < m; k++) out[k * m + k] += lambda;
+  return out;
+}
+
+function norm1(A, m) {
+  let max = 0;
+  for (let j = 0; j < m; j++) {
+    let s = 0;
+    for (let i = 0; i < m; i++) s += Math.abs(A[i * m + j]);
+    if (s > max) max = s;
+  }
+  return max;
+}
+
+function robustInverse(R, m) {
+  for (const lambda of [0, 1e-3, 1e-2, 5e-2, 0.1]) {
+    const A = lambda === 0 ? R : regularise(R, m, lambda);
+    const L = cholesky(A, m);
+    if (!L) continue;
+    const Rinv = choleskyInverse(L, m);
+    const kappa = norm1(A, m) * norm1(Rinv, m);
+    if (kappa <= 1e6) return { Rinv, lambda, kappa };
+  }
+  return null;
+}
+
+function campoWeights(Rinv, m, active, d) {
+  const s = new Float64Array(m);
+  let S = 0;
+  for (let i = 0; i < m; i++) {
+    let row = 0;
+    for (let j = 0; j < m; j++) row += Rinv[i * m + j];
+    s[i] = row;
+    S += row;
+  }
+  const raw = new Float64Array(d).fill(NaN);
+  const base = new Float64Array(d);
+  let clipped = false;
+  let pos = 0;
+  for (let i = 0; i < m; i++) {
+    const r = s[i] / S;
+    raw[active[i]] = r;
+    if (r < 0) clipped = true; else pos += r;
+  }
+  for (let i = 0; i < m; i++) {
+    const r = raw[active[i]];
+    base[active[i]] = r > 0 ? r / pos : 0;
+  }
+  return { raw, base, clipped, s, S };
+}
+
+function finalWeights(base, prio, pinned) {
+  const d = base.length;
+  const b = new Float64Array(d);
+  let B = 0;
+  for (let i = 0; i < d; i++) {
+    if (!Number.isNaN(pinned[i])) continue;
+    b[i] = base[i] * prio[i];
+    B += b[i];
+  }
+  let P = 0;
+  for (let i = 0; i < d; i++) if (!Number.isNaN(pinned[i])) P += pinned[i];
+  if (P > 1 + 1e-9)
+    return { final: base, error: `Pinned weights sum to ${P.toFixed(3)} (> 1)` };
+  const rest = 1 - P;
+  if (rest > 1e-9 && B <= 1e-12)
+    return { final: base, error: 'Nothing to scale: all unpinned weights are 0' };
+  const k = B > 0 ? rest / B : 0;
+  const final = new Float64Array(d);
+  for (let i = 0; i < d; i++)
+    final[i] = Number.isNaN(pinned[i]) ? b[i] * k : pinned[i];
+  return { final, error: null };
+}
+
+// prepareDesirabilityFrame + pearsonMatrix (spec §2.4, §2.5)
+function prepareAndCorrelate(D, n) {
+  const d = D.length;
+  const mask = new Uint8Array(n).fill(1);
+  for (let k = 0; k < d; k++) {
+    const a = D[k];
+    for (let i = 0; i < n; i++) if (Number.isNaN(a[i])) mask[i] = 0;
+  }
+  let rows = 0;
+  for (let i = 0; i < n; i++) rows += mask[i];
+
+  const active = [], constant = [], cols = [], means = [], sds = [];
+  for (let k = 0; k < d; k++) {
+    const a = D[k];
+    const out = new Float32Array(rows);
+    let sum = 0;
+    for (let i = 0, r = 0; i < n; i++) if (mask[i]) { out[r++] = a[i]; sum += a[i]; }
+    const mean = rows ? sum / rows : 0;
+    let v = 0;
+    for (let r = 0; r < rows; r++) { const t = out[r] - mean; v += t * t; }
+    if (v > 1e-12) { active.push(k); cols.push(out); means.push(mean); sds.push(Math.sqrt(v)); }
+    else constant.push(k);
+  }
+  const m = active.length;
+  const R = new Float64Array(m * m);
+  for (let p = 0; p < m; p++) {
+    R[p * m + p] = 1;
+    for (let q = p + 1; q < m; q++) {
+      const a = cols[p], b = cols[q], ma = means[p], mb = means[q];
+      let s = 0;
+      for (let r = 0; r < rows; r++) s += (a[r] - ma) * (b[r] - mb);
+      R[p * m + q] = R[q * m + p] = s / (sds[p] * sds[q]);
+    }
+  }
+  return { R, m, active: Int32Array.from(active), constant: Int32Array.from(constant), rows, cols };
+}
+// MATH-END
+
+// ===================== DATA GENERATION =====================
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function normCdf(x) {
+  const t = 1 / (1 + 0.3275911 * Math.abs(x) / Math.SQRT2);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x / 2);
+  return x >= 0 ? 0.5 * (1 + y) : 0.5 * (1 - y);
+}
+function generateData(Rt, d, n, seed, missingPct, constLast) {
+  let L = cholesky(Rt, d);
+  for (const lam of [1e-3, 1e-2, 5e-2, 0.1, 0.3]) { if (L) break; L = cholesky(regularise(Rt, d, lam), d); }
+  if (!L) return null;
+  const rnd = mulberry32(seed >>> 0);
+  const D = Array.from({ length: d }, () => new Float32Array(n));
+  const z = new Float64Array(d);
+  for (let i = 0; i < n; i++) {
+    for (let k = 0; k < d; k += 2) {
+      const u1 = Math.max(rnd(), 1e-12), u2 = rnd();
+      const r = Math.sqrt(-2 * Math.log(u1));
+      z[k] = r * Math.cos(2 * Math.PI * u2);
+      if (k + 1 < d) z[k + 1] = r * Math.sin(2 * Math.PI * u2);
+    }
+    for (let k = 0; k < d; k++) {
+      let x = 0;
+      for (let j = 0; j <= k; j++) x += L[k * d + j] * z[j];
+      D[k][i] = normCdf(x);
+    }
+  }
+  if (constLast) D[d - 1].fill(1);
+  if (missingPct > 0) {
+    const p = missingPct / 100;
+    for (let k = 0; k < d; k++) for (let i = 0; i < n; i++) if (rnd() < p) D[k][i] = NaN;
+  }
+  return D;
+}
+
+// ===================== PRESETS =====================
+function fromLower(names, lower) {
+  const d = names.length, R = new Float64Array(d * d);
+  for (let i = 0; i < d; i++) {
+    R[i * d + i] = 1;
+    for (let j = 0; j < i; j++) R[i * d + j] = R[j * d + i] = lower[i][j];
+  }
+  return R;
+}
+const PRESETS = [
+  { id: 'fig2a', label: 'Paper, fig. 2a — one independent, three r = 0.98',
+    names: ['A', 'B', 'C', 'D'], lower: [[], [0], [0, 0.98], [0, 0.98, 0.98]] },
+  { id: 'fig2b', label: 'Paper, fig. 2b — r(B, C) = −0.35',
+    names: ['A', 'B', 'C'], lower: [[], [0], [0, -0.35]] },
+  { id: 'indep', label: 'Independent (identity, 5 properties)',
+    names: ['P1', 'P2', 'P3', 'P4', 'P5'], lower: [[], [0], [0, 0], [0, 0, 0], [0, 0, 0, 0]] },
+  { id: 'drugs', label: 'drugs_props example (9 properties)',
+    names: ['TPSA', 'TPSA_S', 'HBA', 'HBD', 'MW', 'nAtoms', 'cLogD', 'cLogP', 'mbpKa'],
+    lower: [[], [0.96], [0.82, 0.80], [0.58, 0.55, 0.40], [0.45, 0.44, 0.50, 0.00], [0.42, 0.41, 0.48, 0.00, 0.97],
+      [-0.35, -0.33, 0.00, -0.25, 0.00, 0.00], [-0.30, -0.29, 0.00, -0.22, 0.00, 0.00, 0.78],
+      [0.00, 0.00, 0.00, 0.10, 0.00, 0.00, -0.38, 0.05]] },
+  { id: 'nearsing', label: 'Near-singular pair (needs regularisation)',
+    names: ['X', 'Y', 'Z'], lower: [[], [0.9999999], [0.3, 0.3]] },
+  { id: 'notpd', label: 'Not positive definite (should fail)',
+    names: ['U', 'V', 'W'], lower: [[], [0.9], [0.9, -0.9]] },
+];
+
+// ===================== STATE =====================
+const state = {
+  source: 'matrix', presetId: 'drugs',
+  names: [], R: null, d: 0,
+  n: 2000, missing: 0, seed: 42, constLast: false,
+  prio: null, prioText: [], prioErr: [],
+  pinText: new Map(), pinned: null,
+  A: null, B: null, lastFinal: null, error: null,
+};
+const $ = (id) => document.getElementById(id);
+const fmt = (v, k = 3) => (Number.isNaN(v) || v == null ? '—' : v.toFixed(k));
+
+function loadPreset(id) {
+  const p = PRESETS.find((x) => x.id === id);
+  state.presetId = id;
+  state.names = p.names.slice();
+  state.d = p.names.length;
+  state.R = fromLower(p.names, p.lower);
+  state.prio = new Float64Array(state.d).fill(1);
+  state.prioText = Array(state.d).fill('1');
+  state.prioErr = Array(state.d).fill(null);
+  state.pinText = new Map();
+  state.pinned = new Float64Array(state.d).fill(NaN);
+  state.lastFinal = null;
+  buildPropsTable();
+  runStageA();
+}
+
+// ===================== STAGE A =====================
+function runStageA() {
+  const d = state.d;
+  let R, m, active, rows = null, constant = [], cols = null, genError = null;
+  if (state.source === 'matrix') {
+    R = state.R; m = d; active = Int32Array.from({ length: d }, (_, i) => i);
+  } else {
+    const D = generateData(state.R, d, state.n, state.seed, state.missing, state.constLast);
+    if (!D) { genError = 'Cannot generate data: preset matrix is far from positive definite'; }
+    else {
+      const prep = prepareAndCorrelate(D, state.n);
+      R = prep.R; m = prep.m; active = prep.active; rows = prep.rows; constant = Array.from(prep.constant); cols = prep.cols;
+    }
+  }
+  const A = { R, m, active, rows, constant, cols, inv: null, weights: null, error: genError };
+  if (!genError) {
+    if (m < 2 || (rows !== null && rows <= m)) A.error = 'Not enough data to compute correlation-aware weights';
+    else {
+      const inv = robustInverse(R, m);
+      if (!inv) A.error = 'Correlation matrix is singular';
+      else { A.inv = inv; A.weights = campoWeights(inv.Rinv, m, active, d); }
+    }
+  }
+  state.A = A;
+  renderCorr();
+  runStageB();
+}
+
+// ===================== STAGE B =====================
+function runStageB() {
+  const A = state.A;
+  if (!A.weights) {
+    state.B = null; state.error = A.error;
+    renderAll(); return;
+  }
+  const { final, error } = finalWeights(A.weights.base, state.prio, state.pinned);
+  state.error = error;
+  if (!error) {
+    const status = state.names.map((_, i) =>
+      !Number.isNaN(state.pinned[i]) ? 'pinned' : final[i] === 0 ? 'dropped' : 'kept');
+    state.B = { final, status };
+    state.lastFinal = final;
+  }
+  renderAll();
+}
+
+// ===================== FORM =====================
+const PIN_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1 6 4 4v2h-5v6l-1 1-1-1v-6H6v-2l4-4z"/></svg>';
+
+function buildPropsTable() {
+  const el = $('props');
+  el.innerHTML = '<div class="head">Property</div><div class="head">Priority</div><div class="head">Weight</div>';
+  state.names.forEach((nm, i) => {
+    const name = document.createElement('div');
+    name.className = 'cell'; name.innerHTML = `<span class="name" id="nm${i}"></span>`;
+    name.querySelector('span').textContent = nm;
+
+    const pc = document.createElement('div');
+    pc.className = 'cell';
+    const pi = document.createElement('input');
+    pi.className = 'num-input'; pi.type = 'text'; pi.inputMode = 'decimal'; pi.value = state.prioText[i];
+    pi.id = `prio${i}`; pi.setAttribute('aria-label', `Priority of ${nm}`);
+    pi.addEventListener('input', () => onPriority(i, pi.value));
+    const pm = document.createElement('div'); pm.id = `prioMsg${i}`;
+    pc.append(pi, pm);
+
+    const wc = document.createElement('div');
+    wc.className = 'cell'; wc.id = `wcell${i}`;
+    el.append(name, pc, wc);
+    renderWeightCell(i);
+  });
+}
+
+function validatePin(s) {
+  if (s == null || s.trim() === '') return 'Enter a weight';
+  const v = Number(s);
+  if (!Number.isFinite(v) || v < 0 || v > 1) return 'Must be between 0 and 1';
+  let sum = 0;
+  for (const t of state.pinText.values()) { if (t.trim() === '') continue; const x = Number(t); if (Number.isFinite(x)) sum += x; }
+  if (sum > 1 + 1e-9) return `Pinned weights sum to ${sum.toFixed(2)} (> 1)`;
+  return null;
+}
+
+function renderWeightCell(i) {
+  const wc = $(`wcell${i}`);
+  wc.innerHTML = '';
+  const box = document.createElement('div'); box.className = 'wbox';
+  const pinned = state.pinText.has(i);
+  let msg = null;
+  if (pinned) {
+    const inp = document.createElement('input');
+    inp.className = 'num-input'; inp.type = 'text'; inp.inputMode = 'decimal';
+    inp.id = `pin${i}`; inp.value = state.pinText.get(i); inp.placeholder = '0–1';
+    inp.setAttribute('aria-label', `Pinned weight of ${state.names[i]}`);
+    inp.addEventListener('input', () => onPinInput(i, inp.value));
+    box.append(inp);
+    msg = document.createElement('div'); msg.className = 'msg'; msg.id = `pinMsg${i}`;
+  } else {
+    const sp = document.createElement('span'); sp.className = 'wval'; sp.id = `wval${i}`;
+    box.append(sp);
+  }
+  const btn = document.createElement('button');
+  btn.className = 'pin' + (pinned ? ' on' : '');
+  btn.innerHTML = PIN_SVG;
+  btn.querySelector('svg').setAttribute('fill', pinned ? 'currentColor' : 'none');
+  btn.title = pinned ? 'Unpin weight' : 'Pin weight';
+  btn.setAttribute('aria-label', btn.title);
+  btn.setAttribute('aria-pressed', String(pinned));
+  btn.addEventListener('click', () => togglePin(i));
+  box.append(btn);
+  wc.append(box);
+  if (msg) wc.append(msg);
+}
+
+function togglePin(i) {
+  if (state.pinText.has(i)) state.pinText.delete(i);
+  else state.pinText.set(i, '');
+  renderWeightCell(i);
+  if (state.pinText.has(i)) setTimeout(() => $(`pin${i}`)?.focus());
+  revalidatePins();
+}
+
+function onPinInput(i, s) {
+  state.pinText.set(i, s);
+  revalidatePins();
+}
+
+function revalidatePins() {
+  const pinned = new Float64Array(state.d).fill(NaN);
+  for (const [i, t] of state.pinText) {
+    const err = validatePin(t);
+    const inp = $(`pin${i}`), m = $(`pinMsg${i}`);
+    if (inp) inp.setAttribute('aria-invalid', err ? 'true' : 'false');
+    if (m) m.textContent = err || '';
+    if (!err) pinned[i] = Number(t);
+  }
+  state.pinned = pinned;
+  runStageB();
+}
+
+function onPriority(i, s) {
+  state.prioText[i] = s;
+  let err = null;
+  if (s.trim() === '') err = 'Enter a priority';
+  else { const v = Number(s); if (!Number.isFinite(v) || v < 0) err = 'Must be 0 or greater'; }
+  state.prioErr[i] = err;
+  if (!err) { state.prio[i] = Number(s); runStageB(); }
+  else renderForm();
+}
+
+function renderForm() {
+  const A = state.A, B = state.B;
+  const final = B ? B.final : state.lastFinal;
+  state.names.forEach((_, i) => {
+    const pinned = state.pinText.has(i);
+    const w = final ? final[i] : NaN;
+    const sp = $(`wval${i}`);
+    if (sp) { sp.textContent = fmt(w); sp.classList.toggle('zero', w === 0); }
+    const nm = $(`nm${i}`);
+    if (nm) nm.classList.toggle('dropped', B ? B.status[i] === 'dropped' : false);
+
+    const pi = $(`prio${i}`), pm = $(`prioMsg${i}`);
+    pi.disabled = pinned;
+    pi.title = pinned ? 'Weight is pinned' : '';
+    pi.setAttribute('aria-invalid', state.prioErr[i] ? 'true' : 'false');
+    let note = '', cls = 'msg';
+    if (state.prioErr[i]) note = state.prioErr[i];
+    else if (!pinned && A.weights && A.weights.base[i] === 0 && state.prio[i] !== 1) {
+      note = 'No effect: computed weight is 0. Pin the weight instead.'; cls = 'note';
+    }
+    pm.className = cls; pm.textContent = note;
+  });
+
+  const fe = $('formError');
+  fe.innerHTML = '';
+  if (state.error) {
+    const b = document.createElement('div'); b.className = 'banner err'; b.textContent = state.error; fe.append(b);
+  } else if (A.rows !== null && A.m && A.rows < 10 * A.m) {
+    const b = document.createElement('div'); b.className = 'banner warn';
+    b.textContent = `Only ${A.rows} complete rows for ${A.m} properties: weights may be unreliable.`; fe.append(b);
+  }
+
+  const st = $('stats');
+  const rows = [];
+  if (A.rows !== null) rows.push(['Complete rows', `${A.rows} of ${state.n}`]);
+  rows.push(['Properties in R', `${A.m ?? '—'} of ${state.d}`]);
+  if (A.constant.length) rows.push(['Excluded (constant)', A.constant.map((k) => state.names[k]).join(', ')]);
+  if (A.inv) {
+    rows.push(['Regularisation λ', A.inv.lambda === 0 ? 'none' : String(A.inv.lambda)]);
+    rows.push(['κ(R), 1-norm', A.inv.kappa.toFixed(1)]);
+    rows.push(['Clipped', A.weights.clipped ? 'yes' : 'no']);
+    rows.push(['S = Σ R⁻¹', A.weights.S.toFixed(4)]);
+  }
+  if (final) rows.push(['Σ final', final.reduce((a, b) => a + b, 0).toFixed(6)]);
+  st.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+}
+
+// ===================== CORRELATION PLOT =====================
+function heatColor(r) {
+  const k = Math.min(Math.abs(r) / 0.6, 1);
+  const c = r >= 0 ? '232,40,30' : '30,30,232';
+  return { bg: `rgba(${c},${(k * 0.92).toFixed(3)})`, fg: k > 0.7 ? '#ffffff' : 'var(--text)' };
+}
+
+function renderCorr() {
+  const A = state.A, tbl = $('corr');
+  const editable = state.source === 'matrix';
+  $('corrNote').textContent = editable
+    ? 'Preset matrix R. Click an off-diagonal cell to edit; the value is mirrored across the diagonal.'
+    : 'R recomputed from generated data (complete rows only, constant columns excluded). Diagonal: distribution of desirability scores.';
+  if (!A.R) { tbl.innerHTML = ''; return; }
+  const names = Array.from(A.active, (k) => state.names[k]);
+  const m = A.m;
+  let html = '<tr><th class="rowh"></th>' + names.map((n) => `<th>${esc(n)}</th>`).join('') + '</tr>';
+  for (let p = 0; p < m; p++) {
+    html += `<tr><th class="rowh"><span class="t">d</span>${esc(names[p])}</th>`;
+    for (let q = 0; q < m; q++) {
+      if (p === q) {
+        html += `<td>${A.cols ? histHtml(A.cols[p]) : ''}</td>`;
+      } else {
+        const r = A.R[p * m + q];
+        const c = heatColor(r);
+        html += `<td class="${editable ? 'editable' : ''}" data-p="${p}" data-q="${q}" style="background:${c.bg};color:${c.fg}" title="${esc(names[p])} × ${esc(names[q])}: r = ${r.toFixed(4)}">${r.toFixed(2)}</td>`;
+      }
+    }
+    html += '</tr>';
+  }
+  tbl.innerHTML = html;
+}
+
+function histHtml(a) {
+  const bins = new Array(10).fill(0);
+  for (let i = 0; i < a.length; i++) bins[Math.min(9, Math.floor(a[i] * 10))]++;
+  const mx = Math.max(...bins) || 1;
+  return '<div class="hist">' + bins.map((b) => `<span style="height:${(b / mx * 100).toFixed(0)}%"></span>`).join('') + '</div>';
+}
+
+$('corr').addEventListener('click', (e) => {
+  const td = e.target.closest('td.editable');
+  if (!td || td.querySelector('input')) return;
+  const p = +td.dataset.p, q = +td.dataset.q, d = state.d;
+  const inp = document.createElement('input');
+  inp.value = state.R[p * d + q].toFixed(3);
+  inp.setAttribute('aria-label', 'Correlation value');
+  td.textContent = ''; td.append(inp); inp.focus(); inp.select();
+  const commit = () => {
+    const v = Number(inp.value);
+    if (Number.isFinite(v) && v >= -1 && v <= 1) { state.R[p * d + q] = state.R[q * d + p] = v; }
+    runStageA();
+  };
+  inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') commit(); if (ev.key === 'Escape') renderCorr(); });
+  inp.addEventListener('blur', commit, { once: true });
+});
+
+// ===================== BAR CHARTS =====================
+const EPS = 0.004;
+
+function niceRange(lo, hi) {
+  return [Math.floor(lo * 10 - 1e-9) / 10, Math.ceil(hi * 10 - 1e-9) / 10];
+}
+
+function barChartSvg(items, lo, hi, legend, equal) {
+  const W = 460, labelW = 70, padR = 46, rowH = 26, top = equal != null ? 16 : 6;
+  const H = top + items.length * rowH + 26;
+  const plotW = W - labelW - padR;
+  const x = (v) => labelW + (v - lo) / (hi - lo) * plotW;
+  const x0 = x(Math.max(lo, Math.min(0, hi)));
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Bar chart">`;
+  items.forEach((it, k) => {
+    const y = top + k * rowH;
+    const v = it.display;
+    const xa = Math.min(x0, x(v)), xb = Math.max(x0, x(v));
+    s += `<text x="${labelW - 8}" y="${y + rowH / 2 + 4}" text-anchor="end" font-size="12" fill="var(--text)">${esc(it.name)}</text>`;
+    s += `<rect x="${xa.toFixed(1)}" y="${y + 4}" width="${Math.max(0.5, xb - xa).toFixed(1)}" height="${rowH - 8}" fill="var(${it.color})"><title>${esc(it.name)}: ${it.title}</title></rect>`;
+    const lx = (v >= 0 ? xb : x0) + 4;
+    s += `<text x="${lx.toFixed(1)}" y="${y + rowH / 2 + 4}" font-size="11" fill="var(--muted)">${it.label}</text>`;
+  });
+  const axisY = top + items.length * rowH;
+  s += `<line x1="${x0}" y1="${top}" x2="${x0}" y2="${axisY}" stroke="var(--drop)"/>`;
+  s += `<line x1="${labelW}" y1="${axisY}" x2="${labelW + plotW}" y2="${axisY}" stroke="var(--drop)"/>`;
+  const step = hi - lo > 0.6 ? 0.2 : 0.1;
+  for (let t = Math.ceil(lo / step - 1e-9) * step; t <= hi + 1e-9; t += step) {
+    const tx = x(t);
+    s += `<line x1="${tx}" y1="${axisY}" x2="${tx}" y2="${axisY + 4}" stroke="var(--drop)"/>`;
+    s += `<text x="${tx}" y="${axisY + 16}" text-anchor="middle" font-size="10" fill="var(--muted)">${String(+t.toFixed(2))}</text>`;
+  }
+  if (equal != null) {
+    const ex = x(equal);
+    s += `<line x1="${ex}" y1="${top - 10}" x2="${ex}" y2="${axisY}" stroke="var(--equal)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+    s += `<text x="${ex + 4}" y="${top - 3}" font-size="10" fill="var(--equal)">Equal ${equal.toFixed(3)}</text>`;
+  }
+  const lgH = legend.length * 16 + 8, lgW = 70;
+  const lgX = W - lgW - 4, lgY = axisY - lgH - 6;
+  s += `<rect x="${lgX}" y="${lgY}" width="${lgW}" height="${lgH}" fill="var(--bg)" stroke="var(--line)"/>`;
+  legend.forEach((l, k) => { s += `<text x="${lgX + 8}" y="${lgY + 16 + k * 16}" font-size="12" fill="var(${l.color})">${l.name}</text>`; });
+  return s + '</svg>';
+}
+
+function renderCharts() {
+  const A = state.A, B = state.B, el = $('charts');
+  if (!A.weights) { el.innerHTML = `<div class="viewer empty">${esc(state.error || 'No weights')}</div>`; return; }
+  const names = state.names;
+  let html = '';
+  if (A.weights.clipped) {
+    const items = names.map((n, i) => ({ n, i })).filter((o) => !Number.isNaN(A.weights.raw[o.i]))
+      .map(({ n, i }) => {
+        const r = A.weights.raw[i];
+        return { name: n, display: r, color: r < 0 ? '--neg' : '--pos', label: String(+r.toFixed(2)), title: r.toFixed(4) };
+      }).sort((a, b) => b.display - a.display);
+    const mn = Math.min(...items.map((i) => i.display)), mx = Math.max(...items.map((i) => i.display));
+    const [lo, hi] = niceRange(Math.min(-0.1, mn), Math.max(0.1, mx));
+    html += `<div class="viewer"><h3>Raw weight R⁻¹1</h3>${barChartSvg(items, lo, hi,
+      [{ name: 'positive', color: '--pos' }, { name: 'negative', color: '--neg' }], null)}</div>`;
+  }
+  const final = B ? B.final : state.lastFinal;
+  if (final) {
+    const status = B ? B.status : names.map(() => 'kept');
+    const items = names.map((n, i) => ({
+      name: n, display: final[i] === 0 ? EPS : final[i],
+      color: status[i] === 'pinned' ? '--pin' : status[i] === 'dropped' ? '--drop' : '--pos',
+      label: String(+final[i].toFixed(2)), title: `${final[i].toFixed(4)} (${status[i]})`,
+    })).sort((a, b) => b.display - a.display);
+    const [, hi] = niceRange(0, Math.max(0.1, ...final));
+    html += `<div class="viewer"><h3>Final weight</h3>${barChartSvg(items, 0, hi,
+      [{ name: 'kept', color: '--pos' }, { name: 'pinned', color: '--pin' }, { name: 'dropped', color: '--drop' }], 1 / state.d)}</div>`;
+  }
+  if (!A.weights.clipped) html = `<p class="pane-note" style="flex-basis:100%">No negative raw weights, so the Raw weight chart is not shown (spec §3).</p>` + html;
+  el.innerHTML = html;
+}
+
+// ===================== DETAILS =====================
+function renderDetails() {
+  const A = state.A, B = state.B;
+  const t = $('details'), ti = $('inverse');
+  if (!A.weights) { t.innerHTML = ''; ti.innerHTML = ''; return; }
+  const pos = new Map(Array.from(A.active, (k, i) => [k, i]));
+  const m = A.m;
+  let h = '<tr><th>Property</th><th>s_i</th><th>raw</th><th>base</th><th>priority</th><th>pinned</th><th>final</th><th>status</th><th>R²_i</th></tr>';
+  state.names.forEach((n, k) => {
+    const i = pos.get(k);
+    const si = i == null ? NaN : A.weights.s[i];
+    const r2 = i == null ? NaN : 1 - 1 / A.inv.Rinv[i * m + i];
+    const fin = B ? B.final[k] : NaN;
+    h += `<tr><td>${esc(n)}</td><td>${fmt(si, 4)}</td><td>${fmt(A.weights.raw[k], 4)}</td><td>${fmt(A.weights.base[k], 4)}</td>` +
+      `<td>${fmt(state.prio[k], 2)}</td><td>${Number.isNaN(state.pinned[k]) ? '—' : fmt(state.pinned[k], 3)}</td>` +
+      `<td>${fmt(fin, 4)}</td><td>${B ? B.status[k] : (i == null ? 'excluded' : '—')}</td><td>${fmt(r2, 3)}</td></tr>`;
+  });
+  t.innerHTML = h;
+  const names = Array.from(A.active, (k) => state.names[k]);
+  let hi = '<tr><th></th>' + names.map((n) => `<th>${esc(n)}</th>`).join('') + '<th>row sum s_i</th></tr>';
+  for (let p = 0; p < m; p++) {
+    hi += `<tr><td>${esc(names[p])}</td>`;
+    for (let q = 0; q < m; q++) hi += `<td>${A.inv.Rinv[p * m + q].toFixed(3)}</td>`;
+    hi += `<td>${A.weights.s[p].toFixed(3)}</td></tr>`;
+  }
+  ti.innerHTML = hi;
+}
+
+function renderAll() { renderForm(); renderCharts(); renderDetails(); }
+
+// ===================== TESTS =====================
+function presetMatrix(id) { const p = PRESETS.find((x) => x.id === id); return { R: fromLower(p.names, p.lower), d: p.names.length }; }
+function weightsFor(R, d) {
+  const inv = robustInverse(R, d);
+  if (!inv) return null;
+  return campoWeights(inv.Rinv, d, Int32Array.from({ length: d }, (_, i) => i), d);
+}
+const near = (a, b, tol) => Math.abs(a - b) <= tol;
+const list = (a, k = 4) => Array.from(a, (v) => v.toFixed(k)).join(', ');
+
+function runTests() {
+  const T = [];
+  const add = (name, pass, detail) => T.push({ name, pass, detail });
+
+  { const { R, d } = presetMatrix('fig2a'); const w = weightsFor(R, d);
+    add('Fig. 2a: A ≈ 0.497, B = C = D ≈ 0.168', w && near(w.base[0], 0.4966, 0.002) && [1, 2, 3].every((i) => near(w.base[i], 0.1678, 0.002)),
+      w ? `base = [${list(w.base)}]` : 'inverse failed'); }
+  { const { R, d } = presetMatrix('fig2b'); const w = weightsFor(R, d);
+    add('Fig. 2b: A ≈ 0.245, B = C ≈ 0.377', w && near(w.base[0], 0.2453, 0.002) && near(w.base[1], 0.3774, 0.002) && near(w.base[2], 0.3774, 0.002),
+      w ? `base = [${list(w.base)}]` : 'inverse failed'); }
+  { const { R, d } = presetMatrix('indep'); const w = weightsFor(R, d);
+    add('Identity: all weights = 1/d', w && Array.from(w.base).every((v) => near(v, 1 / d, 1e-12)), w ? `base = [${list(w.base, 6)}]` : 'inverse failed'); }
+  { const { R, d } = presetMatrix('drugs'); const L = cholesky(R, d); const inv = choleskyInverse(L, d);
+    let err = 0;
+    for (let i = 0; i < d; i++) for (let j = 0; j < d; j++) { let s = 0; for (let k = 0; k < d; k++) s += R[i * d + k] * inv[k * d + j]; err = Math.max(err, Math.abs(s - (i === j ? 1 : 0))); }
+    add('Cholesky inverse: R·R⁻¹ = I within 1e-9', err < 1e-9, `max |R·R⁻¹ − I| = ${err.toExponential(2)}`); }
+  { const { R, d } = presetMatrix('drugs'); const L = cholesky(R, d); const inv = choleskyInverse(L, d);
+    const x = choleskySolve(L, d, new Float64Array(d).fill(1)); let err = 0;
+    for (let i = 0; i < d; i++) { let s = 0; for (let j = 0; j < d; j++) s += inv[i * d + j]; err = Math.max(err, Math.abs(s - x[i])); }
+    add('Row sums of R⁻¹ equal the solution of R·x = 1', err < 1e-10, `max difference = ${err.toExponential(2)}`); }
+  { const { R, d } = presetMatrix('notpd');
+    add('cholesky returns null on a non-positive-definite matrix', cholesky(R, d) === null, 'r(U,V) = r(U,W) = 0.9, r(V,W) = −0.9'); }
+  { const { R, d } = presetMatrix('notpd'); const inv = robustInverse(R, d);
+    add('robustInverse gives up when λ ≤ 0.1 is not enough', inv === null, inv ? `λ = ${inv.lambda}` : 'returned null'); }
+  { const { R, d } = presetMatrix('nearsing'); const inv = robustInverse(R, d);
+    add('robustInverse regularises a near-singular matrix', inv && inv.lambda > 0 && inv.kappa <= 1e6, inv ? `λ = ${inv.lambda}, κ = ${inv.kappa.toFixed(1)}` : 'returned null'); }
+  { const base = Float64Array.from([0.258, 0.038, 0, 0.023, 0, 0.103, 0.363, 0, 0.215]);
+    const prio = new Float64Array(9).fill(1); const pinned = new Float64Array(9).fill(NaN); pinned[2] = 0.08;
+    const { final, error } = finalWeights(base, prio, pinned); const sum = final.reduce((a, b) => a + b, 0);
+    add('§2.8 example: pin HBA = 0.08 → TPSA = 0.237, cLogD = 0.334, Σ = 1', !error && near(final[0], 0.23736, 1e-4) && near(final[6], 0.33396, 1e-4) && near(final[2], 0.08, 1e-12) && near(sum, 1, 1e-9),
+      `final = [${list(final)}], Σ = ${sum.toFixed(6)}`); }
+  { const base = Float64Array.from([0.5, 0.3, 0.2]); const pinned = new Float64Array(3).fill(NaN); pinned[0] = 0.7; pinned[1] = 0.4;
+    const { error } = finalWeights(base, new Float64Array(3).fill(1), pinned);
+    add('Pinned sum > 1 → error', !!error && error.includes('> 1'), String(error)); }
+  { const base = Float64Array.from([0.5, 0.3, 0.2]); const pinned = new Float64Array(3).fill(NaN); pinned[0] = 0.6; pinned[1] = 0.4;
+    const { final, error } = finalWeights(base, new Float64Array(3).fill(1), pinned);
+    add('Pinned sum = 1 → unpinned weights are 0', !error && final[2] === 0, `final = [${list(final)}]`); }
+  { const base = Float64Array.from([0.5, 0.3, 0.2]); const pinned = new Float64Array(3).fill(NaN); pinned[0] = 0.5;
+    const { error } = finalWeights(Float64Array.from([0.5, 0, 0]), new Float64Array(3).fill(1), pinned);
+    add('Pinned sum < 1 and all unpinned weights 0 → error', !!error && error.startsWith('Nothing to scale'), String(error)); }
+  { const base = Float64Array.from([0.5, 0.3, 0.2]); const prio = Float64Array.from([2, 1, 1]);
+    const { final } = finalWeights(base, prio, new Float64Array(3).fill(NaN));
+    add('Priority 2 on first property: 1.0 / 0.3 / 0.2 normalised by 1.5', near(final[0], 2 / 3, 1e-12) && near(final[1], 0.2, 1e-12) && near(final[2], 0.2 / 1.5, 1e-12),
+      `final = [${list(final)}]`); }
+  { const base = Float64Array.from([0.6, 0.4, 0]); const prio = Float64Array.from([1, 1, 5]);
+    const { final } = finalWeights(base, prio, new Float64Array(3).fill(NaN));
+    add('Priority on a dropped property has no effect', final[2] === 0 && near(final[0], 0.6, 1e-12), `final = [${list(final)}]`); }
+  { const { R, d } = presetMatrix('drugs'); const n = 20000;
+    const D = generateData(R, d, n, 7, 0, false); const prep = prepareAndCorrelate(D, n);
+    let mx = 0; for (let i = 0; i < d * d; i++) mx = Math.max(mx, Math.abs(prep.R[i] - R[i]));
+    const w1 = weightsFor(R, d); const inv = robustInverse(prep.R, prep.m);
+    add('Generated data (n = 20 000): Pearson R close to target', mx < 0.05, `max |R − R_target| = ${mx.toFixed(4)} (Φ-transform slightly shrinks r)`);
+    add('Generated data: pipeline produces finite weights summing to 1', !!inv && (() => { const w = campoWeights(inv.Rinv, prep.m, prep.active, d); return Array.from(w.base).every(Number.isFinite) && near(w.base.reduce((a, b) => a + b, 0), 1, 1e-9); })(),
+      inv ? `λ = ${inv.lambda}` : 'inverse failed'); }
+  { const { R, d } = presetMatrix('fig2b'); const n = 3000;
+    const D = generateData(R, d, n, 3, 5, true); const prep = prepareAndCorrelate(D, n);
+    const inv = robustInverse(prep.R, prep.m);
+    const w = inv && campoWeights(inv.Rinv, prep.m, prep.active, d);
+    add('Constant column excluded, missing rows dropped, no NaN in base weights',
+      prep.constant.length === 1 && prep.constant[0] === d - 1 && prep.rows < n && w && Array.from(w.base).every(Number.isFinite) && w.base[d - 1] === 0,
+      `constant = [${Array.from(prep.constant)}], rows = ${prep.rows} of ${n}, base = [${w ? list(w.base) : '—'}]`); }
+
+  const el = $('tests');
+  const passed = T.filter((t) => t.pass).length;
+  el.innerHTML = `<p class="pane-note" style="margin:0 0 6px">${passed} of ${T.length} passed</p>` +
+    T.map((t) => `<div class="test"><span class="badge ${t.pass ? 'pass' : 'fail'}">${t.pass ? 'Pass' : 'Fail'}</span><div><div>${esc(t.name)}</div><div class="d">${esc(t.detail)}</div></div></div>`).join('');
+  $('tab-tests').textContent = `Tests (${passed}/${T.length})`;
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+// ===================== WIRING =====================
+const presetSel = $('preset');
+PRESETS.forEach((p) => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.label; presetSel.append(o); });
+presetSel.value = state.presetId;
+presetSel.addEventListener('change', () => loadPreset(presetSel.value));
+
+$('source').addEventListener('change', (e) => {
+  state.source = e.target.value;
+  $('dataOpts').hidden = state.source !== 'data';
+  $('sourceHint').textContent = state.source === 'matrix'
+    ? 'R is used as is. Click a cell in the correlation plot to edit it.'
+    : 'R is recomputed from generated rows, as the Correlation plot would.';
+  runStageA();
+});
+let debounceTimer = null;
+const debounced = () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(runStageA, 150); };
+$('nRows').addEventListener('input', (e) => { const v = Math.round(Number(e.target.value)); if (v >= 5 && v <= 200000) { state.n = v; debounced(); } });
+$('missing').addEventListener('input', (e) => { const v = Number(e.target.value); if (v >= 0 && v <= 50) { state.missing = v; debounced(); } });
+$('seed').addEventListener('input', (e) => { const v = Math.round(Number(e.target.value)); if (Number.isFinite(v)) { state.seed = v; debounced(); } });
+$('constLast').addEventListener('change', (e) => { state.constLast = e.target.checked; runStageA(); });
+
+const tabs = ['corr', 'weights', 'details', 'tests'];
+function openTab(id) {
+  tabs.forEach((t) => {
+    $(`tab-${t}`).setAttribute('aria-selected', String(t === id));
+    $(`pane-${t}`).hidden = t !== id;
+  });
+  try { history.replaceState(null, '', '#' + id); } catch (e) { /* ignore */ }
+}
+tabs.forEach((t) => $(`tab-${t}`).addEventListener('click', () => openTab(t)));
+$('runTests').addEventListener('click', runTests);
+
+loadPreset(state.presetId);
+runTests();
+const initial = (location.hash || '').slice(1);
+openTab(tabs.includes(initial) ? initial : 'weights');
+</script>
+</body>
+</html>

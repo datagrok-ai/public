@@ -329,7 +329,7 @@ function finalWeights(base, prio, pinned) {
   return { final, error: null };
 }
 
-// prepareDesirabilityFrame + Pearson (stands in for the Correlation plot's `table`)
+// prepareDesirabilityFrame + pearsonMatrix (spec §2.4, §2.5)
 function prepareAndCorrelate(D, n) {
   const d = D.length;
   const mask = new Uint8Array(n).fill(1);
