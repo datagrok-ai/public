@@ -157,12 +157,14 @@ export class MolTrackEms {
     ]);
   }
 
-  // the server cannot search a formatted key: a typed `DG-000060` becomes `molregno = 60`
+  // the server cannot search a formatted key: a typed `DG-000060` becomes `molregno = 60`. Only a
+  // whole key: the swap empties the box, and `DG-0` would empty it under the user's typing
   private static _keySearch(app: DomainApp, column: string): void {
-    const {prefix} = MolTrackTables.keyFormat(app.table, column);
+    const {prefix, width} = MolTrackTables.keyFormat(app.table, column);
     app.effect(() => {
       const typed = app.listSource.search.value;
-      const n = typed.trim().toUpperCase().startsWith(prefix) ?
+      const key = typed.trim().toUpperCase();
+      const n = key.startsWith(prefix) && key.length >= prefix.length + width ?
         MolTrackTables.keyNumber(app.table, column, typed) : null;
       if (n === null)
         return;
