@@ -726,8 +726,8 @@ export class DomainApp extends Control {
    * Permission ⇒ hidden — the button is gone while the access allows nothing in it. */
   private _actionsMenu(): Control {
     const control = this.runInScope(() => {
-      const open = () => actionsMenu(this.menuActions(), {access: this.listSource.access.peek()}).show({anchor: el});
-      const el = iconButton('ellipsis-v', open, {tooltip: 'More actions'});
+      const el = DomainApp._menuButton('ellipsis-v', 'More actions',
+        () => actionsMenu(this.menuActions(), {access: this.listSource.access.peek()}));
       el.dataset.u2 = 'actions-menu';
       return new Control(el);
     });
@@ -748,7 +748,7 @@ export class DomainApp extends Control {
     const write = (sort: string) => void confirmDiscard(this.session, {action: 'change the order'})
       .then((ok) => ok && (source.sort.value = sort));
     const control = this.runInScope(() => {
-      const el = iconButton('sort-amount-down', () => {
+      const el = DomainApp._menuButton('sort-amount-down', 'Sort by', () => {
         const current = source.sort.peek().split(',')[0] ?? '';
         const desc = current.startsWith('!');
         const column = desc ? current.slice(1) : current;
@@ -760,12 +760,27 @@ export class DomainApp extends Control {
         menu.separator();
         menu.item('Ascending', () => write(column), {check: column !== '' && !desc, enabled: column !== ''});
         menu.item('Descending', () => write(`!${column}`), {check: desc, enabled: column !== ''});
-        menu.show({anchor: el});
-      }, {tooltip: 'Sort by'});
+        return menu;
+      });
       el.dataset.u2 = 'sort-menu';
       return new Control(el);
     });
     return control;
+  }
+
+  /** A ribbon icon whose menu is built on every open; pressed again, it closes the menu it opened. */
+  private static _menuButton(name: string, tooltip: string, build: () => Menu): HTMLButtonElement {
+    let menu: Menu | undefined;
+    const el = iconButton(name, () => {
+      const open = menu?.isOpen.peek() === true;
+      menu?.close();
+      menu = undefined;
+      if (open)
+        return;
+      menu = build();
+      menu.show({anchor: el});
+    }, {tooltip});
+    return el;
   }
 
   /** The entity page's row, as the Actions menu acts on it: the table's row actions, and Delete —
