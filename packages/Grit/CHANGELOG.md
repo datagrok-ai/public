@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Issues: Cards show the status on their second line
 * Issues: The closing rule, the actions and the card hold wherever an issue is edited: a project's Issues tab, bulk edit, which no longer closes unassigned issues, and the `/domains` view once Grit has loaded
 * u2: Took u2's stylesheet from u2 itself (installed once per page, the newest copy any package carries) instead of the EMS sheet bundle; republish with the other u2 packages
 * EMS: imports from `@datagrok-libraries/ems`
