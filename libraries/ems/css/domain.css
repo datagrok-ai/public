@@ -546,9 +546,10 @@
 
 /* the query box is a row of the list page, full width under the ribbon — the shell's ribbon is one
    fixed 32px line with `overflow: hidden`, which clipped it to a 4px sliver */
+/* no side padding: the box and the list frame under it share their edges */
 .u2-domain-app-list > .u2-domain-filters {
   flex: none;
-  padding: var(--dg-space-s) var(--dg-space-m);
+  padding: var(--dg-space-s) 0;
 }
 
 .u2-domain-filters {
@@ -575,6 +576,12 @@
 .u2-domain-app-list > .u2-splitter > .u2-splitter-panel > .u2-domain-list {
   flex: 1;
   min-height: 0;
+}
+
+/* neither pane is framed: the splitter's line is the boundary, and the pane's title row starts at
+   the list's top edge */
+.u2-domain-app-list > .u2-splitter .u2-domain-list-rows {
+  border: none;
 }
 
 .u2-domain-app-filters-host {
