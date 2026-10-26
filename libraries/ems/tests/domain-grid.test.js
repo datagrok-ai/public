@@ -304,8 +304,11 @@ scoped('columns: only these, in order; a click on the open column hands its row 
   const id = String(src.df.value.columns.byName('id').get(at));
   const cell = (column) => ({isTableCell: true, tableRowIndex: at, tableColumn: {name: column}, grid: grid.grid});
   grid.grid.onCellClick.fire(cell('due'));
+  await flush();
   assert.deepEqual(opened, [], 'another column does not open');
   grid.grid.onCellClick.fire(cell('title'));
+  assert.deepEqual(opened, [], 'not while the click is being handled: the grid\'s view would take the front back');
+  await flush();
   assert.deepEqual(opened, [id]);
   grid.dispose();
   src.dispose();
