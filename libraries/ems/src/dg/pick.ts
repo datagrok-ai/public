@@ -3,7 +3,7 @@
    the one over a domain table, querying it by its name column through the domain seam, so it
    works over the memory backend as it does over the server. */
 import {emsBackends} from '../core/domain-backend.js';
-import {Input, InputOptions, labelText, div, span, text, TypeAhead, Filters, Rows} from '@datagrok-libraries/u2';
+import {Input, InputOptions, div, span, text, TypeAhead, Filters, Rows} from '@datagrok-libraries/u2';
 import type {ObjectRenderer, DomainCondition, DomainConditionNode, DomainConditionTree,
   FilterSchema} from '@datagrok-libraries/u2';
 import type {DomainQueryLike, DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
@@ -172,7 +172,7 @@ export class DomainPick extends PickInput<PickItem> {
         },
         itemText: (item) => item.name,
         render: listItem,
-        placeholder: placeholder ?? `${labelText(options.label) ?? table.split('.').pop()}…`,
+        placeholder,
         debounceMs,
         openOnFocus: true,
         // an empty table is not a dead end: say what there is none of yet

@@ -255,12 +255,12 @@ export class DomainForm extends Control {
 
   /** A `User` column's editor: the value is the user id, the box the user picker. */
   static userPick(options: InputOptions<string | null>): PickInput<DG.User> {
-    return new PickInput<DG.User>({...options, typeAhead: () => userInput(), idOf: (user) => user.id,
+    return new PickInput<DG.User>({...options, typeAhead: () => userInput(''), idOf: (user) => user.id,
       resolve: (id) => grok.dapi.users.find(id)});
   }
 
   static groupPick(options: InputOptions<string | null>): PickInput<DG.Group> {
-    return new PickInput<DG.Group>({...options, typeAhead: () => entityInput('Group…', () => grok.dapi.groups),
+    return new PickInput<DG.Group>({...options, typeAhead: () => entityInput('', () => grok.dapi.groups),
       idOf: (group) => group.id, resolve: (id) => grok.dapi.groups.find(id)});
   }
 

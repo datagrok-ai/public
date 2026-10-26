@@ -171,12 +171,12 @@ scoped('without a backend the search reports the failure in the popup', async ()
 });
 
 scoped('ergonomics: the candidates open on focus in the table\'s order, a held value is not swapped by Enter, the ' +
-  'placeholder is the caption, ✕ clears', async () => {
+  'no placeholder, ✕ clears', async () => {
     emsBackends.domain = backend();
     const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p2'});
     const input = mount(pick);
     await flush();
-    assert.equal(input.placeholder, 'Project…');
+    assert.equal(input.placeholder, '', 'no placeholder repeating the caption');
     assert.equal(input.value, 'Datagrok');
     input.focus();
     await flush();

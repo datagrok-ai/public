@@ -205,6 +205,11 @@ textarea.u2-input-editor {
   padding: 0;
 }
 
+/* the empty canvas's "Click to edit" is a hint, drawn as every other placeholder is */
+.u2-input-root[data-u2='dart-input'] .d4-input-molecule-canvas-hint {
+  color: var(--dg-text-color-light);
+}
+
 /* a whole line of its own under the editor, whatever room is left beside it: the editors are as
    wide as the platform pins them, so a message that fit beside a 100px color field but not beside a
    460px one would land off the pane on one row and under the field on the next. Long verdicts
