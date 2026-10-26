@@ -1576,3 +1576,27 @@ scoped('the ribbon keeps its slots: New holds its place in the trash, the search
   assert.equal(add.style.visibility, '');
   a.dispose();
 });
+
+scoped('presets are a framed switch; on a narrow view they fold into the Actions menu', async () => {
+  const {app: a} = await app();
+  const group = a.presets(['Mine', 'title = "Aspirin"'], ['Open', 'done = false']);
+  await flush();
+  assert.equal(group.root.classList.contains('u2-btn-group-ribbon'), false, 'framed, not two bare words');
+  assert.equal(group.root.getAttribute('aria-label'), 'Show');
+  assert.equal(group.root.hidden, false);
+  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Bulk edit…', 'Show deleted issues']);
+
+  a.compact.value = true;
+  await flush();
+  assert.equal(group.root.hidden, true, 'no room on the ribbon');
+  const actions = a.menuActions();
+  assert.deepEqual(actions.map((x) => x.name), ['Mine', 'Open', 'Import…', 'Bulk edit…', 'Show deleted issues']);
+  actions[1].run();
+  await flush();
+  assert.equal(a.listSource.query.value, 'done = false', 'a folded preset still filters');
+  assert.equal(a.menuActions()[1].icon, 'check', 'and the one in force is checked');
+  a.compact.value = false;
+  await flush();
+  assert.equal(group.root.hidden, false);
+  a.dispose();
+});

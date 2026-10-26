@@ -31,6 +31,9 @@ export type DomainAppMode = 'live' | 'trash';
 /** What the status bar says while a live source is behind the server ({@link DomainApp.refresh}). */
 const STALE = 'Data changed — Refresh';
 
+/** Below this width the ribbon is cut by the view (about 1100px of window with the Browse panel). */
+const COMPACT_WIDTH = 900;
+
 /** The trash reads newest-deleted first: a soft delete is a write, so it stamps `updated_on`. */
 const TRASH_SORT = '!updated_on';
 
@@ -147,6 +150,9 @@ export class DomainApp extends Control {
   readonly trash: ReadonlySignal<boolean>;
   /** See {@link DomainAppOptions.shortcuts}; a subclass may declare its own. */
   shortcuts: Record<string, string>;
+  /** The view is too narrow for the whole ribbon: the presets fold into the Actions menu, so a
+   * laptop screen loses no control without a trace. Follows the app's width. */
+  readonly compact = signal(false);
 
   private readonly _mode = signal<DomainAppMode>('live');
   private readonly _count = signal('');
@@ -162,6 +168,8 @@ export class DomainApp extends Control {
   private _unloadGuard: ((e: BeforeUnloadEvent) => void) | undefined;
   /** The entity page's source whose row the Actions menu deleted. */
   private _deleting: DomainSource | null = null;
+  /** The presets as menu items, for the Actions menu of a {@link compact} ribbon. */
+  private readonly _presets: Action[] = [];
   private readonly _sync: ViewSync;
 
   private static readonly _byView = new WeakMap<DG.ViewBase, DomainApp>();
@@ -375,6 +383,13 @@ export class DomainApp extends Control {
       (this._page.value === 'entity' ? this._entitySource.value : this.listSource)?.stale.value ?? false);
     this._wireMode();
     this.own(() => this._close());
+    const fit = new ResizeObserver(() => {
+      const width = this.root.clientWidth;
+      if (width > 0)
+        this.compact.value = width < COMPACT_WIDTH;
+    });
+    fit.observe(this.root);
+    this.own(() => fit.disconnect());
   }
 
   /** Re-points the app at the route the shell actually mounted its view at (`/apps/Stockroom`):
@@ -462,8 +477,9 @@ export class DomainApp extends Control {
     return [main, tools, presets].filter((group) => group.length > 0);
   }
 
-  /** The Actions menu, in sections: on the entity page the row's own actions first (the table's
-   * row actions, then Delete), then the table-wide ones — the import wizard and the bulk edit over
+  /** The Actions menu, in sections: the presets while a {@link compact} ribbon has no room for
+   * them; on the entity page the row's own actions first (the table's row actions, then Delete);
+   * then the table-wide ones — the import wizard and the bulk edit over
    * what the list holds — and last the switch to the deleted rows. Nothing writes in the trash, so
    * only the way out of it is offered there. */
   menuActions(): Action[] {
@@ -485,7 +501,8 @@ export class DomainApp extends Control {
     const mode: Action[] = support.deleted && support.restore ? [{name: trash ? `Back to ${plural}` :
       `Show deleted ${plural}`, icon: trash ? 'arrow-left' : 'history', requires: 'delete',
     run: () => void this.setTrash(!trash)}] : [];
-    return [this._rowActions(), table, mode].filter((section) => section.length > 0)
+    const presets = this.compact.peek() && this._page.peek() === 'list' && !trash ? this._presets : [];
+    return [presets, this._rowActions(), table, mode].filter((section) => section.length > 0)
       .flatMap((section, i) => i === 0 ? section : [{...section[0], separator: true}, ...section.slice(1)]);
   }
 
@@ -537,10 +554,18 @@ export class DomainApp extends Control {
         Filters.group('and') : bound(at);
       source.query.value = typeof q === 'string' ? Filters.format(tree) : tree;
     };
-    const group = this.runInScope(() => new ButtonGroup({toggle: 'single', density: 'ribbon',
-      items: entries.map(([label], at) => ({id: String(at), label, onClick: () =>
-        void confirmDiscard(this.session, {action: 'change the filter'}).then((ok) => ok && apply(at))}))}));
+    const press = (at: number) =>
+      void confirmDiscard(this.session, {action: 'change the filter'}).then((ok) => ok && apply(at));
+    // framed, as toggles read, and led by what they do: two bare words are not a switch
+    const group = this.runInScope(() => new ButtonGroup({toggle: 'single',
+      items: entries.map(([label], at) => ({id: String(at), label, onClick: () => press(at)}))}));
     group.root.dataset.u2 = 'domain-presets';
+    group.root.setAttribute('aria-label', 'Show');
+    // what the Actions menu offers in their place while the ribbon is too narrow for them
+    this._presets.push(...entries.map(([label], at): Action => ({name: label, run: () => press(at),
+      get icon() {
+        return group.selected.peek().includes(String(at)) ? 'check' : undefined;
+      }})));
     group.effect(() => {
       // the schema arrives with the load: read the state so the presets are bound again once it has
       source.state.value;
@@ -551,7 +576,7 @@ export class DomainApp extends Control {
       const at = entries.findIndex((_, i) => Filters.equals(bound(i), current));
       group.selected.value = at < 0 ? [] : [String(at)];
     });
-    this._listOnly(group);
+    this._listOnly(group, () => this.compact.value);
     return group;
   }
 
@@ -665,6 +690,7 @@ export class DomainApp extends Control {
     });
     control.effect(() => {
       this._page.value;
+      this.compact.value;
       this._entitySource.value?.currentRow.value;
       control.root.hidden = allowedActions(this.menuActions(), {access: this.listSource.access.value}).length === 0;
     });
@@ -711,15 +737,13 @@ export class DomainApp extends Control {
 
   /** Shown on the list page only — and with them the ribbon panel they sit in, whose divider would
    * otherwise stay behind with nothing after it. */
-  private _listOnly(...controls: Control[]): void {
+  private _listOnly(control: Control, folded: () => boolean = () => false): void {
     this.effect(() => {
-      const list = this._page.value === 'list';
-      for (const control of controls) {
-        control.root.hidden = !list;
-        const panel = control.root.closest<HTMLElement>('.d4-ribbon-panel');
-        if (panel !== null && Array.from(panel.children).every((item) => item.contains(control.root)))
-          panel.style.display = list ? '' : 'none';
-      }
+      const shown = this._page.value === 'list' && !folded();
+      control.root.hidden = !shown;
+      const panel = control.root.closest<HTMLElement>('.d4-ribbon-panel');
+      if (panel !== null && Array.from(panel.children).every((item) => item.contains(control.root)))
+        panel.style.display = shown ? '' : 'none';
     });
   }
 

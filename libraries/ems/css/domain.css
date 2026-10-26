@@ -563,13 +563,35 @@
   color: var(--dg-error);
 }
 
-/* the ribbon controls: a search box and a query box side by side, the query box the wider */
-/* the search box and the filter share whatever the ribbon has left and shrink before the VIEW
-   does: a floor wide enough to read is a floor the toolbox and the context panel push the ribbon
-   past, and the whole view scrolls sideways instead (the filter ends up under the panel) */
+/* the search box takes what the ribbon has left, up to a readable width, and shrinks before the
+   VIEW does: a floor wide enough to read is a floor the toolbox and the context panel push the
+   ribbon past, and the whole view scrolls sideways instead */
 .u2-domain-search {
   flex: 1 1 auto;
   min-width: 90px;
+}
+
+.d4-ribbon-panel:has(> .d4-ribbon-item > .u2-domain-search) {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 340px;
+}
+
+.d4-ribbon-item:has(> .u2-domain-search) {
+  flex: 1 1 160px;
+  min-width: 90px;
+}
+
+.d4-ribbon-item > .u2-domain-search {
+  width: 100%;
+}
+
+/* the presets are a framed switch, led by what they do */
+.u2-btn-group[data-u2='domain-presets']::before {
+  content: 'Show:';
+  margin-right: var(--dg-space-s);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
 }
 
 /* the query box is a row of the list page, full width under the ribbon — the shell's ribbon is one
