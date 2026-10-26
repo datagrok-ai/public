@@ -8,7 +8,7 @@
    the rows every registry and source hands out; the default reads any column as unknown. */
 import {emsBackends} from '../core/domain-backend.js';
 import * as DG from 'datagrok-api/dg';
-import {Access, Rows, allowedActions, divV, span, timestamp, text} from '@datagrok-libraries/u2';
+import {Access, Rows, allowedActions, divV, span, timestamp, text, notify, plural, untracked} from '@datagrok-libraries/u2';
 import type {Capability, IProperty, ObjectRenderer, Action, ColumnOf, DomainRowLike, RowValues, RowView,
   ReadonlySignal, NotifyHandle} from '@datagrok-libraries/u2';
 import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
@@ -369,17 +369,37 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     // last resort, after every guard: the writer refused over a cell and named neither
     source.nameCell = (row, column, problem) => nameCell(this, row as RowView<TRow>, column, problem, source);
     source.caption = (row) => this.renderer.caption(row as RowView<TRow>);
-    // every refused save is one balloon, form or not, closed once the refusal is settled; a load
-    // failure is the list's and the hint's to show
-    let balloon: NotifyHandle | null = null;
+    // a refused save is one balloon per session, replacing the one the attempt before raised, and
+    // closed once the refusal is settled; a load failure is the list's and the hint's to show
     source.effect(() => {
       const error = source.error.value;
-      balloon?.close();
-      balloon = error !== undefined && source.state.peek() !== 'error' &&
-        DomainErrors.codeOf(error) !== DomainSource.REFUSED ? DomainErrors.report(error, source) : null;
+      const shown = BALLOONS.get(source.session);
+      if (shown?.source === source) {
+        shown.balloon?.close();
+        BALLOONS.delete(source.session);
+      }
+      if (error === undefined || source.state.peek() === 'error' || DomainErrors.codeOf(error) === DomainSource.REFUSED)
+        return;
+      BALLOONS.get(source.session)?.balloon?.close();
+      const fix = untracked(() => this._fieldsToFix(source, error));
+      BALLOONS.set(source.session, {source, balloon: fix === 0 ? DomainErrors.report(error, source) :
+        notify.error(`Fix ${plural(fix, 'field', 'fields')} to save`)});
     });
     source.start();
     return source;
+  }
+
+  /** How many fields of the row the form shows carry their own error for a refusal about that row
+   * — then the balloon need not say it again ("Fix 1 field to save"); 0 where the refusal is about
+   * another row, or names nothing a field shows, and the balloon words it in full. */
+  private _fieldsToFix(source: DomainSource<TRow>, error: unknown): number {
+    const row = source.currentRow.peek();
+    const about = source.problemRow.peek();
+    if (DomainErrors.codeOf(error) !== 'validation' || row === null || (about !== null && about !== row.id))
+      return 0;
+    const edit = source.edit.peek();
+    return this.properties.filter(({name}) => name !== undefined &&
+      ((edit?.errorOf(row.id, name) ?? null) !== null || this.validators.check(name, row[name], row) !== null)).length;
   }
 
   /** The validators over every row the batch will send — a form wires them into its inputs, but a
@@ -393,6 +413,9 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return found.message;
   }
 }
+
+/** The refusal balloon each session has up, and the source that raised it. */
+const BALLOONS = new WeakMap<object, {source: DomainSource<any>, balloon: NotifyHandle | null}>();
 
 // one registry per page, not per bundle: the `/domains` route runs in PowerPack's copy of this
 // library, and must still dress a table with what the app's bundle configured. The version keeps a

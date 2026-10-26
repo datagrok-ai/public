@@ -696,7 +696,8 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   fire(save.button, 'click');
   await flush();
   await flush();
-  assert.match(document.body.querySelector('.u2-notify-error')?.textContent ?? '', /Cannot save: Title is required/);
+  assert.equal(document.body.querySelector('.u2-notify-error')?.textContent, 'Fix 1 field to save',
+    'the field says what is wrong; the balloon does not say it again');
   assert.equal(draft.summary.value, 'Cannot save: Title is required', 'the guard\'s refusal is the source\'s error');
   assert.equal(form.input('title').root.classList.contains('u2-input-untouched'), false, 'the verdict is shown');
   assert.equal(emsBackends.domain.tableSync('grit.issue').rows.length, 3, 'nothing was written');
@@ -707,6 +708,35 @@ scoped('a refused save names the field by its caption; the verdicts are shown', 
   assert.equal(await draft.save(), true, 'the guard left with the form');
   save.dispose();
   draft.dispose();
+});
+
+scoped('VR-46/47: one refusal balloon per session, replaced by the next; in full for a row no form shows', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const unregister = table.validators.add('number', (v) => v === 3 ? 'Three is taken' : null);
+  const source = table.source({pageSize: 10});
+  await flush();
+  source.currentRow.value = source.rows.byKey('i1');
+  source.rows.byKey('i2').number = 3;
+  assert.equal(await source.save(), false);
+  await flush();
+  let balloons = [...document.body.querySelectorAll('.u2-notify-error')];
+  assert.equal(balloons.length, 1);
+  assert.match(balloons[0].textContent, /Cannot save: .*Three is taken/, 'another row than the current: named in full');
+  assert.equal(await source.save(), false);
+  await flush();
+  balloons = [...document.body.querySelectorAll('.u2-notify-error')];
+  assert.equal(balloons.length, 1, `DBG ${String(source.error.value)} ${document.body.querySelectorAll('.u2-notify').length}`);
+  source.currentRow.value = source.rows.byKey('i2');
+  assert.equal(await source.save(), false);
+  await flush();
+  assert.equal(document.body.querySelector('.u2-notify-error').textContent, 'Fix 1 field to save',
+    'the current row\'s field shows its error itself');
+  source.revert();
+  await flush();
+  assert.equal(document.body.querySelectorAll('.u2-notify-error').length, 0, 'settled: the balloon goes');
+  unregister();
+  source.dispose();
 });
 
 scoped('a refusal by the table\'s validators shows every verdict too, the failing field focused', async () => {
