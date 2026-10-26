@@ -98,7 +98,7 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
     {columns: ['label', 'substance_id', 'location_id', 'lot', 'quantity', 'unit', 'expires'],
       onActivate: (row) => containers.open(row)});
   // short values get short tracks, so the names keep their room
-  const widths: Record<string, string> = {label: '56px', quantity: '72px', unit: '48px'};
+  const widths: Record<string, string> = {label: '72px', quantity: '72px', unit: '48px'};
   table.effect(() => {
     const grid = table.table.value;
     if (grid !== null)
