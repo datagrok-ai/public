@@ -59,6 +59,31 @@
   color: var(--dg-text-color-light);
 }
 
+/* the entity page: a form of readable width whose editors share one right edge, a structure big
+   enough to read */
+.u2-domain-app-form :is(.u2-form, .u2-domain-form-system) {
+  max-width: 560px;
+}
+
+.u2-domain-app-form .u2-form-auto.u2-form-wide .u2-input-root .u2-input-box:has(> .u2-input-editor:is(.u2-number, .u2-date)),
+.u2-domain-app-form .u2-form-auto.u2-form-wide .u2-input-root[data-u2='choice-input'] .u2-input-box {
+  flex: 1;
+  max-width: none;
+}
+
+.u2-domain-app-form .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2] .u2-input-editor:is(.u2-number, .u2-date),
+.u2-domain-app-form .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='choice-input'] select.u2-input-editor {
+  flex: 1;
+  width: auto;
+  max-width: none;
+}
+
+.u2-domain-app-form .u2-input-root[data-u2='dart-input'] .u2-input-editor.d4-input-molecule-canvas {
+  width: 280px;
+  max-width: 100%;
+  height: 200px;
+}
+
 /* a short lookup reads as a dropdown: a chevron at rest instead of the search magnifier, the clear
    taking its place while hovered */
 .u2-pick-short .u2-typeahead-input {
@@ -579,6 +604,7 @@
   flex: 1 0 auto;
   flex-direction: column;
   gap: var(--dg-space-s);
+  /* the form's own padding: the panes start on its left edge */
   padding: 0 var(--dg-space-m);
 }
 
