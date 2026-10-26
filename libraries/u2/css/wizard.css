@@ -146,13 +146,15 @@
   margin-right: var(--dg-space-l);
 }
 
-/* the host's status line and the gate's reason share the footer's left side */
+/* the host's status line and the gate's reason lead up to the buttons they are about */
 .u2-wizard-left {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--dg-space-m);
   min-width: 0;
-  margin-right: auto;
+  text-align: right;
   font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
 }
