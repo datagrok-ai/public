@@ -4,7 +4,7 @@
    decorates the columns. Selection and the current row are the frame's, so the source sees them
    without a wire; Save and Discard are the session's, not the grid's. */
 import * as DG from 'datagrok-api/dg';
-import {Control, signal, text, Dates, span, timestamp, DataTable, Rows} from '@datagrok-libraries/u2';
+import {Control, signal, text, textWidth, Dates, span, timestamp, DataTable, Rows} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, IProperty, ObjectRenderer, CellStateLike, DataTableColumn,
   RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
@@ -40,6 +40,7 @@ const HEADER_HEIGHT = 44;
 /** Floors by type, so an empty frame still gets readable columns, and a cap. */
 const COLUMN_WIDTH = {flag: 48, number: 64, date: 96, text: 96, name: 160, reference: 160, max: 320};
 const SCROLLBAR = 12;
+const HEADER_MARGIN = 8;
 
 export class DomainGrid extends Control {
   readonly grid: DG.Grid;
@@ -164,12 +165,25 @@ export class DomainGrid extends Control {
     this._fittedTo = df.dart;
     const byName = new Map(this.source.schema.properties.map((p): [string, IProperty] => [p.name!, p]));
     const nameColumn = this.source.schema.info.nameColumn;
+    const font = this.grid.props.colHeaderFont;
     for (const c of this._columns()) {
       if (c.column === null || !c.visible)
         continue;
       const floor = DomainGrid._floorOf(byName.get(c.column.name), c.column.name === nameColumn);
-      c.width = Math.round(Math.min(COLUMN_WIDTH.max, Math.max(floor, c.getDataWidth())));
+      const caption = DomainGrid._captionWidth(c.column.getTag(DG.TAGS.FRIENDLY_NAME) || c.name, font);
+      c.width = Math.round(Math.min(COLUMN_WIDTH.max, Math.max(floor, c.getDataWidth(), caption + HEADER_MARGIN)));
     }
+  }
+
+  /** The narrowest width that fits `caption` in the header's two lines, broken between words. */
+  private static _captionWidth(caption: string, font: string): number {
+    const words = caption.split(/\s+/).filter((w) => w !== '');
+    let best = textWidth(words.join(' '), font);
+    for (let at = 1; at < words.length; at++) {
+      best = Math.min(best, Math.max(textWidth(words.slice(0, at).join(' '), font),
+        textWidth(words.slice(at).join(' '), font)));
+    }
+    return best;
   }
 
   private static _floorOf(prop: IProperty | undefined, isName: boolean): number {
@@ -313,7 +327,7 @@ export class DomainDataTable extends Control {
       render: (row) => this._cell(row, name, byName.get(name)),
     }));
     const table = this.runInScope(() => new DataTable<RowView>({columns, rowHeight: this._options.rowHeight,
-      items: source.rows, sort: source.sort, cellState: this._cellState(),
+      items: source.rows, sort: source.sort, cellState: this._cellState(), fitColumns: true,
       contextActions: (row) => DomainTable.of(source)?.rowActions(row, this._options.actions) ?? [],
       onActivate: this._options.onActivate ??
         (() => source.activate.value = source.activate.peek() + 1)}));

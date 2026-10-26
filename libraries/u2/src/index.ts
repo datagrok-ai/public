@@ -188,7 +188,7 @@ export {RefInput} from './components/filter/ref-input.js';
 export type {RefInputOptions} from './components/filter/ref-input.js';
 
 export {Emitter} from './core/emitter.js';
-export {EMPTY, isEmpty, plural, text, camelCaseToWords} from './core/text.js';
+export {EMPTY, isEmpty, plural, text, camelCaseToWords, textWidth} from './core/text.js';
 export {labelText} from './core/input-base.js';
 export type {LiveOption} from './core/input-base.js';
 export {subBind} from './sources/sub-bind.js';

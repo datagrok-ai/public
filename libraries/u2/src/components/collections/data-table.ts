@@ -6,6 +6,7 @@
 import {Signal} from '../../core/signals.js';
 import type {ReadonlySignal} from '../../core/signals.js';
 import {icon} from '../display/icon.js';
+import {textWidth} from '../../core/text.js';
 import {VirtualRows} from './list.js';
 import type {VirtualRowsOptions} from './list.js';
 import type {RowsLike} from '../../sources/rows-like.js';
@@ -55,10 +56,14 @@ export interface DataTableOptions<T> extends Omit<VirtualRowsOptions<T>, 'itemHe
   /** The text a row is found by (`revealItem`, the state block): the first column's value by
    * default. */
   labelOf?: (item: T) => string;
+  /** A `minmax(<px>, <n>fr)` column takes its share by what its header and first rows hold, never
+   * narrower than its header — fitted once, at the first rows. */
+  fitColumns?: boolean;
 }
 
 const MAX_HEADER_HEIGHT = 28;
 const MIN_COLUMN_WIDTH = 32;
+const FIT = {rows: 100, padding: 16, sort: 20, max: 400};
 
 export class DataTable<T> extends VirtualRows<T> {
   private _columns: DataTableColumn<T>[];
@@ -78,6 +83,7 @@ export class DataTable<T> extends VirtualRows<T> {
   /** Whether the current items are live — decided per {@link setItems}, so the base keeps every
    * row whose item is unchanged and {@link placeRow} asks for a render where they are live. */
   private _liveNow = false;
+  private _fit: boolean;
 
   constructor(options: DataTableOptions<T>) {
     const first = options.columns[0];
@@ -91,6 +97,7 @@ export class DataTable<T> extends VirtualRows<T> {
     this._liveOption = options.liveItems;
     this._headerHeight = Math.min(this.itemHeight, MAX_HEADER_HEIGHT);
     this._sort = options.sort;
+    this._fit = options.fitColumns ?? false;
     this._template = DataTable._templateOf(options.columns);
     this._head = this._header();
     this.root.prepend(this._head);
@@ -240,6 +247,8 @@ export class DataTable<T> extends VirtualRows<T> {
   /** The row's cells rendered in place — each restored to a fresh cell's attributes first, so a
    * `render` that set a title, a dataset key or an aria flag does not follow the pool. */
   protected fillRow(row: HTMLElement, index: number): void {
+    if (this._fit)
+      this._fitColumns();
     if (this._rowShape.get(row) !== this._shape)
       this._cells(row);
     else
@@ -274,6 +283,34 @@ export class DataTable<T> extends VirtualRows<T> {
       cell.classList.add('u2-cell-error');
       cell.title = error.message;
     }
+  }
+
+  private _fitColumns(): void {
+    this._fit = false;
+    const style = getComputedStyle(document.body);
+    const font = `${style.fontSize} ${style.fontFamily}`;
+    // nothing measures without a canvas: the declared tracks stand
+    if (textWidth('M', font) === 0)
+      return;
+    const scratch = document.createElement('div');
+    const items = this.items.slice(0, FIT.rows);
+    this._columns = this._columns.map((c) => {
+      const track = /^minmax\((\d+)px, [\d.]+fr\)$/.exec(c.width ?? '');
+      if (track === null)
+        return c;
+      const head = Math.ceil(textWidth(c.header ?? c.name, `bold ${font}`)) + FIT.padding +
+        (this._sort === undefined ? 0 : FIT.sort);
+      let widest = head;
+      for (const [i, item] of items.entries()) {
+        const content = c.render === undefined ? DataTable._text(item, c.name) : c.render(item, i, scratch);
+        const label = typeof content === 'string' ? content : content.textContent ?? '';
+        widest = Math.max(widest, Math.ceil(textWidth(label, font)) + FIT.padding);
+      }
+      const width = Math.min(widest, FIT.max);
+      return {...c, width: `minmax(${Math.max(head, Math.min(Number(track[1]), width))}px, ${width}fr)`};
+    });
+    this._template = DataTable._templateOf(this._columns);
+    this._head.style.gridTemplateColumns = this._template;
   }
 
   protected rowKey(e: KeyboardEvent, index: number): boolean {

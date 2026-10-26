@@ -472,6 +472,7 @@ class ImportFlow {
     const table = owner.runInScope(() => new DataTable<DomainImportRow>({
       rowHeight: this._table.importer?.rowHeight ?? 24,
       keyOf: (row) => String(row.index),
+      fitColumns: true,
       columns: columns.map((c) => ({name: c.name, header: c.header, width: c.width, render: (row) => {
         const content = c.render(row);
         return typeof content === 'string' ? span(content, 'u2-domain-import-text') : content;
