@@ -35,9 +35,7 @@ export class BulkRegistration {
       const input = String(row.values[STRUCTURE] ?? '');
       if (input !== '' && row.kind !== 'error')
         return grok.chem.drawMolecule(input, 160, 60);
-      const text = span(input, row.kind === 'error' ? 'u2-cell-error' : undefined);
-      text.title = input;
-      return text;
+      return span(input, row.kind === 'error' ? 'u2-cell-error' : undefined);
     }};
   }
 
