@@ -1600,3 +1600,12 @@ scoped('presets are a framed switch; on a narrow view they fold into the Actions
   assert.equal(group.root.hidden, false);
   a.dispose();
 });
+
+scoped('itemHeight sizes the list rows: an app draws taller cards', async () => {
+  const {app: a} = await app({mode: 'cards', itemHeight: 88});
+  assert.equal(a.list.list.itemHeight, 88);
+  a.dispose();
+  const {app: b} = await app({mode: 'cards'});
+  assert.equal(b.list.list.itemHeight, 64, 'the card default otherwise');
+  b.dispose();
+});

@@ -79,6 +79,8 @@ export interface DomainAppOptions {
   live?: boolean;
   liveMs?: number;
   mode?: DomainListMode;
+  /** The list's row height — a card taller than the default 64px fits a larger picture. */
+  itemHeight?: number;
   /** What every draft the app creates starts with — the preset a view that opened the app carries
    * (a location's id on a containers app). Threaded into the entity page's draft source. */
   defaults?: Record<string, unknown>;
@@ -211,7 +213,7 @@ export class DomainApp extends Control {
       live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
     this.list = this.runInScope(() => new DomainList(this.listSource, {mode: _options.mode,
-      create: () => void this.create()}));
+      itemHeight: _options.itemHeight, create: () => void this.create()}));
     // Enter on a row is the way into the entity page
     let seen = this.listSource.activate.peek();
     this.effect(() => {
