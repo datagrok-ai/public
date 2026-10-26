@@ -42,7 +42,7 @@ export class CompoundsApp extends DomainApp {
       if (row === null)
         return;
       this._showIdentity(row, null, row.original_structure);
-      this.header.append(this._identity);
+      this.panes.prepend(this._identity);
       return () => this._identity.remove();
     });
     this.effect(() => {
@@ -51,7 +51,7 @@ export class CompoundsApp extends DomainApp {
       if (source === null || source === undefined || edit === undefined || !source.isDraft)
         return;
       this._showIdentity(null, null);
-      this.header.append(this._identity);
+      this.panes.prepend(this._identity);
       const changes = edit.onChanged.subscribe(() => void this._derive(source));
       const unguard = source.guard(() => {
         const verdict = this._verdicts.get(source.currentRow.peek()?.id ?? '');
@@ -63,6 +63,18 @@ export class CompoundsApp extends DomainApp {
         this._identity.remove();
         this._verdicts.clear();
       };
+    });
+    // the identity's captions take the form's label column, which the form sets on its own root
+    this.effect(() => {
+      const form = this.form.value;
+      if (form === null)
+        return;
+      const align = () => this._identity.style.setProperty('--u2-form-label-width',
+        form.root.querySelector<HTMLElement>('.u2-form')?.style.getPropertyValue('--u2-form-label-width') ?? '');
+      align();
+      const observer = new MutationObserver(align);
+      observer.observe(form.root, {subtree: true, childList: true, attributes: true, attributeFilter: ['style']});
+      return () => observer.disconnect();
     });
   }
 
@@ -128,21 +140,26 @@ export class CompoundsApp extends DomainApp {
     const shown = (column: keyof CompoundIdentity) => isEmpty(identity?.[column]) ? '—' : identity![column]!;
     const rule = shown('match_rule');
     // the parent is drawn, not spelled out — only where it is not the Structure the form draws
-    // already (a salt or a charge taken off); the rows stack under it so they form no third caption column
+    // already (a salt or a charge taken off)
     const parent = ui.div([]);
+    const rows = ui.tableFromMap({'Parent': parent, 'Formula': shown('formula'), 'InChIKey': shown('inchikey'),
+      'Matching rule': `${rule.charAt(0)}${rule.slice(1).toLowerCase().replace(/_/g, ' ')}`});
+    const parentRow = parent.closest('tr');
+    if (parentRow !== null)
+      parentRow.hidden = true;
     const structure = identity?.structure;
     if (!isEmpty(structure)) {
       void Chemistry.same(original ?? '', structure!).catch(() => false).then((same) => {
-        if (!same)
-          parent.append(grok.chem.drawMolecule(structure!, 160, 120));
+        if (same)
+          return;
+        parent.append(grok.chem.drawMolecule(structure!, 160, 120));
+        if (parentRow !== null)
+          parentRow.hidden = false;
       });
     }
     this._identity.replaceChildren(this._identityHeading,
       ...(problem === null ? [] : [ui.divText(problem, 'moltrack-ems-problem')]),
       identity === null ? ui.divText(problem === null ? 'Draw a structure to see its identity' : '',
-        'moltrack-ems-hint') :
-        ui.divV([parent,
-          ui.tableFromMap({'Formula': shown('formula'), 'InChIKey': shown('inchikey'),
-            'Matching rule': `${rule.charAt(0)}${rule.slice(1).toLowerCase().replace(/_/g, ' ')}`})]));
+        'moltrack-ems-hint') : rows);
   }
 }
