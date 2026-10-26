@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Compounds: Batches are a grid you type new batches into; the Grok Batch ID opens the batch
 * Assay results: Showed concentrations and CLint values as formatted numbers instead of raw floats
 * Compounds, batches and assay results show and check the same in child tabs as in their own lists, and in the `/domains` view
 * Added MolTrack EMS: compounds, batches, additions, assays and results on a domain schema, each compound identified from its structure before it is saved

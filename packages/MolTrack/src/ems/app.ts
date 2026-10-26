@@ -18,6 +18,10 @@ export const APP_PATH = '/apps/Moltrack/MolTrackEMS';
 
 const FILTERS = {filters: {mode: 'builder' as const, placement: 'left' as const}};
 
+// a compound's batches are typed in its grid; the Grok Batch ID opens the batch's own page
+const BATCH_GRID = {open: 'batch_regno', columns: ['batch_regno', 'source', 'source_batch_code', 'acquired_date',
+  'synthesized_date', 'purity', 'project']};
+
 const KEYS: Record<string, string> = {[`${SCHEMA}.compound`]: 'molregno', [`${SCHEMA}.compound_batch`]: 'batch_regno'};
 
 // a batch page shows the compound it is a lot of, above its fields; the picker stays the way to set it
@@ -68,7 +72,8 @@ const VIEWS = domains.views({
   ready: (app, table) => MolTrackEms.ready(app, table),
   views: [
     {table: `${SCHEMA}.compound`, name: 'Compounds', options: {...FILTERS, sort: '!molregno', app: CompoundsApp,
-      mode: 'cards', itemHeight: 88, include: CompoundsApp.FIELDS, children: {tables: ['compound_batch'], mode: 'list'},
+      mode: 'cards', itemHeight: 88, include: CompoundsApp.FIELDS,
+      children: {tables: ['compound_batch'], grids: {compound_batch: BATCH_GRID}},
       // no Bulk edit: it would write past the identity a structure derives
       menu: {bulkEdit: false}}},
     {table: `${SCHEMA}.compound_batch`, name: 'Batches', options: {...FILTERS, sort: '!batch_regno', app: BatchesApp,
