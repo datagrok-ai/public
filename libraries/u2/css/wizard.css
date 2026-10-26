@@ -17,8 +17,7 @@
   height: 100%;
 }
 
-/* the wizard pads its own rail, body and footer: the dialog body's padding would indent all of them
-   past the title */
+/* the wizard pads its own rail, body and footer */
 .u2-dialog-content:has(> .u2-wizard) {
   padding: 0;
 }
@@ -130,7 +129,7 @@
   overflow-wrap: anywhere;
 }
 
-/* the dialog's footer (dialog.css .u2-dialog-buttons): the same rule and padding */
+/* as the dialog's footer (dialog.css .u2-dialog-buttons) */
 .u2-wizard-buttons {
   display: flex;
   align-items: center;
@@ -141,13 +140,12 @@
   border-top: var(--dg-border-width) solid var(--dg-border-subtle);
 }
 
-/* dismissing stands apart from stepping: CANCEL, a gap, then BACK and NEXT */
+/* CANCEL stands apart from BACK and NEXT */
 .u2-wizard-cancel {
   margin-right: var(--dg-space-l);
 }
 
-/* the host's status line and the gate's reason sit centred in the room the buttons leave, as a
-   platform dialog's footer warning does (Chem's MPO dialog) */
+/* the host's status line and the gate's reason, centred as a platform dialog's footer warning */
 .u2-wizard-left {
   display: flex;
   flex: 1 1 auto;

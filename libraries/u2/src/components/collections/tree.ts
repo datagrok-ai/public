@@ -612,9 +612,8 @@ export class VirtualTree<T = unknown> extends Control {
     return row ? Number(row.dataset.index) : -1;
   }
 
-  /** The platform's chevron (the Browse tree's `chevron.svg`), not a text glyph: it inherits the
-   * icon sheet every other twistie in the app is drawn from, and keeps its box when it is hidden
-   * so the rows stay aligned. */
+  /** The platform's chevron, not a text glyph: it inherits the icon sheet every other twistie in
+   * the app is drawn from, and keeps its box when it is hidden so the rows stay aligned. */
   private static _twistie(branch: boolean, open: boolean): HTMLElement {
     const el = icon(open ? 'chevron-down' : 'chevron-right', {cls: 'u2-tree-twistie'});
     if (!branch)

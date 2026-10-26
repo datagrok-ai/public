@@ -12,7 +12,7 @@
   min-width: 0;
 }
 
-/* the search box's skin with a funnel for its magnifier: the two boxes look alike, and differ by it */
+/* the search box's look, with a funnel for its magnifier */
 .u2-fq-search::before {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M2 3h12l-4.6 5.4V13l-2.8 1.2V8.4z'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M2 3h12l-4.6 5.4V13l-2.8 1.2V8.4z'/%3E%3C/svg%3E");
@@ -44,7 +44,7 @@
   text-overflow: ellipsis;
 }
 
-/* the completion popup: sized by its rows up to POPUP_MAX_WIDTH (filter-query-input.ts), squared off like a menu */
+/* max-width is POPUP_MAX_WIDTH in filter-query-input.ts */
 .u2-suggest-popup.u2-fq-popup {
   min-width: 160px;
   max-width: 320px;

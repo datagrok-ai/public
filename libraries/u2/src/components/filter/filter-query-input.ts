@@ -224,7 +224,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
       autoHighlight: true,
       // a query's options are many and the rows under the box are what the user is filtering
       maxHeight: 'calc(var(--dg-control-height) * 6)',
-      // a few short words do not need the width of the box: the rows set it, and it hangs at the caret
+      // sized by its rows and hung at the caret
       matchWidth: false,
       onPick: (index) => {
         this._moved = true;
@@ -274,22 +274,16 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     return this._searchSkin(input);
   }
 
-  /** The search box's chrome — a funnel where the search has its magnifier, and the same clear button,
-   * which empties the box and applies that at once. */
+  /** The search box's look, with a funnel for its magnifier; ✕ applies the empty filter at once. */
   private _searchSkin(input: HTMLInputElement): HTMLElement {
     const editor = document.createElement('div');
     editor.className = 'u2-input-search u2-fq-search';
-    const clear = document.createElement('button');
-    clear.type = 'button';
-    clear.className = 'u2-input-clear';
-    clear.textContent = '✕';
-    clear.setAttribute('aria-label', 'Clear filter');
-    this.scope.listen(clear, 'click', () => {
+    const clear = this.createClearButton(() => {
       this._list.dismiss();
       this._text.value = '';
       this.commit();
       input.focus();
-    });
+    }, 'Clear filter');
     this.effect(() => clear.hidden = this._text.value === '');
     editor.append(input, clear);
     return editor;
@@ -361,7 +355,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     return true;
   }
 
-  /** Where the token at `at` starts inside the box, kept so a popup at its widest still fits under it. */
+  /** Where the token at `at` starts in the box, clamped so the widest popup still fits under it. */
   private _caretOffset(at: number): number {
     FilterQueryInput._measure ??= document.createElement('canvas').getContext?.('2d') ?? null;
     const measure = FilterQueryInput._measure;

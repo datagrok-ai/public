@@ -358,7 +358,7 @@ export class ObjectForm extends Form {
           if (field.input !== null)
             field.input.value.value = this._read(field.prop, field.kind);
           else
-            field.text!.textContent = ObjectForm.display(field.prop, this._read(field.prop, null));
+            field.text!.textContent = ObjectForm._display(field.prop, this._read(field.prop, null));
         }
       });
     } finally {
@@ -393,7 +393,7 @@ export class ObjectForm extends Form {
     const access = this._access.field(prop.name!);
     if (access === 'readonly') {
       const {row, value} = ObjectForm.readonlyField(labelText(override.label) ?? ObjectForm._caption(prop),
-        prop.name!, ObjectForm.display(prop, this._read(prop, null)));
+        prop.name!, ObjectForm._display(prop, this._read(prop, null)));
       const tooltip = labelText(override.tooltipText) ?? prop.description;
       if (tooltip)
         row.title = tooltip;
@@ -451,9 +451,8 @@ export class ObjectForm extends Form {
     });
   }
 
-  /** A value as text the way its property shows it: a number through its `format` (`DG.format`,
-   * where the platform is loaded), a calendar day by the format's `yyyy`, `MM` and `dd`. */
-  static display(prop: IProperty, value: unknown): string {
+  /** A value as its property's `format` shows it. */
+  private static _display(prop: IProperty, value: unknown): string {
     if (value === null || value === undefined || value === '')
       return '';
     const format = formatter(prop);

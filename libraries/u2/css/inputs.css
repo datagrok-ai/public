@@ -205,14 +205,12 @@ textarea.u2-input-editor {
   padding: 0;
 }
 
-/* the bridged box is as wide as the platform input in it: at a zero basis it shared its line with
-   the verdict, which then sat clipped beside the canvas instead of wrapping under it */
+/* as wide as the platform input in it, so the verdict wraps under it instead of clipping beside it */
 .u2-input-root[data-u2='dart-input'] > .u2-input-box {
   flex: 0 1 auto;
 }
 
-/* a bridged platform input brings its own caption: a required one carries the asterisk there,
-   hanging past a right-aligned caption as u2's own does */
+/* a bridged input's own caption carries the required asterisk, hanging as u2's own does */
 .u2-input-required[data-u2='dart-input'] .ui-input-label::after {
   content: '*';
   margin-left: var(--dg-space-xs);
@@ -230,7 +228,6 @@ textarea.u2-input-editor {
   margin-left: 1px;
 }
 
-/* the empty canvas's "Click to edit" is a hint, drawn as every other placeholder is */
 .u2-input-root[data-u2='dart-input'] .d4-input-molecule-canvas-hint {
   color: var(--dg-text-color-light);
 }
@@ -1037,9 +1034,13 @@ textarea.u2-list-area {
 }
 
 .u2-suggest-footer {
+  /* in view while the rows scroll */
+  position: sticky;
+  bottom: 0;
   padding: var(--dg-space-xs) var(--dg-space-m);
   font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
+  background: var(--dg-bg);
   border-top: var(--dg-border-width) solid var(--dg-border-subtle);
 }
 

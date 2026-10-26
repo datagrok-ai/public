@@ -56,7 +56,7 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
   readonly query: ReadonlySignal<string>;
   readonly problems: ReadonlySignal<FilterProblem[]>;
   readonly mode: Signal<FilterMode>;
-  /** The Simple/Advanced link, at the end of the header unless a host moves it to its own title row. */
+  /** The Simple/Advanced link, for a host to move into its own title row. */
   readonly modeSwitch: HTMLElement;
 
   // every field below is built by createEditor(), which the base constructor calls before

@@ -49,9 +49,8 @@
   background: var(--dg-hover-subtle);
 }
 
-/* the platform's state language: the current row grey with its text unchanged (the Browse tree's
-   .d4-current), the selection an accent stripe — so the current row inside a multi-selection is
-   still the one that stands out */
+/* the current row grey (the Browse tree's .d4-current), the selection an accent stripe, so the
+   current row stands out inside a multi-selection */
 .u2-list-row-current {
   background: var(--dg-hover-subtle);
 }
@@ -73,8 +72,7 @@
   pointer-events: none;
 }
 
-/* on a list row the block floats over the row's end instead of reserving it: the text runs to the
-   edge and the actions cover its tail on hover, in the row's own colour when a list sets --u2-row-bg */
+/* on a list row the block floats over the row's end, in the row's colour (--u2-row-bg) */
 .u2-list-row .u2-row-actions {
   position: absolute;
   top: 0;
@@ -84,7 +82,6 @@
   background: var(--u2-row-bg, var(--dg-hover-subtle));
 }
 
-/* the platform's hover icons (Chem's scaffold tree): actions in blue, a destructive one in red */
 .u2-row-actions .u2-btn.u2-icon-btn.u2-row-action-destructive {
   color: var(--dg-error);
 }

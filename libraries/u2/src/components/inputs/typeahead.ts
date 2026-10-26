@@ -33,9 +33,9 @@ export interface TypeAheadOptions<T> {
   emptyText?: string | ((query: string) => string);
   /** A ceiling on the popup's height (a CSS length or pixels), under the room the overlay gives it. */
   maxHeight?: number | string;
-  /** At least as wide as the box (default); `false` sizes the popup to its rows, 240px at least. */
+  /** At least as wide as the box (default); `false` sizes the popup to its rows. */
   matchWidth?: boolean;
-  /** A muted line under the candidates, read whenever they change — "10 of 20 — type to narrow". */
+  /** A muted line under the candidates ("10 of 20 — type to narrow"). */
   footer?: () => string | null;
   /** The accessible name (`aria-label` on the editor); a type-ahead shows no caption of its own. */
   label?: string;
@@ -301,8 +301,8 @@ export class TypeAhead<T> extends Control {
     }
   }
 
-  /** Opens the candidates as focus does — the first of them over a held item, not its name as a
-   * query; what a host whose box takes no typing (a short lookup read as a dropdown) does on a click. */
+  /** Opens the candidates as focus does, listing all of them over a held item rather than
+   * querying its name — for a box read as a dropdown. */
   open(): void {
     if (this._source && this.selected.peek() !== null)
       this._source.query('');

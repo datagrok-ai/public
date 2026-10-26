@@ -284,8 +284,7 @@ export class TabStrip extends Control {
     }
   }
 
-  /** Scrolls the strip, and nothing around it, to the tab: a tab made active in code must not
-   * scroll the page the strip sits in. */
+  /** Scrolls the strip to the tab without `scrollIntoView`, which also scrolls the page around it. */
   private _reveal(tab: Tab): void {
     const strip = this._scroller.getBoundingClientRect();
     const at = tab.header.getBoundingClientRect();

@@ -43,7 +43,7 @@ export interface SuggestionListOptions<T> {
   maxHeight?: number | string;
   /** At least as wide as the anchor (default); `false` sizes the popup to its rows. */
   matchWidth?: boolean;
-  /** A muted line under the rows ("10 of 20 — type to narrow"), read whenever they change; null for none. */
+  /** A muted line under the rows; null for none. */
   footer?: () => string | null;
 }
 

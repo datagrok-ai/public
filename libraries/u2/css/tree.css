@@ -100,8 +100,7 @@
   color: var(--dg-text-color-light);
 }
 
-/* the selected node as the platform tree draws it (.d4-tree-view-node-selected): a grey band
-   under text in its own colour, not the list's accent */
+/* the selected node as the platform tree draws it (.d4-tree-view-node-selected) */
 .u2-tree .u2-list-row-selected,
 .u2-tree .u2-list-row-selected:hover {
   background: var(--dg-grey-1);

@@ -113,8 +113,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
       const value = this.value.value;
       if (echo)
         echo = false;
-      // a float column stores what was typed as the nearest float32 and hands that back: the
-      // text being typed already says it
+      // a float32 column echoes the typed value rounded: the typed text already says it
       else if (!NumberInput._sameFloat32(this._parse(input.value), value))
         input.value = this._format(value);
       this._syncSlider();
@@ -304,10 +303,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     return String(rounded === 0 && value !== 0 ? value : rounded);
   }
 
-  /** Dart's dynamic precision: as many decimals as the most precise of value/min/max/step carries
-   * (`float_input.dart:21-24`). */
-  /** A float32 read back as a double (3.200000047683716) as the shortest decimal that rounds to the
-   * same float32 (3.2); any other double as it is. */
+  /** A float32 read back as a double (3.200000047683716) as the shortest decimal for it (3.2). */
   private static _shortest(value: number): number {
     if (Math.fround(value) !== value)
       return value;
@@ -323,6 +319,8 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     return a != null && b != null && Math.fround(a) === Math.fround(b);
   }
 
+  /** Dart's dynamic precision: as many decimals as the most precise of value/min/max/step carries
+   * (`float_input.dart:21-24`). */
   private _decimals(value: number): number {
     const {min, max, step} = this.options;
     let decimals = NumberInput._decimalsOf(value);

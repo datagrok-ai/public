@@ -96,7 +96,6 @@ function textPart(cls: string, part: string): HTMLElement {
   return el;
 }
 
-/** A value not filled in yet marks only its empty slot (`u2-fb-missing`), not the whole row. */
 function markProblem(root: HTMLElement, line: HTMLElement, message: string | null, missing = false): void {
   root.classList.toggle('u2-fb-invalid', message !== null && !missing);
   root.classList.toggle('u2-fb-missing', message !== null && missing);

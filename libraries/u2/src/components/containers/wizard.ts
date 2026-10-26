@@ -34,7 +34,7 @@ export interface WizardStep {
   finishText?: string;
   /** What NEXT reads on this step (NEXT by default) — CREATE on a step whose commit registers; a
    * signal where the wording follows the state (SAVE, then REOPEN once a save's outcome is unknown).
-   * A named NEXT, like a step with a {@link commit} and FINISH, is the raised primary; a plain NEXT is flat. */
+   * A named NEXT is raised, as is one with a {@link commit} and FINISH; a plain NEXT is flat. */
   nextText?: string | ReadonlySignal<string>;
   /** Work NEXT runs before leaving this step: the wizard waits on it and nothing closes meanwhile;
    * `false` keeps the step (a commit the server refused), and so does a throw or a rejection, whose
@@ -249,8 +249,7 @@ export class Wizard extends Control {
       this._index.value = at;
   }
 
-  /** Marks a step as failed — a report over work that did not land: its marker reads "!" in the
-   * error colour until it is cleared. */
+  /** Marks a step as failed: its marker reads "!" in the error colour until cleared. */
   setStepFailed(id: string, failed: boolean): void {
     const next = new Set(this._failed.peek());
     if (failed)
@@ -451,7 +450,7 @@ export class Wizard extends Control {
     const next = typeof current.nextText === 'string' ? current.nextText : current.nextText?.value;
     const last = index === this._steps.length - 1;
     this._next.textContent = !last ? next ?? 'NEXT' : current.done === true ? 'CLOSE' : current.finishText ?? 'FINISH';
-    // raised only where pressing it commits, as the platform's dialogs raise only their committing button
+    // raised only where pressing it commits
     this._next.classList.toggle('u2-btn-primary', current.done !== true &&
       (last || current.commit !== undefined || current.nextText !== undefined));
   }

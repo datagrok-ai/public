@@ -13,8 +13,7 @@ const AVATAR_HUES = 6;
 const PAGE = 20;
 
 /** Smart-filter `like` wraps the value in `%…%` server-side, so the sanitized substring goes
- * in as is. The empty query lists the current user first; a page that is not the whole answer
- * says how much more there is. */
+ * in as is. The empty query lists the current user first. */
 export function userInput(placeholder = 'User…'): TypeAhead<DG.User> {
   let total: number | null = null;
   return new TypeAhead<DG.User>({
@@ -52,7 +51,7 @@ function renderUser(user: DG.User): HTMLElement {
   const name = line('u2-typeahead-user-name', user.friendlyName);
   name.dataset.u2Part = 'item-label';
   text.append(name);
-  // every row two lines high: the login, else the email where the login is the name itself
+  // always a second line, so every row is the same height
   const secondary = user.login && user.login !== user.friendlyName ? user.login : user.email ?? '';
   text.append(line('u2-typeahead-user-secondary', secondary === user.friendlyName ? '' : secondary));
   row.append(avatar(user), text);

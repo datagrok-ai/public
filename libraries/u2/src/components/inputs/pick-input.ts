@@ -1,6 +1,5 @@
-/* A reference picker with an `Input<string | null>` face: the value is the id a reference holds,
-   the box shows the item's caption. The face over any `TypeAhead` — a domain table's rows, the
-   platform's users or groups. */
+/* A reference picker: the value is the id a reference holds, the box shows the item's caption,
+   over any `TypeAhead` (a domain table's rows, the platform's users or groups). */
 import {Input, InputOptions} from '../../core/input-base.js';
 import {div, span} from '../../core/elements.js';
 import {TypeAhead} from './typeahead.js';
@@ -77,9 +76,8 @@ export class PickInput<T> extends Input<string | null, PickInputOptions<T>> {
     hint.dataset.u2Part = 'hint';
     hint.hidden = true;
     this._hint = hint;
-    // text that is not a pick never survives a blur: the held pick's name comes back (and a line
-    // says so until the next focus when something was typed), else the box is cleared — text that
-    // looks chosen is worse than none (an Enter still awaiting its candidates is left to land)
+    // text that is not a pick never survives a blur: the held pick comes back (with a hint if
+    // something was typed), else the box is cleared
     const onBlur = () => {
       if (picker.isPickPending || picker.selected.peek() !== null)
         return;
@@ -98,20 +96,13 @@ export class PickInput<T> extends Input<string | null, PickInputOptions<T>> {
       input.removeEventListener('blur', onBlur);
       input.removeEventListener('focus', onFocus);
     });
-    const clear = document.createElement('button');
-    clear.type = 'button';
-    clear.className = 'u2-input-clear';
-    clear.textContent = '✕';
-    clear.setAttribute('aria-label', 'Clear');
-    const onClear = () => {
+    const clear = this.createClearButton(() => {
       held = null;
       picker.selected.value = null;
       picker.resync();
       this.value.value = null;
       input.focus();
-    };
-    clear.addEventListener('click', onClear);
-    this.own(() => clear.removeEventListener('click', onClear));
+    });
     this.effect(() => clear.hidden = empty(this.value.value) && picker.text.value === '');
     const follow = this.options.open;
     if (follow === undefined)

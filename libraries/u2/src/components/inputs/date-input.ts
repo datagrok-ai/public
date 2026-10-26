@@ -139,7 +139,7 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
     let echo = false;
     this.effect(() => {
       const value = this.value.value;
-      // a form's refresh re-sends an equal Date mid-typing: reformatting would turn "09:3" into "09:03"
+      // an equal Date re-sent mid-typing must not reformat "09:3" into "09:03"
       const shown = this._parse(input.value);
       if (echo)
         echo = false;

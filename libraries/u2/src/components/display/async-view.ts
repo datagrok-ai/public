@@ -31,16 +31,15 @@ export function loader(text?: string): HTMLElement {
 }
 
 export interface EmptyStateOptions {
-  /** Platform icon name, drawn large and muted above the sentence. */
+  /** Platform icon name, drawn above the text. */
   icon?: string;
-  /** The way forward: a primary "New issue", a "Clear filter". */
+  /** The way forward ("New issue", "Clear filter"). */
   actions?: HTMLElement[];
-  /** A failure rather than an absence: the icon and the sentence in the error colour. */
+  /** A failure rather than an absence: drawn in the error colour. */
   error?: boolean;
 }
 
-/** One look for "nothing here" and "this failed" alike: an icon, a sentence and the actions out of
- * it, centred in whatever area holds it. */
+/** "Nothing here" or "this failed": an icon, a sentence and the actions out of it, centred. */
 export function emptyState(text: string, options?: EmptyStateOptions): HTMLElement {
   const el = document.createElement('div');
   el.className = options?.error ? 'u2-empty-state u2-empty-state-error' : 'u2-empty-state';

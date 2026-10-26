@@ -41,12 +41,8 @@ export interface DataTableOptions<T> extends Omit<VirtualRowsOptions<T>, 'itemHe
   items?: RowsLike<T> | ReadonlySignal<T[]>;
   /** Row height in pixels; 24 by default. */
   rowHeight?: number;
-  /** Header height in pixels: the row height, up to 28, by default — a tall row (a depiction) is
-   * no reason for a tall header. */
-  headerHeight?: number;
-  /** The order, as `'name'`, `'!name'` (descending) or `''` (unsorted), of which the header shows
-   * and sets the first column: a click on a header sorts by it, again descending, a third time not
-   * at all. Absent, the headers do not sort. */
+  /** The order (`'name'`, `'!name'` descending, `''` none) the headers show and set by click;
+   * absent, the headers do not sort. */
   sort?: Signal<string>;
   cellState?: CellStateLike;
   /** Enter on the selected row, or a double-click on it. */
@@ -93,13 +89,13 @@ export class DataTable<T> extends VirtualRows<T> {
     this._onActivate = options.onActivate;
     this._optionKeyOf = options.keyOf;
     this._liveOption = options.liveItems;
-    this._headerHeight = options.headerHeight ?? Math.min(this.itemHeight, MAX_HEADER_HEIGHT);
+    this._headerHeight = Math.min(this.itemHeight, MAX_HEADER_HEIGHT);
     this._sort = options.sort;
     this._template = DataTable._templateOf(options.columns);
     this._head = this._header();
     this.root.prepend(this._head);
     this._listen();
-    const sort = options.sort;
+    const sort = this._sort;
     if (sort !== undefined)
       this.effect(() => this._showSort(sort.value));
     if (options.items)
@@ -147,8 +143,7 @@ export class DataTable<T> extends VirtualRows<T> {
     return Math.max(0, this.root.clientHeight - this._headerHeight);
   }
 
-  /** The column at `index` given `px` of width — what dragging its header's right edge does. */
-  resizeColumn(index: number, px: number): void {
+  private _resizeColumn(index: number, px: number): void {
     const width = `${Math.max(MIN_COLUMN_WIDTH, Math.round(px))}px`;
     this._columns = this._columns.map((c, i) => i === index ? {...c, width} : c);
     this._template = DataTable._templateOf(this._columns);
@@ -157,14 +152,14 @@ export class DataTable<T> extends VirtualRows<T> {
       (row as HTMLElement).style.gridTemplateColumns = this._template;
   }
 
-  /** The header's sorting, column resizing, and the full text of a cut cell as its tooltip. */
+  /** Header sorting, column resizing, and a cut cell's full text as its tooltip. */
   private _listen(): void {
     const scope = this.scope;
     scope.listen(this.root, 'click', (e) => {
       const target = e.target as Element;
       const head = target.closest('.u2-data-table-head') as HTMLElement | null;
       if (head !== null && this._sort !== undefined && target.closest('.u2-data-table-resize') === null)
-        this._sort.value = DataTable.nextSort(this._sort.peek(), head.dataset.column!);
+        this._sort.value = DataTable._nextSort(this._sort.peek(), head.dataset.column!);
     });
     scope.listen(this.root, 'pointerdown', (e) => {
       const handle = (e.target as Element).closest('.u2-data-table-resize');
@@ -185,7 +180,7 @@ export class DataTable<T> extends VirtualRows<T> {
     const index = Array.prototype.indexOf.call(this._head.children, head);
     const from = e.clientX;
     const width = head.getBoundingClientRect().width;
-    const move = (m: Event) => this.resizeColumn(index, width + (m as PointerEvent).clientX - from);
+    const move = (m: Event) => this._resizeColumn(index, width + (m as PointerEvent).clientX - from);
     const end = () => {
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', end);
@@ -196,8 +191,8 @@ export class DataTable<T> extends VirtualRows<T> {
     this._endResize = end;
   }
 
-  /** The order a click on `column`'s header gives: by it, then by it descending, then none. */
-  static nextSort(sort: string, column: string): string {
+  /** Ascending, then descending, then none. */
+  private static _nextSort(sort: string, column: string): string {
     const first = sort.split(',')[0];
     return first === column ? `!${column}` : first === `!${column}` ? '' : column;
   }

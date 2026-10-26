@@ -686,8 +686,7 @@ export abstract class VirtualRows<T> extends Control {
     this._mark(row.el, index);
   }
 
-  /** The selection, and apart from it the lead: inside a multi-selection the row Enter and the
-   * keys act on has to be found. */
+  /** The selection, and apart from it the lead row the keys act on. */
   private _mark(el: HTMLElement, index: number, selected = this._selected.peek(),
     lead = this.selectedIndex.peek()): void {
     this.setSelected(el, selected.has(index));

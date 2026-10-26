@@ -11,7 +11,7 @@
   line-height: var(--dg-line-height);
   color: var(--dg-text-color);
   outline: none;
-  /* a scroll comes to rest on a row's top edge under the header, never on a sliver of a row */
+  /* a scroll rests on a row's top edge under the header */
   scroll-snap-type: y proximity;
   scroll-padding-top: var(--u2-data-table-header-height, 0px);
 }
@@ -28,7 +28,6 @@
   outline-offset: calc(-1 * var(--dg-focus-ring-width));
 }
 
-/* the platform grid's header: captions in bold text colour on the table's own background */
 .u2-data-table-header {
   position: sticky;
   top: 0;
@@ -73,7 +72,7 @@
   color: var(--dg-accent);
 }
 
-/* the column's right edge: dragged, it sets the column's width */
+/* dragged, the column's right edge sets its width */
 .u2-data-table-resize {
   position: absolute;
   top: 0;
@@ -144,7 +143,6 @@
   color: var(--dg-error);
 }
 
-/* a date in a column is the row's data, not a muted timestamp */
 .u2-data-table-row .u2-timestamp {
   color: inherit;
 }

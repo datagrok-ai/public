@@ -1,7 +1,7 @@
 /* Notifications — the u2 counterpart of the platform's `Balloon` (d4/widgets/balloon): a
    top-right stack of per-type balloons. Every type auto-hides, a warning or an error after twice
-   an info's time, so a refusal read once does not pile up; hovering pauses the countdown;
-   `oneTimeKey` persists across sessions, `singleKey` dedupes concurrent balloons; copy and close reveal on hover; a click anywhere
+   an info's time; hovering pauses the countdown; `oneTimeKey` persists across sessions,
+   `singleKey` dedupes concurrent balloons; copy and close reveal on hover; a click anywhere
    on the balloon closes it. Deliberately not ported: `appendHtml` for string content — a
    string renders as text, never as markup. */
 import {Overlay} from '../../core/overlay.js';

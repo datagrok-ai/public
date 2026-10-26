@@ -15,12 +15,11 @@ export interface Action {
   /** The capability the action needs (`'delete'`, a custom permission name): denied by the
    * access in force, the action is not rendered at all — permission ⇒ hidden, state ⇒ disabled. */
   requires?: Capability;
-  /** The key that runs it where the action's host handles one ("Del"), shown in menus. */
+  /** The key shown beside it in menus ("Del"). */
   shortcut?: string;
-  /** Grey text after the name in a menu — what the action runs over ("3 issues"). */
+  /** Grey text after the name in a menu ("3 issues"). */
   detail?: string;
-  /** Throws something away: listed last in its section, after a separator in menus, and red on
-   * hover. */
+  /** Throws something away: after a separator in menus, red in the row's icons. */
   destructive?: boolean;
   /** Starts a new section of a menu: a separator above it. */
   separator?: boolean;
@@ -41,7 +40,7 @@ export function allowedActions(actions: Action[], options?: ActionsOptions): Act
   const table = options?.access ?? Access.full;
   const access = options?.row === undefined ? table : table.row(options.row);
   const out: Action[] = [];
-  // a section whose head is denied still starts where its first allowed action does
+  // a denied section head passes its separator to the next allowed action
   let separator = false;
   for (const action of actions) {
     if (action.requires !== undefined && !access.can(action.requires)) {
@@ -52,20 +51,6 @@ export function allowedActions(actions: Action[], options?: ActionsOptions): Act
     separator = false;
   }
   return out;
-}
-
-/** The destructive actions after the rest of their section, each part in its own order. */
-function ordered(actions: Action[]): Action[] {
-  const sections: Action[][] = [];
-  for (const action of actions) {
-    if (sections.length === 0 || action.separator)
-      sections.push([]);
-    sections[sections.length - 1].push(action);
-  }
-  return sections.flatMap((section) => {
-    const sorted = [...section.filter((a) => !a.destructive), ...section.filter((a) => a.destructive)];
-    return sorted.map((a, i) => i === 0 && section[0].separator && !a.separator ? {...a, separator: true} : a);
-  });
 }
 
 function addItems(menu: Menu, actions: Action[]): void {
@@ -88,7 +73,7 @@ export function rowActions(actions: Action[], options?: ActionsOptions): HTMLEle
     el.className = 'u2-row-actions';
     el.dataset.u2 = 'row-actions';
     el.setAttribute('role', 'toolbar');
-    for (const action of ordered(allowedActions(actions, options))) {
+    for (const action of allowedActions(actions, options)) {
       if (!action.icon)
         continue;
       const button = iconButton(action.icon, () => action.run(), {tooltip: action.name});
@@ -117,11 +102,11 @@ export interface ActionsMenuOptions extends ActionsOptions {
 /** A popup menu over the same action list — the right-click superset of {@link rowActions}. */
 export function actionsMenu(actions: Action[], options?: ActionsMenuOptions): Menu {
   const menu = new Menu();
-  const flat = ordered(allowedActions(actions, options));
+  const flat = allowedActions(actions, options);
   addItems(menu, flat);
   let anything = flat.length > 0;
   for (const group of options?.groups ?? []) {
-    const allowed = ordered(allowedActions(group.actions, options));
+    const allowed = allowedActions(group.actions, options);
     if (allowed.length === 0)
       continue;
     if (anything)

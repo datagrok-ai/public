@@ -207,7 +207,7 @@
   min-width: 60px;
 }
 
-/* the column's name is what a narrow row is read by: the operator gives way first */
+/* in a narrow row the operator gives way before the column's name */
 .u2-fb-cond > .u2-fb-op {
   flex-shrink: 3;
 }
@@ -291,7 +291,6 @@
   box-shadow: inset 2px 0 0 var(--dg-error);
 }
 
-/* a value not filled in yet: only the empty slot is marked */
 .u2-fb-missing .u2-fb-values .u2-input-editor {
   border-bottom-color: var(--dg-error);
 }

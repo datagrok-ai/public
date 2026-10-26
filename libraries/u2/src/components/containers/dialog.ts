@@ -222,7 +222,7 @@ export class Dialog extends Control implements OverlayDialog {
    * that is not one yet). A promise keeps it open and busy until it settles: it closes unless the
    * promise answers `false`; a rejection, like a throw, stays open with the message in the error
    * row. Escape or ✕ while busy aborts `signal`. `text` is the button's caption; `primary` raises
-   * it, for an OK that commits something (UPDATE 2 VENDORS) rather than closing a pick. */
+   * it, for an OK that commits something. */
   onOK(fn: (ctx: DialogOkContext) => unknown, options?: {text?: string, primary?: boolean}): this {
     this._onOK = Dialog._owned(fn);
     const ok = this._okButton(options?.text);

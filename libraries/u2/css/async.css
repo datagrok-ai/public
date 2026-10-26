@@ -61,7 +61,6 @@
   color: var(--dg-text-color-light);
 }
 
-/* "nothing here" and "this failed" in one look: an icon, a sentence, the way out — centred */
 .u2-empty-state {
   display: flex;
   flex-direction: column;
