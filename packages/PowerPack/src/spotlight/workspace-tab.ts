@@ -600,29 +600,47 @@ export class WorkspaceTab {
   }
 
   /** Renders the model's own preview (from the model-catalog handler) — not the generic Func runner, which
-   * would auto-run the model and fail. "Open" launches the model via `prepare().edit()`. */
+   * would auto-run the model and fail. "Open" launches the model via `prepare().edit()`. Beside it go the
+   * panels other packages contribute for the model (see {@link renderModelPanels}). */
   private async renderModelPreview(func: DG.Func): Promise<void> {
     const token = (this.activePreviewToken = Symbol('model-preview'));
-    showWorkspacePreview(ui.div([ui.loader()], 'pp-workspace-preview-loader'), func.friendlyName);
+    const panels = ui.div([], 'pp-workspace-model-panels');
+    const show = (el: HTMLElement, onOpen?: () => void) =>
+      showWorkspacePreview(ui.div([el, panels], 'pp-workspace-model-preview'), func.friendlyName, onOpen);
+    show(ui.div([ui.loader()], 'pp-workspace-preview-loader'));
+    this.renderModelPanels(func, panels, token);
     try {
       const handler = DG.ObjectHandler.forEntity(func);
       const view: DG.View | undefined = await handler?.renderPreview(func);
       if (token !== this.activePreviewToken)
         return;
       if (view?.root instanceof HTMLElement)
-        showWorkspacePreview(ui.div([view.root], 'pp-workspace-preview-view'), func.friendlyName, () => this.open(func));
+        show(ui.div([view.root], 'pp-workspace-preview-view'), () => this.open(func));
       else
-        showWorkspacePreview(ui.divText('No preview available.', 'pp-workspace-preview-text'), func.friendlyName, () => this.open(func));
+        show(ui.divText('No preview available.', 'pp-workspace-preview-text'), () => this.open(func));
     }
     catch (e: any) {
       if (token !== this.activePreviewToken)
         return;
       console.error('Workspace model preview failed', e);
-      showWorkspacePreview(
-        ui.divText(`Preview failed: ${e?.message ?? e}`, 'pp-workspace-preview-error'),
-        func.friendlyName,
-        () => this.open(func),
-      );
+      show(ui.divText(`Preview failed: ${e?.message ?? e}`, 'pp-workspace-preview-error'), () => this.open(func));
+    }
+  }
+
+  /** Adds the widgets of the functions with `meta.role: workspaceModelPanel` (signature
+   * `panel(model: func): widget`, null when it has nothing to say about the model) to [host], each as it
+   * arrives. A failing panel is logged and left out; none of them holds up the model's own preview. */
+  private renderModelPanels(func: DG.Func, host: HTMLElement, token: symbol): void {
+    const panelFuncs = DG.Func.find({meta: {role: 'workspaceModelPanel'}, returnType: 'widget'})
+      .filter((f) => f.inputs.length === 1);
+    for (const f of panelFuncs) {
+      f.apply({[f.inputs[0].name]: func}).then((w: DG.Widget | null) => {
+        if (token !== this.activePreviewToken || !(w?.root instanceof HTMLElement))
+          return;
+        const wrap = ui.div([w.root], 'pp-workspace-model-panel');
+        wrap.setAttribute('name', `workspace-panel-${f.name}`);
+        host.appendChild(wrap);
+      }).catch((e: any) => console.error(`Workspace model panel ${f.nqName} failed`, e));
     }
   }
 
@@ -735,7 +753,22 @@ export class WorkspaceTab {
     showWorkspacePreview(ui.divText(text, 'pp-workspace-preview-text'), fc.func.friendlyName);
   }
 
+  /** An entity of no kind above: a package that registered a handler for it (a domain record, say)
+   * previews it with the handler's card, as the platform shows a selected item; otherwise a hint. */
   private renderEntityDetails(entity: DG.Entity): void {
+    const handler = DG.ObjectHandler.forEntity(entity);
+    if (handler && !(handler instanceof DG.EntityMetaDartProxy)) {
+      try {
+        const card = handler.renderCard(entity);
+        if (card instanceof HTMLElement) {
+          showWorkspacePreview(ui.div([card], 'pp-workspace-preview-card'), entity.friendlyName, () => this.open(entity));
+          return;
+        }
+      }
+      catch (e) {
+        console.error('Workspace card preview failed', e);
+      }
+    }
     const hint = ui.divText(
       'Use "Open" to work with this item.',
       'pp-workspace-editor-hint',
