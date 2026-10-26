@@ -15,8 +15,8 @@ import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
 import {propertyForm, ObjectForm, Editors, userPick, groupPick} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {ObjectFormOptions} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DomainSource} from '../core/domain-source.js';
-import {emsBackends, capital, nounOf} from '../core/domain-backend.js';
-import {DomainTable, domains} from './facade.js';
+import {capital, nounOf} from '../core/domain-backend.js';
+import {DomainTable} from './facade.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {DomainErrors} from './errors.js';
 import {DomainPick, PickInput} from './pick.js';
@@ -34,7 +34,7 @@ interface Constraint {
 }
 
 export interface DomainFormOptions extends Pick<ObjectFormOptions,
-  'include' | 'exclude' | 'layout' | 'condensed' | 'overrides' | 'onChanged'> {
+  'include' | 'exclude' | 'layout' | 'condensed' | 'overrides' | 'onChanged' | 'labelColumn'> {
   /** What the caller may see and edit; the source's access by default. */
   access?: Access;
   /** The source a bare row or a row signal belongs to — needed unless the signal is the
@@ -317,7 +317,7 @@ export class DomainForm extends Control {
     }
     const form = propertyForm(source.schema.properties.filter((p) => !system.has(p.name)), row, {
       include: options.include, exclude: options.exclude, layout: options.layout, condensed: options.condensed,
-      overrides, access: view,
+      labelColumn: options.labelColumn, overrides, access: view,
       onChanged: (name, value) => {
         options.onChanged?.(name, value);
         this._checkConstraints();

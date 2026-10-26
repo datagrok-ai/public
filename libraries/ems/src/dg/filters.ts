@@ -230,7 +230,7 @@ export class DomainFilters extends Control {
   pane(list: HTMLElement): HTMLElement {
     return this.runInScope(() => {
       const head = divH([span('Filters', 'u2-domain-app-filters-title')], 'u2-domain-app-filters-head');
-      const pane = divV([head, this.root], 'u2-domain-app-filters-pane');
+      const pane = divV([head, this.root], 'u2-domain-app-filters-pane u2-fb-narrow');
       this.effect(() => {
         const input = this._input.value;
         if (input instanceof FilterBuilder)

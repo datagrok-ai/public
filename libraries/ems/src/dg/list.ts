@@ -69,7 +69,7 @@ export class DomainList extends Control {
       onEnter: () => source.activate.value = source.activate.peek() + 1,
       onDelete: (row) => this.actionsFor(row).find((a) => a.name === 'Delete')?.run(),
     }));
-    this.list.root.classList.add('u2-domain-list-rows');
+    this.list.root.classList.add('u2-domain-list-rows', 'u2-list-no-ring');
     this.list.setItems(source.rows.items as ReadonlySignal<RowView[]>);
 
     collectionSelection(this, source, this.list);
@@ -106,7 +106,9 @@ export class DomainList extends Control {
       else
         status.replaceChildren();
       // the rows have nothing to scroll: the message takes their place
-      this.root.classList.toggle('u2-domain-list-blank', count === 0 && (state === 'ready' || state === 'error'));
+      const blank = count === 0 && (state === 'ready' || state === 'error');
+      this.root.classList.toggle('u2-domain-list-blank', blank);
+      status.classList.toggle('u2-list-frame', blank);
     });
     // a refusal names one row: marked where it is drawn, brought into view, and unmarked with the refusal
     this.effect(() => {

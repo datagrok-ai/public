@@ -85,19 +85,6 @@
   max-width: 560px;
 }
 
-.u2-domain-app-form .u2-form-auto.u2-form-wide .u2-input-root .u2-input-box:has(> .u2-input-editor:is(.u2-number, .u2-date)),
-.u2-domain-app-form .u2-form-auto.u2-form-wide .u2-input-root[data-u2='choice-input'] .u2-input-box {
-  flex: 1;
-  max-width: none;
-}
-
-.u2-domain-app-form .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2] .u2-input-editor:is(.u2-number, .u2-date),
-.u2-domain-app-form .u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='choice-input'] select.u2-input-editor {
-  flex: 1;
-  width: auto;
-  max-width: none;
-}
-
 .u2-domain-pick-item {
   display: flex;
   flex-direction: column;
@@ -175,8 +162,6 @@
   align-items: center;
   justify-content: center;
   min-height: 0;
-  border: var(--dg-border-width) solid var(--dg-border);
-  background: var(--dg-bg);
 }
 
 .u2-domain-card {
@@ -193,14 +178,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.u2-list.u2-domain-list-rows:focus-visible .u2-list-row-current {
-  outline: none;
-}
-
-.u2-domain-list > .u2-list.u2-domain-list-rows:focus-visible {
-  outline: none;
 }
 
 .u2-list-row.u2-domain-list-restored,
@@ -398,14 +375,6 @@
   align-self: flex-start;
 }
 
-.u2-domain-history .u2-async-error {
-  padding: var(--dg-space-s) 0;
-}
-
-.u2-domain-history .u2-async-error-message {
-  color: var(--dg-text-color-light);
-}
-
 .u2-domain-children {
   display: flex;
   flex: 1 1 auto;
@@ -416,21 +385,6 @@
 .u2-domain-children-tabs {
   flex: 1;
   min-height: 0;
-}
-
-/* tabs, toolbar, grid and form share the pane's left edge */
-.u2-tabs.u2-domain-children-tabs:not(.u2-tabs-vertical) > .u2-tabs-header .u2-tabs-tab:first-child {
-  padding-left: 0;
-}
-
-.u2-domain-children-tabs > .u2-tabs-content {
-  padding-left: 0;
-  padding-right: 0;
-}
-
-/* the panel is shown by an inline `display`, so the pane takes its height instead */
-.u2-domain-children-tabs > .u2-tabs-content > .u2-tabs-panel {
-  height: 100%;
 }
 
 .u2-domain-children-pane {
@@ -481,11 +435,6 @@
   flex: 0 0 260px;
   height: 0;
   min-height: 100%;
-}
-
-.u2-domain-children-split > .u2-domain-list > .u2-domain-list-rows {
-  border: none;
-  border-right: var(--dg-border-width) solid var(--dg-border);
 }
 
 .u2-domain-children-error {
@@ -576,10 +525,6 @@
   min-height: 0;
 }
 
-.u2-domain-app-list > .u2-splitter .u2-domain-list-rows {
-  border: none;
-}
-
 .u2-domain-app-filters-pane {
   height: 100%;
   overflow: auto;
@@ -602,64 +547,6 @@
 
 .u2-domain-app-filters-head > .u2-fb-mode {
   margin-left: 0;
-}
-
-/* a condition is one card; spaced by a transparent border so a drop between two still lands on a row */
-.u2-domain-app-filters-pane .u2-fb-rows,
-.u2-domain-app-filters-pane .u2-fb-group-rows {
-  gap: 0;
-}
-
-.u2-domain-app-filters-pane .u2-fb-cond:not(.u2-fb-nested) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  grid-template-areas: 'prop op remove' 'value value value';
-  align-items: center;
-  gap: var(--dg-space-xs) var(--dg-space-s);
-  padding: var(--dg-space-s);
-  background: var(--dg-bg-secondary);
-  background-clip: padding-box;
-  border-bottom: var(--dg-space-s) solid transparent;
-}
-
-.u2-domain-app-filters-pane .u2-fb-advanced .u2-fb-cond:not(.u2-fb-nested) {
-  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto;
-  grid-template-areas: 'handle prop op remove' 'handle value value value';
-}
-
-.u2-domain-app-filters-pane .u2-fb-group {
-  background-clip: padding-box;
-  border-bottom: var(--dg-space-s) solid transparent;
-}
-
-.u2-domain-app-filters-pane .u2-fb-group .u2-fb-cond:not(.u2-fb-nested) {
-  background: var(--dg-bg);
-}
-
-.u2-domain-app-filters-pane .u2-fb-group .u2-fb-group .u2-fb-cond:not(.u2-fb-nested) {
-  background: var(--dg-bg-secondary);
-}
-
-.u2-domain-app-filters-pane .u2-fb-cond > .u2-fb-handle {
-  grid-area: handle;
-}
-
-.u2-domain-app-filters-pane .u2-fb-cond > .u2-fb-prop,
-.u2-domain-app-filters-pane .u2-fb-cond > .u2-fb-prop-text {
-  grid-area: prop;
-}
-
-.u2-domain-app-filters-pane .u2-fb-cond > .u2-fb-op,
-.u2-domain-app-filters-pane .u2-fb-cond > .u2-fb-op-text {
-  grid-area: op;
-}
-
-.u2-domain-app-filters-pane .u2-fb-cond > .u2-fb-values {
-  grid-area: value;
-}
-
-.u2-domain-app-filters-pane .u2-fb-cond > .u2-fb-remove {
-  grid-area: remove;
 }
 
 .u2-domain-app {
@@ -694,15 +581,6 @@
 
 .u2-domain-app > .u2-breadcrumbs > :first-child {
   padding-left: 0;
-}
-
-.u2-domain-app-header {
-  flex: none;
-  padding: 0 var(--dg-space-m);
-}
-
-.u2-domain-app-header:empty {
-  display: none;
 }
 
 .u2-domain-app-panes {
@@ -800,26 +678,6 @@
   display: none;
 }
 
-.u2-domain-import-mapping .u2-data-table-cell > .u2-input-root {
-  flex: 1 1 auto;
-  width: 100%;
-  min-width: 0;
-}
-
-.u2-domain-import-mapping .u2-data-table-cell > .u2-input-root > .u2-input-box {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.u2-domain-import-mapping .u2-data-table-cell > .u2-input-root .u2-input-editor {
-  width: 100%;
-}
-
-/* the reason is in the footer */
-.u2-domain-import-mapping .u2-input-error {
-  display: none;
-}
-
 .u2-domain-import-mapping .u2-data-table-row:has(.u2-domain-import-skipped),
 .u2-domain-import-skipped .u2-input-editor {
   color: var(--dg-text-color-light);
@@ -880,11 +738,6 @@
 
 .u2-domain-import-summary {
   color: var(--dg-text-color-light);
-}
-
-.u2-domain-import-issues {
-  max-height: 200px;
-  overflow: auto;
 }
 
 /* the HTML data table host: the table is the scroller, so it takes the height the page gives */

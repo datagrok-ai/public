@@ -8,7 +8,7 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divH, divV, span,
-  icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu}
+  icon, Filters, allowedActions, actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Menu, LabelColumn}
   from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
@@ -123,6 +123,8 @@ export class DomainApp extends Control {
   /** One row per entity page — a source of one sharing the session, replaced with the entity. */
   readonly entitySource: ReadonlySignal<DomainSource | null>;
   readonly form: ReadonlySignal<DomainForm | null>;
+  /** The entity form's label column: content lined up with the form reads its `width`. */
+  readonly labelColumn = new LabelColumn();
   readonly breadcrumbs: Breadcrumbs;
   /** The entity page below the form — where the children and history panes go. */
   readonly panes: HTMLElement;
@@ -222,7 +224,7 @@ export class DomainApp extends Control {
       if (index === 0)
         void (this.trash.peek() ? this.setTrash(false) : this.goTo('list'));
     }}));
-    this._formHost = div([], 'u2-domain-app-form');
+    this._formHost = div([], 'u2-domain-app-form u2-form-fill');
     this.panes = div([], 'u2-domain-app-panes');
     this.panes.dataset.u2Part = 'panes';
     this.filters = this.runInScope(() => domains.filters(this.listSource, _options.filters));
@@ -961,7 +963,7 @@ export class DomainApp extends Control {
       });
       const {children, history, include} = this._options;
       const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include,
-        empty: `${capital(nounOf(this.table.info, true))} "${entity}" was not found.`}));
+        labelColumn: this.labelColumn, empty: `${capital(nounOf(this.table.info, true))} "${entity}" was not found.`}));
       this._panes = this.runInScope(() => [
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
         ...(history === false || !this.table.table.support.audit ? [] :

@@ -59,7 +59,7 @@ export class DomainChildren extends Control {
     this._status = div([], 'u2-domain-children-status');
     this._status.dataset.u2Part = 'status';
     this.tabs = this.runInScope(() => new TabStrip());
-    this.tabs.root.classList.add('u2-domain-children-tabs');
+    this.tabs.root.classList.add('u2-domain-children-tabs', 'u2-tabs-flush');
     this.root.append(this._status, this.tabs.root);
     // the child tables are known with the parent's table: build the tabs once it is loaded
     let built = false;

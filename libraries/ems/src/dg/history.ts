@@ -49,7 +49,7 @@ export class DomainHistory extends Control {
   constructor(readonly source: DomainSource, row?: DomainHistoryTarget,
     private readonly _options: DomainHistoryOptions = {}) {
     super();
-    this.root.classList.add('u2-domain-history');
+    this.root.classList.add('u2-domain-history', 'u2-async-quiet');
     this.root.dataset.u2 = 'domain-history';
     this.row = DomainForm.resolve(row ?? source, source).row;
     this._hint = div([], 'u2-domain-history-hint');
