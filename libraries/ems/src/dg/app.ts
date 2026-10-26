@@ -457,7 +457,7 @@ export class DomainApp extends Control {
   ribbon(): DomainRibbon {
     if (this._ribbon !== undefined)
       return this._ribbon;
-    // icon-first, as the platform's ribbons are: SAVE is the one raised button
+    // New is an icon, as the platform's ribbons are; SAVE is the one raised button
     const singular = DomainTable.noun(this.table.info, true);
     const add = new Control(this.runInScope(() =>
       iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`})));
@@ -469,7 +469,7 @@ export class DomainApp extends Control {
       add.root.style.visibility = trash ? 'hidden' : '';
     });
     const save = domains.saveButton(this.session);
-    const discard = this.runInScope(() => domains.discardButton(this.session, {icon: 'undo'}));
+    const discard = domains.discardButton(this.session);
     // a create page nothing was typed into has nothing to discard but itself: Discard leaves it
     const pristine = () => !this.session.isDirty.value && this._page.value === 'entity' &&
       DomainApp._isDraft(this._entitySource.value, this._entitySource.value?.currentRow.value ?? null);

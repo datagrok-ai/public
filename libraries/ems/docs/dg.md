@@ -78,8 +78,8 @@ where the children and history panes go; the app may add its own beside them.
 
 Override points for a subclass (`class IssuesApp extends DomainApp`):
 
-- `ribbon(): DomainRibbon` — named slots, built once and owned by the app: `main` (New, Save,
-  Discard as icon buttons with SAVE the one raised button, the ⋮ Actions menu, Refresh),
+- `ribbon(): DomainRibbon` — named slots, built once and owned by the app: `main` (New as an icon
+  button, SAVE the one raised button, DISCARD, the ⋮ Actions menu, Refresh),
   `tools` (the search box and the Sort by menu, list page only) and `presets` (empty by default).
   Extend a slot: `({...super.ribbon(), presets: [this.presets(...)]})`; `ribbonGroups()` is the
   positional shape `appView` takes. New opens `?entity=new` and is hidden without `insert`; in the

@@ -57,8 +57,8 @@ under its own `SharedSession`:
   draft) on the entity page; `base` is `/domains/<schema>/<table>` unless `path` says otherwise.
   Deep links land through `acceptsPath`/`handlePath`; a saved row opened from anywhere
   (`DomainTable.open(row)`) activates the running app instead of a second view.
-- **The ribbon** is `DomainApp.ribbon()`, three named slots: `main` — New and Discard as icon
-  buttons, Save (Ctrl+S; Tab from the form's last field lands on it) the one raised button, the
+- **The ribbon** is `DomainApp.ribbon()`, three named slots: `main` — New as an icon button,
+  Save (Ctrl+S; Tab from the form's last field lands on it) the one raised button, Discard, the
   ⋮ **Actions** menu (below), Refresh shown only while the page is stale; `tools` — the
   search box and the Sort by menu, on the list page only; `presets` — empty unless a subclass
   fills it. New is hidden without `insert`; Discard is disabled while there is nothing to save,
