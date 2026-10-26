@@ -799,7 +799,7 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   await flush();
   assert.equal(save.root.hidden, false, 'a restore is saved: the trash is a page that saves (R-c)');
   assert.equal(discard.root.hidden, false);
-  assert.equal(add.root.hidden, true, 'and nothing to insert: the access is narrowed');
+  assert.equal(add.root.style.visibility, 'hidden', 'and nothing to insert: the access is narrowed — the slot stays');
 
   const row = a.listSource.rows.byKey('i2');
   assert.deepEqual(a.list.actionsFor(row).map((x) => x.name), ['Restore'], 'the row action Delete became Restore');
@@ -1539,5 +1539,34 @@ scoped('the entity page Actions menu: the row first, Delete last of it, then the
   await flush();
   assert.equal(a.page.value, 'list', 'nothing left on the page once the save took the row');
   assert.equal(a.listSource.rows.items.value.some((r) => r.id === 'i1'), false);
+  a.dispose();
+});
+
+scoped('the ribbon keeps its slots: New holds its place in the trash, the search panel goes on the entity page', async () => {
+  const {app: a} = await app();
+  const {main, tools} = a.ribbon();
+  const panel = document.createElement('div');
+  panel.className = 'd4-ribbon-panel';
+  const item = document.createElement('div');
+  item.className = 'd4-ribbon-item';
+  item.append(tools[0].root);
+  panel.append(item);
+  document.body.append(panel);
+  assert.equal(await a.goTo('entity', 'i1'), true);
+  await flush();
+  assert.equal(panel.style.display, 'none', 'no divider left behind with nothing after it');
+  assert.equal(await a.goTo('list'), true);
+  await flush();
+  assert.equal(panel.style.display, '');
+
+  const add = main[0].root;
+  assert.equal(add.getAttribute('aria-label'), 'New issue', 'an icon button named by its tooltip');
+  assert.equal(await a.setTrash(true), true);
+  await flush();
+  assert.equal(add.hidden, false, 'the slot stays');
+  assert.equal(add.style.visibility, 'hidden', 'but there is nothing to create in the trash');
+  assert.equal(await a.setTrash(false), true);
+  await flush();
+  assert.equal(add.style.visibility, '');
   a.dispose();
 });

@@ -428,7 +428,12 @@ export class DomainApp extends Control {
     const add = new Control(this.runInScope(() =>
       iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`})));
     add.root.dataset.u2 = 'new-button';
-    add.effect(() => add.root.hidden = !this.listSource.access.value.can('insert'));
+    // the trash narrows the access, but the slot stays: SAVE and DISCARD must not jump on the way in
+    add.effect(() => {
+      const trash = this.trash.value;
+      add.root.hidden = !trash && !this.listSource.access.value.can('insert');
+      add.root.style.visibility = trash ? 'hidden' : '';
+    });
     const save = domains.saveButton(this.session);
     const discard = this.runInScope(() => domains.discardButton(this.session, {icon: 'undo'}));
     const more = this._actionsMenu();
@@ -697,11 +702,17 @@ export class DomainApp extends Control {
     return this.trash.value ? `${path}${path.includes('?') ? '&' : '?'}trash=1` : path;
   }
 
+  /** Shown on the list page only — and with them the ribbon panel they sit in, whose divider would
+   * otherwise stay behind with nothing after it. */
   private _listOnly(...controls: Control[]): void {
     this.effect(() => {
       const list = this._page.value === 'list';
-      for (const control of controls)
+      for (const control of controls) {
         control.root.hidden = !list;
+        const panel = control.root.closest<HTMLElement>('.d4-ribbon-panel');
+        if (panel !== null && Array.from(panel.children).every((item) => item.contains(control.root)))
+          panel.style.display = list ? '' : 'none';
+      }
     });
   }
 
