@@ -1,8 +1,10 @@
-import {Input, InputOptions} from '../../core/input-base.js';
+import {Input, InputOptions, LiveOption} from '../../core/input-base.js';
 import {signal, Signal} from '../../core/signals.js';
 import {icon} from '../display/icon.js';
 
 export interface NumberInputOptions extends InputOptions<number | null> {
+  /** Shown while the field is empty: what an empty value means ("Auto"). */
+  placeholder?: LiveOption<string>;
   /** `int` accepts an optional minus and digits; `float` (default) also decimals and exponents. */
   mode?: 'int' | 'float';
   min?: number;
@@ -59,6 +61,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   constructor(options: NumberInputOptions = {}) {
     super(options, null);
     this.root.dataset.u2 = 'number-input';
+    this.liveOption('placeholder', options.placeholder, (x) => this._input.placeholder = x);
   }
 
   get min(): number | undefined {
