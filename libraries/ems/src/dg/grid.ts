@@ -297,7 +297,7 @@ export interface DomainDataTableOptions {
   columns?: string[];
   /** Columns the table never shows, on top of those — a child collection's FK to the parent. */
   hiddenColumns?: string[];
-  /** Row and header height in pixels. */
+  /** Row height in pixels; the header keeps its own, at most 28. */
   rowHeight?: number;
   /** Enter on the selected row, or a double-click on it; by default the row is handed to the
    * form paired through the source, as a list's Enter hands it over. */
@@ -306,10 +306,10 @@ export interface DomainDataTableOptions {
 
 /** `domains.dataTable` — the source's rows as the HTML {@link DataTable}: virtualized rows of
  * pooled cells, the columns derived from the table's schema the way the grid's decoration
- * derives them, and the source's writer painting the cells (pending amber, refused red, a cell
- * the caller may not write muted). Read-only by design (ruling 5: the Dart grid stays THE
- * editor) — what it is for is a wide collection beside a tree or a form, where a canvas viewer
- * is more than the page needs. */
+ * derives them, the headers sorting through the source, and the source's writer painting the
+ * cells (pending amber, refused red). Read-only by design (ruling 5: the Dart grid stays THE
+ * editor), so no cell is drawn as one the caller may not write — what it is for is a wide
+ * collection beside a tree or a form, where a canvas viewer is more than the page needs. */
 export class DomainDataTable extends Control {
   /** The table, once the source's schema is known — it is what the columns are derived from. */
   readonly table: ReadonlySignal<DataTable<RowView> | null>;
@@ -366,7 +366,7 @@ export class DomainDataTable extends Control {
       render: (row) => this._cell(row, name, byName.get(name)),
     }));
     const table = this.runInScope(() => new DataTable<RowView>({columns, rowHeight: this._options.rowHeight,
-      items: source.rows, cellState: this._cellState(),
+      items: source.rows, sort: source.sort, cellState: this._cellState(),
       onActivate: this._options.onActivate ??
         (() => source.activate.value = source.activate.peek() + 1)}));
     collectionSelection(this, source, table);
@@ -381,10 +381,6 @@ export class DomainDataTable extends Control {
     const source = this.source;
     return {
       isChanged: (key, column) => source.edit.peek()?.isChanged(key, column) ?? false,
-      canEdit: (key, column) => {
-        const row = source.rows.byKey(key);
-        return row !== undefined && source.access.peek().row(row).field(column) === 'editable';
-      },
       errorOf: (key, column) => {
         const message = source.edit.peek()?.errorOf(key, column) ?? null;
         return message === null ? null : {message, kind: 'error'};

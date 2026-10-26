@@ -5,6 +5,7 @@
 
 import {Signal} from '../../core/signals.js';
 import type {ReadonlySignal} from '../../core/signals.js';
+import {icon} from '../display/icon.js';
 import {VirtualRows} from './list.js';
 import type {VirtualRowsOptions} from './list.js';
 import type {RowsLike} from '../../sources/rows-like.js';
@@ -38,8 +39,15 @@ export interface CellStateLike {
 export interface DataTableOptions<T> extends Omit<VirtualRowsOptions<T>, 'itemHeight'> {
   columns: DataTableColumn<T>[];
   items?: RowsLike<T> | ReadonlySignal<T[]>;
-  /** Row and header height in pixels; 24 by default. */
+  /** Row height in pixels; 24 by default. */
   rowHeight?: number;
+  /** Header height in pixels: the row height, up to 28, by default — a tall row (a depiction) is
+   * no reason for a tall header. */
+  headerHeight?: number;
+  /** The order, as `'name'`, `'!name'` (descending) or `''` (unsorted), of which the header shows
+   * and sets the first column: a click on a header sorts by it, again descending, a third time not
+   * at all. Absent, the headers do not sort. */
+  sort?: Signal<string>;
   cellState?: CellStateLike;
   /** Enter on the selected row, or a double-click on it. */
   onActivate?(item: T, index: number): void;
@@ -53,6 +61,9 @@ export interface DataTableOptions<T> extends Omit<VirtualRowsOptions<T>, 'itemHe
   labelOf?: (item: T) => string;
 }
 
+const MAX_HEADER_HEIGHT = 28;
+const MIN_COLUMN_WIDTH = 32;
+
 export class DataTable<T> extends VirtualRows<T> {
   private _columns: DataTableColumn<T>[];
   private readonly _cellState: CellStateLike | undefined;
@@ -61,6 +72,9 @@ export class DataTable<T> extends VirtualRows<T> {
   private readonly _liveOption: boolean | undefined;
   private _template: string;
   private _head: HTMLElement;
+  private readonly _headerHeight: number;
+  private readonly _sort: Signal<string> | undefined;
+  private _endResize: (() => void) | undefined;
   private readonly _cellBaseline = new Map<string, string>();
   /** Bumped by a {@link columns} change: a row whose cells are older is given new ones on its next fill. */
   private _shape = 0;
@@ -79,9 +93,15 @@ export class DataTable<T> extends VirtualRows<T> {
     this._onActivate = options.onActivate;
     this._optionKeyOf = options.keyOf;
     this._liveOption = options.liveItems;
+    this._headerHeight = options.headerHeight ?? Math.min(this.itemHeight, MAX_HEADER_HEIGHT);
+    this._sort = options.sort;
     this._template = DataTable._templateOf(options.columns);
     this._head = this._header();
     this.root.prepend(this._head);
+    this._listen();
+    const sort = options.sort;
+    if (sort !== undefined)
+      this.effect(() => this._showSort(sort.value));
     if (options.items)
       this.setItems(options.items);
   }
@@ -124,7 +144,78 @@ export class DataTable<T> extends VirtualRows<T> {
 
   /** The rows sit under the sticky header, so the header's height is not theirs. */
   protected get viewport(): number {
-    return Math.max(0, this.root.clientHeight - this.itemHeight);
+    return Math.max(0, this.root.clientHeight - this._headerHeight);
+  }
+
+  /** The column at `index` given `px` of width — what dragging its header's right edge does. */
+  resizeColumn(index: number, px: number): void {
+    const width = `${Math.max(MIN_COLUMN_WIDTH, Math.round(px))}px`;
+    this._columns = this._columns.map((c, i) => i === index ? {...c, width} : c);
+    this._template = DataTable._templateOf(this._columns);
+    this._head.style.gridTemplateColumns = this._template;
+    for (const row of this.content.querySelectorAll('.u2-data-table-row'))
+      (row as HTMLElement).style.gridTemplateColumns = this._template;
+  }
+
+  /** The header's sorting, column resizing, and the full text of a cut cell as its tooltip. */
+  private _listen(): void {
+    const scope = this.scope;
+    scope.listen(this.root, 'click', (e) => {
+      const target = e.target as Element;
+      const head = target.closest('.u2-data-table-head') as HTMLElement | null;
+      if (head !== null && this._sort !== undefined && target.closest('.u2-data-table-resize') === null)
+        this._sort.value = DataTable.nextSort(this._sort.peek(), head.dataset.column!);
+    });
+    scope.listen(this.root, 'pointerdown', (e) => {
+      const handle = (e.target as Element).closest('.u2-data-table-resize');
+      if (handle !== null)
+        this._startResize(e as PointerEvent, handle.parentElement!);
+    });
+    scope.listen(this.content, 'mouseover', (e) => {
+      const cell = (e.target as Element).closest('.u2-data-table-cell') as HTMLElement | null;
+      if (cell !== null && cell.title === '' && cell.scrollWidth > cell.clientWidth)
+        cell.title = cell.textContent ?? '';
+    });
+    this.own(() => this._endResize?.());
+  }
+
+  private _startResize(e: PointerEvent, head: HTMLElement): void {
+    e.preventDefault();
+    this._endResize?.();
+    const index = Array.prototype.indexOf.call(this._head.children, head);
+    const from = e.clientX;
+    const width = head.getBoundingClientRect().width;
+    const move = (m: Event) => this.resizeColumn(index, width + (m as PointerEvent).clientX - from);
+    const end = () => {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', end);
+      this._endResize = undefined;
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', end);
+    this._endResize = end;
+  }
+
+  /** The order a click on `column`'s header gives: by it, then by it descending, then none. */
+  static nextSort(sort: string, column: string): string {
+    const first = sort.split(',')[0];
+    return first === column ? `!${column}` : first === `!${column}` ? '' : column;
+  }
+
+  private _showSort(sort: string, header = this._head): void {
+    const first = sort.split(',')[0];
+    const descending = first.startsWith('!');
+    const column = descending ? first.slice(1) : first;
+    for (const head of header.children) {
+      const cell = head as HTMLElement;
+      const sorted = cell.dataset.column === column;
+      cell.setAttribute('aria-sort', !sorted ? 'none' : descending ? 'descending' : 'ascending');
+      cell.querySelector('.u2-data-table-sort')?.remove();
+      if (sorted) {
+        cell.insertBefore(icon(descending ? 'arrow-down' : 'arrow-up', {cls: 'u2-data-table-sort'}),
+          cell.querySelector('.u2-data-table-resize'));
+      }
+    }
   }
 
   protected createRow(): HTMLElement {
@@ -161,7 +252,7 @@ export class DataTable<T> extends VirtualRows<T> {
   protected fillRow(row: HTMLElement, index: number): void {
     if (this._rowShape.get(row) !== this._shape)
       this._cells(row);
-    else if (this._shape > 0)
+    else
       row.style.gridTemplateColumns = this._template;
     this.placeRow(row, index);
     const item = this.items[index];
@@ -213,14 +304,23 @@ export class DataTable<T> extends VirtualRows<T> {
     header.className = 'u2-data-table-header';
     header.setAttribute('role', 'row');
     header.style.gridTemplateColumns = this._template;
-    header.style.height = `${this.itemHeight}px`;
+    header.style.height = `${this._headerHeight}px`;
+    header.classList.toggle('u2-data-table-sortable', this._sort !== undefined);
     for (const column of this._columns) {
       const cell = document.createElement('div');
       cell.className = `${DataTable._cellClass(column)} u2-data-table-head`;
       cell.setAttribute('role', 'columnheader');
-      cell.textContent = cell.title = column.header ?? column.name;
+      cell.dataset.column = column.name;
+      const label = document.createElement('span');
+      label.className = 'u2-data-table-head-label';
+      label.textContent = cell.title = column.header ?? column.name;
+      const resize = document.createElement('div');
+      resize.className = 'u2-data-table-resize';
+      cell.append(label, resize);
       header.append(cell);
     }
+    if (this._sort !== undefined)
+      this._showSort(this._sort.peek(), header);
     return header;
   }
 

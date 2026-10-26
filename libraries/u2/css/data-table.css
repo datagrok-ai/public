@@ -25,6 +25,7 @@
   outline-offset: calc(-1 * var(--dg-focus-ring-width));
 }
 
+/* the platform grid's header: captions in bold text colour on the table's own background */
 .u2-data-table-header {
   position: sticky;
   top: 0;
@@ -32,14 +33,55 @@
   display: grid;
   align-items: center;
   box-sizing: border-box;
-  background: var(--dg-bg-secondary);
+  background: var(--dg-bg);
   border-bottom: var(--dg-border-width) solid var(--dg-border);
 }
 
 .u2-data-table-head {
-  color: var(--dg-text-color-light);
-  font-size: var(--dg-font-size-small);
-  font-weight: var(--dg-font-weight-regular);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  height: 100%;
+  color: var(--dg-text-color);
+  font-weight: var(--dg-font-weight-bold);
+}
+
+.u2-data-table-head.u2-data-table-align-right {
+  flex-direction: row-reverse;
+}
+
+.u2-data-table-head.u2-data-table-align-center {
+  justify-content: center;
+}
+
+.u2-data-table-head-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.u2-data-table-sortable > .u2-data-table-head {
+  cursor: pointer;
+}
+
+.u2-data-table-sort {
+  flex: none;
+  color: var(--dg-accent);
+}
+
+/* the column's right edge: dragged, it sets the column's width */
+.u2-data-table-resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--dg-space-s);
+  cursor: col-resize;
+}
+
+.u2-data-table-resize:hover {
+  border-right: var(--dg-border-width) solid var(--dg-border);
 }
 
 .u2-data-table-content {

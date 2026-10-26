@@ -267,3 +267,80 @@ scoped('an empty table renders no rows; dispose leaves nothing listening', () =>
   assert.equal(t.selectedIndex.value, before, 'the keyboard and the scroll handler are gone');
   assert.equal(t.renderedCount, 13, 'and nothing re-rendered');
 });
+
+scoped('the header keeps its own height: the row height, at most 28, unless given', () => {
+  const short = table();
+  assert.equal(short.root.querySelector('.u2-data-table-header').style.height, '20px');
+  const tall = table({rowHeight: 52});
+  assert.equal(tall.root.querySelector('.u2-data-table-header').style.height, '28px',
+    'a depiction row is no reason for a tall header');
+  const own = table({rowHeight: 52, headerHeight: 40});
+  assert.equal(own.root.querySelector('.u2-data-table-header').style.height, '40px');
+  for (const t of [short, tall, own])
+    t.dispose();
+});
+
+scoped('a header click sorts by its column, again descending, a third time not at all', () => {
+  const sort = signal('');
+  const t = table({sort});
+  const head = (i) => t.root.querySelector('.u2-data-table-header').children[i];
+  assert.equal(head(0).getAttribute('aria-sort'), 'none');
+  fire(head(0), 'click');
+  assert.equal(sort.value, 'name');
+  assert.equal(head(0).getAttribute('aria-sort'), 'ascending');
+  assert.notEqual(head(0).querySelector('.u2-data-table-sort'), null, 'an arrow shows the order');
+  fire(head(0), 'click');
+  assert.equal(sort.value, '!name');
+  assert.equal(head(0).getAttribute('aria-sort'), 'descending');
+  fire(head(1), 'click');
+  assert.equal(sort.value, 'amount', 'another column starts ascending');
+  assert.equal(head(0).querySelector('.u2-data-table-sort'), null);
+  fire(head(1), 'click');
+  fire(head(1), 'click');
+  assert.equal(sort.value, '');
+  sort.value = '!name,amount';
+  assert.equal(head(0).getAttribute('aria-sort'), 'descending', 'the first term is the header\'s');
+  assert.equal(DataTable.nextSort('!name,amount', 'name'), '');
+  t.dispose();
+});
+
+scoped('without a sort the headers do not sort; a header\'s right edge resizes its column', () => {
+  const t = table();
+  const header = t.root.querySelector('.u2-data-table-header');
+  fire(header.children[0], 'click');
+  assert.equal(header.children[0].getAttribute('aria-sort'), null);
+  t.resizeColumn(0, 150);
+  assert.equal(header.style.gridTemplateColumns, '150px 80px');
+  assert.equal(row(t, 3).style.gridTemplateColumns, '150px 80px', 'the rows follow');
+  t.resizeColumn(1, 5);
+  assert.equal(header.style.gridTemplateColumns, '150px 32px', 'never narrower than a grip');
+  scrollTo(t, 400);
+  assert.equal(row(t, 30).style.gridTemplateColumns, '150px 32px', 'a recycled row too');
+  t.dispose();
+});
+
+scoped('a cut cell shows its whole text as its tooltip; one that fits gets none', () => {
+  const t = table();
+  const [cut, fits] = cells(t, 2);
+  cut.scrollWidth = 200;
+  cut.clientWidth = 60;
+  fire(cut, 'mouseover');
+  assert.equal(cut.title, 'Row 2');
+  fire(fits, 'mouseover');
+  assert.equal(fits.title, '');
+  t.dispose();
+});
+
+scoped('dragging a header\'s right edge resizes the column until the pointer is released', () => {
+  const t = table();
+  const header = t.root.querySelector('.u2-data-table-header');
+  const grip = header.children[0].querySelector('.u2-data-table-resize');
+  header.children[0].getBoundingClientRect = () => ({left: 0, top: 0, width: 100, height: 20});
+  fire(grip, 'pointerdown', {clientX: 100});
+  fire(document, 'pointermove', {clientX: 140});
+  assert.equal(header.style.gridTemplateColumns, '140px 80px');
+  fire(document, 'pointerup', {clientX: 140});
+  fire(document, 'pointermove', {clientX: 300});
+  assert.equal(header.style.gridTemplateColumns, '140px 80px', 'released');
+  t.dispose();
+});
