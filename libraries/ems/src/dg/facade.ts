@@ -39,7 +39,7 @@ import type {DomainChildrenOptions} from './children.js';
 import type {DomainFiltersOptions} from './filters.js';
 import type {DomainFormOptions, DomainFormTarget} from './form.js';
 import type {DomainGridOptions, DomainDataTableOptions} from './grid.js';
-import type {DomainHistoryTarget} from './history.js';
+import type {DomainHistoryTarget, DomainHistoryOptions} from './history.js';
 import {DomainList} from './list.js';
 import type {DomainListOptions} from './list.js';
 import {DomainPick} from './pick.js';
@@ -471,7 +471,8 @@ export const domains = {
     options?: DomainTreeOptions<TRow>): DomainTree<TRow> => new DomainTree(table, options),
   search: (source: DomainSource, options?: DomainSearchOptions): DomainSearch => new DomainSearch(source, options),
   filters: (source: DomainSource, options?: DomainFiltersOptions): DomainFilters => new DomainFilters(source, options),
-  history: (source: DomainSource, row?: DomainHistoryTarget): DomainHistory => new DomainHistory(source, row),
+  history: (source: DomainSource, row?: DomainHistoryTarget, options?: DomainHistoryOptions): DomainHistory =>
+    new DomainHistory(source, row, options),
   children: (parent: DomainSource, options?: DomainChildrenOptions): DomainChildren =>
     new DomainChildren(parent, options),
   app: (options: DomainAppOptions): DomainApp => new DomainApp(options),

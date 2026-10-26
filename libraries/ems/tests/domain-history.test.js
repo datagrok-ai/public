@@ -47,12 +47,16 @@ async function settle() {
   await flush();
 }
 
-/** The virtual list renders rows for a viewport only. */
 function lines(history) {
-  const list = history.view.root.querySelector('.u2-domain-history-lines');
-  list.clientHeight = 300;
-  fire(list, 'scroll');
-  return [...list.querySelectorAll('.u2-domain-history-line')];
+  return [...history.view.root.querySelectorAll('.u2-domain-history-line')];
+}
+
+/** An entry's change lines as "<caption>: <before> → <after>". */
+function changes(line) {
+  return [...line.querySelectorAll('.u2-domain-history-change')].map((c) => {
+    const [field, before, , after] = [...c.children].map((e) => e.textContent);
+    return `${field}: ${before} → ${after}`;
+  });
 }
 
 scoped('entries from the audit, newest first; an update names the changed captions; refreshed on save', async () => {
@@ -77,18 +81,18 @@ scoped('entries from the audit, newest first; an update names the changed captio
   assert.equal(rows[0].querySelector('.u2-badge').textContent, 'updated');
   assert.equal(rows[0].querySelector('.u2-domain-history-actor').textContent, 'system');
   assert.equal(rows[0].querySelector('.u2-timestamp') !== null, true);
-  assert.equal(rows[0].querySelector('.u2-domain-history-changes').textContent,
-    'title: Aspirin → Aspirin 2, weight: 1.5 → 3', 'the version stamp is not a change');
+  assert.deepEqual(changes(rows[0]), ['Title: Aspirin → Aspirin 2', 'Weight: 1.5 → 3'],
+    'one line per changed column; the version stamp is not a change');
 
   src.rows.byKey('i1').done = false;
   assert.equal(await src.save(), true);
   await settle();
   rows = lines(history);
   assert.equal(rows.length, 2);
-  assert.equal(rows[0].querySelector('.u2-domain-history-changes').textContent, 'done: true → false', 'newest first');
+  assert.deepEqual(changes(rows[0]), ['Done: true → false'], 'newest first');
   assert.equal(history.changesOf({op: 'insert', before: null, after: {title: 'x'}}), '');
   assert.equal(history.changesOf({op: 'update', before: {title: 'A', version: 1, priority: null},
-    after: {title: 'B', version: 2, priority: 'high', nosuch: 1}}), 'title: A → B, Priority:  → high');
+    after: {title: 'B', version: 2, priority: 'high', nosuch: 1}}), 'title: A → B, Priority: (empty) → high');
   history.dispose();
   src.dispose();
 });
@@ -154,12 +158,12 @@ scoped('the trail loads 50 entries at a time; "Show older" loads the older ones 
   await settle();
   assert.deepEqual(pages, [{limit: 50}]);
   const more = history.view.root.querySelector('[data-u2-part="more"]');
-  const shown = () => [lines(history)[0].parentElement.getAttribute('aria-setsize'), more.hidden];
-  assert.deepEqual(shown(), ['50', false]);
+  const shown = () => [lines(history).length, more.hidden];
+  assert.deepEqual(shown(), [50, false]);
 
   fire(more, 'click');
   await settle();
-  assert.deepEqual([pages[1], shown()], [{limit: 50, before: 10}, ['60', true]]);
+  assert.deepEqual([pages[1], shown()], [{limit: 50, before: 10}, [60, true]]);
   history.dispose();
   src.dispose();
 });
@@ -213,10 +217,58 @@ scoped('a reference cell shows the name it points at, not the uuid; the pane car
   src.rows.byKey('i1').project_id = 'p2';
   assert.equal(await src.save(), true);
   await settle();
-  const changes = lines(history)[0].querySelector('.u2-domain-history-changes');
-  assert.equal(changes.textContent, 'project_id: Grit → Datagrok',
+  assert.deepEqual(changes(lines(history)[0]), ['Project id: Grit → Datagrok'],
     'a ref cell shows the name of the row it points at, not the uuid');
-  assert.equal(changes.title, changes.textContent, 'the full line rides the title');
+  history.dispose();
+  src.dispose();
+});
+
+scoped('HI-1: "(empty)" for a missing value, dates as dates, derived columns by name, long entries fold, folded summary', async () => {
+  emsBackends.domain = backend();
+  const issue = emsBackends.domain.tableSync('grit.issue');
+  issue.history.push({id: 'i1', tx_id: 't1', op: 'update', actor_id: null, ts: '2026-09-13T10:00:00Z',
+    before: {title: 'A', description: null, due: null, weight: 1, done: false, number: 1, tags: null, priority: 'low'},
+    after: {title: 'B', description: 'd', due: '2026-10-02T00:00:00Z', weight: 2, done: true, number: 2, tags: ['x'],
+      priority: 'high'}});
+  const src = (await domains.table('grit.issue')).source({pageSize: 10});
+  await flush();
+  src.currentRow.value = src.rows.byKey('i1');
+  const history = domains.history(src, undefined, {include: ['title', 'description', 'due', 'weight', 'done', 'number']});
+  await settle();
+  assert.equal(history.section.expanded.value, false, 'folded by default');
+  assert.equal(history.root.querySelector('.u2-section-hint').textContent.startsWith('updated '), true,
+    'the folded header sums up the newest entry');
+  const [line] = lines(history);
+  const all = changes(line);
+  assert.equal(all.length, 6);
+  assert.equal(all.includes('Description: (empty) → d'), true, all.join('; '));
+  const due = all.find((c) => c.startsWith('Due: '));
+  assert.equal(/^Due: \(empty\) → [^:]*2026$/.test(due), true, `a date at midnight UTC is a date, no time: ${due}`);
+  assert.equal(line.querySelector('.u2-domain-history-derived').textContent, 'Also changedTags, Priority',
+    'the columns outside the form by name only');
+  const folded = [...line.querySelectorAll('.u2-domain-history-change, .u2-domain-history-derived')].filter((l) => l.hidden);
+  assert.equal(folded.length, 2, 'past five lines the rest fold');
+  const expand = line.querySelector('.u2-domain-history-expand');
+  assert.equal(expand.textContent, '2 more');
+  fire(expand, 'click');
+  assert.equal(folded.every((l) => !l.hidden) && !expand.isConnected, true);
+  history.dispose();
+  src.dispose();
+});
+
+scoped('VR-39: a failed load says "History is unavailable" with the server\'s words as its tooltip', async () => {
+  emsBackends.domain = backend();
+  const issue = emsBackends.domain.tableSync('grit.issue');
+  Object.defineProperty(issue, 'audit', {configurable: true, value: async () => {
+    throw new Error('NoSuchMethodError: method not found: \'call\'');
+  }});
+  const src = (await domains.table('grit.issue')).source({pageSize: 10});
+  await flush();
+  src.currentRow.value = src.rows.byKey('i1');
+  const history = domains.history(src);
+  await settle();
+  assert.equal(history.view.root.querySelector('.u2-async-error-message').textContent, 'History is unavailable');
+  assert.equal(history.view.root.title, 'NoSuchMethodError: method not found: \'call\'');
   history.dispose();
   src.dispose();
 });

@@ -23,7 +23,7 @@ export type {DomainGridOptions, DomainDataTableOptions} from './grid.js';
 export {DomainTree} from './tree.js';
 export type {DomainTreeOptions} from './tree.js';
 export {DomainHistory} from './history.js';
-export type {DomainHistoryTarget} from './history.js';
+export type {DomainHistoryTarget, DomainHistoryOptions} from './history.js';
 export {DomainChildren} from './children.js';
 export type {DomainChildrenOptions, DomainChildrenMode, ChildEntry} from './children.js';
 export type {DomainBulkEditOptions} from './bulk.js';

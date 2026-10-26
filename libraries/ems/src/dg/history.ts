@@ -1,42 +1,58 @@
 /* `domains.history` — a row's audit trail, newest first: who did what when, and for an update
-   the columns it changed as `<caption>: <before> → <after>`. Reads `table.audit(id)` through the
-   seam a page at a time, so the memory backend's history shows the same way; "Show older" under
-   the list loads the next page, and the pane is refreshed when the row's session saves. A draft
-   has no history yet, and says so. */
+   one line per changed column, `<caption>  <before> → <after>`. Reads `table.audit(id)` through
+   the seam a page at a time, so the memory backend's history shows the same way; "Show older"
+   under the list loads the next page, and the pane is refreshed when the row's session saves. A
+   draft has no history yet, and says so. The pane is a folded section whose header sums up the
+   latest entry. */
 import {emsBackends} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
 import {Component, Control, signal, AsyncSource, div, divH, divV, span, timestamp, text, badge, button, AsyncView,
-  Section, VirtualList, Rows, Scope} from '@datagrok-libraries/u2';
+  Section, Rows, Scope, isEmpty} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, BadgeVariant, IProperty, RowView} from '@datagrok-libraries/u2';
 import type {AuditEntryLike} from '../core/domain-backend.js';
 import type {DomainSource} from '../core/domain-source.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {DomainTable} from './facade.js';
 import {DomainForm} from './form.js';
+import {DomainDataTable} from './grid.js';
 import {DomainErrors} from './errors.js';
 
 /** The current row of the source (default), a row signal, or one row. */
 export type DomainHistoryTarget = RowView | ReadonlySignal<RowView | null>;
 
+export interface DomainHistoryOptions {
+  /** The columns the user edits — the form's `include`. A change to any other column (one the app
+   * derives, as a hash from a structure) is named under "Also changed", without its values. */
+  include?: string[];
+}
+
 const OPS: Record<string, [label: string, variant: BadgeVariant]> = {
   insert: ['created', 'success'], update: ['updated', 'default'], delete: ['deleted', 'error'],
   promote: ['shared', 'accent'], undelete: ['restored', 'success'],
 };
-const ITEM_HEIGHT = 40;
 const PAGE_SIZE = 50;
+/** The changed columns an entry lists before the rest fold under "N more". */
+const SHOWN_CHANGES = 5;
+const NO_VALUE = '(empty)';
 
 export class DomainHistory extends Control {
   readonly row: ReadonlySignal<RowView | null>;
   readonly view: AsyncView<AuditEntryLike>;
+  readonly section: Section;
 
   private readonly _hint: HTMLElement;
   /** Whether the table keeps no history at all — its handle declares it, so the pane says so
    * instead of showing an empty list nothing will ever fill. */
   private readonly _noHistory = signal(false);
+  /** The folded header's line: the latest entry, "updated Oct 23, 2026 by Admin". */
+  private readonly _summary = signal('');
+  /** Why the last load failed, as the platform said it — the tooltip behind "History is unavailable". */
+  private _failure = '';
   /** id → the name behind it, resolved once per pane: the actors and the ref cells alike. */
   private readonly _names = new Map<string, Promise<string>>();
 
-  constructor(readonly source: DomainSource, row?: DomainHistoryTarget) {
+  constructor(readonly source: DomainSource, row?: DomainHistoryTarget,
+    private readonly _options: DomainHistoryOptions = {}) {
     super();
     this.root.classList.add('u2-domain-history');
     this.root.dataset.u2 = 'domain-history';
@@ -47,9 +63,17 @@ export class DomainHistory extends Control {
     this.own(() => entries.dispose());
     this.view = this.runInScope(() => new AsyncView<AuditEntryLike>(entries, (items) => this._lines(items),
       {empty: 'No history yet'}));
-    const section = this.runInScope(() => new Section({title: 'History'}));
-    section.add(this._hint, this.view.root);
-    this.root.append(section.root);
+    this.effect(() => {
+      const failed = entries.state.value.kind === 'error';
+      this.view.root.title = failed ? this._failure : '';
+      if (failed)
+        this._summary.value = 'unavailable';
+    });
+    // folded by default, as the platform's own History pane; the user's choice is kept
+    this.section = this.runInScope(() => new Section({title: 'History', hint: this._summary, expanded: false,
+      persistKey: 'u2-domain-history'}));
+    this.section.add(this._hint, this.view.root);
+    this.root.append(this.section.root);
     this.effect(() => {
       const row = this.row.value;
       // a draft id, and any other key the frame stood in for a row it has no id for, names
@@ -60,6 +84,7 @@ export class DomainHistory extends Control {
       this._hint.textContent = hint ?? '';
       this._hint.hidden = hint === null;
       this.view.root.hidden = hint !== null;
+      this._summary.value = hint === 'Not saved yet' ? 'not saved yet' : '';
       if (hint === null)
         this.view.refresh(row!.id);
     });
@@ -92,8 +117,18 @@ export class DomainHistory extends Control {
       .map((prop) => ({prop, before: before[prop.name!], after: after[prop.name!]}));
   }
 
-  private static _display(raw: unknown): string {
-    return raw !== null && typeof raw === 'object' && raw.constructor === Object ? JSON.stringify(raw) : text(raw);
+  /** A cell as the line reads it: a datetime as every u2 surface stamps it (a value at midnight UTC
+   * is a date, never shifted a day by the local zone), a number through the schema's format. */
+  private static _display(raw: unknown, prop?: IProperty): string {
+    if (isEmpty(raw))
+      return NO_VALUE;
+    if (raw !== null && typeof raw === 'object' && raw.constructor === Object)
+      return JSON.stringify(raw);
+    switch (prop?.propertyType ?? prop?.type) {
+      case 'datetime': return timestamp(raw as string, undefined, {utcDates: true}).textContent || text(raw);
+      case 'double': case 'float': case 'num': return DomainDataTable.number(raw as number, prop!.format);
+      default: return text(raw);
+    }
   }
 
   private async _load(id: string): Promise<AuditEntryLike[]> {
@@ -102,77 +137,122 @@ export class DomainHistory extends Control {
       this._noHistory.value = true;
       return [];
     }
-    const entries = await table.audit(id, {limit: PAGE_SIZE});
-    return entries.slice().reverse();
+    try {
+      const entries = await table.audit(id, {limit: PAGE_SIZE});
+      return entries.slice().reverse();
+    }
+    catch (e) {
+      // the pane says it plainly beside its Retry; what the server said is the tooltip
+      this._failure = DomainErrors.message(e, this.source);
+      throw new Error('History is unavailable');
+    }
   }
 
   private _lines(items: AuditEntryLike[]): HTMLElement {
-    const list = new VirtualList<AuditEntryLike>({
-      itemHeight: ITEM_HEIGHT, rowRole: 'listitem',
-      render: (entry) => this._line(entry),
-    });
-    list.root.classList.add('u2-domain-history-lines');
-    const shown = signal(items);
-    list.setItems(shown);
+    const list = divV(items.map((entry) => this._line(entry)), 'u2-domain-history-lines');
+    list.setAttribute('role', 'list');
+    this._summarize(items[0]);
     const scope = Scope.ambient!;
+    let oldest = items.at(-1)!;
     // a button, not a scroll trigger: on the entity page the page scrolls, not the list
     const more: HTMLButtonElement = button('Show older', async () => {
       more.disabled = true;
       try {
-        const last = shown.peek().at(-1)!;
         const table = await emsBackends.domain!.table(this.source.table);
-        const page = await table.audit!(last.id, {limit: PAGE_SIZE, before: last.seq});
+        const page = await table.audit!(oldest.id, {limit: PAGE_SIZE, before: oldest.seq});
         if (scope.isDisposed)
           return;
-        shown.value = shown.peek().concat(page.slice().reverse());
+        const older = page.slice().reverse();
+        Scope.runWith(scope, () => list.append(...older.map((entry) => this._line(entry))));
+        oldest = older.at(-1) ?? oldest;
         more.hidden = page.length < PAGE_SIZE;
-      } catch (e) {
+      }
+      catch (e) {
         if (!scope.isDisposed)
           DomainErrors.report(e, this.source);
-      } finally {
+      }
+      finally {
         more.disabled = false;
       }
     });
     more.classList.add('u2-domain-history-more');
     more.dataset.u2Part = 'more';
     more.hidden = items.length < PAGE_SIZE;
-    return divV([list.root, more], 'u2-domain-history-trail');
+    return divV([list, more], 'u2-domain-history-trail');
+  }
+
+  /** The folded header's line, from the newest entry. */
+  private _summarize(entry: AuditEntryLike): void {
+    const [label] = OPS[entry.op] ?? [entry.op];
+    const when = `${label} ${timestamp(entry.ts).textContent ?? ''}`;
+    this._summary.value = when;
+    if (entry.actor_id !== null)
+      void this._actor(entry.actor_id).then((name) => this._summary.value = `${when} by ${name}`);
+  }
+
+  private _actor(id: string): Promise<string> {
+    return this._resolve(id, () => grok.dapi.users.find(id).then((user) => user?.friendlyName ?? null));
   }
 
   private _line(entry: AuditEntryLike): HTMLElement {
     const [label, variant] = OPS[entry.op] ?? [entry.op, 'default'];
     const actorId = entry.actor_id;
     const actor = span(actorId ?? 'system', 'u2-domain-history-actor');
-    if (actorId !== null) {
-      void this._resolve(actorId, () => grok.dapi.users.find(actorId).then((user) => user?.friendlyName ?? null))
-        .then((name) => actor.textContent = name);
-    }
-    const changes = div([], 'u2-domain-history-changes');
-    const retitle = () => changes.title = changes.textContent ?? '';
-    let first = true;
-    for (const {prop, before, after} of this.changedColumns(entry)) {
-      changes.append(span(`${first ? '' : ', '}${prop.friendlyName ?? prop.name}: `),
-        this._value(prop, before, retitle), span(' → '), this._value(prop, after, retitle));
-      first = false;
-    }
-    retitle();
-    const line = divH([timestamp(entry.ts, 'u2-domain-history-time'), actor, badge(label, {variant}), changes],
-      'u2-domain-history-line');
+    if (actorId !== null)
+      void this._actor(actorId).then((name) => actor.textContent = name);
+    const head = divH([timestamp(entry.ts, 'u2-domain-history-time'), actor, badge(label, {variant})],
+      'u2-domain-history-head');
+    const changes = this._changes(entry);
+    const line = divV(changes === null ? [head] : [head, changes], 'u2-domain-history-line');
+    line.setAttribute('role', 'listitem');
     return line;
+  }
+
+  /** One line per changed column the user edits; the columns derived from them by name only, on a
+   * line of their own; past {@link SHOWN_CHANGES} lines the rest fold under "N more". */
+  private _changes(entry: AuditEntryLike): HTMLElement | null {
+    const changed = this.changedColumns(entry);
+    if (changed.length === 0)
+      return null;
+    const include = this._options.include;
+    const own = include === undefined ? changed : changed.filter(({prop}) => include.includes(prop.name!));
+    const derived = changed.filter((c) => !own.includes(c));
+    const lines = own.map(({prop, before, after}) => divH([span(DomainTable.captionOf(prop), 'u2-domain-history-field'),
+      this._value(prop, before), span('→', 'u2-domain-history-arrow'), this._value(prop, after)],
+    'u2-domain-history-change'));
+    if (derived.length > 0) {
+      lines.push(div([span('Also changed', 'u2-domain-history-field'),
+        span(derived.map(({prop}) => DomainTable.captionOf(prop)).join(', '))], 'u2-domain-history-derived'));
+    }
+    const box = divV(lines, 'u2-domain-history-changes');
+    const folded = lines.slice(SHOWN_CHANGES);
+    if (folded.length > 0) {
+      for (const line of folded)
+        line.hidden = true;
+      const more: HTMLButtonElement = button(`${folded.length} more`, () => {
+        for (const line of folded)
+          line.hidden = false;
+        more.remove();
+      });
+      more.classList.add('u2-domain-history-expand');
+      box.append(more);
+    }
+    return box;
   }
 
   /** A cell as the line shows it: a reference is the name it points at, an id standing in until
    * the platform answers. This one keeps its own lookup where the rest of the domain path reads
    * `~caption_<column>` off the frame: an audit line's `before`/`after` values are ids out of a
    * jsonb snapshot, not frame cells, and no caption column will ever carry them. */
-  private _value(prop: IProperty, raw: unknown, resolved: () => void): HTMLElement {
-    const el = span(DomainHistory._display(raw), 'u2-domain-history-value');
-    const id = text(raw);
-    if (id !== '' && DomainTable.isReference(prop)) {
-      void this._resolve(id, () => DomainForm.captionOf(prop, id)).then((name) => {
-        el.textContent = name;
-        resolved();
-      });
+  private _value(prop: IProperty, raw: unknown): HTMLElement {
+    const el = span(DomainHistory._display(raw, prop), 'u2-domain-history-value');
+    if (isEmpty(raw)) {
+      el.classList.add('u2-domain-history-empty');
+      return el;
+    }
+    if (DomainTable.isReference(prop)) {
+      const id = text(raw);
+      void this._resolve(id, () => DomainForm.captionOf(prop, id)).then((name) => el.textContent = name);
     }
     return el;
   }

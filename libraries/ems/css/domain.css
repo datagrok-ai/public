@@ -276,28 +276,20 @@
   height: var(--u2-domain-grid-height, auto);
 }
 
-/* history: one line per audit entry — when, who, what, the changed columns trailing off */
+/* history: a folded section; each entry a when · who · what line over one line per changed column,
+   wrapped, never cut */
 .u2-domain-history {
   display: flex;
   flex-direction: column;
-  min-height: 0;
   font-family: var(--dg-font-family);
   font-size: var(--dg-font-size);
-}
-
-.u2-domain-history > .u2-section,
-.u2-domain-history .u2-section-body {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
 }
 
 .u2-domain-history-hint,
 .u2-domain-children-hint,
 .u2-domain-children-empty,
 .u2-domain-children-status {
-  padding: var(--dg-space-m);
+  padding: var(--dg-space-m) 0;
   color: var(--dg-text-color-light);
 }
 
@@ -306,23 +298,23 @@
   display: none;
 }
 
-.u2-domain-history-trail,
-.u2-domain-history-lines {
-  flex: 1;
-  min-height: 0;
-}
-
 .u2-domain-history-more {
   align-self: flex-start;
-  margin: var(--dg-space-s);
+  margin: var(--dg-space-s) 0;
 }
 
 .u2-domain-history-line {
-  align-items: baseline;
+  gap: var(--dg-space-xs);
+  padding: var(--dg-space-s) 0;
+}
+
+.u2-domain-history-head {
+  align-items: center;
   gap: var(--dg-space-s);
-  height: 100%;
-  padding: var(--dg-space-s);
-  overflow: hidden;
+}
+
+.u2-domain-history-head > .u2-badge {
+  font-size: var(--dg-font-size-small);
 }
 
 .u2-domain-history-time {
@@ -334,20 +326,49 @@
   flex: none;
 }
 
-/* two lines before it trails off — a change line names columns, ids and names */
 .u2-domain-history-changes {
-  flex: 1;
+  gap: 2px;
+}
+
+.u2-domain-history-change {
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--dg-space-s);
   min-width: 0;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  line-height: var(--dg-line-height);
+}
+
+.u2-domain-history-field,
+.u2-domain-history-arrow,
+.u2-domain-history-derived {
   color: var(--dg-text-color-light);
 }
 
+.u2-domain-history-derived > .u2-domain-history-field {
+  margin-right: var(--dg-space-s);
+}
+
 .u2-domain-history-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--dg-text-color);
+}
+
+.u2-domain-history-empty {
+  color: var(--dg-text-color-light);
+  font-style: italic;
+}
+
+.u2-domain-history-expand {
+  align-self: flex-start;
+}
+
+/* a failed load is a muted line with its Retry beside it; the server's words are the tooltip */
+.u2-domain-history .u2-async-error {
+  padding: var(--dg-space-s) 0;
+}
+
+.u2-domain-history .u2-async-error-message {
+  color: var(--dg-text-color-light);
 }
 
 /* children: the tab strip, each pane a toolbar over the child collection */
