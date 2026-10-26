@@ -107,7 +107,7 @@ const views = domains.views({
   path: '/apps/Grit',
   handle: async (address) => Object.values((await getGritDb()).tables).find((t) => t.address === address)!,
   views: [
-    {table: 'grit.issue', name: 'Issues', options: {app: IssuesApp, mode: 'cards',
+    {table: 'grit.issue', name: 'Issues', options: {app: IssuesApp, mode: 'cards', itemHeight: 48,
       children: {tables: ['comment']}}},
     {table: 'grit.project', name: 'Projects'},
     {table: 'grit.label', name: 'Labels'},
