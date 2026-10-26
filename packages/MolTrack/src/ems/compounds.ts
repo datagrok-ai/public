@@ -4,6 +4,7 @@ import {DomainApp, DomainFilters} from '@datagrok-libraries/ems/src/dg';
 import type {DomainAppOptions, DomainTable} from '@datagrok-libraries/ems/src/dg';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {Filters, Rows, Section, isEmpty} from '@datagrok-libraries/u2';
+import {ObjectForm} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {Action, RowView} from '@datagrok-libraries/u2';
 import type {CompoundRow} from '../generated/db';
 import {Chemistry, IDENTITY_COLUMNS} from './chemistry';
@@ -23,12 +24,11 @@ export class CompoundsApp extends DomainApp {
     'iupac_name', 'source', 'source_compound_code', 'mol_logp'];
 
   private readonly _verdicts = new Map<string, Verdict>();
-  private readonly _identity = ui.divV([], 'moltrack-ems-identity');
-  private readonly _identityHeading =
-    this.runInScope(() => new Section({title: 'Identity', collapsible: false})).header;
+  private readonly _identity = this.runInScope(() => new Section({title: 'Identity', collapsible: false}));
 
   constructor(options: DomainAppOptions) {
     super(options);
+    this._identity.root.classList.add('moltrack-ems-identity');
     this.own(DomainFilters.registerOperators(this.table.address, StructureSearch.operators()));
     this.own((this.table as DomainTable<CompoundRow>).validators.add('original_structure', (_, row) =>
       this._verdicts.get(row.id)?.problem ?? null));
@@ -42,8 +42,8 @@ export class CompoundsApp extends DomainApp {
       if (row === null)
         return;
       this._showIdentity(row, null, row.original_structure);
-      this.panes.prepend(this._identity);
-      return () => this._identity.remove();
+      this.panes.prepend(this._identity.root);
+      return () => this._identity.root.remove();
     });
     this.effect(() => {
       const source = this.entitySource.value;
@@ -51,7 +51,7 @@ export class CompoundsApp extends DomainApp {
       if (source === null || source === undefined || edit === undefined || !source.isDraft)
         return;
       this._showIdentity(null, null);
-      this.panes.prepend(this._identity);
+      this.panes.prepend(this._identity.root);
       const changes = edit.onChanged.subscribe(() => void this._derive(source));
       const unguard = source.guard(() => {
         const verdict = this._verdicts.get(source.currentRow.peek()?.id ?? '');
@@ -60,7 +60,7 @@ export class CompoundsApp extends DomainApp {
       return () => {
         changes.unsubscribe();
         unguard();
-        this._identity.remove();
+        this._identity.root.remove();
         this._verdicts.clear();
       };
     });
@@ -69,7 +69,7 @@ export class CompoundsApp extends DomainApp {
       const form = this.form.value;
       if (form === null)
         return;
-      const align = () => this._identity.style.setProperty('--u2-form-label-width',
+      const align = () => this._identity.root.style.setProperty('--u2-form-label-width',
         form.root.querySelector<HTMLElement>('.u2-form')?.style.getPropertyValue('--u2-form-label-width') ?? '');
       align();
       const observer = new MutationObserver(align);
@@ -140,19 +140,18 @@ export class CompoundsApp extends DomainApp {
     const shown = (column: keyof CompoundIdentity) => isEmpty(identity?.[column]) ? '—' : identity![column]!;
     const rule = shown('match_rule');
     const ruleName = `${rule.charAt(0)}${rule.slice(1).toLowerCase().replace(/_/g, ' ')}`;
-    const table = (parent: {Parent?: HTMLElement}) => ui.tableFromMap({...parent, 'Formula': shown('formula'),
-      'InChIKey': shown('inchikey'), 'Matching rule': ruleName});
-    const rows = table({});
+    const field = (caption: string, value: string | Node) => ObjectForm.readonlyField(caption, caption, value).row;
+    const rows = ui.divV([field('Formula', shown('formula')), field('InChIKey', shown('inchikey')),
+      field('Matching rule', ruleName)]);
     const structure = identity?.structure;
     // the parent is drawn only where it differs from the Structure the form draws (a salt or a charge taken off)
     if (!isEmpty(structure)) {
       void Chemistry.same(original ?? '', structure!).catch(() => false).then((same) => {
         if (!same)
-          rows.replaceWith(table({Parent: grok.chem.drawMolecule(structure!, 160, 120)}));
+          rows.prepend(field('Parent', grok.chem.drawMolecule(structure!, 160, 120)));
       });
     }
-    this._identity.replaceChildren(this._identityHeading,
-      ...(problem === null ? [] : [ui.divText(problem, 'moltrack-ems-problem')]),
+    this._identity.body.replaceChildren(...(problem === null ? [] : [ui.divText(problem, 'moltrack-ems-problem')]),
       identity === null ? ui.divText(problem === null ? 'Draw a structure to see its identity' : '',
         'moltrack-ems-hint') : rows);
   }

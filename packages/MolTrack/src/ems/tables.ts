@@ -16,9 +16,7 @@ const CAS = /^[1-9]\d{1,6}-\d{2}-\d$/;
 
 type Resolve<T> = (value: T) => void;
 
-// one handle per table, acquired once
 export class MolTrackTables {
-  private static readonly _handles = new Map<string, Promise<DomainTable<any>>>();
   private static readonly _names = new Map<string, Promise<string>>();
   private static _asked: Map<string, Resolve<string>> | null = null;
 
@@ -52,13 +50,7 @@ export class MolTrackTables {
   }
 
   static table(name: string): Promise<DomainTable<any>> {
-    let handle = MolTrackTables._handles.get(name);
-    if (handle === undefined) {
-      handle = domains.table<any>(`${SCHEMA}.${name}`);
-      handle.catch(() => MolTrackTables._handles.delete(name));
-      MolTrackTables._handles.set(name, handle);
-    }
-    return handle;
+    return DomainTable.shared(`${SCHEMA}.${name}`);
   }
 
   static compounds(): Promise<DomainTable<CompoundRow>> {
@@ -103,7 +95,7 @@ export class MolTrackTables {
       row.structure ? grok.chem.drawMolecule(row.structure, 120, 80) : span(''),
       divV([
         span(caption(row), 'u2-domain-card-title'),
-        MolTrackTables._text(row.common_name ?? '', 'u2-domain-card-description'),
+        span(row.common_name ?? '', 'u2-domain-card-description'),
         span(row.formula ?? '', 'u2-domain-card-description'),
       ], 'moltrack-ems-card-text'),
     ], 'moltrack-ems-card');
@@ -118,11 +110,11 @@ export class MolTrackTables {
       const rest = [row.project, row.source_batch_code].filter((d) => !isEmpty(d));
       const details = (name: string) => [[compound, name].filter((d) => d !== '').join(' '), ...rest]
         .filter((d) => d !== '').join(' · ');
-      const line = MolTrackTables._text(details(''), 'u2-domain-list-details');
+      const line = span(details(''), 'u2-domain-list-details');
       if (!isEmpty(row.compound_id)) {
         void MolTrackTables.compoundName(row.compound_id).then((name) => {
           if (name !== '')
-            line.textContent = line.title = details(name);
+            line.textContent = details(name);
         });
       }
       return divH([span(caption(row), 'u2-domain-list-name'), line], 'u2-domain-list-line');
@@ -147,16 +139,9 @@ export class MolTrackTables {
     table.renderer = {...table.renderer, caption, listItem: (row) => Rows.isDraft(row) ?
       span(caption(row), 'u2-domain-list-name') : divH([
         span(batch(row), 'u2-domain-list-name'),
-        MolTrackTables._text(run(row), 'moltrack-ems-run'),
-        MolTrackTables._text([dosed(row), clint(row)].filter((d) => d !== '').join(' · '), 'u2-domain-list-details'),
+        span(run(row), 'moltrack-ems-run'),
+        span([dosed(row), clint(row)].filter((d) => d !== '').join(' · '), 'u2-domain-list-details'),
       ], 'u2-domain-list-line moltrack-ems-result')};
-  }
-
-  /** Text that may be cut, whole on hover. */
-  private static _text(text: string, cls: string): HTMLElement {
-    const el = span(text, cls);
-    el.title = text;
-    return el;
   }
 
   /** A compound's common name; names asked for together are read in one query. */

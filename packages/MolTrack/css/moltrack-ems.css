@@ -40,23 +40,6 @@
   padding: 8px 0 16px;
 }
 
-/* the identity's captions and values take the form's columns: the caption right-aligned in the
-   label column, the value where the form's readonly values start */
-.moltrack-ems-identity .d4-info-table td:first-child {
-  width: var(--u2-form-label-width, 100px);
-  min-width: var(--u2-form-label-width, 100px);
-  padding: 0;
-  border: none;
-  text-align: right;
-  color: var(--dg-text-color-light);
-}
-
-.moltrack-ems-identity .d4-info-table td:nth-child(2) {
-  padding-left: calc(var(--dg-space-m) + var(--dg-space-s));
-  border: none;
-  color: var(--dg-text-color);
-}
-
 .moltrack-ems-bulk-preview {
   max-height: 360px;
   min-width: 680px;
