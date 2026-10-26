@@ -16,7 +16,7 @@ const CAS = /^[1-9]\d{1,6}-\d{2}-\d$/;
 
 type Resolve<T> = (value: T) => void;
 
-// one handle per table, acquired once; what MolTrack declares on a table is configured on every handle over it
+// one handle per table, acquired once
 export class MolTrackTables {
   private static readonly _handles = new Map<string, Promise<DomainTable<any>>>();
   private static readonly _names = new Map<string, Promise<string>>();
@@ -79,12 +79,11 @@ export class MolTrackTables {
     Chemistry.load().catch((e) => grok.log.warning(`MolTrack: Crux did not load: ${e}`));
   }
 
-  // a number as the column's own format shows it, the platform's default where it has none
   private static _number(table: DomainTable, column: string, value: number): string {
     return DG.format(value, table.properties.find((p) => p.name === column)?.format || undefined);
   }
 
-  /** Registered at load, so a view's handle, a child tab's and the `/domains` route's are all dressed alike. */
+  /** Registered at load, so every handle over a table is configured alike. */
   static configure(): void {
     const id = {id: 'moltrack'};
     domains.configure<CompoundRow>(`${SCHEMA}.compound`, (table) => MolTrackTables._configureCompounds(table), id);
@@ -136,7 +135,8 @@ export class MolTrackTables {
     const batch = (row: RowView<AssayResultRow>) =>
       MolTrackTables.corporateId(batches, 'batch_regno', row[Rows.caption('batch_id')]);
     // the server captions a run by its key columns joined with ", "
-    const run = (row: RowView<AssayResultRow>) => String(row[Rows.caption('assay_run_id')] ?? '').replace(/, /g, ' · ');
+    const run = (row: RowView<AssayResultRow>) =>
+      String(row[Rows.caption('assay_run_id')] ?? '').replace(/, /g, ' · ');
     const caption = (row: RowView<AssayResultRow>) => Rows.isDraft(row) ? 'New assay result' :
       [batch(row), run(row)].filter((d) => d !== '').join(' · ');
     const clint = (row: RowView<AssayResultRow>) => isEmpty(row.reported_clint) ? '' :
@@ -159,7 +159,7 @@ export class MolTrackTables {
     return el;
   }
 
-  /** A compound's common name; the names asked for together are read in one query, once per page. */
+  /** A compound's common name; names asked for together are read in one query. */
   static compoundName(id: string): Promise<string> {
     let name = MolTrackTables._names.get(id);
     if (name === undefined) {

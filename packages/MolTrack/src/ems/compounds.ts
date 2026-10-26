@@ -64,7 +64,7 @@ export class CompoundsApp extends DomainApp {
         this._verdicts.clear();
       };
     });
-    // the identity's captions take the form's label column, which the form sets on its own root
+    // the identity's captions take the form's label column
     this.effect(() => {
       const form = this.form.value;
       if (form === null)
@@ -139,22 +139,16 @@ export class CompoundsApp extends DomainApp {
     original: string | null = null): void {
     const shown = (column: keyof CompoundIdentity) => isEmpty(identity?.[column]) ? '—' : identity![column]!;
     const rule = shown('match_rule');
-    // the parent is drawn, not spelled out — only where it is not the Structure the form draws
-    // already (a salt or a charge taken off)
-    const parent = ui.div([]);
-    const rows = ui.tableFromMap({'Parent': parent, 'Formula': shown('formula'), 'InChIKey': shown('inchikey'),
-      'Matching rule': `${rule.charAt(0)}${rule.slice(1).toLowerCase().replace(/_/g, ' ')}`});
-    const parentRow = parent.closest('tr');
-    if (parentRow !== null)
-      parentRow.hidden = true;
+    const ruleName = `${rule.charAt(0)}${rule.slice(1).toLowerCase().replace(/_/g, ' ')}`;
+    const table = (parent: {Parent?: HTMLElement}) => ui.tableFromMap({...parent, 'Formula': shown('formula'),
+      'InChIKey': shown('inchikey'), 'Matching rule': ruleName});
+    const rows = table({});
     const structure = identity?.structure;
+    // the parent is drawn only where it differs from the Structure the form draws (a salt or a charge taken off)
     if (!isEmpty(structure)) {
       void Chemistry.same(original ?? '', structure!).catch(() => false).then((same) => {
-        if (same)
-          return;
-        parent.append(grok.chem.drawMolecule(structure!, 160, 120));
-        if (parentRow !== null)
-          parentRow.hidden = false;
+        if (!same)
+          rows.replaceWith(table({Parent: grok.chem.drawMolecule(structure!, 160, 120)}));
       });
     }
     this._identity.replaceChildren(this._identityHeading,

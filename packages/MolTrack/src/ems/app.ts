@@ -118,8 +118,7 @@ export class MolTrackEms {
     ]);
   }
 
-  // the server cannot search a formatted key: a typed `DG-000060` becomes `molregno = 60`. Only a
-  // whole key: the swap empties the box, and `DG-0` would empty it under the user's typing
+  // the server cannot search a formatted key: a typed `DG-000060` becomes `molregno = 60`, only once the key is whole
   private static _keySearch(app: DomainApp, column: string): void {
     const {prefix, width} = MolTrackTables.keyFormat(app.table, column);
     app.effect(() => {
