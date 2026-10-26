@@ -146,15 +146,16 @@
   margin-right: var(--dg-space-l);
 }
 
-/* the host's status line and the gate's reason lead up to the buttons they are about */
+/* the host's status line and the gate's reason sit centred in the room the buttons leave, as a
+   platform dialog's footer warning does (Chem's MPO dialog) */
 .u2-wizard-left {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: var(--dg-space-m);
   min-width: 0;
-  text-align: right;
+  text-align: center;
   font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
 }

@@ -890,11 +890,11 @@
   display: none;
 }
 
-/* why Update is off leads up to the buttons, as a wizard's gate reason does */
+/* why Update is off sits centred left of the buttons, as a wizard's gate reason does */
 .u2-domain-bulk-reason {
   flex: 1 1 auto;
-  justify-content: flex-end;
-  text-align: right;
+  justify-content: center;
+  text-align: center;
 }
 
 .u2-domain-bulk-reason:not(.u2-status-line-problem) {
