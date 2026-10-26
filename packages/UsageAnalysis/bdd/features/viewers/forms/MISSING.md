@@ -29,3 +29,20 @@ and the viewer's "Automation surface" (`public/libraries/utils/src/viewers/CLAUD
   renderer draws, on a card or in the grid, is the renderer's package test, not a feature (the
   library's "What never becomes a feature"). `forms-cards-drawn.feature` claims which row each card
   shows (`record of card <n>`).
+
+## Edge cases (`forms-edge-cases.feature`)
+
+Added with `forms-edge-cases.feature` (edge-case round of 2026-10-26, localhost). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+
+### Still open
+
+1. **Questions for owners (candidate defect, no ticket)**: observed on localhost: fields AGE, HEIGHT,
+   SEX; layout saved; HEIGHT removed (the field goes, `fields` = "AGE, SEX"); the saved layout loaded:
+   `fields` is "AGE, HEIGHT, SEX" again, naming a column the table does not have. A column that leaves
+   the table otherwise takes its field with it (`forms-fields.feature`). Is the field kept on purpose?
+   (A calculated column cannot show it: the layout recreates the column.)
+2. **Questions for owners**: a pinned row filtered out (stays pinned or hides); a row pinned by an
+   empty cell (stored as the text "null").
+3. **Package tests to write (PowerGrid)**: the Data Manipulation set the Dart viewers get (remove all
+   columns, all values empty, every row filtered out) for the Forms viewer, which is a JS viewer the
+   Dart regTest does not run; `fixedRowNumbers` set before Show Current Row.

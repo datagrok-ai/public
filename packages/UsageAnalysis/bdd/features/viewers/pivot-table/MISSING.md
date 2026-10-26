@@ -41,3 +41,25 @@ surface" and `pivot-table.md`. The Table switch is in `pivot-table-table-switch.
 
 - **Dragging a key column header inside the inner grid** is now a `@known-failure` scenario in
   `pivot-table-inner-grid-drag.feature` (core#467).
+
+## Edge cases (`pivot-table-edge-cases.feature`)
+
+Written for `pivot-table-edge-cases.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
+
+### Still open
+
+**Questions for owners**
+
+1. Row Source Filtered with nothing passing, then ADD: hide ADD, or publish an empty table?
+2. Group by a column with blanks and a click on the blank key cell under Filtering Enabled: what does the `filter label` say for the blank value?
+3. Pivot on a column with thousands of categories (demog SUBJ): `auto()` stops at 100, the + picker does not. A cap or a warning?
+4. `pivot_viewer/CLAUDE.md` says a removed Group by column leaves `missingColumnError` over the grid; on the stand the removal re-picks the column (`look.auto` from `onColumnsRemoved`) and no error shows. The feature claims the re-pick; the document should say which applies to a removal and which to a layout from another table.
+
+**API or Dart tests to write**
+
+1. Dart regTest: the Data Manipulation crash test runs for `ViewerDescriptor.all.take(30)` and skips the pivot, the tile viewer and the points viewer.
+2. Dart regTest: column names holding `, `, `[`, `]` or quotes through Save parameters and the history menu.
+
+### Won't do
+
+- A layout grouping by a column the table lacks: covered by the Dart regTest "Grouped by a column the table lacks" (`viewers_test.dart`).

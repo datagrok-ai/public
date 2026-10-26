@@ -44,3 +44,35 @@ surface" and `statistics-ui.md` / `statistics.md`. Back Color is in `statistics-
     Then statistics viewer should not be in full screen
     And the "columns shown" reading of statistics viewer should be 11
   ```
+
+## Edge cases (`statistics-edge-cases.feature`)
+
+Written for `statistics-edge-cases.feature` (26 Oct 2026), the guard suite of edge cases: data
+shapes, columns removed or renamed under the open viewer, layouts naming a missing column, property
+bounds, closing the viewer. Nothing here asks for a library, binding or code change made by that
+feature; it lists what the feature could not claim and why.
+
+### Edge cases: Still open
+
+#### 1. Steps requested
+
+None.
+
+#### 2. Questions for owners
+
+1. **Numeric statistics over no values.** With every row filtered out, or Row Source Selected and
+   nothing selected, `values` is 0 (claimed); what avg, min, max and stdev should read then (`''`,
+   as for a categorical column in `statistics.feature`, or 0) is not defined by help statistics.md.
+2. **An all-empty or constant numeric column**: avg and stdev of no values, stdev of one value.
+3. **A Histograms > <column> column after that column is removed or renamed** (`[SEX]` is built
+   once by name, `stats_viewer_core.dart:111-122`): drop it, rename it, or keep it stale?
+4. **A column added while Columns is an explicit list**: does it get a row? (With Columns empty it
+   does; claimed.)
+
+#### 3. API or Dart tests to write
+
+None.
+
+### Edge cases: Won't do
+
+Nothing.

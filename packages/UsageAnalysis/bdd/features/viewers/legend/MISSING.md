@@ -46,3 +46,32 @@ click is already driven (`user clicks on mini legend icon of <viewer>`).
   the list renders a window of its items, so `user scrolls {element} to the middle of its list`
   cannot reach an item that is not in the page yet. Needs the first rendered item key published
   (`data-legend-first-item`) and a step that scrolls the legend list by a page.
+
+## Edge cases (`legend-edge-cases.feature`)
+
+Written for `legend-edge-cases.feature` (26 Oct 2026), the guard suite of edge cases: data shapes,
+columns removed or renamed under the open viewer, layouts naming a missing column, property bounds,
+closing the viewer. Nothing here asks for a library, binding or code change made by that feature; it
+lists what the feature could not claim and why.
+
+### Edge cases: Still open
+
+#### 1. Steps requested
+
+None.
+
+#### 2. Questions for owners
+
+1. **The color column renamed under a legend selection**: is the selection kept (same column, new
+   name)?
+
+#### 3. API or Dart tests to write
+
+1. ApiTests: a 300-character category label is clipped at 120 characters with "…" and shown whole
+   in the tooltip (`legend.dart:335-339`, `:421-427`).
+2. ApiTests: a 20001-row table with Position Auto gets no corner placement
+   (`legend_mixin.dart:237-240`).
+
+### Edge cases: Won't do
+
+Nothing.

@@ -79,3 +79,37 @@ the properties is open there, and a scenario would then claim the wrong thing.
 - **Dynamic Camera Movement.** An endless rotation timer: nothing settles, a signature claim has no fixed frame.
 - **Marker size as a number.** The `point` area is a fixed 6×6 box, so Size and Marker Size Scaling are
   claimed as frame changes, not as marker sizes.
+
+## Edge cases (`scatter-plot-3d-edge-cases.feature`)
+
+Written for `scatter-plot-3d-edge-cases.feature` (26 Oct 2026), the guard suite of edge cases: data
+shapes, columns removed or renamed under the open viewer, layouts naming a missing column, property
+bounds, closing the viewer. Nothing here asks for a library, binding or code change made by that
+feature; it lists what the feature could not claim and why.
+
+### Edge cases: Still open
+
+#### 1. Steps requested
+
+1. **Markers drawn.** `rows shown` is the filter count, not what the scene holds, so two core#1027
+   defects have no claim: a one-row table draws nothing (the marker scale `1/(10*ln 1)` is
+   Infinity) and rows removed while the plot is open stay drawn (200 markers after 50 of 200 rows
+   are removed). Needs a `markers drawn` reading from the instanced mesh (`JsScatterPlot3dCore`);
+   then a one-row table → 1, and remove 50 of 200 rows → 150, both `@known-failure` on core#1027.
+
+#### 2. Questions for owners
+
+1. **Which column takes over** after the Size or Label column is removed (core#1027 calls the
+   freeze a defect; the fallback is not defined).
+2. **Null labels** read "undefined" (core#1027): should they be empty or "(no value)"?
+
+#### 3. API or Dart tests to write
+
+1. Dart regTest: WebGL contexts released after 17 plots are opened and closed (core#1027; a loop no
+   user claim measures).
+2. Dart regTest: options or a layout naming a Label or Size column the table lacks (core#1027, same
+   throw path as the removal).
+
+### Edge cases: Won't do
+
+Nothing.

@@ -70,3 +70,34 @@ Nothing planned.
   (`libraries/bdd/CLAUDE.md`). edit-tooltip and the others use demog-1000 for this reason.
 - **The `.tooltip` and `.tooltip-visibility` tags the old specs read** — echoes of what the gesture wrote;
   the features claim the tooltip a hover shows instead.
+
+## Edge cases (`tooltips-edge-cases.feature`)
+
+Written for `tooltips-edge-cases.feature` (26 Oct 2026), the guard suite of edge cases: data shapes,
+columns removed or renamed under the open viewer, layouts naming a missing column, property bounds,
+closing the viewer. Nothing here asks for a library, binding or code change made by that feature; it
+lists what the feature could not claim and why.
+
+### Edge cases: Still open
+
+#### 1. Steps requested
+
+None.
+
+#### 2. Questions for owners
+
+1. **A tooltip column renamed.** The table tag keeps column names (`tooltip.dart:574-577`) and
+   nothing renames them, so the column drops out of the tooltip: should the tooltip follow the
+   rename?
+2. **Ten columns ticked, seven shown.** An explicit selection is cut to `colAmount` = 7
+   (`tooltip.dart:590`) with no sign of it: intended, and should the dialog say so?
+3. **Edit Aggregated Tooltip with an empty row** (Add aggregation, no column, OK): what should be
+   stored?
+
+#### 3. API or Dart tests to write
+
+None.
+
+### Edge cases: Won't do
+
+Nothing.

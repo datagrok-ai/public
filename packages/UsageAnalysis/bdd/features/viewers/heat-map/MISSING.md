@@ -78,3 +78,22 @@ slider handles, a Shift-drag selection and Escape, the Table property).
 - **Sorting the spreadsheet next to the heat map**: a double-click on the table view's grid header
   sorts that grid only — the heat map keeps the table's order (`row order` stays 1..10), since each
   grid holds its own order. That is how every grid behaves, not a heat map claim.
+
+## Edge cases (`heat-map-edge-cases.feature`)
+
+Written for `heat-map-edge-cases.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
+
+### Still open
+
+**Steps requested**
+
+1. Alt-drag zoom on a sorted map (TestTrack `Heatmap/heatmap-ui.md`: "view zooms into that area"): the zoom passes table row indexes to the grid-row scroll (`grid_core.dart`), so on a map sorted by AGE the window may land elsewhere. Needs a reading of the first and last grid rows in the vertical window (`first row shown`, `last row shown`) to claim that the zoomed window starts at the sorted top rows.
+2. Sort > Custom on a categorical column with the empty value moved to the top, then Ascending / Descending (heatmap-ui.md, "Custom sorting on categorical column"): needs steps for the custom sort dialog's order list (drag an item to the top).
+
+**Questions for owners**
+
+1. Max Heatmap Columns −1: clamped to 0 columns with no error message (the message is set only for 0). Same as 0, or refused?
+2. A column hidden in the Columns dialog, then Max Heatmap Columns 3: the cap shows the first three numerical columns again, the hidden one included. Should the cap count visible columns only?
+3. An Alt-click without moving: no zoom, or a minimum window?
+
+### Won't do

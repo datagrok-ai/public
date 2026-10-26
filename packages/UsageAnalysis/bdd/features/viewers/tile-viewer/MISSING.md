@@ -44,3 +44,40 @@ Written during the viewer-gaps round of 23 Oct 2026, against
     And the "lane names" reading of tile viewer should be "Asian, Black, Caucasian, Other"
     And no errors should have been logged
   ```
+
+## Edge cases (`tile-viewer-edge-cases.feature`)
+
+Written for `tile-viewer-edge-cases.feature` (26 Oct 2026), the guard suite of edge cases: data
+shapes, columns removed or renamed under the open viewer, layouts naming a missing column, property
+bounds, closing the viewer. Nothing here asks for a library, binding or code change made by that
+feature; it lists what the feature could not claim and why.
+
+### Edge cases: Still open
+
+#### 1. Steps requested
+
+None.
+
+#### 2. Questions for owners
+
+1. **The lanes column removed while lanes are shown.** No error and every row stays (claimed);
+   should the viewer fall back to one lane, as clearing the lanes column does
+   (`tile-viewer-lanes.feature`)?
+2. **A lanes column with empty values**: is there an "(empty)" lane, and what does a card dropped
+   into it write?
+3. **A lanes column with more than 20 categories** set from a layout or the API (the picker offers
+   only columns of at most 20, `tile_viewer_look.dart:21`): reject it as a numeric column is
+   rejected, or accept?
+4. **Leaving the form designer by Escape or the window close** after deleting a field: discard,
+   apply or ask?
+5. **A drag between lanes when the lanes column is calculated**: block it, or write and recompute?
+
+#### 3. API or Dart tests to write
+
+1. Dart regTest: the Data Manipulation loop (`viewers_test.dart:904-950`) runs for
+   `ViewerDescriptor.all.take(30)` and skips the tile viewer (index 30); drop the `take(30)`.
+
+### Edge cases: Won't do
+
+- core#1088 (a designer edit reaches one lane only): already pinned in
+  `tile-viewer-persistence.feature:71`.

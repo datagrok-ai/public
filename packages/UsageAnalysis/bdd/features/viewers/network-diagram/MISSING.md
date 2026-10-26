@@ -44,3 +44,27 @@ Written during the viewer-gaps round of 23 Oct 2026, against
   description says so). Needs an `arrow heads` reading — how many edges vis draws with an arrow
   (`edges.get()` whose `arrows` option is set) — so Show Arrows = to can be claimed as 4 arrow heads
   on demog-1000 and 0 after it is switched off.
+
+## Edge cases (`network-diagram-edge-cases.feature`)
+
+Written for `network-diagram-edge-cases.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
+
+### Still open
+
+**Steps requested**
+
+1. core#1041 crash 2 (Merge Nodes off plus a categorical Node 1 Color column, then a hover on a node) did not reproduce through `user hovers over the "node \"F\"" area`: with Merge Nodes off the label F belongs to two nodes and the hover lands on the one that does not throw. Needs the second group's node by its id (`node "<id>"`, the area the status already names for a duplicate label) documented in `network_diagram/CLAUDE.md`, then a hover on it, tagged `@known-failure … @realizes:core#1041`.
+2. core#1041 crash 3 (node columns removed, then a hover on a node) did not reproduce with a hover on the `view` area: the removed columns take the node areas with them. Needs a hover at the place a node was (`user remembers the place of the "node \"F\"" area` before the removal, then a hover there).
+
+**Questions for owners**
+
+1. Node 1 with more than 10000 categories: the "Too many nodes to display, max 10000" message is the expected state; confirm it is the one a feature should claim.
+
+**API or Dart tests to write**
+
+1. Dart regTest: edge widths after a filter drops a group come from the wrong group (core#1041, wrong output); no edge reading exists for a feature.
+2. Dart regTest: a click on empty space, then the viewer closed within 300 ms, throws from `clickTimer` (core#1041, crash 5); too tight for a feature.
+
+### Won't do
+
+- A wrong `onNodeExpandFunction` name and a negative edge width: no defined behaviour and little value.

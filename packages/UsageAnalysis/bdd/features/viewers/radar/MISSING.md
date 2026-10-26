@@ -35,3 +35,25 @@ leaves none.
   `mouse-over row` 7, unchecks Show Mouse-Over Row, hovers again and claims 0.
 - **A line's hit area.** The chart reports no area per line (`line <row>`), so clicking a line to make
   its row current (the viewer's `click` handler sets `currentRowIdx`) has no gesture.
+
+## Edge cases (`radar-edge-cases.feature`)
+
+Written for `radar-edge-cases.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
+
+### Still open
+
+**Steps requested**
+
+1. The Charts package on the local stand reports no Radar readings (`axes`, `rows shown`, `message`), so the feature claims the Values property the removal rewrites and the message text. Once the package with `radar-status.ts` is on the stand, the removal scenario should claim `the "axes" reading of radar viewer should be "AGE, WEIGHT"` and the empty row sets `the "rows shown" reading … should be 0`.
+
+**Questions for owners**
+
+1. The Min/Max values map with min above max for an axis: every value is clamped to max and the axis goes flat. Refuse or swap?
+2. A Values column holding NaN or ±Infinity under Column normalization: how are the non-finite values drawn?
+3. Show Current Row on a table with no current row highlights row 1 (`Math.max(currentRowIdx, 0)`, already in this file): should it highlight nothing?
+
+**API or Dart tests to write**
+
+1. Charts package test: a constant Values column under Column normalization gives ECharts a zero range.
+
+### Won't do

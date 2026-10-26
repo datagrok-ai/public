@@ -44,3 +44,20 @@ slider against the Bins property (github-2296) in `histogram.feature`, and exact
     And the "bin label 8" reading of histogram viewer should be "<count of WEIGHT bin 8, measured>"
     And no errors should have been logged
   ```
+
+## Edge cases (`histogram-edge-cases.feature`)
+
+Added with `histogram-edge-cases.feature` (edge-case round of 2026-10-26, localhost). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+
+### Still open
+
+1. **Steps requested**: the range inputs' own validation. Min equal to max (50 and 50) is flagged by
+   the input validator ("Max should be greater than min", `histogram_core.dart`), while the viewer's
+   `error` reading stays empty (measured on localhost; the viewer reports only max below min). No step
+   reads the inputs' invalid state.
+2. **Questions for owners**: Bins typed as 201 or 1000 (declared max 200, drawn anyway); `abc` in a
+   range input; Value switched to WEIGHT while a range of AGE filters; a layout whose Value column the
+   table lacks; bin labels dropped above 100 bins; X Axis Height at 0, below 0 or above the viewer's
+   height.
+3. **Not written yet**: the same range checks for a date value column (`STARTED`), which uses date
+   inputs; the selectors hidden at 200 × 200 and shown at 201 × 201.

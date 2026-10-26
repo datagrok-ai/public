@@ -27,3 +27,15 @@ surface". What could be said is in `density-plot-bin-selector-escape-tooltip.fea
     And user sets "showBinSelector" property of density plot viewer to "true"
     Then no errors should have been logged
   ```
+
+## Edge cases (`density-plot-edge-cases.feature`)
+
+Added with `density-plot-edge-cases.feature` (edge-case round of 2026-10-26, localhost). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+
+### Still open
+
+1. **ApiTests to write (core#1048)**: Bins set to 0, -5 or null through `setOptions` (the slider
+   cannot produce them) and a viewer root of 0 × 0 must not throw on every frame.
+2. **Steps requested**: the bin tooltip's range on a logarithmic axis (core#1048 "Wrong 4") needs the
+   tooltip's range as numbers, not text.
+3. **Dart test to write**: listener count across table swaps (core#1048 "Leaks").

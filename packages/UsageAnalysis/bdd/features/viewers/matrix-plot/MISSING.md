@@ -30,3 +30,25 @@ Scenario: A point inside a cell hovers, clicks and drag-selects its row
   Then <measured> rows should be selected
   And no errors should have been logged
 ```
+
+## Edge cases (`matrix-plot-edge-cases.feature`)
+
+Written for `matrix-plot-edge-cases.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
+
+### Still open
+
+**Steps requested**
+
+1. A layout naming a column the table no longer has gives a blank plot with no message (confirmed on the stand through the API: `loadLayout` after HEIGHT was removed, or `xColumnNames` with `NO_SUCH`). There is no manual path a feature can take: the Layouts pane of the toolbox does not offer a layout once its table lacks one of its columns (measured: saved from the pane on `mp-edge-<time>`, HEIGHT removed, the table opened again without HEIGHT — the card is not listed). The scenario needs either a UI path that applies such a layout (a layout file opened on the table, or the pane listing it) or stays a Dart regTest.
+
+**Questions for owners**
+
+1. A layout naming a missing column: skip the missing column and draw the others, or show a message naming it? Today nothing is drawn and nothing is said.
+
+**API or Dart tests to write**
+
+1. Dart regTest: `xColumnNames` naming a column the table lacks (`matrix_plot_core.dart` keeps the null from `dataFrame[cn]`) draws the other columns.
+
+### Won't do
+
+- 0-cell viewport leaves the render pending: not reproduced on the stand (`columns` 0, not pending, at 0.5, 3 and 12 s); the note in `matrix-plot-viewport.feature:30` no longer holds.

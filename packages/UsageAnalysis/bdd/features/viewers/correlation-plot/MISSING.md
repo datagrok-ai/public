@@ -27,3 +27,13 @@ surface" and the TestTrack `correlation-plot.md` / `correlation-plot-ui.md`. Wha
     And no errors should have been logged
   ```
 
+## Edge cases (`correlation-plot-edge-cases.feature`)
+
+Added with `correlation-plot-edge-cases.feature` (edge-case round of 2026-10-26, localhost). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+
+### Still open
+
+1. **Questions for owners**: axes narrowed to AGE, HEIGHT, WEIGHT and then WEIGHT removed (today both
+   axes reset to every numeric column); what the cells show with no row passing; Row Source Selected
+   with a single row; a table with no numeric column.
+2. **ApiTests to write**: a table with 120 numeric columns opens with Show Coefficients off.

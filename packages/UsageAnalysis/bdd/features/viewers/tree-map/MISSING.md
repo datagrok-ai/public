@@ -57,3 +57,35 @@ selectors (public#2131), and the categorical gate.
   with a repaint, not a pixel scan of the band.
 - **What a layout stores for Show Selected Rows / Auto Layout**: a layout round trip is ApiTests',
   `tree-map-color-size-selection.feature` already claims the one the md asks for.
+
+## Edge cases (`tree-map-edge-cases.feature`)
+
+Written for `tree-map-edge-cases.feature` (26 Oct 2026), the guard suite of edge cases: data shapes,
+columns removed or renamed under the open viewer, layouts naming a missing column, property bounds,
+closing the viewer. Nothing here asks for a library, binding or code change made by that feature; it
+lists what the feature could not claim and why.
+
+### Edge cases: Still open
+
+#### 1. Steps requested
+
+None.
+
+#### 2. Questions for owners
+
+1. **After the Color or Size column is removed** (core#1135, pinned as known failures): drop the
+   encoding or pick another column?
+2. **A category whose sizes sum to a negative number** is clamped to 0 (`tree_map_core.dart:246`)
+   and its leaf disappears with its rows: hide, use the absolute value, or warn?
+3. **Outer margins larger than half the viewer, or negative** (no bounds,
+   `tree_map_look.dart:33-36`): clamp or reject?
+
+#### 3. API or Dart tests to write
+
+1. Dart regTest: a Size or Color column empty within one leaf (NaN score) leaves the other leaves
+   laid out and colored.
+2. Dart benchmark: split by a 1000-category column.
+
+### Edge cases: Won't do
+
+Nothing.

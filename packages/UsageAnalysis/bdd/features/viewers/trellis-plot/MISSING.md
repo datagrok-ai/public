@@ -62,3 +62,39 @@ Nothing planned.
 - A cell already current is not clicked again by a scenario that expects a selection: pick another cell.
 - Pick Up / Apply, inner color, scroll: `x label <category>` / `y label <category>` areas are the way to
   tell which categories a scroll brought into the window.
+
+## Edge cases (`trellis-plot-edge-cases.feature`)
+
+Written for `trellis-plot-edge-cases.feature` (26 Oct 2026), the guard suite of edge cases: data
+shapes, columns removed or renamed under the open viewer, layouts naming a missing column, property
+bounds, closing the viewer. Nothing here asks for a library, binding or code change made by that
+feature; it lists what the feature could not claim and why.
+
+### Edge cases: Still open
+
+#### 1. Steps requested
+
+None.
+
+#### 2. Questions for owners
+
+1. **Values outside a property's declared bounds typed in the context panel are taken.** Tiles Per
+   Row declares 1..10, yet 0 typed in the panel becomes its value (and crashes a one-column trellis,
+   pinned on core#1057); the word cloud's Rotation Step (min 1) takes 0 the same way. The number
+   input carries min/max validators (`number_input.dart` `addMinMaxValidators`); should the property
+   panel refuse or clamp an invalid value instead of writing it?
+2. **A layout naming an inner viewer type that is not installed** (core#1057 W2): fall back to the
+   default inner type or show a message?
+
+#### 3. API or Dart tests to write
+
+1. Dart regTest: `viewerType` with another case (`PC plot`) from a layout or `setOptions`
+   (core#1057 W2).
+2. Dart regTest: `tilesPerRow: 0` from JS or a layout (core#1057 W3; the UI path is pinned in the
+   feature).
+3. Dart regTests for the core#1057 leaks: full-screen dialog viewers, inner-look listeners on
+   property toggles, off-screen cells kept alive while scrolling 100 categories.
+
+### Edge cases: Won't do
+
+Nothing.

@@ -41,3 +41,23 @@ and `pc-plot-ui.md`. What could be said is in `pc-plot-hover-and-layout.feature`
   `AppEvents.currentlyDragging.dragSource == this` (`pc_plot_core.dart:125`), i.e. its own axis
   labels. Dropping `header STARTED` onto `view` leaves `axes` at 3 (measured). If adding an axis that
   way is wanted, it is a feature request, not a missing step.
+
+## Edge cases (`pc-plot-edge-cases.feature`)
+
+Written for `pc-plot-edge-cases.feature`: the edge cases of this viewer that the feature could not state with the current step library and the expected behaviour documented today. No library, binding or code change was made for them.
+
+### Still open
+
+**Questions for owners**
+
+1. A Log Columns axis over a column holding zero or negative values is drawn linear without a word (`pc_plot_core.dart`, `col.min > 0`). Silent fallback, or a warning?
+2. An axis slider range set before a transformation is applied stays in the table filter with no slider left to undo it (core#967, behaviour). What should the filter be once the transformation is on?
+3. An axis column removed from the table while the plot shows it: the axis goes and the others stay — confirm, and what a layout naming the missing column should do.
+
+**API or Dart tests to write**
+
+1. Dart regTest: a constant column as an axis under Normalized with density box or violin (normalization divides by max − min).
+
+### Won't do
+
+- `bins`, `horzMargin` and the line-width sliders past their bounds: property-grid clamping, the same for every viewer.

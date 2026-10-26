@@ -51,3 +51,22 @@ into claims added to `box-plot.feature` (category selector, the month and quarte
     Then the "faded groups" reading of box plot viewer should be ""
     And no errors should have been logged
   ```
+
+## Edge cases (`box-plot-edge-cases.feature`)
+
+Added with `box-plot-edge-cases.feature` (edge-case round of 2026-10-26, localhost). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+
+### Still open
+
+1. **Steps requested**:
+   - The log-axis warning: the box plot draws "… can't be visualized in the log scale" over a value
+     with zero or negative values but reports no area for it. Wanted: a `y warning` area as the density
+     plot reports.
+   - Alpha typed in the property panel as 0, 1, 1.5 or -0.1 (help: 0 < alpha < 1) needs a step that
+     types into a property row (the property step goes through the API).
+2. **Data**: the group comparison shown at 30 categories and hidden at 31 (help box-plot.md) needs a
+   categorical column with exactly 30 and 31 categories; demog-1000 has none.
+3. **Questions for owners**: the Category 1 column removed while in use; a group of one row (does the
+   info tooltip give the variance reason); the control group filtered out.
+4. **Dart tests to write**: a value column holding NaN (not an empty value) with the violin style, and
+   retained listeners after ten add/close cycles and ten table swaps (core#960).

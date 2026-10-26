@@ -40,3 +40,21 @@ Nothing planned.
 - **Pixel checks of a renderer, a correlation plot's mirrored cells (GROK-20919)**: renderer.
 - **The legend's own picker, its Cancel and a second pick (github-3132)**: `legend/legend-across-viewers.feature`;
   a conditional coloring's legend: `guides/scatter-plot-conditional-colors.feature`.
+
+## Edge cases (`color-coding-edge-cases.feature`)
+
+Added with `color-coding-edge-cases.feature` (edge-case round of 2026-10-26, localhost). Only the feature was written: no library, binding or code change. Expected behaviour that no help page, TestTrack md, code contract or ticket defines is listed here instead of being written as a scenario.
+
+### Still open
+
+1. **Questions for owners**:
+   - A linked coloring whose source column is deleted: today it takes the colours of the first other
+     column (USUBJID). Off, blank, or a broken-link mark? (The rename case is the `@ticket-pending`
+     scenario.)
+   - Linear Min typed above Max in the editor; linear and conditional coloring of a constant column.
+   - Bin... with 0, a negative number or 10000 bins (the dialog accepts any integer).
+   - A value on the edge two Bin... ranges share: which bin colours it.
+   - A three-column link cycle (A → B → C → A), and a chain longer than the 5 links followed.
+   - A coloring picked up from an uncoloured column and applied to a coloured one.
+2. **Steps requested**: the stop values typed in Edit scheme... (`abc`, stops out of order) have no
+   invalid state to read; the conditional editor's "Invalid pattern" mark is the model.
