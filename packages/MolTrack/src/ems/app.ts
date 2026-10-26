@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {domains, DomainApp} from '@datagrok-libraries/ems/src/dg';
-import type {CompoundBatchRow, CompoundRow} from '../generated/db';
+import {domains} from '@datagrok-libraries/ems/src/dg';
+import type {DomainApp} from '@datagrok-libraries/ems/src/dg';
 import {moltrackEmsDb} from '../generated/db';
 import {CompoundsApp} from './compounds';
 import {MolTrackTables, SCHEMA} from './tables';
@@ -12,7 +12,6 @@ export const APP_PATH = '/apps/Moltrack/MolTrackEMS';
 
 const FILTERS = {filters: {mode: 'builder' as const, placement: 'left' as const}};
 
-// a compound's batches are typed in its grid; the Grok Batch ID opens the batch's own page
 const BATCH_GRID = {open: 'batch_regno', columns: ['batch_regno', 'source', 'source_batch_code', 'acquired_date',
   'synthesized_date', 'purity', 'project']};
 
@@ -59,16 +58,6 @@ export class MolTrackEms {
       MolTrackEms._keySearch(app, key);
   }
 
-  static async compoundByGrokId(corporateId: string): Promise<CompoundRow | null> {
-    const molregno = MolTrackTables.keyNumber(await MolTrackTables.compounds(), 'molregno', corporateId);
-    return molregno === null ? null : moltrackEmsDb.compounds.first({filter: DG.cond('molregno', '=', molregno)});
-  }
-
-  static async batchByGrokId(corporateId: string): Promise<CompoundBatchRow | null> {
-    const regno = MolTrackTables.keyNumber(await MolTrackTables.table('compound_batch'), 'batch_regno', corporateId);
-    return regno === null ? null : moltrackEmsDb.compoundBatches.first({filter: DG.cond('batch_regno', '=', regno)});
-  }
-
   // the server cannot search a formatted key: a typed `DG-000060` becomes `molregno = 60`, only once the key is whole
   private static _keySearch(app: DomainApp, column: string): void {
     const {prefix, width} = MolTrackTables.keyFormat(app.table, column);
@@ -90,11 +79,15 @@ export class MolTrackEms {
     const compound = params.get('corporate_compound_id');
     const batch = params.get('corporate_batch_id');
     if (compound !== null) {
-      const row = await MolTrackEms.compoundByGrokId(compound);
+      const n = MolTrackTables.keyNumber(await MolTrackTables.compounds(), 'molregno', compound);
+      const row = n === null ? null :
+        await moltrackEmsDb.compounds.first({filter: DG.cond('molregno', '=', n), columns: ['molregno']});
       return row === null ? 'Compounds' : `Compounds?entity=${row.id}`;
     }
     if (batch !== null) {
-      const row = await MolTrackEms.batchByGrokId(batch);
+      const n = MolTrackTables.keyNumber(await MolTrackTables.table('compound_batch'), 'batch_regno', batch);
+      const row = n === null ? null :
+        await moltrackEmsDb.compoundBatches.first({filter: DG.cond('batch_regno', '=', n), columns: ['batch_regno']});
       return row === null ? 'Batches' : `Batches?entity=${row.id}`;
     }
     return null;

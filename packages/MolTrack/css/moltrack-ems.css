@@ -1,6 +1,6 @@
 .moltrack-ems-card {
   align-items: flex-start;
-  gap: var(--dg-space-l);
+  gap: 12px;
   padding-top: var(--dg-space-s);
   overflow: hidden;
 }

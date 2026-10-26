@@ -64,18 +64,8 @@ export class CompoundsApp extends DomainApp {
         this._verdicts.clear();
       };
     });
-    // the identity's captions take the form's label column
-    this.effect(() => {
-      const form = this.form.value;
-      if (form === null)
-        return;
-      const align = () => this._identity.root.style.setProperty('--u2-form-label-width',
-        form.root.querySelector<HTMLElement>('.u2-form')?.style.getPropertyValue('--u2-form-label-width') ?? '');
-      align();
-      const observer = new MutationObserver(align);
-      observer.observe(form.root, {subtree: true, childList: true, attributes: true, attributeFilter: ['style']});
-      return () => observer.disconnect();
-    });
+    this.effect(() =>
+      this._identity.root.style.setProperty('--u2-form-label-width', `${this.labelColumn.width.value}px`));
   }
 
   menuActions(): Action[] {

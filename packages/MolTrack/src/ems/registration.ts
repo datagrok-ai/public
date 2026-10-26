@@ -32,10 +32,10 @@ export class BulkRegistration {
 
   private static _structure(header: string): DomainImportColumn {
     return {name: STRUCTURE, header, width: '180px', render: (row: DomainImportRow) => {
-      const input = String(row.values[STRUCTURE] ?? '');
-      if (input !== '' && row.kind !== 'error')
-        return grok.chem.drawMolecule(input, 160, 60);
-      return span(input, row.kind === 'error' ? 'u2-cell-error' : undefined);
+      const input = row.values[STRUCTURE];
+      return isEmpty(input) || row.kind === 'error' ?
+        span(String(input ?? ''), row.kind === 'error' ? 'u2-cell-error' : undefined) :
+        grok.chem.drawMolecule(String(input), 160, 60);
     }};
   }
 

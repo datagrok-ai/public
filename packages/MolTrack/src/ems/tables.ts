@@ -14,11 +14,9 @@ export const SCHEMA = 'moltrack_ems';
 
 const CAS = /^[1-9]\d{1,6}-\d{2}-\d$/;
 
-type Resolve<T> = (value: T) => void;
-
 export class MolTrackTables {
   private static readonly _names = new Map<string, Promise<string>>();
-  private static _asked: Map<string, Resolve<string>> | null = null;
+  private static _asked: Map<string, (name: string) => void> | null = null;
 
   static matchRule(): MatchRule {
     const rule = Chemistry.package().settings?.['CompoundMatchingRule'];
@@ -155,8 +153,8 @@ export class MolTrackTables {
     return name;
   }
 
-  private static _readNames(): Map<string, Resolve<string>> {
-    const asked = new Map<string, Resolve<string>>();
+  private static _readNames(): Map<string, (name: string) => void> {
+    const asked: Map<string, (name: string) => void> = new Map();
     setTimeout(async () => {
       MolTrackTables._asked = null;
       const ids = [...asked.keys()];
