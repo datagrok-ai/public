@@ -328,6 +328,11 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       const info = schema().info;
       const column = info.nameColumn ?? info.businessKey[0];
       const name = column === undefined ? undefined : row[column];
+      // a bare number names nothing on its own: "Purchase order 9", not "9"
+      if (typeof name === 'number' || typeof name === 'bigint') {
+        const noun = DomainTable.noun(info, true);
+        return {text: `${noun.charAt(0).toUpperCase()}${noun.slice(1)} ${name}`, draft: false};
+      }
       if (name !== null && name !== undefined && name !== '')
         return {text: String(name), draft: false};
       return Rows.isDraft(row) ? {text: `New ${DomainTable.noun(info, true)}`, draft: true} :
