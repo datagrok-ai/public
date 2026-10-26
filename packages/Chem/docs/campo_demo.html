@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MPO Profiles — correlation-aware weighting (demo)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #ffffff; --panel: #f6f7f9; --line: #e3e5ea; --line-strong: #c9ccd3;
+  --text: #2b2e35; --muted: #5d616d; --accent: #1a62a8; --accent-soft: #e8f0fa;
+  --pos: #1f77b4; --neg: #ff7f0e; --pin: #2ca02c; --drop: #8a8f99; --equal: #d62728;
+  --err: #b3261e; --err-bg: #fdecea; --warn: #7a4a00; --warn-bg: #fff4e0;
+  --up: #1e7a33; --down: #b3261e; --hist: #b9d3ec; --curve: #e8590c; --type-d: #c2408f;
+  --row-hover: #f3f6fa;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1d22; --panel: #22252b; --line: #33363e; --line-strong: #4a4e59;
+    --text: #e6e7ea; --muted: #a6aab4; --accent: #7ab0ea; --accent-soft: #1f2c3b;
+    --pos: #4c9be0; --neg: #ff9a3c; --pin: #52c152; --drop: #8f949e; --equal: #ff6b6b;
+    --err: #ff8a80; --err-bg: #3a1f1f; --warn: #ffcc80; --warn-bg: #3a2e1a;
+    --up: #8fd99f; --down: #ff8a80; --hist: #3d5f80; --curve: #ff9a3c; --type-d: #e07bb8;
+    --row-hover: #262a31;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1d22; --panel: #22252b; --line: #33363e; --line-strong: #4a4e59;
+  --text: #e6e7ea; --muted: #a6aab4; --accent: #7ab0ea; --accent-soft: #1f2c3b;
+  --pos: #4c9be0; --neg: #ff9a3c; --pin: #52c152; --drop: #8f949e; --equal: #ff6b6b;
+  --err: #ff8a80; --err-bg: #3a1f1f; --warn: #ffcc80; --warn-bg: #3a2e1a;
+  --up: #8fd99f; --down: #ff8a80; --hist: #3d5f80; --curve: #ff9a3c; --type-d: #e07bb8;
+  --row-hover: #262a31;
+  color-scheme: dark;
+}
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 Roboto, "Segoe UI", Arial, sans-serif; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.menubar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px; padding: 6px 14px; font-size: 14px; }
+.menubar span { color: var(--text); cursor: default; }
+.menubar .acts { display: flex; gap: 22px; margin-left: 34px; }
+.menubar button { border: 0; background: transparent; padding: 2px 0; font-size: 14px; font-weight: 500; color: var(--accent); cursor: pointer; letter-spacing: 0.01em; }
+.menubar button:hover { text-decoration: underline; }
+
+.top { padding: 14px 18px 12px; border-bottom: 1px solid var(--line); }
+.bottom { display: flex; flex-wrap: wrap; align-items: stretch; height: max(560px, calc(100vh - 210px)); }
+.form { flex: 1 1 520px; max-width: 640px; height: 100%; overflow: auto; padding: 4px 18px 24px; border-right: 1px solid var(--line); }
+.dock { flex: 999 1 520px; min-width: 0; height: 100%; display: flex; flex-direction: column; }
+.panes { flex: 1 1 auto; min-height: 0; overflow: auto; }
+
+.title { font-size: 18px; font-weight: 500; }
+.desc { color: var(--muted); font-style: italic; margin-top: 2px; }
+.fields { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.frow { display: flex; flex-wrap: wrap; gap: 4px 32px; }
+.f { display: grid; grid-template-columns: 86px minmax(0, 240px); column-gap: 10px; row-gap: 3px; align-items: center; }
+.f label { color: var(--muted); }
+.f select { border: 0; border-bottom: 1px solid var(--line-strong); background: transparent; padding: 4px 2px; }
+.f .hint { grid-column: 2; color: var(--muted); font-style: italic; font-size: 12px; }
+
+.banner { margin-top: 12px; padding: 8px 10px; border-radius: 4px; font-size: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.banner.err { background: var(--err-bg); color: var(--err); }
+.banner.warn { background: var(--warn-bg); color: var(--warn); }
+.banner .sp { flex: 1 1 200px; }
+.banner button { border: 1px solid currentColor; background: transparent; border-radius: 3px; padding: 4px 10px; cursor: pointer; font-size: 12px; font-weight: 500; }
+
+.ptable { margin-top: 4px; overflow-x: auto; }
+.props { display: grid; column-gap: 12px; min-width: 520px; }
+.props .head { font-weight: 500; padding: 8px 0; border-bottom: 1px solid var(--line-strong); }
+.props .cell { padding: 6px 0; border-bottom: 1px solid var(--line); min-height: 58px; display: flex; flex-direction: column; justify-content: center; }
+.pname { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default; }
+.pname.dropped { color: var(--drop); }
+.num-input { width: 62px; border: 0; border-bottom: 1px solid var(--line-strong); background: transparent; padding: 3px 2px; font-family: "Roboto Mono", monospace; }
+.num-input[aria-invalid="true"] { border-bottom: 2px solid var(--err); }
+.num-input:disabled { color: var(--drop); border-bottom-style: dotted; }
+.msg { font-size: 11px; color: var(--err); margin-top: 2px; }
+.note { font-size: 11px; color: var(--warn); margin-top: 2px; max-width: 140px; line-height: 1.3; }
+.wbox { display: flex; align-items: center; gap: 8px; }
+.wval { font-family: "Roboto Mono", monospace; font-weight: 500; width: 50px; }
+.wval.zero { color: var(--drop); }
+.pin { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; border-radius: 3px; cursor: pointer; color: var(--drop); padding: 0; }
+.pin:hover { background: var(--accent-soft); }
+.pin.on { color: var(--accent); }
+.curve svg { display: block; }
+
+.tabbar { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: stretch; background: var(--panel); border-top: 1px solid var(--line); }
+.tw { display: flex; align-items: center; border-right: 1px solid transparent; border-left: 1px solid transparent; }
+.tw[hidden] { display: none; }
+.tw.active { background: var(--bg); border-left-color: var(--line); border-right-color: var(--line); margin-top: -1px; }
+.tab { padding: 5px 4px 6px 12px; font-size: 14px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.tw.active .tab { color: var(--text); }
+.tab-x { border: 0; background: transparent; color: var(--muted); font-size: 16px; line-height: 1; padding: 4px 10px 4px 8px; cursor: pointer; }
+.tab-x:hover { color: var(--text); }
+.tw:not(:has(.tab-x)) .tab { padding-right: 14px; }
+.pane { padding: 14px 16px 20px; }
+.pane[hidden] { display: none; }
+.pane-note { color: var(--muted); font-size: 12px; margin: 0 0 10px; max-width: 80ch; }
+.scroll { overflow: auto; }
+
+.grid { border-collapse: collapse; font-size: 12px; }
+.grid th { position: sticky; top: 0; background: var(--panel); font-weight: 500; text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--line-strong); white-space: nowrap; z-index: 1; }
+.grid td { padding: 4px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; font-family: "Roboto Mono", monospace; }
+.grid th:nth-child(-n+2), .grid td:nth-child(-n+2) { text-align: left; }
+.grid td:nth-child(2) { font-family: inherit; }
+.grid tr:hover td { background: var(--row-hover); }
+.scorebar { display: inline-flex; align-items: center; gap: 6px; }
+.scorebar i { display: inline-block; height: 8px; background: var(--pos); border-radius: 1px; }
+.up { color: var(--up); } .down { color: var(--down); } .same { color: var(--muted); }
+
+.corr { border-collapse: collapse; font-size: 13px; }
+.corr th { font-weight: 700; font-size: 12px; text-align: left; vertical-align: bottom; padding: 4px; width: 54px; max-width: 54px; word-break: break-all; line-height: 1.2; }
+.corr th.rowh { font-weight: 400; color: var(--muted); white-space: nowrap; border-right: 2px solid var(--line-strong); padding-right: 10px; width: auto; max-width: none; }
+.corr th.rowh .t { color: var(--type-d); margin-right: 10px; }
+.corr td { width: 54px; height: 28px; text-align: center; border: 1px solid var(--bg); padding: 0; position: relative; }
+.hist { position: absolute; left: 3px; right: 5px; top: 3px; bottom: 1px; display: flex; align-items: flex-end; gap: 1px; }
+.hist span { flex: 1 1 0; background: var(--hist); }
+
+.charts { display: flex; flex-wrap: wrap; gap: 16px; }
+.viewer { flex: 1 1 320px; min-width: 0; border: 1px solid var(--line); padding: 8px 10px 6px; }
+.viewer h3 { margin: 0 0 6px; font-size: 13px; font-weight: 400; color: var(--muted); }
+.viewer svg { display: block; width: 100%; height: auto; }
+
+.tip { position: fixed; z-index: 10; max-width: 300px; background: var(--bg); color: var(--text); border: 1px solid var(--line-strong); box-shadow: 0 4px 14px rgba(0,0,0,0.15); border-radius: 4px; padding: 10px 12px; font-size: 12px; pointer-events: none; }
+.tip b { font-weight: 500; }
+.tip .r { display: grid; grid-template-columns: 70px 1fr 36px; gap: 3px 8px; align-items: center; margin-top: 6px; }
+.tip .bar { height: 7px; }
+
+@media (max-width: 760px) { .bottom { height: auto; } .form { max-width: none; height: auto; border-right: 0; border-bottom: 1px solid var(--line); } .dock { height: 640px; } }
+</style>
+</head>
+<body>
+<div class="menubar">
+  <span>Edit</span><span>View</span><span>Select</span><span>Data</span><span>ML</span><span>Chem</span><span>Bio</span>
+  <span class="acts"><button type="button">SAVE</button><button type="button" id="resetBtn">RESET</button></span>
+</div>
+
+<main>
+  <section class="top" aria-label="Profile settings">
+    <div class="title">Untitled Profile</div>
+    <div class="desc">Add description…</div>
+    <div class="fields">
+      <div class="f">
+        <label for="method">Method</label>
+        <select id="method"><option value="manual">Manual</option><option value="data">Data-driven</option></select>
+        <span class="hint">Manual desirability curve editing or data-driven MPO trained from labeled data</span>
+      </div>
+      <div class="f">
+        <label for="dataset">Dataset</label>
+        <select id="dataset"><option>drugs_props</option></select>
+        <span class="hint">Load data to preview desirability scores as you edit the profile</span>
+      </div>
+      <div class="frow">
+        <div class="f">
+          <label for="agg">Aggregation</label>
+          <select id="agg">
+            <option value="average">Average</option>
+            <option value="geomean">Geometric mean</option>
+            <option value="min">Minimum</option>
+          </select>
+          <span class="hint">How property scores combine into the MPO score</span>
+        </div>
+        <div class="f" style="grid-template-columns: 70px minmax(0, 240px)">
+          <label for="weighting">Weighting</label>
+          <select id="weighting">
+            <option value="equal">Equal</option>
+            <option value="manual">Manual</option>
+            <option value="correlation">Correlation-aware</option>
+          </select>
+          <span class="hint">How property weights are set</span>
+        </div>
+      </div>
+    </div>
+    <div id="banner"></div>
+  </section>
+
+  <div class="bottom">
+    <section class="form" aria-label="Properties">
+      <div class="ptable"><div class="props" id="props"></div></div>
+      <div id="formError"></div>
+    </section>
+
+    <section class="dock" aria-label="Grid and viewers">
+      <div class="panes">
+        <div class="pane" id="pane-grid" role="tabpanel" aria-labelledby="tab-grid">
+          <div class="scroll"><table class="grid" id="grid"></table></div>
+        </div>
+        <div class="pane" id="pane-corr" role="tabpanel" aria-labelledby="tab-corr" hidden>
+          <div class="scroll"><table class="corr" id="corr"></table></div>
+        </div>
+        <div class="pane" id="pane-weights" role="tabpanel" aria-labelledby="tab-weights" hidden>
+          <div class="charts" id="charts"></div>
+        </div>
+      </div>
+      <div class="tabbar" role="tablist" aria-label="Views">
+        <div class="tw active" id="tw-grid"><div class="tab" role="tab" id="tab-grid" tabindex="0" aria-controls="pane-grid" aria-selected="true">drugs_props</div></div>
+        <div class="tw" id="tw-corr"><div class="tab" role="tab" id="tab-corr" tabindex="0" aria-controls="pane-corr" aria-selected="false">Correlations</div><button type="button" class="tab-x" data-close="corr" aria-label="Close Correlations">×</button></div>
+        <div class="tw" id="tw-weights"><div class="tab" role="tab" id="tab-weights" tabindex="0" aria-controls="pane-weights" aria-selected="false">Weights</div><button type="button" class="tab-x" data-close="weights" aria-label="Close Weights">×</button></div>
+      </div>
+    </section>
+  </div>
+</main>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+// MATH-START
+function cholesky(A, m) {
+  const L = new Float64Array(m * m);
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j <= i; j++) {
+      let s = A[i * m + j];
+      for (let k = 0; k < j; k++) s -= L[i * m + k] * L[j * m + k];
+      if (i === j) {
+        if (s <= 1e-12) return null;
+        L[i * m + i] = Math.sqrt(s);
+      } else {
+        L[i * m + j] = s / L[j * m + j];
+      }
+    }
+  }
+  return L;
+}
+
+function choleskySolve(L, m, b) {
+  const y = new Float64Array(m);
+  for (let i = 0; i < m; i++) {
+    let s = b[i];
+    for (let k = 0; k < i; k++) s -= L[i * m + k] * y[k];
+    y[i] = s / L[i * m + i];
+  }
+  const x = new Float64Array(m);
+  for (let i = m - 1; i >= 0; i--) {
+    let s = y[i];
+    for (let k = i + 1; k < m; k++) s -= L[k * m + i] * x[k];
+    x[i] = s / L[i * m + i];
+  }
+  return x;
+}
+
+function choleskyInverse(L, m) {
+  const inv = new Float64Array(m * m);
+  const e = new Float64Array(m);
+  for (let c = 0; c < m; c++) {
+    e.fill(0); e[c] = 1;
+    const col = choleskySolve(L, m, e);
+    for (let r = 0; r < m; r++) inv[r * m + c] = col[r];
+  }
+  return inv;
+}
+
+function regularise(R, m, lambda) {
+  const out = new Float64Array(m * m);
+  for (let i = 0; i < m * m; i++) out[i] = (1 - lambda) * R[i];
+  for (let k = 0; k < m; k++) out[k * m + k] += lambda;
+  return out;
+}
+
+function norm1(A, m) {
+  let max = 0;
+  for (let j = 0; j < m; j++) {
+    let s = 0;
+    for (let i = 0; i < m; i++) s += Math.abs(A[i * m + j]);
+    if (s > max) max = s;
+  }
+  return max;
+}
+
+function robustInverse(R, m) {
+  for (const lambda of [0, 1e-3, 1e-2, 5e-2, 0.1]) {
+    const A = lambda === 0 ? R : regularise(R, m, lambda);
+    const L = cholesky(A, m);
+    if (!L) continue;
+    const Rinv = choleskyInverse(L, m);
+    const kappa = norm1(A, m) * norm1(Rinv, m);
+    if (kappa <= 1e6) return { Rinv, lambda, kappa };
+  }
+  return null;
+}
+
+function campoWeights(Rinv, m, active, d) {
+  const s = new Float64Array(m);
+  let S = 0;
+  for (let i = 0; i < m; i++) {
+    let row = 0;
+    for (let j = 0; j < m; j++) row += Rinv[i * m + j];
+    s[i] = row;
+    S += row;
+  }
+  const raw = new Float64Array(d).fill(NaN);
+  const base = new Float64Array(d);
+  let clipped = false;
+  let pos = 0;
+  for (let i = 0; i < m; i++) {
+    const r = s[i] / S;
+    raw[active[i]] = r;
+    if (r < 0) clipped = true; else pos += r;
+  }
+  for (let i = 0; i < m; i++) {
+    const r = raw[active[i]];
+    base[active[i]] = r > 0 ? r / pos : 0;
+  }
+  return { raw, base, clipped, s, S };
+}
+
+function finalWeights(base, prio, pinned) {
+  const d = base.length;
+  const b = new Float64Array(d);
+  let B = 0;
+  for (let i = 0; i < d; i++) {
+    if (!Number.isNaN(pinned[i])) continue;
+    b[i] = base[i] * prio[i];
+    B += b[i];
+  }
+  let P = 0;
+  for (let i = 0; i < d; i++) if (!Number.isNaN(pinned[i])) P += pinned[i];
+  if (P > 1 + 1e-9)
+    return { final: base, error: `Pinned weights sum to ${P.toFixed(3)} (> 1)` };
+  const rest = 1 - P;
+  if (rest > 1e-9 && B <= 1e-12)
+    return { final: base, error: 'Nothing to scale: all unpinned weights are 0' };
+  const k = B > 0 ? rest / B : 0;
+  const final = new Float64Array(d);
+  for (let i = 0; i < d; i++)
+    final[i] = Number.isNaN(pinned[i]) ? b[i] * k : pinned[i];
+  return { final, error: null };
+}
+
+// prepareDesirabilityFrame + Pearson (stands in for the Correlation plot's `table`)
+function prepareAndCorrelate(D, n) {
+  const d = D.length;
+  const mask = new Uint8Array(n).fill(1);
+  for (let k = 0; k < d; k++) {
+    const a = D[k];
+    for (let i = 0; i < n; i++) if (Number.isNaN(a[i])) mask[i] = 0;
+  }
+  let rows = 0;
+  for (let i = 0; i < n; i++) rows += mask[i];
+
+  const active = [], constant = [], cols = [], means = [], sds = [];
+  for (let k = 0; k < d; k++) {
+    const a = D[k];
+    const out = new Float32Array(rows);
+    let sum = 0;
+    for (let i = 0, r = 0; i < n; i++) if (mask[i]) { out[r++] = a[i]; sum += a[i]; }
+    const mean = rows ? sum / rows : 0;
+    let v = 0;
+    for (let r = 0; r < rows; r++) { const t = out[r] - mean; v += t * t; }
+    if (v > 1e-12) { active.push(k); cols.push(out); means.push(mean); sds.push(Math.sqrt(v)); }
+    else constant.push(k);
+  }
+  const m = active.length;
+  const R = new Float64Array(m * m);
+  for (let p = 0; p < m; p++) {
+    R[p * m + p] = 1;
+    for (let q = p + 1; q < m; q++) {
+      const a = cols[p], b = cols[q], ma = means[p], mb = means[q];
+      let s = 0;
+      for (let r = 0; r < rows; r++) s += (a[r] - ma) * (b[r] - mb);
+      R[p * m + q] = R[q * m + p] = s / (sds[p] * sds[q]);
+    }
+  }
+  return { R, m, active: Int32Array.from(active), constant: Int32Array.from(constant), rows, cols };
+}
+// MATH-END
+
+// ===================== DATA GENERATION =====================
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function normCdf(x) {
+  const t = 1 / (1 + 0.3275911 * Math.abs(x) / Math.SQRT2);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x / 2);
+  return x >= 0 ? 0.5 * (1 + y) : 0.5 * (1 - y);
+}
+function generateData(Rt, d, n, seed, missingPct, constLast) {
+  let L = cholesky(Rt, d);
+  for (const lam of [1e-3, 1e-2, 5e-2, 0.1, 0.3]) { if (L) break; L = cholesky(regularise(Rt, d, lam), d); }
+  if (!L) return null;
+  const rnd = mulberry32(seed >>> 0);
+  const D = Array.from({ length: d }, () => new Float32Array(n));
+  const z = new Float64Array(d);
+  for (let i = 0; i < n; i++) {
+    for (let k = 0; k < d; k += 2) {
+      const u1 = Math.max(rnd(), 1e-12), u2 = rnd();
+      const r = Math.sqrt(-2 * Math.log(u1));
+      z[k] = r * Math.cos(2 * Math.PI * u2);
+      if (k + 1 < d) z[k + 1] = r * Math.sin(2 * Math.PI * u2);
+    }
+    for (let k = 0; k < d; k++) {
+      let x = 0;
+      for (let j = 0; j <= k; j++) x += L[k * d + j] * z[j];
+      D[k][i] = normCdf(x);
+    }
+  }
+  if (constLast) D[d - 1].fill(1);
+  if (missingPct > 0) {
+    const p = missingPct / 100;
+    for (let k = 0; k < d; k++) for (let i = 0; i < n; i++) if (rnd() < p) D[k][i] = NaN;
+  }
+  return D;
+}
+
+
+const PROPS = [
+  { name: 'TPSA',          mean: 85,  sd: 30,  round: 1, min: 0,   curve: [[20, 1], [60, 1], [170, 0]] },
+  { name: 'TPSA_S',        mean: 90,  sd: 32,  round: 1, min: 0,   curve: [[20, 1], [65, 1], [180, 0]] },
+  { name: 'HBA',           mean: 6,   sd: 2.5, round: 0, min: 0,   curve: [[0, 1], [3, 1], [14, 0]] },
+  { name: 'HBD',           mean: 2,   sd: 1.3, round: 0, min: 0,   curve: [[0, 1], [1, 1], [6, 0]] },
+  { name: 'MW',            mean: 420, sd: 90,  round: 1, min: 120, curve: [[150, 1], [300, 1], [700, 0]] },
+  { name: 'nAtoms',        mean: 30,  sd: 6,   round: 0, min: 8,   curve: [[10, 1], [20, 1], [48, 0]] },
+  { name: 'cLogD_ACD_v15', mean: 2.2, sd: 1.4, round: 2, min: -3,  curve: [[-2, 0], [0.5, 1], [6, 0]] },
+  { name: 'cLogP_Biobyte', mean: 3,   sd: 1.5, round: 2, min: -2,  curve: [[-1, 0], [1, 1], [7, 0]] },
+  { name: 'mbpKa',         mean: 7,   sd: 2,   round: 2, min: 0,   curve: [[1, 0], [9, 1], [13, 1]] },
+];
+const LOWER = [[], [0.96], [0.82, 0.80], [0.58, 0.55, 0.40], [0.45, 0.44, 0.50, 0.00], [0.42, 0.41, 0.48, 0.00, 0.97],
+  [-0.35, -0.33, 0.00, -0.25, 0.00, 0.00], [-0.30, -0.29, 0.00, -0.22, 0.00, 0.00, 0.78],
+  [0.00, 0.00, 0.00, 0.10, 0.00, 0.00, -0.38, 0.05]];
+function curveAt(c, x) {
+  if (x <= c[0][0]) return c[0][1];
+  for (let k = 1; k < c.length; k++) if (x <= c[k][0]) { const [x0, y0] = c[k - 1], [x1, y1] = c[k]; return y0 + (y1 - y0) * (x - x0) / (x1 - x0); }
+  return c[c.length - 1][1];
+}
+function generateCompounds(n, seed) {
+  const d = PROPS.length, R = new Float64Array(d * d);
+  for (let i = 0; i < d; i++) { R[i * d + i] = 1; for (let j = 0; j < i; j++) R[i * d + j] = R[j * d + i] = LOWER[i][j]; }
+  const L = cholesky(R, d);
+  const rnd = mulberry32(seed);
+  const raw = PROPS.map(() => new Float32Array(n));
+  const z = new Float64Array(d);
+  for (let i = 0; i < n; i++) {
+    for (let k = 0; k < d; k += 2) {
+      const u1 = Math.max(rnd(), 1e-12), u2 = rnd(), r = Math.sqrt(-2 * Math.log(u1));
+      z[k] = r * Math.cos(2 * Math.PI * u2); if (k + 1 < d) z[k + 1] = r * Math.sin(2 * Math.PI * u2);
+    }
+    for (let k = 0; k < d; k++) {
+      let x = 0; for (let j = 0; j <= k; j++) x += L[k * d + j] * z[j];
+      const p = PROPS[k]; let v = Math.max(p.min, p.mean + p.sd * x);
+      const f = Math.pow(10, p.round); raw[k][i] = Math.round(v * f) / f;
+    }
+  }
+  return raw;
+}
+
+
+// ===================== STATE =====================
+const N = 400;
+const d = PROPS.length;
+const names = PROPS.map((p) => p.name);
+const RAW = generateCompounds(N, 20261026);
+const DES = RAW.map((a, k) => Float32Array.from(a, (x) => curveAt(PROPS[k].curve, x)));
+const IDS = Array.from({ length: N }, (_, i) => 'CMP-' + String(i + 1).padStart(4, '0'));
+
+const state = {
+  agg: 'average', weighting: 'correlation',
+  manual: new Float64Array(d).fill(1), manualText: Array(d).fill('1.000'),
+  prio: new Float64Array(d).fill(1), prioText: Array(d).fill('1'), prioErr: Array(d).fill(null),
+  pinText: new Map(), pinned: new Float64Array(d).fill(NaN),
+  A: null, B: null, lastFinal: null, error: null, aggWarn: false,
+};
+const $ = (id) => document.getElementById(id);
+const fmt = (v, k = 3) => (v == null || Number.isNaN(v) ? '—' : v.toFixed(k));
+function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+// ===================== STAGE A / B =====================
+function runStageA() {
+  const prep = prepareAndCorrelate(DES, N);
+  const A = { R: prep.R, m: prep.m, active: prep.active, rows: prep.rows, constant: Array.from(prep.constant), cols: prep.cols, inv: null, weights: null, error: null };
+  if (prep.m < 2 || prep.rows <= prep.m) A.error = 'Not enough data to compute correlation-aware weights';
+  else {
+    const inv = robustInverse(prep.R, prep.m);
+    if (!inv) A.error = 'Correlation matrix is singular';
+    else { A.inv = inv; A.weights = campoWeights(inv.Rinv, prep.m, prep.active, d); }
+  }
+  state.A = A;
+  runStageB();
+}
+
+function runStageB() {
+  const A = state.A;
+  state.error = null;
+  if (state.weighting === 'correlation') {
+    if (!A.weights) { state.B = null; state.error = A.error; }
+    else {
+      const { final, error } = finalWeights(A.weights.base, state.prio, state.pinned);
+      state.error = error;
+      if (!error) {
+        const status = names.map((_, i) => !Number.isNaN(state.pinned[i]) ? 'pinned' : final[i] === 0 ? 'dropped' : 'kept');
+        state.B = { final, status };
+        state.lastFinal = final;
+      }
+    }
+  }
+  renderAll();
+}
+
+function currentWeights() {
+  if (state.weighting === 'equal') return new Float64Array(d).fill(1 / d);
+  if (state.weighting === 'manual') {
+    const s = state.manual.reduce((a, b) => a + b, 0) || 1;
+    return Float64Array.from(state.manual, (w) => w / s);
+  }
+  return state.B ? state.B.final : (state.lastFinal || new Float64Array(d).fill(1 / d));
+}
+
+function scores(w, agg) {
+  const out = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    if (agg === 'average') { let s = 0; for (let k = 0; k < d; k++) s += w[k] * DES[k][i]; out[i] = s; }
+    else if (agg === 'geomean') { let s = 0; for (let k = 0; k < d; k++) if (w[k] > 0) s += w[k] * Math.log(Math.max(DES[k][i], 1e-6)); out[i] = Math.exp(s); }
+    else { let s = 1; for (let k = 0; k < d; k++) if (w[k] > 0 && DES[k][i] < s) s = DES[k][i]; out[i] = s; }
+  }
+  return out;
+}
+function ranks(sc) {
+  const idx = Array.from({ length: N }, (_, i) => i).sort((a, b) => sc[b] - sc[a]);
+  const r = new Int32Array(N); idx.forEach((i, k) => { r[i] = k + 1; }); return { idx, r };
+}
+
+// ===================== FORM =====================
+const PIN_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1 6 4 4v2h-5v6l-1 1-1-1v-6H6v-2l4-4z"/></svg>';
+
+function curveSvg(k) {
+  const W = 170, H = 46, a = RAW[k], c = PROPS[k].curve;
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < N; i++) { if (a[i] < lo) lo = a[i]; if (a[i] > hi) hi = a[i]; }
+  lo = Math.min(lo, c[0][0]); hi = Math.max(hi, c[c.length - 1][0]);
+  const bins = new Array(24).fill(0);
+  for (let i = 0; i < N; i++) bins[Math.min(23, Math.floor((a[i] - lo) / (hi - lo) * 24))]++;
+  const mx = Math.max(...bins), bw = (W - 4) / 24, top = 3, base = H - 12;
+  let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Desirability curve of ${esc(PROPS[k].name)}">`;
+  bins.forEach((b, j) => { const h = b / mx * (base - top); s += `<rect x="${(2 + j * bw).toFixed(1)}" y="${(base - h).toFixed(1)}" width="${(bw - 1).toFixed(1)}" height="${h.toFixed(1)}" fill="var(--hist)"/>`; });
+  const X = (x) => 2 + (x - lo) / (hi - lo) * (W - 4), Y = (y) => base - y * (base - top);
+  const pts = [[lo, curveAt(c, lo)], ...c.filter((p) => p[0] > lo && p[0] < hi), [hi, curveAt(c, hi)]];
+  s += `<polyline points="${pts.map(([x, y]) => X(x).toFixed(1) + ',' + Y(y).toFixed(1)).join(' ')}" fill="none" stroke="var(--curve)" stroke-width="1.6"/>`;
+  s += `<line x1="2" y1="${base}" x2="${W - 2}" y2="${base}" stroke="var(--line-strong)"/>`;
+  s += `<text x="2" y="${H - 1}" font-size="9" fill="var(--muted)">${+lo.toFixed(1)}</text><text x="${W - 2}" y="${H - 1}" font-size="9" text-anchor="end" fill="var(--muted)">${+hi.toFixed(1)}</text>`;
+  return s + '</svg>';
+}
+const CURVES = names.map((_, k) => curveSvg(k));
+
+function buildProps() {
+  const el = $('props');
+  const ca = state.weighting === 'correlation';
+  el.style.gridTemplateColumns = ca ? 'minmax(90px, 1fr) 72px 96px 170px' : 'minmax(90px, 1fr) 96px 170px';
+  el.innerHTML = '<div class="head">Property</div>' + (ca ? '<div class="head">Priority</div>' : '') + '<div class="head">Weight</div><div class="head">Desirability</div>';
+  names.forEach((nm, i) => {
+    const nc = document.createElement('div'); nc.className = 'cell';
+    const sp = document.createElement('span'); sp.className = 'pname'; sp.id = `nm${i}`; sp.textContent = nm; sp.tabIndex = 0;
+    sp.addEventListener('mouseenter', (e) => showWhy(i, e)); sp.addEventListener('mousemove', moveTip); sp.addEventListener('mouseleave', hideTip);
+    sp.addEventListener('focus', (e) => showWhy(i, e)); sp.addEventListener('blur', hideTip);
+    nc.append(sp); el.append(nc);
+
+    if (ca) {
+      const pc = document.createElement('div'); pc.className = 'cell';
+      const pi = document.createElement('input');
+      pi.className = 'num-input'; pi.type = 'text'; pi.inputMode = 'decimal'; pi.id = `prio${i}`; pi.value = state.prioText[i];
+      pi.setAttribute('aria-label', `Priority of ${nm}`);
+      pi.addEventListener('input', () => onPriority(i, pi.value));
+      const pm = document.createElement('div'); pm.id = `prioMsg${i}`;
+      pc.append(pi, pm); el.append(pc);
+    }
+
+    const wc = document.createElement('div'); wc.className = 'cell'; wc.id = `wcell${i}`; el.append(wc);
+    renderWeightCell(i);
+
+    const cc = document.createElement('div'); cc.className = 'cell curve'; cc.innerHTML = CURVES[i]; el.append(cc);
+  });
+}
+
+function renderWeightCell(i) {
+  const wc = $(`wcell${i}`); wc.innerHTML = '';
+  const box = document.createElement('div'); box.className = 'wbox';
+  if (state.weighting === 'equal') {
+    const inp = document.createElement('input'); inp.className = 'num-input'; inp.value = '1.000'; inp.disabled = true;
+    inp.setAttribute('aria-label', `Weight of ${names[i]}`); box.append(inp); wc.append(box); return;
+  }
+  if (state.weighting === 'manual') {
+    const inp = document.createElement('input'); inp.className = 'num-input'; inp.type = 'text'; inp.inputMode = 'decimal'; inp.value = state.manualText[i];
+    inp.setAttribute('aria-label', `Weight of ${names[i]}`);
+    inp.addEventListener('input', () => {
+      state.manualText[i] = inp.value; const v = Number(inp.value);
+      const ok = inp.value.trim() !== '' && Number.isFinite(v) && v >= 0;
+      inp.setAttribute('aria-invalid', ok ? 'false' : 'true');
+      if (ok) { state.manual[i] = v; runStageB(); }
+    });
+    box.append(inp); wc.append(box); return;
+  }
+  const pinned = state.pinText.has(i);
+  let msg = null;
+  if (pinned) {
+    const inp = document.createElement('input');
+    inp.className = 'num-input'; inp.type = 'text'; inp.inputMode = 'decimal'; inp.id = `pin${i}`; inp.value = state.pinText.get(i); inp.placeholder = '0–1';
+    inp.setAttribute('aria-label', `Pinned weight of ${names[i]}`);
+    inp.addEventListener('input', () => { state.pinText.set(i, inp.value); revalidatePins(); });
+    box.append(inp);
+    msg = document.createElement('div'); msg.className = 'msg'; msg.id = `pinMsg${i}`;
+  } else {
+    const sp = document.createElement('span'); sp.className = 'wval'; sp.id = `wval${i}`; box.append(sp);
+  }
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'pin' + (pinned ? ' on' : ''); btn.innerHTML = PIN_SVG;
+  btn.querySelector('svg').setAttribute('fill', pinned ? 'currentColor' : 'none');
+  const tipText = pinned ? 'Unpin weight' : 'Pin weight';
+  btn.setAttribute('aria-label', `${tipText}: ${names[i]}`); btn.setAttribute('aria-pressed', String(pinned));
+  btn.addEventListener('mouseenter', (e) => showTipText(tipText, e));
+  btn.addEventListener('mousemove', moveTip);
+  btn.addEventListener('mouseleave', hideTip);
+  btn.addEventListener('focus', (e) => showTipText(tipText, e));
+  btn.addEventListener('blur', hideTip);
+  btn.addEventListener('click', () => {
+    hideTip();
+    if (state.pinText.has(i)) state.pinText.delete(i); else state.pinText.set(i, '');
+    renderWeightCell(i);
+    if (state.pinText.has(i)) setTimeout(() => $(`pin${i}`)?.focus());
+    revalidatePins();
+  });
+  box.append(btn); wc.append(box);
+  if (msg) wc.append(msg);
+}
+
+function validatePin(s) {
+  if (s == null || s.trim() === '') return 'Enter a weight';
+  const v = Number(s);
+  if (!Number.isFinite(v) || v < 0 || v > 1) return 'Must be between 0 and 1';
+  let sum = 0;
+  for (const t of state.pinText.values()) { if (t.trim() === '') continue; const x = Number(t); if (Number.isFinite(x)) sum += x; }
+  if (sum > 1 + 1e-9) return `Pinned weights sum to ${sum.toFixed(2)} (> 1)`;
+  return null;
+}
+function revalidatePins() {
+  const pinned = new Float64Array(d).fill(NaN);
+  for (const [i, t] of state.pinText) {
+    const err = validatePin(t);
+    const inp = $(`pin${i}`), m = $(`pinMsg${i}`);
+    if (inp) inp.setAttribute('aria-invalid', err ? 'true' : 'false');
+    if (m) m.textContent = err || '';
+    if (!err) pinned[i] = Number(t);
+  }
+  state.pinned = pinned;
+  runStageB();
+}
+function onPriority(i, s) {
+  state.prioText[i] = s;
+  let err = null;
+  if (s.trim() === '') err = 'Enter a priority';
+  else { const v = Number(s); if (!Number.isFinite(v) || v < 0) err = 'Must be 0 or greater'; }
+  state.prioErr[i] = err;
+  if (!err) { state.prio[i] = Number(s); runStageB(); } else renderForm();
+}
+
+function renderForm() {
+  const ca = state.weighting === 'correlation';
+  const A = state.A, B = state.B;
+  const final = B ? B.final : state.lastFinal;
+  names.forEach((_, i) => {
+    const nm = $(`nm${i}`);
+    nm.classList.toggle('dropped', ca && !!B && B.status[i] === 'dropped');
+    if (!ca) return;
+    const sp = $(`wval${i}`);
+    if (sp) { const w = final ? final[i] : NaN; sp.textContent = fmt(w); sp.classList.toggle('zero', w === 0); }
+    const pinned = state.pinText.has(i);
+    const pi = $(`prio${i}`), pm = $(`prioMsg${i}`);
+    pi.disabled = pinned; pi.title = pinned ? 'Weight is pinned' : '';
+    pi.setAttribute('aria-invalid', state.prioErr[i] ? 'true' : 'false');
+    let note = '', cls = 'msg';
+    if (state.prioErr[i]) note = state.prioErr[i];
+    else if (!pinned && A.weights && A.weights.base[i] === 0 && state.prio[i] !== 1) { note = 'No effect: computed weight is 0. Pin the weight instead.'; cls = 'note'; }
+    pm.className = cls; pm.textContent = note;
+  });
+  const fe = $('formError'); fe.innerHTML = '';
+  if (ca && state.error) fe.innerHTML = `<div class="banner err">${esc(state.error)}</div>`;
+
+  const bn = $('banner'); bn.innerHTML = '';
+  if (ca && state.agg !== 'average') {
+    bn.innerHTML = '<div class="banner warn"><span class="sp">Correlation-aware weights are derived for a weighted average. With this aggregation they no longer remove redundancy.</span><button type="button" id="toAvg">Switch to Average</button><button type="button" id="toManual">Use Manual</button></div>';
+    $('toAvg').onclick = () => { state.agg = 'average'; $('agg').value = 'average'; syncAggOptions(); runStageB(); };
+    $('toManual').onclick = () => setWeighting('manual');
+  }
+}
+
+// ===================== TOOLTIP: WHY THIS WEIGHT =====================
+function showWhy(i, e) {
+  const A = state.A;
+  if (state.weighting !== 'correlation' || !A.weights) return;
+  const pos = Array.from(A.active).indexOf(i);
+  const tip = $('tip');
+  const final = state.B ? state.B.final[i] : NaN;
+  let html = `<div><b>${esc(names[i])}</b> · final weight ${fmt(final)}</div>`;
+  if (pos < 0) html += '<div>Constant in this dataset — excluded.</div>';
+  else {
+    const m = A.m, r2 = 1 - 1 / A.inv.Rinv[pos * m + pos], raw = A.weights.raw[i];
+    html += `<div style="margin-top:4px">${Math.round(r2 * 100)}% of its desirability is explained by the other properties.</div>`;
+    if (state.pinText.has(i) && !Number.isNaN(state.pinned[i])) html += `<div>Pinned at ${fmt(state.pinned[i])}.</div>`;
+    else if (raw < 0) html += `<div>Raw weight ${raw.toFixed(2)} &lt; 0, so it was set to 0.</div>`;
+    const partners = Array.from(A.active).map((k, q) => ({ k, r: A.R[pos * m + q] })).filter((o) => o.k !== i)
+      .sort((a, b) => Math.abs(b.r) - Math.abs(a.r)).slice(0, 3);
+    html += '<div style="margin-top:6px;color:var(--muted)">Most correlated</div><div class="r">' + partners.map((o) =>
+      `<span>${esc(names[o.k])}</span><span class="bar" style="width:${Math.round(Math.abs(o.r) * 100)}%;background:${o.r >= 0 ? 'rgb(232,40,30)' : 'rgb(30,30,232)'}"></span><span style="font-family:'Roboto Mono',monospace">${o.r.toFixed(2)}</span>`).join('') + '</div>';
+  }
+  tip.innerHTML = html; tip.hidden = false; moveTip(e);
+}
+function moveTip(e) {
+  const tip = $('tip'); if (tip.hidden) return;
+  let x, y;
+  if (e.clientX != null && e.type !== 'focus') { x = e.clientX + 14; y = e.clientY + 14; }
+  else { const r = e.target.getBoundingClientRect(); x = r.right + 8; y = r.top; }
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.min(x, window.innerWidth - w - 8) + 'px';
+  tip.style.top = Math.min(y, window.innerHeight - h - 8) + 'px';
+}
+function hideTip() { $('tip').hidden = true; }
+function showTipText(text, e) { const tip = $('tip'); tip.textContent = text; tip.hidden = false; moveTip(e); }
+
+// ===================== GRID =====================
+function renderGrid() {
+  const ca = state.weighting === 'correlation';
+  const w = currentWeights();
+  const sc = scores(w, state.agg);
+  let h = '<tr><th></th><th>ID</th>' + names.map((n) => `<th>${esc(n)}</th>`).join('') + '<th>MPO Untitled Profile</th></tr>';
+  for (let i = 0; i < N; i++) {
+    h += `<tr><td>${i + 1}</td><td>${IDS[i]}</td>` +
+      names.map((_, k) => `<td>${+RAW[k][i].toFixed(PROPS[k].round)}</td>`).join('') +
+      `<td>${sc[i].toFixed(5)}</td></tr>`;
+  }
+  $('grid').innerHTML = h;
+}
+
+// ===================== CORRELATION PLOT =====================
+function heatColor(r) {
+  const k = Math.min(Math.abs(r) / 0.6, 1);
+  const c = r >= 0 ? '232,40,30' : '30,30,232';
+  return { bg: `rgba(${c},${(k * 0.92).toFixed(3)})`, fg: k > 0.7 ? '#ffffff' : 'var(--text)' };
+}
+function histHtml(a) {
+  const bins = new Array(10).fill(0);
+  for (let i = 0; i < a.length; i++) bins[Math.min(9, Math.floor(a[i] * 10))]++;
+  const mx = Math.max(...bins) || 1;
+  return '<div class="hist">' + bins.map((b) => `<span style="height:${(b / mx * 100).toFixed(0)}%"></span>`).join('') + '</div>';
+}
+function renderCorr() {
+  const A = state.A, tbl = $('corr');
+  const nm = Array.from(A.active, (k) => names[k]), m = A.m;
+  let html = '<tr><th class="rowh"></th>' + nm.map((n) => `<th>${esc(n)}</th>`).join('') + '</tr>';
+  for (let p = 0; p < m; p++) {
+    html += `<tr><th class="rowh"><span class="t">d</span>${esc(nm[p])}</th>`;
+    for (let q = 0; q < m; q++) {
+      if (p === q) html += `<td>${histHtml(A.cols[p])}</td>`;
+      else { const r = A.R[p * m + q], c = heatColor(r); html += `<td style="background:${c.bg};color:${c.fg}" title="${esc(nm[p])} × ${esc(nm[q])}: r = ${r.toFixed(3)}">${r.toFixed(2)}</td>`; }
+    }
+    html += '</tr>';
+  }
+  tbl.innerHTML = html;
+}
+
+// ===================== BAR CHARTS =====================
+const EPS = 0.004;
+function niceRange(lo, hi) { return [Math.floor(lo * 10 - 1e-9) / 10, Math.ceil(hi * 10 - 1e-9) / 10]; }
+function barChartSvg(items, lo, hi, legend, equal) {
+  const W = 460, labelW = 96, padR = 40, rowH = 26, top = equal != null ? 16 : 6;
+  const H = top + items.length * rowH + 26, plotW = W - labelW - padR;
+  const x = (v) => labelW + (v - lo) / (hi - lo) * plotW;
+  const x0 = x(Math.max(lo, Math.min(0, hi)));
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Bar chart">`;
+  items.forEach((it, k) => {
+    const y = top + k * rowH, v = it.display;
+    const xa = Math.min(x0, x(v)), xb = Math.max(x0, x(v));
+    s += `<text x="${labelW - 8}" y="${y + rowH / 2 + 4}" text-anchor="end" font-size="12" fill="var(--text)">${esc(it.name)}</text>`;
+    s += `<rect x="${xa.toFixed(1)}" y="${y + 4}" width="${Math.max(0.5, xb - xa).toFixed(1)}" height="${rowH - 8}" fill="var(${it.color})"><title>${esc(it.name)}: ${it.title}</title></rect>`;
+    s += `<text x="${((v >= 0 ? xb : x0) + 4).toFixed(1)}" y="${y + rowH / 2 + 4}" font-size="11" fill="var(--muted)">${it.label}</text>`;
+  });
+  const axisY = top + items.length * rowH;
+  s += `<line x1="${x0}" y1="${top}" x2="${x0}" y2="${axisY}" stroke="var(--drop)"/><line x1="${labelW}" y1="${axisY}" x2="${labelW + plotW}" y2="${axisY}" stroke="var(--drop)"/>`;
+  const step = hi - lo > 0.6 ? 0.2 : 0.1;
+  for (let t = Math.ceil(lo / step - 1e-9) * step; t <= hi + 1e-9; t += step) {
+    const tx = x(t);
+    s += `<line x1="${tx}" y1="${axisY}" x2="${tx}" y2="${axisY + 4}" stroke="var(--drop)"/><text x="${tx}" y="${axisY + 16}" text-anchor="middle" font-size="10" fill="var(--muted)">${String(+t.toFixed(2))}</text>`;
+  }
+  if (equal != null) {
+    const ex = x(equal);
+    s += `<line x1="${ex}" y1="${top - 10}" x2="${ex}" y2="${axisY}" stroke="var(--equal)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${ex + 4}" y="${top - 3}" font-size="10" fill="var(--equal)">Equal ${equal.toFixed(3)}</text>`;
+  }
+  const lgH = legend.length * 16 + 8, lgW = 70, lgX = W - lgW - 4, lgY = axisY - lgH - 6;
+  s += `<rect x="${lgX}" y="${lgY}" width="${lgW}" height="${lgH}" fill="var(--bg)" stroke="var(--line)"/>`;
+  legend.forEach((l, k) => { s += `<text x="${lgX + 8}" y="${lgY + 16 + k * 16}" font-size="12" fill="var(${l.color})">${l.name}</text>`; });
+  return s + '</svg>';
+}
+function renderCharts() {
+  const A = state.A, B = state.B, el = $('charts');
+  if (!A.weights) { el.innerHTML = ''; return; }
+  let html = '';
+  if (A.weights.clipped) {
+    const items = names.map((n, i) => ({ n, i })).filter((o) => !Number.isNaN(A.weights.raw[o.i])).map(({ n, i }) => {
+      const r = A.weights.raw[i];
+      return { name: n, display: r, color: r < 0 ? '--neg' : '--pos', label: String(+r.toFixed(2)), title: r.toFixed(4) };
+    }).sort((a, b) => b.display - a.display);
+    const [lo, hi] = niceRange(Math.min(-0.1, ...items.map((i) => i.display)), Math.max(0.1, ...items.map((i) => i.display)));
+    html += `<div class="viewer"><h3>Raw weights (may be negative)</h3>${barChartSvg(items, lo, hi, [{ name: 'positive', color: '--pos' }, { name: 'negative', color: '--neg' }], null)}</div>`;
+  }
+  const final = B ? B.final : state.lastFinal;
+  if (final) {
+    const status = B ? B.status : names.map(() => 'kept');
+    const items = names.map((n, i) => ({
+      name: n, display: final[i] === 0 ? EPS : final[i],
+      color: status[i] === 'pinned' ? '--pin' : status[i] === 'dropped' ? '--drop' : '--pos',
+      label: String(+final[i].toFixed(2)), title: `${final[i].toFixed(4)} (${status[i]})`,
+    })).sort((a, b) => b.display - a.display);
+    const [, hi] = niceRange(0, Math.max(0.1, ...final));
+    html += `<div class="viewer"><h3>Final weights (sum = 1)</h3>${barChartSvg(items, 0, hi, [{ name: 'kept', color: '--pos' }, { name: 'pinned', color: '--pin' }, { name: 'dropped', color: '--drop' }], 1 / d)}</div>`;
+  }
+  el.innerHTML = html;
+}
+
+// ===================== MODES, TABS =====================
+const TABS = ['grid', 'corr', 'weights'];
+const closed = { corr: false, weights: false };
+function openTab(id) {
+  TABS.forEach((t) => {
+    $(`tab-${t}`).setAttribute('aria-selected', String(t === id));
+    $(`tw-${t}`).classList.toggle('active', t === id);
+    $(`pane-${t}`).hidden = t !== id;
+  });
+}
+TABS.forEach((t) => {
+  $(`tab-${t}`).addEventListener('click', () => openTab(t));
+  $(`tab-${t}`).addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTab(t); } });
+});
+document.querySelectorAll('.tab-x').forEach((b) => b.addEventListener('click', () => {
+  const t = b.dataset.close;
+  closed[t] = true;
+  $(`tw-${t}`).hidden = true;
+  if ($(`tab-${t}`).getAttribute('aria-selected') === 'true') openTab('grid');
+}));
+
+function setWeighting(mode) {
+  const prev = state.weighting;
+  if (mode === 'correlation' && state.agg !== 'average') { $('weighting').value = prev; return; }
+  if (prev === 'manual' && mode === 'correlation') {
+    state.prio = Float64Array.from(state.manual); state.prioText = Array.from(state.manual, (v) => String(+v.toFixed(3))); state.prioErr = Array(d).fill(null);
+  }
+  state.weighting = mode; $('weighting').value = mode;
+  const ca = mode === 'correlation';
+  if (ca && prev !== 'correlation') { closed.corr = false; closed.weights = false; }
+  $('tw-corr').hidden = !ca || closed.corr; $('tw-weights').hidden = !ca || closed.weights;
+  buildProps();
+  if (ca) { runStageA(); openTab(closed.weights ? 'grid' : 'weights'); }
+  else { openTab('grid'); runStageB(); }
+}
+function syncAggOptions() {
+  const opt = $('weighting').querySelector('option[value="correlation"]');
+  const off = state.agg !== 'average' && state.weighting !== 'correlation';
+  opt.disabled = off;
+  opt.title = off ? 'Available for Average aggregation only' : '';
+}
+$('weighting').addEventListener('change', (e) => setWeighting(e.target.value));
+$('agg').addEventListener('change', (e) => { state.agg = e.target.value; syncAggOptions(); runStageB(); });
+$('method').addEventListener('change', (e) => {
+  if (e.target.value === 'data') { e.target.value = 'manual'; alert('The Data-driven method is not part of this demo.'); }
+});
+$('resetBtn').addEventListener('click', () => {
+  state.manual.fill(1); state.manualText.fill('1.000');
+  state.prio.fill(1); state.prioText.fill('1'); state.prioErr.fill(null);
+  state.pinText = new Map(); state.pinned = new Float64Array(d).fill(NaN);
+  state.agg = 'average'; $('agg').value = 'average';
+  syncAggOptions(); closed.corr = closed.weights = false; state.weighting = 'equal'; setWeighting('correlation');
+});
+
+function renderAll() {
+  renderForm(); renderGrid();
+  if (state.weighting === 'correlation') { renderCorr(); renderCharts(); }
+}
+
+$('weighting').value = 'correlation';
+setWeighting('correlation');
+</script>
+</body>
+</html>
