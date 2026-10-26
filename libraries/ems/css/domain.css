@@ -577,16 +577,69 @@
   min-height: 0;
 }
 
-.u2-domain-app-filters-pane {
+.u2-domain-app-filters-host {
+  display: flex;
+  flex-direction: column;
   height: 100%;
+}
+
+.u2-domain-app-filters-pane {
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   gap: var(--dg-space-s);
-  padding: var(--dg-space-s) var(--dg-space-m);
+  padding: 0 var(--dg-space-m) var(--dg-space-s);
+}
+
+.u2-domain-app-filters-head {
+  flex: none;
+  align-items: center;
+  gap: var(--dg-space-m);
+  min-height: var(--dg-control-height);
 }
 
 .u2-domain-app-filters-title {
+  flex: 1;
   font-weight: 600;
-  color: var(--dg-text-color-light);
+  color: var(--dg-text-color);
+}
+
+.u2-domain-app-filters-head > .u2-fb-mode {
+  margin-left: 0;
+}
+
+.u2-domain-app-filters-pane[hidden],
+.u2-domain-app-filters-tab[hidden] {
+  display: none;
+}
+
+/* folded: the pane gives way to a narrow tab that names it and counts the conditions in force */
+.u2-domain-app-filters-folded > .u2-splitter-panel:first-child {
+  flex: 0 0 28px !important;
+}
+
+.u2-domain-app-filters-folded > .u2-splitter-panel:nth-child(2) {
+  flex: 1 1 0 !important;
+}
+
+.u2-domain-app-filters-folded > .u2-sash {
+  display: none;
+}
+
+.u2-domain-app-filters-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  height: 100%;
+  padding: var(--dg-space-m) 0;
+  writing-mode: vertical-rl;
+  color: var(--dg-text-color);
+  border-right: var(--dg-border-width) solid var(--dg-border);
+  cursor: pointer;
+}
+
+.u2-domain-app-filters-tab:hover {
+  background: var(--dg-hover-subtle);
 }
 
 /* the app: the list page and the entity page under one root, one shown at a time */

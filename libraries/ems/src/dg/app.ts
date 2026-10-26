@@ -8,7 +8,7 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, signal, computed, batch, ReadonlySignal, Signal, button, div, divV, span, Filters, allowedActions,
-  actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows, Splitter} from '@datagrok-libraries/u2';
+  actionsMenu, iconButton, ButtonGroup, Breadcrumbs, Rows} from '@datagrok-libraries/u2';
 import type {FilterGroup, IWidgetStatus, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import type {DomainTableInfoLike} from '../core/domain-backend.js';
@@ -233,9 +233,7 @@ export class DomainApp extends Control {
       this._filterProblem.value = problem;
       this.list.stale.value = problem !== null;
     });
-    const listPage = divV(_options.filters?.placement === 'left' ? [this.runInScope(() => new Splitter([
-      divV([span('Filters', 'u2-domain-app-filters-title'), this.filters.root], 'u2-domain-app-filters-pane'),
-      this.list.root], {direction: 'horizontal', sizes: [0.3, 0.7]})).root] :
+    const listPage = divV(_options.filters?.placement === 'left' ? [this.filters.pane(this.list.root)] :
       [this.filters.root, this.list.root], 'u2-domain-app-list');
     listPage.dataset.u2Part = 'list-page';
     const entityPage = divV([this.header, this._formHost, this.panes], 'u2-domain-app-entity');
