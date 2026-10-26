@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Locations: A narrower location tree, padded panes, the container count in the Containers header, short columns for short values, and New container on a location's right-click menu
+* Locations: A narrower location tree, the container count in the Containers header, and New container on a location's right-click menu
 * Containers: Site suggests the sites the locations already name
 * Locations: The containers table scrolls to every container, and containers list by label
 * u2: Took u2's stylesheet from u2 itself (installed once per page, the newest copy any package carries) instead of the EMS sheet bundle; republish with the other u2 packages
