@@ -93,7 +93,35 @@ function build<V extends DG.Viewer, S>(make: (df: DG.DataFrame, look: Partial<S>
   });
   viewer.runInScope(() => {
     for (const [name, source] of bound)
-      viewer.link(name, source, isWritableSignal(source));
+      linkWhenDeclared(viewer, name, source);
   });
   return viewer;
+}
+
+/** How long a bound option waits for its property: a package (JS) viewer declares its properties a
+ * tick after it is made (only core viewers have them at once), about 50 ms in the browser. */
+const LATE_PROPERTY_TRIES = 40;
+const LATE_PROPERTY_MS = 25;
+
+/** Links `name` to `source` once the viewer declares the property: linked before, `link` would find
+ * no property, bind nothing and remember the empty property index. A name it never declares is linked
+ * after the wait, so `link` says why, as for any unknown name. */
+function linkWhenDeclared(viewer: DG.Viewer & Control, name: string, source: Signal<unknown>): void {
+  const declared = () => viewer.getProperties().some((p) => p.name === name);
+  const link = () => viewer.runInScope(() => viewer.link(name, source, isWritableSignal(source)));
+  if (declared()) {
+    link();
+    return;
+  }
+  let tries = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const retry = () => {
+    timer = undefined;
+    if (declared() || ++tries >= LATE_PROPERTY_TRIES)
+      link();
+    else
+      timer = setTimeout(retry, LATE_PROPERTY_MS);
+  };
+  timer = setTimeout(retry, 0);
+  viewer.own(() => clearTimeout(timer));
 }

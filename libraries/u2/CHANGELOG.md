@@ -2,6 +2,13 @@
 
 ## v.next
 
+* Viewers: An option bound to a signal now reaches a package (JS) viewer: its properties appear a tick after it is made, and the link waits for the property (it bound nothing, silently)
+* funcForm: An override's `visible: false` hides its field (the param's `visible:` expression alone decided it)
+* funcForm: Added `collapsedCategories` — categories that open folded, their headers still shown (`['Advanced']`)
+* funcForm: A `file` param gets a field (the FileInput registered for the type) instead of landing in `unsupported`
+* FileInput: Emptying the box clears the file (the value kept the last one)
+* Buttons: `iconButton` and `buttonWithIcon` take `disabled` with its reason, as `button` does — the reason is the tooltip while disabled
+* NumberInput: Added `placeholder`, as TextInput and QNumInput have: what an empty value means ("Auto")
 * Buttons: A disabled u2 button — `button()`, a button group's items, a dialog's OK and footer, a wizard's BACK / NEXT — is `aria-disabled` and keeps its tab stop, so keyboard focus shows its reason tooltip and a screen reader reads the reason (`aria-description`); a click, Enter or Space on it does nothing, and `el.disabled` still reads and writes the state (`focusableWhenDisabled` and `describeDisabled` for a button built by hand); `Dialog.addButton` takes `disabled`, as `button()` does
 * Validation: Every message waits until the input is edited, left or validated (a required field already did; a validator's message showed at once, and an `ObjectForm`/`propertyForm` required field too); `validity` still judges from the start, so Save and OK stay off with the reason. A field focused from code and left untouched is not touched
 * Dialog: Enter on a dialog whose OK the form holds off shows every field's message and focuses the first one to fix, instead of doing nothing
