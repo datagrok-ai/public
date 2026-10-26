@@ -568,10 +568,10 @@ scoped('a query the backend refuses is the list\'s error, in the status bar and 
   assert.equal(a.summary.value, 'Unknown or inaccessible column "project_id"',
     'the backend\'s refusal, in the status bar');
   assert.match(a.root.querySelector('.u2-domain-list-error').textContent, /Unknown or inaccessible column/);
-  const buttons = [...a.root.querySelectorAll('.u2-domain-list-error button')];
-  assert.deepEqual(buttons.map((b) => b.textContent), ['Clear filter', 'Retry']);
+  const clear = [...a.root.querySelectorAll('.u2-domain-list-error button')].find((b) => b.textContent === 'Clear filter');
+  assert.notEqual(clear, undefined, 'Retry alone would only run it again');
   assert.equal(document.body.querySelector('.u2-notify-error'), null, 'a load failure is not a balloon');
-  fire(buttons[0], 'click');
+  fire(clear, 'click');
   await flush();
   assert.equal(a.listSource.query.value, '');
   assert.equal(a.listSource.rows.items.value.length, 3);

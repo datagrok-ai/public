@@ -82,8 +82,6 @@ export interface DomainAppOptions {
   liveMs?: number;
   mode?: DomainListMode;
   itemHeight?: number;
-  /** Switches off a built-in item of the Actions menu, `{bulkEdit: false}`. */
-  menu?: {bulkEdit?: boolean};
   /** What every draft the app creates starts with — the preset a view that opened the app carries
    * (a location's id on a containers app). Threaded into the entity page's draft source. */
   defaults?: Record<string, unknown>;
@@ -487,13 +485,12 @@ export class DomainApp extends Control {
     // what the caller may do (`requires`) and what the table can do at all are different
     // questions: a permission hides an action, an undeclared support leaves it out entirely
     const support = this.table.table.support;
-    const menu = this._options.menu ?? {};
     const table: Action[] = [];
     if (!trash && support.writes && !this.listSource.readOnly.value) {
       table.push({name: 'Import…', icon: 'upload', requires: 'insert', run: () =>
         void domains.import(this.table).then((report) => report === null ? null : this.listSource.refresh())});
     }
-    if (!trash && menu.bulkEdit !== false && support.updateWhere) {
+    if (!trash && support.updateWhere) {
       table.push({name: 'Bulk edit…', icon: 'edit', requires: 'edit',
         run: () => void domains.bulkEdit(this.listSource)});
     }
@@ -558,10 +555,7 @@ export class DomainApp extends Control {
       items: entries.map(([label], at) => ({id: String(at), label, onClick: () => press(at)}))}));
     group.root.dataset.u2 = 'domain-presets';
     group.root.setAttribute('aria-label', 'Show');
-    this._presets.push(...entries.map(([label], at): Action => ({name: label, run: () => press(at),
-      get icon() {
-        return group.selected.peek().includes(String(at)) ? 'check' : undefined;
-      }})));
+    this._presets.push(...entries.map(([label], at): Action => ({name: label, run: () => press(at)})));
     group.effect(() => {
       // the schema arrives with the load: read the state so the presets are bound again once it has
       source.state.value;
@@ -742,11 +736,10 @@ export class DomainApp extends Control {
     const row = source?.currentRow.peek() ?? null;
     if (source === null || row === null || Rows.isDraft(row))
       return [];
-    return allowedActions([...this.table.actions.for(row), {name: 'Delete', icon: 'trash-alt', requires: 'delete',
-      shortcut: 'Del', destructive: true, run: () => {
-        this._deleting = source;
-        source.edit.peek()?.markDeleted(row.id);
-      }}], {access: source.access.peek(), row});
+    return allowedActions([...this.table.actions.for(row), DomainList.deleteAction(() => {
+      this._deleting = source;
+      source.edit.peek()?.markDeleted(row.id);
+    })], {access: source.access.peek(), row});
   }
 
   /** Trash mode is one flip of the list source's `deleted` mode: the search box, the filters and

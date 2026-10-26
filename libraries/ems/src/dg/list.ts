@@ -146,16 +146,15 @@ export class DomainList extends Control {
       return allowedActions([{name: 'Restore', icon: 'undo', requires: 'delete',
         run: () => source.stageRestore([row.id])}], {access: source.access.peek(), row});
     }
-    const draft = Rows.isDraft(row);
-    const actions: Action[] = [];
-    if (table !== undefined && !draft)
-      actions.push({name: 'Open', icon: 'external-link', shortcut: 'Enter', run: () => table.open(row)});
-    if (table !== undefined)
-      actions.push(...table.actions.for(row));
-    actions.push(...ActionRegistry.bind(this._options.actions ?? [], row));
-    actions.push({name: 'Delete', icon: 'trash-alt', requires: 'delete', shortcut: 'Del', destructive: true,
-      run: () => source.edit.peek()?.markDeleted(row.id)});
-    return allowedActions(actions, {access: source.access.peek(), row});
+    const extra = this._options.actions ?? [];
+    const actions = table === undefined ? ActionRegistry.bind(extra, row) :
+      table.rowActions(row, extra).map((a) => a.name === 'Open' ? {...a, shortcut: 'Enter'} : a);
+    return allowedActions([...actions, DomainList.deleteAction(() => source.edit.peek()?.markDeleted(row.id))],
+      {access: source.access.peek(), row});
+  }
+
+  static deleteAction(run: () => void): Action {
+    return {name: 'Delete', icon: 'trash-alt', requires: 'delete', shortcut: 'Del', destructive: true, run};
   }
 
   /** The context menu of a row that is part of a multi-selection: every action that applies to ALL

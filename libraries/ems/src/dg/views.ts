@@ -34,20 +34,18 @@ export interface DomainViewsOptions {
 }
 
 export class DomainViews {
-  /** Where each table's rows open: every views object over it, the latest last. */
-  private static readonly _byTable = new Map<string, DomainViews[]>();
+  /** Where each table's rows open: the views made over it last. */
+  private static readonly _byTable = new Map<string, DomainViews>();
 
   constructor(private readonly _options: DomainViewsOptions) {
     for (const entry of _options.views)
-      DomainViews._byTable.set(entry.table, [...DomainViews._byTable.get(entry.table) ?? [], this]);
+      DomainViews._byTable.set(entry.table, this);
   }
 
   /** Opens a saved row of `table` in the view of it some views have — brought forward at the row, or docked; false
-   * where no views show the table. Views with an app open over the table win over the latest made. */
+   * where no views show the table. */
   static openRow(table: string, id: string): boolean {
-    const all = DomainViews._byTable.get(table) ?? [];
-    const open = all.filter((v) => [...DomainApp.live].some((app) => app.base === v.baseOf(table)));
-    const views = open[open.length - 1] ?? all[all.length - 1];
+    const views = DomainViews._byTable.get(table);
     if (views !== undefined)
       void views.show(`${views._segment(views._entry(table))}?entity=${encodeURIComponent(DomainAddress.escape(id))}`);
     return views !== undefined;

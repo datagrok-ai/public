@@ -248,17 +248,20 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 
   /** What a read-only row offers — a tree node, a data table row: Open, the table's actions and the caller's. */
   rowActions(row: RowView<TRow>, extra: readonly DomainAction<TRow>[] = []): Action[] {
-    return allowedActions([{name: 'Open', icon: 'folder-open', run: () => this.open(row)},
-      ...this.actions.for(row), ...ActionRegistry.bind(extra, row)], {access: this.access, row});
+    const open: Action[] = Rows.isDraft(row) ? [] : [{name: 'Open', icon: 'external-link', run: () => this.open(row)}];
+    return allowedActions([...open, ...this.actions.for(row), ...ActionRegistry.bind(extra, row)],
+      {access: this.access, row});
   }
 
   /** Opens a saved row: the entity page of the app open over this table (find-or-activate), else
-   * the platform's entity view. */
+   * the platform's entity view. Deferred: the platform brings a clicked view back to the front after the click. */
   open(row: RowView<TRow>): void {
-    if (Rows.isDraft(row) || DomainApp.activate(DomainApp.baseOf(this.address), row.id) ||
-        DomainViews.openRow(this.address, row.id))
+    if (Rows.isDraft(row))
       return;
-    this.handler.openRow(this.row(row));
+    setTimeout(() => {
+      if (!DomainApp.activate(DomainApp.baseOf(this.address), row.id) && !DomainViews.openRow(this.address, row.id))
+        this.handler.openRow(this.row(row));
+    });
   }
 
   /** The table as a platform view (GOAL "What it looks like": `grok.shell.addView(issues.app())`):

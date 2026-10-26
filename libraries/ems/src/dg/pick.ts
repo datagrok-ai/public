@@ -8,9 +8,6 @@ import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.
 import {DomainSource} from '../core/domain-source.js';
 import type {DomainTable} from './facade.js';
 
-export {PickInput};
-export type {PickInputOptions} from '@datagrok-libraries/u2';
-
 export interface PickItem {
   id: string;
   name: string;

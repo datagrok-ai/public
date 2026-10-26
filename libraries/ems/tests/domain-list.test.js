@@ -129,6 +129,7 @@ scoped('actions: Open on saved rows through the handler, Delete under the row\'s
   list.actionsFor(src.rows.byKey('i1')).find((a) => a.name === 'Escalate').run();
   assert.equal(src.rows.byKey('i1').title, 'Aspirin!', 'bound to the row');
   list.actionsFor(src.rows.byKey('i1')).find((a) => a.name === 'Open').run();
+  await flush();
   assert.equal(DG.DomainObjectHandler.opened.length, 1);
   assert.equal(DG.DomainObjectHandler.opened[0].values.title, 'Aspirin!');
   list.actionsFor(src.rows.byKey('i1')).find((a) => a.name === 'Delete').run();

@@ -7,7 +7,7 @@ import {emsBackends, nounOf} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
 import {Component, Control, signal, AsyncSource, div, divH, divV, span, timestamp, text, badge, button, AsyncView,
   Accordion, Rows, Scope, isEmpty} from '@datagrok-libraries/u2';
-import type {AccordionPane, ReadonlySignal, BadgeVariant, IProperty, RowView} from '@datagrok-libraries/u2';
+import type {ReadonlySignal, BadgeVariant, IProperty, RowView} from '@datagrok-libraries/u2';
 import type {AuditEntryLike} from '../core/domain-backend.js';
 import type {DomainSource} from '../core/domain-source.js';
 import {SYSTEM_COLUMNS} from './backend.js';
@@ -35,7 +35,6 @@ const NO_VALUE = '(empty)';
 export class DomainHistory extends Control {
   readonly row: ReadonlySignal<RowView | null>;
   readonly view: AsyncView<AuditEntryLike>;
-  readonly pane: AccordionPane;
 
   private readonly _hint: HTMLElement;
   /** Whether the table keeps no history at all — its handle declares it, so the pane says so
@@ -65,7 +64,7 @@ export class DomainHistory extends Control {
         this._summary.value = 'unavailable';
     });
     const accordion = this.runInScope(() => new Accordion());
-    this.pane = accordion.addPane('History', div([this._hint, this.view.root]),
+    accordion.addPane('History', div([this._hint, this.view.root]),
       {hint: this._summary, expanded: false, persistKey: 'u2-domain-history'});
     this.root.append(accordion.root);
     this.effect(() => {

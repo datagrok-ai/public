@@ -88,9 +88,8 @@ export class DomainGrid extends Control {
       if (open === undefined || !cell.isTableCell || cell.tableColumn?.name !== open.column)
         return;
       const row = source.rows.byKey(String(cell.grid.dataFrame.get('id', cell.tableRowIndex!)));
-      // the platform brings the clicked grid's view back to the front after this handler
       if (row !== undefined && !Rows.isDraft(row))
-        setTimeout(() => open.run(row));
+        open.run(row);
     });
     this.own(() => {
       repointed.unsubscribe();

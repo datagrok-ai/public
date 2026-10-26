@@ -24,9 +24,7 @@ const VIEWS = domains.views({
   views: [
     {table: `${SCHEMA}.compound`, name: 'Compounds', options: {...FILTERS, sort: '!molregno', app: CompoundsApp,
       mode: 'cards', itemHeight: 88, include: CompoundsApp.FIELDS,
-      children: {tables: ['compound_batch'], grids: {compound_batch: BATCH_GRID}},
-      // no Bulk edit: it would write past the identity a structure derives
-      menu: {bulkEdit: false}}},
+      children: {tables: ['compound_batch'], grids: {compound_batch: BATCH_GRID}}}},
     {table: `${SCHEMA}.compound_batch`, name: 'Batches', options: {...FILTERS, sort: '!batch_regno',
       children: {tables: ['batch_addition', 'assay_result']}}},
     {table: `${SCHEMA}.assay`, name: 'Assays', options: {...FILTERS, sort: 'name', children: {tables: ['assay_run']}}},
