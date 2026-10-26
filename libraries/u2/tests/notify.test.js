@@ -46,16 +46,18 @@ smoke('per-type balloons stack in the container; strings render as text', async 
   assert.equal(balloons().length, 0);
 });
 
-smoke('info auto-hides; warning and error stay; explicit autoHide overrides', async () => {
+smoke('every type auto-hides, a warning or an error after twice an info\'s time; explicit autoHide overrides', async () => {
   const info = notify.info('Bye', {timeout: 20});
-  const warning = notify.warning('Stay');
-  const sticky = notify.info('Also stay', {autoHide: false});
+  const error = notify.error('Gone too', {timeout: 20});
+  const warning = notify.warning('Later');
+  const sticky = notify.info('Stay', {autoHide: false});
   assert.ok(info.root.querySelector('.u2-notify-timer'), 'auto-hiding balloon shows the countdown');
-  assert.equal(warning.root.querySelector('.u2-notify-timer'), null);
+  assert.equal(warning.root.querySelector('.u2-notify-timer').style.animationDuration, '10000ms');
   assert.equal(sticky.root.querySelector('.u2-notify-timer'), null);
 
   await sleep(50);
   assert.equal(info.root.isConnected, false, 'info closed itself');
+  assert.equal(error.root.isConnected, false, 'and an error too');
   assert.equal(warning.root.isConnected, true);
   assert.equal(sticky.root.isConnected, true);
 });

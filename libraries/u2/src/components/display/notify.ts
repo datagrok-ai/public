@@ -1,7 +1,7 @@
 /* Notifications — the u2 counterpart of the platform's `Balloon` (d4/widgets/balloon): a
-   top-right stack of per-type balloons. Ported semantics: info auto-hides, warning and error
-   stay until closed; hovering pauses the countdown; `oneTimeKey` persists across sessions,
-   `singleKey` dedupes concurrent balloons; copy and close reveal on hover; a click anywhere
+   top-right stack of per-type balloons. Every type auto-hides, a warning or an error after twice
+   an info's time, so a refusal read once does not pile up; hovering pauses the countdown;
+   `oneTimeKey` persists across sessions, `singleKey` dedupes concurrent balloons; copy and close reveal on hover; a click anywhere
    on the balloon closes it. Deliberately not ported: `appendHtml` for string content — a
    string renders as text, never as markup. */
 import {Overlay} from '../../core/overlay.js';
@@ -13,9 +13,9 @@ import {iconButton} from '../actions/buttons.js';
 export type NotifyType = 'info' | 'warning' | 'error';
 
 export interface NotifyOptions {
-  /** Close after {@link timeout}; info balloons by default, warnings and errors stay until closed. */
+  /** Close after {@link timeout}; on by default. */
   autoHide?: boolean;
-  /** Auto-hide delay in milliseconds; 5000 by default. */
+  /** Auto-hide delay in milliseconds; 5000 for an info, 10000 for a warning or an error. */
   timeout?: number;
   /** Shown once ever — remembered in localStorage under `u2-notify-<key>`. */
   oneTimeKey?: string;
@@ -115,8 +115,8 @@ class Notify {
       balloon.addEventListener('click', close);
 
     let timer = 0;
-    if (options.autoHide ?? type === 'info') {
-      const timeout = options.timeout ?? 5000;
+    if (options.autoHide ?? true) {
+      const timeout = options.timeout ?? (type === 'info' ? 5000 : 10000);
       const bar = div([], 'u2-notify-timer');
       bar.style.animationDuration = `${timeout}ms`;
       balloon.append(bar);
