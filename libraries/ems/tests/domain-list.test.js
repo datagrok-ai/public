@@ -622,8 +622,8 @@ scoped('a seeded row is current but no pick; a pending delete reads with an Undo
   await flush();
   const deleted = list.list.root.querySelector('[data-u2-row="i2"]');
   assert.equal(deleted.classList.contains('u2-domain-list-pending'), true, 'a pending delete has the pending edge');
-  const undo = deleted.querySelector('.u2-domain-list-undo .u2-link');
-  assert.equal(undo.textContent, 'Undo', 'undone in words, not a bare icon');
+  const undo = deleted.querySelector('.u2-domain-list-undo .u2-icon-btn');
+  assert.equal(undo.getAttribute('aria-label'), 'Undo delete', 'an undo icon, its tooltip says what it undoes');
   fire(undo, 'click');
   await flush();
   assert.equal(src.isDirty.value, false);

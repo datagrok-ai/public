@@ -4,7 +4,7 @@
    paired through the source, the next page loaded near the bottom, a row marked deleted kept
    struck through with Restore until the save, and the source's loading, empty and error states
    shown under the rows. */
-import {Control, signal, button, div, divH, span, link, timestamp, text, VirtualList, allowedActions, rowActions,
+import {Control, signal, button, iconButton, div, divH, span, timestamp, text, VirtualList, allowedActions, rowActions,
   loader, emptyState, Rows} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, Signal, ObjectRenderer, Action, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
@@ -237,10 +237,11 @@ export class DomainList extends Control {
     const content = render ? render(row) : this._content(row);
     content.classList.add('u2-domain-list-content');
     const actions = this.actionsFor(row);
-    // a delete waiting for the save is undone in words, in reach without hovering
+    // a delete waiting for the save is undone in reach without hovering
     const undo = state === 'deleted' ? actions.find((a) => a.name === 'Restore') : undefined;
-    return div([content, undo === undefined ? rowActions(actions) :
-      div([link('Undo', () => undo.run())], 'u2-domain-list-undo')], 'u2-domain-list-item');
+    const tail = undo === undefined ? rowActions(actions) :
+      div([iconButton('undo', () => undo.run(), {tooltip: 'Undo delete'})], 'u2-domain-list-undo');
+    return div([content, tail], 'u2-domain-list-item');
   }
 
   /** The row a refusal names, marked while it stands — the way a pending delete is marked. */
