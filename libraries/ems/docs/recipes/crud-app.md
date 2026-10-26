@@ -85,15 +85,15 @@ under its own `SharedSession`:
 
 The ribbon's ⋮ Actions menu is `DomainApp.menuActions()`, in sections, each item gated on the
 capability it needs, so a caller without it never sees the item: on the entity page the row's own
-actions first (the table's row actions, then Delete); Import… and Bulk edit…; then **Show deleted
-<rows>**. `menu: {bulkEdit: false}` drops a built-in item. A `DomainApp` subclass that adds to the
+actions first (the table's row actions, then Delete); Import… and Bulk edit…; then **Show deleted**.
+`menu: {bulkEdit: false}` drops a built-in item. A `DomainApp` subclass that adds to the
 ribbon keeps them (`({...super.ribbon(), presets: [this.presets(…)]})`); one that overrides
 `menuActions()` should extend the result rather than replace it.
 
 ### Trash and restore
 
 `delete` is soft everywhere: the row keeps its place with `is_deleted` set and leaves every query
-that does not ask for it. **Show deleted <rows>** flips the list source's `deleted` mode, so the search box, the
+that does not ask for it. **Show deleted** flips the list source's `deleted` mode, so the search box, the
 filter box and the paging are the ones already in force:
 
 ```ts

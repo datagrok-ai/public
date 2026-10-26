@@ -123,7 +123,7 @@ async function checkGeometry(page) {
 async function checkTrashHistory(page) {
   await openDomain(page, SUBSTANCE);
   const before = await appState(page);
-  await menuPick(page, 'Show deleted substances');
+  await menuPick(page, 'Show deleted');
   await page.waitForTimeout(3000);
   const trash = await appState(page);
   await shot(page, 'domain-stand-2-trash');

@@ -60,8 +60,7 @@ category('U2: domain trash', () => {
 
   test('a deleted row leaves the list; the Actions menu offers the deleted rows', async () => {
     expect(names(), 'Alpha,Beta');
-    expect(app.menuActions().map((a) => a.name.replace(/^Show deleted .*/, 'Show deleted')).join(),
-      'Import…,Bulk edit…,Show deleted');
+    expect(app.menuActions().map((a) => a.name).join(), 'Import…,Bulk edit…,Show deleted');
     const row = app.listSource.rows.byKey(goneId)!;
     const del = app.list.actionsFor(row).find((a) => a.name === 'Delete')!;
     expect(del !== undefined, true, 'Delete is the row action on a live row');

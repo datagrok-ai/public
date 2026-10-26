@@ -524,7 +524,7 @@ export class DomainApp extends Control {
     const plural = DomainTable.noun(this.table.info);
     // a mode, not a verb: named for what the list shows, never "Trash" beside the actions
     const mode: Action[] = menu.trash === false || !support.deleted || !support.restore ? [] : [{
-      name: trash ? `Back to ${plural}` : `Show deleted ${plural}`, icon: trash ? 'arrow-left' : 'history',
+      name: trash ? `Back to ${plural}` : 'Show deleted', icon: trash ? 'arrow-left' : 'history',
       requires: 'delete', run: () => void this.setTrash(!trash)}];
     const presets = this.compact.peek() && this._page.peek() === 'list' && !trash ? this._presets : [];
     return [presets, this._rowActions(), table, mode].filter((section) => section.length > 0)

@@ -86,7 +86,7 @@ Override points for a subclass (`class IssuesApp extends DomainApp`):
   trash its slot stays, empty, so Save and Discard do not move.
 - `menuActions(): Action[]` — the Actions menu, in sections: the presets while the ribbon is
   `compact`; on the entity page the row's own actions (the table's row actions, then Delete, staged
-  until the Save); Import… and Bulk edit…; then "Show deleted <rows>" ("Back to <rows>" in the
+  until the Save); Import… and Bulk edit…; then "Show deleted" ("Back to <rows>" in the
   trash). `menu: {import, bulkEdit, trash}` switches a built-in item off; an override should
   extend the result rather than replace it.
 - `compact: Signal<boolean>` — set while the app is narrower than 900px: the presets fold into the

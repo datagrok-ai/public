@@ -779,7 +779,7 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   fire(more.root, 'click');
   await flush();
   const items = [...document.querySelectorAll('[role="menuitem"] .u2-menu-label')].map((el) => el.textContent);
-  assert.deepEqual(items, ['Import…', 'Bulk edit…', 'Show deleted issues']);
+  assert.deepEqual(items, ['Import…', 'Bulk edit…', 'Show deleted']);
   assert.equal(a.breadcrumbs.root.hidden, true, 'a plain list has no breadcrumb: the view title names the table');
 
   a.listSource.edit.value.markDeleted('i2');
@@ -1445,7 +1445,7 @@ scoped('support ⇒ absent: Bulk edit goes with updateWhere, the History pane wi
   const a = domains.app({table: await domains.table('grit.issue'), base: BASE, pageSize: 10});
   document.body.append(a.root);
   await flush();
-  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Show deleted issues'],
+  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Show deleted'],
     'no Bulk edit without updateWhere');
   await a.goTo('entity', 'i1');
   await flush();
@@ -1545,7 +1545,7 @@ scoped('the entity page Actions menu: the row first, Delete last of it, then the
   assert.equal(await a.goTo('entity', 'i1'), true);
   await flush();
   const actions = a.menuActions();
-  assert.deepEqual(actions.map((x) => x.name), ['Close', 'Delete', 'Import…', 'Bulk edit…', 'Show deleted issues']);
+  assert.deepEqual(actions.map((x) => x.name), ['Close', 'Delete', 'Import…', 'Bulk edit…', 'Show deleted']);
   assert.deepEqual(actions.map((x) => x.separator === true), [false, false, true, false, true],
     'the row, the table and the mode switch are sections of their own');
   const more = a.ribbon().main.find((c) => c.root.dataset.u2 === 'actions-menu');
@@ -1604,13 +1604,13 @@ scoped('presets are a framed switch; on a narrow view they fold into the Actions
   assert.equal(group.root.classList.contains('u2-btn-group-ribbon'), false, 'framed, not two bare words');
   assert.equal(group.root.getAttribute('aria-label'), 'Show');
   assert.equal(group.root.hidden, false);
-  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Bulk edit…', 'Show deleted issues']);
+  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Bulk edit…', 'Show deleted']);
 
   a.compact.value = true;
   await flush();
   assert.equal(group.root.hidden, true, 'no room on the ribbon');
   const actions = a.menuActions();
-  assert.deepEqual(actions.map((x) => x.name), ['Mine', 'Open', 'Import…', 'Bulk edit…', 'Show deleted issues']);
+  assert.deepEqual(actions.map((x) => x.name), ['Mine', 'Open', 'Import…', 'Bulk edit…', 'Show deleted']);
   actions[1].run();
   await flush();
   assert.equal(a.listSource.query.value, 'done = false', 'a folded preset still filters');
@@ -1632,7 +1632,7 @@ scoped('itemHeight sizes the list rows: an app draws taller cards', async () => 
 
 scoped('menu switches a built-in item off; Discard on an untouched create page goes back to the list', async () => {
   const {app: a} = await app({menu: {bulkEdit: false}});
-  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Show deleted issues'], 'no Bulk edit');
+  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Show deleted'], 'no Bulk edit');
   const discard = a.ribbon().main.find((c) => c.root.dataset.u2 === 'discard-button');
   assert.equal(discard.button.disabled, true, 'nothing to discard on the list');
   assert.equal(await a.create(), true);
