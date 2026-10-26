@@ -142,6 +142,33 @@ scoped('the builder offers the name column first and the system columns last; a 
   src.dispose();
 });
 
+scoped('an operator registered for one table is offered there and not on another table\'s columns', async () => {
+  const {DomainFilters} = await import('../src/dg/filters.js');
+  const op = {id: 'sounds like', label: 'sounds like', arity: 1, kinds: [Filters.KIND.STRING], editor: 'default'};
+  const unregister = DomainFilters.registerOperators('grit.issue', [op]);
+  try {
+    const offered = async (address, column) => {
+      const table = await domains.table(address);
+      const src = table.source({pageSize: 10, query: ''});
+      const filters = domains.filters(src, {mode: 'builder'});
+      await flush();
+      const schema = filters.input.value.options.schema;
+      const prop = Filters.property(schema, column);
+      const ids = schema.operators(prop, Filters.operators.for(prop)).map((o) => o.id);
+      filters.dispose();
+      src.dispose();
+      return ids;
+    };
+    emsBackends.domain = backend();
+    assert.equal((await offered('grit.issue', 'title')).includes('sounds like'), true, 'offered on its own table');
+    assert.equal((await offered('grit.project', 'name')).includes('sounds like'), false, 'not on another');
+    assert.equal((await offered('grit.project', 'name')).includes('like'), true, 'the shared operators stay');
+  } finally {
+    unregister();
+  }
+  assert.equal(Filters.operators.all().some((o) => o.id === 'sounds like'), false, 'unregistered with its owner');
+});
+
 scoped('the builder pane: its title row holds the mode switch and a fold; folded, a tab counts the conditions', async () => {
   const src = await issues({query: Filters.group('and', [Filters.cond('done', '=', true)])});
   const filters = domains.filters(src, {mode: 'builder'});

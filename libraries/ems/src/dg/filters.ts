@@ -7,7 +7,8 @@ import {domainFilterSchema} from './filter-schema.js';
 import {emsBackends} from '../core/domain-backend.js';
 import {Control, computed, signal, ReadonlySignal, Filters, FilterQueryInput, FilterBuilder, Splitter,
   div, divH, divV, span, icon, iconButton} from '@datagrok-libraries/u2';
-import type {FilterGroup, FilterProblem, FilterProperty, FilterSchema, FilterValueItem} from '@datagrok-libraries/u2';
+import type {FilterGroup, FilterOperator, FilterProblem, FilterProperty, FilterSchema,
+  FilterValueItem} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {confirmDiscard} from '../core/session.js';
 import {DomainPick} from './pick.js';
@@ -47,6 +48,8 @@ export class DomainFilters extends Control {
   /** Per source: how a query a control wrote bound is spelled in the box — `DomainApp.presets`
    * registers `assignee = "<id>"` → `assignee = $me`, so the switch does not paste a uuid there. */
   private static readonly _shownAs = new WeakMap<DomainSource, Map<string, string>>();
+  /** Per table address: the operators {@link registerOperators} offers there and nowhere else. */
+  private static readonly _scoped = new Map<string, FilterOperator[]>();
 
   private readonly _input = signal<FilterQueryInput | FilterBuilder | null>(null);
   /** The tree the source's query stands for — what a cancelled change goes back to. */
@@ -145,13 +148,17 @@ export class DomainFilters extends Control {
     }
     const applies = (prop: FilterProperty) => prop.ref !== undefined ? hierarchies.has(prop.ref) :
       prop.name === 'id' && own.info.hierarchy === true;
+    const scopedTo = (table: string, o: FilterOperator) =>
+      (DomainFilters._scoped.get(table) ?? []).some((s) => s.id === o.id && s.semType === o.semType);
+    const offered = (o: FilterOperator) => scopedTo(this.source.table, o) ||
+      ![...DomainFilters._scoped.keys()].some((table) => scopedTo(table, o));
     const runs = (prop: FilterProperty, id: string) => {
       const kind = Filters.kindOf(prop);
       return !NOT_BASIC.has(id) && !(kind === Filters.KIND.DATE_TIME && id === '!=') &&
         !(kind === Filters.KIND.BOOL && NULL_TESTS.has(id));
     };
-    return (prop, offered) => {
-      const out = applies(prop) ? offered : offered.filter((o) => o.id !== UNDER);
+    return (prop, ops) => {
+      const out = (applies(prop) ? ops : ops.filter((o) => o.id !== UNDER)).filter(offered);
       return basic ? out.filter((o) => runs(prop, o.id)) : out;
     };
   }
@@ -263,6 +270,22 @@ export class DomainFilters extends Control {
     } finally {
       this._syncing = false;
     }
+  }
+
+  /** Registers `ops` with the operator registry, where the grammar reads them, but offers them only in the
+   * filters over `table` — an app's own operators (a chemistry search) do not reach another app's
+   * columns of the same kind. The returned function unregisters them; an app owns it with its view. */
+  static registerOperators(table: string, ops: FilterOperator[]): () => void {
+    const unregister = Filters.operators.register(ops);
+    DomainFilters._scoped.set(table, [...DomainFilters._scoped.get(table) ?? [], ...ops]);
+    return () => {
+      unregister();
+      const left = (DomainFilters._scoped.get(table) ?? []).filter((op) => !ops.includes(op));
+      if (left.length === 0)
+        DomainFilters._scoped.delete(table);
+      else
+        DomainFilters._scoped.set(table, left);
+    };
   }
 
   /** Spells `bound` as `unbound` in the box over `source` — the form a control wrote the query
