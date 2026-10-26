@@ -560,6 +560,24 @@ scoped('a ?q= the grammar refuses never loads: the text stays red in the box, th
   a.dispose();
 });
 
+scoped('a query the backend refuses is the list\'s error, in the status bar and over the rows', async () => {
+  const {app: a} = await app();
+  assert.equal(await a.open('?q=project_id%20under%20%22p1%22'), true);
+  await flush();
+  assert.equal(a.listSource.state.value, 'error');
+  assert.equal(a.summary.value, 'Unknown or inaccessible column "project_id"',
+    'the backend\'s refusal, in the status bar');
+  assert.match(a.root.querySelector('.u2-domain-list-error').textContent, /Unknown or inaccessible column/);
+  const buttons = [...a.root.querySelectorAll('.u2-domain-list-error button')];
+  assert.deepEqual(buttons.map((b) => b.textContent), ['Clear filter', 'Retry']);
+  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'a load failure is not a balloon');
+  fire(buttons[0], 'click');
+  await flush();
+  assert.equal(a.listSource.query.value, '');
+  assert.equal(a.listSource.rows.items.value.length, 3);
+  a.dispose();
+});
+
 scoped('an emptied box applies the empty query even when the refused one left no tree behind', async () => {
   const {app: a} = await app();
   const filters = a.filters;
