@@ -279,3 +279,21 @@ smoke('commitOn change: typing marks bad text at once but writes only on blur', 
   assert.equal(input.value.peek(), 9);
   input.dispose();
 });
+
+smoke('a float32 column\'s value reads as typed, and typing is never rewritten by the stored float32', async () => {
+  const stored = signal(Math.fround(3.2));
+  const input = mount(new NumberInput({label: 'LogP', bind: stored}));
+  assert.equal(editor(input).value, '3.2', 'not 3.200000047683716');
+  const storage = input.value.subscribe((v) => {
+    if (typeof v === 'number')
+      stored.value = Math.fround(v);
+  });
+  for (const text of ['4', '4.', '4.3', '4.31']) {
+    editor(input).value = text;
+    fire(editor(input), 'input');
+    await flush();
+    assert.equal(editor(input).value, text);
+  }
+  storage();
+  input.dispose();
+});
