@@ -13,6 +13,8 @@ import {backend, hierarchyBackend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
+const {SavedSearches} = await import('../src/dg/saved-searches.js');
+const {userSettings} = await import('datagrok-api/grok');
 const {registerDomainComponents} = await import('../src/dg/registrations.js');
 
 function scoped(name, body) {
@@ -111,6 +113,22 @@ scoped('a filter from outside opens the builder in the mode its shape needs; the
   await flush();
   assert.equal(src.query.value, 'done = false');
   assert.equal(builder.mode.value, 'advanced', 'an edit in the builder never flips its mode');
+  filters.dispose();
+  src.dispose();
+});
+
+scoped('the builder follows a filter set from outside even when it is the one the builder last sent', async () => {
+  const src = await issues({query: ''});
+  const filters = domains.filters(src, {mode: 'builder'});
+  await flush();
+  const builder = filters.input.value;
+  builder.value.value = Filters.group('and', [Filters.cond('done', '=', true)]);
+  await flush();
+  src.query.value = 'done = false';
+  await flush();
+  src.query.value = 'done = true';
+  await flush();
+  assert.equal(Filters.format(builder.value.value), 'done = true');
   filters.dispose();
   src.dispose();
 });
@@ -346,4 +364,28 @@ scoped('a `basic` backend is offered no under, regex, !like, fuzzy or between, n
   assert.equal(offersOf(treeFilters, tree)('parent_id').includes('under'), false, 'no under on a basic backend');
   treeFilters.dispose();
   tree.dispose();
+});
+
+scoped('saved and recent searches: the list names the saved search it holds, history keeps 20, newest first', async () => {
+  userSettings.values = {};
+  const high = {q: 'priority = "high"', search: 'Nap', sort: '!number'};
+  SavedSearches.save('grit.issue', 'High', high);
+  const src = await issues();
+  const filters = domains.filters(src);
+  await flush();
+  assert.equal(filters.root.querySelectorAll('.u2-domain-filters-tools button').length, 2);
+  SavedSearches.apply(src, high);
+  await flush();
+  assert.equal(SavedSearches.title(src), 'High');
+  src.search.value = 'Na';
+  await flush();
+  assert.equal(SavedSearches.title(src), 'High (edited)');
+  assert.deepEqual(SavedSearches.recent('grit.issue').map((r) => r.search), ['Na', 'Nap']);
+  for (let i = 0; i < 25; i++)
+    SavedSearches.record('grit.issue', {...high, search: `t${i}`});
+  assert.equal(SavedSearches.recent('grit.issue').length, 20);
+  SavedSearches.remove('grit.issue', 'High');
+  assert.equal(SavedSearches.title(src), null);
+  filters.dispose();
+  src.dispose();
 });

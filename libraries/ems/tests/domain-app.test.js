@@ -1504,7 +1504,8 @@ scoped('domains.views: a view per table, addressed and brought forward, where it
     assert.deepEqual([projects.base, projects.entity.value], ['/apps/T/Projects', 'p1'],
       'a row opens in the view docked for its table');
     const items = [];
-    views.tree({item: (name) => ({onSelected: {subscribe: (run) => items.push([name, run])}})});
+    views.tree({item: (name) => ({onSelected: {subscribe: (run) => items.push([name, run])}}),
+      group: () => ({children: []})});
     items[0][1]();
     await flush();
     assert.deepEqual([items.map(([name]) => name), projects.page.value, docked.length],

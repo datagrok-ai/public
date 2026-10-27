@@ -20,6 +20,7 @@ import {DomainList} from './list.js';
 import type {DomainListMode} from './list.js';
 import {SAVE_SHORTCUTS, isSaveKey, DomainForm} from './form.js';
 import {DomainFilters} from './filters.js';
+import {SavedSearches} from './saved-searches.js';
 import type {DomainFiltersOptions} from './filters.js';
 import type {DomainChildrenOptions} from './children.js';
 import {DomainAddress} from './address.js';
@@ -364,7 +365,8 @@ export class DomainApp extends Control {
       const source = entity ? this._entitySource.value : this.listSource;
       const dirty = this.session.isDirty.value;
       const pending = dirty ? this._pendingSummary() : null;
-      const count = this._count.value;
+      const saved = entity ? null : SavedSearches.title(this.listSource);
+      const count = saved === null || this._count.value === '' ? this._count.value : `${saved} · ${this._count.value}`;
       // what a bulk action would act on, beside the count — the platform grid's own convention
       const selected = entity ? 0 : this.listSource.selection.value.length;
       const problem = source !== null && source.error.value !== undefined ? source.summary.value : null;

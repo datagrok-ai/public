@@ -490,6 +490,19 @@
   color: var(--dg-text-color-light);
 }
 
+.u2-domain-filters-row {
+  align-items: center;
+  gap: var(--dg-space-m);
+}
+
+.u2-domain-filters-row > :first-child {
+  flex: 1;
+}
+
+.u2-domain-filters-tools {
+  gap: var(--dg-space-s);
+}
+
 .u2-domain-filters-note[hidden] {
   display: none;
 }

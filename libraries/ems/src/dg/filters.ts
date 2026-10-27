@@ -13,6 +13,7 @@ import type {DomainSource} from '../core/domain-source.js';
 import {confirmDiscard} from '../core/session.js';
 import {DomainPick} from './pick.js';
 import {DgDomainBackend, SYSTEM_COLUMNS} from './backend.js';
+import {SavedSearches} from './saved-searches.js';
 
 export type DomainFiltersMode = 'query' | 'builder';
 
@@ -60,6 +61,8 @@ export class DomainFilters extends Control {
   private _syncing = false;
   /** What the builder last sent: its own query coming back must not overwrite the rows still being written. */
   private _echo: string | FilterGroup | undefined;
+  private readonly _tools = divH([], 'u2-domain-filters-tools');
+  private _paned = false;
 
   constructor(readonly source: DomainSource, private readonly _options: DomainFiltersOptions = {}) {
     super();
@@ -174,6 +177,7 @@ export class DomainFilters extends Control {
       const q = source.query.value;
       if (q === this._echo)
         return;
+      this._echo = undefined;
       const parsed = typeof q === 'string' && q.trim() !== '' ? Filters.parse(q, schema, 'domain') : null;
       this._accepted = parsed === null ? DomainFilters.treeOf(q, schema) : parsed.root;
       // a query the grammar or the schema refuses would leave the box empty and the user with no
@@ -213,7 +217,11 @@ export class DomainFilters extends Control {
       note.textContent = this._accepted.nodes.length === 0 ? 'Filter not applied: showing all rows' :
         'Showing results for the last valid filter';
     });
-    this.root.replaceChildren(input.root, note);
+    this._tools.replaceChildren(...this.runInScope(() =>
+      [SavedSearches.historyButton(source), SavedSearches.saveButton(source)]));
+    this.effect(() => SavedSearches.track(source));
+    const row = this._paned ? input.root : divH([input.root, this._tools], 'u2-domain-filters-row');
+    this.root.replaceChildren(row, note);
     this._input.value = input;
   }
 
@@ -230,8 +238,9 @@ export class DomainFilters extends Control {
 
   /** The filters in a pane on `list`'s left, the builder's mode switch on its title row. */
   pane(list: HTMLElement): HTMLElement {
+    this._paned = true;
     return this.runInScope(() => {
-      const head = divH([span('Filters', 'u2-domain-app-filters-title')], 'u2-domain-app-filters-head');
+      const head = divH([span('Filters', 'u2-domain-app-filters-title'), this._tools], 'u2-domain-app-filters-head');
       const pane = divV([head, this.root], 'u2-domain-app-filters-pane u2-fb-narrow');
       this.effect(() => {
         const input = this._input.value;
