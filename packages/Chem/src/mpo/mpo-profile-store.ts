@@ -5,7 +5,7 @@ import {CURRENT_MPO_VERSION, DESIRABILITY_PROFILE_TYPE, DesirabilityProfile, isD
   lockProfileRanges, migrateProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 import {_package} from '../package';
-import {mpoDb, ProfileAggregation, ProfileInsert, ProfileRow} from '../generated/db';
+import {mpoDb, ProfileAggregation, ProfileInsert, ProfileRow, ProfileWeighting} from '../generated/db';
 import {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT, MpoProfileInfo, MpoProfileRef,
   UNTITLED_PROFILE} from './utils';
 
@@ -36,6 +36,7 @@ export function toRow(p: DesirabilityProfile): ProfileInsert {
     name: p.name?.trim() || UNTITLED_PROFILE,
     description: p.description,
     aggregation: (p.aggregation ?? null) as ProfileAggregation | undefined,
+    weighting: (p.weighting && p.weighting !== 'manual' ? p.weighting : null) as ProfileWeighting | undefined,
     format_version: CURRENT_MPO_VERSION,
     properties: p.properties,
   };
@@ -52,6 +53,7 @@ export function fromRow(r: ProfileRow): MpoProfileInfo {
     name: r.name,
     description: r.description ?? '',
     aggregation: r.aggregation,
+    ...(r.weighting && r.weighting !== 'manual' ? {weighting: r.weighting} : {}),
     properties: r.properties as DesirabilityProfile['properties'],
   });
   return {...profile, id: r.id, rowVersion: r.version};

@@ -24,7 +24,7 @@ export class MpoContextPanel {
   private scoreViewerInteraction = false;
   // Caches per-column desirability across preview renders so editing one property's line recomputes
   // only that column. Released on close / dataframe switch.
-  private calculator = new MpoCalculator();
+  readonly calculator = new MpoCalculator();
 
   private static readonly RENDER_DEBOUNCE_MS = 150;
   private renderTimer: ReturnType<typeof setTimeout> | null = null;

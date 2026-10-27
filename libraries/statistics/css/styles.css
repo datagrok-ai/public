@@ -9,17 +9,85 @@
   font-weight: bold;
 }
 
-.statistics-mpo-header > *:first-child {
+/* `> div.` outranks the `:nth-child` header rules of older copies of this file that other packages still bundle */
+.statistics-mpo-header > div.statistics-mpo-header-property {
   width: 130px;
 }
 
-.statistics-mpo-header > *:nth-child(2) {
-  width: 120px;
-  min-width: 60px;
+.statistics-mpo-header > div.statistics-mpo-header-priority {
+  width: 80px;
+  min-width: 80px;
+  flex-grow: 0;
 }
 
-.statistics-mpo-header > *:nth-child(3) {
+.statistics-mpo-header > div.statistics-mpo-header-weight {
+  width: 120px;
+  min-width: 60px;
+  flex-grow: 0;
+}
+
+.statistics-mpo-header > div.statistics-mpo-header-weight-campo {
+  width: 96px;
+  min-width: 96px;
+  flex-grow: 0;
+}
+
+.statistics-mpo-header > div.statistics-mpo-header-desirability {
   flex-grow: 1;
+}
+
+.statistics-mpo-priority-cell {
+  position: relative;
+  width: 80px;
+  min-width: 80px;
+  align-self: flex-end;
+  margin-bottom: 20px !important;
+}
+
+.statistics-mpo-priority-cell .ui-input-editor {
+  width: 70px;
+}
+
+/* below the input, out of the flow, so a hint does not lift the input off the row's line */
+.statistics-mpo-priority-hint {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 180px;
+  color: var(--text-color-light);
+  font-size: 11px;
+  white-space: normal;
+}
+
+.statistics-mpo-campo-weight {
+  align-items: center;
+  gap: 4px;
+  width: 96px;
+  min-width: 96px;
+}
+
+/* the box of the pin input, so the text lines up with the inputs of the row and the icon does not move on pinning */
+.statistics-mpo-campo-value {
+  width: 80px;
+  height: 28px;
+  line-height: 28px;
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+.statistics-mpo-campo-weight .statistics-mpo-weight-input {
+  width: 80px;
+  flex: 0 0 auto;
+}
+
+.statistics-mpo-pin {
+  cursor: pointer;
+  color: var(--grey-4);
+}
+
+.statistics-mpo-pin:hover,
+.statistics-mpo-pin-active {
+  color: var(--blue-1);
 }
 
 .statistics-mpo-property-cell {

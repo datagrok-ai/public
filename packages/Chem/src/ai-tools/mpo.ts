@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {
-  DesirabilityMode, MpoScale, NumericalDesirability, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST,
-  WeightedAggregation, getMpoScoreColumnName, isNumerical, setDesirabilityScale,
+  DesirabilityMode, MPO_WEIGHTINGS, MPO_WEIGHTING_CAPTIONS, MpoScale, NumericalDesirability, PropertyDesirability,
+  WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation, getMpoScoreColumnName, isNumerical, setDesirabilityScale,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 import {MpoProfileCreateView} from '../mpo/mpo-create-profile';
@@ -132,6 +132,8 @@ function state(view: MpoProfileCreateView): object {
       Object.entries(view.profile.properties).map(([name, prop]) => [name, reportedProperty(prop)]))},
     columnMapping: view.editor.columnMapping,
     aggregation: aggregationOf(view),
+    weighting: view.editor.weighting,
+    correlationAwareWeights: view.editor.weighting === 'correlation' ? view.campo?.state ?? null : undefined,
     method: view.showMethod ? (view.isManualMode ? MpoMethod.Manual : MpoMethod.DataDriven) : null,
     modified: view.isModified,
     dataset: df ? {name: df.name, rowCount: df.rowCount, columns: df.columns.names()} : null,
@@ -142,7 +144,15 @@ function state(view: MpoProfileCreateView): object {
 }
 
 function changed(view: MpoProfileCreateView): object {
+  view.campo?.update();
   return {success: true, ...state(view)};
+}
+
+/** A priority or a pin the computation could not apply (pins over 1, nothing left to scale) is a failure. */
+function weightingChanged(view: MpoProfileCreateView): object {
+  const result = changed(view);
+  const error = view.campo?.state?.error;
+  return error ? {...result, success: false, error} : result;
 }
 
 const MPO_EDITOR_AI_DESCRIPTION = 'MPO profile editor - a multi-parameter optimization profile: the scored properties, ' +
@@ -150,7 +160,8 @@ const MPO_EDITOR_AI_DESCRIPTION = 'MPO profile editor - a multi-parameter optimi
   'functions (search list_view_functions with "mpo"): getMpoState (call first - it gives the property names, ' +
   'the column each is mapped to, and the desirability fields setMpoDesirability takes back), then ' +
   'addMpoProperty, removeMpoProperty, renameMpoProperty, setMpoPropertyColumn, setMpoPropertyWeight and ' +
-  'setMpoDesirability for the properties; setMpoProfileName, setMpoProfileDescription, setMpoDataset, ' +
+  'setMpoDesirability for the properties; setMpoWeighting, then setMpoPriority and pinMpoWeight in ' +
+  'Correlation-aware weighting; setMpoProfileName, setMpoProfileDescription, setMpoDataset, ' +
   'setMpoAggregation and setMpoMethod for the profile; saveMpoProfile, resetMpoProfile and applyMpoProfile ' +
   'for the rest.';
 
@@ -216,13 +227,58 @@ export function mpoFunctions(): DG.Func[] {
       }),
 
     aiFunc('setMpoPropertyWeight', 'dynamic setMpoPropertyWeight(view view, string property, double weight)',
-      'How much a property counts towards the score, 0 to 1, relative to the other weights',
+      'How much a property counts towards the score, 0 to 1, relative to the other weights. Only in Manual weighting: in Equal and Correlation-aware weighting the weights are computed',
       async (view, property: string, weight: number) => {
         const error = propertyError(view, property);
         if (error)
           return {success: false, error};
+        const mode = view.editor.weighting;
+        if (mode !== 'manual') {
+          return {success: false, error: `Weights are set by ${MPO_WEIGHTING_CAPTIONS[mode]} weighting - ` +
+            (mode === 'correlation' ? 'use setMpoPriority or pinMpoWeight, or ' : '') +
+            'switch to Manual with setMpoWeighting'};
+        }
         view.editor.updateProperty(property, {weight: Math.max(0, Math.min(1, weight))});
         return changed(view);
+      }),
+
+    aiFunc('setMpoWeighting', 'dynamic setMpoWeighting(view view, string weighting)',
+      `How the property weights are set: ${MPO_WEIGHTING_CAPTIONS.manual} (by hand, setMpoPropertyWeight), ${MPO_WEIGHTING_CAPTIONS.equal} (all 1), or ${MPO_WEIGHTING_CAPTIONS.correlation} - computed from the correlations between the properties' desirabilities on the dataset, so that redundant properties count less and independent ones more (caMPO). Works with any aggregation`,
+      async (view, weighting: string) => {
+        const wanted = weighting?.toLowerCase();
+        const mode = MPO_WEIGHTINGS.find((w) => w === wanted || MPO_WEIGHTING_CAPTIONS[w].toLowerCase() === wanted);
+        if (!mode)
+          return {success: false, error: `weighting must be one of: ${MPO_WEIGHTINGS.map((w) => MPO_WEIGHTING_CAPTIONS[w]).join(', ')}`};
+        view.setWeighting(mode);
+        return changed(view);
+      }),
+
+    aiFunc('setMpoPriority', 'dynamic setMpoPriority(view view, string property, double priority)',
+      'Correlation-aware weighting only: a multiplier (0 or greater, 1 by default) on the weight computed for a property, after which the weights are renormalised. A property whose computed weight is 0 stays at 0 - pin its weight instead',
+      async (view, property: string, priority: number) => {
+        const error = propertyError(view, property);
+        if (error)
+          return {success: false, error};
+        if (view.editor.weighting !== 'correlation')
+          return {success: false, error: 'Priorities apply in Correlation-aware weighting only - switch with setMpoWeighting'};
+        if (!(priority >= 0))
+          return {success: false, error: 'priority must be 0 or greater'};
+        view.editor.setPriority(property, priority);
+        return weightingChanged(view);
+      }),
+
+    aiFunc('pinMpoWeight', 'dynamic pinMpoWeight(view view, string property, double weight)',
+      'Correlation-aware weighting only: fix a property\'s weight at a value between 0 and 1; the other weights are scaled to fill the rest, so the pinned weights together must not exceed 1. Leave weight out to unpin the property',
+      async (view, property: string, weight?: number) => {
+        const error = propertyError(view, property);
+        if (error)
+          return {success: false, error};
+        if (view.editor.weighting !== 'correlation')
+          return {success: false, error: 'Pins apply in Correlation-aware weighting only - switch with setMpoWeighting'};
+        if (weight != null && !(weight >= 0 && weight <= 1))
+          return {success: false, error: 'weight must be between 0 and 1'};
+        view.editor.setPinnedWeight(property, weight ?? null);
+        return weightingChanged(view);
       }),
 
     aiFunc('setMpoDesirability', 'dynamic setMpoDesirability(view view, string property, dynamic desirability)',
@@ -279,6 +335,7 @@ export function mpoFunctions(): DG.Func[] {
         if (!agg)
           return {success: false, error: `aggregation must be one of: ${WEIGHTED_AGGREGATIONS_LIST.join(', ')}`};
         view.editor.aggregationInput.value = agg;
+        view.warnAggregation();
         return changed(view);
       }),
 

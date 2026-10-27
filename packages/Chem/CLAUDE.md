@@ -60,6 +60,7 @@ User documentation: [Cheminformatics](../../help/datagrok/solutions/domains/chem
 | `src/analysis/molecular-matched-pairs/`                  | MMPA: fragments, generations, differences, viewer      |
 | `src/analysis/bit-birch/`                                | BitBIRCH clustering (WASM-based)                       |
 | `src/mpo/`                                               | MPO profile manager, profiles view, scores viewer, context panel, profile handler/creator |
+| `src/mpo/campo-*.ts`                                     | Correlation-aware MPO weights (see "MPO: correlation-aware weighting" below) |
 | `src/utils/reaction-enumeration/`                        | Forward-reaction library enumeration over BBs and SMARTS templates (see "Reaction enumeration" below) |
 | `src/utils/reactions/`                                   | Reaction transformation/two-component reactions: browser, editor, storage, UI |
 | `src/rdkit.worker.ts`                                    | Top-level RDKit worker entry                           |
@@ -298,6 +299,32 @@ search and filters, MMPA, SDF / MOL2 importers, notation conversion, scaffold tr
 reordering), reaction enumeration, atom picker (2D + 3D hover, escape), pharmacophore features,
 synthon search, ChemProp, vector functions, save-as-SDF, sketcher, projects/clone-layout, and
 top-menu/menu test suites for chem-space, cliffs, R-groups, similarity/diversity, etc.
+
+## MPO: correlation-aware weighting
+
+An MPO profile's **Weighting** (`DesirabilityProfile.weighting`, stored in the `mpo.profile.weighting` column; absent =
+Manual) is Manual (weights by hand), Equal (all 1) or Correlation-aware (caMPO, Garellick et al., ChemRxiv 2026): the
+weights come from the correlations between the properties' desirabilities on the profile view's dataset, so redundant
+properties count less. The profile always stores the effective weights in `weight`, so the score is the same wherever
+the profile is applied (MPO Score dialog, `mpoCalculate`, other packages) - only the profile view computes them; other
+hosts of `MpoProfileEditor` show them disabled. Priorities (`priority`, a multiplier) and pins (`pinnedWeight`) are
+per-property inputs of the computation. Spec and decisions: [`docs/campo_spec_en.md`](docs/campo_spec_en.md).
+
+| File | Purpose |
+|------|---------|
+| `src/mpo/campo-math.ts` | Pure math, no platform imports (meant to move to a library): complete rows, Pearson matrix, Cholesky inverse with shrinkage, base weights `R⁻¹·1 / 1ᵀR⁻¹1` clipped at 0, priorities and pins |
+| `src/mpo/campo-controller.ts` | `CampoController`: stage A (desirabilities from the context panel's `MpoCalculator` → R → base weights; reruns when `stageAKey` changes: curves, mapping, columns) and stage B (priorities, pins); messages; the "why this weight" tooltip |
+| `src/mpo/campo-viewers.ts` | `CampoViewers`: the profile view's right half, a detached `TableView` of the dataset; one panel is docked as a tab over its grid (`FILL`): the Correlation plot above, the weight bar charts below (Raw and Final side by side when a raw weight is negative, otherwise one chart titled Weights), in `flexSplit` splitters |
+| `libraries/statistics/src/mpo/mpo-profile-editor.ts` | `weightingControl` (set by the profile view), Priority column, pin inputs, `setWeights` (fires a change only when a weight changes at 0.000) |
+
+Traps: `editor.setProfile` fires no change, so the view restarts the controller itself after `attachLayout` and RESET;
+a bar chart given a new data frame picks its own value column, so `CampoViewers` re-applies the options on every update;
+writing a `ChoiceInput` from its own `onValueChanged` throws in Dart. In the detached view: a viewer root is
+`inline-flex`, so its slot must be `display: flex` or the root drops to the text baseline and its bottom is clipped; the
+`div.ui-box > :not(...)` rule gives the view `overflow: auto !important`, so it is overridden inline; the JS `TableView`
+has no `_handleResize`, so the dock is resized with `DG.DockView.prototype._handleResize.call(view)`. Messages of the
+mode (`showCampoMessage`) are an icon next to Weighting with a tooltip, plus a balloon when one appears. Tests:
+categories `MPO: correlation-aware weights` and `MPO: correlation-aware plumbing` (`src/tests/campo-tests.ts`).
 
 ## Reaction enumeration
 

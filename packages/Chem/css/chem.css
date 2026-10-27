@@ -1207,25 +1207,6 @@
   overflow: auto;
 }
 
-.chem-data-grid-container {
-  flex: 1 1 0;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.chem-data-grid {
-  flex: 1 1 0;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0;
-  min-height: 0;
-}
-
 .chem-editor-panel {
   flex: 1 1 65%;
   min-width: 0;
@@ -1500,4 +1481,116 @@
    at all (0 x 0). */
 .d4-dialog .d4-dialog-contents .grok-sketcher[style*="min-width: 0px"]:not([style*="min-height: 0px"]) {
   min-width: 400px !important;
+}
+
+.chem-mpo-campo-weighting {
+  align-items: center;
+}
+
+/* `i.` outranks the color of `.grok-icon` */
+i.chem-mpo-campo-alert {
+  color: var(--red-3);
+  margin-left: 8px;
+  cursor: default;
+}
+
+i.chem-mpo-campo-alert.chem-mpo-campo-alert-warning {
+  color: var(--grey-4);
+}
+
+.chem-mpo-campo-view {
+  width: 100%;
+  height: 100%;
+}
+
+/* a viewer sizes its root inline on its first layout, before the panel has its size */
+.chem-mpo-campo-slot > * {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chem-mpo-campo-split-v,
+.chem-mpo-campo-split-h {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.chem-mpo-campo-split-v {
+  flex-direction: column;
+}
+
+/* flex: a viewer root is inline-flex, and in a block it sits on the text baseline, below the slot top */
+.chem-mpo-campo-slot {
+  display: flex;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chem-mpo-campo-chart {
+  min-width: 0;
+  min-height: 0;
+}
+
+.chem-mpo-campo-chart > .chem-mpo-campo-slot {
+  flex: 1 1 0;
+}
+
+.chem-mpo-campo-chart-title {
+  flex: 0 0 auto;
+  text-align: center;
+  font-size: 15px;
+  color: var(--text-color);
+  padding: 6px 0 2px;
+}
+
+.chem-mpo-campo-divider-v,
+.chem-mpo-campo-divider-h {
+  flex: 0 0 4px;
+  background: var(--grey-1);
+}
+
+.chem-mpo-campo-divider-v {
+  cursor: row-resize;
+}
+
+.chem-mpo-campo-divider-h {
+  cursor: col-resize;
+}
+
+.chem-mpo-why-title {
+  font-weight: 600;
+}
+
+.chem-mpo-why-caption {
+  margin-top: 6px;
+  color: var(--text-color-light);
+}
+
+.chem-mpo-why-row {
+  align-items: center;
+  gap: 6px;
+}
+
+.chem-mpo-why-name {
+  min-width: 70px;
+}
+
+.chem-mpo-why-bar {
+  height: 6px;
+}
+
+.chem-mpo-why-bar-pos {
+  background: var(--red-3);
+}
+
+.chem-mpo-why-bar-neg {
+  background: var(--blue-1);
+}
+
+.chem-profile-fields-row {
+  gap: 24px;
+  flex-wrap: wrap;
 }

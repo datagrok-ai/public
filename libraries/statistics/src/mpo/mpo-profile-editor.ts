@@ -4,8 +4,8 @@ import * as grok from 'datagrok-api/grok';
 
 import {Subject, Subscription} from 'rxjs';
 import {
-  DEFAULT_AGGREGATION, WEIGHTED_AGGREGATIONS_LIST,
-  DesirabilityMode, DesirabilityProfile, PropertyDesirability, WeightedAggregation,
+  DEFAULT_AGGREGATION, WEIGHTED_AGGREGATIONS_LIST, MPO_WEIGHTING_CAPTIONS,
+  DesirabilityMode, DesirabilityProfile, MpoWeighting, PropertyDesirability, WeightedAggregation,
   createDefaultCategorical, createDefaultNumerical, isMpoNumericColumn, isNumerical, migrateDesirability,
   rangeNumericalToColumn, applyDesirabilityPatch,
 } from './mpo';
@@ -29,7 +29,12 @@ interface RowCtx {
   nameInput?: DG.InputBase<string>;
   nameInputSub?: Subscription;
   name: string;
+  /** Correlation-aware weighting: the pin input, present while the property is being pinned. */
+  pinInput?: DG.InputBase<number | null>;
+  refreshWeight?: () => void;
 }
+
+const PIN_SUM_TOLERANCE = 1e-9;
 
 function isMpoEligibleColumn(c: DG.Column): boolean {
   return c.isCategorical ? c.categories.length <= MAX_CATEGORICAL_CATEGORIES : isMpoNumericColumn(c);
@@ -40,10 +45,18 @@ export class MpoProfileEditor {
   readonly onChanged = new Subject<void>();
   readonly aggregationInput: DG.ChoiceInput<WeightedAggregation | null>;
 
+  readonly onWeightingInputChanged = new Subject<void>();
+
   profile?: DesirabilityProfile;
   dataFrame?: DG.DataFrame;
   design = false;
   preview = false;
+  /** Set by the host that owns the Weighting control (the profile view): shows priorities and pins. Other hosts
+   *  show the weights of an Equal or Correlation-aware profile read-only. */
+  weightingControl = false;
+  /** "Why this weight" tooltip of a property name in Correlation-aware weighting. */
+  explainWeight: ((name: string) => HTMLElement | null) | null = null;
+  private baseWeights: Record<string, number> | null = null;
 
   private rowIds: Record<string, string> = {};
   private rowCtx = new Map<string, RowCtx>();
@@ -83,6 +96,7 @@ export class MpoProfileEditor {
       this.columnMapping = {};
       this.rowIds = {};
     }
+    this.baseWeights = null;
 
     if (profile) {
       for (const key of Object.keys(profile.properties)) {
@@ -128,6 +142,72 @@ export class MpoProfileEditor {
 
   getProfile(): DesirabilityProfile | undefined {
     return this.profile;
+  }
+
+  get weighting(): MpoWeighting {
+    return this.profile?.weighting ?? 'manual';
+  }
+
+  setWeighting(mode: MpoWeighting): void {
+    if (!this.profile)
+      return;
+    if (mode === 'manual')
+      delete this.profile.weighting;
+    else
+      this.profile.weighting = mode;
+    this.baseWeights = null;
+    this.resetRows();
+    this.render();
+    this.emitChange();
+  }
+
+  setPriority(name: string, priority: number): void {
+    const prop = this.profile?.properties[name];
+    if (!prop)
+      return;
+    if (priority === 1)
+      delete prop.priority;
+    else
+      prop.priority = priority;
+    this.rerenderWeightingInputs();
+  }
+
+  setPinnedWeight(name: string, weight: number | null): void {
+    const prop = this.profile?.properties[name];
+    if (!prop)
+      return;
+    if (weight == null)
+      delete prop.pinnedWeight;
+    else
+      prop.pinnedWeight = weight;
+    this.rerenderWeightingInputs();
+  }
+
+  private rerenderWeightingInputs(): void {
+    this.resetRows();
+    this.render();
+    this.weightingInputChanged();
+  }
+
+  /** Writes computed weights (and the base weights the Priority hint needs) without a change per property;
+   *  fires one change if any weight changed at display precision. Returns whether it did. */
+  setWeights(weights: Record<string, number>, base: Record<string, number> | null): boolean {
+    if (!this.profile)
+      return false;
+    this.baseWeights = base;
+    let changed = false;
+    for (const [name, w] of Object.entries(weights)) {
+      const prop = this.profile.properties[name];
+      if (!prop || prop.weight.toFixed(3) === w.toFixed(3))
+        continue;
+      prop.weight = w;
+      changed = true;
+    }
+    for (const ctx of this.rowCtx.values())
+      ctx.refreshWeight?.();
+    if (changed)
+      this.emitChange();
+    return changed;
   }
 
   setDesignMode(on: boolean): void {
@@ -220,12 +300,17 @@ export class MpoProfileEditor {
     this.deleteRow(this.rowIds[name]);
   }
 
+  private get showsPriority(): boolean {
+    return this.weightingControl && this.weighting === 'correlation';
+  }
+
   private buildHeader(): HTMLElement {
     return ui.divH([
       ui.divText('Property', 'statistics-mpo-header-property'),
-      ui.divText('Weight', 'statistics-mpo-header-weight'),
+      this.showsPriority ? ui.divText('Priority', 'statistics-mpo-header-priority') : null,
+      ui.divText('Weight', this.showsPriority ? 'statistics-mpo-header-weight-campo' : 'statistics-mpo-header-weight'),
       ui.divText('Desirability', 'statistics-mpo-header-desirability'),
-    ], 'statistics-mpo-header');
+    ].filter(Boolean) as HTMLElement[], 'statistics-mpo-header');
   }
 
   private buildRow(
@@ -250,7 +335,8 @@ export class MpoProfileEditor {
       onChanged: () => this.emitChange(),
       onReplaced: (replacement) => {
         const current = currentName();
-        this.profile!.properties[current] = replacement;
+        const props = this.profile!.properties;
+        props[current] = MpoProfileEditor.keepWeighting(props[current], replacement);
         this.rebuildRow(current, rowId);
       },
     });
@@ -261,7 +347,7 @@ export class MpoProfileEditor {
     ctx.propertyCell = this.buildPropertyCell(ctx);
     const columnCell = this.buildColumnSelector(ctx);
     mpoRow.propertyCell.append(...[ctx.propertyCell, columnCell].filter(Boolean) as HTMLElement[]);
-    this.appendWeightColumnControls(mpoRow.weightCell, mpoRow.weightInput, prop);
+    this.buildWeightCell(ctx, prop);
     if (this.design)
       row.append(this.buildRowControls(rowId, prop));
     this.rowCtx.set(rowId, ctx);
@@ -385,6 +471,163 @@ export class MpoProfileEditor {
     cell.append(colInput.root, toggle);
   }
 
+  /** Copies the Correlation-aware inputs of a property onto its replacement (a type switch builds a new one). */
+  private static keepWeighting(from: PropertyDesirability, to: PropertyDesirability): PropertyDesirability {
+    if (from.priority != null)
+      to.priority = from.priority;
+    if (from.pinnedWeight != null)
+      to.pinnedWeight = from.pinnedWeight;
+    return to;
+  }
+
+  private propOf(ctx: RowCtx): PropertyDesirability {
+    return this.profile!.properties[ctx.name];
+  }
+
+  private buildWeightCell(ctx: RowCtx, prop: PropertyDesirability): void {
+    const {weightCell, weightInput} = ctx.mpoRow;
+    const mode = this.weighting;
+    if (mode === 'manual')
+      return this.appendWeightColumnControls(weightCell, weightInput, prop);
+
+    weightInput.enabled = false;
+    ctx.refreshWeight = () => {
+      weightInput.notify = false;
+      weightInput.value = this.propOf(ctx).weight;
+      weightInput.notify = true;
+    };
+    if (!this.weightingControl) {
+      weightInput.setTooltip(`Set by ${MPO_WEIGHTING_CAPTIONS[mode]} weighting. Change it in MPO Profiles.`);
+      return;
+    }
+    if (mode === 'equal')
+      return;
+
+    weightInput.root.classList.add('statistics-mpo-hidden');
+    const priority = this.buildPriorityCell(ctx);
+    weightCell.before(priority.root);
+    ui.tooltip.bind(ctx.mpoRow.propertyCell, () => this.explainWeight?.(ctx.name) ?? null);
+
+    if (prop.pinnedWeight != null)
+      ctx.pinInput = this.createPinInput(prop.pinnedWeight);
+    const host = ui.divH([], 'statistics-mpo-campo-weight');
+    const valueEl = ui.divText('', 'statistics-mpo-campo-value');
+    // the name input keeps the hover for its own validation tooltip, so the weight explains itself too
+    ui.tooltip.bind(valueEl, () => this.explainWeight?.(ctx.name) ?? null);
+    const render = () => {
+      ui.empty(host);
+      const icon = ui.iconFA('thumbtack', () => this.togglePin(ctx, render));
+      icon.classList.add('statistics-mpo-pin');
+      if (ctx.pinInput)
+        icon.classList.replace('fal', 'fas');
+      icon.classList.toggle('statistics-mpo-pin-active', !!ctx.pinInput);
+      ui.tooltip.bind(icon, () => ctx.pinInput ? 'Unpin weight' : 'Pin weight');
+      host.append(ctx.pinInput?.root ?? valueEl, icon);
+      ctx.refreshWeight!();
+    };
+    ctx.refreshWeight = () => {
+      valueEl.textContent = this.propOf(ctx).weight.toFixed(3);
+      priority.refresh();
+    };
+    render();
+    weightCell.append(host);
+  }
+
+  private buildPriorityCell(ctx: RowCtx): {root: HTMLElement, refresh: () => void} {
+    const input = ui.input.float('', {value: this.propOf(ctx).priority ?? 1, min: 0, step: 0.1, format: '#0.00',
+      nullable: true,
+      onValueChanged: (v) => {
+        if (!input.validate())
+          return;
+        const p = this.propOf(ctx);
+        if (v === 1)
+          delete p.priority;
+        else
+          p.priority = v!;
+        refresh();
+        this.weightingInputChanged();
+      },
+    });
+    input.addValidator((s) => s == null || s.trim() === '' ? 'Enter a priority' :
+      !(Number(s) >= 0) ? 'Must be 0 or greater' : null);
+    input.captionLabel.classList.add('statistics-mpo-hidden');
+    ui.tooltip.bind(input.input, 'Multiplies the computed weight');
+
+    const hint = ui.divText('', 'statistics-mpo-priority-hint');
+    const refresh = () => {
+      const p = this.propOf(ctx);
+      const changed = (p.priority ?? 1) !== 1;
+      hint.textContent = !changed ? '' : p.pinnedWeight != null ? 'Applies when the weight is unpinned.' :
+        this.baseWeights?.[ctx.name] === 0 ? 'No effect: computed weight is 0. Pin the weight instead.' : '';
+      hint.classList.toggle('statistics-mpo-hidden', !hint.textContent);
+    };
+    refresh();
+    return {root: ui.divV([input.root, hint], 'statistics-mpo-priority-cell'), refresh};
+  }
+
+  private createPinInput(value?: number): DG.InputBase<number | null> {
+    const input = ui.input.float('', {value, min: 0, max: 1, step: 0.01, format: '#0.000', nullable: true,
+      onValueChanged: () => {
+        this.syncPins();
+        this.weightingInputChanged();
+      },
+    });
+    input.addValidator((s) => {
+      if (s == null || s.trim() === '')
+        return 'Enter a weight';
+      const v = Number(s);
+      if (!Number.isFinite(v) || v < 0 || v > 1)
+        return 'Must be between 0 and 1';
+      const sum = this.pinnedSum();
+      return sum > 1 + PIN_SUM_TOLERANCE ? `Pinned weights sum to ${sum.toFixed(2)} (> 1)` : null;
+    });
+    input.root.classList.add('statistics-mpo-weight-input');
+    input.captionLabel.classList.add('statistics-mpo-hidden');
+    return input;
+  }
+
+  private pinnedSum(): number {
+    let s = 0;
+    for (const ctx of this.rowCtx.values()) {
+      const v = ctx.pinInput?.value;
+      if (v != null && Number.isFinite(v))
+        s += v;
+    }
+    return s;
+  }
+
+  /** The sum condition spans rows, so every pin is revalidated. A property is pinned while its own value is a valid
+   *  weight; a sum over 1 keeps the pins and is reported by the computation, which then applies nothing. */
+  private syncPins(): void {
+    for (const ctx of this.rowCtx.values()) {
+      const p = this.propOf(ctx);
+      ctx.pinInput?.validate();
+      const v = ctx.pinInput?.value;
+      if (v != null && v >= 0 && v <= 1)
+        p.pinnedWeight = v;
+      else
+        delete p.pinnedWeight;
+    }
+  }
+
+  private togglePin(ctx: RowCtx, render: () => void): void {
+    const pinning = !ctx.pinInput;
+    // pinning starts from the computed weight, so it changes nothing until the user edits it
+    ctx.pinInput = pinning ? this.createPinInput(Number(this.propOf(ctx).weight.toFixed(3))) : undefined;
+    render();
+    if (pinning)
+      setTimeout(() => (ctx.pinInput?.input as HTMLInputElement | undefined)?.select());
+    this.syncPins();
+    this.weightingInputChanged();
+  }
+
+  private weightingInputChanged(): void {
+    this.onWeightingInputChanged.next();
+    for (const ctx of this.rowCtx.values())
+      ctx.refreshWeight?.();
+    this.emitChange();
+  }
+
   private buildColumnSelector(ctx: RowCtx): HTMLElement | null {
     if (!this.dataFrame)
       return null;
@@ -481,11 +724,11 @@ export class MpoProfileEditor {
   private correctPropertyType(prop: PropertyDesirability, col: DG.Column): PropertyDesirability | null {
     if (isNumerical(prop) && col.isCategorical) {
       const categories = col.categories.map((c: string) => ({name: c, desirability: 1}));
-      return createDefaultCategorical(prop.weight, categories);
+      return MpoProfileEditor.keepWeighting(prop, createDefaultCategorical(prop.weight, categories));
     }
 
     if (!isNumerical(prop) && col.isNumerical)
-      return createDefaultNumerical(prop.weight, col.min, col.max);
+      return MpoProfileEditor.keepWeighting(prop, createDefaultNumerical(prop.weight, col.min, col.max));
 
     if (isNumerical(prop) && col.isNumerical && !prop.rangeUserSet && (prop.min !== col.min || prop.max !== col.max)) {
       const updated = {...prop};

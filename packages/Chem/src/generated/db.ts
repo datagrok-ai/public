@@ -9,6 +9,8 @@ import type {Dayjs} from 'dayjs';
 
 export type ProfileAggregation = 'Average' | 'Sum' | 'Product' | 'Geomean' | 'Min' | 'Max';
 
+export type ProfileWeighting = 'equal' | 'manual' | 'correlation';
+
 /** Row of `mpo.profile`. */
 export interface ProfileRow {
   id: string;
@@ -19,6 +21,7 @@ export interface ProfileRow {
   name: string;
   description?: string;
   aggregation?: ProfileAggregation;
+  weighting?: ProfileWeighting;
   format_version?: number;
   properties: {[key: string]: any};
 }
@@ -28,12 +31,13 @@ export interface ProfileInsert {
   name: string;
   description?: string;
   aggregation?: ProfileAggregation;
+  weighting?: ProfileWeighting;
   format_version?: number;
   properties: {[key: string]: any};
 }
 
 export type ProfileColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'description' |
-  'aggregation' | 'format_version' | 'properties';
+  'aggregation' | 'weighting' | 'format_version' | 'properties';
 
 export type ProfileExpand = {};
 

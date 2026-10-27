@@ -1,5 +1,9 @@
 # statistics changelog
 
+## 1.12.17 (2026-10-27)
+
+* MPO: Profiles carry a weighting mode (`weighting`) and per-property `priority` and `pinnedWeight`; `MpoProfileEditor` shows priorities, pins and read-only computed weights; `MpoCalculator.desirabilities()` returns the cached desirability arrays
+
 ## 1.12.16 (2026-10-20)
 
 * [#4291](https://github.com/datagrok-ai/public/issues/4291): Chem: MPO: Add support for qnum values

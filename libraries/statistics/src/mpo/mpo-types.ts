@@ -15,9 +15,18 @@ export type MissingValueConfig =
   | { strategy: 'default'; score: number }
   | { strategy: 'skip' };
 
+/// How property weights are set: by hand, all equal, or from the correlations between desirabilities (caMPO).
+export type MpoWeighting = 'equal' | 'manual' | 'correlation';
+export const MPO_WEIGHTINGS: MpoWeighting[] = ['equal', 'manual', 'correlation'];
+export const MPO_WEIGHTING_CAPTIONS: Record<MpoWeighting, string> = {
+  equal: 'Equal', manual: 'Manual', correlation: 'Correlation-aware',
+};
+
 type BasePropertyDesirability = {
-  weight: number; /// 0-1
-  weightColumn?: string; /// optional column name to read per-row weights from (0-1)
+  weight: number; /// 0-1; the weight the score uses, whatever the weighting mode
+  weightColumn?: string; /// optional column name to read per-row weights from (0-1); Manual weighting only
+  priority?: number; /// Correlation-aware weighting: multiplier on the computed weight; absent = 1
+  pinnedWeight?: number; /// Correlation-aware weighting: weight fixed by the user; absent = not pinned
   missingValues?: MissingValueConfig;
   computeFunction?: TemplateFunction;
 }
@@ -84,6 +93,7 @@ export type DesirabilityProfile = {
   name: string;
   description: string;
   aggregation?: WeightedAggregation;
+  weighting?: MpoWeighting; /// absent = 'manual'
   properties: { [key: string]: PropertyDesirability };
 }
 

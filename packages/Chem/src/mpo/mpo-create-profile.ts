@@ -6,6 +6,11 @@ import {Subscription} from 'rxjs';
 
 import {
   DesirabilityProfile,
+  MPO_WEIGHTINGS,
+  DEFAULT_AGGREGATION,
+  MPO_WEIGHTING_CAPTIONS,
+  MpoCalculator,
+  MpoWeighting,
   getMpoScoreColumnName,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
@@ -13,6 +18,8 @@ import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/ut
 
 import {attachMpoProfileAi} from '../ai-tools/mpo';
 import {MpoContextPanel} from './mpo-context-panel';
+import {CampoController, CampoHost, CampoMessageKind} from './campo-controller';
+import {CampoViewers} from './campo-viewers';
 import {
   MpoMethod,
   MpoPathMode,
@@ -34,9 +41,13 @@ const FIELD_DESCRIPTIONS: Record<string, string> = {
   'Method': 'Manual desirability curve editing or data-driven MPO trained from labeled data',
   'Dataset': 'Load data to preview desirability scores as you edit the profile',
   'Aggregation': 'How individual property scores combine into the final MPO score',
+  'Weighting': 'How property weights are set',
 };
 
-export class MpoProfileCreateView {
+const weightingOf = (caption: string | null): MpoWeighting =>
+  MPO_WEIGHTINGS.find((w) => MPO_WEIGHTING_CAPTIONS[w] === caption) ?? 'manual';
+
+export class MpoProfileCreateView implements CampoHost {
   static readonly PROFILE_ID_TAG = 'chem-mpo-profile-id';
 
   static focusOpenEditor(profileId: string): boolean {
@@ -67,6 +78,8 @@ export class MpoProfileCreateView {
   profileViewContainer!: HTMLDivElement;
   methodInput?: DG.ChoiceInput<string | null>;
   datasetInput?: DG.InputBase;
+  weightingInput!: DG.ChoiceInput<string | null>;
+  campo: CampoController | null = null;
   saved: MpoProfileRef | null = null;
   saveButton: HTMLElement | null = null;
   resetButton: HTMLElement | null = null;
@@ -76,6 +89,12 @@ export class MpoProfileCreateView {
   private descEl!: HTMLElement;
   private toolbarEl!: HTMLElement;
   private aggregationField!: HTMLElement;
+  private weightingField!: HTMLElement;
+  private campoAlert = ui.iconFA('exclamation-circle', null);
+  private campoMessage: {text: string, kind: CampoMessageKind} | null = null;
+  private campoViewers: CampoViewers | null = null;
+  /** Manual weights set aside while another weighting mode is on, for the session. */
+  private manualStash: Record<string, {weight: number, weightColumn?: string}> | null = null;
   private contentEl!: HTMLDivElement;
 
   tableView: DG.TableView;
@@ -117,6 +136,7 @@ export class MpoProfileCreateView {
     this.profile = existingProfile ? structuredClone(existingProfile) : createDefaultProfile();
     this.originalProfile = structuredClone(this.profile);
     this.editor = new MpoProfileEditor(undefined, true);
+    this.editor.weightingControl = true;
     this.editor.setProfile(this.profile);
     this.profileEditorContainer = ui.divV([this.editor.root]);
     this.profileEditorContainer.classList.add('chem-profile-editor-container');
@@ -187,7 +207,21 @@ export class MpoProfileCreateView {
       controls.push(field(this.methodInput));
     controls.push(field(this.datasetInput));
     this.aggregationField = field(this.editor.aggregationInput);
-    controls.push(this.aggregationField);
+    this.subs.push(this.editor.aggregationInput.onInput.subscribe(() => this.warnAggregation()));
+    this.weightingInput = ui.input.choice('Weighting', {
+      items: MPO_WEIGHTINGS.map((w) => MPO_WEIGHTING_CAPTIONS[w]),
+      value: MPO_WEIGHTING_CAPTIONS[this.editor.weighting],
+      nullable: false,
+      onValueChanged: (v) => {
+        if (!this.suppressInputHandlers)
+          this.setWeighting(weightingOf(v));
+      },
+    });
+    this.campoAlert.classList.add('chem-mpo-campo-alert', 'chem-mpo-d-none');
+    ui.tooltip.bind(this.campoAlert, () => this.campoMessage?.text ?? null);
+    this.weightingField = field(this.weightingInput);
+    this.weightingField.prepend(ui.divH([this.weightingInput.root, this.campoAlert], 'chem-mpo-campo-weighting'));
+    controls.push(ui.divH([this.aggregationField, this.weightingField], 'chem-profile-fields-row'));
 
     this.saveButton = ui.button('Save', () => this.save());
     this.resetButton = ui.button('Reset', () => this.resetProfile());
@@ -241,6 +275,7 @@ export class MpoProfileCreateView {
     if (this.suppressInputHandlers)
       return;
     this.aggregationField.classList.toggle('chem-mpo-d-none', !this.isManualMode);
+    this.weightingField.classList.toggle('chem-mpo-d-none', !this.isManualMode);
 
     if (this.methodInput!.value === MpoMethod.DataDriven) {
       this.stashedManualProfile = {
@@ -293,6 +328,7 @@ export class MpoProfileCreateView {
       return;
     }
 
+    this.stopCampo();
     this.df = df;
     this.closePMpoPanels();
     const indicatorRoot = this.tableViewVisible ? this.tableView.root : this.view.root;
@@ -434,6 +470,7 @@ export class MpoProfileCreateView {
 
   async resetProfile(): Promise<void> {
     this.profile = structuredClone(this.originalProfile);
+    this.manualStash = null;
     this.setModified(false);
     this.updatingLayout = true;
     try {
@@ -441,10 +478,107 @@ export class MpoProfileCreateView {
       this.descEl.innerText = this.profile.description;
       this.updateDescPlaceholder();
       this.editor.setProfile(this.profile);
+      this.syncWeightingInput();
     } finally {
       this.updatingLayout = false;
     }
+    if (this.editor.weighting === 'correlation') {
+      this.campoViewers?.open();
+      this.startCampo();
+    } else
+      this.stopCampo();
     this.renderContextPanel();
+  }
+
+  // --- Weighting ---
+
+  get calculator(): MpoCalculator | null {
+    return this.mpoContextPanel?.calculator ?? null;
+  }
+
+  /** Switches the weighting mode, moving the weights between modes. */
+  setWeighting(mode: MpoWeighting): void {
+    const from = this.editor.weighting;
+    if (from === mode)
+      return;
+    const props = Object.entries(this.profile.properties);
+    if (from === 'manual') {
+      this.manualStash = Object.fromEntries(props.map(([name, p]) =>
+        [name, {weight: p.weight, weightColumn: p.weightColumn}]));
+    }
+
+    for (const [name, p] of props) {
+      if (mode === 'manual') {
+        const stashed = this.manualStash?.[name];
+        if (stashed) {
+          p.weight = stashed.weight;
+          if (stashed.weightColumn)
+            p.weightColumn = stashed.weightColumn;
+        }
+        continue;
+      }
+      delete p.weightColumn;
+      if (mode === 'equal')
+        p.weight = 1;
+      else if (from === 'manual') {
+        if (p.weight === 1)
+          delete p.priority;
+        else
+          p.priority = p.weight;
+      }
+    }
+    if (mode === 'manual')
+      this.manualStash = null;
+
+    // when the input itself is the caller, writing it back from its own change handler throws
+    if (weightingOf(this.weightingInput.value) !== mode)
+      this.syncWeightingInput(mode);
+    this.editor.setWeighting(mode);
+    if (mode === 'correlation') {
+      this.campoViewers?.open();
+      this.startCampo();
+      this.warnAggregation();
+    } else
+      this.stopCampo();
+  }
+
+  /** Correlation-aware weights are derived for a weighted average; other aggregations are allowed, with a warning. */
+  warnAggregation(): void {
+    const aggregation = this.editor.aggregationInput.value ?? DEFAULT_AGGREGATION;
+    if (this.editor.weighting === 'correlation' && aggregation !== DEFAULT_AGGREGATION) {
+      grok.shell.warning(`Correlation-aware weights are derived for ${DEFAULT_AGGREGATION}. ` +
+        `With ${aggregation}, they reduce redundancy only approximately.`);
+    }
+  }
+
+  private syncWeightingInput(mode: MpoWeighting = this.editor.weighting): void {
+    const suppressed = this.suppressInputHandlers;
+    this.suppressInputHandlers = true;
+    this.weightingInput.value = MPO_WEIGHTING_CAPTIONS[mode];
+    this.suppressInputHandlers = suppressed;
+  }
+
+  private startCampo(): void {
+    this.campo?.dispose();
+    this.campo = new CampoController(this, this.campoViewers);
+    this.campo.runStageA(true);
+  }
+
+  private stopCampo(): void {
+    this.campo?.dispose();
+    this.campo = null;
+    this.campoViewers?.hide();
+    this.showCampoMessage(null, 'error');
+  }
+
+  /** The message stays in the tooltip of the icon next to Weighting; the balloon shows only when one appears, not
+   *  on every recomputation that keeps it. */
+  showCampoMessage(message: string | null, kind: CampoMessageKind): void {
+    if (message && this.campoMessage?.kind !== kind)
+      grok.shell.warning(message);
+    this.campoMessage = message ? {text: message, kind} : null;
+    this.campoAlert.classList.toggle('chem-mpo-d-none', !message);
+    this.campoAlert.classList.toggle('chem-mpo-campo-alert-warning', kind === 'warning');
   }
 
   // --- Layout ---
@@ -461,6 +595,7 @@ export class MpoProfileCreateView {
       this.updatingLayout = true;
       try {
         this.editor.setProfile(this.profile);
+        this.syncWeightingInput();
       } finally {
         this.updatingLayout = false;
       }
@@ -470,6 +605,8 @@ export class MpoProfileCreateView {
 
       if (!this.df) {
         this.contentEl.append(this.profileEditorContainer);
+        if (this.isManualMode && this.editor.weighting === 'correlation')
+          this.startCampo();
         return;
       }
 
@@ -480,6 +617,9 @@ export class MpoProfileCreateView {
   }
 
   private clearPreviousLayout() {
+    this.stopCampo();
+    this.campoViewers?.dispose();
+    this.campoViewers = null;
     this.profileEditorContainer.remove();
     ui.empty(this.contentEl);
   }
@@ -488,17 +628,11 @@ export class MpoProfileCreateView {
     if (!this.mpoContextPanel)
       this.mpoContextPanel = new MpoContextPanel(this.df!);
 
-    const gridContainer = ui.div([]);
-    gridContainer.classList.add('chem-data-grid-container');
-
-    const gridPlot = this.df!.plot.grid();
-    gridPlot.root.classList.add('chem-data-grid');
-    gridContainer.append(gridPlot.root);
-
     const editorPanel = ui.box(this.profileEditorContainer);
     editorPanel.classList.add('chem-editor-panel');
 
-    const gridPanel = ui.box(gridContainer);
+    this.campoViewers = new CampoViewers(this.df!);
+    const gridPanel = ui.box(this.campoViewers.view.root);
     gridPanel.classList.add('chem-grid-panel');
 
     const split = ui.splitH([editorPanel, gridPanel], {}, true);
@@ -510,6 +644,8 @@ export class MpoProfileCreateView {
       this.df!.currentCell = this.df!.cell(0, this.df!.columns.byIndex(0).name);
 
     this.renderContextPanel();
+    if (this.editor.weighting === 'correlation')
+      this.startCampo();
   }
 
   private setTableViewVisible(visible: boolean, ratio = 0.78): void {
@@ -705,6 +841,10 @@ export class MpoProfileCreateView {
   }
 
   private detach(): void {
+    this.campo?.dispose();
+    this.campo = null;
+    this.campoViewers?.dispose();
+    this.campoViewers = null;
     this.closeContextPanel();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];

@@ -1,6 +1,6 @@
 # Specification: Correlation-aware (caMPO) weighting mode in MPO Profiles
 
-Status: v5 (EN). Rebased on the existing MPO implementation (§1.1): the spec now describes changes to that code rather than a standalone feature. Correlation plot checked on a live instance (`campo_corrplot_check.js`, 2026-10-26).
+Status: v8 (EN), implemented (§11). v8 allows `Correlation-aware` with every aggregation, with a warning balloon instead of the banner (§8). v5 rebased the spec on the existing MPO implementation (§1.1); v6 is a review against that code (`MpoProfileEditor`, `MpoProfileCreateView`, `MpoContextPanel`) that fixes how recomputation is triggered and adds edge cases; v7 closes the gaps between the controller code and the text (messages, tab activation, `d = 1`, no dataset, mode transitions, in-place edits). Correlation plot checked on a live instance (`campo_corrplot_check.js`, 2026-10-26).
 Method reference: Garellick et al., *caMPO: Correlation-aware multiparameter optimization*, ChemRxiv 2026, doi:10.26434/chemrxiv.15008121/v1.
 
 Decisions taken:
@@ -14,15 +14,31 @@ Decisions proposed in v5, to confirm:
 
 - desirability arrays come from the existing `mapColumnDesirability` through the `MpoCalculator` cache, not from new code (§2.3);
 - the property's existing `weight` always holds the **effective** weight, so the score, the MPO Score dialog, old clients and other packages need no change; caMPO inputs are stored next to it (§6);
-- the mode viewers live in a `ui.tabControl` in the right half of the profile view, which today is a plain `ui.splitH`, not a table view with a dock manager (§3);
+- the mode viewers are one panel docked as a tab over the grid of a detached table view that fills the right half of the profile view (§3; replaced the tab control of v5–v7, §11);
 - RESET keeps its current meaning, "revert to the last saved profile" (§4);
 - the **Weighting** control exists only in the profile view; the MPO Score dialog and the profile preview use the stored weights (§1.2).
+
+Decisions proposed in v6, to confirm:
+
+- `editor.setProfile` fires no change event, so the view runs stage A itself after `attachLayout` and after RESET; `onChanged` covers only the user's edits (§4);
+- a recomputation that does not change the weights does not mark the profile as modified; one that does (another dataset, edited data) does (§4);
+- two properties mapped to the same column: the second one is excluded from `R` (§7);
+- a property whose column is created by its compute function is picked up when the column appears (§4);
+- on a stage A error the **Correlations** and **Weights** tabs are removed and the weights keep their last values (§4, §7).
+
+Decisions proposed in v7, to confirm:
+
+- stage A warnings (λ, few rows, rows less than half the dataset) are kept and shown by every successful stage B; an error replaces them (§4);
+- the Weights tab becomes current only when the mode is switched on or RESET restores it, not when a saved profile is opened (§4);
+- `hide()` guards `tabs.clear()` with a flag instead of relying on what `onTabRemoved` reports for it (§3.3);
+- edits to the dataset's values do not recompute the weights in version 1 (§4);
+- `Equal → Correlation-aware` keeps the stored priorities; a `weightColumn` property brings its static weight into the priority (§5.1).
 
 ### Reference artifacts (same folder)
 
 | File | Purpose |
 |---|---|
-| `campo_demo.html` | Interactive demo of the feature: layout, weighting modes, priorities, pins, tooltips, viewers, tabs, aggregation warning. Open in a browser. The reference for behaviour and look, with the differences listed below. |
+| `campo_demo.html` | Interactive demo of the feature: layout, weighting modes, priorities, pins, tooltips, viewers, tabs, aggregation warning (dropped, §8). Open in a browser. The reference for behaviour and look, with the differences listed below. |
 | `campo_bench.html` | Verification bench for the computation: presets from the paper, generated data, intermediate values (s_i, raw, base, final, R⁻¹), the §9 test suite. |
 | `campo_corrplot_check.js` | Datagrok script that checks what Correlation plot exposes: `getCorrelation` vs reference Pearson, missing values, hidden tab, filter, performance, close events. Its results are in §10. |
 
@@ -40,7 +56,7 @@ The math in both HTML files is the code from §2, ported 1:1 to JavaScript. Diff
 
 The MPO profile view (**Manual** method) gets a choice of how weights are set, **Weighting**: `Equal` / `Manual` / `Correlation-aware`. `Manual` is today's behaviour and the default. In `Correlation-aware` mode, weights are computed from the correlations between desirability columns: redundant properties get less weight, independent ones get more. An expert can adjust the result in two ways: a priority (a multiplier on the weight) and pinning a specific weight value.
 
-Out of scope: the Data-driven method (unchanged; **Weighting** is hidden there, as **Aggregation** already is) and aggregations other than `Average` (§8).
+Out of scope: the Data-driven method (unchanged; **Weighting** is hidden there, as **Aggregation** already is).
 
 ### 1.1. Existing implementation
 
@@ -51,7 +67,7 @@ Out of scope: the Data-driven method (unchanged; **Weighting** is hidden there, 
 | `libraries/statistics/src/mpo/campo.ts` | — | new: the math of §2 (pure functions, no UI) |
 | `libraries/statistics/src/mpo/mpo-profile-editor.ts` | `MpoProfileEditor`: header Property / Weight / Desirability, one row per property, `aggregationInput`, column mapping (`columnMapping`), design mode (rename, add, delete, compute function), weight-from-column toggle, `onChanged` + `MPO_SCORE_CHANGED_EVENT` | weighting mode, Priority column, read-only weights, pins, name tooltip, `setWeights()` (§5) |
 | `libraries/statistics/src/mpo/editors/mpo-property-row.ts` | `createMpoRow`: property cell, weight cell (`ui.input.float`, 0–1, `#0.000`), curve editor | priority cell, weight cell variants (§5) |
-| `packages/Chem/src/mpo/mpo-create-profile.ts` | `MpoProfileCreateView`: title, description, Method / Dataset / Aggregation with hints, Save / Reset in the ribbon; content is `ui.splitH([editor, grid])`; Data-driven mode docks EDA viewers into a hidden `tableView` | Weighting input, tab control in the right half, caMPO controller, aggregation banner (§3, §4, §8) |
+| `packages/Chem/src/mpo/mpo-create-profile.ts` | `MpoProfileCreateView`: title, description, Method / Dataset / Aggregation with hints, Save / Reset in the ribbon; content is `ui.splitH([editor, grid])`; Data-driven mode docks EDA viewers into a hidden `tableView` | Weighting input, tab control in the right half, caMPO controller (§3, §4) |
 | `packages/Chem/src/mpo/campo-controller.ts`, `campo-viewers.ts` | — | new (§3.3, §4) |
 | `packages/Chem/src/mpo/mpo-context-panel.ts` | Context panel: score histogram, best / worst compounds; owns the `MpoCalculator` | exposes its calculator to the controller |
 | `packages/Chem/src/mpo/utils.ts` | `computeMpo` (maps property → column, tags columns, runs the calculator), `createProfileForDf` (up to `MAX_MPO_PROPERTIES` = 10, weight 1) | none |
@@ -129,6 +145,10 @@ desirabilities(dataFrame: DG.DataFrame, columns: DG.Column[]): ColumnDesirabilit
 
 `compute()` keeps its own loop or calls this method; either way one cache serves both. The controller uses the context panel's calculator (`MpoContextPanel` owns it today), and gets the columns the way `computeMpo` does: property → `columnMapping[property] ?? property` → `applyDesirabilityTags`. A property with no column in the dataset gets no `D_k` (§7).
 
+The cache is an optimisation, not something to rely on. The view creates `MpoContextPanel` lazily in `setupGridAndContextPanel`, drops it in `closeContextPanel`, and the panel calls `calculator.release()` when the user leaves the view. So the controller reads `view.mpoContextPanel?.calculator` on every stage A run and keeps no reference; with no panel it uses a fresh `MpoCalculator`.
+
+Known limitation: under the `default` strategy every missing value becomes the same score. With many missing values this lowers the column's variance and shifts its correlations towards that constant. These are still the values the score aggregates, so they are correlated as they are.
+
 > Verified on a live instance: for `double` columns `getRawData()` returns a `Float32Array`, and `raw[i] === DG.FLOAT_NULL` finds every missing value (112 of 112). `hoistColumns` relies on this (`valNull`); keep it as a unit test.
 
 ### 2.4. Complete rows and constant columns
@@ -136,6 +156,10 @@ desirabilities(dataFrame: DG.DataFrame, columns: DG.Column[]): ColumnDesirabilit
 Two steps are performed before `R` is computed.
 
 **Complete rows only.** `R` is computed only on rows where every `D_k` is a number (listwise deletion). Correlations on different row subsets (pairwise deletion) can produce a matrix that is not positive definite — Cholesky decomposition would then fail. The Correlation plot gets the same complete rows: it uses pairwise deletion (verified: with 5% missing values it matches the pairwise reference to 3e-9 and differs from the listwise one by 0.028), so on the full data it would show a matrix different from the one the weights come from.
+
+The score is computed on a different set of rows: under the `skip` strategy `reduceMpo` averages a row over the properties it has. The weights come from the rows where every property is present. This is accepted for version 1. When complete rows are less than half the dataset, the form shows a warning (§5.4): `Weights are derived from <rows> of <n> rows that have every property.`
+
+If there are not more complete rows than properties (`rows ≤ d`), the function returns at once with no active columns, so the controller reports `No rows with all properties present` (`rows = 0`) or `Not enough data…` instead of reading every column as constant (with `rows = 0` the mean is `NaN`).
 
 **Constant columns.** If a desirability column has zero variance (for example, every row is 1.0), its correlation is undefined (the viewer returns `NaN`). Such a property is excluded from `R` and from the viewer, gets weight 0 and status `dropped`; the reason is shown in the name tooltip.
 
@@ -161,6 +185,8 @@ function prepareDesirabilityFrame(names: string[], D: (Float32Array | null)[], n
   }
   let rows = 0;
   for (let i = 0; i < n; i++) rows += mask[i];
+  if (rows <= d)
+    return {cols: [], frame: DG.DataFrame.create(0), active: new Int32Array(0), constant: new Int32Array(0), rows};
 
   const activeList: number[] = [];
   const constantList: number[] = [];
@@ -200,7 +226,7 @@ function prepareDesirabilityFrame(names: string[], D: (Float32Array | null)[], n
 `R` is computed from `prepared.cols` (complete rows, active columns) into a `Float64Array` (row-major, `m×m`). The Correlation plot is not used as a source of `R` (§10, questions 1 and 2):
 
 - the viewer has no matrix to read: its `table` setting is the name of the bound table (`null` for a viewer built in code);
-- `DG.CorrelationPlot.getCorrelation(c1, c2)` returns the right value (matches the reference Pearson to 4e-9, also in a hidden tab and right after the data changes), but it recomputes the pair on every call, with no cache: the full 20×20 matrix on 10⁵ rows takes ~1.5 s (measured). The code below does 190 dot products of length 10⁵ for the same matrix — tens of milliseconds by estimate; the §9 performance test confirms it.
+- `DG.CorrelationPlot.getCorrelation(c1, c2)` returns the right value (matches the reference Pearson to 4e-9, also in a hidden tab and right after the data changes), but it recomputes the pair on every call, with no cache: the full 20×20 matrix on 10⁵ rows takes ~1.5 s (measured). The code below does 190 dot products of length 10⁵ for the same matrix — tens of milliseconds by estimate. The §9 performance test covers all of stage A (desirability mapping on a cold cache, complete rows, `R`, inversion), so its 300 ms limit leaves room for more than this function.
 
 On the same complete rows the viewer shows exactly this matrix, so what the user sees in **Correlations** is what the weights are computed from.
 
@@ -390,7 +416,7 @@ w_i = base'_i · (1 − P) / U       for unpinned
 The priority of a pinned property has no effect on the result.
 
 ```ts
-type StageBResult = { final: Float64Array; error: string | null };
+type StageBResult = { final: Float64Array; error: null } | { final: null; error: string };
 
 /**
  * prio[i] >= 0 (default 1).
@@ -412,11 +438,11 @@ function finalWeights(base: Float64Array, prio: Float64Array, pinned: Float64Arr
   let P = 0;
   for (let i = 0; i < d; i++) if (!Number.isNaN(pinned[i])) P += pinned[i];
   if (P > 1 + 1e-9)
-    return { final: base, error: `Pinned weights sum to ${P.toFixed(3)} (> 1)` };
+    return { final: null, error: `Pinned weights sum to ${P.toFixed(3)} (> 1)` };
 
   const rest = 1 - P;
   if (rest > 1e-9 && B <= 1e-12)
-    return { final: base, error: 'Nothing to scale: all unpinned weights are 0' };
+    return { final: null, error: 'Nothing to scale: all unpinned weights are 0' };
 
   const k = B > 0 ? rest / B : 0;
   const final = new Float64Array(d);
@@ -430,7 +456,7 @@ The normalisation after priorities is merged with the pin scaling: `b_i · (1 �
 
 **Example.** Base weights after clipping: TPSA 0.258, TPSA_S 0.038, HBA 0, HBD 0.023, MW 0, nAtoms 0.103, cLogD 0.363, cLogP 0, mbpKa 0.215; all priorities 1. Pin HBA = 0.08: `P = 0.08`, `Σ b = 1`, `k = 0.92`; TPSA = 0.237, cLogD = 0.334, and so on; the sum is 1.
 
-**Display statuses:** `pinned` — pinned; `dropped` — final weight 0; `kept` — all others.
+**Display statuses:** `pinned` — pinned; `dropped` — final weight 0; `kept` — all others. `pinned` is checked first, so a property pinned at 0 is `pinned`, not `dropped`: its weight is the user's choice, not the computation's.
 
 The final weights go into the profile as the properties' `weight` (§6). They are in [0, 1] and sum to 1, which the weight input's 0–1 range and `reduceMpo` both accept.
 
@@ -442,24 +468,22 @@ The final weights go into the profile as the properties' `weight` (§6). They ar
 
 Reference: `campo_demo.html`; the view is `MpoProfileCreateView` (`packages/Chem/src/mpo/mpo-create-profile.ts`), the same in create and edit mode.
 
-- **Top** (`profileViewContainer`, unchanged except one input): editable title, editable description, then the toolbar with **Method**, **Dataset**, **Aggregation**, each with its hint below (`FIELD_DESCRIPTIONS`). **Weighting** is added after **Aggregation**, on the same row, with the hint `How property weights are set`; the Aggregation hint stays as it is (`How individual property scores combine into the final MPO score`). In Data-driven mode **Weighting** is hidden together with **Aggregation** (`chem-mpo-d-none` in `onMethodChanged`). The aggregation banner (§8) goes at the bottom of the toolbar. **Save** and **Reset** stay in the ribbon.
+- **Top** (`profileViewContainer`, unchanged except one input): editable title, editable description, then the toolbar with **Method**, **Dataset**, **Aggregation**, each with its hint below (`FIELD_DESCRIPTIONS`). **Weighting** is added after **Aggregation**, on the same row, with the hint `How property weights are set`; the Aggregation hint stays as it is (`How individual property scores combine into the final MPO score`). In Data-driven mode **Weighting** is hidden together with **Aggregation** (`chem-mpo-d-none` in `onMethodChanged`). **Save** and **Reset** stay in the ribbon.
 - **Content**: `ui.splitH([editorPanel, gridPanel])`, as today.
   - **left** — `MpoProfileEditor` in design mode. Its header becomes **Property / Priority / Weight / Desirability**; the Priority column is shown only in `Correlation-aware` mode. The Weight column depends on the mode: `Equal` — read-only `1.000`; `Manual` — editable input and the weight-from-column toggle, as today; `Correlation-aware` — final weight (`0.000`, read-only) and the pin icon (§5.2). In `Equal` and `Correlation-aware` the weight-from-column toggle is hidden (§5.1).
-  - **right** — today a grid (`df.plot.grid()`). It becomes a `DG.TabControl` (`ui.tabControl`):
-    1. `<dataset name>` — the grid, as today. The MPO score column `MPO <profile name>` is maintained by the context panel's preview (`computeMpo`), which reruns on every weight change through `MPO_SCORE_CHANGED_EVENT`.
-    2. **Correlations** — Correlation plot on the complete rows (§2.4), `allowClose: true`.
-    3. **Weights** — bar chart "Raw weights (may be negative)" and bar chart "Final weights (sum = 1)" side by side in a `ui.splitH`, `allowClose: true`.
-- If **no raw weight was negative** (`clipped === false`), the Raw chart is not shown and **Weights** holds only "Final weights (sum = 1)".
-- When `Correlation-aware` is switched on, the **Weights** tab becomes current.
-- The user can close **Correlations** or **Weights** with the tab's ×. Both tabs reopen the next time the mode is switched on, or on RESET when the restored mode is `Correlation-aware`.
-- When Weighting is switched to `Equal` or `Manual`, both tabs are removed and the grid tab becomes current.
+  - **right** — today a grid (`df.plot.grid()`). It becomes a detached `DG.TableView` of the dataset (`DG.TableView.create(df, false)`, laid out as Flow embeds one): its grid shows the data as today, and in `Correlation-aware` mode one panel, **Weights**, is docked `FILL` on the grid (a tab over it). It is a vertical splitter:
+    1. above — the Correlation plot on the complete rows (§2.4);
+    2. below — bar charts "Raw" and "Final" side by side in a horizontal splitter, each filling its half, with the legend always shown at the bottom right. Each chart has a title with a tooltip: Raw — the weights straight from the correlations, before any adjustment (a negative weight means the property is redundant); Final — the weights used in the score, after clipping, priorities and pins, summing to 1.
+    The MPO score column `MPO <profile name>` is maintained by the context panel's preview (`computeMpo`), which reruns on every weight change through `MPO_SCORE_CHANGED_EVENT`.
+- If **no raw weight was negative** (`clipped === false`), the Raw chart is not shown and "Final" takes the whole lower half.
+- The user can close the panel with its ×. It comes back the next time the mode is switched on, or on RESET when the restored mode is `Correlation-aware`.
+- When Weighting is switched to `Equal` or `Manual`, the panel is undocked and only the grid stays.
 - The context panel (score histogram, best and worst compounds) is unchanged.
 
 **Bar chart titles.** "Raw weights (may be negative)" — `R⁻¹·1` normalised by `S`, before clipping; "Final weights (sum = 1)" — after clipping, priorities and pins, i.e. the weights used in the score. "Clipped & normalized" was rejected: the final weights also include priorities and pins.
 
 > The Correlation plot is display only. Its tab being inactive or closed does not affect the computation.
 
-> `TabControl` puts its tab strip on top; the demo draws it at the bottom. Keep the platform's look.
 
 ### 3.1. Weights data frame for the bar charts
 
@@ -523,6 +547,15 @@ function addEqualLine(chart: DG.Viewer, d: number): void {
 
 Axis ranges: Raw — from `min(−0.1, minRaw)` to `max(0.1, maxRaw)`, rounded outward to 0.1; Final — from 0 to `max(0.1, maxFinal)`, rounded to 0.1.
 
+```ts
+/** [valueMin, valueMax] of a chart over the finite values of `a`, rounded outward to 0.1. */
+function axisRange(a: Float64Array, withNegative: boolean): [number, number] {
+  let lo = 0, hi = 0.1;
+  for (const v of a) if (Number.isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  return [withNegative ? Math.floor(Math.min(lo, -0.1) * 10) / 10 : 0, Math.ceil(hi * 10) / 10];
+}
+```
+
 > Verified on a live instance: horizontal orientation, negative values, stacking by category, legend, the Equal line, the `EPS` stub for zeros, and `correlationType` on Correlation plot. Not verified: hiding the selectors.
 
 ### 3.3. Tabs and viewers
@@ -539,10 +572,12 @@ class CampoViewers {
   private finalChart: DG.Viewer | null = null;
   private weightsHost = ui.div([], 'chem-mpo-campo-weights');
   private closedByUser = {corr: false, weights: false};
+  private clearing = false;
 
   constructor(private gridRoot: HTMLElement, private gridTitle: string) {
     this.gridPane = this.tabs.addPane(gridTitle, () => gridRoot);
     this.tabs.onTabRemoved.subscribe((pane: DG.TabPane) => {   // the user pressed ×
+      if (this.clearing) return;
       if (pane.name === 'Correlations') { this.closedByUser.corr = true; this.corr = null; }
       if (pane.name === 'Weights') { this.closedByUser.weights = true; this.rawChart = this.finalChart = null; }
     });
@@ -564,20 +599,28 @@ class CampoViewers {
     }
   }
 
-  showWeights(weightsDf: DG.DataFrame, d: number, clipped: boolean, activate: boolean): void {
+  showWeights(weightsDf: DG.DataFrame, raw: Float64Array, final: Float64Array, clipped: boolean,
+              activate: boolean): void {
     if (this.closedByUser.weights) return;
     const first = !this.finalChart;
+    const [fMin, fMax] = axisRange(final, false);
     if (!this.finalChart) {
-      this.finalChart = createBarChart(weightsDf, 'weight', 'status', 'Final weights (sum = 1)', 0, 0.4);
-      addEqualLine(this.finalChart, d);
-    } else
+      this.finalChart = createBarChart(weightsDf, 'weight', 'status', 'Final weights (sum = 1)', fMin, fMax);
+      addEqualLine(this.finalChart, final.length);
+    } else {
       this.finalChart.dataFrame = weightsDf;
+      this.finalChart.setOptions({valueMin: fMin, valueMax: fMax});
+    }
 
+    const [rMin, rMax] = axisRange(raw, true);
     if (clipped && !this.rawChart)
-      this.rawChart = createBarChart(weightsDf, 'raw', 'sign', 'Raw weights (may be negative)', -0.4, 0.6);
+      this.rawChart = createBarChart(weightsDf, 'raw', 'sign', 'Raw weights (may be negative)', rMin, rMax);
     else if (!clipped)
       this.rawChart = null;
-    if (this.rawChart) this.rawChart.dataFrame = weightsDf;
+    else {
+      this.rawChart!.dataFrame = weightsDf;
+      this.rawChart!.setOptions({valueMin: rMin, valueMax: rMax});
+    }
 
     ui.empty(this.weightsHost);
     this.weightsHost.append(this.rawChart ?
@@ -588,18 +631,20 @@ class CampoViewers {
     }
   }
 
-  /** Mode switched to Equal or Manual: only the grid stays. */
+  /** Mode switched to Equal or Manual, or stage A failed: only the grid stays. */
   hide(): void {
-    this.tabs.clear();
+    this.clearing = true;
+    try { this.tabs.clear(); }
+    finally { this.clearing = false; }
     this.gridPane = this.tabs.addPane(this.gridTitle, () => this.gridRoot);
     this.corr = this.rawChart = this.finalChart = null;
   }
 }
 ```
 
-Axis ranges of the charts follow §3.2 (set them with `setOptions({valueMin, valueMax})` on each update). `MpoProfileCreateView.setupGridAndContextPanel` puts `campoViewers.tabs.root` where it puts `gridContainer` today; on dataset change the view is rebuilt as it is now (`attachLayout`), with a new `CampoViewers`.
+Axis ranges of the charts follow §3.2 (`axisRange`, applied with `setOptions({valueMin, valueMax})` on each update). `hide()` is also called when stage A fails (§4); the next successful stage A brings the tabs back, unless the user closed them. `MpoProfileCreateView.setupGridAndContextPanel` puts `campoViewers.tabs.root` where it puts `gridContainer` today; on dataset change the view is rebuilt as it is now (`attachLayout`), with a new `CampoViewers`.
 
-> To check on a live instance: `onTabRemoved` fires for a pane closed with × and not for `clear()`; if it fires for `clear()` too, `hide()` must set a flag around the call so that the closures are not taken for the user's.
+> `hide()` runs `clear()` under the `clearing` flag, so whatever `onTabRemoved` reports for `clear()`, its removals are not taken for the user's. This matters because `hide()` also runs on every stage A error: without the flag, one error could mark both tabs as closed by the user, and they would not come back until the mode is switched on again. Whether `onTabRemoved` fires for `clear()` at all no longer needs checking.
 
 ---
 
@@ -609,24 +654,33 @@ All computation runs automatically; there is no Recompute button.
 
 | Event | Where it comes from today | What is recomputed |
 |---|---|---|
-| Dataset change | `onDatasetChanged` → `attachLayout` → `editor.setProfile` | stage A + B, viewers rebuilt |
+| Dataset change, view opened | `onDatasetChanged` → `attachLayout` → `setupGridAndContextPanel` | the view calls `campo.start(false)`: new controller, stage A + B, viewers rebuilt |
 | Property added / removed / renamed, column remapped | `MpoProfileEditor.onChanged` | stage A + B |
 | Desirability curve or missing-value handling edited | `MpoProfileEditor.onChanged` (debounced) | stage A + B |
+| Column of a property created by its compute function | `df.onColumnsAdded` | stage A + B |
 | `Correlation-aware` mode switched on | Weighting input | tabs opened, stage A + B |
 | Priority changed (valid value) | Priority input | stage B only |
 | Pin set / removed (valid value) | pin icon, pin input | stage B only |
 | Switched to `Equal` / `Manual` | Weighting input | tabs removed, no computation (§5.1) |
-| RESET | ribbon **Reset** → `resetProfile` | the saved profile is restored with its weighting, priorities and pins; if its mode is `Correlation-aware`, tabs reopen and stage A + B run |
+| RESET | ribbon **Reset** → `resetProfile` | the saved profile is restored with its weighting, priorities and pins; if its mode is `Correlation-aware`, `resetProfile` reopens the tabs and calls `runStageA(true)` |
 
-`MpoProfileEditor.onChanged` fires for every edit, including the weights the controller itself writes. The controller tells the cases apart with a fingerprint of what stage A depends on, and runs stage A only when it changed:
+`editor.setProfile` (used by `attachLayout` and `resetProfile`) rebuilds the rows and fires **no** change event, and `resetProfile` does not go through `attachLayout`. So the two rows that start from it are wired in the view, not through `onChanged`. `runAllComputeFunctions` (called from `setProfile`) adds columns asynchronously and also fires nothing; hence the `onColumnsAdded` row.
+
+`MpoProfileEditor.onChanged` fires for every edit, including the weights the controller itself writes. The controller tells the cases apart with a fingerprint of what stage A depends on, and runs stage A only when it changed. Whether the mapped column exists is part of the key, so a column that appears later is picked up:
 
 ```ts
 /** Everything stage A depends on; weights, priorities and pins are not part of it. */
 function stageAKey(df: DG.DataFrame, profile: DesirabilityProfile, mapping: Record<string, string | null>): string {
-  return df.id + '|' + Object.entries(profile.properties)
-    .map(([name, p]) => `${name}>${mapping[name] ?? name}>${desirabilityKey(p)}`).join('|');
+  return df.id + '|' + Object.entries(profile.properties).map(([name, p]) => {
+    const col = mapping[name] ?? name;
+    return `${name}>${col}>${df.col(col) ? 1 : 0}>${desirabilityKey(p)}`;
+  }).join('|');
 }
 ```
+
+**Modified state.** `listenForProfileChanges` marks the profile modified on every `MPO_SCORE_CHANGED_EVENT` outside `updatingLayout`. A recomputation that gives the same weights must not do that, or a saved `Correlation-aware` profile would open as modified. So `editor.setWeights` compares the new weights with the stored ones at the display precision (`toFixed(3)`) and, if none changed, writes nothing and fires nothing. If they did change (the profile is opened on another dataset), it fires as usual and **Save** becomes active: the stored weights are no longer the ones the score would use.
+
+**Edits to the data in place.** Changing values in the dataset (the same `df.id`) does not rerun stage A: nothing in §4 tracks cell edits, and `MpoCalculator` validates its cache by curve, not by data, so it would return the old desirabilities anyway. The MPO score preview has the same limitation today. Weights follow such edits when stage A next runs for another reason with a cold cache, or when the dataset is selected again. Tracking `df.onDataChanged` would need the cache invalidated per column and a guard against the score and desirability columns the preview itself writes; not in version 1.
 
 ```ts
 // packages/Chem/src/mpo/campo-controller.ts
@@ -636,44 +690,77 @@ import {debounceTime} from 'rxjs/operators';
 class CampoController {
   private baseW: BaseWeights | null = null;
   private keyA = '';
-  private sub: Subscription;
+  private warningsA: string[] = [];   // stage A warnings; stage B shows them whenever it has no error
+  private subs: Subscription[] = [];
 
-  constructor(private view: MpoProfileCreateView, private viewers: CampoViewers,
-              private calculator: MpoCalculator) {
+  /** `activate`: make the Weights tab current when it is first shown (mode switched on, RESET into the mode). */
+  /** `viewers` is null when there is no dataset (the view has no right half then). */
+  constructor(private view: MpoProfileCreateView, private viewers: CampoViewers | null, private activate: boolean) {
     // curve dragging fires many events: debounce stage A
-    this.sub = view.editor.onChanged.pipe(debounceTime(150)).subscribe(() => this.runStageA());
+    this.subs.push(view.editor.onChanged.pipe(debounceTime(150)).subscribe(() => this.runStageA()));
+    if (view.df)
+      this.subs.push(view.df.onColumnsAdded.pipe(debounceTime(150)).subscribe(() => this.runStageA()));
   }
 
   private get names(): string[] { return Object.keys(this.view.profile.properties); }
 
+  private fail(message: string): void {
+    this.baseW = null;
+    this.warningsA = [];
+    this.viewers?.hide();
+    this.view.showCampoMessage(message, 'error');
+  }
+
   runStageA(force = false): void {
     const {df, profile, editor} = this.view;
-    if (!df) return;
+    const names = this.names;
+    if (names.length < 2) {
+      this.keyA = '';
+      editor.setWeights(Object.fromEntries(names.map((nm) => [nm, 1])), names.map(() => 'kept'), null);
+      return this.fail('Needs at least two properties');
+    }
+    if (!df) {
+      this.keyA = '';
+      return this.fail('Select a dataset to compute weights');
+    }
     const key = stageAKey(df, profile, editor.columnMapping);
     if (!force && key === this.keyA) return;
     this.keyA = key;
 
-    const names = this.names;
-    const columns = names.map((nm) => df.col(editor.columnMapping[nm] ?? nm));
+    // a column mapped to by an earlier property is not used again: one D_k per column
+    const seen = new Set<DG.Column>();
+    const columns = names.map((nm) => {
+      const c = df.col(editor.columnMapping[nm] ?? nm);
+      if (!c || seen.has(c)) return null;
+      seen.add(c);
+      return c;
+    });
     const tagged = applyDesirabilityTags(df, Object.fromEntries(names
       .map((nm, k) => [columns[k]?.name, profile.properties[nm]]).filter(([c]) => c)), true);
-    const maps = this.calculator.desirabilities(df, tagged);
+    const calculator = this.view.mpoContextPanel?.calculator ?? new MpoCalculator();
+    const maps = calculator.desirabilities(df, tagged);
     const D = columns.map((c) => (c ? maps[tagged.indexOf(c)].D : null));
 
     const prep = prepareDesirabilityFrame(names, D, df.rowCount);
     const m = prep.active.length;
-    if (m < 2 || prep.rows <= m) {
-      this.view.showCampoMessage('Not enough data to compute correlation-aware weights', 'error');
-      return;
-    }
+    if (prep.rows === 0)
+      return this.fail('No rows with all properties present');
+    if (m < 2 || prep.rows <= m)
+      return this.fail('Not enough data to compute correlation-aware weights');
 
-    this.viewers.showCorr(prep.frame, Array.from(prep.active, (k) => names[k]));
+    this.viewers!.showCorr(prep.frame, Array.from(prep.active, (k) => names[k]));
     const R = pearsonMatrix(prep.cols, prep.rows);
     const inv = robustInverse(R, m);
-    if (!inv) {
-      this.view.showCampoMessage('Correlation matrix is singular', 'error');
-      return;
-    }
+    if (!inv)
+      return this.fail('Correlation matrix is singular');
+
+    this.warningsA = [];
+    if (prep.rows < 10 * m)
+      this.warningsA.push(`Only ${prep.rows} complete rows for ${m} properties: weights may be unreliable.`);
+    if (prep.rows < df.rowCount / 2)
+      this.warningsA.push(`Weights are derived from ${prep.rows} of ${df.rowCount} rows that have every property.`);
+    if (inv.lambda > 0)
+      this.warningsA.push(`Correlation matrix is nearly singular: regularised with λ = ${inv.lambda}.`);
     this.baseW = campoWeights(inv.Rinv, m, prep.active, names.length);
     this.runStageB();
   }
@@ -686,22 +773,27 @@ class CampoController {
     const prio = Float64Array.from(props, (p) => p.priority ?? 1);
     const pinned = Float64Array.from(props, (p) => p.pinnedWeight ?? NaN);
     const {final, error} = finalWeights(this.baseW.base, prio, pinned);
-    this.view.showCampoMessage(error, 'error');
-    if (error) return;
+    if (!final)
+      return this.view.showCampoMessage(error, 'error');
+    this.view.showCampoMessage(this.warningsA.length ? this.warningsA.join(' ') : null, 'warning');
     const status = names.map((_, i) =>
       !Number.isNaN(pinned[i]) ? 'pinned' : final[i] === 0 ? 'dropped' : 'kept');
-    this.viewers.showWeights(weightsFrame(names, this.baseW.raw, final, status), names.length,
-      this.baseW.clipped, false);
-    this.view.editor.setWeights(Object.fromEntries(names.map((nm, i) => [nm, final[i]])), status);
+    this.viewers!.showWeights(weightsFrame(names, this.baseW.raw, final, status), this.baseW.raw, final,
+      this.baseW.clipped, this.activate);
+    this.activate = false;
+    this.view.editor.setWeights(Object.fromEntries(names.map((nm, i) => [nm, final[i]])), status,
+      this.baseW.base);
   }
 
-  dispose(): void { this.sub.unsubscribe(); this.baseW = null; this.keyA = ''; }
+  dispose(): void { this.subs.forEach((s) => s.unsubscribe()); this.baseW = null; this.keyA = ''; }
 }
 ```
 
-- `editor.setWeights` writes `weight` on every property and refreshes the read-only cells without firing a change per property; it then fires `onChanged` and `MPO_SCORE_CHANGED_EVENT` once, so the score, the context panel and the view's "modified" state update as for any edit. The `onChanged` it fires reaches `runStageA`, which returns at once because the key is unchanged.
+- `editor.setWeights(weights, status, base)` writes `weight` on every property and refreshes the read-only cells without firing a change per property; `base` (the base weights before priorities, `null` when there are none) feeds the Priority hint (§5.2). If any weight changed (see **Modified state** above), it then fires `onChanged` and `MPO_SCORE_CHANGED_EVENT` once, so the score, the context panel and the view's "modified" state update as for any edit. The `onChanged` it fires reaches `runStageA`, which returns at once because the key is unchanged.
 - Priority and pin inputs write `priority` / `pinnedWeight` on the property and call `runStageB()`.
-- The controller is created when the mode is switched on and disposed when it is switched off, on dataset change and when the view is detached (`detach()`).
+- `MpoContextPanel.calculator` becomes a public read-only field; the controller reads it on every run (§2.3).
+- **Messages.** One message line (§5.4). An error (stage A or stage B) replaces whatever is shown. Stage A warnings are kept in `warningsA` and shown by every successful stage B, so editing a priority or a pin does not wipe them; a stage B error hides them until it is fixed.
+- The view owns the controller: `campo.start(activate)` disposes the old one, creates a new one and calls `runStageA(true)`. It is called with `activate = true` when the mode is switched on and in `resetProfile` when the restored mode is `Correlation-aware`, and with `false` at the end of `setupGridAndContextPanel` (opening the view, dataset change), so that opening a saved profile keeps the dataset tab current. `attachLayout` returns early when there is no dataset; in `Correlation-aware` mode that branch also calls `campo.start(false)`, with no `CampoViewers`, so the form says why there are no weights. `activate` is used once, by the first stage B that shows the Weights tab. The controller is disposed when the mode is switched off, before the dataset changes and in the view's `detach()`.
 
 ---
 
@@ -716,16 +808,18 @@ All of this is in `MpoProfileEditor` and `createMpoRow`, behind a mode the host 
 - **`Correlation-aware`** — the cells show the final weights (§5.2).
 - In `Equal` and `Correlation-aware` the weight-from-column toggle is hidden and `weightColumn` is removed from the properties: per-row weights would override the computed ones in `reduceMpo`.
 - **Leaving `Manual`**: the manual weights and `weightColumn` values are stashed in the view for the session. **Back to `Manual`**: they are restored from the stash; without a stash (the profile was opened in another mode) Manual starts from the current effective weights.
-- **`Manual → Correlation-aware`**: current manual weights are copied into the priorities (overwriting stored priorities).
-- `d = 1` and aggregations other than `Average`: see §7 and §8.
+- **`Manual → Correlation-aware`**: current manual weights are copied into the priorities (overwriting stored priorities). For a property with `weightColumn` the static `weight` is copied (the per-row column cannot be a priority); `weightColumn` goes to the stash with the manual weights.
+- **`Equal → Correlation-aware`**: priorities are left as stored (absent = 1); in `Equal` every weight is 1, so copying them would only reset priorities to 1.
+- **`Correlation-aware → Equal`** and **back**: `priority` and `pinnedWeight` stay on the properties untouched (§6), so the round trip restores them.
+- `d = 1`: see §7. Aggregations other than `Average`: see §8.
 
 ### 5.2. Priority
 
 - Shown only in `Correlation-aware` mode, as a column between Property and Weight (`createMpoRow` gets a `priorityCell`; the editor's header gets `Priority`).
 - `ui.input.float`, min 0, no max, step 0.1, default 1; stored as the property's `priority` (§6).
 - Validator: not empty → `Enter a priority`; ≥ 0 → `Must be 0 or greater`.
-- For a pinned property the field is disabled, with tooltip `Weight is pinned`.
-- If the base weight of a property is 0 and its priority ≠ 1, the field shows a hint: `No effect: computed weight is 0. Pin the weight instead.` — the priority multiplies the weight, and zero stays zero.
+- For a pinned property the field stays editable: the priority is kept and applies once the weight is unpinned; while it is pinned and the priority ≠ 1 the field shows `Applies when the weight is unpinned.`
+- If the base weight of a property is 0 and its priority ≠ 1, the field shows a hint: `No effect: computed weight is 0. Pin the weight instead.` — the priority multiplies the weight, and zero stays zero. The base weight comes from the third argument of `editor.setWeights` (§4); the final weight cannot tell this case apart from a priority of 0.
 
 ### 5.3. Weight and pinning
 
@@ -733,7 +827,7 @@ All of this is in `MpoProfileEditor` and `createMpoRow`, behind a mode the host 
 
 1. Each row of the Weight column shows the final weight (format `0.000`, read-only) and a `ui.iconFA('thumbtack')` icon.
 2. **Icon tooltip:** `Pin weight` (not pinned) / `Unpin weight` (pinned). A Datagrok tooltip (`ui.tooltip.bind`), not the browser `title`: shown on hover and on keyboard focus, hidden on click; after the click the next hover shows the new state.
-3. **Clicking the icon on an unpinned property:** the number is replaced by a `ui.input.float` field **with no value**, and the field gets focus. Until a value is entered and passes validation, the property is treated as unpinned (the computation does not change).
+3. **Clicking the icon on an unpinned property:** the number is replaced by a `ui.input.float` field holding the current final weight (rounded to 0.001), selected for editing. The property is pinned at once at that value, so the weights do not change until the user edits it.
 4. **Entering a valid value:** `pinnedWeight` is set → stage B: unpinned weights are scaled (§2.8), the Weight column and the Final bar chart are updated.
 5. **Clicking the icon on a pinned property:** `pinnedWeight` is removed, the field is replaced by the number → stage B.
 
@@ -813,12 +907,14 @@ function weightCell(name: () => string, state: PinState, setPin: (name: string, 
 
 `name` is a getter because the editor renames properties in place (`updatePropertyName`); the pin state follows the rename.
 
+**Pins of a loaded profile.** `editor.setProfile` (opening the view, RESET, dataset change) creates a new `PinState`. For every property with `pinnedWeight`, it creates the pin input with that value before the rows are rendered, the same input `toggle()` creates, so the row opens pinned and the validator sees the sum of all pins. Nothing of the previous profile's pins is kept.
+
 ### 5.4. Form messages
 
-Below the property table (`profileEditorContainer`) there is one message line for the mode, built like the view's other messages (`chem-mpo-error-message`):
+The mode has one message at a time, not a line under the property table: a long table hid it below the fold. It is shown as an `exclamation-circle` icon (regular, not solid) right of the **Weighting** input (beside it, not in the input's options): red (`--red-3`) for an error, grey for a warning, with the message in its tooltip; the icon disappears when there is no message. When a message appears (or its kind changes), a warning balloon (`grok.shell.warning`) shows it too; a recomputation that keeps a message does not repeat the balloon, even if the text changes (e.g. the list of constant properties shrinks while the user shapes their curves) (v8):
 
-- errors: `Not enough data…`, `Correlation matrix is singular`, the errors of `finalWeights` — the weights are not applied;
-- warnings: regularisation used (`λ = 0.01`), few complete rows (§7).
+- errors: `Desirability does not vary for …`, `No rows with all properties present`, `Not enough data…`, `Correlation matrix is singular`, the errors of `finalWeights` — the weights are not applied;
+- warnings: regularisation used (`λ = 0.01`), few complete rows (§7), complete rows less than half the dataset (§2.4).
 
 ### 5.5. "Why this weight" tooltip
 
@@ -826,7 +922,7 @@ Hovering (or focusing) a property name in `Correlation-aware` mode shows a toolt
 
 - the property name and its final weight;
 - the share of its desirability explained by the other properties, `R²_i = 1 − 1/R⁻¹[i][i]`;
-- the reason, if any: `Pinned at 0.080.` or `Raw weight −0.08 < 0, so it was set to 0.`; for a constant column: `Constant in this dataset — excluded.`; for an unmapped property: `No column in this dataset — excluded.`;
+- the reason, if any: `Pinned at 0.080.` or `Raw weight −0.08 < 0, so it was set to 0.`; for a constant column: `Constant in this dataset — excluded.`; for an unmapped property: `No column in this dataset — excluded.`; for a second property on the same column: `Column <name> is already used by <property> — excluded.` (§7; `WhyInput` gets a `sharedWith: Map<number, number>` next to `unmapped`);
 - the three most correlated properties (by |r|) with their r values; the demo shows each with a small red (positive) or blue (negative) bar.
 
 ```ts
@@ -905,27 +1001,32 @@ Export and import go through `toPlainProfile` / `parseMpoProfile` and carry the 
 
 | Case | Behaviour |
 |---|---|
-| `d = 1` | `Correlation-aware` has nothing to compute: selecting it shows `Needs at least two properties` and keeps the weight at 1 |
+| `d = 1` | `Correlation-aware` has nothing to compute: `runStageA` checks it first, shows `Needs at least two properties`, sets the weight to 1 and shows no tabs |
 | Property with no column in the dataset | excluded from `R`, weight 0, status `dropped`, reason in the name tooltip |
+| Two properties mapped to the same column | the first one in profile order uses the column; the others are excluded from `R`, weight 0, status `dropped`, tooltip `Column <name> is already used by <property> — excluded.` (otherwise `R` gets two identical columns, r = 1) |
+| Column created by a compute function | until the column exists the property is treated as unmapped; stage A reruns when it is added (§4) |
 | Constant desirability column | excluded from `R` and from the Correlation plot, weight 0, status `dropped`, reason in the name tooltip |
-| Fewer than 2 properties in `R` | error `Not enough data…`, tabs are not shown, weights keep their last values |
+| Fewer than 2 properties in `R` | error `Not enough data…`, tabs are removed (`viewers.hide()`), weights keep their last values |
+| No complete rows | error `No rows with all properties present`, tabs are removed, weights keep their last values |
 | Few complete rows (`rows < 10·m`) | computation runs; the form message warns that weights may be unreliable |
-| `rows ≤ m` | `R` is singular → error, weights keep their last values |
+| Complete rows less than half the dataset | computation runs; the form message names how many rows the weights come from (§2.4) |
+| `rows ≤ d` | `prepareDesirabilityFrame` returns no active columns → error `Not enough data…`, weights keep their last values |
 | Cholesky failed / `κ > 10⁶` | regularisation `R_λ` (§2.6); the fact and `λ` are shown in the form message |
 | No negative raw weight | Raw bar chart is not shown |
 | Sum of pinned = 1 | all unpinned weights are 0 (allowed) |
 | Sum of pinned < 1, all unpinned weights × priorities = 0 | form error, result not applied |
 | All priorities of unpinned properties = 0 and no pins | form error |
-| No dataset selected | the profile view shows only the editor (as today); `Correlation-aware` shows `Select a dataset to compute weights` and keeps the stored weights |
+| No dataset selected | the profile view shows only the editor (as today); the view still starts the controller in `Correlation-aware` mode, and `runStageA` shows `Select a dataset to compute weights` and keeps the stored weights |
+| Values edited in place | weights are not recomputed (§4, **Edits to the data in place**) |
 | More than `MAX_MPO_PROPERTIES` (10) properties | no limit for caMPO; 10 is only the limit of auto-population |
 
 ---
 
-## 8. Aggregation constraint
+## 8. Aggregations
 
-caMPO weights are derived for a weighted average. The aggregations are `Average` (default), `Sum`, `Product`, `Geomean`, `Min`, `Max` (`WEIGHTED_AGGREGATIONS`); with any of them other than `Average` the weights no longer mean what caMPO computed (`Product`, `Min` and `Max` use them as exponents).
+caMPO weights are derived for a weighted average. The aggregations are `Average` (default), `Sum`, `Product`, `Geomean`, `Min`, `Max` (`WEIGHTED_AGGREGATIONS`); with any of them other than `Average` the weights mean less than caMPO computed (`Product`, `Min` and `Max` use them as exponents; `Geomean` averages `log dᵢ`, while the weights come from the correlations of `dᵢ`).
 
-`ui.input.choice` cannot disable one item, so the mode is not blocked. Whenever Weighting is `Correlation-aware` and Aggregation is not `Average` — whichever of the two was changed last — a warning is shown at the bottom of the toolbar: `Correlation-aware weights are derived for a weighted average. With this aggregation they no longer remove redundancy.` with two buttons: **Switch to Average** (sets `editor.aggregationInput`) and **Use Manual** (switches Weighting to `Manual`). Until the user chooses, the score is computed with the selected aggregation and the current weights.
+**Decision (v8):** `Correlation-aware` is allowed with every aggregation. The weights are computed the same way whatever the aggregation, and the score uses them with the selected one. The banner with **Switch to Average** / **Use Manual** proposed in v7 is dropped; instead, when the user (or the AI tools) switches Weighting to `Correlation-aware` while Aggregation is not `Average`, or picks another aggregation in that mode, a warning balloon is shown (`grok.shell.warning`): `Correlation-aware weights are derived for Average. With <aggregation>, they reduce redundancy only approximately.` Opening a saved profile shows none.
 
 ---
 
@@ -944,7 +1045,16 @@ The math of §2 is in `libraries/statistics/src/mpo/campo.ts`; its tests and the
 **Other:**
 
 - `pearsonMatrix`: on complete rows, values match `DG.CorrelationPlot.getCorrelation` within `1e-6` (this also guards that **Correlations** shows the matrix the weights come from); the matrix is symmetric with 1 on the diagonal.
-- `MpoCalculator.desirabilities`: returns the arrays `compute()` caches (same object on a second call with an unchanged curve); missing values of a `double` column come out as `NaN` under `exclude` and `skip`, as the default score under `default`.
+- `MpoCalculator.desirabilities`: returns the arrays `compute()` caches (same object on a second call with an unchanged curve and no `release()` in between); missing values of a `double` column come out as `NaN` under `exclude` and `skip`, as the default score under `default`.
+- `prepareDesirabilityFrame` with no complete rows returns no active columns and no `NaN`.
+- Two properties mapped to one column: the second is `dropped`, `R` has the column once.
+- A compute-function property whose column is added after stage A gets a weight once the column appears.
+- Opening a saved `Correlation-aware` profile on its dataset leaves it unmodified (Save inactive); on another dataset with different weights it is modified.
+- RESET in `Correlation-aware` mode restores the saved pins (inputs filled) and recomputes; a stage A error removes the Correlations and Weights tabs, and the next successful stage A brings them back (a removal by `hide()` is not taken for the user's ×).
+- Switching the mode on makes Weights current; opening a saved `Correlation-aware` profile leaves the dataset tab current.
+- A regularisation warning survives a priority or pin edit; a stage B error replaces it, and fixing the error brings it back.
+- `d = 1` → `Needs at least two properties`, weight 1; no dataset → `Select a dataset to compute weights`.
+- The Priority hint appears for a property with base weight 0 and priority ≠ 1, and not for one with priority 0.
 - `cholesky`: returns `null` on a non-positive-definite matrix; `robustInverse` finds a working `λ`.
 - `finalWeights`: the example from §2.8; priority 2 on one property; sum of pinned > 1 → error; = 1 → unpinned are 0.
 - A constant column and an unmapped property are excluded without exceptions and without `NaN` in final weights.
@@ -968,7 +1078,31 @@ Questions 1, 2 and 4 were checked with `campo_corrplot_check.js` on 2026-10-26.
 1. ~~**Updating the `table` field of Correlation plot.**~~ Resolved. `DG.CorrelationPlot.getCorrelation(c1, c2)` computes the value synchronously on each call: correct in an inactive tab, right after an in-place edit and right after `dataFrame` is replaced, so there is nothing to wait for. It has no cache (1.5 s for 20×20 on 10⁵ rows), so `R` is computed by our own code (§2.5). Also found: the viewer uses pairwise deletion of missing values, returns `NaN` for a constant column, honours `correlationType`, and does not appear to apply `df.filter`. That last point is not confirmed: the script did not compare against the unfiltered data, and it does not matter here because the desirability frame has no filter.
 2. ~~**Structure of `table`.**~~ Resolved: there is no matrix to read. `table` is the name of the bound table (`null` for a viewer built in code).
 3. ~~**Docking `RIGHT` inside a `FILL` tab.**~~ No longer applies: the profile view has no dock manager in Manual mode, and the viewers live in a tab control (§3.3).
-4. ~~**Closing tabs.**~~ Resolved for docked viewers: `grok.events.onViewerClosed` gives `args.args.viewer` (match by `.dart`), `dockManager.onClosed` gives `viewer.root`; `close()` on a viewer that was never docked throws. With the tab control (§3.3) the signal is `TabControl.onTabRemoved`; what it reports for `clear()` is still to check.
+4. ~~**Closing tabs.**~~ Resolved for docked viewers: `grok.events.onViewerClosed` gives `args.args.viewer` (match by `.dart`), `dockManager.onClosed` gives `viewer.root`; `close()` on a viewer that was never docked throws. With the tab control (§3.3) the signal is `TabControl.onTabRemoved`; `hide()` guards `clear()` with a flag, so what it reports for `clear()` does not matter.
 5. **Applying the profile to other tables.** Proposed (§1.2, §6): the stored effective weights are used as they are; weights are recomputed only in the profile view, on its dataset. To confirm.
 6. **Pin semantics.** Version 1 uses simple scaling (§2.8). Consider conditional re-optimisation in version 2.
 7. **Manual weights after a save in another mode.** With `weight` holding the effective weight (§6), the manual weights survive a mode switch only within the session (§5.1). If they must survive a save in `Equal` / `Correlation-aware` mode, add `manualWeight` to the property.
+8. **AI function on a pinned property.** `setMpoPropertyWeight` refuses in `Correlation-aware` mode (§1.2). For that mode it could set `pinnedWeight` instead, which is what a user does by hand; or `pinMpoWeight` stays the only way. To decide.
+9. **Rows of the weights vs rows of the score.** Weights come from complete rows, the score under `skip` uses every row (§2.4). Version 1 accepts this and warns below half the dataset; whether the threshold is right, and whether `skip` properties should be correlated on pairwise rows with a nearest positive-definite correction instead, is open.
+
+---
+
+## 11. Implementation notes
+
+Implemented on 2026-10-27 (branch `vmakarichev/chem-ca-mpo`). The math is in `packages/Chem/src/mpo/campo-math.ts` for now, not in `libraries/statistics` as §1.1 says; it has no platform imports and moves to a library as is. Where the code differs from the text above:
+
+- **Migration.** No `0002_weighting.sql`: a new optional column is an additive change that the domain-schema deploy applies itself. `schema.json` is at 1.2.0 and `src/generated/db.ts` is regenerated.
+- **Flat curves.** When fewer than two desirabilities vary, the error names the properties with flat curves (`Desirability does not vary for …: shape their curves to compute weights`) instead of `Not enough data…`: a profile auto-populated from a dataset starts with flat curves (§7).
+- **Computed weights in other hosts** are disabled, not read-only: a float input with a range has a slider that `readOnly` leaves draggable (§1.2).
+- **"Why this weight" tooltip** is on the weight value and on the property cell around the name input; the name input keeps the hover for its own validation tooltip (§5.5).
+- **`editor.setWeights(weights, base)`** takes no statuses; the editor reads pins from the properties (§4).
+- **Stage B right after an edit.** A priority or pin edit, and every AI function, first reruns stage A when its key is stale (`CampoController.update()`), so a rename or deletion inside the stage A debounce cannot reach stage B with old names (§4).
+- **Splitters.** The panel's splitters are flex-share splitters in `campo-viewers.ts` (`flexSplit`), not `ui.splitV` / `ui.splitH`: those fix pixel sizes when first inserted into the document, which happens before the dock has laid the panel out, so the panes stayed small.
+- **Docked panel.** One panel (Correlation plot over both charts, in splitters) is docked `FILL` on the grid of a detached table view in the right half (§3), not shown in a tab control. `CampoViewers` owns the view; a detached view has no dock manager until it is added, so the view is added when its root enters the document, and shows requested before that are replayed then. Data updates change the viewers in place; Raw appearing or going only rebuilds the charts' half of the panel. The user's × is tracked through `dockManager.onClosed`. §3.3's code shows the earlier tab control.
+- **Charts** are titled `Raw` and `Final`. The titles are drawn by `CampoViewers` above each chart, not by the viewers, so that they carry tooltips with the explanation (§3). When the chart is shown alone (no negative raw weights), it is titled `Weights`, with a tooltip that leaves out the clipping of negative weights.
+- **Detached view layout.** A viewer root is `inline-flex`; in a block slot it sits on the text baseline and its bottom (the value axis) is clipped, so the slots are `display: flex`. The `div.ui-box > :not(...)` rule gives the view `overflow: auto !important`, and a pixel of rounding then added scrollbars under the tabs, so `overflow: hidden` is set inline with `important`. The JS `TableView` has no `_handleResize`; the dock follows the view's size through `DG.DockView.prototype._handleResize`.
+- **Messages** of the mode are the icon next to Weighting and a balloon (§5.4, v8), and the aggregation warning is a balloon (§8, v8); there is no message line under the property table and no banner.
+- **Weight column** is 96 px in Correlation-aware mode: the value sits in a box the size of the pin input, so it lines up with the row's inputs and the pin icon does not move on pinning. The header rules use `> div.` selectors because other packages bundle older copies of the editor's CSS whose `:nth-child` header rules would win otherwise.
+- **Pins over 1** stay on the properties and stage B reports the error; only a pin whose own value is not a weight is treated as unpinned (§5.3). `setMpoPriority` and `pinMpoWeight` return `success: false` with the stage B error.
+- **Statistics library** 1.12.17: `MpoWeighting`, `priority`, `pinnedWeight`, `weighting`, `MpoCalculator.desirabilities()`, the editor's weighting UI.
+- **Tests** (`src/tests/campo-tests.ts`) cover §9 except the view-level cases (opening, RESET, tabs, messages), which were checked by hand on a local stand.

@@ -468,19 +468,7 @@ export class MpoCalculator {
       (dataFrame.col(profileName) ?? DG.Column.float(profileName, rowCount));
 
     const hoisted = hoistColumns(dataFrame, columns);
-    const maps: ColumnDesirability[] = [];
-    for (const h of hoisted) {
-      const lineKey = desirabilityKey(h.template);
-      const key = `${dataFrame.id}|${h.col.name}`;
-      const hit = this.cache.get(key);
-      if (hit && hit.lineKey === lineKey && hit.D.length === rowCount) {
-        maps.push({D: hit.D, state: hit.state});
-        continue;
-      }
-      const m = mapColumnDesirability(h, rowCount);
-      this.cache.set(key, {lineKey, D: m.D, state: m.state});
-      maps.push(m);
-    }
+    const maps = this.mapHoisted(dataFrame, hoisted, rowCount);
 
     const {scores, minPositive} = reduceMpo(maps, hoisted, aggregation, rowCount);
     resultColumn.setRawData(scores); // notify=true: refreshes viewers
@@ -490,6 +478,24 @@ export class MpoCalculator {
       buildDesirabilityColumns(columns, maps, profileName, rowCount) : undefined;
 
     return {scoreColumn: resultColumn, desirabilityColumns};
+  }
+
+  /// Desirability arrays of the given columns (tagged with 'desirabilityTemplate'), from the same cache compute() uses.
+  desirabilities(dataFrame: DG.DataFrame, columns: DG.Column[]): ColumnDesirability[] {
+    return this.mapHoisted(dataFrame, hoistColumns(dataFrame, columns), dataFrame.rowCount);
+  }
+
+  private mapHoisted(dataFrame: DG.DataFrame, hoisted: HoistedColumn[], rowCount: number): ColumnDesirability[] {
+    return hoisted.map((h) => {
+      const lineKey = desirabilityKey(h.template);
+      const key = `${dataFrame.id}|${h.col.name}`;
+      const hit = this.cache.get(key);
+      if (hit && hit.lineKey === lineKey && hit.D.length === rowCount)
+        return {D: hit.D, state: hit.state};
+      const m = mapColumnDesirability(h, rowCount);
+      this.cache.set(key, {lineKey, D: m.D, state: m.state});
+      return m;
+    });
   }
 
   /// Drops all cached desirability arrays. Call on dialog close / dataframe switch.
