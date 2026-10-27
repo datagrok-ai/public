@@ -6,9 +6,7 @@ import {Subscription} from 'rxjs';
 
 import {
   DesirabilityProfile,
-  MPO_WEIGHTINGS,
   DEFAULT_AGGREGATION,
-  MPO_WEIGHTING_CAPTIONS,
   MpoCalculator,
   MpoWeighting,
   getMpoScoreColumnName,
@@ -44,8 +42,8 @@ const FIELD_DESCRIPTIONS: Record<string, string> = {
   'Weighting': 'How property weights are set',
 };
 
-const weightingOf = (caption: string | null): MpoWeighting =>
-  MPO_WEIGHTINGS.find((w) => MPO_WEIGHTING_CAPTIONS[w] === caption) ?? 'manual';
+// a message that only updates its numbers or its list of properties is the same message
+const messageTopic = (text: string) => text.replace(/ for .*|[\d.]+/g, '');
 
 export class MpoProfileCreateView implements CampoHost {
   static readonly PROFILE_ID_TAG = 'chem-mpo-profile-id';
@@ -78,7 +76,6 @@ export class MpoProfileCreateView implements CampoHost {
   profileViewContainer!: HTMLDivElement;
   methodInput?: DG.ChoiceInput<string | null>;
   datasetInput?: DG.InputBase;
-  weightingInput!: DG.ChoiceInput<string | null>;
   campo: CampoController | null = null;
   saved: MpoProfileRef | null = null;
   saveButton: HTMLElement | null = null;
@@ -93,7 +90,7 @@ export class MpoProfileCreateView implements CampoHost {
   private campoAlert = ui.iconFA('exclamation-circle', null);
   private campoMessage: {text: string, kind: CampoMessageKind} | null = null;
   private campoViewers: CampoViewers | null = null;
-  /** Manual weights set aside while another weighting mode is on, for the session. */
+  // manual weights set aside while another weighting mode is on
   private manualStash: Record<string, {weight: number, weightColumn?: string}> | null = null;
   private contentEl!: HTMLDivElement;
 
@@ -208,19 +205,12 @@ export class MpoProfileCreateView implements CampoHost {
     controls.push(field(this.datasetInput));
     this.aggregationField = field(this.editor.aggregationInput);
     this.subs.push(this.editor.aggregationInput.onInput.subscribe(() => this.warnAggregation()));
-    this.weightingInput = ui.input.choice('Weighting', {
-      items: MPO_WEIGHTINGS.map((w) => MPO_WEIGHTING_CAPTIONS[w]),
-      value: MPO_WEIGHTING_CAPTIONS[this.editor.weighting],
-      nullable: false,
-      onValueChanged: (v) => {
-        if (!this.suppressInputHandlers)
-          this.setWeighting(weightingOf(v));
-      },
-    });
+    this.subs.push(this.editor.onWeightingSelected.subscribe((mode) => this.setWeighting(mode)));
     this.campoAlert.classList.add('chem-mpo-campo-alert', 'chem-mpo-d-none');
     ui.tooltip.bind(this.campoAlert, () => this.campoMessage?.text ?? null);
-    this.weightingField = field(this.weightingInput);
-    this.weightingField.prepend(ui.divH([this.weightingInput.root, this.campoAlert], 'chem-mpo-campo-weighting'));
+    const weightingInput = this.editor.weightingInput;
+    this.weightingField = field(weightingInput);
+    this.weightingField.prepend(ui.divH([weightingInput.root, this.campoAlert], 'chem-mpo-campo-weighting'));
     controls.push(ui.divH([this.aggregationField, this.weightingField], 'chem-profile-fields-row'));
 
     this.saveButton = ui.button('Save', () => this.save());
@@ -478,7 +468,6 @@ export class MpoProfileCreateView implements CampoHost {
       this.descEl.innerText = this.profile.description;
       this.updateDescPlaceholder();
       this.editor.setProfile(this.profile);
-      this.syncWeightingInput();
     } finally {
       this.updatingLayout = false;
     }
@@ -496,7 +485,6 @@ export class MpoProfileCreateView implements CampoHost {
     return this.mpoContextPanel?.calculator ?? null;
   }
 
-  /** Switches the weighting mode, moving the weights between modes. */
   setWeighting(mode: MpoWeighting): void {
     const from = this.editor.weighting;
     if (from === mode)
@@ -530,9 +518,6 @@ export class MpoProfileCreateView implements CampoHost {
     if (mode === 'manual')
       this.manualStash = null;
 
-    // when the input itself is the caller, writing it back from its own change handler throws
-    if (weightingOf(this.weightingInput.value) !== mode)
-      this.syncWeightingInput(mode);
     this.editor.setWeighting(mode);
     if (mode === 'correlation') {
       this.campoViewers?.open();
@@ -542,20 +527,13 @@ export class MpoProfileCreateView implements CampoHost {
       this.stopCampo();
   }
 
-  /** Correlation-aware weights are derived for a weighted average; other aggregations are allowed, with a warning. */
+  // the weights are derived for a weighted average; other aggregations are allowed, with a warning
   warnAggregation(): void {
     const aggregation = this.editor.aggregationInput.value ?? DEFAULT_AGGREGATION;
     if (this.editor.weighting === 'correlation' && aggregation !== DEFAULT_AGGREGATION) {
       grok.shell.warning(`Correlation-aware weights are derived for ${DEFAULT_AGGREGATION}. ` +
         `With ${aggregation}, they reduce redundancy only approximately.`);
     }
-  }
-
-  private syncWeightingInput(mode: MpoWeighting = this.editor.weighting): void {
-    const suppressed = this.suppressInputHandlers;
-    this.suppressInputHandlers = true;
-    this.weightingInput.value = MPO_WEIGHTING_CAPTIONS[mode];
-    this.suppressInputHandlers = suppressed;
   }
 
   private startCampo(): void {
@@ -571,10 +549,10 @@ export class MpoProfileCreateView implements CampoHost {
     this.showCampoMessage(null, 'error');
   }
 
-  /** The message stays in the tooltip of the icon next to Weighting; the balloon shows only when one appears, not
-   *  on every recomputation that keeps it. */
+  // the icon keeps the latest message; the balloon shows only a new one
   showCampoMessage(message: string | null, kind: CampoMessageKind): void {
-    if (message && this.campoMessage?.kind !== kind)
+    const prev = this.campoMessage;
+    if (message && (prev?.kind !== kind || messageTopic(prev.text) !== messageTopic(message)))
       grok.shell.warning(message);
     this.campoMessage = message ? {text: message, kind} : null;
     this.campoAlert.classList.toggle('chem-mpo-d-none', !message);
@@ -595,7 +573,6 @@ export class MpoProfileCreateView implements CampoHost {
       this.updatingLayout = true;
       try {
         this.editor.setProfile(this.profile);
-        this.syncWeightingInput();
       } finally {
         this.updatingLayout = false;
       }

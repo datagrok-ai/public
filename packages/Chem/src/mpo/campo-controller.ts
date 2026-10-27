@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {Subscription} from 'rxjs';
+import {Subscription, merge} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 
 import {DesirabilityProfile, MpoCalculator, desirabilityKey} from '@datagrok-libraries/statistics/src/mpo/mpo';
@@ -37,7 +37,6 @@ export function stageAKey(df: DG.DataFrame, profile: DesirabilityProfile,
   }).join('|');
 }
 
-/** The last stage A result, kept for the "why this weight" tooltip and the AI state. */
 interface StageA {
   names: string[];
   R: Float64Array;
@@ -70,14 +69,15 @@ export class CampoController {
   private warningsA: string[] = [];
   private subs: Subscription[] = [];
 
-  /** `viewers` is null without a dataset. */
   constructor(private host: CampoHost, private viewers: CampoViewers | null) {
     const editor = host.editor;
     // curve dragging fires many events
     this.subs.push(editor.onChanged.pipe(debounceTime(DEBOUNCE_MS)).subscribe(() => this.runStageA()));
     this.subs.push(editor.onWeightingInputChanged.subscribe(() => this.update()));
-    if (host.df)
-      this.subs.push(host.df.onColumnsAdded.pipe(debounceTime(DEBOUNCE_MS)).subscribe(() => this.runStageA()));
+    if (host.df) {
+      this.subs.push(merge(host.df.onColumnsAdded, host.df.onColumnsRemoved).pipe(debounceTime(DEBOUNCE_MS))
+        .subscribe(() => this.runStageA()));
+    }
     editor.explainWeight = (name) => this.why(name);
   }
 
@@ -207,7 +207,6 @@ export class CampoController {
     };
   }
 
-  /** The "why this weight" tooltip of a property name. */
   private why(name: string): HTMLElement | null {
     const a = this.stageA;
     const i = a?.names.indexOf(name) ?? -1;

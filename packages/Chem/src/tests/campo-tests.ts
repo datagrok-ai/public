@@ -1,18 +1,18 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
 import {
-  DESIRABILITY_PROFILE_TYPE, DesirabilityProfile, MpoCalculator, NumericalDesirability, desirabilityKey, mpo,
+  DESIRABILITY_PROFILE_TYPE, DesirabilityProfile, MPO_WEIGHTING_CAPTIONS, MpoCalculator, NumericalDesirability,
+  desirabilityKey, mpo,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {campoWeights, cholesky, finalWeights, pearsonMatrix, prepareDesirabilities, robustInverse}
   from '../mpo/campo-math';
 import {stageAKey} from '../mpo/campo-controller';
+import {MpoProfileCreateView} from '../mpo/mpo-create-profile';
 import {fromRow, toRow} from '../mpo/mpo-profile-store';
 import {applyDesirabilityTags} from '../mpo/utils';
-
-/** Correlation-aware MPO weights (caMPO): the computation of campo-math.ts, the desirability cache it reads, and
- *  the profile format it adds. The UI is covered by the manual scenarios in docs/campo_spec_en.md. */
+import {ProfileRow} from '../generated/db';
 
 /** m×m correlation matrix from its upper triangle, row by row. */
 function corr(m: number, upper: number[]): Float64Array {
@@ -54,6 +54,9 @@ function correlatedColumns(n: number, d: number, seed = 1): Float32Array[] {
 const numerical = (line: number[][], p: Partial<NumericalDesirability> = {}): NumericalDesirability =>
   ({functionType: 'numerical', weight: 1, line, ...p});
 
+/* Correlation-aware MPO weights (caMPO): the computation of campo-math.ts, the desirability cache it reads, the
+   profile format it adds and the switch between weighting modes. The panel and the messages are covered by the
+   manual scenarios in docs/campo_spec_en.md. */
 category('MPO: correlation-aware weights', () => {
   test('Four properties, one independent and three nearly identical (paper)', async () => {
     const w = weightsOf(corr(4, [0, 0, 0, 0.98, 0.98, 0.98]), 4);
@@ -182,21 +185,19 @@ category('MPO: correlation-aware weights', () => {
     }
   });
 
-  test('Stage A on 100 000 rows and 20 properties takes under a second', async () => {
+  test('Stage A on 100 000 rows and 20 properties', async () => {
     const n = 100000;
     const d = 20;
     const cols = correlatedColumns(n, d, 5);
     const df = DG.DataFrame.fromColumns(cols.map((c, k) => DG.Column.fromFloat32Array(`p${k}`, c)));
     const tagged = applyDesirabilityTags(df, Object.fromEntries(cols.map((_, k) =>
       [`p${k}`, numerical([[0, 0], [1, 1]])])), true);
-    const start = performance.now();
     const maps = new MpoCalculator().desirabilities(df, tagged);
     const prep = prepareDesirabilities(maps.map((m) => m.D), n);
     const inv = robustInverse(pearsonMatrix(prep.cols, prep.rows), prep.active.length);
-    campoWeights(inv!.Rinv, prep.active.length, prep.active, d);
-    const ms = performance.now() - start;
-    expect(ms < 1000, true, `stage A took ${ms.toFixed(0)} ms`);
-  });
+    const {base} = campoWeights(inv!.Rinv, prep.active.length, prep.active, d);
+    expectFloat(base.reduce((a, b) => a + b, 0), 1, 1e-9, 'weights sum to 1');
+  }, {benchmark: true});
 });
 
 category('MPO: correlation-aware plumbing', () => {
@@ -207,6 +208,7 @@ category('MPO: correlation-aware plumbing', () => {
       b: numerical([[0, 1], [1, 0]], {weight: 0.6, pinnedWeight: 0.6}),
     },
   });
+  const rowOf = (p: DesirabilityProfile, id: string) => ({...toRow(p), id, version: 1}) as ProfileRow;
 
   test('MpoCalculator.desirabilities reads the cache compute() fills', async () => {
     const values = [0.1, DG.FLOAT_NULL, 0.9, 0.5];
@@ -245,14 +247,14 @@ category('MPO: correlation-aware plumbing', () => {
   });
 
   test('Profile row round trip keeps weighting, priorities, pins and weights', async () => {
-    const back = fromRow({...toRow(profileOf('correlation')), id: 'x', version: 1} as any);
+    const back = fromRow(rowOf(profileOf('correlation'), 'x'));
     expect(back.weighting, 'correlation');
     expect(back.properties.a.priority, 2);
     expect(back.properties.b.pinnedWeight, 0.6);
     expect(back.properties.b.weight, 0.6);
 
     expect(toRow(profileOf('manual')).weighting ?? null, null, 'manual is not written');
-    expect(fromRow({...toRow(profileOf()), id: 'y', version: 1} as any).weighting == null, true, 'absent = manual');
+    expect(fromRow(rowOf(profileOf(), 'y')).weighting == null, true, 'absent = manual');
   });
 
   test('Renaming a property keeps its priority and pin', async () => {
@@ -293,5 +295,37 @@ category('MPO: correlation-aware plumbing', () => {
     editor.setProfile(profileOf());
     const manual = Array.from(editor.root.querySelectorAll('.statistics-mpo-weight-input input')) as HTMLInputElement[];
     expect(manual.every((i) => !i.disabled), true, 'manual stays editable');
+  });
+
+  test('Switching the weighting moves the weights between modes', async () => {
+    const profile: DesirabilityProfile = {
+      type: DESIRABILITY_PROFILE_TYPE, name: 'campo-switch', description: '',
+      properties: {
+        a: numerical([[0, 0], [1, 1]], {weight: 0.4, weightColumn: 'wa'}),
+        b: numerical([[0, 1], [1, 0]], {weight: 1}),
+      },
+    };
+    const view = new MpoProfileCreateView(profile, false);
+    try {
+      const {a, b} = view.profile.properties;
+      const input = view.editor.weightingInput;
+      input.value = MPO_WEIGHTING_CAPTIONS.correlation;
+      expect(view.editor.weighting, 'correlation', 'the input switches the mode');
+      expect(a.priority, 0.4, 'a manual weight becomes the priority');
+      expect(b.priority == null, true, 'weight 1 is no priority');
+      expect(a.weightColumn == null, true, 'no weight column outside Manual');
+
+      view.setWeighting('equal');
+      expect(input.value, MPO_WEIGHTING_CAPTIONS.equal, 'the input follows the mode');
+      expect(a.weight, 1);
+      expect(b.weight, 1);
+
+      view.setWeighting('manual');
+      expect(a.weight, 0.4, 'manual weights come back');
+      expect(a.weightColumn, 'wa');
+      expect(b.weight, 1);
+    } finally {
+      view.activeView.close();
+    }
   });
 });

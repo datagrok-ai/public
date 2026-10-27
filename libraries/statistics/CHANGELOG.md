@@ -2,7 +2,7 @@
 
 ## 1.12.17 (2026-10-27)
 
-* MPO: Profiles carry a weighting mode (`weighting`) and per-property `priority` and `pinnedWeight`; `MpoProfileEditor` shows priorities, pins and read-only computed weights; `MpoCalculator.desirabilities()` returns the cached desirability arrays
+* MPO: Profiles carry a weighting mode (`weighting`) and per-property `priority` and `pinnedWeight`; `MpoProfileEditor` has a Weighting input (`weightingInput`, `onWeightingSelected`) and shows priorities, pins and read-only computed weights; `MpoCalculator.desirabilities()` returns the cached desirability arrays
 
 ## 1.12.16 (2026-10-20)
 

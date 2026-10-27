@@ -53,7 +53,7 @@ export function fromRow(r: ProfileRow): MpoProfileInfo {
     name: r.name,
     description: r.description ?? '',
     aggregation: r.aggregation,
-    ...(r.weighting && r.weighting !== 'manual' ? {weighting: r.weighting} : {}),
+    weighting: r.weighting,
     properties: r.properties as DesirabilityProfile['properties'],
   });
   return {...profile, id: r.id, rowVersion: r.version};

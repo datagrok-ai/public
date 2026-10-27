@@ -5,13 +5,12 @@ import {Subscription} from 'rxjs';
 
 const CORRELATIONS_TITLE = 'Correlations';
 const RAW_TITLE = 'Raw';
-const PANEL_TITLE = 'Weights';
 const FINAL_TITLE = 'Final';
 const WEIGHTS_TITLE = 'Weights';
 
 export type WeightStatus = 'kept' | 'pinned' | 'dropped';
 
-// Display-only stub so a zero bar keeps its row on the chart; scores and tooltips use the real value.
+// Display-only stub so a zero bar keeps its row on the chart; the score and the "why" tooltip use the real value.
 const ZERO_BAR = 0.004;
 
 const SIGN_COLORS = {positive: 0xFF1F77B4, negative: 0xFFFF7F0E};
@@ -123,7 +122,7 @@ function flexSplit(a: HTMLElement, b: HTMLElement, vertical: boolean): HTMLEleme
 }
 
 /** The right half of the profile view: a detached table view of the dataset. In Correlation-aware mode one panel is
- *  docked as a tab over its grid: the Correlation plot above, the Computed and Applied charts side by side below. */
+ *  docked as a tab over its grid: the Correlation plot above, the weight charts below. */
 export class CampoViewers {
   readonly view: DG.TableView;
   private corr: DG.Viewer | null = null;
@@ -180,7 +179,7 @@ export class CampoViewers {
     if (this.docked)
       return;
     const dm = this.view.dockManager;
-    dm.dock(this.panel, DG.DOCK_TYPE.FILL, dm.findNode(this.view.grid.root) ?? null, PANEL_TITLE);
+    dm.dock(this.panel, DG.DOCK_TYPE.FILL, dm.findNode(this.view.grid.root) ?? null, WEIGHTS_TITLE);
     this.docked = true;
   }
 
@@ -215,8 +214,13 @@ export class CampoViewers {
         title: 'Equal', color: '#d62728', style: 'dashed',
       });
       const hadRaw = !!this.rawChart;
-      this.rawChart = clipped ? showBarChart(this.rawChart, df,
-        barChartOptions('raw', 'sign', RAW_TITLE, axisRange(raw, true))) : null;
+      if (clipped) {
+        this.rawChart = showBarChart(this.rawChart, df,
+          barChartOptions('raw', 'sign', RAW_TITLE, axisRange(raw, true)));
+      } else {
+        this.rawChart?.detach();
+        this.rawChart = null;
+      }
       if (hadRaw !== !!this.rawChart || !this.chartsSlot.firstChild) {
         ui.empty(this.chartsSlot);
         this.chartsSlot.append(this.rawChart ? flexSplit(chartPane(this.rawChart, RAW_TITLE, RAW_TOOLTIP),
@@ -231,6 +235,8 @@ export class CampoViewers {
     ui.empty(this.corrSlot);
     ui.empty(this.chartsSlot);
     this.docked = false;
+    for (const viewer of [this.corr, this.rawChart, this.finalChart])
+      viewer?.detach();
     this.corr = this.rawChart = this.finalChart = null;
   }
 

@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {Subject, Subscription} from 'rxjs';
 import {
-  DEFAULT_AGGREGATION, WEIGHTED_AGGREGATIONS_LIST, MPO_WEIGHTING_CAPTIONS,
+  DEFAULT_AGGREGATION, WEIGHTED_AGGREGATIONS_LIST, MPO_WEIGHTINGS, MPO_WEIGHTING_CAPTIONS,
   DesirabilityMode, DesirabilityProfile, MpoWeighting, PropertyDesirability, WeightedAggregation,
   createDefaultCategorical, createDefaultNumerical, isMpoNumericColumn, isNumerical, migrateDesirability,
   rangeNumericalToColumn, applyDesirabilityPatch,
@@ -29,7 +29,6 @@ interface RowCtx {
   nameInput?: DG.InputBase<string>;
   nameInputSub?: Subscription;
   name: string;
-  /** Correlation-aware weighting: the pin input, present while the property is being pinned. */
   pinInput?: DG.InputBase<number | null>;
   refreshWeight?: () => void;
 }
@@ -44,6 +43,8 @@ export class MpoProfileEditor {
   readonly root = ui.div([]);
   readonly onChanged = new Subject<void>();
   readonly aggregationInput: DG.ChoiceInput<WeightedAggregation | null>;
+  readonly weightingInput: DG.ChoiceInput<string | null>;
+  readonly onWeightingSelected = new Subject<MpoWeighting>();
 
   readonly onWeightingInputChanged = new Subject<void>();
 
@@ -51,10 +52,8 @@ export class MpoProfileEditor {
   dataFrame?: DG.DataFrame;
   design = false;
   preview = false;
-  /** Set by the host that owns the Weighting control (the profile view): shows priorities and pins. Other hosts
-   *  show the weights of an Equal or Correlation-aware profile read-only. */
+  // the host that owns the weighting (the profile view) gets priorities and pins; others show the weights disabled
   weightingControl = false;
-  /** "Why this weight" tooltip of a property name in Correlation-aware weighting. */
   explainWeight: ((name: string) => HTMLElement | null) | null = null;
   private baseWeights: Record<string, number> | null = null;
 
@@ -78,6 +77,13 @@ export class MpoProfileEditor {
       },
     });
     this.aggregationInput.setTooltip('Score aggregation method');
+    this.weightingInput = ui.input.choice('Weighting', {
+      items: MPO_WEIGHTINGS.map((w) => MPO_WEIGHTING_CAPTIONS[w]),
+      value: MPO_WEIGHTING_CAPTIONS.manual,
+      nullable: false,
+      onValueChanged: (v) =>
+        this.onWeightingSelected.next(MPO_WEIGHTINGS.find((w) => MPO_WEIGHTING_CAPTIONS[w] === v) ?? 'manual'),
+    });
   }
 
   private newRowId(): string {
@@ -111,6 +117,7 @@ export class MpoProfileEditor {
 
     this.profile = profile;
     this.aggregationInput.value = profile?.aggregation ?? DEFAULT_AGGREGATION;
+    this.showWeighting();
     this.propertyOrder = profile ? Object.keys(profile.properties) : [];
 
     for (const name of this.propertyOrder)
@@ -155,10 +162,21 @@ export class MpoProfileEditor {
       delete this.profile.weighting;
     else
       this.profile.weighting = mode;
+    this.showWeighting();
     this.baseWeights = null;
     this.resetRows();
     this.render();
     this.emitChange();
+  }
+
+  // silent, and skipped when unchanged: writing the input from its own change handler throws in Dart
+  private showWeighting(): void {
+    const caption = MPO_WEIGHTING_CAPTIONS[this.weighting];
+    if (this.weightingInput.value === caption)
+      return;
+    this.weightingInput.notify = false;
+    this.weightingInput.value = caption;
+    this.weightingInput.notify = true;
   }
 
   setPriority(name: string, priority: number): void {
@@ -189,8 +207,7 @@ export class MpoProfileEditor {
     this.weightingInputChanged();
   }
 
-  /** Writes computed weights (and the base weights the Priority hint needs) without a change per property;
-   *  fires one change if any weight changed at display precision. Returns whether it did. */
+  // one change for all the weights, and none if they are equal at display precision
   setWeights(weights: Record<string, number>, base: Record<string, number> | null): boolean {
     if (!this.profile)
       return false;
@@ -471,7 +488,6 @@ export class MpoProfileEditor {
     cell.append(colInput.root, toggle);
   }
 
-  /** Copies the Correlation-aware inputs of a property onto its replacement (a type switch builds a new one). */
   private static keepWeighting(from: PropertyDesirability, to: PropertyDesirability): PropertyDesirability {
     if (from.priority != null)
       to.priority = from.priority;
@@ -491,17 +507,16 @@ export class MpoProfileEditor {
       return this.appendWeightColumnControls(weightCell, weightInput, prop);
 
     weightInput.enabled = false;
-    ctx.refreshWeight = () => {
-      weightInput.notify = false;
-      weightInput.value = this.propOf(ctx).weight;
-      weightInput.notify = true;
-    };
-    if (!this.weightingControl) {
-      weightInput.setTooltip(`Set by ${MPO_WEIGHTING_CAPTIONS[mode]} weighting. Change it in MPO Profiles.`);
+    if (!this.weightingControl || mode === 'equal') {
+      ctx.refreshWeight = () => {
+        weightInput.notify = false;
+        weightInput.value = this.propOf(ctx).weight;
+        weightInput.notify = true;
+      };
+      if (!this.weightingControl)
+        weightInput.setTooltip(`Set by ${MPO_WEIGHTING_CAPTIONS[mode]} weighting. Change it in MPO Profiles.`);
       return;
     }
-    if (mode === 'equal')
-      return;
 
     weightInput.root.classList.add('statistics-mpo-hidden');
     const priority = this.buildPriorityCell(ctx);
@@ -596,8 +611,7 @@ export class MpoProfileEditor {
     return s;
   }
 
-  /** The sum condition spans rows, so every pin is revalidated. A property is pinned while its own value is a valid
-   *  weight; a sum over 1 keeps the pins and is reported by the computation, which then applies nothing. */
+  // the sum condition spans rows, so every pin is revalidated; a sum over 1 keeps the pins, the computation reports it
   private syncPins(): void {
     for (const ctx of this.rowCtx.values()) {
       const p = this.propOf(ctx);

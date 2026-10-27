@@ -315,7 +315,7 @@ per-property inputs of the computation. Spec and decisions: [`docs/campo_spec_en
 | `src/mpo/campo-math.ts` | Pure math, no platform imports (meant to move to a library): complete rows, Pearson matrix, Cholesky inverse with shrinkage, base weights `R⁻¹·1 / 1ᵀR⁻¹1` clipped at 0, priorities and pins |
 | `src/mpo/campo-controller.ts` | `CampoController`: stage A (desirabilities from the context panel's `MpoCalculator` → R → base weights; reruns when `stageAKey` changes: curves, mapping, columns) and stage B (priorities, pins); messages; the "why this weight" tooltip |
 | `src/mpo/campo-viewers.ts` | `CampoViewers`: the profile view's right half, a detached `TableView` of the dataset; one panel is docked as a tab over its grid (`FILL`): the Correlation plot above, the weight bar charts below (Raw and Final side by side when a raw weight is negative, otherwise one chart titled Weights), in `flexSplit` splitters |
-| `libraries/statistics/src/mpo/mpo-profile-editor.ts` | `weightingControl` (set by the profile view), Priority column, pin inputs, `setWeights` (fires a change only when a weight changes at 0.000) |
+| `libraries/statistics/src/mpo/mpo-profile-editor.ts` | `weightingInput` / `onWeightingSelected` (placed by the profile view next to `aggregationInput`; the view moves the weights between modes), `weightingControl` (set by the profile view), Priority column, pin inputs, `setWeights` (fires a change only when a weight changes at 0.000) |
 
 Traps: `editor.setProfile` fires no change, so the view restarts the controller itself after `attachLayout` and RESET;
 a bar chart given a new data frame picks its own value column, so `CampoViewers` re-applies the options on every update;
