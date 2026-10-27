@@ -1,5 +1,5 @@
 @guide
-Feature: MolTrack EMS: register a compound
+Feature: MolTrack: register a compound
   A guide: the answer to "how do I register a new compound, and what happens to a salt of one that is
   registered already?". Compounds > New opens the compound form; the structure drawn there is
   standardized in the browser (Crux: cleanup, largest fragment, neutralized) and identified by its
@@ -11,7 +11,7 @@ Feature: MolTrack EMS: register a compound
     Given user is logged in
     And simple mode is off
     And no compound with the structure "CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O" is registered, now and at feature end
-    And user opens the "Compounds" view of MolTrack EMS
+    And user opens the "Compounds" view of MolTrack
     # caption: Start a new compound
     When user clicks on "New compound" button in app ribbon
     # caption: Draw the structure: click the empty picture to open the sketcher

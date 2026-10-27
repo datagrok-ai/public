@@ -39,7 +39,7 @@ export class Chemistry {
 
   // the package-test bundle's own `_package` is never initialized: this is the published package either way
   static package(): DG.Package {
-    return Chemistry._moltrack ??= DG.Func.find({package: 'Moltrack', name: 'molTrackEmsApp'})[0].package;
+    return Chemistry._moltrack ??= DG.Func.find({package: 'Moltrack', name: 'molTrackApp'})[0].package;
   }
 
   static load(): Promise<void> {

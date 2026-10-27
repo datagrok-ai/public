@@ -29,7 +29,7 @@ export class CompoundsApp extends DomainApp {
 
   constructor(options: DomainAppOptions) {
     super(options);
-    this._identity.root.classList.add('moltrack-ems-identity');
+    this._identity.root.classList.add('moltrack-identity');
     this.own(DomainFilters.registerOperators(this.table.address, StructureSearch.operators()));
     this.own((this.table as DomainTable<CompoundRow>).validators.add('original_structure', (_, row) =>
       this._verdicts.get(row.id)?.problem ?? null));
@@ -145,8 +145,8 @@ export class CompoundsApp extends DomainApp {
           formula.before(field('Parent', grok.chem.drawMolecule(structure!, 160, 120)));
       });
     }
-    this._identity.body.replaceChildren(...(problem === null ? [] : [ui.divText(problem, 'moltrack-ems-problem')]),
+    this._identity.body.replaceChildren(...(problem === null ? [] : [ui.divText(problem, 'moltrack-problem')]),
       identity === null ? ui.divText(problem === null ? 'Draw a structure to see its identity' : '',
-        'moltrack-ems-hint') : form.root);
+        'moltrack-hint') : form.root);
   }
 }

@@ -11,7 +11,7 @@ Chembl, MolTrack, HitTriage, Curves.
 All functions are callable through the `datagrok_exec` tool via
 `grok.functions.call('<Package>:<funcName>', {param1, param2, ...})`. For the
 data-side packages, results are usually `DG.DataFrame` objects produced by SQL
-queries or by Docker services (MolTrack).
+queries.
 
 For the structure-and-modeling side (Chem, Admetica, Reinvent4, Docking,
 Boltz1), see the sibling skill **`datagrok-chem-toolkit`**.
@@ -70,15 +70,7 @@ few data-side specific ones. Common values that appear in the **Tags** column:
 | ChEMBL ID → SMILES | `Chembl:chemblIdToSmilesTs` | Chembl |
 | Get ChEMBL molregno for SMILES | `Chembl:chemblMolregno` | Chembl |
 | Pull ChEMBL compounds by organism | `Chembl:getChemblCompoundsByOrganism` | Chembl |
-| Open MolTrack | `MolTrack:molTrackApp` | MolTrack |
-| Register one compound / batch | `MolTrack:registerMolTrackProperties` (props), `MolTrack:registerBulk` (bulk CSV) | MolTrack |
-| Look up compound by corporate ID | `MolTrack:getCompoundByCorporateId` | MolTrack |
-| Look up batch by corporate ID | `MolTrack:getBatchByCorporateId` | MolTrack |
-| Advanced compound search with structured filter | `MolTrack:advancedSearch` | MolTrack |
-| Generic entity search (compounds / batches / assays / runs / results) | `MolTrack:search` | MolTrack |
-| List compound / batch / assay schema | `MolTrack:fetchCompoundProperties`, `MolTrack:fetchBatchProperties`, `MolTrack:fetchSchema`, `MolTrack:fetchDirectSchema` | MolTrack |
-| Register assay / assay results | `MolTrack:registerAssays` | MolTrack |
-| Retrieve all entities of a scope | `MolTrack:retrieveEntity` | MolTrack |
+| Open MolTrack (register, browse or search compounds, batches, assays) | `MolTrack:molTrackApp` | MolTrack |
 | Start a Hit Triage campaign | `HitTriage:hitTriageApp` | HitTriage |
 | Start a Hit Design campaign | `HitTriage:hitDesignApp` | HitTriage |
 | Start a PeptiHit campaign | `HitTriage:peptiHitApp` | HitTriage |
@@ -130,57 +122,16 @@ All entries below have the `panel` tag.
 
 ## MolTrack package — small-molecule registration system (`MolTrack:...`)
 
-Docker-backed compound and batch registration with dynamic properties, assay
-schema, and a structured search DSL. Backed by the `moltrack` Docker container
-and a `moltrack` PostgreSQL connection.
-
-**Entity scope enum** (used by `registerBulk`, `search`, `retrieveEntity`): `'compounds' | 'batches' | 'assays' | 'assay_runs' | 'assay_results'`.
-
-### App and views
+Registers compounds, batches and assay data in the `moltrack` domain schema.
+Registration, bulk import and search happen in the app; there are no
+registration or search functions to call.
 
 | Function | Tags | What it does |
 |---|---|---|
-| `molTrackApp(path?: string)` | `app` | Opens the MolTrack app. `path` (URL) routes to sub-views: `'Compound' \| 'Batch' \| 'Register' \| 'Search' \| 'Saved Searches' \| 'Bulk' \| 'Assay' \| 'Schema'`. URL params `corporate_compound_id` / `corporate_batch_id` jump to a specific entity. browsePath `Chem`. |
-| `molTrackAppTreeBrowser(appNode: object, browseView: object)` | `appTreeBrowser` | Wires the tree-browser sidebar (auto). |
-| `initDB()` | — | Initializes all MolTrack schemas + assay data — call once after first deploy. |
+| `molTrackApp(path?: string)` | `app` | Opens MolTrack. `path`: `'Compounds' \| 'Batches' \| 'Assays' \| 'AssayRuns' \| 'AssayResults' \| 'Additions'`. `Compounds?corporate_compound_id=DG-000060` opens one compound, `Batches?corporate_batch_id=DGB-000365` one batch. |
 
-### Lookups and metadata
-
-| Function | Tags | What it does |
-|---|---|---|
-| `getCompoundByCorporateId(corporateValue: string)` | — | Compound JSON by corporate compound ID. |
-| `getBatchByCorporateId(corporateValue: string)` | — | Batch JSON by corporate batch ID. |
-| `fetchCompoundProperties()` / `fetchBatchProperties()` | — | JSON describing all properties for the `compound` / `batch` scope. Cached monthly. |
-| `fetchSchema()` | — | JSON of all dynamic fields. |
-| `fetchDirectSchema()` | — | JSON of all static (direct-table-column) fields. |
-
-### Registration
-
-| Function | Tags | What it does |
-|---|---|---|
-| `registerMolTrackProperties(jsonPayload: string)` | — | Registers compound/batch property definitions. `jsonPayload` is a JSON string defining fields `name`, `value_type`, `entity_type`, `nullable`, etc. |
-| `registerAssays(assayPayload: string)` | — | Register assay schema (JSON string with `name`, properties, result types). |
-| `registerBulk(csvFile: file, scope: 'compounds' \| 'batches' \| 'assays' \| 'assay_runs' \| 'assay_results', mapping: string, errorHandling: 'reject_all' \| 'reject_row')` | — | Bulk-register rows from CSV. `mapping` is a JSON string `{ csvColumn: moltrackProperty }`. `errorHandling`: `'reject_all'` aborts on any invalid row; `'reject_row'` skips. |
-
-**For "register this compound" intent:** even if the payload isn't fully spelled out, emit an exec block that calls `MolTrack:registerMolTrackProperties` with a placeholder `jsonPayload` string (e.g. `{"name":"...","value_type":"...","entity_type":"compound","nullable":false}`) or `MolTrack:registerBulk` with a placeholder CSV/mapping. Do NOT bail into a conversational reply — surface the function call with TODOs.
-
-### Search
-
-| Function | Tags | What it does |
-|---|---|---|
-| `search(query: string, entityEndpoint: 'compounds' \| 'batches' \| 'assays' \| 'assay_runs' \| 'assay_results')` | — | Generic search — `query` is a JSON string with `level`, `output`, `filter`, `output_format`. |
-| `advancedSearch(outputFields: list<string>, filter: object)` | — | **Most useful programmatic entry.** Returns a DataFrame of compounds. `outputFields` are fully-qualified (`compounds.canonical_smiles`, `compounds.details.<dynamic_prop>`). `filter` is a structured boolean tree. **Operators:** string `'=' \| '!=' \| 'IN' \| 'STARTS WITH' \| 'ENDS WITH' \| 'LIKE' \| 'CONTAINS'`; numeric `'<' \| '>' \| '<=' \| '>=' \| 'RANGE'`; datetime `'BEFORE' \| 'AFTER' \| 'ON'`; molecular (only for `compounds.structure`) `'IS SIMILAR'` (needs `threshold`), `'IS SUBSTRUCTURE OF'`, `'HAS SUBSTRUCTURE'`. Compose with `{operator: 'AND' \| 'OR', conditions: [...]}`. |
-| `retrieveEntity(scope: 'compounds' \| 'batches' \| 'assays' \| 'assay_runs' \| 'assay_results')` | — | Returns *all* entities of a scope as a flattened DataFrame. |
-| `getMoltrackPropPanelById(id: semantic_value<Grok ID>)` | `panel` | "Databases \| MolTrack" context panel for a `Grok ID` cell. |
-
-### Skipped
-
-- `init` — bootstraps MolTrack queries, semantic types, and schema once per session.
-
-### Queries shipped in `queries/`
-
-- `setup.sql` — schema-init queries; called via `init` (`checkDBInitialized`, etc.).
-- `search.sql` — backing query used by the search UI.
+To read the data: `grok.dapi.domains.table('moltrack.compound')` (also
+`compound_batch`, `addition`, `batch_addition`, `assay`, `assay_run`, `assay_result`).
 
 ---
 
@@ -219,7 +170,7 @@ All entries below have the `app` tag.
 
 | Function | Tags | What it does |
 |---|---|---|
-| `registerMoleculesToViD()` | — | Pushes all campaign molecules into MolTrack-managed ViD. |
+| `registerMoleculesToViD()` | — | Registers the molecules of Hit Design campaigns in V-iD storage (opens a dialog to pick a campaign; irreversible). |
 | `hitDesignVidPanel(vid: semantic_value<HIT_DESIGN_VID>)` | `panel` | "Hit Design V-iD" context panel — shows campaigns for a V-iD. |
 | `gasteigerCellRenderer()` | `cellRenderer` | PNG cell renderer for Gasteiger charge images. |
 | `htPackageSettingEditor(propList: object)` | — | Hit Triage package settings editor (UI). |

@@ -19,16 +19,16 @@ import {columnTypeOfTable} from '@datagrok-libraries/bdd/bindings/platform/colum
 import {simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
-test.describe("MolTrack EMS: register compounds in bulk", () => {
+test.describe("MolTrack: register compounds in bulk", () => {
   const session = feature(test, "features/guides/register-in-bulk.feature", import.meta.url);
   test("Pick a table, see what is new, register it", {tag: ["@guide"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(10, "Given user is logged in", () => loggedIn(page));
     await session.step(11, "And simple mode is off", () => simpleModeOff(page));
-    await session.step(12, "And the MolTrack EMS demo data is on the server", () => demoData(page));
+    await session.step(12, "And the MolTrack demo data is on the server", () => demoData(page));
     await session.step(13, "And the bulk registration example is open, and its compounds are not registered now and at feature end", () => bulkExample(page));
-    await session.step(14, "And user opens the \"Compounds\" view of MolTrack EMS", () => openEmsView(page, "Compounds"));
-    enter(page, "MolTrack EMS");
+    await session.step(14, "And user opens the \"Compounds\" view of MolTrack", () => openEmsView(page, "Compounds"));
+    enter(page, "MolTrack");
     await session.step(16, "When user clicks on more actions in app ribbon", () => clickOn(page, el("more actions in app ribbon")), undefined, "Bulk registration is the Import of the Compounds view");
     await session.step(17, "And user clicks on \"Import…\" menu item", () => clickOn(page, el("\"Import…\" menu item")));
     await session.step(18, "Then \"Import compounds\" dialog should be visible", () => shouldBe(page, el("\"Import compounds\" dialog"), "visible"));

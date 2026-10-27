@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {Filters, KIND} from '@datagrok-libraries/u2';
 import type {FilterCondition, FilterGroup, FilterOperator} from '@datagrok-libraries/u2';
-import {moltrackEmsDb} from '../generated/db';
+import {moltrackDb} from '../generated/db';
 import {Chemistry, HASH_COLUMNS} from './chemistry';
 import {MolTrackTables} from './tables';
 
@@ -38,7 +38,7 @@ export class StructureSearch {
     if (condition.operator === StructureSearch.EXACT) {
       const rule = MolTrackTables.matchRule();
       const {hash_mol: hash} = await Chemistry.identify(query, rule);
-      const rows = await moltrackEmsDb.compounds.query({filter: DG.cond(HASH_COLUMNS[rule], '=', hash),
+      const rows = await moltrackDb.compounds.query({filter: DG.cond(HASH_COLUMNS[rule], '=', hash),
         columns: [HASH_COLUMNS[rule]], deleted: 'include'});
       return rows.map((r) => r.id);
     }
@@ -60,7 +60,7 @@ export class StructureSearch {
     const structures: string[] = [];
     for (let offset = 0; ; offset += StructureSearch.PAGE) {
       signal?.throwIfAborted();
-      const rows = await moltrackEmsDb.compounds.query({columns: [column], sort: 'molregno',
+      const rows = await moltrackDb.compounds.query({columns: [column], sort: 'molregno',
         limit: StructureSearch.PAGE, offset, deleted: 'include'});
       for (const row of rows) {
         ids.push(row.id);

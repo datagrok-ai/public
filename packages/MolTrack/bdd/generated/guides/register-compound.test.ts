@@ -18,15 +18,15 @@ import {clickOn, pressKeyIn, shouldBe, shouldContainText, shouldNotContainText, 
 import {simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
-test.describe("MolTrack EMS: register a compound", () => {
+test.describe("MolTrack: register a compound", () => {
   const session = feature(test, "features/guides/register-compound.feature", import.meta.url);
   test("Register an acid, then see its sodium salt refused as the same compound", {tag: ["@guide"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(11, "Given user is logged in", () => loggedIn(page));
     await session.step(12, "And simple mode is off", () => simpleModeOff(page));
     await session.step(13, "And no compound with the structure \"CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O\" is registered, now and at feature end", () => noCompound(page, "CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O"));
-    await session.step(14, "And user opens the \"Compounds\" view of MolTrack EMS", () => openEmsView(page, "Compounds"));
-    enter(page, "MolTrack EMS");
+    await session.step(14, "And user opens the \"Compounds\" view of MolTrack", () => openEmsView(page, "Compounds"));
+    enter(page, "MolTrack");
     await session.step(16, "When user clicks on \"New compound\" button in app ribbon", () => clickOn(page, el("\"New compound\" button in app ribbon")), undefined, "Start a new compound");
     await session.step(18, "And user clicks on molecule canvas in \"Structure\" dart input", () => clickOn(page, el("molecule canvas in \"Structure\" dart input")), undefined, "Draw the structure: click the empty picture to open the sketcher");
     await session.step(20, "And user types \"CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O\" into molecule input of sketcher dialog", () => typeInto(page, "CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O", el("molecule input of sketcher dialog")), undefined, "Type or paste a SMILES");

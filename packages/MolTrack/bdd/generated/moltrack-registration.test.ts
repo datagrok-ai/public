@@ -2,7 +2,7 @@
 /* eslint-disable comma-spacing */
 /* eslint-disable quotes */
 /* ---
-generated: features/moltrack-ems-registration.feature
+generated: features/moltrack-registration.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
 --- */
 import {test} from '@playwright/test';
@@ -19,16 +19,16 @@ import {shouldHaveItemsInTotal} from '@datagrok-libraries/bdd/bindings/common/u2
 import {packageInstalled} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {el, enter, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
-test.describe("MolTrack EMS: registering a compound", () => {
-  const session = feature(test, "features/moltrack-ems-registration.feature", import.meta.url);
-  test("MolTrack EMS: registering a compound", {tag: ["@journey"]}, async ({browser}) => {
+test.describe("MolTrack: registering a compound", () => {
+  const session = feature(test, "features/moltrack-registration.feature", import.meta.url);
+  test("MolTrack: registering a compound", {tag: ["@journey"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 3, page);
     await session.step(10, "Given user is logged in", () => loggedIn(page));
     await session.step(11, "And the \"Chem\" package is installed", () => packageInstalled(page, "Chem"));
     await session.step(12, "And no compound with the structure \"CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O\" is registered, now and at feature end", () => noCompound(page, "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)O"));
-    await session.step(13, "And user opens the MolTrack EMS app", () => openEms(page));
-    enter(page, "MolTrack EMS");
+    await session.step(13, "And user opens the MolTrack app", () => openEms(page));
+    enter(page, "MolTrack");
     await run.scenario("A new structure is registered through the form", async () => {
       await session.step(16, "When user clicks on \"New compound\" button in app ribbon", () => clickOn(page, el("\"New compound\" button in app ribbon")));
       await session.step(17, "Then breadcrumbs should contain text \"New compound\"", () => shouldContainText(page, el("breadcrumbs"), "New compound"));

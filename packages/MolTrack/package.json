@@ -8,28 +8,22 @@
     "email": "oserhiienko@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/compute-utils": "workspace:^",
     "@datagrok-libraries/ems": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
-    "@datagrok-libraries/tutorials": "workspace:^",
     "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
-    "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
-    "dayjs": "catalog:",
-    "randexp": "^0.5.3",
-    "rxjs": "catalog:"
+    "dayjs": "catalog:"
   },
   "devDependencies": {
     "@datagrok-libraries/bdd": "workspace:^",
-    "@playwright/test": "^1.62.1",
-    "@types/wu": "catalog:"
+    "@playwright/test": "^1.62.1"
   },
   "properties": [
     {
       "name": "CompoundMatchingRule",
       "friendlyName": "Compound matching rule",
-      "description": "Which registration-hash layers decide that two structures are the same compound in MolTrack EMS; a change applies to registrations made after it",
+      "description": "Which registration-hash layers decide that two structures are the same compound in MolTrack; a change applies to registrations made after it",
       "propertyType": "string",
       "choices": [
         "ALL_LAYERS",
@@ -42,7 +36,7 @@
     {
       "name": "SimilarityThreshold",
       "friendlyName": "Similarity threshold",
-      "description": "The lowest Tanimoto similarity an \"is similar to\" structure condition accepts in MolTrack EMS",
+      "description": "The lowest Tanimoto similarity an \"is similar to\" structure condition accepts in MolTrack",
       "propertyType": "double",
       "defaultValue": 0.5,
       "nullable": false

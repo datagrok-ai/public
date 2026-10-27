@@ -1,5 +1,5 @@
 @guide
-Feature: MolTrack EMS: register compounds in bulk
+Feature: MolTrack: register compounds in bulk
   A guide: the answer to "how do I register a table of structures?". Compounds > ⋯ > Import opens the import
   wizard: the table (any open table or a file), its columns mapped to the compound's, a preview of every row
   (the structure drawn, and whether it is new, already registered, repeated or unreadable) and a report with
@@ -9,9 +9,9 @@ Feature: MolTrack EMS: register compounds in bulk
   Scenario: Pick a table, see what is new, register it
     Given user is logged in
     And simple mode is off
-    And the MolTrack EMS demo data is on the server
+    And the MolTrack demo data is on the server
     And the bulk registration example is open, and its compounds are not registered now and at feature end
-    And user opens the "Compounds" view of MolTrack EMS
+    And user opens the "Compounds" view of MolTrack
     # caption: Bulk registration is the Import of the Compounds view
     When user clicks on more actions in app ribbon
     And user clicks on "Import…" menu item

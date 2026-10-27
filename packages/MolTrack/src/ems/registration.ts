@@ -4,7 +4,7 @@ import type {DomainImportColumn, DomainImporter, DomainImportRow, DomainImportVe
   from '@datagrok-libraries/ems/src/dg';
 import {isEmpty, span} from '@datagrok-libraries/u2';
 import type {CompoundRow} from '../generated/db';
-import {moltrackEmsDb} from '../generated/db';
+import {moltrackDb} from '../generated/db';
 import {Chemistry, HASH_COLUMNS, IDENTITY_COLUMNS} from './chemistry';
 import type {CompoundIdentity, MatchRule} from './chemistry';
 import {MolTrackTables} from './tables';
@@ -73,7 +73,7 @@ export class BulkRegistration {
     const found = new Map<string, CompoundRow>();
     for (let at = 0; at < hashes.length; at += LOOKUP_CHUNK) {
       const filter = DG.cond(column, '=', hashes.slice(at, at + LOOKUP_CHUNK));
-      const rows = await moltrackEmsDb.compounds.query({filter, columns: [column, 'molregno'], sort: 'molregno'});
+      const rows = await moltrackDb.compounds.query({filter, columns: [column, 'molregno'], sort: 'molregno'});
       for (const row of rows) {
         if (!found.has(row[column]!))
           found.set(row[column]!, row);

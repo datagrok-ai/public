@@ -6,7 +6,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 
 declare const grok: any;
 
-const SCHEMA = 'moltrack_ems';
+const SCHEMA = 'moltrack';
 const remembered = new WeakMap<Page, string>();
 
 const BULK_EXAMPLE = new URL('../fixtures/bulk-registration.csv', import.meta.url);
@@ -16,26 +16,26 @@ async function openView(page: Page, view: string): Promise<void> {
   if (!await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false))
     await loggedIn(page);
   await page.evaluate(async (path) => {
-    grok.shell.addView(await grok.functions.call('Moltrack:molTrackEmsApp', {path}));
+    grok.shell.addView(await grok.functions.call('Moltrack:molTrackApp', {path}));
   }, view);
   // loaded: the first row, the empty state a table with no rows shows, or the record a deep link opens
   await page.locator('[data-u2="domain-list"] :is([data-u2-row], .u2-domain-list-empty), [data-u2="domain-form"]')
     .filter({visible: true}).first().waitFor({timeout: 60000});
 }
 
-export const openEms = Given('user opens the MolTrack EMS app', (page: Page) => openView(page, 'Compounds'),
-  {tier: 'api', enters: 'MolTrack EMS',
+export const openEms = Given('user opens the MolTrack app', (page: Page) => openView(page, 'Compounds'),
+  {tier: 'api', enters: 'MolTrack',
     description: 'runs the app function on Compounds and waits for its list to load ' +
       '(its first row, or its empty state); ' +
       'needs this package published'});
 
-export const openEmsView = Given('user opens the {string} view of MolTrack EMS',
+export const openEmsView = Given('user opens the {string} view of MolTrack',
   (page: Page, view: string) => openView(page, view.replace(/ /g, '')),
-  {tier: 'api', enters: 'MolTrack EMS',
+  {tier: 'api', enters: 'MolTrack',
     description: 'runs the app function on that view (Compounds, Batches, Additions, Assays, Assay Runs, Assay Results) ' +
       'and waits for its list to load'});
 
-export const demoData = Given('the MolTrack EMS demo data is on the server', async (page: Page) => {
+export const demoData = Given('the MolTrack demo data is on the server', async (page: Page) => {
   silent(page);
   const missing = await page.evaluate(async (schema) => {
     const count = () => Promise.all(['compound', 'assay_result']
@@ -46,7 +46,7 @@ export const demoData = Given('the MolTrack EMS demo data is on the server', asy
     return (await count()).every((n) => n > 0) ? '' : loaded;
   }, SCHEMA);
   if (missing !== '')
-    throw new Error(`the MolTrack EMS demo data did not load: ${missing}`);
+    throw new Error(`the MolTrack demo data did not load: ${missing}`);
 }, {tier: 'api', description: 'loads the package\'s demo set (Moltrack:loadEmsDemoData: the compounds and batches of ' +
   'files/ems-demo, the additions, the hepatocyte stability assay, its runs and results) where the schema has no ' +
   'compounds or no results; a fixture loaded once and kept, as a dataset is'});

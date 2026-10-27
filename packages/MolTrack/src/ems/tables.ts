@@ -4,13 +4,13 @@ import {domains, DomainTable} from '@datagrok-libraries/ems/src/dg';
 import {Filters, Rows, divH, divV, isEmpty, span} from '@datagrok-libraries/u2';
 import type {FilterGroup, RowView} from '@datagrok-libraries/u2';
 import type {AssayResultRow, CompoundBatchRow, CompoundRow} from '../generated/db';
-import {moltrackEmsDb} from '../generated/db';
+import {moltrackDb} from '../generated/db';
 import {Chemistry, HASH_COLUMNS, MATCH_RULES} from './chemistry';
 import {BulkRegistration} from './registration';
 import {StructureSearch} from './structure-search';
 import type {MatchRule} from './chemistry';
 
-export const SCHEMA = 'moltrack_ems';
+export const SCHEMA = 'moltrack';
 
 const CAS = /^[1-9]\d{1,6}-\d{2}-\d$/;
 
@@ -43,7 +43,7 @@ export class MolTrackTables {
   }
 
   static registeredAs(hash: string, rule: MatchRule): Promise<CompoundRow | null> {
-    return moltrackEmsDb.compounds.first({filter: DG.cond(HASH_COLUMNS[rule], '=', hash),
+    return moltrackDb.compounds.first({filter: DG.cond(HASH_COLUMNS[rule], '=', hash),
       columns: ['molregno', 'common_name'], sort: 'molregno'});
   }
 
@@ -95,8 +95,8 @@ export class MolTrackTables {
         span(caption(row), 'u2-domain-card-title'),
         span(row.common_name ?? '', 'u2-domain-card-description'),
         span(row.formula ?? '', 'u2-domain-card-description'),
-      ], 'moltrack-ems-card-text'),
-    ], 'moltrack-ems-card');
+      ], 'moltrack-card-text'),
+    ], 'moltrack-card');
     table.renderer = {...table.renderer, caption, card};
   }
 
@@ -137,9 +137,9 @@ export class MolTrackTables {
     table.renderer = {...table.renderer, caption, listItem: (row) => Rows.isDraft(row) ?
       span(caption(row), 'u2-domain-list-name') : divH([
         span(batch(row), 'u2-domain-list-name'),
-        span(run(row), 'moltrack-ems-run'),
+        span(run(row), 'moltrack-run'),
         span([dosed(row), clint(row)].filter((d) => d !== '').join(' · '), 'u2-domain-list-details'),
-      ], 'u2-domain-list-line moltrack-ems-result')};
+      ], 'u2-domain-list-line moltrack-result')};
   }
 
   /** A compound's common name; names asked for together are read in one query. */
@@ -158,7 +158,7 @@ export class MolTrackTables {
     setTimeout(async () => {
       MolTrackTables._asked = null;
       const ids = [...asked.keys()];
-      const rows = await moltrackEmsDb.compounds.query({filter: DG.cond('id', '=', ids), columns: ['common_name'],
+      const rows = await moltrackDb.compounds.query({filter: DG.cond('id', '=', ids), columns: ['common_name'],
         limit: ids.length}).catch(() => null);
       for (const [id, resolve] of asked) {
         if (rows === null)

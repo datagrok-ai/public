@@ -7,36 +7,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
-export namespace queries {
-  export async function getCompounds(): Promise<DG.DataFrame> {
-    return await grok.data.query('MolTrack:GetCompounds', {});
-  }
-
-  export async function insertAdminUser(): Promise<DG.DataFrame> {
-    return await grok.data.query('MolTrack:InsertAdminUser', {});
-  }
-
-  export async function insertSemanticTypeSynonym(): Promise<DG.DataFrame> {
-    return await grok.data.query('MolTrack:InsertSemanticTypeSynonym', {});
-  }
-
-  export async function insertProperties(): Promise<DG.DataFrame> {
-    return await grok.data.query('MolTrack:InsertProperties', {});
-  }
-
-  export async function insertSettings(): Promise<DG.DataFrame> {
-    return await grok.data.query('MolTrack:InsertSettings', {});
-  }
-
-  export async function insertStandartization(): Promise<DG.DataFrame> {
-    return await grok.data.query('MolTrack:InsertStandartization', {});
-  }
-
-  export async function checkDBInitialized(): Promise<DG.DataFrame> {
-    return await grok.data.query('MolTrack:CheckDBInitialized', {});
-  }
-}
-
 export namespace funcs {
   export async function init(): Promise<void> {
     return await grok.functions.call('MolTrack:Init', {});

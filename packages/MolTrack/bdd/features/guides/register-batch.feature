@@ -1,5 +1,5 @@
 @guide
-Feature: MolTrack EMS: register a batch of a registered compound
+Feature: MolTrack: register a batch of a registered compound
   A guide: the answer to "how do I register a batch?". A batch is a lot of a registered compound. Open the
   compound: its Batches tab is a grid of its batches, and New there adds a row with the compound filled in; Save
   stores it. Batches > New is the other way in, picking the compound by its Grok ID number. Many batches at once come
@@ -8,10 +8,10 @@ Feature: MolTrack EMS: register a batch of a registered compound
   Scenario: Open the compound, add a batch to it, save it
     Given user is logged in
     And simple mode is off
-    And the MolTrack EMS demo data is on the server
+    And the MolTrack demo data is on the server
     And no batch with the Source Batch Code "GUIDE-001" is registered, now and at feature end
     # caption: Open the compound by its Grok ID: DG-000482, bisphenol A
-    And user opens the "Compounds?corporate_compound_id=DG-000482" view of MolTrack EMS
+    And user opens the "Compounds?corporate_compound_id=DG-000482" view of MolTrack
     Then breadcrumbs should contain text "DG-000482"
     # caption: Its batches are below it; New starts one with the compound filled in
     When user clicks on "New" button in batches tab
