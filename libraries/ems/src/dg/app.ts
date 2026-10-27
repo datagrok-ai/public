@@ -24,6 +24,9 @@ import {SavedSearches} from './saved-searches.js';
 import type {DomainFiltersOptions} from './filters.js';
 import type {DomainChildrenOptions} from './children.js';
 import {DomainAddress} from './address.js';
+import {DomainErrors} from './errors.js';
+import {DgDomainTable} from './backend.js';
+import {PropertyDialog} from './authoring/property-dialog.js';
 import {ViewSync} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {ViewState} from '@datagrok-libraries/u2/src/dg/index.js';
 
@@ -88,6 +91,8 @@ export interface DomainAppOptions {
   defaults?: Record<string, unknown>;
   /** The form's columns, in this order; every column by default. */
   include?: string[];
+  /** The columns the form leaves out — where the rest, columns users add later included, should show. */
+  exclude?: string[];
   /** The entity page's panes under the form, on by default: the child collections (a tab per
    * referring table; options narrow them) and the row's history — where the table keeps one
    * (`support.audit`); a table that keeps none has no pane. */
@@ -469,11 +474,28 @@ export class DomainApp extends Control {
     reload.effect(() => reload.root.hidden = !this.stale.value);
     const search = domains.search(this.listSource);
     const sort = this._sortMenu();
-    for (const control of [add, save, discard, more, reload, search, sort])
+    const tools: Control[] = [search, sort];
+    // only the platform's tables are extended; whether this user may is asked of it
+    if (this.table.table instanceof DgDomainTable)
+      tools.push(this._propertiesButton());
+    for (const control of [add, save, discard, more, reload, ...tools])
       this.own(() => control.dispose());
     this._listOnly(search);
     this._listOnly(sort, () => this.trash.value);
-    return this._ribbon = {main: [add, save, discard, more, reload], tools: [search, sort], presets: []};
+    return this._ribbon = {main: [add, save, discard, more, reload], tools, presets: []};
+  }
+
+  /** "Edit properties…" — shown once the platform says the user may add columns to this table. */
+  private _propertiesButton(): Control {
+    const [schema, table] = this.table.address.split('.');
+    const properties = new Control(this.runInScope(() => iconButton('pencil-ruler',
+      () => void domains.editProperties(schema, {table}).catch((e) => DomainErrors.report(e)),
+      {tooltip: 'Edit properties…'})));
+    properties.root.dataset.u2 = 'properties-button';
+    properties.root.hidden = true;
+    void PropertyDialog.extensible(schema).then((tables) => properties.root.hidden = !tables.has(table),
+      () => properties.root.hidden = true);
+    return properties;
   }
 
   /** The ribbon as `appView` takes it — `[main, tools, presets]`, empty slots dropped.
@@ -810,6 +832,11 @@ export class DomainApp extends Control {
     return DomainApp._byView.get(view);
   }
 
+  /** The view showing an app — its counterpart of {@link of}. */
+  static viewOf(app: DomainApp): DG.ViewBase | undefined {
+    return DomainApp._views.get(app);
+  }
+
   /** The base path of the app open over a table address: the one the shell shows, else the last. */
   static baseOf(address: string): string | undefined {
     return DomainApp._pick((app) => app.table.address === address)?.base;
@@ -963,13 +990,13 @@ export class DomainApp extends Control {
         if (source.state.value === 'ready' && rows.length > 0 && source.currentRow.peek() === null)
           source.currentRow.value = rows[0];
       });
-      const {children, history, include} = this._options;
-      const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include,
+      const {children, history, include, exclude} = this._options;
+      const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include, exclude,
         labelColumn: this.labelColumn, empty: `${capital(nounOf(this.table.info, true))} "${entity}" was not found.`}));
       this._panes = this.runInScope(() => [
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
         ...(history === false || !this.table.table.support.audit ? [] :
-          [domains.history(source, undefined, {include})]),
+          [domains.history(source, undefined, {include, exclude})]),
       ]);
       this._formHost.replaceChildren(form.root);
       this.panes.replaceChildren(...this._panes.map((pane) => pane.root));

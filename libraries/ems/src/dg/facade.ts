@@ -32,6 +32,8 @@ import {DomainViews} from './views.js';
 import type {DomainViewsOptions} from './views.js';
 import type {DomainImporter} from './import.js';
 import {bulkEdit} from './bulk.js';
+import {editProperties, PropertyDialog} from './authoring/property-dialog.js';
+import type {EditPropertiesOptions} from './authoring/property-dialog.js';
 import {BindingDialog, BindingWizard, createBinding} from './authoring/binding-dialog.js';
 import {BindingEditDialog, editBinding} from './authoring/binding-edit-dialog.js';
 // the cycles with the control modules are function-scoped only: none reads another at load time
@@ -156,6 +158,15 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   constructor(readonly address: string, readonly table: DomainTableLike, readonly access: Access) {
     this.handler = new DG.DomainObjectHandler(address);
     this.renderer = this.defaultRenderer = DomainTable.handlerRenderer(this);
+  }
+
+  /** Drops the shared handles over these tables and the backend's, so the next read takes the
+   * registry's columns — after the table's schema changed. */
+  static forget(addresses: string[]): void {
+    const handles = emsBackends.domain === undefined ? undefined : DomainTable._shared.get(emsBackends.domain);
+    for (const address of addresses)
+      handles?.delete(address);
+    (emsBackends.domain as {invalidate?: () => void} | undefined)?.invalidate?.();
   }
 
   /** One configured handle over `address` per backend, for whoever only reads it. */
@@ -510,6 +521,16 @@ export const domains = {
   bulkEdit,
   /** The import wizard over a table: source → mapping → preview → the server's report. */
   import: openImport,
+  /** The user's own properties on a plugin schema's extensible tables (the manifest editor in
+   * extend mode); a save rebuilds the open views of the tables it changed. Resolves to whether
+   * anything was saved. */
+  editProperties: (schema: string, options: EditPropertiesOptions = {}): Promise<boolean> =>
+    editProperties(schema, {...options, onSaved: async (tables) => {
+      await DomainViews.reload(tables.map((t) => `${schema}.${t}`));
+      await options.onSaved?.(tables);
+    }}),
+  /** Whether the current user may add properties to the schema's tables (Extend on a plugin schema). */
+  canExtend: (schema: string): Promise<boolean> => PropertyDialog.canExtend(schema),
   saveButton,
   discardButton,
   newButton,
@@ -518,5 +539,6 @@ export const domains = {
    * to `{name, access}`) and "Edit binding" over a registered one (Design › Review › Saved;
    * resolves to `{name, applied}`). The editor stays platform-free; the dialogs are what talk to
    * `grok.dapi`. */
-  authoring: Object.assign(authoring, {createBinding, BindingDialog, editBinding, BindingEditDialog, BindingWizard}),
+  authoring: Object.assign(authoring, {createBinding, BindingDialog, editBinding, BindingEditDialog, BindingWizard,
+    PropertyDialog}),
 };

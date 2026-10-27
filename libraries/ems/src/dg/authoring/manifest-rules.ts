@@ -55,6 +55,18 @@ export class ManifestRules {
     return ManifestRules.RESERVED_TABLE_NAMES.includes(name) ? `Table name "${name}" is reserved` : null;
   }
 
+  /** Whether a column of [type] carries the descriptive key: choices name strings, a range bounds
+   * numbers, a format shapes numbers and dates. */
+  static attributeFits(key: string, type: string): boolean {
+    switch (key) {
+    case 'choices': return type === 'string';
+    case 'min':
+    case 'max': return type === 'int' || type === 'float';
+    case 'format': return type === 'int' || type === 'float' || type === 'datetime';
+    default: return true;
+    }
+  }
+
   static checkColumnName(name: string): string | null {
     const problem = ManifestRules.checkIdentifier(name, 'Column');
     if (problem !== null)

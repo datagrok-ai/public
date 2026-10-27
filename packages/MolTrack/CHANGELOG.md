@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Added Compound properties and Batch properties: add your own fields to compounds and batches, which then show on forms, grids and filters
 * Compounds: Added a batches grid to type new batches into
 * Compounds: A saved compound shows its stored identity
 * Compounds: Added ⋯ > Open as table

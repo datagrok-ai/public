@@ -66,6 +66,25 @@
   color: var(--dg-text-color-light);
 }
 
+/* extend mode: the plugin's columns are read, the user's own removed ones wait for the save */
+.u2-manifest-node-plugin .u2-manifest-node-name,
+.u2-manifest-node-lock {
+  color: var(--dg-text-color-light);
+}
+
+.u2-manifest-node-lock {
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-manifest-node-removed .u2-manifest-node-name {
+  color: var(--dg-text-color-light);
+  text-decoration: line-through;
+}
+
+.u2-manifest-panel-remove {
+  margin-left: auto;
+}
+
 .u2-manifest-panel {
   height: 100%;
   min-height: 0;
@@ -138,4 +157,57 @@
 /* the group look-up beside the visibility chips */
 .u2-manifest-panel .u2-input-box > .u2-typeahead {
   margin-left: var(--dg-space-m);
+}
+
+/* the property editor: the banner a reload leaves, the editor, the footer's change summary */
+.u2-manifest-properties {
+  height: 100%;
+  min-height: 0;
+  gap: var(--dg-space-s);
+}
+
+.u2-manifest-properties .u2-manifest-editor {
+  flex: 1;
+  min-height: 0;
+  border: var(--dg-border-width) solid var(--dg-border-subtle);
+}
+
+.u2-manifest-banner {
+  padding: var(--dg-space-s) var(--dg-space-m);
+  background: var(--dg-orange-1);
+  color: var(--dg-orange-3);
+}
+
+.u2-manifest-status {
+  color: var(--dg-text-color-light);
+}
+
+/* the confirmation of a save that drops values: one line per change, its sign coloured by kind */
+.u2-manifest-confirm,
+.u2-manifest-plan {
+  gap: var(--dg-space-s);
+}
+
+.u2-manifest-plan-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--dg-space-s);
+}
+
+.u2-manifest-plan-sign {
+  width: 1em;
+  text-align: center;
+  font-weight: bold;
+}
+
+.u2-manifest-plan-add {
+  color: var(--dg-green-3);
+}
+
+.u2-manifest-plan-change {
+  color: var(--dg-orange-3);
+}
+
+.u2-manifest-plan-remove {
+  color: var(--dg-red-4);
 }

@@ -20,8 +20,9 @@ interface Verdict {
 
 // EMS has no server write hook: a draft's identity is derived in the browser as its structure is drawn
 export class CompoundsApp extends DomainApp {
-  static readonly FIELDS = ['molregno', 'original_structure', 'common_name', 'cas', 'epa_compound_id', 'usan',
-    'iupac_name', 'source', 'source_compound_code', 'mol_logp'];
+  /** Derived from the structure on registration: shown in the identity section, not edited. */
+  static readonly DERIVED = ['structure', 'formula', 'inchikey', 'inchi', 'hash_mol', 'hash_all_layers',
+    'hash_stereo_insensitive', 'hash_tautomer_insensitive', 'match_rule'];
 
   private readonly _verdicts = new Map<string, Verdict>();
   private readonly _identity = this.runInScope(() => new Section({title: 'Identity', collapsible: false}));

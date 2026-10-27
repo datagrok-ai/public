@@ -23,7 +23,7 @@ const KEYS: Record<string, string> = {[`${SCHEMA}.compound`]: 'molregno', [`${SC
 
 const ENTRIES: DomainViewEntry[] = [
   {table: `${SCHEMA}.compound`, name: 'Compounds', options: {...FILTERS, sort: '!molregno', app: CompoundsApp,
-    mode: 'cards', itemHeight: 88, include: CompoundsApp.FIELDS,
+    mode: 'cards', itemHeight: 88, exclude: CompoundsApp.DERIVED,
     children: {tables: ['compound_batch'], grids: {compound_batch: BATCH_GRID}}}},
   {table: `${SCHEMA}.compound_batch`, name: 'Batches', options: {...FILTERS, sort: '!batch_regno',
     children: {tables: ['batch_addition', 'assay_result']}}},
@@ -64,6 +64,15 @@ export class MolTrackEms {
       {label: 'Register bulk', run: async () => void await domains.import(await MolTrackTables.compounds())},
       {label: 'Search', run: () => void MolTrackEms.show('Compounds')},
     ]);
+    // only for whoever may add properties: the platform answers after the page is up
+    void domains.canExtend(SCHEMA).then((can) => {
+      if (!can)
+        return;
+      for (const [label, table] of [['Compound properties', 'compound'], ['Batch properties', 'compound_batch']]) {
+        actions.querySelector('.moltrack-quick-links')!.append(ui.link(label,
+          () => void domains.editProperties(SCHEMA, {table}).catch((e) => grok.shell.error(String(e?.message ?? e)))));
+      }
+    });
     const content = ui.divH([counts, actions]);
     content.classList.add('moltrack-home');
     const view = DG.View.fromRoot(ui.divV([MolTrackEms._header(), content]));

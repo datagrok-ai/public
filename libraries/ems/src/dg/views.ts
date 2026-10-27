@@ -3,8 +3,8 @@
    one of the tables opens from anywhere: the app's own view of the table, not the platform's entity view. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {domains} from './facade.js';
-import type {DomainAppViewOptions, DomainTable} from './facade.js';
+import {domains, DomainTable} from './facade.js';
+import type {DomainAppViewOptions} from './facade.js';
 import {DomainApp} from './app.js';
 import {DomainAddress} from './address.js';
 import {SavedSearches} from './saved-searches.js';
@@ -84,6 +84,25 @@ export class DomainViews {
     const view = handle.app({...entry.options, name: entry.name, path: this.baseOf(table)});
     this._options.ready?.(DomainApp.of(view)!, table);
     return view;
+  }
+
+  /** Every open view over these tables rebuilt over their columns as the registry has them now, at the
+   * address it showed — after their schema changed. A view holding unsaved changes is left as it is. */
+  static async reload(tables: string[]): Promise<void> {
+    DomainTable.forget(tables);
+    for (const app of [...DomainApp.live]) {
+      const old = DomainApp.viewOf(app);
+      if (!tables.includes(app.table.address) || old === undefined || app.session.isDirty.peek())
+        continue;
+      const views = DomainViews._byTable.get(app.table.address);
+      const path = app.path.peek();
+      const view = views !== undefined ? await views.open(path.slice(views._options.path.length)) :
+        (await domains.table(app.table.address)).app({path: app.base});
+      if (views === undefined)
+        void DomainApp.of(view)!.open(path.slice(app.base.length));
+      grok.shell.addView(view);
+      old.close();
+    }
   }
 
   /** An item per view under `node` — the app's tree browser: one selected brings its view forward at the list —

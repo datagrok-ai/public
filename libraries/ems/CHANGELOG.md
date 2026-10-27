@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Properties: Added an editor for users' own columns on a plugin's extensible tables, opened from Edit properties… on the list's ribbon (`domains.editProperties`); the plugin's columns stay read-only, and a save that deletes values asks first
 * Added `domains.configure(address, fn, {id})`: an app's rules apply to every handle over the table
 * Bulk edit: Redesigned the dialog as one form with a field picker
 * Bulk edit: Refusals and the table's validators show in the dialog
