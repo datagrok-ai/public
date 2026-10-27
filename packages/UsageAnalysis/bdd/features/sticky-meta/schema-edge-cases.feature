@@ -12,8 +12,8 @@ Feature: Sticky Meta schema edge cases: a taken name, a malformed matching expre
 
   The schema and its entity type are made through the API, matching molecules, and removed at feature
   end with the type the malformed expression is typed for; serial with the other Sticky Meta features,
-  since a schema that matches molecules shows in every molecule column's Sticky meta pane. What OK in the
-  confirmation does to the existing schema is not defined: see MISSING.md.
+  since a schema that matches molecules shows in every molecule column's Sticky meta pane; only CANCEL
+  in the confirmation is claimed.
 
   Background:
     Given user is logged in

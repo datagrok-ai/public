@@ -5,23 +5,25 @@ Each item names the case, why it is not a scenario yet, and what would make it o
 
 ## Still open
 
-### Questions for owners
+### Waiting for core#456
 
-1. **Closing the script editor with an unsaved edit.** `script_view.dart` has no close guard;
-   `scripts-edit.feature` claims only that Save is disabled until the code changes. Should closing ask?
-2. **The console call with an argument of the wrong type** (e.g. `BddScript("x")` for a dataframe input).
-   What error should the console show?
-3. **Renaming a script.** Scripts have no Rename... command (`script_meta.dart`); the name changes through the
-   `name:` header in the editor. Is that the intended way, and should it refuse a name with no letter as the
-   Rename dialog of queries and connections does? A project whose script is gone is claimed in
-   `projects/projects-lifecycle-script.feature`.
+1. **Closing the script editor with an unsaved edit**: the confirmation is requested in core#456.
+
+### Steps requested
+
+2. **A script renamed through its `name:` header** (decided 2026-10-27: that is the way to rename a script, as
+   `script_meta.dart` has no Rename... command, and a name with no letter is refused as in the Rename dialog of
+   queries and connections). Saving a script does not check the name today (`isValidEntityName` is used only by
+   `DbEntityMeta.getRenameDialog` and the project Save dialog). No step edits one line of the editor: a step
+   `user replaces {string} with {string} in {element}` would let a scenario turn `name: <script>` into
+   `name: 2026` and claim the refusal.
 
 ### API or server tests to write
 
-4. **Two scripts with one name.** `makeUniqueName` deliberately skips scripts, queries and projects
+3. **Two scripts with one name.** `makeUniqueName` deliberately skips scripts, queries and projects
    (`repository_query.dart`), so a creation script resolved by name is ambiguous — the class of core#546.
    An ApiTests case once the owners decide.
-5. **A header with extra whitespace or a malformed `input:` line** (core#200, core#604: the parsers drift apart).
+4. **A header with extra whitespace or a malformed `input:` line** (core#200, core#604: the parsers drift apart).
    A parser unit test in ddt/xamgle, not a feature.
 
 ## Won't do

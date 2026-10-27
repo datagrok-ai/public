@@ -9,8 +9,10 @@ Feature: Layout edge cases: the Layouts pane suggests a layout only for a table 
   again is suggested the demog layout. The cars card shown in the same pane is what makes the
   missing demog card a finished reading rather than a pane still loading.
 
-  What the pane suggests for a layout of a grid alone is not settled (see MISSING.md), so it is not
-  claimed here.
+  A layout of a grid alone takes the grid's columns as its columns of interest
+  (`TableView.getViewerColumns`), so it is suggested only for a table that has them (a known
+  failure: the lookup uses the wrong name, and the layout is suggested everywhere). A layout
+  renamed to an empty name in the context panel keeps its name.
 
   The tables are named with the run's time, so each layout is named after its table and is unique to
   the run; both layouts are deleted when the feature ends.
@@ -19,6 +21,9 @@ Feature: Layout edge cases: the Layouts pane suggests a layout only for a table 
     Given user is logged in
     And the layouts named "bdd-edge-layout-{time}" are deleted when the feature ends
     And the layouts named "bdd-edge-cars-{time}" are deleted when the feature ends
+    And the layouts named "bdd-edge-grid-{time}" are deleted when the feature ends
+    And the layouts named "bdd-edge-carsb-{time}" are deleted when the feature ends
+    And the layouts named "bdd-edge-name-{time}" are deleted when the feature ends
     And the toolbox pane is shown
     And the context panel is open
 
@@ -56,4 +61,46 @@ Feature: Layout edge cases: the Layouts pane suggests a layout only for a table 
     And Layouts accordion header in toolbox is expanded
     Then "bdd-edge-layout-{time}" layout card should be visible
     And "bdd-edge-cars-{time}" layout card should be absent
+    And no errors should have been logged
+
+  @edge-cases @known-failure:85 @ticket-pending
+  Scenario: A layout of a grid alone is suggested only for a table that has the grid's columns
+    Today the grid-only layout is suggested for the cars table too: `getViewerColumns` looks the
+    grid's columns up by `name` instead of `colName`, so the layout has no columns of interest. No
+    ticket yet. Remove the tag when the cars table is not offered it.
+    Given user opens demog dataset keeping the first 100 rows as "bdd-edge-grid-{time}"
+    And Layouts accordion header in toolbox is expanded
+    When user clicks on the "header AGE" area of grid
+    Then the context panel should show "AGE"
+    When user clicks on Save button in layouts pane
+    Then "bdd-edge-grid-{time}" layout card should be visible
+    When user closes all views
+    Given user opens cars dataset keeping the first 30 rows as "bdd-edge-carsb-{time}"
+    And the toolbox pane is shown
+    And Layouts accordion header in toolbox is expanded
+    When user clicks on the "header model" area of grid
+    Then the context panel should show "model"
+    When user clicks on Save button in layouts pane
+    Then "bdd-edge-carsb-{time}" layout card should be visible
+    And "bdd-edge-grid-{time}" layout card should be absent
+    When user closes all views
+    Given user opens demog dataset keeping the first 100 rows as "bdd-edge-grid-{time}"
+    And the toolbox pane is shown
+    And Layouts accordion header in toolbox is expanded
+    Then "bdd-edge-grid-{time}" layout card should be visible
+    And no errors should have been logged
+
+  @edge-cases
+  Scenario: A layout renamed to an empty name in the context panel keeps its name
+    Given user opens demog dataset keeping the first 100 rows as "bdd-edge-name-{time}"
+    And Layouts accordion header in toolbox is expanded
+    When user clicks on the "header AGE" area of grid
+    Then the context panel should show "AGE"
+    When user clicks on Save button in layouts pane
+    Then "bdd-edge-name-{time}" layout card should be visible
+    And the context panel should show "bdd-edge-name-{time}"
+    When user clears Name details field in context panel
+    And user presses Enter
+    Then "bdd-edge-name-{time}" layout card should be visible
+    And value of Name details field in context panel should have text "bdd-edge-name-{time}"
     And no errors should have been logged
