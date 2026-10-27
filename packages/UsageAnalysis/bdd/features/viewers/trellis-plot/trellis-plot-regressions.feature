@@ -3,9 +3,10 @@ Feature: Trellis plot regressions of closed issues
   Closed trellis issues, each claimed by what the cells draw. public#2144: an inner viewer's own
   setting survives switching the trellis to another inner viewer and back; the bar charts set to
   avg come back with the setting and with the very picture they had (the cell's signature as remembered).
-  public#3617: on spgi-100 split by Stereo Category, the inner bar chart split by Series draws a
-  (no value) bar, and Include Nulls off takes it away from the cells; on is the picture it started
-  from. public#1547: bar charts inside a trellis (Scaffold Names by Series, Value = CAST Idea ID,
+  public#3617: on spgi-100 split by Stereo Category, the inner bar charts split by Series redraw
+  their cells when Include Nulls goes off (the cell's signature changes), and on is the picture they
+  started from; the trellis reports no area for an inner chart's bar, so the (no value) bar itself is
+  not claimed. public#1547: bar charts inside a trellis (Scaffold Names by Series, Value = CAST Idea ID,
   split by Stereo Category) used to show part of their data until a bar chart was clicked; every
   drawn cell now has a picture at once, and a full redraw (Bar Sort Order descending and back)
   gives the same picture, so the first one was complete. The inner viewer is changed in the trellis's own viewer

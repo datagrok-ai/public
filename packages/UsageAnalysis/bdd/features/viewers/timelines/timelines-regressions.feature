@@ -46,8 +46,10 @@ Feature: Timelines regressions of closed issues
     Then "Split By" property of timelines viewer should be "USUBJID"
     And the "lanes" reading of timelines viewer should be 71
     When user adds a calculated column "LongSubj" with formula "${USUBJID} + ' is a deliberately very long subject label that runs past the axis'"
+    And user takes a snapshot of timelines viewer
     And user selects "LongSubj" in "Split By" property in context panel
     Then "Split By" property of timelines viewer should be "LongSubj"
+    And timelines viewer should have repainted
     And the "lanes" reading of timelines viewer should be 71
     And the "intervals" reading of timelines viewer should be 143
     And timelines viewer should report no error

@@ -21,7 +21,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {colorLinearOver, colorOff, filterPassesAll, filterPassesFewer, noColorCoding, passingAsRemembered, rememberPassing} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {colorLinearOver, colorOff, filterPasses, filterPassesAll, noColorCoding, passingAsRemembered, rememberPassing} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {closeAllViews, openDataset, openProject, saveAsProject} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, hasArea, lessInk, loadLayout, moreInk, noErrors, pickFromContextMenu, propertyShouldBe, readingAsRemembered, readingDoesNotRead, readingHigher, readingIs, rememberReading, saveLayout, scaleNarrower, scaleWider, setProperties, setProperty, showsRows, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {dragRangeHandle} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
@@ -109,7 +109,7 @@ test.describe("Scatter plot regressions — markers, colors, layouts and the pro
     await run.scenario("The window a zoom left comes back with the project (core#375)", async () => {
       await session.step(126, "When user drags the min handle of the \"x\" range slider of scatter plot viewer by 40 pixels", () => dragRangeHandle(page, "min", "x", el("scatter plot viewer"), 40));
       await session.step(127, "Then the \"x axis min\" reading of scatter plot viewer should be higher than before", () => readingHigher(page, "x axis min", el("scatter plot viewer")));
-      await session.step(128, "And fewer than 1000 rows should pass the filter", () => filterPassesFewer(page, 1000));
+      await session.step(128, "And 991 rows should pass the filter", () => filterPasses(page, 991));
       await session.step(129, "When user remembers the \"x axis min\" reading of scatter plot viewer", () => rememberReading(page, "x axis min", el("scatter plot viewer")));
       await session.step(130, "And user remembers how many rows pass the filter", () => rememberPassing(page));
       await session.step(131, "And user saves the current view as project \"bdd-scatter-zoom-{time}\"", () => saveAsProject(page, session.text("bdd-scatter-zoom-{time}")));

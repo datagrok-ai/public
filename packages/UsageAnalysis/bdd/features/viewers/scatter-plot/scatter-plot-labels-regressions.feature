@@ -3,8 +3,9 @@ Feature: Scatter plot regressions — labels and missing columns
   Closed scatter plot issues about marker labels and about a plot that lost a column: a label is
   dragged, not the plot under it, when Mouse Drag = Select (public#3120) and when Show Labels For is
   All under a panel filter (public#3323) — a dragged label leaves the auto-placed ones, so `labels
-  shown` drops by one, and the selection stays as it was; a molecule column as the label column draws
-  labels (public#3041, spgi-100); and a layout applied after its logarithmic X column was removed
+  shown` drops by one under Selected (1 to 0), while under All the plot places the rest anew (274 labels
+  before the drag, 301 after, measured), and the selection stays as it was; a molecule column as the
+  label column draws 43 labels (public#3041, spgi-100); and a layout applied after its logarithmic X column was removed
   loads, and the view's layout can be saved and loaded again without an error (public#2867). Each
   scenario opens its own table. The plot draws "x: Column "WEIGHT" does not exist." then, but its
   status carries no `error`, so the message itself is in MISSING.md (public#3091).
@@ -43,9 +44,9 @@ Feature: Scatter plot regressions — labels and missing columns
     When user adds a categorical filter on "SEX" keeping "F"
     Then 553 rows should pass the filter
     And scatter plot viewer should have a "label of row 1" area
-    When user remembers the "labels shown" reading of scatter plot viewer
-    And user drags the "label of row 1" area of scatter plot viewer by 60 pixels to the right
-    Then the "labels shown" reading of scatter plot viewer should not be as remembered
+    And the "labels shown" reading of scatter plot viewer should be 274
+    When user drags the "label of row 1" area of scatter plot viewer by 60 pixels to the right
+    Then the "labels shown" reading of scatter plot viewer should be 301
     And no rows should be selected
     And no errors should have been logged
 
@@ -58,7 +59,7 @@ Feature: Scatter plot regressions — labels and missing columns
       | Y | Chemist 521     |
     Then the "labels shown" reading of scatter plot viewer should be 0
     When user sets "Label Columns" property of scatter plot viewer to "Core"
-    Then the "labels shown" reading of scatter plot viewer should be at least 1
+    Then the "labels shown" reading of scatter plot viewer should be 43
     And scatter plot viewer should report no error
     And no errors should have been logged
 
@@ -81,5 +82,5 @@ Feature: Scatter plot regressions — labels and missing columns
     Then scatter plot viewer should be visible
     And "X" property of scatter plot viewer should be "WEIGHT"
     And "X Axis Type" property of scatter plot viewer should be "logarithmic"
-    And no errors should have been logged
     And no error or warning balloon should have been shown
+    And no errors should have been logged

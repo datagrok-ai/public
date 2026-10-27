@@ -85,7 +85,7 @@ slider handles, a Shift-drag selection and Escape, the Table property).
   With Max Heatmap Columns 0 the map shows "No columns to show: Max Heatmap Columns is 0" in its
   `.d4-viewer-error` (core#928, `grid_core.dart` sets it as the viewer error), yet
   `getWidgetStatus().error` is null, so `heat map viewer should report the error "…"` cannot see it and
-  `should report no error` passes over it. `heat-map-regressions.feature` claims the hint as text shown
+  `should report no error` passes over it. `heat-map-columns-and-sorting.feature` (GROK-17776, core#928) claims the hint as text shown
   in the viewer (`heat map viewer should show the text …`). Needs `grid_status.dart` to report the
   viewer's error, as the other viewers' statuses do; then the hint can be claimed as:
 

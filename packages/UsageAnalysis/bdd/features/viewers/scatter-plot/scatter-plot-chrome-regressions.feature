@@ -55,13 +55,18 @@ Feature: Viewer chrome regressions — the context panel, the title and layouts
   @realizes:public#1745
   Scenario: A viewer stacked over the grid and closed does not come back as a floating window from the layout (public#1745)
     Given user adds a scatter plot viewer
+    And user adds a histogram viewer
     When user stacks scatter plot viewer onto grid as a tab
     Then the viewers "demog-1000, Scatter plot" should be the tabs of one panel
     When user picks "General > Close" from the viewer menu of scatter plot viewer
     Then the open tableview should have 0 scatter plot viewers
+    And the open tableview should have 1 histogram viewer
     When user saves the layout of the current table view to the server
-    And user loads the saved layout
-    Then the open tableview should have 0 scatter plot viewers
+    And user picks "General > Close" from the viewer menu of histogram viewer
+    Then the open tableview should have 0 histogram viewers
+    When user loads the saved layout
+    Then the open tableview should have 1 histogram viewer
+    And the open tableview should have 0 scatter plot viewers
     And grid should be visible
     And no errors should have been logged
 

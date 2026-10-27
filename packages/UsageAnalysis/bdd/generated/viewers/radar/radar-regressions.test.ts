@@ -23,7 +23,7 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {autostartsCompleted, contextPanelOpen, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, boundTable, noErrors, propertyShouldBe, setProperty, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewer, boundTable, noErrors, propertyShouldBe, repainted, setProperty, takeSnapshot, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {pickFromViewerMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -55,8 +55,10 @@ test.describe("Radar regressions — the Table property and Pick Up / Apply on a
     await session.step(32, "When user picks \"Pick Up / Apply > Pick Up\" from the viewer menu of first radar viewer", () => pickFromViewerMenu(page, "Pick Up / Apply > Pick Up", el("first radar viewer")));
     await session.step(33, "And user picks \"Pick Up / Apply > Apply\" from the viewer menu of second radar viewer", () => pickFromViewerMenu(page, "Pick Up / Apply > Apply", el("second radar viewer")));
     await session.step(34, "Then \"normalization\" property of second radar viewer should be \"Global\"", () => propertyShouldBe(page, "normalization", el("second radar viewer"), "Global"));
-    await session.step(35, "When user sets \"normalization\" property of first radar viewer to \"Column\"", () => setProperty(page, "normalization", el("first radar viewer"), "Column"));
-    await session.step(36, "Then \"normalization\" property of second radar viewer should be \"Global\"", () => propertyShouldBe(page, "normalization", el("second radar viewer"), "Global"));
-    await session.step(37, "And no errors should have been logged", () => noErrors(page));
+    await session.step(35, "When user takes a snapshot of first radar viewer", () => takeSnapshot(page, el("first radar viewer")));
+    await session.step(36, "And user sets \"normalization\" property of first radar viewer to \"Column\"", () => setProperty(page, "normalization", el("first radar viewer"), "Column"));
+    await session.step(37, "Then first radar viewer should have repainted", () => repainted(page, el("first radar viewer")));
+    await session.step(38, "And \"normalization\" property of second radar viewer should be \"Global\"", () => propertyShouldBe(page, "normalization", el("second radar viewer"), "Global"));
+    await session.step(39, "And no errors should have been logged", () => noErrors(page));
   });
 });

@@ -31,7 +31,7 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     And user adds a categorical filter on "SEX" keeping "M"
     Then 447 rows should pass the filter
     When user selects rows where "SEX" is "M"
-    Then the "labels shown" reading of scatter plot viewer should be at least 1
+    Then the "labels shown" reading of scatter plot viewer should be 373
     When user selects rows where "SEX" is "F"
     Then 553 rows should be selected
     And 0 selected rows should pass the filter
@@ -52,9 +52,13 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     Then scatter plot viewer should show 38 rows
     When user adds a calculated column "AGE2" with formula "${AGE} * 2"
     Then the table should have a column "AGE2"
+    When user takes a snapshot of scatter plot viewer
+    And user sets "Color" property of scatter plot viewer to "AGE2"
+    Then scatter plot viewer should have repainted
     And scatter plot viewer should show 38 rows
     And scatter plot viewer should report no error
-    When user removes "AGE2" column
+    When user sets "Color" property of scatter plot viewer to ""
+    And user removes "AGE2" column
     And user sets "Filter" property of scatter plot viewer to ""
     Then scatter plot viewer should show 872 rows
     And no errors should have been logged
@@ -71,7 +75,7 @@ Feature: Scatter plot regressions — filtering, zoom, selection and labels
     And user opens the filter panel
     Then scatter plot viewer should show the remembered value range
     When user adds a range filter on "AGE" from 20 to 40
-    Then fewer than 1000 rows should pass the filter
+    Then 359 rows should pass the filter
     And scatter plot viewer should show the remembered value range
     When user hovers over filter panel
     And user clicks on reset icon of filter panel

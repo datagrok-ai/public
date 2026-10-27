@@ -148,11 +148,12 @@ test.describe("Tooltip regressions from closed issues", () => {
     await session.step(139, "And user clicks on OK button in \"Edit Tooltip\" dialog", () => clickOn(page, el("OK button in \"Edit Tooltip\" dialog")));
     await session.step(140, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
     await session.step(141, "When user hovers over the \"marker of row 11\" area of scatter plot viewer", () => hoverArea(page, "marker of row 11", el("scatter plot viewer")));
-    await session.step(142, "Then the tooltip should show columns in the order \"HEIGHT, WEIGHT, AGE, SEX\"", () => tooltipColumnsInOrder(page, "HEIGHT, WEIGHT, AGE, SEX"));
-    await session.step(143, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
-    await session.step(144, "And user picks \"Tooltip > Hide\" from the context menu of scatter plot viewer", () => pickFromContextMenu(page, "Tooltip > Hide", el("scatter plot viewer")));
-    await session.step(145, "And user hovers over the \"marker of row 11\" area of scatter plot viewer", () => hoverArea(page, "marker of row 11", el("scatter plot viewer")));
-    await session.step(146, "Then tooltip should be hidden", () => shouldBe(page, el("tooltip"), "hidden"));
-    await session.step(147, "And no errors should have been logged", () => noErrors(page));
+    await session.step(142, "Then tooltip should be visible", () => shouldBe(page, el("tooltip"), "visible"));
+    await session.step(143, "And the tooltip should show columns in the order \"HEIGHT, WEIGHT, AGE, SEX\"", () => tooltipColumnsInOrder(page, "HEIGHT, WEIGHT, AGE, SEX"));
+    await session.step(144, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
+    await session.step(145, "And user picks \"Tooltip > Hide\" from the context menu of scatter plot viewer", () => pickFromContextMenu(page, "Tooltip > Hide", el("scatter plot viewer")));
+    await session.step(146, "And user hovers over the \"marker of row 11\" area of scatter plot viewer", () => hoverArea(page, "marker of row 11", el("scatter plot viewer")));
+    await session.step(147, "Then tooltip should be hidden", () => shouldBe(page, el("tooltip"), "hidden"));
+    await session.step(148, "And no errors should have been logged", () => noErrors(page));
   });
 });

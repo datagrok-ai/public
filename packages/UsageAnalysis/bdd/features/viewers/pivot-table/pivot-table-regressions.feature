@@ -58,5 +58,5 @@ Feature: Pivot table regressions from closed issues
     Then UNLINK button in "Link Tables" dialog should be visible
     And 1 rows of table "demog-1000 aggregation" should pass the filter
     When user clicks on CLOSE button in "Link Tables" dialog
-    Then no errors should have been logged
-    And no error or warning balloon should have been shown
+    Then no error or warning balloon should have been shown
+    And no errors should have been logged

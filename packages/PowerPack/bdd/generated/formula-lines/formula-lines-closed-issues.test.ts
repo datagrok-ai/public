@@ -19,13 +19,13 @@ import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {renameColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {closeAllViews, openDataset, openProject, saveAsProject} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {drawsFormulaLines, lineDrawnAtValue} from '@datagrok-libraries/bdd/bindings/tiers/viewers/formula-lines';
-import {addViewerWith, clickArea, loadLayout, noErrors, pickFromAreaContextMenu, pickFromContextMenu, pickFromOpenMenu, propertyShouldBe, propertyShouldContain, readingAtLeast, readingReads, resizeTo, saveLayout, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, clickArea, loadLayout, noErrors, pickFromAreaContextMenu, pickFromContextMenu, pickFromOpenMenu, propertyShouldBe, propertyShouldContain, readingBetween, readingReads, resizeTo, saveLayout, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {setInnerProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Formula lines — closed GitHub issues guarded on the scatter plot", () => {
   const session = feature(test, "features/formula-lines/formula-lines-closed-issues.feature", import.meta.url);
-  test("A line on the axis tokens follows the columns on the axes, a line on column names does not", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.trellis-plot", "@realizes:powerpack.dialogs.formula-lines", "@realizes:public#3177"]}, async ({browser}) => {
+  test("A line on the axis tokens follows the columns on the axes, a line on column names does not (public#3177)", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.trellis-plot", "@realizes:powerpack.dialogs.formula-lines", "@realizes:public#3177"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -38,7 +38,7 @@ test.describe("Formula lines — closed GitHub issues guarded on the scatter plo
     await session.step(37, "Then scatter plot viewer should draw 2 formula lines", () => drawsFormulaLines(page, el("scatter plot viewer"), 2));
     await session.step(38, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Viewer formula lines on two scatter plots come back with the project", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.trellis-plot", "@realizes:powerpack.dialogs.formula-lines", "@realizes:public#3019"]}, async ({browser}) => {
+  test("Viewer formula lines on two scatter plots come back with the project (public#3019)", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.trellis-plot", "@realizes:powerpack.dialogs.formula-lines", "@realizes:public#3019"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -56,7 +56,7 @@ test.describe("Formula lines — closed GitHub issues guarded on the scatter plo
     await session.step(58, "And the \"HEIGHT\" line of first scatter plot viewer should be drawn at its value on the y axis", () => lineDrawnAtValue(page, "HEIGHT", el("first scatter plot viewer"), "y"));
     await session.step(59, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Bands on columns with parentheses in their names are drawn", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.trellis-plot", "@realizes:powerpack.dialogs.formula-lines", "@realizes:public#542"]}, async ({browser}) => {
+  test("Bands on columns with parentheses in their names are drawn (public#542)", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.trellis-plot", "@realizes:powerpack.dialogs.formula-lines", "@realizes:public#542"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -77,7 +77,7 @@ test.describe("Formula lines — closed GitHub issues guarded on the scatter plo
     await session.step(80, "And user renames \"HEIGHT (cm)\" column to \"HEIGHT\"", () => renameColumn(page, "HEIGHT (cm)", "HEIGHT"));
     await session.step(81, "Then no errors should have been logged", () => noErrors(page));
   });
-  test("A valid line is drawn next to an invalid one, also after a layout round trip", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.trellis-plot", "@realizes:powerpack.dialogs.formula-lines", "@realizes:public#699"]}, async ({browser}) => {
+  test("A valid line is drawn next to an invalid one, also after a layout round trip (public#699)", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.trellis-plot", "@realizes:powerpack.dialogs.formula-lines", "@realizes:public#699"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -96,7 +96,7 @@ test.describe("Formula lines — closed GitHub issues guarded on the scatter plo
     await session.step(101, "When user clicks CANCEL button in \"Formula Lines\" dialog", () => clickOn(page, el("CANCEL button in \"Formula Lines\" dialog")));
     await session.step(102, "Then no errors should have been logged", () => noErrors(page));
   });
-  test("The Formula Lines dialog opened from a trellis cell previews the inner scatter plot's X and Y", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.trellis-plot", "@realizes:powerpack.dialogs.formula-lines", "@realizes:public#3390", "@realizes:public#3389"]}, async ({browser}) => {
+  test("The Formula Lines dialog opened from a trellis cell previews the inner scatter plot's X and Y (public#3390, public#3389)", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.trellis-plot", "@realizes:powerpack.dialogs.formula-lines", "@realizes:public#3390", "@realizes:public#3389"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
@@ -110,7 +110,7 @@ test.describe("Formula lines — closed GitHub issues guarded on the scatter plo
     await session.step(116, "Then the \"current item\" reading of scatter plot viewer in \"Formula Lines\" dialog should be \"${WEIGHT} = 77.4\"", () => readingReads(page, "current item", el("scatter plot viewer in \"Formula Lines\" dialog"), "${WEIGHT} = 77.4"));
     await session.step(117, "And \"xColumnName\" property of scatter plot viewer in \"Formula Lines\" dialog should be \"WEIGHT\"", () => propertyShouldBe(page, "xColumnName", el("scatter plot viewer in \"Formula Lines\" dialog"), "WEIGHT"));
     await session.step(118, "And \"yColumnName\" property of scatter plot viewer in \"Formula Lines\" dialog should be \"HEIGHT\"", () => propertyShouldBe(page, "yColumnName", el("scatter plot viewer in \"Formula Lines\" dialog"), "HEIGHT"));
-    await session.step(119, "And the \"y axis min\" reading of scatter plot viewer in \"Formula Lines\" dialog should be at least 100", () => readingAtLeast(page, "y axis min", el("scatter plot viewer in \"Formula Lines\" dialog"), 100));
+    await session.step(119, "And the \"y axis min\" reading of scatter plot viewer in \"Formula Lines\" dialog should be between 134.24 and 134.25", () => readingBetween(page, "y axis min", el("scatter plot viewer in \"Formula Lines\" dialog"), 134.24, 134.25));
     await session.step(120, "When user clicks OK button in \"Formula Lines\" dialog", () => clickOn(page, el("OK button in \"Formula Lines\" dialog")));
     await session.step(121, "And user picks \"Scatter plot > Tools > Formula Lines...\" from the context menu of the \"cell body F | Critical\" area of trellis plot viewer", () => pickFromAreaContextMenu(page, "Scatter plot > Tools > Formula Lines...", "cell body F | Critical", el("trellis plot viewer")));
     await session.step(122, "Then the \"current item\" reading of scatter plot viewer in \"Formula Lines\" dialog should be \"${WEIGHT} = 77.4\"", () => readingReads(page, "current item", el("scatter plot viewer in \"Formula Lines\" dialog"), "${WEIGHT} = 77.4"));
@@ -123,7 +123,7 @@ test.describe("Formula lines — closed GitHub issues guarded on the scatter plo
     await session.step(129, "And user sets \"formulaLines\" inner property of trellis plot viewer to \"\"", () => setInnerProperty(page, "formulaLines", el("trellis plot viewer"), ""));
     await session.step(130, "Then no errors should have been logged", () => noErrors(page));
   });
-  test("Formula Lines stays in the context menu after the axis type is switched from the axis menu", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.trellis-plot", "@realizes:powerpack.dialogs.formula-lines", "@realizes:public#425"]}, async ({browser}) => {
+  test("Formula Lines stays in the context menu after the axis type is switched from the axis menu (public#425)", {tag: ["@viewers", "@realizes:viewers.scatter-plot", "@realizes:viewers.trellis-plot", "@realizes:powerpack.dialogs.formula-lines", "@realizes:public#425"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));

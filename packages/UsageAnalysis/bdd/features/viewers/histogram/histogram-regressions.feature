@@ -45,11 +45,11 @@ Feature: Histogram regressions from closed issues
     When user hovers over the "view" area of histogram viewer
     And user moves the pointer away from histogram viewer
     Then the "error" reading of histogram viewer should be ""
-    And no errors should have been logged
     When user sets properties of histogram viewer:
       | Bins  | 20 |
       | Split |    |
     Then the "bins shown" reading of histogram viewer should be 20
+    And no errors should have been logged
 
   # core#998 (c)
   @realizes:core#998
@@ -96,10 +96,10 @@ Feature: Histogram regressions from closed issues
     And the "range max" reading of histogram viewer should be 89
     And 1 row should pass the filter
     And the "error" reading of histogram viewer should be ""
-    And no errors should have been logged
     When user double-clicks on the "range slider" area of histogram viewer
     Then all rows should pass the filter
     And the "range min" reading of histogram viewer should be 18
+    And no errors should have been logged
 
   # public#130
   @realizes:public#130

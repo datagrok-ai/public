@@ -32,6 +32,8 @@ Feature: Radar regressions — the Table property and Pick Up / Apply on a JS vi
     When user picks "Pick Up / Apply > Pick Up" from the viewer menu of first radar viewer
     And user picks "Pick Up / Apply > Apply" from the viewer menu of second radar viewer
     Then "normalization" property of second radar viewer should be "Global"
-    When user sets "normalization" property of first radar viewer to "Column"
-    Then "normalization" property of second radar viewer should be "Global"
+    When user takes a snapshot of first radar viewer
+    And user sets "normalization" property of first radar viewer to "Column"
+    Then first radar viewer should have repainted
+    And "normalization" property of second radar viewer should be "Global"
     And no errors should have been logged

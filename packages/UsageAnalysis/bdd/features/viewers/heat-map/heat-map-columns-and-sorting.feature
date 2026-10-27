@@ -12,7 +12,9 @@ Feature: Heat map columns, sorting and column widths
   the drag is shown to land, and turning the heat map back on gives that column the uniform width
   again. Max Heatmap Columns 0 (GROK-17776) used to break the layout with a
   division by a zero width: it now leaves no column on the map and logs no error, and 100 brings
-  all eleven back. Since core#928 the empty map says why: "No columns to show: Max Heatmap Columns is 0".
+  all eleven back. Since core#928 the empty map says why: "No columns to show: Max Heatmap Columns is 0",
+  and 100 takes the hint away (core#928). The hint is read as text shown in the viewer: the grid's
+  status does not publish it as its `error` (see MISSING.md).
 
   Background:
     Given user is logged in
@@ -87,7 +89,8 @@ Feature: Heat map columns, sorting and column widths
     And the "column AGE" and "column SEX" areas of heat map viewer should be the same width
     And no errors should have been logged
 
-  Scenario: Max Heatmap Columns 0 leaves no column on the map and says why (GROK-17776)
+  @realizes:core#928
+  Scenario: Max Heatmap Columns 0 leaves no column on the map and says why (GROK-17776, core#928)
     When user sets "maxHeatmapColumns" property of heat map viewer to "0"
     Then the "max heatmap columns" reading of heat map viewer should be 0
     And the "columns shown" reading of heat map viewer should be 0
@@ -98,5 +101,6 @@ Feature: Heat map columns, sorting and column widths
     When user sets "maxHeatmapColumns" property of heat map viewer to "100"
     Then the "columns shown" reading of heat map viewer should be 11
     And heat map viewer should have a "column AGE" area
+    And heat map viewer should not show the text "No columns to show"
     And heat map viewer should be painted
     And no errors should have been logged

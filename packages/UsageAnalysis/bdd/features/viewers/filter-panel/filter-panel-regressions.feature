@@ -145,10 +145,12 @@ Feature: Filter panel regressions
   Scenario: Adding viewers does not shrink the filter panel (public#2501)
     When user adds a card for "RACE" to the filter panel
     And user remembers the size of filter panel
+    And user remembers the size of grid
     And user adds histogram viewer
     And user adds bar chart viewer
     And user adds line chart viewer
     Then the open tableview should have 1 line chart viewer
+    And grid should be narrower than remembered
     And filter panel should keep its remembered width
     And no errors should have been logged
 

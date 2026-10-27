@@ -24,7 +24,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {addCalculated, addCategoricalFilter, allRowsSelected, clearSelection, filterIsExactlyCategory, filterPasses, filterPassesAll, filterTo, noneOfFiltered, removeColumn, resetFilter, rowCount, selectAllRows} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, openDatasetRowsAs, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, boundTable, clickArea, hasArea, hasNoArea, noErrors, propertiesShouldBe, readingIs, readingNotAsRemembered, rememberReading, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, boundTable, clickArea, hasArea, hasNoArea, noErrors, propertiesShouldBe, readingBetween, readingIs, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Pie chart regressions from the pie chart audit", () => {
@@ -123,13 +123,13 @@ test.describe("Pie chart regressions from the pie chart audit", () => {
     await session.step(112, "Given user opens demog-1000 dataset keeping the first 500 rows as \"demog-500\"", () => openDatasetRowsAs(page, ds("demog-1000"), 500, "demog-500"));
     await session.step(113, "And user switches to the \"demog-1000\" table view", () => switchTableView(page, "demog-1000"));
     await session.step(114, "When user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","avg"]]), [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","avg"]]);
-    await session.step(118, "And user remembers the \"angle value of Caucasian\" reading of pie chart viewer", () => rememberReading(page, "angle value of Caucasian", el("pie chart viewer")));
-    await session.step(119, "And user sets \"Table\" property of pie chart viewer to \"demog-500\"", () => setProperty(page, "Table", el("pie chart viewer"), "demog-500"));
+    await session.step(118, "Then the \"angle value of Caucasian\" reading of pie chart viewer should be between 79.487 and 79.488", () => readingBetween(page, "angle value of Caucasian", el("pie chart viewer"), 79.487, 79.488));
+    await session.step(119, "When user sets \"Table\" property of pie chart viewer to \"demog-500\"", () => setProperty(page, "Table", el("pie chart viewer"), "demog-500"));
     await session.step(120, "Then pie chart viewer should be bound to table \"demog-500\"", () => boundTable(page, el("pie chart viewer"), "demog-500"));
     await session.step(121, "And pie chart viewer should show 500 rows", () => showsRows(page, el("pie chart viewer"), 500));
     await session.step(122, "And properties of pie chart viewer should be:", () => propertiesShouldBe(page, el("pie chart viewer"), [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","avg"]]), [["Category","RACE"],["Segment Angle Column","WEIGHT"],["Segment Angle Aggr Type","avg"]]);
     await session.step(126, "And the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
-    await session.step(127, "And the \"angle value of Caucasian\" reading of pie chart viewer should not be as remembered", () => readingNotAsRemembered(page, "angle value of Caucasian", el("pie chart viewer")));
+    await session.step(127, "And the \"angle value of Caucasian\" reading of pie chart viewer should be between 75.665 and 75.666", () => readingBetween(page, "angle value of Caucasian", el("pie chart viewer"), 75.665, 75.666));
     await session.step(128, "When user clicks on close icon of pie chart viewer", () => clickOn(page, el("close icon of pie chart viewer")));
     await session.step(129, "Then no errors should have been logged", () => noErrors(page));
   });

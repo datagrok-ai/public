@@ -43,8 +43,8 @@ Feature: Substructure filter regressions from closed issues
     And the filter should pass exactly the molecules of "Structure" column containing "c1ccncc1"
     And no errors should have been logged
 
-  @realizes:public#1473
-  Scenario: Use as filter on a Core cell filters the Core card, not the Structure card (public#1473)
+  @realizes:public#1473 @realizes:public#1225 @realizes:public#1216
+  Scenario: Use as filter on a Core cell filters the Core card, not the Structure card (public#1473, public#1225, public#1216)
     When user scrolls the grid to the "Core" column
     And user picks "Current Value > Use as filter" from the context menu of the "cell 1 of Core" area of grid
     Then the "filtering of Core" reading of filter panel should be "true"

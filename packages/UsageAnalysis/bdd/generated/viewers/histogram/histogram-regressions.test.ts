@@ -58,9 +58,9 @@ test.describe("Histogram regressions from closed issues", () => {
       await session.step(45, "When user hovers over the \"view\" area of histogram viewer", () => hoverArea(page, "view", el("histogram viewer")));
       await session.step(46, "And user moves the pointer away from histogram viewer", () => pointerAway(page, el("histogram viewer")));
       await session.step(47, "Then the \"error\" reading of histogram viewer should be \"\"", () => readingReads(page, "error", el("histogram viewer"), ""));
-      await session.step(48, "And no errors should have been logged", () => noErrors(page));
-      await session.step(49, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Bins","20"],["Split",""]]), [["Bins","20"],["Split",""]]);
-      await session.step(52, "Then the \"bins shown\" reading of histogram viewer should be 20", () => readingIs(page, "bins shown", el("histogram viewer"), 20));
+      await session.step(48, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Bins","20"],["Split",""]]), [["Bins","20"],["Split",""]]);
+      await session.step(51, "Then the \"bins shown\" reading of histogram viewer should be 20", () => readingIs(page, "bins shown", el("histogram viewer"), 20));
+      await session.step(52, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A logarithmic X axis over a column with no positive value is reported, not thrown (core#998)", async () => {
       await session.step(57, "When user adds a calculated column \"NEG_AGE\" with formula \"0 - ${AGE}\"", () => addCalculated(page, "NEG_AGE", "0 - ${AGE}"));
@@ -97,10 +97,10 @@ test.describe("Histogram regressions from closed issues", () => {
       await session.step(96, "And the \"range max\" reading of histogram viewer should be 89", () => readingIs(page, "range max", el("histogram viewer"), 89));
       await session.step(97, "And 1 row should pass the filter", () => filterPasses(page, 1));
       await session.step(98, "And the \"error\" reading of histogram viewer should be \"\"", () => readingReads(page, "error", el("histogram viewer"), ""));
-      await session.step(99, "And no errors should have been logged", () => noErrors(page));
-      await session.step(100, "When user double-clicks on the \"range slider\" area of histogram viewer", () => doubleClickArea(page, "range slider", el("histogram viewer")));
-      await session.step(101, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(102, "And the \"range min\" reading of histogram viewer should be 18", () => readingIs(page, "range min", el("histogram viewer"), 18));
+      await session.step(99, "When user double-clicks on the \"range slider\" area of histogram viewer", () => doubleClickArea(page, "range slider", el("histogram viewer")));
+      await session.step(100, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(101, "And the \"range min\" reading of histogram viewer should be 18", () => readingIs(page, "range min", el("histogram viewer"), 18));
+      await session.step(102, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Split lines take the split column's category colours (public#130)", async () => {
       await session.step(107, "When user colors \"SEX\" column categorically:", () => colorCategorical(page, "SEX", [["F","#00FF00"],["M","#FF00FF"]]), [["F","#00FF00"],["M","#FF00FF"]]);

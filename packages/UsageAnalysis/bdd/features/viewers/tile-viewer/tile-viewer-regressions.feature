@@ -30,10 +30,10 @@ Feature: Tile viewer regressions from closed issues
       | 1  | 5                                            |
       | 2  | 6                                            |
     And user adds a tile viewer
-    When user hovers over the "label id of row 1" area of tile viewer
-    Then tooltip should be hidden
     When user hovers over the "label measured_concentration_of_compound_in_plasma of row 1" area of tile viewer
     Then tooltip should be visible
     And tooltip should contain text "measured_concentration_of_compound_in_plasma"
+    When user hovers over the "label id of row 1" area of tile viewer
+    Then tooltip should be hidden
     When user moves the pointer away from tile viewer
     Then no errors should have been logged

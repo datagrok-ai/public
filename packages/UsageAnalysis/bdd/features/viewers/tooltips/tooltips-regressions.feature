@@ -139,7 +139,8 @@ Feature: Tooltip regressions from closed issues
     And user clicks on OK button in "Edit Tooltip" dialog
     Then the "Edit Tooltip" dialog should close
     When user hovers over the "marker of row 11" area of scatter plot viewer
-    Then the tooltip should show columns in the order "HEIGHT, WEIGHT, AGE, SEX"
+    Then tooltip should be visible
+    And the tooltip should show columns in the order "HEIGHT, WEIGHT, AGE, SEX"
     When user moves the pointer away from grid
     And user picks "Tooltip > Hide" from the context menu of scatter plot viewer
     And user hovers over the "marker of row 11" area of scatter plot viewer

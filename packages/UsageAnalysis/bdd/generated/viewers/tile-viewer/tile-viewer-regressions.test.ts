@@ -46,11 +46,11 @@ test.describe("Tile viewer regressions from closed issues", () => {
     await session.step(11, "Given user is logged in", () => loggedIn(page));
     await session.step(28, "Given user opens a table \"long-names\" with:", () => openTableOf(page, "long-names", [["id","measured_concentration_of_compound_in_plasma"],["1","5"],["2","6"]]), [["id","measured_concentration_of_compound_in_plasma"],["1","5"],["2","6"]]);
     await session.step(32, "And user adds a tile viewer", () => addTileViewer(page));
-    await session.step(33, "When user hovers over the \"label id of row 1\" area of tile viewer", () => hoverArea(page, "label id of row 1", el("tile viewer")));
-    await session.step(34, "Then tooltip should be hidden", () => shouldBe(page, el("tooltip"), "hidden"));
-    await session.step(35, "When user hovers over the \"label measured_concentration_of_compound_in_plasma of row 1\" area of tile viewer", () => hoverArea(page, "label measured_concentration_of_compound_in_plasma of row 1", el("tile viewer")));
-    await session.step(36, "Then tooltip should be visible", () => shouldBe(page, el("tooltip"), "visible"));
-    await session.step(37, "And tooltip should contain text \"measured_concentration_of_compound_in_plasma\"", () => shouldContainText(page, el("tooltip"), "measured_concentration_of_compound_in_plasma"));
+    await session.step(33, "When user hovers over the \"label measured_concentration_of_compound_in_plasma of row 1\" area of tile viewer", () => hoverArea(page, "label measured_concentration_of_compound_in_plasma of row 1", el("tile viewer")));
+    await session.step(34, "Then tooltip should be visible", () => shouldBe(page, el("tooltip"), "visible"));
+    await session.step(35, "And tooltip should contain text \"measured_concentration_of_compound_in_plasma\"", () => shouldContainText(page, el("tooltip"), "measured_concentration_of_compound_in_plasma"));
+    await session.step(36, "When user hovers over the \"label id of row 1\" area of tile viewer", () => hoverArea(page, "label id of row 1", el("tile viewer")));
+    await session.step(37, "Then tooltip should be hidden", () => shouldBe(page, el("tooltip"), "hidden"));
     await session.step(38, "When user moves the pointer away from tile viewer", () => pointerAway(page, el("tile viewer")));
     await session.step(39, "Then no errors should have been logged", () => noErrors(page));
   });

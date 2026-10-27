@@ -44,9 +44,9 @@ test.describe("Network diagram regressions of closed issues", () => {
       await session.step(23, "And the \"node \\\"F\\\"\" area of network diagram viewer should be painted", () => areaPainted(page, "node \"F\"", el("network diagram viewer")));
       await session.step(24, "And the \"node \\\"true\\\"\" area of network diagram viewer should be painted", () => areaPainted(page, "node \"true\"", el("network diagram viewer")));
       await session.step(25, "And network diagram viewer should report no error", () => reportsNoError(page, el("network diagram viewer")));
-      await session.step(26, "And no errors should have been logged", () => noErrors(page));
-      await session.step(27, "When user sets \"nodeShape\" property of network diagram viewer to \"dot\"", () => setProperty(page, "nodeShape", el("network diagram viewer"), "dot"));
-      await session.step(28, "Then the \"nodes\" reading of network diagram viewer should be 4", () => readingIs(page, "nodes", el("network diagram viewer"), 4));
+      await session.step(26, "When user sets \"nodeShape\" property of network diagram viewer to \"dot\"", () => setProperty(page, "nodeShape", el("network diagram viewer"), "dot"));
+      await session.step(27, "Then the \"nodes\" reading of network diagram viewer should be 4", () => readingIs(page, "nodes", el("network diagram viewer"), 4));
+      await session.step(28, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Auto Layout drops the column selectors on a small diagram, and Auto Layout off keeps them (public#2129)", async () => {
       await session.step(32, "Then network diagram viewer should have a \"node 1 selector\" area", () => hasArea(page, el("network diagram viewer"), "node 1 selector"));

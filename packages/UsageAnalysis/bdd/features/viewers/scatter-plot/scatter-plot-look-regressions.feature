@@ -125,7 +125,7 @@ Feature: Scatter plot regressions — markers, colors, layouts and the project
   Scenario: The window a zoom left comes back with the project (core#375)
     When user drags the min handle of the "x" range slider of scatter plot viewer by 40 pixels
     Then the "x axis min" reading of scatter plot viewer should be higher than before
-    And fewer than 1000 rows should pass the filter
+    And 991 rows should pass the filter
     When user remembers the "x axis min" reading of scatter plot viewer
     And user remembers how many rows pass the filter
     And user saves the current view as project "bdd-scatter-zoom-{time}"

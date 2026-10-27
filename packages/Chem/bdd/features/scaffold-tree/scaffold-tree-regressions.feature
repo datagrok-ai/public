@@ -75,7 +75,6 @@ Feature: Scaffold Tree regressions from closed issues
     Then 1 row should pass the filter
     And the "checked nodes" reading of Scaffold Tree viewer should be 0
     And the "nodes" reading of Scaffold Tree viewer should be 1
-    And 1 row should pass the filter
     And no errors should have been logged
 
   @realizes:public#2315
@@ -147,7 +146,7 @@ Feature: Scaffold Tree regressions from closed issues
     When user clicks on the "checkbox of node 2" area of Scaffold Tree viewer
     Then the "checked nodes" reading of Scaffold Tree viewer should be 1
     And 32 rows should pass the filter
-    And user hovers over the "node 1" area of Scaffold Tree viewer
+    When user hovers over the "node 1" area of Scaffold Tree viewer
     And user clicks on the "edit icon of node 1" area of Scaffold Tree viewer
     Then sketcher dialog should be visible
     When user clears molecule input of sketcher dialog

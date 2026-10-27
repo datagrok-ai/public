@@ -84,7 +84,7 @@ test.describe("Pivot table regressions from closed issues", () => {
     await session.step(58, "Then UNLINK button in \"Link Tables\" dialog should be visible", () => shouldBe(page, el("UNLINK button in \"Link Tables\" dialog"), "visible"));
     await session.step(59, "And 1 rows of table \"demog-1000 aggregation\" should pass the filter", () => tableFilterCount(page, 1, "demog-1000 aggregation"));
     await session.step(60, "When user clicks on CLOSE button in \"Link Tables\" dialog", () => clickOn(page, el("CLOSE button in \"Link Tables\" dialog")));
-    await session.step(61, "Then no errors should have been logged", () => noErrors(page));
-    await session.step(62, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(61, "Then no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(62, "And no errors should have been logged", () => noErrors(page));
   });
 });

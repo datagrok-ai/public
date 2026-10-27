@@ -115,8 +115,8 @@ Feature: Pie chart regressions from the pie chart audit
       | Category                | RACE   |
       | Segment Angle Column    | WEIGHT |
       | Segment Angle Aggr Type | avg    |
-    And user remembers the "angle value of Caucasian" reading of pie chart viewer
-    And user sets "Table" property of pie chart viewer to "demog-500"
+    Then the "angle value of Caucasian" reading of pie chart viewer should be between 79.487 and 79.488
+    When user sets "Table" property of pie chart viewer to "demog-500"
     Then pie chart viewer should be bound to table "demog-500"
     And pie chart viewer should show 500 rows
     And properties of pie chart viewer should be:
@@ -124,6 +124,6 @@ Feature: Pie chart regressions from the pie chart audit
       | Segment Angle Column    | WEIGHT |
       | Segment Angle Aggr Type | avg    |
     And the "slices" reading of pie chart viewer should be 4
-    And the "angle value of Caucasian" reading of pie chart viewer should not be as remembered
+    And the "angle value of Caucasian" reading of pie chart viewer should be between 75.665 and 75.666
     When user clicks on close icon of pie chart viewer
     Then no errors should have been logged

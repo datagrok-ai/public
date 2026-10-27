@@ -23,9 +23,9 @@ Feature: Network diagram regressions of closed issues
     And the "node \"F\"" area of network diagram viewer should be painted
     And the "node \"true\"" area of network diagram viewer should be painted
     And network diagram viewer should report no error
-    And no errors should have been logged
     When user sets "nodeShape" property of network diagram viewer to "dot"
     Then the "nodes" reading of network diagram viewer should be 4
+    And no errors should have been logged
 
   @realizes:public#2129
   Scenario: Auto Layout drops the column selectors on a small diagram, and Auto Layout off keeps them (public#2129)

@@ -20,7 +20,7 @@ Feature: Formula lines — closed GitHub issues guarded on the scatter plot
 
   # public#3177
   @realizes:public#3177
-  Scenario: A line on the axis tokens follows the columns on the axes, a line on column names does not
+  Scenario: A line on the axis tokens follows the columns on the axes, a line on column names does not (public#3177)
     Given user adds a scatter plot viewer with:
       | xColumnName  | WEIGHT |
       | yColumnName  | HEIGHT |
@@ -39,7 +39,7 @@ Feature: Formula lines — closed GitHub issues guarded on the scatter plot
 
   # public#3019
   @realizes:public#3019
-  Scenario: Viewer formula lines on two scatter plots come back with the project
+  Scenario: Viewer formula lines on two scatter plots come back with the project (public#3019)
     Given user adds a scatter plot viewer with:
       | xColumnName | WEIGHT |
       | yColumnName | HEIGHT |
@@ -60,7 +60,7 @@ Feature: Formula lines — closed GitHub issues guarded on the scatter plot
 
   # public#542
   @realizes:public#542
-  Scenario: Bands on columns with parentheses in their names are drawn
+  Scenario: Bands on columns with parentheses in their names are drawn (public#542)
     Given user adds a scatter plot viewer with:
       | xColumnName | WEIGHT |
       | yColumnName | HEIGHT |
@@ -82,7 +82,7 @@ Feature: Formula lines — closed GitHub issues guarded on the scatter plot
 
   # public#699
   @realizes:public#699
-  Scenario: A valid line is drawn next to an invalid one, also after a layout round trip
+  Scenario: A valid line is drawn next to an invalid one, also after a layout round trip (public#699)
     Given user adds a scatter plot viewer with:
       | xColumnName  | WEIGHT |
       | yColumnName  | HEIGHT |
@@ -103,7 +103,7 @@ Feature: Formula lines — closed GitHub issues guarded on the scatter plot
 
   # public#3390, public#3389
   @realizes:public#3390 @realizes:public#3389
-  Scenario: The Formula Lines dialog opened from a trellis cell previews the inner scatter plot's X and Y
+  Scenario: The Formula Lines dialog opened from a trellis cell previews the inner scatter plot's X and Y (public#3390, public#3389)
     Given user adds a trellis plot viewer with:
       | X Column Names | SEX          |
       | Viewer Type    | Scatter plot |
@@ -116,7 +116,7 @@ Feature: Formula lines — closed GitHub issues guarded on the scatter plot
     Then the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${WEIGHT} = 77.4"
     And "xColumnName" property of scatter plot viewer in "Formula Lines" dialog should be "WEIGHT"
     And "yColumnName" property of scatter plot viewer in "Formula Lines" dialog should be "HEIGHT"
-    And the "y axis min" reading of scatter plot viewer in "Formula Lines" dialog should be at least 100
+    And the "y axis min" reading of scatter plot viewer in "Formula Lines" dialog should be between 134.24 and 134.25
     When user clicks OK button in "Formula Lines" dialog
     And user picks "Scatter plot > Tools > Formula Lines..." from the context menu of the "cell body F | Critical" area of trellis plot viewer
     Then the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${WEIGHT} = 77.4"
@@ -131,7 +131,7 @@ Feature: Formula lines — closed GitHub issues guarded on the scatter plot
 
   # public#425
   @realizes:public#425
-  Scenario: Formula Lines stays in the context menu after the axis type is switched from the axis menu
+  Scenario: Formula Lines stays in the context menu after the axis type is switched from the axis menu (public#425)
     Given user adds a scatter plot viewer with:
       | xColumnName | WEIGHT |
       | yColumnName | HEIGHT |

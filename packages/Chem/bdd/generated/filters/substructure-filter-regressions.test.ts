@@ -4,7 +4,7 @@
 /* ---
 generated: features/filters/substructure-filter-regressions.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [filters.cp.chem-and-bio-filters, public#3328, public#1473, public#2512, public#2639, public#2628, public#2473, public#697, public#1239]
+sub_features_covered: [filters.cp.chem-and-bio-filters, public#3328, public#1473, public#1225, public#1216, public#2512, public#2639, public#2628, public#2473, public#697, public#1239]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/crux.js';
@@ -56,7 +56,7 @@ test.describe("Substructure filter regressions from closed issues", () => {
     await session.step(43, "And the filter should pass exactly the molecules of \"Structure\" column containing \"c1ccncc1\"", () => filterPassesMatching(page, "Structure", "c1ccncc1"));
     await session.step(44, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Use as filter on a Core cell filters the Core card, not the Structure card (public#1473)", {tag: ["@realizes:filters.cp.chem-and-bio-filters", "@serial", "@realizes:public#1473"]}, async ({browser}) => {
+  test("Use as filter on a Core cell filters the Core card, not the Structure card (public#1473, public#1225, public#1216)", {tag: ["@realizes:filters.cp.chem-and-bio-filters", "@serial", "@realizes:public#1473", "@realizes:public#1225", "@realizes:public#1216"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(19, "Given user is logged in", () => loggedIn(page));
     await session.step(20, "And the \"chem-filter\" user settings are put back at feature end", () => userSettingsPutBack(page, "chem-filter"));
