@@ -568,7 +568,7 @@ export function handleSequenceHeaderRendering() {
       // headers painted before the scrollers existed stay plain until the next repaint
       if (seqCols.length > 0)
         grid.invalidate();
-    }, 1000);
+    });
   };
 
   const _ = grok.events.onViewerAdded.subscribe((e) => {
