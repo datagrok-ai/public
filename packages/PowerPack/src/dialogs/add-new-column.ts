@@ -963,9 +963,8 @@ export class AddNewColumnDialog {
             this.error = '';
             if (cmValue) {
               if (this.packageAutocomplete) {
-                setTimeout(() => {
-                  startCompletion(cm);
-                }, 100);
+                // a completion cannot start inside the editor's update listener
+                setTimeout(() => startCompletion(cm));
               } else if (fullFuncName?.includes(':')) {
                 const packAndFuncNames = fullFuncName.split(':');
                 const packName: string | undefined =
@@ -1394,7 +1393,7 @@ export class AddNewColumnDialog {
       this.codeMirror!.focus();
       if (this.getArgumentParam(this.codeMirror!.state.doc.toString(), firstParamEnd))
         this._startCompletion(this.codeMirror!);
-    }, 100);
+    });
   }
 
   findFunc(name: string): DG.Func | null {

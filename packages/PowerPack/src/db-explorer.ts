@@ -169,8 +169,8 @@ export async function setupGlobalDBExplorer() {
   }
 
 
-  // we still might be late, so we need to process the nodes
-  setTimeout(() => {
+  // connection nodes expanded before the subscription above existed; scanned once the configs are loaded
+  const processExpandedNodes = () => {
     const databasesNode = grok.shell.browsePanel.mainTree.children.find((n) => n.text === 'Databases');
     if (databasesNode && databasesNode instanceof DG.TreeViewGroup && databasesNode.expanded) {
       databasesNode.children.forEach((providersNode) => {
@@ -185,7 +185,7 @@ export async function setupGlobalDBExplorer() {
         }
       });
     }
-  }, 1000);
+  };
 
 
   async function onSaveAction(editor: DBExplorerEditor) {
@@ -236,6 +236,7 @@ export async function setupGlobalDBExplorer() {
   savedConfigs = await getSavedConfigs();
   // after this, we process any deferred nodes
   deferredTreeNodes.forEach((node) => processConnectionNode(node));
+  processExpandedNodes();
   savedConfigs.forEach((config) => {
     DBExplorer.initFromConfig(config);
   });

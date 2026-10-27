@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): DB explorer: connections expanded before the package started get their identifier items once the configurations are loaded, instead of a scan after 1 s that marked them done with no configurations when the load was slower; Add New Column: autocomplete opens right after typing or picking a function instead of 100 ms later; search widgets set up their table view once it is in the document instead of after 200 ms; the learning widget styles its DEMO pane without a 100 ms wait
 * Formula Lines: Marked the OK button `aria-disabled` while the formula is invalid, as the platform's dialogs mark a disabled button
 * Tests: Added BDD scenarios for the box plot's axis Annotations (Add Line, Band, Region on the value axis, none on the category axis) and a lasso region on the scatter plot, with MISSING.md for the region shape and its value span
 * [core#770](https://github.com/datagrok-ai/core/issues/770): Added `chatMessageInput` (`tags: chatInput`) — the u2 MessageInput with @-mentions of users, the compose and edit box of the platform chat

@@ -1,5 +1,9 @@
 # Proteomics changelog
 
+## v.next
+
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): Publish: no 100 ms waits between adding views and viewers, saving and reopening (eight of them)
+
 ## 1.3.0 (2026-07-13)
 
 - **Rank–Abundance (dynamic-range) viewer** — visualize the abundance dynamic range across the
