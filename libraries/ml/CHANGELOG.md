@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core#1146: Multi-column dimensionality reduction no longer waits 300 ms before fitting (a timer cannot make the garbage collector run)
 * Activity cliffs: The Activities input defaults to a column named like an activity or potency (Activity, IC50, Ki, ...), else the first float column, instead of the first numeric one (an ID on most tables)
 * UMAP: The CPU fit runs its epochs in slices of about a frame instead of one timer per epoch; on a few hundred rows the fit took ~3 s, mostly the browser's timer clamp
 * Activity cliffs: Fixed "Cannot read properties of null (reading 'getSortedOrder')" thrown a second after a click in the cliffs table when the view was closed meanwhile
