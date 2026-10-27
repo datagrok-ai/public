@@ -79,4 +79,5 @@ Written while turning the closed colour coding issues into `color-coding-regress
   Color Coding > Pick Up Coloring on demog-1000's RACE, then the header menu of demog-100's RACE: Apply
   Coloring is disabled with "Pick up coloring first" (seen 26 Oct 2026). The issue's note says applying
   the colour coding should work from a style picked up in a different dataframe: is the Color Coding
-  pair meant to be per table?
+  pair meant to be per table? Yes — by design (Olesia, 27 Oct 2026): Pick Up Coloring keeps the scheme on
+  the grid (`grid.clonedColorCodingType`), and across tables it is Pick Up / Apply Style that carries it.

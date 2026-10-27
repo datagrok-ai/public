@@ -136,6 +136,11 @@ test.describe("Grid regressions from closed issues", () => {
     await session.step(109, "When user presses Escape", () => pressKey(page, "Escape"));
     await session.step(110, "Then cell editor should be hidden", () => shouldBe(page, el("cell editor"), "hidden"));
     await session.step(111, "And the value of \"AGE\" column in row 4 should be \"45\"", () => valueInRow(page, "AGE", 4, "45"));
-    await session.step(112, "And no errors should have been logged", () => noErrors(page));
+    await session.step(112, "When user presses F2", () => pressKey(page, "F2"));
+    await session.step(113, "Then \"AGE\" dialog should be visible", () => shouldBe(page, el("\"AGE\" dialog"), "visible"));
+    await session.step(114, "And cell editor should be hidden", () => shouldBe(page, el("cell editor"), "hidden"));
+    await session.step(115, "When user presses Escape", () => pressKey(page, "Escape"));
+    await session.step(116, "Then \"AGE\" dialog should be absent", () => shouldBe(page, el("\"AGE\" dialog"), "absent"));
+    await session.step(117, "And no errors should have been logged", () => noErrors(page));
   });
 });

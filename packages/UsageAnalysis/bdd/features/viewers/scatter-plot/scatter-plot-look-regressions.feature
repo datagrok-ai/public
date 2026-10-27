@@ -4,7 +4,8 @@ Feature: Scatter plot regressions — markers, colors, layouts and the project
   or a project brings back: Marker Default Size changes the markers (public#2285), Regression Per Category draws one line per color up to 20 categories and one
   common line past that (public#3695), Color Min / Color Max narrow the color scale (public#2658),
   the grid's linear coloring with its own min and max stops narrowing the plot's scale once it is
-  removed (public#1434), an explicit X window comes back from a layout (public#2402), and the window
+  removed (public#1434), an explicit X window comes back from a layout (public#2402) and is dropped when the X column
+  changes (public#1882), and the window
   a zoom left comes back with the project (core#375; the window is set with the range slider, since
   a wheel zoom is animated past the plot's settle). Show Markers With Empty Size (public#3843) is
   claimed in `scatter-plot-edge-cases.feature`. One journey on demog-1000,
@@ -98,6 +99,24 @@ Feature: Scatter plot regressions — markers, colors, layouts and the project
       | xMin |  |
       | xMax |  |
     Then the "x axis min" reading of scatter plot viewer should not be "100"
+    And scatter plot viewer should show 872 rows
+    And no errors should have been logged
+
+  # public#1882
+  @realizes:public#1882
+  Scenario: A new X column drops the explicit X window (public#1882)
+    When user sets properties of scatter plot viewer:
+      | xMin | 50 |
+      | xMax | 70 |
+    Then the "x axis min" reading of scatter plot viewer should be 50
+    And the "x axis max" reading of scatter plot viewer should be 70
+    When user sets "X" property of scatter plot viewer to "AGE"
+    Then "xMin" property of scatter plot viewer should be ""
+    And "xMax" property of scatter plot viewer should be ""
+    And the "x axis min" reading of scatter plot viewer should not be "50"
+    And the "x axis max" reading of scatter plot viewer should not be "70"
+    When user sets "X" property of scatter plot viewer to "WEIGHT"
+    Then "xMin" property of scatter plot viewer should be ""
     And scatter plot viewer should show 872 rows
     And no errors should have been logged
 

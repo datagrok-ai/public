@@ -38,7 +38,8 @@ Written while turning the closed bar chart issues into `bar-chart-regressions.fe
 
 - **Under count a column picked in the on-chart value selector is taken (public#463).** Under count
   the value selector shows `count` and the column (`AGE` on demog-1000) side by side in one
-  `div-column-combobox-value` (probed 26 Oct 2026). `user picks {string} in the "value" column selector
+  `div-column-combobox-value` (probed 26 Oct 2026); the aggregation on the left and the column on the
+  right are two halves by design (Olesia, 27 Oct 2026), so the gap is the step's. `user picks {string} in the "value" column selector
   of bar chart viewer` (`widgets.ts` `openColumnSelector`) clicks the selector as a whole and opens the
   aggregation list (count, values, unique …), so the pick times out. Needs the step to open the
   column half (`.d4-column-selector-column` inside the selector) when the selector has one, then:

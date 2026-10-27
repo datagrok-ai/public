@@ -7,8 +7,8 @@ Feature: Grid regressions from closed issues
   header, descending, ascending and off, and takes a resize (public#1159). A project with a second
   grid on a second table, sorted, opens again with the sort and no error (public#2718).
   Control+Shift+Home and Control+Shift+End select from the current row to the first and to the last
-  row (public#2663). Enter and a typed digit open the editor on the current cell (public#629; F2 is
-  not a grid key: `viewer_base.dart` gives it to the other viewers). A cut-off cell's value in its
+  row (public#2663). Enter and a typed digit open the editor on the current cell, and F2 opens the
+  column's Column Properties dialog, as the help says (public#629). A cut-off cell's value in its
   tooltip (public#989, public#996) shows an empty tooltip on the current master: see MISSING.md.
 
   Background:
@@ -109,4 +109,9 @@ Feature: Grid regressions from closed issues
     When user presses Escape
     Then cell editor should be hidden
     And the value of "AGE" column in row 4 should be "45"
+    When user presses F2
+    Then "AGE" dialog should be visible
+    And cell editor should be hidden
+    When user presses Escape
+    Then "AGE" dialog should be absent
     And no errors should have been logged

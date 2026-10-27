@@ -42,6 +42,13 @@ Written while turning the closed line chart issues into `line-chart-row-source-r
 (the split legend ones are `line-chart-regressions.feature`). Each item needs a step or a reading
 that does not exist yet.
 
+- **The "too many split combinations" message (public#3288) is gone — nothing to claim** (Olesia,
+  27 Oct 2026). 7c24a9df21 (18 Mar 2025) warned "Selected split columns resulted in N combinations.
+  Supported limit is …"; "Line chart: Optimizations and speedups" (b374989c2c, the next day) commented
+  it out and the d4 cleanup c0d2266d64 (Sep 2026) deleted it. Its limit was 100,000,000 combinations
+  (`TOTAL_CATEGORIES_LIMIT_TO_STORE`), out of reach on demog anyway. What public#3210 asked for — a
+  split this large does not break the page — is claimed in `line-chart-row-source-regressions.feature`.
+
 - **A click on a line selects its category; Control adds, Control+Shift removes (public#2608,
   public#2360).** The chart hit-tests a split line (`LineChartCore.hitTestLineCategory`,
   `line_chart_core.dart:808`, through `renderers/line_chart_line_renderer.dart:497`) and a click on it

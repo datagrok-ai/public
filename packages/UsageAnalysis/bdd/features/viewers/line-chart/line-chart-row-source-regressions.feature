@@ -6,7 +6,8 @@ Feature: Line chart regressions — row source, row groups, categories and the l
   (public#1650, public#1628); a row group hovered in a bar chart repaints the line chart only while
   Show Mouse Over Row Group is on (public#3709); a molecule column on X draws a category per
   structure (public#1582); and a logarithmic Y axis fits the data instead of leaving an empty band
-  above it (public#2485). Each scenario adds its own line chart. The split legend under Row Source =
+  above it (public#2485); a split with a category per row (USUBJID on demog-1000) draws its 1000
+  categories and logs nothing (public#3210). Each scenario adds its own line chart. The split legend under Row Source =
   Selected is `line-chart-regressions.feature`.
   Not translated: the line click under a split (public#2608, public#2360), on-plot split and Y
   column removal (public#2951 and its duplicates), the log-axis warning (public#3701), label
@@ -109,4 +110,21 @@ Feature: Line chart regressions — row source, row groups, categories and the l
     Then the "y axis max of \"Whole blood assay 1\"" reading of line chart viewer should be between 31.5 and 37.8
     And the "y axis min of \"Whole blood assay 1\"" reading of line chart viewer should be between 0.04 and 0.14
     And line chart viewer should report no error
+    And no errors should have been logged
+
+  # public#3210: demog-1000 holds one row per USUBJID, so the split has a category per row
+  @realizes:public#3210
+  Scenario: A split with a category per row keeps the chart working (public#3210)
+    Given user opens demog-1000 dataset
+    When user adds a line chart viewer with:
+      | xColumnName      | STARTED |
+      | yColumnNames     | AGE     |
+      | splitColumnNames | USUBJID |
+    Then the "split columns" reading of line chart viewer should be 1
+    And the "categories" reading of line chart viewer should be 1000
+    And line chart viewer should report no error
+    When user sets "splitColumnNames" property of line chart viewer to ""
+    Then the "split columns" reading of line chart viewer should be 0
+    And the "categories" reading of line chart viewer should be 1
+    And line chart viewer should be painted
     And no errors should have been logged

@@ -72,7 +72,8 @@ Written during the round of 26 Oct 2026 that turned closed issues into regressio
 
 - **public#2753** (a structure drawn on a switched-off card did not filter when the card was switched on): the
   premise is gone. A switched-off card's body is `aria-disabled` and takes no clicks (the card's Sketch link is
-  under the disabled body, measured 26 Oct 2026), so nothing can be drawn on it. A card switched off with a
+  under the disabled body, measured 26 Oct 2026), so nothing can be drawn on it — by design (Olesia,
+  27 Oct 2026). A card switched off with a
   structure and on again filters again: `card-interplay.feature` ("The substructure and category cards
   intersect and switch off on their own"). The panel's master switch, the other half of public#3328, is a
   scenario of `substructure-filter-regressions.feature`.
