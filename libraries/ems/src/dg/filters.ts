@@ -190,6 +190,8 @@ export class DomainFilters extends Control {
       }
       this._write(input, this._accepted);
       box?.showText(this._raw, this._rawProblems);
+      if (input instanceof FilterBuilder)
+        input.setMode(Filters.isFlat(this._accepted) ? 'simple' : 'advanced');
     });
     this.effect(() => {
       const tree = input.value.value;

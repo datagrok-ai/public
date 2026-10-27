@@ -95,6 +95,26 @@ scoped('a tree query stays a tree; the builder mode shows rows', async () => {
   src.dispose();
 });
 
+scoped('a filter from outside opens the builder in the mode its shape needs; the builder\'s own edits keep it', async () => {
+  const src = await issues({query: ''});
+  const filters = domains.filters(src, {mode: 'builder'});
+  await flush();
+  const builder = filters.input.value;
+  src.query.value = 'title like "a" or (done = true)';
+  await flush();
+  assert.equal(builder.mode.value, 'advanced', 'a sub-group needs Advanced');
+  src.query.value = 'done = true';
+  await flush();
+  assert.equal(builder.mode.value, 'simple', 'a flat filter opens Simple');
+  builder.setMode('advanced');
+  builder.value.value = Filters.group('and', [Filters.cond('done', '=', false)]);
+  await flush();
+  assert.equal(src.query.value, 'done = false');
+  assert.equal(builder.mode.value, 'advanced', 'an edit in the builder never flips its mode');
+  filters.dispose();
+  src.dispose();
+});
+
 scoped('the builder keeps a half-written row and sends only the complete conditions', async () => {
   const src = await issues({query: ''});
   const filters = domains.filters(src, {mode: 'builder'});
