@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {expect, expectExceptionAsync} from '@datagrok-libraries/test/src/test';
+import {expect, expectArray, expectExceptionAsync} from '@datagrok-libraries/test/src/test';
 
 import {cruxPredict, readCruxManifest} from '../crux/crux-model';
 import {isClassTarget} from '../crux/methods';
@@ -240,6 +240,34 @@ export async function predictColumn(df: DG.DataFrame, bytes: Uint8Array): Promis
   return (await cruxPredict(df, bytes)).columns.byIndex(0);
 }
 
+/** `cruxPredict` of a classifier: `Prediction` then one `proba_<class>` FLOAT column per `classes` entry; every
+ * predicted row sums to 1 and its predicted class has the largest probability */
+export async function expectProbabilities(df: DG.DataFrame, bytes: Uint8Array, classes: string[]):
+  Promise<DG.DataFrame> {
+  const out = await cruxPredict(df, bytes);
+  expectArray(out.columns.names(), ['Prediction', ...classes.map((c) => `proba_${c}`)]);
+  const prediction = out.columns.byIndex(0);
+  const probabilities = out.columns.toList().slice(1);
+  for (const col of probabilities) {
+    expect(col.type, DG.COLUMN_TYPE.FLOAT, `${col.name} must be a FLOAT column`);
+    expect(col.length, df.rowCount, `${col.name} length`);
+  }
+
+  for (let i = 0; i < df.rowCount; ++i) {
+    if (prediction.isNone(i)) {
+      for (const col of probabilities)
+        expect(col.isNone(i), true, `row ${i}: ${col.name} must be null where the prediction is null`);
+      continue;
+    }
+    const sum = probabilities.reduce((s, col) => s + col.get(i), 0);
+    expect(Math.abs(sum - 1) < 1e-5, true, `row ${i}: the probabilities sum to ${sum}`);
+    const predicted = out.col(`proba_${String(prediction.get(i))}`)!.get(i);
+    for (const col of probabilities)
+      expect(predicted >= col.get(i), true, `row ${i}: ${col.name} exceeds the predicted class's probability`);
+  }
+  return out;
+}
+
 export type Predict = (cols: DG.ColumnList) => Promise<DG.Column>;
 export type Same = (a: DG.Column, b: DG.Column) => boolean;
 
@@ -294,6 +322,8 @@ export async function roundTrip(label: string, fit: Fit, target: DG.Column, feat
 }
 
 const IRIS_MEASUREMENTS = ['Sepal.Length', 'Sepal.Width', 'Petal.Length', 'Petal.Width'];
+/** The iris Species classes, in crux's (sorted) order */
+export const IRIS_SPECIES = ['setosa', 'versicolor', 'virginica'];
 export const GAP_ROWS = [3, 10];
 
 /** Copies of the four iris measurements; `Sepal.Width` is null at `gaps` */

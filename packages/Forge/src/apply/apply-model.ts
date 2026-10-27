@@ -2,10 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {PREDICTION_TAG} from '../constants';
 import {defaultMissingValues, Engine, isComplete} from '../engines/engine';
-import {apply, LoopProgress, yieldToEventLoop} from '../engines/engine-calls';
+import {apply, EnginePrediction, LoopProgress, yieldToEventLoop} from '../engines/engine-calls';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
 import {ApplicationInsert, ApplicationSource, ModelRow} from '../generated/db';
+import {ClassProbabilities} from '../metrics/metrics';
 import {imputeSettings, MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
 import {isRecord, PreparationOptions, preparationOptionsOf, stringsOf} from '../preparation/preparation-options';
 import {replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
@@ -57,6 +58,8 @@ export interface RowPredictions {
   keptRows: DG.BitSet | null;
   skippedRows: number;
   blob: Uint8Array;
+  /** The method's class probabilities of the kept rows, when it returns them. */
+  probabilities?: ClassProbabilities;
 }
 
 /** The model with the id or the unique name [idOrName], ready to apply. */
@@ -182,9 +185,10 @@ export async function predictRows(request: ApplyRequest, progress?: LoopProgress
   }
   const columns = replayPreprocessing(prepared.features, model.options);
   const blob = await grok.dapi.files.readAsBytes(model.blobPath);
-  const raw = await predictInBatches(model.engine, columns, rowCount, blob, request.batchSize, progress);
+  const {prediction: raw, probabilities} =
+    await predictInBatches(model.engine, columns, rowCount, blob, request.batchSize, progress);
   return {columns, raw, labels: replayPostprocessing(raw, model.options), keptRows: prepared.keptRows,
-    skippedRows: prepared.skippedRows, blob};
+    skippedRows: prepared.skippedRows, blob, probabilities};
 }
 
 async function predict(request: ApplyRequest, progress?: LoopProgress): Promise<ApplyResult> {
@@ -200,9 +204,9 @@ async function predict(request: ApplyRequest, progress?: LoopProgress): Promise<
 /** One engine call on [features] themselves ([rowCount] rows) when they fit a batch; otherwise one call per batch of
  * rows, with a pause for the event loop at most every YIELD_MS, so a cancel and the progress repaint get through. */
 async function predictInBatches(engine: Engine, features: DG.Column[], rowCount: number, blob: Uint8Array,
-  batchSize: number, progress?: LoopProgress): Promise<DG.Column> {
+  batchSize: number, progress?: LoopProgress): Promise<EnginePrediction> {
   let yieldedAt = Date.now();
-  const predictBatch = async (start: number): Promise<DG.Column> => {
+  const predictBatch = async (start: number): Promise<EnginePrediction> => {
     if (Date.now() - yieldedAt >= YIELD_MS) {
       await yieldToEventLoop();
       yieldedAt = Date.now();
@@ -218,11 +222,21 @@ async function predictInBatches(engine: Engine, features: DG.Column[], rowCount:
   const first = await predictBatch(0);
   if (rowCount <= batchSize)
     return first;
-  const column = DG.Column.fromType(first.type, first.name, rowCount);
-  copyInto(column, first, 0);
+  const column = DG.Column.fromType(first.prediction.type, first.prediction.name, rowCount);
+  const probabilities: ClassProbabilities | undefined = first.probabilities === undefined ? undefined :
+    {classes: first.probabilities.classes,
+      columns: first.probabilities.columns.map((c) => DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, c.name, rowCount))};
+  const copyBatch = (batch: EnginePrediction, start: number): void => {
+    copyInto(column, batch.prediction, start);
+    if (probabilities !== undefined && batch.probabilities !== undefined) {
+      for (const [k, col] of batch.probabilities.columns.entries())
+        copyInto(probabilities.columns[k], col, start);
+    }
+  };
+  copyBatch(first, 0);
   for (let start = batchSize; start < rowCount; start += batchSize)
-    copyInto(column, await predictBatch(start), start);
-  return column;
+    copyBatch(await predictBatch(start), start);
+  return {prediction: column, probabilities};
 }
 
 /** The rows [start, end) of [rowCount] rows; only the batch's bits are visited, not every row as a predicate would. */

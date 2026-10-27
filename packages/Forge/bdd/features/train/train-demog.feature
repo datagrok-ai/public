@@ -260,13 +260,14 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     And "Predict probability" input should not be checked
     And Method input should have value "XGBoost"
     And Method input should offer "CatBoost, Decision Tree, Extra Trees, Hist Gradient Boosting, k-Nearest Neighbors, LDA, Naive Bayes, Neural Network, Random Forest, RealMLP, Softmax, SVM, TabM, XGBoost"
-    And the "rows" reading of grid viewer in "Performance" results panel should be 6
+    And the "rows" reading of grid viewer in "Performance" results panel should be 7
     And the "text of cell 1 of Metric" reading of grid viewer in "Performance" results panel should be "Accuracy"
     And the "text of cell 2 of Metric" reading of grid viewer in "Performance" results panel should be "F1"
     And the "text of cell 3 of Metric" reading of grid viewer in "Performance" results panel should be "Sensitivity"
     And the "text of cell 4 of Metric" reading of grid viewer in "Performance" results panel should be "Specificity"
     And the "text of cell 5 of Metric" reading of grid viewer in "Performance" results panel should be "Precision"
     And the "text of cell 6 of Metric" reading of grid viewer in "Performance" results panel should be "Negative Predicted Value"
+    And the "text of cell 7 of Metric" reading of grid viewer in "Performance" results panel should be "AUC-ROC"
     And "Performance" results panel should contain text "Positive class: F"
     When user hovers over label of "Predict probability" input
     Then tooltip should contain text "Trains a regression model on the two classes and predicts the probability of F. The score is the regression output, not a calibrated probability."
@@ -281,7 +282,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     When user hovers over label of "Positive class cutoff" input
     Then tooltip should contain text "Probability from which a row is predicted as F."
     When user hovers over the "cell 7 of Metric" area of grid viewer in "Performance" results panel
-    Then tooltip should contain text "Area Under the Receiver Operating Characteristic Curve"
+    Then tooltip should contain text "How well the model separates the classes"
     When user scrolls grid viewer in "Performance" results panel to the "Train" column
     Then the "text of cell 7 of Train" reading of grid viewer in "Performance" results panel should be between 0.5 and 1
     And the "text of cell 7 of Validation" reading of grid viewer in "Performance" results panel should be between 0.5 and 1

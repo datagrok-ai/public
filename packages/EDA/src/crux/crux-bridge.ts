@@ -83,6 +83,31 @@ export function flatBatch(table: Table, arrowName: string): Float64Array {
   return asFloat64(table.getChild(arrowName)!.getChildAt(0)!.toArray());
 }
 
+/** One FLOAT column per name from a `List<Float64>` column with one list per row (the lists as wide as `names`);
+ * a null row is null in every column */
+export function listColumns(table: Table, arrowName: string, names: string[]): DG.Column[] {
+  const vector = table.getChild(arrowName)!;
+  const n = table.numRows;
+  const k = names.length;
+  const out = names.map(() => new Float32Array(n));
+  const flat = vector.nullCount === 0 ? flatBatch(table, arrowName) : null;
+
+  for (let i = 0; i < n; ++i) {
+    if (flat === null && !vector.isValid(i)) {
+      for (const column of out)
+        column[i] = DG.FLOAT_NULL;
+      continue;
+    }
+    const row = flat === null ? vector.get(i)! : null;
+    for (let j = 0; j < k; ++j) {
+      const v = row === null ? flat![i * k + j] : Number(row.get(j));
+      out[j][i] = Number.isFinite(v) ? v : DG.FLOAT_NULL;
+    }
+  }
+
+  return names.map((name, j) => DG.Column.fromFloat32Array(name, out[j]));
+}
+
 /** Float column from a numeric Arrow column; nulls and non-finite values become DG nulls */
 export function floatColumn(table: Table, arrowName: string, name: string): DG.Column {
   const vector = table.getChild(arrowName)!;

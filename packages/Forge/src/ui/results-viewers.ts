@@ -25,8 +25,8 @@ export const PANEL_TEXTS: {[key in PanelText]: [title: string, tooltip: string]}
   regressionVsActual: ['Predicted <name> vs Actual', 'The predicted value of each row against the actual one.'],
   classifierVsActual: ['Predicted <name> vs Actual',
     'The rows by two features, colored by the actual class; a cross marks a wrong prediction.'],
-  rocCurve: ['ROC Curve', 'How well the predicted probabilities separate the two classes at every cutoff; the ' +
-    'marked point is the current Positive class cutoff. The AUC is the one of Performance.'],
+  rocCurve: ['ROC Curve', 'How well the predicted probabilities separate the two classes at every cutoff; with ' +
+    'Predict probability the marked point is the current Positive class cutoff. The AUC is the one of Performance.'],
   metrics: ['Performance', 'How well the model predicts, on the training rows and in validation.'],
   confusions: ['Confusions', 'How often each actual class is predicted as each class.'],
   wrongPredictions: ['Wrong predictions', 'The rows whose predicted class differs from the actual one.'],
@@ -60,6 +60,9 @@ export interface ResultsData {
   prediction: DG.Column;
   /** Predict probability: the method's scores, Forge's own column. */
   score?: DG.Column;
+  /** A two-class classifier's probability of the positive class for the kept rows, Forge's own column: the ROC curve
+   * without Predict probability (`rocProbabilityOf`). */
+  rocProbability?: DG.Column;
   /** The table's rows the data holds; null for all of them. */
   keptRows: DG.BitSet | null;
   positiveClass?: string;
@@ -96,10 +99,12 @@ export interface Shown {
   /** The residuals of a regression, whether a label is right for a classifier. */
   marks: DG.Column;
   score?: DG.Column;
+  rocProbability?: DG.Column;
   /** Forge's own frames of **Distributions ...** and **Statistics** (regression). */
   distributions?: DG.DataFrame;
   statistics?: DG.DataFrame;
-  /** **ROC Curve** (scores only): Forge's own frame of the curve's points and the panel's title text. */
+  /** **ROC Curve** (two classes, {@link rocScore}): Forge's own frame of the curve's points and the panel's title
+   * text. */
   roc?: {frame: DG.DataFrame; title: HTMLElement};
   wrong?: Mismatches;
   subs: rxjs.Subscription[];
@@ -114,7 +119,7 @@ export interface Shown {
 /** The viewers of [data]: one frame of the columns the method saw, the target, the prediction and Forge's own
  * columns, and the panels over it. A viewer that fails to build gives the frame and the links back. */
 export function buildShown(data: ResultsData, kind: ResultKind): Shown {
-  const {table, columns, target, prediction, score, keptRows} = data;
+  const {table, columns, target, prediction, score, rocProbability, keptRows} = data;
   const kept = keptRows?.getSelectedIndexes() ?? null;
   let toFrame: Int32Array | null = null;
   if (kept !== null) {
@@ -123,7 +128,8 @@ export function buildShown(data: ResultsData, kind: ResultKind): Shown {
       toFrame[kept[i]] = i;
   }
   const shown: Shown = {table, kind, classes: classesOf(target), columns, target, keptRows, kept, toFrame,
-    prediction, score, subs: [], isLinking: false, panels: new Map(), viewers: new Map(), ...previewFrame(data)};
+    prediction, score, rocProbability, subs: [], isLinking: false, panels: new Map(), viewers: new Map(),
+    ...previewFrame(data)};
   linkRows(shown, shown.frame, kept, toFrame, shown.subs);
   try {
     if (kind === 'regression')
@@ -256,6 +262,7 @@ function isSameData(shown: Shown, data: ResultsData, kind: ResultKind): boolean 
   const now = [...data.columns, data.target];
   return shown.table === data.table && shown.kind === kind &&
     (shown.score === undefined) === (data.score === undefined) && isSameRows(shown.keptRows, data.keptRows) &&
+    (shown.rocProbability === undefined) === (data.rocProbability === undefined) &&
     before.length === now.length && now.every((c, i) => isSameColumn(before[i], c));
 }
 
@@ -287,19 +294,24 @@ function isSamePrefix(a: ArrayLike<number | string>, b: ArrayLike<number | strin
   return true;
 }
 
-/** The model's columns of [shown] take the values of [data]: the prediction, the scores (unless the same, as after a
- * cutoff change), the marks, the regression frames. False, with nothing changed, when a new column cannot be
- * written into the old one. */
-function refill(shown: Shown, {prediction, score, positiveClass}: ResultsData): boolean {
-  if (!canCopy(shown.prediction, prediction) ||
-    (shown.score !== undefined && score !== undefined && !canCopy(shown.score, score)))
+/** The model's columns of [shown] take the values of [data]: the prediction, the scores and the ROC probability
+ * (unless the same, as after a cutoff change), the marks, the regression frames. False, with nothing changed, when a
+ * new column cannot be written into the old one. */
+function refill(shown: Shown, {prediction, score, rocProbability, positiveClass}: ResultsData): boolean {
+  const pairs: [DG.Column, DG.Column][] = [];
+  if (shown.score !== undefined && score !== undefined)
+    pairs.push([shown.score, score]);
+  if (shown.rocProbability !== undefined && rocProbability !== undefined)
+    pairs.push([shown.rocProbability, rocProbability]);
+  if (!canCopy(shown.prediction, prediction) || pairs.some(([to, from]) => !canCopy(to, from)))
     return false;
   copyValues(shown.prediction, prediction);
-  if (shown.score !== undefined && score !== undefined && !isSameColumn(shown.score, score)) {
-    copyValues(shown.score, score);
-    if (shown.roc !== undefined)
-      fillRoc(shown.roc.frame, shown.score, shown, positiveClass);
-  }
+  const changed = pairs.filter(([to, from]) => !isSameColumn(to, from));
+  for (const [to, from] of changed)
+    copyValues(to, from);
+  const rocColumn = rocScore(shown);
+  if (changed.length > 0 && shown.roc !== undefined && rocColumn !== undefined)
+    fillRoc(shown.roc.frame, rocColumn, shown, positiveClass);
   const {target, marks, distributions, statistics} = shown;
   if (shown.kind === 'regression') {
     copyValues(marks, residualsOf(target, shown.prediction));
@@ -354,7 +366,7 @@ function addViewer(shown: Shown, key: PanelKey & PanelText, viewer: DG.Viewer, n
   shown.viewers.set(key, viewer);
 }
 
-/** **ROC Curve** (scores only; {@link rocPanel}), **Predicted <target> vs Actual** (two numerical columns),
+/** **ROC Curve** (two classes; {@link rocPanel}), **Predicted <target> vs Actual** (two numerical columns),
  * **Confusions** (fewer than ten classes), **Class balance** (the target's classes over the kept rows, each its own
  * color). **Wrong predictions** follows the prediction ({@link updateWrongPredictions}). */
 function classifierPanels(shown: Shown, positiveClass: string | undefined): void {
@@ -378,18 +390,25 @@ function classifierPanels(shown: Shown, positiveClass: string | undefined): void
 const FPR = 'False Positive Rate';
 const TPR = 'True Positive Rate';
 
-/** **ROC Curve** of [shown]'s scores: a scatter plot over Forge's own frame of the curve's points (`Threshold`,
- * {@link FPR}, {@link TPR}, one row per threshold of {@link ROC_THRESHOLDS}) drawn as a line, with the dashed
- * non-informative baseline.
- * Nothing but the scores changes it: a retrain refills the frame ({@link fillRoc}), a cutoff moves its current row
- * ({@link markRoc}). */
+/** The column the ROC curve is drawn from: the scores (Predict probability), else the ROC probability of a two-class
+ * result; undefined otherwise. */
+function rocScore(shown: Shown): DG.Column | undefined {
+  return shown.score ?? (shown.kind === 'binary' ? shown.rocProbability : undefined);
+}
+
+/** **ROC Curve** of [shown]'s {@link rocScore}: a scatter plot over Forge's own frame of the curve's points
+ * (`Threshold`, {@link FPR}, {@link TPR}, one row per threshold of {@link ROC_THRESHOLDS}) drawn as a line, with the
+ * dashed non-informative baseline.
+ * Nothing but the scores or the ROC probability changes it: a retrain refills the frame ({@link fillRoc}), a cutoff
+ * moves its current row ({@link markRoc}). */
 function rocPanel(shown: Shown, positiveClass: string | undefined): void {
-  if (shown.score === undefined)
+  const score = rocScore(shown);
+  if (score === undefined)
     return;
   const frame = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Threshold', [...ROC_THRESHOLDS]),
     DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, FPR, ROC_THRESHOLDS.length),
     DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, TPR, ROC_THRESHOLDS.length)]);
-  fillRoc(frame, shown.score, shown, positiveClass);
+  fillRoc(frame, score, shown, positiveClass);
   frame.meta.formulaLines.addLine({title: 'Non-informative baseline', formula: `\${${TPR}} = \${${FPR}}`, width: 1,
     style: 'dashed', min: 0, max: 1});
   const viewer = DG.Viewer.scatterPlot(frame, {xColumnName: FPR, yColumnName: TPR, linesOrderColumnName: FPR,

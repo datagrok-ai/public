@@ -7,6 +7,25 @@ export const METRIC_IDS =
 export type MetricId = typeof METRIC_IDS[number];
 export type MetricValues = Partial<Record<MetricId, number>>;
 
+/** A classifier's class probabilities: one column per class, as the method's `proba_<class>` columns. */
+export interface ClassProbabilities {
+  classes: string[];
+  columns: DG.Column[];
+}
+
+export function probabilityOf(probabilities: ClassProbabilities, cls: string): DG.Column | undefined {
+  const k = probabilities.classes.indexOf(cls);
+  return k < 0 ? undefined : probabilities.columns[k];
+}
+
+/** The column a two-class result's ROC curve is drawn from: [positiveClass]'s probability when [probabilities] has
+ * exactly two columns; undefined otherwise. */
+export function rocProbabilityOf(probabilities: ClassProbabilities | undefined,
+  positiveClass: string): DG.Column | undefined {
+  return probabilities === undefined || probabilities.classes.length !== 2 ? undefined :
+    probabilityOf(probabilities, positiveClass);
+}
+
 export const METRIC_LABELS: Record<MetricId, string> = {
   mse: 'MSE',
   rmse: 'RMSE',
@@ -42,9 +61,8 @@ export const METRIC_DESCRIPTIONS: Record<MetricId, string> = {
     'positive predictions. Higher values indicate fewer false positives.',
   npv: 'Negative Predicted Value of the model. It measures the proportion of true negatives among the total number ' +
     'of negative predictions. Higher values indicate fewer false negatives.',
-  auc: 'Area Under the Receiver Operating Characteristic Curve. It represents the model\'s ability to distinguish ' +
-    'between classes. Values range from 0 to 1, with 1 indicating perfect classification and 0.5 representing ' +
-    'random guessing.',
+  auc: 'How well the model separates the classes: 1 is perfect, 0.5 is random guessing. With more than two classes, ' +
+    'the average over the classes.',
 };
 
 /** A training's two measurements: the final model on its training rows, and the out-of-fold predictions. */
@@ -142,10 +160,14 @@ export function classificationMetrics(actual: DG.Column, predicted: DG.Column,
   return metrics;
 }
 
-export function metricsOf(task: ModelTask, actual: DG.Column, predicted: DG.Column,
-  positiveClass?: string): MetricValues {
-  return task === 'regression' ? regressionMetrics(actual, predicted) :
-    classificationMetrics(actual, predicted, positiveClass ?? actual.categories[0]);
+/** The metrics of [predicted]; with a classifier's [probabilities], also `auc` ({@link aucOfProbabilities}). */
+export function metricsOf(task: ModelTask, actual: DG.Column, predicted: DG.Column, positiveClass?: string,
+  probabilities?: ClassProbabilities): MetricValues {
+  if (task === 'regression')
+    return regressionMetrics(actual, predicted);
+  const values = classificationMetrics(actual, predicted, positiveClass ?? actual.categories[0]);
+  const auc = probabilities === undefined ? undefined : aucOfProbabilities(actual, probabilities, positiveClass);
+  return auc === undefined ? values : {...values, auc};
 }
 
 /** A numerical target makes a regression, any other a classification. */
@@ -189,6 +211,19 @@ export function aucOf(actual: DG.Column, score: DG.Column, positiveClass: string
     auc += (fp / negatives - fpr) * (tp / positives + tpr) / 2;
   }
   return auc;
+}
+
+/** AUC-ROC of [probabilities] against [actual]: with a [positiveClass], the AUC of its probability; otherwise the
+ * macro average of the one-vs-rest AUCs over the classes whose rows hold both classes; undefined when none does. */
+export function aucOfProbabilities(actual: DG.Column, probabilities: ClassProbabilities,
+  positiveClass?: string): number | undefined {
+  if (positiveClass !== undefined) {
+    const column = probabilityOf(probabilities, positiveClass);
+    return column === undefined ? undefined : aucOf(actual, column, positiveClass);
+  }
+  const aucs = probabilities.classes.map((cls, k) => aucOf(actual, probabilities.columns[k], cls))
+    .filter((auc): auc is number => auc !== undefined);
+  return aucs.length === 0 ? undefined : aucs.reduce((sum, auc) => sum + auc, 0) / aucs.length;
 }
 
 /** The cutoffs the ROC curve is drawn at: 0, 0.01, ..., 1. */

@@ -70,6 +70,7 @@ Hover a column header or a metric name to see what it means; hover a value to se
 | Regression | **MSE**, **RMSE** (mean squared error and its root; lower is better), **MAE** (mean absolute error; lower is better), **R2** (the share of the target's variation the model explains; 1 is perfect) |
 | Classification | **Accuracy** (the share of correct predictions), **F1** (balances precision and sensitivity; for more than two classes, the average over the classes) |
 | Two classes | also **Sensitivity**, **Specificity**, **Precision**, **Negative Predicted Value**, computed for the positive class named under the table (the first class in alphabetical order) |
+| Classifier with class probabilities | **AUC-ROC** (the area under the ROC curve of the probabilities: 0.5 is a coin toss, 1 is perfect), for every classifier whose method returns class probabilities (all EDA classifiers but SVM): for two classes, of the positive class's probability; with more than two classes, the average over the classes of the one-vs-rest AUCs |
 | Predict probability | the classification metrics of the labels the cutoff gives, and **AUC-ROC** (the area under the ROC curve of the probabilities: 0.5 is a coin toss, 1 is perfect) |
 
 Training runs in the browser's main thread: on large tables the page pauses for a few seconds.
@@ -124,10 +125,12 @@ The viewers:
   prediction minus the actual value, against the prediction), **Distributions of predicted and actual <target>** (a
   histogram in two colors, `TARGET` and `PREDICTION`), **Statistics** (a grid of the eleven summary statistics, `min`
   ... `q3`, of the actual and of the predicted values; hover a statistic for its meaning)
-* a classifier: **ROC Curve** (with **Predict probability**: the rate of true positives against the rate of false
-  positives at the cutoffs 0, 0.01, ..., 1, drawn as a line with a dot per cutoff, the dashed `Non-informative
-  baseline` and the current **Positive class cutoff** marked; the title shows **AUC-ROC** as **Performance** does,
-  `ROC Curve (AUC = 0.912)`, the area under all the scores, which can differ slightly from the area under the 101
+* a classifier: **ROC Curve** (for a two-class classifier whose method returns class probabilities, and with
+  **Predict probability**: the rate of true positives against the rate of false positives at the cutoffs 0, 0.01,
+  ..., 1 of the positive class's probability or of the scores, drawn as a line with a dot per cutoff, the dashed
+  `Non-informative baseline` and, with **Predict probability** only, the current **Positive class cutoff** marked;
+  the title shows **AUC-ROC** as **Performance** does,
+  `ROC Curve (AUC = 0.912)`, the area under all the scores or probabilities, which can differ slightly from the area under the 101
   points drawn), **Predicted <target> vs Actual** (the first two
   numerical features colored by the target, when there are two; a right prediction is a circle, a wrong one a cross),
   **Confusions** (a confusion matrix, for fewer than 10 classes), **Wrong predictions** (when the model gets a training
@@ -198,7 +201,8 @@ that disappears goes back to its default. Hover an input to see what it does.
   a number from 0 to 1 marks the input red, **Performance** says `Fix the settings.` and **Save** is unavailable. Changing
   the cutoff does not retrain: the metrics are computed again from the scores of the last training, **AUC-ROC** and
   **ROC Curve** stay (only its mark moves), and **Save** saves the model with the current cutoff. Applied to a table, the model adds the class labels, not the
-  scores
+  scores. Most methods' own class probabilities already give AUC-ROC and the ROC curve; check this to pick the
+  positive class cutoff
 
 ## Save a model
 
@@ -626,7 +630,7 @@ To add a method, register functions that share the same `meta.mlname` (the metho
 | Role | Required | Purpose |
 |---|---|---|
 | `train` | yes | Trains a model on a table and a target column, returns the model |
-| `apply` | yes | Applies a trained model to a table, returns the predictions |
+| `apply` | yes | Applies a trained model to a table, returns the predictions: the first column; `proba_<class>` columns after it give the class probabilities (AUC-ROC, ROC curve) |
 | `isApplicable` | yes | Tells whether the method can learn from the given data |
 | `isInteractive` | no | Tells whether training is fast enough to rerun on every change |
 | `visualize` | no | Shows method-specific views of a trained model |

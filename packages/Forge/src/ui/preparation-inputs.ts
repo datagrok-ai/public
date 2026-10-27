@@ -79,7 +79,9 @@ export class PreparationInputs {
     this.hasTwoClasses = classes !== null;
     if (classes !== null) {
       this.predictProbability.setTooltip('Trains a regression model on the two classes and predicts the probability ' +
-        `of ${classes[0]}. The score is the regression output, not a calibrated probability.`);
+        `of ${classes[0]}. The score is the regression output, not a calibrated probability. Most methods' ` +
+        'own class probabilities already give AUC-ROC and the ROC curve; check this to pick the positive class ' +
+        'cutoff.');
       this.cutoff.setTooltip(`Probability from which a row is predicted as ${classes[0]}.`);
     }
     this.updateVisibility();

@@ -3,13 +3,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 
-import {applyTwice, classificationDataset, accuracy, demogFrame, expectGapsKept, expectRejected, madError, mulberry32,
-  numericFeatures, predictColumn, r2, sameValues, seededRegression, splitTarget} from './utils';
+import {applyTwice, classificationDataset, accuracy, demogFrame, expectGapsKept, expectProbabilities, expectRejected,
+  GAP_ROWS, IRIS_SPECIES, irisMeasurements, madError, mulberry32, numericFeatures, predictColumn, r2, sameValues,
+  seededRegression, splitTarget} from './utils';
 import {FITS} from './baseline';
 import {isSvmInteractive, trainSoftmax, trainSvm, trainXgboost} from '../crux/methods';
-import {readCruxManifest} from '../crux/crux-model';
+import {cruxPredict, readCruxManifest} from '../crux/crux-model';
 
 const ROWS_K = 50;
 const MIN_COLS = 2;
@@ -29,6 +30,9 @@ function classification(rows: number, cols: number, shift: boolean, seed?: numbe
   const df = classificationDataset(rows, cols, shift, seed);
   return {df, target: splitTarget(df, 'Labels')};
 }
+
+/** The target's classes as crux orders string classes */
+const sortedClasses = (target: DG.Column) => [...target.categories].sort();
 
 category('Softmax', () => {
   test(`Performance: ${ROWS_K}K samples, ${COLS} features`, async () => {
@@ -60,6 +64,11 @@ category('Softmax', () => {
     expect(readCruxManifest(await trainSoftmax(multi.df, multi.target, 100, 0.1, 0.001)).params.C, 10);
 
     await expectRejected([['penalty 0', () => trainSoftmax(multi.df, multi.target, 100, 0, 0.001)]]);
+  }, {timeout: TIMEOUT});
+
+  test('Class probabilities', async () => {
+    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    await expectProbabilities(df, await softmax(df, target), sortedClasses(target));
   }, {timeout: TIMEOUT});
 }); // Softmax
 
@@ -172,6 +181,17 @@ category('XGBoost', () => {
 
   test('Missing feature values are kept', async () => {
     await expectGapsKept(xgboost, await grok.dapi.files.readCsv('System:DemoFiles/iris.csv'));
+  }, {timeout: TIMEOUT});
+
+  test('Class probabilities', async () => {
+    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    await expectProbabilities(df, await xgboost(df, target), sortedClasses(target));
+
+    const iris = await grok.dapi.files.readCsv('System:DemoFiles/iris.csv');
+    const gapped = irisMeasurements(iris, GAP_ROWS);
+    const out = await expectProbabilities(gapped, await xgboost(gapped, iris.col('Species')!), IRIS_SPECIES);
+    for (const col of out.columns.toList())
+      expect(col.stats.missingValueCount, 0, `${col.name}: rows with gaps must be predicted`);
   }, {timeout: TIMEOUT});
 
   test('Benchmarks (demog)', async () => {
@@ -352,5 +372,10 @@ category('SVM', () => {
     const t0 = Date.now();
     await svm(DG.DataFrame.fromColumns(features.toList()), target);
     console.log(`winequality classification fit: ${Date.now() - t0} ms`);
+  }, {timeout: TIMEOUT});
+
+  test('No class probabilities', async () => {
+    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    expectArray((await cruxPredict(df, await svm(df, target))).columns.names(), ['Prediction']);
   }, {timeout: TIMEOUT});
 }); // SVM

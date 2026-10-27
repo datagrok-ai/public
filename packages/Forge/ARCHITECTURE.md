@@ -198,7 +198,8 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   with the model's **Performance** pane (it builds one there). The pane keeps one while results come (a training,
   a cutoff re-cut): `update(summary)` rewrites the values in place, refills the bullet list and repaints the marks when
   the metric rows and the value columns are the same, so the grid neither flickers nor loses its column widths; other
-  rows (task, AUC-ROC) build a new one; a hint shown in between detaches the grid and keeps it. It is a frame of **Metric**, **Train**, **Validation**
+  rows (task, AUC-ROC) build a new one (the rows are the ids with a validation value or an evaluation value: a model
+  saved before AUC-ROC existed gets the AUC-ROC row with Train and Validation empty when evaluated); a hint shown in between detaches the grid and keeps it. It is a frame of **Metric**, **Train**, **Validation**
   and, with `MetricsSummary.evaluation`, **Evaluation** (format `0.000`) in a
   `readOnlyGrid` with the header texts, the metric descriptions and the full-precision values as tooltips, then a
   bullet list (`ul`): `Missing values: kept (the method handles them)` (only under `keep` when the training features
@@ -440,7 +441,11 @@ dataset fingerprint is computed on the request's `features` and `target` (before
 Predict probability it also keeps `scores` (`ProbabilityScores`: the method's train and out-of-fold predictions, the
 selection's target, the positive class and both AUC-ROC values, measured once), so `recutResult(result, cutoff)` cuts
 them again at another cutoff without retraining: it returns the result with `options.binaryClassificationThreshold`
-and the metrics of the new labels; AUC-ROC does not change. A result without scores is returned as it is.
+and the metrics of the new labels; AUC-ROC does not change. A result without scores is returned as it is. When the
+method returns class probabilities (`proba_<class>` columns after its prediction, see "Engine contract") the result
+keeps the final model's ones of the training rows as `probabilities` (`ClassProbabilities` `{classes, columns}`, the
+two-class ROC curve); the out-of-fold ones are gathered by class name (`outOfFoldProbabilities`, named as the final
+model's columns) for the validation AUC-ROC only; each split is one `metricsOf(..., probabilities)` call.
 
 **The cutoff in the view.** A **Positive class cutoff** change requests no check: it fires the same `CHECK_DELAY_MS`
 timer (`isCheckRequested` tells the two apart; a check wins), and `recut()` replaces `lastTraining.result` with
@@ -535,7 +540,7 @@ changed, and those no step touches are passed on as they are.
   `positiveClass`, `negativeClass`, `binaryClassificationThreshold` (the cutoff) and `targetType` (the target's type)
   are recorded: the keys of the built-in tool's models. Training then measures the scores (see "Metrics"). As in the
   built-in tool, the score is the regression model's prediction on the 0/1 target, not a calibrated probability (it can
-  fall outside 0..1); real class probabilities come when the EDA methods return them (phase 9).
+  fall outside 0..1). A classifier's own probabilities need no step: see "Metrics"; the step stays for the cutoff.
 
 `replayPreprocessing(columns, options)` (application) replays `options.preprocessingInfo` on the mapped columns and
 returns the columns the method gets (the given list itself when there is nothing to replay): `ignore-missing` and
@@ -561,14 +566,18 @@ all-unique columns (the core's rule); without `oneHotCategories` one-hot uses th
   tool hid it. `f1` (new): of the positive class for two classes, the macro average over the classes otherwise.
   For a two-category target the positive class is saved as `metrics.positiveClass`.
 - Rows where the actual or the predicted value is empty are skipped; no rows left is a `ForgeError`.
-- `auc` ("AUC-ROC"), Predict probability only: `aucOf(actual, score, positiveClass)`, the trapezoid over the rows
+- `auc` ("AUC-ROC"): `aucOf(actual, score, positiveClass)`, the trapezoid over the rows
   sorted by score, highest first, the rows of one score taken as one step (one diagonal segment, as scikit-learn; the
   built-in ROC curve stepped row by row, so tied scores counted in their row order); undefined (left out) when the
-  rows hold one class only. A
+  rows hold one class only. For any classifier with probabilities, `metricsOf(task, actual, predicted,
+  positiveClass?, probabilities?)` adds `auc` from `aucOfProbabilities(actual, probabilities, positiveClass?)`: the
+  positive class's column for two classes (`probabilityOf`), the macro average of the
+  one-vs-rest AUCs otherwise (scikit-learn's `multi_class='ovr', average='macro'`) over the classes whose rows hold
+  both classes; the train value on the final model's probabilities, the validation value on the out-of-fold columns
+  gathered by class name (a class a fold model never saw is 0 in its rows). A
   Predict probability training measures its train and out-of-fold scores: the classification metrics above on the
   labels the cutoff gives (`replayPostprocessing` of the scores) against the selection's target, with its positive
-  class, and `auc` on the scores themselves. The scores are regression outputs, not calibrated probabilities (real
-  class probabilities come when the EDA methods return them, phase 9).
+  class, and `auc` on the scores themselves. The scores are regression outputs, not calibrated probabilities.
 - `rocCurveOf(actual, score, positiveClass)` (the points of **ROC Curve**, ported from EDA's probabilistic MPO): at each
   of `ROC_THRESHOLDS` (0, 0.01, ..., 1) a row is positive when its score is at least the threshold (as the cutoff cuts
   the scores); `tpr` and `fpr` are float arrays of 101 values, a rate whose class has no row 0. The curve is drawn,
@@ -652,7 +661,9 @@ host (the two panels while there is no result) and the rows host (`forge-results
 - `setDataInsights(insights)`: the check's `SelectionCheck.insights`, set after every check (also when a problem or a
   hint follows), shown first until the next call.
 - `show(data: ResultsData)`: `engine`, `table`, `columns` (what the method saw), `target` (the selection's), `prediction`
-  (labels or values; the Train view passes `trainPredictionOf(result)`), `score` (Predict probability), `keptRows`,
+  (labels or values; the Train view passes `trainPredictionOf(result)`), `score` (Predict probability),
+  `rocProbability` (`rocProbabilityOf` of the result's class probabilities: the positive class's column when there
+  are exactly two, the ROC curve without Predict probability; a Forge column, not on the preview frame), `keptRows`,
   `positiveClass`, `cutoff` (Predict probability: the Train view's `binaryClassificationThreshold` of the result, the
   evaluation's of the model), `blob`, `summary`. The grid is the `MetricsTable` in place at once (see "Components");
   the result insights are `evaluationInsights` of `summary.evaluation?.values ?? summary.metrics.train` and
@@ -726,7 +737,7 @@ saw them (no row skipped, no preparation step) and Forge's own columns: the pred
 | | **Residuals** | `scatterPlot`: residuals by prediction, regression line, y from `-m` to `m`, `m` the target's largest magnitude |
 | | **Distributions of predicted and actual <target>** | `histogram` of Forge's own frame of 2N rows: `targets` (the target, then the prediction), split by `label` (`TARGET` / `PREDICTION`) |
 | | **Statistics** | `readOnlyGrid` of **Statistic / Actual / Predicted** (`statisticsOf`, `0.000`), header tooltips, the statistic's description on **Statistic** |
-| text or yes/no | **ROC Curve** (with Predict probability) | `scatterPlot` over Forge's own frame of `Threshold`, `FPR`, `TPR` (`rocCurveOf` of the score for the positive class, 101 rows), as EDA's probabilistic MPO: a line (`linesOrderColumnName` `FPR`, `linesWidth` 5, `markerType` `dot`), the dashed formula line `${TPR} = ${FPR}` `Non-informative baseline`, no column selectors; the frame's current row is the cutoff's threshold (`round(cutoff * 100)`); the panel title `ROC Curve (AUC = 0.912)`, the AUC-ROC of **Performance** (`summary.evaluation?.values.auc ?? summary.metrics.train.auc`) |
+| text or yes/no | **ROC Curve** (two classes: with Predict probability, or a method that returns class probabilities) | `scatterPlot` over Forge's own frame of `Threshold`, `FPR`, `TPR` (`rocCurveOf` of `rocScore`: the scores, else the `rocProbability` of a `binary` result; 101 rows), as EDA's probabilistic MPO: a line (`linesOrderColumnName` `FPR`, `linesWidth` 5, `markerType` `dot`), the dashed formula line `${TPR} = ${FPR}` `Non-informative baseline`, no column selectors; the frame's current row is the cutoff's threshold (`round(cutoff * 100)`), none (-1) without a cutoff (probabilities only); more classes: no panel; the panel title `ROC Curve (AUC = 0.912)`, the AUC-ROC of **Performance** (`summary.evaluation?.values.auc ?? summary.metrics.train.auc`) |
 | | **Predicted <target> vs Actual** | `scatterPlot` of the first two numerical columns, colored by the target, markers by `correctness` (two or more numerical columns) |
 | | **Confusions** | `confusionMatrix`: target by prediction (fewer than 10 classes) |
 | | **Wrong predictions** | when a row is wrong: a `readOnlyGrid` of a second shared frame, every column of the table and the prediction spread over its rows (`scatteredColumn`; the same column when no row was skipped), filtered to the wrong rows, with the row header (the table's row numbers); header tooltip `The model's prediction for the row.` |
@@ -742,12 +753,12 @@ frame's extra parent changes nothing for the user's columns (`Column.parent` is 
 
 Keeping the viewers: the pane keeps the shown result's data (table, kind, `columns`, `target`, `keptRows`), its frame,
 Forge's columns, Forge's own frames of **Distributions ...**, **Statistics** and **ROC Curve** (with its title), the
-wrong-predictions frame and the viewer panels. A new result whose table and kind are the same, with or without a score as before, the same kept rows
+wrong-predictions frame and the viewer panels. A new result whose table and kind are the same, with or without a score as before, with or without a `rocProbability` as before, the same kept rows
 and the same columns and target (the same objects, or copies with the same name, type and values: a skipped row or a
 preparation step gives new copies on every training) only refills: the new prediction and score are written into the
 old columns in place (`copyInto` of `apply/apply-model.ts`, or `init` for a text column so its categories are rebuilt, then `fireValuesChanged`; only when the type and the length match, otherwise everything
-is rebuilt; a score equal to the shown one, as after a cutoff change, is not written; a new score refills the ROC
-frame's `FPR` and `TPR` in place, its 101 rows kept), then the marks, the distribution values and the statistics are recomputed in place, so the viewers redraw with
+is rebuilt; a score or a `rocProbability` equal to the shown one, as after a cutoff change, is not written; a new
+one refills the ROC frame's `FPR` and `TPR` in place from `rocScore`, its 101 rows kept), then the marks, the distribution values and the statistics are recomputed in place, so the viewers redraw with
 their state (zoom, sizes) kept. A scatter plot recomputes its regression line only when the state of its inputs
 changes (its columns, its filter's version, its settings: `getRegressionState`, `d4/.../scatterplot/features/
 regression_line.dart`), not when the values of its columns do, so a regression refill fires the frame's filter
@@ -885,18 +896,24 @@ mapping, the positive class): `checkApplyRequest`, then `predictRows` with the d
 missing-values mode the model was trained with (`missingValuesOf`, see "Missing values"); the target is the given column, or a copy of its kept rows
 (`columnRowCopy`). A Predict probability model is measured as at training: the classification metrics of the labels with the positive class (the request's, else the options') plus
 `auc` of the scores (`probabilityValues`, shared with training), the scores coming back as `score`; any other model
-uses `metricsOf(taskOf(target), ...)` (`taskOf`: regression for a numerical target). A
+uses `metricsOf(taskOf(target), ..., rows.probabilities)` (`taskOf`: regression for a numerical target; `auc` of the
+class probabilities when the method returned them: the positive class's column for two classes, else the macro
+average). A
 row without an actual value is left out by the metrics. The `EvaluationResult` holds the columns, the target and the
-prediction of the kept rows, `keptRows`, `skippedRows`, `rowCount` (the kept rows), the metric `values`, the blob
-and `positiveClass` (the request's, else the options'). Nothing is added to the table and no application is recorded.
+prediction of the kept rows, `keptRows`, `skippedRows`, `rowCount` (the kept rows), the metric `values`, the blob,
+`positiveClass` (the request's, else the options') and `probabilities` (the class probabilities of the kept rows, when
+the method returns them). Nothing is added to the table and no application is recorded.
 
 No step writes into the table's columns: the engines read their inputs and return new frames, the replay builds new
 lists with Forge's own one-hot columns, and the imputer only gets copies of the columns it fills. The pipeline builds
 no frame of its own; the imputer's and the engine's frames are given back by the calls that build them. The raw
 engine call
 (`apply` in `engines/engine-calls.ts`) takes the prediction column out of the engine's result frame, so the user's
-table is the column's only parent (`column.dataFrame` is the table). Only the first column of the engine's result is
-used; other output columns are dropped.
+table is the column's only parent (`column.dataFrame` is the table). The first column is the prediction; the
+`proba_<class>` columns after it are the class probabilities (`EnginePrediction` `{prediction, probabilities?}`, taken
+out of the frame too); other columns are dropped. `predictInBatches` concatenates the probabilities of the batches
+(the first batch's classes: a model gives the same ones in every batch) and `predictRows` returns them as
+`RowPredictions.probabilities`; the application adds the prediction column only.
 
 After the pipeline, `applyAndRecord` writes one `application` row (`apply/application-store.ts`, which then fires
 `applicationRecorded` with the model's id): `completed` with
@@ -1393,7 +1410,9 @@ for a method that does not retrain on every change), and the task bar names the 
 Validation uses five folds that cover every row once,
 from a seed saved with the model, instead of five overlapping random samples, and it runs from 10 rows instead of
 being skipped below 100. MAE and F1 are new; AUC-ROC is measured on the Predict probability scores, whose target is a
-float 0/1 column (the built-in tool's int target gets rounded 0/1 predictions from XGBoost). One-hot records the
+float 0/1 column (the built-in tool's int target gets rounded 0/1 predictions from XGBoost), and on the class
+probabilities of any classifier whose method returns them (new; the macro one-vs-rest average for more than two
+classes). One-hot records the
 training categories and replays them (the built-in tool encoded the applied table's categories), and text and yes/no
 features are refused while One-hot is off (which starts checked when every such feature has at most 20 categories).
 Skip unique categories records the columns it dropped, and applying neither asks for them nor passes them to the
@@ -1509,7 +1528,7 @@ nothing trained reads once the view is settled (`aria-busy` not true).
 
 ## EMS schema `forge`
 
-Manifest: `databases/forge/schema.json`, version `0.1.14`. `grok publish` deploys it; a debug publish applies
+Manifest: `databases/forge/schema.json`, version `0.1.15`. `grok publish` deploys it; a debug publish applies
 destructive changes without migration scripts, except a `promotion` change on a row table, which is always refused
 (`[promotion-change]`). To change it, publish a manifest with only a placeholder table, then the real one, bumping
 `version` both times; the first publish drops the tables with their data and their rows' entities and permissions,
@@ -1543,7 +1562,7 @@ EMS `json` columns hold objects only; a list is wrapped in an object. TS types: 
 | `model.features`, `training_run.features` | `FeaturesSchema` | `{columns: [{name, type, semType?}]}`, in training order |
 | `options` | `PreparationOptions` | Preparation replay, see below and "Preparation"; Forge writes `{preprocessingInfo, postprocessingInfo, missingValues: {mode, neighbors?, distance?, skippedRows}, skippedColumns?: [names], oneHotCategories?: {<column>: [categories]}}`, plus `positiveClass`, `negativeClass`, `binaryClassificationThreshold`, `targetType` with Predict probability |
 | `hyperparameters` | `Hyperparameters` | `{<train function input>: value}` |
-| `metrics` | `MetricsRecord` | `{train: {<metric id>: number}, validation: {<metric id>: number}, positiveClass?}`; ids `mse`, `rmse`, `mae`, `r2`, `accuracy`, `f1`, `sensitivity`, `specificity`, `precision`, `npv`, `auc` (Predict probability only) |
+| `metrics` | `MetricsRecord` | `{train: {<metric id>: number}, validation: {<metric id>: number}, positiveClass?}`; ids `mse`, `rmse`, `mae`, `r2`, `accuracy`, `f1`, `sensitivity`, `specificity`, `precision`, `npv`, `auc` (classifiers whose method returns probabilities, and Predict probability) |
 | `splitting` | `Splitting` | `{scheme: none \| kfold \| holdout, folds?, trainFraction?, isStratified?}` |
 | `model.dataset_ref` | `DatasetRef` | Reference mode: `{kind: file \| query \| script, script, path?, id?, name?}`, see "Storage modes" |
 | `dataset_fingerprint` | `DatasetFingerprint` | `{rowCount, columnCount, hash, columns: [{name, type, missingCount, min?, max?, mean?, categories?}]}` |
@@ -1646,7 +1665,7 @@ An engine is the set of functions that share `meta.mlname` (the engine id). `met
 | Role | Signature | Notes |
 |---|---|---|
 | `train` | `(df, predictColumn, ...hyperparameters) -> model blob` | The other inputs are the hyperparameters |
-| `apply` | `(df, model) -> dataframe` | Forge takes the first column as the prediction, out of the returned frame |
+| `apply` | `(df, model) -> dataframe` | Forge takes the first column as the prediction and the `proba_<class>` columns after it as the class probabilities, out of the returned frame |
 | `isApplicable` | `(df, predictColumn) -> bool` | |
 | `isInteractive` | `(df, predictColumn) -> bool` | Optional. `meta.mlupdate: 'false'` turns off live retraining |
 | `visualize` | `(df, targetColumn, predictColumn, model)` | Optional |
@@ -1662,7 +1681,8 @@ CatBoost, Decision Tree and TabM; see "Missing values").
 - The calls (`isApplicable`, `isInteractive`, `train`, `apply` in `engines/engine-calls.ts`) take the feature columns
   and build the table themselves, a frame of the columns given back by `onFrame` when the call ends.
 - `train` returns the blob as a `Uint8Array` or a `DG.FileInfo` (its `data` is used); anything else is a
-  `ForgeError`. `apply` must return a dataframe with at least one column.
+  `ForgeError`. `apply` must return a dataframe with at least one column; columns named `proba_<class>` after the
+  first are read as the class probabilities (AUC-ROC, the two-class ROC curve), any other column is dropped.
 - Hyperparameter defaults come from the `train` annotation (`//input: int iterations = 20`). The platform keeps them
   as text in `Property.initialValue` (`Property.defaultValue` stays null), a string one in quotes (`'RBF'`);
   `defaultValuesOf` (used by `defaultHyperparameters` and for the imputation inputs) converts them by the input type

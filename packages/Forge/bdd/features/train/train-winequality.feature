@@ -52,7 +52,7 @@ Feature: Training a regressor of wine quality in the Train view
     And "Features" results panel should be visible
     And "Features correlation" results panel should be visible
     And "Class balance" results panel should be visible
-    And "ROC Curve" results panel should be absent
+    And "ROC Curve" results panel should be visible
     And "Residuals" results panel should be absent
     And the "bars" reading of bar chart viewer in "Class balance" results panel should be 2
     And "Insights & Tips" results panel should contain text "The classes are unbalanced."

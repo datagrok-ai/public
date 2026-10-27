@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {Engine, EngineRole, Hyperparameters} from './engine';
 import {ForgeError} from '../forge-error';
+import {ClassProbabilities} from '../metrics/metrics';
 import {onFrame} from '../preparation/shared-frame';
 
 export async function isApplicable(engine: Engine, features: DG.Column[], target: DG.Column): Promise<boolean> {
@@ -27,15 +28,27 @@ export async function train(engine: Engine, features: DG.Column[], target: DG.Co
   throw new ForgeError(`The method '${engine.name}' returned no model.`);
 }
 
-/** The first column of the engine's result, taken out of the result frame, so a table it is added to is its parent. */
-export async function apply(engine: Engine, features: DG.Column[], blob: Uint8Array): Promise<DG.Column> {
+const PROBABILITY_PREFIX = 'proba_';
+
+export interface EnginePrediction {
+  prediction: DG.Column;
+  probabilities?: ClassProbabilities;
+}
+
+/** The first column of the engine's result, the prediction, and the `proba_<class>` columns after it, all taken out of
+ * the result frame, so a table they are added to is their parent. */
+export async function apply(engine: Engine, features: DG.Column[], blob: Uint8Array): Promise<EnginePrediction> {
   const func = roleFunc(engine, 'apply', 'cannot apply models');
   const result: unknown = await onFrame(features, (df) => func.apply({df, model: blob}));
   if (!(result instanceof DG.DataFrame) || result.columns.length === 0)
     throw new ForgeError(`The method '${engine.name}' returned no predictions.`);
-  const prediction = result.columns.byIndex(0);
-  result.columns.remove(prediction, false);
-  return prediction;
+  const columns = result.columns.toList();
+  const prediction = columns[0];
+  const probabilityColumns = columns.slice(1).filter((c) => c.name.startsWith(PROBABILITY_PREFIX));
+  for (const col of [prediction, ...probabilityColumns])
+    result.columns.remove(col, false);
+  return probabilityColumns.length === 0 ? {prediction} : {prediction, probabilities: {
+    classes: probabilityColumns.map((c) => c.name.substring(PROBABILITY_PREFIX.length)), columns: probabilityColumns}};
 }
 
 /** The part of a progress indicator a loop of engine calls uses: the cancel flag and the update. */

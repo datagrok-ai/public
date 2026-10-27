@@ -6,7 +6,7 @@ import {selectBestEngine} from '../engines/best-engine';
 import {defaultHyperparameters, defaultValuesOf, Engine, handlesMissingValues, hasTrainingRows, hyperparametersOf,
   isComplete, isServerEngine, rolesOf} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
-import {isApplicable, isInteractive} from '../engines/engine-calls';
+import {apply, isApplicable, isInteractive} from '../engines/engine-calls';
 import {SettingDetails} from '../engines/method-list';
 import {runListMethods, runTrainModel} from '../training/train-api';
 import {CLASSIFIERS, columnsOf, deleteRunsOf, demoDemog, EDA_METHODS, engineByName, expectReleased, failsWith,
@@ -78,6 +78,32 @@ category('Engines', () => {
     const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
     expect(JSON.stringify(defaultHyperparameters(xgboost)),
       JSON.stringify({iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0}));
+  });
+
+  test('apply takes the first column and the proba_ columns after it, drops the rest', async () => {
+    const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
+    const engineReturning = (result: () => DG.DataFrame): Engine => {
+      const spy: DG.Func = Object.create(xgboost.functions.apply!);
+      spy.apply = async () => result();
+      return {...xgboost, functions: {...xgboost.functions, apply: spy}};
+    };
+    const frame = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('Prediction', ['a', 'b', 'a']),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_b', [0.2, 0.7, 0.4]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_a', [0.8, 0.3, 0.6]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'other', [1, 2, 3])]);
+    const spy = engineReturning(() => frame);
+    const columns = [DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [0, 1, 2])];
+    const result = await apply(spy, columns, new Uint8Array());
+    expect(result.prediction.name, 'Prediction');
+    expectArray(result.probabilities?.classes ?? [], ['b', 'a']);
+    expectArray(result.probabilities?.columns.map((c) => c.name) ?? [], ['proba_b', 'proba_a']);
+    expectArray(frame.columns.names(), ['other']);
+
+    const single = engineReturning(() =>
+      DG.DataFrame.fromColumns([DG.Column.fromStrings('Prediction', ['a', 'b', 'a'])]));
+    expect((await apply(single, columns, new Uint8Array())).probabilities === undefined, true,
+      'A single column gave probabilities');
   });
 
   test('a string default loses the quotes the server keeps it in', async () => {

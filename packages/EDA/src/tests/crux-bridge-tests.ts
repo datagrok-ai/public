@@ -1,15 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, category, expect, expectArray, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectArray, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
 
 import {tableFromIPC} from 'apache-arrow';
 
 import {cruxMl} from '../crux/crux-loader';
 import {toArrowIpc} from '../crux/crux-bridge';
 import {LEGACY_MODEL_ERROR, cruxFit, cruxPredict, cruxTerminate, readCruxManifest, runCrux} from '../crux/crux-model';
-import {accuracy, classificationDataset, copyCol, decoyColumns, mulberry32, numericFeatures, predictColumn, r2,
-  regressionDataset} from './utils';
+import {GAP_ROWS, IRIS_SPECIES, accuracy, classificationDataset, copyCol, decoyColumns, expectProbabilities,
+  irisMeasurements, mulberry32, numericFeatures, predictColumn, r2, regressionDataset} from './utils';
 
 const IRIS = 'System:DemoFiles/iris.csv';
 const ROWS = 200;
@@ -132,6 +132,49 @@ category('Crux bridge', () => {
     const manifest = readCruxManifest(bytes);
     expect(manifest.pipeline![0].step, 'standard_scaler');
     expectArray(manifest.classes!, Array.from(new Set(target.toList())).sort());
+  }, {timeout: TIMEOUT});
+
+  test('Class probabilities', async () => {
+    const {features, bytes} = await irisModel();
+    await expectProbabilities(frame(features), bytes, IRIS_SPECIES);
+
+    const df = classificationDataset(300, 3, true, 42);
+    const flags = numericFeatures(df, 'Labels').toList();
+    const target = DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'flag',
+      df.col('Labels')!.toList().map((l: string) => l[0] === 'A'));
+    await expectProbabilities(frame(flags), await cruxFit('classification', 'logistic', frame(flags), target),
+      ['false', 'true']);
+
+    const regression = await cruxFit('regression', 'linear', frame(features.slice(1)), features[0]);
+    expectArray((await cruxPredict(frame(features), regression)).columns.names(), ['Prediction']);
+
+    const gapped = await expectProbabilities(irisMeasurements(await grok.dapi.files.readCsv(IRIS), GAP_ROWS), bytes,
+      IRIS_SPECIES);
+    for (const col of gapped.columns.toList()) {
+      for (let i = 0; i < gapped.rowCount; ++i)
+        expect(col.isNone(i), GAP_ROWS.includes(i), `${col.name}, row ${i}`);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Class probabilities of rows the model cannot predict and of no rows', async () => {
+    const {bytes} = await irisModel();
+    const iris = await grok.dapi.files.readCsv(IRIS);
+    const everyRow = Array.from({length: iris.rowCount}, (_, i) => i);
+    const allGaps = await expectProbabilities(irisMeasurements(iris, everyRow), bytes, IRIS_SPECIES);
+    for (const col of allGaps.columns.toList())
+      expect(col.stats.missingValueCount, iris.rowCount, `${col.name} has a value`);
+
+    const none = irisMeasurements(iris).clone(DG.BitSet.create(iris.rowCount, () => false));
+    expect((await expectProbabilities(none, bytes, IRIS_SPECIES)).rowCount, 0);
+  }, {timeout: TIMEOUT});
+
+  test('Classes that differ only in case get no probability columns', async () => {
+    const df = classificationDataset(200, 3, true, 42);
+    const features = numericFeatures(df, 'Labels').toList();
+    const target = DG.Column.fromStrings('case',
+      df.col('Labels')!.toList().map((l: string) => l[0] === 'A' ? 'a' : 'A'));
+    const bytes = await cruxFit('classification', 'logistic', frame(features), target);
+    expectArray((await cruxPredict(frame(features), bytes)).columns.names(), ['Prediction']);
   }, {timeout: TIMEOUT});
 
   test('Save and read back', async () => {
@@ -273,6 +316,4 @@ category('Crux bridge', () => {
     for (const line of lines)
       console.log(line);
   }, {timeout: 600000, benchmark: true});
-
-  after(async () => cruxTerminate());
 });

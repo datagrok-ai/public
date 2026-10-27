@@ -12,9 +12,9 @@ import {isCatBoostApplicable, isCatBoostInteractive, isDecisionTreeApplicable, i
   trainTabm} from '../crux/methods';
 import {readCruxManifest} from '../crux/crux-model';
 import {Fit, FITS, loadCase} from './baseline';
-import {accuracy, applyTwice, asTable, classificationDataset, copyCol, demogFrame, expectGapsKept, expectRejected,
-  GAP_ROWS, irisMeasurements, numericFeatures, predictColumn, roundTrip, sameValues, seededRegression,
-  splitTarget} from './utils';
+import {accuracy, applyTwice, asTable, classificationDataset, copyCol, demogFrame, expectGapsKept,
+  expectProbabilities, expectRejected, GAP_ROWS, IRIS_SPECIES, irisMeasurements, numericFeatures, predictColumn,
+  roundTrip, sameValues, seededRegression, splitTarget} from './utils';
 
 const IRIS = 'System:DemoFiles/iris.csv';
 
@@ -256,6 +256,11 @@ for (const m of METHODS) {
         const iris = await readIris();
         await roundTrip(m.name, m.fit, iris.col('Species')!, numericFeatures(iris, 'Species', ['col 1']),
           m.floors.species);
+      }, {timeout: TIMEOUT});
+
+      test('Class probabilities', async () => {
+        const {df, species} = await irisSpecies();
+        await expectProbabilities(df, await m.fit(df, species), IRIS_SPECIES);
       }, {timeout: TIMEOUT});
     }
 

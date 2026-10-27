@@ -4,24 +4,25 @@ import {awaitCheck, category, expect, expectArray, expectExceptionAsync, expectF
   from '@datagrok-libraries/test/src/test';
 import {defaultHyperparameters, Engine, hyperparametersOf} from '../engines/engine';
 import {applicableEngines} from '../engines/applicable-engines';
-import {apply, LoopProgress, yieldToEventLoop} from '../engines/engine-calls';
+import {apply, EnginePrediction, LoopProgress, yieldToEventLoop} from '../engines/engine-calls';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {defaultFeatures} from '../training/default-features';
 import {kFold} from '../training/k-fold';
-import {aucOf, MetricValues} from '../metrics/metrics';
+import {aucOf, aucOfProbabilities, MetricValues, probabilityOf} from '../metrics/metrics';
 import {MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
 import {prepareFeatures, replayPreprocessing} from '../preparation/pipeline';
 import {isRecord, PreparationOptions, stringsOf} from '../preparation/preparation-options';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {dataInsights, metricInsights, resultInsights} from '../training/insights';
 import {runTrainModel, TrainModelInput} from '../training/train-api';
-import {checkSelection, needsRowsWithoutGaps, prepareTraining, recutResult, TrainingProblems, TrainingRequest,
-  TrainingResult, TrainingSelection, trainingEngines, trainModel, trainPredictionOf} from '../training/train-model';
+import {checkSelection, needsRowsWithoutGaps, outOfFoldProbabilities, prepareTraining, recutResult, TrainingProblems,
+  TrainingRequest, TrainingResult, TrainingSelection, trainingEngines, trainModel, trainPredictionOf}
+  from '../training/train-model';
 import {QueuedTraining, TrainingQueue} from '../training/training-queue';
 import {cancelTaskBarEntry, CLASSIFIERS, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, EDA_METHODS,
   engineByName, expectMetrics, expectNoFrames, expectReleased, failsWith, framesSharing, GAP_ROWS, IMPUTE,
-  inDiscoveryOrder, IRIS, MEASUREMENTS, names, NO_OPTIONS, ONE_HOT_STEPS, openDemoTable, openIris,
+  inDiscoveryOrder, IRIS, MEASUREMENTS, names, NO_OPTIONS, NO_PREPARATION_STEPS, ONE_HOT_STEPS, openDemoTable, openIris,
   PREDICT_PROBABILITY, REGRESSORS, requestOf, runsOf, selectionOf, SKIP_UNIQUE_STEPS, taskBarEntry, twoSpeciesIris,
   valuesOf, withGaps} from './test-data';
 
@@ -760,6 +761,77 @@ category('Training', () => {
     expect(skipped.keptRows?.get(3), false);
   }, {timeout: TIMEOUT});
 
+  test('trainModel measures AUC-ROC from the class probabilities: three classes macro, two classes the positive class',
+    async () => {
+      const iris = await openIris();
+      const species = iris.getCol('Species');
+      const result = await trainModel(await requestOf(columnsOf(iris, MEASUREMENTS), species));
+      const probabilities = result.probabilities;
+      expectArray(probabilities?.classes ?? [], ['setosa', 'versicolor', 'virginica']);
+      for (const col of probabilities?.columns ?? [])
+        expect(`${col.type} ${col.length}`, `${DG.COLUMN_TYPE.FLOAT} 150`, col.name);
+      for (const split of ['train', 'validation'] as const) {
+        const auc = result.metrics[split].auc ?? NaN;
+        expect(auc > 0.5 && auc <= 1, true, `${split} AUC-ROC ${auc}`);
+      }
+      expectFloat(result.metrics.train.auc ?? NaN, aucOfProbabilities(species, probabilities!) ?? NaN, 1e-9);
+      expect(result.task, 'classification');
+      expect(result.scores === undefined, true, 'A plain classifier has scores');
+
+      const twoSpecies = await twoSpeciesIris();
+      const two = twoSpecies.getCol('Species');
+      const binary = await trainModel(await requestOf(columnsOf(twoSpecies, MEASUREMENTS), two));
+      expect(binary.metrics.positiveClass, 'versicolor');
+      const positive = probabilityOf(binary.probabilities!, 'versicolor')!;
+      expectFloat(binary.metrics.train.auc ?? NaN, aucOf(two, positive, 'versicolor') ?? NaN, 1e-9);
+    }, {timeout: ENGINE_TIMEOUT});
+
+  test('a regression and Predict probability get no class probabilities', async () => {
+    const iris = await openIris();
+    const regression = await trainModel(await requestOf(columnsOf(iris, ['Sepal.Length', 'Sepal.Width']),
+      iris.getCol('Petal.Length')));
+    expect(regression.probabilities === undefined && regression.metrics.validation.auc === undefined, true,
+      'A regression has class probabilities');
+
+    const twoSpecies = await twoSpeciesIris();
+    const probability = await trainModel(await requestOf(columnsOf(twoSpecies, MEASUREMENTS),
+      twoSpecies.getCol('Species'), PREDICT_PROBABILITY));
+    expect(probability.probabilities === undefined, true, 'Predict probability has class probabilities');
+    expect(probability.scores !== undefined && probability.metrics.validation.auc !== undefined, true,
+      'Predict probability lost its scores or AUC-ROC');
+  }, {timeout: ENGINE_TIMEOUT});
+
+  test('outOfFoldProbabilities gathers by class name and gives 0 to a class a fold never saw', async () => {
+    const floats = (name: string, values: number[]) => DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values);
+    const prediction = DG.Column.fromStrings('Prediction', ['a', 'b']);
+    const fold0: EnginePrediction = {prediction, probabilities: {classes: ['a', 'b'],
+      columns: [floats('proba_a', [0.9, 0.2]), floats('proba_b', [0.1, 0.8])]}};
+    const fold1: EnginePrediction = {prediction, probabilities: {classes: ['a', 'b', 'c'],
+      columns: [floats('proba_a', [0.5, 0.1]), floats('proba_b', [0.3, 0.2]), floats('proba_c', [0.2, 0.7])]}};
+    const fold = [0, 1, 0, 1];
+    const position = [0, 0, 1, 1];
+    const gathered = outOfFoldProbabilities([fold0, fold1], fold1.probabilities!, fold, position)!;
+    expectArray(gathered.columns.map((c) => c.name), ['proba_a', 'proba_b', 'proba_c']);
+    const rounded = (col: DG.Column) => col.toList().map((v: number) => Math.round(v * 100) / 100);
+    expectArray(rounded(gathered.columns[0]), [0.9, 0.5, 0.2, 0.1]);
+    expectArray(rounded(gathered.columns[1]), [0.1, 0.3, 0.8, 0.2]);
+    expectArray(rounded(gathered.columns[2]), [0, 0.2, 0, 0.7]);
+    expect(outOfFoldProbabilities([fold0, {prediction}], fold0.probabilities!, fold, position) === undefined, true,
+      'A fold without probabilities gave probabilities');
+  });
+
+  test('a boolean target gets AUC-ROC of its positive class', async () => {
+    const demog = await openDemoTable('System:DemoFiles/demog.csv', 'demog');
+    const control = demog.getCol('CONTROL');
+    const result = await trainModel(await requestOf(columnsOf(demog, ['AGE', 'HEIGHT', 'WEIGHT']), control,
+      NO_PREPARATION_STEPS, undefined, {mode: 'keep'}));
+    expectArray(result.probabilities?.classes ?? [], ['false', 'true']);
+    expect(result.metrics.positiveClass, control.categories[0]);
+    expect(probabilityOf(result.probabilities!, result.metrics.positiveClass!) !== undefined, true,
+      `No probability column of ${result.metrics.positiveClass}`);
+    expect(typeof result.metrics.validation.auc, 'number');
+  }, {timeout: ENGINE_TIMEOUT});
+
   for (const [name, targets] of SKIP_IMPUTE_TARGETS) {
     test(`${name} trains and applies with missing values under Skip rows and Impute`, async () => {
       const calls: string[] = [];
@@ -778,9 +850,13 @@ category('Training', () => {
           const result = await trainModel(request);
           expect(result.rowCount, expectedRows, what);
           expect(result.task, targetName === 'Species' ? 'classification' : 'regression', what);
+          if (targetName === 'Species') {
+            expect(name === 'SVM' ? result.metrics.validation.auc === undefined :
+              typeof result.metrics.validation.auc === 'number', true, `${what}: AUC-ROC`);
+          }
 
           const prepared = await prepareMissingValues(features, undefined, missingValues);
-          const prediction = await apply(engine, prepared.features, result.blob);
+          const prediction = (await apply(engine, prepared.features, result.blob)).prediction;
           expect(prediction.length, expectedRows, what);
           expect(prediction.stats.missingValueCount, 0, `${what}: empty predictions`);
           expect(features[0].isNone(GAP_ROWS[0]) && features[1].isNone(GAP_ROWS[1]), true,
@@ -812,8 +888,10 @@ category('Training', () => {
         expect(result.rowCount, 150, what);
         expect(JSON.stringify(result.options.missingValues), JSON.stringify({mode: 'keep', skippedRows: 0}), what);
         expectArray(result.options.preprocessingInfo, []);
+        if (targetName === 'Species')
+          expect(typeof result.metrics.validation.auc, 'number', `${what}: no AUC-ROC`);
 
-        const prediction = await apply(engine, features, result.blob);
+        const prediction = (await apply(engine, features, result.blob)).prediction;
         expect(prediction.length, 150, what);
         expect(prediction.stats.missingValueCount, 0, `${what}: empty predictions`);
       }
@@ -858,6 +936,7 @@ category('Training', () => {
       expect(result.rowCount, 150);
       expect(result.skippedRows, 0);
       expect(typeof result.metrics.validation.accuracy, 'number');
+      expect(typeof result.metrics.validation.auc, 'number');
       expect(result.modelId === null && result.name === null, true, JSON.stringify(result));
       const runs = await runsOf([iris]);
       expectArray(runs.map((r) => `${r.id} ${r.status} ${r.source} ${r.model_id ?? ''}`),

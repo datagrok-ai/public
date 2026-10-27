@@ -4,10 +4,11 @@ import {applicableEngines, EngineFailure} from '../engines/applicable-engines';
 import {selectBestEngine} from '../engines/best-engine';
 import {defaultMissingValues, Engine, handlesMissingValues, Hyperparameters, isComplete} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
-import {apply, isInteractive, LoopProgress, train, yieldToEventLoop} from '../engines/engine-calls';
+import {apply, EnginePrediction, isInteractive, LoopProgress, train, yieldToEventLoop} from '../engines/engine-calls';
 import {ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
-import {aucOf, METRIC_IDS, MetricValues, metricsOf, probabilityValues, Split, taskOf} from '../metrics/metrics';
+import {aucOf, ClassProbabilities, METRIC_IDS, MetricValues, metricsOf, probabilityOf, probabilityValues, Split,
+  taskOf} from '../metrics/metrics';
 import {missingColumnsOf, MissingValuesSettings, missingValuesProblems, prepareMissingValues}
   from '../preparation/missing-values';
 import {PreparationSteps, PreparedFeatures, prepareFeatures, replayPostprocessing} from '../preparation/pipeline';
@@ -86,6 +87,9 @@ export interface TrainingResult extends TrainingSetup {
   hyperparameters: Hyperparameters;
   rowCount: number;
   scores?: ProbabilityScores;
+  /** The final model's class probabilities of the training rows, when the method returns them (`proba_<class>`
+   * columns after its prediction). */
+  probabilities?: ClassProbabilities;
 }
 
 export interface TrainingProblems { target: string[]; features: string[]; missingValues: string[]; method: string[] }
@@ -278,24 +282,28 @@ export async function trainModel(request: TrainingRequest, progress?: LoopProgre
   const steps = folds + 1;
 
   const fold = kFold(rowCount, folds, seed);
-  const foldPredictions: DG.Column[] = [];
+  const foldResults: EnginePrediction[] = [];
   for (let i = 0; i < folds; i++) {
     // Fold copies keep the target's full category list, so every fold model has the final model's classes.
     const isFit = DG.BitSet.create(rowCount, (r) => fold[r] !== i);
     const isHeldOut = isFit.clone().invert();
     await checkCancelled(progress);
     const foldBlob = await train(engine, columns.map((c) => c.clone(isFit)), target.clone(isFit), hyperparameters);
-    foldPredictions.push(await apply(engine, columns.map((c) => c.clone(isHeldOut)), foldBlob));
+    foldResults.push(await apply(engine, columns.map((c) => c.clone(isHeldOut)), foldBlob));
     progress?.update(100 * (i + 1) / steps, `Fold ${i + 1} of ${folds}`);
   }
-  const outOfFold = DG.Column.fromType(foldPredictions[0].type, foldPredictions[0].name, rowCount);
   const next = new Int32Array(folds);
-  for (let r = 0; r < rowCount; r++)
-    outOfFold.set(r, foldPredictions[fold[r]].get(next[fold[r]]++), false);
+  const position = new Int32Array(rowCount);
+  const first = foldResults[0].prediction;
+  const outOfFold = DG.Column.fromType(first.type, first.name, rowCount);
+  for (let r = 0; r < rowCount; r++) {
+    position[r] = next[fold[r]]++;
+    outOfFold.set(r, foldResults[fold[r]].prediction.get(position[r]), false);
+  }
 
   await checkCancelled(progress);
   const blob = await train(engine, columns, target, hyperparameters);
-  const trainPrediction = await apply(engine, columns, blob);
+  const {prediction: trainPrediction, probabilities} = await apply(engine, columns, blob);
   progress?.update(100, 'Final model');
 
   const result = {...setup, blob, prediction: trainPrediction, seed, hyperparameters: {...hyperparameters}, rowCount};
@@ -309,13 +317,34 @@ export async function trainModel(request: TrainingRequest, progress?: LoopProgre
   }
   const categories = setup.target.categories;
   const positiveClass = categories !== undefined && categories.length === 2 ? categories[0] : undefined;
+  const validationProbabilities = probabilities === undefined ? undefined :
+    outOfFoldProbabilities(foldResults, probabilities, fold, position);
   const metrics: MetricsRecord = {
-    train: metricsOf(setup.task, target, trainPrediction, positiveClass),
-    validation: metricsOf(setup.task, target, outOfFold, positiveClass),
+    train: metricsOf(setup.task, target, trainPrediction, positiveClass, probabilities),
+    validation: metricsOf(setup.task, target, outOfFold, positiveClass, validationProbabilities),
   };
   if (positiveClass !== undefined)
     metrics.positiveClass = positiveClass;
-  return {...result, metrics};
+  return {...result, metrics, probabilities};
+}
+
+/** The out-of-fold probabilities of the classes of [final] (the final model's, whose column names they take),
+ * gathered by class name from the fold models' results ([fold] and [position] map a row to its fold and its row
+ * there); a class a fold model never saw is 0 in its rows; undefined when a fold returned none. */
+export function outOfFoldProbabilities(results: EnginePrediction[], final: ClassProbabilities,
+  fold: ArrayLike<number>, position: ArrayLike<number>): ClassProbabilities | undefined {
+  if (results.some((r) => r.probabilities === undefined))
+    return undefined;
+  const columns = final.classes.map((cls, k) => {
+    const sources = results.map((r) => probabilityOf(r.probabilities!, cls)?.getRawData() ?? null);
+    const values = new Float32Array(position.length);
+    for (let r = 0; r < position.length; r++) {
+      const source = sources[fold[r]];
+      values[r] = source === null ? 0 : source[position[r]];
+    }
+    return DG.Column.fromFloat32Array(final.columns[k].name, values);
+  });
+  return {classes: final.classes, columns};
 }
 
 /** A Predict probability result cut again at [cutoff], without retraining: the metrics of the labels change, AUC-ROC

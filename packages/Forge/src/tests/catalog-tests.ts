@@ -114,7 +114,7 @@ category('Catalog', () => {
     }, failsWith('Select at least two models to compare.'));
   });
 
-  test('compareModels lists AUC-ROC (train) and (validation) for a predict-probability model', async () => {
+  test('compareModels lists AUC-ROC for a predict-probability model and a plain classifier', async () => {
     const iris = await twoSpeciesIris();
     const result = await trainModel(await requestOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'),
       PREDICT_PROBABILITY));
@@ -122,10 +122,16 @@ category('Catalog', () => {
     const probability: CompareModelRow = {id: 'p', name: 'forge-test-probability', created_on: dayjs(),
       engine_name: 'XGBoost', task: result.task, target_name: 'Species', row_count: result.rowCount,
       metrics: result.metrics};
-    const df = compareModels([regressor, probability]);
+    const threeSpecies = await openIris();
+    const classifier = await trainModel(await requestOf(columnsOf(threeSpecies, MEASUREMENTS),
+      threeSpecies.getCol('Species')));
+    const plain: CompareModelRow = {...probability, id: 'c', name: 'forge-test-classifier', task: classifier.task,
+      row_count: classifier.rowCount, metrics: classifier.metrics};
+    const df = compareModels([regressor, probability, plain]);
     const names = df.columns.names();
     expect(names.includes('AUC-ROC (train)') && names.includes('AUC-ROC (validation)'), true, names.join(', '));
     expectFloat(df.get('AUC-ROC (validation)', 1), result.metrics.validation.auc ?? NaN, 1e-6);
+    expectFloat(df.get('AUC-ROC (validation)', 2), classifier.metrics.validation.auc ?? NaN, 1e-6);
     expect(df.getCol('AUC-ROC (train)').isNone(0), true, 'The regressor has an AUC-ROC');
   }, {timeout: TIMEOUT});
 

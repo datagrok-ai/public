@@ -36,7 +36,7 @@ let fixtureId: string | undefined;
 
 /** The engine's predictions for [columns], as a list. */
 async function predictionsOf(engine: Engine, columns: DG.Column[], blob: Uint8Array): Promise<unknown[]> {
-  return (await apply(engine, columns, blob)).toList();
+  return (await apply(engine, columns, blob)).prediction.toList();
 }
 
 const shared = () => savedFixture(fixture);
@@ -233,7 +233,7 @@ category('Apply', () => {
       expect(column.getTag(PREDICTION_TAG), id);
       expect(skippedRows, 0);
       expectMetrics(metricsOf('classification', iris.getCol('Species'), column, result.metrics.positiveClass),
-        result.metrics.train, 1e-9);
+        {...result.metrics.train, auc: undefined}, 1e-9);
       expectArray(column.toList(), await predictionsOf(model.engine, columnsOf(iris, MEASUREMENTS), result.blob));
       expectArray(iris.columns.names(), [...names, 'Species (predicted)']);
       expect(iris.getCol('col 1').type, DG.COLUMN_TYPE.INT);
@@ -289,6 +289,12 @@ category('Apply', () => {
     expect(percents.length, 4);
     expect(percents.every((p, i) => i === 0 || p > percents[i - 1]), true, percents.join(', '));
     expect(percents[percents.length - 1], 100);
+
+    const whole = await predictRows(requestFor(model, irisCopy('one-call')));
+    const batched = await predictRows(requestFor(model, irisCopy('batched'), {batchSize: 40}));
+    expectArray(batched.probabilities?.classes ?? [], whole.probabilities?.classes ?? ['none']);
+    for (const [k, col] of (whole.probabilities?.columns ?? []).entries())
+      expectArray(batched.probabilities!.columns[k].toList(), col.toList());
 
     const cancelled = irisCopy('cancel');
     const columnCount = cancelled.columns.length;
@@ -524,12 +530,15 @@ category('Apply', () => {
     expect(rows.keptRows === null && rows.skippedRows === 0, true, 'Rows were skipped');
     expect(rows.blob.length > 0, true, 'Empty blob');
     expectArray(rows.columns.map((c) => c.name), MEASUREMENTS);
+    expectArray(rows.probabilities?.classes ?? [], ['setosa', 'versicolor', 'virginica']);
+    expectArray(rows.probabilities?.columns.map((c) => c.length) ?? [], [150, 150, 150]);
 
     table.getCol('Sepal.Width').set(3, null);
     const skipped = await predictRows(requestFor(model, table));
     expect(skipped.keptRows?.trueCount, 149);
     expect(skipped.skippedRows, 1);
     expect(skipped.labels.length, 149);
+    expectArray(skipped.probabilities?.columns.map((c) => c.length) ?? [], [149, 149, 149]);
     const spread = scatteredColumn(skipped.labels, skipped.keptRows ?? DG.BitSet.create(150), 150);
     expect(spread.isNone(3), true, 'The skipped row has a prediction');
     expect(spread.get(4), reference[4]);
@@ -547,6 +556,8 @@ category('Apply', () => {
     const evaluation = await evaluateModel({model, table, target, mapping: exactMapping(model.features, table),
       positiveClass: result.metrics.positiveClass});
     expectMetrics(evaluation.values, result.metrics.train, 1e-6);
+    expect(typeof evaluation.values.auc, 'number');
+    expect(evaluation.probabilities !== undefined, true, 'No class probabilities');
     expect(evaluation.rowCount, 150);
     expect(evaluation.target === target && evaluation.keptRows === null, true, 'The target was copied');
     expect(evaluation.score === undefined, true, 'A score without Predict probability');
@@ -644,6 +655,7 @@ category('Apply', () => {
         [id, iris.name, 'Species', 150, 0]);
       expectFloat(evaluation.metrics.evaluation.accuracy ?? NaN, result.metrics.train.accuracy ?? NaN, 1e-6,
         'accuracy');
+      expectFloat(evaluation.metrics.evaluation.auc ?? NaN, result.metrics.train.auc ?? NaN, 1e-6, 'auc');
       expectMetrics(evaluation.metrics.train, stored.train, 1e-12);
       expectMetrics(evaluation.metrics.validation, stored.validation, 1e-12);
       expect(Array.isArray(evaluation.insights) && evaluation.insights.every((i) => typeof i.text === 'string' &&

@@ -5,7 +5,7 @@ import {ApplyRequest, checkApplyRequest, DEFAULT_BATCH_SIZE, LoadedModel, missin
 import {ColumnMapping} from '../apply/column-matching';
 import {LoopProgress} from '../engines/engine-calls';
 import {ModelRow} from '../generated/db';
-import {aucOf, MetricValues, metricsOf, probabilityValues, taskOf} from '../metrics/metrics';
+import {aucOf, ClassProbabilities, MetricValues, metricsOf, probabilityValues, taskOf} from '../metrics/metrics';
 import {BINARY_CLASSIFICATION} from '../preparation/preparation-options';
 import {columnRowCopy} from '../preparation/row-copy';
 import {openDatasetRef, storedDatasetRef} from '../storage/dataset-ref';
@@ -36,6 +36,8 @@ export interface EvaluationResult {
   blob: Uint8Array;
   /** The request's positive class, else the model's. */
   positiveClass?: string;
+  /** The method's class probabilities of the kept rows, when it returns them. */
+  probabilities?: ClassProbabilities;
 }
 
 /** Applies the model to the table's rows (missing values handled as at training, `missingValuesOf`) and measures the
@@ -56,7 +58,8 @@ export async function evaluateModel(request: EvaluationRequest, progress?: LoopP
     const values = probabilityValues(target, rows.labels, positiveClass, aucOf(target, rows.raw, positiveClass));
     return {...result, values, score: rows.raw};
   }
-  return {...result, values: metricsOf(taskOf(target), target, rows.labels, positiveClass)};
+  return {...result, values: metricsOf(taskOf(target), target, rows.labels, positiveClass, rows.probabilities),
+    probabilities: rows.probabilities};
 }
 
 /** The data the model keeps a reference to, else its uploaded copy, opened without joining the workspace; null when

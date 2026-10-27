@@ -112,7 +112,9 @@ Returns one object with what the model's **Details**, **Performance** and **Acti
 | `applicableTo` | the names of the open tables the model fits (a column of a close name counts) |
 
 The metric keys inside `train`, `validation` and `evaluation`: `mse`, `rmse`, `mae`, `r2` (regression), `accuracy`,
-`f1` (classification), `sensitivity`, `specificity`, `precision`, `npv` (two classes), `auc` (Predict probability).
+`f1` (classification), `sensitivity`, `specificity`, `precision`, `npv` (two classes), `auc` (classifiers whose
+method returns probabilities, and Predict probability; with more than two classes, the average over the classes of
+the one-vs-rest AUCs).
 
 Errors (every function with `model`): `No Forge model 'X' is available to you.`,
 `Several models are named 'X'. Use the model id.`

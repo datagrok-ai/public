@@ -72,6 +72,12 @@ async function closeTrainView(view: TrainView, tables: DG.DataFrame[]): Promise<
 
 const isDisabled = (button: HTMLElement) => button.classList.contains('d4-disabled');
 const isShown = (element: HTMLElement) => element.style.display !== 'none';
+/** The title of [view]'s ROC Curve panel (`ROC Curve (AUC = ...)`); '' when there is none. */
+const rocTitleOf = (view: TrainView | EvaluationView) =>
+  rowTitles(view).flat().find((t) => t.startsWith('ROC Curve')) ?? '';
+/** The metrics grid under [root] has the row [label]. */
+const hasMetric = (root: HTMLElement, label: string) =>
+  gridWith(root, 'Metric').dataFrame.getCol('Metric').toList().includes(label);
 /** **Train** is laid out: its row under the inputs is shown. */
 const isTrainShown = (view: TrainView) => view.trainButton.offsetParent !== null;
 
@@ -1014,10 +1020,9 @@ category('UI: Train', () => {
       expect(view.methodInput.items.includes('Softmax'), false, 'Softmax is listed for the probability');
       const auc = trained?.metrics.validation.auc;
       expect(auc !== undefined && auc > 0.5 && auc <= 1, true, `Validation AUC-ROC ${auc}`);
-      expect(gridWith(view.root, 'Metric').dataFrame.getCol('Metric').toList().includes('AUC-ROC'), true,
-        'No AUC-ROC row in Results');
+      expect(hasMetric(view.root, 'AUC-ROC'), true, 'No AUC-ROC row in Results');
       const probabilityGrid = gridWith(view.root, 'Metric');
-      expect(probabilityGrid.root === classificationGrid, false, 'A task change kept the classification grid');
+      expect(probabilityGrid.root === classificationGrid, true, 'The same metric rows built a new grid');
       const runCount = (await runsOf([demog])).length;
 
       cutoff.value = 0.9;
@@ -1068,8 +1073,7 @@ category('UI: Train', () => {
       await awaitTrained(view);
       expect(view.lastTraining?.result.options.binaryClassificationThreshold, 0.5);
       expect(resultsText(view).includes('Fix the settings.'), false, 'Results still shows the hint');
-      expect(gridWith(view.root, 'Metric').dataFrame.getCol('Metric').toList().includes('AUC-ROC'), true,
-        'Results shows no metrics');
+      expect(hasMetric(view.root, 'AUC-ROC'), true, 'Results shows no metrics');
     } finally {
       for (const model of await models())
         await deleteModel(model.id);
@@ -1163,7 +1167,7 @@ async function expectRocCurve(): Promise<void> {
   const {predictProbability, cutoff} = view.preparationInputs;
   try {
     predictProbability.value = true;
-    const rocTitle = () => rowTitles(view).flat().find((t) => t.startsWith('ROC Curve')) ?? '';
+    const rocTitle = () => rocTitleOf(view);
     await awaitCheck(() => rocTitle() !== '' && view.lastTraining?.result.scores !== undefined && !view.isTraining,
       'No ROC Curve', TIMEOUT);
     const aucTitle = () => `ROC Curve (AUC = ${view.lastTraining?.result.metrics.train.auc?.toFixed(3)})`;
@@ -1218,6 +1222,121 @@ async function expectRocCurve(): Promise<void> {
     expect(frame.currentRowIdx, 90, 'The retrain moved the mark');
   } finally {
     await closeTrainView(view, [iris]);
+  }
+}
+
+/** XGBoost on two iris species: ROC Curve from the class probabilities, no mark, refilled by a retrain; none for SVM
+ * (no class probabilities), a regression or three classes, which still get the AUC-ROC row. */
+async function expectProbabilityRocCurve(): Promise<void> {
+  const iris = await twoSpeciesIris();
+  const view = await openTrainView(iris);
+  const rocTitle = () => rocTitleOf(view);
+  let other: TrainView | undefined;
+  let threeSpecies: DG.DataFrame | undefined;
+  try {
+    await awaitCheck(() => rocTitle() !== '' && !view.isTraining, 'No ROC Curve', TIMEOUT);
+    expectRows(rowTitles(view)[0], ['Predicted Species vs Actual', rocTitle(), 'Performance']);
+    expect(view.lastTraining?.result.scores === undefined, true, 'Scores without Predict probability');
+    expect(rocTitle(), `ROC Curve (AUC = ${view.lastTraining?.result.metrics.train.auc?.toFixed(3)})`);
+    const roc = panelViewer(view, rocTitle());
+    const frame = roc.dataFrame;
+    expectArray(frame.columns.names(), ['Threshold', 'False Positive Rate', 'True Positive Rate']);
+    expect(frame.rowCount, 101);
+    expect(frame.currentRowIdx, -1, 'A curve without a cutoff has a marked point');
+    expect(view.resultsPane.frames.some((f) => f.dart === frame.dart), false, 'ROC Curve is on the preview frame');
+    const fpr = frame.getCol('False Positive Rate').toList();
+    const tpr = frame.getCol('True Positive Rate').toList();
+
+    const before = view.lastTraining;
+    setHyperparameter(view, 'iterations', 1);
+    await awaitCheck(() => view.lastTraining !== before && !view.isTraining, 'No retrain', TIMEOUT);
+    await delay(CHECK_DELAY_MS * 3);
+    const retrained = panelViewer(view, rocTitle());
+    expect(retrained.root === roc.root && retrained.dataFrame.dart === frame.dart, true,
+      'The retrain rebuilt ROC Curve or its frame');
+    expect(frame.getCol('False Positive Rate').toList().some((v, i) => v !== fpr[i]) ||
+      frame.getCol('True Positive Rate').toList().some((v, i) => v !== tpr[i]), true,
+    'The retrain left the curve as it was');
+
+    view.methodInput.value = 'SVM';
+    await awaitCheck(() => view.lastTraining?.engine.name === 'SVM' && !view.isTraining, 'No SVM training', TIMEOUT);
+    await delay(CHECK_DELAY_MS * 3);
+    expect(rocTitle(), '', 'SVM has a ROC Curve');
+    expect(hasMetric(view.root, 'AUC-ROC'), false, 'SVM has an AUC-ROC row');
+
+    view.methodInput.value = 'XGBoost';
+    view.featuresInput.value = columnsOf(iris, ['Sepal.Length', 'Sepal.Width']);
+    view.targetInput.value = iris.getCol('Petal.Length');
+    await awaitCheck(() => view.lastTraining?.result.task === 'regression' && !view.isTraining,
+      'No regression training', TIMEOUT);
+    await delay(CHECK_DELAY_MS * 3);
+    expect(rocTitle(), '', 'A regression has a ROC Curve');
+
+    threeSpecies = await openIris();
+    other = await openTrainView(threeSpecies);
+    expect(rocTitleOf(other), '', 'Three classes have ROC Curve');
+    expect(hasMetric(other.root, 'AUC-ROC'), true, 'Three classes have no AUC-ROC row');
+  } finally {
+    if (other !== undefined && threeSpecies !== undefined)
+      await closeTrainView(other, [threeSpecies]);
+    await closeTrainView(view, [iris]);
+  }
+}
+
+/** XGBoost on demog SEX: ROC Curve from the class probabilities without a mark; Predict probability on marks the
+ * cutoff, off drops the mark again; the metrics grid is kept throughout. */
+async function expectProbabilityToggle(): Promise<void> {
+  const demog = await openDemog();
+  const view = await TrainView.create(demog);
+  grok.shell.addView(view);
+  const {predictProbability} = view.preparationInputs;
+  const rocTitle = () => rocTitleOf(view);
+  const rocFrame = () => panelViewer(view, rocTitle()).dataFrame;
+  try {
+    view.targetInput.value = demog.getCol('SEX');
+    view.featuresInput.value = columnsOf(demog, ['AGE', 'HEIGHT', 'WEIGHT']);
+    await awaitCheck(() => view.lastTraining?.result.probabilities !== undefined && !view.isTraining &&
+      rocTitle() !== '', 'No ROC Curve from the class probabilities', TIMEOUT);
+    expect(rocFrame().currentRowIdx, -1, 'A curve without a cutoff has a marked point');
+    const grid = gridWith(view.root, 'Metric').root;
+
+    predictProbability.value = true;
+    await awaitCheck(() => view.lastTraining?.result.scores !== undefined && !view.isTraining && rocTitle() !== '',
+      'No ROC Curve with Predict probability', TIMEOUT);
+    await delay(CHECK_DELAY_MS * 3);
+    expect(rocFrame().currentRowIdx, 50, 'The cutoff 0.5 is not marked');
+    expect(gridWith(view.root, 'Metric').root === grid, true, 'Predict probability built a new metrics grid');
+
+    predictProbability.value = false;
+    await awaitCheck(() => view.lastTraining?.result.probabilities !== undefined && !view.isTraining &&
+      rocTitle() !== '', 'No ROC Curve after Predict probability is off', TIMEOUT);
+    await delay(CHECK_DELAY_MS * 3);
+    expect(rocFrame().currentRowIdx, -1, 'The mark stayed without Predict probability');
+    expect(gridWith(view.root, 'Metric').root === grid, true, 'Turning Predict probability off built a new grid');
+  } finally {
+    await closeTrainView(view, [demog]);
+  }
+}
+
+/** Run Evaluation of a two-class XGBoost model without Predict probability: ROC Curve from the class probabilities,
+ * no mark, the AUC-ROC row with an Evaluation value. */
+async function expectEvaluationRocCurve(): Promise<void> {
+  const iris = await twoSpeciesIris();
+  const {id} = await saveTestModel(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'), iris.name);
+  let view: EvaluationView | undefined;
+  try {
+    const model = await forgeDb.models.get(id);
+    const loaded = await loadModel(id);
+    view = await EvaluationView.open(model, loaded, iris, iris.getCol('Species'), exactMapping(loaded.features, iris));
+    const titles = rowTitles(view)[0];
+    const roc = rocTitleOf(view);
+    expectRows(titles, ['Predicted Species vs Actual', roc, 'Performance']);
+    const metrics = gridWith(view.resultsPane.root, 'Metric').dataFrame;
+    const aucRow = metricRow(gridWith(view.resultsPane.root, 'Metric'), 'AUC-ROC');
+    expect(roc, `ROC Curve (AUC = ${metrics.get('Evaluation', aucRow).toFixed(3)})`);
+  } finally {
+    view?.close();
+    await deleteModel(id);
   }
 }
 
@@ -1599,6 +1718,15 @@ category('UI: Results', () => {
   test('ROC Curve: a line over its own frame of 101 thresholds, the AUC of Performance; a cutoff moves only its ' +
     'mark, a retrain refills the frame', expectRocCurve, {timeout: 120000});
 
+  test('ROC Curve from the class probabilities of a two-class classifier, none for more classes; refilled by a retrain',
+    expectProbabilityRocCurve, {timeout: 180000});
+
+  test('ROC Curve stays when Predict probability goes on and off; the mark follows it, the grid is kept',
+    expectProbabilityToggle, {timeout: 180000});
+
+  test('Run Evaluation of a two-class model shows ROC Curve from the class probabilities', expectEvaluationRocCurve,
+    {timeout: TIMEOUT});
+
   test('MetricsTable: the Evaluation column and bullet, a finding in the failure color\'s tooltip', async () => {
     const evaluated = new MetricsTable({metrics: {train: {accuracy: 0.9, f1: 0.9}, validation: {accuracy: 0.85,
       f1: 0.8}}, rowCount: 150, skippedRows: 0, evaluation: {values: {accuracy: 0.9, f1: 0.9}, tableName: 't',
@@ -1612,6 +1740,16 @@ category('UI: Results', () => {
     const grid = gridWith(low.root, 'Metric');
     const tooltip = gridTooltip(grid, grid.cell('Train', metricRow(grid, 'R2')));
     expect(tooltip.endsWith('R2 is below 0.3.'), true, tooltip);
+
+    const evaluationOnly = gridWith(new MetricsTable({metrics: {train: {accuracy: 0.9}, validation: {accuracy: 0.85}},
+      rowCount: 150, skippedRows: 0, evaluation: {values: {accuracy: 0.9, auc: 0.8}, tableName: 't', rowCount: 150,
+        skippedRows: 0}}).root, 'Metric');
+    const metrics = evaluationOnly.dataFrame;
+    expectArray(metrics.getCol('Metric').toList(), ['Accuracy', 'AUC-ROC']);
+    const aucRow = metricRow(evaluationOnly, 'AUC-ROC');
+    expect(metrics.getCol('Train').isNone(aucRow) && metrics.getCol('Validation').isNone(aucRow), true,
+      'AUC-ROC has Train or Validation values');
+    expectFloat(metrics.get('Evaluation', aucRow), 0.8, 1e-6);
   });
 
   test('EvaluationView: the Evaluation column equals Train on the training data; no column, no application',
@@ -3019,6 +3157,8 @@ category('UI: Runs', () => {
       expectArray([grid.dataFrame.get('#', 0), grid.dataFrame.get('Method', 0), grid.dataFrame.get('Status', 0)],
         [1, 'XGBoost', 'completed']);
       expect(typeof grid.dataFrame.get('Accuracy (validation)', 0), 'number');
+      expect(grid.dataFrame.columns.names().includes('AUC-ROC (validation)'), true,
+        grid.dataFrame.columns.names().join(', '));
       expect(grid.dataFrame.currentRowIdx, 0);
       expect(grid.props.showCurrentRowIndicator, true);
       expect(gridTooltip(grid, grid.cell('Method', 0)).includes('iterations: 20'), true,

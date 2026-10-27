@@ -7,6 +7,7 @@ import {defaultHyperparameters, Engine, handlesMissingValues, Hyperparameters, h
   from '../engines/engine';
 import {errorMessage} from '../forge-error';
 import {TrainingRunStatus} from '../generated/db';
+import {rocProbabilityOf} from '../metrics/metrics';
 import {_package} from '../package';
 import {missingColumnsOf} from '../preparation/missing-values';
 import {DatasetFingerprint, datasetFingerprint, featuresHadGaps} from '../storage/dataset-fingerprint';
@@ -26,6 +27,7 @@ import {ForgeApp} from './forge-app';
 import {MissingValuesInputs} from './missing-values-inputs';
 import {PreparationInputs} from './preparation-inputs';
 import {reportError} from './report-error';
+import {classesOf} from './results-layout';
 import {ResultsPane} from './results-pane';
 import {RunInputs, RunsPanel, SessionRun} from './runs-panel';
 import {saveModelDialog} from './save-model-dialog';
@@ -699,12 +701,14 @@ export class TrainView extends DG.ViewBase {
     const summary = {metrics: result.metrics, rowCount: result.rowCount, folds: FOLDS, seed: result.seed,
       skippedRows: result.options.missingValues?.skippedRows ?? 0,
       keepsMissingValues: result.options.missingValues?.mode === 'keep' && featuresHadGaps(fingerprint)};
+    const positiveClass = result.metrics.positiveClass;
     this.results.setAttribute(SHOWN_RUN, runId);
     this.showing++;
     this.publishState(this.problem());
     this.resultsPane.show({engine, table, columns: request.prepared.columns, target: request.target,
-      prediction: trainPredictionOf(result), score: result.scores?.train, keptRows: request.keptRows,
-      positiveClass: result.metrics.positiveClass, cutoff: result.options.binaryClassificationThreshold,
+      prediction: trainPredictionOf(result), score: result.scores?.train,
+      rocProbability: rocProbabilityOf(result.probabilities, positiveClass ?? classesOf(request.target)[0]),
+      keptRows: request.keptRows, positiveClass, cutoff: result.options.binaryClassificationThreshold,
       blob: result.blob, summary}).catch((e) => reportError(e)).finally(() => {
       this.showing--;
       this.publishState(this.problem());

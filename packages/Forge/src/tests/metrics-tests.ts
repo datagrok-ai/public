@@ -2,8 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectExceptionAsync, expectFloat, test}
   from '@datagrok-libraries/test/src/test';
 import {ForgeError} from '../forge-error';
-import {areValuesSimilar, classificationMetrics, metricFindings, MetricId, MetricValues, regressionMetrics,
-  ROC_THRESHOLDS, rocCurveOf} from '../metrics/metrics';
+import {areValuesSimilar, aucOf, aucOfProbabilities, ClassProbabilities, classificationMetrics, metricFindings,
+  MetricId, MetricValues, probabilityOf, regressionMetrics, ROC_THRESHOLDS, rocCurveOf} from '../metrics/metrics';
 import {residualsOf, STATISTIC_IDS, statisticsOf} from '../metrics/statistics';
 
 const numbers = (values: (number | null)[]) => DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'n', values);
@@ -130,6 +130,28 @@ category('Metrics', () => {
     expectArray(point(0.5), [0.5, 0.5]);
     expectArray(point(0.7), [0, 0.5]);
     expectArray(point(0.95), [0, 0]);
+  });
+
+  test('aucOfProbabilities: the positive class for two classes, the macro one-vs-rest average for more', async () => {
+    const two = labels(['a', 'a', 'b', 'b']);
+    // a's positives score 0.9 and 0.3, its negatives 0.8 and 0.1: 3 of 4 pairs ordered.
+    const probaA = numbers([0.9, 0.3, 0.8, 0.1]);
+    const flat = numbers([0.5, 0.5, 0.5, 0.5]);
+    const binary: ClassProbabilities = {classes: ['a', 'b'], columns: [probaA, flat]};
+    expectFloat(aucOfProbabilities(two, binary, 'a')!, 0.75, 1e-9);
+    expectFloat(aucOfProbabilities(two, binary, 'b')!, 0.5, 1e-9);
+    expectFloat(aucOfProbabilities(two, binary)!, (0.75 + 0.5) / 2, 1e-9);
+    expect(probabilityOf(binary, 'z') === undefined, true, 'an unknown class has a column');
+    expect(aucOfProbabilities(two, binary, 'z') === undefined, true, 'an unknown positive class has an AUC');
+
+    const three = labels(['a', 'a', 'b', 'c']);
+    const columns = [numbers([0.7, 0.2, 0.4, 0.1]), numbers([0.2, 0.5, 0.5, 0.3]), numbers([0.1, 0.3, 0.1, 0.6])];
+    const macro = aucOfProbabilities(three, {classes: ['a', 'b', 'c'], columns})!;
+    const each = ['a', 'b', 'c'].map((cls, k) => aucOf(three, columns[k], cls)!);
+    expectFloat(macro, (each[0] + each[1] + each[2]) / 3, 1e-9);
+
+    const absent: ClassProbabilities = {classes: ['a', 'b', 'c'], columns: [probaA, flat, numbers([0, 0, 0, 0])]};
+    expectFloat(aucOfProbabilities(two, absent)!, (0.75 + 0.5) / 2, 1e-9);
   });
 
   test('statisticsOf lists the eleven statistics, q2 being the median', async () => {

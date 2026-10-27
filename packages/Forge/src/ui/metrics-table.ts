@@ -113,8 +113,8 @@ export class MetricsTable {
     return true;
   }
 
-  private static idsOf({metrics}: MetricsSummary): MetricId[] {
-    return METRIC_IDS.filter((id) => metrics.validation[id] !== undefined);
+  private static idsOf({metrics, evaluation}: MetricsSummary): MetricId[] {
+    return METRIC_IDS.filter((id) => metrics.validation[id] !== undefined || evaluation?.values[id] !== undefined);
   }
 
   /** The findings that mark the value of [column] in [row]. */

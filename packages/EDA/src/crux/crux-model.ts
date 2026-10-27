@@ -4,11 +4,12 @@ import * as sha256 from 'fast-sha256';
 import {Table, tableFromIPC} from 'apache-arrow';
 
 import {cruxMl, CruxResource} from './crux-loader';
-import {floatColumn, stringValues, toArrowIpc} from './crux-bridge';
+import {floatColumn, listColumns, stringValues, toArrowIpc} from './crux-bridge';
 
 export const LEGACY_MODEL_ERROR =
   'This model was saved by an older EDA version and is no longer supported - retrain the model';
 const PREDICTION = 'Prediction';
+const PROBA_PREFIX = 'proba_';
 
 const FORMAT = 'crux-model-v1';
 const MANIFEST_KEY = 'crux.model';
@@ -105,6 +106,13 @@ export function modelFeatures(df: DG.DataFrame, manifest: CruxManifest): DG.Colu
   return columns;
 }
 
+/** A classifier whose `ml.predict` fills `probas` (not `svc`), with column names that differ beyond case (a DataFrame
+ * refuses two names that differ only in case) */
+function hasProbabilities(manifest: CruxManifest): boolean {
+  const classes = (manifest.classes ?? []).map((c) => String(c));
+  return manifest.model !== 'svc' && new Set(classes.map((c) => c.toLowerCase())).size === classes.length;
+}
+
 /** Applies a crux-model-v1 blob; features are matched by the names saved at training */
 export async function cruxPredict(df: DG.DataFrame, bytes: Uint8Array): Promise<DG.DataFrame> {
   const manifest = readCruxManifest(bytes);
@@ -116,11 +124,13 @@ export async function cruxPredict(df: DG.DataFrame, bytes: Uint8Array): Promise<
   if (manifest.task === 'regression')
     return DG.DataFrame.fromColumns([floatColumn(out, 'value', PREDICTION)]);
 
-  const labels = stringValues(out, 'class');
   const classes = manifest.classes ?? [];
+  const probabilities = hasProbabilities(manifest) ?
+    listColumns(out, 'probas', classes.map((c) => `${PROBA_PREFIX}${c}`)) : [];
+  const labels = stringValues(out, 'class');
   const all = (type: string) => classes.length > 0 && classes.every((c) => typeof c === type);
   const result = (type: DG.ColumnType, values: any[]) =>
-    DG.DataFrame.fromColumns([DG.Column.fromList(type, PREDICTION, values)]);
+    DG.DataFrame.fromColumns([DG.Column.fromList(type, PREDICTION, values), ...probabilities]);
   if (all('boolean'))
     return result(DG.COLUMN_TYPE.BOOL, labels.map((v) => v === 'true'));
   if (all('number')) {
