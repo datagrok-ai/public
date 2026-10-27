@@ -384,3 +384,41 @@ describe('logs match', () => {
     expect(calls[0].path).toContain('since=2h');
   });
 });
+
+describe('groups', () => {
+  const current = () => ({logGroups: [{id: 'g1', name: 'Errors', kind: 'records', levels: ['error'], saveTo: [{destination: 'db'}]}],
+    exportSettings: [{'#type': 'OpenTelemetrySettings', id: 'e1', name: 'grafana', endpoint: 'http://otel:4318/v1/logs'}]});
+  const answer = (settings: any) => (method: string) => method === 'GET' ? JSON.stringify({settings}) : null;
+  const posted = (calls: any[]) => calls.find((c) => c.method === 'POST')?.body;
+
+  it('adds a group from flags, the filter as text', async () => {
+    const {calls} = await observe('groups', 'add', [], {name: 'Chembl', levels: 'error,warning',
+      filter: 'package = Chembl and not text ~ probe', to: 'db,grafana:otlp'}, answer(current()));
+    const g = posted(calls).logGroups[1];
+    expect(g).toMatchObject({name: 'Chembl', levels: ['error', 'warning'], filter: 'package = Chembl and not text ~ probe',
+      saveTo: [{destination: 'db'}, {destination: 'grafana', format: 'otlp'}], activation: 'always'});
+    expect(g.id).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('changes only the flags given, by name', async () => {
+    const {calls} = await observe('groups', 'set', ['Errors'], {enabled: 'false', when: 'level = error', for: '15m', before: '60s'},
+      answer(current()));
+    expect(posted(calls).logGroups[0]).toMatchObject({name: 'Errors', enabled: false, levels: ['error'], activation: 'triggered',
+      triggerWhen: 'level = error', activeMinutes: 15, flushBeforeSeconds: 60});
+  });
+
+  it('removes a group, and an endpoint with the ticks that name it', async () => {
+    expect(posted((await observe('groups', 'rm', ['Errors'], {}, answer(current()))).calls).logGroups).toEqual([]);
+    const settings = current();
+    settings.logGroups[0].saveTo.push({destination: 'grafana'});
+    const body = posted((await observe('endpoints', 'rm', ['grafana'], {}, answer(settings))).calls);
+    expect(body.exportSettings).toEqual([]);
+    expect(body.logGroups[0].saveTo).toEqual([{destination: 'db'}]);
+  });
+
+  it('lists groups as a table', async () => {
+    const {printed} = await observe('groups', 'list', [], {}, answer(current()), 'table');
+    expect(printed).toContain('Errors');
+    expect(printed).toContain('db');
+  });
+});
