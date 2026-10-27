@@ -91,7 +91,6 @@ export interface DomainAppOptions {
   defaults?: Record<string, unknown>;
   /** The form's columns, in this order; every column by default. */
   include?: string[];
-  /** The columns the form leaves out — where the rest, columns users add later included, should show. */
   exclude?: string[];
   /** The entity page's panes under the form, on by default: the child collections (a tab per
    * referring table; options narrow them) and the row's history — where the table keeps one
@@ -475,7 +474,6 @@ export class DomainApp extends Control {
     const search = domains.search(this.listSource);
     const sort = this._sortMenu();
     const tools: Control[] = [search, sort];
-    // only the platform's tables are extended; whether this user may is asked of it
     if (this.table.table instanceof DgDomainTable)
       tools.push(this._propertiesButton());
     for (const control of [add, save, discard, more, reload, ...tools])
@@ -485,17 +483,13 @@ export class DomainApp extends Control {
     return this._ribbon = {main: [add, save, discard, more, reload], tools, presets: []};
   }
 
-  /** "Edit properties…" — shown once the platform says the user may add columns to this table. */
   private _propertiesButton(): Control {
     const [schema, table] = this.table.address.split('.');
-    const properties = new Control(this.runInScope(() => iconButton('pencil-ruler',
-      () => void domains.editProperties(schema, {table}).catch((e) => DomainErrors.report(e)),
-      {tooltip: 'Edit properties…'})));
-    properties.root.dataset.u2 = 'properties-button';
-    properties.root.hidden = true;
-    void PropertyDialog.extensible(schema).then((tables) => properties.root.hidden = !tables.has(table),
-      () => properties.root.hidden = true);
-    return properties;
+    const button = new Control(this.runInScope(() => iconButton('pencil-ruler',
+      () => void domains.editProperties(schema, table).catch((e) => DomainErrors.report(e)), {tooltip: 'Edit properties…'})));
+    button.root.hidden = true;
+    void PropertyDialog.extensible(schema).then((tables) => button.root.hidden = !tables.has(table));
+    return button;
   }
 
   /** The ribbon as `appView` takes it — `[main, tools, presets]`, empty slots dropped.
@@ -832,7 +826,6 @@ export class DomainApp extends Control {
     return DomainApp._byView.get(view);
   }
 
-  /** The view showing an app — its counterpart of {@link of}. */
   static viewOf(app: DomainApp): DG.ViewBase | undefined {
     return DomainApp._views.get(app);
   }

@@ -16,7 +16,7 @@
    could not be read). Registered names are locked by baseline membership, declared refs stay
    authoritative (a new warehouse foreign key is a suggestion), and every edit is a field on one
    flat surface, which is what the change list, the apply patch and the three-way rebase read. */
-import {computed, signal, Signal, ReadonlySignal, camelCaseToWords} from '@datagrok-libraries/u2';
+import {computed, signal, Signal, ReadonlySignal} from '@datagrok-libraries/u2';
 import {ManifestRules} from './manifest-rules.js';
 
 export interface ManifestColumnJson {
@@ -143,7 +143,6 @@ export interface TableView {
   /** In the registered manifest (edit mode): its logical name and remote mapping are locked. */
   registered: boolean;
   drift?: DriftView;
-  /** The plugin opened the table to its users' own columns (`extensible`). */
   extensible: boolean;
 }
 
@@ -188,24 +187,10 @@ export interface ColumnView {
   relations: RelationView[];
   registered: boolean;
   drift?: DriftView;
-  /** Extend mode: a column of the user's own — added on the server before, or in this edit —
-   * which they may change; every other column is the plugin's and is read. True outside extend. */
   owned: boolean;
-  /** The declaration's descriptive keys as they stand. */
-  attributes: ColumnAttributes;
+  decl: Readonly<ManifestColumnJson>;
 }
 
-/** The keys of a column declaration that describe its values, not its storage. */
-export const COLUMN_ATTRIBUTES = ['friendlyName', 'description', 'choices', 'min', 'max', 'format', 'default',
-  'semType'] as const;
-export type ColumnAttribute = typeof COLUMN_ATTRIBUTES[number];
-export type ColumnAttributes = {[K in ColumnAttribute]?: K extends 'choices' ? string[] :
-  K extends 'min' | 'max' ? number : K extends 'default' ? string | number | boolean : string};
-
-/** The types a column of the user's own may take: a ref is not offered here. */
-export const EXTEND_TYPES = ['string', 'int', 'float', 'bool', 'datetime'] as const;
-
-/** Extend mode's apply section: per plugin table, the FULL state of the user's own columns. */
 export type ExtendPatch = Record<string, {columns: Record<string, ManifestColumnJson>}>;
 
 /** One line of the Review change list; `id` is stable across re-plans, by LOGICAL names (a
@@ -254,7 +239,6 @@ export interface ManifestModelOptions {
   takenNames?: string[];
   /** Edit mode: the registered manifest, the immutable baseline the draft annotates and extends. */
   baseline?: ManifestJson;
-  /** Extend mode over the baseline: only the user's own columns change, on tables that opted in. */
   extend?: boolean;
 }
 
@@ -270,9 +254,7 @@ interface ColumnState {
   target?: string;
   demoted?: string;
   registered: boolean;
-  /** The registry marked it the user's (`origin: 'user'`), or this edit added it. */
   owned: boolean;
-  /** Its logical name was typed: it no longer follows the friendly name. */
   named?: boolean;
 }
 
@@ -403,8 +385,6 @@ export class ManifestModel {
   constructor(draft: DraftEnvelope | null, options: ManifestModelOptions = {}) {
     this._baseline = options.baseline ?? null;
     this._extend = options.extend === true;
-    if (this._extend && this._baseline === null)
-      throw new Error('u2: extend mode edits a registered manifest (options.baseline)');
     this.name = signal('');
     this.friendlyName = signal(options.friendlyName ?? '');
     this.description = signal(options.description ?? '');
@@ -457,15 +437,12 @@ export class ManifestModel {
     return this._baseline?.incarnation;
   }
 
-  /** Extend mode: the plugin's tables and columns are read, the user's own are edited. */
   get extending(): boolean {
     return this._extend;
   }
 
-  /** The extension counter an extend apply sends as `ifVersion` (a package-managed schema's). */
   get extVersion(): string | undefined {
-    const v = this._baseline?.['extVersion'];
-    return v === undefined ? undefined : String(v);
+    return this._baseline?.extVersion as string | undefined;
   }
 
   table(remote: string): TableView | undefined {
@@ -532,70 +509,42 @@ export class ManifestModel {
     if (state === undefined || column === undefined || state.key.includes(remote) || column.included === on ||
         column.demoted !== undefined || !column.owned)
       return;
-    this._mutate(() => column.included = on);
-  }
-
-  /** Extend mode: a new column of the user's own on a table that opted in, named free of the
-   * table's columns; answers its name, null where the table takes none. */
-  addColumn(table: string, type: string = 'string'): string | null {
-    const state = this._tables.get(table);
-    if (!this._extend || state === undefined || state.decl?.extensible !== true)
-      return null;
-    const name = ManifestModel._free('property', [...state.columns.keys()]);
-    this._mutate(() => state.columns.set(name, {remote: name, logical: name, decl: {type}, included: true, type,
-      registered: false, owned: true}));
-    return name;
-  }
-
-  /** A column this edit added goes away; a saved one of the user's own is marked removed until the
-   * save drops it — {@link includeColumn} takes it back. */
-  removeColumn(table: string, remote: string): void {
-    const state = this._tables.get(table);
-    const column = state?.columns.get(remote);
-    if (state === undefined || column === undefined || !this._extend || !column.owned)
-      return;
-    if (column.registered)
-      this.includeColumn(table, remote, false);
-    else
-      this._mutate(() => state.columns.delete(remote));
-  }
-
-  /** A new column's type; the values it described that the new type cannot hold go. A saved
-   * column keeps its type: changing it would rewrite the stored values. */
-  setColumnType(table: string, remote: string, type: string): void {
-    const column = this._tables.get(table)?.columns.get(remote);
-    if (column === undefined || column.registered || !column.owned || column.type === type)
-      return;
     this._mutate(() => {
-      column.type = type;
-      column.decl.type = type;
-      for (const key of COLUMN_ATTRIBUTES) {
-        if (!ManifestRules.attributeFits(key, type))
-          delete column.decl[key];
-      }
-      delete column.decl.default;
+      if (this._extend && !column.registered)
+        state.columns.delete(remote);
+      else
+        column.included = on;
     });
   }
 
-  /** One descriptive key of a column of the user's own; empty (`''`, `null`, `[]`) clears it. A
-   * new column's name follows its friendly name until it is typed. */
-  setColumnAttribute(table: string, remote: string, key: ColumnAttribute, value: unknown): void {
+  addColumn(table: string): string | null {
+    const state = this._tables.get(table);
+    if (!this._extend || state?.decl?.extensible !== true)
+      return null;
+    const name = ManifestModel._free('property', [...state.columns.keys()]);
+    this._mutate(() => state.columns.set(name, {remote: name, logical: name, decl: {type: 'string'}, included: true,
+      type: 'string', registered: false, owned: true}));
+    return name;
+  }
+
+  setColumn(table: string, remote: string, key: string, value: unknown): void {
     const state = this._tables.get(table);
     const column = state?.columns.get(remote);
-    if (state === undefined || column === undefined || !column.owned || !ManifestRules.attributeFits(key, column.type))
-      return;
-    const empty = value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
-    if (empty ? !(key in column.decl) : Fields.same(column.decl[key], value))
+    if (state === undefined || column === undefined || !column.owned || key === 'type' && column.registered)
       return;
     this._mutate(() => {
-      if (empty)
+      if (key === 'type') {
+        const {friendlyName, description} = column.decl;
+        column.type = String(value);
+        column.decl = {type: column.type, friendlyName, description};
+      }
+      else if (value == null || value === '' || Array.isArray(value) && value.length === 0)
         delete column.decl[key];
       else
-        (column.decl as Record<string, unknown>)[key] = value;
+        column.decl[key] = value;
       if (key === 'friendlyName' && !column.registered && !column.named) {
-        const base = ManifestRules.identifier(String(value ?? '')) || 'property';
-        column.logical = ManifestModel._free(base, [...state.columns.values()].filter((c) => c !== column)
-          .map((c) => c.logical));
+        column.logical = ManifestModel._free(ManifestRules.identifier(String(value ?? '')) || 'property',
+          [...state.columns.values()].filter((c) => c !== column).map((c) => c.logical));
       }
     });
   }
@@ -832,41 +781,24 @@ export class ManifestModel {
         continue;
       out.push(this._describe(d));
     }
-    // a column this edit declared is no field of the loaded surface: one line says it all
-    for (const remote of this._order) {
-      const state = this._tables.get(remote)!;
+    for (const state of this._tables.values()) {
       for (const column of state.columns.values()) {
         if (this._extend && !column.registered)
-          out.push(this._added(state, column));
+          out.push(ManifestModel._added(state, column));
       }
     }
     return out;
   }
 
-  /** Extend mode's apply section: per table whose own columns changed, the full state of them —
-   * omitting a saved one is its drop; empty when nothing changed. */
   extendPatch(): ExtendPatch {
     const patch: ExtendPatch = {};
-    const baseline = this._baseline!;
-    for (const remote of this._order) {
-      const state = this._tables.get(remote)!;
-      const owned = [...state.columns.values()].filter((c) => c.owned && (c.registered || c.included));
-      if (owned.length === 0)
-        continue;
-      const columns: Record<string, ManifestColumnJson> = {};
-      for (const column of owned) {
-        if (column.included)
-          columns[column.logical] = this._columnJSON(column, false);
-      }
-      const before: Record<string, ManifestColumnJson> = {};
-      for (const [name, c] of Object.entries(baseline.tables[state.logical]?.columns ?? {})) {
-        if (c.origin === 'user') {
-          const {origin: _origin, ...rest} = c;
-          before[name] = rest;
-        }
-      }
-      if (!Fields.same(before, columns))
-        patch[state.logical] = {columns};
+    for (const state of this._tables.values()) {
+      const own = [...state.columns.values()].filter((c) => c.owned && (c.registered || c.included));
+      const now = Object.fromEntries(own.filter((c) => c.included).map((c) => [c.logical, this._columnJSON(c, false)]));
+      const before = Object.fromEntries(Object.entries(this._baseline!.tables[state.logical]?.columns ?? {})
+        .filter(([, c]) => c.origin === 'user').map(([name, {origin: _o, ...c}]) => [name, c]));
+      if (own.length > 0 && !Fields.same(before, now))
+        patch[state.logical] = {columns: now};
     }
     return patch;
   }
@@ -906,8 +838,8 @@ export class ManifestModel {
     options: {friendlyName: string, description: string}): RebaseReport {
     const before = this._loaded;
     const ops = Fields.diff(before, this._surface());
-    const added = [...this._tables.values()].flatMap((state) => [...state.columns.values()]
-      .filter((c) => this._extend && !c.registered).map((column) => ({table: state.remote, column})));
+    const added = [...this._tables.values()].flatMap((t) => [...t.columns.values()]
+      .filter((c) => this._extend && !c.registered).map((c) => [t.remote, c] as const));
     this._baseline = baseline;
     this.friendlyName.value = options.friendlyName;
     this.description.value = options.description;
@@ -923,29 +855,26 @@ export class ManifestModel {
     };
     const report = Fields.replay(ops, before, after, {exists, fallback: () => undefined,
       apply: (d) => this._apply(d), surface: () => this._surface(), describe: (d) => this._describe(d)});
-    // a column this edit declared goes back on its table, under a name the reload left free
-    for (const {table, column} of added) {
+    for (const [table, column] of added) {
       const state = this._tables.get(table);
+      const op = {...ManifestModel._added(state ?? null, column), from: null, to: column.logical};
       if (state?.decl?.extensible !== true) {
-        report.dropped.push({...this._added(state ?? null, column), from: null, to: column.logical});
+        report.dropped.push(op);
         continue;
       }
-      const taken = [...state.columns.values()].map((c) => c.logical);
-      const logical = ManifestModel._free(column.logical, taken);
+      const logical = ManifestModel._free(column.logical, [...state.columns.values()].map((c) => c.logical));
       const remote = ManifestModel._free(column.remote, [...state.columns.keys()]);
-      state.columns.set(remote, {...column, remote, logical, decl: {...column.decl}});
-      const op = {...this._added(state, state.columns.get(remote)!), from: null, to: logical};
+      state.columns.set(remote, {...column, remote, logical});
       if (logical === column.logical)
         report.applied.push(op);
       else
-        report.conflicts.push({...op, server: column.logical, note: `"${column.logical}" is taken now — added as "${logical}"`});
+        report.conflicts.push({...op, note: `"${column.logical}" is taken now — added as "${logical}"`});
     }
     this._rev.value = this._rev.peek() + 1;
     return report;
   }
 
-  /** The Review line of a column this edit declared. */
-  private _added(state: TableState | null, column: ColumnState): ManifestChange {
+  private static _added(state: TableState | null, column: ColumnState): ManifestChange {
     const table = state?.logical ?? '';
     return {id: `column:${table}.${column.logical}`, text: `Column ${table}.${column.logical} added (${column.type})`,
       table, column: column.logical, removes: false};
@@ -987,8 +916,11 @@ export class ManifestModel {
       this.setRequired(f.table, column, to as boolean);
     else if (f.name === 'ref')
       this.setRef(f.table, column, to !== null);
-    else if ((COLUMN_ATTRIBUTES as readonly string[]).includes(f.name))
-      this.setColumnAttribute(f.table, column, f.name as ColumnAttribute, to);
+    else if (f.name === 'decl') {
+      const state = this._tables.get(f.table)?.columns.get(column);
+      if (state?.owned)
+        this._mutate(() => state.decl = JSON.parse(to as string));
+    }
   }
 
   /** The Review wording of one field change, by the current logical names. */
@@ -1025,14 +957,10 @@ export class ManifestModel {
       const target = (remote: unknown): string => this._tables.get(String(remote))?.logical ?? String(remote);
       text = d.to === null ? `Column ${at}: ref to ${target(d.from)} demoted to a plain ${cs?.type ?? 'value'}` :
         `Column ${at}: now a ref to ${target(d.to)}`;
-    } else if (f.name === 'required')
+    } else if (f.name === 'decl')
+      text = `Column ${at} changed`;
+    else
       text = `Column ${at}: required ${onOff(d.to)}`;
-    else {
-      const what = f.name === 'semType' ? 'semantic type' : f.name === 'default' ? 'default value' :
-        camelCaseToWords(f.name).toLowerCase();
-      text = d.to === null ? `Column ${at}: ${what} cleared` :
-        `Column ${at}: ${what} ${Array.isArray(d.to) ? d.to.join(', ') : JSON.stringify(d.to)}`;
-    }
     return {id, text, table, column, removes: f.name === 'included' && d.to === false && cs?.registered === true};
   }
 
@@ -1061,10 +989,8 @@ export class ManifestModel {
         s.set(`${c}.logical`, column.logical);
         s.set(`${c}.required`, column.decl.required === true);
         s.set(`${c}.ref`, column.type === 'ref' ? column.target ?? null : null);
-        if (this._extend && column.owned) {
-          for (const key of COLUMN_ATTRIBUTES)
-            s.set(`${c}.${key}`, column.decl[key] ?? null);
-        }
+        if (this._extend && column.owned)
+          s.set(`${c}.decl`, Fields.stable(column.decl));
       }
     }
     return s;
@@ -1122,7 +1048,6 @@ export class ManifestModel {
     this._plainTypes.clear();
     this._listed.clear();
     this._relations = draft?.inventory?.relations ?? [];
-    // the platform's own store has no catalog to drift from
     const external = source.storage?.kind === 'external';
     this._catalog = !external ||
       draft !== null && !(draft.diagnostics ?? []).some((d) => CATALOG_UNKNOWN_CODES.includes(d.code)) ? 'known' : 'unknown';
@@ -1211,7 +1136,7 @@ export class ManifestModel {
     options: {registered: boolean, included: boolean, inventory?: InventoryTable}): void {
     const columns = new Map<string, ColumnState>();
     const keyByLogical = new Map<string, string>();
-    // `origin` is the registry's read-only stamp: it says who owns the item and is never sent back
+    // `origin` is the registry's read-only ownership stamp, never sent back
     for (const [name, {origin, ...c}] of Object.entries(decl?.columns ?? {})) {
       const columnRemote = c.column ?? name;
       keyByLogical.set(name, columnRemote);
@@ -1220,8 +1145,7 @@ export class ManifestModel {
         owned: !this._extend || origin === 'user'});
     }
     const key = decl?.businessKey?.map((k) => keyByLogical.get(k) ?? k) ?? options.inventory?.key ?? [];
-    const {origin: _origin, ...declared} = decl ?? {columns: {}};
-    this._tables.set(remote, {remote, logical, decl: decl === null ? null : declared,
+    this._tables.set(remote, {remote, logical, decl: decl === null ? null : {...decl},
       included: decl !== null && options.included, key, columns, inventory: options.inventory,
       registered: options.registered});
     this._order.push(remote);
@@ -1424,9 +1348,7 @@ export class ManifestModel {
       required: isKey || column.decl.required === true,
       isName: column.decl.isName === true, searchable: column.decl.searchable === true,
       supported: true, reason: column.demoted ?? drift?.reason, relations,
-      registered: column.registered, drift, owned: column.owned,
-      attributes: Object.fromEntries(COLUMN_ATTRIBUTES.filter((k) => column.decl[k] !== undefined)
-        .map((k) => [k, column.decl[k]])) as ColumnAttributes,
+      registered: column.registered, drift, owned: column.owned, decl: column.decl,
     };
   }
 
@@ -1434,7 +1356,8 @@ export class ManifestModel {
     return {
       table: state.remote, remote: u.remote, logical: u.remote, type: u.dbType ?? '',
       dbType: u.dbType, included: false, isKey: false, required: false, isName: false, searchable: false,
-      supported: false, reason: u.message, code: u.code, relations: [], registered: false, owned: false, attributes: {},
+      supported: false, reason: u.message, code: u.code, relations: [], registered: false, owned: false,
+      decl: {type: u.dbType ?? ''},
     };
   }
 

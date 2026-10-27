@@ -316,8 +316,7 @@ export interface DomainManifestColumn {
   friendlyName?: string;
   /** The remote column name where it differs from the key (external). */
   column?: string;
-  /** `'user'` on a column a user added to a plugin table; read-only, answered by
-   * {@link DomainSchemaClient.manifest} on a package-managed schema only. */
+  /** `'user'` on a column a user added to a plugin table (read-only). */
   origin?: 'user';
   /** Any other key of the column vocabulary, kept as written. */
   [key: string]: unknown;
@@ -336,9 +335,9 @@ export interface DomainManifestTable {
   table?: string;
   /** Opted out of writes under a writable binding (external). */
   readOnly?: boolean;
-  /** Whether users holding Extend may add their own columns to this plugin table. */
+  /** Whether users holding Extend may add columns to this plugin table. */
   extensible?: boolean;
-  /** `'user'` on a table a user added to a package-managed schema; read-only, like the column's. */
+  /** `'user'` on a table a user added to a plugin schema (read-only). */
   origin?: 'user';
   /** Any other key of the table vocabulary, kept as written. */
   [key: string]: unknown;
@@ -501,7 +500,7 @@ export interface DomainRegisteredManifest extends DomainManifest {
   /** The schema row's creation instant (ISO 8601): what {@link DomainApplyBody.ifIncarnation} names.
    * A name deleted and re-created starts at version `'1'` again with a new incarnation. */
   incarnation: string;
-  /** Package-managed schema: the extension counter an extension apply sends as `ifVersion`. */
+  /** Plugin schema: the `ifVersion` of an extension apply. */
   extVersion?: string;
 }
 

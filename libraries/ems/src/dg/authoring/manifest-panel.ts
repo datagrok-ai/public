@@ -12,16 +12,14 @@
    field as text, never as a dead input. Access is modelled beside the manifest and rendered
    here; the dialog applies it after Create. */
 import {Control, Scope, signal, ReadonlySignal, div, link, span, each, focusMark, refocus, Form, Section, TextInput,
-  BoolInput, ChoiceInput, RadioInput, ChipsInput, TagsInput, NumberInput, AccessGrid, badge, camelCaseToWords}
-  from '@datagrok-libraries/u2';
-import type {Input, AccessRow, InheritedAccessRow} from '@datagrok-libraries/u2';
-import {ObjectForm} from '@datagrok-libraries/u2/src/dg/forms/object-form.js';
+  BoolInput, ChoiceInput, RadioInput, ChipsInput, AccessGrid, Access, badge, camelCaseToWords} from '@datagrok-libraries/u2';
+import type {Input, AccessRow, InheritedAccessRow, IProperty, FieldAccess} from '@datagrok-libraries/u2';
+import {ObjectForm, propertyForm} from '@datagrok-libraries/u2/src/dg/forms/object-form.js';
 import type {EditorContext, FieldOffer} from './editor-context.js';
 import {fieldOffer} from './editor-context.js';
-import {AccessModel, ManifestModel, EXTEND_TYPES} from './manifest-model.js';
-import type {AccessGrant, AccessPrincipal, AccessScope, ColumnAttribute, ColumnView, DriftView, ManifestDiagnostic,
-  ManifestSelection, RelationView, TableView} from './manifest-model.js';
-import {ManifestRules} from './manifest-rules.js';
+import {AccessModel, ManifestModel} from './manifest-model.js';
+import type {AccessGrant, AccessPrincipal, AccessScope, ColumnView, DriftView, ManifestDiagnostic, ManifestSelection,
+  RelationView, TableView} from './manifest-model.js';
 import {ManifestTree} from './manifest-tree.js';
 
 /** Builds a look-up control that hands every picked principal to `onPick` — the platform's group
@@ -40,9 +38,13 @@ export interface ManifestContextPanelOptions {
   diagnostics?: ReadonlySignal<ManifestDiagnostic[]>;
   /** Why the Writable switch cannot be turned on here; the switch is then disabled with this hint. */
   writableDisabled?: string;
-  /** Selects a node in the tree — where a column the panel added is taken to. */
+  columnOptions?: ColumnOption[];
   onSelect?: (selection: ManifestSelection) => void;
 }
+
+export type ColumnOption = IProperty & {applicableTo?: string};
+
+const EXTEND_TYPES = ['string', 'int', 'float', 'bool', 'datetime'];
 
 const SCHEMA: AccessScope = {kind: 'schema'};
 
@@ -75,7 +77,7 @@ export class ManifestContextPanel extends Control {
   private readonly _picker: PrincipalPicker | undefined;
   private readonly _diagnostics: ReadonlySignal<ManifestDiagnostic[]> | undefined;
   private readonly _writableDisabled: string | undefined;
-  private readonly _onAdded: ((selection: ManifestSelection) => void) | undefined;
+  private readonly _options: ManifestContextPanelOptions;
   private readonly _shapes = new WeakMap<HTMLElement, string>();
 
   constructor(readonly model: ManifestModel, options: ManifestContextPanelOptions) {
@@ -86,7 +88,7 @@ export class ManifestContextPanel extends Control {
     this._picker = options.principalPicker;
     this._diagnostics = options.diagnostics;
     this._writableDisabled = options.writableDisabled;
-    this._onAdded = options.onSelect;
+    this._options = options;
     this.root.classList.add('u2-manifest-panel');
     this.root.dataset.u2 = 'manifest-panel';
     this.runInScope(() => each(this.root, () => this._parts(options.selected.value), (p) => p.key, (p) => {
@@ -158,11 +160,6 @@ export class ManifestContextPanel extends Control {
     const model = this.model;
     const name = model.name.peek();
     const writable = model.writable.peek();
-    if (model.extending) {
-      return [this._part('title', () => ManifestContextPanel._title('Schema', name)),
-        this._part('note', () => ManifestContextPanel._note('Pick a table to add properties of your own to it. ' +
-          'Columns with a lock come from the plugin and are read-only.'))];
-    }
     return [this._part('title', () => ManifestContextPanel._title('Schema', name)),
       this._part('form', () => this._schemaForm(name, writable)),
       this._part('access', () => this._schemaAccess(writable))];
@@ -240,7 +237,7 @@ export class ManifestContextPanel extends Control {
     if (table === undefined || !table.included && (!table.bindable || !table.drafted))
       return [title];
     if (this.model.extending)
-      return [title, this._part('form', () => this._extendTableForm(remote, table))];
+      return [title, this._part('add', () => this._addLink(remote))];
     // a registered table taken out is on its way to the purge: its fields are read, not edited
     const live = table.included || !table.registered;
     return [title, this._part('form', () => this._tableForm(remote, table, live)),
@@ -342,9 +339,8 @@ export class ManifestContextPanel extends Control {
     if (column === undefined || !column.supported)
       return [title];
     if (this.model.extending) {
-      return [this._part('title', () => this._extendColumnTitle(table, remote, column)),
-        this._part('form', () => column.owned && column.included ? this._extendColumnForm(table, remote, column) :
-          this._pluginColumnForm(column))];
+      return [this._part('title', () => this._extendTitle(table, remote, column)),
+        this._part('form', () => this._extendForm(table, remote, column))];
     }
     const parts = [title, this._part('form', () => this._columnForm(table, remote, column))];
     if (column.relations.length > 0) {
@@ -355,139 +351,8 @@ export class ManifestContextPanel extends Control {
         return reference;
       }));
     }
-    if (this.offer.access)
-      parts.push(this._part('visibility', () => this._visibility(table, remote, column)));
+    parts.push(this._part('visibility', () => this._visibility(table, remote, column)));
     return parts;
-  }
-
-  // ─────────────────────── extend mode ───────────────────────
-
-  private _extendTableForm(remote: string, table: TableView): Form {
-    const columns = this.model.columns(remote).peek();
-    const own = columns.filter((c) => c.owned && c.included).length;
-    const form = new Form({layout: 'wide'});
-    form.addElement(ObjectForm.readonlyField('Friendly name', 'friendlyName',
-      table.friendlyName || camelCaseToWords(table.logical)).row);
-    form.addElement(ObjectForm.readonlyField('Properties', 'properties',
-      `${columns.length - own} from the plugin, ${own} of your own`).row);
-    if (this.offer.editable) {
-      const add = link('+ Add property', () => this._add(remote));
-      add.dataset.u2 = 'manifest-add-column';
-      form.addElement(add);
-    }
-    return form;
-  }
-
-  /** The column's title: who owns it, what the save does to it, and the way to remove or restore it. */
-  private _extendColumnTitle(table: string, remote: string, column: ColumnView): HTMLElement {
-    const title = ManifestContextPanel._title('Column', `${table}.${column.logical}`);
-    if (!column.owned) {
-      title.append(badge('plugin'));
-      return title;
-    }
-    if (!column.registered)
-      title.append(badge('new', {variant: 'accent'}));
-    else if (!column.included)
-      title.append(badge('removed', {variant: 'error'}), span('dropped on Save, with its values', 'u2-manifest-node-hint'));
-    else
-      title.append(badge('custom', {variant: 'success'}));
-    if (!this.offer.editable)
-      return title;
-    let action: HTMLElement;
-    if (column.included) {
-      action = link('Remove', () => this.model.removeColumn(table, remote));
-      action.dataset.u2 = 'manifest-remove-column';
-    } else {
-      action = link('Restore', () => this.model.includeColumn(table, remote, true));
-      action.dataset.u2 = 'manifest-restore-column';
-    }
-    action.classList.add('u2-manifest-panel-remove');
-    title.append(action);
-    return title;
-  }
-
-  /** A plugin column, or one of the user's own on its way out: every field as text. */
-  private _pluginColumnForm(column: ColumnView): Form {
-    const a = column.attributes;
-    const form = new Form({layout: 'wide'});
-    const text = (label: string, name: string, value: string | undefined): void => {
-      if (value !== undefined && value !== '')
-        form.addElement(ObjectForm.readonlyField(label, name, value).row);
-    };
-    text('Name', 'logical', column.logical);
-    text('Friendly name', 'friendlyName', a.friendlyName);
-    text('Type', 'type', column.type === 'ref' ? `ref → ${column.relations.find((r) => r.ref)?.targetLogical ?? ''}` :
-      column.type);
-    text('Description', 'description', a.description);
-    text('Choices', 'choices', a.choices?.join(', '));
-    text('Range', 'range', a.min === undefined && a.max === undefined ? undefined : `${a.min ?? ''} – ${a.max ?? ''}`);
-    text('Format', 'format', a.format);
-    text('Default', 'default', a.default === undefined ? undefined : String(a.default));
-    if (!column.owned) {
-      form.addElement(ManifestContextPanel._note('Defined by the plugin, so it cannot be changed here; plugin ' +
-        'upgrades keep it in step.'));
-    }
-    return form;
-  }
-
-  /** A column of the user's own: the declaration's descriptive keys, by type; the name and the type
-   * only until it is saved. */
-  private _extendColumnForm(table: string, remote: string, column: ColumnView): Form {
-    const model = this.model;
-    const a = column.attributes;
-    const set = (key: ColumnAttribute) => (v: unknown): void => model.setColumnAttribute(table, remote, key, v);
-    const form = new Form({layout: 'wide'});
-    form.add(new TextInput({label: 'Friendly name', name: 'friendlyName', value: a.friendlyName ?? '',
-      placeholder: camelCaseToWords(column.logical), commitOn: 'change', onChanged: set('friendlyName')}));
-    this._field(form, 'Name', 'logical', column.logical, (hint) => {
-      const input = new TextInput({label: 'Name', name: 'logical', value: column.logical, commitOn: 'change',
-        onChanged: (v) => model.renameColumn(table, remote, v), ...hint});
-      input.addValidator((v) => model.checkColumnName(table, remote, v));
-      return input;
-    }, column.registered ? 'saved — used in filters and links' : 'fixed once saved', !column.registered);
-    this._field(form, 'Type', 'type', column.type, (hint) => new ChoiceInput({label: 'Type', name: 'type',
-      items: [...EXTEND_TYPES], value: column.type, nullable: false,
-      onChanged: (v) => model.setColumnType(table, remote, v as string), ...hint}),
-    column.registered ? 'saved — a new type would rewrite the stored values' : 'fixed once saved', !column.registered);
-    form.add(new TextInput({label: 'Description', name: 'description', value: a.description ?? '', commitOn: 'change',
-      onChanged: set('description')}));
-    const type = column.type;
-    if (ManifestRules.attributeFits('choices', type)) {
-      form.add(new TagsInput<string>({label: 'Choices', name: 'choices', value: a.choices ?? [], allowNew: true,
-        placeholder: 'Type a value, Enter to add', onChanged: set('choices')}));
-    }
-    if (ManifestRules.attributeFits('min', type)) {
-      const mode = type === 'int' ? 'int' : 'float';
-      form.add(new NumberInput({label: 'Min', name: 'min', value: a.min ?? null, mode, onChanged: set('min')}));
-      form.add(new NumberInput({label: 'Max', name: 'max', value: a.max ?? null, mode, onChanged: set('max')}));
-    }
-    if (ManifestRules.attributeFits('format', type)) {
-      form.add(new TextInput({label: 'Format', name: 'format', value: a.format ?? '', commitOn: 'change',
-        placeholder: type === 'datetime' ? 'yyyy-MM-dd' : '0.00', onChanged: set('format')}));
-    }
-    if (type === 'string' && (a.choices ?? []).length > 0) {
-      form.add(new ChoiceInput({label: 'Default', name: 'default', items: a.choices!,
-        value: typeof a.default === 'string' && a.choices!.includes(a.default) ? a.default : null,
-        onChanged: set('default')}));
-    } else if (type === 'string')
-      form.add(new TextInput({label: 'Default', name: 'default', value: String(a.default ?? ''), commitOn: 'change', onChanged: set('default')}));
-    else if (type === 'int' || type === 'float') {
-      form.add(new NumberInput({label: 'Default', name: 'default', value: typeof a.default === 'number' ? a.default : null,
-        mode: type, onChanged: set('default')}));
-    } else if (type === 'bool') {
-      form.add(new ChoiceInput({label: 'Default', name: 'default', items: ['true', 'false'],
-        value: a.default === undefined ? null : String(a.default),
-        onChanged: (v) => set('default')(v === null ? null : v === 'true')}));
-    }
-    form.add(new BoolInput({label: 'Required', name: 'required', value: false, enabled: false,
-      postfix: 'properties of your own stay optional, so rows saved before stay valid'}));
-    return form;
-  }
-
-  private _add(table: string): void {
-    const column = this.model.addColumn(table);
-    if (column !== null)
-      this._onAdded?.({kind: 'column', table, column});
   }
 
   private _columnForm(table: string, remote: string, column: ColumnView): Form {
@@ -526,6 +391,40 @@ export class ManifestContextPanel extends Control {
         onChanged: (v) => model.setSearchable(table, v ? remote : null), ...hint}), 'one per table');
     }
     return form;
+  }
+
+  private _addLink(table: string): HTMLElement {
+    return link('+ Add property', () => {
+      const column = this.model.addColumn(table);
+      if (column !== null)
+        this._options.onSelect?.({kind: 'column', table, column});
+    });
+  }
+
+  private _extendTitle(table: string, remote: string, column: ColumnView): HTMLElement {
+    const title = ManifestContextPanel._title('Column', `${table}.${column.logical}`);
+    title.append(ManifestTree.ownership(column));
+    if (column.owned && this.offer.editable) {
+      title.append(column.included ? link('Remove', () => this.model.includeColumn(table, remote, false)) :
+        link('Restore', () => this.model.includeColumn(table, remote, true)));
+    }
+    return title;
+  }
+
+  private _extendForm(table: string, remote: string, column: ColumnView): Form {
+    const type = column.type === 'int' || column.type === 'float' ? 'numerical' : column.type;
+    const writable = this.offer.editable && column.owned && column.included;
+    const fields: Record<string, FieldAccess> = {name: 'readonly'};
+    const props: IProperty[] = [
+      {name: 'type', type: 'string', choices: EXTEND_TYPES, nullable: false},
+      ...(this._options.columnOptions ?? []).filter((o) => o.applicableTo === undefined || o.applicableTo === type),
+    ].map((p) => {
+      fields[p.name!] = writable && (p.name !== 'type' || !column.registered) ? 'editable' : 'readonly';
+      return {...p, friendlyName: p.friendlyName ?? camelCaseToWords(p.name!), get: () => column.decl[p.name!],
+        set: (_: unknown, v: unknown) => this.model.setColumn(table, remote, p.name!, v)};
+    });
+    return propertyForm([{name: 'name', type: 'string', friendlyName: 'Name', get: () => column.logical}, ...props], {},
+      {layout: 'wide', access: Access.from({can: {view: true, edit: true}, fields})});
   }
 
   private _visibility(table: string, remote: string, column: ColumnView): Section {

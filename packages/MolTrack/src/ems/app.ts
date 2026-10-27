@@ -64,13 +64,12 @@ export class MolTrackEms {
       {label: 'Register bulk', run: async () => void await domains.import(await MolTrackTables.compounds())},
       {label: 'Search', run: () => void MolTrackEms.show('Compounds')},
     ]);
-    // only for whoever may add properties: the platform answers after the page is up
-    void domains.canExtend(SCHEMA).then((can) => {
-      if (!can)
-        return;
+    void domains.extensible(SCHEMA).then((tables) => {
       for (const [label, table] of [['Compound properties', 'compound'], ['Batch properties', 'compound_batch']]) {
-        actions.querySelector('.moltrack-quick-links')!.append(ui.link(label,
-          () => void domains.editProperties(SCHEMA, {table}).catch((e) => grok.shell.error(String(e?.message ?? e)))));
+        if (tables.has(table)) {
+          actions.querySelector('.moltrack-quick-links')!.append(ui.link(label,
+            () => void domains.editProperties(SCHEMA, table).catch((e) => grok.shell.error(e.message))));
+        }
       }
     });
     const content = ui.divH([counts, actions]);

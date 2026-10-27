@@ -22,7 +22,6 @@ export type DomainHistoryTarget = RowView | ReadonlySignal<RowView | null>;
 export interface DomainHistoryOptions {
   /** The columns the user edits (the form's `include`); changes to derived columns are left out. */
   include?: string[];
-  /** The columns the form leaves out (its `exclude`); their changes are left out too. */
   exclude?: string[];
 }
 
@@ -200,7 +199,7 @@ export class DomainHistory extends Control {
   private _changes(entry: AuditEntryLike): HTMLElement | null {
     const {include, exclude} = this._options;
     const own = this.changedColumns(entry).filter(({prop}) => (include === undefined || include.includes(prop.name!)) &&
-      !(exclude ?? []).includes(prop.name!));
+      !exclude?.includes(prop.name!));
     if (own.length === 0)
       return null;
     const lines = own.map(({prop, before, after}) => divH([span(DomainTable.captionOf(prop), 'u2-domain-history-field'),

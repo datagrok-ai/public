@@ -239,7 +239,7 @@ test('the access model round-trips and edits by scope', () => {
   assert.equal(AccessModel.sameScope({kind: 'table', table: 'schema'}, schema), false, 'a table named schema is a table');
 });
 
-test('the field offer: the external vocabulary under create and view; the arms not built refuse by name', () => {
+test('the field offer: the external vocabulary under create and view; the other arms refuse by name', () => {
   const create = fieldOffer({mode: 'create', storage: 'external'});
   assert.equal(create.editable, true);
   assert.equal(create.type, 'readonly');
@@ -251,14 +251,7 @@ test('the field offer: the external vocabulary under create and view; the arms n
   const edit = fieldOffer({mode: 'edit', storage: 'external'});
   assert.deepEqual([edit.editable, edit.identifier, edit.description, edit.type, edit.writable], [true, false, true, 'readonly', true]);
   assert.throws(() => fieldOffer({mode: 'create', storage: 'domain'}), /not built yet/);
-  assert.throws(() => fieldOffer({mode: 'edit', storage: 'domain'}), /not built yet/);
-  assert.throws(() => fieldOffer({mode: 'extend', storage: 'external'}), /an external binding is edited/);
-  const extend = fieldOffer({mode: 'extend', storage: 'domain'});
-  assert.deepEqual([extend.editable, extend.type, extend.columns, extend.attributes, extend.choices, extend.defaultValue],
-    [true, 'editable', true, true, true, true]);
-  assert.deepEqual([extend.required, extend.unique, extend.nameColumn, extend.access, extend.optionalOnly],
-    [false, false, false, false, true]);
-  assert.equal(fieldOffer({mode: 'view', storage: 'domain'}).editable, false);
+  assert.throws(() => fieldOffer({mode: 'extend', storage: 'external'}), /only a platform-stored schema is extended/);
 });
 
 test('the identifier follows the friendly name, harmonized and free of the registered names, until set by hand', () => {

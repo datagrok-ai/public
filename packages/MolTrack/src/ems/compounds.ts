@@ -20,7 +20,6 @@ interface Verdict {
 
 // EMS has no server write hook: a draft's identity is derived in the browser as its structure is drawn
 export class CompoundsApp extends DomainApp {
-  /** Derived from the structure on registration: shown in the identity section, not edited. */
   static readonly DERIVED = ['structure', 'formula', 'inchikey', 'inchi', 'hash_mol', 'hash_all_layers',
     'hash_stereo_insensitive', 'hash_tautomer_insensitive', 'match_rule'];
 

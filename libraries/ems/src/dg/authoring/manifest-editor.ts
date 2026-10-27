@@ -11,7 +11,7 @@ import type {AccessJson, AccessPrincipal, AccessSnapshot, DraftEnvelope, ExtendP
   ManifestDiagnostic, ManifestJson, ManifestPatch, ManifestSelection, RebaseReport} from './manifest-model.js';
 import {ManifestTree} from './manifest-tree.js';
 import {ManifestContextPanel} from './manifest-panel.js';
-import type {PrincipalPicker} from './manifest-panel.js';
+import type {ColumnOption, PrincipalPicker} from './manifest-panel.js';
 
 export interface ManifestEditorOptions {
   context: EditorContext;
@@ -37,6 +37,7 @@ export interface ManifestEditorOptions {
   /** Why the Writable switch cannot be turned on here (a DML right the author lacks); the switch
    * is then disabled with this hint. */
   writableDisabled?: string;
+  columnOptions?: ColumnOption[];
 }
 
 /** A grant to apply after Create, by the names the API takes: one per table and group, the
@@ -86,19 +87,6 @@ export interface ApplyPayload extends ManifestPatch {
   access?: ApplyAccess;
 }
 
-/** Extend mode's apply body: the extension counter and the user's own columns per changed table. */
-export interface ExtendPayload {
-  ifVersion: string;
-  extend: ExtendPatch;
-  confirmDestructive?: boolean;
-}
-
-export interface ExtendPlan {
-  payload: ExtendPayload;
-  /** The Review list; empty when nothing changed. */
-  changes: ManifestChange[];
-}
-
 export interface EditPlan {
   payload: ApplyPayload;
   /** The Review list, in manifest order then access; empty for a no-op edit. */
@@ -128,7 +116,7 @@ export class ManifestEditor extends Control {
     const extending = options.context.mode === 'extend';
     const editing = options.context.mode === 'edit' || extending;
     if (editing && options.baseline === undefined)
-      throw new Error(`u2: the manifest editor's ${options.context.mode} mode needs the registered manifest (options.baseline)`);
+      throw new Error('u2: the manifest editor\'s edit mode needs the registered manifest (options.baseline)');
     if (!editing && draft === null)
       throw new Error('u2: the manifest editor needs a draft');
     this._author = options.author;
@@ -145,7 +133,8 @@ export class ManifestEditor extends Control {
     this.panel = this.runInScope(() => new ManifestContextPanel(this.model, {selected: this.selected,
       access: this.access, context: options.context, groups: options.groups?.map((g) => AccessModel.principal(g)),
       principalPicker: options.principalPicker, diagnostics: this.diagnostics,
-      writableDisabled: options.writableDisabled, onSelect: (s) => void this.tree.select(s)}));
+      writableDisabled: options.writableDisabled, columnOptions: options.columnOptions,
+      onSelect: (selection) => void this.tree.select(selection)}));
     const share = options.treeShare ?? 0.42;
     const splitter = this.runInScope(() => new Splitter([this.tree, this.panel],
       {direction: 'horizontal', sizes: [share, 1 - share], minSize: 200}));
@@ -238,14 +227,8 @@ export class ManifestEditor extends Control {
     return {payload, changes, blockers: model.blockers.peek()};
   }
 
-  /** Extend mode's apply body and Review list. */
-  extendPlan(): ExtendPlan {
-    const model = this.model;
-    if (!model.extending)
-      throw new Error('u2: extendPlan() needs the editor\'s extend mode');
-    if (model.extVersion === undefined)
-      throw new Error('u2: the registered manifest carries no extVersion — the schema is not package-managed');
-    return {payload: {ifVersion: model.extVersion, extend: model.extendPatch()}, changes: model.changes()};
+  extendPlan(): {payload: {ifVersion: string, extend: ExtendPatch}, changes: ManifestChange[]} {
+    return {payload: {ifVersion: this.model.extVersion!, extend: this.model.extendPatch()}, changes: this.model.changes()};
   }
 
   /** After a `version-conflict`: the user's edits replayed over the schema as it is now — the
@@ -253,10 +236,8 @@ export class ManifestEditor extends Control {
    * items that vanished are reported, never applied silently; the tree and the panel rebuild. */
   rebase(baseline: ManifestJson, snapshot: AccessSnapshot | null, draft: DraftEnvelope | null,
     options: {friendlyName: string, description: string}): RebaseReport {
-    if (this.model.extending) {
-      this.diagnostics.value = [];
+    if (this.model.extending)
       return this.model.rebase(baseline, null, options);
-    }
     const manifest = this.model.rebase(baseline, draft, options);
     const access = this.access.rebase(snapshot, baseline, (table, column) => this._known(table, column));
     this.stale = ManifestEditor._stale(snapshot, baseline);

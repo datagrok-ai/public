@@ -86,20 +86,15 @@ export class DomainViews {
     return view;
   }
 
-  /** Every open view over these tables rebuilt over their columns as the registry has them now, at the
-   * address it showed — after their schema changed. A view holding unsaved changes is left as it is. */
-  static async reload(tables: string[]): Promise<void> {
-    DomainTable.forget(tables);
+  static async reload(schema: string): Promise<void> {
+    DomainTable.forget(schema);
     for (const app of [...DomainApp.live]) {
       const old = DomainApp.viewOf(app);
-      if (!tables.includes(app.table.address) || old === undefined || app.session.isDirty.peek())
+      if (!app.table.address.startsWith(`${schema}.`) || old === undefined || app.session.isDirty.peek())
         continue;
       const views = DomainViews._byTable.get(app.table.address);
-      const path = app.path.peek();
-      const view = views !== undefined ? await views.open(path.slice(views._options.path.length)) :
+      const view = views !== undefined ? await views.open(app.path.peek().slice(views._options.path.length)) :
         (await domains.table(app.table.address)).app({path: app.base});
-      if (views === undefined)
-        void DomainApp.of(view)!.open(path.slice(app.base.length));
       grok.shell.addView(view);
       old.close();
     }
