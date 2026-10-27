@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {interval} from 'rxjs';
+import {timer} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {Platform, getPlatform, platformKeyMap} from '../../shortcuts';
@@ -180,7 +180,7 @@ export class GridTutorial extends Tutorial {
       'in any cell to order its rows.',
     () => grid.sort(['AGE'], [false]));
 
-    await this.action('Reset sorting in the grid', interval(1000).pipe(filter(() => {
+    await this.action('Reset sorting in the grid', timer(0, 200).pipe(filter(() => {
       const ageIdx = grid.sortByColumns.findIndex((col) => col.name === 'AGE');
       return ageIdx === -1 || grid.sortTypes[ageIdx] == null;
     })), null, 'To clear sorting, right-click the column header and select <b>Sort > Reset</b>. ' +
@@ -188,7 +188,7 @@ export class GridTutorial extends Tutorial {
       'by double-clicking the column header. It switches the state between three modes: descending, ascending, reset.',
     () => grid.sort([]));
 
-    await this.action('Move columns HEIGHT, WEIGHT and STARTED to the beginning of the grid', interval(1000).pipe(
+    await this.action('Move columns HEIGHT, WEIGHT and STARTED to the beginning of the grid', timer(0, 200).pipe(
       filter(() => heightGridCol.idx === 1 && weightGridCol.idx === 2 && startedGridCol.idx === 3)), null,
     'To reorder ' +
       'columns, either drag each column header to a new position or select the group of columns ' +
@@ -205,12 +205,12 @@ export class GridTutorial extends Tutorial {
     });
 
     const initialRowHeight = grid.props.rowHeight;
-    await this.action('Increase row height', interval(1000).pipe(filter(() => grid.props.rowHeight > initialRowHeight)),
+    await this.action('Increase row height', timer(0, 200).pipe(filter(() => grid.props.rowHeight > initialRowHeight)),
       null, 'Dragging a row header border will resize the row height (move up to decrease it, or down to increase it).',
       () => grid.props.rowHeight = initialRowHeight + 10);
 
     const initialColWidth = startedGridCol.width;
-    await this.action('Extend the STARTED column width', interval(1000).pipe(filter(() => startedGridCol.width >
+    await this.action('Extend the STARTED column width', timer(0, 200).pipe(filter(() => startedGridCol.width >
       initialColWidth)), null,
     'To resize a column width, drag the column header. This also works for multiple selected ' +
       'columns. You can also adjust column sizing for the whole grid: right-click on any cell in the grid and select ' +
@@ -262,12 +262,12 @@ export class GridTutorial extends Tutorial {
     this.title('Summary columns');
 
     await this.action('Add a summary column with inline bar chart',
-      interval(1000).pipe(filter(() => grid.col('Bar Chart') !== null)), null,
+      timer(0, 200).pipe(filter(() => grid.col('Bar Chart') !== null)), null,
       'Summary columns is a way to visualize multiple numerical values across the row. To add one, right-click ' +
       'on any cell in the grid and select <b>Add > Summary Columns > Bar Chart</b>.',
       () => grid.columns.add({gridColumnName: 'Bar Chart', cellType: 'barchart'}));
 
-    await this.action('Click the "Bar Chart" column header', interval(1000).pipe(filter(() =>
+    await this.action('Click the "Bar Chart" column header', timer(0, 200).pipe(filter(() =>
       grok.shell.o instanceof DG.GridColumn && grok.shell.o.name === 'Bar Chart')), null,
     'Summary columns contain an inline viewer that visualizes by ' +
       'default up to 3 columns. When you click the column header, ' +

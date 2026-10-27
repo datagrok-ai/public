@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import $ from 'cash-dom';
-import {interval} from 'rxjs';
+import {timer} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {Platform, getPlatform, platformKeyMap} from '../../shortcuts';
 
@@ -57,7 +57,7 @@ export class AggregationTutorial extends Tutorial {
 
     const colTagSelector = 'div.d4-tag-editor.d4-pivot-column-tags span.d4-tag';
     const findColTag = (root: HTMLElement, colName: string, condition: (() => boolean) | null = null) =>
-      interval(1000).pipe(filter(() => {
+      timer(0, 200).pipe(filter(() => {
         const tag = $(root).find(colTagSelector)
           .filter((idx, el) => el.textContent?.toUpperCase() === colName.toUpperCase())[0];
         return tag != null && (condition === null ? true : condition());
@@ -194,7 +194,7 @@ export class AggregationTutorial extends Tutorial {
     const historyStr = window.localStorage['grok-aggregation-history'];
     const initialParamsLen = historyStr ? JSON.parse(historyStr).length : 0;
 
-    await this.action('Save parameters', interval(1000).pipe(filter(() => {
+    await this.action('Save parameters', timer(0, 200).pipe(filter(() => {
       const historyStr = window.localStorage['grok-aggregation-history'];
       if (!historyStr)
         return false;

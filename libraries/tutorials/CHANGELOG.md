@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tutorial: Column inputs are checked at once instead of after the first second (core#1146)
 * Tutorial: A running tutorial shows its current step in a bar docked on top; `showAllSteps()` opens the full pane
 * Tutorial: `cleanup()` removes what a tutorial created on the server; it runs when the tutorial finishes and when it is closed
 
