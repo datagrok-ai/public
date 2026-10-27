@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Viewers: Fixed `props.get(name)` returning `undefined` and `props.set(name, value)` doing nothing on core viewers: both now use the viewer's look, as `props[name]` does (#1154)
 * FuncCall: `getResultViews()` calls a view's `onAdded` once it is in the document instead of 200 ms later, when the caller had often added it already (#1146)
 * Chats: Added `grok.dapi.chats` (find by entity or reference, comments, post with replies and references, edit, import, watch), `DG.ChatWidget` and `grok.dapi.users.notifications.send` (#772, #770)
 * Domains: Fixed `DomainTableClient.save()` sending the `'~'` service columns and master-expand fields of a spread read row as column values, which the server refused
