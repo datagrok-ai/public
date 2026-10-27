@@ -5,8 +5,9 @@ Feature: Viewer Filter formula regressions
   no error. An invalid formula is ignored (the scatter plot keeps all 1000 rows) and logs nothing; it
   used to log a RangeError from DataFrameViewer.createCombinedRowFilter (core#1141, fixed 27 Oct
   2026), which the second scenario guards. AGE and WEIGHT have no blanks, so the plot draws all 1000
-  rows. An invalid formula set after a valid one keeps the valid one's 27 rows (measured), so no
-  gesture makes the ignored formula change a reading: its 1000-row claims read an unchanged plot.
+  rows. An invalid formula set after a valid one gives every row back (it kept the valid one's 27
+  rows before the core#1141 fix); the viewer should also say the formula is invalid (core#1167), which
+  no claim reads until the fix decides how.
 
   Background:
     Given user is logged in
@@ -30,4 +31,12 @@ Feature: Viewer Filter formula regressions
     When user sets "Filter" property of scatter plot viewer to '${RACE} = "Black"'
     Then all rows should pass the filter
     And scatter plot viewer should show 1000 rows
+    And no errors should have been logged
+
+  @realizes:core#1167
+  Scenario: An invalid Filter formula set after a valid one gives every row back (core#1167)
+    When user sets "Filter" property of scatter plot viewer to '${RACE} == "Black"'
+    Then scatter plot viewer should show 27 rows
+    When user sets "Filter" property of scatter plot viewer to '${RACE} = "Black"'
+    Then scatter plot viewer should show 1000 rows
     And no errors should have been logged
