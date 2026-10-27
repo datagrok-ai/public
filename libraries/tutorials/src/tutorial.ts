@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {from, fromEvent, interval, merge, Observable, Subject, Subscription} from 'rxjs';
+import {from, fromEvent, interval, merge, Observable, Subject, Subscription, timer} from 'rxjs';
 import {filter, first, map, switchMap} from 'rxjs/operators';
 import {Track} from './track';
 import {awardBadge} from './utils/badges-utils';
@@ -891,7 +891,7 @@ export abstract class Tutorial extends DG.Widget {
       console.error('Tutorial step skipped: no column input', this.name, caption);
       return;
     }
-    const source = interval(intervalPeriod).pipe(
+    const source = timer(0, intervalPeriod).pipe(
       map((_) => this.getElement(columnInput, valueSelector)?.textContent),
       filter((value) => value === columnName));
     return this.action(instructions, source, columnInput, description);

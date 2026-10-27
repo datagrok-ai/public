@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): Reactions: Removed a 100 ms wait after detecting semantic types, and a table chosen meanwhile no longer gets the previous table's molecule column; R-groups: Removed a 50 ms wait when replacing the latest analysis
 * Activity Cliffs: The Activities input defaults to a column named like an activity or potency, else the first float column, instead of the first numeric one (the ID on sar_small)
 * Map Identifiers: To Source defaults to chembl instead of the first source in alphabetical order (actor)
 * R-Groups Analysis: Fixed "Invalid regular expression" for a column prefix holding a regular expression character, such as `R(`

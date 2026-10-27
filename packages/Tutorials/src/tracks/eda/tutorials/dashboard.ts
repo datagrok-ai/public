@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {interval} from 'rxjs';
+import {timer} from 'rxjs';
 import {elementClick} from './utils';
 
 export class DashboardTutorial extends Tutorial {
@@ -85,7 +85,7 @@ export class DashboardTutorial extends Tutorial {
     const editorText = (): string => ($(dqv.root).find('.CodeMirror')[0] as any)?.CodeMirror?.getValue() ??
       Tutorial.codeMirrorView(dqv.root)?.state.doc.toString() ?? '';
     await this.action('Enter the query with its parameter annotation',
-      interval(1000).pipe(filter(() => {
+      timer(0, 200).pipe(filter(() => {
         const lines = editorText().split('\n').map((line) => line.trim());
         return lines[0] === paramAnnotation && lines.slice(1).includes(query);
       })), () => $(dqv.root).find('.CodeMirror, .cm-editor')[0] ?? null, queryDescription,
@@ -141,7 +141,7 @@ export class DashboardTutorial extends Tutorial {
     await DG.delay(1000);
     const projectNameHint = $(projectDlg.root).find('.ui-input-editor#name')[0];
 
-    await this.action(`Set the project name to "${projectName}"`, interval(2000).pipe(filter(() => projectName ===
+    await this.action(`Set the project name to "${projectName}"`, timer(0, 200).pipe(filter(() => projectName ===
       (<HTMLInputElement>$(projectDlg.root).find('.ui-input-editor#name')[0])?.value)),
     projectNameHint, '', () => Tutorial.setInputValue(projectNameHint as HTMLInputElement, projectName));
 
@@ -162,7 +162,6 @@ export class DashboardTutorial extends Tutorial {
       closeProjectDescription,
       () => grok.shell.closeAll());
 
-    await DG.delay(1000);
     // the tree is rebuilt after Close all, so the row is looked up on every poll; a click anywhere in it counts
     const dashboardsNode = () => ($('div.d4-tree-view-item-label')
       .filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]
