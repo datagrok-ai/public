@@ -542,6 +542,8 @@ grok s o logs archive list --prefix cw/ --since 1d           # keys in the log a
 grok s o logs archive read <key>                             # one archived object decoded to events
 grok s o logs container                                      # docker containers and their status
 grok s o logs container scripting-python_1 --since 1h --grep 'Kernel (started|shutdown)'   # one container's log lines
+grok s o logs match 'level in (error, warning) and not text ~ ResizeObserver' --since 2h   # what a log filter matches
+grok s o logs match --level error --package Chembl --grep timeout   # flags add conditions joined by and
 ```
 
 Problems need `ManageAlerts`, errors, another session's timeline and `logs cloud`/`logs archive` `ViewTelemetry`,

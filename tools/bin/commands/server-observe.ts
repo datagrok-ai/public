@@ -54,6 +54,11 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
                                        read them with timeline --session <id>
   logs capture stop <login|group>      Remove that expiring entry; one that holds other settings is left
                                        to logger set --remove
+  logs match ['<filter>'] [--level l1,l2] [--user <login>] [--package <p>] [--source <s>] [--type <t>] [--grep <text>]
+             [--since 1h] [--limit 1000]
+                                       Saved and in-memory records a log filter matches, newest first: the
+                                       filter of a log group (Settings > Logger), e.g. 'level in (error, warning)
+                                       and not text ~ ResizeObserver'; the flags add conditions joined by and
   logs request <logId>                 What the requests of one command logged (grok s ... --log prints
                                        its logId), gathered from every instance's memory; once only
 
@@ -307,6 +312,21 @@ const needFrom = (argv: any) => {
     throw new Error('--to needs --from');
 };
 
+/// The log filter text of `logs match`: the expression given, and a condition per flag, joined by `and`.
+export function matchFilter(rest: string[], argv: any): string {
+  const parts: string[] = rest.length ? [rest.join(' ')] : [];
+  const word = (v: string) => /^[^\s=<>~!(),"']+$/.test(v) && !/^(and|or|not)$/i.test(v) ? v : JSON.stringify(v);
+  for (const field of ['level', 'type', 'user', 'package', 'source', 'function', 'session']) {
+    if (argv[field] === undefined)
+      continue;
+    const values = String(argv[field]).split(',').map((x) => x.trim()).filter(Boolean);
+    parts.push(values.length > 1 ? `${field} in (${values.map(word).join(', ')})` : `${field} = ${word(values[0])}`);
+  }
+  if (argv.grep !== undefined)
+    parts.push(`text ~ ${word(String(argv.grep))}`);
+  return parts.length > 1 ? parts.map((p) => `(${p})`).join(' and ') : parts[0] ?? '';
+}
+
 async function logs(dapi: NodeDapi, verb: string | undefined, rest: string[], argv: any,
                     output: OutputFormat): Promise<boolean> {
   const connection = argv.connection;
@@ -325,6 +345,12 @@ async function logs(dapi: NodeDapi, verb: string | undefined, rest: string[], ar
   }
   if (verb === 'container')
     return containerLogs(dapi, rest[0], argv, output);
+  if (verb === 'match') {
+    const filter = matchFilter(rest, argv);
+    printOutput(await dapi.raw('GET', `/log/match${buildQuery({filter, since: argv.since ?? '1h', limit: argv.limit,
+      format: 'json'})}`), output);
+    return true;
+  }
   if (verb === 'request' && rest[0] !== undefined) {
     const rows = await readRequestLog(dapi, String(rest[0]));
     printOutput(output === 'table' ? rows.map((r) => ({time: r.time, level: r.level, flag: r.flag ?? '',
@@ -347,7 +373,7 @@ async function logs(dapi: NodeDapi, verb: string | undefined, rest: string[], ar
     return true;
   }
   throw new Error('Usage: grok s observe logs cloud [--group <g>] ... | logs container [<name|id>] | ' +
-    'logs archive list [--prefix <p>] | logs archive read <key> | logs request <logId> | logs capture [<login|group>] | ' +
+    'logs match [<filter>] | logs archive list [--prefix <p>] | logs archive read <key> | logs request <logId> | logs capture [<login|group>] | ' +
     'logs capture stop <login|group>');
 }
 

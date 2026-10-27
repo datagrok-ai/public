@@ -2,7 +2,7 @@ import {describe, it, expect, vi} from 'vitest';
 import {NodeDapi} from '../utils/node-dapi';
 import {OutputFormat} from '../utils/server-output';
 import {ALL_USERS} from '../utils/migrate/walker';
-import {handleObserve, parseDuration, parseTime, setPath} from '../commands/server-observe';
+import {handleObserve, matchFilter, parseDuration, parseTime, setPath} from '../commands/server-observe';
 
 type Call = {method: string; path: string; body: any};
 
@@ -364,5 +364,23 @@ describe('logs', () => {
 describe('an unknown command', () => {
   it('fails with the usage', async () => {
     await expect(observe('problem', 'list', [], {})).rejects.toThrow(/Unknown command 'problem list'\nUsage: grok s observe/);
+  });
+});
+
+describe('logs match', () => {
+  it('joins the expression and the flags into one log filter', () => {
+    expect(matchFilter(['level', 'in', '(error,', 'warning)'], {})).toBe('level in (error, warning)');
+    expect(matchFilter([], {level: 'error,warning', package: 'Chembl', grep: 'Resize Observer'}))
+      .toBe('(level in (error, warning)) and (package = Chembl) and (text ~ "Resize Observer")');
+    expect(matchFilter(['not text ~ probe'], {user: 'alice'})).toBe('(not text ~ probe) and (user = alice)');
+    expect(matchFilter([], {})).toBe('');
+  });
+
+  it('asks the server for what the filter matches', async () => {
+    const {calls} = await observe('logs', 'match', ['level = error'], {since: '2h', limit: 50});
+    expect(calls[0].method).toBe('GET');
+    expect(calls[0].path).toContain('/log/match?');
+    expect(decodeURIComponent(calls[0].path)).toContain('filter=level = error');
+    expect(calls[0].path).toContain('since=2h');
   });
 });
