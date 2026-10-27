@@ -9,16 +9,12 @@ a shared stand.
 
 ## Still open
 
-### Questions for owners
+### Decided and written
 
-1. **Two groups with the same visible name.** The name guard (`groups_repository.dart` save, "A group or role with
-   the same name already exists") compares the internal names. The New Group dialog sends no internal name and the
-   server derives one from the name typed; a group made through the JS API (`DG.Group.create(name)`) has the name as
-   its internal name. On localhost (2026-10-26) OK in the New Group dialog with the name of such a group closed the
-   dialog with no message, and two groups showed the same name. Should the visible name be unique, whatever made the
-   first group?
-2. **Invite a Friend... with the email of an existing user.** No source says whether the dialog refuses it, invites
-   again, or points to the user.
+The answers of 2026-10-27 are scenarios: a group made in the New Group dialog under the name of a group made through
+the API is refused (`group-edge-cases`; it passes on localhost today, the 2026-10-26 silent duplicate is gone), and
+Invite a Friend... with the email of a registered user says "User is already registered", OK inviting that user
+again rather than making a new one (`user-edge-cases`, `cmdUsersInvite`).
 
 ### API or server tests to write
 

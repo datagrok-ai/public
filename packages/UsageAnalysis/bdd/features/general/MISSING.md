@@ -39,15 +39,16 @@ fast). Section numbers are the first list's.
 
 Nothing planned.
 
-## Edge cases (`table-manager-edge-cases.feature`) — still open
+## Edge cases
 
-Written for the edge-case feature, with no library, binding or code change. It claims the Table Manager with no
-table open (an empty list, no error). What follows has no source for its expected behaviour.
+Written for the edge-case features, with no library, binding or code change. `table-manager-edge-cases` claims
+the Table Manager with no table open (an empty list, no error).
 
-### Questions for owners
+### Decided and written
 
-1. **An empty first name, or a very long one, in the profile's Enter new name dialog.** Refused, trimmed, or saved?
-2. **An empty molecule cell in a CSV export.** An empty field, or a placeholder text?
+The answers of 2026-10-27 are scenarios of `profile-export-edge-cases`: an emptied first name keeps OK disabled, a
+200-character first name is saved whole (both known failures with no ticket yet), and an empty molecule cell goes
+out of a CSV export as an empty field.
 
 ## Won't do (the lead's triage, 2026-10-11)
 

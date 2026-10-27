@@ -8,7 +8,8 @@ Feature: Group edge cases: the only admin, a group nested into its own member, a
   member of its own member is refused as a circular reference, and a second group made in the New
   Group dialog under a name already made there is refused (`groups_repository.dart`: "A group or role
   with the same name already exists"; the guard compares the internal names, which the dialog derives
-  from the name typed, so a group named the same through the API is not one: MISSING.md). The Properties dialog refuses a name of
+  from the name typed; the visible name is to be unique whatever made the first group, and a group made
+  through the API under the name typed is refused as well). The Properties dialog refuses a name of
   spaces only ("Name must be at least 1 character", `grok_group_meta.dart` `propertiesDialog`).
   CANCEL in MANAGE and in Properties leaves the group as it was on the server.
 
@@ -22,6 +23,7 @@ Feature: Group edge cases: the only admin, a group nested into its own member, a
     And a group named "BDD-GE-Group-{time}" is on the server
     And a group named "BDD-GE-Child-{time}" is on the server
     And no group named "BDD-GE-Twice-{time}" is on the server
+    And no group named "BDDGEApi{time}" is on the server
     And the browse panel is open
     And the context panel is open
     When user expands "Platform" tree node inside browse tree
@@ -118,3 +120,14 @@ Feature: Group edge cases: the only admin, a group nested into its own member, a
     And 1 group named "BDD-GE-Group-{time}" should be on the server
     And no errors should have been logged
     And no error or warning balloon should have been shown
+
+  Scenario: A group made in the New Group dialog under the name of a group made through the API is refused
+    Given a group named "BDDGEApi{time}" is on the server
+    When user clicks on "New Group..." button
+    And user types "BDDGEApi{time}" into Name input in "Create New Group" dialog
+    And user clicks on OK button in "Create New Group" dialog
+    Then an error balloon containing "A group or role with the same name already exists" should have been shown
+    And "Create New Group" dialog should be visible
+    And 1 group named "BDDGEApi{time}" should be on the server
+    When user clicks on CANCEL button in "Create New Group" dialog
+    Then the "Create New Group" dialog should close
