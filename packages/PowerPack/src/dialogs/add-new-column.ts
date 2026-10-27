@@ -1229,6 +1229,9 @@ export class AddNewColumnDialog {
       let actualInputType = actualInputParamTypes[property.name].toLowerCase();
       let actualSemType = actualInputSemTypes[property.name];
       const input = funcCall.inputs[property.name];
+      const unresolved = this.unresolvedNameArgument(funcCall, property);
+      if (unresolved)
+        return unresolved;
       //check for variables missing in the context
       //TODO: preview with variables doesn't work
       if (input?.func && input.func.name === GET_VAR_FUNCTION_NAME) {
@@ -1316,6 +1319,25 @@ export class AddNewColumnDialog {
       }
     }
     return '';
+  }
+
+  /** A table or column passed by name that does not exist, which would fail on every row. */
+  private unresolvedNameArgument(funcCall: DG.FuncCall, property: DG.Property): string {
+    const name = funcCall.inputs[property.name];
+    if (typeof name !== 'string' || !name)
+      return '';
+    if (property.semType === DG.SEMTYPE.TABLE_NAME)
+      return this.tableByName(name) ? '' : `Table ${name} is missing`;
+    if (property.semType !== DG.SEMTYPE.COLUMN_NAME)
+      return '';
+    const tableName = funcCall.inputs[property.options[DG.FuncParamOptions.Table]];
+    const table = typeof tableName === 'string' && tableName ? this.tableByName(tableName) : this.sourceDf;
+    // a missing table is reported by its own argument
+    return !table || table.col(name) ? '' : `Column ${name} is missing`;
+  }
+
+  private tableByName(name: string): DG.DataFrame | null {
+    return name === this.sourceDf?.name ? this.sourceDf : grok.shell.tableByName(name);
   }
 
   /** A formula that reads whole columns, the row index or the table gives other values on a few rows. */
