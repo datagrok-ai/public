@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1158](https://github.com/datagrok-ai/core/issues/1158): System Activity: Added the e-mail confirmation and password reset and change audit records
 * Test Track: Fixed the search box throwing on regular-expression characters such as "(" or "["; it now matches the typed text
 * Tests: Added a BDD scenario for a "(" typed into the categorical filter card's search, which threw a regular-expression error
 * Tests: Retired the known failure of a run link without a required value ([core#446](https://github.com/datagrok-ai/core/issues/446)): the scenario that opens the link now claims its warning, which a later scenario could never see; the Source link that keeps an unticked parameter until a reopen is now [core#1127](https://github.com/datagrok-ai/core/issues/1127)
