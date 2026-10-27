@@ -7,7 +7,7 @@ Feature: Scatter plot regressions — labels and missing columns
   labels (public#3041, spgi-100); and a layout applied after its logarithmic X column was removed
   loads, and the view's layout can be saved and loaded again without an error (public#2867). Each
   scenario opens its own table. The plot draws "x: Column "WEIGHT" does not exist." then, but its
-  status carries no `error`, so the message itself is in MISSING-regressions.md (public#3091).
+  status carries no `error`, so the message itself is in MISSING.md (public#3091).
 
   Background:
     Given user is logged in

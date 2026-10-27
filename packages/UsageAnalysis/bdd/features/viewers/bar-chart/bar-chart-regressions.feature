@@ -6,7 +6,7 @@ Feature: Bar chart regressions from closed issues
   with its twelve bars (public#2562). Each scenario adds its own bar chart to demog-1000 (Caucasian
   896 rows, 426 of them started in 1990).
   Not translated: public#463 (a column picked in the on-chart value selector under count) — the
-  library's selector step opens the selector's aggregation half, see MISSING-regressions.md; the audit's
+  library's selector step opens the selector's aggregation half, see MISSING.md; the audit's
   negative Bar Corner Radius (a value set from JS is an API test) and its performance half.
 
   Background:

@@ -9,7 +9,7 @@ Feature: Grid regressions from closed issues
   Control+Shift+Home and Control+Shift+End select from the current row to the first and to the last
   row (public#2663). Enter and a typed digit open the editor on the current cell (public#629; F2 is
   not a grid key: `viewer_base.dart` gives it to the other viewers). A cut-off cell's value in its
-  tooltip (public#989, public#996) shows an empty tooltip on the current master: see MISSING-regressions.md.
+  tooltip (public#989, public#996) shows an empty tooltip on the current master: see MISSING.md.
 
   Background:
     Given user is logged in

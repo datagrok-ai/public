@@ -11,7 +11,7 @@ Feature: Line chart regressions — row source, row groups, categories and the l
   Not translated: the line click under a split (public#2608, public#2360), on-plot split and Y
   column removal (public#2951 and its duplicates), the log-axis warning (public#3701), label
   alignment after a filter (public#1456), a custom category order (public#1551) and the other
-  candidates listed in MISSING-regressions.md — each needs a step or a core signal that does not exist yet.
+  candidates listed in MISSING.md — each needs a step or a core signal that does not exist yet.
 
   Background:
     Given user is logged in

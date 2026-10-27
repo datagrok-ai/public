@@ -6,8 +6,8 @@ Feature: Colour coding regressions from closed issues
   with Pick Up / Apply > Pick Up is applied, colouring included, to a column of another table with
   Pick Up / Apply > Apply (public#1887), here from demog-1000 to its first 100 rows (Color Coding >
   Apply Coloring after Pick Up Coloring in the other table stays disabled: a question in
-  MISSING-regressions.md). The bar chart painting the category names of a colour-coded column (public#3621)
-  reproduces on the current master: see MISSING-regressions.md.
+  MISSING.md). The bar chart painting the category names of a colour-coded column (public#3621)
+  reproduces on the current master: see MISSING.md.
 
   Background:
     Given user is logged in

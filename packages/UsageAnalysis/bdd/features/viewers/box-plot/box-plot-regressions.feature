@@ -7,7 +7,7 @@ Feature: Box plot regressions from closed issues
   off takes the outlier markers away (public#1379). Each scenario adds its own box plot.
   core#960's hover over a box plot too small for its axes is claimed in `box-plot-edge-cases.feature`.
   Not translated: core#960's violin over a real NaN — the data steps write NaN as a missing value,
-  see MISSING-regressions.md; its zero-row and leak halves (an API test, a memory audit).
+  see MISSING.md; its zero-row and leak halves (an API test, a memory audit).
 
   Background:
     Given user is logged in

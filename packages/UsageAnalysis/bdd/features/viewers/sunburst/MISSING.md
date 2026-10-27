@@ -1,8 +1,8 @@
-# Sunburst — closed issues the regression round of 26 Oct 2026 could not claim
+# Sunburst — what the features cannot say yet
 
-Kept apart from `MISSING.md` (the regression round of closed issues; the edge-case round keeps its own notes there).
+## Closed issues the regression round of 26 Oct 2026 could not claim
 
-## Regressions found 26 Oct 2026
+### Regressions found 26 Oct 2026
 
 - **Rows selected in the grid are not drawn on the sunburst (public#2262, closed).** public#2262 asked
   that a selection made in the grid or in a viewer light up only the segments it belongs to. On

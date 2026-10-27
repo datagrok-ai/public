@@ -4,7 +4,7 @@ Feature: Sunburst regressions of closed issues
   sunburst did not respond to its Table property; picked in the context panel, spgi-100 rebinds it
   and it draws that table's segments, and demog-1000 picked back brings the first segments back.
   public#2262 (rows selected in the grid drawn on their segments) reproduces on the stand and is
-  written up in MISSING-regressions.md, not here.
+  written up in MISSING.md, not here.
 
   Background:
     Given user is logged in

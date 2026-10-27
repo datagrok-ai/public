@@ -24,8 +24,8 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, expand, shouldBe, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {maxInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, areasSameSize, doubleClickArea, dragAreaBy, hasArea, hasNoArea, noErrors, painted, readingBetween, readingHigherThanRemembered, readingIs, readingReads, rememberReading, repainted, reportsNoError, setProperty, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {checkedInColumnList, toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {addViewer, areasSameSize, doubleClickArea, dragAreaBy, hasArea, hasNoArea, noErrors, painted, readingBetween, readingHigherThanRemembered, readingIs, readingReads, rememberReading, repainted, setProperty, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {checkedInColumnList, showsText, toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Heat map columns, sorting and column widths", () => {
@@ -102,13 +102,13 @@ test.describe("Heat map columns, sorting and column widths", () => {
       await session.step(87, "And the \"column AGE\" and \"column SEX\" areas of heat map viewer should be the same width", () => areasSameSize(page, "column AGE", "column SEX", el("heat map viewer"), "width"));
       await session.step(88, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Max Heatmap Columns 0 leaves no column on the map and no error (GROK-17776)", async () => {
+    await run.scenario("Max Heatmap Columns 0 leaves no column on the map and says why (GROK-17776)", async () => {
       await session.step(91, "When user sets \"maxHeatmapColumns\" property of heat map viewer to \"0\"", () => setProperty(page, "maxHeatmapColumns", el("heat map viewer"), "0"));
       await session.step(92, "Then the \"max heatmap columns\" reading of heat map viewer should be 0", () => readingIs(page, "max heatmap columns", el("heat map viewer"), 0));
       await session.step(93, "And the \"columns shown\" reading of heat map viewer should be 0", () => readingIs(page, "columns shown", el("heat map viewer"), 0));
       await session.step(94, "And the \"column order\" reading of heat map viewer should be \"\"", () => readingReads(page, "column order", el("heat map viewer"), ""));
       await session.step(95, "And heat map viewer should not have a \"column AGE\" area", () => hasNoArea(page, el("heat map viewer"), "column AGE"));
-      await session.step(96, "And heat map viewer should report no error", () => reportsNoError(page, el("heat map viewer")));
+      await session.step(96, "And heat map viewer should show the text \"No columns to show: Max Heatmap Columns is 0\"", () => showsText(page, el("heat map viewer"), "No columns to show: Max Heatmap Columns is 0"));
       await session.step(97, "And heat map viewer should have repainted", () => repainted(page, el("heat map viewer")));
       await session.step(98, "When user sets \"maxHeatmapColumns\" property of heat map viewer to \"100\"", () => setProperty(page, "maxHeatmapColumns", el("heat map viewer"), "100"));
       await session.step(99, "Then the \"columns shown\" reading of heat map viewer should be 11", () => readingIs(page, "columns shown", el("heat map viewer"), 11));

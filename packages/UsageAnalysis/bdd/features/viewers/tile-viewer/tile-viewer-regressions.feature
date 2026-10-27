@@ -5,7 +5,7 @@ Feature: Tile viewer regressions from closed issues
   where row 1 started on 8/2/1990. A caption too long for the card shows the whole column name in a
   tooltip, and a short one shows none (public#1593), on a two-row inline table. The other half of
   public#1593, a long value in a field, shows no tooltip on the current master, and a formula edited
-  in the Formula pane (public#3344) needs PowerPack's Formula pane noun: see MISSING-regressions.md.
+  in the Formula pane (public#3344) needs PowerPack's Formula pane noun: see MISSING.md.
 
   Background:
     Given user is logged in

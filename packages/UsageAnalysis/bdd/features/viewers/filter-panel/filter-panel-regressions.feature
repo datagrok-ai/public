@@ -4,7 +4,7 @@ Feature: Filter panel regressions
   numeric card's missing-values choice back to "Keep missing values" (public#790); a min/max range
   that holds none of the column's values keeps no row (public#2364); the range handles dragged back
   past the ends of the slider keep every row (public#1343); with one card's search open, a second
-  card's search icon takes the typing (public#2359); a grid header dragged onto the panel leaves the
+  card's search opens too and what is typed in it filters only its own column (public#2359); a grid header dragged onto the panel leaves the
   grid's column order alone (public#1986); Ctrl+C in a card's search copies the text selected in
   it, not a picture of the panel (public#3027); a string column holding one value is listed as a
   compact row after the cards rather than as a card of its own (core#479); adding viewers does not
@@ -19,7 +19,7 @@ Feature: Filter panel regressions
   and max fields clamp a typed end to it (filter-panel-ladder.feature: 999 becomes 89) and 95 to 120
   becomes 89 to 89, which keeps the one row aged 89; the categorical half of public#2943 — the column
   popup reports no `category <label>` areas (grid/MISSING.md); public#344 (an invalid viewer Filter
-  formula) logs an error on the current master and is in MISSING-regressions.md; the close and menu icons of
+  formula) logs an error on the current master and is in MISSING.md; the close and menu icons of
   the single-value row (core#479) are not claimed — the row reports no parts.
 
   Background:
@@ -84,14 +84,16 @@ Feature: Filter panel regressions
     And no errors should have been logged
 
   @realizes:public#2359
-  Scenario: A second card's search icon takes the typing while the first search is open (public#2359)
+  Scenario: A second card's search opens beside the first one and filters only its column (public#2359)
     When user adds a card for "RACE" to the filter panel
     And user adds a card for "DIS_POP" to the filter panel
     And user hovers over "RACE" filter card
     And user clicks on search icon of "RACE" filter card
     And user hovers over "DIS_POP" filter card
     And user clicks on search icon of "DIS_POP" filter card
-    And user types "RA" at the caret
+    Then search of "DIS_POP" filter card should be visible
+    And search of "RACE" filter card should be visible
+    When user types "RA" into the search of the "DIS_POP" filter card
     Then 434 rows should pass the filter
     And the filter should pass exactly the rows where "DIS_POP" is "RA"
     And the "filtering of DIS_POP" reading of filter panel should be "true"

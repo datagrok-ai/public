@@ -3,7 +3,7 @@ Feature: Heat map regressions of closed issues
   Closed heat map issues, each claimed by what a person sees. core#928: with Max Heatmap Columns 0
   the map is empty, and it now says why inside the viewer ("No columns to show: Max Heatmap Columns
   is 0"); 100 brings the columns back and takes the hint away. The hint is read as text shown in the
-  viewer: the grid's status does not publish it as its `error` (see MISSING-regressions.md). core#931: a heat map
+  viewer: the grid's status does not publish it as its `error` (see MISSING.md). core#931: a heat map
   stacked with a histogram as tabs comes back from a layout on the tab that was active at the save,
   the Heat map tab, with no switch; the histogram of the other tab is not on the page. The layout is
   deleted at feature end and read back gone.

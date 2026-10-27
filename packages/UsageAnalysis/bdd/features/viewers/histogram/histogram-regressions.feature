@@ -8,7 +8,7 @@ Feature: Histogram regressions from closed issues
   category colours (public#130). One journey on demog-1000 with a histogram of AGE, 500 by 400 so the
   range slider and the selectors are drawn; every scenario puts back what it changed.
   Not translated: the audit's distribution lines after a filter made elsewhere (no reading of a
-  line's statistics, see MISSING-regressions.md), its empty-table and JS-set Bins crashes (API tests) and its
+  line's statistics, see MISSING.md), its empty-table and JS-set Bins crashes (API tests) and its
   performance half.
 
   Background:

@@ -1,6 +1,6 @@
-# Filter panel — closed issues the regression round of 26 Oct 2026 could not claim
+# Filter panel — what the features cannot say yet
 
-Kept apart from `MISSING.md` (the regression round of closed issues; the edge-case round keeps its own notes there).
+## Closed issues the regression round of 26 Oct 2026 could not claim
 
 Written during the closed-issue regression round of 26 Oct 2026 (bucket b5, filtering), against the
 panel's "Automation surface" (`core/client/d4/lib/src/viewers/filters/CLAUDE.md`). What could be said
@@ -9,7 +9,7 @@ public#2501, #2943) and `filter-panel-layout-regressions.feature` (public#3059, 
 #377, #1464, #1889, #319). Chem's substructure-card candidates of the same bucket are in
 `Chem/bdd/features/filters/`.
 
-## Regressions found 26 Oct 2026
+### Regressions found 26 Oct 2026
 
 - **An invalid viewer Filter formula logs a RangeError** ([public#344](https://github.com/datagrok-ai/public/issues/344)).
   The page keeps working and the formula is ignored (the scatter plot keeps showing all 1000 rows), but
@@ -46,7 +46,7 @@ public#2501, #2943) and `filter-panel-layout-regressions.feature` (public#3059, 
   `filter-panel-regressions.feature` (demog-1000, X and Y on AGE and WEIGHT, which have no blanks —
   the default axes include HEIGHT and draw 872) once the error is gone.
 
-## Still open
+### Still open
 
 - **A click keeps the clicked category after the column's custom order changed**
   ([public#576](https://github.com/datagrok-ai/public/issues/576)). The custom order is set in the
@@ -132,6 +132,18 @@ public#2501, #2943) and `filter-panel-layout-regressions.feature` (public#3059, 
   ```
 
   (the count is a placeholder — measure it in the run that first passes.)
+
+- **The second card's search icon itself moves the focus to its search**
+  ([public#2359](https://github.com/datagrok-ai/public/issues/2359), first half).
+  `filter-panel-regressions.feature` opens both searches and types into the second one by name; it
+  does not claim that the icon click alone hands it the caret. Every `Icon` puts the focus back where
+  it was on mouse down, one `Timer.run` later (`core/client/d4/lib/src/widgets/icons.dart`, GROK-8211).
+  A hand click holds the button longer than that, so the restore runs first and the search icon's
+  click then focuses its search; Playwright's click releases within the same tick, the icon focuses
+  the DIS_POP search and the restore moves the caret back to RACE 13 ms later (traced 27 Oct 2026:
+  6 of 6 headless clicks lose it, 6 of 6 clicks held 120 ms keep it). Needs a press that lasts as long
+  as a hand click — a `delay` on the library's icon click — before `search of "DIS_POP" filter card
+  should be focused` and `user types "RA" at the caret` can say it.
 
 - **The single-value row keeps its close and menu icons** (core#479, second half).
   `filter-panel-regressions.feature` claims the row (`card <caption>` area) after the cards and the
