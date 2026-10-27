@@ -432,10 +432,8 @@ export function handleSequenceHeaderRendering() {
             conservationTrackRef.resetViewportTracking();
             conservationTrackRef.forceUpdate();
           }
-          setTimeout(() => {
-            if (!grid.isDetached)
-              grid.invalidate();
-          }, 50);
+          if (!grid.isDetached)
+            grid.invalidate();
         });
 
         sub(filterChangeSub);

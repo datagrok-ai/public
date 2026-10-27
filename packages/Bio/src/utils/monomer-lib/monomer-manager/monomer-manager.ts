@@ -185,21 +185,19 @@ export class MonomerManager implements IMonomerManager {
   private _tables = 0;
   private _rowSub: Subscription | null = null;
 
-  private adjustTable() {
-    this._tables++;
+  /** The widths follow the detection: a column's renderer, chosen by its semantic type, sets its own width. */
+  private async adjustTable() {
+    const table = ++this._tables;
     const df = this.tv?.dataFrame;
     if (df) {
-      grok.data.detectSemanticTypes(df);
-      df.meta.detectSemanticTypes();
       this._followRows(df);
+      await Promise.all([grok.data.detectSemanticTypes(df), df.meta.detectSemanticTypes()]);
     }
-    setTimeout(() => {
-      if (this.tv?.grid) {
-        this.tv!.grid.props.allowEdit = false;
-        this.tv!.grid.col(MONOMER_DF_COLUMN_NAMES.NAME)!.width = 100;
-        this.tv!.grid.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.width = 70;
-      }
-    }, 200);
+    if (this._tables !== table || !this.tv?.grid)
+      return;
+    this.tv.grid.props.allowEdit = false;
+    this.tv.grid.col(MONOMER_DF_COLUMN_NAMES.NAME)!.width = 100;
+    this.tv.grid.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.width = 70;
   }
 
   public static readonly VIEW_NAME = 'Manage Monomers';
@@ -254,21 +252,20 @@ export class MonomerManager implements IMonomerManager {
       return;
     const df = await this.getMonomersDf(this._libName);
     this.tv.dataFrame = df;
-    this.adjustTable();
+    const adjusted = this.adjustTable();
     this._editor?.libraryReloaded();
     if (scrollToSymbol == undefined)
       return;
     // the view hands out a new wrapper for its table every time: the table is told apart by the count
     const table = this._tables;
-    setTimeout(() => {
-      if (this._tables !== table || !this.tv)
-        return;
-      const scrollToRow = df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.toList().indexOf(scrollToSymbol);
-      if (scrollToRow === -1)
-        return;
-      this.tv.grid.scrollToCell(df.columns.byIndex(0), scrollToRow);
-      df.currentRow = df.rows.get(scrollToRow);
-    }, 500);
+    await adjusted;
+    if (this._tables !== table || !this.tv)
+      return;
+    const scrollToRow = df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.toList().indexOf(scrollToSymbol);
+    if (scrollToRow === -1)
+      return;
+    this.tv.grid.scrollToCell(df.columns.byIndex(0), scrollToRow);
+    df.currentRow = df.rows.get(scrollToRow);
   }
 
   async createNewMonomerLib(providerName: string, libName: string, _monomers: Monomer[]): Promise<void> {
