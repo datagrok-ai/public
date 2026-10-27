@@ -13,8 +13,8 @@ public#2501, #2943) and `filter-panel-layout-regressions.feature` (public#3059, 
 
 - **An invalid viewer Filter formula logs a RangeError** ([public#344](https://github.com/datagrok-ai/public/issues/344)),
   filed as core#1141 (`DataFrameViewer.createCombinedRowFilter` reads `columns[0]` of the empty list
-  `getNewColumn` answers for a formula that does not parse). Claimed in
-  `viewer-filter-formula-regressions.feature` as `@known-failure:24`, pinned to core#1141 (27 Oct 2026).
+  `getNewColumn` answers for a formula that does not parse). Fixed by a4e5e89276 and closed on
+  27 Oct 2026; `viewer-filter-formula-regressions.feature` guards it as a plain scenario.
 
 ### Still open
 

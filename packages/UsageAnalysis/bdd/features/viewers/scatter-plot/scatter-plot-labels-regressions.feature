@@ -4,7 +4,7 @@ Feature: Scatter plot regressions — labels and missing columns
   dragged, not the plot under it, when Mouse Drag = Select (public#3120) and when Show Labels For is
   All under a panel filter (public#3323) — a dragged label leaves the auto-placed ones, so `labels
   shown` drops by one under Selected (1 to 0), while under All the plot places the rest anew (274 labels
-  before the drag, 301 after, measured), and the selection stays as it was; a molecule column as the
+  before the drag, 301 after, measured; the rise is intended — Olesia, 27 Oct 2026), and the selection stays as it was; a molecule column as the
   label column draws 43 labels (public#3041, spgi-100); and a layout applied after its logarithmic X column was removed
   loads, and the view's layout can be saved and loaded again without an error (public#2867). Each
   scenario opens its own table. The plot draws "x: Column "WEIGHT" does not exist." then, but its
