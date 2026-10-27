@@ -49,8 +49,7 @@ export class ScriptingTutorial extends Tutorial {
       'In the Browse Panel, click Platform > Functions > Scripts > New > Python Script. This opens a script editor.',
       'ScriptView', providerRoot, editorIntro, () => grok.shell.route('/script/python'));
 
-    // UI generation delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const sampleIcon = await Tutorial.waitFor(() => $('div.d4-ribbon-item').has('i.grok-icon.fa-asterisk')[0]);
 
     const sampleDfName = 'cars';
     const sampleScriptName = 'Template';
@@ -58,7 +57,7 @@ export class ScriptingTutorial extends Tutorial {
 
     await this.action('Open a sample table for the script', grok.events.onTableAdded.pipe(
       filter((data) => data.args.dataFrame.name === sampleDfName)),
-    $('div.d4-ribbon-item').has('i.grok-icon.fa-asterisk')[0],
+    sampleIcon,
     'In front of you is a valid script. The commented out section on top defines script parameters. ' +
       'This simple script calculates the number of cells in a dataframe. ' +
       'The <i class="grok-icon fal fa-asterisk"></i> ' +

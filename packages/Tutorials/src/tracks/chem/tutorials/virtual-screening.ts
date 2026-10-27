@@ -250,9 +250,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       filters.setOptions({columnNames: [curatedMolColName]});
     
 
-    // UI generation delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    const sketcherInput = $(filters.root).find('div.grok-sketcher-input > input')[0];
+    const sketcherInput = await Tutorial.waitFor(() => $(filters.root).find('div.grok-sketcher-input > input')[0]);
     if (!sketcherInput) return;
 
     await this.action('Filter the compounds by the substituents "CCl.OCc1ccccc1C"', timer(0, 200).pipe(

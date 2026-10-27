@@ -138,8 +138,7 @@ export class DashboardTutorial extends Tutorial {
 
     const projectDlg = await this.openDialog('Save a project', 'Save project', projectPaneHints, uploadProjectInfo,
       () => projectPaneHints[0].click());
-    await DG.delay(1000);
-    const projectNameHint = $(projectDlg.root).find('.ui-input-editor#name')[0];
+    const projectNameHint = await Tutorial.waitFor(() => $(projectDlg.root).find('.ui-input-editor#name')[0]);
 
     await this.action(`Set the project name to "${projectName}"`, timer(0, 200).pipe(filter(() => projectName ===
       (<HTMLInputElement>$(projectDlg.root).find('.ui-input-editor#name')[0])?.value)),
@@ -177,10 +176,10 @@ export class DashboardTutorial extends Tutorial {
       async () => (await grok.dapi.projects.find(savedProjectId)).open());
     savedProjectSub.unsubscribe();
     this.showToolbox();
-    await DG.delay(1000);
+    const toolbox = await Tutorial.waitFor(() => $('.d4-toolbox')[1]);
 
-    await this.textInpAction($('.d4-toolbox')[1]!, 'Set State to LA', 'State', 'LA');
+    await this.textInpAction(toolbox!, 'Set State to LA', 'State', 'LA');
 
-    await this.buttonClickAction($('.d4-toolbox')[1]!, 'Click REFRESH button', 'REFRESH');
+    await this.buttonClickAction(toolbox!, 'Click REFRESH button', 'REFRESH');
   }
 }
