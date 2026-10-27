@@ -198,10 +198,19 @@ export class StickyMetaTutorial extends Tutorial {
     );
 
     const selectorDlg = await new Promise<DG.Dialog>((resolve) => {
-      const iv = setInterval(() => {
-        const dlg = DG.Dialog.getOpenDialogs().find((d) => d.title.includes('Select types for'));
-        if (dlg) {clearInterval(iv); resolve(dlg);}
-      }, 50);
+      const find = () => DG.Dialog.getOpenDialogs().find((d) => d.title.includes('Select types for'));
+      const open = find();
+      if (open) {
+        resolve(open);
+        return;
+      }
+      const sub = grok.events.onDialogShown.subscribe(() => {
+        const dlg = find();
+        if (dlg) {
+          sub.unsubscribe();
+          resolve(dlg);
+        }
+      });
     });
 
     // the rows are rendered after the dialog opens, so the checkbox is looked up on every poll
